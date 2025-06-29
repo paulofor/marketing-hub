@@ -1,0 +1,22 @@
+{
+  "name": "marketing-hub-frontend",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "echo \"no tests yet\""
+  },
+  "dependencies": {
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "@tanstack/react-query": "^5.36.0",
+    "zustand": "^4.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "vite": "^5.2.1",
+    "@vitejs/plugin-react": "^4.1.0"
+  }
+}

@@ -1,10 +1,10 @@
 # Marketing Hub
 
-Mono‑repo skeleton (Spring Boot backend + React frontend) generated automatically.
-Run everything with:
-
 ```bash
-docker compose up --build
+docker compose up -d      # start MySQL
+cd backend && mvn spring-boot:run
+cd ../frontend && npm run dev
+# deploy to VPS (Java 21 already installed)
+scp target/ads-service.jar <vps>:/opt/marketing-hub/
+ssh <vps> "java -jar /opt/marketing-hub/ads-service.jar"
 ```
-
-Then open http://localhost:5173

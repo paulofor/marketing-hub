@@ -2,8 +2,8 @@
 
 ## Build & Test
 - **Backend**
-  - Build: `./gradlew build`
-  - Tests: `./gradlew test`
+  - Build: `cd backend/ads-service && mvn package`
+  - Tests: `cd backend/ads-service && mvn test`
 - **Frontend**
   - Build: `npm run build`
   - Tests: `npm run test`

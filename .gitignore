@@ -1,6 +1,6 @@
-# Java / Gradle
-/.gradle
+# Java / Maven
 /build/
+/target/
 *.class
 
 # Node

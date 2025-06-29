@@ -1,0 +1,15 @@
+# Java / Gradle
+/.gradle
+/build/
+*.class
+
+# Node
+/node_modules
+/dist
+.parcel-cache
+
+# OS
+.DS_Store
+
+# Env
+.env

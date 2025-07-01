@@ -1,7 +1,6 @@
 package com.marketinghub.ads;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -16,5 +15,21 @@ public class FacebookAccountController {
     @GetMapping("/accounts/facebook")
     public List<FacebookAccount> findAll() {
         return repository.findAll();
+    }
+
+    @PostMapping("/accounts/facebook")
+    public FacebookAccount create(@RequestBody FacebookAccount account) {
+        return repository.save(account);
+    }
+
+    @PutMapping("/accounts/facebook/{id}")
+    public FacebookAccount update(@PathVariable Long id, @RequestBody FacebookAccount account) {
+        account.setId(id);
+        return repository.save(account);
+    }
+
+    @DeleteMapping("/accounts/facebook/{id}")
+    public void delete(@PathVariable Long id) {
+        repository.deleteById(id);
     }
 }

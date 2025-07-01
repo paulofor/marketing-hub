@@ -1,18 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
-export interface FacebookAccount {
+export interface InstagramAccount {
   id: string;
   name: string;
   currency: string;
 }
 
-export function useFacebookAccounts() {
+export function useInstagramAccounts() {
   return useQuery({
-    queryKey: ["facebook-accounts"],
+    queryKey: ["instagram-accounts"],
     queryFn: async () => {
-      const { data } = await axios.get<FacebookAccount[]>(
-        "/api/accounts/facebook",
+      const { data } = await axios.get<InstagramAccount[]>(
+        "/api/accounts/instagram",
       );
       return data;
     },

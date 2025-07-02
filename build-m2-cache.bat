@@ -5,6 +5,7 @@ rem === CONFIGURÁVEIS =========================================
 set "MODULE_PATH=backend\ads-service"
 set "CACHE_DIR=%~dp0codex-cache"
 set "TAR_NAME=m2-cache-springboot-3.2.5.tar.gz"
+set "CHUNK_SIZE=80MB"                   rem ajuste se quiser partes menores
 rem ===========================================================
 
 set "ORIG_M2=%USERPROFILE%\.m2"
@@ -31,6 +32,27 @@ mkdir "%CACHE_DIR%" 2>nul
 if exist "%CACHE_DIR%\%TAR_NAME%" del "%CACHE_DIR%\%TAR_NAME%"
 tar -czf "%CACHE_DIR%\%TAR_NAME%" -C "%ORIG_M2%" repository
 echo   Arquivo criado: %CACHE_DIR%\%TAR_NAME%
+
+echo [3.1] Dividindo em partes de %CHUNK_SIZE%...
+powershell -NoLogo -NoProfile -Command ^
+  "$chunk='%CHUNK_SIZE%';" ^
+  "$src='%CACHE_DIR%\%TAR_NAME%';" ^
+  "$dir=[IO.Path]::GetDirectoryName($src);" ^
+  "$name='m2-part-';" ^
+  "$fs=[IO.File]::OpenRead($src);" ^
+  "$buffer=New-Object byte[] (Invoke-Expression $chunk.Replace('MB','*1MB').Replace('mb','*1MB'));" ^
+  "$i=0;" ^
+  "while(($read=$fs.Read($buffer,0,$buffer.Length)) -gt 0){" ^
+  "  $file=('{0}\{1}{2:D2}.tar.gz' -f $dir,$name,$i);" ^
+  "  $out=[IO.File]::OpenWrite($file);" ^
+  "  $out.Write($buffer,0,$read);" ^
+  "  $out.Close();" ^
+  "  $i++" ^
+  "}" ^
+  "$fs.Close();"
+
+del "%CACHE_DIR%\%TAR_NAME%"
+echo   Partes geradas: %CACHE_DIR%\m2-part-*.tar.gz
 
 echo [4] Restaurando .m2 original...
 rd /s /q "%ORIG_M2%"

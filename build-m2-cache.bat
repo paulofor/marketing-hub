@@ -21,14 +21,14 @@ mkdir "%ORIG_M2%" >nul
 
 echo [2] Rodando Maven dependency:go-offline…
 pushd "%MODULE_PATH%"
-call ..\mvnw.cmd -U dependency:go-offline
+call ..\mvnw.cmd -Dmaven.repo.local="%ORIG_M2%\repository" -U dependency:go-offline
 if errorlevel 1 (
     echo *** Falha no Maven. Abortando.
     exit /b 1
 )
 
 echo [2.1] Baixando explicitamente o POM-pai Spring Boot…
-call ..\mvnw.cmd dependency:get -Dartifact=%BOOT_PARENT%
+call ..\mvnw.cmd -Dmaven.repo.local="%ORIG_M2%\repository" dependency:get -Dartifact=%BOOT_PARENT%
 if errorlevel 1 (
     echo *** Falha ao baixar POM-pai. Abortando.
     exit /b 1
@@ -68,5 +68,5 @@ if exist "%BACK_M2%" (
 )
 
 echo.
-echo Concluído com sucesso!
+echo ✅ Concluído com sucesso!
 endlocal

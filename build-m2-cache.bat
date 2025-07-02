@@ -5,7 +5,8 @@ rem ══ CONFIGURÁVEIS ══════════════════
 set "MODULE_PATH=backend\ads-service"
 set "CACHE_DIR=%~dp0codex-cache"
 set "TAR_NAME=m2-cache-springboot-3.2.5.tar.gz"
-set "CHUNK_SIZE=50MB"                 rem máx. 50 MB por fragmento
+set "CHUNK_SIZE=50MB"                rem máx. 50 MB por fragmento
+set "BOOT_PARENT=org.springframework.boot:spring-boot-starter-parent:3.2.5:pom"
 rem ════════════════════════════════════════════════════════════════════════
 
 set "ORIG_M2=%USERPROFILE%\.m2"
@@ -25,6 +26,13 @@ if errorlevel 1 (
     echo *** Falha no Maven. Abortando.
     exit /b 1
 )
+
+echo [2.1] Baixando explicitamente o POM-pai Spring Boot…
+call ..\mvnw.cmd dependency:get -Dartifact=%BOOT_PARENT%
+if errorlevel 1 (
+    echo *** Falha ao baixar POM-pai. Abortando.
+    exit /b 1
+)
 popd
 
 echo [3] Compactando repositório…
@@ -35,16 +43,15 @@ echo   Arquivo criado: %CACHE_DIR%\%TAR_NAME%
 
 echo [3.1] Dividindo em partes de %CHUNK_SIZE%…
 powershell -NoLogo -NoProfile -Command ^
-  "$src      = '%CACHE_DIR%\%TAR_NAME%';" ^
-  "$dir      = [IO.Path]::GetDirectoryName($src);" ^
-  "$prefix   = 'm2-part-';" ^
-  "$chunkB   = [int]('%CHUNK_SIZE%'.ToUpper().Replace('MB','')) * 1MB;" ^
-  "[byte[]]$buf = New-Object byte[] $chunkB;" ^
-  "$i       = 0;" ^
-  "$fs      = [IO.File]::OpenRead($src);" ^
-  "while(($read = $fs.Read($buf,0,$buf.Length)) -gt 0) {" ^
-  "  $file = ('{0}\{1}{2:D2}.tar.gz' -f $dir,$prefix,$i);" ^
-  "  [IO.File]::WriteAllBytes($file, $buf[0..($read-1)]);" ^
+  "$src='%CACHE_DIR%\%TAR_NAME%';" ^
+  "$dir=[IO.Path]::GetDirectoryName($src);" ^
+  "$pref='m2-part-';" ^
+  "$chunk=[int]('%CHUNK_SIZE%'.ToUpper().Replace('MB',''))*1MB;" ^
+  "[byte[]]$buf=New-Object byte[] $chunk;" ^
+  "$i=0;$fs=[IO.File]::OpenRead($src);" ^
+  "while(($read=$fs.Read($buf,0,$buf.Length)) -gt 0){" ^
+  "  $file=('{0}\{1}{2:D2}.tar.gz' -f $dir,$pref,$i);" ^
+  "  [IO.File]::WriteAllBytes($file,$buf[0..($read-1)]);" ^
   "  $i++" ^
   "}" ^
   "$fs.Close();"

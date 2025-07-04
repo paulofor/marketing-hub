@@ -30,7 +30,7 @@ export default function FacebookAccountsPage() {
 
   return (
     <div>
-      <table>
+      <table className="table table-striped">
         <thead>
           <tr>
             <th>ID</th>
@@ -47,6 +47,7 @@ export default function FacebookAccountsPage() {
               <td>{currency}</td>
               <td>
                 <button
+                  className="btn btn-sm btn-outline-primary me-2"
                   onClick={() => {
                     setForm({ id, name, currency });
                     setEditing(id);
@@ -54,7 +55,10 @@ export default function FacebookAccountsPage() {
                 >
                   Edit
                 </button>
-                <button onClick={() => deleteMutation.mutate(id)}>
+                <button
+                  className="btn btn-sm btn-outline-danger"
+                  onClick={() => deleteMutation.mutate(id)}
+                >
                   Delete
                 </button>
               </td>
@@ -62,23 +66,36 @@ export default function FacebookAccountsPage() {
           ))}
         </tbody>
       </table>
-      <div>
-        <input
-          placeholder="id"
-          value={form.id}
-          onChange={(e) => setForm({ ...form, id: e.target.value })}
-        />
-        <input
-          placeholder="name"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-        />
-        <input
-          placeholder="currency"
-          value={form.currency}
-          onChange={(e) => setForm({ ...form, currency: e.target.value })}
-        />
-        <button onClick={submit}>{editing ? "Update" : "Create"}</button>
+      <div className="row g-2">
+        <div className="col-md-2">
+          <input
+            className="form-control"
+            placeholder="id"
+            value={form.id}
+            onChange={(e) => setForm({ ...form, id: e.target.value })}
+          />
+        </div>
+        <div className="col-md-4">
+          <input
+            className="form-control"
+            placeholder="name"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+        </div>
+        <div className="col-md-2">
+          <input
+            className="form-control"
+            placeholder="currency"
+            value={form.currency}
+            onChange={(e) => setForm({ ...form, currency: e.target.value })}
+          />
+        </div>
+        <div className="col-md-2">
+          <button className="btn btn-primary w-100" onClick={submit}>
+            {editing ? "Update" : "Create"}
+          </button>
+        </div>
       </div>
     </div>
   );

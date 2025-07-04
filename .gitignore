@@ -16,3 +16,10 @@
 
 frontend/node_modules
 frontend/dist
+
+# Pastas do projeto que não devem ir para o Git
+/backend/.idea/
+/backend/ads-service/target/
+log.exec
+chaves/
+

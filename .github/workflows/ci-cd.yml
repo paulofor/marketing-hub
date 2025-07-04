@@ -1,0 +1,69 @@
+# .github/workflows/ci-cd.yml
+name: CI + CD – marketinghub backend
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  APP_DIR: /opt/marketinghub/app           # caminho no servidor
+
+jobs:
+# ─────────────────────────────────────────────────────────────
+# 1) BUILD – compila, testa, empacota e faz cache do Maven
+# ─────────────────────────────────────────────────────────────
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4             # clona o repositório
+
+      - name: Setup Java 21 (Temurin)
+        uses: actions/setup-java@v4           # distrib.: Eclipse Temurin
+        with:                                 # :contentReference[oaicite:0]{index=0}
+          distribution: temurin
+          java-version: 21
+          cache: maven                        # cria/restaura cache automático
+
+      - name: Cache repositório Maven manual (fallback)
+        uses: actions/cache@v4                # :contentReference[oaicite:1]{index=1}
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: maven-
+
+      - name: Testes e build
+        run: |
+          mvn -B verify               # testes
+          mvn -B package -DskipTests  # gera target/*.jar
+
+      - name: Publicar artefato
+        uses: actions/upload-artifact@v4      # :contentReference[oaicite:2]{index=2}
+        with:
+          name: backend-jar
+          path: target/*.jar
+
+# ─────────────────────────────────────────────────────────────
+# 2) DEPLOY – transfere o JAR e reinicia o serviço remoto
+# ─────────────────────────────────────────────────────────────
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'       # só na branch main
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v4    # :contentReference[oaicite:3]{index=3}
+        with:
+          name: backend-jar
+          path: target
+
+      - name: Adicionar chave SSH ao agente
+        uses: webfactory/ssh-agent@v0.8.1     # :contentReference[oaicite:4]{index=4}
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Sincronizar JAR e reiniciar serviço
+        run: |
+          rsync -az --delete target/*.jar marketinghub@${{ secrets.VPS_HOST }}:${APP_DIR}/app.jar
+          ssh   marketinghub@${{ secrets.VPS_HOST }} \
+               "sudo systemctl restart marketinghub-backend.service"

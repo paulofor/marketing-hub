@@ -2,6 +2,9 @@ import { Route, Routes, Link } from "react-router-dom";
 
 import FacebookAccountsPage from "./pages/FacebookAccountsPage";
 import InstagramAccountsPage from "./pages/InstagramAccountsPage";
+import MediaListPage from "./pages/media/MediaListPage";
+import NewMediaPage from "./pages/media/NewMediaPage";
+import MediaDetailPage from "./pages/media/MediaDetailPage";
 
 export default function App() {
   return (
@@ -18,12 +21,16 @@ export default function App() {
             <Link className="nav-link" to="/accounts/instagram">
               Instagram Accounts
             </Link>
+            <Link className="nav-link" to="/media">Media</Link>
           </div>
         </div>
       </nav>
       <Routes>
         <Route path="/accounts/facebook" element={<FacebookAccountsPage />} />
         <Route path="/accounts/instagram" element={<InstagramAccountsPage />} />
+        <Route path="/media" element={<MediaListPage />} />
+        <Route path="/media/new" element={<NewMediaPage />} />
+        <Route path="/media/:id" element={<MediaDetailPage />} />
         <Route path="*" element={<div>Home</div>} />
       </Routes>
     </div>

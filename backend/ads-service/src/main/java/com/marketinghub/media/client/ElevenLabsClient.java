@@ -2,8 +2,7 @@ package com.marketinghub.media.client;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
 
@@ -12,14 +11,18 @@ import java.util.Map;
  */
 @Component
 public class ElevenLabsClient {
-    private final WebClient webClient;
+    private final RestTemplate restTemplate;
+    private final String baseUrl;
 
-    public ElevenLabsClient(WebClient webClient, @Value("${elevenlabs.base-url:https://api.elevenlabs.io}") String baseUrl) {
-        this.webClient = webClient.mutate().baseUrl(baseUrl).build();
+    public ElevenLabsClient(RestTemplate restTemplate,
+                            @Value("${elevenlabs.base-url:https://api.elevenlabs.io}") String baseUrl) {
+        this.restTemplate = restTemplate;
+        this.baseUrl = baseUrl;
     }
 
-    public Mono<Map<String, Object>> createSpeech(String voiceId, Map<String, Object> request) {
+    public Map<String, Object> createSpeech(String voiceId, Map<String, Object> request) {
         // TODO: auth header
-        return webClient.post().uri("/v1/text-to-speech/{voiceId}", voiceId).bodyValue(request).retrieve().bodyToMono(Map.class);
+        String url = baseUrl + "/v1/text-to-speech/" + voiceId;
+        return restTemplate.postForObject(url, request, Map.class);
     }
 }

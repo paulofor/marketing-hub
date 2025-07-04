@@ -2,8 +2,7 @@ package com.marketinghub.media.client;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
 
@@ -12,18 +11,23 @@ import java.util.Map;
  */
 @Component
 public class HeyGenClient {
-    private final WebClient webClient;
+    private final RestTemplate restTemplate;
+    private final String baseUrl;
 
-    public HeyGenClient(WebClient webClient, @Value("${heygen.base-url:https://api.heygen.com}") String baseUrl) {
-        this.webClient = webClient.mutate().baseUrl(baseUrl).build();
+    public HeyGenClient(RestTemplate restTemplate,
+                        @Value("${heygen.base-url:https://api.heygen.com}") String baseUrl) {
+        this.restTemplate = restTemplate;
+        this.baseUrl = baseUrl;
     }
 
-    public Mono<Map<String, Object>> createVideo(Map<String, Object> request) {
+    public Map<String, Object> createVideo(Map<String, Object> request) {
         // TODO: auth header
-        return webClient.post().uri("/v2/video/generate").bodyValue(request).retrieve().bodyToMono(Map.class);
+        String url = baseUrl + "/v2/video/generate";
+        return restTemplate.postForObject(url, request, Map.class);
     }
 
-    public Mono<Map<String, Object>> getVideo(String id) {
-        return webClient.get().uri("/v2/video/{id}", id).retrieve().bodyToMono(Map.class);
+    public Map<String, Object> getVideo(String id) {
+        String url = baseUrl + "/v2/video/" + id;
+        return restTemplate.getForObject(url, Map.class);
     }
 }

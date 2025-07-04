@@ -2,8 +2,7 @@ package com.marketinghub.media.client;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
 
@@ -12,21 +11,26 @@ import java.util.Map;
  */
 @Component
 public class SynthesiaClient {
-    private final WebClient webClient;
+    private final RestTemplate restTemplate;
+    private final String baseUrl;
 
-    public SynthesiaClient(WebClient webClient, @Value("${synthesia.base-url:https://api.synthesia.io}") String baseUrl) {
-        this.webClient = webClient.mutate().baseUrl(baseUrl).build();
+    public SynthesiaClient(RestTemplate restTemplate,
+                           @Value("${synthesia.base-url:https://api.synthesia.io}") String baseUrl) {
+        this.restTemplate = restTemplate;
+        this.baseUrl = baseUrl;
     }
 
     /**
      * Create video.
      */
-    public Mono<Map<String, Object>> createVideo(Map<String, Object> request) {
+    public Map<String, Object> createVideo(Map<String, Object> request) {
         // TODO: add authentication header
-        return webClient.post().uri("/v2/videos").bodyValue(request).retrieve().bodyToMono(Map.class);
+        String url = baseUrl + "/v2/videos";
+        return restTemplate.postForObject(url, request, Map.class);
     }
 
-    public Mono<Map<String, Object>> getVideo(String id) {
-        return webClient.get().uri("/v2/videos/{id}", id).retrieve().bodyToMono(Map.class);
+    public Map<String, Object> getVideo(String id) {
+        String url = baseUrl + "/v2/videos/" + id;
+        return restTemplate.getForObject(url, Map.class);
     }
 }

@@ -10,7 +10,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
@@ -58,17 +57,14 @@ public class MediaService {
     void createVideoAsync(Asset asset, CreateVideoRequest request) {
         asset.setStatus(AssetStatus.PROCESSING);
         repository.save(asset);
-        Mono<Map<String, Object>> mono;
+        Map<String, Object> resp;
         if (request.getProvider() == MediaProvider.SYNTHESIA) {
-            mono = synthesia.createVideo(Map.of("script", request.getScript()));
+            resp = synthesia.createVideo(Map.of("script", request.getScript()));
         } else {
-            mono = heyGen.createVideo(Map.of("script", request.getScript()));
+            resp = heyGen.createVideo(Map.of("script", request.getScript()));
         }
-        mono.map(resp -> {
-            asset.setExternalId(resp.get("id").toString());
-            repository.save(asset);
-            return asset;
-        }).subscribe();
+        asset.setExternalId(resp.get("id").toString());
+        repository.save(asset);
     }
 
     /**
@@ -92,12 +88,9 @@ public class MediaService {
     void createAudioAsync(Asset asset, CreateAudioRequest request) {
         asset.setStatus(AssetStatus.PROCESSING);
         repository.save(asset);
-        Mono<Map<String, Object>> mono = elevenLabs.createSpeech(request.getVoice(), Map.of("text", request.getScript()));
-        mono.map(resp -> {
-            asset.setExternalId(resp.get("id").toString());
-            repository.save(asset);
-            return asset;
-        }).subscribe();
+        Map<String, Object> resp = elevenLabs.createSpeech(request.getVoice(), Map.of("text", request.getScript()));
+        asset.setExternalId(resp.get("id").toString());
+        repository.save(asset);
     }
 
     public Asset getAsset(Long id) {
@@ -121,21 +114,20 @@ public class MediaService {
     public void refreshStatus() {
         List<Asset> processing = repository.findByStatus(AssetStatus.PROCESSING);
         for (Asset asset : processing) {
-            Mono<Map<String, Object>> mono;
+            Map<String, Object> resp;
             switch (asset.getProvider()) {
-                case SYNTHESIA -> mono = synthesia.getVideo(asset.getExternalId());
-                case HEYGEN -> mono = heyGen.getVideo(asset.getExternalId());
-                case RUNWAY -> mono = runway.getJob(asset.getExternalId());
-                default -> mono = Mono.empty();
+                case SYNTHESIA -> resp = synthesia.getVideo(asset.getExternalId());
+                case HEYGEN -> resp = heyGen.getVideo(asset.getExternalId());
+                case RUNWAY -> resp = runway.getJob(asset.getExternalId());
+                default -> {
+                    continue;
+                }
             }
-            mono.map(resp -> {
-                // TODO: map provider response to status/url
-                asset.setStatus(AssetStatus.READY);
-                asset.setUrl("TODO");
-                repository.save(asset);
-                messagingTemplate.convertAndSend("/topic/assets", asset.getId());
-                return asset;
-            }).subscribe();
+            // TODO: map provider response to status/url
+            asset.setStatus(AssetStatus.READY);
+            asset.setUrl("TODO");
+            repository.save(asset);
+            messagingTemplate.convertAndSend("/topic/assets", asset.getId());
         }
     }
 }

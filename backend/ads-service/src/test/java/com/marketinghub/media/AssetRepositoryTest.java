@@ -1,13 +1,16 @@
 package com.marketinghub.media;
 
 import com.marketinghub.media.repository.AssetRepository;
+import com.marketinghub.ads.AdsServiceApplication;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.ContextConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
+@ContextConfiguration(classes = AdsServiceApplication.class)
 class AssetRepositoryTest {
 
     @Autowired

@@ -9,24 +9,27 @@ env:
   APP_DIR: /opt/marketinghub/app           # caminho no servidor
 
 jobs:
-# ─────────────────────────────────────────────────────────────
-# 1) BUILD – compila, testa, empacota e faz cache do Maven
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────
+# 1) BUILD – compila, testa e empacota
+# ─────────────────────────────────────────
   build:
     runs-on: ubuntu-latest
+    defaults:                     # 👉 força todos os steps a rodarem em backend/
+      run:
+        working-directory: backend
 
     steps:
-      - uses: actions/checkout@v4             # clona o repositório
+      - uses: actions/checkout@v4           # clona o repositório
 
       - name: Setup Java 21 (Temurin)
-        uses: actions/setup-java@v4           # distrib.: Eclipse Temurin
-        with:                                 # :contentReference[oaicite:0]{index=0}
+        uses: actions/setup-java@v4         # JDK + cache Maven automático :contentReference[oaicite:5]{index=5}
+        with:
           distribution: temurin
           java-version: 21
-          cache: maven                        # cria/restaura cache automático
+          cache: maven
 
       - name: Cache repositório Maven manual (fallback)
-        uses: actions/cache@v4                # :contentReference[oaicite:1]{index=1}
+        uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: maven-${{ hashFiles('**/pom.xml') }}
@@ -34,36 +37,35 @@ jobs:
 
       - name: Testes e build
         run: |
-          mvn -B verify               # testes
-          mvn -B package -DskipTests  # gera target/*.jar
+          mvn -B verify               # executa testes
+          mvn -B package -DskipTests  # gera backend/target/*.jar
 
       - name: Publicar artefato
-        uses: actions/upload-artifact@v4      # :contentReference[oaicite:2]{index=2}
+        uses: actions/upload-artifact@v4
         with:
           name: backend-jar
-          path: target/*.jar
+          path: backend/target/*.jar  # ⬅️ caminho relativo ao repo
 
-# ─────────────────────────────────────────────────────────────
-# 2) DEPLOY – transfere o JAR e reinicia o serviço remoto
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────
+# 2) DEPLOY – transfere JAR e reinicia
+# ─────────────────────────────────────────
   deploy:
     needs: build
-    if: github.ref == 'refs/heads/main'       # só na branch main
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/download-artifact@v4    # :contentReference[oaicite:3]{index=3}
+      - uses: actions/download-artifact@v4
         with:
           name: backend-jar
-          path: target
+          path: target                # salva em target/ no runner
 
       - name: Adicionar chave SSH ao agente
-        uses: webfactory/ssh-agent@v0.8.1     # :contentReference[oaicite:4]{index=4}
+        uses: webfactory/ssh-agent@v0.8.1      # carrega chave privada :contentReference[oaicite:6]{index=6}
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Sincronizar JAR e reiniciar serviço
         run: |
           rsync -az --delete target/*.jar marketinghub@${{ secrets.VPS_HOST }}:${APP_DIR}/app.jar
-          ssh   marketinghub@${{ secrets.VPS_HOST }} \
-               "sudo systemctl restart marketinghub-backend.service"
+          ssh   marketinghub@${{ secrets.VPS_HOST }} "sudo systemctl restart marketinghub-backend.service"

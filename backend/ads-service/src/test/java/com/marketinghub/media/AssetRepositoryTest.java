@@ -7,7 +7,11 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.marketinghub.ads.AdsServiceApplication;
+import org.springframework.test.context.ContextConfiguration;
+
 @DataJpaTest
+@ContextConfiguration(classes = AdsServiceApplication.class)
 class AssetRepositoryTest {
 
     @Autowired

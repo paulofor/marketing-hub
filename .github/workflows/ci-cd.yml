@@ -14,9 +14,9 @@ jobs:
 # ─────────────────────────────────────────
   build:
     runs-on: ubuntu-latest
-    defaults:                     # 👉 força todos os steps a rodarem em backend/
+    defaults:                     # 👉 força todos os steps a rodarem em backend/ads-service
       run:
-        working-directory: backend
+        working-directory: backend/ads-service
 
     steps:
       - uses: actions/checkout@v4           # clona o repositório
@@ -38,13 +38,13 @@ jobs:
       - name: Testes e build
         run: |
           mvn -B verify               # executa testes
-          mvn -B package -DskipTests  # gera backend/target/*.jar
+          mvn -B package -DskipTests  # gera target/*.jar
 
       - name: Publicar artefato
         uses: actions/upload-artifact@v4
         with:
           name: backend-jar
-          path: backend/target/*.jar  # ⬅️ caminho relativo ao repo
+          path: backend/ads-service/target/*.jar  # ⬅️ caminho relativo ao repo
 
 # ─────────────────────────────────────────
 # 2) DEPLOY – transfere JAR e reinicia

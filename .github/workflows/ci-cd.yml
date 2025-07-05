@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4           # clona o repositório
 
       - name: Setup Java 21 (Temurin)
-        uses: actions/setup-java@v4         # JDK + cache Maven automático :contentReference[oaicite:5]{index=5}
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
@@ -44,7 +44,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: backend-jar
-          path: backend/ads-service/target/*.jar  # ⬅️ caminho relativo ao repo
+          path: backend/ads-service/target/*.jar
 
 # ─────────────────────────────────────────
 # 2) DEPLOY – transfere JAR e reinicia
@@ -54,19 +54,21 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
-    steps:
+    steps:  # <- este bloco estava fora do alinhamento correto
       - uses: actions/download-artifact@v4
         with:
           name: backend-jar
-          path: target                # salva em target/ no runner
+          path: target
 
       - name: Adicionar chave SSH ao agente
-        uses: webfactory/ssh-agent@v0.5.4      # carrega chave privada :contentReference[oaicite:6]{index=6}
+        uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
+      - name: Adicionar VPS ao known_hosts
+        run: ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
       - name: Sincronizar JAR e reiniciar serviço
         run: |
-          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
           rsync -az --delete target/*.jar marketinghub@${{ secrets.VPS_HOST }}:${APP_DIR}/app.jar
           ssh marketinghub@${{ secrets.VPS_HOST }} "sudo systemctl restart marketinghub-backend.service"

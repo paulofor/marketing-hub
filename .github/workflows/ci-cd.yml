@@ -7,6 +7,7 @@ on:
 
 env:
   APP_DIR: /opt/marketinghub/app           # caminho no servidor
+  VPS_IP: 191.252.92.222              # ← IP fixo do servidor
 
 jobs:
 # ─────────────────────────────────────────
@@ -66,15 +67,16 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Adicionar VPS ao known_hosts
-        run: ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+        run: ssh-keyscan -H ${VPS_IP} >> ~/.ssh/known_hosts
  
       - name: Teste SSH (debug)
         run: |
           ssh -o StrictHostKeyChecking=no \
               -o BatchMode=yes -vvv \
-              marketinghub@${{ secrets.VPS_HOST }} echo ok
+              marketinghub@${VPS_IP} echo ok
     
+
       - name: Sincronizar JAR e reiniciar serviço
         run: |
-          rsync -az --delete target/*.jar marketinghub@${{ secrets.VPS_HOST }}:${APP_DIR}/app.jar
-          ssh marketinghub@${{ secrets.VPS_HOST }} "sudo systemctl restart marketinghub-backend.service"
+          rsync -az --delete target/*.jar marketinghub@${VPS_IP}:${APP_DIR}/app.jar
+          ssh marketinghub@${VPS_IP} "sudo systemctl restart marketinghub-backend.service"

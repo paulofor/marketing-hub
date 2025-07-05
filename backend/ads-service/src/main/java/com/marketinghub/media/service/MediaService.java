@@ -5,7 +5,6 @@ import com.marketinghub.media.client.*;
 import com.marketinghub.media.dto.CreateAudioRequest;
 import com.marketinghub.media.dto.CreateVideoRequest;
 import com.marketinghub.media.repository.AssetRepository;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -24,16 +23,14 @@ public class MediaService {
     private final HeyGenClient heyGen;
     private final ElevenLabsClient elevenLabs;
     private final RunwayClient runway;
-    private final SimpMessagingTemplate messagingTemplate;
 
     public MediaService(AssetRepository repository, SynthesiaClient synthesia, HeyGenClient heyGen,
-                        ElevenLabsClient elevenLabs, RunwayClient runway, SimpMessagingTemplate messagingTemplate) {
+                        ElevenLabsClient elevenLabs, RunwayClient runway) {
         this.repository = repository;
         this.synthesia = synthesia;
         this.heyGen = heyGen;
         this.elevenLabs = elevenLabs;
         this.runway = runway;
-        this.messagingTemplate = messagingTemplate;
     }
 
     /**
@@ -127,7 +124,6 @@ public class MediaService {
             asset.setStatus(AssetStatus.READY);
             asset.setUrl("TODO");
             repository.save(asset);
-            messagingTemplate.convertAndSend("/topic/assets", asset.getId());
         }
     }
 }

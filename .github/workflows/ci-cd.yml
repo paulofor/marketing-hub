@@ -54,7 +54,6 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
-
     steps:  # <- este bloco estava fora do alinhamento correto
       - uses: actions/download-artifact@v4
         with:

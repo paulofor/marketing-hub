@@ -61,7 +61,7 @@ jobs:
           path: target                # salva em target/ no runner
 
       - name: Adicionar chave SSH ao agente
-        uses: webfactory/ssh-agent@v0.8.1      # carrega chave privada :contentReference[oaicite:6]{index=6}
+        uses: webfactory/ssh-agent@v0.5.4      # carrega chave privada :contentReference[oaicite:6]{index=6}
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 

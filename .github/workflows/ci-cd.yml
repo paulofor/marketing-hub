@@ -79,5 +79,6 @@ jobs:
 
       - name: Sincronizar JAR e reiniciar serviço
         run: |
-          rsync -az --delete target/ads-service.jar marketinghub@${VPS_IP}:${APP_DIR}/app.jar
-          ssh marketinghub@${VPS_IP} "sudo systemctl restart marketinghub-backend.service"
+          JAR=$(ls -S target/*.jar | head -n 1)
+          rsync -az --delete "$JAR" marketinghub@${VPS_IP}:${APP_DIR}/
+          ssh marketinghub@${VPS_IP} "sudo -n systemctl restart marketinghub-backend.service"

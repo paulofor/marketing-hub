@@ -1,0 +1,13 @@
+[Unit]
+Description=Marketing Hub Backend
+After=network.target
+
+[Service]
+Type=simple
+User=marketinghub
+WorkingDirectory=/opt/marketinghub/app
+ExecStart=/usr/bin/java -jar /opt/marketinghub/app/ads-service.jar
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

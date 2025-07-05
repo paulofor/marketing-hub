@@ -36,16 +36,17 @@ jobs:
           key: maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: maven-
 
-      - name: Testes e build
-        run: |
-          mvn -B verify               # executa testes
-          mvn -B package -DskipTests  # gera target/*.jar
+      - name: Rodar testes
+        run: mvn -B test
+
+      - name: Build JAR
+        run: mvn -B clean package -DskipTests
 
       - name: Publicar artefato
         uses: actions/upload-artifact@v4
         with:
           name: backend-jar
-          path: backend/ads-service/target/*.jar
+          path: backend/ads-service/target/ads-service.jar
 
 # ─────────────────────────────────────────
 # 2) DEPLOY – transfere JAR e reinicia
@@ -78,5 +79,5 @@ jobs:
 
       - name: Sincronizar JAR e reiniciar serviço
         run: |
-          rsync -az --delete target/*.jar marketinghub@${VPS_IP}:${APP_DIR}/app.jar
+          rsync -az --delete target/ads-service.jar marketinghub@${VPS_IP}:${APP_DIR}/app.jar
           ssh marketinghub@${VPS_IP} "sudo systemctl restart marketinghub-backend.service"

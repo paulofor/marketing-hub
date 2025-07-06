@@ -46,7 +46,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: backend-jar
-          path: backend/ads-service/target/ads-service.jar
+          path: backend/ads-service/target/app.jar
 
 # ─────────────────────────────────────────
 # 2) DEPLOY – transfere JAR e reinicia

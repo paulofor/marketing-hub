@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User=marketinghub
 WorkingDirectory=/opt/marketinghub/app
-ExecStart=/usr/bin/java -jar /opt/marketinghub/app/ads-service.jar
+ExecStart=/usr/bin/java -jar /opt/marketinghub/app/app.jar
 Restart=on-failure
 
 [Install]

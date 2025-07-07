@@ -9,13 +9,19 @@ public class InstagramAccount {
     private Long id;
     private String name;
     private String currency;
+    private String avatarUrl;
 
     public InstagramAccount() {}
 
-    public InstagramAccount(Long id, String name, String currency) {
+    public InstagramAccount(Long id, String name, String currency, String avatarUrl) {
         this.id = id;
         this.name = name;
         this.currency = currency;
+        this.avatarUrl = avatarUrl;
+    }
+
+    public InstagramAccount(Long id, String name, String currency) {
+        this(id, name, currency, null);
     }
 
     public Long getId() {
@@ -40,5 +46,13 @@ public class InstagramAccount {
 
     public void setCurrency(String currency) {
         this.currency = currency;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 }

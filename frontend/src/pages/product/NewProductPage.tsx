@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { useCreateProduct } from "../../api/product/useCreateProduct";
+import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 
 export default function NewProductPage() {
   const create = useCreateProduct();
+  const { data: accounts } = useInstagramAccounts();
   const [form, setForm] = useState({
     niche: "",
     avatar: "",
+    instagramAccountId: "",
     explicitPain: "",
     promise: "",
     uniqueMechanism: "",
@@ -19,7 +22,10 @@ export default function NewProductPage() {
   });
 
   const submit = () => {
-    create.mutate(form);
+    create.mutate({
+      ...form,
+      instagramAccountId: Number(form.instagramAccountId) || undefined,
+    });
   };
 
   return (
@@ -36,6 +42,20 @@ export default function NewProductPage() {
         value={form.avatar}
         onChange={(e) => setForm({ ...form, avatar: e.target.value })}
       />
+      <select
+        className="form-select mb-2"
+        value={form.instagramAccountId}
+        onChange={(e) =>
+          setForm({ ...form, instagramAccountId: e.target.value })
+        }
+      >
+        <option value="">Select Instagram Account</option>
+        {accounts?.map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.name}
+          </option>
+        ))}
+      </select>
       <textarea
         className="form-control mb-2"
         placeholder="Explicit Pain"

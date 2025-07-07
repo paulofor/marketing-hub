@@ -9,6 +9,7 @@ import lombok.Data;
 public class CreateProductRequest {
     private String niche;
     private String avatar;
+    private Long instagramAccountId;
     private String explicitPain;
     private String promise;
     private String uniqueMechanism;

@@ -15,6 +15,7 @@ export default function ProductListPage() {
             <th>ID</th>
             <th>Niche</th>
             <th>Avatar</th>
+            <th>Instagram</th>
           </tr>
         </thead>
         <tbody>
@@ -23,6 +24,7 @@ export default function ProductListPage() {
               <td>{p.id}</td>
               <td>{p.niche}</td>
               <td>{p.avatar}</td>
+              <td>{p.instagramAccountId}</td>
             </tr>
           ))}
         </tbody>

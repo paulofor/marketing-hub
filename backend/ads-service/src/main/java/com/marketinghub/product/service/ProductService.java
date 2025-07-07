@@ -3,6 +3,8 @@ package com.marketinghub.product.service;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.dto.CreateProductRequest;
 import com.marketinghub.product.repository.ProductRepository;
+import com.marketinghub.ads.InstagramAccountRepository;
+import com.marketinghub.ads.InstagramAccount;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,9 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ProductService {
     private final ProductRepository repository;
+    private final InstagramAccountRepository accountRepository;
 
-    public ProductService(ProductRepository repository) {
+    public ProductService(ProductRepository repository, InstagramAccountRepository accountRepository) {
         this.repository = repository;
+        this.accountRepository = accountRepository;
     }
 
     /**
@@ -25,6 +29,7 @@ public class ProductService {
         Product product = Product.builder()
                 .niche(request.getNiche())
                 .avatar(request.getAvatar())
+                .instagramAccount(resolveAccount(request.getInstagramAccountId()))
                 .explicitPain(request.getExplicitPain())
                 .promise(request.getPromise())
                 .uniqueMechanism(request.getUniqueMechanism())
@@ -37,6 +42,13 @@ public class ProductService {
                 .storytelling(request.getStorytelling())
                 .build();
         return repository.save(product);
+    }
+
+    private InstagramAccount resolveAccount(Long id) {
+        if (id == null) {
+            return null;
+        }
+        return accountRepository.findById(id).orElseThrow();
     }
 
     public Product getProduct(Long id) {

@@ -27,6 +27,7 @@ CREATE TABLE product (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     niche VARCHAR(255),
     avatar VARCHAR(255),
+    instagram_account_id BIGINT,
     explicit_pain TEXT,
     promise TEXT,
     unique_mechanism TEXT,
@@ -37,6 +38,15 @@ CREATE TABLE product (
     funnel TEXT,
     creative_volume TEXT,
     storytelling TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE instagram_post (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    instagram_account_id BIGINT,
+    caption TEXT,
+    media_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

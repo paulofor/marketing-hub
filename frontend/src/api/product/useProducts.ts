@@ -5,6 +5,7 @@ export interface Product {
   id: number;
   niche: string;
   avatar: string;
+  instagramAccountId?: number;
   explicitPain: string;
   promise: string;
   uniqueMechanism: string;

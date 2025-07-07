@@ -5,6 +5,9 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { io } from "socket.io-client";
 import App from "./App";
+import axios from "axios";
+
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || "";
 
 const queryClient = new QueryClient();
 const socket = io({ path: "/ws" });

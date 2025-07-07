@@ -21,9 +21,9 @@ public class DataSeeder {
                 fbRepo.save(new FacebookAccount(3L, "Account C", "GBP"));
             }
             if (igRepo.count() == 0) {
-                igRepo.save(new InstagramAccount(1L, "Insta A", "USD"));
-                igRepo.save(new InstagramAccount(2L, "Insta B", "EUR"));
-                igRepo.save(new InstagramAccount(3L, "Insta C", "GBP"));
+                igRepo.save(new InstagramAccount(1L, "Insta A", "USD", "https://example.com/a.png"));
+                igRepo.save(new InstagramAccount(2L, "Insta B", "EUR", "https://example.com/b.png"));
+                igRepo.save(new InstagramAccount(3L, "Insta C", "GBP", "https://example.com/c.png"));
             }
         };
     }

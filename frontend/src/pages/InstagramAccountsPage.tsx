@@ -46,6 +46,12 @@ export default function InstagramAccountsPage() {
               <td>{name}</td>
               <td>{currency}</td>
               <td>
+                <a
+                  className="btn btn-sm btn-outline-secondary me-2"
+                  href={`/accounts/instagram/${id}/posts`}
+                >
+                  Posts
+                </a>
                 <button
                   className="btn btn-sm btn-outline-primary me-2"
                   onClick={() => {

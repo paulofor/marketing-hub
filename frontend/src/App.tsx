@@ -10,6 +10,7 @@ import NewCoursePlanPage from "./pages/course/NewCoursePlanPage";
 import CoursePlanDetailPage from "./pages/course/CoursePlanDetailPage";
 import ProductListPage from "./pages/product/ProductListPage";
 import NewProductPage from "./pages/product/NewProductPage";
+import InstagramPostsPage from "./pages/post/InstagramPostsPage";
 
 export default function App() {
   return (
@@ -41,6 +42,10 @@ export default function App() {
       <Routes>
         <Route path="/accounts/facebook" element={<FacebookAccountsPage />} />
         <Route path="/accounts/instagram" element={<InstagramAccountsPage />} />
+        <Route
+          path="/accounts/instagram/:id/posts"
+          element={<InstagramPostsPage />}
+        />
         <Route path="/media" element={<MediaListPage />} />
         <Route path="/media/new" element={<NewMediaPage />} />
         <Route path="/media/:id" element={<MediaDetailPage />} />

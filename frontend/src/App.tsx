@@ -5,6 +5,9 @@ import InstagramAccountsPage from "./pages/InstagramAccountsPage";
 import MediaListPage from "./pages/media/MediaListPage";
 import NewMediaPage from "./pages/media/NewMediaPage";
 import MediaDetailPage from "./pages/media/MediaDetailPage";
+import CoursePlanListPage from "./pages/course/CoursePlanListPage";
+import NewCoursePlanPage from "./pages/course/NewCoursePlanPage";
+import CoursePlanDetailPage from "./pages/course/CoursePlanDetailPage";
 
 export default function App() {
   return (
@@ -21,7 +24,12 @@ export default function App() {
             <Link className="nav-link" to="/accounts/instagram">
               Instagram Accounts
             </Link>
-            <Link className="nav-link" to="/media">Media</Link>
+            <Link className="nav-link" to="/media">
+              Media
+            </Link>
+            <Link className="nav-link" to="/courses">
+              Courses
+            </Link>
           </div>
         </div>
       </nav>
@@ -31,6 +39,9 @@ export default function App() {
         <Route path="/media" element={<MediaListPage />} />
         <Route path="/media/new" element={<NewMediaPage />} />
         <Route path="/media/:id" element={<MediaDetailPage />} />
+        <Route path="/courses" element={<CoursePlanListPage />} />
+        <Route path="/courses/new" element={<NewCoursePlanPage />} />
+        <Route path="/courses/:id" element={<CoursePlanDetailPage />} />
         <Route path="*" element={<div>Home</div>} />
       </Routes>
     </div>

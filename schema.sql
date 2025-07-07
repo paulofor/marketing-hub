@@ -10,3 +10,15 @@ CREATE TABLE asset (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
+CREATE TABLE course_plan (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    target_audience VARCHAR(255),
+    transformation VARCHAR(255),
+    macro_topics TEXT,
+    modules TEXT,
+    objectives TEXT,
+    resources TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

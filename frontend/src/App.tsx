@@ -8,6 +8,8 @@ import MediaDetailPage from "./pages/media/MediaDetailPage";
 import CoursePlanListPage from "./pages/course/CoursePlanListPage";
 import NewCoursePlanPage from "./pages/course/NewCoursePlanPage";
 import CoursePlanDetailPage from "./pages/course/CoursePlanDetailPage";
+import ProductListPage from "./pages/product/ProductListPage";
+import NewProductPage from "./pages/product/NewProductPage";
 
 export default function App() {
   return (
@@ -30,6 +32,9 @@ export default function App() {
             <Link className="nav-link" to="/courses">
               Courses
             </Link>
+            <Link className="nav-link" to="/products">
+              Products
+            </Link>
           </div>
         </div>
       </nav>
@@ -42,6 +47,8 @@ export default function App() {
         <Route path="/courses" element={<CoursePlanListPage />} />
         <Route path="/courses/new" element={<NewCoursePlanPage />} />
         <Route path="/courses/:id" element={<CoursePlanDetailPage />} />
+        <Route path="/products" element={<ProductListPage />} />
+        <Route path="/products/new" element={<NewProductPage />} />
         <Route path="*" element={<div>Home</div>} />
       </Routes>
     </div>

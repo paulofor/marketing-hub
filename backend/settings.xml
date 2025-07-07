@@ -1,21 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                              https://maven.apache.org/xsd/settings-1.0.0.xsd">
 
-    <mirrors>
-        <mirror>
-            <id>central-mirror</id>
-            <mirrorOf>central</mirrorOf>
-            <url>https://repo1.maven.org/maven2</url>
-        </mirror>
-    </mirrors>
+  <!-- 1️⃣  Redireciona TODAS as requisições a este host -->
+  <mirrors>
+    <mirror>
+      <id>central-all</id>
+      <name>Maven Central (HTTPS)</name>
+      <url>https://repo.maven.apache.org/maven2</url>
+      <mirrorOf>*</mirrorOf>   <!-- cobre central, plugins, snapshots etc. -->
+    </mirror>
+  </mirrors>
 
-    <profiles>
-        <profile>
-            <id>default</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-        </profile>
-    </profiles>
+  <!-- 2️⃣  (Opcional) autenticação se for Artifactory/Nexus interno
+  <servers>
+    <server>
+      <id>central-all</id>
+      <username>${env.ARTI_USER}</username>
+      <password>${env.ARTI_PASS}</password>
+    </server>
+  </servers>
+  -->
+
+  <!-- 3️⃣  Perfil default apenas para manter coerência -->
+  <profiles>
+    <profile>
+      <id>default</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+    </profile>
+  </profiles>
 </settings>

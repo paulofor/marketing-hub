@@ -17,7 +17,7 @@ export default function NewMediaPage() {
 
   return (
     <div>
-      <PageTitle>New Media</PageTitle>
+      <PageTitle>Nova Mídia</PageTitle>
       <select
         className="form-select mb-2"
         value={form.provider}
@@ -33,7 +33,7 @@ export default function NewMediaPage() {
         onChange={(e) => setForm({ ...form, script: e.target.value })}
       />
       <button className="btn btn-primary" onClick={submit}>
-        Generate
+        Gerar
       </button>
     </div>
   );

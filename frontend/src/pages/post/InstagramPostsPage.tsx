@@ -29,13 +29,13 @@ export default function InstagramPostsPage() {
 
   return (
     <div>
-      <PageTitle>Instagram Posts</PageTitle>
+      <PageTitle>Publicações do Instagram</PageTitle>
       <table className="table">
         <thead>
           <tr>
             <th>ID</th>
-            <th>Caption</th>
-            <th>Actions</th>
+            <th>Legenda</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -51,13 +51,13 @@ export default function InstagramPostsPage() {
                     setEditing(p.id);
                   }}
                 >
-                  Edit
+                  Editar
                 </button>
                 <button
                   className="btn btn-sm btn-outline-danger"
                   onClick={() => remove.mutate(p.id)}
                 >
-                  Delete
+                  Excluir
                 </button>
               </td>
             </tr>
@@ -68,7 +68,7 @@ export default function InstagramPostsPage() {
         <div className="col-md-5">
           <input
             className="form-control"
-            placeholder="caption"
+            placeholder="legenda"
             value={form.caption}
             onChange={(e) => setForm({ ...form, caption: e.target.value })}
           />
@@ -76,14 +76,14 @@ export default function InstagramPostsPage() {
         <div className="col-md-5">
           <input
             className="form-control"
-            placeholder="media url"
+            placeholder="url da mídia"
             value={form.mediaUrl}
             onChange={(e) => setForm({ ...form, mediaUrl: e.target.value })}
           />
         </div>
         <div className="col-md-2">
           <button className="btn btn-primary w-100" onClick={submit}>
-            {editing ? "Update" : "Create"}
+            {editing ? "Atualizar" : "Criar"}
           </button>
         </div>
       </div>

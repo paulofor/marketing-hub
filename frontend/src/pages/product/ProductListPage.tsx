@@ -4,12 +4,12 @@ import PageTitle from "../../components/PageTitle";
 
 export default function ProductListPage() {
   const { data, isLoading } = useProducts();
-  if (isLoading) return <p>Loading...</p>;
+  if (isLoading) return <p>Carregando...</p>;
   return (
     <div>
-      <PageTitle>Products</PageTitle>
+      <PageTitle>Produtos</PageTitle>
       <Link className="btn btn-primary mb-3" to="/products/new">
-        New Product
+        Novo Produto
       </Link>
       <table className="table">
         <thead>

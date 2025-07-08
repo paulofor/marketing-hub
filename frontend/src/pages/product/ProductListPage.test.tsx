@@ -18,6 +18,6 @@ describe('ProductListPage', () => {
         </BrowserRouter>
       </QueryClientProvider>
     );
-    expect(await screen.findByText(/New Product/)).toBeTruthy();
+    expect(await screen.findByText(/Novo Produto/)).toBeTruthy();
   });
 });

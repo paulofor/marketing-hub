@@ -4,19 +4,18 @@ import PageTitle from "../../components/PageTitle";
 
 export default function SuccessProductListPage() {
   const { data, isLoading } = useSuccessProducts();
-  if (isLoading) return <p>Loading...</p>;
+  if (isLoading) return <p>Carregando...</p>;
   return (
     <div>
-      <PageTitle>Success Products</PageTitle>
+      <PageTitle>Produtos de Sucesso</PageTitle>
       <Link className="btn btn-primary mb-3" to="/success-products/new">
-        New Success Product
+        Novo Produto de Sucesso
       </Link>
       <table className="table">
         <thead>
           <tr>
             <th>ID</th>
-            <th>Description</th>
-            <th>New</th>
+            <th>Descrição</th>
           </tr>
         </thead>
         <tbody>

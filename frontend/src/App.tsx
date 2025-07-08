@@ -10,6 +10,8 @@ import NewCoursePlanPage from "./pages/course/NewCoursePlanPage";
 import CoursePlanDetailPage from "./pages/course/CoursePlanDetailPage";
 import ProductListPage from "./pages/product/ProductListPage";
 import NewProductPage from "./pages/product/NewProductPage";
+import SuccessProductListPage from "./pages/successProduct/SuccessProductListPage";
+import NewSuccessProductPage from "./pages/successProduct/NewSuccessProductPage";
 import InstagramPostsPage from "./pages/post/InstagramPostsPage";
 
 export default function App() {
@@ -36,6 +38,9 @@ export default function App() {
             <Link className="nav-link" to="/products">
               Products
             </Link>
+            <Link className="nav-link" to="/success-products">
+              Success Products
+            </Link>
           </div>
         </div>
       </nav>
@@ -54,6 +59,11 @@ export default function App() {
         <Route path="/courses/:id" element={<CoursePlanDetailPage />} />
         <Route path="/products" element={<ProductListPage />} />
         <Route path="/products/new" element={<NewProductPage />} />
+        <Route path="/success-products" element={<SuccessProductListPage />} />
+        <Route
+          path="/success-products/new"
+          element={<NewSuccessProductPage />}
+        />
         <Route path="*" element={<div>Home</div>} />
       </Routes>
     </div>

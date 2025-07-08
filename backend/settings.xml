@@ -10,7 +10,7 @@
       <id>central-all</id>
       <name>Maven Central (HTTPS)</name>
       <url>https://repo.maven.apache.org/maven2</url>
-      <mirrorOf>*</mirrorOf>   <!-- cobre central, plugins, snapshots etc. -->
+      <mirrorOf>central</mirrorOf>   <!-- apenas o repositório central -->
     </mirror>
   </mirrors>
 

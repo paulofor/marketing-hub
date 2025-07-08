@@ -48,6 +48,12 @@
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- reuse entities from the ads-service module -->
+        <dependency>
+            <groupId>com.marketinghub</groupId>
+            <artifactId>ads-service</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

@@ -4,6 +4,10 @@
 - **Backend**
   - Build: `cd backend/ads-service && mvn package`
   - Tests: `cd backend/ads-service && mvn test`
+- **Success Product Worker**
+  - Build: `cd success-product-worker && mvn package`
+  - Tests: `cd success-product-worker && mvn test`
+  - Requires the `ads-service` module installed locally with `mvn install`.
 - **Frontend**
   - Build: `npm run build`
   - Tests: `npm run test`

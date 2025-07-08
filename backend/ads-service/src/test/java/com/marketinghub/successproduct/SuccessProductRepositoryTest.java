@@ -22,6 +22,7 @@ class SuccessProductRepositoryTest {
                 .description("Great product")
                 .build();
         repository.save(product);
-        assertThat(repository.findById(product.getId())).isPresent();
+        SuccessProduct saved = repository.findById(product.getId()).orElseThrow();
+        assertThat(saved.isNovo()).isTrue();
     }
 }

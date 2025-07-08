@@ -24,6 +24,7 @@ public class SuccessProductService {
     public SuccessProduct create(CreateSuccessProductRequest request) {
         SuccessProduct product = SuccessProduct.builder()
                 .description(request.getDescription())
+                .novo(true)
                 .build();
         return repository.save(product);
     }

@@ -23,6 +23,7 @@ export default function SuccessProductListPage() {
             <tr key={p.id}>
               <td>{p.id}</td>
               <td>{p.description}</td>
+              <td>{p.novo ? "Yes" : "No"}</td>
             </tr>
           ))}
         </tbody>

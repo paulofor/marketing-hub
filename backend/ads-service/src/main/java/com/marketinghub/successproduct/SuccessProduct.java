@@ -24,6 +24,10 @@ public class SuccessProduct {
     @Lob
     private String description;
 
+    /** Flag to indicate newly created entries. */
+    @Builder.Default
+    private boolean novo = true;
+
     private String niche;
     private String avatar;
 

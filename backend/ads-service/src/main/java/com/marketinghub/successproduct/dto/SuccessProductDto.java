@@ -10,6 +10,7 @@ import lombok.Data;
 public class SuccessProductDto {
     private Long id;
     private String description;
+    private boolean novo;
     private String niche;
     private String avatar;
     private Long instagramAccountId;

@@ -45,6 +45,7 @@ CREATE TABLE product (
 CREATE TABLE success_product (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     description TEXT,
+    novo BOOLEAN DEFAULT TRUE,
     niche VARCHAR(255),
     avatar VARCHAR(255),
     instagram_account_id BIGINT,

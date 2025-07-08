@@ -16,6 +16,7 @@ export default function SuccessProductListPage() {
           <tr>
             <th>ID</th>
             <th>Description</th>
+            <th>New</th>
           </tr>
         </thead>
         <tbody>
@@ -23,6 +24,7 @@ export default function SuccessProductListPage() {
             <tr key={p.id}>
               <td>{p.id}</td>
               <td>{p.description}</td>
+              <td>{p.novo ? "Yes" : "No"}</td>
             </tr>
           ))}
         </tbody>

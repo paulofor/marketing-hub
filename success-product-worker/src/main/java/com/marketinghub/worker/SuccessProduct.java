@@ -1,5 +1,6 @@
 package com.marketinghub.worker;
 
+import com.marketinghub.ads.InstagramAccount;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -26,6 +27,10 @@ public class SuccessProduct {
 
     private String niche;
     private String avatar;
+
+    @ManyToOne
+    @JoinColumn(name = "instagram_account_id")
+    private InstagramAccount instagramAccount;
 
     @Lob
     private String explicitPain;

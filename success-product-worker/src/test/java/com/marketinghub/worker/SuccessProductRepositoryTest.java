@@ -4,11 +4,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @ContextConfiguration(classes = SuccessProductWorkerApplication.class)
+@TestPropertySource(properties = {
+        "spring.datasource.url=jdbc:h2:mem:testdb",
+        "spring.datasource.driverClassName=org.h2.Driver",
+        "spring.datasource.username=sa",
+        "spring.jpa.hibernate.ddl-auto=create"
+})
 class SuccessProductRepositoryTest {
 
     @Autowired

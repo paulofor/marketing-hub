@@ -9,6 +9,10 @@
 
     <properties>
         <java.version>21</java.version>
+        <jboss-logging.version>3.5.0.Final</jboss-logging.version>
+        <classmate.version>1.5.1</classmate.version>
+        <byte-buddy.version>1.14.11</byte-buddy.version>
+        <glassfish-jaxb.version>4.0.2</glassfish-jaxb.version>
     </properties>
 
     <parent>

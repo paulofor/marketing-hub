@@ -1,4 +1,5 @@
 import { useState } from "react";
+import PageTitle from "../../components/PageTitle";
 import { useCreateProduct } from "../../api/product/useCreateProduct";
 import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 
@@ -30,6 +31,7 @@ export default function NewProductPage() {
 
   return (
     <div>
+      <PageTitle>New Product</PageTitle>
       <input
         className="form-control mb-2"
         placeholder="Niche"

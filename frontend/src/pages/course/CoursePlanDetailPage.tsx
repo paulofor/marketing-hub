@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { CoursePlan } from "../../api/course/useCoursePlans";
+import PageTitle from "../../components/PageTitle";
 
 export default function CoursePlanDetailPage() {
   const { id } = useParams();
@@ -16,6 +17,7 @@ export default function CoursePlanDetailPage() {
   if (!data) return <p>Not found</p>;
   return (
     <div>
+      <PageTitle>Course Plan {id}</PageTitle>
       <h3>Modules</h3>
       <pre>{data.modules}</pre>
       <h3>Objectives</h3>

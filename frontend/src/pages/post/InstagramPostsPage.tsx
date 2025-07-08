@@ -6,6 +6,7 @@ import {
   useUpdateInstagramPost,
 } from "../../api/post/instagramPostMutations";
 import { useInstagramPosts } from "../../api/post/useInstagramPosts";
+import PageTitle from "../../components/PageTitle";
 
 export default function InstagramPostsPage() {
   const { id = "" } = useParams<{ id: string }>();
@@ -28,6 +29,7 @@ export default function InstagramPostsPage() {
 
   return (
     <div>
+      <PageTitle>Instagram Posts</PageTitle>
       <table className="table">
         <thead>
           <tr>

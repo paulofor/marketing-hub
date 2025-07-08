@@ -1,11 +1,13 @@
 import { Link } from "react-router-dom";
 import { useProducts } from "../../api/product/useProducts";
+import PageTitle from "../../components/PageTitle";
 
 export default function ProductListPage() {
   const { data, isLoading } = useProducts();
   if (isLoading) return <p>Loading...</p>;
   return (
     <div>
+      <PageTitle>Products</PageTitle>
       <Link className="btn btn-primary mb-3" to="/products/new">
         New Product
       </Link>

@@ -1,11 +1,13 @@
 import { Link } from "react-router-dom";
 import { useCoursePlans } from "../../api/course/useCoursePlans";
+import PageTitle from "../../components/PageTitle";
 
 export default function CoursePlanListPage() {
   const { data, isLoading } = useCoursePlans();
   if (isLoading) return <p>Loading...</p>;
   return (
     <div>
+      <PageTitle>Course Plans</PageTitle>
       <Link className="btn btn-primary mb-3" to="/courses/new">
         New Course Plan
       </Link>

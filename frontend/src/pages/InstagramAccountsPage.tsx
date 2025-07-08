@@ -5,6 +5,7 @@ import {
   useUpdateInstagramAccount,
   useDeleteInstagramAccount,
 } from "../api/instagramAccountMutations";
+import PageTitle from "../components/PageTitle";
 
 export default function InstagramAccountsPage() {
   const { data, isLoading, error } = useInstagramAccounts();
@@ -30,6 +31,7 @@ export default function InstagramAccountsPage() {
 
   return (
     <div>
+      <PageTitle>Instagram Accounts</PageTitle>
       <table className="table table-striped">
         <thead>
           <tr>

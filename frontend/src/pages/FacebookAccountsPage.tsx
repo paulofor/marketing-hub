@@ -5,6 +5,7 @@ import {
   useUpdateFacebookAccount,
   useDeleteFacebookAccount,
 } from "../api/facebookAccountMutations";
+import PageTitle from "../components/PageTitle";
 
 export default function FacebookAccountsPage() {
   const { data, isLoading, error } = useFacebookAccounts();
@@ -30,6 +31,7 @@ export default function FacebookAccountsPage() {
 
   return (
     <div>
+      <PageTitle>Facebook Accounts</PageTitle>
       <table className="table table-striped">
         <thead>
           <tr>

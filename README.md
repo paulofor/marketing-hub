@@ -5,6 +5,8 @@ This project manages ads, media assets, course plans and now products built with
 docker compose up -d      # start MySQL
 cd backend/ads-service && mvn spring-boot:run
 cd ../../frontend && npm run dev
+# run the background worker (optional)
+cd ../success-product-worker && mvn spring-boot:run
 # create a .env file to point the React app to your backend
 echo "VITE_API_URL=http://localhost:8000" > frontend/.env
 # deploy to VPS (Java 21 already installed)

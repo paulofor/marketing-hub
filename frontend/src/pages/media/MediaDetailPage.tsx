@@ -7,11 +7,11 @@ export default function MediaDetailPage() {
   const assetId = Number(id);
   const { data } = useAsset(assetId);
 
-  if (!data) return <p>Loading...</p>;
+  if (!data) return <p>Carregando...</p>;
 
   return (
     <div>
-      <PageTitle>Asset {data.id}</PageTitle>
+      <PageTitle>Arquivo {data.id}</PageTitle>
       <p>Status: {data.status}</p>
       {data.url && (
         <div>

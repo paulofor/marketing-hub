@@ -16,27 +16,27 @@ export default function NewCoursePlanPage() {
 
   return (
     <div>
-      <PageTitle>New Course Plan</PageTitle>
+      <PageTitle>Novo Plano de Curso</PageTitle>
       <input
         className="form-control mb-2"
-        placeholder="Target Audience"
+        placeholder="Público Alvo"
         value={form.targetAudience}
         onChange={(e) => setForm({ ...form, targetAudience: e.target.value })}
       />
       <input
         className="form-control mb-2"
-        placeholder="Transformation"
+        placeholder="Transformação"
         value={form.transformation}
         onChange={(e) => setForm({ ...form, transformation: e.target.value })}
       />
       <textarea
         className="form-control mb-2"
-        placeholder="Macro Topics"
+        placeholder="Tópicos Macro"
         value={form.macroTopics}
         onChange={(e) => setForm({ ...form, macroTopics: e.target.value })}
       />
       <button className="btn btn-primary" onClick={submit}>
-        Generate
+        Gerar
       </button>
     </div>
   );

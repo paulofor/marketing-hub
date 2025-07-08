@@ -12,15 +12,15 @@ export default function NewSuccessProductPage() {
 
   return (
     <div>
-      <PageTitle>New Success Product</PageTitle>
+      <PageTitle>Novo Produto de Sucesso</PageTitle>
       <textarea
         className="form-control mb-2"
-        placeholder="Description"
+        placeholder="Descrição"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
       />
       <button className="btn btn-primary" onClick={submit}>
-        Save
+        Salvar
       </button>
     </div>
   );

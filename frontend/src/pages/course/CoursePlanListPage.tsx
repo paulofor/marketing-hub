@@ -4,20 +4,20 @@ import PageTitle from "../../components/PageTitle";
 
 export default function CoursePlanListPage() {
   const { data, isLoading } = useCoursePlans();
-  if (isLoading) return <p>Loading...</p>;
+  if (isLoading) return <p>Carregando...</p>;
   return (
     <div>
-      <PageTitle>Course Plans</PageTitle>
+      <PageTitle>Planos de Curso</PageTitle>
       <Link className="btn btn-primary mb-3" to="/courses/new">
-        New Course Plan
+        Novo Plano de Curso
       </Link>
       <table className="table">
         <thead>
           <tr>
             <th>ID</th>
-            <th>Audience</th>
-            <th>Transformation</th>
-            <th>Actions</th>
+            <th>Público</th>
+            <th>Transformação</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -31,7 +31,7 @@ export default function CoursePlanListPage() {
                   className="btn btn-sm btn-outline-primary"
                   to={`/courses/${p.id}`}
                 >
-                  View
+                  Visualizar
                 </Link>
               </td>
             </tr>

@@ -24,22 +24,22 @@ export default function App() {
           </Link>
           <div className="navbar-nav">
             <Link className="nav-link" to="/accounts/facebook">
-              Facebook Accounts
+              Contas do Facebook
             </Link>
             <Link className="nav-link" to="/accounts/instagram">
-              Instagram Accounts
+              Contas do Instagram
             </Link>
             <Link className="nav-link" to="/media">
-              Media
+              Mídia
             </Link>
             <Link className="nav-link" to="/courses">
-              Courses
+              Cursos
             </Link>
             <Link className="nav-link" to="/products">
-              Products
+              Produtos
             </Link>
             <Link className="nav-link" to="/success-products">
-              Success Products
+              Produtos de Sucesso
             </Link>
           </div>
         </div>
@@ -64,7 +64,7 @@ export default function App() {
           path="/success-products/new"
           element={<NewSuccessProductPage />}
         />
-        <Route path="*" element={<div>Home</div>} />
+        <Route path="*" element={<div>Início</div>} />
       </Routes>
     </div>
   );

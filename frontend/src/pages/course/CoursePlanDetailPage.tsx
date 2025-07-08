@@ -13,16 +13,16 @@ export default function CoursePlanDetailPage() {
       return data;
     },
   });
-  if (isLoading) return <p>Loading...</p>;
-  if (!data) return <p>Not found</p>;
+  if (isLoading) return <p>Carregando...</p>;
+  if (!data) return <p>Não encontrado</p>;
   return (
     <div>
-      <PageTitle>Course Plan {id}</PageTitle>
-      <h3>Modules</h3>
+      <PageTitle>Plano de Curso {id}</PageTitle>
+      <h3>Módulos</h3>
       <pre>{data.modules}</pre>
-      <h3>Objectives</h3>
+      <h3>Objetivos</h3>
       <pre>{data.objectives}</pre>
-      <h3>Resources</h3>
+      <h3>Recursos</h3>
       <pre>{data.resources}</pre>
     </div>
   );

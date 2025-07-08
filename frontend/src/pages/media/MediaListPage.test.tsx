@@ -19,6 +19,6 @@ describe('MediaListPage', () => {
         </BrowserRouter>
       </QueryClientProvider>
     );
-    expect(await screen.findByText(/New Media/)).toBeTruthy();
+    expect(await screen.findByText(/Nova Mídia/)).toBeTruthy();
   });
 });

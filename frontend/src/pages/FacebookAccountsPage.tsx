@@ -16,8 +16,8 @@ export default function FacebookAccountsPage() {
   const [form, setForm] = useState({ id: "", name: "", currency: "" });
   const [editing, setEditing] = useState<boolean | string>(false);
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error loading accounts</p>;
+  if (isLoading) return <p>Carregando...</p>;
+  if (error) return <p>Erro ao carregar contas</p>;
 
   const submit = () => {
     if (editing) {
@@ -31,14 +31,14 @@ export default function FacebookAccountsPage() {
 
   return (
     <div>
-      <PageTitle>Facebook Accounts</PageTitle>
+      <PageTitle>Contas do Facebook</PageTitle>
       <table className="table table-striped">
         <thead>
           <tr>
             <th>ID</th>
-            <th>Name</th>
-            <th>Currency</th>
-            <th>Actions</th>
+            <th>Nome</th>
+            <th>Moeda</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -55,13 +55,13 @@ export default function FacebookAccountsPage() {
                     setEditing(id);
                   }}
                 >
-                  Edit
+                  Editar
                 </button>
                 <button
                   className="btn btn-sm btn-outline-danger"
                   onClick={() => deleteMutation.mutate(id)}
                 >
-                  Delete
+                  Excluir
                 </button>
               </td>
             </tr>
@@ -80,7 +80,7 @@ export default function FacebookAccountsPage() {
         <div className="col-md-4">
           <input
             className="form-control"
-            placeholder="name"
+            placeholder="nome"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
@@ -88,14 +88,14 @@ export default function FacebookAccountsPage() {
         <div className="col-md-2">
           <input
             className="form-control"
-            placeholder="currency"
+            placeholder="moeda"
             value={form.currency}
             onChange={(e) => setForm({ ...form, currency: e.target.value })}
           />
         </div>
         <div className="col-md-2">
           <button className="btn btn-primary w-100" onClick={submit}>
-            {editing ? "Update" : "Create"}
+            {editing ? "Atualizar" : "Criar"}
           </button>
         </div>
       </div>

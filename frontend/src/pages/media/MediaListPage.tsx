@@ -4,20 +4,20 @@ import PageTitle from "../../components/PageTitle";
 
 export default function MediaListPage() {
   const { data, isLoading } = useAssets();
-  if (isLoading) return <p>Loading...</p>;
+  if (isLoading) return <p>Carregando...</p>;
   return (
     <div>
-      <PageTitle>Media Assets</PageTitle>
+      <PageTitle>Arquivos de Mídia</PageTitle>
       <Link className="btn btn-primary mb-3" to="/media/new">
-        New Media
+        Nova Mídia
       </Link>
       <table className="table">
         <thead>
           <tr>
             <th>ID</th>
-            <th>Type</th>
+            <th>Tipo</th>
             <th>Status</th>
-            <th>Actions</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -31,7 +31,7 @@ export default function MediaListPage() {
                   className="btn btn-sm btn-outline-primary"
                   to={`/media/${a.id}`}
                 >
-                  View
+                  Visualizar
                 </Link>
               </td>
             </tr>

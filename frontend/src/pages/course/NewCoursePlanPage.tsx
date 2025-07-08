@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useCreateCoursePlan } from "../../api/course/useCreateCoursePlan";
+import PageTitle from "../../components/PageTitle";
 
 export default function NewCoursePlanPage() {
   const create = useCreateCoursePlan();
@@ -15,6 +16,7 @@ export default function NewCoursePlanPage() {
 
   return (
     <div>
+      <PageTitle>New Course Plan</PageTitle>
       <input
         className="form-control mb-2"
         placeholder="Target Audience"

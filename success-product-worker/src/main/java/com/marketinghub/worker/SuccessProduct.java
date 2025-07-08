@@ -18,6 +18,7 @@ public class SuccessProduct {
     private Long id;
 
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String description;
 
     @Builder.Default

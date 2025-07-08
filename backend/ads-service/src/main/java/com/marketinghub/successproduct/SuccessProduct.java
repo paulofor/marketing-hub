@@ -22,6 +22,7 @@ public class SuccessProduct {
     private Long id;
 
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String description;
 
     /** Flag to indicate newly created entries. */

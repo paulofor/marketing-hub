@@ -6,8 +6,14 @@ export default function NewSuccessProductPage() {
   const create = useCreateSuccessProduct();
   const [description, setDescription] = useState("");
 
-  const submit = () => {
-    create.mutate({ description });
+  const submit = async () => {
+    try {
+      await create.mutateAsync({ description });
+      setDescription("");
+      alert("Produto de Sucesso salvo!");
+    } catch (err) {
+      alert("Erro ao salvar Produto de Sucesso");
+    }
   };
 
   return (

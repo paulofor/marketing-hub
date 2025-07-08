@@ -18,6 +18,7 @@ export default function NewSuccessProductPage() {
         placeholder="Descrição"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
+        rows={5}
       />
       <button className="btn btn-primary" onClick={submit}>
         Salvar

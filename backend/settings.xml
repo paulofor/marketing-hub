@@ -9,7 +9,7 @@
     <mirror>
       <id>central-all</id>
       <name>Maven Central (HTTPS)</name>
-      <url>https://repo.maven.apache.org/maven2</url>
+      <url>https://repo1.maven.org/maven2/</url>
       <mirrorOf>central</mirrorOf>   <!-- apenas o repositório central -->
     </mirror>
   </mirrors>

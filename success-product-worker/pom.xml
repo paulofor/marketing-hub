@@ -13,6 +13,11 @@
             <name>GitHub Packages</name>
             <url>https://maven.pkg.github.com/paulofor/marketing-hub</url>
         </repository>
+        <repository>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
     </repositories>
 
     <properties>

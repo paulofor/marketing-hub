@@ -47,6 +47,8 @@ jobs:
         run: mvn -B test
 
       - name: Build and publish to GitHub Packages
+        # <classifier>exec</classifier> gera app.jar (puro) e app-exec.jar
+        # reempacotado pelo plugin; o jar "puro" segue para o GitHub Packages
         run: mvn -B -s ../settings.xml deploy -DskipTests
 
       - name: Publicar artefato
@@ -86,6 +88,6 @@ jobs:
 
       - name: Sincronizar JAR e reiniciar serviço
         run: |
-          JAR=$(ls -S target/*.jar | head -n 1)
+          JAR=target/app-exec.jar
           rsync -az --delete "$JAR" marketinghub@${VPS_IP}:${APP_DIR}/
           ssh marketinghub@${VPS_IP} "sudo -n systemctl restart marketinghub-backend.service"

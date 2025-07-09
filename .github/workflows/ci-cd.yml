@@ -13,69 +13,79 @@ env:
   APP_DIR: /opt/marketinghub/app           # caminho no servidor
   VPS_IP: 191.252.92.222              # ← IP fixo do servidor
 
-
 jobs:
+# ─────────────────────────────────────────
+# 1) BUILD – compila, testa e empacota
+# ─────────────────────────────────────────
   build:
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GITHUB_ACTOR:  ${{ github.actor }}
-    defaults:
+      GITHUB_ACTOR: ${{ github.actor }}
+    defaults:                     # 👉 força todos os steps a rodarem em backend/ads-service
       run:
         working-directory: backend/ads-service
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4           # clona o repositório
 
-      - name: Setup Java 21
+      - name: Setup Java 21 (Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
-          cache: maven     # :contentReference[oaicite:5]{index=5}
+          cache: maven
 
-      - name: Cache manual do repositório Maven
+      - name: Cache repositório Maven manual (fallback)
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: maven-
 
-      # 1) build + deploy plain JAR
-      - name: Build plain JAR e publicar no GitHub Packages
-        run: |
-          mvn -B -s ../settings.xml deploy \
-              -Dspring-boot.repackage.skip=true \
-              -DskipTests
+      - name: Rodar testes
+        run: mvn -B test
 
-      # 2) gerar o exec JAR
-      - name: Repackage para JAR executável
-        run: |
-          mvn -B spring-boot:repackage \
-              -Dspring-boot.repackage.classifier=exec \
-              -DskipTests
+      - name: Build and publish to GitHub Packages
+        run: mvn -B -s ../settings.xml deploy -DskipTests
 
-      # 3) disponibilizar o exec JAR para o job deploy
-      - name: Upload exec JAR
+      - name: Publicar artefato
         uses: actions/upload-artifact@v4
         with:
           name: backend-jar
-          path: backend/ads-service/target/*-exec.jar
+          path: backend/ads-service/target/app-exec.jar
 
+# ─────────────────────────────────────────
+# 2) DEPLOY – transfere JAR e reinicia
+# ─────────────────────────────────────────
   deploy:
     needs: build
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
-    steps:
+    steps:  # <- este bloco estava fora do alinhamento correto
       - uses: actions/download-artifact@v4
         with:
           name: backend-jar
           path: target
 
-      # … passos de SSH/rsync exatamente como estavam …
+      - name: Adicionar chave SSH ao agente
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Adicionar VPS ao known_hosts
+        run: ssh-keyscan -H ${VPS_IP} >> ~/.ssh/known_hosts
+ 
+      - name: Teste SSH (debug)
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+              -o BatchMode=yes -vvv \
+              marketinghub@${VPS_IP} echo ok
+    
+
       - name: Sincronizar JAR e reiniciar serviço
         run: |
-          JAR=$(ls -S target/*-exec.jar | head -n 1)
+          JAR=$(ls -S target/*.jar | head -n 1)
           rsync -az --delete "$JAR" marketinghub@${VPS_IP}:${APP_DIR}/
           ssh marketinghub@${VPS_IP} "sudo -n systemctl restart marketinghub-backend.service"

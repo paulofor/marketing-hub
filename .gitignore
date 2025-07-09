@@ -22,4 +22,5 @@ frontend/dist
 /backend/ads-service/target/
 log.exec
 chaves/
+local/
 

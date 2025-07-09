@@ -2,12 +2,12 @@
 
 ## Build & Test
 - **Backend**
-  - Build: `cd backend/ads-service && mvn package`
-  - Tests: `cd backend/ads-service && mvn test`
+  - Build & publish: `cd backend/ads-service && mvn -s ../settings.xml deploy`
+  - Tests: `cd backend/ads-service && mvn -s ../settings.xml test`
 - **Success Product Worker**
-  - Build: `cd success-product-worker && mvn package`
-  - Tests: `cd success-product-worker && mvn test`
-  - Requires the `ads-service` module installed locally with `mvn install`.
+  - Build: `cd success-product-worker && mvn -s settings.xml package`
+  - Tests: `cd success-product-worker && mvn -s settings.xml test`
+  - Downloads the `ads-service` artifact from GitHub Packages.
 - **Frontend**
   - Build: `npm run build`
   - Tests: `npm run test`

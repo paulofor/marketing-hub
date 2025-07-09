@@ -1,7 +1,8 @@
 @echo off
 setlocal
 
-rem Builds ads-service and success-product-worker using credentials for GitHub Packages.
+rem Builds ads-service and publishes the JAR to GitHub Packages, then compiles
+rem success-product-worker downloading the dependency.
 rem Defina as variaveis GITHUB_ACTOR e GITHUB_TOKEN antes de executar este script.
 
 if "%GITHUB_ACTOR%"=="" (
@@ -14,9 +15,9 @@ if "%GITHUB_TOKEN%"=="" (
   exit /b 1
 )
 
-echo [1] Instalando modulo ads-service...
+echo [1] Publicando modulo ads-service...
 pushd backend\ads-service
-mvn -s ..\settings.xml install
+mvn -s ..\settings.xml deploy
 if errorlevel 1 (
   echo Falha ao instalar ads-service
   popd
@@ -26,7 +27,7 @@ popd
 
 echo [2] Compilando success-product-worker...
 pushd success-product-worker
-mvn -s settings.xml install
+mvn -s settings.xml package
 if errorlevel 1 (
   echo Falha ao compilar success-product-worker
   popd

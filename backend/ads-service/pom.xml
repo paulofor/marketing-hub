@@ -73,6 +73,8 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <finalName>app</finalName>
+                    <classifier>exec</classifier>
+                    <attach>true</attach>
                 </configuration>
             </plugin>
             <plugin>

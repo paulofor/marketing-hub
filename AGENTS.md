@@ -7,7 +7,7 @@
 - **Success Product Worker**
   - Build: `cd success-product-worker && mvn -s settings.xml package`
   - Tests: `cd success-product-worker && mvn -s settings.xml test`
-  - Downloads the `ads-service` artifact from GitHub Packages.
+  - Downloads the `ads-service` artifact from the `paulofor/ads-service` GitHub Packages repository.
 - **Frontend**
   - Build: `npm run build`
   - Tests: `npm run test`

@@ -7,10 +7,11 @@
   <!-- 1️⃣  Redireciona TODAS as requisições a este host -->
   <mirrors>
     <mirror>
-      <id>central-all</id>
-      <name>Maven Central (HTTPS)</name>
-      <url>https://repo.maven.apache.org/maven2</url>
-      <mirrorOf>central</mirrorOf>   <!-- apenas o repositório central -->
+      <id>central-repo1</id>
+      <name>Maven Central via Fastly (repo1.maven.org)</name>
+      <url>https://repo1.maven.org/maven2/</url>
+      <!-- só o repositório "central" é redirecionado -->
+      <mirrorOf>central</mirrorOf>
     </mirror>
   </mirrors>
 

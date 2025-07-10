@@ -27,4 +27,6 @@ mvn spring-boot:run
 
 A aplicação agenda a tarefa `SuccessProductScheduler` para rodar a cada hora (`0 0 * * * *`). O método `analyzeNewProducts` busca registros com `novo=true`, chama `ChatGptClient` (no momento implementado por `DummyChatGptClient`) para preencher os campos e persiste o resultado.
 
+Durante a execução, o worker registra logs informando o início e o término da tarefa, além de detalhes sobre cada produto processado. Verifique o console para acompanhar o andamento.
+
 Edite `src/main/resources/application.yml` caso precise alterar as credenciais ou a URL do banco de dados.

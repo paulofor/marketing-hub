@@ -43,11 +43,13 @@ public class OpenAiChatGptClient implements ChatGptClient {
             log.warn("OpenAI API key not configured, returning product unchanged");
             return product;
         }
+        String requestBody = null;
+        String body = null;
         try {
             String prompt = "Preencha os campos explicitPain, promise, uniqueMechanism, "
                     + "tripwire, riskReversal, socialProof, checkoutMonetization, funnel, "
                     + "creativeVolume, storytelling em formato JSON.";
-            String requestBody = MAPPER.writeValueAsString(
+            requestBody = MAPPER.writeValueAsString(
                     Map.of(
                             "model",
                             model,
@@ -62,6 +64,10 @@ public class OpenAiChatGptClient implements ChatGptClient {
                             "temperature",
                             0));
 
+            if (log.isDebugEnabled()) {
+                log.debug("Sending request to OpenAI: {}", requestBody);
+            }
+
             HttpRequest request =
                     HttpRequest.newBuilder()
                             .uri(URI.create("https://api.openai.com/v1/chat/completions"))
@@ -73,9 +79,18 @@ public class OpenAiChatGptClient implements ChatGptClient {
 
             HttpResponse<String> response =
                     httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            String body = response.body();
+
+            body = response.body();
+            log.debug("OpenAI status: {}", response.statusCode());
+            log.trace("OpenAI response body: {}", body);
+
             JsonNode root = MAPPER.readTree(body);
-            String content = root.path("choices").get(0).path("message").path("content").asText();
+            JsonNode choices = root.path("choices");
+            if (!choices.isArray() || choices.isEmpty()) {
+                log.warn("Unexpected OpenAI response format: {}", body);
+                return product;
+            }
+            String content = choices.get(0).path("message").path("content").asText();
             JsonNode data = MAPPER.readTree(content);
             product.setExplicitPain(asText(data, "explicitPain"));
             product.setPromise(asText(data, "promise"));
@@ -90,7 +105,11 @@ public class OpenAiChatGptClient implements ChatGptClient {
             product.setNovo(false);
             return product;
         } catch (Exception e) {
-            log.error("Failed to call OpenAI API", e);
+            if (requestBody != null) {
+                log.error("Failed to call OpenAI API. Request: {} Response: {}", requestBody, body, e);
+            } else {
+                log.error("Failed to call OpenAI API", e);
+            }
             return product;
         }
     }

@@ -9,6 +9,10 @@ cd ../../frontend && npm run dev
 cd ../success-product-worker && mvn spring-boot:run
 # the worker fetches the ads-service dependency from
 # https://maven.pkg.github.com/paulofor/ads-service
+# The backend builds two JAR files when packaging:
+# - `app.jar` is the thin artifact published to GitHub Packages and
+#   consumed by the Success Product Worker using Maven.
+# - `app-exec.jar` is the fat executable that gets copied to the VPS.
 # create a .env file to point the React app to your backend
 echo "VITE_API_URL=http://localhost:8000" > frontend/.env
 # deploy to VPS (Java 21 already installed)

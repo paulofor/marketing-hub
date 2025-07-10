@@ -46,16 +46,41 @@ jobs:
       - name: Rodar testes
         run: mvn -B test
 
-      - name: Build and publish to GitHub Packages
-        # <classifier>exec</classifier> gera app.jar (puro) e app-exec.jar
-        # reempacotado pelo plugin; o jar "puro" segue para o GitHub Packages
-        run: mvn -B -s ../settings.xml deploy -DskipTests
+      - name: Build backend
+        run: mvn -B -s ../settings.xml package -DskipTests
+
+      - name: Ajustar nomes dos JARs
+        run: |
+          mv target/app.jar target/app-lib.jar
+          mv target/app-exec.jar target/app.jar
+
+      - name: Enviar lib ao GitHub Packages com Maven Deploy Plugin
+        run: |
+          mvn -B -s ../settings.xml \
+            org.apache.maven.plugins:maven-deploy-plugin:3.1.1:deploy-file \
+            -DrepositoryId=github \
+            -Durl=https://maven.pkg.github.com/paulofor/marketing-hub \
+            -Dfile=target/app-lib.jar \
+            -DgroupId=com.marketinghub \
+            -DartifactId=ads-service \
+            -Dversion=0.0.1-SNAPSHOT \
+            -Dpackaging=jar
+
+      - name: Verificar biblioteca publicada
+        run: |
+          mvn -B -s ../settings.xml dependency:get \
+            -Dartifact=com.marketinghub:ads-service:0.0.1-SNAPSHOT \
+            -Dtransitive=false
+          test -f ~/.m2/repository/com/marketinghub/ads-service/0.0.1-SNAPSHOT/ads-service-0.0.1-SNAPSHOT.jar
+
+      - name: Build Success Product Worker
+        run: cd ../../success-product-worker && mvn -s settings.xml package
 
       - name: Publicar artefato
         uses: actions/upload-artifact@v4
         with:
           name: backend-jar
-          path: backend/ads-service/target/app-exec.jar
+          path: backend/ads-service/target/app.jar
 
 # ─────────────────────────────────────────
 # 2) DEPLOY – transfere JAR e reinicia
@@ -88,6 +113,6 @@ jobs:
 
       - name: Sincronizar JAR e reiniciar serviço
         run: |
-          JAR=target/app-exec.jar
+          JAR=target/app.jar
           rsync -az --delete "$JAR" marketinghub@${VPS_IP}:${APP_DIR}/
-          ssh marketinghub@${VPS_IP} "mv ${APP_DIR}/app-exec.jar ${APP_DIR}/app.jar && sudo -n systemctl restart marketinghub-backend.service"
+          ssh marketinghub@${VPS_IP} "sudo -n systemctl restart marketinghub-backend.service"

@@ -12,8 +12,19 @@ cd ../success-product-worker && mvn spring-boot:run
 # The backend builds two JAR files when packaging:
 # - `app.jar` is the thin artifact published to GitHub Packages and
 #   consumed by the Success Product Worker using Maven.
-# - `app-exec.jar` is the fat executable that gets copied to the VPS as
-#   `app.jar`.
+# - `app-exec.jar` is the fat executable. The CI workflow renames it to
+#   `app.jar` for deployment and keeps a copy of the thin JAR as
+#   `app-lib.jar`.
+# The thin JAR can be published manually with:
+#   cd backend/ads-service && mvn -s ../settings.xml \
+#     org.apache.maven.plugins:maven-deploy-plugin:deploy-file \
+#     -DrepositoryId=github -Durl=https://maven.pkg.github.com/paulofor/marketing-hub \
+#     -Dfile=target/app-lib.jar -DgroupId=com.marketinghub \
+#     -DartifactId=ads-service -Dversion=0.0.1-SNAPSHOT -Dpackaging=jar
+# The CI workflow performs the same deploy-file command and then verifies the
+# upload with `mvn dependency:get`.
+# The worker only needs this JAR from GitHub Packages – Maven downloads it
+# automatically when compiling.
 # create a .env file to point the React app to your backend
 echo "VITE_API_URL=http://localhost:8000" > frontend/.env
 # deploy to VPS (Java 21 already installed)

@@ -7,7 +7,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       // Backend now listens on port 8000
-      "/api": "http://localhost:8000",
+      "/api": "http://191.252.92.222:8000",
     },
   },
   test: {

@@ -12,12 +12,13 @@ cd ../success-product-worker && mvn spring-boot:run
 # The backend builds two JAR files when packaging:
 # - `app.jar` is the thin artifact published to GitHub Packages and
 #   consumed by the Success Product Worker using Maven.
-# - `app-exec.jar` is the fat executable that gets copied to the VPS.
+# - `app-exec.jar` is the fat executable that gets copied to the VPS as
+#   `app.jar`.
 # create a .env file to point the React app to your backend
 echo "VITE_API_URL=http://localhost:8000" > frontend/.env
 # deploy to VPS (Java 21 already installed)
-scp target/app-exec.jar <vps>:/opt/marketing-hub/
-ssh <vps> "java -jar /opt/marketing-hub/app-exec.jar"
+scp target/app-exec.jar <vps>:/opt/marketinghub/app/app.jar
+ssh <vps> "java -jar /opt/marketinghub/app/app.jar"
 ```
 
 To run the Media Hub locally:

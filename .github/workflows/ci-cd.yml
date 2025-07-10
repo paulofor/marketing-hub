@@ -90,4 +90,4 @@ jobs:
         run: |
           JAR=target/app-exec.jar
           rsync -az --delete "$JAR" marketinghub@${VPS_IP}:${APP_DIR}/
-          ssh marketinghub@${VPS_IP} "sudo -n systemctl restart marketinghub-backend.service"
+          ssh marketinghub@${VPS_IP} "mv ${APP_DIR}/app-exec.jar ${APP_DIR}/app.jar && sudo -n systemctl restart marketinghub-backend.service"

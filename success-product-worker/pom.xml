@@ -11,8 +11,7 @@
     <repositories>
         <repository>
             <id>github</id>
-            <!-- wildcard evita erro se mudar de repositório no futuro -->
-            <url>https://maven.pkg.github.com/paulofor/*</url>
+            <url>https://maven.pkg.github.com/paulofor/marketing-hub</url>
             <releases><enabled>true</enabled></releases>
             <snapshots><enabled>true</enabled></snapshots>
         </repository>

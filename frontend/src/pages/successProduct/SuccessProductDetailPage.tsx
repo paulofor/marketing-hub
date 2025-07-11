@@ -35,7 +35,7 @@ export default function SuccessProductDetailPage() {
 
   return (
     <div>
-      <PageTitle>Produto de Sucesso {data.id}</PageTitle>
+      <PageTitle>{data.name || `Produto de Sucesso ${data.id}`}</PageTitle>
       <div className="card">
         <div className="card-body p-0">
           <dl className="row mb-0">

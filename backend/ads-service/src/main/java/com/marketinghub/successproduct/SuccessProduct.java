@@ -25,6 +25,8 @@ public class SuccessProduct {
     @Column(columnDefinition = "LONGTEXT")
     private String description;
 
+    private String name;
+
     /** Flag to indicate newly created entries. */
     @Builder.Default
     private boolean novo = true;

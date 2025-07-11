@@ -24,6 +24,7 @@ class SuccessProductRepositoryTest {
         repository.save(product);
         SuccessProduct saved = repository.findById(product.getId()).orElseThrow();
         assertThat(saved.isNovo()).isTrue();
+        assertThat(saved.getName()).isNull();
     }
 
     @Test

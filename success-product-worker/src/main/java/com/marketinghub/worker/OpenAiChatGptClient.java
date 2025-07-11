@@ -89,6 +89,7 @@ public class OpenAiChatGptClient implements ChatGptClient {
                         "tool_choice", "auto"));
 
                 log.info("Sending ChatGPT request with {} messages", messages.size());
+                log.info("ChatGPT request body: {}", requestBody);
 
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create("https://api.openai.com/v1/chat/completions"))
@@ -100,6 +101,8 @@ public class OpenAiChatGptClient implements ChatGptClient {
 
                 HttpResponse<String> response =
                         httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+                log.info("ChatGPT response body: {}", response.body());
 
                 JsonNode choice = MAPPER.readTree(response.body())
                         .path("choices").get(0);

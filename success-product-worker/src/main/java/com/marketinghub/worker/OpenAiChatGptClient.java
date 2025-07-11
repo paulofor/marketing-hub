@@ -19,7 +19,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
- * OpenAI client que suporta Function Calling + busca na web via Bing Search API.
+ * OpenAI client que suporta Function Calling + busca na web via Google Search API.
  */
 @Component
 public class OpenAiChatGptClient implements ChatGptClient {
@@ -30,15 +30,18 @@ public class OpenAiChatGptClient implements ChatGptClient {
     private final HttpClient httpClient;
     private final String apiKey;
     private final String model;
-    private final String bingKey;
+    private final String googleKey;
+    private final String searchId;
 
     public OpenAiChatGptClient(
             @Value("${openai.api-key:}") String apiKey,
             @Value("${openai.model:o3}") String model,
-            @Value("${bing.api-key:}") String bingKey) {
+            @Value("${google.api-key:}") String googleKey,
+            @Value("${google.search-id:}") String searchId) {
         this.apiKey = apiKey;
         this.model = model;
-        this.bingKey = bingKey;
+        this.googleKey = googleKey;
+        this.searchId = searchId;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(30))
                 .build();
@@ -134,31 +137,34 @@ public class OpenAiChatGptClient implements ChatGptClient {
     }
 
     /**
-     * Executa busca na Web usando Bing Search API.
+     * Executa busca na Web usando Google Search API.
      */
     private List<SearchResult> searchWeb(String query) throws Exception {
-        if (bingKey == null || bingKey.isBlank()) {
+        if (googleKey == null || googleKey.isBlank() || searchId == null || searchId.isBlank()) {
             return Collections.emptyList();
         }
-        String endpoint = "https://api.bing.microsoft.com/v7.0/search?q=" +
-                URLEncoder.encode(query, StandardCharsets.UTF_8);
+        String endpoint = "https://www.googleapis.com/customsearch/v1?key=" + googleKey +
+                "&cx=" + URLEncoder.encode(searchId, StandardCharsets.UTF_8) +
+                "&q=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(endpoint))
                 .timeout(Duration.ofSeconds(15))
-                .header("Ocp-Apim-Subscription-Key", bingKey)
                 .GET()
                 .build();
         HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
-        JsonNode webPages = MAPPER.readTree(resp.body()).path("webPages").path("value");
+        JsonNode items = MAPPER.readTree(resp.body()).path("items");
 
         List<SearchResult> list = new ArrayList<>();
-        for (JsonNode item : webPages) {
-            list.add(new SearchResult(
-                    item.path("name").asText(),
-                    item.path("url").asText(),
-                    item.path("snippet").asText()));
+        if (items.isArray()) {
+            for (JsonNode item : items) {
+                list.add(new SearchResult(
+                        item.path("title").asText(),
+                        item.path("link").asText(),
+                        item.path("snippet").asText()));
+                if (list.size() == 5) break;
+            }
         }
-        return list.size() > 5 ? list.subList(0, 5) : list;
+        return list;
     }
 
     private static String stripCodeFence(String text) {

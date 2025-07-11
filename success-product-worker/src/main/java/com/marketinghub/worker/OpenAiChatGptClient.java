@@ -111,9 +111,16 @@ public class OpenAiChatGptClient implements ChatGptClient {
                 log.info("OpenAI finish reason: {}", finishReason);
 
                 // ===== 3a. Modelo quer usar o tool search_web
-                if ("tool".equals(finishReason)) {
-                    String query = choice.path("message").path("tool_call")
-                            .path("arguments").path("query").asText();
+                if ("tool".equals(finishReason) || "tool_calls".equals(finishReason)) {
+                    JsonNode toolCall = choice.path("message").path("tool_call");
+                    if (toolCall == null || toolCall.isMissingNode() || toolCall.isNull()) {
+                        JsonNode array = choice.path("message").path("tool_calls");
+                        if (array.isArray() && array.size() > 0) {
+                            toolCall = array.get(0);
+                        }
+                    }
+
+                    String query = toolCall.path("function").path("arguments").path("query").asText();
                     log.info("Searching web for '{}'", query);
                     List<SearchResult> results = searchWeb(query);
                     log.info("Search returned {} results", results.size());

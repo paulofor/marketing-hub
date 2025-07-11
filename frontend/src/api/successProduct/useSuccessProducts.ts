@@ -8,6 +8,10 @@ export interface SuccessProduct {
   novo: boolean;
   niche: string;
   avatar: string;
+  salesPageUrl: string;
+  instagramUrl: string;
+  facebookUrl: string;
+  youtubeUrl: string;
   instagramAccountId?: number;
   explicitPain: string;
   promise: string;

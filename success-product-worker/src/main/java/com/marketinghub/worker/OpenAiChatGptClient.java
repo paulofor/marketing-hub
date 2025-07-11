@@ -54,6 +54,8 @@ public class OpenAiChatGptClient implements ChatGptClient {
             return product;
         }
 
+        log.info("Enriching product {} with OpenAI", product.getId());
+
         // ===== 1. Mensagens iniciais
         List<Map<String, Object>> messages = new ArrayList<>();
         messages.add(Map.of("role", "system", "content", "Você é um especialista em marketing."));
@@ -86,6 +88,8 @@ public class OpenAiChatGptClient implements ChatGptClient {
                         "tools", tools,
                         "tool_choice", "auto"));
 
+                log.info("Sending ChatGPT request with {} messages", messages.size());
+
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create("https://api.openai.com/v1/chat/completions"))
                         .timeout(Duration.ofMinutes(2))
@@ -101,11 +105,15 @@ public class OpenAiChatGptClient implements ChatGptClient {
                         .path("choices").get(0);
                 String finishReason = choice.path("finish_reason").asText();
 
+                log.info("OpenAI finish reason: {}", finishReason);
+
                 // ===== 3a. Modelo quer usar o tool search_web
                 if ("tool".equals(finishReason)) {
                     String query = choice.path("message").path("tool_call")
                             .path("arguments").path("query").asText();
+                    log.info("Searching web for '{}'", query);
                     List<SearchResult> results = searchWeb(query);
+                    log.info("Search returned {} results", results.size());
                     String toolContent = MAPPER.writeValueAsString(Map.of("results", results));
 
                     messages.add(Map.of(
@@ -136,6 +144,7 @@ public class OpenAiChatGptClient implements ChatGptClient {
                 product.setFacebookUrl(asText(data, "facebookUrl"));
                 product.setYoutubeUrl(asText(data, "youtubeUrl"));
                 product.setNovo(false);
+                log.info("OpenAI enrichment completed for product {}", product.getId());
                 return product;
             }
         } catch (Exception e) {

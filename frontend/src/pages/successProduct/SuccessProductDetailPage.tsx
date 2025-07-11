@@ -13,32 +13,60 @@ export default function SuccessProductDetailPage() {
   return (
     <div>
       <PageTitle>Produto de Sucesso {data.id}</PageTitle>
-      <h3>Descrição</h3>
-      <pre>{data.description}</pre>
-      <h3>Nicho</h3>
-      <p>{data.niche}</p>
-      <h3>Avatar</h3>
-      <p>{data.avatar}</p>
-      <h3>Dor Explícita</h3>
-      <pre>{data.explicitPain}</pre>
-      <h3>Promessa</h3>
-      <pre>{data.promise}</pre>
-      <h3>Mecanismo Único</h3>
-      <pre>{data.uniqueMechanism}</pre>
-      <h3>Tripwire</h3>
-      <pre>{data.tripwire}</pre>
-      <h3>Reversão de Risco</h3>
-      <pre>{data.riskReversal}</pre>
-      <h3>Prova Social</h3>
-      <pre>{data.socialProof}</pre>
-      <h3>Monetização do Checkout</h3>
-      <pre>{data.checkoutMonetization}</pre>
-      <h3>Funil</h3>
-      <pre>{data.funnel}</pre>
-      <h3>Volume Criativo</h3>
-      <pre>{data.creativeVolume}</pre>
-      <h3>Storytelling</h3>
-      <pre>{data.storytelling}</pre>
+      <div className="card">
+        <div className="card-body">
+          <dl className="row mb-0">
+            <dt className="col-sm-3">Descrição</dt>
+            <dd className="col-sm-9" style={{ whiteSpace: "pre-wrap" }}>
+              {data.description}
+            </dd>
+            <dt className="col-sm-3">Nicho</dt>
+            <dd className="col-sm-9">{data.niche}</dd>
+            <dt className="col-sm-3">Avatar</dt>
+            <dd className="col-sm-9">{data.avatar}</dd>
+            <dt className="col-sm-3">Dor Explícita</dt>
+            <dd className="col-sm-9" style={{ whiteSpace: "pre-wrap" }}>
+              {data.explicitPain}
+            </dd>
+            <dt className="col-sm-3">Promessa</dt>
+            <dd className="col-sm-9" style={{ whiteSpace: "pre-wrap" }}>
+              {data.promise}
+            </dd>
+            <dt className="col-sm-3">Mecanismo Único</dt>
+            <dd className="col-sm-9" style={{ whiteSpace: "pre-wrap" }}>
+              {data.uniqueMechanism}
+            </dd>
+            <dt className="col-sm-3">Tripwire</dt>
+            <dd className="col-sm-9" style={{ whiteSpace: "pre-wrap" }}>
+              {data.tripwire}
+            </dd>
+            <dt className="col-sm-3">Reversão de Risco</dt>
+            <dd className="col-sm-9" style={{ whiteSpace: "pre-wrap" }}>
+              {data.riskReversal}
+            </dd>
+            <dt className="col-sm-3">Prova Social</dt>
+            <dd className="col-sm-9" style={{ whiteSpace: "pre-wrap" }}>
+              {data.socialProof}
+            </dd>
+            <dt className="col-sm-3">Monetização do Checkout</dt>
+            <dd className="col-sm-9" style={{ whiteSpace: "pre-wrap" }}>
+              {data.checkoutMonetization}
+            </dd>
+            <dt className="col-sm-3">Funil</dt>
+            <dd className="col-sm-9" style={{ whiteSpace: "pre-wrap" }}>
+              {data.funnel}
+            </dd>
+            <dt className="col-sm-3">Volume Criativo</dt>
+            <dd className="col-sm-9" style={{ whiteSpace: "pre-wrap" }}>
+              {data.creativeVolume}
+            </dd>
+            <dt className="col-sm-3">Storytelling</dt>
+            <dd className="col-sm-9" style={{ whiteSpace: "pre-wrap" }}>
+              {data.storytelling}
+            </dd>
+          </dl>
+        </div>
+      </div>
     </div>
   );
 }

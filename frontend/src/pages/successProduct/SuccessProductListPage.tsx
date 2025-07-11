@@ -16,6 +16,8 @@ export default function SuccessProductListPage() {
           <tr>
             <th>ID</th>
             <th>Descrição</th>
+            <th>Novo</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -24,6 +26,14 @@ export default function SuccessProductListPage() {
               <td>{p.id}</td>
               <td>{p.description}</td>
               <td>{p.novo ? "Yes" : "No"}</td>
+              <td>
+                <Link
+                  className="btn btn-sm btn-outline-primary"
+                  to={`/success-products/${p.id}`}
+                >
+                  Visualizar
+                </Link>
+              </td>
             </tr>
           ))}
         </tbody>

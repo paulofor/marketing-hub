@@ -12,6 +12,7 @@ import ProductListPage from "./pages/product/ProductListPage";
 import NewProductPage from "./pages/product/NewProductPage";
 import SuccessProductListPage from "./pages/successProduct/SuccessProductListPage";
 import NewSuccessProductPage from "./pages/successProduct/NewSuccessProductPage";
+import SuccessProductDetailPage from "./pages/successProduct/SuccessProductDetailPage";
 import InstagramPostsPage from "./pages/post/InstagramPostsPage";
 
 export default function App() {
@@ -63,6 +64,10 @@ export default function App() {
         <Route
           path="/success-products/new"
           element={<NewSuccessProductPage />}
+        />
+        <Route
+          path="/success-products/:id"
+          element={<SuccessProductDetailPage />}
         />
         <Route path="*" element={<div>Início</div>} />
       </Routes>

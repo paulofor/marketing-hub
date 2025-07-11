@@ -104,8 +104,24 @@ public class OpenAiChatGptClient implements ChatGptClient {
 
                 log.info("ChatGPT response body: {}", response.body());
 
-                JsonNode choice = MAPPER.readTree(response.body())
-                        .path("choices").get(0);
+                JsonNode root = MAPPER.readTree(response.body());
+                if (root.has("error")) {
+                    log.error("OpenAI error: {}", root.path("error").path("message").asText());
+                    return product;
+                }
+
+                JsonNode choice = root.path("choices").get(0);
+                if (choice == null || choice.isNull()) {
+                    log.error("OpenAI response missing choices");
+                    return product;
+                }
+
+                JsonNode messageNode = choice.path("message");
+                // add the assistant message so the next request keeps the conversation context
+                @SuppressWarnings("unchecked")
+                Map<String, Object> assistantMsg = MAPPER.convertValue(messageNode, Map.class);
+                messages.add(assistantMsg);
+
                 String finishReason = choice.path("finish_reason").asText();
 
                 log.info("OpenAI finish reason: {}", finishReason);
@@ -120,6 +136,7 @@ public class OpenAiChatGptClient implements ChatGptClient {
                         }
                     }
 
+                    String callId = toolCall.path("id").asText();
                     String query = toolCall.path("function").path("arguments").path("query").asText();
                     log.info("Searching web for '{}'", query);
                     List<SearchResult> results = searchWeb(query);
@@ -128,6 +145,7 @@ public class OpenAiChatGptClient implements ChatGptClient {
 
                     messages.add(Map.of(
                             "role", "tool",
+                            "tool_call_id", callId,
                             "name", "search_web",
                             "content", toolContent));
                     continue; // volta ao início do loop

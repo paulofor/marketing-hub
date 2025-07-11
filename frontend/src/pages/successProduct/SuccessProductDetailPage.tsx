@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useSuccessProduct } from "../../api/successProduct/useSuccessProduct";
 import PageTitle from "../../components/PageTitle";
 
@@ -11,6 +11,8 @@ export default function SuccessProductDetailPage() {
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
 
+  const nextId = data.id + 1;
+
   const rows = [
     { label: "Descrição", value: data.description, pre: true },
     { label: "Nicho", value: data.niche },
@@ -21,7 +23,11 @@ export default function SuccessProductDetailPage() {
     { label: "Tripwire", value: data.tripwire, pre: true },
     { label: "Reversão de Risco", value: data.riskReversal, pre: true },
     { label: "Prova Social", value: data.socialProof, pre: true },
-    { label: "Monetização do Checkout", value: data.checkoutMonetization, pre: true },
+    {
+      label: "Monetização do Checkout",
+      value: data.checkoutMonetization,
+      pre: true,
+    },
     { label: "Funil", value: data.funnel, pre: true },
     { label: "Volume Criativo", value: data.creativeVolume, pre: true },
     { label: "Storytelling", value: data.storytelling, pre: true },
@@ -51,6 +57,9 @@ export default function SuccessProductDetailPage() {
           </dl>
         </div>
       </div>
+      <Link className="btn btn-primary mt-3" to={`/success-products/${nextId}`}>
+        Próximo Produto
+      </Link>
     </div>
   );
 }

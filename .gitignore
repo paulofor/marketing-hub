@@ -23,4 +23,5 @@ frontend/dist
 log.exec
 chaves/
 local/
+/success-product-worker/target/
 

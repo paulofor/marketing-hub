@@ -29,10 +29,12 @@ class SuccessProductRepositoryTest {
     void testSaveSuccessProduct() {
         SuccessProduct product = SuccessProduct.builder()
                 .description("Great product")
+                .name("Produto")
                 .build();
         repository.save(product);
         SuccessProduct saved = repository.findById(product.getId()).orElseThrow();
         assertThat(saved.isNovo()).isTrue();
+        assertThat(saved.getName()).isEqualTo("Produto");
     }
 
     @Test
@@ -54,9 +56,11 @@ class SuccessProductRepositoryTest {
 
         SuccessProduct product = SuccessProduct.builder()
                 .description(description)
+                .name("Produto")
                 .build();
         repository.save(product);
         SuccessProduct saved = repository.findById(product.getId()).orElseThrow();
         assertThat(saved.getDescription()).isEqualTo(description);
+        assertThat(saved.getName()).isEqualTo("Produto");
     }
 }

@@ -14,6 +14,10 @@ public class SuccessProductDto {
     private boolean novo;
     private String niche;
     private String avatar;
+    private String salesPageUrl;
+    private String instagramUrl;
+    private String facebookUrl;
+    private String youtubeUrl;
     private Long instagramAccountId;
     private String explicitPain;
     private String promise;

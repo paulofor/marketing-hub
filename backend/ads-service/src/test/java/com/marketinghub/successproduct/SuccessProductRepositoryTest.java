@@ -20,11 +20,13 @@ class SuccessProductRepositoryTest {
     void testSaveSuccessProduct() {
         SuccessProduct product = SuccessProduct.builder()
                 .description("Great product")
+                .salesPageUrl("https://example.com")
                 .build();
         repository.save(product);
         SuccessProduct saved = repository.findById(product.getId()).orElseThrow();
         assertThat(saved.isNovo()).isTrue();
         assertThat(saved.getName()).isNull();
+        assertThat(saved.getSalesPageUrl()).contains("example.com");
     }
 
     @Test
@@ -46,9 +48,11 @@ class SuccessProductRepositoryTest {
 
         SuccessProduct product = SuccessProduct.builder()
                 .description(description)
+                .salesPageUrl("https://www.taichichenonline.com/PVDTAICHI")
                 .build();
         repository.save(product);
         SuccessProduct saved = repository.findById(product.getId()).orElseThrow();
         assertThat(saved.getDescription()).isEqualTo(description);
+        assertThat(saved.getSalesPageUrl()).contains("PVDTAICHI");
     }
 }

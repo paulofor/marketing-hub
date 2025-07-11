@@ -59,7 +59,10 @@ public class OpenAiChatGptClient implements ChatGptClient {
         messages.add(Map.of("role", "system", "content", "Você é um especialista em marketing."));
         String prompt = "Preencha os campos name, explicitPain, promise, uniqueMechanism, " +
                 "tripwire, riskReversal, socialProof, checkoutMonetization, funnel, " +
-                "creativeVolume, storytelling em formato JSON.";
+                "creativeVolume, storytelling, salesPageUrl, instagramUrl, facebookUrl, " +
+                "youtubeUrl em formato JSON. Se houver um link de p\u00e1gina de vendas na\n" +
+                "descri\u00e7\u00e3o, visite a p\u00e1gina para coletar esses detalhes de copy e\n" +
+                "marketing, incluindo links de redes sociais.";
         messages.add(Map.of("role", "user", "content", prompt + "\n" + product.getDescription()));
 
         // ===== 2. Definição do tool search_web
@@ -128,6 +131,10 @@ public class OpenAiChatGptClient implements ChatGptClient {
                 product.setFunnel(asText(data, "funnel"));
                 product.setCreativeVolume(asText(data, "creativeVolume"));
                 product.setStorytelling(asText(data, "storytelling"));
+                product.setSalesPageUrl(asText(data, "salesPageUrl"));
+                product.setInstagramUrl(asText(data, "instagramUrl"));
+                product.setFacebookUrl(asText(data, "facebookUrl"));
+                product.setYoutubeUrl(asText(data, "youtubeUrl"));
                 product.setNovo(false);
                 return product;
             }

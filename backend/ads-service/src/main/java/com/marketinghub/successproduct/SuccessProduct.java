@@ -34,6 +34,11 @@ public class SuccessProduct {
     private String niche;
     private String avatar;
 
+    private String salesPageUrl;
+    private String instagramUrl;
+    private String facebookUrl;
+    private String youtubeUrl;
+
     @ManyToOne
     @JoinColumn(name = "instagram_account_id")
     private InstagramAccount instagramAccount;

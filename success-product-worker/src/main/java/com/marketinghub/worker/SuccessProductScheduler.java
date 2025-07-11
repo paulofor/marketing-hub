@@ -14,7 +14,7 @@ public class SuccessProductScheduler {
         this.analyzer = analyzer;
     }
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 */5 * * * *")
     public void run() {
         log.info("SuccessProductScheduler started");
         try {

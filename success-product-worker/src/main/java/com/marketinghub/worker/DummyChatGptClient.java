@@ -13,6 +13,7 @@ public class DummyChatGptClient implements ChatGptClient {
     public SuccessProduct enrich(SuccessProduct product) {
         log.debug("Enriching product {} using DummyChatGptClient", product.getId());
         // TODO connect to ChatGPT API
+        product.setName("Produto Teste");
         product.setNovo(false);
         return product;
     }

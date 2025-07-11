@@ -45,6 +45,7 @@ CREATE TABLE product (
 CREATE TABLE success_product (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     description LONGTEXT,
+    name VARCHAR(255),
     novo BOOLEAN DEFAULT TRUE,
     niche VARCHAR(255),
     avatar VARCHAR(255),

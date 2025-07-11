@@ -57,7 +57,7 @@ public class OpenAiChatGptClient implements ChatGptClient {
         // ===== 1. Mensagens iniciais
         List<Map<String, Object>> messages = new ArrayList<>();
         messages.add(Map.of("role", "system", "content", "Você é um especialista em marketing."));
-        String prompt = "Preencha os campos explicitPain, promise, uniqueMechanism, " +
+        String prompt = "Preencha os campos name, explicitPain, promise, uniqueMechanism, " +
                 "tripwire, riskReversal, socialProof, checkoutMonetization, funnel, " +
                 "creativeVolume, storytelling em formato JSON.";
         messages.add(Map.of("role", "user", "content", prompt + "\n" + product.getDescription()));
@@ -117,6 +117,7 @@ public class OpenAiChatGptClient implements ChatGptClient {
                 content = stripCodeFence(content);
                 JsonNode data = MAPPER.readTree(content);
 
+                product.setName(asText(data, "name"));
                 product.setExplicitPain(asText(data, "explicitPain"));
                 product.setPromise(asText(data, "promise"));
                 product.setUniqueMechanism(asText(data, "uniqueMechanism"));

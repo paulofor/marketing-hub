@@ -22,6 +22,8 @@ public class SuccessProduct {
     @Column(columnDefinition = "LONGTEXT")
     private String description;
 
+    private String name;
+
     @Builder.Default
     private boolean novo = true;
 

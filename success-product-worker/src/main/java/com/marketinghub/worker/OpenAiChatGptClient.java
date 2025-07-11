@@ -89,6 +89,7 @@ public class OpenAiChatGptClient implements ChatGptClient {
                 return product;
             }
             String content = choices.get(0).path("message").path("content").asText();
+            content = stripCodeFence(content);
             JsonNode data = MAPPER.readTree(content);
             product.setExplicitPain(asText(data, "explicitPain"));
             product.setPromise(asText(data, "promise"));
@@ -115,5 +116,20 @@ public class OpenAiChatGptClient implements ChatGptClient {
     private static String asText(JsonNode node, String field) {
         JsonNode value = node.get(field);
         return value != null && !value.isNull() ? value.asText() : null;
+    }
+
+    private static String stripCodeFence(String text) {
+        if (text == null) {
+            return null;
+        }
+        String trimmed = text.trim();
+        if (trimmed.startsWith("```") && trimmed.contains("```")) {
+            int start = trimmed.indexOf('\n');
+            int end = trimmed.lastIndexOf("```");
+            if (start >= 0 && end > start) {
+                return trimmed.substring(start + 1, end).trim();
+            }
+        }
+        return trimmed;
     }
 }

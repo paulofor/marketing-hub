@@ -4,6 +4,7 @@ import axios from "axios";
 export interface SuccessProduct {
   id: number;
   description: string;
+  name?: string;
   novo: boolean;
   niche: string;
   avatar: string;

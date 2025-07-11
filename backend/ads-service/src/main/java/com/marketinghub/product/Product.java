@@ -29,24 +29,34 @@ public class Product {
     private InstagramAccount instagramAccount;
 
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String explicitPain;
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String promise;
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String uniqueMechanism;
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String tripwire;
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String riskReversal;
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String socialProof;
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String checkoutMonetization;
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String funnel;
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String creativeVolume;
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String storytelling;
 
     @CreationTimestamp

@@ -60,9 +60,7 @@ public class OpenAiChatGptClient implements ChatGptClient {
                                             "role",
                                             "user",
                                             "content",
-                                            prompt + "\n" + product.getDescription())),
-                            "temperature",
-                            0));
+                                            prompt + "\n" + product.getDescription()))));
 
             if (log.isDebugEnabled()) {
                 log.debug("Sending request to OpenAI: {}", requestBody);

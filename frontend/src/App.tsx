@@ -16,6 +16,8 @@ import SuccessProductDetailPage from "./pages/successProduct/SuccessProductDetai
 import InstagramPostsPage from "./pages/post/InstagramPostsPage";
 import NicheListPage from "./pages/niche/NicheListPage";
 import NewNichePage from "./pages/niche/NewNichePage";
+import AiServiceListPage from "./pages/aiService/AiServiceListPage";
+import NewAiServicePage from "./pages/aiService/NewAiServicePage";
 
 export default function App() {
   return (
@@ -47,6 +49,9 @@ export default function App() {
             <Link className="nav-link" to="/niches">
               Nichos
             </Link>
+            <Link className="nav-link" to="/ai-services">
+              IA
+            </Link>
           </div>
         </div>
       </nav>
@@ -76,6 +81,8 @@ export default function App() {
         />
         <Route path="/niches" element={<NicheListPage />} />
         <Route path="/niches/new" element={<NewNichePage />} />
+        <Route path="/ai-services" element={<AiServiceListPage />} />
+        <Route path="/ai-services/new" element={<NewAiServicePage />} />
         <Route path="*" element={<div>Início</div>} />
       </Routes>
     </div>

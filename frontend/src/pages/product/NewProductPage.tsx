@@ -20,12 +20,14 @@ export default function NewProductPage() {
     funnel: "",
     creativeVolume: "",
     storytelling: "",
+    aiCost: "",
   });
 
   const submit = () => {
     create.mutate({
       ...form,
       instagramAccountId: Number(form.instagramAccountId) || undefined,
+      aiCost: Number(form.aiCost),
     });
   };
 
@@ -119,6 +121,12 @@ export default function NewProductPage() {
         placeholder="Storytelling"
         value={form.storytelling}
         onChange={(e) => setForm({ ...form, storytelling: e.target.value })}
+      />
+      <input
+        className="form-control mb-2"
+        placeholder="Custo de IA"
+        value={form.aiCost}
+        onChange={(e) => setForm({ ...form, aiCost: e.target.value })}
       />
       <button className="btn btn-primary" onClick={submit}>
         Salvar

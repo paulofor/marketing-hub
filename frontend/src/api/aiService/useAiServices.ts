@@ -5,6 +5,7 @@ export interface AiService {
   id: number;
   name: string;
   objective: string;
+  url: string;
   price: number;
   cost: number;
 }

@@ -14,6 +14,8 @@ import SuccessProductListPage from "./pages/successProduct/SuccessProductListPag
 import NewSuccessProductPage from "./pages/successProduct/NewSuccessProductPage";
 import SuccessProductDetailPage from "./pages/successProduct/SuccessProductDetailPage";
 import InstagramPostsPage from "./pages/post/InstagramPostsPage";
+import NicheListPage from "./pages/niche/NicheListPage";
+import NewNichePage from "./pages/niche/NewNichePage";
 
 export default function App() {
   return (
@@ -42,6 +44,9 @@ export default function App() {
             <Link className="nav-link" to="/success-products">
               Produtos de Sucesso
             </Link>
+            <Link className="nav-link" to="/niches">
+              Nichos
+            </Link>
           </div>
         </div>
       </nav>
@@ -69,6 +74,8 @@ export default function App() {
           path="/success-products/:id"
           element={<SuccessProductDetailPage />}
         />
+        <Route path="/niches" element={<NicheListPage />} />
+        <Route path="/niches/new" element={<NewNichePage />} />
         <Route path="*" element={<div>Início</div>} />
       </Routes>
     </div>

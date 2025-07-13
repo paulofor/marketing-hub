@@ -5,6 +5,7 @@ import { AiService } from "./useAiServices";
 export interface CreateAiService {
   name: string;
   objective: string;
+  url: string;
   price: number;
   cost: number;
 }

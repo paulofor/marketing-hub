@@ -10,6 +10,7 @@ import lombok.Data;
 public class CreateAiServiceRequest {
     private String name;
     private String objective;
+    private String url;
     private BigDecimal price;
     private BigDecimal cost;
 }

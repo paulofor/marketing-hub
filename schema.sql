@@ -27,6 +27,7 @@ CREATE TABLE ai_service (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255),
     objective LONGTEXT,
+    url VARCHAR(255),
     price DECIMAL(10,2),
     cost DECIMAL(10,2),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -7,6 +7,7 @@ export default function NewAiServicePage() {
   const [form, setForm] = useState({
     name: "",
     objective: "",
+    url: "",
     price: "",
     cost: "",
   });
@@ -34,6 +35,12 @@ export default function NewAiServicePage() {
         value={form.objective}
         onChange={(e) => setForm({ ...form, objective: e.target.value })}
         rows={3}
+      />
+      <input
+        className="form-control mb-2"
+        placeholder="URL"
+        value={form.url}
+        onChange={(e) => setForm({ ...form, url: e.target.value })}
       />
       <input
         className="form-control mb-2"

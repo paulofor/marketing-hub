@@ -26,6 +26,8 @@ public class AiService {
     @Lob
     private String objective;
 
+    private String url;
+
     private BigDecimal price;
 
     private BigDecimal cost;

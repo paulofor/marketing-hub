@@ -25,6 +25,7 @@ public class AiServiceService {
         AiService service = AiService.builder()
                 .name(request.getName())
                 .objective(request.getObjective())
+                .url(request.getUrl())
                 .price(request.getPrice())
                 .cost(request.getCost())
                 .build();

@@ -12,6 +12,7 @@ public class AiServiceDto {
     private Long id;
     private String name;
     private String objective;
+    private String url;
     private BigDecimal price;
     private BigDecimal cost;
     private Instant createdAt;

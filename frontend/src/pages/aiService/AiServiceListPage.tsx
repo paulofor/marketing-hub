@@ -16,6 +16,7 @@ export default function AiServiceListPage() {
           <tr>
             <th>ID</th>
             <th>Nome</th>
+            <th>URL</th>
             <th>Preço</th>
             <th>Custo</th>
           </tr>
@@ -25,6 +26,7 @@ export default function AiServiceListPage() {
             <tr key={s.id}>
               <td>{s.id}</td>
               <td>{s.name}</td>
+              <td>{s.url}</td>
               <td>{s.price}</td>
               <td>{s.cost}</td>
             </tr>

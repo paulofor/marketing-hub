@@ -16,6 +16,7 @@ export interface CreateProduct {
   funnel: string;
   creativeVolume: string;
   storytelling: string;
+  aiCost: number;
 }
 
 export function useCreateProduct() {

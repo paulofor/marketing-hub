@@ -24,6 +24,7 @@ class ProductRepositoryTest {
                 .explicitPain("Lack of energy")
                 .promise("More vitality in 30 days")
                 .uniqueMechanism("Special diet")
+                .aiCost(java.math.BigDecimal.TEN)
                 .build();
         repository.save(product);
         assertThat(repository.findById(product.getId())).isPresent();

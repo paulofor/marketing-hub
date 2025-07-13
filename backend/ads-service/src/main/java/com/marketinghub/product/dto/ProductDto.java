@@ -22,6 +22,7 @@ public class ProductDto {
     private String funnel;
     private String creativeVolume;
     private String storytelling;
+    private java.math.BigDecimal aiCost;
     private Instant createdAt;
     private Instant updatedAt;
 }

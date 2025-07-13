@@ -40,6 +40,7 @@ public class ProductService {
                 .funnel(request.getFunnel())
                 .creativeVolume(request.getCreativeVolume())
                 .storytelling(request.getStorytelling())
+                .aiCost(request.getAiCost())
                 .build();
         return repository.save(product);
     }

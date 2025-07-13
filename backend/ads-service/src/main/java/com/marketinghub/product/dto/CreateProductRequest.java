@@ -20,4 +20,5 @@ public class CreateProductRequest {
     private String funnel;
     private String creativeVolume;
     private String storytelling;
+    private java.math.BigDecimal aiCost;
 }

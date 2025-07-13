@@ -59,6 +59,8 @@ public class Product {
     @Column(columnDefinition = "LONGTEXT")
     private String storytelling;
 
+    private java.math.BigDecimal aiCost;
+
     @CreationTimestamp
     private Instant createdAt;
 

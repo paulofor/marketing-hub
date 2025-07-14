@@ -38,6 +38,22 @@ public class MarketNiche {
     @Lob
     private String offers;
 
+    /** Base segmentation for the Brazilian market. */
+    @Lob
+    private String baseSegmentation;
+
+    /** Main interests or behaviors for this niche. */
+    @Lob
+    private String interests;
+
+    /** Demographic filters and job roles. */
+    @Lob
+    private String demographicFilters;
+
+    /** Extra tips for advertising this niche. */
+    @Lob
+    private String extraTips;
+
     @CreationTimestamp
     private Instant createdAt;
 

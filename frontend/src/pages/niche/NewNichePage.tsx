@@ -10,6 +10,10 @@ export default function NewNichePage() {
     demandVolume: "",
     promises: "",
     offers: "",
+    baseSegmentation: "",
+    interests: "",
+    demographicFilters: "",
+    extraTips: "",
   });
 
   const submit = () => {
@@ -51,6 +55,38 @@ export default function NewNichePage() {
         placeholder="Ofertas"
         value={form.offers}
         onChange={(e) => setForm({ ...form, offers: e.target.value })}
+        rows={3}
+      />
+      <textarea
+        className="form-control mb-2"
+        placeholder="Segmentação-base (Brasil)"
+        value={form.baseSegmentation}
+        onChange={(e) =>
+          setForm({ ...form, baseSegmentation: e.target.value })
+        }
+        rows={3}
+      />
+      <textarea
+        className="form-control mb-2"
+        placeholder="Principais interesses / comportamentos"
+        value={form.interests}
+        onChange={(e) => setForm({ ...form, interests: e.target.value })}
+        rows={3}
+      />
+      <textarea
+        className="form-control mb-2"
+        placeholder="Filtros demográficos & cargos"
+        value={form.demographicFilters}
+        onChange={(e) =>
+          setForm({ ...form, demographicFilters: e.target.value })
+        }
+        rows={3}
+      />
+      <textarea
+        className="form-control mb-2"
+        placeholder="Dicas extras"
+        value={form.extraTips}
+        onChange={(e) => setForm({ ...form, extraTips: e.target.value })}
         rows={3}
       />
       <button className="btn btn-primary" onClick={submit}>

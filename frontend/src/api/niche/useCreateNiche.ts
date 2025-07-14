@@ -8,6 +8,10 @@ export interface CreateNiche {
   demandVolume: string;
   promises: string;
   offers: string;
+  baseSegmentation: string;
+  interests: string;
+  demographicFilters: string;
+  extraTips: string;
 }
 
 export function useCreateNiche() {

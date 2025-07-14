@@ -8,6 +8,10 @@ on:
     paths:
       - 'frontend/**'
 
+env:
+  FRONTEND_DIR: /opt/marketinghub/frontend
+  VPS_IP: 191.252.92.222
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -24,3 +28,28 @@ jobs:
           cd frontend
           npm ci
           npm run build --if-present
+      - name: Archive build
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/dist
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: dist
+      - name: Add SSH key
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Add VPS to known_hosts
+        run: ssh-keyscan -H ${VPS_IP} >> ~/.ssh/known_hosts
+      - name: Deploy static files
+        run: |
+          rsync -az --delete dist/ marketinghub@${VPS_IP}:${FRONTEND_DIR}/
+          ssh marketinghub@${VPS_IP} "sudo -n systemctl restart marketinghub-frontend.service"

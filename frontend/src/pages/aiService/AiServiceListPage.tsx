@@ -1,8 +1,9 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAiServices } from "../../api/aiService/useAiServices";
 import PageTitle from "../../components/PageTitle";
 
 export default function AiServiceListPage() {
+  const navigate = useNavigate();
   const { data, isLoading } = useAiServices();
   if (isLoading) return <p>Carregando...</p>;
   return (
@@ -31,12 +32,12 @@ export default function AiServiceListPage() {
               <td>{s.price}</td>
               <td>{s.cost}</td>
               <td>
-                <Link
+                <button
                   className="btn btn-sm btn-outline-primary"
-                  to={`/ai-services/${s.id}/edit`}
+                  onClick={() => navigate(`/ai-services/${s.id}/edit`)}
                 >
                   Editar
-                </Link>
+                </button>
               </td>
             </tr>
           ))}

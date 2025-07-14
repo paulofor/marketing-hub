@@ -16,6 +16,7 @@ import SuccessProductDetailPage from "./pages/successProduct/SuccessProductDetai
 import InstagramPostsPage from "./pages/post/InstagramPostsPage";
 import NicheListPage from "./pages/niche/NicheListPage";
 import NewNichePage from "./pages/niche/NewNichePage";
+import EditNichePage from "./pages/niche/EditNichePage";
 import AiServiceListPage from "./pages/aiService/AiServiceListPage";
 import NewAiServicePage from "./pages/aiService/NewAiServicePage";
 
@@ -81,6 +82,7 @@ export default function App() {
         />
         <Route path="/niches" element={<NicheListPage />} />
         <Route path="/niches/new" element={<NewNichePage />} />
+        <Route path="/niches/:id/edit" element={<EditNichePage />} />
         <Route path="/ai-services" element={<AiServiceListPage />} />
         <Route path="/ai-services/new" element={<NewAiServicePage />} />
         <Route path="*" element={<div>Início</div>} />

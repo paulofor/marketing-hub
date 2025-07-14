@@ -19,6 +19,7 @@ import NewNichePage from "./pages/niche/NewNichePage";
 import EditNichePage from "./pages/niche/EditNichePage";
 import AiServiceListPage from "./pages/aiService/AiServiceListPage";
 import NewAiServicePage from "./pages/aiService/NewAiServicePage";
+import EditAiServicePage from "./pages/aiService/EditAiServicePage";
 
 export default function App() {
   return (
@@ -85,6 +86,7 @@ export default function App() {
         <Route path="/niches/:id/edit" element={<EditNichePage />} />
         <Route path="/ai-services" element={<AiServiceListPage />} />
         <Route path="/ai-services/new" element={<NewAiServicePage />} />
+        <Route path="/ai-services/:id/edit" element={<EditAiServicePage />} />
         <Route path="*" element={<div>Início</div>} />
       </Routes>
     </div>

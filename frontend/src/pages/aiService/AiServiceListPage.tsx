@@ -19,6 +19,7 @@ export default function AiServiceListPage() {
             <th>URL</th>
             <th>Preço</th>
             <th>Custo</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -29,6 +30,14 @@ export default function AiServiceListPage() {
               <td>{s.url}</td>
               <td>{s.price}</td>
               <td>{s.cost}</td>
+              <td>
+                <Link
+                  className="btn btn-sm btn-outline-primary"
+                  to={`/ai-services/${s.id}/edit`}
+                >
+                  Editar
+                </Link>
+              </td>
             </tr>
           ))}
         </tbody>

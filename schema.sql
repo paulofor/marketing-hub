@@ -96,6 +96,10 @@ CREATE TABLE market_niche (
     demand_volume LONGTEXT,
     promises LONGTEXT,
     offers LONGTEXT,
+    base_segmentation LONGTEXT,
+    interests LONGTEXT,
+    demographic_filters LONGTEXT,
+    extra_tips LONGTEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

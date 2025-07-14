@@ -28,6 +28,10 @@ public class MarketNicheService {
                 .demandVolume(request.getDemandVolume())
                 .promises(request.getPromises())
                 .offers(request.getOffers())
+                .baseSegmentation(request.getBaseSegmentation())
+                .interests(request.getInterests())
+                .demographicFilters(request.getDemographicFilters())
+                .extraTips(request.getExtraTips())
                 .build();
         return repository.save(niche);
     }
@@ -44,6 +48,10 @@ public class MarketNicheService {
         niche.setDemandVolume(request.getDemandVolume());
         niche.setPromises(request.getPromises());
         niche.setOffers(request.getOffers());
+        niche.setBaseSegmentation(request.getBaseSegmentation());
+        niche.setInterests(request.getInterests());
+        niche.setDemographicFilters(request.getDemographicFilters());
+        niche.setExtraTips(request.getExtraTips());
         return repository.save(niche);
     }
 

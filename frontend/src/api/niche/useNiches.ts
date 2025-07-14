@@ -8,6 +8,10 @@ export interface MarketNiche {
   demandVolume: string;
   promises: string;
   offers: string;
+  baseSegmentation: string;
+  interests: string;
+  demographicFilters: string;
+  extraTips: string;
 }
 
 export function useNiches() {

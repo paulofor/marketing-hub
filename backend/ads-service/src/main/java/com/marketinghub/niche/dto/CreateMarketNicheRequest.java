@@ -12,4 +12,9 @@ public class CreateMarketNicheRequest {
     private String demandVolume;
     private String promises;
     private String offers;
+
+    private String baseSegmentation;
+    private String interests;
+    private String demographicFilters;
+    private String extraTips;
 }

@@ -14,6 +14,10 @@ public class MarketNicheDto {
     private String demandVolume;
     private String promises;
     private String offers;
+    private String baseSegmentation;
+    private String interests;
+    private String demographicFilters;
+    private String extraTips;
     private Instant createdAt;
     private Instant updatedAt;
 }

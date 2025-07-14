@@ -33,6 +33,7 @@ export default function EditNichePage() {
   const submit = () => {
     update.mutate(form, {
       onSuccess: () => navigate("/niches"),
+      onError: () => alert("Erro ao salvar Nicho"),
     });
   };
 
@@ -107,9 +108,26 @@ export default function EditNichePage() {
         onChange={(e) => setForm({ ...form, extraTips: e.target.value })}
         rows={3}
       />
-      <button className="btn btn-primary" onClick={submit}>
-        Salvar
+      <button
+        className="btn btn-primary"
+        onClick={submit}
+        disabled={update.isPending}
+      >
+        {update.isPending ? (
+          <>
+            <span
+              className="spinner-border spinner-border-sm me-2"
+              role="status"
+            />
+            Processando...
+          </>
+        ) : (
+          "Salvar"
+        )}
       </button>
+      {update.isError && (
+        <div className="alert alert-danger mt-2">Erro ao salvar Nicho</div>
+      )}
     </div>
   );
 }

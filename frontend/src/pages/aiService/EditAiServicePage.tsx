@@ -33,34 +33,34 @@ export default function EditAiServicePage() {
   return (
     <div>
       <PageTitle>Editar Serviço de IA</PageTitle>
+      <label className="form-label">Nome</label>
       <input
         className="form-control mb-2"
-        placeholder="Nome"
         value={form.name}
         onChange={(e) => setForm({ ...form, name: e.target.value })}
       />
+      <label className="form-label">Objetivo</label>
       <textarea
         className="form-control mb-2"
-        placeholder="Objetivo"
         value={form.objective}
         onChange={(e) => setForm({ ...form, objective: e.target.value })}
         rows={3}
       />
+      <label className="form-label">URL</label>
       <input
         className="form-control mb-2"
-        placeholder="URL"
         value={form.url}
         onChange={(e) => setForm({ ...form, url: e.target.value })}
       />
+      <label className="form-label">Preço</label>
       <input
         className="form-control mb-2"
-        placeholder="Preço"
         value={form.price}
         onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
       />
+      <label className="form-label">Custo</label>
       <input
         className="form-control mb-2"
-        placeholder="Custo"
         value={form.cost}
         onChange={(e) => setForm({ ...form, cost: Number(e.target.value) })}
       />

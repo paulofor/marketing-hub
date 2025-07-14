@@ -1,28 +1,38 @@
-import { useState } from "react";
-import { useCreateAiService } from "../../api/aiService/useCreateAiService";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
+import { useAiService } from "../../api/aiService/useAiService";
+import { useUpdateAiService } from "../../api/aiService/useUpdateAiService";
+import { AiService } from "../../api/aiService/useAiServices";
 
-export default function NewAiServicePage() {
-  const create = useCreateAiService();
-  const [form, setForm] = useState({
+export default function EditAiServicePage() {
+  const { id } = useParams<{ id: string }>();
+  const serviceId = Number(id);
+  const { data, isLoading } = useAiService(serviceId);
+  const update = useUpdateAiService();
+  const navigate = useNavigate();
+  const [form, setForm] = useState<AiService>({
+    id: serviceId,
     name: "",
     objective: "",
     url: "",
-    price: "",
-    cost: "",
+    price: 0,
+    cost: 0,
   });
 
+  useEffect(() => {
+    if (data) setForm(data);
+  }, [data]);
+
   const submit = () => {
-    create.mutate({
-      ...form,
-      price: Number(form.price),
-      cost: Number(form.cost),
-    });
+    update.mutate(form, { onSuccess: () => navigate("/ai-services") });
   };
+
+  if (isLoading) return <p>Carregando...</p>;
 
   return (
     <div>
-      <PageTitle>Novo Serviço de IA</PageTitle>
+      <PageTitle>Editar Serviço de IA</PageTitle>
       <input
         className="form-control mb-2"
         placeholder="Nome"
@@ -46,20 +56,20 @@ export default function NewAiServicePage() {
         className="form-control mb-2"
         placeholder="Preço"
         value={form.price}
-        onChange={(e) => setForm({ ...form, price: e.target.value })}
+        onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
       />
       <input
         className="form-control mb-2"
         placeholder="Custo"
         value={form.cost}
-        onChange={(e) => setForm({ ...form, cost: e.target.value })}
+        onChange={(e) => setForm({ ...form, cost: Number(e.target.value) })}
       />
       <button
         className="btn btn-primary"
         onClick={submit}
-        disabled={create.isPending}
+        disabled={update.isPending}
       >
-        {create.isPending ? (
+        {update.isPending ? (
           <>
             <span
               className="spinner-border spinner-border-sm me-2"

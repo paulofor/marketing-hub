@@ -33,6 +33,11 @@ public class AiServiceController {
         return mapper.toDto(service.get(id));
     }
 
+    @PutMapping("/{id}")
+    public AiServiceDto update(@PathVariable Long id, @RequestBody CreateAiServiceRequest request) {
+        return mapper.toDto(service.update(id, request));
+    }
+
     @GetMapping
     public List<AiServiceDto> list() {
         return StreamSupport.stream(service.list().spliterator(), false)

@@ -39,4 +39,16 @@ public class AiServiceService {
     public Iterable<AiService> list() {
         return repository.findAll();
     }
+
+    /** Update an existing AI service. */
+    @Transactional
+    public AiService update(Long id, CreateAiServiceRequest request) {
+        AiService service = repository.findById(id).orElseThrow();
+        service.setName(request.getName());
+        service.setObjective(request.getObjective());
+        service.setUrl(request.getUrl());
+        service.setPrice(request.getPrice());
+        service.setCost(request.getCost());
+        return repository.save(service);
+    }
 }

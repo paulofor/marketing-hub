@@ -36,6 +36,17 @@ public class MarketNicheService {
         return repository.findById(id).orElseThrow();
     }
 
+    @Transactional
+    public MarketNiche update(Long id, CreateMarketNicheRequest request) {
+        MarketNiche niche = repository.findById(id).orElseThrow();
+        niche.setName(request.getName());
+        niche.setDescription(request.getDescription());
+        niche.setDemandVolume(request.getDemandVolume());
+        niche.setPromises(request.getPromises());
+        niche.setOffers(request.getOffers());
+        return repository.save(niche);
+    }
+
     public Iterable<MarketNiche> list() {
         return repository.findAll();
     }

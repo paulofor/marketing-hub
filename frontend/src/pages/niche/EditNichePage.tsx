@@ -41,68 +41,68 @@ export default function EditNichePage() {
   return (
     <div>
       <PageTitle>Editar Nicho</PageTitle>
+      <label className="form-label">Nome</label>
       <input
         className="form-control mb-2"
-        placeholder="Nome"
         value={form.name}
         onChange={(e) => setForm({ ...form, name: e.target.value })}
       />
+      <label className="form-label">Descrição</label>
       <textarea
         className="form-control mb-2"
-        placeholder="Descrição"
         value={form.description}
         onChange={(e) => setForm({ ...form, description: e.target.value })}
         rows={3}
       />
+      <label className="form-label">Volume de Demanda</label>
       <textarea
         className="form-control mb-2"
-        placeholder="Volume de Demanda"
         value={form.demandVolume}
         onChange={(e) => setForm({ ...form, demandVolume: e.target.value })}
         rows={3}
       />
+      <label className="form-label">Promessas</label>
       <textarea
         className="form-control mb-2"
-        placeholder="Promessas"
         value={form.promises}
         onChange={(e) => setForm({ ...form, promises: e.target.value })}
         rows={3}
       />
+      <label className="form-label">Ofertas</label>
       <textarea
         className="form-control mb-2"
-        placeholder="Ofertas"
         value={form.offers}
         onChange={(e) => setForm({ ...form, offers: e.target.value })}
         rows={3}
       />
+      <label className="form-label">Segmentação-base (Brasil)</label>
       <textarea
         className="form-control mb-2"
-        placeholder="Segmentação-base (Brasil)"
         value={form.baseSegmentation}
-        onChange={(e) =>
-          setForm({ ...form, baseSegmentation: e.target.value })
-        }
+        onChange={(e) => setForm({ ...form, baseSegmentation: e.target.value })}
         rows={3}
       />
+      <label className="form-label">
+        Principais interesses / comportamentos
+      </label>
       <textarea
         className="form-control mb-2"
-        placeholder="Principais interesses / comportamentos"
         value={form.interests}
         onChange={(e) => setForm({ ...form, interests: e.target.value })}
         rows={3}
       />
+      <label className="form-label">Filtros demográficos & cargos</label>
       <textarea
         className="form-control mb-2"
-        placeholder="Filtros demográficos & cargos"
         value={form.demographicFilters}
         onChange={(e) =>
           setForm({ ...form, demographicFilters: e.target.value })
         }
         rows={3}
       />
+      <label className="form-label">Dicas extras</label>
       <textarea
         className="form-control mb-2"
-        placeholder="Dicas extras"
         value={form.extraTips}
         onChange={(e) => setForm({ ...form, extraTips: e.target.value })}
         rows={3}

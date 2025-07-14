@@ -33,6 +33,11 @@ public class MarketNicheController {
         return mapper.toDto(service.get(id));
     }
 
+    @PutMapping("/{id}")
+    public MarketNicheDto update(@PathVariable Long id, @RequestBody CreateMarketNicheRequest request) {
+        return mapper.toDto(service.update(id, request));
+    }
+
     @GetMapping
     public List<MarketNicheDto> list() {
         return StreamSupport.stream(service.list().spliterator(), false)

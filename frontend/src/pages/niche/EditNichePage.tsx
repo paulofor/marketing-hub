@@ -1,0 +1,79 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useUpdateNiche } from "../../api/niche/useUpdateNiche";
+import { useNiche } from "../../api/niche/useNiche";
+import PageTitle from "../../components/PageTitle";
+import { MarketNiche } from "../../api/niche/useNiches";
+
+export default function EditNichePage() {
+  const { id } = useParams<{ id: string }>();
+  const nicheId = Number(id);
+  const { data, isLoading } = useNiche(nicheId);
+  const update = useUpdateNiche();
+  const navigate = useNavigate();
+  const [form, setForm] = useState<MarketNiche>({
+    id: nicheId,
+    name: "",
+    description: "",
+    demandVolume: "",
+    promises: "",
+    offers: "",
+  });
+
+  useEffect(() => {
+    if (data) {
+      setForm(data);
+    }
+  }, [data]);
+
+  const submit = () => {
+    update.mutate(form, {
+      onSuccess: () => navigate("/niches"),
+    });
+  };
+
+  if (isLoading) return <p>Carregando...</p>;
+
+  return (
+    <div>
+      <PageTitle>Editar Nicho</PageTitle>
+      <input
+        className="form-control mb-2"
+        placeholder="Nome"
+        value={form.name}
+        onChange={(e) => setForm({ ...form, name: e.target.value })}
+      />
+      <textarea
+        className="form-control mb-2"
+        placeholder="Descrição"
+        value={form.description}
+        onChange={(e) => setForm({ ...form, description: e.target.value })}
+        rows={3}
+      />
+      <textarea
+        className="form-control mb-2"
+        placeholder="Volume de Demanda"
+        value={form.demandVolume}
+        onChange={(e) => setForm({ ...form, demandVolume: e.target.value })}
+        rows={3}
+      />
+      <textarea
+        className="form-control mb-2"
+        placeholder="Promessas"
+        value={form.promises}
+        onChange={(e) => setForm({ ...form, promises: e.target.value })}
+        rows={3}
+      />
+      <textarea
+        className="form-control mb-2"
+        placeholder="Ofertas"
+        value={form.offers}
+        onChange={(e) => setForm({ ...form, offers: e.target.value })}
+        rows={3}
+      />
+      <button className="btn btn-primary" onClick={submit}>
+        Salvar
+      </button>
+    </div>
+  );
+}

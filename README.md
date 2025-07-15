@@ -53,7 +53,7 @@ After=network.target
 Type=simple
 User=marketinghub
 WorkingDirectory=/opt/marketinghub/frontend
-ExecStart=/usr/bin/serve -s /opt/marketinghub/frontend/dist -l 3000
+ExecStart=/usr/bin/serve -s /opt/marketinghub/frontend -l 3000
 Restart=on-failure
 
 [Install]

@@ -39,3 +39,23 @@ docker compose up     # start MySQL
 cd backend/ads-service && mvn package && mvn spring-boot:run
 cd ../../frontend && npm run dev
 ```
+
+### systemd
+
+Conteúdo do arquivo `/etc/systemd/system/marketinghub-frontend.service`:
+
+```ini
+[Unit]
+Description=Marketing Hub – Frontend static server
+After=network.target
+
+[Service]
+Type=simple
+User=marketinghub
+WorkingDirectory=/opt/marketinghub/frontend
+ExecStart=/usr/bin/serve -s /opt/marketinghub/frontend/dist -l 3000
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+```

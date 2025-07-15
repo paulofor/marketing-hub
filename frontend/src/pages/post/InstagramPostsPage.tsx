@@ -11,6 +11,7 @@ import PageTitle from "../../components/PageTitle";
 export default function InstagramPostsPage() {
   const { id = "" } = useParams<{ id: string }>();
   const { data } = useInstagramPosts(id);
+  const posts = Array.isArray(data) ? data : [];
   const create = useCreateInstagramPost(id);
   const update = useUpdateInstagramPost(id);
   const remove = useDeleteInstagramPost(id);
@@ -39,7 +40,7 @@ export default function InstagramPostsPage() {
           </tr>
         </thead>
         <tbody>
-          {data?.map((p) => (
+          {posts.map((p) => (
             <tr key={p.id}>
               <td>{p.id}</td>
               <td>{p.caption}</td>

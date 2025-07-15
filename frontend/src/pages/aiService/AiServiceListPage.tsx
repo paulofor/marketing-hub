@@ -5,6 +5,7 @@ import PageTitle from "../../components/PageTitle";
 export default function AiServiceListPage() {
   const navigate = useNavigate();
   const { data, isLoading } = useAiServices();
+  const services = Array.isArray(data) ? data : [];
   if (isLoading) return <p>Carregando...</p>;
   return (
     <div>
@@ -24,7 +25,7 @@ export default function AiServiceListPage() {
           </tr>
         </thead>
         <tbody>
-          {data?.map((s) => (
+          {services.map((s) => (
             <tr key={s.id}>
               <td>{s.id}</td>
               <td>{s.name}</td>

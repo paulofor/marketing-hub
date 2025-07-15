@@ -9,6 +9,7 @@ import PageTitle from "../components/PageTitle";
 
 export default function FacebookAccountsPage() {
   const { data, isLoading, error } = useFacebookAccounts();
+  const accounts = Array.isArray(data) ? data : [];
   const createMutation = useCreateFacebookAccount();
   const updateMutation = useUpdateFacebookAccount();
   const deleteMutation = useDeleteFacebookAccount();
@@ -42,7 +43,7 @@ export default function FacebookAccountsPage() {
           </tr>
         </thead>
         <tbody>
-          {data?.map(({ id, name, currency }) => (
+          {accounts.map(({ id, name, currency }) => (
             <tr key={id}>
               <td>{id}</td>
               <td>{name}</td>

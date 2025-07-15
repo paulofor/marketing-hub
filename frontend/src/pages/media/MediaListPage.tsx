@@ -4,6 +4,7 @@ import PageTitle from "../../components/PageTitle";
 
 export default function MediaListPage() {
   const { data, isLoading } = useAssets();
+  const assets = Array.isArray(data) ? data : [];
   if (isLoading) return <p>Carregando...</p>;
   return (
     <div>
@@ -21,7 +22,7 @@ export default function MediaListPage() {
           </tr>
         </thead>
         <tbody>
-          {data?.map((a) => (
+          {assets.map((a) => (
             <tr key={a.id}>
               <td>{a.id}</td>
               <td>{a.type}</td>

@@ -1,6 +1,5 @@
 import { Route, Routes, Link } from "react-router-dom";
 
-
 import FacebookAccountsPage from "./pages/FacebookAccountsPage";
 import InstagramAccountsPage from "./pages/InstagramAccountsPage";
 import MediaListPage from "./pages/media/MediaListPage";

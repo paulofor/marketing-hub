@@ -4,6 +4,7 @@ import PageTitle from "../../components/PageTitle";
 
 export default function CoursePlanListPage() {
   const { data, isLoading } = useCoursePlans();
+  const plans = Array.isArray(data) ? data : [];
   if (isLoading) return <p>Carregando...</p>;
   return (
     <div>
@@ -21,7 +22,7 @@ export default function CoursePlanListPage() {
           </tr>
         </thead>
         <tbody>
-          {data?.map((p) => (
+          {plans.map((p) => (
             <tr key={p.id}>
               <td>{p.id}</td>
               <td>{p.targetAudience}</td>

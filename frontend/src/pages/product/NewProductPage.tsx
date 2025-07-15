@@ -5,7 +5,8 @@ import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 
 export default function NewProductPage() {
   const create = useCreateProduct();
-  const { data: accounts } = useInstagramAccounts();
+  const { data: accountsData } = useInstagramAccounts();
+  const accounts = Array.isArray(accountsData) ? accountsData : [];
   const [form, setForm] = useState({
     niche: "",
     avatar: "",
@@ -54,7 +55,7 @@ export default function NewProductPage() {
         }
       >
         <option value="">Selecione a Conta do Instagram</option>
-        {accounts?.map((a) => (
+        {accounts.map((a) => (
           <option key={a.id} value={a.id}>
             {a.name}
           </option>

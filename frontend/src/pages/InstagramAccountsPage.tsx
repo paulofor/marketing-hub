@@ -9,6 +9,7 @@ import PageTitle from "../components/PageTitle";
 
 export default function InstagramAccountsPage() {
   const { data, isLoading, error } = useInstagramAccounts();
+  const accounts = Array.isArray(data) ? data : [];
   const createMutation = useCreateInstagramAccount();
   const updateMutation = useUpdateInstagramAccount();
   const deleteMutation = useDeleteInstagramAccount();
@@ -42,7 +43,7 @@ export default function InstagramAccountsPage() {
           </tr>
         </thead>
         <tbody>
-          {data?.map(({ id, name, currency }) => (
+          {accounts.map(({ id, name, currency }) => (
             <tr key={id}>
               <td>{id}</td>
               <td>{name}</td>

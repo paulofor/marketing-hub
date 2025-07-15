@@ -4,6 +4,7 @@ import PageTitle from "../../components/PageTitle";
 
 export default function SuccessProductListPage() {
   const { data, isLoading } = useSuccessProducts();
+  const products = Array.isArray(data) ? data : [];
   if (isLoading) return <p>Carregando...</p>;
   return (
     <div>
@@ -21,7 +22,7 @@ export default function SuccessProductListPage() {
           </tr>
         </thead>
         <tbody>
-          {data?.map((p) => (
+          {products.map((p) => (
             <tr key={p.id}>
               <td>{p.id}</td>
               <td>{p.description}</td>

@@ -4,6 +4,7 @@ import PageTitle from "../../components/PageTitle";
 
 export default function NicheListPage() {
   const { data, isLoading } = useNiches();
+  const niches = Array.isArray(data) ? data : [];
 
   if (isLoading) return <p>Carregando...</p>;
   return (
@@ -21,7 +22,7 @@ export default function NicheListPage() {
           </tr>
         </thead>
         <tbody>
-          {data?.map((n) => (
+          {niches.map((n) => (
             <tr key={n.id}>
               <td>{n.id}</td>
               <td>{n.name}</td>

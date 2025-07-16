@@ -16,6 +16,7 @@ export default function EditAiServicePage() {
     name: "",
     objective: "",
     url: "",
+    phase: "",
     price: 0,
     cost: 0,
   });
@@ -51,6 +52,12 @@ export default function EditAiServicePage() {
         className="form-control mb-2"
         value={form.url}
         onChange={(e) => setForm({ ...form, url: e.target.value })}
+      />
+      <label className="form-label">Fase</label>
+      <input
+        className="form-control mb-2"
+        value={form.phase}
+        onChange={(e) => setForm({ ...form, phase: e.target.value })}
       />
       <label className="form-label">Preço</label>
       <input

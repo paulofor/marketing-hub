@@ -24,6 +24,7 @@ class AiServiceRepositoryTest {
                 .name("OpenAI GPT-4")
                 .objective("Geração de texto")
                 .url("https://example.com")
+                .phase("Planejamento")
                 .price(new BigDecimal("20.0"))
                 .cost(new BigDecimal("20.0"))
                 .build();

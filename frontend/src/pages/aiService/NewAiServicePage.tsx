@@ -8,6 +8,7 @@ export default function NewAiServicePage() {
     name: "",
     objective: "",
     url: "",
+    phase: "",
     price: "",
     cost: "",
   });
@@ -41,6 +42,12 @@ export default function NewAiServicePage() {
         placeholder="URL"
         value={form.url}
         onChange={(e) => setForm({ ...form, url: e.target.value })}
+      />
+      <input
+        className="form-control mb-2"
+        placeholder="Fase"
+        value={form.phase}
+        onChange={(e) => setForm({ ...form, phase: e.target.value })}
       />
       <input
         className="form-control mb-2"

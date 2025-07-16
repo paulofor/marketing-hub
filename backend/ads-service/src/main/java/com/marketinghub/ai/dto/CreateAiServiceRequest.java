@@ -11,6 +11,7 @@ public class CreateAiServiceRequest {
     private String name;
     private String objective;
     private String url;
+    private String phase;
     private BigDecimal price;
     private BigDecimal cost;
 }

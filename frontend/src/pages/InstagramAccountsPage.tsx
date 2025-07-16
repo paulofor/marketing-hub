@@ -33,7 +33,8 @@ export default function InstagramAccountsPage() {
   return (
     <div>
       <PageTitle>Contas do Instagram</PageTitle>
-      <table className="table table-striped">
+      <div className="table-responsive">
+        <table className="table table-striped">
         <thead>
           <tr>
             <th>ID</th>
@@ -74,7 +75,8 @@ export default function InstagramAccountsPage() {
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
       <div className="row g-2">
         <div className="col-md-2">
           <input

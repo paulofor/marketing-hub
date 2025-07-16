@@ -13,7 +13,8 @@ export default function AiServiceListPage() {
       <Link className="btn btn-primary mb-3" to="/ai-services/new">
         Novo Serviço de IA
       </Link>
-      <table className="table">
+      <div className="table-responsive">
+        <table className="table">
         <thead>
           <tr>
             <th>ID</th>
@@ -43,7 +44,8 @@ export default function AiServiceListPage() {
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
     </div>
   );
 }

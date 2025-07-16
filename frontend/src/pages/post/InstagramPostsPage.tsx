@@ -31,7 +31,8 @@ export default function InstagramPostsPage() {
   return (
     <div>
       <PageTitle>Publicações do Instagram</PageTitle>
-      <table className="table">
+      <div className="table-responsive">
+        <table className="table">
         <thead>
           <tr>
             <th>ID</th>
@@ -64,7 +65,8 @@ export default function InstagramPostsPage() {
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
       <div className="row g-2">
         <div className="col-md-5">
           <input

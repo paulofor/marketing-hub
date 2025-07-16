@@ -12,7 +12,8 @@ export default function MediaListPage() {
       <Link className="btn btn-primary mb-3" to="/media/new">
         Nova Mídia
       </Link>
-      <table className="table">
+      <div className="table-responsive">
+        <table className="table">
         <thead>
           <tr>
             <th>ID</th>
@@ -38,7 +39,8 @@ export default function MediaListPage() {
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
     </div>
   );
 }

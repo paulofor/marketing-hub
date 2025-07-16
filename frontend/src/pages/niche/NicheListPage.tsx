@@ -13,7 +13,8 @@ export default function NicheListPage() {
       <Link className="btn btn-primary mb-3" to="/niches/new">
         Novo Nicho
       </Link>
-      <table className="table">
+      <div className="table-responsive">
+        <table className="table">
         <thead>
           <tr>
             <th>ID</th>
@@ -37,7 +38,8 @@ export default function NicheListPage() {
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
     </div>
   );
 }

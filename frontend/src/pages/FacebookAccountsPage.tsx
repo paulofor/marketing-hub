@@ -33,7 +33,8 @@ export default function FacebookAccountsPage() {
   return (
     <div>
       <PageTitle>Contas do Facebook</PageTitle>
-      <table className="table table-striped">
+      <div className="table-responsive">
+        <table className="table table-striped">
         <thead>
           <tr>
             <th>ID</th>
@@ -68,7 +69,8 @@ export default function FacebookAccountsPage() {
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
       <div className="row g-2">
         <div className="col-md-2">
           <input

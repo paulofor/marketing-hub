@@ -28,6 +28,7 @@ CREATE TABLE ai_service (
     name VARCHAR(255),
     objective LONGTEXT,
     url VARCHAR(255),
+    phase VARCHAR(255),
     price DECIMAL(10,2),
     cost DECIMAL(10,2),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

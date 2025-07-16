@@ -20,6 +20,7 @@ export default function AiServiceListPage() {
             <th>ID</th>
             <th>Nome</th>
             <th>URL</th>
+            <th>Fase</th>
             <th>Preço</th>
             <th>Custo</th>
             <th>Ações</th>
@@ -31,6 +32,7 @@ export default function AiServiceListPage() {
               <td>{s.id}</td>
               <td>{s.name}</td>
               <td>{s.url}</td>
+              <td>{s.phase}</td>
               <td>{s.price}</td>
               <td>{s.cost}</td>
               <td>

@@ -26,6 +26,7 @@ public class AiServiceService {
                 .name(request.getName())
                 .objective(request.getObjective())
                 .url(request.getUrl())
+                .phase(request.getPhase())
                 .price(request.getPrice())
                 .cost(request.getCost())
                 .build();
@@ -47,6 +48,7 @@ public class AiServiceService {
         service.setName(request.getName());
         service.setObjective(request.getObjective());
         service.setUrl(request.getUrl());
+        service.setPhase(request.getPhase());
         service.setPrice(request.getPrice());
         service.setCost(request.getCost());
         return repository.save(service);

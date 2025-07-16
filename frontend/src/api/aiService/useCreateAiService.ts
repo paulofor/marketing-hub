@@ -6,6 +6,7 @@ export interface CreateAiService {
   name: string;
   objective: string;
   url: string;
+  phase: string;
   price: number;
   cost: number;
 }

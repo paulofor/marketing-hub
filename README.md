@@ -1,5 +1,6 @@
 # Marketing Hub
 This project manages ads, media assets, course plans and now products built with marketing principles.
+Recursos de IA podem ser cadastrados informando em qual fase do marketing atuam.
 
 ```bash
 docker compose up -d      # start MySQL

@@ -28,6 +28,9 @@ public class AiService {
 
     private String url;
 
+    /** Phase of the marketing process where this service is used. */
+    private String phase;
+
     private BigDecimal price;
 
     private BigDecimal cost;

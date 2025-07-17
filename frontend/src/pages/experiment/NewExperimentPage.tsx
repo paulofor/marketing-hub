@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { useCreateExperiment } from "../../api/experiment/useCreateExperiment";
+import { useNiches } from "../../api/niche/useNiches";
 import PageTitle from "../../components/PageTitle";
 
 export default function NewExperimentPage() {
   const create = useCreateExperiment();
+  const { data: niches } = useNiches();
   const [form, setForm] = useState({
+    nicheId: "",
+    name: "",
     hypothesis: "",
-    kpiGoal: "",
+    kpiTarget: "",
     startDate: "",
     endDate: "",
   });
@@ -14,12 +18,14 @@ export default function NewExperimentPage() {
   const submit = async () => {
     try {
       await create.mutateAsync({
+        nicheId: Number(form.nicheId),
+        name: form.name,
         hypothesis: form.hypothesis,
-        kpiGoal: Number(form.kpiGoal),
-        startDate: form.startDate,
-        endDate: form.endDate,
+        kpiTarget: Number(form.kpiTarget),
+        startDate: form.startDate || undefined,
+        endDate: form.endDate || undefined,
       });
-      setForm({ hypothesis: "", kpiGoal: "", startDate: "", endDate: "" });
+      setForm({ nicheId: "", name: "", hypothesis: "", kpiTarget: "", startDate: "", endDate: "" });
       alert("Teste salvo!");
     } catch {
       alert("Erro ao salvar Teste");
@@ -29,6 +35,25 @@ export default function NewExperimentPage() {
   return (
     <div>
       <PageTitle>Novo Teste de Nicho</PageTitle>
+      <select
+        className="form-select mb-2"
+        value={form.nicheId}
+        onChange={(e) => setForm({ ...form, nicheId: e.target.value })}
+      >
+        <option value="">Selecione o Nicho</option>
+        {Array.isArray(niches) &&
+          niches.map((n) => (
+            <option key={n.id} value={n.id}>
+              {n.name}
+            </option>
+          ))}
+      </select>
+      <input
+        className="form-control mb-2"
+        placeholder="Nome"
+        value={form.name}
+        onChange={(e) => setForm({ ...form, name: e.target.value })}
+      />
       <input
         className="form-control mb-2"
         placeholder="Hipótese"
@@ -39,8 +64,8 @@ export default function NewExperimentPage() {
         className="form-control mb-2"
         placeholder="Meta do KPI"
         type="number"
-        value={form.kpiGoal}
-        onChange={(e) => setForm({ ...form, kpiGoal: e.target.value })}
+        value={form.kpiTarget}
+        onChange={(e) => setForm({ ...form, kpiTarget: e.target.value })}
       />
       <input
         className="form-control mb-2"

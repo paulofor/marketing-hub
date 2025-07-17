@@ -3,8 +3,12 @@ package com.marketinghub.experiment.service;
 import com.marketinghub.experiment.*;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.repository.MarketNicheRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Service layer for experiments.
@@ -12,31 +16,62 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ExperimentService {
     private final ExperimentRepository repository;
+    private final MarketNicheRepository nicheRepository;
 
-    public ExperimentService(ExperimentRepository repository) {
+    public ExperimentService(ExperimentRepository repository, MarketNicheRepository nicheRepository) {
         this.repository = repository;
+        this.nicheRepository = nicheRepository;
     }
 
     /**
      * Creates and stores a new experiment.
      */
     @Transactional
-    public Experiment create(CreateExperimentRequest request) {
+    public Experiment create(Long nicheId, CreateExperimentRequest request) {
+        MarketNiche niche = nicheRepository.findById(nicheId).orElseThrow();
+        if (request.getStartDate() != null && request.getEndDate() != null &&
+                request.getStartDate().isAfter(request.getEndDate())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "startDate must be before endDate");
+        }
+        if (repository.existsByNicheAndName(niche, request.getName())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name already exists for niche");
+        }
         Experiment exp = Experiment.builder()
+                .niche(niche)
+                .name(request.getName())
                 .hypothesis(request.getHypothesis())
-                .kpiGoal(request.getKpiGoal())
+                .kpiTarget(request.getKpiTarget())
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
                 .status(ExperimentStatus.PLANNED)
+                .platform(ExperimentPlatform.FACEBOOK)
                 .build();
         return repository.save(exp);
     }
 
-    public Experiment get(Long id) {
+    public Experiment get(java.util.UUID id) {
         return repository.findById(id).orElseThrow();
     }
 
     public Iterable<Experiment> list() {
         return repository.findAll();
+    }
+
+    public Iterable<Experiment> listByNiche(Long nicheId) {
+        return repository.findByNicheId(nicheId);
+    }
+
+    @Transactional
+    public Experiment duplicate(java.util.UUID id) {
+        Experiment original = repository.findById(id).orElseThrow();
+        Experiment copy = Experiment.builder()
+                .niche(original.getNiche())
+                .name(original.getName() + " copy")
+                .hypothesis(original.getHypothesis())
+                .kpiTarget(original.getKpiTarget())
+                .status(ExperimentStatus.PLANNED)
+                .platform(original.getPlatform())
+                .build();
+        return repository.save(copy);
     }
 }

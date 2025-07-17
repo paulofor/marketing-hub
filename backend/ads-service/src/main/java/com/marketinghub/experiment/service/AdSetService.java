@@ -37,7 +37,7 @@ public class AdSetService {
         return repository.save(adSet);
     }
 
-    public Iterable<AdSet> listByExperiment(Long experimentId) {
+    public Iterable<AdSet> listByExperiment(java.util.UUID experimentId) {
         Experiment exp = experimentRepository.findById(experimentId).orElseThrow();
         return repository.findAll().stream().filter(a -> a.getExperiment().equals(exp)).toList();
     }

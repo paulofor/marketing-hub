@@ -6,6 +6,7 @@ package com.marketinghub.experiment;
 public enum ExperimentStatus {
     PLANNED,
     RUNNING,
+    PAUSED,
     FINISHED,
-    CANCELLED
+    FAILED
 }

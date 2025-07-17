@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { Experiment } from "./useExperiments";
 
-export function useExperiment(id: number) {
+export function useExperiment(id: string) {
   return useQuery({
     queryKey: ["experiment", id],
     queryFn: async () => {

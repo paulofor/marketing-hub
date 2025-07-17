@@ -9,5 +9,6 @@ import org.mapstruct.Mapper;
  */
 @Mapper(componentModel = "spring")
 public interface ExperimentMapper {
+    @org.mapstruct.Mapping(target = "nicheId", source = "niche.id")
     ExperimentDto toDto(Experiment experiment);
 }

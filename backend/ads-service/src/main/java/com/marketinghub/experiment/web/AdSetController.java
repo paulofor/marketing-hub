@@ -29,7 +29,7 @@ public class AdSetController {
     }
 
     @GetMapping
-    public List<AdSetDto> list(@RequestParam Long experimentId) {
+    public List<AdSetDto> list(@RequestParam java.util.UUID experimentId) {
         return StreamSupport.stream(service.listByExperiment(experimentId).spliterator(), false)
                 .map(mapper::toDto)
                 .toList();

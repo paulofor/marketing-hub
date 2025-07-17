@@ -9,8 +9,9 @@ import lombok.Data;
  */
 @Data
 public class CreateExperimentRequest {
+    private String name;
     private String hypothesis;
-    private BigDecimal kpiGoal;
+    private BigDecimal kpiTarget;
     private LocalDate startDate;
     private LocalDate endDate;
 }

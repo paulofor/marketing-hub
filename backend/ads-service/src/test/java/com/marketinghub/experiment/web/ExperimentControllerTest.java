@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import org.junit.jupiter.api.Test;
@@ -19,7 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Integration tests for {@link ExperimentController}.
  */
-@SpringBootTest
+@SpringBootTest(classes = AdsServiceApplication.class)
 @AutoConfigureMockMvc
 class ExperimentControllerTest {
 

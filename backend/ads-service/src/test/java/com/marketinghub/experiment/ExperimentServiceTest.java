@@ -1,11 +1,13 @@
 package com.marketinghub.experiment;
 
+import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.experiment.service.ExperimentService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.context.annotation.Import;
 
 import java.math.BigDecimal;
@@ -17,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Basic tests for {@link ExperimentService}.
  */
 @DataJpaTest
+@ContextConfiguration(classes = AdsServiceApplication.class)
 @Import(ExperimentService.class)
 class ExperimentServiceTest {
 

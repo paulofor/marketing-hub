@@ -32,7 +32,7 @@ public class DataSeeder {
             if (expRepo.count() == 0) {
                 expRepo.save(Experiment.builder()
                         .hypothesis("Default hypothesis")
-                        .kpiGoal(java.math.BigDecimal.valueOf(10))
+                        .kpiTarget(java.math.BigDecimal.valueOf(10))
                         .status(ExperimentStatus.PLANNED)
                         .build());
             }

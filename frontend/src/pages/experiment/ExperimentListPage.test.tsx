@@ -9,7 +9,8 @@ vi.mock("axios");
 
 describe("ExperimentListPage", () => {
   it("renders table", async () => {
-    (axios.get as any).mockResolvedValue({ data: [] });
+    (axios.get as any).mockResolvedValueOnce({ data: [] });
+    (axios.get as any).mockResolvedValueOnce({ data: [] });
     const client = new QueryClient();
     render(
       <QueryClientProvider client={client}>

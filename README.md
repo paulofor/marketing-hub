@@ -62,3 +62,4 @@ WantedBy=multi-user.target
 ```
 \nSwagger UI disponível em /swagger-ui.html quando o backend estiver rodando.
 
+\n## Niches e Experiments\nCada Experiment pertence a um Market Niche. Use as rotas /api/niches/{nicheId}/experiments para criar e listar por nicho.

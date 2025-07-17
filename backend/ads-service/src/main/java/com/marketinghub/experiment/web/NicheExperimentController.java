@@ -10,34 +10,28 @@ import java.util.List;
 import java.util.stream.StreamSupport;
 
 /**
- * REST controller for experiments.
+ * Nested routes for experiments under a niche.
  */
 @RestController
-@RequestMapping("/api/experiments")
-public class ExperimentController {
+@RequestMapping("/api/niches/{nicheId}/experiments")
+public class NicheExperimentController {
     private final ExperimentService service;
     private final ExperimentMapper mapper;
 
-    public ExperimentController(ExperimentService service, ExperimentMapper mapper) {
+    public NicheExperimentController(ExperimentService service, ExperimentMapper mapper) {
         this.service = service;
         this.mapper = mapper;
     }
 
-    @PostMapping("/{id}/duplicate")
-    public ExperimentDto duplicate(@PathVariable java.util.UUID id) {
-        return mapper.toDto(service.duplicate(id));
-    }
-
-    @GetMapping("/{id}")
-    public ExperimentDto get(@PathVariable java.util.UUID id) {
-        return mapper.toDto(service.get(id));
+    @PostMapping
+    public ExperimentDto create(@PathVariable Long nicheId, @RequestBody CreateExperimentRequest request) {
+        return mapper.toDto(service.create(nicheId, request));
     }
 
     @GetMapping
-    public List<ExperimentDto> list() {
-        return StreamSupport.stream(service.list().spliterator(), false)
+    public List<ExperimentDto> list(@PathVariable Long nicheId) {
+        return StreamSupport.stream(service.listByNiche(nicheId).spliterator(), false)
                 .map(mapper::toDto)
                 .toList();
     }
-
 }

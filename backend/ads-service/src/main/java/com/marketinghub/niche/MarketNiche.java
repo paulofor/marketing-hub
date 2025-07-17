@@ -2,6 +2,7 @@ package com.marketinghub.niche;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.marketinghub.experiment.Experiment;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -53,6 +54,9 @@ public class MarketNiche {
     /** Extra tips for advertising this niche. */
     @Lob
     private String extraTips;
+
+    @OneToMany(mappedBy = "niche")
+    private java.util.List<Experiment> experiments;
 
     @CreationTimestamp
     private Instant createdAt;

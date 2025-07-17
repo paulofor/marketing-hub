@@ -1,43 +1,50 @@
 package com.marketinghub.experiment;
 
-import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
-import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.experiment.service.ExperimentService;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.repository.MarketNicheRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Basic tests for {@link ExperimentService}.
- */
-@DataJpaTest
-@ContextConfiguration(classes = AdsServiceApplication.class)
-@Import(ExperimentService.class)
+@SpringBootTest
+@TestPropertySource(properties = {
+        "spring.datasource.url=jdbc:h2:mem:testdb",
+        "spring.jpa.hibernate.ddl-auto=create"
+})
 class ExperimentServiceTest {
-
     @Autowired
-    private ExperimentService service;
+    ExperimentService service;
     @Autowired
-    private ExperimentRepository repository;
+    MarketNicheRepository nicheRepository;
 
     @Test
-    void createExperimentPersistsEntity() {
+    void createValidExperiment() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
         CreateExperimentRequest req = new CreateExperimentRequest();
-        req.setHypothesis("Test hyp");
-        req.setKpiGoal(BigDecimal.ONE);
-        req.setStartDate(LocalDate.now());
-        req.setEndDate(LocalDate.now().plusDays(7));
+        req.setName("Exp1");
+        req.setHypothesis("Teste");
+        req.setKpiTarget(new BigDecimal("10"));
+        var exp = service.create(niche.getId(), req);
+        assertThat(exp.getId()).isNotNull();
+        assertThat(exp.getPlatform()).isEqualTo(ExperimentPlatform.FACEBOOK);
+    }
 
-        Experiment saved = service.create(req);
-
-        assertThat(repository.findById(saved.getId())).isPresent();
+    @Test
+    void validateDates() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        req.setName("Exp1");
+        req.setStartDate(java.time.LocalDate.of(2024,2,1));
+        req.setEndDate(java.time.LocalDate.of(2024,1,1));
+        assertThatThrownBy(() -> service.create(niche.getId(), req))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }

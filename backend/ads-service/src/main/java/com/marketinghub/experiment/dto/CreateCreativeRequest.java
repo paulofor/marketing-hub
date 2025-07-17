@@ -8,7 +8,7 @@ import lombok.Data;
  */
 @Data
 public class CreateCreativeRequest {
-    private Long experimentId;
+    private java.util.UUID experimentId;
     private CreativeType type;
     private String assetUrl;
     private String titles;

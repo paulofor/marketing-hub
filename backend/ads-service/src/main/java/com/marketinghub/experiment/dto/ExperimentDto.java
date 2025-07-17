@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.dto;
 
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.experiment.ExperimentPlatform;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -11,12 +12,15 @@ import lombok.Data;
  */
 @Data
 public class ExperimentDto {
-    private Long id;
+    private java.util.UUID id;
+    private Long nicheId;
+    private String name;
     private String hypothesis;
-    private BigDecimal kpiGoal;
+    private BigDecimal kpiTarget;
     private LocalDate startDate;
     private LocalDate endDate;
     private ExperimentStatus status;
+    private ExperimentPlatform platform;
     private Instant createdAt;
     private Instant updatedAt;
 }

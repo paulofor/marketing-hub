@@ -2,12 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
 export interface Experiment {
-  id: number;
+  id: string;
+  nicheId: number;
+  name: string;
   hypothesis: string;
-  kpiGoal: number;
-  startDate: string;
-  endDate: string;
+  kpiTarget: number;
+  startDate: string | null;
+  endDate: string | null;
   status: string;
+  platform: string;
   createdAt: string;
   updatedAt: string;
 }

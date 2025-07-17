@@ -1,27 +1,47 @@
 import { Fragment } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useExperiment } from "../../api/experiment/useExperiment";
+import { useNiche } from "../../api/niche/useNiche";
 import PageTitle from "../../components/PageTitle";
 
 export default function ExperimentDetailPage() {
   const { id } = useParams();
-  const expId = Number(id);
+  const expId = id as string;
   const { data, isLoading } = useExperiment(expId);
+  const { data: niche } = useNiche(data?.nicheId ?? 0, !!data);
 
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
 
   const rows = [
+    { label: "Nome", value: data.name },
+    { label: "Nicho", value: <Link to={`/niches/${data.nicheId}/edit`}>{niche?.name}</Link> },
     { label: "Hipótese", value: data.hypothesis },
-    { label: "KPI", value: data.kpiGoal },
+    { label: "KPI", value: data.kpiTarget },
     { label: "Início", value: data.startDate },
     { label: "Término", value: data.endDate },
-    { label: "Status", value: data.status },
   ];
 
   return (
     <div>
-      <PageTitle>Teste {data.id}</PageTitle>
+      <div className="d-flex justify-content-between align-items-center">
+        <PageTitle>Teste {data.id}</PageTitle>
+        <span className="badge bg-secondary">{data.status}</span>
+      </div>
+      <ul className="nav nav-tabs mt-3">
+        <li className="nav-item">
+          <span className="nav-link active">Overview</span>
+        </li>
+        <li className="nav-item">
+          <span className="nav-link">Criativos</span>
+        </li>
+        <li className="nav-item">
+          <span className="nav-link">Públicos</span>
+        </li>
+        <li className="nav-item">
+          <span className="nav-link">Métricas</span>
+        </li>
+      </ul>
       <div className="card">
         <div className="card-body p-0">
           <dl className="row mb-0">

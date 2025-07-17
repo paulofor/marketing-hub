@@ -3,19 +3,22 @@ import axios from "axios";
 import { Experiment } from "./useExperiments";
 
 export interface CreateExperiment {
+  nicheId: number;
+  name: string;
   hypothesis: string;
-  kpiGoal: number;
-  startDate: string;
-  endDate: string;
+  kpiTarget: number;
+  startDate?: string;
+  endDate?: string;
 }
 
 export function useCreateExperiment() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: CreateExperiment) => {
+      const { nicheId, ...payload } = data;
       const { data: experiment } = await axios.post<Experiment>(
-        "/api/experiments",
-        data,
+        `/api/niches/${nicheId}/experiments`,
+        payload,
       );
       return experiment;
     },

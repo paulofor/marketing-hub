@@ -1,0 +1,60 @@
+openapi: 3.0.0
+info:
+  title: Marketing Hub API
+  version: 1.0.0
+paths:
+  /api/niches/{nicheId}/experiments:
+    post:
+      summary: Criar experimento
+      parameters:
+        - in: path
+          name: nicheId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExperimentRequest'
+    get:
+      summary: Listar experimentos do nicho
+      parameters:
+        - in: path
+          name: nicheId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+  /api/experiments/{id}/duplicate:
+    post:
+      summary: Duplicar experimento
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+components:
+  schemas:
+    CreateExperimentRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        hypothesis:
+          type: string
+        kpiTarget:
+          type: number
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                              https://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+  <!-- 1️⃣  Redireciona TODAS as requisições a este host -->
+  <mirrors>
+    <mirror>
+      <id>central-repo1</id>
+      <name>Maven Central via Fastly (repo1.maven.org)</name>
+      <url>https://repo1.maven.org/maven2/</url>
+      <!-- só o repositório "central" é redirecionado -->
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+  </mirrors>
+
+  <!-- 2️⃣  Autenticação para publicar e baixar do GitHub Packages -->
+  <servers>
+    <server>
+      <id>github</id>
+      <username>${env.GITHUB_ACTOR}</username>
+      <password>${env.GITHUB_TOKEN}</password>
+    </server>
+  </servers>
+
+  <!-- 3️⃣  Perfil default apenas para manter coerência -->
+  <profiles>
+    <profile>
+      <id>default</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+    </profile>
+  </profiles>
+</settings>

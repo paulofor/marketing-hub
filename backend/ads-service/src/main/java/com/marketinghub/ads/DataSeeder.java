@@ -10,14 +10,19 @@ import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.repository.MarketNicheRepository;
 
-@Configuration
+@Configuration("adsDataSeeder")
 public class DataSeeder {
 
     @Bean
-    CommandLineRunner seed(FacebookAccountRepository fbRepo, InstagramAccountRepository igRepo,
-                          ExperimentRepository expRepo) {
+    CommandLineRunner seed(FacebookAccountRepository fbRepo,
+                          InstagramAccountRepository igRepo,
+                          ExperimentRepository expRepo,
+                          MarketNicheRepository nicheRepo) {
         return args -> {
             if (fbRepo.count() == 0) {
                 fbRepo.save(new FacebookAccount(1L, "Account A", "USD"));
@@ -30,10 +35,15 @@ public class DataSeeder {
                 igRepo.save(new InstagramAccount(3L, "Insta C", "GBP", "https://example.com/c.png"));
             }
             if (expRepo.count() == 0) {
+                MarketNiche niche = nicheRepo.findAll().stream().findFirst()
+                        .orElseGet(() -> nicheRepo.save(MarketNiche.builder().name("Default Niche").build()));
                 expRepo.save(Experiment.builder()
+                        .niche(niche)
+                        .name("Default Experiment")
                         .hypothesis("Default hypothesis")
                         .kpiTarget(java.math.BigDecimal.valueOf(10))
                         .status(ExperimentStatus.PLANNED)
+                        .platform(ExperimentPlatform.FACEBOOK)
                         .build());
             }
         };

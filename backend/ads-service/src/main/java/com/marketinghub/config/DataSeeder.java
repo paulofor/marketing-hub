@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import java.math.BigDecimal;
 import java.util.Arrays;
 
-@Configuration
+@Configuration("nicheDataSeeder")
 public class DataSeeder {
     @Bean
     CommandLineRunner seedData(MarketNicheRepository nicheRepo, ExperimentRepository expRepo) {

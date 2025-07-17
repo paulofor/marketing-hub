@@ -14,9 +14,11 @@ import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@SpringBootTest
+@SpringBootTest(classes = com.marketinghub.ads.AdsServiceApplication.class)
 @TestPropertySource(properties = {
         "spring.datasource.url=jdbc:h2:mem:testdb",
+        "spring.datasource.driverClassName=org.h2.Driver",
+        "spring.datasource.username=sa",
         "spring.jpa.hibernate.ddl-auto=create"
 })
 class ExperimentServiceTest {
@@ -45,6 +47,6 @@ class ExperimentServiceTest {
         req.setStartDate(java.time.LocalDate.of(2024,2,1));
         req.setEndDate(java.time.LocalDate.of(2024,1,1));
         assertThatThrownBy(() -> service.create(niche.getId(), req))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     }
 }

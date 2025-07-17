@@ -48,12 +48,13 @@ class ExperimentControllerTest {
     @Test
     void createEndpointPersists() throws Exception {
         CreateExperimentRequest req = new CreateExperimentRequest();
+        req.setName("Exp1");
         req.setHypothesis("H1");
         req.setKpiTarget(BigDecimal.TEN);
         req.setStartDate(LocalDate.now());
         req.setEndDate(LocalDate.now().plusDays(5));
 
-        mockMvc.perform(post("/api/experiments")
+        mockMvc.perform(post("/api/niches/1/experiments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(req)))
                 .andExpect(status().isOk());

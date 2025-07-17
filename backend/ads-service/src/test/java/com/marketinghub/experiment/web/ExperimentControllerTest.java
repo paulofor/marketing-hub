@@ -49,7 +49,7 @@ class ExperimentControllerTest {
     void createEndpointPersists() throws Exception {
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setHypothesis("H1");
-        req.setKpiGoal(BigDecimal.TEN);
+        req.setKpiTarget(BigDecimal.TEN);
         req.setStartDate(LocalDate.now());
         req.setEndDate(LocalDate.now().plusDays(5));
 

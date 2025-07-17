@@ -8,12 +8,16 @@ import com.marketinghub.ads.FacebookAccountRepository;
 import com.marketinghub.ads.InstagramAccountRepository;
 import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.ads.InstagramAccount;
+import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.experiment.repository.ExperimentRepository;
 
 @Configuration
 public class DataSeeder {
 
     @Bean
-    CommandLineRunner seed(FacebookAccountRepository fbRepo, InstagramAccountRepository igRepo) {
+    CommandLineRunner seed(FacebookAccountRepository fbRepo, InstagramAccountRepository igRepo,
+                          ExperimentRepository expRepo) {
         return args -> {
             if (fbRepo.count() == 0) {
                 fbRepo.save(new FacebookAccount(1L, "Account A", "USD"));
@@ -24,6 +28,13 @@ public class DataSeeder {
                 igRepo.save(new InstagramAccount(1L, "Insta A", "USD", "https://example.com/a.png"));
                 igRepo.save(new InstagramAccount(2L, "Insta B", "EUR", "https://example.com/b.png"));
                 igRepo.save(new InstagramAccount(3L, "Insta C", "GBP", "https://example.com/c.png"));
+            }
+            if (expRepo.count() == 0) {
+                expRepo.save(Experiment.builder()
+                        .hypothesis("Default hypothesis")
+                        .kpiGoal(java.math.BigDecimal.valueOf(10))
+                        .status(ExperimentStatus.PLANNED)
+                        .build());
             }
         };
     }

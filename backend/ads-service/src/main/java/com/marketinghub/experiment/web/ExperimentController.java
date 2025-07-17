@@ -1,0 +1,42 @@
+package com.marketinghub.experiment.web;
+
+import com.marketinghub.experiment.dto.CreateExperimentRequest;
+import com.marketinghub.experiment.dto.ExperimentDto;
+import com.marketinghub.experiment.mapper.ExperimentMapper;
+import com.marketinghub.experiment.service.ExperimentService;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.stream.StreamSupport;
+
+/**
+ * REST controller for experiments.
+ */
+@RestController
+@RequestMapping("/api/experiments")
+public class ExperimentController {
+    private final ExperimentService service;
+    private final ExperimentMapper mapper;
+
+    public ExperimentController(ExperimentService service, ExperimentMapper mapper) {
+        this.service = service;
+        this.mapper = mapper;
+    }
+
+    @PostMapping
+    public ExperimentDto create(@RequestBody CreateExperimentRequest request) {
+        return mapper.toDto(service.create(request));
+    }
+
+    @GetMapping("/{id}")
+    public ExperimentDto get(@PathVariable Long id) {
+        return mapper.toDto(service.get(id));
+    }
+
+    @GetMapping
+    public List<ExperimentDto> list() {
+        return StreamSupport.stream(service.list().spliterator(), false)
+                .map(mapper::toDto)
+                .toList();
+    }
+}

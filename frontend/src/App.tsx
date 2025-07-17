@@ -21,6 +21,9 @@ import EditNichePage from "./pages/niche/EditNichePage";
 import AiServiceListPage from "./pages/aiService/AiServiceListPage";
 import NewAiServicePage from "./pages/aiService/NewAiServicePage";
 import EditAiServicePage from "./pages/aiService/EditAiServicePage";
+import ExperimentListPage from "./pages/experiment/ExperimentListPage";
+import NewExperimentPage from "./pages/experiment/NewExperimentPage";
+import ExperimentDetailPage from "./pages/experiment/ExperimentDetailPage";
 
 export default function App() {
   return (
@@ -51,6 +54,9 @@ export default function App() {
             </Link>
             <Link className="nav-link" to="/niches">
               Nichos
+            </Link>
+            <Link className="nav-link" to="/experiments">
+              Testes de Nicho
             </Link>
             <Link className="nav-link" to="/ai-services">
               IA
@@ -85,6 +91,9 @@ export default function App() {
         <Route path="/niches" element={<NicheListPage />} />
         <Route path="/niches/new" element={<NewNichePage />} />
         <Route path="/niches/:id/edit" element={<EditNichePage />} />
+        <Route path="/experiments" element={<ExperimentListPage />} />
+        <Route path="/experiments/new" element={<NewExperimentPage />} />
+        <Route path="/experiments/:id" element={<ExperimentDetailPage />} />
         <Route path="/ai-services" element={<AiServiceListPage />} />
         <Route path="/ai-services/new" element={<NewAiServicePage />} />
         <Route path="/ai-services/:id/edit" element={<EditAiServicePage />} />

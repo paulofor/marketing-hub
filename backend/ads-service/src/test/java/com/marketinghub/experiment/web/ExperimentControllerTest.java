@@ -5,6 +5,7 @@ import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,6 +18,7 @@ import java.time.LocalDate;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for {@link ExperimentController}.
@@ -38,6 +40,11 @@ class ExperimentControllerTest {
     @Autowired
     private ExperimentRepository repository;
 
+    @BeforeEach
+    void cleanDb() {
+        repository.deleteAll();
+    }
+
     @Test
     void createEndpointPersists() throws Exception {
         CreateExperimentRequest req = new CreateExperimentRequest();
@@ -51,6 +58,6 @@ class ExperimentControllerTest {
                         .content(mapper.writeValueAsString(req)))
                 .andExpect(status().isOk());
 
-        assert(repository.count() == 1);
+        assertThat(repository.count()).isEqualTo(1);
     }
 }

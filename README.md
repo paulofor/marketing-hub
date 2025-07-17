@@ -1,5 +1,5 @@
 # Marketing Hub
-This project manages ads, media assets, course plans and now products built with marketing principles.
+This project manages ads, media assets, course plans and now products built with marketing principles. A new **Teste de Nichos** module allows running advertising experiments with creatives and audiences.
 Recursos de IA podem ser cadastrados informando em qual fase do marketing atuam.
 
 ```bash
@@ -60,3 +60,5 @@ Restart=on-failure
 [Install]
 WantedBy=multi-user.target
 ```
+\nSwagger UI disponível em /swagger-ui.html quando o backend estiver rodando.
+

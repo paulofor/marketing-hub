@@ -104,3 +104,50 @@ CREATE TABLE market_niche (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
+CREATE TABLE experiment (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    hypothesis VARCHAR(500),
+    kpi_goal DECIMAL(10,2),
+    start_date DATE,
+    end_date DATE,
+    status VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE creative_variant (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    experiment_id BIGINT,
+    type VARCHAR(20),
+    asset_url VARCHAR(500),
+    titles LONGTEXT,
+    descriptions LONGTEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ad_set (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    experiment_id BIGINT,
+    location VARCHAR(255),
+    interests LONGTEXT,
+    lookalikes LONGTEXT,
+    budget DECIMAL(10,2),
+    duration_days INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE metric_snapshot (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    creative_id BIGINT,
+    ad_set_id BIGINT,
+    impressions INT,
+    clicks INT,
+    cost DECIMAL(10,2),
+    roas DECIMAL(10,2),
+    ctr DOUBLE,
+    cpa DECIMAL(10,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

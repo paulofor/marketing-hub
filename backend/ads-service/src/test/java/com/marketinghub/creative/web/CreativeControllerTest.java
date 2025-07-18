@@ -9,6 +9,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.FixtureUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +46,8 @@ class CreativeControllerTest {
     ExperimentRepository experimentRepository;
     @Autowired
     MarketNicheRepository marketNicheRepository;
+    @Autowired
+    FixtureUtils fixtures;
 
     Long expId;
 
@@ -53,10 +56,8 @@ class CreativeControllerTest {
         repository.deleteAll();
         experimentRepository.deleteAll();
         marketNicheRepository.deleteAll();
-        MarketNiche niche = marketNicheRepository.save(MarketNiche.builder()
-                .name("Digital Marketing").build());
-        Experiment exp = experimentRepository.save(Experiment.builder()
-                .name("E").niche(niche).build());
+        MarketNiche niche = fixtures.createAndSaveNiche();
+        Experiment exp = fixtures.createAndSaveExperiment(niche);
         expId = exp.getId();
     }
 

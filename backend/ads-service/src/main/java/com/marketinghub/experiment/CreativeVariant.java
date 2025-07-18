@@ -20,8 +20,9 @@ public class CreativeVariant {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "experiment_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false,
+            cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "experiment_id", nullable = false)
     private Experiment experiment;
 
     @Enumerated(EnumType.STRING)

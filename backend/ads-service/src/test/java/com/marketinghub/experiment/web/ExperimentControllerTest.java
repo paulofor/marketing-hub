@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.FixtureUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,10 +42,19 @@ class ExperimentControllerTest {
     private ObjectMapper mapper;
     @Autowired
     private ExperimentRepository repository;
+    @Autowired
+    private MarketNicheRepository nicheRepo;
+    @Autowired
+    private FixtureUtils fixtures;
+
+    Long nicheId;
 
     @BeforeEach
     void cleanDb() {
         repository.deleteAll();
+        nicheRepo.deleteAll();
+        MarketNiche niche = fixtures.createAndSaveNiche();
+        nicheId = niche.getId();
     }
 
     @Test
@@ -54,7 +66,7 @@ class ExperimentControllerTest {
         req.setStartDate(LocalDate.now());
         req.setEndDate(LocalDate.now().plusDays(5));
 
-        mockMvc.perform(post("/api/niches/1/experiments")
+        mockMvc.perform(post("/api/niches/" + nicheId + "/experiments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(req)))
                 .andExpect(status().isOk());

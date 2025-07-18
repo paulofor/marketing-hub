@@ -19,12 +19,12 @@ public class MetricSnapshot {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "creative_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "creative_id", nullable = false)
     private CreativeVariant creative;
 
-    @ManyToOne
-    @JoinColumn(name = "ad_set_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "ad_set_id", nullable = false)
     private AdSet adSet;
 
     private Integer impressions;

@@ -24,12 +24,12 @@ public class ExperimentController {
     }
 
     @PostMapping("/{id}/duplicate")
-    public ExperimentDto duplicate(@PathVariable java.util.UUID id) {
+    public ExperimentDto duplicate(@PathVariable Long id) {
         return mapper.toDto(service.duplicate(id));
     }
 
     @GetMapping("/{id}")
-    public ExperimentDto get(@PathVariable java.util.UUID id) {
+    public ExperimentDto get(@PathVariable Long id) {
         return mapper.toDto(service.get(id));
     }
 
@@ -45,7 +45,7 @@ public class ExperimentController {
      */
     @PatchMapping("/{id}/status")
     public ExperimentDto updateStatus(
-            @PathVariable java.util.UUID id,
+            @PathVariable Long id,
             @RequestParam com.marketinghub.experiment.ExperimentStatus status) {
         return mapper.toDto(service.updateStatus(id, status));
     }

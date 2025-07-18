@@ -10,7 +10,7 @@ import lombok.Data;
 @Data
 public class AdSetDto {
     private Long id;
-    private java.util.UUID experimentId;
+    private Long experimentId;
     private String location;
     private String interests;
     private String lookalikes;

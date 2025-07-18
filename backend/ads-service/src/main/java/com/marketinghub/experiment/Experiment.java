@@ -20,9 +20,8 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class Experiment {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "BINARY(16)")
-    private java.util.UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "niche_id")

@@ -29,7 +29,7 @@ public class CreativeController {
     }
 
     @GetMapping
-    public List<CreativeVariantDto> list(@RequestParam java.util.UUID experimentId) {
+    public List<CreativeVariantDto> list(@RequestParam Long experimentId) {
         return StreamSupport.stream(service.listByExperiment(experimentId).spliterator(), false)
                 .map(mapper::toDto)
                 .toList();

@@ -21,6 +21,7 @@ import java.time.LocalDate;
 public class Experiment {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(columnDefinition = "BINARY(16)")
     private java.util.UUID id;
 
     @ManyToOne(optional = false)

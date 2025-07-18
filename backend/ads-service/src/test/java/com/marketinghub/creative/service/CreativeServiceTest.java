@@ -6,6 +6,8 @@ import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.repository.CreativeRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.repository.MarketNicheRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -34,6 +36,8 @@ class CreativeServiceTest {
     CreativeRepository repository;
     @Autowired
     ExperimentRepository experimentRepository;
+    @Autowired
+    MarketNicheRepository marketNicheRepository;
 
     CreativeService service;
 
@@ -53,7 +57,10 @@ class CreativeServiceTest {
 
     @Test
     void previewParsesHtml() throws Exception {
-        Experiment exp = experimentRepository.save(Experiment.builder().name("E").build());
+        MarketNiche niche = marketNicheRepository.save(MarketNiche.builder()
+                .name("Digital Marketing").build());
+        Experiment exp = experimentRepository.save(Experiment.builder()
+                .name("E").niche(niche).build());
         repository.save(Creative.builder().experiment(exp).headline("h").primaryText("p").imageUrl("i").status(CreativeStatus.DRAFT).build());
 
         HttpClient client = Mockito.mock(HttpClient.class);

@@ -1,8 +1,9 @@
-package com.marketinghub.creative;
+package com.marketinghub.creative.service;
 
 import com.marketinghub.ads.AdsServiceApplication;
+import com.marketinghub.creative.Creative;
+import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.repository.CreativeRepository;
-import com.marketinghub.creative.service.CreativeService;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,7 +59,7 @@ class CreativeServiceTest {
         HttpClient client = Mockito.mock(HttpClient.class);
         HttpResponse<String> resp = Mockito.mock(HttpResponse.class);
         when(resp.body()).thenReturn("{\"data\":[{\"body\":\"<div>ok</div>\"}]}");
-        when(client.send(any(), any())).thenReturn(resp);
+        when(client.send(any(), any())).thenReturn((HttpResponse) resp);
         service = new CreativeService(repository, experimentRepository, client);
         String html = service.preview(1L);
         assertThat(html).contains("ok");

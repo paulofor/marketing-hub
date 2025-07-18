@@ -74,4 +74,14 @@ public class ExperimentService {
                 .build();
         return repository.save(copy);
     }
+
+    /**
+     * Updates the status of an experiment.
+     */
+    @Transactional
+    public Experiment updateStatus(java.util.UUID id, ExperimentStatus status) {
+        Experiment exp = repository.findById(id).orElseThrow();
+        exp.setStatus(status);
+        return exp;
+    }
 }

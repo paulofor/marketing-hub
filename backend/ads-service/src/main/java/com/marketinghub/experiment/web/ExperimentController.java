@@ -40,4 +40,14 @@ public class ExperimentController {
                 .toList();
     }
 
+    /**
+     * Atualiza apenas o status do experimento.
+     */
+    @PatchMapping("/{id}/status")
+    public ExperimentDto updateStatus(
+            @PathVariable java.util.UUID id,
+            @RequestParam com.marketinghub.experiment.ExperimentStatus status) {
+        return mapper.toDto(service.updateStatus(id, status));
+    }
+
 }

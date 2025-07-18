@@ -15,4 +15,19 @@ mvn -s settings.xml test
 ```bash
 mvn spring-boot:run
 ```
-Configure as propriedades `facebook.token` e `facebook.version` para acessar a API oficial.
+Defina as variáveis de ambiente:
+
+```bash
+export FB_ACCESS_TOKEN=<seu_token>
+export FB_AD_ACCOUNT_ID=<ad_account>
+export FB_ENV=SANDBOX # ou PROD
+export HUB_BASE_URL=http://localhost:8000/api
+```
+
+Quando `FB_ENV` for `SANDBOX`, os nomes das campanhas criadas recebem o prefixo `[SANDBOX]` e a conta de anúncios de teste é utilizada.
+
+Gere a documentação pública com:
+
+```bash
+mvn javadoc:javadoc
+```

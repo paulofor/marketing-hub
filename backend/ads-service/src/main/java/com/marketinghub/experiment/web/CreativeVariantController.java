@@ -14,11 +14,11 @@ import java.util.stream.StreamSupport;
  */
 @RestController
 @RequestMapping("/api/creatives")
-public class CreativeController {
+public class CreativeVariantController {
     private final CreativeVariantService service;
     private final CreativeVariantMapper mapper;
 
-    public CreativeController(CreativeVariantService service, CreativeVariantMapper mapper) {
+    public CreativeVariantController(CreativeVariantService service, CreativeVariantMapper mapper) {
         this.service = service;
         this.mapper = mapper;
     }

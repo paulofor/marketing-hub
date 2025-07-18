@@ -3,7 +3,7 @@ package com.marketinghub.experiment.web;
 import com.marketinghub.experiment.dto.CreateCreativeRequest;
 import com.marketinghub.experiment.dto.CreativeVariantDto;
 import com.marketinghub.experiment.mapper.CreativeVariantMapper;
-import com.marketinghub.experiment.service.CreativeService;
+import com.marketinghub.experiment.service.CreativeVariantService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,10 +15,10 @@ import java.util.stream.StreamSupport;
 @RestController
 @RequestMapping("/api/creatives")
 public class CreativeController {
-    private final CreativeService service;
+    private final CreativeVariantService service;
     private final CreativeVariantMapper mapper;
 
-    public CreativeController(CreativeService service, CreativeVariantMapper mapper) {
+    public CreativeController(CreativeVariantService service, CreativeVariantMapper mapper) {
         this.service = service;
         this.mapper = mapper;
     }

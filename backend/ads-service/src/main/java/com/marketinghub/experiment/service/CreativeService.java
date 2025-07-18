@@ -36,7 +36,7 @@ public class CreativeService {
         return repository.save(creative);
     }
 
-    public Iterable<CreativeVariant> listByExperiment(java.util.UUID experimentId) {
+    public Iterable<CreativeVariant> listByExperiment(Long experimentId) {
         Experiment exp = experimentRepository.findById(experimentId).orElseThrow();
         return repository.findAll().stream().filter(c -> c.getExperiment().equals(exp)).toList();
     }

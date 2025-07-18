@@ -106,7 +106,7 @@ CREATE TABLE market_niche (
 );
 
 CREATE TABLE experiment (
-    id BINARY(16) PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     niche_id BIGINT NOT NULL,
     name VARCHAR(255) NOT NULL,
     hypothesis VARCHAR(255),
@@ -121,7 +121,7 @@ CREATE TABLE experiment (
 
 CREATE TABLE creative_variant (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    experiment_id BINARY(16),
+    experiment_id BIGINT,
     type VARCHAR(20),
     asset_url VARCHAR(500),
     titles LONGTEXT,
@@ -132,7 +132,7 @@ CREATE TABLE creative_variant (
 
 CREATE TABLE ad_set (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    experiment_id BINARY(16),
+    experiment_id BIGINT,
     location VARCHAR(255),
     interests LONGTEXT,
     lookalikes LONGTEXT,

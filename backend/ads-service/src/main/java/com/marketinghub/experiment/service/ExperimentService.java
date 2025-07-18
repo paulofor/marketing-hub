@@ -49,7 +49,7 @@ public class ExperimentService {
         return repository.save(exp);
     }
 
-    public Experiment get(java.util.UUID id) {
+    public Experiment get(Long id) {
         return repository.findById(id).orElseThrow();
     }
 
@@ -62,7 +62,7 @@ public class ExperimentService {
     }
 
     @Transactional
-    public Experiment duplicate(java.util.UUID id) {
+    public Experiment duplicate(Long id) {
         Experiment original = repository.findById(id).orElseThrow();
         Experiment copy = Experiment.builder()
                 .niche(original.getNiche())
@@ -79,7 +79,7 @@ public class ExperimentService {
      * Updates the status of an experiment.
      */
     @Transactional
-    public Experiment updateStatus(java.util.UUID id, ExperimentStatus status) {
+    public Experiment updateStatus(Long id, ExperimentStatus status) {
         Experiment exp = repository.findById(id).orElseThrow();
         exp.setStatus(status);
         return exp;

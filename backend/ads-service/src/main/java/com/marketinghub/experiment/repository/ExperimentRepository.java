@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Repository for experiments.
  */
-public interface ExperimentRepository extends JpaRepository<Experiment, java.util.UUID> {
+public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
     List<Experiment> findByNicheId(Long nicheId);
     boolean existsByNicheAndName(MarketNiche niche, String name);
 }

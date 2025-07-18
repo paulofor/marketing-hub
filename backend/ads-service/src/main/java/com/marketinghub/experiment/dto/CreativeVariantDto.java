@@ -10,7 +10,7 @@ import lombok.Data;
 @Data
 public class CreativeVariantDto {
     private Long id;
-    private java.util.UUID experimentId;
+    private Long experimentId;
     private CreativeType type;
     private String assetUrl;
     private String titles;

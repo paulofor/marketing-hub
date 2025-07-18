@@ -12,7 +12,7 @@ import lombok.Data;
  */
 @Data
 public class ExperimentDto {
-    private java.util.UUID id;
+    private Long id;
     private Long nicheId;
     private String name;
     private String hypothesis;

@@ -58,3 +58,56 @@ components:
         endDate:
           type: string
           format: date
+  /api/experiments/{id}/creatives:
+    post:
+      summary: Criar criativo
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCreativeRequest'
+    get:
+      summary: Listar criativos do experimento
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+  /api/creatives/{id}/preview:
+    get:
+      summary: Preview do criativo
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+components:
+  schemas:
+    CreateCreativeRequest:
+      type: object
+      properties:
+        headline:
+          type: string
+        primaryText:
+          type: string
+        imageUrl:
+          type: string
+        status:
+          type: string
+          enum: [DRAFT, READY]
+

@@ -63,3 +63,6 @@ WantedBy=multi-user.target
 \nSwagger UI disponível em /swagger-ui.html quando o backend estiver rodando.
 
 \n## Niches e Experiments\nCada Experiment pertence a um Market Niche. Use as rotas /api/niches/{nicheId}/experiments para criar e listar por nicho.
+
+## Criativos
+Os criativos representam variações de anúncios vinculados a um experimento. Utilize a rota `/api/experiments/{id}/creatives` para cadastrar e listar. A visualização de um criativo usa `/api/creatives/{id}/preview` que consulta a Marketing API do Facebook.

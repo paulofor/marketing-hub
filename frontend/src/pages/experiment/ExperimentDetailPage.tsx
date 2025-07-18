@@ -1,8 +1,9 @@
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useExperiment } from "../../api/experiment/useExperiment";
 import { useNiche } from "../../api/niche/useNiche";
 import PageTitle from "../../components/PageTitle";
+import CriativosTab from "../Experiment/CriativosTab";
 
 export default function ExperimentDetailPage() {
   const { id } = useParams();
@@ -22,6 +23,8 @@ export default function ExperimentDetailPage() {
     { label: "Término", value: data.endDate },
   ];
 
+  const [tab, setTab] = useState("overview");
+
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center">
@@ -30,10 +33,10 @@ export default function ExperimentDetailPage() {
       </div>
       <ul className="nav nav-tabs mt-3">
         <li className="nav-item">
-          <span className="nav-link active">Overview</span>
+          <button className={`nav-link${tab === "overview" ? " active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
         </li>
         <li className="nav-item">
-          <span className="nav-link">Criativos</span>
+          <button className={`nav-link${tab === "creatives" ? " active" : ""}`} onClick={() => setTab("creatives")}>Criativos</button>
         </li>
         <li className="nav-item">
           <span className="nav-link">Públicos</span>
@@ -42,26 +45,21 @@ export default function ExperimentDetailPage() {
           <span className="nav-link">Métricas</span>
         </li>
       </ul>
-      <div className="card">
-        <div className="card-body p-0">
-          <dl className="row mb-0">
-            {rows.map((r, idx) => (
-              <Fragment key={r.label}>
-                <dt
-                  className={`col-sm-3 py-2${idx % 2 === 0 ? " bg-light" : ""}`}
-                >
-                  {r.label}
-                </dt>
-                <dd
-                  className={`col-sm-9 py-2${idx % 2 === 0 ? " bg-light" : ""}`}
-                >
-                  {r.value}
-                </dd>
-              </Fragment>
-            ))}
-          </dl>
+      {tab === "overview" && (
+        <div className="card">
+          <div className="card-body p-0">
+            <dl className="row mb-0">
+              {rows.map((r, idx) => (
+                <Fragment key={r.label}>
+                  <dt className={`col-sm-3 py-2${idx % 2 === 0 ? " bg-light" : ""}`}>{r.label}</dt>
+                  <dd className={`col-sm-9 py-2${idx % 2 === 0 ? " bg-light" : ""}`}>{r.value}</dd>
+                </Fragment>
+              ))}
+            </dl>
+          </div>
         </div>
-      </div>
+      )}
+      {tab === "creatives" && <CriativosTab experimentId={expId} />}
     </div>
   );
 }

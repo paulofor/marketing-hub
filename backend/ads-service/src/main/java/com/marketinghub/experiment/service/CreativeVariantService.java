@@ -11,11 +11,11 @@ import org.springframework.transaction.annotation.Transactional;
  * Service layer for creative variants.
  */
 @Service
-public class CreativeService {
+public class CreativeVariantService {
     private final CreativeVariantRepository repository;
     private final ExperimentRepository experimentRepository;
 
-    public CreativeService(CreativeVariantRepository repository, ExperimentRepository experimentRepository) {
+    public CreativeVariantService(CreativeVariantRepository repository, ExperimentRepository experimentRepository) {
         this.repository = repository;
         this.experimentRepository = experimentRepository;
     }

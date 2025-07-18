@@ -7,6 +7,8 @@ import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.creative.repository.CreativeRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.repository.MarketNicheRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +43,8 @@ class CreativeControllerTest {
     CreativeRepository repository;
     @Autowired
     ExperimentRepository experimentRepository;
+    @Autowired
+    MarketNicheRepository marketNicheRepository;
 
     Long expId;
 
@@ -48,7 +52,11 @@ class CreativeControllerTest {
     void setup() {
         repository.deleteAll();
         experimentRepository.deleteAll();
-        Experiment exp = experimentRepository.save(Experiment.builder().name("E").build());
+        marketNicheRepository.deleteAll();
+        MarketNiche niche = marketNicheRepository.save(MarketNiche.builder()
+                .name("Digital Marketing").build());
+        Experiment exp = experimentRepository.save(Experiment.builder()
+                .name("E").niche(niche).build());
         expId = exp.getId();
     }
 

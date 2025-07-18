@@ -23,8 +23,9 @@ public class Experiment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "niche_id")
+    @ManyToOne(optional = false, fetch = FetchType.LAZY,
+            cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "niche_id", nullable = false)
     private MarketNiche niche;
 
     @Column(nullable = false)

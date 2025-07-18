@@ -10,6 +10,7 @@ import com.marketinghub.experiment.repository.ExperimentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
 import java.net.URI;
@@ -26,26 +27,13 @@ import java.time.Duration;
  * Service layer for creatives.
  */
 @Service
+@RequiredArgsConstructor
 public class CreativeService {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final CreativeRepository repository;
     private final ExperimentRepository experimentRepository;
     private final HttpClient httpClient;
-
-    public CreativeService(CreativeRepository repository,
-                           ExperimentRepository experimentRepository) {
-        this(repository, experimentRepository, HttpClient.newHttpClient());
-    }
-
-    // visible for tests
-    CreativeService(CreativeRepository repository,
-                    ExperimentRepository experimentRepository,
-                    HttpClient httpClient) {
-        this.repository = repository;
-        this.experimentRepository = experimentRepository;
-        this.httpClient = httpClient;
-    }
 
     /**
      * Creates and stores a creative.

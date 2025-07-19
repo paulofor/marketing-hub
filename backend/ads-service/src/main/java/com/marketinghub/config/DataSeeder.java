@@ -9,6 +9,7 @@ import com.marketinghub.niche.repository.MarketNicheRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -16,6 +17,7 @@ import java.util.Arrays;
 @Configuration("nicheDataSeeder")
 public class DataSeeder {
     @Bean
+    @Transactional
     CommandLineRunner seedData(MarketNicheRepository nicheRepo, ExperimentRepository expRepo) {
         return args -> {
             if (nicheRepo.count() > 0) return;

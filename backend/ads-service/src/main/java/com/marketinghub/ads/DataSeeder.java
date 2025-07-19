@@ -3,6 +3,7 @@ package com.marketinghub.ads;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.marketinghub.ads.FacebookAccountRepository;
 import com.marketinghub.ads.InstagramAccountRepository;
@@ -19,6 +20,7 @@ import com.marketinghub.niche.repository.MarketNicheRepository;
 public class DataSeeder {
 
     @Bean
+    @Transactional
     CommandLineRunner seed(FacebookAccountRepository fbRepo,
                           InstagramAccountRepository igRepo,
                           ExperimentRepository expRepo,

@@ -28,7 +28,7 @@ class ExperimentServiceTest {
     MarketNicheRepository nicheRepository;
 
     @Test
-    void createValidExperiment() {
+    void createNewExperimentWithExistingNiche() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setName("Exp1");

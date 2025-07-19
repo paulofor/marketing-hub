@@ -65,8 +65,13 @@ class CreativeServiceTest {
         HttpResponse<String> resp = Mockito.mock(HttpResponse.class);
         when(resp.body()).thenReturn("{\"data\":[{\"body\":\"<div>ok</div>\"}]}");
         when(client.send(any(), any())).thenReturn((HttpResponse) resp);
-        service = new CreativeService(repository, experimentRepository, client);
-        String html = service.preview(1L);
-        assertThat(html).contains("ok");
+        System.setProperty("FB_ACCESS_TOKEN", "dummy");
+        try {
+            service = new CreativeService(repository, experimentRepository, client);
+            String html = service.preview(1L);
+            assertThat(html).contains("ok");
+        } finally {
+            System.clearProperty("FB_ACCESS_TOKEN");
+        }
     }
 }

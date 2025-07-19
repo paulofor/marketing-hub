@@ -45,12 +45,15 @@ class ExperimentControllerTest {
     @Autowired
     private MarketNicheRepository nicheRepo;
     @Autowired
+    private com.marketinghub.creative.repository.CreativeRepository creativeRepo;
+    @Autowired
     private FixtureUtils fixtures;
 
     Long nicheId;
 
     @BeforeEach
     void cleanDb() {
+        creativeRepo.deleteAll();
         repository.deleteAll();
         nicheRepo.deleteAll();
         MarketNiche niche = fixtures.createAndSaveNiche();

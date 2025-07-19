@@ -27,14 +27,35 @@ public class DataSeeder {
                           MarketNicheRepository nicheRepo) {
         return args -> {
             if (fbRepo.count() == 0) {
-                fbRepo.save(new FacebookAccount(1L, "Account A", "USD"));
-                fbRepo.save(new FacebookAccount(2L, "Account B", "EUR"));
-                fbRepo.save(new FacebookAccount(3L, "Account C", "GBP"));
+                fbRepo.save(FacebookAccount.builder()
+                        .name("Account A")
+                        .currency("USD")
+                        .build());
+                fbRepo.save(FacebookAccount.builder()
+                        .name("Account B")
+                        .currency("EUR")
+                        .build());
+                fbRepo.save(FacebookAccount.builder()
+                        .name("Account C")
+                        .currency("GBP")
+                        .build());
             }
             if (igRepo.count() == 0) {
-                igRepo.save(new InstagramAccount(1L, "Insta A", "USD", "https://example.com/a.png"));
-                igRepo.save(new InstagramAccount(2L, "Insta B", "EUR", "https://example.com/b.png"));
-                igRepo.save(new InstagramAccount(3L, "Insta C", "GBP", "https://example.com/c.png"));
+                igRepo.save(InstagramAccount.builder()
+                        .name("Insta A")
+                        .currency("USD")
+                        .avatarUrl("https://example.com/a.png")
+                        .build());
+                igRepo.save(InstagramAccount.builder()
+                        .name("Insta B")
+                        .currency("EUR")
+                        .avatarUrl("https://example.com/b.png")
+                        .build());
+                igRepo.save(InstagramAccount.builder()
+                        .name("Insta C")
+                        .currency("GBP")
+                        .avatarUrl("https://example.com/c.png")
+                        .build());
             }
             if (expRepo.count() == 0) {
                 MarketNiche niche = nicheRepo.findAll().stream().findFirst()

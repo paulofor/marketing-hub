@@ -1,58 +1,25 @@
 package com.marketinghub.ads;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity(name = "ig_account")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class InstagramAccount {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     private String name;
     private String currency;
     private String avatarUrl;
-
-    public InstagramAccount() {}
-
-    public InstagramAccount(Long id, String name, String currency, String avatarUrl) {
-        this.id = id;
-        this.name = name;
-        this.currency = currency;
-        this.avatarUrl = avatarUrl;
-    }
-
-    public InstagramAccount(Long id, String name, String currency) {
-        this(id, name, currency, null);
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getCurrency() {
-        return currency;
-    }
-
-    public void setCurrency(String currency) {
-        this.currency = currency;
-    }
-
-    public String getAvatarUrl() {
-        return avatarUrl;
-    }
-
-    public void setAvatarUrl(String avatarUrl) {
-        this.avatarUrl = avatarUrl;
-    }
 }

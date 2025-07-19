@@ -23,8 +23,7 @@ public class Experiment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY,
-            cascade = CascadeType.PERSIST)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "niche_id", nullable = false)
     private MarketNiche niche;
 

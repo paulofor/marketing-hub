@@ -20,8 +20,7 @@ public class AdSet {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false,
-            cascade = CascadeType.PERSIST)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "experiment_id", nullable = false)
     private Experiment experiment;
 

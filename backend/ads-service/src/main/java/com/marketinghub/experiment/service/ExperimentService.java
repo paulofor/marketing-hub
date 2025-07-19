@@ -5,6 +5,8 @@ import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,10 +19,26 @@ import org.springframework.web.server.ResponseStatusException;
 public class ExperimentService {
     private final ExperimentRepository repository;
     private final MarketNicheRepository nicheRepository;
+    private final EntityManager entityManager;
 
-    public ExperimentService(ExperimentRepository repository, MarketNicheRepository nicheRepository) {
+    public ExperimentService(ExperimentRepository repository, MarketNicheRepository nicheRepository, EntityManager entityManager) {
         this.repository = repository;
         this.nicheRepository = nicheRepository;
+        this.entityManager = entityManager;
+    }
+
+    /**
+     * Obtains a managed reference to {@link MarketNiche} without hitting the database.
+     * getReference() avoids {@code detached entity passed to persist} by associating
+     * the proxy with the current persistence context.
+     *
+     * @throws EntityNotFoundException if the id does not exist
+     */
+    private MarketNiche attachNiche(Long nicheId) {
+        if (!nicheRepository.existsById(nicheId)) {
+            throw new EntityNotFoundException("MarketNiche not found: " + nicheId);
+        }
+        return entityManager.getReference(MarketNiche.class, nicheId);
     }
 
     /**
@@ -28,7 +46,7 @@ public class ExperimentService {
      */
     @Transactional
     public Experiment create(Long nicheId, CreateExperimentRequest request) {
-        MarketNiche niche = nicheRepository.findById(nicheId).orElseThrow();
+        MarketNiche niche = attachNiche(nicheId);
         if (request.getStartDate() != null && request.getEndDate() != null &&
                 request.getStartDate().isAfter(request.getEndDate())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "startDate must be before endDate");

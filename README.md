@@ -66,3 +66,10 @@ WantedBy=multi-user.target
 
 ## Criativos
 Os criativos representam variações de anúncios vinculados a um experimento. Utilize a rota `/api/experiments/{id}/creatives` para cadastrar e listar. A visualização de um criativo usa `/api/creatives/{id}/preview` que consulta a Marketing API do Facebook.
+
+## Erros comuns Hibernate
+
+Para evitar `PersistentObjectException: detached entity passed to persist`, anexe
+entidades existentes usando `entityManager.getReference()` em vez de criar
+instâncias soltas. O método `attachNiche()` no serviço de experiments demonstra
+essa abordagem.

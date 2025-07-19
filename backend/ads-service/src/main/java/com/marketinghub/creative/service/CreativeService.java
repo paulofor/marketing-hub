@@ -88,7 +88,10 @@ public class CreativeService {
      * Fetches the preview HTML from Facebook Marketing API.
      */
     public String preview(Long creativeId) throws IOException, InterruptedException {
-        String token = System.getenv("FB_ACCESS_TOKEN");
+        String token = System.getProperty("FB_ACCESS_TOKEN");
+        if (token == null || token.isBlank()) {
+            token = System.getenv("FB_ACCESS_TOKEN");
+        }
         if (token == null || token.isBlank()) {
             return "";
         }

@@ -11,20 +11,20 @@ export default function ExperimentDetailPage() {
   const { data, isLoading } = useExperiment(expId);
   const { data: niche } = useNiche(data?.nicheId ?? 0);
 
+  const [tab, setTab] = useState("overview");
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
-
   const rows = [
     { label: "Nome", value: data.name },
-    { label: "Nicho", value: <Link to={`/niches/${data.nicheId}/edit`}>{niche?.name}</Link> },
+    {
+      label: "Nicho",
+      value: <Link to={`/niches/${data.nicheId}/edit`}>{niche?.name}</Link>,
+    },
     { label: "Hipótese", value: data.hypothesis },
     { label: "KPI", value: data.kpiTarget },
     { label: "Início", value: data.startDate },
     { label: "Término", value: data.endDate },
   ];
-
-  const [tab, setTab] = useState("overview");
-
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center">
@@ -33,10 +33,20 @@ export default function ExperimentDetailPage() {
       </div>
       <ul className="nav nav-tabs mt-3">
         <li className="nav-item">
-          <button className={`nav-link${tab === "overview" ? " active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
+          <button
+            className={`nav-link${tab === "overview" ? " active" : ""}`}
+            onClick={() => setTab("overview")}
+          >
+            Overview
+          </button>
         </li>
         <li className="nav-item">
-          <button className={`nav-link${tab === "creatives" ? " active" : ""}`} onClick={() => setTab("creatives")}>Criativos</button>
+          <button
+            className={`nav-link${tab === "creatives" ? " active" : ""}`}
+            onClick={() => setTab("creatives")}
+          >
+            Criativos
+          </button>
         </li>
         <li className="nav-item">
           <span className="nav-link">Públicos</span>
@@ -51,8 +61,16 @@ export default function ExperimentDetailPage() {
             <dl className="row mb-0">
               {rows.map((r, idx) => (
                 <Fragment key={r.label}>
-                  <dt className={`col-sm-3 py-2${idx % 2 === 0 ? " bg-light" : ""}`}>{r.label}</dt>
-                  <dd className={`col-sm-9 py-2${idx % 2 === 0 ? " bg-light" : ""}`}>{r.value}</dd>
+                  <dt
+                    className={`col-sm-3 py-2${idx % 2 === 0 ? " bg-light" : ""}`}
+                  >
+                    {r.label}
+                  </dt>
+                  <dd
+                    className={`col-sm-9 py-2${idx % 2 === 0 ? " bg-light" : ""}`}
+                  >
+                    {r.value}
+                  </dd>
                 </Fragment>
               ))}
             </dl>

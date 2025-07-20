@@ -17,7 +17,7 @@ export default function CoursePlanDetailPage() {
   if (!data) return <p>Não encontrado</p>;
   return (
     <div>
-      <PageTitle>Plano de Curso {id}</PageTitle>
+      <PageTitle>{`Plano de Curso ${id ?? ''}`}</PageTitle>
       <h3>Módulos</h3>
       <pre>{data.modules}</pre>
       <h3>Objetivos</h3>

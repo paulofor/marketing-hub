@@ -73,3 +73,11 @@ Para evitar `PersistentObjectException: detached entity passed to persist`, anex
 entidades existentes usando `entityManager.getReference()` em vez de criar
 instâncias soltas. O método `attachNiche()` no serviço de experiments demonstra
 essa abordagem.
+
+## Debug em produção
+
+Use `npm run build:debug` para gerar um bundle de produção sem minificação e com
+source maps. Inicie o servidor com `vite preview --host --port 5000`. O overlay
+de erros do React fica acessível em `/__vite__`. Os mapas de origem são
+armazenados em `dist` para depurar erros em staging. O `ErrorBoundary` envia as
+exceções ao console ou para o Sentry se `SENTRY_DSN` estiver definido.

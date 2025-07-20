@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:debug": "cross-env REACT_APP_DEBUG_PROD=true vite build",
+    "check-react": "npm ls react react-dom",
     "preview": "vite preview",
     "test": "vitest"
   },
@@ -23,9 +25,11 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^14.2.1",
     "@vitejs/plugin-react": "^4.1.0",
+    "cross-env": "^7.0.3",
     "jsdom": "^22.1.0",
     "typescript": "^5.5.0",
     "vite": "^5.2.1",
+    "vite-plugin-checker": "^0.10.0",
     "vitest": "^1.4.0"
   }
 }

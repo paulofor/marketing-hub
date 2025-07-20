@@ -9,7 +9,7 @@ export default function ExperimentDetailPage() {
   const { id } = useParams();
   const expId = id as string;
   const { data, isLoading } = useExperiment(expId);
-  const { data: niche } = useNiche(data?.nicheId ?? 0, !!data);
+  const { data: niche } = useNiche(data?.nicheId ?? 0);
 
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
@@ -28,7 +28,7 @@ export default function ExperimentDetailPage() {
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center">
-        <PageTitle>Teste {data.id}</PageTitle>
+        <PageTitle>{`Teste ${data.id}`}</PageTitle>
         <span className="badge bg-secondary">{data.status}</span>
       </div>
       <ul className="nav nav-tabs mt-3">

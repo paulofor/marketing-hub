@@ -11,7 +11,7 @@ export default function MediaDetailPage() {
 
   return (
     <div>
-      <PageTitle>Arquivo {data.id}</PageTitle>
+      <PageTitle>{`Arquivo ${data.id}`}</PageTitle>
       <p>Status: {data.status}</p>
       {data.url && (
         <div>

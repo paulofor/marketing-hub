@@ -1,17 +1,30 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { Plugin } from "vite";
 
-export default defineConfig({
-  plugins: [react({ fastRefresh: false })],
-  server: {
-    port: 5173,
-    hmr: false,
-    proxy: {
-      // Backend now listens on port 8000
-      "/api": "http://191.252.92.222:8000",
+const debug = process.env.REACT_APP_DEBUG_PROD === "true";
+
+export default defineConfig(async () => {
+  const { default: checker } = await import("vite-plugin-checker");
+  return {
+    plugins: [react({ fastRefresh: debug }), checker({ typescript: true })],
+    resolve: {
+      dedupe: ["react", "react-dom"],
     },
-  },
-  test: {
-    environment: "jsdom",
-  },
+    server: {
+      port: 5173,
+      hmr: false,
+      proxy: {
+        // Backend now listens on port 8000
+        "/api": "http://191.252.92.222:8000",
+      },
+    },
+    build: {
+      minify: debug ? false : "esbuild",
+      sourcemap: true,
+    },
+    test: {
+      environment: "jsdom",
+    },
+  };
 });

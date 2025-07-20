@@ -60,6 +60,21 @@ Restart=on-failure
 [Install]
 WantedBy=multi-user.target
 ```
+
+## Debug em produção
+
+Para depurar problemas que surgem apenas no build otimizado execute:
+
+```bash
+cd frontend
+npm run build:debug
+npx vite preview --port 5000 --host
+```
+
+O overlay de erros fica acessível em `/__vite__` e os sourcemaps são gerados em
+`dist`. O `ErrorBoundary` envia logs ao console ou Sentry quando a variável
+`VITE_SENTRY_DSN` estiver presente.
+
 \nSwagger UI disponível em /swagger-ui.html quando o backend estiver rodando.
 
 \n## Niches e Experiments\nCada Experiment pertence a um Market Niche. Use as rotas /api/niches/{nicheId}/experiments para criar e listar por nicho.

@@ -6,6 +6,9 @@ import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.repository.CreativeRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.creative.label.repository.AngleRepository;
+import com.marketinghub.creative.label.repository.VisualProofRepository;
+import com.marketinghub.creative.label.repository.EmotionalTriggerRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.FixtureUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +40,12 @@ class CreativeServiceTest {
     @Autowired
     ExperimentRepository experimentRepository;
     @Autowired
+    AngleRepository angleRepository;
+    @Autowired
+    VisualProofRepository visualProofRepository;
+    @Autowired
+    EmotionalTriggerRepository emotionalTriggerRepository;
+    @Autowired
     FixtureUtils fixtures;
 
     CreativeService service;
@@ -44,7 +53,13 @@ class CreativeServiceTest {
     @BeforeEach
     void setup() {
         HttpClient client = Mockito.mock(HttpClient.class);
-        service = new CreativeService(repository, experimentRepository, client);
+        service = new CreativeService(
+                repository,
+                experimentRepository,
+                angleRepository,
+                visualProofRepository,
+                emotionalTriggerRepository,
+                client);
     }
 
     @Test
@@ -67,7 +82,13 @@ class CreativeServiceTest {
         when(client.send(any(), any())).thenReturn((HttpResponse) resp);
         System.setProperty("FB_ACCESS_TOKEN", "dummy");
         try {
-            service = new CreativeService(repository, experimentRepository, client);
+            service = new CreativeService(
+                    repository,
+                    experimentRepository,
+                    angleRepository,
+                    visualProofRepository,
+                    emotionalTriggerRepository,
+                    client);
             String html = service.preview(1L);
             assertThat(html).contains("ok");
         } finally {

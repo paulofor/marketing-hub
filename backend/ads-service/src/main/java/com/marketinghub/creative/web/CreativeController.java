@@ -4,6 +4,7 @@ import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.creative.dto.CreativeDto;
 import com.marketinghub.creative.mapper.CreativeMapper;
 import com.marketinghub.creative.service.CreativeService;
+import com.marketinghub.creative.dto.UpdateCreativeLabelsRequest;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -44,6 +45,13 @@ public class CreativeController {
     @DeleteMapping("/api/creatives/{id}")
     public void delete(@PathVariable Long id) {
         service.delete(id);
+    }
+
+    @PatchMapping("/api/creatives/{id}/labels")
+    public CreativeDto patchLabels(@PathVariable Long id,
+                                   @RequestBody UpdateCreativeLabelsRequest request) {
+        return mapper.toDto(service.updateLabels(id,
+                request.getAngles(), request.getVisualProofs(), request.getEmotionalTriggers()));
     }
 
     @PostMapping("/api/assets")

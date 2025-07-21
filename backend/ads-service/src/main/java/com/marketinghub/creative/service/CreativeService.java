@@ -5,6 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.creative.*;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.creative.repository.CreativeRepository;
+import com.marketinghub.creative.label.repository.AngleRepository;
+import com.marketinghub.creative.label.repository.VisualProofRepository;
+import com.marketinghub.creative.label.repository.EmotionalTriggerRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import org.springframework.stereotype.Service;
@@ -33,6 +36,9 @@ public class CreativeService {
 
     private final CreativeRepository repository;
     private final ExperimentRepository experimentRepository;
+    private final AngleRepository angleRepository;
+    private final VisualProofRepository visualProofRepository;
+    private final EmotionalTriggerRepository emotionalTriggerRepository;
     private final HttpClient httpClient;
 
     /**
@@ -71,6 +77,23 @@ public class CreativeService {
 
     public Iterable<Creative> listByExperiment(Long experimentId) {
         return repository.findByExperimentId(experimentId);
+    }
+
+    @Transactional
+    public Creative updateLabels(Long id, java.util.Set<Long> angleIds,
+                                 java.util.Set<Long> proofIds,
+                                 java.util.Set<Long> triggerIds) {
+        Creative creative = repository.findById(id).orElseThrow();
+        if (angleIds != null) {
+            creative.setAngles(new java.util.HashSet<>(angleRepository.findAllById(angleIds)));
+        }
+        if (proofIds != null) {
+            creative.setVisualProofs(new java.util.HashSet<>(visualProofRepository.findAllById(proofIds)));
+        }
+        if (triggerIds != null) {
+            creative.setEmotionalTriggers(new java.util.HashSet<>(emotionalTriggerRepository.findAllById(triggerIds)));
+        }
+        return creative;
     }
 
     /**

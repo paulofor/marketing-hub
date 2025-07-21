@@ -111,3 +111,116 @@ components:
           type: string
           enum: [DRAFT, READY]
 
+  /api/angles:
+    get:
+      summary: Listar angles
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Criar angle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAngleRequest'
+      responses:
+        '200':
+          description: OK
+  /api/visual-proofs:
+    get:
+      summary: Listar visual proofs
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Criar visual proof
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVisualProofRequest'
+      responses:
+        '200':
+          description: OK
+  /api/emotional-triggers:
+    get:
+      summary: Listar emotional triggers
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Criar emotional trigger
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEmotionalTriggerRequest'
+      responses:
+        '200':
+          description: OK
+  /api/creatives/{id}/labels:
+    patch:
+      summary: Atualizar labels do criativo
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCreativeLabelsRequest'
+      responses:
+        '200':
+          description: OK
+components:
+  schemas:
+    CreateAngleRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        frameType:
+          type: string
+    CreateVisualProofRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        proofType:
+          type: string
+        description:
+          type: string
+    CreateEmotionalTriggerRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        valence:
+          type: string
+        description:
+          type: string
+    UpdateCreativeLabelsRequest:
+      type: object
+      properties:
+        angles:
+          type: array
+          items:
+            type: integer
+        visualProofs:
+          type: array
+          items:
+            type: integer
+        emotionalTriggers:
+          type: array
+          items:
+            type: integer

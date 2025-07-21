@@ -128,6 +128,30 @@ components:
       responses:
         '200':
           description: OK
+        '400':
+          description: Invalid data
+  /api/angles/{id}:
+    put:
+      summary: Atualizar angle
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AngleDto'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Invalid data
+        '404':
+          description: Not found
   /api/visual-proofs:
     get:
       summary: Listar visual proofs
@@ -190,6 +214,13 @@ components:
         description:
           type: string
         frameType:
+          type: string
+    AngleDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
           type: string
     CreateVisualProofRequest:
       type: object

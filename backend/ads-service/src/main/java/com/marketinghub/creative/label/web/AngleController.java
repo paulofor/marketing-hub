@@ -4,6 +4,7 @@ import com.marketinghub.creative.label.dto.AngleDto;
 import com.marketinghub.creative.label.dto.CreateAngleRequest;
 import com.marketinghub.creative.label.mapper.AngleMapper;
 import com.marketinghub.creative.label.service.AngleService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,8 +22,13 @@ public class AngleController {
     }
 
     @PostMapping
-    public AngleDto create(@RequestBody CreateAngleRequest request) {
+    public AngleDto create(@Valid @RequestBody CreateAngleRequest request) {
         return mapper.toDto(service.create(request));
+    }
+
+    @PutMapping("/{id}")
+    public AngleDto update(@PathVariable Long id, @Valid @RequestBody AngleDto dto) {
+        return mapper.toDto(service.update(id, dto));
     }
 
     @GetMapping("/{id}")

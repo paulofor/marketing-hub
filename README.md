@@ -83,7 +83,7 @@ O overlay de erros fica acessível em `/__vite__` e os sourcemaps são gerados e
 Os criativos representam variações de anúncios vinculados a um experimento. Utilize a rota `/api/experiments/{id}/creatives` para cadastrar e listar. A visualização de um criativo usa `/api/creatives/{id}/preview` que consulta a Marketing API do Facebook.
 
 ### Taxonomias reutilizáveis
-Angles, Visual Proofs e Emotional Triggers podem ser gerenciados via `/api/angles`, `/api/visual-proofs` e `/api/emotional-triggers`. Use `PATCH /api/creatives/{id}/labels` para vincular listas de IDs a um criativo.
+Angles, Visual Proofs e Emotional Triggers podem ser gerenciados via `/api/angles`, `/api/visual-proofs` e `/api/emotional-triggers`. Use `PATCH /api/creatives/{id}/labels` para vincular um angle, visual proof e emotional trigger a um criativo.
 
 ## Erros comuns Hibernate
 

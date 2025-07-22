@@ -3,9 +3,9 @@ import axios from "axios";
 import { Creative } from "./useCreatives";
 
 export interface UpdateCreativeLabels {
-  angles: number[];
-  visualProofs: number[];
-  emotionalTriggers: number[];
+  angleId?: number;
+  visualProofId?: number;
+  emotionalTriggerId?: number;
 }
 
 export interface UpdateCreativeLabelsVariables {

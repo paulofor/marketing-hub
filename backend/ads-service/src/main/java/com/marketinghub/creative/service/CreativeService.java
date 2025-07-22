@@ -80,18 +80,18 @@ public class CreativeService {
     }
 
     @Transactional
-    public Creative updateLabels(Long id, java.util.Set<Long> angleIds,
-                                 java.util.Set<Long> proofIds,
-                                 java.util.Set<Long> triggerIds) {
+    public Creative updateLabels(Long id, Long angleId,
+                                 Long proofId,
+                                 Long triggerId) {
         Creative creative = repository.findById(id).orElseThrow();
-        if (angleIds != null) {
-            creative.setAngles(new java.util.HashSet<>(angleRepository.findAllById(angleIds)));
+        if (angleId != null) {
+            creative.setAngles(java.util.Set.of(angleRepository.findById(angleId).orElseThrow()));
         }
-        if (proofIds != null) {
-            creative.setVisualProofs(new java.util.HashSet<>(visualProofRepository.findAllById(proofIds)));
+        if (proofId != null) {
+            creative.setVisualProofs(java.util.Set.of(visualProofRepository.findById(proofId).orElseThrow()));
         }
-        if (triggerIds != null) {
-            creative.setEmotionalTriggers(new java.util.HashSet<>(emotionalTriggerRepository.findAllById(triggerIds)));
+        if (triggerId != null) {
+            creative.setEmotionalTriggers(java.util.Set.of(emotionalTriggerRepository.findById(triggerId).orElseThrow()));
         }
         return creative;
     }

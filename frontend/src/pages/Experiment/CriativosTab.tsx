@@ -27,9 +27,9 @@ export default function CriativosTab({ experimentId }: Props) {
   const { data: angles } = useAngles();
   const { data: proofs } = useVisualProofs();
   const { data: triggers } = useEmotionalTriggers();
-  const [selectedAngles, setSelectedAngles] = useState<number[]>([]);
-  const [selectedProofs, setSelectedProofs] = useState<number[]>([]);
-  const [selectedTriggers, setSelectedTriggers] = useState<number[]>([]);
+  const [selectedAngle, setSelectedAngle] = useState<string>("");
+  const [selectedProof, setSelectedProof] = useState<string>("");
+  const [selectedTrigger, setSelectedTrigger] = useState<string>("");
   const patchLabels = useUpdateCreativeLabels(experimentId);
   const create = useCreateCreative(experimentId);
   const update = editing ? useUpdateCreative(editing.id, experimentId) : null;
@@ -43,9 +43,9 @@ export default function CriativosTab({ experimentId }: Props) {
   const openNew = () => {
     setEditing(null);
     setForm({ headline: "", primaryText: "", imageUrl: "", status: "DRAFT" });
-    setSelectedAngles([]);
-    setSelectedProofs([]);
-    setSelectedTriggers([]);
+    setSelectedAngle("");
+    setSelectedProof("");
+    setSelectedTrigger("");
     setShowForm(true);
   };
 
@@ -57,9 +57,11 @@ export default function CriativosTab({ experimentId }: Props) {
       await patchLabels.mutateAsync({
         id: created.id,
         labels: {
-          angles: selectedAngles,
-          visualProofs: selectedProofs,
-          emotionalTriggers: selectedTriggers,
+          angleId: selectedAngle ? Number(selectedAngle) : undefined,
+          visualProofId: selectedProof ? Number(selectedProof) : undefined,
+          emotionalTriggerId: selectedTrigger
+            ? Number(selectedTrigger)
+            : undefined,
         },
       });
     }
@@ -122,7 +124,9 @@ export default function CriativosTab({ experimentId }: Props) {
                 <td>
                   <span
                     className={
-                      c.status === "READY" ? "badge bg-success" : "badge bg-secondary"
+                      c.status === "READY"
+                        ? "badge bg-success"
+                        : "badge bg-secondary"
                     }
                   >
                     {c.status}
@@ -168,18 +172,29 @@ export default function CriativosTab({ experimentId }: Props) {
           <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">{editing ? "Editar" : "Novo"} Criativo</h5>
-                <button className="btn-close" onClick={() => setShowForm(false)} />
+                <h5 className="modal-title">
+                  {editing ? "Editar" : "Novo"} Criativo
+                </h5>
+                <button
+                  className="btn-close"
+                  onClick={() => setShowForm(false)}
+                />
               </div>
               <div className="modal-body">
-                <input type="file" className="form-control mb-2" onChange={upload} />
+                <input
+                  type="file"
+                  className="form-control mb-2"
+                  onChange={upload}
+                />
                 <input
                   className="form-control mb-2"
                   placeholder="Headline"
                   maxLength={40}
                   value={form.headline}
                   title="máx. 40 caracteres"
-                  onChange={(e) => setForm({ ...form, headline: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, headline: e.target.value })
+                  }
                 />
                 <textarea
                   className="form-control mb-2"
@@ -187,22 +202,16 @@ export default function CriativosTab({ experimentId }: Props) {
                   maxLength={125}
                   value={form.primaryText}
                   title="máx. 125 caracteres"
-                  onChange={(e) => setForm({ ...form, primaryText: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, primaryText: e.target.value })
+                  }
                 />
                 {!editing && (
                   <>
                     <select
-                      multiple
                       className="form-select mb-2"
-                      value={selectedAngles.map(String)}
-                      onChange={(e) =>
-                        setSelectedAngles(
-                          Array.from(
-                            e.target.selectedOptions,
-                            (o) => Number(o.value),
-                          ),
-                        )
-                      }
+                      value={selectedAngle}
+                      onChange={(e) => setSelectedAngle(e.target.value)}
                     >
                       {Array.isArray(angles) &&
                         angles.map((a) => (
@@ -212,17 +221,9 @@ export default function CriativosTab({ experimentId }: Props) {
                         ))}
                     </select>
                     <select
-                      multiple
                       className="form-select mb-2"
-                      value={selectedProofs.map(String)}
-                      onChange={(e) =>
-                        setSelectedProofs(
-                          Array.from(
-                            e.target.selectedOptions,
-                            (o) => Number(o.value),
-                          ),
-                        )
-                      }
+                      value={selectedProof}
+                      onChange={(e) => setSelectedProof(e.target.value)}
                     >
                       {Array.isArray(proofs) &&
                         proofs.map((p) => (
@@ -232,17 +233,9 @@ export default function CriativosTab({ experimentId }: Props) {
                         ))}
                     </select>
                     <select
-                      multiple
                       className="form-select mb-2"
-                      value={selectedTriggers.map(String)}
-                      onChange={(e) =>
-                        setSelectedTriggers(
-                          Array.from(
-                            e.target.selectedOptions,
-                            (o) => Number(o.value),
-                          ),
-                        )
-                      }
+                      value={selectedTrigger}
+                      onChange={(e) => setSelectedTrigger(e.target.value)}
                     >
                       {Array.isArray(triggers) &&
                         triggers.map((t) => (
@@ -284,7 +277,10 @@ export default function CriativosTab({ experimentId }: Props) {
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Preview</h5>
-                <button className="btn-close" onClick={() => setShowPreview(false)} />
+                <button
+                  className="btn-close"
+                  onClick={() => setShowPreview(false)}
+                />
               </div>
               <div className="modal-body">
                 <iframe

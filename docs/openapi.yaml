@@ -96,6 +96,37 @@ components:
       responses:
         '200':
           description: OK
+  /api/experiments/{experimentId}/landing:
+    post:
+      summary: Criar landing page
+      parameters:
+        - in: path
+          name: experimentId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                html:
+                  type: string
+    get:
+      summary: Listar landing pages do experimento
+      parameters:
+        - in: path
+          name: experimentId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
 components:
   schemas:
     CreateCreativeRequest:

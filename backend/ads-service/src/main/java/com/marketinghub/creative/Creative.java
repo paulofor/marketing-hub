@@ -33,6 +33,14 @@ public class Creative {
     @Column(name = "image_url")
     private String imageUrl;
 
+    /** Hash da imagem hospedada no Facebook. */
+    @Column(name = "image_hash")
+    private String imageHash;
+
+    /** ID de um vídeo já enviado para o Facebook. */
+    @Column(name = "video_id")
+    private String videoId;
+
     @Enumerated(EnumType.STRING)
     private CreativeStatus status;
 

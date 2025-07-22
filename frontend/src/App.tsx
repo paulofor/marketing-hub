@@ -25,6 +25,7 @@ import ExperimentListPage from "./pages/experiment/ExperimentListPage";
 import NewExperimentPage from "./pages/experiment/NewExperimentPage";
 import ExperimentDetailPage from "./pages/experiment/ExperimentDetailPage";
 import AnglesPage from "./pages/AnglesPage";
+import VisualProofsPage from "./pages/VisualProofsPage";
 
 export default function App() {
   return (
@@ -63,6 +64,7 @@ export default function App() {
               IA
             </Link>
             <Link className="nav-link" to="/angles">Angles</Link>
+            <Link className="nav-link" to="/visual-proofs">Provas Visuais</Link>
           </div>
         </div>
       </nav>
@@ -100,6 +102,7 @@ export default function App() {
         <Route path="/ai-services/new" element={<NewAiServicePage />} />
         <Route path="/ai-services/:id/edit" element={<EditAiServicePage />} />
         <Route path="/angles" element={<AnglesPage />} />
+        <Route path="/visual-proofs" element={<VisualProofsPage />} />
         <Route path="*" element={<div>Início</div>} />
       </Routes>
     </div>

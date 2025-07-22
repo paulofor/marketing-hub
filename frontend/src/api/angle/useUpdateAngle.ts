@@ -5,6 +5,7 @@ import { Angle } from "./useAngles";
 export interface UpdateAngle {
   id: number;
   name: string;
+  description?: string;
 }
 
 export function useUpdateAngle() {

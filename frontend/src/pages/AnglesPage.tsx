@@ -10,8 +10,10 @@ export default function AnglesPage() {
   const create = useCreateAngle();
   const update = useUpdateAngle();
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [editId, setEditId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
 
   useEffect(() => {
     if (Array.isArray(data)) setAngles(data);
@@ -22,9 +24,10 @@ export default function AnglesPage() {
   const submit = async () => {
     if (disabled) return;
     try {
-      const res = await create.mutateAsync({ name });
+      const res = await create.mutateAsync({ name, description });
       setAngles([...angles, res]);
       setName("");
+      setDescription("");
     } catch {
       alert("Erro ao salvar Angle");
     }
@@ -32,7 +35,11 @@ export default function AnglesPage() {
 
   const confirm = async (id: number) => {
     try {
-      const updated = await update.mutateAsync({ id, name: editName });
+      const updated = await update.mutateAsync({
+        id,
+        name: editName,
+        description: editDescription,
+      });
       setAngles(angles.map((a) => (a.id === id ? updated : a)));
       setEditId(null);
     } catch {
@@ -48,6 +55,13 @@ export default function AnglesPage() {
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
+      <textarea
+        className="form-control mb-2"
+        placeholder="Descrição"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        rows={3}
+      />
       <button className="btn btn-primary mb-3" onClick={submit} disabled={disabled}>
         Novo Angle
       </button>
@@ -61,6 +75,13 @@ export default function AnglesPage() {
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                 />
+                <textarea
+                  className="form-control mb-2"
+                  placeholder="Descrição"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows={2}
+                />
                 <button className="btn btn-success btn-sm me-1" onClick={() => confirm(a.id)}>
                   ✔️
                 </button>
@@ -71,7 +92,13 @@ export default function AnglesPage() {
             ) : (
               <>
                 {a.name}{" "}
-                <button className="btn btn-link p-0" onClick={() => { setEditId(a.id); setEditName(a.name); }}>
+                <button
+                  className="btn btn-link p-0"
+                  onClick={() => {
+                    setEditId(a.id);
+                    setEditName(a.name);
+                    setEditDescription(a.description || "");
+                  }}>
                   ✏️
                 </button>
               </>

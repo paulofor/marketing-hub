@@ -1,6 +1,5 @@
 import { Route, Routes, Link } from "react-router-dom";
 
-
 import FacebookAccountsPage from "./pages/FacebookAccountsPage";
 import InstagramAccountsPage from "./pages/InstagramAccountsPage";
 import MediaListPage from "./pages/media/MediaListPage";
@@ -26,6 +25,7 @@ import NewExperimentPage from "./pages/experiment/NewExperimentPage";
 import ExperimentDetailPage from "./pages/experiment/ExperimentDetailPage";
 import AnglesPage from "./pages/AnglesPage";
 import VisualProofsPage from "./pages/VisualProofsPage";
+import EmotionalTriggersPage from "./pages/EmotionalTriggersPage";
 
 export default function App() {
   return (
@@ -63,8 +63,15 @@ export default function App() {
             <Link className="nav-link" to="/ai-services">
               IA
             </Link>
-            <Link className="nav-link" to="/angles">Angles</Link>
-            <Link className="nav-link" to="/visual-proofs">Provas Visuais</Link>
+            <Link className="nav-link" to="/angles">
+              Angles
+            </Link>
+            <Link className="nav-link" to="/visual-proofs">
+              Provas Visuais
+            </Link>
+            <Link className="nav-link" to="/emotional-triggers">
+              Gatilhos Emocionais
+            </Link>
           </div>
         </div>
       </nav>
@@ -103,6 +110,7 @@ export default function App() {
         <Route path="/ai-services/:id/edit" element={<EditAiServicePage />} />
         <Route path="/angles" element={<AnglesPage />} />
         <Route path="/visual-proofs" element={<VisualProofsPage />} />
+        <Route path="/emotional-triggers" element={<EmotionalTriggersPage />} />
         <Route path="*" element={<div>Início</div>} />
       </Routes>
     </div>

@@ -26,6 +26,8 @@ import ExperimentDetailPage from "./pages/experiment/ExperimentDetailPage";
 import AnglesPage from "./pages/AnglesPage";
 import VisualProofsPage from "./pages/VisualProofsPage";
 import EmotionalTriggersPage from "./pages/EmotionalTriggersPage";
+import LandingPreview from "./pages/landing/LandingPreview";
+import AnalyticsDashboard from "./pages/landing/AnalyticsDashboard";
 
 export default function App() {
   return (
@@ -111,6 +113,8 @@ export default function App() {
         <Route path="/angles" element={<AnglesPage />} />
         <Route path="/visual-proofs" element={<VisualProofsPage />} />
         <Route path="/emotional-triggers" element={<EmotionalTriggersPage />} />
+        <Route path="/landing/:id" element={<LandingPreview />} />
+        <Route path="/analytics" element={<AnalyticsDashboard />} />
         <Route path="*" element={<div>Início</div>} />
       </Routes>
     </div>

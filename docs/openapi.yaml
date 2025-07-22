@@ -245,15 +245,9 @@ components:
     UpdateCreativeLabelsRequest:
       type: object
       properties:
-        angles:
-          type: array
-          items:
-            type: integer
-        visualProofs:
-          type: array
-          items:
-            type: integer
-        emotionalTriggers:
-          type: array
-          items:
-            type: integer
+        angleId:
+          type: integer
+        visualProofId:
+          type: integer
+        emotionalTriggerId:
+          type: integer

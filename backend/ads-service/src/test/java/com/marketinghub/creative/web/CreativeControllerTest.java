@@ -48,6 +48,12 @@ class CreativeControllerTest {
     MarketNicheRepository marketNicheRepository;
     @Autowired
     FixtureUtils fixtures;
+    @Autowired
+    com.marketinghub.creative.label.repository.AngleRepository angleRepository;
+    @Autowired
+    com.marketinghub.creative.label.repository.VisualProofRepository visualProofRepository;
+    @Autowired
+    com.marketinghub.creative.label.repository.EmotionalTriggerRepository emotionalTriggerRepository;
 
     Long expId;
 
@@ -73,5 +79,41 @@ class CreativeControllerTest {
                         .content(mapper.writeValueAsString(req)))
                 .andExpect(status().isOk());
         assertThat(repository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void patchLabelsAssignsSingleLabels() throws Exception {
+        // create creative
+        CreateCreativeRequest req = new CreateCreativeRequest();
+        req.setHeadline("H");
+        req.setPrimaryText("P");
+        req.setImageUrl("img");
+        req.setStatus(CreativeStatus.DRAFT);
+        String resp = mockMvc.perform(post("/api/experiments/" + expId + "/creatives")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        com.marketinghub.creative.dto.CreativeDto created =
+                mapper.readValue(resp, com.marketinghub.creative.dto.CreativeDto.class);
+
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+        var proof = visualProofRepository.save(com.marketinghub.creative.label.VisualProof.builder().name("V").build());
+        var trigger = emotionalTriggerRepository.save(com.marketinghub.creative.label.EmotionalTrigger.builder().name("T").build());
+
+        var labels = new com.marketinghub.creative.dto.UpdateCreativeLabelsRequest();
+        labels.setAngleId(angle.getId());
+        labels.setVisualProofId(proof.getId());
+        labels.setEmotionalTriggerId(trigger.getId());
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/creatives/" + created.getId() + "/labels")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(labels)))
+                .andExpect(status().isOk());
+
+        var found = repository.findById(created.getId()).orElseThrow();
+        assertThat(found.getAngles()).hasSize(1);
+        assertThat(found.getVisualProofs()).hasSize(1);
+        assertThat(found.getEmotionalTriggers()).hasSize(1);
     }
 }

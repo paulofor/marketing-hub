@@ -51,7 +51,7 @@ public class CreativeController {
     public CreativeDto patchLabels(@PathVariable Long id,
                                    @RequestBody UpdateCreativeLabelsRequest request) {
         return mapper.toDto(service.updateLabels(id,
-                request.getAngles(), request.getVisualProofs(), request.getEmotionalTriggers()));
+                request.getAngleId(), request.getVisualProofId(), request.getEmotionalTriggerId()));
     }
 
     @PostMapping("/api/assets")

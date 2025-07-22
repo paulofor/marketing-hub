@@ -4,6 +4,10 @@ import { useCreateCreative } from "../../api/creative/useCreateCreative";
 import { useUpdateCreative } from "../../api/creative/useUpdateCreative";
 import { useDeleteCreative } from "../../api/creative/useDeleteCreative";
 import { usePreviewCreative } from "../../api/creative/usePreviewCreative";
+import { useAngles } from "../../api/angle/useAngles";
+import { useVisualProofs } from "../../api/visualProof/useVisualProofs";
+import { useEmotionalTriggers } from "../../api/emotionalTrigger/useEmotionalTriggers";
+import { useUpdateCreativeLabels } from "../../api/creative/useUpdateCreativeLabels";
 
 interface Props {
   experimentId: string;
@@ -20,6 +24,13 @@ export default function CriativosTab({ experimentId }: Props) {
     imageUrl: "",
     status: "DRAFT",
   });
+  const { data: angles } = useAngles();
+  const { data: proofs } = useVisualProofs();
+  const { data: triggers } = useEmotionalTriggers();
+  const [selectedAngles, setSelectedAngles] = useState<number[]>([]);
+  const [selectedProofs, setSelectedProofs] = useState<number[]>([]);
+  const [selectedTriggers, setSelectedTriggers] = useState<number[]>([]);
+  const patchLabels = useUpdateCreativeLabels(experimentId);
   const create = useCreateCreative(experimentId);
   const update = editing ? useUpdateCreative(editing.id, experimentId) : null;
   const del = useDeleteCreative(0, experimentId); // id changed dynamically
@@ -32,6 +43,9 @@ export default function CriativosTab({ experimentId }: Props) {
   const openNew = () => {
     setEditing(null);
     setForm({ headline: "", primaryText: "", imageUrl: "", status: "DRAFT" });
+    setSelectedAngles([]);
+    setSelectedProofs([]);
+    setSelectedTriggers([]);
     setShowForm(true);
   };
 
@@ -39,7 +53,15 @@ export default function CriativosTab({ experimentId }: Props) {
     if (editing) {
       await update?.mutateAsync(form);
     } else {
-      await create.mutateAsync(form);
+      const created = await create.mutateAsync(form);
+      await patchLabels.mutateAsync({
+        id: created.id,
+        labels: {
+          angles: selectedAngles,
+          visualProofs: selectedProofs,
+          emotionalTriggers: selectedTriggers,
+        },
+      });
     }
     setShowForm(false);
   };
@@ -167,6 +189,70 @@ export default function CriativosTab({ experimentId }: Props) {
                   title="máx. 125 caracteres"
                   onChange={(e) => setForm({ ...form, primaryText: e.target.value })}
                 />
+                {!editing && (
+                  <>
+                    <select
+                      multiple
+                      className="form-select mb-2"
+                      value={selectedAngles.map(String)}
+                      onChange={(e) =>
+                        setSelectedAngles(
+                          Array.from(
+                            e.target.selectedOptions,
+                            (o) => Number(o.value),
+                          ),
+                        )
+                      }
+                    >
+                      {Array.isArray(angles) &&
+                        angles.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.name}
+                          </option>
+                        ))}
+                    </select>
+                    <select
+                      multiple
+                      className="form-select mb-2"
+                      value={selectedProofs.map(String)}
+                      onChange={(e) =>
+                        setSelectedProofs(
+                          Array.from(
+                            e.target.selectedOptions,
+                            (o) => Number(o.value),
+                          ),
+                        )
+                      }
+                    >
+                      {Array.isArray(proofs) &&
+                        proofs.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                    </select>
+                    <select
+                      multiple
+                      className="form-select mb-2"
+                      value={selectedTriggers.map(String)}
+                      onChange={(e) =>
+                        setSelectedTriggers(
+                          Array.from(
+                            e.target.selectedOptions,
+                            (o) => Number(o.value),
+                          ),
+                        )
+                      }
+                    >
+                      {Array.isArray(triggers) &&
+                        triggers.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.name}
+                          </option>
+                        ))}
+                    </select>
+                  </>
+                )}
                 <select
                   className="form-select"
                   value={form.status}

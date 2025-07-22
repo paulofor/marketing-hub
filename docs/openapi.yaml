@@ -215,13 +215,15 @@ components:
           type: string
         frameType:
           type: string
-    AngleDto:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
+  AngleDto:
+    type: object
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      description:
+        type: string
     CreateVisualProofRequest:
       type: object
       properties:

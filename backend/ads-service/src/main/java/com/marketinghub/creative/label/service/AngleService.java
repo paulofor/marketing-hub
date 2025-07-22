@@ -40,6 +40,7 @@ public class AngleService {
         Angle angle = repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         angle.setName(dto.getName());
+        angle.setDescription(dto.getDescription());
         return repository.save(angle);
     }
 }

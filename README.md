@@ -91,3 +91,12 @@ Para evitar `PersistentObjectException: detached entity passed to persist`, anex
 entidades existentes usando `entityManager.getReference()` em vez de criar
 instâncias soltas. O método `attachNiche()` no serviço de experiments demonstra
 essa abordagem.
+
+## Niche Smoke Test Workflow
+
+1. Crie um nicho e um experimento via `/api/niches` e `/api/niches/{id}/experiments`.
+2. Gere landing pages com `POST /api/experiments/{expId}/landing`.
+3. Utilize o Ad Generator para criar criativos combinando angle, prova visual e gatilho emocional.
+4. O worker publica os anúncios em modo `PAUSED` e coleta métricas horárias.
+5. A regra de stop-loss pausa conjuntos com CPA acima do dobro da meta.
+6. Dashboards em `/analytics` mostram CTR, CPL e CPA por combinação.

@@ -25,6 +25,11 @@ public class EmotionalTriggerController {
         return mapper.toDto(service.create(request));
     }
 
+    @PutMapping("/{id}")
+    public EmotionalTriggerDto update(@PathVariable Long id, @RequestBody EmotionalTriggerDto dto) {
+        return mapper.toDto(service.update(id, dto));
+    }
+
     @GetMapping("/{id}")
     public EmotionalTriggerDto get(@PathVariable Long id) {
         return mapper.toDto(service.get(id));

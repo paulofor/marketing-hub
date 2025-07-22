@@ -90,18 +90,25 @@ export default function AnglesPage() {
                 </button>
               </>
             ) : (
-              <>
-                {a.name}{" "}
-                <button
-                  className="btn btn-link p-0"
-                  onClick={() => {
-                    setEditId(a.id);
-                    setEditName(a.name);
-                    setEditDescription(a.description || "");
-                  }}>
-                  ✏️
-                </button>
-              </>
+              <div>
+                <div className="d-flex align-items-start">
+                  <div className="flex-grow-1">
+                    {a.name}
+                    {a.description && (
+                      <div className="text-muted small">{a.description}</div>
+                    )}
+                  </div>
+                  <button
+                    className="btn btn-link p-0"
+                    onClick={() => {
+                      setEditId(a.id);
+                      setEditName(a.name);
+                      setEditDescription(a.description || "");
+                    }}>
+                    ✏️
+                  </button>
+                </div>
+              </div>
             )}
           </li>
         ))}

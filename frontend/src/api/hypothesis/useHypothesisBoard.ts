@@ -7,6 +7,7 @@ export interface Hypothesis {
   title: string;
   premiseAngleId?: number;
   offerType?: string;
+  price?: number;
   kpiTargetCpl?: number;
   status: string;
 }

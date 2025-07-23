@@ -313,6 +313,29 @@ components:
       responses:
         '200':
           description: OK
+  /api/hypotheses:
+    post:
+      summary: Criar hipótese
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHypothesisRequest'
+      responses:
+        '201':
+          description: Created
+    get:
+      summary: Listar hipóteses
+      parameters:
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
   /api/hypotheses/{id}/status:
     patch:
       summary: Atualizar status da hipótese
@@ -321,12 +344,16 @@ components:
           name: id
           required: true
           schema:
-            type: integer
-        - in: query
-          name: status
-          required: true
-          schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
       responses:
         '200':
           description: OK
@@ -347,11 +374,15 @@ components:
     CreateHypothesisRequest:
       type: object
       properties:
+        experimentId:
+          type: integer
         title:
           type: string
         premiseAngleId:
           type: integer
         offerType:
           type: string
+        price:
+          type: number
         kpiTargetCpl:
           type: number

@@ -44,11 +44,12 @@ class HypothesisServiceTest {
         Experiment exp = fixtures.createAndSaveExperiment(niche);
         var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
         CreateHypothesisRequest req = new CreateHypothesisRequest();
+        req.setExperimentId(exp.getId());
         req.setTitle("Teste");
         req.setPremiseAngleId(angle.getId());
         req.setOfferType("LEAD");
         req.setKpiTargetCpl(new BigDecimal("5"));
-        Hypothesis h = service.create(exp.getId(), req);
+        Hypothesis h = service.create(req);
         assertThat(h.getId()).isNotNull();
         assertThat(h.getStatus()).isEqualTo(HypothesisStatus.BACKLOG);
     }
@@ -58,8 +59,35 @@ class HypothesisServiceTest {
         MarketNiche niche = fixtures.createAndSaveNiche();
         Experiment exp = fixtures.createAndSaveExperiment(niche);
         CreateHypothesisRequest req = new CreateHypothesisRequest();
+        req.setExperimentId(exp.getId());
         req.setTitle("   ");
-        assertThatThrownBy(() -> service.create(exp.getId(), req))
+        assertThatThrownBy(() -> service.create(req))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    }
+
+    @Test
+    void validateAngleAndKpi() {
+        MarketNiche niche = fixtures.createAndSaveNiche();
+        Experiment exp = fixtures.createAndSaveExperiment(niche);
+        CreateHypothesisRequest req = new CreateHypothesisRequest();
+        req.setExperimentId(exp.getId());
+        req.setTitle("T");
+        assertThatThrownBy(() -> service.create(req))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    }
+
+    @Test
+    void priceRequiredForTripwire() {
+        MarketNiche niche = fixtures.createAndSaveNiche();
+        Experiment exp = fixtures.createAndSaveExperiment(niche);
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+        CreateHypothesisRequest req = new CreateHypothesisRequest();
+        req.setExperimentId(exp.getId());
+        req.setTitle("T");
+        req.setPremiseAngleId(angle.getId());
+        req.setOfferType("TRIPWIRE");
+        req.setKpiTargetCpl(new BigDecimal("5"));
+        assertThatThrownBy(() -> service.create(req))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     }
 }

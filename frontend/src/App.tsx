@@ -24,6 +24,7 @@ import ExperimentListPage from "./pages/experiment/ExperimentListPage";
 import NewExperimentPage from "./pages/experiment/NewExperimentPage";
 import ExperimentDetailPage from "./pages/experiment/ExperimentDetailPage";
 import HypothesesPage from "./pages/hypothesis/HypothesesPage";
+import HypothesisListPage from "./pages/hypothesis/HypothesisListPage";
 import AnglesPage from "./pages/AnglesPage";
 import VisualProofsPage from "./pages/VisualProofsPage";
 import EmotionalTriggersPage from "./pages/EmotionalTriggersPage";
@@ -154,7 +155,8 @@ export default function App() {
         <Route path="/experiments" element={<ExperimentListPage />} />
         <Route path="/experiments/new" element={<NewExperimentPage />} />
         <Route path="/experiments/:id" element={<ExperimentDetailPage />} />
-        <Route path="/hypotheses" element={<HypothesesPage />} />
+        <Route path="/hypotheses" element={<HypothesisListPage />} />
+        <Route path="/hypotheses/board" element={<HypothesesPage />} />
         <Route path="/ai-services" element={<AiServiceListPage />} />
         <Route path="/ai-services/new" element={<NewAiServicePage />} />
         <Route path="/ai-services/:id/edit" element={<EditAiServicePage />} />

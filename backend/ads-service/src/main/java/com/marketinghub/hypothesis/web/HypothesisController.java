@@ -31,8 +31,9 @@ public class HypothesisController {
     }
 
     @GetMapping("/experiments/{experimentId}/hypotheses")
-    public List<HypothesisDto> list(@PathVariable Long experimentId) {
-        return StreamSupport.stream(service.listByExperiment(experimentId).spliterator(), false)
+    public List<HypothesisDto> list(@PathVariable Long experimentId,
+                                    @RequestParam(value = "status", required = false) HypothesisStatus status) {
+        return StreamSupport.stream(service.listByExperiment(experimentId, status).spliterator(), false)
                 .map(mapper::toDto)
                 .toList();
     }

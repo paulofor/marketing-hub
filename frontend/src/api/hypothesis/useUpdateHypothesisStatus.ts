@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import { toast } from "react-toastify";
 import { Hypothesis } from "./useHypothesisBoard";
 
 export function useUpdateHypothesisStatus(experimentId: string) {
@@ -13,6 +14,10 @@ export function useUpdateHypothesisStatus(experimentId: string) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["hypothesis-board", experimentId] });
+      toast.success("Status atualizado");
+    },
+    onError: () => {
+      toast.error("Erro ao atualizar status");
     },
   });
 }

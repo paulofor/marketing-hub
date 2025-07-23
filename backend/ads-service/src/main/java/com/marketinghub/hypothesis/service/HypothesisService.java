@@ -61,8 +61,11 @@ public class HypothesisService {
         return repository.save(h);
     }
 
-    public Iterable<Hypothesis> listByExperiment(Long experimentId) {
-        return repository.findByExperimentId(experimentId);
+    public Iterable<Hypothesis> listByExperiment(Long experimentId, HypothesisStatus status) {
+        if (status == null) {
+            return repository.findByExperimentId(experimentId);
+        }
+        return repository.findByExperimentIdAndStatus(experimentId, status);
     }
 
     @Transactional

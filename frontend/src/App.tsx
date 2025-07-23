@@ -29,6 +29,8 @@ import VisualProofsPage from "./pages/VisualProofsPage";
 import EmotionalTriggersPage from "./pages/EmotionalTriggersPage";
 import LandingPreview from "./pages/landing/LandingPreview";
 import AnalyticsDashboard from "./pages/landing/AnalyticsDashboard";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function App() {
   return (
@@ -88,7 +90,10 @@ export default function App() {
               >
                 Teste de Mercado
               </span>
-              <ul className="dropdown-menu" aria-labelledby="market-test-dropdown">
+              <ul
+                className="dropdown-menu"
+                aria-labelledby="market-test-dropdown"
+              >
                 <li>
                   <a className="dropdown-item" href="#">
                     1- Hipotese e Oferta Isca
@@ -160,6 +165,7 @@ export default function App() {
         <Route path="/analytics" element={<AnalyticsDashboard />} />
         <Route path="*" element={<div>Início</div>} />
       </Routes>
+      <ToastContainer position="top-right" />
     </div>
   );
 }

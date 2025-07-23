@@ -7,6 +7,7 @@ import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.hypothesis.*;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import java.util.UUID;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -56,8 +57,8 @@ public class HypothesisService {
                 .title(req.getTitle())
                 .premiseAngle(attachAngle(req.getPremiseAngleId()))
                 .offerType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()))
+                .price(req.getPrice())
                 .kpiTargetCpl(req.getKpiTargetCpl())
-                .status(HypothesisStatus.BACKLOG)
                 .build();
         return repository.save(h);
     }
@@ -70,7 +71,7 @@ public class HypothesisService {
     }
 
     @Transactional
-    public Hypothesis updateStatus(Long id, HypothesisStatus status) {
+    public Hypothesis updateStatus(UUID id, HypothesisStatus status) {
         Hypothesis h = repository.findById(id).orElseThrow();
         h.setStatus(status);
         return h;

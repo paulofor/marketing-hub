@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.StreamSupport;
 
 @RestController
@@ -39,7 +40,7 @@ public class HypothesisController {
     }
 
     @PatchMapping("/hypotheses/{id}/status")
-    public HypothesisDto patchStatus(@PathVariable Long id, @RequestParam HypothesisStatus status) {
+    public HypothesisDto patchStatus(@PathVariable UUID id, @RequestParam HypothesisStatus status) {
         return mapper.toDto(service.updateStatus(id, status));
     }
 

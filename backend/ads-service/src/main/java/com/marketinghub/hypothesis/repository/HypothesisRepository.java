@@ -6,7 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface HypothesisRepository extends JpaRepository<Hypothesis, Long> {
+import java.util.UUID;
+
+public interface HypothesisRepository extends JpaRepository<Hypothesis, UUID> {
     List<Hypothesis> findByExperimentId(Long experimentId);
     List<Hypothesis> findByExperimentIdAndStatus(Long experimentId, HypothesisStatus status);
 }

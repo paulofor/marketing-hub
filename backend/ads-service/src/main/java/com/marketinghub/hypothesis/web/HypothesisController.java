@@ -26,6 +26,19 @@ public class HypothesisController {
         this.facade = facade;
     }
 
+    @PostMapping("/hypotheses")
+    @ResponseStatus(org.springframework.http.HttpStatus.CREATED)
+    public HypothesisDto create(@RequestBody CreateHypothesisRequest req) {
+        return mapper.toDto(service.create(req));
+    }
+
+    @GetMapping("/hypotheses")
+    public List<HypothesisDto> listAll(@RequestParam(value = "status", required = false) HypothesisStatus status) {
+        return StreamSupport.stream(service.list(status).spliterator(), false)
+                .map(mapper::toDto)
+                .toList();
+    }
+
     @PostMapping("/experiments/{experimentId}/hypotheses")
     public HypothesisDto create(@PathVariable Long experimentId, @RequestBody CreateHypothesisRequest req) {
         return mapper.toDto(service.create(experimentId, req));
@@ -40,7 +53,8 @@ public class HypothesisController {
     }
 
     @PatchMapping("/hypotheses/{id}/status")
-    public HypothesisDto patchStatus(@PathVariable UUID id, @RequestParam HypothesisStatus status) {
+    public HypothesisDto patchStatus(@PathVariable UUID id, @RequestBody Map<String, HypothesisStatus> body) {
+        HypothesisStatus status = body.get("status");
         return mapper.toDto(service.updateStatus(id, status));
     }
 

@@ -11,4 +11,5 @@ import java.util.UUID;
 public interface HypothesisRepository extends JpaRepository<Hypothesis, UUID> {
     List<Hypothesis> findByExperimentId(Long experimentId);
     List<Hypothesis> findByExperimentIdAndStatus(Long experimentId, HypothesisStatus status);
+    List<Hypothesis> findByStatus(HypothesisStatus status);
 }

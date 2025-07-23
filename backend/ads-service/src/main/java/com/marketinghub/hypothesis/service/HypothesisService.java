@@ -47,13 +47,40 @@ public class HypothesisService {
         return em.getReference(Angle.class, id);
     }
 
-    @Transactional
-    public Hypothesis create(Long experimentId, CreateHypothesisRequest req) {
+    private void validate(CreateHypothesisRequest req) {
         if (req.getTitle() == null || req.getTitle().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "title required");
         }
+        if (req.getPremiseAngleId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "angle required");
+        }
+        if (req.getKpiTargetCpl() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "kpiTargetCpl required");
+        }
+        if ("TRIPWIRE".equals(req.getOfferType()) && req.getPrice() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "price required for TRIPWIRE");
+        }
+    }
+
+    @Transactional
+    public Hypothesis create(Long experimentId, CreateHypothesisRequest req) {
+        validate(req);
         Hypothesis h = Hypothesis.builder()
                 .experiment(attachExperiment(experimentId))
+                .title(req.getTitle())
+                .premiseAngle(attachAngle(req.getPremiseAngleId()))
+                .offerType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()))
+                .price(req.getPrice())
+                .kpiTargetCpl(req.getKpiTargetCpl())
+                .build();
+        return repository.save(h);
+    }
+
+    @Transactional
+    public Hypothesis create(CreateHypothesisRequest req) {
+        validate(req);
+        Hypothesis h = Hypothesis.builder()
+                .experiment(attachExperiment(req.getExperimentId()))
                 .title(req.getTitle())
                 .premiseAngle(attachAngle(req.getPremiseAngleId()))
                 .offerType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()))
@@ -68,6 +95,13 @@ public class HypothesisService {
             return repository.findByExperimentId(experimentId);
         }
         return repository.findByExperimentIdAndStatus(experimentId, status);
+    }
+
+    public Iterable<Hypothesis> list(HypothesisStatus status) {
+        if (status == null) {
+            return repository.findAll();
+        }
+        return repository.findByStatus(status);
     }
 
     @Transactional

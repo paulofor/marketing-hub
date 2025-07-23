@@ -100,3 +100,19 @@ essa abordagem.
 4. O worker publica os anúncios em modo `PAUSED` e coleta métricas horárias.
 5. A regra de stop-loss pausa conjuntos com CPA acima do dobro da meta.
 6. Dashboards em `/analytics` mostram CTR, CPL e CPA por combinação.
+
+## Fluxo de Hipóteses & Ofertas
+
+```mermaid
+flowchart LR
+    B(Backlog) --> T(Testing)
+    T --> V(Validated)
+    T --> I(Invalidated)
+```
+
+```mermaid
+flowchart TD
+    H(Hypothesis) --> L(Landing)
+    L --> C(Creative)
+    C --> S(Insights)
+```

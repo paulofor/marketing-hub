@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
         "spring.datasource.username=sa",
         "spring.jpa.hibernate.ddl-auto=create"
 })
+@org.springframework.transaction.annotation.Transactional
 class HypothesisServiceTest {
     @Autowired
     HypothesisService service;

@@ -44,19 +44,19 @@ public class Creative {
     @Enumerated(EnumType.STRING)
     private CreativeStatus status;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "creative_angle",
             joinColumns = @JoinColumn(name = "creative_id"),
             inverseJoinColumns = @JoinColumn(name = "angle_id"))
     private java.util.Set<Angle> angles = new java.util.HashSet<>();
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "creative_visual_proof",
             joinColumns = @JoinColumn(name = "creative_id"),
             inverseJoinColumns = @JoinColumn(name = "proof_id"))
     private java.util.Set<VisualProof> visualProofs = new java.util.HashSet<>();
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "creative_emotional_trigger",
             joinColumns = @JoinColumn(name = "creative_id"),
             inverseJoinColumns = @JoinColumn(name = "trigger_id"))

@@ -74,6 +74,44 @@ export default function App() {
             <Link className="nav-link" to="/emotional-triggers">
               Gatilhos Emocionais
             </Link>
+            <div className="nav-item dropdown">
+              <span
+                className="nav-link dropdown-toggle"
+                id="market-test-dropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                Teste de Mercado
+              </span>
+              <ul className="dropdown-menu" aria-labelledby="market-test-dropdown">
+                <li>
+                  <a className="dropdown-item" href="#">
+                    1- Hipotese e Oferta Isca
+                  </a>
+                </li>
+                <li>
+                  <a className="dropdown-item" href="#">
+                    2- Funil Mínimo
+                  </a>
+                </li>
+                <li>
+                  <a className="dropdown-item" href="#">
+                    3- Trafego e Segmentação
+                  </a>
+                </li>
+                <li>
+                  <a className="dropdown-item" href="#">
+                    4- KPIs e limiares de decisão
+                  </a>
+                </li>
+                <li>
+                  <a className="dropdown-item" href="#">
+                    5- Automação analítica
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </nav>

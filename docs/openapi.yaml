@@ -282,3 +282,71 @@ components:
           type: integer
         emotionalTriggerId:
           type: integer
+  /api/experiments/{experimentId}/hypotheses:
+    post:
+      summary: Criar hipótese
+      parameters:
+        - in: path
+          name: experimentId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHypothesisRequest'
+    get:
+      summary: Listar hipóteses do experimento
+      parameters:
+        - in: path
+          name: experimentId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+  /api/hypotheses/{id}/status:
+    patch:
+      summary: Atualizar status da hipótese
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: status
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /api/experiments/{experimentId}/hypotheses/board:
+    get:
+      summary: Kanban de hipóteses
+      parameters:
+        - in: path
+          name: experimentId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+components:
+  schemas:
+    CreateHypothesisRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        premiseAngleId:
+          type: integer
+        offerType:
+          type: string
+        kpiTargetCpl:
+          type: number

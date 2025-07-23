@@ -1,0 +1,64 @@
+package com.marketinghub.hypothesis;
+
+import com.marketinghub.FixtureUtils;
+import com.marketinghub.creative.label.repository.AngleRepository;
+import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
+import com.marketinghub.hypothesis.service.HypothesisService;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.repository.MarketNicheRepository;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
+
+import java.math.BigDecimal;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+@SpringBootTest(classes = com.marketinghub.ads.AdsServiceApplication.class)
+@TestPropertySource(properties = {
+        "spring.datasource.url=jdbc:h2:mem:testdb",
+        "spring.datasource.driverClassName=org.h2.Driver",
+        "spring.datasource.username=sa",
+        "spring.jpa.hibernate.ddl-auto=create"
+})
+class HypothesisServiceTest {
+    @Autowired
+    HypothesisService service;
+    @Autowired
+    ExperimentRepository experimentRepository;
+    @Autowired
+    MarketNicheRepository nicheRepository;
+    @Autowired
+    AngleRepository angleRepository;
+    @Autowired
+    FixtureUtils fixtures;
+
+    @Test
+    void createValidHypothesis() {
+        MarketNiche niche = fixtures.createAndSaveNiche();
+        Experiment exp = fixtures.createAndSaveExperiment(niche);
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+        CreateHypothesisRequest req = new CreateHypothesisRequest();
+        req.setTitle("Teste");
+        req.setPremiseAngleId(angle.getId());
+        req.setOfferType("LEAD");
+        req.setKpiTargetCpl(new BigDecimal("5"));
+        Hypothesis h = service.create(exp.getId(), req);
+        assertThat(h.getId()).isNotNull();
+        assertThat(h.getStatus()).isEqualTo(HypothesisStatus.BACKLOG);
+    }
+
+    @Test
+    void validateTitle() {
+        MarketNiche niche = fixtures.createAndSaveNiche();
+        Experiment exp = fixtures.createAndSaveExperiment(niche);
+        CreateHypothesisRequest req = new CreateHypothesisRequest();
+        req.setTitle("   ");
+        assertThatThrownBy(() -> service.create(exp.getId(), req))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    }
+}

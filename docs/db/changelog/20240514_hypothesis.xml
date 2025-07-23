@@ -1,0 +1,17 @@
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+    <changeSet id="20240514-hypothesis" author="codex">
+        <createTable tableName="hypothesis">
+            <column name="id" type="BIGINT" autoIncrement="true" primaryKey="true" />
+            <column name="experiment_id" type="BIGINT" />
+            <column name="title" type="VARCHAR(255)" />
+            <column name="premise_angle_id" type="BIGINT" />
+            <column name="offer_type" type="VARCHAR(20)" />
+            <column name="kpi_target_cpl" type="DECIMAL(19,2)" />
+            <column name="status" type="VARCHAR(20)" />
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP" />
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import { toast } from "react-toastify";
 import { Hypothesis } from "./useHypothesisBoard";
 
 export interface CreateHypothesis {
@@ -25,6 +26,10 @@ export function useCreateHypothesis() {
       queryClient.invalidateQueries({
         queryKey: ["hypothesis-board", String(variables.experimentId)],
       });
+      toast.success("Hipótese criada");
+    },
+    onError: () => {
+      toast.error("Erro ao criar hipótese");
     },
   });
 }

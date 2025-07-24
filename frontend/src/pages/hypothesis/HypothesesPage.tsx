@@ -3,15 +3,25 @@ import HypothesisBoard from "./HypothesisBoard";
 import NewHypothesisModal from "./NewHypothesisModal";
 import { useSearchParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
+import { useState } from "react";
+import Button from "../../components/ui/Button";
 
 export default function HypothesesPage() {
   const [params] = useSearchParams();
   const experimentId = params.get("experimentId") ?? "1";
   const { data } = useHypothesisBoard(experimentId);
+  const [open, setOpen] = useState(false);
   return (
     <div>
       <PageTitle>Hipóteses</PageTitle>
-      <NewHypothesisModal experimentId={experimentId} />
+      <div className="mb-3">
+        <Button onClick={() => setOpen(true)}>Nova Hipótese</Button>
+      </div>
+      <NewHypothesisModal
+        experimentId={experimentId}
+        open={open}
+        onOpenChange={setOpen}
+      />
       {data && <HypothesisBoard board={data} experimentId={experimentId} />}
     </div>
   );

@@ -28,7 +28,6 @@ class HypothesisServiceTest {
     @Autowired
     HypothesisService service;
     @Autowired
-    @Autowired
     MarketNicheRepository nicheRepository;
     @Autowired
     AngleRepository angleRepository;

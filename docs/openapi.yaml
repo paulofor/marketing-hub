@@ -29,6 +29,18 @@ paths:
       responses:
         '200':
           description: OK
+  /api/experiments:
+    post:
+      summary: Criar experimento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExperimentRequest'
+      responses:
+        '200':
+          description: OK
   /api/experiments/{id}/duplicate:
     post:
       summary: Duplicar experimento
@@ -46,6 +58,10 @@ components:
     CreateExperimentRequest:
       type: object
       properties:
+        marketNicheId:
+          type: integer
+        hypothesisId:
+          type: string
         name:
           type: string
         hypothesis:
@@ -282,26 +298,12 @@ components:
           type: integer
         emotionalTriggerId:
           type: integer
-  /api/experiments/{experimentId}/hypotheses:
-    post:
-      summary: Criar hipótese
-      parameters:
-        - in: path
-          name: experimentId
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateHypothesisRequest'
+  /api/niches/{nicheId}/hypotheses:
     get:
-      summary: Listar hipóteses do experimento
+      summary: Listar hipóteses do nicho
       parameters:
         - in: path
-          name: experimentId
+          name: nicheId
           required: true
           schema:
             type: integer
@@ -374,7 +376,7 @@ components:
     CreateHypothesisRequest:
       type: object
       properties:
-        experimentId:
+        marketNicheId:
           type: integer
         title:
           type: string

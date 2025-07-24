@@ -3,7 +3,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { Hypothesis } from "./useHypothesisBoard";
 
-export function useUpdateHypothesisStatus(experimentId?: string) {
+export function useUpdateHypothesisStatus(nicheId?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { id: number; status: string }) => {
@@ -13,8 +13,8 @@ export function useUpdateHypothesisStatus(experimentId?: string) {
       return data;
     },
     onSuccess: () => {
-      if (experimentId) {
-        qc.invalidateQueries({ queryKey: ["hypothesis-board", experimentId] });
+      if (nicheId) {
+        qc.invalidateQueries({ queryKey: ["hypothesis-board", nicheId] });
       }
       qc.invalidateQueries({ queryKey: ["hypotheses"] });
       toast.success("Status atualizado");

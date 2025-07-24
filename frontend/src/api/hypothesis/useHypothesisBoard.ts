@@ -3,7 +3,7 @@ import axios from "axios";
 
 export interface Hypothesis {
   id: number;
-  experimentId: number;
+  marketNicheId: number;
   title: string;
   premiseAngleId?: number;
   offerType?: string;
@@ -12,15 +12,15 @@ export interface Hypothesis {
   status: string;
 }
 
-export function useHypothesisBoard(experimentId: string) {
+export function useHypothesisBoard(nicheId: string) {
   return useQuery({
-    queryKey: ["hypothesis-board", experimentId],
+    queryKey: ["hypothesis-board", nicheId],
     queryFn: async () => {
       const statuses = ["BACKLOG", "TESTING", "VALIDATED", "INVALIDATED"] as const;
       const entries = await Promise.all(
         statuses.map(async (s) => {
           const { data } = await axios.get<Hypothesis[]>(
-            `/api/experiments/${experimentId}/hypotheses?status=${s}`,
+            `/api/niches/${nicheId}/hypotheses?status=${s}`,
           );
           return [s, data] as const;
         }),

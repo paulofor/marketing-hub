@@ -1,6 +1,6 @@
 package com.marketinghub.hypothesis;
 
-import com.marketinghub.experiment.Experiment;
+import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.creative.label.Angle;
 import jakarta.persistence.*;
 import lombok.*;
@@ -24,8 +24,8 @@ public class Hypothesis {
     private UUID id;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "experiment_id", nullable = false)
-    private Experiment experiment;
+    @JoinColumn(name = "market_niche_id", nullable = false)
+    private MarketNiche marketNiche;
 
     @Column(nullable = false)
     private String title;

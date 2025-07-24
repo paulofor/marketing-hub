@@ -35,11 +35,11 @@ const schema = z
 type FormData = z.infer<typeof schema>;
 
 export default function NewHypothesisModal({
-  experimentId,
+  marketNicheId,
   open,
   onOpenChange,
 }: {
-  experimentId?: string;
+  marketNicheId?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -63,6 +63,7 @@ export default function NewHypothesisModal({
       angleId: Number(values.angleId),
       offerType: values.offerType,
       kpiTargetCpl: values.kpiTargetCpl,
+      marketNicheId: marketNicheId ? Number(marketNicheId) : undefined,
     };
     if (values.offerType === "TRIPWIRE") {
       body.price = values.price;

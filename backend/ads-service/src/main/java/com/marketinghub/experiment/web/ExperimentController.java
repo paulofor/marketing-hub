@@ -23,6 +23,11 @@ public class ExperimentController {
         this.mapper = mapper;
     }
 
+    @PostMapping
+    public ExperimentDto create(@RequestBody CreateExperimentRequest request) {
+        return mapper.toDto(service.create(request));
+    }
+
     @PostMapping("/{id}/duplicate")
     public ExperimentDto duplicate(@PathVariable Long id) {
         return mapper.toDto(service.duplicate(id));

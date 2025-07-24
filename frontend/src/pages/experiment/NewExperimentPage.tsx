@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useCreateExperiment } from "../../api/experiment/useCreateExperiment";
 import { useNiches } from "../../api/niche/useNiches";
+import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
 import PageTitle from "../../components/PageTitle";
 
 export default function NewExperimentPage() {
@@ -9,23 +10,26 @@ export default function NewExperimentPage() {
   const [form, setForm] = useState({
     nicheId: "",
     name: "",
+    hypothesisId: "",
     hypothesis: "",
     kpiTarget: "",
     startDate: "",
     endDate: "",
   });
+  const { data: hypotheses } = useHypothesesByNiche(form.nicheId);
 
   const submit = async () => {
     try {
       await create.mutateAsync({
         nicheId: Number(form.nicheId),
+        hypothesisId: form.hypothesisId ? Number(form.hypothesisId) : undefined,
         name: form.name,
         hypothesis: form.hypothesis,
         kpiTarget: Number(form.kpiTarget),
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
       });
-      setForm({ nicheId: "", name: "", hypothesis: "", kpiTarget: "", startDate: "", endDate: "" });
+      setForm({ nicheId: "", hypothesisId: "", name: "", hypothesis: "", kpiTarget: "", startDate: "", endDate: "" });
       alert("Teste salvo!");
     } catch {
       alert("Erro ao salvar Teste");
@@ -38,7 +42,7 @@ export default function NewExperimentPage() {
       <select
         className="form-select mb-2"
         value={form.nicheId}
-        onChange={(e) => setForm({ ...form, nicheId: e.target.value })}
+        onChange={(e) => setForm({ ...form, nicheId: e.target.value, hypothesisId: "" })}
       >
         <option value="">Selecione o Nicho</option>
         {Array.isArray(niches) &&
@@ -47,6 +51,22 @@ export default function NewExperimentPage() {
               {n.name}
             </option>
           ))}
+      </select>
+      <select
+        className="form-select mb-2"
+        value={form.hypothesisId}
+        onChange={(e) => setForm({ ...form, hypothesisId: e.target.value })}
+      >
+        <option value="">Selecione Hipótese</option>
+        {Array.isArray(hypotheses) && hypotheses.length > 0 ? (
+          hypotheses.map((h) => (
+            <option key={h.id} value={h.id}>
+              {h.title}
+            </option>
+          ))
+        ) : (
+          <option value="">Não há hipóteses para este nicho</option>
+        )}
       </select>
       <input
         className="form-control mb-2"

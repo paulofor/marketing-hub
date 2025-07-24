@@ -22,8 +22,8 @@ public class HypothesisKanbanFacade {
         this.mapper = mapper;
     }
 
-    public Map<HypothesisStatus, List<HypothesisDto>> board(Long experimentId) {
-        Iterable<com.marketinghub.hypothesis.Hypothesis> it = repository.findByExperimentId(experimentId);
+    public Map<HypothesisStatus, List<HypothesisDto>> board(Long marketNicheId) {
+        Iterable<com.marketinghub.hypothesis.Hypothesis> it = repository.findByMarketNicheId(marketNicheId);
         return StreamSupport.stream(it.spliterator(), false)
                 .map(mapper::toDto)
                 .collect(Collectors.groupingBy(HypothesisDto::getStatus,

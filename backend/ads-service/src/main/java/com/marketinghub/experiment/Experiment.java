@@ -33,6 +33,10 @@ public class Experiment {
     @Column(length = 255)
     private String hypothesis;
 
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "hypothesis_id", nullable = false)
+    private com.marketinghub.hypothesis.Hypothesis hypothesisRef;
+
     private java.math.BigDecimal kpiTarget;
     private LocalDate startDate;
     private LocalDate endDate;

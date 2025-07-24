@@ -39,15 +39,10 @@ public class HypothesisController {
                 .toList();
     }
 
-    @PostMapping("/experiments/{experimentId}/hypotheses")
-    public HypothesisDto create(@PathVariable Long experimentId, @RequestBody CreateHypothesisRequest req) {
-        return mapper.toDto(service.create(experimentId, req));
-    }
-
-    @GetMapping("/experiments/{experimentId}/hypotheses")
-    public List<HypothesisDto> list(@PathVariable Long experimentId,
-                                    @RequestParam(value = "status", required = false) HypothesisStatus status) {
-        return StreamSupport.stream(service.listByExperiment(experimentId, status).spliterator(), false)
+    @GetMapping("/niches/{nicheId}/hypotheses")
+    public List<HypothesisDto> listByNiche(@PathVariable Long nicheId,
+                                           @RequestParam(value = "status", required = false) HypothesisStatus status) {
+        return StreamSupport.stream(service.listByMarketNiche(nicheId, status).spliterator(), false)
                 .map(mapper::toDto)
                 .toList();
     }
@@ -58,8 +53,8 @@ public class HypothesisController {
         return mapper.toDto(service.updateStatus(id, status));
     }
 
-    @GetMapping("/experiments/{experimentId}/hypotheses/board")
-    public Map<HypothesisStatus, List<HypothesisDto>> board(@PathVariable Long experimentId) {
-        return facade.board(experimentId);
+    @GetMapping("/niches/{nicheId}/hypotheses/board")
+    public Map<HypothesisStatus, List<HypothesisDto>> board(@PathVariable Long nicheId) {
+        return facade.board(nicheId);
     }
 }

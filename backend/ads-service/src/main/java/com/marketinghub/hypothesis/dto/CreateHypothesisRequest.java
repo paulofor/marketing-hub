@@ -3,15 +3,15 @@ package com.marketinghub.hypothesis.dto;
 import java.math.BigDecimal;
 
 public class CreateHypothesisRequest {
-    private Long experimentId;
+    private Long marketNicheId;
     private String title;
     private Long premiseAngleId;
     private String offerType;
     private BigDecimal price;
     private BigDecimal kpiTargetCpl;
 
-    public Long getExperimentId() { return experimentId; }
-    public void setExperimentId(Long experimentId) { this.experimentId = experimentId; }
+    public Long getMarketNicheId() { return marketNicheId; }
+    public void setMarketNicheId(Long marketNicheId) { this.marketNicheId = marketNicheId; }
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }

@@ -4,6 +4,7 @@ import { Experiment } from "./useExperiments";
 
 export interface CreateExperiment {
   nicheId: number;
+  hypothesisId?: number;
   name: string;
   hypothesis: string;
   kpiTarget: number;
@@ -17,8 +18,8 @@ export function useCreateExperiment() {
     mutationFn: async (data: CreateExperiment) => {
       const { nicheId, ...payload } = data;
       const { data: experiment } = await axios.post<Experiment>(
-        `/api/niches/${nicheId}/experiments`,
-        payload,
+        `/api/experiments`,
+        { ...payload, marketNicheId: nicheId },
       );
       return experiment;
     },

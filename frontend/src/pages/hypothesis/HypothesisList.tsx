@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAngles } from "../../api/angle/useAngles";
 import { useHypotheses } from "../../api/hypothesis/useHypotheses";
+import { useNiches } from "../../api/niche/useNiches";
 import { useUpdateHypothesisStatus } from "../../api/hypothesis/useUpdateHypothesisStatus";
 import type { Hypothesis } from "../../api/hypothesis/useHypothesisBoard";
 import NewHypothesisModal from "./NewHypothesisModal";
@@ -14,6 +15,7 @@ export default function HypothesisList() {
   const { data, isLoading } = useHypotheses(status);
   const update = useUpdateHypothesisStatus();
   const { data: angles } = useAngles();
+  const { data: niches } = useNiches();
   const angleMap = new Map<number, string>(
     Array.isArray(angles) ? angles.map((a) => [a.id, a.name]) : [],
   );
@@ -51,6 +53,7 @@ export default function HypothesisList() {
             <tr>
               <th>Título</th>
               <th>Ângulo</th>
+              <th>Nicho</th>
               <th>Oferta</th>
               <th>CPL</th>
               <th>Status</th>
@@ -62,6 +65,7 @@ export default function HypothesisList() {
               <tr key={h.id}>
                 <td>{h.title}</td>
                 <td>{angleMap.get(h.premiseAngleId ?? 0)}</td>
+                <td>{niches?.find((n) => n.id === h.marketNicheId)?.name}</td>
                 <td>
                   {h.offerType === "TRIPWIRE"
                     ? `Tripwire R$ ${h.price ?? ""}`

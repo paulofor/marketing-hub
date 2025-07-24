@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import { Hypothesis } from "./useHypothesisBoard";
 
 export interface CreateHypothesis {
-  experimentId: number;
+  marketNicheId: number;
   title: string;
   premiseAngleId?: number;
   offerType?: string;
@@ -15,16 +15,16 @@ export function useCreateHypothesis() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: CreateHypothesis) => {
-      const { experimentId, ...body } = input;
+      const { marketNicheId, ...body } = input;
       const { data } = await axios.post<Hypothesis>(
-        `/api/experiments/${experimentId}/hypotheses`,
-        body,
+        `/api/hypotheses`,
+        { ...body, marketNicheId },
       );
       return data;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ["hypothesis-board", String(variables.experimentId)],
+        queryKey: ["hypothesis-board", String(variables.marketNicheId)],
       });
       toast.success("Hipótese criada");
     },

@@ -81,11 +81,11 @@ function Card({
 
 interface BoardProps {
   board: Record<string, Hypothesis[]>;
-  experimentId: string;
+  nicheId: string;
 }
 
-export default function HypothesisBoard({ board, experimentId }: BoardProps) {
-  const update = useUpdateHypothesisStatus(experimentId);
+export default function HypothesisBoard({ board, nicheId }: BoardProps) {
+  const update = useUpdateHypothesisStatus(nicheId);
   const { data: angles } = useAngles();
   const angleMap = new Map<number, string>(
     Array.isArray(angles) ? angles.map((a) => [a.id, a.name]) : [],

@@ -4,6 +4,17 @@
           xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
                               https://maven.apache.org/xsd/settings-1.0.0.xsd">
 
+
+  <proxies>
+    <proxy>
+      <id>codex</id>
+      <active>true</active>
+      <protocol>http</protocol>   <!-- https também passa por esse proxy -->
+      <host>proxy</host>
+      <port>8080</port>
+    </proxy>
+  </proxies>
+
   <!-- 1️⃣  Redireciona TODAS as requisições a este host -->
   <mirrors>
     <mirror>

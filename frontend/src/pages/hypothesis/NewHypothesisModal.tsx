@@ -1,4 +1,4 @@
-import { useState } from "react";
+
 import axios from "axios";
 import { useAngles } from "../../api/angle/useAngles";
 import { useForm } from "react-hook-form";
@@ -36,11 +36,14 @@ type FormData = z.infer<typeof schema>;
 
 export default function NewHypothesisModal({
   experimentId,
+  open,
+  onOpenChange,
 }: {
   experimentId?: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
   const { data: angles } = useAngles();
-  const [open, setOpen] = useState(false);
   const {
     register,
     handleSubmit,
@@ -66,24 +69,21 @@ export default function NewHypothesisModal({
     }
     await axios.post("/api/hypotheses", body);
     reset({ offerType: "LEAD" });
-    setOpen(false);
+    onOpenChange(false);
   });
 
+  if (!open) return null;
+
   return (
-    <div className="mb-3">
-      <button className="btn btn-primary" onClick={() => setOpen(true)}>
-        Nova Hipótese
-      </button>
-      {open && (
-        <div className="modal d-block" tabIndex={-1}>
-          <div className="modal-dialog" style={{ maxWidth: 480 }}>
-            <form className="modal-content" onSubmit={onSubmit} noValidate>
+    <div className="modal d-block" tabIndex={-1}>
+      <div className="modal-dialog" style={{ maxWidth: 480 }}>
+        <form className="modal-content" onSubmit={onSubmit} noValidate>
               <div className="modal-header">
                 <h5 className="modal-title">Nova Hipótese</h5>
                 <button
                   type="button"
                   className="btn-close"
-                  onClick={() => setOpen(false)}
+                  onClick={() => onOpenChange(false)}
                 />
               </div>
               <div className="modal-body">
@@ -227,7 +227,7 @@ export default function NewHypothesisModal({
                 <button
                   type="button"
                   className="btn btn-outline-secondary"
-                  onClick={() => setOpen(false)}
+                  onClick={() => onOpenChange(false)}
                   disabled={isSubmitting}
                 >
                   Cancelar
@@ -243,7 +243,5 @@ export default function NewHypothesisModal({
             </form>
           </div>
         </div>
-      )}
-    </div>
-  );
+    );
 }

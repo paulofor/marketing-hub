@@ -10,6 +10,7 @@ import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.FixtureUtils;
+import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +49,8 @@ class CreativeControllerTest {
     @Autowired
     MarketNicheRepository marketNicheRepository;
     @Autowired
+    HypothesisRepository hypothesisRepository;
+    @Autowired
     FixtureUtils fixtures;
     @Autowired
     com.marketinghub.creative.label.repository.AngleRepository angleRepository;
@@ -62,6 +65,7 @@ class CreativeControllerTest {
     void setup() {
         repository.deleteAll();
         experimentRepository.deleteAll();
+        hypothesisRepository.deleteAll();
         marketNicheRepository.deleteAll();
         MarketNiche niche = fixtures.createAndSaveNiche();
         Experiment exp = fixtures.createAndSaveExperiment(niche);

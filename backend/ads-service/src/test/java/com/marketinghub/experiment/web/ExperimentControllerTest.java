@@ -6,6 +6,8 @@ import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.creative.label.repository.AngleRepository;
+import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.FixtureUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +47,10 @@ class ExperimentControllerTest {
     @Autowired
     private MarketNicheRepository nicheRepo;
     @Autowired
+    private AngleRepository angleRepository;
+    @Autowired
+    private HypothesisRepository hypothesisRepository;
+    @Autowired
     private com.marketinghub.creative.repository.CreativeRepository creativeRepo;
     @Autowired
     private FixtureUtils fixtures;
@@ -62,8 +68,17 @@ class ExperimentControllerTest {
 
     @Test
     void createEndpointPersists() throws Exception {
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(nicheRepo.findById(nicheId).orElseThrow())
+                .title("H")
+                .premiseAngle(angle)
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(BigDecimal.ONE)
+                .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setName("Exp1");
+        req.setHypothesisId(hyp.getId());
         req.setHypothesis("H1");
         req.setKpiTarget(BigDecimal.TEN);
         req.setStartDate(LocalDate.now());

@@ -58,12 +58,12 @@ public class ExperimentService {
     @Transactional
     public Experiment create(Long nicheId, CreateExperimentRequest request) {
         MarketNiche niche = attachNiche(nicheId);
-        com.marketinghub.hypothesis.Hypothesis hyp = null;
-        if (request.getHypothesisId() != null) {
-            hyp = attachHypothesis(request.getHypothesisId());
-            if (!hyp.getMarketNiche().getId().equals(nicheId)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "hypothesis and experiment niche mismatch");
-            }
+        if (request.getHypothesisId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "hypothesisId required");
+        }
+        com.marketinghub.hypothesis.Hypothesis hyp = attachHypothesis(request.getHypothesisId());
+        if (!hyp.getMarketNiche().getId().equals(nicheId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "hypothesis and experiment niche mismatch");
         }
         if (request.getStartDate() != null && request.getEndDate() != null &&
                 request.getStartDate().isAfter(request.getEndDate())) {
@@ -113,7 +113,10 @@ public class ExperimentService {
                 .niche(original.getNiche())
                 .name(original.getName() + " copy")
                 .hypothesis(original.getHypothesis())
+                .hypothesisRef(original.getHypothesisRef())
                 .kpiTarget(original.getKpiTarget())
+                .startDate(original.getStartDate())
+                .endDate(original.getEndDate())
                 .status(ExperimentStatus.PLANNED)
                 .platform(original.getPlatform())
                 .build();

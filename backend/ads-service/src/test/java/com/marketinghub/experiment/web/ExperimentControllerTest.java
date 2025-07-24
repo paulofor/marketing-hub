@@ -62,6 +62,8 @@ class ExperimentControllerTest {
     void cleanDb() {
         creativeRepo.deleteAll();
         repository.deleteAll();
+        hypothesisRepository.deleteAll();
+        angleRepository.deleteAll();
         nicheRepo.deleteAll();
         MarketNiche niche = fixtures.createAndSaveNiche();
         nicheId = niche.getId();

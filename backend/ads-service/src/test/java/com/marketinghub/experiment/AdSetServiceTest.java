@@ -33,17 +33,19 @@ class AdSetServiceTest {
     ExperimentRepository experimentRepository;
 
     Long experimentId;
+    Long nicheId;
 
     @BeforeEach
     void setup() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("N").build());
         Experiment exp = fixtures.createAndSaveExperiment(niche);
         experimentId = exp.getId();
+        nicheId = niche.getId();
     }
 
     @Test
     void rejectWhenExperimentFinished() {
-        Experiment exp = fixtures.createAndSaveExperiment(nicheRepository.findById(experimentId).orElseThrow());
+        Experiment exp = fixtures.createAndSaveExperiment(nicheRepository.findById(nicheId).orElseThrow());
         exp.setStatus(ExperimentStatus.FINISHED);
         experimentRepository.save(exp);
         CreateAdSetRequest req = new CreateAdSetRequest();

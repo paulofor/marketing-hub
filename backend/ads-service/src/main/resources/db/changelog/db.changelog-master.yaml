@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - include:
+      file: V2025_07_01__add_fk_niche_to_hypothesis.sql
+  - include:
+      file: V2025_07_01__add_fk_hypothesis_to_experiment.sql
+  - include:
+      file: V2025_07_01__add_fk_experiment_to_creative.sql
+  - include:
+      file: V2025_07_01__add_fk_experiment_to_audience_target.sql

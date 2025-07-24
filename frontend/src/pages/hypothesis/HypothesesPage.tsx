@@ -10,14 +10,18 @@ export default function HypothesesPage() {
   const [params] = useSearchParams();
   const nicheId = params.get("nicheId") ?? "1";
   const { data } = useHypothesisBoard(nicheId);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(params.get("open") === "new");
   return (
     <div>
       <PageTitle>Hipóteses</PageTitle>
       <div className="mb-3">
         <Button onClick={() => setOpen(true)}>Nova Hipótese</Button>
       </div>
-      <NewHypothesisModal marketNicheId={nicheId} open={open} onOpenChange={setOpen} />
+      <NewHypothesisModal
+        marketNicheId={nicheId}
+        open={open}
+        onOpenChange={setOpen}
+      />
       {data && <HypothesisBoard board={data} nicheId={nicheId} />}
     </div>
   );

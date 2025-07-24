@@ -29,7 +29,15 @@ export default function NewExperimentPage() {
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
       });
-      setForm({ nicheId: "", hypothesisId: "", name: "", hypothesis: "", kpiTarget: "", startDate: "", endDate: "" });
+      setForm({
+        nicheId: "",
+        hypothesisId: "",
+        name: "",
+        hypothesis: "",
+        kpiTarget: "",
+        startDate: "",
+        endDate: "",
+      });
       alert("Teste salvo!");
     } catch {
       alert("Erro ao salvar Teste");
@@ -42,7 +50,9 @@ export default function NewExperimentPage() {
       <select
         className="form-select mb-2"
         value={form.nicheId}
-        onChange={(e) => setForm({ ...form, nicheId: e.target.value, hypothesisId: "" })}
+        onChange={(e) =>
+          setForm({ ...form, nicheId: e.target.value, hypothesisId: "" })
+        }
       >
         <option value="">Selecione o Nicho</option>
         {Array.isArray(niches) &&
@@ -68,6 +78,15 @@ export default function NewExperimentPage() {
           <option value="">Não há hipóteses para este nicho</option>
         )}
       </select>
+      {Array.isArray(hypotheses) && hypotheses.length === 0 && (
+        <button
+          type="button"
+          className="btn btn-link mb-2"
+          onClick={() => (window.location.href = "/hypotheses?open=new")}
+        >
+          Criar nova hipótese
+        </button>
+      )}
       <input
         className="form-control mb-2"
         placeholder="Nome"

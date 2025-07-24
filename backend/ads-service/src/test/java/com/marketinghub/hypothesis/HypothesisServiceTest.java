@@ -82,4 +82,15 @@ class HypothesisServiceTest {
         assertThatThrownBy(() -> service.create(req))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     }
+
+    @Test
+    void marketNicheIdRequired() {
+        CreateHypothesisRequest req = new CreateHypothesisRequest();
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+        req.setTitle("T");
+        req.setPremiseAngleId(angle.getId());
+        req.setKpiTargetCpl(new BigDecimal("5"));
+        assertThatThrownBy(() -> service.create(req))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    }
 }

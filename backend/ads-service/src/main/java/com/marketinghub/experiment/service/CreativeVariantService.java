@@ -26,6 +26,11 @@ public class CreativeVariantService {
     @Transactional
     public CreativeVariant create(CreateCreativeRequest request) {
         Experiment exp = experimentRepository.findById(request.getExperimentId()).orElseThrow();
+        if (exp.getStatus() == ExperimentStatus.FINISHED || exp.getStatus() == ExperimentStatus.FAILED) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "experiment not active");
+        }
         CreativeVariant creative = CreativeVariant.builder()
                 .experiment(exp)
                 .type(request.getType())

@@ -75,4 +75,24 @@ class ExperimentServiceTest {
         assertThatThrownBy(() -> service.create(req))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     }
+
+    @Test
+    void hypothesisAndNicheMustMatch() {
+        MarketNiche niche1 = nicheRepository.save(MarketNiche.builder().name("N1").build());
+        MarketNiche niche2 = nicheRepository.save(MarketNiche.builder().name("N2").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche1)
+                .title("T")
+                .premiseAngle(angle)
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        req.setMarketNicheId(niche2.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("Exp1");
+        assertThatThrownBy(() -> service.create(req))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    }
 }

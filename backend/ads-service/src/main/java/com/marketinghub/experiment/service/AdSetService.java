@@ -26,6 +26,11 @@ public class AdSetService {
     @Transactional
     public AdSet create(CreateAdSetRequest request) {
         Experiment exp = experimentRepository.findById(request.getExperimentId()).orElseThrow();
+        if (exp.getStatus() == ExperimentStatus.FINISHED || exp.getStatus() == ExperimentStatus.FAILED) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "experiment not active");
+        }
         AdSet adSet = AdSet.builder()
                 .experiment(exp)
                 .location(request.getLocation())

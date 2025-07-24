@@ -31,10 +31,11 @@ class ExperimentServiceTest {
     void createNewExperimentWithExistingNiche() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
         CreateExperimentRequest req = new CreateExperimentRequest();
+        req.setMarketNicheId(niche.getId());
         req.setName("Exp1");
         req.setHypothesis("Teste");
         req.setKpiTarget(new BigDecimal("10"));
-        var exp = service.create(niche.getId(), req);
+        var exp = service.create(req);
         assertThat(exp.getId()).isNotNull();
         assertThat(exp.getPlatform()).isEqualTo(ExperimentPlatform.FACEBOOK);
     }
@@ -43,10 +44,11 @@ class ExperimentServiceTest {
     void validateDates() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
         CreateExperimentRequest req = new CreateExperimentRequest();
+        req.setMarketNicheId(niche.getId());
         req.setName("Exp1");
         req.setStartDate(java.time.LocalDate.of(2024,2,1));
         req.setEndDate(java.time.LocalDate.of(2024,1,1));
-        assertThatThrownBy(() -> service.create(niche.getId(), req))
+        assertThatThrownBy(() -> service.create(req))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     }
 }

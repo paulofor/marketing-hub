@@ -116,3 +116,4 @@ flowchart TD
     L --> C(Creative)
     C --> S(Insights)
 ```
+\nNovo fluxo: Nicho -> Hipótese -> Experimento para garantir coesão nos testes.

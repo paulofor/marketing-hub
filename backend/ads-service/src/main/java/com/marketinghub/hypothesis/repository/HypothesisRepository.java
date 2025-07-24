@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface HypothesisRepository extends JpaRepository<Hypothesis, UUID> {
-    List<Hypothesis> findByExperimentId(Long experimentId);
-    List<Hypothesis> findByExperimentIdAndStatus(Long experimentId, HypothesisStatus status);
+    List<Hypothesis> findByMarketNicheId(Long marketNicheId);
+    List<Hypothesis> findByMarketNicheIdAndStatus(Long marketNicheId, HypothesisStatus status);
     List<Hypothesis> findByStatus(HypothesisStatus status);
 }

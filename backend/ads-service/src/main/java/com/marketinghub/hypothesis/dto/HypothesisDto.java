@@ -10,7 +10,7 @@ import java.util.UUID;
 @Data
 public class HypothesisDto {
     private UUID id;
-    private Long experimentId;
+    private Long marketNicheId;
     private String title;
     private Long premiseAngleId;
     private OfferType offerType;

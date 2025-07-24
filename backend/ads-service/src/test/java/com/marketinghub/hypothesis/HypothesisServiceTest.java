@@ -2,8 +2,6 @@ package com.marketinghub.hypothesis;
 
 import com.marketinghub.FixtureUtils;
 import com.marketinghub.creative.label.repository.AngleRepository;
-import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.hypothesis.service.HypothesisService;
 import com.marketinghub.niche.MarketNiche;
@@ -30,7 +28,6 @@ class HypothesisServiceTest {
     @Autowired
     HypothesisService service;
     @Autowired
-    ExperimentRepository experimentRepository;
     @Autowired
     MarketNicheRepository nicheRepository;
     @Autowired
@@ -41,10 +38,9 @@ class HypothesisServiceTest {
     @Test
     void createValidHypothesis() {
         MarketNiche niche = fixtures.createAndSaveNiche();
-        Experiment exp = fixtures.createAndSaveExperiment(niche);
         var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
         CreateHypothesisRequest req = new CreateHypothesisRequest();
-        req.setExperimentId(exp.getId());
+        req.setMarketNicheId(niche.getId());
         req.setTitle("Teste");
         req.setPremiseAngleId(angle.getId());
         req.setOfferType("LEAD");
@@ -57,9 +53,8 @@ class HypothesisServiceTest {
     @Test
     void validateTitle() {
         MarketNiche niche = fixtures.createAndSaveNiche();
-        Experiment exp = fixtures.createAndSaveExperiment(niche);
         CreateHypothesisRequest req = new CreateHypothesisRequest();
-        req.setExperimentId(exp.getId());
+        req.setMarketNicheId(niche.getId());
         req.setTitle("   ");
         assertThatThrownBy(() -> service.create(req))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
@@ -68,9 +63,8 @@ class HypothesisServiceTest {
     @Test
     void validateAngleAndKpi() {
         MarketNiche niche = fixtures.createAndSaveNiche();
-        Experiment exp = fixtures.createAndSaveExperiment(niche);
         CreateHypothesisRequest req = new CreateHypothesisRequest();
-        req.setExperimentId(exp.getId());
+        req.setMarketNicheId(niche.getId());
         req.setTitle("T");
         assertThatThrownBy(() -> service.create(req))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
@@ -79,10 +73,9 @@ class HypothesisServiceTest {
     @Test
     void priceRequiredForTripwire() {
         MarketNiche niche = fixtures.createAndSaveNiche();
-        Experiment exp = fixtures.createAndSaveExperiment(niche);
         var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
         CreateHypothesisRequest req = new CreateHypothesisRequest();
-        req.setExperimentId(exp.getId());
+        req.setMarketNicheId(niche.getId());
         req.setTitle("T");
         req.setPremiseAngleId(angle.getId());
         req.setOfferType("TRIPWIRE");

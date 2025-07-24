@@ -14,6 +14,7 @@ import lombok.Data;
 public class ExperimentDto {
     private Long id;
     private Long nicheId;
+    private java.util.UUID hypothesisId;
     private String name;
     private String hypothesis;
     private BigDecimal kpiTarget;

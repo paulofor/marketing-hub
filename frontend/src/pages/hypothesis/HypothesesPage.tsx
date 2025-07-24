@@ -8,8 +8,8 @@ import Button from "../../components/ui/Button";
 
 export default function HypothesesPage() {
   const [params] = useSearchParams();
-  const experimentId = params.get("experimentId") ?? "1";
-  const { data } = useHypothesisBoard(experimentId);
+  const nicheId = params.get("nicheId") ?? "1";
+  const { data } = useHypothesisBoard(nicheId);
   const [open, setOpen] = useState(false);
   return (
     <div>
@@ -17,12 +17,8 @@ export default function HypothesesPage() {
       <div className="mb-3">
         <Button onClick={() => setOpen(true)}>Nova Hipótese</Button>
       </div>
-      <NewHypothesisModal
-        experimentId={experimentId}
-        open={open}
-        onOpenChange={setOpen}
-      />
-      {data && <HypothesisBoard board={data} experimentId={experimentId} />}
+      <NewHypothesisModal marketNicheId={nicheId} open={open} onOpenChange={setOpen} />
+      {data && <HypothesisBoard board={data} nicheId={nicheId} />}
     </div>
   );
 }

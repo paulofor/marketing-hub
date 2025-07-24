@@ -7,7 +7,7 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface HypothesisMapper {
-    @Mapping(target = "experimentId", source = "experiment.id")
+    @Mapping(target = "marketNicheId", source = "marketNiche.id")
     @Mapping(target = "premiseAngleId", source = "premiseAngle.id")
     HypothesisDto toDto(Hypothesis hypothesis);
 }

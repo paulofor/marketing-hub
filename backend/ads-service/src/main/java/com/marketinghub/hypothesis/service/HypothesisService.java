@@ -2,8 +2,8 @@ package com.marketinghub.hypothesis.service;
 
 import com.marketinghub.creative.label.Angle;
 import com.marketinghub.creative.label.repository.AngleRepository;
-import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.hypothesis.*;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
@@ -18,25 +18,25 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class HypothesisService {
     private final HypothesisRepository repository;
-    private final ExperimentRepository experimentRepository;
+    private final MarketNicheRepository nicheRepository;
     private final AngleRepository angleRepository;
     private final EntityManager em;
 
     public HypothesisService(HypothesisRepository repository,
-                             ExperimentRepository experimentRepository,
+                             MarketNicheRepository nicheRepository,
                              AngleRepository angleRepository,
                              EntityManager em) {
         this.repository = repository;
-        this.experimentRepository = experimentRepository;
+        this.nicheRepository = nicheRepository;
         this.angleRepository = angleRepository;
         this.em = em;
     }
 
-    private Experiment attachExperiment(Long id) {
-        if (!experimentRepository.existsById(id)) {
-            throw new EntityNotFoundException("Experiment not found: " + id);
+    private MarketNiche attachNiche(Long id) {
+        if (!nicheRepository.existsById(id)) {
+            throw new EntityNotFoundException("MarketNiche not found: " + id);
         }
-        return em.getReference(Experiment.class, id);
+        return em.getReference(MarketNiche.class, id);
     }
 
     private Angle attachAngle(Long id) {
@@ -51,6 +51,9 @@ public class HypothesisService {
         if (req.getTitle() == null || req.getTitle().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "title required");
         }
+        if (req.getMarketNicheId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "marketNicheId required");
+        }
         if (req.getPremiseAngleId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "angle required");
         }
@@ -63,24 +66,10 @@ public class HypothesisService {
     }
 
     @Transactional
-    public Hypothesis create(Long experimentId, CreateHypothesisRequest req) {
-        validate(req);
-        Hypothesis h = Hypothesis.builder()
-                .experiment(attachExperiment(experimentId))
-                .title(req.getTitle())
-                .premiseAngle(attachAngle(req.getPremiseAngleId()))
-                .offerType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()))
-                .price(req.getPrice())
-                .kpiTargetCpl(req.getKpiTargetCpl())
-                .build();
-        return repository.save(h);
-    }
-
-    @Transactional
     public Hypothesis create(CreateHypothesisRequest req) {
         validate(req);
         Hypothesis h = Hypothesis.builder()
-                .experiment(attachExperiment(req.getExperimentId()))
+                .marketNiche(attachNiche(req.getMarketNicheId()))
                 .title(req.getTitle())
                 .premiseAngle(attachAngle(req.getPremiseAngleId()))
                 .offerType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()))
@@ -90,11 +79,11 @@ public class HypothesisService {
         return repository.save(h);
     }
 
-    public Iterable<Hypothesis> listByExperiment(Long experimentId, HypothesisStatus status) {
+    public Iterable<Hypothesis> listByMarketNiche(Long marketNicheId, HypothesisStatus status) {
         if (status == null) {
-            return repository.findByExperimentId(experimentId);
+            return repository.findByMarketNicheId(marketNicheId);
         }
-        return repository.findByExperimentIdAndStatus(experimentId, status);
+        return repository.findByMarketNicheIdAndStatus(marketNicheId, status);
     }
 
     public Iterable<Hypothesis> list(HypothesisStatus status) {

@@ -19,11 +19,15 @@ import org.springframework.web.server.ResponseStatusException;
 public class ExperimentService {
     private final ExperimentRepository repository;
     private final MarketNicheRepository nicheRepository;
+    private final com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository;
     private final EntityManager entityManager;
 
-    public ExperimentService(ExperimentRepository repository, MarketNicheRepository nicheRepository, EntityManager entityManager) {
+    public ExperimentService(ExperimentRepository repository, MarketNicheRepository nicheRepository,
+                             com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository,
+                             EntityManager entityManager) {
         this.repository = repository;
         this.nicheRepository = nicheRepository;
+        this.hypothesisRepository = hypothesisRepository;
         this.entityManager = entityManager;
     }
 
@@ -41,12 +45,26 @@ public class ExperimentService {
         return entityManager.getReference(MarketNiche.class, nicheId);
     }
 
+    private com.marketinghub.hypothesis.Hypothesis attachHypothesis(java.util.UUID id) {
+        if (!hypothesisRepository.existsById(id)) {
+            throw new EntityNotFoundException("Hypothesis not found: " + id);
+        }
+        return entityManager.getReference(com.marketinghub.hypothesis.Hypothesis.class, id);
+    }
+
     /**
      * Creates and stores a new experiment.
      */
     @Transactional
     public Experiment create(Long nicheId, CreateExperimentRequest request) {
         MarketNiche niche = attachNiche(nicheId);
+        com.marketinghub.hypothesis.Hypothesis hyp = null;
+        if (request.getHypothesisId() != null) {
+            hyp = attachHypothesis(request.getHypothesisId());
+            if (!hyp.getMarketNiche().getId().equals(nicheId)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "hypothesis and experiment niche mismatch");
+            }
+        }
         if (request.getStartDate() != null && request.getEndDate() != null &&
                 request.getStartDate().isAfter(request.getEndDate())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "startDate must be before endDate");
@@ -58,6 +76,7 @@ public class ExperimentService {
                 .niche(niche)
                 .name(request.getName())
                 .hypothesis(request.getHypothesis())
+                .hypothesisRef(hyp)
                 .kpiTarget(request.getKpiTarget())
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
@@ -65,6 +84,14 @@ public class ExperimentService {
                 .platform(ExperimentPlatform.FACEBOOK)
                 .build();
         return repository.save(exp);
+    }
+
+    @Transactional
+    public Experiment create(CreateExperimentRequest request) {
+        if (request.getMarketNicheId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "marketNicheId required");
+        }
+        return create(request.getMarketNicheId(), request);
     }
 
     public Experiment get(Long id) {

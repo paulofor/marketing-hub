@@ -9,6 +9,8 @@ import lombok.Data;
  */
 @Data
 public class CreateExperimentRequest {
+    private Long marketNicheId;
+    private java.util.UUID hypothesisId;
     private String name;
     private String hypothesis;
     private BigDecimal kpiTarget;

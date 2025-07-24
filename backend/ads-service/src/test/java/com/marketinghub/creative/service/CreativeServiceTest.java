@@ -31,7 +31,8 @@ import static org.mockito.Mockito.when;
         "spring.datasource.url=jdbc:h2:mem:testdb",
         "spring.datasource.driverClassName=org.h2.Driver",
         "spring.datasource.username=sa",
-        "spring.jpa.hibernate.ddl-auto=create"
+        "spring.jpa.hibernate.ddl-auto=create",
+        "spring.liquibase.enabled=false"
 })
 class CreativeServiceTest {
 

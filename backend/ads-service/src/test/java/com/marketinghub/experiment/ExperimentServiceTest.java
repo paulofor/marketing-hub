@@ -4,6 +4,8 @@ import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.creative.label.repository.AngleRepository;
+import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -26,12 +28,25 @@ class ExperimentServiceTest {
     ExperimentService service;
     @Autowired
     MarketNicheRepository nicheRepository;
+    @Autowired
+    com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository;
+    @Autowired
+    com.marketinghub.creative.label.repository.AngleRepository angleRepository;
 
     @Test
     void createNewExperimentWithExistingNiche() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("T")
+                .premiseAngle(angle)
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
         req.setHypothesis("Teste");
         req.setKpiTarget(new BigDecimal("10"));
@@ -43,8 +58,17 @@ class ExperimentServiceTest {
     @Test
     void validateDates() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("T")
+                .premiseAngle(angle)
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
         req.setStartDate(java.time.LocalDate.of(2024,2,1));
         req.setEndDate(java.time.LocalDate.of(2024,1,1));

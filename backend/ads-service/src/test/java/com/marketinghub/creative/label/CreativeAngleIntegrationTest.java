@@ -9,6 +9,7 @@ import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.creative.label.repository.AngleRepository;
+import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -29,12 +30,30 @@ class CreativeAngleIntegrationTest {
     MarketNicheRepository nicheRepository;
     @Autowired
     AngleRepository angleRepository;
+    @Autowired
+    HypothesisRepository hypothesisRepository;
 
     @Test
     void persistRelationships() {
         MarketNiche niche = MarketNiche.builder().name("N").build();
         nicheRepository.save(niche);
-        Experiment exp = Experiment.builder().niche(niche).name("E").status(com.marketinghub.experiment.ExperimentStatus.PLANNED).platform(com.marketinghub.experiment.ExperimentPlatform.FACEBOOK).build();
+        Angle base = angleRepository.save(Angle.builder().name("Base").build());
+        var hyp = com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("H")
+                .premiseAngle(base)
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(java.math.BigDecimal.ONE)
+                .build();
+        hyp = hypothesisRepository.save(hyp);
+        Experiment exp = Experiment.builder()
+                .niche(niche)
+                .name("E")
+                .hypothesis("H")
+                .hypothesisRef(hyp)
+                .status(com.marketinghub.experiment.ExperimentStatus.PLANNED)
+                .platform(com.marketinghub.experiment.ExperimentPlatform.FACEBOOK)
+                .build();
         experimentRepository.save(exp);
         Angle angle = Angle.builder().name("Ganho").build();
         angleRepository.save(angle);

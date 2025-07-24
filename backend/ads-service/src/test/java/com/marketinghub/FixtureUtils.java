@@ -3,6 +3,8 @@ package com.marketinghub;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.repository.CreativeRepository;
+import com.marketinghub.creative.label.repository.AngleRepository;
+import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.experiment.*;
 import com.marketinghub.experiment.repository.*;
 import com.marketinghub.niche.MarketNiche;
@@ -21,6 +23,8 @@ public class FixtureUtils {
     private final ExperimentRepository experimentRepository;
     private final CreativeRepository creativeRepository;
     private final AdSetRepository adSetRepository;
+    private final com.marketinghub.creative.label.repository.AngleRepository angleRepository;
+    private final com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository;
 
     public MarketNiche createAndSaveNiche() {
         MarketNiche niche = MarketNiche.builder()
@@ -29,10 +33,25 @@ public class FixtureUtils {
         return nicheRepository.save(niche);
     }
 
+    public com.marketinghub.hypothesis.Hypothesis createAndSaveHypothesis(MarketNiche niche) {
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+        com.marketinghub.hypothesis.Hypothesis h = com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("H")
+                .premiseAngle(angle)
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(java.math.BigDecimal.ONE)
+                .build();
+        return hypothesisRepository.save(h);
+    }
+
     public Experiment createAndSaveExperiment(MarketNiche niche) {
+        var hyp = createAndSaveHypothesis(niche);
         Experiment exp = Experiment.builder()
                 .niche(niche)
                 .name("Experiment")
+                .hypothesis("H")
+                .hypothesisRef(hyp)
                 .status(ExperimentStatus.PLANNED)
                 .platform(ExperimentPlatform.FACEBOOK)
                 .build();

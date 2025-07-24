@@ -47,9 +47,10 @@ public class FixtureUtils {
 
     public Experiment createAndSaveExperiment(MarketNiche niche) {
         var hyp = createAndSaveHypothesis(niche);
+        String name = "Experiment-" + java.util.UUID.randomUUID();
         Experiment exp = Experiment.builder()
                 .niche(niche)
-                .name("Experiment")
+                .name(name)
                 .hypothesis("H")
                 .hypothesisRef(hyp)
                 .status(ExperimentStatus.PLANNED)

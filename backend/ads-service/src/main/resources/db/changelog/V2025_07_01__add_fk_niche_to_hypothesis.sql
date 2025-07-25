@@ -1,5 +1,7 @@
 -- liquibase formatted sql
 -- changeset marketinghub:2025-07-01-add-fk-niche-to-hypothesis
+--preconditions onFail:MARK_RAN onError:HALT
+--precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'hypothesis' AND CONSTRAINT_NAME = 'fk_hypothesis_niche' AND CONSTRAINT_TYPE = 'FOREIGN KEY';
 ALTER TABLE hypothesis
     MODIFY market_niche_id BIGINT NOT NULL;
 ALTER TABLE hypothesis

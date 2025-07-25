@@ -1,11 +1,9 @@
 -- liquibase formatted sql
 -- changeset marketinghub:2025-07-24-add-fk-hypothesis-to-experiment
 -- preconditions onFail:MARK_RAN onError:HALT
---   sql-check expectedResult:0 SELECT COUNT(*) 
---     FROM INFORMATION_SCHEMA.COLUMNS
---     WHERE TABLE_SCHEMA='marketinghubdb'
---       AND TABLE_NAME='experiment'
---       AND COLUMN_NAME='hypothesis_id';
+--    <not>
+--        <columnExists tableName="experiment" columnName="hypothesis_id"/>
+--    </not>
 
 ALTER TABLE experiment ADD COLUMN hypothesis_id BINARY(16) NOT NULL;
 

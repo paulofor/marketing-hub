@@ -1,5 +1,7 @@
 -- liquibase formatted sql
 -- changeset marketinghub:2025-07-23-create-hypothesis
+-- preconditions onFail=MARK_RAN
+--     not tableExists tableName: hypothesis
 CREATE TABLE hypothesis (
     id BINARY(16) PRIMARY KEY,
     experiment_id BIGINT NOT NULL,

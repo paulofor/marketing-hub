@@ -1,3 +1,5 @@
+-- liquibase formatted sql
+-- changeset marketinghub:2025-07-01-add-fk-experiment-to-audience-target
 ALTER TABLE ad_set
     MODIFY experiment_id BIGINT NOT NULL;
 ALTER TABLE ad_set

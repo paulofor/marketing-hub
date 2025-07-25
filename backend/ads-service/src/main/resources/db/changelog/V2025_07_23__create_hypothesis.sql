@@ -5,7 +5,7 @@
 --    <not>
 --        <tableExists tableName="hypothesis"/>
 --    </not>
-CREATE TABLE hypothesis (
+CREATE TABLE IF NOT EXISTS hypothesis (
     id BINARY(16) PRIMARY KEY,
     experiment_id BIGINT NOT NULL,
     title VARCHAR(255) NOT NULL,

@@ -1,5 +1,14 @@
 databaseChangeLog:
   - include:
+      file: V2025_07_23__create_hypothesis.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2025_07_24__add_fk_hypothesis_to_experiment.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2025_07_24__add_fk_niche_to_hypothesis.sql
+      relativeToChangelogFile: true
+  - include:
       file: V2025_07_01__add_fk_niche_to_hypothesis.sql
       relativeToChangelogFile: true
   - include:

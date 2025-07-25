@@ -16,7 +16,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.context.TestPropertySource;
+import com.marketinghub.test.MySqlContainerBase;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -30,14 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(classes = AdsServiceApplication.class)
 @AutoConfigureMockMvc
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:testdb",
-        "spring.datasource.driverClassName=org.h2.Driver",
-        "spring.datasource.username=sa",
-        "spring.jpa.hibernate.ddl-auto=create",
-        "spring.liquibase.enabled=false"
-})
-class ExperimentControllerTest {
+class ExperimentControllerTest extends MySqlContainerBase {
 
     @Autowired
     private MockMvc mockMvc;

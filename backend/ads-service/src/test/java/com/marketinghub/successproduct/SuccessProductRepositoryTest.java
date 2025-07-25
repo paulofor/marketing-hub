@@ -6,14 +6,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import com.marketinghub.test.MySqlContainerBase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(classes = AdsServiceApplication.class)
-@TestPropertySource(properties = "spring.liquibase.enabled=false")
-class SuccessProductRepositoryTest {
+class SuccessProductRepositoryTest extends MySqlContainerBase {
 
     @Autowired
     SuccessProductRepository repository;

@@ -9,7 +9,7 @@ import com.marketinghub.niche.repository.MarketNicheRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
+import com.marketinghub.test.MySqlContainerBase;
 
 import java.math.BigDecimal;
 
@@ -17,15 +17,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest(classes = com.marketinghub.ads.AdsServiceApplication.class)
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:testdb",
-        "spring.datasource.driverClassName=org.h2.Driver",
-        "spring.datasource.username=sa",
-        "spring.jpa.hibernate.ddl-auto=create",
-        "spring.liquibase.enabled=false"
-})
 @org.springframework.transaction.annotation.Transactional
-class HypothesisServiceTest {
+class HypothesisServiceTest extends MySqlContainerBase {
     @Autowired
     HypothesisService service;
     @Autowired

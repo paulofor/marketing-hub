@@ -6,22 +6,17 @@ import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import com.marketinghub.worker.test.MySqlContainerBase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ImportAutoConfiguration
 @EntityScan("com.marketinghub.ads")
 @ContextConfiguration(classes = SuccessProductWorkerApplication.class)
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:testdb",
-        "spring.datasource.driverClassName=org.h2.Driver",
-        "spring.datasource.username=sa",
-        "spring.jpa.hibernate.ddl-auto=create",
-        "spring.liquibase.enabled=false"
-})
-class SuccessProductRepositoryTest {
+class SuccessProductRepositoryTest extends MySqlContainerBase {
 
     @Autowired
     SuccessProductRepository repository;

@@ -4,6 +4,7 @@ import axios from "axios";
 export interface Experiment {
   id: string;
   nicheId: number;
+  hypothesisId: string;
   name: string;
   hypothesis: string;
   kpiTarget: number;

@@ -46,6 +46,15 @@ jobs:
       - name: Rodar testes
         run: mvn -B test
 
+      - name: Validar changelogs Liquibase
+        run: |
+          mvn -B \
+            org.liquibase:liquibase-maven-plugin:4.26.0:validate \
+            -Dliquibase.changeLogFile=src/main/resources/db/changelog/db.changelog-master.yaml \
+            -Dliquibase.url=jdbc:h2:mem:validate \
+            -Dliquibase.username=sa \
+            -Dliquibase.password=
+
       - name: Build backend
         run: mvn -B -s ../settings.xml package -DskipTests
 

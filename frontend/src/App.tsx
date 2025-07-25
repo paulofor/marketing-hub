@@ -23,8 +23,11 @@ import EditAiServicePage from "./pages/aiService/EditAiServicePage";
 import ExperimentListPage from "./pages/experiment/ExperimentListPage";
 import NewExperimentPage from "./pages/experiment/NewExperimentPage";
 import ExperimentDetailPage from "./pages/experiment/ExperimentDetailPage";
+import NicheDetailPage from "./pages/niche/NicheDetailPage";
+import HypothesisDetailPage from "./pages/hypothesis/HypothesisDetailPage";
 import HypothesesPage from "./pages/hypothesis/HypothesesPage";
 import HypothesisListPage from "./pages/hypothesis/HypothesisListPage";
+import AppLayout from "./app/AppLayout";
 import AnglesPage from "./pages/AnglesPage";
 import VisualProofsPage from "./pages/VisualProofsPage";
 import EmotionalTriggersPage from "./pages/EmotionalTriggersPage";
@@ -149,12 +152,21 @@ export default function App() {
           path="/success-products/:id"
           element={<SuccessProductDetailPage />}
         />
-        <Route path="/niches" element={<NicheListPage />} />
-        <Route path="/niches/new" element={<NewNichePage />} />
-        <Route path="/niches/:id/edit" element={<EditNichePage />} />
+        <Route path="/niches" element={<AppLayout />}>
+          <Route index element={<NicheListPage />} />
+          <Route path="new" element={<NewNichePage />} />
+          <Route path=":nicheId" element={<NicheDetailPage />} />
+          <Route path=":nicheId/edit" element={<EditNichePage />} />
+          <Route
+            path=":nicheId/hypotheses/:hypothesisId"
+            element={<HypothesisDetailPage />}
+          />
+        </Route>
         <Route path="/experiments" element={<ExperimentListPage />} />
         <Route path="/experiments/new" element={<NewExperimentPage />} />
-        <Route path="/experiments/:id" element={<ExperimentDetailPage />} />
+        <Route path="/experiments/:id" element={<AppLayout />}>
+          <Route index element={<ExperimentDetailPage />} />
+        </Route>
         <Route path="/hypotheses" element={<HypothesisListPage />} />
         <Route path="/hypotheses/board" element={<HypothesesPage />} />
         <Route path="/ai-services" element={<AiServiceListPage />} />

@@ -31,11 +31,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(classes = AdsServiceApplication.class)
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:testdb",
+        "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MYSQL",
         "spring.datasource.driverClassName=org.h2.Driver",
         "spring.datasource.username=sa",
         "spring.jpa.hibernate.ddl-auto=create",
-        "spring.liquibase.enabled=false"
+        "spring.liquibase.enabled=true"
 })
 class ExperimentControllerTest {
 

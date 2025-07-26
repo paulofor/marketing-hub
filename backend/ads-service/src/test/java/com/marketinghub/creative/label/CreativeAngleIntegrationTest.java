@@ -22,7 +22,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @ContextConfiguration(classes = AdsServiceApplication.class)
-@TestPropertySource(properties = "spring.liquibase.enabled=false")
+@TestPropertySource(properties = {
+        "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MYSQL",
+        "spring.datasource.driverClassName=org.h2.Driver",
+        "spring.datasource.username=sa",
+        "spring.jpa.hibernate.ddl-auto=create",
+        "spring.liquibase.enabled=true"
+})
 class CreativeAngleIntegrationTest {
     @Autowired
     CreativeRepository creativeRepository;

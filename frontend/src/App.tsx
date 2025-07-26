@@ -25,6 +25,7 @@ import NewExperimentPage from "./pages/experiment/NewExperimentPage";
 import ExperimentDetailPage from "./pages/experiment/ExperimentDetailPage";
 import NicheDetailPage from "./pages/niche/NicheDetailPage";
 import HypothesisDetailPage from "./pages/hypothesis/HypothesisDetailPage";
+import NewHypothesisPage from "./pages/hypothesis/NewHypothesisPage";
 import HypothesesPage from "./pages/hypothesis/HypothesesPage";
 import HypothesisListPage from "./pages/hypothesis/HypothesisListPage";
 import AppLayout from "./app/AppLayout";
@@ -157,6 +158,7 @@ export default function App() {
           <Route path="new" element={<NewNichePage />} />
           <Route path=":nicheId" element={<NicheDetailPage />} />
           <Route path=":nicheId/edit" element={<EditNichePage />} />
+          <Route path=":nicheId/hypotheses/new" element={<NewHypothesisPage />} />
           <Route
             path=":nicheId/hypotheses/:hypothesisId"
             element={<HypothesisDetailPage />}

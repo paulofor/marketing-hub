@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
+import com.marketinghub.test.MySqlContainerBase;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.net.http.HttpClient;
@@ -27,14 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(classes = AdsServiceApplication.class)
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:testdb",
-        "spring.datasource.driverClassName=org.h2.Driver",
-        "spring.datasource.username=sa",
-        "spring.jpa.hibernate.ddl-auto=create",
-        "spring.liquibase.enabled=false"
-})
-class CreativeServiceTest {
+class CreativeServiceTest extends MySqlContainerBase {
 
     @Autowired
     CreativeRepository repository;

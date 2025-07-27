@@ -44,6 +44,9 @@ class CreativeAngleIntegrationTest {
                 .marketNiche(niche)
                 .title("H")
                 .premiseAngle(base)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(java.math.BigDecimal.ONE)
                 .build();

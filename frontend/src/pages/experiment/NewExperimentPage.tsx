@@ -13,6 +13,9 @@ export default function NewExperimentPage() {
     hypothesisId: "",
     hypothesis: "",
     kpiTarget: "",
+    stopLossCpl: "",
+    sampleSize: "",
+    mde: "",
     startDate: "",
     endDate: "",
   });
@@ -26,6 +29,9 @@ export default function NewExperimentPage() {
         name: form.name,
         hypothesis: form.hypothesis,
         kpiTarget: Number(form.kpiTarget),
+        stopLossCpl: form.stopLossCpl ? Number(form.stopLossCpl) : undefined,
+        sampleSize: form.sampleSize ? Number(form.sampleSize) : undefined,
+        mde: form.mde ? Number(form.mde) : undefined,
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
       });
@@ -35,6 +41,9 @@ export default function NewExperimentPage() {
         name: "",
         hypothesis: "",
         kpiTarget: "",
+        stopLossCpl: "",
+        sampleSize: "",
+        mde: "",
         startDate: "",
         endDate: "",
       });
@@ -105,6 +114,27 @@ export default function NewExperimentPage() {
         type="number"
         value={form.kpiTarget}
         onChange={(e) => setForm({ ...form, kpiTarget: e.target.value })}
+      />
+      <input
+        className="form-control mb-2"
+        placeholder="Stop-loss CPL"
+        type="number"
+        value={form.stopLossCpl}
+        onChange={(e) => setForm({ ...form, stopLossCpl: e.target.value })}
+      />
+      <input
+        className="form-control mb-2"
+        placeholder="Tamanho da amostra"
+        type="number"
+        value={form.sampleSize}
+        onChange={(e) => setForm({ ...form, sampleSize: e.target.value })}
+      />
+      <input
+        className="form-control mb-2"
+        placeholder="MDE %"
+        type="number"
+        value={form.mde}
+        onChange={(e) => setForm({ ...form, mde: e.target.value })}
       />
       <input
         className="form-control mb-2"

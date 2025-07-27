@@ -7,6 +7,10 @@ export interface CreateHypothesis {
   marketNicheId: number;
   title: string;
   premiseAngleId?: number;
+  promise: string;
+  problem: string;
+  persona: string;
+  successRule: string;
   offerType?: string;
   kpiTargetCpl?: number;
 }

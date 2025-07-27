@@ -18,6 +18,9 @@ public class ExperimentDto {
     private String name;
     private String hypothesis;
     private BigDecimal kpiTarget;
+    private BigDecimal stopLossCpl;
+    private Integer sampleSize;
+    private BigDecimal mde;
     private LocalDate startDate;
     private LocalDate endDate;
     private ExperimentStatus status;

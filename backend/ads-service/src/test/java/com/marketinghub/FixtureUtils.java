@@ -39,6 +39,10 @@ public class FixtureUtils {
                 .marketNiche(niche)
                 .title("H")
                 .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .successRule("Regra")
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(java.math.BigDecimal.ONE)
                 .build();

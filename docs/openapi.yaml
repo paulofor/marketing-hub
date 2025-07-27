@@ -68,6 +68,12 @@ components:
           type: string
         kpiTarget:
           type: number
+        stopLossCpl:
+          type: number
+        sampleSize:
+          type: integer
+        mde:
+          type: number
         startDate:
           type: string
           format: date
@@ -382,6 +388,14 @@ components:
           type: string
         premiseAngleId:
           type: integer
+        promise:
+          type: string
+        problem:
+          type: string
+        persona:
+          type: string
+        successRule:
+          type: string
         offerType:
           type: string
         price:

@@ -43,6 +43,10 @@ class HypothesisServiceTest {
         req.setMarketNicheId(niche.getId());
         req.setTitle("Teste");
         req.setPremiseAngleId(angle.getId());
+        req.setPromise("Promessa");
+        req.setProblem("Problema");
+        req.setPersona("Persona");
+        req.setSuccessRule("Regra");
         req.setOfferType("LEAD");
         req.setKpiTargetCpl(new BigDecimal("5"));
         Hypothesis h = service.create(req);
@@ -56,6 +60,10 @@ class HypothesisServiceTest {
         CreateHypothesisRequest req = new CreateHypothesisRequest();
         req.setMarketNicheId(niche.getId());
         req.setTitle("   ");
+        req.setPromise("p");
+        req.setProblem("pr");
+        req.setPersona("pe");
+        req.setSuccessRule("sr");
         assertThatThrownBy(() -> service.create(req))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     }
@@ -66,6 +74,10 @@ class HypothesisServiceTest {
         CreateHypothesisRequest req = new CreateHypothesisRequest();
         req.setMarketNicheId(niche.getId());
         req.setTitle("T");
+        req.setPromise("p");
+        req.setProblem("pr");
+        req.setPersona("pe");
+        req.setSuccessRule("sr");
         assertThatThrownBy(() -> service.create(req))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     }
@@ -78,6 +90,10 @@ class HypothesisServiceTest {
         req.setMarketNicheId(niche.getId());
         req.setTitle("T");
         req.setPremiseAngleId(angle.getId());
+        req.setPromise("p");
+        req.setProblem("pr");
+        req.setPersona("pe");
+        req.setSuccessRule("sr");
         req.setOfferType("TRIPWIRE");
         req.setKpiTargetCpl(new BigDecimal("5"));
         assertThatThrownBy(() -> service.create(req))
@@ -90,6 +106,10 @@ class HypothesisServiceTest {
         var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
         req.setTitle("T");
         req.setPremiseAngleId(angle.getId());
+        req.setPromise("p");
+        req.setProblem("pr");
+        req.setPersona("pe");
+        req.setSuccessRule("sr");
         req.setKpiTargetCpl(new BigDecimal("5"));
         assertThatThrownBy(() -> service.create(req))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);

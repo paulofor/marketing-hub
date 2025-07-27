@@ -42,6 +42,9 @@ class ExperimentServiceTest {
                 .marketNiche(niche)
                 .title("T")
                 .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
@@ -67,6 +70,9 @@ class ExperimentServiceTest {
                 .marketNiche(niche)
                 .title("T")
                 .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
@@ -92,6 +98,9 @@ class ExperimentServiceTest {
                 .marketNiche(niche1)
                 .title("T")
                 .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());

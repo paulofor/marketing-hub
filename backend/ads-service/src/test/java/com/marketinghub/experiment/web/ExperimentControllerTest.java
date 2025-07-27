@@ -76,6 +76,9 @@ class ExperimentControllerTest {
                 .marketNiche(nicheRepo.findById(nicheId).orElseThrow())
                 .title("H")
                 .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(BigDecimal.ONE)
                 .build());

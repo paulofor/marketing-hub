@@ -13,6 +13,10 @@ public class HypothesisDto {
     private Long marketNicheId;
     private String title;
     private Long premiseAngleId;
+    private String promise;
+    private String problem;
+    private String persona;
+    private String successRule;
     private OfferType offerType;
     private BigDecimal price;
     private BigDecimal kpiTargetCpl;

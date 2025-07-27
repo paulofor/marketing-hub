@@ -34,6 +34,22 @@ public class Hypothesis {
     @JoinColumn(name = "premise_angle_id", nullable = false)
     private Angle premiseAngle;
 
+    /** Promessa de valor em até 140 caracteres. */
+    @Column(nullable = false, length = 140)
+    private String promise;
+
+    /** Problema ou insight do cliente em uma frase. */
+    @Column(nullable = false)
+    private String problem;
+
+    /** Persona alvo dentro do nicho. */
+    @Column(nullable = false)
+    private String persona;
+
+    /** Regra de sucesso que define se a hipótese será validada. */
+    @Lob
+    private String successRule;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OfferType offerType;

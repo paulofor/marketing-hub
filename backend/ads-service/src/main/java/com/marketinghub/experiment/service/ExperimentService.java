@@ -72,12 +72,21 @@ public class ExperimentService {
         if (repository.existsByNicheAndName(niche, request.getName())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name already exists for niche");
         }
+        if (request.getStopLossCpl() != null && request.getStopLossCpl().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "stopLossCpl must be positive");
+        }
+        if (request.getSampleSize() != null && request.getSampleSize() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "sampleSize must be positive");
+        }
         Experiment exp = Experiment.builder()
                 .niche(niche)
                 .name(request.getName())
                 .hypothesis(request.getHypothesis())
                 .hypothesisRef(hyp)
                 .kpiTarget(request.getKpiTarget())
+                .stopLossCpl(request.getStopLossCpl())
+                .sampleSize(request.getSampleSize())
+                .mde(request.getMde())
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
                 .status(ExperimentStatus.PLANNED)
@@ -115,6 +124,9 @@ public class ExperimentService {
                 .hypothesis(original.getHypothesis())
                 .hypothesisRef(original.getHypothesisRef())
                 .kpiTarget(original.getKpiTarget())
+                .stopLossCpl(original.getStopLossCpl())
+                .sampleSize(original.getSampleSize())
+                .mde(original.getMde())
                 .startDate(original.getStartDate())
                 .endDate(original.getEndDate())
                 .status(ExperimentStatus.PLANNED)

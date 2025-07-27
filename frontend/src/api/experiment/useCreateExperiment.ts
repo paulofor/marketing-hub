@@ -8,6 +8,9 @@ export interface CreateExperiment {
   name: string;
   hypothesis: string;
   kpiTarget: number;
+  stopLossCpl?: number;
+  sampleSize?: number;
+  mde?: number;
   startDate?: string;
   endDate?: string;
 }

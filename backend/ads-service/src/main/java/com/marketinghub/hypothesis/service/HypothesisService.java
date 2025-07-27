@@ -57,6 +57,21 @@ public class HypothesisService {
         if (req.getPremiseAngleId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "angle required");
         }
+        if (req.getPromise() == null || req.getPromise().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "promise required");
+        }
+        if (req.getPromise().length() > 140) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "promise too long");
+        }
+        if (req.getProblem() == null || req.getProblem().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "problem required");
+        }
+        if (req.getPersona() == null || req.getPersona().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "persona required");
+        }
+        if (req.getSuccessRule() == null || req.getSuccessRule().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "successRule required");
+        }
         if (req.getKpiTargetCpl() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "kpiTargetCpl required");
         }
@@ -72,6 +87,10 @@ public class HypothesisService {
                 .marketNiche(attachNiche(req.getMarketNicheId()))
                 .title(req.getTitle())
                 .premiseAngle(attachAngle(req.getPremiseAngleId()))
+                .promise(req.getPromise())
+                .problem(req.getProblem())
+                .persona(req.getPersona())
+                .successRule(req.getSuccessRule())
                 .offerType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()))
                 .price(req.getPrice())
                 .kpiTargetCpl(req.getKpiTargetCpl())

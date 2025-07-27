@@ -12,6 +12,10 @@ const schema = z
       .string()
       .min(8, "mínimo 8 caracteres")
       .max(120, "máx. 120 caracteres"),
+    promise: z.string().min(1, "obrigatório").max(140, "máx. 140"),
+    problem: z.string().min(1, "obrigatório"),
+    persona: z.string().min(1, "obrigatório"),
+    successRule: z.string().min(1, "obrigatório"),
     angleId: z.string().min(1, "obrigatório"),
     offerType: z.enum(["LEAD", "TRIPWIRE"]),
     price: z
@@ -55,6 +59,10 @@ export default function NewHypothesisPage() {
   const onSubmit = handleSubmit(async (values) => {
     const body: any = {
       title: values.title,
+      promise: values.promise,
+      problem: values.problem,
+      persona: values.persona,
+      successRule: values.successRule,
       angleId: Number(values.angleId),
       offerType: values.offerType,
       kpiTargetCpl: values.kpiTargetCpl,
@@ -84,6 +92,59 @@ export default function NewHypothesisPage() {
         {errors.title && (
           <div id="title-error" className="invalid-feedback d-block">
             {errors.title.message}
+          </div>
+        )}
+
+        <label className="form-label" htmlFor="promise">Promessa</label>
+        <input
+          id="promise"
+          {...register("promise")}
+          className={`form-control mb-2 ${errors.promise ? "is-invalid" : ""}`}
+          aria-describedby="promise-error"
+        />
+        {errors.promise && (
+          <div id="promise-error" className="invalid-feedback d-block">
+            {errors.promise.message}
+          </div>
+        )}
+
+        <label className="form-label" htmlFor="problem">Problema</label>
+        <input
+          id="problem"
+          {...register("problem")}
+          className={`form-control mb-2 ${errors.problem ? "is-invalid" : ""}`}
+          aria-describedby="problem-error"
+        />
+        {errors.problem && (
+          <div id="problem-error" className="invalid-feedback d-block">
+            {errors.problem.message}
+          </div>
+        )}
+
+        <label className="form-label" htmlFor="persona">Persona</label>
+        <input
+          id="persona"
+          {...register("persona")}
+          className={`form-control mb-2 ${errors.persona ? "is-invalid" : ""}`}
+          aria-describedby="persona-error"
+        />
+        {errors.persona && (
+          <div id="persona-error" className="invalid-feedback d-block">
+            {errors.persona.message}
+          </div>
+        )}
+
+        <label className="form-label" htmlFor="successRule">Regra de sucesso</label>
+        <textarea
+          id="successRule"
+          rows={2}
+          {...register("successRule")}
+          className={`form-control mb-2 ${errors.successRule ? "is-invalid" : ""}`}
+          aria-describedby="rule-error"
+        />
+        {errors.successRule && (
+          <div id="rule-error" className="invalid-feedback d-block">
+            {errors.successRule.message}
           </div>
         )}
 

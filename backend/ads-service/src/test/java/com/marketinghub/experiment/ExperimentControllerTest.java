@@ -56,6 +56,9 @@ class ExperimentControllerTest {
         req.setHypothesisId(hyp.getId());
         req.setHypothesis("h");
         req.setKpiTarget(new BigDecimal("11"));
+        req.setStopLossCpl(new BigDecimal("22"));
+        req.setSampleSize(100);
+        req.setMde(new BigDecimal("10"));
         mockMvc.perform(post("/api/niches/" + niche.getId() + "/experiments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(req)))
@@ -76,6 +79,9 @@ class ExperimentControllerTest {
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
+        req.setStopLossCpl(new BigDecimal("22"));
+        req.setSampleSize(100);
+        req.setMde(new BigDecimal("10"));
         req.setStartDate(java.time.LocalDate.of(2024,2,1));
         req.setEndDate(java.time.LocalDate.of(2024,1,1));
         mockMvc.perform(post("/api/niches/" + niche.getId() + "/experiments")

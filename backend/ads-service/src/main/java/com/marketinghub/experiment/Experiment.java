@@ -38,6 +38,16 @@ public class Experiment {
     private com.marketinghub.hypothesis.Hypothesis hypothesisRef;
 
     private java.math.BigDecimal kpiTarget;
+    /** Stop-loss operacional em CPL. */
+    @Column(precision = 7, scale = 2)
+    private java.math.BigDecimal stopLossCpl;
+
+    /** Tamanho de amostra desejado para o experimento. */
+    private Integer sampleSize;
+
+    /** MDE (Minimum Detectable Effect) percentual. */
+    @Column(precision = 5, scale = 2)
+    private java.math.BigDecimal mde;
     private LocalDate startDate;
     private LocalDate endDate;
 

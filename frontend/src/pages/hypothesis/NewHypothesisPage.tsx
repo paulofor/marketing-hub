@@ -16,7 +16,7 @@ const schema = z
     problem: z.string().min(1, "obrigatório"),
     persona: z.string().min(1, "obrigatório"),
     successRule: z.string().min(1, "obrigatório"),
-    angleId: z.string().min(1, "obrigatório"),
+    premiseAngleId: z.string().min(1, "obrigatório"),
     offerType: z.enum(["LEAD", "TRIPWIRE"]),
     price: z
       .preprocess(
@@ -63,7 +63,7 @@ export default function NewHypothesisPage() {
       problem: values.problem,
       persona: values.persona,
       successRule: values.successRule,
-      angleId: Number(values.angleId),
+      premiseAngleId: Number(values.premiseAngleId),
       offerType: values.offerType,
       kpiTargetCpl: values.kpiTargetCpl,
       marketNicheId: nicheId ? Number(nicheId) : undefined,
@@ -153,8 +153,8 @@ export default function NewHypothesisPage() {
         </label>
         <select
           id="angle"
-          {...register("angleId")}
-          className={`form-select mb-2 ${errors.angleId ? "is-invalid" : ""}`}
+          {...register("premiseAngleId")}
+          className={`form-select mb-2 ${errors.premiseAngleId ? "is-invalid" : ""}`}
           aria-describedby="angle-error"
         >
           <option value="">Selecione Angle</option>
@@ -165,9 +165,9 @@ export default function NewHypothesisPage() {
               </option>
             ))}
         </select>
-        {errors.angleId && (
+        {errors.premiseAngleId && (
           <div id="angle-error" className="invalid-feedback d-block">
-            {errors.angleId.message}
+            {errors.premiseAngleId.message}
           </div>
         )}
 

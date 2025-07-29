@@ -5,6 +5,10 @@ export interface Hypothesis {
   id: number;
   marketNicheId: number;
   title: string;
+  promise?: string;
+  problem?: string;
+  persona?: string;
+  successRule?: string;
   premiseAngleId?: number;
   offerType?: string;
   price?: number;
@@ -16,7 +20,12 @@ export function useHypothesisBoard(nicheId: string) {
   return useQuery({
     queryKey: ["hypothesis-board", nicheId],
     queryFn: async () => {
-      const statuses = ["BACKLOG", "TESTING", "VALIDATED", "INVALIDATED"] as const;
+      const statuses = [
+        "BACKLOG",
+        "TESTING",
+        "VALIDATED",
+        "INVALIDATED",
+      ] as const;
       const entries = await Promise.all(
         statuses.map(async (s) => {
           const { data } = await axios.get<Hypothesis[]>(

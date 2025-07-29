@@ -344,6 +344,24 @@ components:
       responses:
         '200':
           description: OK
+  /api/hypotheses/{id}:
+    put:
+      summary: Atualizar hipótese
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHypothesisRequest'
+      responses:
+        '200':
+          description: OK
   /api/hypotheses/{id}/status:
     patch:
       summary: Atualizar status da hipótese

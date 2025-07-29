@@ -9,7 +9,10 @@ export default function HypothesisDetailPage() {
   const { nicheId, hypothesisId } = useParams();
   const { data: niche } = useNiche(Number(nicheId));
   const { data, isLoading } = useHypothesis(nicheId, hypothesisId);
-  const { data: experiments } = useExperimentsByHypothesis(nicheId, hypothesisId);
+  const { data: experiments } = useExperimentsByHypothesis(
+    nicheId,
+    hypothesisId,
+  );
   useBreadcrumbs([
     { label: "Nichos", to: "/niches" },
     { label: niche?.name || "...", to: `/niches/${nicheId}` },
@@ -23,17 +26,29 @@ export default function HypothesisDetailPage() {
     <div>
       <div className="d-flex justify-content-between align-items-center">
         <PageTitle>{data.title}</PageTitle>
-        <Link
-          className="btn btn-primary"
-          to={`/experiments/new?nicheId=${nicheId}&hypothesisId=${hypothesisId}`}
-        >
-          Criar Experimento
-        </Link>
+        <div className="d-flex gap-2">
+          {data.status === "BACKLOG" && (
+            <Link
+              className="btn btn-outline-secondary"
+              to={`/niches/${nicheId}/hypotheses/${hypothesisId}/edit`}
+            >
+              Editar
+            </Link>
+          )}
+          <Link
+            className="btn btn-primary"
+            to={`/experiments/new?nicheId=${nicheId}&hypothesisId=${hypothesisId}`}
+          >
+            Criar Experimento
+          </Link>
+        </div>
       </div>
       <dl className="row">
         <dt className="col-sm-3">Oferta</dt>
         <dd className="col-sm-9">
-          {data.offerType === "TRIPWIRE" ? `Tripwire R$ ${data.price ?? ""}` : "Lead Magnet"}
+          {data.offerType === "TRIPWIRE"
+            ? `Tripwire R$ ${data.price ?? ""}`
+            : "Lead Magnet"}
         </dd>
         <dt className="col-sm-3">KPI</dt>
         <dd className="col-sm-9">{data.kpiTargetCpl}</dd>

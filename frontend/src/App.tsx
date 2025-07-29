@@ -28,6 +28,7 @@ import HypothesisDetailPage from "./pages/hypothesis/HypothesisDetailPage";
 import HypothesesPage from "./pages/hypothesis/HypothesesPage";
 import HypothesisListPage from "./pages/hypothesis/HypothesisListPage";
 import NewHypothesisPage from "./pages/hypothesis/NewHypothesisPage";
+import EditHypothesisPage from "./pages/hypothesis/EditHypothesisPage";
 import AppLayout from "./app/AppLayout";
 import AnglesPage from "./pages/AnglesPage";
 import VisualProofsPage from "./pages/VisualProofsPage";
@@ -165,6 +166,10 @@ export default function App() {
           <Route
             path=":nicheId/hypotheses/:hypothesisId"
             element={<HypothesisDetailPage />}
+          />
+          <Route
+            path=":nicheId/hypotheses/:hypothesisId/edit"
+            element={<EditHypothesisPage />}
           />
         </Route>
         <Route path="/experiments" element={<ExperimentListPage />} />

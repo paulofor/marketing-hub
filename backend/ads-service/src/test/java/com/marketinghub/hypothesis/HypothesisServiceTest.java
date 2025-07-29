@@ -142,4 +142,39 @@ class HypothesisServiceTest {
 
         assertThat(list).hasSize(2);
     }
+
+    @Test
+    void updateHypothesisOnlyWhenBacklog() {
+        MarketNiche niche = fixtures.createAndSaveNiche();
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+        CreateHypothesisRequest req = new CreateHypothesisRequest();
+        req.setMarketNicheId(niche.getId());
+        req.setTitle("H1");
+        req.setPremiseAngleId(angle.getId());
+        req.setPromise("p");
+        req.setProblem("pr");
+        req.setPersona("pe");
+        req.setSuccessRule("sr");
+        req.setOfferType("LEAD");
+        req.setKpiTargetCpl(BigDecimal.ONE);
+
+        Hypothesis h = service.create(req);
+
+        com.marketinghub.hypothesis.dto.UpdateHypothesisRequest u = new com.marketinghub.hypothesis.dto.UpdateHypothesisRequest();
+        u.setTitle("H2");
+        u.setPremiseAngleId(angle.getId());
+        u.setPromise("p2");
+        u.setProblem("pr2");
+        u.setPersona("pe2");
+        u.setSuccessRule("sr2");
+        u.setOfferType("LEAD");
+        u.setKpiTargetCpl(BigDecimal.TEN);
+
+        Hypothesis updated = service.update(h.getId(), u);
+        assertThat(updated.getTitle()).isEqualTo("H2");
+
+        service.updateStatus(h.getId(), HypothesisStatus.TESTING);
+        assertThatThrownBy(() -> service.update(h.getId(), u))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    }
 }

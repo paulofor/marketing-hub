@@ -6,6 +6,7 @@ import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.hypothesis.*;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
+import com.marketinghub.hypothesis.dto.UpdateHypothesisRequest;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import java.util.UUID;
 import jakarta.persistence.EntityManager;
@@ -116,6 +117,55 @@ public class HypothesisService {
     public Hypothesis updateStatus(UUID id, HypothesisStatus status) {
         Hypothesis h = repository.findById(id).orElseThrow();
         h.setStatus(status);
+        return h;
+    }
+
+    private void validate(UpdateHypothesisRequest req) {
+        if (req.getTitle() == null || req.getTitle().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "title required");
+        }
+        if (req.getPremiseAngleId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "angle required");
+        }
+        if (req.getPromise() == null || req.getPromise().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "promise required");
+        }
+        if (req.getPromise().length() > 140) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "promise too long");
+        }
+        if (req.getProblem() == null || req.getProblem().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "problem required");
+        }
+        if (req.getPersona() == null || req.getPersona().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "persona required");
+        }
+        if (req.getSuccessRule() == null || req.getSuccessRule().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "successRule required");
+        }
+        if (req.getKpiTargetCpl() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "kpiTargetCpl required");
+        }
+        if ("TRIPWIRE".equals(req.getOfferType()) && req.getPrice() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "price required for TRIPWIRE");
+        }
+    }
+
+    @Transactional
+    public Hypothesis update(UUID id, UpdateHypothesisRequest req) {
+        validate(req);
+        Hypothesis h = repository.findById(id).orElseThrow();
+        if (h.getStatus() != HypothesisStatus.BACKLOG) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "only BACKLOG hypotheses can be edited");
+        }
+        h.setTitle(req.getTitle());
+        h.setPremiseAngle(attachAngle(req.getPremiseAngleId()));
+        h.setPromise(req.getPromise());
+        h.setProblem(req.getProblem());
+        h.setPersona(req.getPersona());
+        h.setSuccessRule(req.getSuccessRule());
+        h.setOfferType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()));
+        h.setPrice(req.getPrice());
+        h.setKpiTargetCpl(req.getKpiTargetCpl());
         return h;
     }
 }

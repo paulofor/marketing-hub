@@ -3,6 +3,7 @@ package com.marketinghub.hypothesis.web;
 import com.marketinghub.hypothesis.HypothesisStatus;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.hypothesis.dto.HypothesisDto;
+import com.marketinghub.hypothesis.dto.UpdateHypothesisRequest;
 import com.marketinghub.hypothesis.mapper.HypothesisMapper;
 import com.marketinghub.hypothesis.service.HypothesisKanbanFacade;
 import com.marketinghub.hypothesis.service.HypothesisService;
@@ -32,6 +33,11 @@ public class HypothesisController {
     @ResponseStatus(org.springframework.http.HttpStatus.CREATED)
     public HypothesisDto create(@RequestBody CreateHypothesisRequest req) {
         return mapper.toDto(service.create(req));
+    }
+
+    @PutMapping("/hypotheses/{id}")
+    public HypothesisDto update(@PathVariable UUID id, @RequestBody UpdateHypothesisRequest req) {
+        return mapper.toDto(service.update(id, req));
     }
 
     @GetMapping("/hypotheses")

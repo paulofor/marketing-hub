@@ -114,4 +114,32 @@ class HypothesisServiceTest {
         assertThatThrownBy(() -> service.create(req))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     }
+
+    @Test
+    void listByMarketNicheWithNullStatusReturnsAll() {
+        MarketNiche niche = fixtures.createAndSaveNiche();
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+
+        CreateHypothesisRequest req = new CreateHypothesisRequest();
+        req.setMarketNicheId(niche.getId());
+        req.setTitle("H1");
+        req.setPremiseAngleId(angle.getId());
+        req.setPromise("p");
+        req.setProblem("pr");
+        req.setPersona("pe");
+        req.setSuccessRule("sr");
+        req.setOfferType("LEAD");
+        req.setKpiTargetCpl(BigDecimal.ONE);
+
+        Hypothesis h1 = service.create(req);
+        Hypothesis h2 = service.create(req);
+        service.updateStatus(h2.getId(), HypothesisStatus.TESTING);
+
+        Iterable<Hypothesis> all = service.listByMarketNiche(niche.getId(), null);
+        java.util.List<Hypothesis> list = java.util.stream.StreamSupport
+                .stream(all.spliterator(), false)
+                .toList();
+
+        assertThat(list).hasSize(2);
+    }
 }

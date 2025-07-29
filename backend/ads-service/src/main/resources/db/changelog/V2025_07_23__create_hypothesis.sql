@@ -7,6 +7,7 @@
 --    </not>
 CREATE TABLE IF NOT EXISTS hypothesis (
     id BINARY(16) PRIMARY KEY,
+    experiment_id BIGINT NOT NULL,
     title VARCHAR(255) NOT NULL,
     premise_angle_id BIGINT NOT NULL,
     offer_type VARCHAR(20) NOT NULL,

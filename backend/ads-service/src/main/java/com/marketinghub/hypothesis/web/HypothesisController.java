@@ -6,6 +6,8 @@ import com.marketinghub.hypothesis.dto.HypothesisDto;
 import com.marketinghub.hypothesis.mapper.HypothesisMapper;
 import com.marketinghub.hypothesis.service.HypothesisKanbanFacade;
 import com.marketinghub.hypothesis.service.HypothesisService;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,16 +35,18 @@ public class HypothesisController {
     }
 
     @GetMapping("/hypotheses")
-    public List<HypothesisDto> listAll(@RequestParam(value = "status", required = false) HypothesisStatus status) {
-        return StreamSupport.stream(service.list(status).spliterator(), false)
+    public List<HypothesisDto> listAll(@RequestParam(value = "status", required = false) String status) {
+        HypothesisStatus parsed = parseStatus(status);
+        return StreamSupport.stream(service.list(parsed).spliterator(), false)
                 .map(mapper::toDto)
                 .toList();
     }
 
     @GetMapping("/niches/{nicheId}/hypotheses")
     public List<HypothesisDto> listByNiche(@PathVariable Long nicheId,
-                                           @RequestParam(value = "status", required = false) HypothesisStatus status) {
-        return StreamSupport.stream(service.listByMarketNiche(nicheId, status).spliterator(), false)
+                                           @RequestParam(value = "status", required = false) String status) {
+        HypothesisStatus parsed = parseStatus(status);
+        return StreamSupport.stream(service.listByMarketNiche(nicheId, parsed).spliterator(), false)
                 .map(mapper::toDto)
                 .toList();
     }
@@ -56,5 +60,16 @@ public class HypothesisController {
     @GetMapping("/niches/{nicheId}/hypotheses/board")
     public Map<HypothesisStatus, List<HypothesisDto>> board(@PathVariable Long nicheId) {
         return facade.board(nicheId);
+    }
+
+    private HypothesisStatus parseStatus(String raw) {
+        if (raw == null || raw.isBlank() || "ALL".equalsIgnoreCase(raw)) {
+            return null;
+        }
+        try {
+            return HypothesisStatus.valueOf(raw);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status");
+        }
     }
 }

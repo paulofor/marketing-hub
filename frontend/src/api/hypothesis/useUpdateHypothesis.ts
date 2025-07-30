@@ -8,10 +8,12 @@ export function useUpdateHypothesis(nicheId?: string) {
   return useMutation({
     mutationFn: async (h: Hypothesis) => {
       const { id, ...body } = h;
+      console.log("useUpdateHypothesis mutationFn", id, body);
       const { data } = await axios.put<Hypothesis>(
         `/api/hypotheses/${id}`,
         body,
       );
+      console.log("backend responded", data);
       return data;
     },
     onSuccess: () => {

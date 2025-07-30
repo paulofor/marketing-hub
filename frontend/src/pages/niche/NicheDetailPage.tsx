@@ -56,6 +56,14 @@ export default function NicheDetailPage() {
                   <td>{h.status}</td>
                   <td>{h.kpiTargetCpl}</td>
                   <td>
+                    {h.status === "BACKLOG" && (
+                      <Link
+                        className="btn btn-sm btn-outline-secondary me-1"
+                        to={`hypotheses/${h.id}/edit`}
+                      >
+                        Editar
+                      </Link>
+                    )}
                     <Link
                       className="btn btn-sm btn-outline-primary"
                       to={`hypotheses/${h.id}`}

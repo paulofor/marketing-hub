@@ -25,7 +25,7 @@ export default function NewExperimentPage() {
     try {
       await create.mutateAsync({
         nicheId: Number(form.nicheId),
-        hypothesisId: form.hypothesisId ? Number(form.hypothesisId) : undefined,
+        hypothesisId: form.hypothesisId || undefined,
         name: form.name,
         hypothesis: form.hypothesis,
         kpiTarget: Number(form.kpiTarget),

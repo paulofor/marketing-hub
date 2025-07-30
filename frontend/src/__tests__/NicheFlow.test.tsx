@@ -17,7 +17,7 @@ function mockApi() {
       return Promise.resolve({
         data: [
           {
-            id: 10,
+            id: "10",
             title: "Hip 1",
             offerType: "LEAD",
             status: "BACKLOG",

@@ -6,7 +6,7 @@ import { Hypothesis } from "./useHypothesisBoard";
 export function useUpdateHypothesisStatus(nicheId?: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { id: number; status: string }) => {
+    mutationFn: async (input: { id: string; status: string }) => {
       const { data } = await axios.patch<Hypothesis>(
         `/api/hypotheses/${input.id}/status?status=${input.status}`,
       );

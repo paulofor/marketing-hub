@@ -10,7 +10,7 @@ export function useHypothesis(nicheId?: string, id?: string) {
       const { data } = await axios.get<Hypothesis[]>(
         `/api/niches/${nicheId}/hypotheses`,
       );
-      return data.find((h) => h.id === Number(id));
+      return data.find((h) => h.id === id);
     },
     enabled: !!nicheId && !!id,
   });

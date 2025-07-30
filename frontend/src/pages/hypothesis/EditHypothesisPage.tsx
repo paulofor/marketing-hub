@@ -7,6 +7,7 @@ import PageTitle from "../../components/PageTitle";
 import { useAngles } from "../../api/angle/useAngles";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import { useUpdateHypothesis } from "../../api/hypothesis/useUpdateHypothesis";
+import type { Hypothesis } from "../../api/hypothesis/useHypothesisBoard";
 
 const schema = z
   .object({
@@ -70,9 +71,9 @@ export default function EditHypothesisPage() {
   const offerType = watch("offerType");
 
   const onSubmit = async (values: FormData) => {
-    if (!data) return;                // já garantiu load
+    if (!data) return; // já garantiu load
     const body: Hypothesis = {
-      ...data,                        // marketNicheId, status, createdAt, etc.
+      ...data, // marketNicheId, status, createdAt, etc.
       title: values.title,
       promise: values.promise,
       problem: values.problem,
@@ -280,8 +281,10 @@ export default function EditHypothesisPage() {
             type="button"
             className="btn btn-primary"
             disabled={isSubmitting}
-            onClick={() => alert('Clique capturado!')}
-          >Salvar</button>
+            onClick={() => alert("Clique capturado!")}
+          >
+            Salvar
+          </button>
         </div>
       </form>
     </div>

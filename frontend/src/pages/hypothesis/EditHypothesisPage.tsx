@@ -3,10 +3,10 @@ import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import axios from "axios";
 import PageTitle from "../../components/PageTitle";
 import { useAngles } from "../../api/angle/useAngles";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
+import { useUpdateHypothesis } from "../../api/hypothesis/useUpdateHypothesis";
 
 const schema = z
   .object({
@@ -42,6 +42,7 @@ export default function EditHypothesisPage() {
   const navigate = useNavigate();
   const { data, isLoading } = useHypothesis(nicheId, hypothesisId);
   const { data: angles } = useAngles();
+  const update = useUpdateHypothesis(nicheId);
   const {
     register,
     handleSubmit,
@@ -70,6 +71,7 @@ export default function EditHypothesisPage() {
 
   const onSubmit = handleSubmit(async (values) => {
     const body: any = {
+      id: hypothesisId!,
       title: values.title,
       promise: values.promise,
       problem: values.problem,
@@ -80,7 +82,7 @@ export default function EditHypothesisPage() {
       kpiTargetCpl: values.kpiTargetCpl,
     };
     if (values.offerType === "TRIPWIRE") body.price = values.price;
-    await axios.put(`/api/hypotheses/${hypothesisId}`, body);
+    await update.mutateAsync(body);
     navigate(-1);
   });
 

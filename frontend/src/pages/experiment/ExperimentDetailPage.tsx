@@ -4,7 +4,7 @@ import { useExperiment } from "../../api/experiment/useExperiment";
 import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import PageTitle from "../../components/PageTitle";
-import CriativosTab from "../Experiment/CriativosTab";
+import CriativosTab from "./CriativosTab";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import * as Tabs from "@radix-ui/react-tabs";
 
@@ -21,7 +21,10 @@ export default function ExperimentDetailPage() {
   useBreadcrumbs([
     { label: "Nichos", to: "/niches" },
     { label: niche?.name || "...", to: `/niches/${data?.nicheId}` },
-    { label: hyp?.title || "...", to: `/niches/${data?.nicheId}/hypotheses/${data?.hypothesisId}` },
+    {
+      label: hyp?.title || "...",
+      to: `/niches/${data?.nicheId}/hypotheses/${data?.hypothesisId}`,
+    },
     { label: data?.name || "..." },
   ]);
   if (isLoading) return <p>Carregando...</p>;
@@ -64,17 +67,17 @@ export default function ExperimentDetailPage() {
               <dl className="row mb-0">
                 {rows.map((r, idx) => (
                   <Fragment key={r.label}>
-                  <dt
-                    className={`col-sm-3 py-2${idx % 2 === 0 ? " bg-light" : ""}`}
-                  >
-                    {r.label}
-                  </dt>
-                  <dd
-                    className={`col-sm-9 py-2${idx % 2 === 0 ? " bg-light" : ""}`}
-                  >
-                    {r.value}
-                  </dd>
-                </Fragment>
+                    <dt
+                      className={`col-sm-3 py-2${idx % 2 === 0 ? " bg-light" : ""}`}
+                    >
+                      {r.label}
+                    </dt>
+                    <dd
+                      className={`col-sm-9 py-2${idx % 2 === 0 ? " bg-light" : ""}`}
+                    >
+                      {r.value}
+                    </dd>
+                  </Fragment>
                 ))}
               </dl>
             </div>

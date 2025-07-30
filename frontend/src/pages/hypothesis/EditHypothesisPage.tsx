@@ -69,9 +69,9 @@ export default function EditHypothesisPage() {
 
   const offerType = watch("offerType");
 
-  const onSubmit = handleSubmit(async (values) => {
+  const onSubmit = async (values: FormData) => {
     console.log("EditHypothesisPage onSubmit", values);
-    const body: any = {
+    const body = {
       id: hypothesisId!,
       title: values.title,
       promise: values.promise,
@@ -81,13 +81,12 @@ export default function EditHypothesisPage() {
       premiseAngleId: Number(values.premiseAngleId),
       offerType: values.offerType,
       kpiTargetCpl: values.kpiTargetCpl,
+      ...(values.offerType === "TRIPWIRE" && { price: values.price }),
     };
-    if (values.offerType === "TRIPWIRE") body.price = values.price;
-    console.log("calling update.mutateAsync", body);
+
     await update.mutateAsync(body);
-    console.log("update.mutateAsync finished");
     navigate(-1);
-  });
+  };
 
   if (isLoading || !data) return <p>Carregando...</p>;
   if (data.status !== "BACKLOG")
@@ -96,7 +95,7 @@ export default function EditHypothesisPage() {
   return (
     <div style={{ maxWidth: 480 }}>
       <PageTitle>Editar Hipótese</PageTitle>
-      <form onSubmit={onSubmit} noValidate>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <label className="form-label" htmlFor="title">
           Título
         </label>
@@ -278,9 +277,10 @@ export default function EditHypothesisPage() {
             Cancelar
           </button>
           <button
-            type="submit"
+            type="button"
             className="btn btn-primary"
             disabled={isSubmitting}
+            onClick={() => alert('Clique capturado!')}
           >Salvar</button>
         </div>
       </form>

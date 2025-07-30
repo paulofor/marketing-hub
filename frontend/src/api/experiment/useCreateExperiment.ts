@@ -4,7 +4,7 @@ import { Experiment } from "./useExperiments";
 
 export interface CreateExperiment {
   nicheId: number;
-  hypothesisId?: number;
+  hypothesisId?: string;
   name: string;
   hypothesis: string;
   kpiTarget: number;

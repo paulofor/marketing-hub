@@ -92,7 +92,7 @@ export default function HypothesisBoard({ board, nicheId }: BoardProps) {
   );
   const onDragEnd = (e: DragEndEvent) => {
     if (e.over && e.active.data.current) {
-      const id = Number(e.active.id);
+      const id = String(e.active.id);
       const status = String(e.over.id);
       update.mutate({ id, status });
     }

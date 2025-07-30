@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
 export interface Hypothesis {
-  id: number;
+  id: string;
   marketNicheId: number;
   title: string;
   promise?: string;

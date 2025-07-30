@@ -70,9 +70,9 @@ export default function EditHypothesisPage() {
   const offerType = watch("offerType");
 
   const onSubmit = async (values: FormData) => {
-    console.log("EditHypothesisPage onSubmit", values);
-    const body = {
-      id: hypothesisId!,
+    if (!data) return;                // já garantiu load
+    const body: Hypothesis = {
+      ...data,                        // marketNicheId, status, createdAt, etc.
       title: values.title,
       promise: values.promise,
       problem: values.problem,

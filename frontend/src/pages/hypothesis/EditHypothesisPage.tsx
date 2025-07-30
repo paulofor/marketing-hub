@@ -70,6 +70,7 @@ export default function EditHypothesisPage() {
   const offerType = watch("offerType");
 
   const onSubmit = handleSubmit(async (values) => {
+    console.log("EditHypothesisPage onSubmit", values);
     const body: any = {
       id: hypothesisId!,
       title: values.title,
@@ -82,7 +83,9 @@ export default function EditHypothesisPage() {
       kpiTargetCpl: values.kpiTargetCpl,
     };
     if (values.offerType === "TRIPWIRE") body.price = values.price;
+    console.log("calling update.mutateAsync", body);
     await update.mutateAsync(body);
+    console.log("update.mutateAsync finished");
     navigate(-1);
   });
 

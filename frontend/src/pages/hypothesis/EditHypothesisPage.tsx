@@ -7,6 +7,7 @@ import PageTitle from "../../components/PageTitle";
 import { useAngles } from "../../api/angle/useAngles";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import { useUpdateHypothesis } from "../../api/hypothesis/useUpdateHypothesis";
+import type { Hypothesis } from "../../api/hypothesis/useHypothesisBoard";
 
 const schema = z
   .object({

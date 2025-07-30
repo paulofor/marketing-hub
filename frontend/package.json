@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "typecheck": "tsc --noEmit",
     "dev": "vite",
     "build": "vite build",
     "build:debug": "cross-env REACT_APP_DEBUG_PROD=true vite build",

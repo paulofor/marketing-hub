@@ -281,7 +281,9 @@ export default function EditHypothesisPage() {
             type="button"
             className="btn btn-primary"
             disabled={isSubmitting}
-            onClick={handleSubmit(onSubmit)}
+            onClick={handleSubmit(onSubmit, (errors) => {
+              console.log('Validation errors', errors);
+            })}
           >
             Salvar
           </button>

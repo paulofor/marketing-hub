@@ -278,9 +278,10 @@ export default function EditHypothesisPage() {
             Cancelar
           </button>
           <button
-            type="submit"
+            type="button"
             className="btn btn-primary"
             disabled={isSubmitting}
+            onClick={handleSubmit(onSubmit)}
           >
             Salvar
           </button>

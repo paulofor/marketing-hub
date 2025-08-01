@@ -86,10 +86,12 @@ class ExperimentControllerTest {
         req.setName("Exp1");
         req.setHypothesisId(hyp.getId());
         req.setHypothesis("H1");
-        req.setKpiTarget(BigDecimal.TEN);
-        req.setStopLossCpl(new BigDecimal("20"));
-        req.setSampleSize(100);
-        req.setMde(new BigDecimal("10"));
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setStopLossCpl(new BigDecimal("90"));
+        req.setSampleSize(1500);
+        req.setBaselineCvr(new BigDecimal("3"));
+        req.setTargetCvr(new BigDecimal("5"));
+        req.setMdePercent(new BigDecimal("40"));
         req.setStartDate(LocalDate.now());
         req.setEndDate(LocalDate.now().plusDays(5));
 

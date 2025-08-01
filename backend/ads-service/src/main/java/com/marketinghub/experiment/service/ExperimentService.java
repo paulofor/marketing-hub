@@ -75,18 +75,28 @@ public class ExperimentService {
         if (request.getStopLossCpl() != null && request.getStopLossCpl().compareTo(java.math.BigDecimal.ZERO) <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "stopLossCpl must be positive");
         }
-        if (request.getSampleSize() != null && request.getSampleSize() <= 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "sampleSize must be positive");
+        if (request.getKpiTargetCpl() != null && request.getStopLossCpl() != null &&
+                request.getStopLossCpl().compareTo(request.getKpiTargetCpl()) < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "stopLossCpl must be >= kpiTargetCpl");
+        }
+        if (request.getSampleSize() != null && request.getSampleSize() < 100) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "sampleSize must be at least 100");
+        }
+        if (request.getBaselineCvr() != null && request.getTargetCvr() != null &&
+                request.getBaselineCvr().compareTo(request.getTargetCvr()) >= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "baselineCvr must be < targetCvr");
         }
         Experiment exp = Experiment.builder()
                 .niche(niche)
                 .name(request.getName())
                 .hypothesis(request.getHypothesis())
                 .hypothesisRef(hyp)
-                .kpiTarget(request.getKpiTarget())
+                .kpiTargetCpl(request.getKpiTargetCpl())
                 .stopLossCpl(request.getStopLossCpl())
                 .sampleSize(request.getSampleSize())
-                .mde(request.getMde())
+                .baselineCvr(request.getBaselineCvr())
+                .targetCvr(request.getTargetCvr())
+                .mdePercent(request.getMdePercent())
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
                 .status(ExperimentStatus.PLANNED)
@@ -123,10 +133,12 @@ public class ExperimentService {
                 .name(original.getName() + " copy")
                 .hypothesis(original.getHypothesis())
                 .hypothesisRef(original.getHypothesisRef())
-                .kpiTarget(original.getKpiTarget())
+                .kpiTargetCpl(original.getKpiTargetCpl())
                 .stopLossCpl(original.getStopLossCpl())
                 .sampleSize(original.getSampleSize())
-                .mde(original.getMde())
+                .baselineCvr(original.getBaselineCvr())
+                .targetCvr(original.getTargetCvr())
+                .mdePercent(original.getMdePercent())
                 .startDate(original.getStartDate())
                 .endDate(original.getEndDate())
                 .status(ExperimentStatus.PLANNED)
@@ -141,6 +153,11 @@ public class ExperimentService {
     @Transactional
     public Experiment updateStatus(Long id, ExperimentStatus status) {
         Experiment exp = repository.findById(id).orElseThrow();
+        if (status == ExperimentStatus.RUNNING) {
+            if (exp.getKpiTargetCpl() == null || exp.getStopLossCpl() == null || exp.getSampleSize() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "financial fields not set");
+            }
+        }
         exp.setStatus(status);
         return exp;
     }

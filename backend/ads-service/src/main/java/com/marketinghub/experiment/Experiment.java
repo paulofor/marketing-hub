@@ -37,17 +37,26 @@ public class Experiment {
     @JoinColumn(name = "hypothesis_id", nullable = false)
     private com.marketinghub.hypothesis.Hypothesis hypothesisRef;
 
-    private java.math.BigDecimal kpiTarget;
+    @Column(precision = 10, scale = 2)
+    private java.math.BigDecimal kpiTargetCpl;
     /** Stop-loss operacional em CPL. */
-    @Column(precision = 7, scale = 2)
+    @Column(precision = 10, scale = 2)
     private java.math.BigDecimal stopLossCpl;
 
     /** Tamanho de amostra desejado para o experimento. */
     private Integer sampleSize;
 
+    /** Taxa de conversão base para comparação. */
+    @Column(precision = 5, scale = 2)
+    private java.math.BigDecimal baselineCvr;
+
+    /** Taxa de conversão desejada para sucesso. */
+    @Column(precision = 5, scale = 2)
+    private java.math.BigDecimal targetCvr;
+
     /** MDE (Minimum Detectable Effect) percentual. */
     @Column(precision = 5, scale = 2)
-    private java.math.BigDecimal mde;
+    private java.math.BigDecimal mdePercent;
     private LocalDate startDate;
     private LocalDate endDate;
 

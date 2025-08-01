@@ -57,6 +57,12 @@ public class FixtureUtils {
                 .name(name)
                 .hypothesis("H")
                 .hypothesisRef(hyp)
+                .kpiTargetCpl(java.math.BigDecimal.valueOf(45))
+                .stopLossCpl(java.math.BigDecimal.valueOf(90))
+                .sampleSize(1500)
+                .baselineCvr(java.math.BigDecimal.valueOf(3))
+                .targetCvr(java.math.BigDecimal.valueOf(5))
+                .mdePercent(java.math.BigDecimal.valueOf(40))
                 .status(ExperimentStatus.PLANNED)
                 .platform(ExperimentPlatform.FACEBOOK)
                 .build();

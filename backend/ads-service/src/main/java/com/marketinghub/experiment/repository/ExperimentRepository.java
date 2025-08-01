@@ -11,4 +11,5 @@ import java.util.List;
 public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
     List<Experiment> findByNicheId(Long nicheId);
     boolean existsByNicheAndName(MarketNiche niche, String name);
+    List<Experiment> findByStatus(com.marketinghub.experiment.ExperimentStatus status);
 }

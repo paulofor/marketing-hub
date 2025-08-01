@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import { useExperimentsByHypothesis } from "../../api/experiment/useExperimentsByHypothesis";
+import { useAngles } from "../../api/angle/useAngles";
 import PageTitle from "../../components/PageTitle";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 
@@ -12,6 +13,10 @@ export default function HypothesisDetailPage() {
   const { data: experiments } = useExperimentsByHypothesis(
     nicheId,
     hypothesisId,
+  );
+  const { data: angles } = useAngles();
+  const angleMap = new Map<number, string>(
+    Array.isArray(angles) ? angles.map((a) => [a.id, a.name]) : [],
   );
   useBreadcrumbs([
     { label: "Nichos", to: "/niches" },
@@ -44,12 +49,28 @@ export default function HypothesisDetailPage() {
         </div>
       </div>
       <dl className="row">
+        <dt className="col-sm-3">Ângulo</dt>
+        <dd className="col-sm-9">
+          {angleMap.get(data.premiseAngleId ?? 0) || "-"}
+        </dd>
+        <dt className="col-sm-3">Promessa</dt>
+        <dd className="col-sm-9">{data.promise || "-"}</dd>
+        <dt className="col-sm-3">Problema</dt>
+        <dd className="col-sm-9">{data.problem || "-"}</dd>
+        <dt className="col-sm-3">Persona</dt>
+        <dd className="col-sm-9">{data.persona || "-"}</dd>
+        <dt className="col-sm-3">Regra de sucesso</dt>
+        <dd className="col-sm-9">{data.successRule || "-"}</dd>
         <dt className="col-sm-3">Oferta</dt>
         <dd className="col-sm-9">
-          {data.offerType === "TRIPWIRE"
-            ? `Tripwire R$ ${data.price ?? ""}`
-            : "Lead Magnet"}
+          {data.offerType === "TRIPWIRE" ? "Tripwire" : "Lead Magnet"}
         </dd>
+        {data.offerType === "TRIPWIRE" && (
+          <>
+            <dt className="col-sm-3">Preço</dt>
+            <dd className="col-sm-9">R$ {data.price ?? ""}</dd>
+          </>
+        )}
         <dt className="col-sm-3">KPI</dt>
         <dd className="col-sm-9">{data.kpiTargetCpl}</dd>
         <dt className="col-sm-3">Status</dt>

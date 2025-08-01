@@ -1,7 +1,9 @@
+import { Fragment } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import { useExperimentsByHypothesis } from "../../api/experiment/useExperimentsByHypothesis";
+import { useAngles } from "../../api/angle/useAngles";
 import PageTitle from "../../components/PageTitle";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 
@@ -13,6 +15,7 @@ export default function HypothesisDetailPage() {
     nicheId,
     hypothesisId,
   );
+  const { data: angles } = useAngles();
   useBreadcrumbs([
     { label: "Nichos", to: "/niches" },
     { label: niche?.name || "...", to: `/niches/${nicheId}` },
@@ -22,6 +25,23 @@ export default function HypothesisDetailPage() {
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
   const list = Array.isArray(experiments) ? experiments : [];
+  const angleName = angles?.find((a) => a.id === data.premiseAngleId)?.name;
+  const rows = [
+    { label: "Promessa", value: data.promise },
+    { label: "Problema", value: data.problem },
+    { label: "Persona", value: data.persona },
+    { label: "Regra de sucesso", value: data.successRule },
+    { label: "Ângulo", value: angleName },
+    {
+      label: "Oferta",
+      value:
+        data.offerType === "TRIPWIRE"
+          ? `Tripwire R$ ${data.price ?? ""}`
+          : "Lead Magnet",
+    },
+    { label: "KPI", value: data.kpiTargetCpl },
+    { label: "Status", value: data.status },
+  ];
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center">
@@ -43,17 +63,17 @@ export default function HypothesisDetailPage() {
           </Link>
         </div>
       </div>
-      <dl className="row">
-        <dt className="col-sm-3">Oferta</dt>
-        <dd className="col-sm-9">
-          {data.offerType === "TRIPWIRE"
-            ? `Tripwire R$ ${data.price ?? ""}`
-            : "Lead Magnet"}
-        </dd>
-        <dt className="col-sm-3">KPI</dt>
-        <dd className="col-sm-9">{data.kpiTargetCpl}</dd>
-        <dt className="col-sm-3">Status</dt>
-        <dd className="col-sm-9">{data.status}</dd>
+      <dl className="row mb-0">
+        {rows.map((r, idx) => (
+          <Fragment key={r.label}>
+            <dt className={`col-sm-3 py-2${idx % 2 === 0 ? " bg-light" : ""}`}>
+              {r.label}
+            </dt>
+            <dd className={`col-sm-9 py-2${idx % 2 === 0 ? " bg-light" : ""}`}>
+              {r.value}
+            </dd>
+          </Fragment>
+        ))}
       </dl>
       {list.length === 0 ? (
         <p>Nenhum experimento ainda. Crie um agora.</p>

@@ -1,16 +1,20 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useCreateExperiment } from "../../api/experiment/useCreateExperiment";
 import { useNiches } from "../../api/niche/useNiches";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
 import PageTitle from "../../components/PageTitle";
 
 export default function NewExperimentPage() {
+  const [params] = useSearchParams();
+  const nicheIdParam = params.get("nicheId") ?? "";
+  const hypothesisIdParam = params.get("hypothesisId") ?? "";
   const create = useCreateExperiment();
   const { data: niches } = useNiches();
   const [form, setForm] = useState({
-    nicheId: "",
+    nicheId: nicheIdParam,
     name: "",
-    hypothesisId: "",
+    hypothesisId: hypothesisIdParam,
     hypothesis: "",
     kpiTarget: "",
     stopLossCpl: "",
@@ -20,6 +24,8 @@ export default function NewExperimentPage() {
     endDate: "",
   });
   const { data: hypotheses } = useHypothesesByNiche(form.nicheId);
+  const showNicheSelect = nicheIdParam === "";
+  const showHypSelect = hypothesisIdParam === "";
 
   const submit = async () => {
     try {
@@ -36,8 +42,8 @@ export default function NewExperimentPage() {
         endDate: form.endDate || undefined,
       });
       setForm({
-        nicheId: "",
-        hypothesisId: "",
+        nicheId: nicheIdParam,
+        hypothesisId: hypothesisIdParam,
         name: "",
         hypothesis: "",
         kpiTarget: "",
@@ -56,45 +62,51 @@ export default function NewExperimentPage() {
   return (
     <div>
       <PageTitle>Novo Teste de Nicho</PageTitle>
-      <select
-        className="form-select mb-2"
-        value={form.nicheId}
-        onChange={(e) =>
-          setForm({ ...form, nicheId: e.target.value, hypothesisId: "" })
-        }
-      >
-        <option value="">Selecione o Nicho</option>
-        {Array.isArray(niches) &&
-          niches.map((n) => (
-            <option key={n.id} value={n.id}>
-              {n.name}
-            </option>
-          ))}
-      </select>
-      <select
-        className="form-select mb-2"
-        value={form.hypothesisId}
-        onChange={(e) => setForm({ ...form, hypothesisId: e.target.value })}
-      >
-        <option value="">Selecione Hipótese</option>
-        {Array.isArray(hypotheses) && hypotheses.length > 0 ? (
-          hypotheses.map((h) => (
-            <option key={h.id} value={h.id}>
-              {h.title}
-            </option>
-          ))
-        ) : (
-          <option value="">Não há hipóteses para este nicho</option>
-        )}
-      </select>
-      {Array.isArray(hypotheses) && hypotheses.length === 0 && (
-        <button
-          type="button"
-          className="btn btn-link mb-2"
-          onClick={() => (window.location.href = "/hypotheses?open=new")}
+      {showNicheSelect && (
+        <select
+          className="form-select mb-2"
+          value={form.nicheId}
+          onChange={(e) =>
+            setForm({ ...form, nicheId: e.target.value, hypothesisId: "" })
+          }
         >
-          Criar nova hipótese
-        </button>
+          <option value="">Selecione o Nicho</option>
+          {Array.isArray(niches) &&
+            niches.map((n) => (
+              <option key={n.id} value={n.id}>
+                {n.name}
+              </option>
+            ))}
+        </select>
+      )}
+      {showHypSelect && (
+        <>
+          <select
+            className="form-select mb-2"
+            value={form.hypothesisId}
+            onChange={(e) => setForm({ ...form, hypothesisId: e.target.value })}
+          >
+            <option value="">Selecione Hipótese</option>
+            {Array.isArray(hypotheses) && hypotheses.length > 0 ? (
+              hypotheses.map((h) => (
+                <option key={h.id} value={h.id}>
+                  {h.title}
+                </option>
+              ))
+            ) : (
+              <option value="">Não há hipóteses para este nicho</option>
+            )}
+          </select>
+          {Array.isArray(hypotheses) && hypotheses.length === 0 && (
+            <button
+              type="button"
+              className="btn btn-link mb-2"
+              onClick={() => (window.location.href = "/hypotheses?open=new")}
+            >
+              Criar nova hipótese
+            </button>
+          )}
+        </>
       )}
       <input
         className="form-control mb-2"

@@ -17,10 +17,12 @@ public class ExperimentDto {
     private java.util.UUID hypothesisId;
     private String name;
     private String hypothesis;
-    private BigDecimal kpiTarget;
+    private BigDecimal kpiTargetCpl;
     private BigDecimal stopLossCpl;
     private Integer sampleSize;
-    private BigDecimal mde;
+    private BigDecimal baselineCvr;
+    private BigDecimal targetCvr;
+    private BigDecimal mdePercent;
     private LocalDate startDate;
     private LocalDate endDate;
     private ExperimentStatus status;

@@ -53,10 +53,12 @@ class ExperimentServiceTest {
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
         req.setHypothesis("Teste");
-        req.setKpiTarget(new BigDecimal("10"));
-        req.setStopLossCpl(new BigDecimal("20"));
-        req.setSampleSize(100);
-        req.setMde(new BigDecimal("10"));
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setStopLossCpl(new BigDecimal("90"));
+        req.setSampleSize(1500);
+        req.setBaselineCvr(new BigDecimal("3"));
+        req.setTargetCvr(new BigDecimal("5"));
+        req.setMdePercent(new BigDecimal("40"));
         var exp = service.create(req);
         assertThat(exp.getId()).isNotNull();
         assertThat(exp.getPlatform()).isEqualTo(ExperimentPlatform.FACEBOOK);
@@ -80,9 +82,11 @@ class ExperimentServiceTest {
         req.setMarketNicheId(niche.getId());
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
-        req.setStopLossCpl(new BigDecimal("20"));
-        req.setSampleSize(100);
-        req.setMde(new BigDecimal("10"));
+        req.setStopLossCpl(new BigDecimal("90"));
+        req.setSampleSize(1500);
+        req.setBaselineCvr(new BigDecimal("3"));
+        req.setTargetCvr(new BigDecimal("5"));
+        req.setMdePercent(new BigDecimal("40"));
         req.setStartDate(java.time.LocalDate.of(2024,2,1));
         req.setEndDate(java.time.LocalDate.of(2024,1,1));
         assertThatThrownBy(() -> service.create(req))
@@ -108,9 +112,11 @@ class ExperimentServiceTest {
         req.setMarketNicheId(niche2.getId());
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
-        req.setStopLossCpl(new BigDecimal("20"));
-        req.setSampleSize(100);
-        req.setMde(new BigDecimal("10"));
+        req.setStopLossCpl(new BigDecimal("90"));
+        req.setSampleSize(1500);
+        req.setBaselineCvr(new BigDecimal("3"));
+        req.setTargetCvr(new BigDecimal("5"));
+        req.setMdePercent(new BigDecimal("40"));
         assertThatThrownBy(() -> service.create(req))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     }

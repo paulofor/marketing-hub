@@ -58,10 +58,12 @@ class ExperimentControllerTest {
         req.setName("Exp1");
         req.setHypothesisId(hyp.getId());
         req.setHypothesis("h");
-        req.setKpiTarget(new BigDecimal("11"));
-        req.setStopLossCpl(new BigDecimal("22"));
-        req.setSampleSize(100);
-        req.setMde(new BigDecimal("10"));
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setStopLossCpl(new BigDecimal("90"));
+        req.setSampleSize(1500);
+        req.setBaselineCvr(new BigDecimal("3"));
+        req.setTargetCvr(new BigDecimal("5"));
+        req.setMdePercent(new BigDecimal("40"));
         mockMvc.perform(post("/api/niches/" + niche.getId() + "/experiments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(req)))
@@ -85,9 +87,11 @@ class ExperimentControllerTest {
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
-        req.setStopLossCpl(new BigDecimal("22"));
-        req.setSampleSize(100);
-        req.setMde(new BigDecimal("10"));
+        req.setStopLossCpl(new BigDecimal("90"));
+        req.setSampleSize(1500);
+        req.setBaselineCvr(new BigDecimal("3"));
+        req.setTargetCvr(new BigDecimal("5"));
+        req.setMdePercent(new BigDecimal("40"));
         req.setStartDate(java.time.LocalDate.of(2024,2,1));
         req.setEndDate(java.time.LocalDate.of(2024,1,1));
         mockMvc.perform(post("/api/niches/" + niche.getId() + "/experiments")

@@ -24,7 +24,7 @@ const schema = z
         z.number().min(5).max(297),
       )
       .optional(),
-    kpiTargetCpl: z.preprocess(Number, z.number().min(1)),
+    kpiTargetCpl: z.preprocess(Number, z.number()),
   })
   .superRefine((val, ctx) => {
     if (val.offerType === "TRIPWIRE" && val.price === undefined) {
@@ -257,7 +257,6 @@ export default function EditHypothesisPage() {
           type="number"
           step="0.01"
           id="kpiTargetCpl"
-          min={1}
           {...register("kpiTargetCpl", { valueAsNumber: true })}
           className={`form-control mb-2 ${errors.kpiTargetCpl ? "is-invalid" : ""}`}
           aria-describedby="kpi-error"
@@ -282,7 +281,7 @@ export default function EditHypothesisPage() {
             className="btn btn-primary"
             disabled={isSubmitting}
             onClick={handleSubmit(onSubmit, (errors) => {
-              console.log('Validation errors', errors);
+              console.log("Validation errors", errors);
             })}
           >
             Salvar

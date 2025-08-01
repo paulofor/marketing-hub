@@ -19,6 +19,19 @@ jobs:
 # ─────────────────────────────────────────
   build:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: ads
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GITHUB_ACTOR: ${{ github.actor }}
@@ -51,9 +64,9 @@ jobs:
           mvn -B \
             org.liquibase:liquibase-maven-plugin:4.26.0:validate \
             -Dliquibase.changeLogFile=src/main/resources/db/changelog/db.changelog-master.yaml \
-            -Dliquibase.url=jdbc:h2:mem:validate \
-            -Dliquibase.username=sa \
-            -Dliquibase.password=
+            -Dliquibase.url=jdbc:mysql://localhost:3306/ads \
+            -Dliquibase.username=root \
+            -Dliquibase.password=root
 
       - name: Build backend
         run: mvn -B -s ../settings.xml package -DskipTests

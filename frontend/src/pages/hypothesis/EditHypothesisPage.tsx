@@ -21,7 +21,7 @@ const schema = z
     price: z
       .preprocess(
         (v) => (v === "" || v === undefined ? undefined : Number(v)),
-        z.number().min(5).max(297),
+        z.number(),
       )
       .optional(),
     kpiTargetCpl: z.preprocess(Number, z.number()),
@@ -236,8 +236,6 @@ export default function EditHypothesisPage() {
             <input
               type="number"
               id="price"
-              min={5}
-              max={297}
               {...register("price", { valueAsNumber: true })}
               className={`form-control mb-2 ${errors.price ? "is-invalid" : ""}`}
               aria-describedby="price-error"

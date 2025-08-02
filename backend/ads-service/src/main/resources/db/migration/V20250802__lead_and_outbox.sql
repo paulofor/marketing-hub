@@ -7,9 +7,10 @@ CREATE TABLE lead (
     experiment_id BIGINT,
     captured_at TIMESTAMP,
     nurture_stage ENUM('NEW','WARM','HOT') DEFAULT 'NEW',
-    cpl DECIMAL(10,2),
-    INDEX idx_lead_captured_experiment (captured_at, experiment_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+    cpl DECIMAL(10,2)
+);
+
+CREATE INDEX idx_lead_captured_experiment ON lead (captured_at, experiment_id);
 
 CREATE TABLE outbox (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -18,4 +19,4 @@ CREATE TABLE outbox (
     payload JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     processed_at TIMESTAMP NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+);

@@ -7,9 +7,9 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication(scanBasePackages = "com.marketinghub")
-@EntityScan(basePackages = "com.marketinghub")
-@EnableJpaRepositories(basePackages = "com.marketinghub")
+@SpringBootApplication(scanBasePackages = {"com.marketinghub", "com.example.marketinghub"})
+@EntityScan(basePackages = {"com.marketinghub", "com.example.marketinghub"})
+@EnableJpaRepositories(basePackages = {"com.marketinghub", "com.example.marketinghub"})
 @EnableAsync
 @EnableScheduling
 public class AdsServiceApplication {

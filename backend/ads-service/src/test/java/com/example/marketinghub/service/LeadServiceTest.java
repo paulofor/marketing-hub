@@ -5,9 +5,8 @@ import com.example.marketinghub.model.Lead;
 import com.example.marketinghub.model.NurtureStage;
 import com.example.marketinghub.repository.LeadRepository;
 import com.example.marketinghub.repository.OutboxRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.task.TaskExecutor;
@@ -31,8 +30,12 @@ class LeadServiceTest {
 
     TaskExecutor taskExecutor = Runnable::run;
 
-    @InjectMocks
-    LeadService leadService = new LeadService(leadRepository, outboxRepository, graphApiClient, taskExecutor);
+    LeadService leadService;
+
+    @BeforeEach
+    void setUp() {
+        leadService = new LeadService(leadRepository, outboxRepository, graphApiClient, taskExecutor);
+    }
 
     @Test
     void saveFromWebhookPersistsEntitiesAndCallsGraph() {

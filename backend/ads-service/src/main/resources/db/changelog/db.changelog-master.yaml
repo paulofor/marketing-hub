@@ -29,3 +29,6 @@ databaseChangeLog:
   - include:
       file: V2025_08_01__exp_financial_fields.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2025_08_02__lead_and_outbox.sql
+      relativeToChangelogFile: true

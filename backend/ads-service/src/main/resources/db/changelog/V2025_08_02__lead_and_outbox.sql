@@ -1,5 +1,5 @@
--- Creates lead and outbox tables
 -- liquibase formatted sql
+-- Creates lead and outbox tables
 
 -- changeset marketinghub:2025-08-02-create-lead
 CREATE TABLE lead (

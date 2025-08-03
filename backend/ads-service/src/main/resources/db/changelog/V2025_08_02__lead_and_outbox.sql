@@ -1,3 +1,7 @@
+-- Creates lead and outbox tables
+-- liquibase formatted sql
+
+-- changeset marketinghub:2025-08-02-create-lead
 CREATE TABLE lead (
     id BINARY(16) PRIMARY KEY,
     leadgen_id BIGINT UNIQUE,
@@ -10,8 +14,10 @@ CREATE TABLE lead (
     cpl DECIMAL(10,2)
 );
 
+-- changeset marketinghub:2025-08-02-lead-index
 CREATE INDEX idx_lead_captured_experiment ON lead (captured_at, experiment_id);
 
+-- changeset marketinghub:2025-08-02-create-outbox
 CREATE TABLE outbox (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     aggregate_id BINARY(16),

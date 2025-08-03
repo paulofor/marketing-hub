@@ -15,9 +15,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EntityScan("com.marketinghub.ads")
 @ContextConfiguration(classes = SuccessProductWorkerApplication.class)
 @TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:testdb",
-        "spring.datasource.driverClassName=org.h2.Driver",
-        "spring.datasource.username=sa",
+        "spring.datasource.url=${TEST_DB_URL:jdbc:h2:mem:testdb}",
+        "spring.datasource.driverClassName=${TEST_DB_DRIVER:org.h2.Driver}",
+        "spring.datasource.username=${TEST_DB_USERNAME:sa}",
+        "spring.datasource.password=${TEST_DB_PASSWORD:}",
         "spring.jpa.hibernate.ddl-auto=create",
         "spring.liquibase.enabled=false"
 })

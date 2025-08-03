@@ -13,6 +13,7 @@
   - Tests: `npm run test`
 
 ## Conventions
+- DataBase: MySql 5
 - Java 21 + Spring Boot 3
 - React 18 + Vite + TypeScript
 - Zustand for state, TanStack Query for data fetching

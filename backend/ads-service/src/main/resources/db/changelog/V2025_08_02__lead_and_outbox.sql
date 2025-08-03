@@ -9,10 +9,10 @@ CREATE TABLE lead (
     ad_id BIGINT,
     campaign_id BIGINT,
     experiment_id BIGINT,
-    captured_at TIMESTAMP,
+    captured_at DATETIME DEFAULT NULL,
     nurture_stage ENUM('NEW','WARM','HOT') DEFAULT 'NEW',
     cpl DECIMAL(10,2)
-);
+) ENGINE=InnoDB;
 
 -- changeset marketinghub:2025-08-02-lead-index
 CREATE INDEX idx_lead_captured_experiment ON lead (captured_at, experiment_id);
@@ -22,7 +22,7 @@ CREATE TABLE outbox (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     aggregate_id BINARY(16),
     event_type VARCHAR(50),
-    payload JSON,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    processed_at TIMESTAMP NULL
-);
+    payload TEXT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    processed_at DATETIME DEFAULT NULL
+) ENGINE=InnoDB;

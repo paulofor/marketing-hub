@@ -2,6 +2,7 @@ package com.marketinghub.experiment.web;
 
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.ExperimentDto;
+import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
 import com.marketinghub.experiment.service.ExperimentService;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +27,11 @@ public class ExperimentController {
     @PostMapping
     public ExperimentDto create(@RequestBody CreateExperimentRequest request) {
         return mapper.toDto(service.create(request));
+    }
+
+    @PutMapping("/{id}")
+    public ExperimentDto update(@PathVariable Long id, @RequestBody UpdateExperimentRequest request) {
+        return mapper.toDto(service.update(id, request));
     }
 
     @PostMapping("/{id}/duplicate")

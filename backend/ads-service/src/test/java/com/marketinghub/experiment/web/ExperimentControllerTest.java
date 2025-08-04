@@ -23,7 +23,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -128,7 +128,7 @@ class ExperimentControllerTest {
         req.setStartDate(LocalDate.now());
         req.setEndDate(LocalDate.now().plusDays(2));
 
-        mockMvc.perform(put("/api/experiments/" + exp.getId())
+        mockMvc.perform(patch("/api/experiments/" + exp.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(req)))
                 .andExpect(status().isOk());

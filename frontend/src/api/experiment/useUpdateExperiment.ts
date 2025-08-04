@@ -17,7 +17,7 @@ export function useUpdateExperiment(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: UpdateExperiment) => {
-      const { data: experiment } = await axios.put<Experiment>(
+      const { data: experiment } = await axios.patch<Experiment>(
         `/api/experiments/${id}`,
         data,
       );

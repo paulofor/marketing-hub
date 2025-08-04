@@ -1,5 +1,6 @@
 package com.marketinghub.experiment;
 
+import com.marketinghub.experiment.MetricPreset;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.niche.MarketNiche;
@@ -33,6 +34,8 @@ class ExperimentServiceTest {
     com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository;
     @Autowired
     com.marketinghub.creative.label.repository.AngleRepository angleRepository;
+    @Autowired
+    com.marketinghub.experiment.repository.MetricPresetRepository metricPresetRepository;
 
     @Test
     void createNewExperimentWithExistingNiche() {
@@ -48,13 +51,20 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setMarketNicheId(niche.getId());
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
         req.setHypothesis("Teste");
         req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setStopLossCpl(new BigDecimal("90"));
+        req.setMetricPresetId("LEAN_150");
         req.setSampleSize(1500);
         req.setBaselineCvr(new BigDecimal("3"));
         req.setTargetCvr(new BigDecimal("5"));
@@ -78,11 +88,18 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setMarketNicheId(niche.getId());
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
-        req.setStopLossCpl(new BigDecimal("90"));
+        req.setMetricPresetId("LEAN_150");
         req.setSampleSize(1500);
         req.setBaselineCvr(new BigDecimal("3"));
         req.setTargetCvr(new BigDecimal("5"));
@@ -108,11 +125,18 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setMarketNicheId(niche2.getId());
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
-        req.setStopLossCpl(new BigDecimal("90"));
+        req.setMetricPresetId("LEAN_150");
         req.setSampleSize(1500);
         req.setBaselineCvr(new BigDecimal("3"));
         req.setTargetCvr(new BigDecimal("5"));

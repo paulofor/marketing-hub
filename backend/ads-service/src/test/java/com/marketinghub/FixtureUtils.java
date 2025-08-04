@@ -25,6 +25,7 @@ public class FixtureUtils {
     private final AdSetRepository adSetRepository;
     private final com.marketinghub.creative.label.repository.AngleRepository angleRepository;
     private final com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository;
+    private final com.marketinghub.experiment.repository.MetricPresetRepository metricPresetRepository;
 
     public MarketNiche createAndSaveNiche() {
         MarketNiche niche = MarketNiche.builder()
@@ -51,6 +52,14 @@ public class FixtureUtils {
 
     public Experiment createAndSaveExperiment(MarketNiche niche) {
         var hyp = createAndSaveHypothesis(niche);
+        MetricPreset preset = metricPresetRepository.save(
+                MetricPreset.builder()
+                        .id("LEAN_150")
+                        .name("Lean-Startup 150")
+                        .sampleSize(150)
+                        .stopLossFactor(java.math.BigDecimal.valueOf(2))
+                        .defaultMdePp(java.math.BigDecimal.valueOf(12))
+                        .build());
         String name = "Experiment-" + java.util.UUID.randomUUID();
         Experiment exp = Experiment.builder()
                 .niche(niche)
@@ -58,11 +67,9 @@ public class FixtureUtils {
                 .hypothesis("H")
                 .hypothesisRef(hyp)
                 .kpiTargetCpl(java.math.BigDecimal.valueOf(45))
-                .stopLossCpl(java.math.BigDecimal.valueOf(90))
-                .sampleSize(1500)
+                .metricPreset(preset)
                 .baselineCvr(java.math.BigDecimal.valueOf(3))
                 .targetCvr(java.math.BigDecimal.valueOf(5))
-                .mdePercent(java.math.BigDecimal.valueOf(40))
                 .status(ExperimentStatus.PLANNED)
                 .platform(ExperimentPlatform.FACEBOOK)
                 .build();

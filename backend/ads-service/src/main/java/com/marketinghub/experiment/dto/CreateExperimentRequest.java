@@ -14,7 +14,7 @@ public class CreateExperimentRequest {
     private String name;
     private String hypothesis;
     private BigDecimal kpiTargetCpl;
-    private BigDecimal stopLossCpl;
+    private String metricPresetId;
     private Integer sampleSize;
     private BigDecimal baselineCvr;
     private BigDecimal targetCvr;

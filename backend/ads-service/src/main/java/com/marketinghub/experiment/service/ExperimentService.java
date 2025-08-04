@@ -20,14 +20,17 @@ public class ExperimentService {
     private final ExperimentRepository repository;
     private final MarketNicheRepository nicheRepository;
     private final com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository;
+    private final MetricPresetService metricPresetService;
     private final EntityManager entityManager;
 
     public ExperimentService(ExperimentRepository repository, MarketNicheRepository nicheRepository,
                              com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository,
+                             MetricPresetService metricPresetService,
                              EntityManager entityManager) {
         this.repository = repository;
         this.nicheRepository = nicheRepository;
         this.hypothesisRepository = hypothesisRepository;
+        this.metricPresetService = metricPresetService;
         this.entityManager = entityManager;
     }
 
@@ -72,13 +75,14 @@ public class ExperimentService {
         if (repository.existsByNicheAndName(niche, request.getName())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name already exists for niche");
         }
-        if (request.getStopLossCpl() != null && request.getStopLossCpl().compareTo(java.math.BigDecimal.ZERO) <= 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "stopLossCpl must be positive");
+        if (request.getKpiTargetCpl() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "kpiTargetCpl required");
         }
-        if (request.getKpiTargetCpl() != null && request.getStopLossCpl() != null &&
-                request.getStopLossCpl().compareTo(request.getKpiTargetCpl()) < 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "stopLossCpl must be >= kpiTargetCpl");
+        if (request.getMetricPresetId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "metricPresetId required");
         }
+        MetricPreset preset = metricPresetService.get(request.getMetricPresetId());
+        java.math.BigDecimal computedStopLoss = request.getKpiTargetCpl().multiply(preset.getStopLossFactor());
         if (request.getSampleSize() != null && request.getSampleSize() < 100) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "sampleSize must be at least 100");
         }
@@ -92,7 +96,8 @@ public class ExperimentService {
                 .hypothesis(request.getHypothesis())
                 .hypothesisRef(hyp)
                 .kpiTargetCpl(request.getKpiTargetCpl())
-                .stopLossCpl(request.getStopLossCpl())
+                .metricPreset(preset)
+                .stopLossCpl(computedStopLoss)
                 .sampleSize(request.getSampleSize())
                 .baselineCvr(request.getBaselineCvr())
                 .targetCvr(request.getTargetCvr())
@@ -134,6 +139,7 @@ public class ExperimentService {
                 .hypothesis(original.getHypothesis())
                 .hypothesisRef(original.getHypothesisRef())
                 .kpiTargetCpl(original.getKpiTargetCpl())
+                .metricPreset(original.getMetricPreset())
                 .stopLossCpl(original.getStopLossCpl())
                 .sampleSize(original.getSampleSize())
                 .baselineCvr(original.getBaselineCvr())

@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useCreateExperiment } from "../../api/experiment/useCreateExperiment";
 import { useNiches } from "../../api/niche/useNiches";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
+import { useMetricPresets } from "../../api/experiment/useMetricPresets";
 import PageTitle from "../../components/PageTitle";
 
 export default function NewExperimentPage() {
@@ -17,13 +18,14 @@ export default function NewExperimentPage() {
     hypothesisId: hypothesisIdParam,
     hypothesis: "",
     kpiTarget: "",
-    stopLossCpl: "",
+    metricPresetId: "",
     sampleSize: "",
     mde: "",
     startDate: "",
     endDate: "",
   });
   const { data: hypotheses } = useHypothesesByNiche(form.nicheId);
+  const { data: presets } = useMetricPresets();
   const showNicheSelect = nicheIdParam === "";
   const showHypSelect = hypothesisIdParam === "";
 
@@ -35,7 +37,7 @@ export default function NewExperimentPage() {
         name: form.name,
         hypothesis: form.hypothesis,
         kpiTarget: Number(form.kpiTarget),
-        stopLossCpl: form.stopLossCpl ? Number(form.stopLossCpl) : undefined,
+        metricPresetId: form.metricPresetId,
         sampleSize: form.sampleSize ? Number(form.sampleSize) : undefined,
         mde: form.mde ? Number(form.mde) : undefined,
         startDate: form.startDate || undefined,
@@ -47,7 +49,7 @@ export default function NewExperimentPage() {
         name: "",
         hypothesis: "",
         kpiTarget: "",
-        stopLossCpl: "",
+        metricPresetId: "",
         sampleSize: "",
         mde: "",
         startDate: "",
@@ -127,13 +129,19 @@ export default function NewExperimentPage() {
         value={form.kpiTarget}
         onChange={(e) => setForm({ ...form, kpiTarget: e.target.value })}
       />
-      <input
-        className="form-control mb-2"
-        placeholder="Stop-loss CPL"
-        type="number"
-        value={form.stopLossCpl}
-        onChange={(e) => setForm({ ...form, stopLossCpl: e.target.value })}
-      />
+      <select
+        className="form-select mb-2"
+        value={form.metricPresetId}
+        onChange={(e) => setForm({ ...form, metricPresetId: e.target.value })}
+      >
+        <option value="">Selecione Preset de Métricas</option>
+        {Array.isArray(presets) &&
+          presets.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+      </select>
       <input
         className="form-control mb-2"
         placeholder="Tamanho da amostra"

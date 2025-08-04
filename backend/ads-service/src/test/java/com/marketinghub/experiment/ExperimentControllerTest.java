@@ -1,6 +1,7 @@
 package com.marketinghub.experiment;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.experiment.MetricPreset;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
@@ -39,6 +40,8 @@ class ExperimentControllerTest {
     AngleRepository angleRepository;
     @Autowired
     HypothesisRepository hypothesisRepository;
+    @Autowired
+    com.marketinghub.experiment.repository.MetricPresetRepository metricPresetRepository;
 
     @Test
     void postExperiment() throws Exception {
@@ -54,12 +57,19 @@ class ExperimentControllerTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setName("Exp1");
         req.setHypothesisId(hyp.getId());
         req.setHypothesis("h");
         req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setStopLossCpl(new BigDecimal("90"));
+        req.setMetricPresetId("LEAN_150");
         req.setSampleSize(1500);
         req.setBaselineCvr(new BigDecimal("3"));
         req.setTargetCvr(new BigDecimal("5"));
@@ -84,10 +94,17 @@ class ExperimentControllerTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
-        req.setStopLossCpl(new BigDecimal("90"));
+        req.setMetricPresetId("LEAN_150");
         req.setSampleSize(1500);
         req.setBaselineCvr(new BigDecimal("3"));
         req.setTargetCvr(new BigDecimal("5"));

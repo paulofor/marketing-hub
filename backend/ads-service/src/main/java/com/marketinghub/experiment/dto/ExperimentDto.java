@@ -29,4 +29,5 @@ public class ExperimentDto {
     private ExperimentPlatform platform;
     private Instant createdAt;
     private Instant updatedAt;
+    private String metricPresetId;
 }

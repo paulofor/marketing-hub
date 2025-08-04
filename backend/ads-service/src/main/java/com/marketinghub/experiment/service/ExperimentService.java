@@ -2,6 +2,7 @@ package com.marketinghub.experiment.service;
 
 import com.marketinghub.experiment.*;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
+import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
@@ -165,6 +166,56 @@ public class ExperimentService {
             }
         }
         exp.setStatus(status);
+        return exp;
+    }
+
+    /**
+     * Updates mutable fields of an experiment.
+     */
+    @Transactional
+    public Experiment update(Long id, UpdateExperimentRequest request) {
+        Experiment exp = repository.findById(id).orElseThrow();
+
+        if (request.getName() == null || request.getKpiTargetCpl() == null
+                || request.getHypothesis() == null || request.getMetricPresetId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "required fields missing");
+        }
+
+        if (!exp.getName().equals(request.getName()) &&
+                repository.existsByNicheAndName(exp.getNiche(), request.getName())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name already exists for niche");
+        }
+
+        if (request.getStartDate() != null && request.getEndDate() != null
+                && request.getStartDate().isAfter(request.getEndDate())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "startDate must be before endDate");
+        }
+
+        if (request.getSampleSize() != null && request.getSampleSize() < 100) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "sampleSize must be at least 100");
+        }
+
+        MetricPreset preset = metricPresetService.get(request.getMetricPresetId());
+
+        exp.setName(request.getName());
+        exp.setHypothesis(request.getHypothesis());
+        exp.setKpiTargetCpl(request.getKpiTargetCpl());
+        exp.setMetricPreset(preset);
+        if (request.getSampleSize() != null) {
+            exp.setSampleSize(request.getSampleSize());
+        } else {
+            exp.setSampleSize(preset.getSampleSize());
+        }
+        if (request.getMdePercent() != null) {
+            exp.setMdePercent(request.getMdePercent());
+        } else {
+            exp.setMdePercent(preset.getDefaultMdePp());
+        }
+        if (request.getKpiTargetCpl() != null && preset.getStopLossFactor() != null) {
+            exp.setStopLossCpl(request.getKpiTargetCpl().multiply(preset.getStopLossFactor()));
+        }
+        exp.setStartDate(request.getStartDate());
+        exp.setEndDate(request.getEndDate());
         return exp;
     }
 }

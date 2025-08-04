@@ -2,6 +2,7 @@ package com.marketinghub.experiment.service;
 
 import com.marketinghub.experiment.*;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
+import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
@@ -151,6 +152,56 @@ public class ExperimentService {
                 .platform(original.getPlatform())
                 .build();
         return repository.save(copy);
+    }
+
+    /**
+     * Updates an existing experiment.
+     */
+    @Transactional
+    public Experiment update(Long id, UpdateExperimentRequest req) {
+        Experiment exp = repository.findById(id).orElseThrow();
+        if (req.getName() != null && !req.getName().equals(exp.getName())) {
+            if (repository.existsByNicheAndName(exp.getNiche(), req.getName())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name already exists for niche");
+            }
+            exp.setName(req.getName());
+        }
+        if (req.getHypothesis() != null) {
+            exp.setHypothesis(req.getHypothesis());
+        }
+        if (req.getStartDate() != null && req.getEndDate() != null &&
+                req.getStartDate().isAfter(req.getEndDate())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "startDate must be before endDate");
+        }
+        if (req.getStartDate() != null) {
+            exp.setStartDate(req.getStartDate());
+        }
+        if (req.getEndDate() != null) {
+            exp.setEndDate(req.getEndDate());
+        }
+        if (req.getMetricPresetId() != null) {
+            MetricPreset preset = metricPresetService.get(req.getMetricPresetId());
+            exp.setMetricPreset(preset);
+            if (exp.getKpiTargetCpl() != null && preset.getStopLossFactor() != null) {
+                exp.setStopLossCpl(exp.getKpiTargetCpl().multiply(preset.getStopLossFactor()));
+            }
+        }
+        if (req.getKpiTarget() != null) {
+            exp.setKpiTargetCpl(req.getKpiTarget());
+            if (exp.getMetricPreset() != null && exp.getMetricPreset().getStopLossFactor() != null) {
+                exp.setStopLossCpl(req.getKpiTarget().multiply(exp.getMetricPreset().getStopLossFactor()));
+            }
+        }
+        if (req.getSampleSize() != null) {
+            if (req.getSampleSize() < 100) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "sampleSize must be at least 100");
+            }
+            exp.setSampleSize(req.getSampleSize());
+        }
+        if (req.getMde() != null) {
+            exp.setMdePercent(req.getMde());
+        }
+        return exp;
     }
 
     /**

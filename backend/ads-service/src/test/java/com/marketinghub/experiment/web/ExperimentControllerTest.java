@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -110,5 +111,28 @@ class ExperimentControllerTest {
                 .andExpect(status().isOk());
 
         assertThat(repository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void updateEndpointChangesFields() throws Exception {
+        var exp = fixtures.createAndSaveExperiment(nicheRepo.findById(nicheId).orElseThrow());
+        var body = new java.util.HashMap<String, Object>();
+        body.put("name", "Updated");
+        body.put("hypothesis", "Nova");
+        body.put("kpiTarget", new BigDecimal("99"));
+        body.put("sampleSize", 1500);
+        body.put("startDate", LocalDate.now());
+        body.put("endDate", LocalDate.now().plusDays(10));
+
+        mockMvc.perform(put("/api/experiments/" + exp.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(body)))
+                .andExpect(status().isOk());
+
+        var updated = repository.findById(exp.getId()).orElseThrow();
+        assertThat(updated.getName()).isEqualTo("Updated");
+        assertThat(updated.getHypothesis()).isEqualTo("Nova");
+        assertThat(updated.getKpiTargetCpl()).isEqualByComparingTo("99");
+        assertThat(updated.getSampleSize()).isEqualTo(1500);
     }
 }

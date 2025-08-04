@@ -41,6 +41,24 @@ paths:
       responses:
         '200':
           description: OK
+  /api/experiments/{id}:
+    put:
+      summary: Atualizar experimento
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateExperimentRequest'
+      responses:
+        '200':
+          description: OK
   /api/experiments/{id}/duplicate:
     post:
       summary: Duplicar experimento
@@ -62,6 +80,27 @@ components:
           type: integer
         hypothesisId:
           type: string
+        name:
+          type: string
+        hypothesis:
+          type: string
+        kpiTarget:
+          type: number
+        metricPresetId:
+          type: string
+        sampleSize:
+          type: integer
+        mde:
+          type: number
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+    UpdateExperimentRequest:
+      type: object
+      properties:
         name:
           type: string
         hypothesis:

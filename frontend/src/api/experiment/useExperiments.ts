@@ -8,8 +8,11 @@ export interface Experiment {
   name: string;
   hypothesis: string;
   kpiTarget: number;
+  sampleSize?: number | null;
+  mdePercent?: number | null;
   startDate: string | null;
   endDate: string | null;
+  metricPresetId?: string | null;
   status: string;
   platform: string;
   createdAt: string;

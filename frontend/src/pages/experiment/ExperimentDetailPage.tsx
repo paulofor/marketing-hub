@@ -1,6 +1,7 @@
 import { Fragment, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useExperiment } from "../../api/experiment/useExperiment";
+import { useMetricPresets } from "../../api/experiment/useMetricPresets";
 import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import PageTitle from "../../components/PageTitle";
@@ -17,6 +18,7 @@ export default function ExperimentDetailPage() {
     data ? String(data.nicheId) : undefined,
     data ? String(data.hypothesisId) : undefined,
   );
+  const { data: presets } = useMetricPresets();
   const [tab, setTab] = useState("overview");
   useBreadcrumbs([
     { label: "Nichos", to: "/niches" },
@@ -29,22 +31,38 @@ export default function ExperimentDetailPage() {
   ]);
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
+  const presetName = presets?.find((p) => p.id === data.metricPresetId)?.name;
   const rows = [
-    { label: "Nome", value: data.name },
     {
       label: "Nicho",
       value: <Link to={`/niches/${data.nicheId}/edit`}>{niche?.name}</Link>,
     },
-    { label: "Hipótese", value: data.hypothesis },
+    {
+      label: "Hipótese",
+      value: (
+        <Link to={`/niches/${data.nicheId}/hypotheses/${data.hypothesisId}`}>
+          {hyp?.title || data.hypothesis}
+        </Link>
+      ),
+    },
+    { label: "Preset de Métricas", value: presetName || "—" },
     { label: "KPI", value: data.kpiTarget },
     { label: "Início", value: data.startDate },
     { label: "Término", value: data.endDate },
   ];
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center">
-        <PageTitle>{`Teste ${data.id}`}</PageTitle>
-        <span className="badge bg-secondary">{data.status}</span>
+      <div className="d-flex justify-content-between align-items-start">
+        <div>
+          <PageTitle>{data.name}</PageTitle>
+          <p className="text-muted mb-0">{data.hypothesis}</p>
+        </div>
+        <div className="d-flex align-items-center">
+          <Link to="edit" className="btn btn-outline-secondary me-2">
+            Editar
+          </Link>
+          <span className="badge bg-secondary">{data.status}</span>
+        </div>
       </div>
       <Tabs.Root value={tab} onValueChange={setTab} className="mt-3">
         <Tabs.List className="nav nav-tabs">

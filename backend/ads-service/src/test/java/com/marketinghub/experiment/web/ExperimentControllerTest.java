@@ -52,6 +52,8 @@ class ExperimentControllerTest {
     @Autowired
     private HypothesisRepository hypothesisRepository;
     @Autowired
+    private com.marketinghub.experiment.repository.MetricPresetRepository metricPresetRepository;
+    @Autowired
     private com.marketinghub.creative.repository.CreativeRepository creativeRepo;
     @Autowired
     private FixtureUtils fixtures;
@@ -82,12 +84,19 @@ class ExperimentControllerTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(BigDecimal.ONE)
                 .build());
+        metricPresetRepository.save(com.marketinghub.experiment.MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setName("Exp1");
         req.setHypothesisId(hyp.getId());
         req.setHypothesis("H1");
         req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setStopLossCpl(new BigDecimal("90"));
+        req.setMetricPresetId("LEAN_150");
         req.setSampleSize(1500);
         req.setBaselineCvr(new BigDecimal("3"));
         req.setTargetCvr(new BigDecimal("5"));

@@ -68,8 +68,8 @@ components:
           type: string
         kpiTarget:
           type: number
-        stopLossCpl:
-          type: number
+        metricPresetId:
+          type: string
         sampleSize:
           type: integer
         mde:

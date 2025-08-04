@@ -1,0 +1,25 @@
+package com.marketinghub.experiment.service;
+
+import com.marketinghub.experiment.MetricPreset;
+import com.marketinghub.experiment.repository.MetricPresetRepository;
+import org.springframework.stereotype.Service;
+
+/**
+ * Service layer for metric presets.
+ */
+@Service
+public class MetricPresetService {
+    private final MetricPresetRepository repository;
+
+    public MetricPresetService(MetricPresetRepository repository) {
+        this.repository = repository;
+    }
+
+    public Iterable<MetricPreset> list() {
+        return repository.findAll();
+    }
+
+    public MetricPreset get(String id) {
+        return repository.findById(id).orElseThrow();
+    }
+}

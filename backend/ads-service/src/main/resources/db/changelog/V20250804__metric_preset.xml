@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+    <changeSet id="metric_preset_table" author="codex">
+        <createTable tableName="metric_preset">
+            <column name="id" type="varchar(50)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(100)"/>
+            <column name="sample_size" type="int"/>
+            <column name="stop_loss_factor" type="decimal(5,2)"/>
+            <column name="default_mde_pp" type="decimal(5,2)"/>
+        </createTable>
+        <insert tableName="metric_preset">
+            <column name="id" value="LEAN_300"/>
+            <column name="name" value="Lean-Startup 300"/>
+            <column name="sample_size" valueNumeric="300"/>
+            <column name="stop_loss_factor" valueNumeric="2.0"/>
+            <column name="default_mde_pp" valueNumeric="9"/>
+        </insert>
+        <insert tableName="metric_preset">
+            <column name="id" value="LEAN_150"/>
+            <column name="name" value="Lean-Startup 150"/>
+            <column name="sample_size" valueNumeric="150"/>
+            <column name="stop_loss_factor" valueNumeric="2.0"/>
+            <column name="default_mde_pp" valueNumeric="12"/>
+        </insert>
+        <insert tableName="metric_preset">
+            <column name="id" value="LEAN_100"/>
+            <column name="name" value="Lean-Startup 100"/>
+            <column name="sample_size" valueNumeric="100"/>
+            <column name="stop_loss_factor" valueNumeric="2.0"/>
+            <column name="default_mde_pp" valueNumeric="14"/>
+        </insert>
+    </changeSet>
+    <changeSet id="metric_preset_fk" author="codex">
+        <addColumn tableName="experiment">
+            <column name="metric_preset_id" type="varchar(50)"/>
+        </addColumn>
+        <addForeignKeyConstraint baseTableName="experiment" baseColumnNames="metric_preset_id"
+                                  referencedTableName="metric_preset" referencedColumnNames="id"
+                                  constraintName="fk_experiment_metric_preset"/>
+    </changeSet>
+</databaseChangeLog>

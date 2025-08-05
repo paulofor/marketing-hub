@@ -37,6 +37,10 @@ public class Experiment {
     @JoinColumn(name = "hypothesis_id", nullable = false)
     private com.marketinghub.hypothesis.Hypothesis hypothesisRef;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "metric_preset_id")
+    private MetricPreset metricPreset;
+
     @Column(precision = 10, scale = 2)
     private java.math.BigDecimal kpiTargetCpl;
     /** Stop-loss operacional em CPL. */
@@ -71,4 +75,19 @@ public class Experiment {
 
     @UpdateTimestamp
     private Instant updatedAt;
+
+    @PrePersist
+    void applyMetricPreset() {
+        if (metricPreset != null) {
+            if (sampleSize == null) {
+                sampleSize = metricPreset.getSampleSize();
+            }
+            if (stopLossCpl == null && kpiTargetCpl != null && metricPreset.getStopLossFactor() != null) {
+                stopLossCpl = kpiTargetCpl.multiply(metricPreset.getStopLossFactor());
+            }
+            if (mdePercent == null) {
+                mdePercent = metricPreset.getDefaultMdePp();
+            }
+        }
+    }
 }

@@ -2,6 +2,7 @@ package com.marketinghub.experiment.web;
 
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.ExperimentDto;
+import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
 import com.marketinghub.experiment.service.ExperimentService;
 import org.springframework.web.bind.annotation.*;
@@ -53,6 +54,11 @@ public class ExperimentController {
             @PathVariable Long id,
             @RequestParam com.marketinghub.experiment.ExperimentStatus status) {
         return mapper.toDto(service.updateStatus(id, status));
+    }
+
+    @RequestMapping(value = "/{id}", method = {RequestMethod.PUT, RequestMethod.PATCH})
+    public ExperimentDto update(@PathVariable Long id, @RequestBody UpdateExperimentRequest request) {
+        return mapper.toDto(service.update(id, request));
     }
 
 }

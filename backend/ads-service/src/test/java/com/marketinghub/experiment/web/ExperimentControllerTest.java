@@ -3,6 +3,7 @@ package com.marketinghub.experiment.web;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
+import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
@@ -22,6 +23,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -51,6 +53,8 @@ class ExperimentControllerTest {
     private AngleRepository angleRepository;
     @Autowired
     private HypothesisRepository hypothesisRepository;
+    @Autowired
+    private com.marketinghub.experiment.repository.MetricPresetRepository metricPresetRepository;
     @Autowired
     private com.marketinghub.creative.repository.CreativeRepository creativeRepo;
     @Autowired
@@ -82,12 +86,19 @@ class ExperimentControllerTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(BigDecimal.ONE)
                 .build());
+        metricPresetRepository.save(com.marketinghub.experiment.MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setName("Exp1");
         req.setHypothesisId(hyp.getId());
         req.setHypothesis("H1");
         req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setStopLossCpl(new BigDecimal("90"));
+        req.setMetricPresetId("LEAN_150");
         req.setSampleSize(1500);
         req.setBaselineCvr(new BigDecimal("3"));
         req.setTargetCvr(new BigDecimal("5"));
@@ -101,5 +112,30 @@ class ExperimentControllerTest {
                 .andExpect(status().isOk());
 
         assertThat(repository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void updateEndpointUpdatesFields() throws Exception {
+        var niche = nicheRepo.findById(nicheId).orElseThrow();
+        var exp = fixtures.createAndSaveExperiment(niche);
+        UpdateExperimentRequest req = new UpdateExperimentRequest();
+        req.setName("Updated");
+        req.setHypothesis("Hyp");
+        req.setKpiTargetCpl(new BigDecimal("50"));
+        req.setMetricPresetId("LEAN_150");
+        req.setSampleSize(200);
+        req.setMdePercent(new BigDecimal("30"));
+        req.setStartDate(LocalDate.now());
+        req.setEndDate(LocalDate.now().plusDays(2));
+
+        mockMvc.perform(patch("/api/experiments/" + exp.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(req)))
+                .andExpect(status().isOk());
+
+        var updated = repository.findById(exp.getId()).orElseThrow();
+        assertThat(updated.getName()).isEqualTo("Updated");
+        assertThat(updated.getSampleSize()).isEqualTo(200);
+        assertThat(updated.getMdePercent()).isEqualByComparingTo("30");
     }
 }

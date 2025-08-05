@@ -1,24 +1,24 @@
 package com.marketinghub.experiment.dto;
 
-import java.time.LocalDate;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import lombok.Data;
 
 /**
- * Request body for creating an experiment.
+ * Request body for updating an experiment.
  */
 @Data
-public class CreateExperimentRequest {
-    private Long marketNicheId;
-    private java.util.UUID hypothesisId;
+public class UpdateExperimentRequest {
     private String name;
     private String hypothesis;
+    @JsonProperty("kpiTarget")
     private BigDecimal kpiTargetCpl;
     private String metricPresetId;
     private Integer sampleSize;
-    private BigDecimal baselineCvr;
-    private BigDecimal targetCvr;
+    @JsonProperty("mde")
     private BigDecimal mdePercent;
     private LocalDate startDate;
     private LocalDate endDate;
 }
+

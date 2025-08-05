@@ -23,6 +23,7 @@ import EditAiServicePage from "./pages/aiService/EditAiServicePage";
 import ExperimentListPage from "./pages/experiment/ExperimentListPage";
 import NewExperimentPage from "./pages/experiment/NewExperimentPage";
 import ExperimentDetailPage from "./pages/experiment/ExperimentDetailPage";
+import EditExperimentPage from "./pages/experiment/EditExperimentPage";
 import NicheDetailPage from "./pages/niche/NicheDetailPage";
 import HypothesisDetailPage from "./pages/hypothesis/HypothesisDetailPage";
 import HypothesesPage from "./pages/hypothesis/HypothesesPage";
@@ -176,6 +177,7 @@ export default function App() {
         <Route path="/experiments/new" element={<NewExperimentPage />} />
         <Route path="/experiments/:id" element={<AppLayout />}>
           <Route index element={<ExperimentDetailPage />} />
+          <Route path="edit" element={<EditExperimentPage />} />
         </Route>
         <Route path="/hypotheses" element={<HypothesisListPage />} />
         <Route path="/hypotheses/board" element={<HypothesesPage />} />

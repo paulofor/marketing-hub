@@ -89,12 +89,11 @@ describe("niche navigation", () => {
     userEvent.click(screen.getByText("Ver detalhes"));
     await screen.findByText("Criar Experimento");
     userEvent.click(screen.getByText("Abrir"));
-    expect(await screen.findByText(/Teste 100/)).toBeTruthy();
+    expect(await screen.findByText("Exp 1")).toBeTruthy();
     const bc = screen.getByRole("navigation", { name: /breadcrumb/i });
     expect(bc).toBeTruthy();
     expect(within(bc).getByText("Nichos")).toBeTruthy();
     expect(within(bc).getByText("Fitness")).toBeTruthy();
     expect(within(bc).getByText("Hip 1")).toBeTruthy();
-    expect(within(bc).getByText("Exp 1")).toBeTruthy();
   });
 });

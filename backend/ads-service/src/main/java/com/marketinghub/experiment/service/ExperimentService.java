@@ -2,6 +2,7 @@ package com.marketinghub.experiment.service;
 
 import com.marketinghub.experiment.*;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
+import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
@@ -20,14 +21,17 @@ public class ExperimentService {
     private final ExperimentRepository repository;
     private final MarketNicheRepository nicheRepository;
     private final com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository;
+    private final MetricPresetService metricPresetService;
     private final EntityManager entityManager;
 
     public ExperimentService(ExperimentRepository repository, MarketNicheRepository nicheRepository,
                              com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository,
+                             MetricPresetService metricPresetService,
                              EntityManager entityManager) {
         this.repository = repository;
         this.nicheRepository = nicheRepository;
         this.hypothesisRepository = hypothesisRepository;
+        this.metricPresetService = metricPresetService;
         this.entityManager = entityManager;
     }
 
@@ -72,13 +76,14 @@ public class ExperimentService {
         if (repository.existsByNicheAndName(niche, request.getName())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name already exists for niche");
         }
-        if (request.getStopLossCpl() != null && request.getStopLossCpl().compareTo(java.math.BigDecimal.ZERO) <= 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "stopLossCpl must be positive");
+        if (request.getKpiTargetCpl() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "kpiTargetCpl required");
         }
-        if (request.getKpiTargetCpl() != null && request.getStopLossCpl() != null &&
-                request.getStopLossCpl().compareTo(request.getKpiTargetCpl()) < 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "stopLossCpl must be >= kpiTargetCpl");
+        if (request.getMetricPresetId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "metricPresetId required");
         }
+        MetricPreset preset = metricPresetService.get(request.getMetricPresetId());
+        java.math.BigDecimal computedStopLoss = request.getKpiTargetCpl().multiply(preset.getStopLossFactor());
         if (request.getSampleSize() != null && request.getSampleSize() < 100) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "sampleSize must be at least 100");
         }
@@ -92,7 +97,8 @@ public class ExperimentService {
                 .hypothesis(request.getHypothesis())
                 .hypothesisRef(hyp)
                 .kpiTargetCpl(request.getKpiTargetCpl())
-                .stopLossCpl(request.getStopLossCpl())
+                .metricPreset(preset)
+                .stopLossCpl(computedStopLoss)
                 .sampleSize(request.getSampleSize())
                 .baselineCvr(request.getBaselineCvr())
                 .targetCvr(request.getTargetCvr())
@@ -134,6 +140,7 @@ public class ExperimentService {
                 .hypothesis(original.getHypothesis())
                 .hypothesisRef(original.getHypothesisRef())
                 .kpiTargetCpl(original.getKpiTargetCpl())
+                .metricPreset(original.getMetricPreset())
                 .stopLossCpl(original.getStopLossCpl())
                 .sampleSize(original.getSampleSize())
                 .baselineCvr(original.getBaselineCvr())
@@ -159,6 +166,56 @@ public class ExperimentService {
             }
         }
         exp.setStatus(status);
+        return exp;
+    }
+
+    /**
+     * Updates mutable fields of an experiment.
+     */
+    @Transactional
+    public Experiment update(Long id, UpdateExperimentRequest request) {
+        Experiment exp = repository.findById(id).orElseThrow();
+
+        if (request.getName() == null || request.getKpiTargetCpl() == null
+                || request.getHypothesis() == null || request.getMetricPresetId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "required fields missing");
+        }
+
+        if (!exp.getName().equals(request.getName()) &&
+                repository.existsByNicheAndName(exp.getNiche(), request.getName())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name already exists for niche");
+        }
+
+        if (request.getStartDate() != null && request.getEndDate() != null
+                && request.getStartDate().isAfter(request.getEndDate())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "startDate must be before endDate");
+        }
+
+        if (request.getSampleSize() != null && request.getSampleSize() < 100) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "sampleSize must be at least 100");
+        }
+
+        MetricPreset preset = metricPresetService.get(request.getMetricPresetId());
+
+        exp.setName(request.getName());
+        exp.setHypothesis(request.getHypothesis());
+        exp.setKpiTargetCpl(request.getKpiTargetCpl());
+        exp.setMetricPreset(preset);
+        if (request.getSampleSize() != null) {
+            exp.setSampleSize(request.getSampleSize());
+        } else {
+            exp.setSampleSize(preset.getSampleSize());
+        }
+        if (request.getMdePercent() != null) {
+            exp.setMdePercent(request.getMdePercent());
+        } else {
+            exp.setMdePercent(preset.getDefaultMdePp());
+        }
+        if (request.getKpiTargetCpl() != null && preset.getStopLossFactor() != null) {
+            exp.setStopLossCpl(request.getKpiTargetCpl().multiply(preset.getStopLossFactor()));
+        }
+        exp.setStartDate(request.getStartDate());
+        exp.setEndDate(request.getEndDate());
         return exp;
     }
 }

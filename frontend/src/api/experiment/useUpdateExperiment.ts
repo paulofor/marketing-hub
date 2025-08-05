@@ -2,31 +2,29 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { Experiment } from "./useExperiments";
 
-export interface CreateExperiment {
-  nicheId: number;
-  hypothesisId?: string;
+export interface UpdateExperiment {
   name: string;
   hypothesis: string;
   kpiTarget: number;
-  metricPresetId: string;
+  metricPresetId?: string;
   sampleSize?: number;
   mde?: number;
   startDate?: string;
   endDate?: string;
 }
 
-export function useCreateExperiment() {
+export function useUpdateExperiment(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: CreateExperiment) => {
-      const { nicheId, ...payload } = data;
-      const { data: experiment } = await axios.post<Experiment>(
-        `/api/experiments`,
-        { ...payload, marketNicheId: nicheId },
+    mutationFn: async (data: UpdateExperiment) => {
+      const { data: experiment } = await axios.patch<Experiment>(
+        `/api/experiments/${id}`,
+        data,
       );
       return experiment;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["experiment", id] });
       queryClient.invalidateQueries({ queryKey: ["experiments"] });
     },
   });

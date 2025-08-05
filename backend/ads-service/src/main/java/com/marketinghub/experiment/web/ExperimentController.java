@@ -56,8 +56,7 @@ public class ExperimentController {
         return mapper.toDto(service.updateStatus(id, status));
     }
 
-    @PutMapping("/{id}")
-    @PatchMapping("/{id}")
+    @RequestMapping(value = "/{id}", method = {RequestMethod.PUT, RequestMethod.PATCH})
     public ExperimentDto update(@PathVariable Long id, @RequestBody UpdateExperimentRequest request) {
         return mapper.toDto(service.update(id, request));
     }

@@ -136,6 +136,6 @@ class ExperimentControllerTest {
         var updated = repository.findById(exp.getId()).orElseThrow();
         assertThat(updated.getName()).isEqualTo("Updated");
         assertThat(updated.getSampleSize()).isEqualTo(200);
-        assertThat(updated.getMdePercent()).isEqualTo(new BigDecimal("30"));
+        assertThat(updated.getMdePercent()).isEqualByComparingTo("30");
     }
 }

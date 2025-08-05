@@ -31,7 +31,15 @@ export default function ExperimentDetailPage() {
   ]);
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
-  const presetName = presets?.find((p) => p.id === data.metricPresetId)?.name;
+  const preset = presets?.find((p) => p.id === data.metricPresetId);
+  const formatCurrency = (n?: number | null) =>
+    n != null
+      ? new Intl.NumberFormat("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+        }).format(n)
+      : "—";
+  const formatPercent = (n?: number | null) => (n != null ? `${n}%` : "—");
   const rows = [
     {
       label: "Nicho",
@@ -45,8 +53,27 @@ export default function ExperimentDetailPage() {
         </Link>
       ),
     },
-    { label: "Preset de Métricas", value: presetName || "—" },
-    { label: "KPI", value: data.kpiTarget },
+    { label: "Preset de Métricas", value: preset?.name || "—" },
+    {
+      label: "Sample size",
+      value: data.sampleSize ?? preset?.sampleSize ?? "—",
+    },
+    {
+      label: "MDE (p.p.)",
+      value: data.mdePercent ?? preset?.defaultMdePp ?? "—",
+    },
+    {
+      label: "Stop-loss factor",
+      value: preset?.stopLossFactor ? `${preset.stopLossFactor}×` : "—",
+    },
+    {
+      label: "CPL-meta",
+      value: formatCurrency(data.kpiTarget ?? data.kpiTargetCpl),
+    },
+    { label: "Stop-loss CPL", value: formatCurrency(data.stopLossCpl) },
+    { label: "Baseline CVR", value: formatPercent(data.baselineCvr) },
+    { label: "Target CVR", value: formatPercent(data.targetCvr) },
+    { label: "Plataforma", value: data.platform },
     { label: "Início", value: data.startDate },
     { label: "Término", value: data.endDate },
   ];

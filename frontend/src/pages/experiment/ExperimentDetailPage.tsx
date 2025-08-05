@@ -40,6 +40,13 @@ export default function ExperimentDetailPage() {
         }).format(n)
       : "—";
   const formatPercent = (n?: number | null) => (n != null ? `${n}%` : "—");
+  const baseKpi = data.kpiTarget ?? data.kpiTargetCpl;
+  const stopLossFactor = preset?.stopLossFactor;
+  const stopLossCpl =
+    data.stopLossCpl ??
+    (baseKpi != null && stopLossFactor != null
+      ? baseKpi * stopLossFactor
+      : null);
   const rows = [
     {
       label: "Nicho",
@@ -70,7 +77,7 @@ export default function ExperimentDetailPage() {
       label: "CPL-meta",
       value: formatCurrency(data.kpiTarget ?? data.kpiTargetCpl),
     },
-    { label: "Stop-loss CPL", value: formatCurrency(data.stopLossCpl) },
+    { label: "Stop-loss CPL", value: formatCurrency(stopLossCpl) },
     { label: "Baseline CVR", value: formatPercent(data.baselineCvr) },
     { label: "Target CVR", value: formatPercent(data.targetCvr) },
     { label: "Plataforma", value: data.platform },

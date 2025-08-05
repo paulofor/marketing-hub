@@ -8,13 +8,8 @@ import PageTitle from "../../components/PageTitle";
 
 interface FormData {
   name: string;
-  hypothesis: string;
   kpiTarget: string;
   metricPresetId: string;
-  sampleSize: string;
-  mde: string;
-  startDate: string;
-  endDate: string;
 }
 
 export default function EditExperimentPage() {
@@ -30,90 +25,89 @@ export default function EditExperimentPage() {
     if (data) {
       reset({
         name: data.name || "",
-        hypothesis: data.hypothesis || "",
         kpiTarget: data.kpiTarget ? String(data.kpiTarget) : "",
         metricPresetId: data.metricPresetId || "",
-        sampleSize: data.sampleSize ? String(data.sampleSize) : "",
-        mde: data.mdePercent ? String(data.mdePercent) : "",
-        startDate: data.startDate || "",
-        endDate: data.endDate || "",
       });
     }
   }, [data, reset]);
 
   const onSubmit = async (values: FormData) => {
     try {
+      if (!data) return;
       await update.mutateAsync({
         name: values.name,
-        hypothesis: values.hypothesis,
+        hypothesis: data.hypothesis,
         kpiTarget: Number(values.kpiTarget),
         metricPresetId: values.metricPresetId || undefined,
-        sampleSize: values.sampleSize ? Number(values.sampleSize) : undefined,
-        mde: values.mde ? Number(values.mde) : undefined,
-        startDate: values.startDate || undefined,
-        endDate: values.endDate || undefined,
+        sampleSize: data.sampleSize ?? undefined,
+        mde: data.mdePercent ?? undefined,
+        startDate: data.startDate ?? undefined,
+        endDate: data.endDate ?? undefined,
       });
       navigate(-1);
     } catch {
-      alert("Erro ao salvar Teste");
+      alert("Erro ao salvar Experimento");
     }
   };
 
   if (isLoading || !data) return <p>Carregando...</p>;
 
   return (
-    <div>
-      <PageTitle>Editar Teste</PageTitle>
-      <label className="form-label">Nome</label>
-      <input className="form-control mb-2" {...register("name")} />
-      <label className="form-label">Hipótese</label>
-      <input className="form-control mb-2" {...register("hypothesis")} />
-      <label className="form-label">Meta do KPI</label>
-      <input
-        className="form-control mb-2"
-        type="number"
-        {...register("kpiTarget")}
-      />
-      <label className="form-label">Preset de Métricas</label>
-      <select className="form-select mb-2" {...register("metricPresetId")}>
-        <option value="">Selecione Preset de Métricas</option>
-        {Array.isArray(presets) &&
-          presets.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-      </select>
-      <label className="form-label">Tamanho da amostra</label>
-      <input
-        className="form-control mb-2"
-        type="number"
-        {...register("sampleSize")}
-      />
-      <label className="form-label">MDE %</label>
-      <input className="form-control mb-2" type="number" {...register("mde")} />
-      <label className="form-label">Data de Início</label>
-      <input
-        className="form-control mb-2"
-        type="date"
-        {...register("startDate")}
-      />
-      <label className="form-label">Data de Término</label>
-      <input
-        className="form-control mb-2"
-        type="date"
-        {...register("endDate")}
-      />
-      <button
-        type="button"
-        className="btn btn-primary"
-        disabled={update.isPending}
-        onClick={handleSubmit(onSubmit, (errors) => {
-          console.log("Validation errors", errors);
-        })}
-      >
-        Salvar
-      </button>
+    <div style={{ maxWidth: 480 }}>
+      <PageTitle>Editar Experimento</PageTitle>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <label className="form-label" htmlFor="name">
+          Nome
+        </label>
+        <input id="name" className="form-control mb-2" {...register("name")} />
+        <label className="form-label">Hipótese</label>
+        <p className="form-control-plaintext">{data.hypothesis}</p>
+        <label className="form-label" htmlFor="kpiTarget">
+          Meta do KPI
+        </label>
+        <input
+          id="kpiTarget"
+          className="form-control mb-2"
+          type="number"
+          {...register("kpiTarget")}
+        />
+        <label className="form-label" htmlFor="preset">
+          Preset de Métricas
+        </label>
+        <select
+          id="preset"
+          className="form-select mb-2"
+          {...register("metricPresetId")}
+        >
+          <option value="">Selecione Preset de Métricas</option>
+          {Array.isArray(presets) &&
+            presets.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+        </select>
+        <div className="mt-3 d-flex justify-content-end">
+          <button
+            type="button"
+            className="btn btn-outline-secondary me-2"
+            onClick={() => navigate(-1)}
+            disabled={update.isPending}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={update.isPending}
+            onClick={handleSubmit(onSubmit, (errors) => {
+              console.log("Validation errors", errors);
+            })}
+          >
+            Salvar
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

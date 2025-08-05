@@ -7,8 +7,16 @@ export interface Experiment {
   hypothesisId: string;
   name: string;
   hypothesis: string;
-  kpiTarget: number;
+  /**
+   * KPI alvo em CPL. Mantém `kpiTarget` para compatibilidade com APIs
+   * antigas que usavam este nome.
+   */
+  kpiTarget?: number;
+  kpiTargetCpl?: number;
+  stopLossCpl?: number | null;
   sampleSize?: number | null;
+  baselineCvr?: number | null;
+  targetCvr?: number | null;
   mdePercent?: number | null;
   startDate: string | null;
   endDate: string | null;

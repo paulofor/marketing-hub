@@ -38,3 +38,7 @@ databaseChangeLog:
   - include:
       file: V20250825__sales_funnel_multichannel.xml
       relativeToChangelogFile: true
+
+  - include:
+      file: V2025_08_06__create_chat_tables.sql
+      relativeToChangelogFile: true

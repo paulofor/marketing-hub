@@ -28,7 +28,7 @@ public class OutboxScheduler {
     public void processPending() {
         List<OutboxEvent> events = outboxRepository.findByProcessedAtIsNull();
         for (OutboxEvent e : events) {
-            graphApiClient.sendWelcomeAsync(null);
+            graphApiClient.sendWelcomeAsync(null, null);
             e.setProcessedAt(Instant.now());
             outboxRepository.save(e);
         }

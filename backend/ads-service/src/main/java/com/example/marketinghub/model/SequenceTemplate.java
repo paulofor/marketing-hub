@@ -3,6 +3,9 @@ package com.example.marketinghub.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Template defining a message sequence.
  */
@@ -18,6 +21,8 @@ public class SequenceTemplate {
 
     private String name;
 
-    @Lob
-    private String content;
+    @OneToMany(mappedBy = "sequenceTemplate", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("stepOrder ASC")
+    @Builder.Default
+    private List<SequenceStep> steps = new ArrayList<>();
 }

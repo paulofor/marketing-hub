@@ -36,6 +36,7 @@ import VisualProofsPage from "./pages/VisualProofsPage";
 import EmotionalTriggersPage from "./pages/EmotionalTriggersPage";
 import LandingPreview from "./pages/landing/LandingPreview";
 import AnalyticsDashboard from "./pages/landing/AnalyticsDashboard";
+import FunnelsPage from "./pages/FunnelsPage";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -86,6 +87,9 @@ export default function App() {
             </Link>
             <Link className="nav-link" to="/emotional-triggers">
               Gatilhos Emocionais
+            </Link>
+            <Link className="nav-link" to="/funnels">
+              Funil de Vendas
             </Link>
             <div className="nav-item dropdown">
               <span
@@ -189,6 +193,7 @@ export default function App() {
         <Route path="/emotional-triggers" element={<EmotionalTriggersPage />} />
         <Route path="/landing/:id" element={<LandingPreview />} />
         <Route path="/analytics" element={<AnalyticsDashboard />} />
+        <Route path="/funnels" element={<FunnelsPage />} />
         <Route path="*" element={<div>Início</div>} />
       </Routes>
       <ToastContainer position="top-right" />

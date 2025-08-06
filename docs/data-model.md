@@ -1,213 +1,259 @@
 # MarketingHub Data Model
 
-This document summarizes the database schema derived from the Liquibase change logs in `backend/ads-service/src/main/resources/db/changelog`.
+This document summarizes the current database schema defined in `schema.sql`.
 
 ## Tables
 
-### hypothesis
+### asset
 
-- `id` BINARY(16) PRIMARY KEY
-- `title` VARCHAR(255) NOT NULL
-- `premise_angle_id` BIGINT NOT NULL
-- `offer_type` VARCHAR(20) NOT NULL
-- `price` DECIMAL(6,2)
-- `kpi_target_cpl` DECIMAL(7,2) NOT NULL
-- `status` VARCHAR(20) DEFAULT 'BACKLOG'
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `type` VARCHAR(20)
+- `provider` VARCHAR(20)
+- `external_id` VARCHAR(100)
+- `status` VARCHAR(20)
+- `url` VARCHAR(500)
+- `payload` TEXT
+- `campaign_id` BIGINT
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-- `market_niche_id` BIGINT NOT NULL (FK `fk_hypothesis_niche`)
+
+### course_plan
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `target_audience` VARCHAR(255)
+- `transformation` VARCHAR(255)
+- `macro_topics` TEXT
+- `modules` TEXT
+- `objectives` TEXT
+- `resources` TEXT
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+### ai_service
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `name` VARCHAR(255)
+- `objective` LONGTEXT
+- `url` VARCHAR(255)
+- `phase` VARCHAR(255)
+- `price` DECIMAL(10,2)
+- `cost` DECIMAL(10,2)
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+### product
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `niche` VARCHAR(255)
+- `avatar` VARCHAR(255)
+- `instagram_account_id` BIGINT
+- `explicit_pain` LONGTEXT
+- `promise` LONGTEXT
+- `unique_mechanism` LONGTEXT
+- `tripwire` LONGTEXT
+- `risk_reversal` LONGTEXT
+- `social_proof` LONGTEXT
+- `checkout_monetization` LONGTEXT
+- `funnel` LONGTEXT
+- `creative_volume` LONGTEXT
+- `storytelling` LONGTEXT
+- `ai_cost` DECIMAL(10,2) DEFAULT 0
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+### success_product
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `description` LONGTEXT
+- `name` VARCHAR(255)
+- `novo` BOOLEAN DEFAULT TRUE
+- `niche` VARCHAR(255)
+- `avatar` VARCHAR(255)
+- `sales_page_url` VARCHAR(500)
+- `instagram_url` VARCHAR(500)
+- `facebook_url` VARCHAR(500)
+- `youtube_url` VARCHAR(500)
+- `instagram_account_id` BIGINT
+- `explicit_pain` LONGTEXT
+- `promise` LONGTEXT
+- `unique_mechanism` LONGTEXT
+- `tripwire` LONGTEXT
+- `risk_reversal` LONGTEXT
+- `social_proof` LONGTEXT
+- `checkout_monetization` LONGTEXT
+- `funnel` LONGTEXT
+- `creative_volume` LONGTEXT
+- `storytelling` LONGTEXT
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+### instagram_post
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `instagram_account_id` BIGINT
+- `caption` TEXT
+- `media_url` VARCHAR(500)
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+### market_niche
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `name` VARCHAR(255)
+- `description` LONGTEXT
+- `demand_volume` LONGTEXT
+- `promises` LONGTEXT
+- `offers` LONGTEXT
+- `base_segmentation` LONGTEXT
+- `interests` LONGTEXT
+- `demographic_filters` LONGTEXT
+- `extra_tips` LONGTEXT
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
 ### experiment
 
-Columns added via change logs:
-
-- `hypothesis_id` BINARY(16) NOT NULL (FK `fk_experiment_hypothesis`)
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `niche_id` BIGINT NOT NULL
+- `name` VARCHAR(255) NOT NULL
+- `hypothesis` VARCHAR(255)
 - `kpi_target_cpl` DECIMAL(10,2) DEFAULT 45.00
 - `stop_loss_cpl` DECIMAL(10,2) DEFAULT 90.00
 - `sample_size` INT DEFAULT 1500
 - `baseline_cvr` DECIMAL(5,2) DEFAULT 3.00
 - `target_cvr` DECIMAL(5,2) DEFAULT 5.00
 - `mde_percent` DECIMAL(5,2) DEFAULT 40.0
-- `metric_preset_id` VARCHAR(50) (FK `fk_experiment_metric_preset`)
+- `start_date` DATE
+- `end_date` DATE
+- `status` VARCHAR(20)
+- `platform` VARCHAR(50)
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
-### lead
+### creative_variant
 
-- `id` BINARY(16) PRIMARY KEY
-- `leadgen_id` BIGINT UNIQUE
-- `instagram_user_id` BIGINT
-- `ad_id` BIGINT
-- `campaign_id` BIGINT
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
 - `experiment_id` BIGINT
-- `captured_at` DATETIME
-- `nurture_stage` ENUM('NEW','WARM','HOT') DEFAULT 'NEW'
-- `cpl` DECIMAL(10,2)
-- `lead_score` INT DEFAULT 0
+- `type` VARCHAR(20)
+- `asset_url` VARCHAR(500)
+- `titles` LONGTEXT
+- `descriptions` LONGTEXT
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
-### sales_funnel
+### ad_set
 
-- `id` BINARY(16) PRIMARY KEY
-- `experiment_id` BIGINT NOT NULL (FK `fk_funnel_experiment`)
-- `name` VARCHAR(100)
-- `objective` VARCHAR(255)
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `experiment_id` BIGINT
+- `location` VARCHAR(255)
+- `interests` LONGTEXT
+- `lookalikes` LONGTEXT
+- `budget` DECIMAL(10,2)
+- `duration_days` INT
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+### metric_snapshot
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `creative_id` BIGINT
+- `ad_set_id` BIGINT
+- `impressions` INT
+- `clicks` INT
+- `cost` DECIMAL(10,2)
+- `roas` DECIMAL(10,2)
+- `ctr` DOUBLE
+- `cpa` DECIMAL(10,2)
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 
-### funnel_step
+### landing_page
 
-- `id` BINARY(16) PRIMARY KEY
-- `funnel_id` BINARY(16) NOT NULL (FK `fk_step_funnel`)
-- `order_idx` INT
-- `stimulus_type` ENUM('DM','EMAIL','IG_POST_BOOST','FB_AD','STORY','WHATSAPP','CALL','SMS','WEBINAR','PUSH')
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `experiment_id` BIGINT NOT NULL
+- `url` VARCHAR(500)
+- `type` VARCHAR(20)
+- `status` VARCHAR(20)
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+### chat_session
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `user_id` VARCHAR(255)
 - `channel` VARCHAR(50)
-- `template_id` VARCHAR(50)
-- `expected_action` ENUM('OPEN','CLICK','REPLY','PURCHASE')
-- `score_inc` INT
-- `revenue_target` DECIMAL(10,2)
+- `state` VARCHAR(20)
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- `is_active` TINYINT(1) DEFAULT 1
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
-### lead_response
+### chat_message
 
-- `id` BIGINT PRIMARY KEY AUTO_INCREMENT
-- `lead_id` BINARY(16) NOT NULL (FK `fk_response_lead`)
-- `funnel_step_id` BINARY(16) NOT NULL (FK `fk_response_step`)
-- `action` ENUM('OPEN','CLICK','REPLY','PURCHASE')
-- `value` JSON
-- `revenue` DECIMAL(10,2)
-- `occurred_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-
-### step_metric_snapshot
-
-- `id` BIGINT PRIMARY KEY AUTO_INCREMENT
-- `funnel_step_id` BINARY(16) NOT NULL (FK `fk_snapshot_step`)
-- `impressions` BIGINT
-- `responses` BIGINT
-- `conversions` BIGINT
-- `revenue` DECIMAL(12,2)
-- `gross_profit` DECIMAL(12,2)
-- `cvr` DECIMAL(6,4)
-- `captured_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-
-### outbox
-
-- `id` BIGINT PRIMARY KEY AUTO_INCREMENT
-- `aggregate_id` BINARY(16)
-- `event_type` VARCHAR(50)
-- `payload` TEXT
-- `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-- `processed_at` DATETIME
-
-### metric_preset
-
-- `id` VARCHAR(50) PRIMARY KEY
-- `name` VARCHAR(100)
-- `sample_size` INT
-- `stop_loss_factor` DECIMAL(5,2)
-- `default_mde_pp` DECIMAL(5,2)
-
-Additional change logs add foreign keys to existing `creative_variants` and `ad_set` tables linking them to `experiment`.
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `session_id` BIGINT
+- `origin` VARCHAR(50)
+- `content` LONGTEXT
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
 ## Diagram
 
 ```mermaid
 erDiagram
-    HYPOTHESIS {
-        BINARY id PK
-        BIGINT premise_angle_id
-        BIGINT market_niche_id FK
-        VARCHAR offer_type
-        DECIMAL price
-        DECIMAL kpi_target_cpl
-        VARCHAR status
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
-    }
-    EXPERIMENT {
-        BINARY hypothesis_id FK
-        DECIMAL kpi_target_cpl
-        DECIMAL stop_loss_cpl
-        INT sample_size
-        DECIMAL baseline_cvr
-        DECIMAL target_cvr
-        DECIMAL mde_percent
-        VARCHAR metric_preset_id FK
-    }
-    LEAD {
-        BINARY id PK
-        BIGINT leadgen_id
-        BIGINT instagram_user_id
-        BIGINT ad_id
-        BIGINT campaign_id
-        BIGINT experiment_id
-        DATETIME captured_at
-        ENUM nurture_stage
-        DECIMAL cpl
-        INT lead_score
-    }
-    SALES_FUNNEL {
-        BINARY id PK
-        BIGINT experiment_id FK
-        VARCHAR name
-        VARCHAR objective
-        TIMESTAMP created_at
-    }
-    FUNNEL_STEP {
-        BINARY id PK
-        BINARY funnel_id FK
-        INT order_idx
-        ENUM stimulus_type
-        VARCHAR channel
-        VARCHAR template_id
-        ENUM expected_action
-        INT score_inc
-        DECIMAL revenue_target
-        TIMESTAMP created_at
-        TINYINT is_active
-    }
-    LEAD_RESPONSE {
+    ASSET {
         BIGINT id PK
-        BINARY lead_id FK
-        BINARY funnel_step_id FK
-        ENUM action
-        JSON value
-        DECIMAL revenue
-        TIMESTAMP occurred_at
     }
-    STEP_METRIC_SNAPSHOT {
+    COURSE_PLAN {
         BIGINT id PK
-        BINARY funnel_step_id FK
-        BIGINT impressions
-        BIGINT responses
-        BIGINT conversions
-        DECIMAL revenue
-        DECIMAL gross_profit
-        DECIMAL cvr
-        TIMESTAMP captured_at
     }
-    OUTBOX {
+    AI_SERVICE {
         BIGINT id PK
-        BINARY aggregate_id
-        VARCHAR event_type
-        TEXT payload
-        DATETIME created_at
-        DATETIME processed_at
     }
-    METRIC_PRESET {
-        VARCHAR id PK
-        VARCHAR name
-        INT sample_size
-        DECIMAL stop_loss_factor
-        DECIMAL default_mde_pp
+    PRODUCT {
+        BIGINT id PK
+    }
+    SUCCESS_PRODUCT {
+        BIGINT id PK
+    }
+    INSTAGRAM_POST {
+        BIGINT id PK
     }
     MARKET_NICHE {
         BIGINT id PK
     }
-    MARKET_NICHE ||--o{ HYPOTHESIS : categorizes
-    HYPOTHESIS ||--o{ EXPERIMENT : referenced
-    EXPERIMENT ||--o{ LEAD : captures
-    EXPERIMENT ||--o{ SALES_FUNNEL : drives
-    SALES_FUNNEL ||--o{ FUNNEL_STEP : includes
-    FUNNEL_STEP ||--o{ LEAD_RESPONSE : receives
-    FUNNEL_STEP ||--o{ STEP_METRIC_SNAPSHOT : snapshots
-    LEAD ||--o{ LEAD_RESPONSE : acts
-    METRIC_PRESET ||--o{ EXPERIMENT : configures
+    EXPERIMENT {
+        BIGINT id PK
+        BIGINT niche_id FK
+    }
+    CREATIVE_VARIANT {
+        BIGINT id PK
+        BIGINT experiment_id FK
+    }
+    AD_SET {
+        BIGINT id PK
+        BIGINT experiment_id FK
+    }
+    METRIC_SNAPSHOT {
+        BIGINT id PK
+        BIGINT creative_id FK
+        BIGINT ad_set_id FK
+    }
+    LANDING_PAGE {
+        BIGINT id PK
+        BIGINT experiment_id FK
+    }
+    CHAT_SESSION {
+        BIGINT id PK
+    }
+    CHAT_MESSAGE {
+        BIGINT id PK
+        BIGINT session_id FK
+    }
+
+    MARKET_NICHE ||--o{ EXPERIMENT : contains
+    EXPERIMENT ||--o{ CREATIVE_VARIANT : has
+    EXPERIMENT ||--o{ AD_SET : configures
+    EXPERIMENT ||--o{ LANDING_PAGE : uses
+    CREATIVE_VARIANT ||--o{ METRIC_SNAPSHOT : reports
+    AD_SET ||--o{ METRIC_SNAPSHOT : tracks
+    CHAT_SESSION ||--o{ CHAT_MESSAGE : includes
 ```
+

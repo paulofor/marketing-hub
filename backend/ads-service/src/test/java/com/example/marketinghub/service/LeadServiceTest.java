@@ -1,6 +1,7 @@
 package com.example.marketinghub.service;
 
 import com.example.marketinghub.dto.LeadDTO;
+import com.example.marketinghub.model.FunnelStimulus;
 import com.example.marketinghub.model.Lead;
 import com.example.marketinghub.model.NurtureStage;
 import com.example.marketinghub.repository.LeadRepository;
@@ -16,6 +17,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -27,6 +29,8 @@ class LeadServiceTest {
     OutboxRepository outboxRepository;
     @Mock
     GraphApiClient graphApiClient;
+    @Mock
+    LeadScoreService leadScoreService;
 
     TaskExecutor taskExecutor = Runnable::run;
 
@@ -34,7 +38,7 @@ class LeadServiceTest {
 
     @BeforeEach
     void setUp() {
-        leadService = new LeadService(leadRepository, outboxRepository, graphApiClient, taskExecutor);
+        leadService = new LeadService(leadRepository, outboxRepository, graphApiClient, leadScoreService, taskExecutor);
     }
 
     @Test
@@ -51,6 +55,7 @@ class LeadServiceTest {
         verify(leadRepository).save(any());
         verify(outboxRepository).save(any());
         verify(graphApiClient).sendWelcomeAsync(any());
+        verify(leadScoreService).recordEvent(any(), eq(FunnelStimulus.LEAD_CAPTURED));
         assertEquals(dto.leadgenId(), lead.getLeadgenId());
     }
 }

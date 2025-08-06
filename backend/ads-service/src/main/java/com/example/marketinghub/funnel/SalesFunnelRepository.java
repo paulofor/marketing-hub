@@ -9,7 +9,7 @@ import java.util.UUID;
 
 /** Repository for {@link SalesFunnel}. */
 public interface SalesFunnelRepository extends JpaRepository<SalesFunnel, UUID> {
-    List<SalesFunnel> findByExperimentId(UUID experimentId);
+    List<SalesFunnel> findByExperimentId(Long experimentId);
 
     @EntityGraph(attributePaths = "steps")
     Optional<SalesFunnel> findWithStepsById(UUID id);

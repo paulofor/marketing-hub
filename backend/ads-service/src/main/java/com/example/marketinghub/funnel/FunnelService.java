@@ -45,7 +45,7 @@ public class FunnelService {
                 .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
     }
 
-    public List<SalesFunnel> findByExperiment(UUID experimentId) {
+    public List<SalesFunnel> findByExperiment(Long experimentId) {
         return funnelRepository.findByExperimentId(experimentId);
     }
 

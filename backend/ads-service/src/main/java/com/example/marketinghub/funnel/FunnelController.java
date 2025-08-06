@@ -16,7 +16,7 @@ public class FunnelController {
     private final FunnelService funnelService;
 
     @GetMapping
-    public List<SalesFunnel> listByExperiment(@RequestParam UUID experimentId) {
+    public List<SalesFunnel> listByExperiment(@RequestParam Long experimentId) {
         return funnelService.findByExperiment(experimentId);
     }
 

@@ -6,5 +6,6 @@ package com.example.marketinghub.model;
 public enum NurtureStage {
     NEW,
     WARM,
-    HOT
+    HOT,
+    CLIENTE
 }

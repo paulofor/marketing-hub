@@ -50,7 +50,7 @@ class LeadServiceTest {
 
         verify(leadRepository).save(any());
         verify(outboxRepository).save(any());
-        verify(graphApiClient).sendWelcomeAsync(any());
+        verify(graphApiClient).sendWelcomeAsync(any(), any());
         assertEquals(dto.leadgenId(), lead.getLeadgenId());
     }
 }

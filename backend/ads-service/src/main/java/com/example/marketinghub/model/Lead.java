@@ -34,8 +34,12 @@ public class Lead {
 
     private Instant capturedAt;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     private NurtureStage nurtureStage = NurtureStage.NEW;
+
+    @Builder.Default
+    private int score = 0;
 
     private BigDecimal cpl;
 }

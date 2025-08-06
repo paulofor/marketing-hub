@@ -19,18 +19,15 @@ public class LeadService {
     private final LeadRepository leadRepository;
     private final OutboxRepository outboxRepository;
     private final GraphApiClient graphApiClient;
-    private final LeadScoreService leadScoreService;
     private final TaskExecutor taskExecutor;
 
     public LeadService(LeadRepository leadRepository,
                        OutboxRepository outboxRepository,
                        GraphApiClient graphApiClient,
-                       LeadScoreService leadScoreService,
                        TaskExecutor taskExecutor) {
         this.leadRepository = leadRepository;
         this.outboxRepository = outboxRepository;
         this.graphApiClient = graphApiClient;
-        this.leadScoreService = leadScoreService;
         this.taskExecutor = taskExecutor;
     }
 
@@ -66,8 +63,6 @@ public class LeadService {
         outboxRepository.save(event);
 
         taskExecutor.execute(() -> graphApiClient.sendWelcomeAsync(lead));
-
-        leadScoreService.recordEvent(lead, FunnelStimulus.LEAD_CAPTURED);
         return lead;
     }
 }

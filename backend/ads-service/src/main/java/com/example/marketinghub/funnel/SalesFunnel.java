@@ -1,43 +1,39 @@
-package com.example.marketinghub.model;
+package com.example.marketinghub.funnel;
 
 import com.marketinghub.experiment.Experiment;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
-import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
- * Lead captured from webhook.
+ * Sales funnel for an experiment.
  */
 @Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Lead {
+public class SalesFunnel {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(columnDefinition = "BINARY(16)")
     private UUID id;
 
-    @Column(unique = true)
-    private Long leadgenId;
-    private Long instagramUserId;
-    private Long adId;
-    private Long campaignId;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "experiment_id")
     private Experiment experiment;
 
-    private Instant capturedAt;
+    private String name;
+    private String objective;
 
-    @Enumerated(EnumType.STRING)
-    private NurtureStage nurtureStage = NurtureStage.NEW;
+    @CreationTimestamp
+    private Instant createdAt;
 
-    private BigDecimal cpl;
-
-    private Integer leadScore = 0;
+    @OneToMany(mappedBy = "funnel", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FunnelStep> steps = new ArrayList<>();
 }

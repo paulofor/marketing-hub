@@ -35,3 +35,6 @@ databaseChangeLog:
   - include:
       file: V20250804__metric_preset.xml
       relativeToChangelogFile: true
+  - include:
+      file: V20250825__sales_funnel_multichannel.xml
+      relativeToChangelogFile: true

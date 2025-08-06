@@ -33,8 +33,5 @@ databaseChangeLog:
       file: V2025_08_02__lead_and_outbox.sql
       relativeToChangelogFile: true
   - include:
-      file: V2025_08_03__lead_scoring.sql
-      relativeToChangelogFile: true
-  - include:
       file: V20250804__metric_preset.xml
       relativeToChangelogFile: true

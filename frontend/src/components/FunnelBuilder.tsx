@@ -23,6 +23,7 @@ interface Step {
 export default function FunnelBuilder() {
   const [steps, setSteps] = useState<Step[]>([]);
   const [name, setName] = useState("");
+  const [experimentId, setExperimentId] = useState<string>("");
   const { register, handleSubmit } = useForm<Step>();
   const create = useCreateFunnel();
 
@@ -66,6 +67,7 @@ export default function FunnelBuilder() {
 
   const saveFunnel = () => {
     create.mutate({
+      experimentId: Number(experimentId),
       name,
       steps: steps.map((s) => ({
         stimulusType: s.stimulus_type,
@@ -138,6 +140,12 @@ export default function FunnelBuilder() {
           )}
         </Droppable>
       </DragDropContext>
+      <label htmlFor="experiment_id">Experiment ID</label>
+      <input
+        id="experiment_id"
+        value={experimentId}
+        onChange={(e) => setExperimentId(e.target.value)}
+      />
       <label htmlFor="funnel_name">Funnel Name</label>
       <input
         id="funnel_name"

@@ -8,6 +8,7 @@ export interface CreateFunnelStep {
 }
 
 export interface CreateFunnel {
+  experimentId: number;
   name: string;
   steps: CreateFunnelStep[];
 }
@@ -16,7 +17,11 @@ export function useCreateFunnel() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: CreateFunnel) => {
-      const { data: funnel } = await axios.post("/api/funnels", data);
+      const { experimentId, ...body } = data;
+      const { data: funnel } = await axios.post(
+        `/api/funnels?experimentId=${experimentId}`,
+        body,
+      );
       return funnel;
     },
     onSuccess: () => {

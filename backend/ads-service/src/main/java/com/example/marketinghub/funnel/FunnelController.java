@@ -21,8 +21,8 @@ public class FunnelController {
     }
 
     @PostMapping
-    public SalesFunnel create(@RequestBody SalesFunnel funnel) {
-        return funnelService.create(funnel);
+    public SalesFunnel create(@RequestParam Long experimentId, @RequestBody SalesFunnel funnel) {
+        return funnelService.create(experimentId, funnel);
     }
 
     @PostMapping("/{id}/steps")

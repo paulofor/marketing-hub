@@ -5,13 +5,13 @@ package com.example.marketinghub.funnel;
  */
 public enum StimulusType {
     DM,
-    EMAIL,
     IG_POST_BOOST,
     FB_AD,
-    STORY,
     WHATSAPP,
-    CALL,
+    EMAIL,
     SMS,
+    PUSH,
+    STORY,
     WEBINAR,
-    PUSH
+    CALL
 }

@@ -26,6 +26,32 @@ export default function FunnelBuilder() {
   const { register, handleSubmit } = useForm<Step>();
   const create = useCreateFunnel();
 
+  const stimulusOptions = [
+    "DM",
+    "IG_POST_BOOST",
+    "FB_AD",
+    "WHATSAPP",
+    "EMAIL",
+    "SMS",
+    "PUSH",
+    "STORY",
+    "WEBINAR",
+    "CALL",
+  ];
+
+  const actionOptions = [
+    "OPEN",
+    "CLICK",
+    "REPLY",
+    "VIEW",
+    "PURCHASE",
+    "REGISTRATION",
+    "OPT_IN",
+    "OPT_OUT",
+    "BOUNCE",
+    "SHARE",
+  ];
+
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
     const items = Array.from(steps);
@@ -53,10 +79,16 @@ export default function FunnelBuilder() {
     <div>
       <form>
         <label htmlFor="stimulus_type">Stimulus Type</label>
-        <input
+        <select
           id="stimulus_type"
           {...register("stimulus_type", { required: true })}
-        />
+        >
+          {stimulusOptions.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
         <label htmlFor="score_inc">Score Increment</label>
         <input
           id="score_inc"
@@ -64,10 +96,16 @@ export default function FunnelBuilder() {
           {...register("score_inc", { min: 0 })}
         />
         <label htmlFor="expected_action">Expected Action</label>
-        <input
+        <select
           id="expected_action"
           {...register("expected_action", { required: true })}
-        />
+        >
+          {actionOptions.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
         <button
           type="button"
           onClick={handleSubmit(onSubmit, (errors) => {

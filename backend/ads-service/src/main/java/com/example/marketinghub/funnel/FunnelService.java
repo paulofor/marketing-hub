@@ -49,6 +49,13 @@ public class FunnelService {
         return funnelRepository.findByExperimentId(experimentId);
     }
 
+    public SalesFunnel create(SalesFunnel funnel) {
+        if (funnel.getSteps() != null) {
+            funnel.getSteps().forEach(step -> step.setFunnel(funnel));
+        }
+        return funnelRepository.save(funnel);
+    }
+
     public FunnelStep addStep(UUID funnelId, FunnelStep step) {
         SalesFunnel funnel = funnelRepository.findById(funnelId).orElseThrow();
         step.setFunnel(funnel);

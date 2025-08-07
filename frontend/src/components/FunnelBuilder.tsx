@@ -8,6 +8,7 @@ import {
 } from "react-beautiful-dnd";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
+import { useCreateFunnel } from "../api/funnel/useCreateFunnel";
 
 /**
  * Builder UI for arranging funnel steps.
@@ -21,7 +22,9 @@ interface Step {
 
 export default function FunnelBuilder() {
   const [steps, setSteps] = useState<Step[]>([]);
+  const [name, setName] = useState("");
   const { register, handleSubmit } = useForm<Step>();
+  const create = useCreateFunnel();
 
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -33,6 +36,17 @@ export default function FunnelBuilder() {
 
   const onSubmit = (data: Step) => {
     setSteps([...steps, { ...data, id: Date.now().toString() }]);
+  };
+
+  const saveFunnel = () => {
+    create.mutate({
+      name,
+      steps: steps.map((s) => ({
+        stimulusType: s.stimulus_type,
+        expectedAction: s.expected_action,
+        scoreInc: s.score_inc,
+      })),
+    });
   };
 
   return (
@@ -86,6 +100,15 @@ export default function FunnelBuilder() {
           )}
         </Droppable>
       </DragDropContext>
+      <label htmlFor="funnel_name">Funnel Name</label>
+      <input
+        id="funnel_name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <button type="button" onClick={saveFunnel}>
+        Save Funnel
+      </button>
     </div>
   );
 }

@@ -42,4 +42,16 @@ class FunnelServiceTest {
         verify(responseRepository).save(any());
         verify(leadRepository).save(lead);
     }
+
+    @Test
+    void createSetsBackReferenceOnSteps() {
+        FunnelStep step = FunnelStep.builder().build();
+        SalesFunnel funnel = SalesFunnel.builder().name("test").steps(java.util.List.of(step)).build();
+        when(funnelRepository.save(funnel)).thenReturn(funnel);
+
+        SalesFunnel saved = service.create(funnel);
+
+        assertSame(saved, step.getFunnel());
+        verify(funnelRepository).save(funnel);
+    }
 }

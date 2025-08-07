@@ -20,6 +20,11 @@ public class FunnelController {
         return funnelService.findByExperiment(experimentId);
     }
 
+    @PostMapping
+    public SalesFunnel create(@RequestBody SalesFunnel funnel) {
+        return funnelService.create(funnel);
+    }
+
     @PostMapping("/{id}/steps")
     public FunnelStep addStep(@PathVariable UUID id, @RequestBody FunnelStep step) {
         return funnelService.addStep(id, step);

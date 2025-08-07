@@ -38,9 +38,22 @@ export default function FunnelBuilder() {
   return (
     <div>
       <form>
-        <input {...register("stimulus_type", { required: true })} />
-        <input type="number" {...register("score_inc", { min: 0 })} />
-        <input {...register("expected_action", { required: true })} />
+        <label htmlFor="stimulus_type">Stimulus Type</label>
+        <input
+          id="stimulus_type"
+          {...register("stimulus_type", { required: true })}
+        />
+        <label htmlFor="score_inc">Score Increment</label>
+        <input
+          id="score_inc"
+          type="number"
+          {...register("score_inc", { min: 0 })}
+        />
+        <label htmlFor="expected_action">Expected Action</label>
+        <input
+          id="expected_action"
+          {...register("expected_action", { required: true })}
+        />
         <button
           type="button"
           onClick={handleSubmit(onSubmit, (errors) => {

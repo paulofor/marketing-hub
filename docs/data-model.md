@@ -244,10 +244,10 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `id` BINARY(16) PRIMARY KEY
 - `funnel_id` BINARY(16) NOT NULL
 - `order_idx` INT
-- `stimulus_type` ENUM('DM','EMAIL','IG_POST_BOOST','FB_AD','STORY','WHATSAPP','CALL','SMS','WEBINAR','PUSH')
+- `stimulus_type` ENUM('DM','IG_POST_BOOST','FB_AD','WHATSAPP','EMAIL','SMS','PUSH','STORY','WEBINAR','CALL')
 - `channel` VARCHAR(50)
 - `template_id` VARCHAR(50)
-- `expected_action` ENUM('OPEN','CLICK','REPLY','PURCHASE')
+- `expected_action` ENUM('OPEN','CLICK','REPLY','VIEW','PURCHASE','REGISTRATION','OPT_IN','OPT_OUT','BOUNCE','SHARE')
 - `score_inc` INT
 - `revenue_target` DECIMAL(10,2)
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -258,7 +258,7 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `id` BIGINT AUTO_INCREMENT PRIMARY KEY
 - `lead_id` BINARY(16) NOT NULL
 - `funnel_step_id` BINARY(16) NOT NULL
-- `action` ENUM('OPEN','CLICK','REPLY','PURCHASE')
+- `action` ENUM('OPEN','CLICK','REPLY','VIEW','PURCHASE','REGISTRATION','OPT_IN','OPT_OUT','BOUNCE','SHARE')
 - `value` JSON
 - `revenue` DECIMAL(10,2)
 - `occurred_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -387,4 +387,3 @@ erDiagram
     METRIC_PRESET ||--o{ EXPERIMENT : configures
     CHAT_SESSION ||--o{ CHAT_MESSAGE : includes
 ```
-

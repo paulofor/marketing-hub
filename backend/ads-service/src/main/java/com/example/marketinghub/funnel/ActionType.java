@@ -7,5 +7,11 @@ public enum ActionType {
     OPEN,
     CLICK,
     REPLY,
-    PURCHASE
+    VIEW,
+    PURCHASE,
+    REGISTRATION,
+    OPT_IN,
+    OPT_OUT,
+    BOUNCE,
+    SHARE
 }

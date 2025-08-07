@@ -27,10 +27,10 @@
                 <constraints nullable="false" foreignKeyName="fk_step_funnel" references="sales_funnel(id)"/>
             </column>
             <column name="order_idx" type="INT"/>
-            <column name="stimulus_type" type="ENUM('DM','EMAIL','IG_POST_BOOST','FB_AD','STORY','WHATSAPP','CALL','SMS','WEBINAR','PUSH')"/>
+            <column name="stimulus_type" type="ENUM('DM','IG_POST_BOOST','FB_AD','WHATSAPP','EMAIL','SMS','PUSH','STORY','WEBINAR','CALL')"/>
             <column name="channel" type="VARCHAR(50)"/>
             <column name="template_id" type="VARCHAR(50)"/>
-            <column name="expected_action" type="ENUM('OPEN','CLICK','REPLY','PURCHASE')"/>
+            <column name="expected_action" type="ENUM('OPEN','CLICK','REPLY','VIEW','PURCHASE','REGISTRATION','OPT_IN','OPT_OUT','BOUNCE','SHARE')"/>
             <column name="score_inc" type="INT"/>
             <column name="revenue_target" type="DECIMAL(10,2)"/>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
@@ -49,7 +49,7 @@
             <column name="funnel_step_id" type="BINARY(16)">
                 <constraints nullable="false" foreignKeyName="fk_response_step" references="funnel_step(id)"/>
             </column>
-            <column name="action" type="ENUM('OPEN','CLICK','REPLY','PURCHASE')"/>
+            <column name="action" type="ENUM('OPEN','CLICK','REPLY','VIEW','PURCHASE','REGISTRATION','OPT_IN','OPT_OUT','BOUNCE','SHARE')"/>
             <column name="value" type="JSON"/>
             <column name="revenue" type="DECIMAL(10,2)"/>
             <column name="occurred_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>

@@ -3,6 +3,8 @@ package com.example.marketinghub.funnel;
 import com.example.marketinghub.model.Lead;
 import com.example.marketinghub.model.NurtureStage;
 import com.example.marketinghub.repository.LeadRepository;
+import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.repository.ExperimentRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -25,6 +27,7 @@ class FunnelServiceTest {
     @Mock private LeadRepository leadRepository;
     @Mock private LeadResponseRepository responseRepository;
     @Mock private StepMetricSnapshotRepository snapshotRepository;
+    @Mock private ExperimentRepository experimentRepository;
 
     @Test
     void registerResponseUpdatesScoreAndStage() {
@@ -47,11 +50,15 @@ class FunnelServiceTest {
     void createSetsBackReferenceOnSteps() {
         FunnelStep step = FunnelStep.builder().build();
         SalesFunnel funnel = SalesFunnel.builder().name("test").steps(java.util.List.of(step)).build();
+        Long expId = 1L;
+        Experiment experiment = new Experiment();
+        when(experimentRepository.findById(expId)).thenReturn(java.util.Optional.of(experiment));
         when(funnelRepository.save(funnel)).thenReturn(funnel);
 
-        SalesFunnel saved = service.create(funnel);
+        SalesFunnel saved = service.create(expId, funnel);
 
         assertSame(saved, step.getFunnel());
+        assertSame(experiment, saved.getExperiment());
         verify(funnelRepository).save(funnel);
     }
 }

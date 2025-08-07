@@ -17,15 +17,14 @@ describe("FunnelBuilder", () => {
     expect(screen.getByLabelText(/stimulus type/i)).toBeTruthy();
     expect(screen.getByLabelText(/score increment/i)).toBeTruthy();
     expect(screen.getByLabelText(/expected action/i)).toBeTruthy();
+    expect(screen.getByLabelText(/experiment id/i)).toBeTruthy();
   });
 
-  it("logs validation errors on invalid submit", async () => {
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+  it("adds step to list on submit", async () => {
     setup(<FunnelBuilder />);
     await userEvent.click(
       screen.getAllByRole("button", { name: /add step/i })[0],
     );
-    expect(logSpy).toHaveBeenCalledWith("Validation errors", expect.anything());
-    logSpy.mockRestore();
+    expect(await screen.findByText(/DM - OPEN/i)).toBeTruthy();
   });
 });

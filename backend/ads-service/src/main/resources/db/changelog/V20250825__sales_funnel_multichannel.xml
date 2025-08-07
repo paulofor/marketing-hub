@@ -90,14 +90,14 @@
 
     <changeSet id="20250825-6" author="codex">
         <insert tableName="sales_funnel">
-            <column name="id" valueComputed="UUID_TO_BIN(UUID())"/>
+            <column name="id" valueComputed="UNHEX(REPLACE(UUID(), '-', ''))"/>
             <column name="experiment_id" valueNumeric="1"/>
 
             <column name="name" value="DEFAULT_LEAD_MAGNET"/>
             <column name="objective" value="Lead magnet default"/>
         </insert>
         <insert tableName="sales_funnel">
-            <column name="id" valueComputed="UUID_TO_BIN(UUID())"/>
+            <column name="id" valueComputed="UNHEX(REPLACE(UUID(), '-', ''))"/>
             <column name="experiment_id" valueNumeric="1"/>
 
             <column name="name" value="DEFAULT_RETARGET"/>
@@ -108,13 +108,13 @@
     <changeSet id="20250825-7" author="codex">
         <sql>
             INSERT INTO funnel_step(id, funnel_id, order_idx, stimulus_type, channel, template_id, expected_action, score_inc, is_active)
-            VALUES (UUID_TO_BIN(UUID()), (SELECT id FROM sales_funnel WHERE name='DEFAULT_LEAD_MAGNET' LIMIT 1), 1, 'DM', 'DM', 'welcome_tpl', 'OPEN', 10, 1);
+            VALUES (UNHEX(REPLACE(UUID(), '-', '')), (SELECT id FROM sales_funnel WHERE name='DEFAULT_LEAD_MAGNET' LIMIT 1), 1, 'DM', 'DM', 'welcome_tpl', 'OPEN', 10, 1);
             INSERT INTO funnel_step(id, funnel_id, order_idx, stimulus_type, channel, template_id, expected_action, score_inc, is_active)
-            VALUES (UUID_TO_BIN(UUID()), (SELECT id FROM sales_funnel WHERE name='DEFAULT_LEAD_MAGNET' LIMIT 1), 2, 'IG_POST_BOOST', 'IG', 'boost_tpl', 'CLICK', 5, 1);
+            VALUES (UNHEX(REPLACE(UUID(), '-', '')), (SELECT id FROM sales_funnel WHERE name='DEFAULT_LEAD_MAGNET' LIMIT 1), 2, 'IG_POST_BOOST', 'IG', 'boost_tpl', 'CLICK', 5, 1);
             INSERT INTO funnel_step(id, funnel_id, order_idx, stimulus_type, channel, template_id, expected_action, score_inc, is_active)
-            VALUES (UUID_TO_BIN(UUID()), (SELECT id FROM sales_funnel WHERE name='DEFAULT_RETARGET' LIMIT 1), 1, 'FB_AD', 'FB', 'retarget_tpl', 'CLICK', 15, 1);
+            VALUES (UNHEX(REPLACE(UUID(), '-', '')), (SELECT id FROM sales_funnel WHERE name='DEFAULT_RETARGET' LIMIT 1), 1, 'FB_AD', 'FB', 'retarget_tpl', 'CLICK', 15, 1);
             INSERT INTO funnel_step(id, funnel_id, order_idx, stimulus_type, channel, template_id, expected_action, score_inc, is_active)
-            VALUES (UUID_TO_BIN(UUID()), (SELECT id FROM sales_funnel WHERE name='DEFAULT_RETARGET' LIMIT 1), 2, 'WHATSAPP', 'WA', 'followup_tpl', 'REPLY', 20, 1);
+            VALUES (UNHEX(REPLACE(UUID(), '-', '')), (SELECT id FROM sales_funnel WHERE name='DEFAULT_RETARGET' LIMIT 1), 2, 'WHATSAPP', 'WA', 'followup_tpl', 'REPLY', 20, 1);
         </sql>
     </changeSet>
 

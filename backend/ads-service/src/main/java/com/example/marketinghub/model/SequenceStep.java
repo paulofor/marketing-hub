@@ -24,7 +24,9 @@ public class SequenceStep {
     /** delay in seconds before sending this step */
     private Integer delaySeconds;
 
-    private String condition;
+    /** optional condition expression to evaluate before sending */
+    @Column(name = "condition_expression")
+    private String conditionExpression;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sequence_template_id")

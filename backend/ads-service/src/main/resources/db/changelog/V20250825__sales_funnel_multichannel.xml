@@ -89,6 +89,11 @@
     </changeSet>
 
     <changeSet id="20250825-6" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="1">
+                SELECT CASE WHEN EXISTS (SELECT 1 FROM experiment WHERE id = 1) THEN 1 ELSE 0 END
+            </sqlCheck>
+        </preConditions>
         <insert tableName="sales_funnel">
             <column name="id" valueComputed="UNHEX(REPLACE(UUID(), '-', ''))"/>
             <column name="experiment_id" valueNumeric="1"/>
@@ -106,6 +111,11 @@
     </changeSet>
 
     <changeSet id="20250825-7" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="2">
+                SELECT COUNT(*) FROM sales_funnel WHERE name IN ('DEFAULT_LEAD_MAGNET','DEFAULT_RETARGET')
+            </sqlCheck>
+        </preConditions>
         <sql>
             INSERT INTO funnel_step(id, funnel_id, order_idx, stimulus_type, channel, template_id, expected_action, score_inc, is_active)
             VALUES (UNHEX(REPLACE(UUID(), '-', '')), (SELECT id FROM sales_funnel WHERE name='DEFAULT_LEAD_MAGNET' LIMIT 1), 1, 'DM', 'DM', 'welcome_tpl', 'OPEN', 10, 1);

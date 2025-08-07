@@ -14,6 +14,7 @@
 
 ## Conventions
 - DataBase: MySql 5
+- Modelo de Dados atualizado: docs/data-model.md
 - Java 21 + Spring Boot 3
 - React 18 + Vite + TypeScript
 - Zustand for state, TanStack Query for data fetching

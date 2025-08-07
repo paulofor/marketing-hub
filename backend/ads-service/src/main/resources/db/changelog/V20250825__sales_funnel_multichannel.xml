@@ -27,10 +27,10 @@
                 <constraints nullable="false" foreignKeyName="fk_step_funnel" references="sales_funnel(id)"/>
             </column>
             <column name="order_idx" type="INT"/>
-            <column name="stimulus_type" type="ENUM('DM','IG_POST_BOOST','FB_AD','WHATSAPP','EMAIL','SMS','PUSH','STORY','WEBINAR','CALL')"/>
+            <column name="stimulus_type" type="ENUM('DM','EMAIL','IG_POST_BOOST','FB_AD','STORY','WHATSAPP','CALL','SMS','WEBINAR','PUSH')"/>
             <column name="channel" type="VARCHAR(50)"/>
             <column name="template_id" type="VARCHAR(50)"/>
-            <column name="expected_action" type="ENUM('OPEN','CLICK','REPLY','VIEW','PURCHASE','REGISTRATION','OPT_IN','OPT_OUT','BOUNCE','SHARE')"/>
+            <column name="expected_action" type="ENUM('OPEN','CLICK','REPLY','PURCHASE')"/>
             <column name="score_inc" type="INT"/>
             <column name="revenue_target" type="DECIMAL(10,2)"/>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
@@ -49,7 +49,7 @@
             <column name="funnel_step_id" type="BINARY(16)">
                 <constraints nullable="false" foreignKeyName="fk_response_step" references="funnel_step(id)"/>
             </column>
-            <column name="action" type="ENUM('OPEN','CLICK','REPLY','VIEW','PURCHASE','REGISTRATION','OPT_IN','OPT_OUT','BOUNCE','SHARE')"/>
+            <column name="action" type="ENUM('OPEN','CLICK','REPLY','PURCHASE')"/>
             <column name="value" type="JSON"/>
             <column name="revenue" type="DECIMAL(10,2)"/>
             <column name="occurred_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
@@ -115,6 +115,17 @@
             VALUES (UNHEX(REPLACE(UUID(), '-', '')), (SELECT id FROM sales_funnel WHERE name='DEFAULT_RETARGET' LIMIT 1), 1, 'FB_AD', 'FB', 'retarget_tpl', 'CLICK', 15, 1);
             INSERT INTO funnel_step(id, funnel_id, order_idx, stimulus_type, channel, template_id, expected_action, score_inc, is_active)
             VALUES (UNHEX(REPLACE(UUID(), '-', '')), (SELECT id FROM sales_funnel WHERE name='DEFAULT_RETARGET' LIMIT 1), 2, 'WHATSAPP', 'WA', 'followup_tpl', 'REPLY', 20, 1);
+        </sql>
+    </changeSet>
+
+    <changeSet id="20250825-8" author="codex">
+        <sql>
+            ALTER TABLE funnel_step
+            MODIFY expected_action ENUM('OPEN','CLICK','REPLY','VIEW','PURCHASE','REGISTRATION','OPT_IN','OPT_OUT','BOUNCE','SHARE');
+        </sql>
+        <sql>
+            ALTER TABLE lead_response
+            MODIFY action ENUM('OPEN','CLICK','REPLY','VIEW','PURCHASE','REGISTRATION','OPT_IN','OPT_OUT','BOUNCE','SHARE');
         </sql>
     </changeSet>
 

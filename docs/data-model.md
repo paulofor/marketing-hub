@@ -117,6 +117,7 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `niche_id` BIGINT NOT NULL
 - `name` VARCHAR(255) NOT NULL
 - `hypothesis` VARCHAR(255)
+- `hypothesis_id` BINARY(16)
 - `kpi_target_cpl` DECIMAL(10,2) DEFAULT 45.00
 - `stop_loss_cpl` DECIMAL(10,2) DEFAULT 90.00
 - `sample_size` INT DEFAULT 1500
@@ -127,6 +128,7 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `end_date` DATE
 - `status` VARCHAR(20)
 - `platform` VARCHAR(50)
+- `metric_preset_id` VARCHAR(50)
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
@@ -194,6 +196,93 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
+### hypothesis
+
+- `id` BINARY(16) PRIMARY KEY
+- `market_niche_id` BIGINT NOT NULL
+- `title` VARCHAR(255) NOT NULL
+- `premise_angle_id` BIGINT NOT NULL
+- `offer_type` VARCHAR(20) NOT NULL
+- `price` DECIMAL(6,2)
+- `kpi_target_cpl` DECIMAL(7,2) NOT NULL
+- `status` VARCHAR(20) DEFAULT 'BACKLOG' NOT NULL
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+### lead
+
+- `id` BINARY(16) PRIMARY KEY
+- `leadgen_id` BIGINT UNIQUE
+- `instagram_user_id` BIGINT
+- `ad_id` BIGINT
+- `campaign_id` BIGINT
+- `experiment_id` BIGINT
+- `captured_at` DATETIME
+- `nurture_stage` ENUM('NEW','WARM','HOT') DEFAULT 'NEW'
+- `cpl` DECIMAL(10,2)
+- `lead_score` INT DEFAULT 0
+
+### outbox
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `aggregate_id` BINARY(16)
+- `event_type` VARCHAR(50)
+- `payload` TEXT
+- `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+- `processed_at` DATETIME
+
+### sales_funnel
+
+- `id` BINARY(16) PRIMARY KEY
+- `experiment_id` BIGINT NOT NULL
+- `name` VARCHAR(100)
+- `objective` VARCHAR(255)
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+### funnel_step
+
+- `id` BINARY(16) PRIMARY KEY
+- `funnel_id` BINARY(16) NOT NULL
+- `order_idx` INT
+- `stimulus_type` ENUM('DM','EMAIL','IG_POST_BOOST','FB_AD','STORY','WHATSAPP','CALL','SMS','WEBINAR','PUSH')
+- `channel` VARCHAR(50)
+- `template_id` VARCHAR(50)
+- `expected_action` ENUM('OPEN','CLICK','REPLY','PURCHASE')
+- `score_inc` INT
+- `revenue_target` DECIMAL(10,2)
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `is_active` TINYINT(1) DEFAULT 1
+
+### lead_response
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `lead_id` BINARY(16) NOT NULL
+- `funnel_step_id` BINARY(16) NOT NULL
+- `action` ENUM('OPEN','CLICK','REPLY','PURCHASE')
+- `value` JSON
+- `revenue` DECIMAL(10,2)
+- `occurred_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+### step_metric_snapshot
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `funnel_step_id` BINARY(16) NOT NULL
+- `impressions` BIGINT
+- `responses` BIGINT
+- `conversions` BIGINT
+- `revenue` DECIMAL(12,2)
+- `gross_profit` DECIMAL(12,2)
+- `cvr` DECIMAL(6,4)
+- `captured_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+### metric_preset
+
+- `id` VARCHAR(50) PRIMARY KEY
+- `name` VARCHAR(100)
+- `sample_size` INT
+- `stop_loss_factor` DECIMAL(5,2)
+- `default_mde_pp` DECIMAL(5,2)
+
 ## Diagram
 
 ```mermaid
@@ -219,9 +308,15 @@ erDiagram
     MARKET_NICHE {
         BIGINT id PK
     }
+    HYPOTHESIS {
+        BINARY id PK
+        BIGINT market_niche_id FK
+    }
     EXPERIMENT {
         BIGINT id PK
         BIGINT niche_id FK
+        BINARY hypothesis_id FK
+        VARCHAR metric_preset_id FK
     }
     CREATIVE_VARIANT {
         BIGINT id PK
@@ -240,6 +335,13 @@ erDiagram
         BIGINT id PK
         BIGINT experiment_id FK
     }
+    LEAD {
+        BINARY id PK
+        BIGINT experiment_id FK
+    }
+    OUTBOX {
+        BIGINT id PK
+    }
     CHAT_SESSION {
         BIGINT id PK
     }
@@ -247,13 +349,42 @@ erDiagram
         BIGINT id PK
         BIGINT session_id FK
     }
+    SALES_FUNNEL {
+        BINARY id PK
+        BIGINT experiment_id FK
+    }
+    FUNNEL_STEP {
+        BINARY id PK
+        BINARY funnel_id FK
+    }
+    LEAD_RESPONSE {
+        BIGINT id PK
+        BINARY lead_id FK
+        BINARY funnel_step_id FK
+    }
+    STEP_METRIC_SNAPSHOT {
+        BIGINT id PK
+        BINARY funnel_step_id FK
+    }
+    METRIC_PRESET {
+        VARCHAR id PK
+    }
 
+    MARKET_NICHE ||--o{ HYPOTHESIS : guides
+    HYPOTHESIS ||--o{ EXPERIMENT : informs
     MARKET_NICHE ||--o{ EXPERIMENT : contains
     EXPERIMENT ||--o{ CREATIVE_VARIANT : has
     EXPERIMENT ||--o{ AD_SET : configures
     EXPERIMENT ||--o{ LANDING_PAGE : uses
+    EXPERIMENT ||--o{ LEAD : generates
+    EXPERIMENT ||--o{ SALES_FUNNEL : orchestrates
+    SALES_FUNNEL ||--o{ FUNNEL_STEP : includes
+    FUNNEL_STEP ||--o{ LEAD_RESPONSE : triggers
+    LEAD ||--o{ LEAD_RESPONSE : receives
+    FUNNEL_STEP ||--o{ STEP_METRIC_SNAPSHOT : measures
     CREATIVE_VARIANT ||--o{ METRIC_SNAPSHOT : reports
     AD_SET ||--o{ METRIC_SNAPSHOT : tracks
+    METRIC_PRESET ||--o{ EXPERIMENT : configures
     CHAT_SESSION ||--o{ CHAT_MESSAGE : includes
 ```
 

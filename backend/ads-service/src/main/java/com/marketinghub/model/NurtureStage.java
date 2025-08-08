@@ -1,0 +1,11 @@
+package com.marketinghub.model;
+
+/**
+ * Lead nurture stage lifecycle.
+ */
+public enum NurtureStage {
+    NEW,
+    WARM,
+    HOT,
+    CLIENTE
+}

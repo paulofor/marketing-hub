@@ -5,7 +5,7 @@ import lombok.*;
 import com.marketinghub.niche.MarketNiche;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import com.example.marketinghub.funnel.SalesFunnel;
+import com.marketinghub.funnel.SalesFunnel;
 
 import java.time.Instant;
 import java.time.LocalDate;

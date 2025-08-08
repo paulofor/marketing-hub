@@ -3,8 +3,6 @@ package com.example.marketinghub.funnel;
 import com.example.marketinghub.model.Lead;
 import com.example.marketinghub.model.NurtureStage;
 import com.example.marketinghub.repository.LeadRepository;
-import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.repository.ExperimentRepository;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
@@ -27,7 +25,6 @@ public class FunnelService {
     private final LeadRepository leadRepository;
     private final LeadResponseRepository responseRepository;
     private final StepMetricSnapshotRepository snapshotRepository;
-    private final ExperimentRepository experimentRepository;
 
     public List<StepMetricSnapshot> getSnapshots(UUID funnelId) {
         return stepRepository.findByFunnelId(funnelId).stream()
@@ -48,13 +45,11 @@ public class FunnelService {
                 .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
     }
 
-    public List<SalesFunnel> findByExperiment(Long experimentId) {
-        return funnelRepository.findByExperimentId(experimentId);
+    public List<SalesFunnel> list() {
+        return funnelRepository.findAll();
     }
 
-    public SalesFunnel create(Long experimentId, SalesFunnel funnel) {
-        Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
-        funnel.setExperiment(experiment);
+    public SalesFunnel create(SalesFunnel funnel) {
         if (funnel.getSteps() != null) {
             funnel.getSteps().forEach(step -> step.setFunnel(funnel));
         }

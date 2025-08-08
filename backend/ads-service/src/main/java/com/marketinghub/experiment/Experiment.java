@@ -5,6 +5,7 @@ import lombok.*;
 import com.marketinghub.niche.MarketNiche;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import com.example.marketinghub.funnel.SalesFunnel;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -40,6 +41,10 @@ public class Experiment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "metric_preset_id")
     private MetricPreset metricPreset;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sales_funnel_id")
+    private SalesFunnel salesFunnel;
 
     @Column(precision = 10, scale = 2)
     private java.math.BigDecimal kpiTargetCpl;

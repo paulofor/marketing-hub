@@ -40,5 +40,9 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
   - include:
+      file: V20250901__link_experiment_sales_funnel.xml
+      relativeToChangelogFile: true
+
+  - include:
       file: V2025_08_06__create_chat_tables.sql
       relativeToChangelogFile: true

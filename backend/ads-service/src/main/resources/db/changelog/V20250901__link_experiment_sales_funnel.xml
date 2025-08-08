@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="20250901-1" author="codex">
+        <addColumn tableName="experiment">
+            <column name="sales_funnel_id" type="BINARY(16)">
+                <constraints foreignKeyName="fk_experiment_sales_funnel" references="sales_funnel(id)"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20250901-2" author="codex">
+        <dropForeignKeyConstraint baseTableName="sales_funnel" constraintName="fk_funnel_experiment"/>
+        <dropColumn tableName="sales_funnel" columnName="experiment_id"/>
+    </changeSet>
+
+</databaseChangeLog>

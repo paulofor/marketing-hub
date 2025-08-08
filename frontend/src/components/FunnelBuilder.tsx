@@ -19,6 +19,7 @@ interface Step {
   stimulus_type: string;
   score_inc: number;
   expected_action: string;
+  orderIdx: number;
 }
 
 interface FunnelProps {
@@ -26,14 +27,17 @@ interface FunnelProps {
 }
 
 export default function FunnelBuilder({ funnel }: FunnelProps) {
-  const [steps, setSteps] = useState<Step[]>(funnel?.steps ?? []);
+  const reindex = (arr: Step[]) =>
+    arr.map((s, idx) => ({ ...s, orderIdx: idx }));
+  const [steps, setSteps] = useState<Step[]>(reindex(funnel?.steps ?? []));
   const [name, setName] = useState(funnel?.name ?? "");
 
   useEffect(() => {
-    setSteps(funnel?.steps ?? []);
+    setSteps(reindex(funnel?.steps ?? []));
     setName(funnel?.name ?? "");
   }, [funnel]);
-  const { register, handleSubmit } = useForm<Step>();
+  const { register, handleSubmit, reset } =
+    useForm<Omit<Step, "id" | "backendId" | "orderIdx">>();
   const save = useSaveFunnel();
 
   const stimulusOptions = [
@@ -67,23 +71,28 @@ export default function FunnelBuilder({ funnel }: FunnelProps) {
     const items = Array.from(steps);
     const [reordered] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reordered);
-    setSteps(items);
+    setSteps(reindex(items));
   };
 
-  const onSubmit = (data: Step) => {
-    setSteps([...steps, { ...data, id: Date.now().toString() }]);
+  const onSubmit = (data: Omit<Step, "id" | "backendId" | "orderIdx">) => {
+    const next = [
+      ...steps,
+      { ...data, id: Date.now().toString(), orderIdx: steps.length },
+    ];
+    setSteps(reindex(next));
+    reset();
   };
 
   const saveFunnel = () => {
     save.mutate({
       id: funnel?.id,
       name,
-      steps: steps.map((s, index) => ({
+      steps: steps.map((s) => ({
         id: s.backendId,
         stimulusType: s.stimulus_type,
         expectedAction: s.expected_action,
         scoreInc: s.score_inc,
-        orderIdx: index,
+        orderIdx: s.orderIdx,
       })),
     });
   };
@@ -140,8 +149,7 @@ export default function FunnelBuilder({ funnel }: FunnelProps) {
                       {...prov.draggableProps}
                       {...prov.dragHandleProps}
                     >
-                      {step.stimulus_type} - {step.expected_action} (+
-                      {step.score_inc})
+                      {`${step.orderIdx + 1}. ${step.stimulus_type} - ${step.expected_action} (+${step.score_inc})`}
                     </li>
                   )}
                 </Draggable>

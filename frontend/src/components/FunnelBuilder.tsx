@@ -7,7 +7,7 @@ import {
   DraggableProvided,
 } from "react-beautiful-dnd";
 import { useForm } from "react-hook-form";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSaveFunnel } from "../api/funnel/useSaveFunnel";
 
 /**
@@ -28,6 +28,11 @@ interface FunnelProps {
 export default function FunnelBuilder({ funnel }: FunnelProps) {
   const [steps, setSteps] = useState<Step[]>(funnel?.steps ?? []);
   const [name, setName] = useState(funnel?.name ?? "");
+
+  useEffect(() => {
+    setSteps(funnel?.steps ?? []);
+    setName(funnel?.name ?? "");
+  }, [funnel]);
   const { register, handleSubmit } = useForm<Step>();
   const save = useSaveFunnel();
 

@@ -26,4 +26,47 @@ describe("FunnelBuilder", () => {
     );
     expect(await screen.findByText(/DM - OPEN/i)).toBeTruthy();
   });
+
+  it("updates when funnel prop changes", () => {
+    const client = new QueryClient();
+    const { rerender } = render(
+      <QueryClientProvider client={client}>
+        <FunnelBuilder
+          funnel={{
+            id: "1",
+            name: "F1",
+            steps: [
+              {
+                id: "a",
+                stimulus_type: "EMAIL",
+                expected_action: "OPEN",
+                score_inc: 5,
+              },
+            ],
+          }}
+        />
+      </QueryClientProvider>,
+    );
+    expect(screen.getByText(/EMAIL - OPEN \(\+5\)/)).toBeTruthy();
+    rerender(
+      <QueryClientProvider client={client}>
+        <FunnelBuilder
+          funnel={{
+            id: "2",
+            name: "F2",
+            steps: [
+              {
+                id: "b",
+                stimulus_type: "SMS",
+                expected_action: "CLICK",
+                score_inc: 7,
+              },
+            ],
+          }}
+        />
+      </QueryClientProvider>,
+    );
+    expect(screen.getByText(/SMS - CLICK \(\+7\)/)).toBeTruthy();
+    expect(screen.queryByText(/EMAIL - OPEN \(\+5\)/)).toBeNull();
+  });
 });

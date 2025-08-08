@@ -10,7 +10,7 @@ afterEach(() => {
 });
 
 describe("EditFunnelPage", () => {
-  it("renders steps sorted by orderIdx", () => {
+  it("renders steps sorted by orderIdx", async () => {
     vi.spyOn(funnelApi, "useFunnel").mockReturnValue({
       data: {
         id: "1",
@@ -46,9 +46,11 @@ describe("EditFunnelPage", () => {
       </QueryClientProvider>,
     );
 
-    const list = screen.getByRole("list");
-    const items = within(list).getAllByRole("button");
-    expect(items[0].textContent).toMatch(/DM - OPEN/);
-    expect(items[1].textContent).toMatch(/EMAIL - CLICK/);
+    const list = screen.getAllByRole("list")[0];
+    const items = await within(list).findAllByRole("button");
+    expect(within(items[0]).getByDisplayValue("DM")).toBeTruthy();
+    expect(within(items[0]).getByDisplayValue("OPEN")).toBeTruthy();
+    expect(within(items[1]).getByDisplayValue("EMAIL")).toBeTruthy();
+    expect(within(items[1]).getByDisplayValue("CLICK")).toBeTruthy();
   });
 });

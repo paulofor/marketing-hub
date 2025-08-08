@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import FunnelBuilder from "../components/FunnelBuilder";
@@ -24,6 +24,9 @@ describe("FunnelBuilder", () => {
     await userEvent.click(
       screen.getAllByRole("button", { name: /add step/i })[0],
     );
-    expect(await screen.findByText(/DM - OPEN/i)).toBeTruthy();
+    const list = screen.getAllByRole("list")[0];
+    const item = (await within(list).findAllByRole("button"))[0];
+    expect(within(item).getByDisplayValue("DM")).toBeTruthy();
+    expect(within(item).getByDisplayValue("OPEN")).toBeTruthy();
   });
 });

@@ -1,5 +1,6 @@
 package com.example.marketinghub.funnel;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -24,6 +25,7 @@ public class FunnelStep {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "funnel_id")
+    @JsonIgnore
     private SalesFunnel funnel;
 
     private Integer orderIdx;

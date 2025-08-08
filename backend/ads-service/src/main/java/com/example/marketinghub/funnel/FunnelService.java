@@ -3,6 +3,8 @@ package com.example.marketinghub.funnel;
 import com.example.marketinghub.model.Lead;
 import com.example.marketinghub.model.NurtureStage;
 import com.example.marketinghub.repository.LeadRepository;
+import com.example.marketinghub.funnel.dto.SalesFunnelDto;
+import com.marketinghub.experiment.repository.ExperimentRepository;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ public class FunnelService {
     private final LeadRepository leadRepository;
     private final LeadResponseRepository responseRepository;
     private final StepMetricSnapshotRepository snapshotRepository;
+    private final ExperimentRepository experimentRepository;
 
     public List<StepMetricSnapshot> getSnapshots(UUID funnelId) {
         return stepRepository.findByFunnelId(funnelId).stream()
@@ -45,11 +48,32 @@ public class FunnelService {
                 .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
     }
 
-    public List<SalesFunnel> list() {
-        return funnelRepository.findAll();
+    public List<SalesFunnelDto> list() {
+        return funnelRepository.findAll().stream()
+                .map(f -> {
+                    SalesFunnelDto dto = new SalesFunnelDto();
+                    dto.setId(f.getId());
+                    dto.setName(f.getName());
+                    dto.setObjective(f.getObjective());
+                    dto.setExperimentCount(experimentRepository.countBySalesFunnelId(f.getId()));
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 
     public SalesFunnel create(SalesFunnel funnel) {
+        if (funnel.getSteps() != null) {
+            funnel.getSteps().forEach(step -> step.setFunnel(funnel));
+        }
+        return funnelRepository.save(funnel);
+    }
+
+    public SalesFunnel get(UUID id) {
+        return funnelRepository.findWithStepsById(id).orElseThrow();
+    }
+
+    public SalesFunnel update(UUID id, SalesFunnel funnel) {
+        funnel.setId(id);
         if (funnel.getSteps() != null) {
             funnel.getSteps().forEach(step -> step.setFunnel(funnel));
         }

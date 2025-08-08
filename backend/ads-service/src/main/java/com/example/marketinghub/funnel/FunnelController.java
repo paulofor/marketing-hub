@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import com.example.marketinghub.funnel.dto.SalesFunnelDto;
 
 /**
  * REST endpoints for managing funnels.
@@ -16,8 +17,18 @@ public class FunnelController {
     private final FunnelService funnelService;
 
     @GetMapping
-    public List<SalesFunnel> list() {
+    public List<SalesFunnelDto> list() {
         return funnelService.list();
+    }
+
+    @GetMapping("/{id}")
+    public SalesFunnel get(@PathVariable UUID id) {
+        return funnelService.get(id);
+    }
+
+    @PutMapping("/{id}")
+    public SalesFunnel update(@PathVariable UUID id, @RequestBody SalesFunnel funnel) {
+        return funnelService.update(id, funnel);
     }
 
     @PostMapping

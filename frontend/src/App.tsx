@@ -36,7 +36,9 @@ import VisualProofsPage from "./pages/VisualProofsPage";
 import EmotionalTriggersPage from "./pages/EmotionalTriggersPage";
 import LandingPreview from "./pages/landing/LandingPreview";
 import AnalyticsDashboard from "./pages/landing/AnalyticsDashboard";
-import FunnelsPage from "./pages/FunnelsPage";
+import FunnelListPage from "./pages/funnel/FunnelListPage";
+import NewFunnelPage from "./pages/funnel/NewFunnelPage";
+import EditFunnelPage from "./pages/funnel/EditFunnelPage";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -193,7 +195,9 @@ export default function App() {
         <Route path="/emotional-triggers" element={<EmotionalTriggersPage />} />
         <Route path="/landing/:id" element={<LandingPreview />} />
         <Route path="/analytics" element={<AnalyticsDashboard />} />
-        <Route path="/funnels" element={<FunnelsPage />} />
+        <Route path="/funnels" element={<FunnelListPage />} />
+        <Route path="/funnels/new" element={<NewFunnelPage />} />
+        <Route path="/funnels/:id/edit" element={<EditFunnelPage />} />
         <Route path="*" element={<div>Início</div>} />
       </Routes>
       <ToastContainer position="top-right" />

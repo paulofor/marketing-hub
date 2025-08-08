@@ -1,6 +1,5 @@
 package com.example.marketinghub.funnel;
 
-import com.marketinghub.experiment.Experiment;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -11,7 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Sales funnel for an experiment.
+ * Sales funnel definition.
  */
 @Entity
 @Data
@@ -23,10 +22,6 @@ public class SalesFunnel {
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(columnDefinition = "BINARY(16)")
     private UUID id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "experiment_id")
-    private Experiment experiment;
 
     private String name;
     private String objective;

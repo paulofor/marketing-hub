@@ -120,6 +120,7 @@ CREATE TABLE experiment (
     end_date DATE,
     status VARCHAR(20),
     platform VARCHAR(50),
+    sales_funnel_id BINARY(16),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

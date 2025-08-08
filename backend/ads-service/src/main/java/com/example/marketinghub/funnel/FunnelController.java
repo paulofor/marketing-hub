@@ -16,13 +16,13 @@ public class FunnelController {
     private final FunnelService funnelService;
 
     @GetMapping
-    public List<SalesFunnel> listByExperiment(@RequestParam Long experimentId) {
-        return funnelService.findByExperiment(experimentId);
+    public List<SalesFunnel> list() {
+        return funnelService.list();
     }
 
     @PostMapping
-    public SalesFunnel create(@RequestParam Long experimentId, @RequestBody SalesFunnel funnel) {
-        return funnelService.create(experimentId, funnel);
+    public SalesFunnel create(@RequestBody SalesFunnel funnel) {
+        return funnelService.create(funnel);
     }
 
     @PostMapping("/{id}/steps")

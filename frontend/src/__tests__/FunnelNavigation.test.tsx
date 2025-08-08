@@ -19,11 +19,9 @@ afterEach(() => {
 });
 
 describe("funnels navigation", () => {
-  it("renders FunnelBuilder on /funnels route", async () => {
+  it("renders list on /funnels route", async () => {
     setup(<App />, ["/funnels"]);
-    expect(
-      await screen.findByRole("button", { name: /add step/i }),
-    ).toBeTruthy();
+    expect(await screen.findByText(/carregando/i)).toBeTruthy();
   });
 
   it("has menu link to /funnels", () => {

@@ -8,23 +8,28 @@ import {
 } from "react-beautiful-dnd";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
-import { useCreateFunnel } from "../api/funnel/useCreateFunnel";
+import { useSaveFunnel } from "../api/funnel/useSaveFunnel";
 
 /**
  * Builder UI for arranging funnel steps.
  */
 interface Step {
   id: string;
+  backendId?: string;
   stimulus_type: string;
   score_inc: number;
   expected_action: string;
 }
 
-export default function FunnelBuilder() {
-  const [steps, setSteps] = useState<Step[]>([]);
-  const [name, setName] = useState("");
+interface FunnelProps {
+  funnel?: { id?: string; name: string; steps: Step[] };
+}
+
+export default function FunnelBuilder({ funnel }: FunnelProps) {
+  const [steps, setSteps] = useState<Step[]>(funnel?.steps ?? []);
+  const [name, setName] = useState(funnel?.name ?? "");
   const { register, handleSubmit } = useForm<Step>();
-  const create = useCreateFunnel();
+  const save = useSaveFunnel();
 
   const stimulusOptions = [
     "DM",
@@ -65,9 +70,11 @@ export default function FunnelBuilder() {
   };
 
   const saveFunnel = () => {
-    create.mutate({
+    save.mutate({
+      id: funnel?.id,
       name,
       steps: steps.map((s) => ({
+        id: s.backendId,
         stimulusType: s.stimulus_type,
         expectedAction: s.expected_action,
         scoreInc: s.score_inc,

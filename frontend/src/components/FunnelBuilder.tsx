@@ -33,7 +33,7 @@ export default function FunnelBuilder({ funnel }: FunnelProps) {
     setSteps(funnel?.steps ?? []);
     setName(funnel?.name ?? "");
   }, [funnel]);
-  const { register, handleSubmit } = useForm<Step>();
+  const { register, handleSubmit, reset } = useForm<Step>();
   const save = useSaveFunnel();
 
   const stimulusOptions = [
@@ -71,7 +71,23 @@ export default function FunnelBuilder({ funnel }: FunnelProps) {
   };
 
   const onSubmit = (data: Step) => {
-    setSteps([...steps, { ...data, id: Date.now().toString() }]);
+    setSteps([
+      ...steps,
+      {
+        ...data,
+        score_inc: data.score_inc ?? 0,
+        id: Date.now().toString(),
+      },
+    ]);
+    reset();
+  };
+
+  const updateStep = (index: number, updates: Partial<Step>) => {
+    setSteps((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], ...updates };
+      return next;
+    });
   };
 
   const saveFunnel = () => {
@@ -140,8 +156,39 @@ export default function FunnelBuilder({ funnel }: FunnelProps) {
                       {...prov.draggableProps}
                       {...prov.dragHandleProps}
                     >
-                      {step.stimulus_type} - {step.expected_action} (+
-                      {step.score_inc})
+                      <select
+                        value={step.stimulus_type}
+                        onChange={(e) =>
+                          updateStep(index, { stimulus_type: e.target.value })
+                        }
+                      >
+                        {stimulusOptions.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        value={step.score_inc}
+                        onChange={(e) =>
+                          updateStep(index, {
+                            score_inc: parseInt(e.target.value, 10) || 0,
+                          })
+                        }
+                      />
+                      <select
+                        value={step.expected_action}
+                        onChange={(e) =>
+                          updateStep(index, { expected_action: e.target.value })
+                        }
+                      >
+                        {actionOptions.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
                     </li>
                   )}
                 </Draggable>

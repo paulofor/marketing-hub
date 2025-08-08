@@ -12,5 +12,6 @@ public interface ExperimentMapper {
     @org.mapstruct.Mapping(target = "nicheId", source = "niche.id")
     @org.mapstruct.Mapping(target = "hypothesisId", source = "hypothesisRef.id")
     @org.mapstruct.Mapping(target = "metricPresetId", source = "metricPreset.id")
+    @org.mapstruct.Mapping(target = "salesFunnelId", source = "salesFunnel.id")
     ExperimentDto toDto(Experiment experiment);
 }

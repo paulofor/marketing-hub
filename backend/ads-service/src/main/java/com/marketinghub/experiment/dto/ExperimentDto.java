@@ -15,6 +15,7 @@ public class ExperimentDto {
     private Long id;
     private Long nicheId;
     private java.util.UUID hypothesisId;
+    private java.util.UUID salesFunnelId;
     private String name;
     private String hypothesis;
     private BigDecimal kpiTargetCpl;

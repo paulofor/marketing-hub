@@ -118,6 +118,7 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `name` VARCHAR(255) NOT NULL
 - `hypothesis` VARCHAR(255)
 - `hypothesis_id` BINARY(16)
+- `sales_funnel_id` BINARY(16)
 - `kpi_target_cpl` DECIMAL(10,2) DEFAULT 45.00
 - `stop_loss_cpl` DECIMAL(10,2) DEFAULT 90.00
 - `sample_size` INT DEFAULT 1500
@@ -234,7 +235,6 @@ This document summarizes the current database schema defined in `schema.sql`.
 ### sales_funnel
 
 - `id` BINARY(16) PRIMARY KEY
-- `experiment_id` BIGINT NOT NULL
 - `name` VARCHAR(100)
 - `objective` VARCHAR(255)
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -317,6 +317,7 @@ erDiagram
         BIGINT niche_id FK
         BINARY hypothesis_id FK
         VARCHAR metric_preset_id FK
+        BINARY sales_funnel_id FK
     }
     CREATIVE_VARIANT {
         BIGINT id PK
@@ -351,7 +352,6 @@ erDiagram
     }
     SALES_FUNNEL {
         BINARY id PK
-        BIGINT experiment_id FK
     }
     FUNNEL_STEP {
         BINARY id PK
@@ -377,7 +377,7 @@ erDiagram
     EXPERIMENT ||--o{ AD_SET : configures
     EXPERIMENT ||--o{ LANDING_PAGE : uses
     EXPERIMENT ||--o{ LEAD : generates
-    EXPERIMENT ||--o{ SALES_FUNNEL : orchestrates
+    EXPERIMENT ||--|| SALES_FUNNEL : uses
     SALES_FUNNEL ||--o{ FUNNEL_STEP : includes
     FUNNEL_STEP ||--o{ LEAD_RESPONSE : triggers
     LEAD ||--o{ LEAD_RESPONSE : receives

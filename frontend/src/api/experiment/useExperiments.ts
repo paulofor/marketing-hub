@@ -5,6 +5,7 @@ export interface Experiment {
   id: string;
   nicheId: number;
   hypothesisId: string;
+  salesFunnelId?: string | null;
   name: string;
   hypothesis: string;
   /**

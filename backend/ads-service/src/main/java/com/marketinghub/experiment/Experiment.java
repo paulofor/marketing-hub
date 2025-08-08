@@ -5,6 +5,7 @@ import lombok.*;
 import com.marketinghub.niche.MarketNiche;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import com.example.marketinghub.funnel.SalesFunnel;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -69,6 +70,10 @@ public class Experiment {
 
     @Enumerated(EnumType.STRING)
     private ExperimentPlatform platform;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sales_funnel_id")
+    private SalesFunnel salesFunnel;
 
     @CreationTimestamp
     private Instant createdAt;

@@ -48,17 +48,21 @@ public class FunnelService {
                 .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
     }
 
-    public List<SalesFunnel> findByExperiment(Long experimentId) {
-        return funnelRepository.findByExperimentId(experimentId);
+    public SalesFunnel findByExperiment(Long experimentId) {
+        return experimentRepository.findById(experimentId)
+                .map(Experiment::getSalesFunnel)
+                .orElse(null);
     }
 
     public SalesFunnel create(Long experimentId, SalesFunnel funnel) {
         Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
-        funnel.setExperiment(experiment);
         if (funnel.getSteps() != null) {
             funnel.getSteps().forEach(step -> step.setFunnel(funnel));
         }
-        return funnelRepository.save(funnel);
+        SalesFunnel saved = funnelRepository.save(funnel);
+        experiment.setSalesFunnel(saved);
+        experimentRepository.save(experiment);
+        return saved;
     }
 
     public FunnelStep addStep(UUID funnelId, FunnelStep step) {

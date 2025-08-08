@@ -16,7 +16,7 @@ public class FunnelController {
     private final FunnelService funnelService;
 
     @GetMapping
-    public List<SalesFunnel> listByExperiment(@RequestParam Long experimentId) {
+    public SalesFunnel getByExperiment(@RequestParam Long experimentId) {
         return funnelService.findByExperiment(experimentId);
     }
 

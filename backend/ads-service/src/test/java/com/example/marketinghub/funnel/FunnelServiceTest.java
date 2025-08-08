@@ -54,11 +54,13 @@ class FunnelServiceTest {
         Experiment experiment = new Experiment();
         when(experimentRepository.findById(expId)).thenReturn(java.util.Optional.of(experiment));
         when(funnelRepository.save(funnel)).thenReturn(funnel);
+        when(experimentRepository.save(experiment)).thenReturn(experiment);
 
         SalesFunnel saved = service.create(expId, funnel);
 
         assertSame(saved, step.getFunnel());
-        assertSame(experiment, saved.getExperiment());
+        assertSame(saved, experiment.getSalesFunnel());
         verify(funnelRepository).save(funnel);
+        verify(experimentRepository).save(experiment);
     }
 }

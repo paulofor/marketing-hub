@@ -110,6 +110,7 @@ CREATE TABLE experiment (
     niche_id BIGINT NOT NULL,
     name VARCHAR(255) NOT NULL,
     hypothesis VARCHAR(255),
+    sales_funnel_id BINARY(16),
     kpi_target_cpl DECIMAL(10,2) DEFAULT 45.00,
     stop_loss_cpl DECIMAL(10,2) DEFAULT 90.00,
     sample_size INT DEFAULT 1500,

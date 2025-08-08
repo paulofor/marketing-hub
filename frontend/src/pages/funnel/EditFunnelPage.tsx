@@ -8,8 +8,8 @@ export default function EditFunnelPage() {
   if (isLoading || !data) return <p>Carregando...</p>;
   const steps =
     data.steps?.map((s) => ({
-      id: s.id,
-      backendId: s.id,
+      id: s.id.toString(),
+      backendId: s.id.toString(),
       stimulus_type: s.stimulusType,
       expected_action: s.expectedAction,
       score_inc: s.scoreInc ?? 0,

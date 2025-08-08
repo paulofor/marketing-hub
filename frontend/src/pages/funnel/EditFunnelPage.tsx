@@ -7,12 +7,14 @@ export default function EditFunnelPage() {
   const { data, isLoading } = useFunnel(id!);
   if (isLoading || !data) return <p>Carregando...</p>;
   const steps =
-    data.steps?.map((s) => ({
-      id: s.id.toString(),
-      backendId: s.id.toString(),
-      stimulus_type: s.stimulusType,
-      expected_action: s.expectedAction,
-      score_inc: s.scoreInc ?? 0,
-    })) ?? [];
+    [...(data.steps ?? [])]
+      .sort((a, b) => a.orderIdx - b.orderIdx)
+      .map((s) => ({
+        id: s.id.toString(),
+        backendId: s.id.toString(),
+        stimulus_type: s.stimulusType,
+        expected_action: s.expectedAction,
+        score_inc: s.scoreInc ?? 0,
+      }));
   return <FunnelBuilder funnel={{ id: data.id, name: data.name, steps }} />;
 }

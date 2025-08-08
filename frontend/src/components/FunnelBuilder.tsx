@@ -78,11 +78,12 @@ export default function FunnelBuilder({ funnel }: FunnelProps) {
     save.mutate({
       id: funnel?.id,
       name,
-      steps: steps.map((s) => ({
+      steps: steps.map((s, index) => ({
         id: s.backendId,
         stimulusType: s.stimulus_type,
         expectedAction: s.expected_action,
         scoreInc: s.score_inc,
+        orderIdx: index,
       })),
     });
   };

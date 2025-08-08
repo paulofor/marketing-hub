@@ -6,6 +6,7 @@ export interface SaveFunnelStep {
   stimulusType: string;
   expectedAction: string;
   scoreInc: number;
+  orderIdx: number;
 }
 
 export interface SaveFunnel {

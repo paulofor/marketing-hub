@@ -17,6 +17,7 @@ describe("FunnelBuilder", () => {
     expect(screen.getByLabelText(/stimulus type/i)).toBeTruthy();
     expect(screen.getByLabelText(/score increment/i)).toBeTruthy();
     expect(screen.getByLabelText(/expected action/i)).toBeTruthy();
+    expect(screen.getByLabelText(/observation/i)).toBeTruthy();
   });
 
   it("adds step to list on submit", async () => {

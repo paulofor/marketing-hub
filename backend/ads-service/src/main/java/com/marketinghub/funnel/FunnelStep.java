@@ -36,6 +36,9 @@ public class FunnelStep {
     private String channel;
     private String templateId;
 
+    @Column(columnDefinition = "TEXT")
+    private String note;
+
     @Enumerated(EnumType.STRING)
     private ActionType expectedAction;
 

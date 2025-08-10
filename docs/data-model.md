@@ -250,6 +250,7 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `expected_action` ENUM('OPEN','CLICK','REPLY','VIEW','PURCHASE','REGISTRATION','OPT_IN','OPT_OUT','BOUNCE','SHARE')
 - `score_inc` INT
 - `revenue_target` DECIMAL(10,2)
+- `note` TEXT
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `is_active` TINYINT(1) DEFAULT 1
 

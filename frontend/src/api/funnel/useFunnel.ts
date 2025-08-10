@@ -7,6 +7,7 @@ export interface FunnelStep {
   expectedAction: string;
   scoreInc: number;
   orderIdx: number;
+  note?: string;
 }
 
 export interface FunnelDetail {

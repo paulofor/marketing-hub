@@ -15,6 +15,7 @@ export default function EditFunnelPage() {
         stimulus_type: s.stimulusType,
         expected_action: s.expectedAction,
         score_inc: s.scoreInc ?? 0,
+        note: s.note ?? "",
       }));
   return <FunnelBuilder funnel={{ id: data.id, name: data.name, steps }} />;
 }

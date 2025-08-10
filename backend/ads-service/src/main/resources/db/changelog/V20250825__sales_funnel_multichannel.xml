@@ -139,4 +139,10 @@
         </sql>
     </changeSet>
 
+    <changeSet id="20250825-9" author="codex">
+        <addColumn tableName="funnel_step">
+            <column name="note" type="TEXT"/>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>

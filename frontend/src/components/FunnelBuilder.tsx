@@ -19,6 +19,7 @@ interface Step {
   stimulus_type: string;
   score_inc: number;
   expected_action: string;
+  note?: string;
 }
 
 interface FunnelProps {
@@ -101,6 +102,7 @@ export default function FunnelBuilder({ funnel }: FunnelProps) {
         expectedAction: s.expected_action,
         scoreInc: s.score_inc,
         orderIdx: index,
+        note: s.note,
       })),
     });
   };
@@ -136,6 +138,8 @@ export default function FunnelBuilder({ funnel }: FunnelProps) {
             </option>
           ))}
         </select>
+        <label htmlFor="note">Observation</label>
+        <input id="note" {...register("note")} />
         <button
           type="button"
           onClick={handleSubmit(onSubmit, (errors) => {
@@ -190,6 +194,13 @@ export default function FunnelBuilder({ funnel }: FunnelProps) {
                           </option>
                         ))}
                       </select>
+                      <input
+                        type="text"
+                        value={step.note ?? ""}
+                        onChange={(e) =>
+                          updateStep(index, { note: e.target.value })
+                        }
+                      />
                     </li>
                   )}
                 </Draggable>

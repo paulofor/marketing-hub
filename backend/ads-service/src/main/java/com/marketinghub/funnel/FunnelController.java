@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 import com.marketinghub.funnel.dto.SalesFunnelDto;
+import com.marketinghub.funnel.dto.FunnelStepDto;
 
 /**
  * REST endpoints for managing funnels.
@@ -37,7 +38,7 @@ public class FunnelController {
     }
 
     @PostMapping("/{id}/steps")
-    public FunnelStep addStep(@PathVariable UUID id, @RequestBody FunnelStep step) {
+    public FunnelStepDto addStep(@PathVariable UUID id, @RequestBody FunnelStepDto step) {
         return funnelService.addStep(id, step);
     }
 

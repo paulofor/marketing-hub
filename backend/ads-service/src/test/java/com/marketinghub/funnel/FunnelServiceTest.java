@@ -4,6 +4,7 @@ import com.marketinghub.model.Lead;
 import com.marketinghub.model.NurtureStage;
 import com.marketinghub.repository.LeadRepository;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.funnel.dto.FunnelStepDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -55,5 +56,21 @@ class FunnelServiceTest {
 
         assertSame(saved, step.getFunnel());
         verify(funnelRepository).save(funnel);
+    }
+
+    @Test
+    void addStepPersistsNote() {
+        UUID funnelId = UUID.randomUUID();
+        SalesFunnel funnel = SalesFunnel.builder().id(funnelId).build();
+        when(funnelRepository.findById(funnelId)).thenReturn(Optional.of(funnel));
+        when(stepRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        FunnelStepDto dto = new FunnelStepDto();
+        dto.setNote("hello");
+
+        FunnelStepDto saved = service.addStep(funnelId, dto);
+
+        assertEquals("hello", saved.getNote());
+        verify(stepRepository).save(any());
     }
 }

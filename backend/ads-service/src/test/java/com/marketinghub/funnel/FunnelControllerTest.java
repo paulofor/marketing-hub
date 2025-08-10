@@ -31,13 +31,14 @@ class FunnelControllerTest {
     void getFunnelDoesNotReturnNestedFunnel() throws Exception {
         UUID id = UUID.randomUUID();
         SalesFunnel funnel = SalesFunnel.builder().id(id).name("test").build();
-        FunnelStep step = FunnelStep.builder().id(UUID.randomUUID()).funnel(funnel).build();
+        FunnelStep step = FunnelStep.builder().id(UUID.randomUUID()).funnel(funnel).note("obs").build();
         funnel.setSteps(List.of(step));
         when(funnelService.get(id)).thenReturn(funnel);
 
         mockMvc.perform(get("/api/funnels/" + id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.steps[0].funnel").doesNotExist());
+                .andExpect(jsonPath("$.steps[0].funnel").doesNotExist())
+                .andExpect(jsonPath("$.steps[0].note").value("obs"));
     }
 }
 

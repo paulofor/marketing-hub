@@ -13,5 +13,6 @@ public enum StimulusType {
     PUSH,
     STORY,
     WEBINAR,
-    CALL
+    CALL,
+    LANDING
 }

@@ -47,6 +47,7 @@ export default function FunnelBuilder({ funnel }: FunnelProps) {
     "STORY",
     "WEBINAR",
     "CALL",
+    "LANDING",
   ];
 
   const actionOptions = [

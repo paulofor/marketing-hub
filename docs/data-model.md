@@ -244,7 +244,7 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `id` BINARY(16) PRIMARY KEY
 - `funnel_id` BINARY(16) NOT NULL
 - `order_idx` INT
-- `stimulus_type` ENUM('DM','IG_POST_BOOST','FB_AD','WHATSAPP','EMAIL','SMS','PUSH','STORY','WEBINAR','CALL')
+- `stimulus_type` ENUM('DM','IG_POST_BOOST','FB_AD','WHATSAPP','EMAIL','SMS','PUSH','STORY','WEBINAR','CALL','LANDING')
 - `channel` VARCHAR(50)
 - `template_id` VARCHAR(50)
 - `expected_action` ENUM('OPEN','CLICK','REPLY','VIEW','PURCHASE','REGISTRATION','OPT_IN','OPT_OUT','BOUNCE','SHARE')

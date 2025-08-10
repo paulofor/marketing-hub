@@ -27,7 +27,7 @@
                 <constraints nullable="false" foreignKeyName="fk_step_funnel" references="sales_funnel(id)"/>
             </column>
             <column name="order_idx" type="INT"/>
-            <column name="stimulus_type" type="ENUM('DM','EMAIL','IG_POST_BOOST','FB_AD','STORY','WHATSAPP','CALL','SMS','WEBINAR','PUSH')"/>
+            <column name="stimulus_type" type="ENUM('DM','EMAIL','IG_POST_BOOST','FB_AD','STORY','WHATSAPP','CALL','SMS','WEBINAR','PUSH','LANDING')"/>
             <column name="channel" type="VARCHAR(50)"/>
             <column name="template_id" type="VARCHAR(50)"/>
             <column name="expected_action" type="ENUM('OPEN','CLICK','REPLY','PURCHASE')"/>

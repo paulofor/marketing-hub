@@ -19,6 +19,7 @@
     </changeSet>
 
     <changeSet id="20250825-2" author="codex">
+        <validCheckSum>9:4cd87201ff6020297a7db39108a0147a</validCheckSum>
         <createTable tableName="funnel_step">
             <column name="id" type="BINARY(16)">
                 <constraints primaryKey="true" nullable="false"/>

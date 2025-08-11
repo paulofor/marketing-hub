@@ -139,7 +139,12 @@ export default function FunnelBuilder({ funnel }: FunnelProps) {
           ))}
         </select>
         <label htmlFor="note">Observation</label>
-        <input id="note" {...register("note")} />
+        <textarea
+          id="note"
+          rows={3}
+          style={{ width: "100%" }}
+          {...register("note")}
+        />
         <button
           type="button"
           onClick={handleSubmit(onSubmit, (errors) => {
@@ -194,8 +199,9 @@ export default function FunnelBuilder({ funnel }: FunnelProps) {
                           </option>
                         ))}
                       </select>
-                      <input
-                        type="text"
+                      <textarea
+                        rows={3}
+                        style={{ width: "100%" }}
                         value={step.note ?? ""}
                         onChange={(e) =>
                           updateStep(index, { note: e.target.value })

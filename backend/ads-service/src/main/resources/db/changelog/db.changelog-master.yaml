@@ -46,3 +46,6 @@ databaseChangeLog:
   - include:
       file: V2025_08_06__create_chat_tables.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2025_09_15__create_chat_dialog_table.sql
+      relativeToChangelogFile: true

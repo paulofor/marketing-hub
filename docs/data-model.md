@@ -197,6 +197,15 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
+### chat_dialog
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `url` VARCHAR(500)
+- `description` LONGTEXT
+- `theme` VARCHAR(255)
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
 ### hypothesis
 
 - `id` BINARY(16) PRIMARY KEY
@@ -350,6 +359,9 @@ erDiagram
     CHAT_MESSAGE {
         BIGINT id PK
         BIGINT session_id FK
+    }
+    CHAT_DIALOG {
+        BIGINT id PK
     }
     SALES_FUNNEL {
         BINARY id PK

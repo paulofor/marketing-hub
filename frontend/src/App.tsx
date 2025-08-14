@@ -39,6 +39,8 @@ import AnalyticsDashboard from "./pages/landing/AnalyticsDashboard";
 import FunnelListPage from "./pages/funnel/FunnelListPage";
 import NewFunnelPage from "./pages/funnel/NewFunnelPage";
 import EditFunnelPage from "./pages/funnel/EditFunnelPage";
+import ChatDialogListPage from "./pages/chatDialog/ChatDialogListPage";
+import NewChatDialogPage from "./pages/chatDialog/NewChatDialogPage";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -80,6 +82,9 @@ export default function App() {
             </Link>
             <Link className="nav-link" to="/ai-services">
               IA
+            </Link>
+            <Link className="nav-link" to="/chat-dialogs">
+              ChatGPT
             </Link>
             <Link className="nav-link" to="/angles">
               Angles
@@ -198,6 +203,8 @@ export default function App() {
         <Route path="/funnels" element={<FunnelListPage />} />
         <Route path="/funnels/new" element={<NewFunnelPage />} />
         <Route path="/funnels/:id/edit" element={<EditFunnelPage />} />
+        <Route path="/chat-dialogs" element={<ChatDialogListPage />} />
+        <Route path="/chat-dialogs/new" element={<NewChatDialogPage />} />
         <Route path="*" element={<div>Início</div>} />
       </Routes>
       <ToastContainer position="top-right" />

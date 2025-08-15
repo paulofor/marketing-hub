@@ -15,6 +15,7 @@ const schema = z
     promise: z.string().min(1, "obrigatório").max(140, "máx. 140"),
     problem: z.string().min(1, "obrigatório"),
     persona: z.string().min(1, "obrigatório"),
+    uniqueMechanism: z.string().optional(),
     successRule: z.string().min(1, "obrigatório"),
     premiseAngleId: z.string().min(1, "obrigatório"),
     offerType: z.enum(["LEAD", "TRIPWIRE"]),
@@ -62,6 +63,7 @@ export default function NewHypothesisPage() {
       promise: values.promise,
       problem: values.problem,
       persona: values.persona,
+      uniqueMechanism: values.uniqueMechanism,
       successRule: values.successRule,
       premiseAngleId: Number(values.premiseAngleId),
       offerType: values.offerType,
@@ -123,14 +125,30 @@ export default function NewHypothesisPage() {
 
         <label className="form-label" htmlFor="persona">Persona</label>
         <input
-          id="persona"
-          {...register("persona")}
+        id="persona"
+        {...register("persona")}
           className={`form-control mb-2 ${errors.persona ? "is-invalid" : ""}`}
           aria-describedby="persona-error"
         />
         {errors.persona && (
           <div id="persona-error" className="invalid-feedback d-block">
             {errors.persona.message}
+          </div>
+        )}
+
+        <label className="form-label" htmlFor="uniqueMechanism">
+          Mecanismo único
+        </label>
+        <textarea
+          id="uniqueMechanism"
+          rows={2}
+          {...register("uniqueMechanism")}
+          className={`form-control mb-2 ${errors.uniqueMechanism ? "is-invalid" : ""}`}
+          aria-describedby="uniqueMechanism-error"
+        />
+        {errors.uniqueMechanism && (
+          <div id="uniqueMechanism-error" className="invalid-feedback d-block">
+            {errors.uniqueMechanism.message}
           </div>
         )}
 

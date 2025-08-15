@@ -46,6 +46,10 @@ public class Hypothesis {
     @Column(nullable = false)
     private String persona;
 
+    /** Mecanismo único que sustenta a promessa. */
+    @Lob
+    private String uniqueMechanism;
+
     /** Regra de sucesso que define se a hipótese será validada. */
     @Lob
     private String successRule;

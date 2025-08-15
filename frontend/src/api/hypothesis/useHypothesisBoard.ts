@@ -8,6 +8,7 @@ export interface Hypothesis {
   promise?: string;
   problem?: string;
   persona?: string;
+  uniqueMechanism?: string;
   successRule?: string;
   premiseAngleId?: number;
   offerType?: string;

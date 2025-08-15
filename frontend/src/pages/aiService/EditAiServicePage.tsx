@@ -19,6 +19,7 @@ export default function EditAiServicePage() {
     phase: "",
     price: 0,
     cost: 0,
+    observation: "",
   });
 
   useEffect(() => {
@@ -70,6 +71,13 @@ export default function EditAiServicePage() {
         className="form-control mb-2"
         value={form.cost}
         onChange={(e) => setForm({ ...form, cost: Number(e.target.value) })}
+      />
+      <label className="form-label">Observação</label>
+      <textarea
+        className="form-control mb-2"
+        value={form.observation}
+        onChange={(e) => setForm({ ...form, observation: e.target.value })}
+        rows={3}
       />
       <button
         className="btn btn-primary"

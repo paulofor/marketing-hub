@@ -16,6 +16,7 @@ public class AiServiceDto {
     private String phase;
     private BigDecimal price;
     private BigDecimal cost;
+    private String observation;
     private Instant createdAt;
     private Instant updatedAt;
 }

@@ -38,6 +38,7 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `phase` VARCHAR(255)
 - `price` DECIMAL(10,2)
 - `cost` DECIMAL(10,2)
+- `observation` LONGTEXT
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 

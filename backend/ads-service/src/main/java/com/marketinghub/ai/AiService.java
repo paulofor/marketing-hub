@@ -35,6 +35,9 @@ public class AiService {
 
     private BigDecimal cost;
 
+    @Lob
+    private String observation;
+
     @CreationTimestamp
     private Instant createdAt;
 

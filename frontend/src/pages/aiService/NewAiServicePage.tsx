@@ -11,6 +11,7 @@ export default function NewAiServicePage() {
     phase: "",
     price: "",
     cost: "",
+    observation: "",
   });
 
   const submit = () => {
@@ -18,6 +19,7 @@ export default function NewAiServicePage() {
       ...form,
       price: Number(form.price),
       cost: Number(form.cost),
+      observation: form.observation,
     });
   };
 
@@ -60,6 +62,13 @@ export default function NewAiServicePage() {
         placeholder="Custo"
         value={form.cost}
         onChange={(e) => setForm({ ...form, cost: e.target.value })}
+      />
+      <textarea
+        className="form-control mb-2"
+        placeholder="Observação"
+        value={form.observation}
+        onChange={(e) => setForm({ ...form, observation: e.target.value })}
+        rows={3}
       />
       <button
         className="btn btn-primary"

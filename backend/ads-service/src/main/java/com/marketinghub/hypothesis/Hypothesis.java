@@ -46,6 +46,10 @@ public class Hypothesis {
     @Column(nullable = false)
     private String persona;
 
+    /** Mecanismo que sustenta a promessa. */
+    @Lob
+    private String mechanism;
+
     /** Mecanismo único que sustenta a promessa. */
     @Lob
     private String uniqueMechanism;

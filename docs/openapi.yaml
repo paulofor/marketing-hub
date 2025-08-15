@@ -412,6 +412,8 @@ components:
           type: string
         persona:
           type: string
+        mechanism:
+          type: string
         uniqueMechanism:
           type: string
         successRule:

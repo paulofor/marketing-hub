@@ -15,6 +15,7 @@ const schema = z
     promise: z.string().min(1, "obrigatório").max(140, "máx. 140"),
     problem: z.string().min(1, "obrigatório"),
     persona: z.string().min(1, "obrigatório"),
+    mechanism: z.string().optional(),
     uniqueMechanism: z.string().optional(),
     successRule: z.string().min(1, "obrigatório"),
     premiseAngleId: z.string().min(1, "obrigatório"),
@@ -63,6 +64,7 @@ export default function NewHypothesisPage() {
       promise: values.promise,
       problem: values.problem,
       persona: values.persona,
+      mechanism: values.mechanism,
       uniqueMechanism: values.uniqueMechanism,
       successRule: values.successRule,
       premiseAngleId: Number(values.premiseAngleId),
@@ -133,6 +135,22 @@ export default function NewHypothesisPage() {
         {errors.persona && (
           <div id="persona-error" className="invalid-feedback d-block">
             {errors.persona.message}
+          </div>
+        )}
+
+        <label className="form-label" htmlFor="mechanism">
+          Mecanismo
+        </label>
+        <textarea
+          id="mechanism"
+          rows={2}
+          {...register("mechanism")}
+          className={`form-control mb-2 ${errors.mechanism ? "is-invalid" : ""}`}
+          aria-describedby="mechanism-error"
+        />
+        {errors.mechanism && (
+          <div id="mechanism-error" className="invalid-feedback d-block">
+            {errors.mechanism.message}
           </div>
         )}
 

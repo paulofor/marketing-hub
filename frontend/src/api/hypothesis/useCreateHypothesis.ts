@@ -10,6 +10,7 @@ export interface CreateHypothesis {
   promise: string;
   problem: string;
   persona: string;
+  mechanism?: string;
   uniqueMechanism?: string;
   successRule: string;
   offerType?: string;

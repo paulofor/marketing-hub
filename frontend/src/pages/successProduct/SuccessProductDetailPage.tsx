@@ -17,6 +17,7 @@ export default function SuccessProductDetailPage() {
     { label: "Descrição", value: data.description, pre: true },
     { label: "Nicho", value: data.niche },
     { label: "Avatar", value: data.avatar },
+    { label: "Tipo de Público", value: data.audienceType },
     { label: "Página de Vendas", value: data.salesPageUrl },
     { label: "Instagram", value: data.instagramUrl },
     { label: "Facebook", value: data.facebookUrl },
@@ -32,7 +33,7 @@ export default function SuccessProductDetailPage() {
       value: data.checkoutMonetization,
       pre: true,
     },
-    { label: "Funil", value: data.funnel, pre: true },
+    { label: "Funil de Vendas", value: data.salesFunnel, pre: true },
     { label: "Volume Criativo", value: data.creativeVolume, pre: true },
     { label: "Storytelling", value: data.storytelling, pre: true },
   ];

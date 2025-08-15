@@ -2,6 +2,7 @@ package com.marketinghub.worker;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.marketinghub.worker.SuccessProductPlatform;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -36,12 +37,25 @@ class SuccessProductRepositoryTest {
                 .instagramUrl("https://instagram.com/example")
                 .facebookUrl("https://facebook.com/example")
                 .youtubeUrl("https://youtube.com/example")
+                .platform(SuccessProductPlatform.HOTMART)
                 .build();
         repository.save(product);
         SuccessProduct saved = repository.findById(product.getId()).orElseThrow();
         assertThat(saved.isNovo()).isTrue();
         assertThat(saved.getName()).isEqualTo("Produto");
+        assertThat(saved.getPlatform()).isEqualTo(SuccessProductPlatform.HOTMART);
         assertThat(saved.getSalesPageUrl()).contains("example.com");
+    }
+
+    @Test
+    void testDefaultPlatformIsCofre() {
+        SuccessProduct product = SuccessProduct.builder()
+                .description("Default platform")
+                .salesPageUrl("https://example.com/default")
+                .build();
+        repository.save(product);
+        SuccessProduct saved = repository.findById(product.getId()).orElseThrow();
+        assertThat(saved.getPlatform()).isEqualTo(SuccessProductPlatform.COFRE);
     }
 
     @Test
@@ -65,11 +79,13 @@ class SuccessProductRepositoryTest {
                 .description(description)
                 .name("Produto")
                 .salesPageUrl("https://www.taichichenonline.com/PVDTAICHI")
+                .platform(SuccessProductPlatform.CLICKBANK)
                 .build();
         repository.save(product);
         SuccessProduct saved = repository.findById(product.getId()).orElseThrow();
         assertThat(saved.getDescription()).isEqualTo(description);
         assertThat(saved.getName()).isEqualTo("Produto");
+        assertThat(saved.getPlatform()).isEqualTo(SuccessProductPlatform.CLICKBANK);
         assertThat(saved.getSalesPageUrl()).contains("PVDTAICHI");
     }
 }

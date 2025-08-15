@@ -1,9 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { SuccessProduct } from "./useSuccessProducts";
+import { SuccessProduct, SuccessProductPlatform } from "./useSuccessProducts";
 
 export interface CreateSuccessProduct {
   description: string;
+  platform: SuccessProductPlatform;
 }
 
 export function useCreateSuccessProduct() {

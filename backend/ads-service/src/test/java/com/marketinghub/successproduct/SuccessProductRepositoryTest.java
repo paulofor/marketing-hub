@@ -2,6 +2,7 @@ package com.marketinghub.successproduct;
 
 import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.successproduct.repository.SuccessProductRepository;
+import com.marketinghub.successproduct.SuccessProductPlatform;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -27,6 +28,7 @@ class SuccessProductRepositoryTest {
         repository.save(product);
         SuccessProduct saved = repository.findById(product.getId()).orElseThrow();
         assertThat(saved.isNovo()).isTrue();
+        assertThat(saved.getPlatform()).isEqualTo(SuccessProductPlatform.COFRE);
         assertThat(saved.getName()).isNull();
         assertThat(saved.getSalesPageUrl()).contains("example.com");
     }
@@ -51,10 +53,12 @@ class SuccessProductRepositoryTest {
         SuccessProduct product = SuccessProduct.builder()
                 .description(description)
                 .salesPageUrl("https://www.taichichenonline.com/PVDTAICHI")
+                .platform(SuccessProductPlatform.HOTMART)
                 .build();
         repository.save(product);
         SuccessProduct saved = repository.findById(product.getId()).orElseThrow();
         assertThat(saved.getDescription()).isEqualTo(description);
+        assertThat(saved.getPlatform()).isEqualTo(SuccessProductPlatform.HOTMART);
         assertThat(saved.getSalesPageUrl()).contains("PVDTAICHI");
     }
 }

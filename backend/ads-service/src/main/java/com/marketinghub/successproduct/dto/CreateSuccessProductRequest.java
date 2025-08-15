@@ -1,5 +1,6 @@
 package com.marketinghub.successproduct.dto;
 
+import com.marketinghub.successproduct.SuccessProductPlatform;
 import lombok.Data;
 
 /**
@@ -8,4 +9,5 @@ import lombok.Data;
 @Data
 public class CreateSuccessProductRequest {
     private String description;
+    private SuccessProductPlatform platform;
 }

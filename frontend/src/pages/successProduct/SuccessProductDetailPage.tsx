@@ -15,6 +15,7 @@ export default function SuccessProductDetailPage() {
 
   const rows = [
     { label: "Descrição", value: data.description, pre: true },
+    { label: "Plataforma", value: data.platform },
     { label: "Nicho", value: data.niche },
     { label: "Avatar", value: data.avatar },
     { label: "Tipo de Público", value: data.audienceType },

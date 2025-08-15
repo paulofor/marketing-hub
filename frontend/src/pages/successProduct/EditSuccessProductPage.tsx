@@ -68,6 +68,11 @@ export default function EditSuccessProductPage() {
           placeholder="Avatar"
           {...register("avatar")}
         />
+        <select className="form-select mb-2" {...register("platform")}>
+          <option value="COFRE">Cofre</option>
+          <option value="HOTMART">Hotmart</option>
+          <option value="CLICKBANK">Clickbank</option>
+        </select>
         <input
           className="form-control mb-2"
           placeholder="Tipo de Público"

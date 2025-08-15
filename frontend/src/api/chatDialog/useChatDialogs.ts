@@ -6,6 +6,8 @@ export interface ChatDialog {
   url: string;
   description: string;
   theme: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export function useChatDialogs() {
@@ -17,4 +19,3 @@ export function useChatDialogs() {
     },
   });
 }
-

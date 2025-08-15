@@ -18,6 +18,7 @@ export default function SuccessProductListPage() {
           <tr>
             <th>ID</th>
             <th>Descrição</th>
+            <th>Plataforma</th>
             <th>Novo</th>
             <th>Ações</th>
           </tr>
@@ -27,6 +28,7 @@ export default function SuccessProductListPage() {
             <tr key={p.id}>
               <td>{p.id}</td>
               <td>{p.description}</td>
+              <td>{p.platform}</td>
               <td>{p.novo ? "Yes" : "No"}</td>
               <td>
                 <Link

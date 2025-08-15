@@ -1,5 +1,6 @@
 package com.marketinghub.successproduct.dto;
 
+import com.marketinghub.successproduct.SuccessProductPlatform;
 import java.time.Instant;
 import lombok.Data;
 
@@ -12,6 +13,7 @@ public class SuccessProductDto {
     private String description;
     private String name;
     private boolean novo;
+    private SuccessProductPlatform platform;
     private String niche;
     private String avatar;
     private String audienceType;

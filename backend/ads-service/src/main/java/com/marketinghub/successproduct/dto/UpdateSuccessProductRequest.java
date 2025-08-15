@@ -1,5 +1,6 @@
 package com.marketinghub.successproduct.dto;
 
+import com.marketinghub.successproduct.SuccessProductPlatform;
 import lombok.Data;
 
 /**
@@ -12,6 +13,7 @@ public class UpdateSuccessProductRequest {
     private Boolean novo;
     private String niche;
     private String avatar;
+    private SuccessProductPlatform platform;
     private String audienceType;
     private String salesPageUrl;
     private String instagramUrl;

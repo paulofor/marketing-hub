@@ -60,6 +60,7 @@ CREATE TABLE success_product (
     description LONGTEXT,
     name VARCHAR(255),
     novo BOOLEAN DEFAULT TRUE,
+    platform VARCHAR(20) DEFAULT 'COFRE',
     niche VARCHAR(255),
     avatar VARCHAR(255),
     audience_type VARCHAR(255),

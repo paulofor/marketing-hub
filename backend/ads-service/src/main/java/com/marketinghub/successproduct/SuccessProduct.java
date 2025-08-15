@@ -31,6 +31,10 @@ public class SuccessProduct {
     @Builder.Default
     private boolean novo = true;
 
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private SuccessProductPlatform platform = SuccessProductPlatform.COFRE;
+
     private String niche;
     private String avatar;
 

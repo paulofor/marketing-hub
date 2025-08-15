@@ -1,11 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
+export type SuccessProductPlatform = "COFRE" | "HOTMART" | "CLICKBANK";
+
 export interface SuccessProduct {
   id: number;
   description: string;
   name?: string;
   novo: boolean;
+  platform: SuccessProductPlatform;
   niche: string;
   avatar: string;
   audienceType: string;

@@ -6,6 +6,7 @@ import com.marketinghub.successproduct.SuccessProduct;
 import com.marketinghub.successproduct.dto.CreateSuccessProductRequest;
 import com.marketinghub.successproduct.dto.UpdateSuccessProductRequest;
 import com.marketinghub.successproduct.repository.SuccessProductRepository;
+import com.marketinghub.successproduct.SuccessProductPlatform;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ public class SuccessProductService {
         SuccessProduct product = SuccessProduct.builder()
                 .description(request.getDescription())
                 .novo(true)
+                .platform(request.getPlatform() != null ? request.getPlatform() : SuccessProductPlatform.COFRE)
                 .build();
         return repository.save(product);
     }
@@ -54,6 +56,9 @@ public class SuccessProductService {
         }
         product.setNiche(request.getNiche());
         product.setAvatar(request.getAvatar());
+        if (request.getPlatform() != null) {
+            product.setPlatform(request.getPlatform());
+        }
         product.setAudienceType(request.getAudienceType());
         product.setSalesPageUrl(request.getSalesPageUrl());
         product.setInstagramUrl(request.getInstagramUrl());

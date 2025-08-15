@@ -29,6 +29,7 @@ public class AiServiceService {
                 .phase(request.getPhase())
                 .price(request.getPrice())
                 .cost(request.getCost())
+                .observation(request.getObservation())
                 .build();
         return repository.save(service);
     }
@@ -51,6 +52,7 @@ public class AiServiceService {
         service.setPhase(request.getPhase());
         service.setPrice(request.getPrice());
         service.setCost(request.getCost());
+        service.setObservation(request.getObservation());
         return repository.save(service);
     }
 }

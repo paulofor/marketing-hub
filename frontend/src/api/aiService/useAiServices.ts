@@ -9,6 +9,7 @@ export interface AiService {
   phase: string;
   price: number;
   cost: number;
+  observation: string;
 }
 
 export function useAiServices() {

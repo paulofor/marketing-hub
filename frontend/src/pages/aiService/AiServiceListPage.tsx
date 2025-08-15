@@ -23,6 +23,7 @@ export default function AiServiceListPage() {
             <th>Fase</th>
             <th>Preço</th>
             <th>Custo</th>
+            <th>Observação</th>
             <th>Ações</th>
           </tr>
         </thead>
@@ -35,6 +36,7 @@ export default function AiServiceListPage() {
               <td>{s.phase}</td>
               <td>{s.price}</td>
               <td>{s.cost}</td>
+              <td>{s.observation}</td>
               <td>
                 <button
                   className="btn btn-sm btn-outline-primary"

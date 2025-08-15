@@ -29,6 +29,7 @@ class AiServiceRepositoryTest {
                 .phase("Planejamento")
                 .price(new BigDecimal("20.0"))
                 .cost(new BigDecimal("20.0"))
+                .observation("Teste de observação")
                 .build();
         repository.save(service);
         assertThat(repository.findById(service.getId())).isPresent();

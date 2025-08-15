@@ -28,6 +28,7 @@ public class SuccessProduct {
     private boolean novo = true;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     @Builder.Default
     private SuccessProductPlatform platform = SuccessProductPlatform.COFRE;
 

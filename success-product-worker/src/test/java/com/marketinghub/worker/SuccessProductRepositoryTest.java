@@ -48,6 +48,17 @@ class SuccessProductRepositoryTest {
     }
 
     @Test
+    void testDefaultPlatformIsCofre() {
+        SuccessProduct product = SuccessProduct.builder()
+                .description("Default platform")
+                .salesPageUrl("https://example.com/default")
+                .build();
+        repository.save(product);
+        SuccessProduct saved = repository.findById(product.getId()).orElseThrow();
+        assertThat(saved.getPlatform()).isEqualTo(SuccessProductPlatform.COFRE);
+    }
+
+    @Test
     void testSaveSuccessProductWithMultilineDescription() {
         String description = """
                 OFERTA ESCALADA 03/07/25 -  🚀

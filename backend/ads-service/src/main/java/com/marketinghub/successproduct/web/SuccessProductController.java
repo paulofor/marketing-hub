@@ -2,6 +2,7 @@ package com.marketinghub.successproduct.web;
 
 import com.marketinghub.successproduct.dto.CreateSuccessProductRequest;
 import com.marketinghub.successproduct.dto.SuccessProductDto;
+import com.marketinghub.successproduct.dto.UpdateSuccessProductRequest;
 import com.marketinghub.successproduct.mapper.SuccessProductMapper;
 import com.marketinghub.successproduct.service.SuccessProductService;
 import org.springframework.web.bind.annotation.*;
@@ -38,5 +39,10 @@ public class SuccessProductController {
         return StreamSupport.stream(service.list().spliterator(), false)
                 .map(mapper::toDto)
                 .toList();
+    }
+
+    @PutMapping("/{id}")
+    public SuccessProductDto update(@PathVariable Long id, @RequestBody UpdateSuccessProductRequest request) {
+        return mapper.toDto(service.update(id, request));
     }
 }

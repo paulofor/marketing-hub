@@ -30,6 +30,12 @@ export default function SuccessProductListPage() {
               <td>{p.novo ? "Yes" : "No"}</td>
               <td>
                 <Link
+                  className="btn btn-sm btn-outline-secondary me-2"
+                  to={`/success-products/${p.id}/edit`}
+                >
+                  Editar
+                </Link>
+                <Link
                   className="btn btn-sm btn-outline-primary"
                   to={`/success-products/${p.id}`}
                 >

@@ -13,6 +13,7 @@ import NewProductPage from "./pages/product/NewProductPage";
 import SuccessProductListPage from "./pages/successProduct/SuccessProductListPage";
 import NewSuccessProductPage from "./pages/successProduct/NewSuccessProductPage";
 import SuccessProductDetailPage from "./pages/successProduct/SuccessProductDetailPage";
+import EditSuccessProductPage from "./pages/successProduct/EditSuccessProductPage";
 import InstagramPostsPage from "./pages/post/InstagramPostsPage";
 import NicheListPage from "./pages/niche/NicheListPage";
 import NewNichePage from "./pages/niche/NewNichePage";
@@ -165,6 +166,10 @@ export default function App() {
         <Route
           path="/success-products/:id"
           element={<SuccessProductDetailPage />}
+        />
+        <Route
+          path="/success-products/:id/edit"
+          element={<EditSuccessProductPage />}
         />
         <Route path="/niches" element={<AppLayout />}>
           <Route index element={<NicheListPage />} />

@@ -8,6 +8,7 @@ export interface SuccessProduct {
   novo: boolean;
   niche: string;
   avatar: string;
+  audienceType: string;
   salesPageUrl: string;
   instagramUrl: string;
   facebookUrl: string;
@@ -20,7 +21,7 @@ export interface SuccessProduct {
   riskReversal: string;
   socialProof: string;
   checkoutMonetization: string;
-  funnel: string;
+  salesFunnel: string;
   creativeVolume: string;
   storytelling: string;
 }

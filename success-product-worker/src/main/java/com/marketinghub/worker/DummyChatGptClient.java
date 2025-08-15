@@ -14,6 +14,9 @@ public class DummyChatGptClient implements ChatGptClient {
         log.debug("Enriching product {} using DummyChatGptClient", product.getId());
         // TODO connect to ChatGPT API
         product.setName("Produto Teste");
+        product.setUniqueMechanism("Mecanismo Teste");
+        product.setSalesFunnel("Funil Teste");
+        product.setAudienceType("Tipo de Público Teste");
         product.setSalesPageUrl("https://example.com");
         product.setInstagramUrl("https://instagram.com/example");
         product.setFacebookUrl("https://facebook.com/example");

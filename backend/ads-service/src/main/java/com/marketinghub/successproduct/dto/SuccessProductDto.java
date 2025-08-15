@@ -14,6 +14,7 @@ public class SuccessProductDto {
     private boolean novo;
     private String niche;
     private String avatar;
+    private String audienceType;
     private String salesPageUrl;
     private String instagramUrl;
     private String facebookUrl;
@@ -26,7 +27,7 @@ public class SuccessProductDto {
     private String riskReversal;
     private String socialProof;
     private String checkoutMonetization;
-    private String funnel;
+    private String salesFunnel;
     private String creativeVolume;
     private String storytelling;
     private Instant createdAt;

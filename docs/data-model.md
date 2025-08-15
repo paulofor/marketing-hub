@@ -69,6 +69,7 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `novo` BOOLEAN DEFAULT TRUE
 - `niche` VARCHAR(255)
 - `avatar` VARCHAR(255)
+- `audience_type` VARCHAR(255)
 - `sales_page_url` VARCHAR(500)
 - `instagram_url` VARCHAR(500)
 - `facebook_url` VARCHAR(500)
@@ -81,7 +82,7 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `risk_reversal` LONGTEXT
 - `social_proof` LONGTEXT
 - `checkout_monetization` LONGTEXT
-- `funnel` LONGTEXT
+- `sales_funnel` LONGTEXT
 - `creative_volume` LONGTEXT
 - `storytelling` LONGTEXT
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP

@@ -30,6 +30,8 @@ public class SuccessProduct {
     private String niche;
     private String avatar;
 
+    private String audienceType;
+
     private String salesPageUrl;
     private String instagramUrl;
     private String facebookUrl;
@@ -61,8 +63,8 @@ public class SuccessProduct {
     @Column(columnDefinition = "LONGTEXT")
     private String checkoutMonetization;
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
-    private String funnel;
+    @Column(name = "sales_funnel", columnDefinition = "LONGTEXT")
+    private String salesFunnel;
     @Lob
     @Column(columnDefinition = "LONGTEXT")
     private String creativeVolume;

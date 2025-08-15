@@ -60,7 +60,7 @@ public class OpenAiChatGptClient implements ChatGptClient {
         List<Map<String, Object>> messages = new ArrayList<>();
         messages.add(Map.of("role", "system", "content", "Você é um especialista em marketing."));
         String prompt = "Preencha os campos name, explicitPain, promise, uniqueMechanism, " +
-                "tripwire, riskReversal, socialProof, checkoutMonetization, funnel, " +
+                "tripwire, riskReversal, socialProof, checkoutMonetization, salesFunnel, audienceType, " +
                 "creativeVolume, storytelling, salesPageUrl, instagramUrl, facebookUrl, " +
                 "youtubeUrl em formato JSON. Se houver um link de p\u00e1gina de vendas na\n" +
                 "descri\u00e7\u00e3o, visite a p\u00e1gina para coletar esses detalhes de copy e\n" +
@@ -164,7 +164,8 @@ public class OpenAiChatGptClient implements ChatGptClient {
                 product.setRiskReversal(asText(data, "riskReversal"));
                 product.setSocialProof(asText(data, "socialProof"));
                 product.setCheckoutMonetization(asText(data, "checkoutMonetization"));
-                product.setFunnel(asText(data, "funnel"));
+                product.setSalesFunnel(asText(data, "salesFunnel"));
+                product.setAudienceType(asText(data, "audienceType"));
                 product.setCreativeVolume(asText(data, "creativeVolume"));
                 product.setStorytelling(asText(data, "storytelling"));
                 product.setSalesPageUrl(asText(data, "salesPageUrl"));

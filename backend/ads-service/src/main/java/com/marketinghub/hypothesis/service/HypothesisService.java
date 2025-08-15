@@ -91,6 +91,7 @@ public class HypothesisService {
                 .promise(req.getPromise())
                 .problem(req.getProblem())
                 .persona(req.getPersona())
+                .mechanism(req.getMechanism())
                 .uniqueMechanism(req.getUniqueMechanism())
                 .successRule(req.getSuccessRule())
                 .offerType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()))
@@ -163,6 +164,7 @@ public class HypothesisService {
         h.setPromise(req.getPromise());
         h.setProblem(req.getProblem());
         h.setPersona(req.getPersona());
+        h.setMechanism(req.getMechanism());
         h.setUniqueMechanism(req.getUniqueMechanism());
         h.setSuccessRule(req.getSuccessRule());
         h.setOfferType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()));

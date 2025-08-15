@@ -8,6 +8,7 @@ public class UpdateHypothesisRequest {
     private String promise;
     private String problem;
     private String persona;
+    private String uniqueMechanism;
     private String successRule;
     private String offerType;
     private BigDecimal price;
@@ -27,6 +28,9 @@ public class UpdateHypothesisRequest {
 
     public String getPersona() { return persona; }
     public void setPersona(String persona) { this.persona = persona; }
+
+    public String getUniqueMechanism() { return uniqueMechanism; }
+    public void setUniqueMechanism(String uniqueMechanism) { this.uniqueMechanism = uniqueMechanism; }
 
     public String getSuccessRule() { return successRule; }
     public void setSuccessRule(String successRule) { this.successRule = successRule; }

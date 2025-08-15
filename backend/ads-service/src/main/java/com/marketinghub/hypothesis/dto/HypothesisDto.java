@@ -16,6 +16,7 @@ public class HypothesisDto {
     private String promise;
     private String problem;
     private String persona;
+    private String uniqueMechanism;
     private String successRule;
     private OfferType offerType;
     private BigDecimal price;

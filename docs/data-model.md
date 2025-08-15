@@ -214,6 +214,7 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `premise_angle_id` BIGINT NOT NULL
 - `offer_type` VARCHAR(20) NOT NULL
 - `price` DECIMAL(6,2)
+- `unique_mechanism` LONGTEXT
 - `kpi_target_cpl` DECIMAL(7,2) NOT NULL
 - `status` VARCHAR(20) DEFAULT 'BACKLOG' NOT NULL
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP

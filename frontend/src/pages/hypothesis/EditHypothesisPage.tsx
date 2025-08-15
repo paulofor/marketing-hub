@@ -15,6 +15,7 @@ const schema = z
     promise: z.string().min(1).max(140),
     problem: z.string().min(1),
     persona: z.string().min(1),
+    uniqueMechanism: z.string().optional(),
     successRule: z.string().min(1),
     premiseAngleId: z.string().min(1),
     offerType: z.enum(["LEAD", "TRIPWIRE"]),
@@ -59,6 +60,7 @@ export default function EditHypothesisPage() {
         promise: data.promise || "",
         problem: data.problem || "",
         persona: data.persona || "",
+        uniqueMechanism: data.uniqueMechanism || "",
         successRule: data.successRule || "",
         premiseAngleId: String(data.premiseAngleId ?? ""),
         offerType: (data.offerType as "LEAD" | "TRIPWIRE") || "LEAD",
@@ -78,6 +80,7 @@ export default function EditHypothesisPage() {
       promise: values.promise,
       problem: values.problem,
       persona: values.persona,
+      uniqueMechanism: values.uniqueMechanism,
       successRule: values.successRule,
       premiseAngleId: Number(values.premiseAngleId),
       offerType: values.offerType,
@@ -146,14 +149,30 @@ export default function EditHypothesisPage() {
           Persona
         </label>
         <input
-          id="persona"
-          {...register("persona")}
+        id="persona"
+        {...register("persona")}
           className={`form-control mb-2 ${errors.persona ? "is-invalid" : ""}`}
           aria-describedby="persona-error"
         />
         {errors.persona && (
           <div id="persona-error" className="invalid-feedback d-block">
             {errors.persona.message}
+          </div>
+        )}
+
+        <label className="form-label" htmlFor="uniqueMechanism">
+          Mecanismo único
+        </label>
+        <textarea
+          id="uniqueMechanism"
+          rows={2}
+          {...register("uniqueMechanism")}
+          className={`form-control mb-2 ${errors.uniqueMechanism ? "is-invalid" : ""}`}
+          aria-describedby="uniqueMechanism-error"
+        />
+        {errors.uniqueMechanism && (
+          <div id="uniqueMechanism-error" className="invalid-feedback d-block">
+            {errors.uniqueMechanism.message}
           </div>
         )}
 

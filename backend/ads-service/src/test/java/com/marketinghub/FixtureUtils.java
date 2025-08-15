@@ -43,6 +43,7 @@ public class FixtureUtils {
                 .promise("Promessa")
                 .problem("Problema")
                 .persona("Persona")
+                .uniqueMechanism("Mecanismo")
                 .successRule("Regra")
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(java.math.BigDecimal.ONE)

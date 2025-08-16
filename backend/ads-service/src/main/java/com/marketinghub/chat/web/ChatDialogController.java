@@ -2,6 +2,7 @@ package com.marketinghub.chat.web;
 
 import com.marketinghub.chat.dto.ChatDialogDto;
 import com.marketinghub.chat.dto.CreateChatDialogRequest;
+import com.marketinghub.chat.dto.UpdateChatDialogRequest;
 import com.marketinghub.chat.mapper.ChatDialogMapper;
 import com.marketinghub.chat.service.ChatDialogService;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +29,12 @@ public class ChatDialogController {
     @PostMapping
     public ChatDialogDto create(@RequestBody CreateChatDialogRequest request) {
         return mapper.toDto(service.create(request));
+    }
+
+    @PutMapping("/{id}")
+    public ChatDialogDto update(
+            @PathVariable Long id, @RequestBody UpdateChatDialogRequest request) {
+        return mapper.toDto(service.update(id, request));
     }
 }
 

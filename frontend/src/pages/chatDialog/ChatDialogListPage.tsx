@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import { useChatDialogs } from "../../api/chatDialog/useChatDialogs";
+import { useUpdateChatDialog } from "../../api/chatDialog/useUpdateChatDialog";
 
 export default function ChatDialogListPage() {
   const { data, isLoading } = useChatDialogs();
+  const update = useUpdateChatDialog();
   const dialogs = Array.isArray(data)
     ? [...data].sort(
         (a, b) =>
@@ -25,6 +27,7 @@ export default function ChatDialogListPage() {
               <th>Descrição</th>
               <th>Tema</th>
               <th>URL</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -37,6 +40,19 @@ export default function ChatDialogListPage() {
                   <a href={d.url} target="_blank" rel="noopener noreferrer">
                     Abrir
                   </a>
+                </td>
+                <td>
+                  <button
+                    className="btn btn-sm btn-secondary"
+                    onClick={() => {
+                      const description = prompt("Novo nome", d.description);
+                      if (description) {
+                        update.mutate({ id: d.id, description });
+                      }
+                    }}
+                  >
+                    Editar
+                  </button>
                 </td>
               </tr>
             ))}

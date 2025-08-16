@@ -30,6 +30,9 @@ A aplicação agenda a tarefa `SuccessProductScheduler` para rodar a cada cinco 
 Para que a integração funcione é necessário definir a variável de ambiente `OPENAI_API_KEY` ou a propriedade `openai.api-key` com o token de acesso. O modelo utilizado pode ser configurado pela propriedade `openai.model` (padrão `o3`).
 Caso queira permitir buscas na Internet pelo modelo, defina também `GOOGLE_API_KEY` e `GOOGLE_SEARCH_ID` ou as propriedades `google.api-key` e `google.search-id` com as credenciais do Google Search.
 
+## Integração com Hotmart
+O worker possui um cliente para consultar os produtos mais quentes na Hotmart. Defina as propriedades `hotmart.username` e `hotmart.password` (além de `hotmart.base-url` se necessário). Veja [docs/hotmart-client.md](../docs/hotmart-client.md) para instruções detalhadas.
+
 Durante a execução, o worker registra logs informando o início e o término da tarefa, além de detalhes sobre cada produto processado. Verifique o console para acompanhar o andamento.
 
 Edite `src/main/resources/application.properties` caso precise alterar as credenciais ou a URL do banco de dados.

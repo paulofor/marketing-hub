@@ -1,18 +1,20 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useForm } from "react-hook-form";
 import { useUpdateNiche } from "../../api/niche/useUpdateNiche";
 import { useNiche } from "../../api/niche/useNiche";
 import PageTitle from "../../components/PageTitle";
 import { MarketNiche } from "../../api/niche/useNiches";
 
 export default function EditNichePage() {
-  const { id } = useParams<{ id: string }>();
-  const nicheId = Number(id);
-  const { data, isLoading } = useNiche(nicheId);
+  const { nicheId } = useParams<{ nicheId: string }>();
+  const id = Number(nicheId);
+  const { data, isLoading } = useNiche(id);
   const update = useUpdateNiche();
   const navigate = useNavigate();
+  const { handleSubmit } = useForm<MarketNiche>();
   const [form, setForm] = useState<MarketNiche>({
-    id: nicheId,
+    id,
     name: "",
     description: "",
     demandVolume: "",
@@ -110,7 +112,12 @@ export default function EditNichePage() {
       />
       <button
         className="btn btn-primary"
-        onClick={submit}
+        onClick={handleSubmit(
+          () => submit(),
+          (errors) => {
+            console.log("Validation errors", errors);
+          },
+        )}
         disabled={update.isPending}
       >
         {update.isPending ? (

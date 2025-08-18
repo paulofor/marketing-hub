@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useCreateNiche } from "../../api/niche/useCreateNiche";
+import { useCreateNiche, CreateNiche } from "../../api/niche/useCreateNiche";
 import PageTitle from "../../components/PageTitle";
+import { useChatDialogs } from "../../api/chatDialog/useChatDialogs";
 
 export default function NewNichePage() {
   const create = useCreateNiche();
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<CreateNiche>({
     name: "",
     description: "",
     demandVolume: "",
@@ -14,7 +15,9 @@ export default function NewNichePage() {
     interests: "",
     demographicFilters: "",
     extraTips: "",
+    chatDialogId: undefined,
   });
+  const { data: dialogs } = useChatDialogs();
 
   const submit = () => {
     create.mutate(form);
@@ -61,9 +64,7 @@ export default function NewNichePage() {
         className="form-control mb-2"
         placeholder="Segmentação-base (Brasil)"
         value={form.baseSegmentation}
-        onChange={(e) =>
-          setForm({ ...form, baseSegmentation: e.target.value })
-        }
+        onChange={(e) => setForm({ ...form, baseSegmentation: e.target.value })}
         rows={3}
       />
       <textarea
@@ -89,6 +90,23 @@ export default function NewNichePage() {
         onChange={(e) => setForm({ ...form, extraTips: e.target.value })}
         rows={3}
       />
+      <select
+        className="form-select mb-2"
+        value={form.chatDialogId ?? ""}
+        onChange={(e) =>
+          setForm({
+            ...form,
+            chatDialogId: e.target.value ? Number(e.target.value) : undefined,
+          })
+        }
+      >
+        <option value="">Diálogo do ChatGPT (opcional)</option>
+        {dialogs?.map((d) => (
+          <option key={d.id} value={d.id}>
+            {d.theme || d.id}
+          </option>
+        ))}
+      </select>
       <button className="btn btn-primary" onClick={submit}>
         Salvar
       </button>

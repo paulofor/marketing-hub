@@ -111,6 +111,7 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `interests` LONGTEXT
 - `demographic_filters` LONGTEXT
 - `extra_tips` LONGTEXT
+- `chat_dialog_id` BIGINT
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
@@ -404,4 +405,5 @@ erDiagram
     AD_SET ||--o{ METRIC_SNAPSHOT : tracks
     METRIC_PRESET ||--o{ EXPERIMENT : configures
     CHAT_SESSION ||--o{ CHAT_MESSAGE : includes
+    CHAT_DIALOG ||--o{ MARKET_NICHE : generates
 ```

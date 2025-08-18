@@ -3,6 +3,8 @@ package com.marketinghub.niche.service;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.dto.CreateMarketNicheRequest;
 import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.chat.ChatDialog;
+import com.marketinghub.chat.repository.ChatDialogRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,9 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class MarketNicheService {
     private final MarketNicheRepository repository;
+    private final ChatDialogRepository chatDialogRepository;
 
-    public MarketNicheService(MarketNicheRepository repository) {
+    public MarketNicheService(MarketNicheRepository repository, ChatDialogRepository chatDialogRepository) {
         this.repository = repository;
+        this.chatDialogRepository = chatDialogRepository;
     }
 
     /**
@@ -32,6 +36,7 @@ public class MarketNicheService {
                 .interests(request.getInterests())
                 .demographicFilters(request.getDemographicFilters())
                 .extraTips(request.getExtraTips())
+                .chatDialog(attachChatDialog(request.getChatDialogId()))
                 .build();
         return repository.save(niche);
     }
@@ -52,10 +57,19 @@ public class MarketNicheService {
         niche.setInterests(request.getInterests());
         niche.setDemographicFilters(request.getDemographicFilters());
         niche.setExtraTips(request.getExtraTips());
+        niche.setChatDialog(attachChatDialog(request.getChatDialogId()));
         return repository.save(niche);
     }
 
     public Iterable<MarketNiche> list() {
         return repository.findAll();
+    }
+
+    private ChatDialog attachChatDialog(Long id) {
+        if (id == null) {
+            return null;
+        }
+        return chatDialogRepository.findById(id)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("ChatDialog not found: " + id));
     }
 }

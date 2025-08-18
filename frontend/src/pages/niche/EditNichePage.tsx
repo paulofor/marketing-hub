@@ -5,6 +5,7 @@ import { useUpdateNiche } from "../../api/niche/useUpdateNiche";
 import { useNiche } from "../../api/niche/useNiche";
 import PageTitle from "../../components/PageTitle";
 import { MarketNiche } from "../../api/niche/useNiches";
+import { useChatDialogs } from "../../api/chatDialog/useChatDialogs";
 
 export default function EditNichePage() {
   const { nicheId } = useParams<{ nicheId: string }>();
@@ -13,6 +14,7 @@ export default function EditNichePage() {
   const update = useUpdateNiche();
   const navigate = useNavigate();
   const { handleSubmit } = useForm<MarketNiche>();
+  const { data: dialogs } = useChatDialogs();
   const [form, setForm] = useState<MarketNiche>({
     id,
     name: "",
@@ -24,6 +26,7 @@ export default function EditNichePage() {
     interests: "",
     demographicFilters: "",
     extraTips: "",
+    chatDialogId: undefined,
   });
 
   useEffect(() => {
@@ -110,6 +113,24 @@ export default function EditNichePage() {
         onChange={(e) => setForm({ ...form, extraTips: e.target.value })}
         rows={3}
       />
+      <label className="form-label">Diálogo do ChatGPT</label>
+      <select
+        className="form-select mb-2"
+        value={form.chatDialogId ?? ""}
+        onChange={(e) =>
+          setForm({
+            ...form,
+            chatDialogId: e.target.value ? Number(e.target.value) : undefined,
+          })
+        }
+      >
+        <option value="">Nenhum</option>
+        {dialogs?.map((d) => (
+          <option key={d.id} value={d.id}>
+            {d.theme || d.id}
+          </option>
+        ))}
+      </select>
       <button
         className="btn btn-primary"
         onClick={handleSubmit(

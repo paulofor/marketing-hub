@@ -76,3 +76,7 @@ jobs:
         run: |
           rsync -az --delete dist/ marketinghub@${VPS_IP}:${FRONTEND_DIR}/
           ssh marketinghub@${VPS_IP} "sudo -n systemctl restart marketinghub-frontend.service"
+      - name: Cleanup artifact
+        uses: geekyeggo/delete-artifact@v2
+        with:
+          name: frontend-build

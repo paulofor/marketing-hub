@@ -1,6 +1,6 @@
-# Success Product Worker
+# AI Worker
 
-Este projeto executa em segundo plano para analisar novos produtos cadastrados no Marketing Hub e enriquecê-los com características de marketing. Ele utiliza as entidades do **ads-service** publicadas no GitHub Packages e roda tarefas agendadas a cada cinco minutos. Durante o enriquecimento, o ChatGPT também define o campo `name` de cada produto.
+Este projeto executa em segundo plano para processar dados cadastrados no Marketing Hub com auxílio do ChatGPT. Ele reutiliza as entidades do **ads-service** publicadas no GitHub Packages e roda tarefas agendadas a cada cinco minutos. Durante o processamento, campos como `name` podem ser gerados pela IA.
 
 ## Pré-requisitos
 - Java 21

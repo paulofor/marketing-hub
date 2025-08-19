@@ -3,9 +3,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.marketinghub</groupId>
-    <artifactId>success-product-worker</artifactId>
+    <artifactId>ai-worker</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>success-product-worker</name>
+    <name>ai-worker</name>
 
 
     <repositories>

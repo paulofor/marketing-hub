@@ -8,8 +8,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EntityScan({"com.marketinghub.worker", "com.marketinghub.ads"})
 @EnableScheduling
-public class SuccessProductWorkerApplication {
+public class AiWorkerApplication {
     public static void main(String[] args) {
-        SpringApplication.run(SuccessProductWorkerApplication.class, args);
+        SpringApplication.run(AiWorkerApplication.class, args);
     }
 }

@@ -34,7 +34,7 @@ jobs:
         with:
           name: frontend-build
           path: frontend/dist
-          retention-days: 14
+          retention-days: 7
 
 
   build-debug:

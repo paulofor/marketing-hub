@@ -6,13 +6,13 @@ Recursos de IA podem ser cadastrados informando em qual fase do marketing atuam.
 docker compose up -d      # start MySQL
 cd backend/ads-service && mvn spring-boot:run
 cd ../../frontend && npm run dev
-# run the background worker (optional)
-cd ../success-product-worker && mvn spring-boot:run
+# run the AI worker (optional)
+cd ../ai-worker && mvn spring-boot:run
 # the worker fetches the ads-service dependency from
 # https://maven.pkg.github.com/paulofor/ads-service
 # The backend builds two JAR files when packaging:
 # - `app.jar` is the thin artifact published to GitHub Packages and
-#   consumed by the Success Product Worker using Maven.
+#   consumed by the AI Worker using Maven.
 # - `app-exec.jar` is the fat executable. The CI workflow renames it to
 #   `app.jar` for deployment and keeps a copy of the thin JAR as
 #   `app-lib.jar`.

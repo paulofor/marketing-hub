@@ -13,6 +13,8 @@ export interface CreateHypothesis {
   mechanism?: string;
   uniqueMechanism?: string;
   successRule: string;
+  prompt?: string;
+  model?: string;
   offerType?: string;
   kpiTargetCpl?: number;
 }

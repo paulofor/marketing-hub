@@ -17,6 +17,7 @@ export default function NewNichePage() {
     demographicFilters: "",
     extraTips: "",
     chatDialogId: undefined as number | undefined,
+    hypothesesToGenerate: 0,
   });
 
   const submit = () => {
@@ -78,6 +79,15 @@ export default function NewNichePage() {
           </option>
         ))}
       </select>
+      <input
+        type="number"
+        className="form-control mb-2"
+        placeholder="Qtd. de hipóteses para gerar"
+        value={form.hypothesesToGenerate}
+        onChange={(e) =>
+          setForm({ ...form, hypothesesToGenerate: Number(e.target.value) })
+        }
+      />
       <textarea
         className="form-control mb-2"
         placeholder="Segmentação-base (Brasil)"

@@ -100,6 +100,7 @@ CREATE TABLE market_niche (
     demand_volume LONGTEXT,
     promises LONGTEXT,
     offers LONGTEXT,
+    hypotheses_to_generate INT,
     base_segmentation LONGTEXT,
     interests LONGTEXT,
     demographic_filters LONGTEXT,

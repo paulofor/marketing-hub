@@ -107,6 +107,7 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `demand_volume` LONGTEXT
 - `promises` LONGTEXT
 - `offers` LONGTEXT
+- `hypotheses_to_generate` INT
 - `base_segmentation` LONGTEXT
 - `interests` LONGTEXT
 - `demographic_filters` LONGTEXT
@@ -220,6 +221,8 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `price` DECIMAL(6,2)
 - `mechanism` LONGTEXT
 - `unique_mechanism` LONGTEXT
+- `prompt` LONGTEXT
+- `model` VARCHAR(255)
 - `kpi_target_cpl` DECIMAL(7,2) NOT NULL
 - `status` VARCHAR(20) DEFAULT 'BACKLOG' NOT NULL
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP

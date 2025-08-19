@@ -11,6 +11,8 @@ public class UpdateHypothesisRequest {
     private String mechanism;
     private String uniqueMechanism;
     private String successRule;
+    private String prompt;
+    private String model;
     private String offerType;
     private BigDecimal price;
     private BigDecimal kpiTargetCpl;
@@ -38,6 +40,12 @@ public class UpdateHypothesisRequest {
 
     public String getSuccessRule() { return successRule; }
     public void setSuccessRule(String successRule) { this.successRule = successRule; }
+
+    public String getPrompt() { return prompt; }
+    public void setPrompt(String prompt) { this.prompt = prompt; }
+
+    public String getModel() { return model; }
+    public void setModel(String model) { this.model = model; }
 
     public String getOfferType() { return offerType; }
     public void setOfferType(String offerType) { this.offerType = offerType; }

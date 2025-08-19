@@ -54,6 +54,13 @@ public class Hypothesis {
     @Lob
     private String uniqueMechanism;
 
+    /** Prompt usado quando a hipótese é gerada por IA. */
+    @Lob
+    private String prompt;
+
+    /** Modelo de IA responsável pela geração desta hipótese. */
+    private String model;
+
     /** Regra de sucesso que define se a hipótese será validada. */
     @Lob
     private String successRule;

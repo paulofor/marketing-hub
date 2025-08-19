@@ -13,6 +13,7 @@ export interface CreateNiche {
   demographicFilters: string;
   extraTips: string;
   chatDialogId?: number;
+  hypothesesToGenerate?: number;
 }
 
 export function useCreateNiche() {

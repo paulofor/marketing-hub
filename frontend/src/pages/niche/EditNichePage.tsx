@@ -27,6 +27,7 @@ export default function EditNichePage() {
     demographicFilters: "",
     extraTips: "",
     chatDialogId: undefined,
+    hypothesesToGenerate: 0,
   });
 
   useEffect(() => {
@@ -71,6 +72,15 @@ export default function EditNichePage() {
           </option>
         ))}
       </select>
+      <label className="form-label">Qtd. de hipóteses para gerar</label>
+      <input
+        type="number"
+        className="form-control mb-2"
+        value={form.hypothesesToGenerate}
+        onChange={(e) =>
+          setForm({ ...form, hypothesesToGenerate: Number(e.target.value) })
+        }
+      />
       <label className="form-label">Descrição</label>
       <textarea
         className="form-control mb-2"

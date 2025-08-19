@@ -1,5 +1,7 @@
 package com.marketinghub.niche.service;
 
+import com.marketinghub.chat.ChatDialog;
+import com.marketinghub.chat.repository.ChatDialogRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.dto.CreateMarketNicheRequest;
 import com.marketinghub.niche.repository.MarketNicheRepository;
@@ -12,9 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class MarketNicheService {
     private final MarketNicheRepository repository;
+    private final ChatDialogRepository chatDialogRepository;
 
-    public MarketNicheService(MarketNicheRepository repository) {
+    public MarketNicheService(MarketNicheRepository repository, ChatDialogRepository chatDialogRepository) {
         this.repository = repository;
+        this.chatDialogRepository = chatDialogRepository;
     }
 
     /**
@@ -22,6 +26,10 @@ public class MarketNicheService {
      */
     @Transactional
     public MarketNiche create(CreateMarketNicheRequest request) {
+        ChatDialog chat = null;
+        if (request.getChatDialogId() != null) {
+            chat = chatDialogRepository.findById(request.getChatDialogId()).orElseThrow();
+        }
         MarketNiche niche = MarketNiche.builder()
                 .name(request.getName())
                 .description(request.getDescription())
@@ -32,6 +40,7 @@ public class MarketNicheService {
                 .interests(request.getInterests())
                 .demographicFilters(request.getDemographicFilters())
                 .extraTips(request.getExtraTips())
+                .chatDialog(chat)
                 .build();
         return repository.save(niche);
     }
@@ -52,6 +61,11 @@ public class MarketNicheService {
         niche.setInterests(request.getInterests());
         niche.setDemographicFilters(request.getDemographicFilters());
         niche.setExtraTips(request.getExtraTips());
+        ChatDialog chat = null;
+        if (request.getChatDialogId() != null) {
+            chat = chatDialogRepository.findById(request.getChatDialogId()).orElseThrow();
+        }
+        niche.setChatDialog(chat);
         return repository.save(niche);
     }
 

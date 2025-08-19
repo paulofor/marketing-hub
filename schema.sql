@@ -104,6 +104,7 @@ CREATE TABLE market_niche (
     interests LONGTEXT,
     demographic_filters LONGTEXT,
     extra_tips LONGTEXT,
+    chat_dialog_id BIGINT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

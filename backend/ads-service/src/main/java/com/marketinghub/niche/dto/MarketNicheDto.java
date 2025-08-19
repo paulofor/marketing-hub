@@ -18,6 +18,7 @@ public class MarketNicheDto {
     private String interests;
     private String demographicFilters;
     private String extraTips;
+    private Long chatDialogId;
     private Instant createdAt;
     private Instant updatedAt;
 }

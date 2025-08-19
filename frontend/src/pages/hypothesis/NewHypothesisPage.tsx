@@ -5,6 +5,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
+import { useNiche } from "../../api/niche/useNiche";
 
 const schema = z
   .object({
@@ -45,6 +46,7 @@ export default function NewHypothesisPage() {
   const { nicheId } = useParams();
   const navigate = useNavigate();
   const { data: angles } = useAngles();
+  const { data: niche } = useNiche(Number(nicheId));
   const {
     register,
     handleSubmit,
@@ -57,8 +59,7 @@ export default function NewHypothesisPage() {
   });
 
   const offerType = watch("offerType");
-
-  const onSubmit = handleSubmit(async (values) => {
+  const onSubmit = async (values: FormData) => {
     const body: any = {
       title: values.title,
       promise: values.promise,
@@ -78,12 +79,61 @@ export default function NewHypothesisPage() {
     await axios.post("/api/hypotheses", body);
     reset({ offerType: "LEAD" });
     navigate(`/niches/${nicheId}`);
-  });
+  };
+
+  const handleCopy = () => {
+    if (!niche) return;
+    const md = `# Nicho: ${niche.name}\n\n` +
+      `**ID:** ${niche.id}\n\n` +
+      `**Descrição:**\n${niche.description}\n\n` +
+      `**Volume de Demanda:**\n${niche.demandVolume}\n\n` +
+      `**Promessas:**\n${niche.promises}\n\n` +
+      `**Ofertas:**\n${niche.offers}\n\n` +
+      `**Segmentação-base (Brasil):**\n${niche.baseSegmentation}\n\n` +
+      `**Principais interesses / comportamentos:**\n${niche.interests}\n\n` +
+      `**Filtros demográficos & cargos:**\n${niche.demographicFilters}\n\n` +
+      `**Dicas extras:**\n${niche.extraTips}\n`;
+    navigator.clipboard.writeText(md);
+  };
 
   return (
     <div style={{ maxWidth: 480 }}>
       <PageTitle>Nova Hipótese</PageTitle>
-      <form onSubmit={onSubmit} noValidate>
+      {niche && (
+        <div className="mb-3">
+          <div className="d-flex justify-content-between align-items-center">
+            <h2 className="h5 mb-0">Nicho: {niche.name}</h2>
+            <button
+              type="button"
+              className="btn btn-outline-secondary btn-sm"
+              onClick={handleCopy}
+            >
+              Copiar em Markdown
+            </button>
+          </div>
+          <dl className="mt-2 mb-0">
+            <dt>ID</dt>
+            <dd>{niche.id}</dd>
+            <dt>Descrição</dt>
+            <dd>{niche.description}</dd>
+            <dt>Volume de Demanda</dt>
+            <dd>{niche.demandVolume}</dd>
+            <dt>Promessas</dt>
+            <dd>{niche.promises}</dd>
+            <dt>Ofertas</dt>
+            <dd>{niche.offers}</dd>
+            <dt>Segmentação-base (Brasil)</dt>
+            <dd>{niche.baseSegmentation}</dd>
+            <dt>Principais interesses / comportamentos</dt>
+            <dd>{niche.interests}</dd>
+            <dt>Filtros demográficos & cargos</dt>
+            <dd>{niche.demographicFilters}</dd>
+            <dt>Dicas extras</dt>
+            <dd>{niche.extraTips}</dd>
+          </dl>
+        </div>
+      )}
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <label className="form-label" htmlFor="title">
           Título
         </label>
@@ -311,9 +361,12 @@ export default function NewHypothesisPage() {
             Cancelar
           </button>
           <button
-            type="submit"
+            type="button"
             className="btn btn-primary"
             disabled={isSubmitting}
+            onClick={handleSubmit(onSubmit, (errors) => {
+              console.log("Validation errors", errors);
+            })}
           >
             Criar
           </button>

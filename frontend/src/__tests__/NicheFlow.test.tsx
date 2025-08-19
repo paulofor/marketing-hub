@@ -94,6 +94,6 @@ describe("niche navigation", () => {
     expect(bc).toBeTruthy();
     expect(within(bc).getByText("Nichos")).toBeTruthy();
     expect(within(bc).getByText("Fitness")).toBeTruthy();
-    expect(within(bc).getByText("Hip 1")).toBeTruthy();
+    expect(await within(bc).findByText("Hip 1")).toBeTruthy();
   });
 });

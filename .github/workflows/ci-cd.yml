@@ -90,9 +90,12 @@ jobs:
 
       - name: Verificar biblioteca publicada
         run: |
-          mvn -B -s ../settings.xml dependency:get \
+          mvn -U -B -s ../settings.xml \
+            org.apache.maven.plugins:maven-dependency-plugin:3.8.1:get \
             -Dartifact=com.marketinghub:ads-service:0.0.1-SNAPSHOT \
-            -Dtransitive=false
+            -Dtransitive=false \
+            -DremoteRepositories=github::default::https://maven.pkg.github.com/paulofor/marketing-hub
+          ls -la ~/.m2/repository/com/marketinghub/ads-service/0.0.1-SNAPSHOT || true
 
       - name: Build Success Product Worker
         run: cd ../../success-product-worker && mvn -s settings.xml package

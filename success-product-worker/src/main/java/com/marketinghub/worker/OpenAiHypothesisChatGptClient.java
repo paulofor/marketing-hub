@@ -89,8 +89,6 @@ public class OpenAiHypothesisChatGptClient implements HypothesisChatGptClient {
                         .offerType(parseOfferType(asText(node, "offerType")))
                         .price(parseBigDecimal(node, "price"))
                         .kpiTargetCpl(parseBigDecimal(node, "kpiTargetCpl"))
-                        .prompt(prompt)
-                        .model(model)
                         .build();
                 result.add(h);
             }

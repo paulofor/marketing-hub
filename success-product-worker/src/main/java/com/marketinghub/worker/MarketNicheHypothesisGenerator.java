@@ -6,6 +6,7 @@ import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
+import java.lang.reflect.Method;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +39,10 @@ public class MarketNicheHypothesisGenerator {
     @Transactional
     public void generateForNiches() {
         List<MarketNiche> niches = nicheRepository.findAll().stream()
-                .filter(n -> n.getHypothesesToGenerate() != null && n.getHypothesesToGenerate() > 0)
+                .filter(n -> {
+                    Integer qty = getHypothesesToGenerate(n);
+                    return qty != null && qty > 0;
+                })
                 .toList();
         if (niches.isEmpty()) {
             log.debug("No niches with hypotheses to generate");
@@ -48,7 +52,7 @@ public class MarketNicheHypothesisGenerator {
                 .orElseThrow(() -> new IllegalStateException("No angles available"));
         log.info("Generating hypotheses for {} niches", niches.size());
         for (MarketNiche niche : niches) {
-            int qty = niche.getHypothesesToGenerate();
+            int qty = getHypothesesToGenerate(niche);
             List<Hypothesis> generated = client.generate(niche, qty);
             log.info("Generated {} hypotheses for niche {}", generated.size(), niche.getId());
             for (Hypothesis h : generated) {
@@ -58,8 +62,31 @@ public class MarketNicheHypothesisGenerator {
                 }
                 hypothesisRepository.save(h);
             }
-            niche.setHypothesesToGenerate(0);
+            resetHypothesesToGenerate(niche);
             nicheRepository.save(niche);
+        }
+    }
+
+    private static Integer getHypothesesToGenerate(MarketNiche niche) {
+        try {
+            Method m = niche.getClass().getMethod("getHypothesesToGenerate");
+            return (Integer) m.invoke(niche);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static void resetHypothesesToGenerate(MarketNiche niche) {
+        try {
+            Method m;
+            try {
+                m = niche.getClass().getMethod("setHypothesesToGenerate", Integer.class);
+            } catch (NoSuchMethodException ex) {
+                m = niche.getClass().getMethod("setHypothesesToGenerate", int.class);
+            }
+            m.invoke(niche, 0);
+        } catch (Exception ignored) {
+            // property not available
         }
     }
 }

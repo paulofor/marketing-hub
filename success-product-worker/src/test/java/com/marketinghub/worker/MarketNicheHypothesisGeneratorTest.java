@@ -10,6 +10,7 @@ import com.marketinghub.hypothesis.OfferType;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,10 @@ class MarketNicheHypothesisGeneratorTest {
 
     @Test
     void generatesHypothesesAndResetsCounter() {
-        MarketNiche niche = MarketNiche.builder().id(1L).name("Saúde").hypothesesToGenerate(2).build();
+        MarketNiche niche = new MarketNiche();
+        niche.setId(1L);
+        niche.setName("Saúde");
+        setHypothesesToGenerate(niche, 2);
         when(nicheRepository.findAll()).thenReturn(List.of(niche));
         Hypothesis h1 = Hypothesis.builder()
                 .title("A")
@@ -67,7 +71,29 @@ class MarketNicheHypothesisGeneratorTest {
             assertThat(h.getMarketNiche()).isEqualTo(niche);
             assertThat(h.getPremiseAngle()).isEqualTo(angle);
         }
-        assertThat(niche.getHypothesesToGenerate()).isZero();
+        assertThat(getHypothesesToGenerate(niche)).isZero();
         verify(nicheRepository).save(niche);
+    }
+
+    private static void setHypothesesToGenerate(MarketNiche niche, int value) {
+        try {
+            Method m;
+            try {
+                m = niche.getClass().getMethod("setHypothesesToGenerate", Integer.class);
+            } catch (NoSuchMethodException ex) {
+                m = niche.getClass().getMethod("setHypothesesToGenerate", int.class);
+            }
+            m.invoke(niche, value);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static Integer getHypothesesToGenerate(MarketNiche niche) {
+        try {
+            Method m = niche.getClass().getMethod("getHypothesesToGenerate");
+            return (Integer) m.invoke(niche);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

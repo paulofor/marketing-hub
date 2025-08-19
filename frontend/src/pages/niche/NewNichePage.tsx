@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useCreateNiche } from "../../api/niche/useCreateNiche";
+import { useChatDialogs } from "../../api/chatDialog/useChatDialogs";
 import PageTitle from "../../components/PageTitle";
 
 export default function NewNichePage() {
   const create = useCreateNiche();
+  const { data: chatDialogs } = useChatDialogs();
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -14,6 +16,7 @@ export default function NewNichePage() {
     interests: "",
     demographicFilters: "",
     extraTips: "",
+    chatDialogId: undefined as number | undefined,
   });
 
   const submit = () => {
@@ -57,6 +60,24 @@ export default function NewNichePage() {
         onChange={(e) => setForm({ ...form, offers: e.target.value })}
         rows={3}
       />
+      <label className="form-label">Chat GPT Dialog</label>
+      <select
+        className="form-select mb-2"
+        value={form.chatDialogId ?? ""}
+        onChange={(e) =>
+          setForm({
+            ...form,
+            chatDialogId: e.target.value ? Number(e.target.value) : undefined,
+          })
+        }
+      >
+        <option value="">Nenhum</option>
+        {chatDialogs?.map((d) => (
+          <option key={d.id} value={d.id}>
+            {d.theme}
+          </option>
+        ))}
+      </select>
       <textarea
         className="form-control mb-2"
         placeholder="Segmentação-base (Brasil)"

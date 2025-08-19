@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useUpdateNiche } from "../../api/niche/useUpdateNiche";
 import { useNiche } from "../../api/niche/useNiche";
+import { useChatDialogs } from "../../api/chatDialog/useChatDialogs";
 import PageTitle from "../../components/PageTitle";
 import { MarketNiche } from "../../api/niche/useNiches";
 
@@ -13,6 +14,7 @@ export default function EditNichePage() {
   const update = useUpdateNiche();
   const navigate = useNavigate();
   const { handleSubmit } = useForm<MarketNiche>();
+  const { data: chatDialogs } = useChatDialogs();
   const [form, setForm] = useState<MarketNiche>({
     id,
     name: "",
@@ -24,6 +26,7 @@ export default function EditNichePage() {
     interests: "",
     demographicFilters: "",
     extraTips: "",
+    chatDialogId: undefined,
   });
 
   useEffect(() => {
@@ -50,6 +53,24 @@ export default function EditNichePage() {
         value={form.name}
         onChange={(e) => setForm({ ...form, name: e.target.value })}
       />
+      <label className="form-label">Chat GPT Dialog</label>
+      <select
+        className="form-select mb-2"
+        value={form.chatDialogId ?? ""}
+        onChange={(e) =>
+          setForm({
+            ...form,
+            chatDialogId: e.target.value ? Number(e.target.value) : undefined,
+          })
+        }
+      >
+        <option value="">Nenhum</option>
+        {chatDialogs?.map((d) => (
+          <option key={d.id} value={d.id}>
+            {d.theme}
+          </option>
+        ))}
+      </select>
       <label className="form-label">Descrição</label>
       <textarea
         className="form-control mb-2"

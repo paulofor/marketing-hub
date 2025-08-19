@@ -5,6 +5,9 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.util.List;
+import com.marketinghub.niche.MarketNiche;
+
 import java.time.Instant;
 
 /**
@@ -32,5 +35,9 @@ public class ChatDialog {
 
     @UpdateTimestamp
     private Instant updatedAt;
+
+    @OneToMany(mappedBy = "chatDialog")
+    @ToString.Exclude
+    private List<MarketNiche> niches;
 }
 

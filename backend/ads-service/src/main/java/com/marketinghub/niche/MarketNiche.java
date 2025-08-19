@@ -2,6 +2,7 @@ package com.marketinghub.niche;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.marketinghub.chat.ChatDialog;
 import com.marketinghub.experiment.Experiment;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -54,6 +55,12 @@ public class MarketNiche {
     /** Extra tips for advertising this niche. */
     @Lob
     private String extraTips;
+
+    /** ChatGPT dialog that originated this niche, if any. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "chat_dialog_id")
+    @ToString.Exclude
+    private ChatDialog chatDialog;
 
     @OneToMany(mappedBy = "niche")
     private java.util.List<Experiment> experiments;

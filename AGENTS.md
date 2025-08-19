@@ -15,6 +15,9 @@
 ## Conventions
 - DataBase: MySql 5
 - Modelo de Dados atualizado: docs/data-model.md
+- Todo o modelo de dados deve permanecer no projeto **backend**. O projeto
+  **success-product-worker** deve reutilizar esse modelo e não manter uma cópia
+  própria.
 - Java 21 + Spring Boot 3
 - React 18 + Vite + TypeScript
 - Zustand for state, TanStack Query for data fetching

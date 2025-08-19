@@ -25,34 +25,42 @@ public class MarketNiche {
 
     /** Optional description or notes about this niche. */
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String description;
 
     /** Results of demand volume tests. */
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String demandVolume;
 
     /** Promises validated for this niche. */
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String promises;
 
     /** Offers validated for this niche. */
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String offers;
 
     /** Base segmentation for the Brazilian market. */
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String baseSegmentation;
 
     /** Main interests or behaviors for this niche. */
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String interests;
 
     /** Demographic filters and job roles. */
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String demographicFilters;
 
     /** Extra tips for advertising this niche. */
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String extraTips;
 
     @OneToMany(mappedBy = "niche")

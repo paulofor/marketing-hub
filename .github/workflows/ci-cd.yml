@@ -93,7 +93,6 @@ jobs:
           mvn -B -s ../settings.xml dependency:get \
             -Dartifact=com.marketinghub:ads-service:0.0.1-SNAPSHOT \
             -Dtransitive=false
-          test -f ~/.m2/repository/com/marketinghub/ads-service/0.0.1-SNAPSHOT/ads-service-0.0.1-SNAPSHOT.jar
 
       - name: Build Success Product Worker
         run: cd ../../success-product-worker && mvn -s settings.xml package

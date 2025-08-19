@@ -17,5 +17,6 @@ public class CreateMarketNicheRequest {
     private String interests;
     private String demographicFilters;
     private String extraTips;
+    private Integer hypothesesToGenerate;
     private Long chatDialogId;
 }

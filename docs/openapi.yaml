@@ -418,6 +418,10 @@ components:
           type: string
         successRule:
           type: string
+        prompt:
+          type: string
+        model:
+          type: string
         offerType:
           type: string
         price:

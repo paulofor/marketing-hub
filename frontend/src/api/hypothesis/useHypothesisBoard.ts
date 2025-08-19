@@ -11,6 +11,8 @@ export interface Hypothesis {
   mechanism?: string;
   uniqueMechanism?: string;
   successRule?: string;
+  prompt?: string;
+  model?: string;
   premiseAngleId?: number;
   offerType?: string;
   price?: number;

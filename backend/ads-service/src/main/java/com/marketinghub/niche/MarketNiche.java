@@ -44,6 +44,9 @@ public class MarketNiche {
     @Column(columnDefinition = "LONGTEXT")
     private String offers;
 
+    /** Quantidade de hipóteses a serem geradas para este nicho. */
+    private Integer hypothesesToGenerate;
+
     /** Base segmentation for the Brazilian market. */
     @Lob
     @Column(columnDefinition = "LONGTEXT")

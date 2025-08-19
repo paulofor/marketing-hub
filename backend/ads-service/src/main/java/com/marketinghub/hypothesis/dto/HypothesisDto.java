@@ -19,6 +19,8 @@ public class HypothesisDto {
     private String mechanism;
     private String uniqueMechanism;
     private String successRule;
+    private String prompt;
+    private String model;
     private OfferType offerType;
     private BigDecimal price;
     private BigDecimal kpiTargetCpl;

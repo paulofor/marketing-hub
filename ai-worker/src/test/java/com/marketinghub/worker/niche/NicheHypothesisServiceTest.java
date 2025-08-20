@@ -4,7 +4,6 @@ import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +28,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 class NicheHypothesisServiceTest {
     static MockWebServer mockWebServer;
 
+    static {
+        mockWebServer = new MockWebServer();
+        try {
+            mockWebServer.start();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Autowired
     MarketNicheRepository nicheRepository;
 
@@ -39,12 +47,6 @@ class NicheHypothesisServiceTest {
     static void registerProperties(DynamicPropertyRegistry registry) {
         registry.add("openai.base-url", () -> mockWebServer.url("/").toString());
         registry.add("openai.api-key", () -> "test-key");
-    }
-
-    @BeforeAll
-    void setup() throws IOException {
-        mockWebServer = new MockWebServer();
-        mockWebServer.start();
     }
 
     @AfterAll

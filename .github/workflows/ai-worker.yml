@@ -1,12 +1,12 @@
-name: Success Worker CI
+name: AI Worker CI
 
 on:
   push:
     paths:
-      - 'success-product-worker/**'
+      - 'ai-worker/**'
   pull_request:
     paths:
-      - 'success-product-worker/**'
+      - 'ai-worker/**'
 
 jobs:
   build:
@@ -33,7 +33,7 @@ jobs:
       TEST_DB_DRIVER: com.mysql.cj.jdbc.Driver
     defaults:
       run:
-        working-directory: success-product-worker
+        working-directory: ai-worker
     steps:
       - uses: actions/checkout@v4
       - name: Setup Java 21

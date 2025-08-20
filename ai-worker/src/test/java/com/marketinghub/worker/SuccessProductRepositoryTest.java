@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @ImportAutoConfiguration
 @EntityScan("com.marketinghub.ads")
-@ContextConfiguration(classes = SuccessProductWorkerApplication.class)
+@ContextConfiguration(classes = AiWorkerApplication.class)
 @TestPropertySource(properties = {
         "spring.datasource.url=${TEST_DB_URL:jdbc:h2:mem:testdb}",
         "spring.datasource.driverClassName=${TEST_DB_DRIVER:org.h2.Driver}",

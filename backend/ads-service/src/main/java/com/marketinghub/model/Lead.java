@@ -3,6 +3,8 @@ package com.marketinghub.model;
 import com.marketinghub.experiment.Experiment;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -19,7 +21,8 @@ import java.util.UUID;
 public class Lead {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "BINARY(16)")
+    @JdbcTypeCode(SqlTypes.BINARY)
+    @Column(length = 16)
     private UUID id;
 
     @Column(unique = true)

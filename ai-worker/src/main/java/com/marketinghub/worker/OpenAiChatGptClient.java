@@ -2,6 +2,7 @@ package com.marketinghub.worker;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.successproduct.SuccessProduct;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;

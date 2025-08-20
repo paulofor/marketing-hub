@@ -1,5 +1,6 @@
 package com.marketinghub.worker;
 
+import com.marketinghub.successproduct.SuccessProduct;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

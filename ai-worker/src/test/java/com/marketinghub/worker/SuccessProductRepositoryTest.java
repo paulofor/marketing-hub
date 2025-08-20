@@ -1,8 +1,9 @@
 package com.marketinghub.worker;
 
+import com.marketinghub.successproduct.SuccessProduct;
+import com.marketinghub.successproduct.SuccessProductPlatform;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import com.marketinghub.worker.SuccessProductPlatform;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -13,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @ImportAutoConfiguration
-@EntityScan("com.marketinghub.ads")
+@EntityScan("com.marketinghub")
 @ContextConfiguration(classes = AiWorkerApplication.class)
 @TestPropertySource(properties = {
         "spring.datasource.url=${TEST_DB_URL:jdbc:h2:mem:testdb}",

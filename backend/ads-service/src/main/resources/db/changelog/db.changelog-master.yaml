@@ -58,3 +58,6 @@ databaseChangeLog:
   - include:
       file: V2025_09_20__add_chat_dialog_fk_to_market_niche.sql
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2025-08-20-rename-lead-response-value-to-payload.yaml
+      relativeToChangelogFile: true

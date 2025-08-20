@@ -3,6 +3,8 @@ package com.marketinghub.funnel;
 import com.marketinghub.model.Lead;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -31,8 +33,9 @@ public class LeadResponse {
     @Enumerated(EnumType.STRING)
     private ActionType action;
 
-    @Column(columnDefinition = "JSON")
-    private String value;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "payload", columnDefinition = "json")
+    private String payload;
 
     private BigDecimal revenue;
 

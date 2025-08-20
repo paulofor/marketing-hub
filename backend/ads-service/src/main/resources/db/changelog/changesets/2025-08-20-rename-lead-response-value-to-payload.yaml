@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: rename-lead-response-value-to-payload
+      author: codemod
+      changes:
+        - renameColumn:
+            tableName: lead_response
+            oldColumnName: value
+            newColumnName: payload
+            columnDataType: JSON

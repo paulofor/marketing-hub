@@ -1,32 +1,29 @@
 package com.marketinghub.worker;
 
+import com.marketinghub.successproduct.SuccessProduct;
+import com.marketinghub.successproduct.SuccessProductPlatform;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import com.marketinghub.worker.SuccessProductPlatform;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @ImportAutoConfiguration
-@EntityScan("com.marketinghub.ads")
+@EntityScan("com.marketinghub")
 @ContextConfiguration(classes = AiWorkerApplication.class)
-@TestPropertySource(properties = {
-        "spring.datasource.url=${TEST_DB_URL:jdbc:h2:mem:testdb}",
-        "spring.datasource.driverClassName=${TEST_DB_DRIVER:org.h2.Driver}",
-        "spring.datasource.username=${TEST_DB_USERNAME:sa}",
-        "spring.datasource.password=${TEST_DB_PASSWORD:}",
-        "spring.jpa.hibernate.ddl-auto=create",
-        "spring.liquibase.enabled=false"
-})
+@ActiveProfiles("test")
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
+
 class SuccessProductRepositoryTest {
 
     @Autowired
-    SuccessProductRepository repository;
+    WorkerSuccessProductRepository repository;
 
     @Test
     void testSaveSuccessProduct() {

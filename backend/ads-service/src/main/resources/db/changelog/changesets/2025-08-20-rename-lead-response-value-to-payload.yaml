@@ -2,6 +2,11 @@ databaseChangeLog:
   - changeSet:
       id: rename-lead-response-value-to-payload
       author: codemod
+      preConditions:
+        onFail: MARK_RAN
+        columnExists:
+          tableName: lead_response
+          columnName: value
       changes:
         - renameColumn:
             tableName: lead_response

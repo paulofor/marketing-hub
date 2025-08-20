@@ -51,7 +51,7 @@
                 <constraints nullable="false" foreignKeyName="fk_response_step" references="funnel_step(id)"/>
             </column>
             <column name="action" type="ENUM('OPEN','CLICK','REPLY','PURCHASE')"/>
-            <column name="value" type="JSON"/>
+            <column name="payload" type="LONGTEXT"/>
             <column name="revenue" type="DECIMAL(10,2)"/>
             <column name="occurred_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>

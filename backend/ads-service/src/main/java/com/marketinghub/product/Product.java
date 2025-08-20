@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import com.marketinghub.ads.InstagramAccount;
 
 import java.time.Instant;
@@ -29,34 +31,34 @@ public class Product {
     private InstagramAccount instagramAccount;
 
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String explicitPain;
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String promise;
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String uniqueMechanism;
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String tripwire;
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String riskReversal;
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String socialProof;
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String checkoutMonetization;
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String funnel;
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String creativeVolume;
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String storytelling;
 
     private java.math.BigDecimal aiCost;

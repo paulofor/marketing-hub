@@ -6,6 +6,8 @@ import com.marketinghub.chat.ChatDialog;
 import com.marketinghub.experiment.Experiment;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
@@ -26,22 +28,22 @@ public class MarketNiche {
 
     /** Optional description or notes about this niche. */
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String description;
 
     /** Results of demand volume tests. */
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String demandVolume;
 
     /** Promises validated for this niche. */
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String promises;
 
     /** Offers validated for this niche. */
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String offers;
 
     /** Quantidade de hipóteses a serem geradas para este nicho. */
@@ -49,22 +51,22 @@ public class MarketNiche {
 
     /** Base segmentation for the Brazilian market. */
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String baseSegmentation;
 
     /** Main interests or behaviors for this niche. */
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String interests;
 
     /** Demographic filters and job roles. */
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String demographicFilters;
 
     /** Extra tips for advertising this niche. */
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String extraTips;
 
     /** ChatGPT dialog that originated this niche, if any. */

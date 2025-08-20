@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
@@ -22,7 +24,7 @@ public class SuccessProduct {
     private Long id;
 
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String description;
 
     private String name;
@@ -51,34 +53,35 @@ public class SuccessProduct {
     private InstagramAccount instagramAccount;
 
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String explicitPain;
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String promise;
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String uniqueMechanism;
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String tripwire;
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String riskReversal;
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String socialProof;
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String checkoutMonetization;
     @Lob
-    @Column(name = "sales_funnel", columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @Column(name = "sales_funnel")
     private String salesFunnel;
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String creativeVolume;
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String storytelling;
 
     @CreationTimestamp

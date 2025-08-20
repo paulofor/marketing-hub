@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SuccessProductRepositoryTest {
 
     @Autowired
-    SuccessProductRepository repository;
+    WorkerSuccessProductRepository repository;
 
     @Test
     void testSaveSuccessProduct() {

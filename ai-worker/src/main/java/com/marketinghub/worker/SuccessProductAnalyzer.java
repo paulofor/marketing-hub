@@ -11,10 +11,10 @@ import java.util.List;
 @Service
 public class SuccessProductAnalyzer {
     private static final Logger log = LoggerFactory.getLogger(SuccessProductAnalyzer.class);
-    private final SuccessProductRepository repository;
+    private final WorkerSuccessProductRepository repository;
     private final ChatGptClient client;
 
-    public SuccessProductAnalyzer(SuccessProductRepository repository, ChatGptClient client) {
+    public SuccessProductAnalyzer(WorkerSuccessProductRepository repository, ChatGptClient client) {
         this.repository = repository;
         this.client = client;
     }

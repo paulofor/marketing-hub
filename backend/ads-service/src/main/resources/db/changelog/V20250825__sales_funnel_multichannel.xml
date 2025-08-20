@@ -40,6 +40,7 @@
     </changeSet>
 
     <changeSet id="20250825-3" author="codex">
+        <validCheckSum>9:9986258bcabed2f43b3579b4faefb482</validCheckSum>
         <createTable tableName="lead_response">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>

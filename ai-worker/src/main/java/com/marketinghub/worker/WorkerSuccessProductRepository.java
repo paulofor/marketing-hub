@@ -2,6 +2,8 @@ package com.marketinghub.worker;
 
 import com.marketinghub.successproduct.SuccessProduct;
 import com.marketinghub.successproduct.repository.SuccessProductRepository;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
@@ -11,6 +13,8 @@ import java.util.List;
  * <p>Extends the shared {@link SuccessProductRepository} from the backend and
  * adds convenience methods used only by the AI Worker.</p>
  */
+@Primary
+@Repository
 public interface WorkerSuccessProductRepository extends SuccessProductRepository {
     /**
      * Retrieves products marked as new in the database.

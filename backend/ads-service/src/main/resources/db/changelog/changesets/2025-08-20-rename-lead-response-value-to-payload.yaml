@@ -7,4 +7,4 @@ databaseChangeLog:
             tableName: lead_response
             oldColumnName: value
             newColumnName: payload
-            columnDataType: JSON
+            columnDataType: LONGTEXT

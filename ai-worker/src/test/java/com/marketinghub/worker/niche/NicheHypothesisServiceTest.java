@@ -4,7 +4,6 @@ import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,15 +35,11 @@ class NicheHypothesisServiceTest {
     NicheHypothesisService service;
 
     @DynamicPropertySource
-    static void registerProperties(DynamicPropertyRegistry registry) {
-        registry.add("openai.base-url", () -> mockWebServer.url("/").toString());
-        registry.add("openai.api-key", () -> "test-key");
-    }
-
-    @BeforeAll
-    void setup() throws IOException {
+    static void registerProperties(DynamicPropertyRegistry registry) throws IOException {
         mockWebServer = new MockWebServer();
         mockWebServer.start();
+        registry.add("openai.base-url", () -> mockWebServer.url("/").toString());
+        registry.add("openai.api-key", () -> "test-key");
     }
 
     @AfterAll

@@ -5,8 +5,20 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication
-@EntityScan({"com.marketinghub.worker", "com.marketinghub.ads"})
+@SpringBootApplication(
+        scanBasePackages = {
+                "com.marketinghub.worker",
+                "com.marketinghub.niche",
+                "com.marketinghub.hypothesis",
+                "com.marketinghub.creative"
+        })
+@EntityScan({
+        "com.marketinghub.worker",
+        "com.marketinghub.ads",
+        "com.marketinghub.niche",
+        "com.marketinghub.hypothesis",
+        "com.marketinghub.creative"
+})
 @EnableScheduling
 public class AiWorkerApplication {
     public static void main(String[] args) {

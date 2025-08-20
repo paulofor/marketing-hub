@@ -14,6 +14,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.List;
@@ -61,9 +62,15 @@ class NicheHypothesisServiceTest {
         nicheRepository.save(ignored);
 
         String content = "[{\"title\":\"H1\"},{\"title\":\"H2\"}]";
-        mockWebServer.enqueue(new MockResponse()
-                .addHeader("Content-Type", "application/json")
-                .setBody("{\"choices\":[{\"message\":{\"content\":\"" + content + "\"}}]}"));
+        try {
+            String body = new ObjectMapper().writeValueAsString(
+                    Map.of("choices", List.of(Map.of("message", Map.of("content", content)))));
+            mockWebServer.enqueue(new MockResponse()
+                    .addHeader("Content-Type", "application/json")
+                    .setBody(body));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
         Map<Long, List<CreateHypothesisRequest>> result = service.generate();
         assertThat(result).containsKey(niche.getId());

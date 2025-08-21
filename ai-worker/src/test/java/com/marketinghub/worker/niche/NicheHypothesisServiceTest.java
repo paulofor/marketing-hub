@@ -5,6 +5,7 @@ import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +57,12 @@ class NicheHypothesisServiceTest {
         mockWebServer.shutdown();
     }
 
+    @BeforeEach
+    void resetDb() {
+        hypothesisRepository.deleteAll();
+        nicheRepository.deleteAll();
+    }
+
     @Test
     void generateHypothesesForNiches() {
         MarketNiche niche = MarketNiche.builder()
@@ -86,6 +93,7 @@ class NicheHypothesisServiceTest {
             throw new RuntimeException(e);
         }
 
+        int initialCount = mockWebServer.getRequestCount();
         Map<Long, List<Hypothesis>> result = service.generate();
         assertThat(result).containsKey(niche.getId());
         List<Hypothesis> hyps = result.get(niche.getId());
@@ -99,7 +107,7 @@ class NicheHypothesisServiceTest {
         assertThat(org.springframework.test.util.ReflectionTestUtils.getField(first, "generatedAt"))
                 .isNotNull();
         assertThat(hypothesisRepository.count()).isEqualTo(2);
-        assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
+        assertThat(mockWebServer.getRequestCount() - initialCount).isEqualTo(1);
     }
 
     @Test
@@ -127,11 +135,12 @@ class NicheHypothesisServiceTest {
             throw new RuntimeException(e);
         }
 
+        int initialCount = mockWebServer.getRequestCount();
         Map<Long, List<Hypothesis>> result = service.generate();
         assertThat(result).containsKey(niche.getId());
         List<Hypothesis> hyps = result.get(niche.getId());
         assertThat(hyps).hasSize(1);
         assertThat(hypothesisRepository.count()).isEqualTo(1);
-        assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
+        assertThat(mockWebServer.getRequestCount() - initialCount).isEqualTo(1);
     }
 }

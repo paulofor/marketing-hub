@@ -30,13 +30,11 @@ public class NicheHypothesisService {
      */
     public Map<Long, List<CreateHypothesisRequest>> generate() {
         Map<Long, List<CreateHypothesisRequest>> result = new HashMap<>();
-        Iterable<MarketNiche> niches = nicheRepository.findAll();
+        Iterable<MarketNiche> niches = nicheRepository.findAllToGenerateHypotheses();
         for (MarketNiche niche : niches) {
             Integer qty = niche.getHypothesesToGenerate();
-            if (qty != null && qty > 0) {
-                List<CreateHypothesisRequest> hyps = chatGptClient.generateHypotheses(niche, qty);
-                result.put(niche.getId(), hyps);
-            }
+            List<CreateHypothesisRequest> hyps = chatGptClient.generateHypotheses(niche, qty);
+            result.put(niche.getId(), hyps);
         }
         return result;
     }

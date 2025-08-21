@@ -8,6 +8,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -38,6 +39,9 @@ class NicheHypothesisServiceTest {
 
     @Autowired
     HypothesisRepository hypothesisRepository;
+
+    @Value("${openai.model}")
+    String model;
 
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) throws IOException {
@@ -89,7 +93,7 @@ class NicheHypothesisServiceTest {
         Hypothesis first = hyps.get(0);
         assertThat(first.getTitle()).isEqualTo("H1");
         assertThat(first.getMarketNiche().getId()).isEqualTo(niche.getId());
-        assertThat(first.getModel()).isEqualTo("gpt-3.5-turbo");
+        assertThat(first.getModel()).isEqualTo(model);
         assertThat(first.getPrompt()).isNotBlank();
         // Access the field via reflection since older ads-service builds may lack the getter
         assertThat(org.springframework.test.util.ReflectionTestUtils.getField(first, "generatedAt"))

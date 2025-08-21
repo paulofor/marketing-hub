@@ -5,6 +5,8 @@ import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.service.HypothesisService;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -21,6 +23,7 @@ public class NicheHypothesisService {
     private final MarketNicheRepository nicheRepository;
     private final ChatGptClient chatGptClient;
     private final HypothesisService hypothesisService;
+    private static final Logger log = LoggerFactory.getLogger(NicheHypothesisService.class);
 
     public NicheHypothesisService(MarketNicheRepository nicheRepository,
                                   ChatGptClient chatGptClient,
@@ -40,7 +43,9 @@ public class NicheHypothesisService {
         Iterable<MarketNiche> niches = nicheRepository.findAllToGenerateHypotheses();
         for (MarketNiche niche : niches) {
             Integer qty = niche.getHypothesesToGenerate();
+            log.info("Generating {} hypotheses for niche {}", qty, niche.getId());
             List<CreateHypothesisRequest> requests = chatGptClient.generateHypotheses(niche, qty);
+            log.info("ChatGPT returned {} hypotheses for niche {}", requests.size(), niche.getId());
             List<Hypothesis> saved = new ArrayList<>();
             for (CreateHypothesisRequest req : requests) {
                 saved.add(hypothesisService.create(req));

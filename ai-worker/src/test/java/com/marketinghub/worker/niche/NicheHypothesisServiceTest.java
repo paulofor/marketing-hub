@@ -1,6 +1,7 @@
 package com.marketinghub.worker.niche;
 
-import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
+import com.marketinghub.hypothesis.Hypothesis;
+import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import org.junit.jupiter.api.AfterAll;
@@ -34,6 +35,9 @@ class NicheHypothesisServiceTest {
 
     @Autowired
     NicheHypothesisService service;
+
+    @Autowired
+    HypothesisRepository hypothesisRepository;
 
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) throws IOException {
@@ -72,11 +76,17 @@ class NicheHypothesisServiceTest {
             throw new RuntimeException(e);
         }
 
-        Map<Long, List<CreateHypothesisRequest>> result = service.generate();
+        Map<Long, List<Hypothesis>> result = service.generate();
         assertThat(result).containsKey(niche.getId());
-        List<CreateHypothesisRequest> hyps = result.get(niche.getId());
+        List<Hypothesis> hyps = result.get(niche.getId());
         assertThat(hyps).hasSize(2);
-        assertThat(hyps.get(0).getTitle()).isEqualTo("H1");
+        Hypothesis first = hyps.get(0);
+        assertThat(first.getTitle()).isEqualTo("H1");
+        assertThat(first.getMarketNiche().getId()).isEqualTo(niche.getId());
+        assertThat(first.getModel()).isEqualTo("gpt-3.5-turbo");
+        assertThat(first.getPrompt()).isNotBlank();
+        assertThat(first.getGeneratedAt()).isNotNull();
+        assertThat(hypothesisRepository.count()).isEqualTo(2);
         assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
     }
 }

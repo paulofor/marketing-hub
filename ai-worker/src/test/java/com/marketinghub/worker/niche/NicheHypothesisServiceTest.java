@@ -85,7 +85,9 @@ class NicheHypothesisServiceTest {
         assertThat(first.getMarketNiche().getId()).isEqualTo(niche.getId());
         assertThat(first.getModel()).isEqualTo("gpt-3.5-turbo");
         assertThat(first.getPrompt()).isNotBlank();
-        assertThat(first.getGeneratedAt()).isNotNull();
+        // Access the field via reflection since older ads-service builds may lack the getter
+        assertThat(org.springframework.test.util.ReflectionTestUtils.getField(first, "generatedAt"))
+                .isNotNull();
         assertThat(hypothesisRepository.count()).isEqualTo(2);
         assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
     }

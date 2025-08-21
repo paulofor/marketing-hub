@@ -56,15 +56,14 @@ public class ChatGptClient {
         }
         String content = response.choices().get(0).message().content();
         try {
-            CreateHypothesisRequest[] arr = objectMapper.readValue(content, CreateHypothesisRequest[].class);
-            for (CreateHypothesisRequest req : arr) {
-                req.setMarketNicheId(niche.getId());
-                req.setPrompt(prompt);
-                req.setModel(model);
-            }
-            return Arrays.asList(arr);
+            return parseContent(content, niche, prompt);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to parse ChatGPT response", e);
+            try {
+                String unescaped = objectMapper.readValue("\"" + content + "\"", String.class);
+                return parseContent(unescaped, niche, prompt);
+            } catch (Exception ex) {
+                throw new RuntimeException("Failed to parse ChatGPT response", ex);
+            }
         }
     }
 
@@ -95,4 +94,14 @@ public class ChatGptClient {
     private record ChatCompletionResponse(List<Choice> choices) {}
     private record Choice(Message message) {}
     private record Message(String content) {}
+
+    private List<CreateHypothesisRequest> parseContent(String content, MarketNiche niche, String prompt) throws Exception {
+        CreateHypothesisRequest[] arr = objectMapper.readValue(content, CreateHypothesisRequest[].class);
+        for (CreateHypothesisRequest req : arr) {
+            req.setMarketNicheId(niche.getId());
+            req.setPrompt(prompt);
+            req.setModel(model);
+        }
+        return Arrays.asList(arr);
+    }
 }

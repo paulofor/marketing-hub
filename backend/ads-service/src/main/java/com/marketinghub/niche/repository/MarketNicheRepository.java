@@ -16,6 +16,10 @@ public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> 
      * <p>Filters are handled in the query so we only fetch the records we
      * actually need.</p>
      */
-    @Query("select n from MarketNiche n where n.hypothesesToGenerate is not null and n.hypothesesToGenerate > 0")
+    @Query("""
+            select n from MarketNiche n
+            where n.hypothesesToGenerate is not null
+              and n.hypothesesToGenerate > 0
+            """)
     List<MarketNiche> findAllToGenerateHypotheses();
 }

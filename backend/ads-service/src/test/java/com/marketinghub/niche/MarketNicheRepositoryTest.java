@@ -29,4 +29,24 @@ class MarketNicheRepositoryTest {
         repository.save(niche);
         assertThat(repository.findById(niche.getId())).isPresent();
     }
+
+    @Test
+    void findAllToGenerateHypothesesReturnsOnlyConfiguredNiches() {
+        MarketNiche withHyps = MarketNiche.builder()
+                .name("Saúde")
+                .hypothesesToGenerate(2)
+                .build();
+        repository.save(withHyps);
+
+        MarketNiche withoutHyps = MarketNiche.builder()
+                .name("Ignored")
+                .hypothesesToGenerate(0)
+                .build();
+        repository.save(withoutHyps);
+
+        var result = repository.findAllToGenerateHypotheses();
+        assertThat(result)
+                .extracting(MarketNiche::getName)
+                .containsExactly("Saúde");
+    }
 }

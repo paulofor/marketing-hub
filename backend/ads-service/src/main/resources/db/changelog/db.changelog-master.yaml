@@ -62,5 +62,8 @@ databaseChangeLog:
       file: V2025_09_21__add_generated_at_to_hypothesis.sql
       relativeToChangelogFile: true
   - include:
+      file: V2025_09_22__allow_null_premise_angle.sql
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2025-08-20-rename-lead-response-value-to-payload.yaml
       relativeToChangelogFile: true

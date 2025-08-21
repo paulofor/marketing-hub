@@ -74,6 +74,7 @@ public class HypothesisService {
         if (req.getKpiTargetCpl() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "kpiTargetCpl required");
         }
+        // premiseAngleId is optional and validated only when present
         if ("TRIPWIRE".equals(req.getOfferType()) && req.getPrice() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "price required for TRIPWIRE");
         }

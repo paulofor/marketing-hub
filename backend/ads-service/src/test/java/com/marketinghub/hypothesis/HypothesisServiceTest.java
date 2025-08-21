@@ -56,6 +56,23 @@ class HypothesisServiceTest {
     }
 
     @Test
+    void createHypothesisWithoutAngle() {
+        MarketNiche niche = fixtures.createAndSaveNiche();
+        CreateHypothesisRequest req = new CreateHypothesisRequest();
+        req.setMarketNicheId(niche.getId());
+        req.setTitle("Sem ângulo");
+        req.setPromise("Promessa");
+        req.setProblem("Problema");
+        req.setPersona("Persona");
+        req.setSuccessRule("Regra");
+        req.setOfferType("LEAD");
+        req.setKpiTargetCpl(BigDecimal.ONE);
+
+        Hypothesis h = service.create(req);
+        assertThat(h.getPremiseAngle()).isNull();
+    }
+
+    @Test
     void validateTitle() {
         MarketNiche niche = fixtures.createAndSaveNiche();
         CreateHypothesisRequest req = new CreateHypothesisRequest();
@@ -70,11 +87,13 @@ class HypothesisServiceTest {
     }
 
     @Test
-    void validateAngleAndKpi() {
+    void kpiTargetCplRequired() {
         MarketNiche niche = fixtures.createAndSaveNiche();
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
         CreateHypothesisRequest req = new CreateHypothesisRequest();
         req.setMarketNicheId(niche.getId());
         req.setTitle("T");
+        req.setPremiseAngleId(angle.getId());
         req.setPromise("p");
         req.setProblem("pr");
         req.setPersona("pe");

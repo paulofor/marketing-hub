@@ -46,8 +46,14 @@ public class NicheHypothesisService {
             log.info("Generating {} hypotheses for niche {}", qty, niche.getId());
             List<CreateHypothesisRequest> requests = chatGptClient.generateHypotheses(niche, qty);
             log.info("ChatGPT returned {} hypotheses for niche {}", requests.size(), niche.getId());
+            log.info("Hypotheses generated for niche {}: {}", niche.getId(), requests);
             List<Hypothesis> saved = new ArrayList<>();
             for (CreateHypothesisRequest req : requests) {
+                if (req.getTitle() == null || req.getTitle().isBlank()) {
+                    log.error("Skipping hypothesis without title for niche {}: {}", niche.getId(), req);
+                    continue;
+                }
+                log.info("Saving hypothesis for niche {}: {}", niche.getId(), req);
                 saved.add(hypothesisService.create(req));
             }
             result.put(niche.getId(), saved);

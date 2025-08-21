@@ -57,21 +57,25 @@ public class ChatGptClient {
                 .bodyToMono(ChatCompletionResponse.class)
                 .block();
 
-        log.debug("ChatGPT raw response: {}", response);
+        log.info("ChatGPT raw response: {}", response);
 
         if (response == null || response.choices().isEmpty()) {
             log.warn("ChatGPT returned no choices for niche {}", niche.getId());
             return List.of();
         }
         String content = response.choices().get(0).message().content();
-        log.debug("ChatGPT content: {}", content);
+        log.info("ChatGPT content: {}", content);
         try {
-            return parseContent(content, niche, prompt);
+            List<CreateHypothesisRequest> parsed = parseContent(content, niche, prompt);
+            log.info("Parsed hypotheses: {}", parsed);
+            return parsed;
         } catch (Exception e) {
             log.error("Failed to parse ChatGPT response: {}", content, e);
             try {
                 String unescaped = objectMapper.readValue("\"" + content + "\"", String.class);
-                return parseContent(unescaped, niche, prompt);
+                List<CreateHypothesisRequest> parsed = parseContent(unescaped, niche, prompt);
+                log.info("Parsed hypotheses: {}", parsed);
+                return parsed;
             } catch (Exception ex) {
                 log.error("Failed to parse unescaped ChatGPT response: {}", content, ex);
                 throw new RuntimeException("Failed to parse ChatGPT response", ex);

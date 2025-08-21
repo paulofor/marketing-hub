@@ -3,6 +3,8 @@ package com.marketinghub.worker.niche;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.niche.MarketNiche;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
@@ -20,6 +22,7 @@ public class ChatGptClient {
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
     private final String model;
+    private static final Logger log = LoggerFactory.getLogger(ChatGptClient.class);
 
     public ChatGptClient(WebClient.Builder builder,
                          ObjectMapper objectMapper,
@@ -44,6 +47,9 @@ public class ChatGptClient {
                 )
         );
 
+        log.info("Sending prompt to ChatGPT for niche {}: {}", niche.getId(), prompt);
+        log.debug("ChatGPT payload: {}", payload);
+
         ChatCompletionResponse response = webClient.post()
                 .uri("/chat/completions")
                 .bodyValue(payload)
@@ -51,17 +57,23 @@ public class ChatGptClient {
                 .bodyToMono(ChatCompletionResponse.class)
                 .block();
 
+        log.debug("ChatGPT raw response: {}", response);
+
         if (response == null || response.choices().isEmpty()) {
+            log.warn("ChatGPT returned no choices for niche {}", niche.getId());
             return List.of();
         }
         String content = response.choices().get(0).message().content();
+        log.debug("ChatGPT content: {}", content);
         try {
             return parseContent(content, niche, prompt);
         } catch (Exception e) {
+            log.error("Failed to parse ChatGPT response: {}", content, e);
             try {
                 String unescaped = objectMapper.readValue("\"" + content + "\"", String.class);
                 return parseContent(unescaped, niche, prompt);
             } catch (Exception ex) {
+                log.error("Failed to parse unescaped ChatGPT response: {}", content, ex);
                 throw new RuntimeException("Failed to parse ChatGPT response", ex);
             }
         }

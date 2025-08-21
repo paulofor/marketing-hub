@@ -55,17 +55,29 @@ public class ChatGptClient {
             return List.of();
         }
         String content = response.choices().get(0).message().content();
+        // Algumas respostas do ChatGPT podem escapar as aspas do JSON gerado.
+        // Tentamos analisar o conteúdo diretamente e, em caso de falha,
+        // removemos os caracteres de escape antes de tentar novamente.
         try {
-            CreateHypothesisRequest[] arr = objectMapper.readValue(content, CreateHypothesisRequest[].class);
-            for (CreateHypothesisRequest req : arr) {
-                req.setMarketNicheId(niche.getId());
-                req.setPrompt(prompt);
-                req.setModel(model);
+            return parseAndPopulate(content, prompt, niche);
+        } catch (Exception first) {
+            try {
+                String sanitized = content.replace("\\\"", "\"");
+                return parseAndPopulate(sanitized, prompt, niche);
+            } catch (Exception second) {
+                throw new RuntimeException("Failed to parse ChatGPT response", second);
             }
-            return Arrays.asList(arr);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to parse ChatGPT response", e);
         }
+    }
+
+    private List<CreateHypothesisRequest> parseAndPopulate(String json, String prompt, MarketNiche niche) throws Exception {
+        CreateHypothesisRequest[] arr = objectMapper.readValue(json, CreateHypothesisRequest[].class);
+        for (CreateHypothesisRequest req : arr) {
+            req.setMarketNicheId(niche.getId());
+            req.setPrompt(prompt);
+            req.setModel(model);
+        }
+        return Arrays.asList(arr);
     }
 
     private String buildPrompt(MarketNiche niche, int quantity) {

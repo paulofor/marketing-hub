@@ -19,7 +19,7 @@ const schema = z
     mechanism: z.string().optional(),
     uniqueMechanism: z.string().optional(),
     successRule: z.string().min(1, "obrigatório"),
-    premiseAngleId: z.string().min(1, "obrigatório"),
+    premiseAngleId: z.string().optional(),
     offerType: z.enum(["LEAD", "TRIPWIRE"]),
     price: z
       .preprocess(
@@ -68,7 +68,9 @@ export default function NewHypothesisPage() {
       mechanism: values.mechanism,
       uniqueMechanism: values.uniqueMechanism,
       successRule: values.successRule,
-      premiseAngleId: Number(values.premiseAngleId),
+      premiseAngleId: values.premiseAngleId
+        ? Number(values.premiseAngleId)
+        : undefined,
       offerType: values.offerType,
       kpiTargetCpl: values.kpiTargetCpl,
       marketNicheId: nicheId ? Number(nicheId) : undefined,

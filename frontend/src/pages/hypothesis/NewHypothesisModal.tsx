@@ -15,7 +15,7 @@ const schema = z
     problem: z.string().min(1, "obrigatório"),
     persona: z.string().min(1, "obrigatório"),
     successRule: z.string().min(1, "obrigatório"),
-    premiseAngleId: z.string().min(1, "obrigatório"),
+    premiseAngleId: z.string().optional(),
     offerType: z.enum(["LEAD", "TRIPWIRE"]),
     price: z
       .preprocess(
@@ -68,7 +68,9 @@ export default function NewHypothesisModal({
       problem: values.problem,
       persona: values.persona,
       successRule: values.successRule,
-      premiseAngleId: Number(values.premiseAngleId),
+      premiseAngleId: values.premiseAngleId
+        ? Number(values.premiseAngleId)
+        : undefined,
       offerType: values.offerType,
       kpiTargetCpl: values.kpiTargetCpl,
       marketNicheId: marketNicheId ? Number(marketNicheId) : undefined,

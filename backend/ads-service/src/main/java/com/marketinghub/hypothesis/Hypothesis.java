@@ -79,6 +79,9 @@ public class Hypothesis {
     @Column(nullable = false)
     private HypothesisStatus status = HypothesisStatus.BACKLOG;
 
+    /** Data em que a hipótese foi gerada pela IA. */
+    private Instant generatedAt;
+
     @CreationTimestamp
     private Instant createdAt;
 

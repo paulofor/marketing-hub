@@ -52,6 +52,7 @@ class HypothesisServiceTest {
         Hypothesis h = service.create(req);
         assertThat(h.getId()).isNotNull();
         assertThat(h.getStatus()).isEqualTo(HypothesisStatus.BACKLOG);
+        assertThat(h.getGeneratedAt()).isNotNull();
     }
 
     @Test

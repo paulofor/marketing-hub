@@ -9,6 +9,7 @@ import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.hypothesis.dto.UpdateHypothesisRequest;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import java.util.UUID;
+import java.time.Instant;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -94,6 +95,9 @@ public class HypothesisService {
                 .mechanism(req.getMechanism())
                 .uniqueMechanism(req.getUniqueMechanism())
                 .successRule(req.getSuccessRule())
+                .prompt(req.getPrompt())
+                .model(req.getModel())
+                .generatedAt(Instant.now())
                 .offerType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()))
                 .price(req.getPrice())
                 .kpiTargetCpl(req.getKpiTargetCpl())

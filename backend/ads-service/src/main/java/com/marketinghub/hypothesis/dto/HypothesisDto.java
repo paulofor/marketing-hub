@@ -5,6 +5,7 @@ import com.marketinghub.hypothesis.OfferType;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.UUID;
 
 @Data
@@ -25,4 +26,5 @@ public class HypothesisDto {
     private BigDecimal price;
     private BigDecimal kpiTargetCpl;
     private HypothesisStatus status;
+    private Instant generatedAt;
 }

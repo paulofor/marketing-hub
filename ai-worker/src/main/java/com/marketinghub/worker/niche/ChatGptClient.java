@@ -57,6 +57,11 @@ public class ChatGptClient {
         String content = response.choices().get(0).message().content();
         try {
             CreateHypothesisRequest[] arr = objectMapper.readValue(content, CreateHypothesisRequest[].class);
+            for (CreateHypothesisRequest req : arr) {
+                req.setMarketNicheId(niche.getId());
+                req.setPrompt(prompt);
+                req.setModel(model);
+            }
             return Arrays.asList(arr);
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse ChatGPT response", e);

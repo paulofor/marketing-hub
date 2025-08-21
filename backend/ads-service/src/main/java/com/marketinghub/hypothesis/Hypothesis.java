@@ -30,8 +30,8 @@ public class Hypothesis {
     @Column(nullable = false)
     private String title;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "premise_angle_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "premise_angle_id")
     private Angle premiseAngle;
 
     /** Promessa de valor em até 140 caracteres. */

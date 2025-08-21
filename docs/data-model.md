@@ -121,7 +121,7 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `id` BINARY(16) PRIMARY KEY
 - `market_niche_id` BIGINT NOT NULL
 - `title` VARCHAR(255) NOT NULL
-- `premise_angle_id` BIGINT NOT NULL
+- `premise_angle_id` BIGINT
 - `promise` VARCHAR(140) NOT NULL
 - `problem` VARCHAR(255) NOT NULL
 - `persona` VARCHAR(255) NOT NULL
@@ -238,7 +238,7 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `id` BINARY(16) PRIMARY KEY
 - `market_niche_id` BIGINT NOT NULL
 - `title` VARCHAR(255) NOT NULL
-- `premise_angle_id` BIGINT NOT NULL
+- `premise_angle_id` BIGINT
 - `offer_type` VARCHAR(20) NOT NULL
 - `price` DECIMAL(6,2)
 - `mechanism` LONGTEXT

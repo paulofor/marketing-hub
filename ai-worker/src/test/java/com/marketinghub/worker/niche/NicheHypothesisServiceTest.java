@@ -65,7 +65,13 @@ class NicheHypothesisServiceTest {
                 .build();
         nicheRepository.save(ignored);
 
-        String content = "[{\"title\":\"H1\"},{\"title\":\"H2\"}]";
+        String content = "[" +
+                "{\\\"title\\\":\\\"H1\\\",\\\"promise\\\":\\\"p1\\\",\\\"problem\\\":\\\"pr1\\\"," +
+                "\\\"persona\\\":\\\"pe1\\\",\\\"successRule\\\":\\\"sr1\\\"," +
+                "\\\"offerType\\\":\\\"LEAD\\\",\\\"kpiTargetCpl\\\":1}," +
+                "{\\\"title\\\":\\\"H2\\\",\\\"promise\\\":\\\"p2\\\",\\\"problem\\\":\\\"pr2\\\"," +
+                "\\\"persona\\\":\\\"pe2\\\",\\\"successRule\\\":\\\"sr2\\\"," +
+                "\\\"offerType\\\":\\\"LEAD\\\",\\\"kpiTargetCpl\\\":1}]";
         try {
             String body = new ObjectMapper().writeValueAsString(
                     Map.of("choices", List.of(Map.of("message", Map.of("content", content)))));

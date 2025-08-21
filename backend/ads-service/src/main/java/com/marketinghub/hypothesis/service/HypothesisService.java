@@ -56,9 +56,6 @@ public class HypothesisService {
         if (req.getMarketNicheId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "marketNicheId required");
         }
-        if (req.getPremiseAngleId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "angle required");
-        }
         if (req.getPromise() == null || req.getPromise().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "promise required");
         }
@@ -129,9 +126,6 @@ public class HypothesisService {
     private void validate(UpdateHypothesisRequest req) {
         if (req.getTitle() == null || req.getTitle().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "title required");
-        }
-        if (req.getPremiseAngleId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "angle required");
         }
         if (req.getPromise() == null || req.getPromise().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "promise required");

@@ -3,6 +3,8 @@ package com.marketinghub.worker.niche;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.prompt.PromptAttribute;
+import com.marketinghub.prompt.repository.PromptAttributeRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,19 +24,22 @@ public class ChatGptClient {
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
     private final String model;
+    private final PromptAttributeRepository attributeRepository;
     private static final Logger log = LoggerFactory.getLogger(ChatGptClient.class);
 
     public ChatGptClient(WebClient.Builder builder,
                          ObjectMapper objectMapper,
                          @Value("${openai.api-key:}") String apiKey,
                          @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-                         @Value("${openai.model:gpt-3.5-turbo}") String model) {
+                         @Value("${openai.model:gpt-3.5-turbo}") String model,
+                         PromptAttributeRepository attributeRepository) {
         this.webClient = builder
                 .baseUrl(baseUrl)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
                 .build();
         this.objectMapper = objectMapper;
         this.model = model;
+        this.attributeRepository = attributeRepository;
     }
 
     public List<CreateHypothesisRequest> generateHypotheses(MarketNiche niche, int quantity) {
@@ -103,7 +108,20 @@ public class ChatGptClient {
         if (niche.getExtraTips() != null) {
             sb.append("Dicas extras: ").append(niche.getExtraTips()).append("\n");
         }
-        sb.append("Cada objeto deve conter as chaves: \"title\", \"promise\", \"problem\", \"persona\", \"mechanism\", \"uniqueMechanism\", \"successRule\", \"offerType\", \"price\". ");
+        var attrs = attributeRepository.findByEntity_Name("hypothesis");
+        var latest = attrs.stream().collect(java.util.stream.Collectors.toMap(PromptAttribute::getName,
+                java.util.function.Function.identity(),
+                (a, b) -> a.getVersion() > b.getVersion() ? a : b));
+        if (!latest.isEmpty()) {
+            sb.append("Cada objeto deve conter as chaves: ")
+                    .append(latest.keySet().stream().map(n -> "\\\"" + n + "\\\"")
+                            .collect(java.util.stream.Collectors.joining(", ")))
+                    .append(". ");
+            latest.values().forEach(attr ->
+                    sb.append("Campo \\\"" + attr.getName() + "\\\": " + attr.getDescription() + ". "));
+        } else {
+            sb.append("Cada objeto deve conter as chaves: \"title\", \"promise\", \"problem\", \"persona\", \"mechanism\", \"uniqueMechanism\", \"successRule\", \"offerType\", \"price\". ");
+        }
         sb.append("O campo \"offerType\" deve ser \"LEAD\" ou \"TRIPWIRE\". ");
         sb.append("O campo \"price\" deve ser um número. ");
         sb.append("Retorne apenas um array JSON com esses objetos, sem texto adicional.");

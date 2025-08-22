@@ -2,6 +2,7 @@ package com.marketinghub.prompt.web;
 
 import com.marketinghub.prompt.dto.CreatePromptAttributeRequest;
 import com.marketinghub.prompt.dto.PromptAttributeDto;
+import com.marketinghub.prompt.dto.UpdatePromptAttributeRequest;
 import com.marketinghub.prompt.service.PromptAttributeService;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,5 +25,21 @@ public class PromptAttributeController {
     @PostMapping
     public PromptAttributeDto create(@PathVariable String entityName, @RequestBody CreatePromptAttributeRequest req) {
         return service.create(entityName, req);
+    }
+
+    @GetMapping("/{attrName}")
+    public PromptAttributeDto get(@PathVariable String entityName, @PathVariable String attrName) {
+        return service.getLatest(entityName, attrName);
+    }
+
+    @PutMapping("/{attrName}")
+    public PromptAttributeDto update(@PathVariable String entityName, @PathVariable String attrName,
+                                     @RequestBody UpdatePromptAttributeRequest req) {
+        return service.update(entityName, attrName, req);
+    }
+
+    @DeleteMapping("/{attrName}")
+    public void delete(@PathVariable String entityName, @PathVariable String attrName) {
+        service.delete(entityName, attrName);
     }
 }

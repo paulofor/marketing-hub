@@ -9,4 +9,5 @@ import java.util.Optional;
 public interface PromptAttributeRepository extends JpaRepository<PromptAttribute, Long> {
     List<PromptAttribute> findByEntity_Name(String entityName);
     Optional<PromptAttribute> findTopByEntity_NameAndNameOrderByVersionDesc(String entityName, String name);
+    void deleteByEntity_NameAndName(String entityName, String name);
 }

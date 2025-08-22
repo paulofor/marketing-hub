@@ -2,6 +2,7 @@ package com.marketinghub.worker.niche;
 
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.hypothesis.Hypothesis;
+import com.marketinghub.hypothesis.OfferType;
 import com.marketinghub.hypothesis.service.HypothesisService;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
@@ -52,6 +53,15 @@ public class NicheHypothesisService {
                 if (req.getTitle() == null || req.getTitle().isBlank()) {
                     log.error("Skipping hypothesis without title for niche {}: {}", niche.getId(), req);
                     continue;
+                }
+                String offerType = req.getOfferType();
+                if (offerType != null) {
+                    try {
+                        OfferType.valueOf(offerType);
+                    } catch (IllegalArgumentException e) {
+                        log.error("Invalid offerType '{}' for niche {}: {}", offerType, niche.getId(), req);
+                        req.setOfferType(null);
+                    }
                 }
                 log.info("Saving hypothesis for niche {}: {}", niche.getId(), req);
                 saved.add(hypothesisService.create(req));

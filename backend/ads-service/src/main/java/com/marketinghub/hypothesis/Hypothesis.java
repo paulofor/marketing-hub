@@ -23,8 +23,8 @@ public class Hypothesis {
     @UuidGenerator
     private UUID id;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "market_niche_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "market_niche_id")
     private MarketNiche marketNiche;
 
     @Column(nullable = false)
@@ -35,15 +35,15 @@ public class Hypothesis {
     private Angle premiseAngle;
 
     /** Promessa de valor em até 140 caracteres. */
-    @Column(nullable = false, length = 140)
+    @Column(length = 140)
     private String promise;
 
     /** Problema ou insight do cliente em uma frase. */
-    @Column(nullable = false)
+    @Column
     private String problem;
 
     /** Persona alvo dentro do nicho. */
-    @Column(nullable = false)
+    @Column
     private String persona;
 
     /** Mecanismo que sustenta a promessa. */
@@ -66,17 +66,17 @@ public class Hypothesis {
     private String successRule;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column
     private OfferType offerType;
 
     @Column(precision = 6, scale = 2)
     private BigDecimal price;
-    @Column(precision = 7, scale = 2, nullable = false)
+    @Column(precision = 7, scale = 2)
     private BigDecimal kpiTargetCpl;
 
     @Enumerated(EnumType.STRING)
     @Builder.Default
-    @Column(nullable = false)
+    @Column
     private HypothesisStatus status = HypothesisStatus.BACKLOG;
 
     /** Data em que a hipótese foi gerada pela IA. */

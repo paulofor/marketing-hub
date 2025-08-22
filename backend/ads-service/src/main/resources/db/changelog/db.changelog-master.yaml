@@ -67,3 +67,6 @@ databaseChangeLog:
   - include:
       file: changesets/2025-08-20-rename-lead-response-value-to-payload.yaml
       relativeToChangelogFile: true
+  - include:
+      file: V2025_09_26__relax_hypothesis_constraints.sql
+      relativeToChangelogFile: true

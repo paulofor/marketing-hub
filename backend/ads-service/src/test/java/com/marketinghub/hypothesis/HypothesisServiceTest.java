@@ -1,17 +1,13 @@
 package com.marketinghub.hypothesis;
 
 import com.marketinghub.FixtureUtils;
-import com.marketinghub.creative.label.repository.AngleRepository;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.hypothesis.service.HypothesisService;
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.repository.MarketNicheRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
-
-import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -29,26 +25,12 @@ class HypothesisServiceTest {
     @Autowired
     HypothesisService service;
     @Autowired
-    MarketNicheRepository nicheRepository;
-    @Autowired
-    AngleRepository angleRepository;
-    @Autowired
     FixtureUtils fixtures;
 
     @Test
     void createValidHypothesis() {
-        MarketNiche niche = fixtures.createAndSaveNiche();
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
         CreateHypothesisRequest req = new CreateHypothesisRequest();
-        req.setMarketNicheId(niche.getId());
         req.setTitle("Teste");
-        req.setPremiseAngleId(angle.getId());
-        req.setPromise("Promessa");
-        req.setProblem("Problema");
-        req.setPersona("Persona");
-        req.setSuccessRule("Regra");
-        req.setOfferType("LEAD");
-        req.setKpiTargetCpl(new BigDecimal("5"));
         Hypothesis h = service.create(req);
         assertThat(h.getId()).isNotNull();
         assertThat(h.getStatus()).isEqualTo(HypothesisStatus.BACKLOG);
@@ -57,80 +39,16 @@ class HypothesisServiceTest {
 
     @Test
     void createHypothesisWithoutAngle() {
-        MarketNiche niche = fixtures.createAndSaveNiche();
         CreateHypothesisRequest req = new CreateHypothesisRequest();
-        req.setMarketNicheId(niche.getId());
         req.setTitle("Sem ângulo");
-        req.setPromise("Promessa");
-        req.setProblem("Problema");
-        req.setPersona("Persona");
-        req.setSuccessRule("Regra");
-        req.setOfferType("LEAD");
-        req.setKpiTargetCpl(BigDecimal.ONE);
-
         Hypothesis h = service.create(req);
         assertThat(h.getPremiseAngle()).isNull();
     }
 
     @Test
     void validateTitle() {
-        MarketNiche niche = fixtures.createAndSaveNiche();
         CreateHypothesisRequest req = new CreateHypothesisRequest();
-        req.setMarketNicheId(niche.getId());
         req.setTitle("   ");
-        req.setPromise("p");
-        req.setProblem("pr");
-        req.setPersona("pe");
-        req.setSuccessRule("sr");
-        assertThatThrownBy(() -> service.create(req))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
-    }
-
-    @Test
-    void kpiTargetCplRequired() {
-        MarketNiche niche = fixtures.createAndSaveNiche();
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
-        CreateHypothesisRequest req = new CreateHypothesisRequest();
-        req.setMarketNicheId(niche.getId());
-        req.setTitle("T");
-        req.setPremiseAngleId(angle.getId());
-        req.setPromise("p");
-        req.setProblem("pr");
-        req.setPersona("pe");
-        req.setSuccessRule("sr");
-        assertThatThrownBy(() -> service.create(req))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
-    }
-
-    @Test
-    void priceRequiredForTripwire() {
-        MarketNiche niche = fixtures.createAndSaveNiche();
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
-        CreateHypothesisRequest req = new CreateHypothesisRequest();
-        req.setMarketNicheId(niche.getId());
-        req.setTitle("T");
-        req.setPremiseAngleId(angle.getId());
-        req.setPromise("p");
-        req.setProblem("pr");
-        req.setPersona("pe");
-        req.setSuccessRule("sr");
-        req.setOfferType("TRIPWIRE");
-        req.setKpiTargetCpl(new BigDecimal("5"));
-        assertThatThrownBy(() -> service.create(req))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
-    }
-
-    @Test
-    void marketNicheIdRequired() {
-        CreateHypothesisRequest req = new CreateHypothesisRequest();
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
-        req.setTitle("T");
-        req.setPremiseAngleId(angle.getId());
-        req.setPromise("p");
-        req.setProblem("pr");
-        req.setPersona("pe");
-        req.setSuccessRule("sr");
-        req.setKpiTargetCpl(new BigDecimal("5"));
         assertThatThrownBy(() -> service.create(req))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     }
@@ -138,18 +56,10 @@ class HypothesisServiceTest {
     @Test
     void listByMarketNicheWithNullStatusReturnsAll() {
         MarketNiche niche = fixtures.createAndSaveNiche();
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
 
         CreateHypothesisRequest req = new CreateHypothesisRequest();
         req.setMarketNicheId(niche.getId());
         req.setTitle("H1");
-        req.setPremiseAngleId(angle.getId());
-        req.setPromise("p");
-        req.setProblem("pr");
-        req.setPersona("pe");
-        req.setSuccessRule("sr");
-        req.setOfferType("LEAD");
-        req.setKpiTargetCpl(BigDecimal.ONE);
 
         Hypothesis h1 = service.create(req);
         Hypothesis h2 = service.create(req);
@@ -166,29 +76,14 @@ class HypothesisServiceTest {
     @Test
     void updateHypothesisOnlyWhenBacklog() {
         MarketNiche niche = fixtures.createAndSaveNiche();
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
         CreateHypothesisRequest req = new CreateHypothesisRequest();
         req.setMarketNicheId(niche.getId());
         req.setTitle("H1");
-        req.setPremiseAngleId(angle.getId());
-        req.setPromise("p");
-        req.setProblem("pr");
-        req.setPersona("pe");
-        req.setSuccessRule("sr");
-        req.setOfferType("LEAD");
-        req.setKpiTargetCpl(BigDecimal.ONE);
 
         Hypothesis h = service.create(req);
 
         com.marketinghub.hypothesis.dto.UpdateHypothesisRequest u = new com.marketinghub.hypothesis.dto.UpdateHypothesisRequest();
         u.setTitle("H2");
-        u.setPremiseAngleId(angle.getId());
-        u.setPromise("p2");
-        u.setProblem("pr2");
-        u.setPersona("pe2");
-        u.setSuccessRule("sr2");
-        u.setOfferType("LEAD");
-        u.setKpiTargetCpl(BigDecimal.TEN);
 
         Hypothesis updated = service.update(h.getId(), u);
         assertThat(updated.getTitle()).isEqualTo("H2");

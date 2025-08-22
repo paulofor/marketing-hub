@@ -143,4 +143,33 @@ class NicheHypothesisServiceTest {
         assertThat(hypothesisRepository.count()).isEqualTo(1);
         assertThat(mockWebServer.getRequestCount() - initialCount).isEqualTo(1);
     }
+
+    @Test
+    void nullOfferTypeOnInvalidValue() {
+        MarketNiche niche = MarketNiche.builder()
+                .name("Tech")
+                .hypothesesToGenerate(1)
+                .build();
+        nicheRepository.save(niche);
+
+        String content = "[" +
+                "{\\\"title\\\":\\\"H1\\\",\\\"promise\\\":\\\"p1\\\",\\\"problem\\\":\\\"pr1\\\"," +
+                "\\\"persona\\\":\\\"pe1\\\",\\\"successRule\\\":\\\"sr1\\\"," +
+                "\\\"offerType\\\":\\\"Teste grátis 14 dias de plataforma SaaS\\\",\\\"kpiTargetCpl\\\":1}]";
+        try {
+            String body = new ObjectMapper().writeValueAsString(
+                    Map.of("choices", List.of(Map.of("message", Map.of("content", content)))));
+            mockWebServer.enqueue(new MockResponse()
+                    .addHeader("Content-Type", "application/json")
+                    .setBody(body));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        Map<Long, List<Hypothesis>> result = service.generate();
+        assertThat(result).containsKey(niche.getId());
+        List<Hypothesis> hyps = result.get(niche.getId());
+        assertThat(hyps).hasSize(1);
+        assertThat(hyps.get(0).getOfferType()).isNull();
+    }
 }

@@ -104,6 +104,7 @@ public class ChatGptClient {
             sb.append("Dicas extras: ").append(niche.getExtraTips()).append("\n");
         }
         sb.append("Cada objeto deve conter as chaves: \"title\", \"promise\", \"problem\", \"persona\", \"mechanism\", \"uniqueMechanism\", \"successRule\", \"offerType\", \"price\". ");
+        sb.append("O campo \"offerType\" deve ser \"LEAD\" ou \"TRIPWIRE\". ");
         sb.append("O campo \"price\" deve ser um número. ");
         sb.append("Retorne apenas um array JSON com esses objetos, sem texto adicional.");
         return sb.toString();

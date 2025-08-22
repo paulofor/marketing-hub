@@ -42,6 +42,8 @@ import NewFunnelPage from "./pages/funnel/NewFunnelPage";
 import EditFunnelPage from "./pages/funnel/EditFunnelPage";
 import ChatDialogListPage from "./pages/chatDialog/ChatDialogListPage";
 import NewChatDialogPage from "./pages/chatDialog/NewChatDialogPage";
+import PromptEntitiesPage from "./pages/prompt/PromptEntitiesPage";
+import PromptAttributesPage from "./pages/prompt/PromptAttributesPage";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -98,6 +100,9 @@ export default function App() {
             </Link>
             <Link className="nav-link" to="/funnels">
               Funil de Vendas
+            </Link>
+            <Link className="nav-link" to="/prompt-entities">
+              Objetos de Prompt
             </Link>
             <div className="nav-item dropdown">
               <span
@@ -210,6 +215,11 @@ export default function App() {
         <Route path="/funnels/:id/edit" element={<EditFunnelPage />} />
         <Route path="/chat-dialogs" element={<ChatDialogListPage />} />
         <Route path="/chat-dialogs/new" element={<NewChatDialogPage />} />
+        <Route path="/prompt-entities" element={<PromptEntitiesPage />} />
+        <Route
+          path="/prompt-entities/:entityName/attributes"
+          element={<PromptAttributesPage />}
+        />
         <Route path="*" element={<div>Início</div>} />
       </Routes>
       <ToastContainer position="top-right" />

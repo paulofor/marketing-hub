@@ -44,6 +44,7 @@ import ChatDialogListPage from "./pages/chatDialog/ChatDialogListPage";
 import NewChatDialogPage from "./pages/chatDialog/NewChatDialogPage";
 import PromptEntitiesPage from "./pages/prompt/PromptEntitiesPage";
 import PromptAttributesPage from "./pages/prompt/PromptAttributesPage";
+import NewPromptEntityPage from "./pages/prompt/NewPromptEntityPage";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -216,6 +217,7 @@ export default function App() {
         <Route path="/chat-dialogs" element={<ChatDialogListPage />} />
         <Route path="/chat-dialogs/new" element={<NewChatDialogPage />} />
         <Route path="/prompt-entities" element={<PromptEntitiesPage />} />
+        <Route path="/prompt-entities/new" element={<NewPromptEntityPage />} />
         <Route
           path="/prompt-entities/:entityName/attributes"
           element={<PromptAttributesPage />}

@@ -35,6 +35,7 @@ public class HypothesisService {
     }
 
     private MarketNiche attachNiche(Long id) {
+        if (id == null) return null;
         if (!nicheRepository.existsById(id)) {
             throw new EntityNotFoundException("MarketNiche not found: " + id);
         }
@@ -53,31 +54,7 @@ public class HypothesisService {
         if (req.getTitle() == null || req.getTitle().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "title required");
         }
-        if (req.getMarketNicheId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "marketNicheId required");
-        }
-        if (req.getPromise() == null || req.getPromise().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "promise required");
-        }
-        if (req.getPromise().length() > 140) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "promise too long");
-        }
-        if (req.getProblem() == null || req.getProblem().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "problem required");
-        }
-        if (req.getPersona() == null || req.getPersona().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "persona required");
-        }
-        if (req.getSuccessRule() == null || req.getSuccessRule().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "successRule required");
-        }
-        if (req.getKpiTargetCpl() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "kpiTargetCpl required");
-        }
-        // premiseAngleId is optional and validated only when present
-        if ("TRIPWIRE".equals(req.getOfferType()) && req.getPrice() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "price required for TRIPWIRE");
-        }
+        // only title is required
     }
 
     @Transactional
@@ -127,27 +104,6 @@ public class HypothesisService {
     private void validate(UpdateHypothesisRequest req) {
         if (req.getTitle() == null || req.getTitle().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "title required");
-        }
-        if (req.getPromise() == null || req.getPromise().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "promise required");
-        }
-        if (req.getPromise().length() > 140) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "promise too long");
-        }
-        if (req.getProblem() == null || req.getProblem().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "problem required");
-        }
-        if (req.getPersona() == null || req.getPersona().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "persona required");
-        }
-        if (req.getSuccessRule() == null || req.getSuccessRule().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "successRule required");
-        }
-        if (req.getKpiTargetCpl() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "kpiTargetCpl required");
-        }
-        if ("TRIPWIRE".equals(req.getOfferType()) && req.getPrice() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "price required for TRIPWIRE");
         }
     }
 

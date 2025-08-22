@@ -119,21 +119,21 @@ This document summarizes the current database schema defined in `schema.sql`.
 ### hypothesis
 
 - `id` BINARY(16) PRIMARY KEY
-- `market_niche_id` BIGINT NOT NULL
+- `market_niche_id` BIGINT
 - `title` VARCHAR(255) NOT NULL
 - `premise_angle_id` BIGINT
-- `promise` VARCHAR(140) NOT NULL
-- `problem` VARCHAR(255) NOT NULL
-- `persona` VARCHAR(255) NOT NULL
+- `promise` VARCHAR(140)
+- `problem` VARCHAR(255)
+- `persona` VARCHAR(255)
 - `mechanism` LONGTEXT
 - `unique_mechanism` LONGTEXT
 - `prompt` LONGTEXT
 - `model` VARCHAR(255)
 - `success_rule` LONGTEXT
-- `offer_type` VARCHAR(20) NOT NULL
+- `offer_type` VARCHAR(20)
 - `price` DECIMAL(6,2)
-- `kpi_target_cpl` DECIMAL(7,2) NOT NULL
-- `status` VARCHAR(20) DEFAULT 'BACKLOG' NOT NULL
+- `kpi_target_cpl` DECIMAL(7,2)
+- `status` VARCHAR(20) DEFAULT 'BACKLOG'
 - `generated_at` TIMESTAMP
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -236,17 +236,18 @@ This document summarizes the current database schema defined in `schema.sql`.
 ### hypothesis
 
 - `id` BINARY(16) PRIMARY KEY
-- `market_niche_id` BIGINT NOT NULL
+- `market_niche_id` BIGINT
 - `title` VARCHAR(255) NOT NULL
 - `premise_angle_id` BIGINT
-- `offer_type` VARCHAR(20) NOT NULL
+- `offer_type` VARCHAR(20)
 - `price` DECIMAL(6,2)
 - `mechanism` LONGTEXT
 - `unique_mechanism` LONGTEXT
 - `prompt` LONGTEXT
 - `model` VARCHAR(255)
-- `kpi_target_cpl` DECIMAL(7,2) NOT NULL
-- `status` VARCHAR(20) DEFAULT 'BACKLOG' NOT NULL
+- `success_rule` LONGTEXT
+- `kpi_target_cpl` DECIMAL(7,2)
+- `status` VARCHAR(20) DEFAULT 'BACKLOG'
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 

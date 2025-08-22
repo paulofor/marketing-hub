@@ -4,9 +4,11 @@ import com.marketinghub.prompt.PromptAttribute;
 import com.marketinghub.prompt.PromptEntity;
 import com.marketinghub.prompt.dto.CreatePromptAttributeRequest;
 import com.marketinghub.prompt.dto.PromptAttributeDto;
+import com.marketinghub.prompt.dto.UpdatePromptAttributeRequest;
 import com.marketinghub.prompt.mapper.PromptAttributeMapper;
 import com.marketinghub.prompt.repository.PromptAttributeRepository;
 import com.marketinghub.prompt.repository.PromptEntityRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -49,5 +51,31 @@ public class PromptAttributeService {
                 .build();
         attributeRepository.save(attr);
         return mapper.toDto(attr);
+    }
+
+    public PromptAttributeDto getLatest(String entityName, String attrName) {
+        PromptAttribute attr = attributeRepository.findTopByEntity_NameAndNameOrderByVersionDesc(entityName, attrName)
+                .orElseThrow(() -> new EntityNotFoundException("PromptAttribute not found"));
+        return mapper.toDto(attr);
+    }
+
+    public PromptAttributeDto update(String entityName, String attrName, UpdatePromptAttributeRequest req) {
+        PromptEntity entity = entityRepository.findByName(entityName)
+                .orElseGet(() -> entityRepository.save(PromptEntity.builder().name(entityName).build()));
+        int nextVersion = attributeRepository.findTopByEntity_NameAndNameOrderByVersionDesc(entityName, attrName)
+                .map(PromptAttribute::getVersion)
+                .orElse(0) + 1;
+        PromptAttribute attr = PromptAttribute.builder()
+                .entity(entity)
+                .name(attrName)
+                .description(req.getDescription())
+                .version(nextVersion)
+                .build();
+        attributeRepository.save(attr);
+        return mapper.toDto(attr);
+    }
+
+    public void delete(String entityName, String attrName) {
+        attributeRepository.deleteByEntity_NameAndName(entityName, attrName);
     }
 }

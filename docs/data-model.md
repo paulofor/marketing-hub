@@ -127,7 +127,8 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `persona` VARCHAR(255)
 - `mechanism` LONGTEXT
 - `unique_mechanism` LONGTEXT
-- `prompt` LONGTEXT
+- `prompt` LONGTEXT  
+  Texto do prompt usado pela IA; pode ser bem longo
 - `model` VARCHAR(255)
 - `success_rule` LONGTEXT
 - `offer_type` VARCHAR(20)
@@ -243,7 +244,8 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `price` DECIMAL(6,2)
 - `mechanism` LONGTEXT
 - `unique_mechanism` LONGTEXT
-- `prompt` LONGTEXT
+- `prompt` LONGTEXT  
+  Texto do prompt usado pela IA; pode ser bem longo
 - `model` VARCHAR(255)
 - `success_rule` LONGTEXT
 - `kpi_target_cpl` DECIMAL(7,2)

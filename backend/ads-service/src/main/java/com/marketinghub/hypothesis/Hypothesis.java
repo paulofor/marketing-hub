@@ -56,6 +56,7 @@ public class Hypothesis {
 
     /** Prompt usado quando a hipótese é gerada por IA. */
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String prompt;
 
     /** Modelo de IA responsável pela geração desta hipótese. */

@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/prompt-entities")
+@RequestMapping("/api/prompt-entities")
 public class PromptEntityController {
     private final PromptEntityService service;
 

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+
 import java.time.Instant;
 
 @Entity
@@ -12,17 +13,22 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(org.springframework.data.jpa.domain.support.AuditingEntityListener.class)
-public class PromptAttribute {
+@Table(name = "prompt_attribute_description")
+public class PromptAttributeDescription {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "prompt_entity_id")
-    private PromptEntity entity;
+    @JoinColumn(name = "prompt_attribute_id")
+    private PromptAttribute attribute;
+
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String description;
 
     @Column(nullable = false)
-    private String name;
+    private int version;
 
     @CreationTimestamp
     private Instant createdAt;

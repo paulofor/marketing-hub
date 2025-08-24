@@ -327,6 +327,39 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `stop_loss_factor` DECIMAL(5,2)
 - `default_mde_pp` DECIMAL(5,2)
 
+### prompt_entity
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `name` VARCHAR(255) UNIQUE
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+### prompt_attribute
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `prompt_entity_id` BIGINT
+- `name` VARCHAR(255)
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+### prompt_entity_description
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `prompt_entity_id` BIGINT
+- `description` LONGTEXT
+- `version` INT
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+### prompt_attribute_description
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `prompt_attribute_id` BIGINT
+- `description` LONGTEXT
+- `version` INT
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
 ## Diagram
 
 ```mermaid

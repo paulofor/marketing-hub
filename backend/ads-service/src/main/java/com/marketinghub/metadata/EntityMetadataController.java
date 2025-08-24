@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/entities/{entityName}/attributes")
+@RequestMapping("/api/entities")
 public class EntityMetadataController {
     private final EntityMetadataService service;
 
@@ -17,6 +17,11 @@ public class EntityMetadataController {
     }
 
     @GetMapping
+    public List<String> listEntities() {
+        return service.listEntities();
+    }
+
+    @GetMapping("/{entityName}/attributes")
     public List<String> list(@PathVariable String entityName) {
         return service.listAttributes(entityName);
     }

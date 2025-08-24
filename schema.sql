@@ -214,9 +214,27 @@ CREATE TABLE prompt_attribute (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     prompt_entity_id BIGINT,
     name VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_prompt_attribute_entity FOREIGN KEY (prompt_entity_id) REFERENCES prompt_entity(id)
+);
+
+CREATE TABLE prompt_entity_description (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    prompt_entity_id BIGINT,
     description LONGTEXT,
     version INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_prompt_attribute_entity FOREIGN KEY (prompt_entity_id) REFERENCES prompt_entity(id)
+    CONSTRAINT fk_prompt_entity_description_entity FOREIGN KEY (prompt_entity_id) REFERENCES prompt_entity(id)
+);
+
+CREATE TABLE prompt_attribute_description (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    prompt_attribute_id BIGINT,
+    description LONGTEXT,
+    version INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_prompt_attribute_description_attr FOREIGN KEY (prompt_attribute_id) REFERENCES prompt_attribute(id)
 );

@@ -13,6 +13,11 @@ public class EntityMetadataService {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    public List<String> listEntities() {
+        String sql = "SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()";
+        return jdbcTemplate.queryForList(sql, String.class);
+    }
+
     public List<String> listAttributes(String entityName) {
         String sql = "SELECT column_name FROM information_schema.columns WHERE table_name = ?";
         return jdbcTemplate.queryForList(sql, String.class, entityName);

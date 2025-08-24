@@ -2,6 +2,7 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import { useCreatePromptEntity } from "../../api/prompt/useCreatePromptEntity";
+import { useEntities } from "../../api/prompt/useEntities";
 
 interface FormData {
   name: string;
@@ -11,6 +12,7 @@ export default function NewPromptEntityPage() {
   const { register, handleSubmit, reset } = useForm<FormData>();
   const navigate = useNavigate();
   const create = useCreatePromptEntity();
+  const { data: entities } = useEntities();
 
   const onSubmit = async (values: FormData) => {
     try {
@@ -29,7 +31,14 @@ export default function NewPromptEntityPage() {
         <label className="form-label" htmlFor="name">
           Nome
         </label>
-        <input id="name" className="form-control mb-2" {...register("name")} />
+        <select id="name" className="form-control mb-2" {...register("name")}>
+          <option value="">Selecione a entidade</option>
+          {entities?.map((e) => (
+            <option key={e} value={e}>
+              {e}
+            </option>
+          ))}
+        </select>
         <div className="mt-3 d-flex justify-content-end">
           <button
             type="button"

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.prompt.PromptAttribute;
+import com.marketinghub.prompt.PromptAttributeDescription;
+import com.marketinghub.prompt.repository.PromptAttributeDescriptionRepository;
 import com.marketinghub.prompt.repository.PromptAttributeRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +27,7 @@ public class ChatGptClient {
     private final ObjectMapper objectMapper;
     private final String model;
     private final PromptAttributeRepository attributeRepository;
+    private final PromptAttributeDescriptionRepository descriptionRepository;
     private static final Logger log = LoggerFactory.getLogger(ChatGptClient.class);
 
     public ChatGptClient(WebClient.Builder builder,
@@ -32,7 +35,8 @@ public class ChatGptClient {
                          @Value("${openai.api-key:}") String apiKey,
                          @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
                          @Value("${openai.model:gpt-3.5-turbo}") String model,
-                         PromptAttributeRepository attributeRepository) {
+                         PromptAttributeRepository attributeRepository,
+                         PromptAttributeDescriptionRepository descriptionRepository) {
         this.webClient = builder
                 .baseUrl(baseUrl)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
@@ -40,6 +44,7 @@ public class ChatGptClient {
         this.objectMapper = objectMapper;
         this.model = model;
         this.attributeRepository = attributeRepository;
+        this.descriptionRepository = descriptionRepository;
     }
 
     public List<CreateHypothesisRequest> generateHypotheses(MarketNiche niche, int quantity) {
@@ -109,16 +114,20 @@ public class ChatGptClient {
             sb.append("Dicas extras: ").append(niche.getExtraTips()).append("\n");
         }
         var attrs = attributeRepository.findByEntity_Name("hypothesis");
-        var latest = attrs.stream().collect(java.util.stream.Collectors.toMap(PromptAttribute::getName,
-                java.util.function.Function.identity(),
-                (a, b) -> a.getVersion() > b.getVersion() ? a : b));
-        if (!latest.isEmpty()) {
+        var descriptions = attrs.stream()
+                .map(attr -> Map.entry(attr.getName(),
+                        descriptionRepository.findTopByAttribute_IdOrderByVersionDesc(attr.getId())
+                                .map(PromptAttributeDescription::getDescription)
+                                .orElse(null)))
+                .filter(e -> e.getValue() != null)
+                .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        if (!descriptions.isEmpty()) {
             sb.append("Cada objeto deve conter as chaves: ")
-                    .append(latest.keySet().stream().map(n -> "\\\"" + n + "\\\"")
+                    .append(descriptions.keySet().stream().map(n -> "\\\"" + n + "\\\"")
                             .collect(java.util.stream.Collectors.joining(", ")))
                     .append(". ");
-            latest.values().forEach(attr ->
-                    sb.append("Campo \\\"" + attr.getName() + "\\\": " + attr.getDescription() + ". "));
+            descriptions.forEach((name, desc) ->
+                    sb.append("Campo \\\"" + name + "\\\": " + desc + ". "));
         } else {
             sb.append("Cada objeto deve conter as chaves: \"title\", \"promise\", \"problem\", \"persona\", \"mechanism\", \"uniqueMechanism\", \"successRule\", \"offerType\", \"price\". ");
         }

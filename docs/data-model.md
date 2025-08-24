@@ -116,36 +116,12 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
-### hypothesis
-
-- `id` BINARY(16) PRIMARY KEY
-- `market_niche_id` BIGINT
-- `title` VARCHAR(255) NOT NULL
-- `premise_angle_id` BIGINT
-- `promise` VARCHAR(140)
-- `problem` VARCHAR(255)
-- `persona` VARCHAR(255)
-- `mechanism` LONGTEXT
-- `unique_mechanism` LONGTEXT
-- `prompt` LONGTEXT  
-  Texto do prompt usado pela IA; pode ser bem longo
-- `model` VARCHAR(255)
-- `success_rule` LONGTEXT
-- `offer_type` VARCHAR(20)
-- `price` DECIMAL(6,2)
-- `kpi_target_cpl` DECIMAL(7,2)
-- `status` VARCHAR(20) DEFAULT 'BACKLOG'
-- `generated_at` TIMESTAMP
-- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-
 ### experiment
 
 - `id` BIGINT AUTO_INCREMENT PRIMARY KEY
 - `niche_id` BIGINT NOT NULL
 - `name` VARCHAR(255) NOT NULL
 - `hypothesis` VARCHAR(255)
-- `hypothesis_id` BINARY(16)
 - `kpi_target_cpl` DECIMAL(10,2) DEFAULT 45.00
 - `stop_loss_cpl` DECIMAL(10,2) DEFAULT 90.00
 - `sample_size` INT DEFAULT 1500
@@ -156,7 +132,6 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `end_date` DATE
 - `status` VARCHAR(20)
 - `platform` VARCHAR(50)
-- `metric_preset_id` VARCHAR(50)
 - `sales_funnel_id` BINARY(16)
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -234,99 +209,6 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
-### hypothesis
-
-- `id` BINARY(16) PRIMARY KEY
-- `market_niche_id` BIGINT
-- `title` VARCHAR(255) NOT NULL
-- `premise_angle_id` BIGINT
-- `offer_type` VARCHAR(20)
-- `price` DECIMAL(6,2)
-- `mechanism` LONGTEXT
-- `unique_mechanism` LONGTEXT
-- `prompt` LONGTEXT  
-  Texto do prompt usado pela IA; pode ser bem longo
-- `model` VARCHAR(255)
-- `success_rule` LONGTEXT
-- `kpi_target_cpl` DECIMAL(7,2)
-- `status` VARCHAR(20) DEFAULT 'BACKLOG'
-- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-
-### lead
-
-- `id` BINARY(16) PRIMARY KEY
-- `leadgen_id` BIGINT UNIQUE
-- `instagram_user_id` BIGINT
-- `ad_id` BIGINT
-- `campaign_id` BIGINT
-- `experiment_id` BIGINT
-- `captured_at` DATETIME
-- `nurture_stage` ENUM('NEW','WARM','HOT') DEFAULT 'NEW'
-- `cpl` DECIMAL(10,2)
-- `lead_score` INT DEFAULT 0
-
-### outbox
-
-- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
-- `aggregate_id` BINARY(16)
-- `event_type` VARCHAR(50)
-- `payload` TEXT
-- `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
-- `processed_at` DATETIME
-
-### sales_funnel
-
-- `id` BINARY(16) PRIMARY KEY
-- `name` VARCHAR(100)
-- `objective` VARCHAR(255)
-- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-
-### funnel_step
-
-- `id` BINARY(16) PRIMARY KEY
-- `funnel_id` BINARY(16) NOT NULL
-- `order_idx` INT
-- `stimulus_type` ENUM('DM','IG_POST_BOOST','FB_AD','WHATSAPP','EMAIL','SMS','PUSH','STORY','WEBINAR','CALL','LANDING')
-- `channel` VARCHAR(50)
-- `template_id` VARCHAR(50)
-- `expected_action` ENUM('OPEN','CLICK','REPLY','VIEW','PURCHASE','REGISTRATION','OPT_IN','OPT_OUT','BOUNCE','SHARE')
-- `score_inc` INT
-- `revenue_target` DECIMAL(10,2)
-- `note` TEXT
-- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- `is_active` TINYINT(1) DEFAULT 1
-
-### lead_response
-
-- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
-- `lead_id` BINARY(16) NOT NULL
-- `funnel_step_id` BINARY(16) NOT NULL
-- `action` ENUM('OPEN','CLICK','REPLY','VIEW','PURCHASE','REGISTRATION','OPT_IN','OPT_OUT','BOUNCE','SHARE')
-- `value` JSON
-- `revenue` DECIMAL(10,2)
-- `occurred_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-
-### step_metric_snapshot
-
-- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
-- `funnel_step_id` BINARY(16) NOT NULL
-- `impressions` BIGINT
-- `responses` BIGINT
-- `conversions` BIGINT
-- `revenue` DECIMAL(12,2)
-- `gross_profit` DECIMAL(12,2)
-- `cvr` DECIMAL(6,4)
-- `captured_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-
-### metric_preset
-
-- `id` VARCHAR(50) PRIMARY KEY
-- `name` VARCHAR(100)
-- `sample_size` INT
-- `stop_loss_factor` DECIMAL(5,2)
-- `default_mde_pp` DECIMAL(5,2)
-
 ### prompt_entity
 
 - `id` BIGINT AUTO_INCREMENT PRIMARY KEY
@@ -385,42 +267,19 @@ erDiagram
     MARKET_NICHE {
         BIGINT id PK
     }
-    HYPOTHESIS {
-        BINARY id PK
-        BIGINT market_niche_id FK
-        VARCHAR model
-        TEXT prompt
-        TIMESTAMP generated_at
-    }
     EXPERIMENT {
         BIGINT id PK
-        BIGINT niche_id FK
-        BINARY hypothesis_id FK
-        VARCHAR metric_preset_id FK
-        BINARY sales_funnel_id FK
     }
     CREATIVE_VARIANT {
         BIGINT id PK
-        BIGINT experiment_id FK
     }
     AD_SET {
         BIGINT id PK
-        BIGINT experiment_id FK
     }
     METRIC_SNAPSHOT {
         BIGINT id PK
-        BIGINT creative_id FK
-        BIGINT ad_set_id FK
     }
     LANDING_PAGE {
-        BIGINT id PK
-        BIGINT experiment_id FK
-    }
-    LEAD {
-        BINARY id PK
-        BIGINT experiment_id FK
-    }
-    OUTBOX {
         BIGINT id PK
     }
     CHAT_SESSION {
@@ -428,45 +287,31 @@ erDiagram
     }
     CHAT_MESSAGE {
         BIGINT id PK
-        BIGINT session_id FK
     }
     CHAT_DIALOG {
         BIGINT id PK
     }
-    SALES_FUNNEL {
-        BINARY id PK
-    }
-    FUNNEL_STEP {
-        BINARY id PK
-        BINARY funnel_id FK
-    }
-    LEAD_RESPONSE {
+    PROMPT_ENTITY {
         BIGINT id PK
-        BINARY lead_id FK
-        BINARY funnel_step_id FK
     }
-    STEP_METRIC_SNAPSHOT {
+    PROMPT_ATTRIBUTE {
         BIGINT id PK
-        BINARY funnel_step_id FK
     }
-    METRIC_PRESET {
-        VARCHAR id PK
+    PROMPT_ENTITY_DESCRIPTION {
+        BIGINT id PK
+    }
+    PROMPT_ATTRIBUTE_DESCRIPTION {
+        BIGINT id PK
     }
 
-    MARKET_NICHE ||--o{ HYPOTHESIS : guides
-    HYPOTHESIS ||--o{ EXPERIMENT : informs
     MARKET_NICHE ||--o{ EXPERIMENT : contains
     EXPERIMENT ||--o{ CREATIVE_VARIANT : has
     EXPERIMENT ||--o{ AD_SET : configures
     EXPERIMENT ||--o{ LANDING_PAGE : uses
-    EXPERIMENT ||--o{ LEAD : generates
-    SALES_FUNNEL ||--o{ EXPERIMENT : used_by
-    SALES_FUNNEL ||--o{ FUNNEL_STEP : includes
-    FUNNEL_STEP ||--o{ LEAD_RESPONSE : triggers
-    LEAD ||--o{ LEAD_RESPONSE : receives
-    FUNNEL_STEP ||--o{ STEP_METRIC_SNAPSHOT : measures
     CREATIVE_VARIANT ||--o{ METRIC_SNAPSHOT : reports
     AD_SET ||--o{ METRIC_SNAPSHOT : tracks
-    METRIC_PRESET ||--o{ EXPERIMENT : configures
     CHAT_SESSION ||--o{ CHAT_MESSAGE : includes
+    PROMPT_ENTITY ||--o{ PROMPT_ATTRIBUTE : defines
+    PROMPT_ENTITY ||--o{ PROMPT_ENTITY_DESCRIPTION : described_by
+    PROMPT_ATTRIBUTE ||--o{ PROMPT_ATTRIBUTE_DESCRIPTION : described_by
 ```

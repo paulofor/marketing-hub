@@ -19,13 +19,17 @@ interface EditFormData {
 export default function PromptAttributesPage() {
   const { entityId = "" } = useParams<{ entityId: string }>();
   const { data: entity } = usePromptEntity(entityId);
-  const { data, isLoading } = usePromptAttributes(entityId);
-  const create = useCreatePromptAttribute(entityId);
-  const { data: entityAttrs } = useEntityAttributes(entityId);
+  const entityName = entity?.name ?? "";
+  const { data, isLoading } = usePromptAttributes(entityName);
+  const create = useCreatePromptAttribute(entityName);
+  const { data: entityAttrs } = useEntityAttributes(entityName);
   const { register, handleSubmit, reset } = useForm<FormData>();
-  const { register: registerEdit, handleSubmit: handleEdit, reset: resetEdit } =
-    useForm<EditFormData>();
-  const update = useUpdatePromptAttribute(entityId);
+  const {
+    register: registerEdit,
+    handleSubmit: handleEdit,
+    reset: resetEdit,
+  } = useForm<EditFormData>();
+  const update = useUpdatePromptAttribute(entityName);
   const [editing, setEditing] = useState<string | null>(null);
 
   const onSubmit = async (values: FormData) => {
@@ -39,11 +43,14 @@ export default function PromptAttributesPage() {
 
   const onEdit = async (values: EditFormData) => {
     if (!editing) return;
-    await update.mutateAsync({ name: editing, description: values.description });
+    await update.mutateAsync({
+      name: editing,
+      description: values.description,
+    });
     setEditing(null);
   };
 
-  if (isLoading) return <p>Carregando...</p>;
+  if (!entityName || isLoading) return <p>Carregando...</p>;
 
   return (
     <div style={{ maxWidth: 480 }}>
@@ -54,11 +61,7 @@ export default function PromptAttributesPage() {
             <li key={a.name} className="mb-3">
               <strong>{a.name}</strong>
               {editing === a.name ? (
-                <form
-                  onSubmit={handleEdit(onEdit)}
-                  noValidate
-                  className="mt-2"
-                >
+                <form onSubmit={handleEdit(onEdit)} noValidate className="mt-2">
                   <textarea
                     className="form-control mb-2"
                     {...registerEdit("description")}
@@ -99,7 +102,7 @@ export default function PromptAttributesPage() {
         <label className="form-label" htmlFor="name">
           Nome
         </label>
-        <select id="name" className="form-control mb-2" {...register("name")}> 
+        <select id="name" className="form-control mb-2" {...register("name")}>
           <option value="">Selecione o atributo</option>
           {entityAttrs?.map((attr) => (
             <option key={attr} value={attr}>

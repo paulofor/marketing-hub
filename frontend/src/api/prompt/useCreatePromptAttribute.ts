@@ -6,19 +6,19 @@ export interface CreatePromptAttribute {
   name: string;
 }
 
-export function useCreatePromptAttribute(entityName: string) {
+export function useCreatePromptAttribute(entityId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: CreatePromptAttribute) => {
       const { data: attr } = await axios.post<PromptAttribute>(
-        `/api/prompt-entities/${entityName}/attributes`,
+        `/api/prompt-entities/${entityId}/attributes`,
         data,
       );
       return attr;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["promptAttributes", entityName],
+        queryKey: ["promptAttributes", entityId],
       });
       queryClient.invalidateQueries({ queryKey: ["promptEntities"] });
     },

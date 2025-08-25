@@ -18,7 +18,7 @@ export default function NewPromptEntityPage() {
     try {
       const entity = await create.mutateAsync(values);
       reset();
-      navigate(`/prompt-entities/${entity.name}/attributes`);
+      navigate(`/prompt-entities/${entity.id}/attributes`);
     } catch {
       alert("Erro ao criar entidade");
     }

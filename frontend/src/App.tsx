@@ -220,11 +220,11 @@ export default function App() {
         <Route path="/prompt-entities" element={<PromptEntitiesPage />} />
         <Route path="/prompt-entities/new" element={<NewPromptEntityPage />} />
         <Route
-          path="/prompt-entities/:entityName"
+          path="/prompt-entities/:entityId"
           element={<PromptEntityDescriptionPage />}
         />
         <Route
-          path="/prompt-entities/:entityName/attributes"
+          path="/prompt-entities/:entityId/attributes"
           element={<PromptAttributesPage />}
         />
         <Route path="*" element={<div>Início</div>} />

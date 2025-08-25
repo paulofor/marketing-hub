@@ -7,12 +7,12 @@ export interface PromptAttribute {
   version: number;
 }
 
-export function usePromptAttributes(entityName: string) {
+export function usePromptAttributes(entityId: string) {
   return useQuery({
-    queryKey: ["promptAttributes", entityName],
+    queryKey: ["promptAttributes", entityId],
     queryFn: async () => {
       const { data } = await axios.get<PromptAttribute[]>(
-        `/api/prompt-entities/${entityName}/attributes`,
+        `/api/prompt-entities/${entityId}/attributes`,
       );
       return data;
     },

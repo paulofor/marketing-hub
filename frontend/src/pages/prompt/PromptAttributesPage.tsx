@@ -3,12 +3,10 @@ import { useParams } from "react-router-dom";
 import { usePromptAttributes } from "../../api/prompt/usePromptAttributes";
 import { useCreatePromptAttribute } from "../../api/prompt/useCreatePromptAttribute";
 import { useEntityAttributes } from "../../api/prompt/useEntityAttributes";
-import { useUpdatePromptAttribute } from "../../api/prompt/useUpdatePromptAttribute";
 import PageTitle from "../../components/PageTitle";
 
 interface FormData {
   name: string;
-  description: string;
 }
 
 export default function PromptAttributesPage() {
@@ -16,13 +14,12 @@ export default function PromptAttributesPage() {
   const { data, isLoading } = usePromptAttributes(entityName);
   const create = useCreatePromptAttribute(entityName);
   const { data: entityAttrs } = useEntityAttributes(entityName);
-  const update = useUpdatePromptAttribute(entityName);
   const { register, handleSubmit, reset } = useForm<FormData>();
 
   const onSubmit = async (values: FormData) => {
     try {
-      await create.mutateAsync(values);
-      reset({ name: "", description: "" });
+      await create.mutateAsync({ name: values.name });
+      reset({ name: "" });
     } catch {
       alert("Erro ao salvar atributo");
     }
@@ -37,22 +34,7 @@ export default function PromptAttributesPage() {
         {Array.isArray(data) &&
           data.map((a) => (
             <li key={`${a.name}-${a.version}`}>
-              <strong>{a.name}</strong>: {a.description}{" "}
-              <button
-                type="button"
-                className="btn btn-link btn-sm"
-                onClick={() => {
-                  const description = window.prompt(
-                    "Nova descrição",
-                    a.description,
-                  );
-                  if (description) {
-                    update.mutate({ name: a.name, description });
-                  }
-                }}
-              >
-                Editar
-              </button>
+              <strong>{a.name}</strong>
             </li>
           ))}
       </ul>
@@ -68,14 +50,6 @@ export default function PromptAttributesPage() {
             </option>
           ))}
         </select>
-        <label className="form-label" htmlFor="description">
-          Descrição
-        </label>
-        <textarea
-          id="description"
-          className="form-control mb-2"
-          {...register("description")}
-        />
         <div className="mt-3 d-flex justify-content-end">
           <button
             type="button"

@@ -1,7 +1,6 @@
 import { useForm } from "react-hook-form";
 import { useParams } from "react-router-dom";
 import { usePromptAttributes } from "../../api/prompt/usePromptAttributes";
-import { useEntityAttributes } from "../../api/prompt/useEntityAttributes";
 import { useUpdatePromptAttribute } from "../../api/prompt/useUpdatePromptAttribute";
 import { usePromptEntity } from "../../api/prompt/usePromptEntity";
 import { useState } from "react";
@@ -16,8 +15,6 @@ export default function PromptAttributesPage() {
   const { data: entity } = usePromptEntity(entityId);
   const entityName = entity?.name ?? "";
   const { data: promptAttrs, isLoading } = usePromptAttributes(entityName);
-  const { data: entityAttrs, isLoading: loadingAttrs } =
-    useEntityAttributes(entityName);
   const {
     register: registerEdit,
     handleSubmit: handleEdit,
@@ -35,12 +32,9 @@ export default function PromptAttributesPage() {
     setEditing(null);
   };
 
-  if (!entityName || isLoading || loadingAttrs) return <p>Carregando...</p>;
+  if (!entityName || isLoading) return <p>Carregando...</p>;
 
-  const attributes = (entityAttrs ?? []).map((attr) => ({
-    name: attr,
-    description: promptAttrs?.find((a) => a.name === attr)?.description || "",
-  }));
+  const attributes = promptAttrs ?? [];
 
   return (
     <div style={{ maxWidth: 480 }}>

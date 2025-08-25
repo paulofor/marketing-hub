@@ -4,6 +4,7 @@ import { usePromptAttributes } from "../../api/prompt/usePromptAttributes";
 import { useCreatePromptAttribute } from "../../api/prompt/useCreatePromptAttribute";
 import { useEntityAttributes } from "../../api/prompt/useEntityAttributes";
 import { useUpdatePromptAttribute } from "../../api/prompt/useUpdatePromptAttribute";
+import { usePromptEntity } from "../../api/prompt/usePromptEntity";
 import { useState } from "react";
 import PageTitle from "../../components/PageTitle";
 
@@ -16,14 +17,15 @@ interface EditFormData {
 }
 
 export default function PromptAttributesPage() {
-  const { entityName = "" } = useParams<{ entityName: string }>();
-  const { data, isLoading } = usePromptAttributes(entityName);
-  const create = useCreatePromptAttribute(entityName);
-  const { data: entityAttrs } = useEntityAttributes(entityName);
+  const { entityId = "" } = useParams<{ entityId: string }>();
+  const { data: entity } = usePromptEntity(entityId);
+  const { data, isLoading } = usePromptAttributes(entityId);
+  const create = useCreatePromptAttribute(entityId);
+  const { data: entityAttrs } = useEntityAttributes(entityId);
   const { register, handleSubmit, reset } = useForm<FormData>();
   const { register: registerEdit, handleSubmit: handleEdit, reset: resetEdit } =
     useForm<EditFormData>();
-  const update = useUpdatePromptAttribute(entityName);
+  const update = useUpdatePromptAttribute(entityId);
   const [editing, setEditing] = useState<string | null>(null);
 
   const onSubmit = async (values: FormData) => {
@@ -45,7 +47,7 @@ export default function PromptAttributesPage() {
 
   return (
     <div style={{ maxWidth: 480 }}>
-      <PageTitle>{`Atributos de ${entityName}`}</PageTitle>
+      <PageTitle>{`Atributos de ${entity?.name || ""}`}</PageTitle>
       <ul>
         {Array.isArray(data) &&
           data.map((a) => (

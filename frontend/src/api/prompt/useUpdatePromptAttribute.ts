@@ -6,18 +6,18 @@ interface UpdateRequest {
   description: string;
 }
 
-export function useUpdatePromptAttribute(entityName: string) {
+export function useUpdatePromptAttribute(entityId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ name, description }: UpdateRequest) => {
       const { data } = await axios.put(
-        `/api/prompt-entities/${entityName}/attributes/${name}`,
+        `/api/prompt-entities/${entityId}/attributes/${name}`,
         { description },
       );
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["promptAttributes", entityName] });
+      queryClient.invalidateQueries({ queryKey: ["promptAttributes", entityId] });
     },
   });
 }

@@ -6,12 +6,12 @@ export interface PromptEntityDescription {
   version: number;
 }
 
-export function usePromptEntityDescription(entityName: string) {
+export function usePromptEntityDescription(entityId: string) {
   return useQuery({
-    queryKey: ["promptEntityDescription", entityName],
+    queryKey: ["promptEntityDescription", entityId],
     queryFn: async () => {
       const { data } = await axios.get<PromptEntityDescription>(
-        `/api/prompt-entities/${entityName}/description`,
+        `/api/prompt-entities/${entityId}/description`,
       );
       return data;
     },

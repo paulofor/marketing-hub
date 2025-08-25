@@ -20,9 +20,12 @@ export default function PromptEntitiesPage() {
         <ul>
           {entities.map((e) => (
             <li key={e.id}>
-              <Link to={`/prompt-entities/${e.name}`}>{e.name}</Link>{" "}
+              <Link to={`/prompt-entities/${e.id}`} state={{ name: e.name }}>
+                {e.name}
+              </Link>{" "}
               <Link
-                to={`/prompt-entities/${e.name}/attributes`}
+                to={`/prompt-entities/${e.id}/attributes`}
+                state={{ name: e.name }}
                 className="btn btn-link btn-sm"
               >
                 Atributos

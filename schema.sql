@@ -224,6 +224,7 @@ CREATE TABLE prompt_entity_description (
     prompt_entity_id BIGINT,
     description LONGTEXT,
     version INT,
+    active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_prompt_entity_description_entity FOREIGN KEY (prompt_entity_id) REFERENCES prompt_entity(id)
@@ -234,6 +235,7 @@ CREATE TABLE prompt_attribute_description (
     prompt_attribute_id BIGINT,
     description LONGTEXT,
     version INT,
+    active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_prompt_attribute_description_attr FOREIGN KEY (prompt_attribute_id) REFERENCES prompt_attribute(id)

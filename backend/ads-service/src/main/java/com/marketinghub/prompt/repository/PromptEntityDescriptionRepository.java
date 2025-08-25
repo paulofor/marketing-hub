@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface PromptEntityDescriptionRepository extends JpaRepository<PromptEntityDescription, Long> {
     Optional<PromptEntityDescription> findTopByEntity_NameOrderByVersionDesc(String entityName);
+
+    Optional<PromptEntityDescription> findTopByEntity_NameAndActiveTrueOrderByVersionDesc(String entityName);
 }

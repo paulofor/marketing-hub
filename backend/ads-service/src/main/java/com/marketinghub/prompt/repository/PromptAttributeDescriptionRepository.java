@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface PromptAttributeDescriptionRepository extends JpaRepository<PromptAttributeDescription, Long> {
     Optional<PromptAttributeDescription> findTopByAttribute_IdOrderByVersionDesc(Long attributeId);
+
+    Optional<PromptAttributeDescription> findTopByAttribute_IdAndActiveTrueOrderByVersionDesc(Long attributeId);
 }

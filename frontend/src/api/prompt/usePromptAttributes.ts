@@ -4,7 +4,6 @@ import axios from "axios";
 export interface PromptAttribute {
   name: string;
   description: string;
-  version: number;
 }
 
 export function usePromptAttributes(entityName: string) {

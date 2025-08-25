@@ -214,7 +214,6 @@ CREATE TABLE prompt_attribute (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     prompt_entity_id BIGINT,
     name VARCHAR(255),
-    version INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_prompt_attribute_entity FOREIGN KEY (prompt_entity_id) REFERENCES prompt_entity(id)
@@ -224,7 +223,6 @@ CREATE TABLE prompt_entity_description (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     prompt_entity_id BIGINT,
     description LONGTEXT,
-    version INT,
     active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -235,7 +233,6 @@ CREATE TABLE prompt_attribute_description (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     prompt_attribute_id BIGINT,
     description LONGTEXT,
-    version INT,
     active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

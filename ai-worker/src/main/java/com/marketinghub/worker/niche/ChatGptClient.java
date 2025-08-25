@@ -116,7 +116,7 @@ public class ChatGptClient {
         var attrs = attributeRepository.findByEntity_Name("hypothesis");
         var descriptions = attrs.stream()
                 .map(attr -> Map.entry(attr.getName(),
-                        descriptionRepository.findTopByAttribute_IdAndActiveTrueOrderByVersionDesc(attr.getId())
+                        descriptionRepository.findByAttribute_IdAndActiveTrue(attr.getId())
                                 .map(PromptAttributeDescription::getDescription)
                                 .orElse(null)))
                 .filter(e -> e.getValue() != null)

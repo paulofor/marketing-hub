@@ -25,10 +25,6 @@ public class PromptAttribute {
     @Column(nullable = false)
     private String name;
 
-    @Version
-    @Column(nullable = false)
-    private int version;
-
     @CreationTimestamp
     private Instant createdAt;
 

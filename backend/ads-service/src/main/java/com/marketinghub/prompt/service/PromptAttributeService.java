@@ -36,7 +36,7 @@ public class PromptAttributeService {
         List<PromptAttribute> attrs = attributeRepository.findByEntity_Name(entityName);
         return attrs.stream().map(attr -> {
             PromptAttributeDescription desc = descriptionRepository
-                    .findTopByAttribute_IdAndActiveTrueOrderByVersionDesc(attr.getId())
+                    .findByAttribute_IdAndActiveTrue(attr.getId())
                     .orElse(null);
             return mapper.toDto(attr, desc);
         }).toList();
@@ -51,19 +51,14 @@ public class PromptAttributeService {
                         .entity(entity)
                         .name(req.getName())
                         .build()));
-        descriptionRepository.findTopByAttribute_IdAndActiveTrueOrderByVersionDesc(attribute.getId())
+        descriptionRepository.findByAttribute_IdAndActiveTrue(attribute.getId())
                 .ifPresent(prev -> {
                     prev.setActive(false);
                     descriptionRepository.save(prev);
                 });
-        int nextVersion = descriptionRepository
-                .findTopByAttribute_IdOrderByVersionDesc(attribute.getId())
-                .map(PromptAttributeDescription::getVersion)
-                .orElse(0) + 1;
         PromptAttributeDescription desc = PromptAttributeDescription.builder()
                 .attribute(attribute)
                 .description(req.getDescription())
-                .version(nextVersion)
                 .active(true)
                 .build();
         descriptionRepository.save(desc);
@@ -75,7 +70,7 @@ public class PromptAttributeService {
                 .findByEntity_NameAndName(entityName, attrName)
                 .orElseThrow(() -> new EntityNotFoundException("PromptAttribute not found"));
         PromptAttributeDescription desc = descriptionRepository
-                .findTopByAttribute_IdAndActiveTrueOrderByVersionDesc(attribute.getId())
+                .findByAttribute_IdAndActiveTrue(attribute.getId())
                 .orElseThrow(() -> new EntityNotFoundException("PromptAttributeDescription not found"));
         return mapper.toDto(attribute, desc);
     }
@@ -89,19 +84,14 @@ public class PromptAttributeService {
                         .entity(entity)
                         .name(attrName)
                         .build()));
-        descriptionRepository.findTopByAttribute_IdAndActiveTrueOrderByVersionDesc(attribute.getId())
+        descriptionRepository.findByAttribute_IdAndActiveTrue(attribute.getId())
                 .ifPresent(prev -> {
                     prev.setActive(false);
                     descriptionRepository.save(prev);
                 });
-        int nextVersion = descriptionRepository
-                .findTopByAttribute_IdOrderByVersionDesc(attribute.getId())
-                .map(PromptAttributeDescription::getVersion)
-                .orElse(0) + 1;
         PromptAttributeDescription desc = PromptAttributeDescription.builder()
                 .attribute(attribute)
                 .description(req.getDescription())
-                .version(nextVersion)
                 .active(true)
                 .build();
         descriptionRepository.save(desc);

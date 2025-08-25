@@ -10,6 +10,5 @@ import org.mapstruct.Mapping;
 public interface PromptAttributeMapper {
     @Mapping(target = "name", source = "attr.name")
     @Mapping(target = "description", source = "desc.description")
-    @Mapping(target = "version", source = "desc.version")
     PromptAttributeDto toDto(PromptAttribute attr, PromptAttributeDescription desc);
 }

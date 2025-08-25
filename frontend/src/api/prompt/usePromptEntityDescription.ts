@@ -3,7 +3,6 @@ import axios from "axios";
 
 export interface PromptEntityDescription {
   description: string;
-  version: number;
 }
 
 export function usePromptEntityDescription(entityId: string) {

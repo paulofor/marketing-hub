@@ -20,11 +20,10 @@ public class PromptEntityDescriptionService {
     }
 
     public PromptEntityDescriptionDto getLatest(String entityName) {
-        return descriptionRepository.findTopByEntity_NameAndActiveTrueOrderByVersionDesc(entityName)
+        return descriptionRepository.findByEntity_NameAndActiveTrue(entityName)
                 .map(desc -> {
                     PromptEntityDescriptionDto dto = new PromptEntityDescriptionDto();
                     dto.setDescription(desc.getDescription());
-                    dto.setVersion(desc.getVersion());
                     return dto;
                 })
                 .orElse(null);
@@ -33,24 +32,19 @@ public class PromptEntityDescriptionService {
     public PromptEntityDescriptionDto update(String entityName, UpdatePromptEntityDescriptionRequest req) {
         PromptEntity entity = entityRepository.findByName(entityName)
                 .orElseGet(() -> entityRepository.save(PromptEntity.builder().name(entityName).build()));
-        descriptionRepository.findTopByEntity_NameAndActiveTrueOrderByVersionDesc(entityName)
+        descriptionRepository.findByEntity_NameAndActiveTrue(entityName)
                 .ifPresent(prev -> {
                     prev.setActive(false);
                     descriptionRepository.save(prev);
                 });
-        int nextVersion = descriptionRepository.findTopByEntity_NameOrderByVersionDesc(entityName)
-                .map(PromptEntityDescription::getVersion)
-                .orElse(0) + 1;
         PromptEntityDescription desc = PromptEntityDescription.builder()
                 .entity(entity)
                 .description(req.getDescription())
-                .version(nextVersion)
                 .active(true)
                 .build();
         descriptionRepository.save(desc);
         PromptEntityDescriptionDto dto = new PromptEntityDescriptionDto();
         dto.setDescription(desc.getDescription());
-        dto.setVersion(desc.getVersion());
         return dto;
     }
 }

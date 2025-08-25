@@ -4,7 +4,6 @@ import { PromptAttribute } from "./usePromptAttributes";
 
 export interface CreatePromptAttribute {
   name: string;
-  description: string;
 }
 
 export function useCreatePromptAttribute(entityName: string) {

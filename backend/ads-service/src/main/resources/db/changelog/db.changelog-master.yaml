@@ -73,3 +73,7 @@ databaseChangeLog:
   - include:
       file: V2025_09_27__add_active_to_prompt_descriptions.sql
       relativeToChangelogFile: true
+
+  - include:
+      file: V2025_09_28__drop_version_from_prompt_tables.sql
+      relativeToChangelogFile: true

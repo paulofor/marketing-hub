@@ -30,6 +30,9 @@ public class PromptEntityDescription {
     @Column(nullable = false)
     private int version;
 
+    @Column(nullable = false)
+    private boolean active = true;
+
     @CreationTimestamp
     private Instant createdAt;
 

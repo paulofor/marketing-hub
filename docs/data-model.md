@@ -230,6 +230,7 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `prompt_entity_id` BIGINT
 - `description` LONGTEXT
 - `version` INT
+- `active` BOOLEAN
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
@@ -239,6 +240,7 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `prompt_attribute_id` BIGINT
 - `description` LONGTEXT
 - `version` INT
+- `active` BOOLEAN
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 

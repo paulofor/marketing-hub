@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+
 import java.time.Instant;
 
 @Entity
@@ -23,6 +24,10 @@ public class PromptAttribute {
 
     @Column(nullable = false)
     private String name;
+
+    @Version
+    @Column(nullable = false)
+    private int version;
 
     @CreationTimestamp
     private Instant createdAt;

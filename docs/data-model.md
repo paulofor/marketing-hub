@@ -221,6 +221,7 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `id` BIGINT AUTO_INCREMENT PRIMARY KEY
 - `prompt_entity_id` BIGINT
 - `name` VARCHAR(255)
+- `version` INT
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 

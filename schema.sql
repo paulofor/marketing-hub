@@ -214,6 +214,7 @@ CREATE TABLE prompt_attribute (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     prompt_entity_id BIGINT,
     name VARCHAR(255),
+    version INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_prompt_attribute_entity FOREIGN KEY (prompt_entity_id) REFERENCES prompt_entity(id)

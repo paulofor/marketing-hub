@@ -1,5 +1,7 @@
 package com.marketinghub.worker;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.successproduct.SuccessProduct;
@@ -154,28 +156,32 @@ public class OpenAiChatGptClient implements ChatGptClient {
 
                 // ===== 3b. Resposta final do modelo
                 String content = choice.path("message").path("content").asText();
-                content = stripCodeFence(content);
-                JsonNode data = MAPPER.readTree(content);
+                try {
+                    JsonNode data = JsonUtils.parsePossiblyDoubleEncoded(content, new TypeReference<JsonNode>() {});
 
-                product.setName(asText(data, "name"));
-                product.setExplicitPain(asText(data, "explicitPain"));
-                product.setPromise(asText(data, "promise"));
-                product.setUniqueMechanism(asText(data, "uniqueMechanism"));
-                product.setTripwire(asText(data, "tripwire"));
-                product.setRiskReversal(asText(data, "riskReversal"));
-                product.setSocialProof(asText(data, "socialProof"));
-                product.setCheckoutMonetization(asText(data, "checkoutMonetization"));
-                product.setSalesFunnel(asText(data, "salesFunnel"));
-                product.setAudienceType(asText(data, "audienceType"));
-                product.setCreativeVolume(asText(data, "creativeVolume"));
-                product.setStorytelling(asText(data, "storytelling"));
-                product.setSalesPageUrl(asText(data, "salesPageUrl"));
-                product.setInstagramUrl(asText(data, "instagramUrl"));
-                product.setFacebookUrl(asText(data, "facebookUrl"));
-                product.setYoutubeUrl(asText(data, "youtubeUrl"));
-                product.setNovo(false);
-                log.info("OpenAI enrichment completed for product {}", product.getId());
-                return product;
+                    product.setName(asText(data, "name"));
+                    product.setExplicitPain(asText(data, "explicitPain"));
+                    product.setPromise(asText(data, "promise"));
+                    product.setUniqueMechanism(asText(data, "uniqueMechanism"));
+                    product.setTripwire(asText(data, "tripwire"));
+                    product.setRiskReversal(asText(data, "riskReversal"));
+                    product.setSocialProof(asText(data, "socialProof"));
+                    product.setCheckoutMonetization(asText(data, "checkoutMonetization"));
+                    product.setSalesFunnel(asText(data, "salesFunnel"));
+                    product.setAudienceType(asText(data, "audienceType"));
+                    product.setCreativeVolume(asText(data, "creativeVolume"));
+                    product.setStorytelling(asText(data, "storytelling"));
+                    product.setSalesPageUrl(asText(data, "salesPageUrl"));
+                    product.setInstagramUrl(asText(data, "instagramUrl"));
+                    product.setFacebookUrl(asText(data, "facebookUrl"));
+                    product.setYoutubeUrl(asText(data, "youtubeUrl"));
+                    product.setNovo(false);
+                    log.info("OpenAI enrichment completed for product {}", product.getId());
+                    return product;
+                } catch (JsonProcessingException e) {
+                    // JsonUtils já logou a resposta; apenas retornamos o produto sem alterações
+                    return product;
+                }
             }
         } catch (Exception e) {
             log.error("Failed to call OpenAI API", e);
@@ -214,20 +220,54 @@ public class OpenAiChatGptClient implements ChatGptClient {
         return list;
     }
 
-    private static String stripCodeFence(String text) {
-        if (text == null) return null;
-        String t = text.trim();
-        if (t.startsWith("```") && t.contains("```")) {
-            int start = t.indexOf('\n');
-            int end = t.lastIndexOf("```");
-            if (start >= 0 && end > start) return t.substring(start + 1, end).trim();
-        }
-        return t;
-    }
-
     private static String asText(JsonNode node, String field) {
         JsonNode v = node.get(field);
         return (v != null && !v.isNull()) ? v.asText() : null;
+    }
+
+    /**
+     * Exemplo de como usar Structured Outputs da OpenAI Responses API para forçar
+     * a conformidade JSON e evitar cercas Markdown.
+     * TODO: Alternar para este modo quando o backend migrar para a Responses API.
+     */
+    @SuppressWarnings("unused")
+    private HttpRequest buildStructuredOutputRequest(List<Map<String, Object>> messages) throws JsonProcessingException {
+        Map<String, Object> schema = Map.of(
+                "type", "json_schema",
+                "json_schema",
+                Map.of(
+                        "name", "offer_items",
+                        "schema",
+                        Map.of(
+                                "type", "array",
+                                "items",
+                                Map.of(
+                                        "type", "object",
+                                        "properties",
+                                        Map.of(
+                                                "title", Map.of("type", "string"),
+                                                "promise", Map.of("type", "string"),
+                                                "problem", Map.of("type", "string"),
+                                                "persona", Map.of("type", "string"),
+                                                "successRule", Map.of("type", "string"),
+                                                "offerType", Map.of("type", "string"),
+                                                "kpiTargetCpl", Map.of("type", "number")),
+                                        "required",
+                                        List.of("title", "promise", "problem", "persona", "successRule", "offerType", "kpiTargetCpl"))),
+                        "strict", true));
+
+        Map<String, Object> body = Map.of(
+                "model", model,
+                "messages", messages,
+                "response_format", schema);
+
+        return HttpRequest.newBuilder()
+                .uri(URI.create("https://api.openai.com/v1/responses"))
+                .timeout(Duration.ofMinutes(2))
+                .header("Authorization", "Bearer " + apiKey)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(MAPPER.writeValueAsString(body), StandardCharsets.UTF_8))
+                .build();
     }
 
     /** Resultado simplificado de busca. */

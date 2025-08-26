@@ -22,6 +22,7 @@ function mockApi() {
             offerType: "LEAD",
             status: "BACKLOG",
             kpiTargetCpl: 5,
+            createdAt: "",
           },
         ],
       });

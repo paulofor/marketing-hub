@@ -24,6 +24,7 @@ function setup() {
             offerType: "LEAD",
             kpiTargetCpl: 5,
             status: "BACKLOG",
+            createdAt: "",
           },
         ],
       });

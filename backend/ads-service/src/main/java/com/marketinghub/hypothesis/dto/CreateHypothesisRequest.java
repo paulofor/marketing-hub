@@ -1,6 +1,7 @@
 package com.marketinghub.hypothesis.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public class CreateHypothesisRequest {
     private Long marketNicheId;
@@ -17,6 +18,7 @@ public class CreateHypothesisRequest {
     private String offerType;
     private BigDecimal price;
     private BigDecimal kpiTargetCpl;
+    private List<Long> promptAttributeDescriptionIds;
 
     public Long getMarketNicheId() { return marketNicheId; }
     public void setMarketNicheId(Long marketNicheId) { this.marketNicheId = marketNicheId; }
@@ -47,4 +49,7 @@ public class CreateHypothesisRequest {
     public void setPrice(BigDecimal price) { this.price = price; }
     public BigDecimal getKpiTargetCpl() { return kpiTargetCpl; }
     public void setKpiTargetCpl(BigDecimal kpiTargetCpl) { this.kpiTargetCpl = kpiTargetCpl; }
+
+    public List<Long> getPromptAttributeDescriptionIds() { return promptAttributeDescriptionIds; }
+    public void setPromptAttributeDescriptionIds(List<Long> promptAttributeDescriptionIds) { this.promptAttributeDescriptionIds = promptAttributeDescriptionIds; }
 }

@@ -242,6 +242,11 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
+### hypothesis_prompt_attribute_description
+
+- `hypothesis_id` BINARY(16)
+- `prompt_attribute_description_id` BIGINT
+
 ## Diagram
 
 ```mermaid
@@ -303,6 +308,13 @@ erDiagram
     PROMPT_ATTRIBUTE_DESCRIPTION {
         BIGINT id PK
     }
+    HYPOTHESIS {
+        BINARY(16) id PK
+    }
+    HYPOTHESIS_PROMPT_ATTRIBUTE_DESCRIPTION {
+        BINARY(16) hypothesis_id PK
+        BIGINT prompt_attribute_description_id PK
+    }
 
     MARKET_NICHE ||--o{ EXPERIMENT : contains
     EXPERIMENT ||--o{ CREATIVE_VARIANT : has
@@ -314,4 +326,6 @@ erDiagram
     PROMPT_ENTITY ||--o{ PROMPT_ATTRIBUTE : defines
     PROMPT_ENTITY ||--o{ PROMPT_ENTITY_DESCRIPTION : described_by
     PROMPT_ATTRIBUTE ||--o{ PROMPT_ATTRIBUTE_DESCRIPTION : described_by
+    HYPOTHESIS ||--o{ HYPOTHESIS_PROMPT_ATTRIBUTE_DESCRIPTION : uses
+    PROMPT_ATTRIBUTE_DESCRIPTION ||--o{ HYPOTHESIS_PROMPT_ATTRIBUTE_DESCRIPTION : referenced_by
 ```

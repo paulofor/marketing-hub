@@ -238,3 +238,11 @@ CREATE TABLE prompt_attribute_description (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_prompt_attribute_description_attr FOREIGN KEY (prompt_attribute_id) REFERENCES prompt_attribute(id)
 );
+
+CREATE TABLE hypothesis_prompt_attribute_description (
+    hypothesis_id BINARY(16) NOT NULL,
+    prompt_attribute_description_id BIGINT NOT NULL,
+    PRIMARY KEY (hypothesis_id, prompt_attribute_description_id),
+    CONSTRAINT fk_hpah_hypothesis FOREIGN KEY (hypothesis_id) REFERENCES hypothesis(id),
+    CONSTRAINT fk_hpah_description FOREIGN KEY (prompt_attribute_description_id) REFERENCES prompt_attribute_description(id)
+);

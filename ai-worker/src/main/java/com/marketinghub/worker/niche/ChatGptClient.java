@@ -48,16 +48,16 @@ public class ChatGptClient {
     }
 
     public List<CreateHypothesisRequest> generateHypotheses(MarketNiche niche, int quantity) {
-        String prompt = buildPrompt(niche, quantity);
+        PromptData promptData = buildPrompt(niche, quantity);
         Map<String, Object> payload = Map.of(
                 "model", model,
                 "messages", List.of(
                         Map.of("role", "system", "content", "Você é um especialista em marketing."),
-                        Map.of("role", "user", "content", prompt)
+                        Map.of("role", "user", "content", promptData.prompt())
                 )
         );
 
-        log.info("Sending prompt to ChatGPT for niche {}: {}", niche.getId(), prompt);
+        log.info("Sending prompt to ChatGPT for niche {}: {}", niche.getId(), promptData.prompt());
         log.debug("ChatGPT payload: {}", payload);
 
         ChatCompletionResponse response = webClient.post()
@@ -76,14 +76,14 @@ public class ChatGptClient {
         String content = response.choices().get(0).message().content();
         log.info("ChatGPT content: {}", content);
         try {
-            List<CreateHypothesisRequest> parsed = parseContent(content, niche, prompt);
+            List<CreateHypothesisRequest> parsed = parseContent(content, niche, promptData);
             log.info("Parsed hypotheses: {}", parsed);
             return parsed;
         } catch (Exception e) {
             log.error("Failed to parse ChatGPT response: {}", content, e);
             try {
                 String unescaped = objectMapper.readValue("\"" + content + "\"", String.class);
-                List<CreateHypothesisRequest> parsed = parseContent(unescaped, niche, prompt);
+                List<CreateHypothesisRequest> parsed = parseContent(unescaped, niche, promptData);
                 log.info("Parsed hypotheses: {}", parsed);
                 return parsed;
             } catch (Exception ex) {
@@ -93,7 +93,7 @@ public class ChatGptClient {
         }
     }
 
-    private String buildPrompt(MarketNiche niche, int quantity) {
+    private PromptData buildPrompt(MarketNiche niche, int quantity) {
         StringBuilder sb = new StringBuilder();
         sb.append("Gere ").append(quantity).append(" hipóteses em formato JSON. ");
         sb.append("Use o seguinte nicho como contexto:\n");
@@ -114,11 +114,13 @@ public class ChatGptClient {
             sb.append("Dicas extras: ").append(niche.getExtraTips()).append("\n");
         }
         var attrs = attributeRepository.findByEntity_Name("hypothesis");
+        var descriptionIds = new java.util.ArrayList<Long>();
         var descriptions = attrs.stream()
-                .map(attr -> Map.entry(attr.getName(),
-                        descriptionRepository.findByAttribute_IdAndActiveTrue(attr.getId())
-                                .map(PromptAttributeDescription::getDescription)
-                                .orElse(null)))
+                .map(attr -> {
+                    var opt = descriptionRepository.findByAttribute_IdAndActiveTrue(attr.getId());
+                    opt.ifPresent(d -> descriptionIds.add(d.getId()));
+                    return Map.entry(attr.getName(), opt.map(PromptAttributeDescription::getDescription).orElse(null));
+                })
                 .filter(e -> e.getValue() != null)
                 .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         if (!descriptions.isEmpty()) {
@@ -134,20 +136,23 @@ public class ChatGptClient {
         sb.append("O campo \"offerType\" deve ser \"LEAD\" ou \"TRIPWIRE\". ");
         sb.append("O campo \"price\" deve ser um número. ");
         sb.append("Retorne apenas um array JSON com esses objetos, sem texto adicional.");
-        return sb.toString();
+        return new PromptData(sb.toString(), descriptionIds);
     }
 
     private record ChatCompletionResponse(List<Choice> choices) {}
     private record Choice(Message message) {}
     private record Message(String content) {}
 
-    private List<CreateHypothesisRequest> parseContent(String content, MarketNiche niche, String prompt) throws Exception {
+    private List<CreateHypothesisRequest> parseContent(String content, MarketNiche niche, PromptData data) throws Exception {
         CreateHypothesisRequest[] arr = objectMapper.readValue(content, CreateHypothesisRequest[].class);
         for (CreateHypothesisRequest req : arr) {
             req.setMarketNicheId(niche.getId());
-            req.setPrompt(prompt);
+            req.setPrompt(data.prompt());
             req.setModel(model);
+            req.setPromptAttributeDescriptionIds(data.descriptionIds());
         }
         return Arrays.asList(arr);
     }
+
+    private record PromptData(String prompt, List<Long> descriptionIds) {}
 }

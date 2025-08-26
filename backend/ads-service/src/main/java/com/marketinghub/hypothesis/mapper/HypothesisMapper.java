@@ -9,5 +9,6 @@ import org.mapstruct.Mapping;
 public interface HypothesisMapper {
     @Mapping(target = "marketNicheId", source = "marketNiche.id")
     @Mapping(target = "premiseAngleId", source = "premiseAngle.id")
+    @Mapping(target = "promptAttributeDescriptionIds", expression = "java(hypothesis.getPromptAttributeDescriptions().stream().map(com.marketinghub.prompt.PromptAttributeDescription::getId).toList())")
     HypothesisDto toDto(Hypothesis hypothesis);
 }

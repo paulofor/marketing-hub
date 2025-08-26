@@ -4,6 +4,12 @@ import com.marketinghub.FixtureUtils;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.hypothesis.service.HypothesisService;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.prompt.PromptAttribute;
+import com.marketinghub.prompt.PromptAttributeDescription;
+import com.marketinghub.prompt.PromptEntity;
+import com.marketinghub.prompt.repository.PromptAttributeDescriptionRepository;
+import com.marketinghub.prompt.repository.PromptAttributeRepository;
+import com.marketinghub.prompt.repository.PromptEntityRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -26,6 +32,12 @@ class HypothesisServiceTest {
     HypothesisService service;
     @Autowired
     FixtureUtils fixtures;
+    @Autowired
+    PromptEntityRepository entityRepository;
+    @Autowired
+    PromptAttributeRepository attributeRepository;
+    @Autowired
+    PromptAttributeDescriptionRepository descriptionRepository;
 
     @Test
     void createValidHypothesis() {
@@ -91,5 +103,17 @@ class HypothesisServiceTest {
         service.updateStatus(h.getId(), HypothesisStatus.TESTING);
         assertThatThrownBy(() -> service.update(h.getId(), u))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    }
+
+    @Test
+    void linkPromptAttributeDescriptionsOnCreate() {
+        PromptEntity entity = entityRepository.save(PromptEntity.builder().name("hypothesis").build());
+        PromptAttribute attr = attributeRepository.save(PromptAttribute.builder().entity(entity).name("title").build());
+        PromptAttributeDescription desc = descriptionRepository.save(PromptAttributeDescription.builder().attribute(attr).description("d").build());
+        CreateHypothesisRequest req = new CreateHypothesisRequest();
+        req.setTitle("Teste");
+        req.setPromptAttributeDescriptionIds(java.util.List.of(desc.getId()));
+        Hypothesis h = service.create(req);
+        assertThat(h.getPromptAttributeDescriptions()).extracting(PromptAttributeDescription::getId).contains(desc.getId());
     }
 }

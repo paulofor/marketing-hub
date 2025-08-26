@@ -18,6 +18,7 @@ export interface Hypothesis {
   price?: number;
   kpiTargetCpl?: number;
   status: string;
+  createdAt?: string;
 }
 
 export function useHypothesisBoard(nicheId: string) {

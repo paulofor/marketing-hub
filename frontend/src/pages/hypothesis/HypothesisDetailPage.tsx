@@ -112,6 +112,18 @@ export default function HypothesisDetailPage() {
           </table>
         </div>
       )}
+      {data.createdAt && (
+        <div className="mt-4">
+          <h5>Data de criação</h5>
+          <p>{new Date(data.createdAt).toLocaleString("pt-BR")}</p>
+        </div>
+      )}
+      {data.prompt && (
+        <div className="mt-4">
+          <h5>Prompt de criação</h5>
+          <pre>{data.prompt}</pre>
+        </div>
+      )}
     </div>
   );
 }

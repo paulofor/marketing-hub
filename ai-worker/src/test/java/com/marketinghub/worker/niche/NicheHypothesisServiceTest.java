@@ -92,13 +92,12 @@ class NicheHypothesisServiceTest {
                 .build();
         nicheRepository.save(ignored);
 
-        String content = "[" +
-                "{\\\"title\\\":\\\"H1\\\",\\\"promise\\\":\\\"p1\\\",\\\"problem\\\":\\\"pr1\\\"," +
-                "\\\"persona\\\":\\\"pe1\\\",\\\"successRule\\\":\\\"sr1\\\"," +
-                "\\\"offerType\\\":\\\"LEAD\\\",\\\"kpiTargetCpl\\\":1}," +
-                "{\\\"title\\\":\\\"H2\\\",\\\"promise\\\":\\\"p2\\\",\\\"problem\\\":\\\"pr2\\\"," +
-                "\\\"persona\\\":\\\"pe2\\\",\\\"successRule\\\":\\\"sr2\\\"," +
-                "\\\"offerType\\\":\\\"LEAD\\\",\\\"kpiTargetCpl\\\":1}]";
+        String content = """
+                [
+                  {"title":"H1","promise":"p1","problem":"pr1","persona":"pe1","successRule":"sr1","offerType":"LEAD","kpiTargetCpl":1},
+                  {"title":"H2","promise":"p2","problem":"pr2","persona":"pe2","successRule":"sr2","offerType":"LEAD","kpiTargetCpl":1}
+                ]
+                """;
         try {
             String body = new ObjectMapper().writeValueAsString(
                     Map.of("choices", List.of(Map.of("message", Map.of("content", content)))));
@@ -135,13 +134,12 @@ class NicheHypothesisServiceTest {
                 .build();
         nicheRepository.save(niche);
 
-        String content = "[" +
-                "{\\\"title\\\":\\\"H1\\\",\\\"promise\\\":\\\"p1\\\",\\\"problem\\\":\\\"pr1\\\"," +
-                "\\\"persona\\\":\\\"pe1\\\",\\\"successRule\\\":\\\"sr1\\\"," +
-                "\\\"offerType\\\":\\\"LEAD\\\",\\\"kpiTargetCpl\\\":1}," +
-                "{\\\"promise\\\":\\\"p2\\\",\\\"problem\\\":\\\"pr2\\\"," +
-                "\\\"persona\\\":\\\"pe2\\\",\\\"successRule\\\":\\\"sr2\\\"," +
-                "\\\"offerType\\\":\\\"LEAD\\\",\\\"kpiTargetCpl\\\":1}]";
+        String content = """
+                [
+                  {"title":"H1","promise":"p1","problem":"pr1","persona":"pe1","successRule":"sr1","offerType":"LEAD","kpiTargetCpl":1},
+                  {"promise":"p2","problem":"pr2","persona":"pe2","successRule":"sr2","offerType":"LEAD","kpiTargetCpl":1}
+                ]
+                """;
         try {
             String body = new ObjectMapper().writeValueAsString(
                     Map.of("choices", List.of(Map.of("message", Map.of("content", content)))));
@@ -169,10 +167,12 @@ class NicheHypothesisServiceTest {
                 .build();
         nicheRepository.save(niche);
 
-        String content = "[" +
-                "{\\\"title\\\":\\\"H1\\\",\\\"promise\\\":\\\"p1\\\",\\\"problem\\\":\\\"pr1\\\"," +
-                "\\\"persona\\\":\\\"pe1\\\",\\\"successRule\\\":\\\"sr1\\\"," +
-                "\\\"offerType\\\":\\\"Teste grátis 14 dias de plataforma SaaS\\\",\\\"kpiTargetCpl\\\":1}]";
+        String content = """
+                [
+                  {"title":"H1","promise":"p1","problem":"pr1","persona":"pe1","successRule":"sr1",
+                  "offerType":"Teste grátis 14 dias de plataforma SaaS","kpiTargetCpl":1}
+                ]
+                """;
         try {
             String body = new ObjectMapper().writeValueAsString(
                     Map.of("choices", List.of(Map.of("message", Map.of("content", content)))));

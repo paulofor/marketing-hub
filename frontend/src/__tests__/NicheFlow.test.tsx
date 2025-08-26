@@ -86,7 +86,7 @@ describe("niche navigation", () => {
 
     await screen.findByText("Fitness");
     userEvent.click(screen.getByText("Fitness"));
-    await screen.findByText("Nova Hipótese");
+    await screen.findByText("Ver detalhes");
     userEvent.click(screen.getByText("Ver detalhes"));
     await screen.findByText("Criar Experimento");
     userEvent.click(screen.getByText("Abrir"));

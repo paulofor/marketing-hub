@@ -3,6 +3,8 @@ package com.marketinghub.hypothesis.dto;
 import java.math.BigDecimal;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+
 public class CreateHypothesisRequest {
     private Long marketNicheId;
     private String title;
@@ -11,6 +13,8 @@ public class CreateHypothesisRequest {
     private String problem;
     private String persona;
     private String mechanism;
+
+    @JsonAlias("unique_mechanism")
     private String uniqueMechanism;
     private String successRule;
     private String prompt;

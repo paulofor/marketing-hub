@@ -18,20 +18,9 @@ export default function NicheDetailPage() {
   const list = Array.isArray(hypotheses) ? hypotheses : [];
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center">
-        <PageTitle>{data.name}</PageTitle>
-        <Link
-          className="btn btn-primary"
-          to={`/niches/${nicheId}/hypotheses/new`}
-        >
-          Nova Hipótese
-        </Link>
-      </div>
+      <PageTitle>{data.name}</PageTitle>
       {list.length === 0 ? (
-        <p>
-          Nenhuma hipótese ainda.{" "}
-          <Link to={`/niches/${nicheId}/hypotheses/new`}>Crie uma agora</Link>.
-        </p>
+        <p>Nenhuma hipótese ainda.</p>
       ) : (
         <div className="table-responsive">
           <table className="table">
@@ -56,14 +45,6 @@ export default function NicheDetailPage() {
                   <td>{h.status}</td>
                   <td>{h.kpiTargetCpl}</td>
                   <td>
-                    {h.status === "BACKLOG" && (
-                      <Link
-                        className="btn btn-sm btn-outline-secondary me-1"
-                        to={`hypotheses/${h.id}/edit`}
-                      >
-                        Editar
-                      </Link>
-                    )}
                     <Link
                       className="btn btn-sm btn-outline-primary"
                       to={`hypotheses/${h.id}`}

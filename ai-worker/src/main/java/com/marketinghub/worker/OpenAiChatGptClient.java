@@ -1,5 +1,7 @@
 package com.marketinghub.worker;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.successproduct.SuccessProduct;
@@ -83,11 +85,16 @@ public class OpenAiChatGptClient implements ChatGptClient {
         try {
             // ===== 3. Loop principal (tool calling)
             while (true) {
-                String requestBody = MAPPER.writeValueAsString(Map.of(
-                        "model", model,
-                        "messages", messages,
-                        "tools", tools,
-                        "tool_choice", "auto"));
+                boolean structuredOutputs = false; // TODO ativar para usar Structured Outputs e evitar cercas
+                Map<String, Object> body = new java.util.HashMap<>();
+                body.put("model", model);
+                body.put("messages", messages);
+                body.put("tools", tools);
+                body.put("tool_choice", "auto");
+                if (structuredOutputs) {
+                    body.put("response_format", buildResponseFormat());
+                }
+                String requestBody = MAPPER.writeValueAsString(body);
 
                 log.info("Sending ChatGPT request with {} messages", messages.size());
                 log.info("ChatGPT request body: {}", requestBody);
@@ -154,8 +161,14 @@ public class OpenAiChatGptClient implements ChatGptClient {
 
                 // ===== 3b. Resposta final do modelo
                 String content = choice.path("message").path("content").asText();
-                content = stripCodeFence(content);
-                JsonNode data = MAPPER.readTree(content);
+                JsonNode data;
+                try {
+                    data = JsonUtils.parsePossiblyDoubleEncoded(content, new TypeReference<JsonNode>() {});
+                } catch (JsonProcessingException e) {
+                    String preview = content == null ? "null" : content.substring(0, Math.min(200, content.length()));
+                    log.error("Failed to parse ChatGPT response: {}", preview, e);
+                    return product;
+                }
 
                 product.setName(asText(data, "name"));
                 product.setExplicitPain(asText(data, "explicitPain"));
@@ -181,6 +194,28 @@ public class OpenAiChatGptClient implements ChatGptClient {
             log.error("Failed to call OpenAI API", e);
             return product;
         }
+    }
+
+    // TODO usar Structured Outputs para forçar o modelo a seguir o schema e evitar Markdown
+    private Map<String, Object> buildResponseFormat() {
+        Map<String, Object> properties = Map.of(
+                "title", Map.of("type", "string"),
+                "promise", Map.of("type", "string"),
+                "problem", Map.of("type", "string"),
+                "persona", Map.of("type", "string"),
+                "successRule", Map.of("type", "string"),
+                "offerType", Map.of("type", "string"),
+                "kpiTargetCpl", Map.of("type", "number"));
+        Map<String, Object> itemSchema = Map.of(
+                "type", "object",
+                "properties", properties);
+        Map<String, Object> jsonSchema = Map.of(
+                "type", "array",
+                "items", itemSchema,
+                "strict", true);
+        return Map.of(
+                "type", "json_schema",
+                "json_schema", jsonSchema);
     }
 
     /**
@@ -212,17 +247,6 @@ public class OpenAiChatGptClient implements ChatGptClient {
             }
         }
         return list;
-    }
-
-    private static String stripCodeFence(String text) {
-        if (text == null) return null;
-        String t = text.trim();
-        if (t.startsWith("```") && t.contains("```")) {
-            int start = t.indexOf('\n');
-            int end = t.lastIndexOf("```");
-            if (start >= 0 && end > start) return t.substring(start + 1, end).trim();
-        }
-        return t;
     }
 
     private static String asText(JsonNode node, String field) {

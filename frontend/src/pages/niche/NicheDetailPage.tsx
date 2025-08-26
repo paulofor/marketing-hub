@@ -22,40 +22,37 @@ export default function NicheDetailPage() {
       {list.length === 0 ? (
         <p>Nenhuma hipótese ainda.</p>
       ) : (
-        <div className="table-responsive">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Título</th>
-                <th>Oferta</th>
-                <th>Status</th>
-                <th>KPI</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((h) => (
-                <tr key={h.id}>
-                  <td>{h.title}</td>
-                  <td>
-                    {h.offerType === "TRIPWIRE"
-                      ? `Tripwire R$ ${h.price ?? ""}`
-                      : "Lead Magnet"}
-                  </td>
-                  <td>{h.status}</td>
-                  <td>{h.kpiTargetCpl}</td>
-                  <td>
-                    <Link
-                      className="btn btn-sm btn-outline-primary"
-                      to={`hypotheses/${h.id}`}
-                    >
-                      Ver detalhes
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="row row-cols-1 row-cols-md-2 g-4">
+          {list.map((h) => (
+            <div key={h.id} className="col">
+              <div className="card h-100">
+                <div className="card-body">
+                  <h5 className="card-title">{h.title}</h5>
+                  <p className="card-text">
+                    <strong>Promessa:</strong> {h.promise || "-"}
+                  </p>
+                  <p className="card-text">
+                    <strong>Problema:</strong> {h.problem || "-"}
+                  </p>
+                  <p className="card-text">
+                    <strong>Mecanismo:</strong> {h.mechanism || "-"}
+                  </p>
+                  <p className="card-text">
+                    <strong>Mecanismo único:</strong> {h.uniqueMechanism || "-"}
+                  </p>
+                  <p className="card-text">
+                    <strong>Persona:</strong> {h.persona || "-"}
+                  </p>
+                  <Link
+                    className="btn btn-sm btn-outline-primary mt-2"
+                    to={`hypotheses/${h.id}`}
+                  >
+                    Ver detalhes
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

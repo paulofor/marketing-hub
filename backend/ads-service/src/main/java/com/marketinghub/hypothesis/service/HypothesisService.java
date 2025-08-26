@@ -8,8 +8,13 @@ import com.marketinghub.hypothesis.*;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.hypothesis.dto.UpdateHypothesisRequest;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.prompt.PromptAttributeDescription;
+import com.marketinghub.prompt.repository.PromptAttributeDescriptionRepository;
 import java.util.UUID;
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -22,15 +27,18 @@ public class HypothesisService {
     private final HypothesisRepository repository;
     private final MarketNicheRepository nicheRepository;
     private final AngleRepository angleRepository;
+    private final PromptAttributeDescriptionRepository descriptionRepository;
     private final EntityManager em;
 
     public HypothesisService(HypothesisRepository repository,
                              MarketNicheRepository nicheRepository,
                              AngleRepository angleRepository,
+                             PromptAttributeDescriptionRepository descriptionRepository,
                              EntityManager em) {
         this.repository = repository;
         this.nicheRepository = nicheRepository;
         this.angleRepository = angleRepository;
+        this.descriptionRepository = descriptionRepository;
         this.em = em;
     }
 
@@ -57,6 +65,18 @@ public class HypothesisService {
         // only title is required
     }
 
+    private Set<PromptAttributeDescription> attachPromptAttributeDescriptions(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return new HashSet<>();
+        Set<PromptAttributeDescription> set = new HashSet<>();
+        for (Long id : ids) {
+            if (!descriptionRepository.existsById(id)) {
+                throw new EntityNotFoundException("PromptAttributeDescription not found: " + id);
+            }
+            set.add(em.getReference(PromptAttributeDescription.class, id));
+        }
+        return set;
+    }
+
     @Transactional
     public Hypothesis create(CreateHypothesisRequest req) {
         validate(req);
@@ -72,6 +92,7 @@ public class HypothesisService {
                 .successRule(req.getSuccessRule())
                 .prompt(req.getPrompt())
                 .model(req.getModel())
+                .promptAttributeDescriptions(attachPromptAttributeDescriptions(req.getPromptAttributeDescriptionIds()))
                 .generatedAt(Instant.now())
                 .offerType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()))
                 .price(req.getPrice())

@@ -7,6 +7,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.List;
 
 @Data
 public class HypothesisDto {
@@ -27,4 +28,5 @@ public class HypothesisDto {
     private BigDecimal kpiTargetCpl;
     private HypothesisStatus status;
     private Instant generatedAt;
+    private List<Long> promptAttributeDescriptionIds;
 }

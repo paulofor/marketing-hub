@@ -428,3 +428,7 @@ components:
           type: number
         kpiTargetCpl:
           type: number
+        promptAttributeDescriptionIds:
+          type: array
+          items:
+            type: integer

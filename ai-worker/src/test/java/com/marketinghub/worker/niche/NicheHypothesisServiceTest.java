@@ -4,6 +4,12 @@ import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.prompt.PromptAttribute;
+import com.marketinghub.prompt.PromptAttributeDescription;
+import com.marketinghub.prompt.PromptEntity;
+import com.marketinghub.prompt.repository.PromptAttributeDescriptionRepository;
+import com.marketinghub.prompt.repository.PromptAttributeRepository;
+import com.marketinghub.prompt.repository.PromptEntityRepository;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +46,12 @@ class NicheHypothesisServiceTest {
 
     @Autowired
     HypothesisRepository hypothesisRepository;
+    @Autowired
+    PromptEntityRepository entityRepository;
+    @Autowired
+    PromptAttributeRepository attributeRepository;
+    @Autowired
+    PromptAttributeDescriptionRepository descriptionRepository;
 
     @Value("${openai.model}")
     String model;
@@ -64,7 +76,11 @@ class NicheHypothesisServiceTest {
     }
 
     @Test
+    @org.springframework.transaction.annotation.Transactional
     void generateHypothesesForNiches() {
+        PromptEntity entity = entityRepository.save(PromptEntity.builder().name("hypothesis").build());
+        PromptAttribute attr = attributeRepository.save(PromptAttribute.builder().entity(entity).name("title").build());
+        PromptAttributeDescription desc = descriptionRepository.save(PromptAttributeDescription.builder().attribute(attr).description("d").build());
         MarketNiche niche = MarketNiche.builder()
                 .name("Saúde")
                 .hypothesesToGenerate(2)
@@ -106,6 +122,7 @@ class NicheHypothesisServiceTest {
         // Access the field via reflection since older ads-service builds may lack the getter
         assertThat(org.springframework.test.util.ReflectionTestUtils.getField(first, "generatedAt"))
                 .isNotNull();
+        assertThat(first.getPromptAttributeDescriptions()).extracting(PromptAttributeDescription::getId).contains(desc.getId());
         assertThat(hypothesisRepository.count()).isEqualTo(2);
         assertThat(mockWebServer.getRequestCount() - initialCount).isEqualTo(1);
     }

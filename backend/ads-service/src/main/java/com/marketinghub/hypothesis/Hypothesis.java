@@ -2,6 +2,7 @@ package com.marketinghub.hypothesis;
 
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.creative.label.Angle;
+import com.marketinghub.prompt.PromptAttributeDescription;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -9,6 +10,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -61,6 +64,13 @@ public class Hypothesis {
 
     /** Modelo de IA responsável pela geração desta hipótese. */
     private String model;
+
+    @ManyToMany
+    @JoinTable(name = "hypothesis_prompt_attribute_description",
+            joinColumns = @JoinColumn(name = "hypothesis_id"),
+            inverseJoinColumns = @JoinColumn(name = "prompt_attribute_description_id"))
+    @Builder.Default
+    private Set<PromptAttributeDescription> promptAttributeDescriptions = new HashSet<>();
 
     /** Regra de sucesso que define se a hipótese será validada. */
     @Lob

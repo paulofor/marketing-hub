@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import java.util.HashSet;
+import java.util.Set;
 
 import java.time.Instant;
 
@@ -35,4 +37,7 @@ public class PromptAttributeDescription {
 
     @UpdateTimestamp
     private Instant updatedAt;
+
+    @ManyToMany(mappedBy = "promptAttributeDescriptions")
+    private Set<com.marketinghub.hypothesis.Hypothesis> hypotheses = new HashSet<>();
 }

@@ -83,7 +83,7 @@ public class ChatGptClient {
             log.error("Failed to parse ChatGPT response: {}", content, e);
             try {
                 // ChatGPT may return JSON with escaped quotes. Attempt to unescape them and parse again.
-                String unescaped = content.replace("\\\"", "\"");
+                String unescaped = content.replaceAll("\\\\(?=\")", "");
                 List<CreateHypothesisRequest> parsed = parseContent(unescaped, niche, promptData);
                 log.info("Parsed hypotheses after unescaping: {}", parsed);
                 return parsed;

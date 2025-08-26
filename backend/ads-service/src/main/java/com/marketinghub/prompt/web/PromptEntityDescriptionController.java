@@ -6,7 +6,7 @@ import com.marketinghub.prompt.service.PromptEntityDescriptionService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/prompt-entities/{entityName}/description")
+@RequestMapping("/api/prompt-entities/{entityId}/description")
 public class PromptEntityDescriptionController {
     private final PromptEntityDescriptionService service;
 
@@ -15,13 +15,13 @@ public class PromptEntityDescriptionController {
     }
 
     @GetMapping
-    public PromptEntityDescriptionDto get(@PathVariable String entityName) {
-        return service.getLatest(entityName);
+    public PromptEntityDescriptionDto get(@PathVariable Long entityId) {
+        return service.getLatest(entityId);
     }
 
     @PutMapping
-    public PromptEntityDescriptionDto update(@PathVariable String entityName,
+    public PromptEntityDescriptionDto update(@PathVariable Long entityId,
                                              @RequestBody UpdatePromptEntityDescriptionRequest req) {
-        return service.update(entityName, req);
+        return service.update(entityId, req);
     }
 }

@@ -1,5 +1,7 @@
 package com.marketinghub.worker;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.successproduct.SuccessProduct;
@@ -154,28 +156,34 @@ public class OpenAiChatGptClient implements ChatGptClient {
 
                 // ===== 3b. Resposta final do modelo
                 String content = choice.path("message").path("content").asText();
-                content = stripCodeFence(content);
-                JsonNode data = MAPPER.readTree(content);
+                try {
+                    JsonNode data = JsonUtils.parsePossiblyDoubleEncoded(
+                            content, new TypeReference<JsonNode>() {});
 
-                product.setName(asText(data, "name"));
-                product.setExplicitPain(asText(data, "explicitPain"));
-                product.setPromise(asText(data, "promise"));
-                product.setUniqueMechanism(asText(data, "uniqueMechanism"));
-                product.setTripwire(asText(data, "tripwire"));
-                product.setRiskReversal(asText(data, "riskReversal"));
-                product.setSocialProof(asText(data, "socialProof"));
-                product.setCheckoutMonetization(asText(data, "checkoutMonetization"));
-                product.setSalesFunnel(asText(data, "salesFunnel"));
-                product.setAudienceType(asText(data, "audienceType"));
-                product.setCreativeVolume(asText(data, "creativeVolume"));
-                product.setStorytelling(asText(data, "storytelling"));
-                product.setSalesPageUrl(asText(data, "salesPageUrl"));
-                product.setInstagramUrl(asText(data, "instagramUrl"));
-                product.setFacebookUrl(asText(data, "facebookUrl"));
-                product.setYoutubeUrl(asText(data, "youtubeUrl"));
-                product.setNovo(false);
-                log.info("OpenAI enrichment completed for product {}", product.getId());
-                return product;
+                    product.setName(asText(data, "name"));
+                    product.setExplicitPain(asText(data, "explicitPain"));
+                    product.setPromise(asText(data, "promise"));
+                    product.setUniqueMechanism(asText(data, "uniqueMechanism"));
+                    product.setTripwire(asText(data, "tripwire"));
+                    product.setRiskReversal(asText(data, "riskReversal"));
+                    product.setSocialProof(asText(data, "socialProof"));
+                    product.setCheckoutMonetization(asText(data, "checkoutMonetization"));
+                    product.setSalesFunnel(asText(data, "salesFunnel"));
+                    product.setAudienceType(asText(data, "audienceType"));
+                    product.setCreativeVolume(asText(data, "creativeVolume"));
+                    product.setStorytelling(asText(data, "storytelling"));
+                    product.setSalesPageUrl(asText(data, "salesPageUrl"));
+                    product.setInstagramUrl(asText(data, "instagramUrl"));
+                    product.setFacebookUrl(asText(data, "facebookUrl"));
+                    product.setYoutubeUrl(asText(data, "youtubeUrl"));
+                    product.setNovo(false);
+                    log.info("OpenAI enrichment completed for product {}", product.getId());
+                    return product;
+                } catch (JsonProcessingException e) {
+                    log.error("Failed to parse ChatGPT response: {}",
+                            truncate(content), e);
+                    return product;
+                }
             }
         } catch (Exception e) {
             log.error("Failed to call OpenAI API", e);
@@ -214,20 +222,14 @@ public class OpenAiChatGptClient implements ChatGptClient {
         return list;
     }
 
-    private static String stripCodeFence(String text) {
-        if (text == null) return null;
-        String t = text.trim();
-        if (t.startsWith("```") && t.contains("```")) {
-            int start = t.indexOf('\n');
-            int end = t.lastIndexOf("```");
-            if (start >= 0 && end > start) return t.substring(start + 1, end).trim();
-        }
-        return t;
-    }
-
     private static String asText(JsonNode node, String field) {
         JsonNode v = node.get(field);
         return (v != null && !v.isNull()) ? v.asText() : null;
+    }
+
+    private static String truncate(String s) {
+        if (s == null) return null;
+        return s.length() > 200 ? s.substring(0, 200) : s;
     }
 
     /** Resultado simplificado de busca. */

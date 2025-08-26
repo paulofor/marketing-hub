@@ -1,10 +1,10 @@
 package com.marketinghub.worker.niche;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.marketinghub.worker.JsonUtils;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.prompt.PromptAttribute;
-import com.marketinghub.prompt.PromptAttributeDescription;
 import com.marketinghub.prompt.repository.PromptAttributeDescriptionRepository;
 import com.marketinghub.prompt.repository.PromptAttributeRepository;
 import org.slf4j.Logger;
@@ -24,14 +24,12 @@ import java.util.Map;
 @Component
 public class ChatGptClient {
     private final WebClient webClient;
-    private final ObjectMapper objectMapper;
     private final String model;
     private final PromptAttributeRepository attributeRepository;
     private final PromptAttributeDescriptionRepository descriptionRepository;
     private static final Logger log = LoggerFactory.getLogger(ChatGptClient.class);
 
     public ChatGptClient(WebClient.Builder builder,
-                         ObjectMapper objectMapper,
                          @Value("${openai.api-key:}") String apiKey,
                          @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
                          @Value("${openai.model:gpt-3.5-turbo}") String model,
@@ -41,7 +39,6 @@ public class ChatGptClient {
                 .baseUrl(baseUrl)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
                 .build();
-        this.objectMapper = objectMapper;
         this.model = model;
         this.attributeRepository = attributeRepository;
         this.descriptionRepository = descriptionRepository;
@@ -49,13 +46,37 @@ public class ChatGptClient {
 
     public List<CreateHypothesisRequest> generateHypotheses(MarketNiche niche, int quantity) {
         PromptData promptData = buildPrompt(niche, quantity);
-        Map<String, Object> payload = Map.of(
-                "model", model,
-                "messages", List.of(
-                        Map.of("role", "system", "content", "Você é um especialista em marketing."),
-                        Map.of("role", "user", "content", promptData.prompt())
-                )
-        );
+        Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("model", model);
+        payload.put("messages", List.of(
+                Map.of("role", "system", "content", "Você é um especialista em marketing."),
+                Map.of("role", "user", "content", promptData.prompt())
+        ));
+        // TODO: para evitar respostas com cercas, use a OpenAI Responses API e
+        // habilite Structured Outputs adicionando o campo abaixo.
+        // payload.put("response_format", Map.of(
+        //         "type", "json_schema",
+        //         "json_schema", Map.of(
+        //                 "name", "hypotheses",
+        //                 "strict", true,
+        //                 "schema", Map.of(
+        //                         "type", "array",
+        //                         "items", Map.of(
+        //                                 "type", "object",
+        //                                 "properties", Map.of(
+        //                                         "title", Map.of("type", "string"),
+        //                                         "promise", Map.of("type", "string"),
+        //                                         "problem", Map.of("type", "string"),
+        //                                         "persona", Map.of("type", "string"),
+        //                                         "successRule", Map.of("type", "string"),
+        //                                         "offerType", Map.of("type", "string"),
+        //                                         "kpiTargetCpl", Map.of("type", "number")
+        //                                 ),
+        //                                 "required", List.of("title", "promise", "problem", "persona", "successRule", "offerType", "kpiTargetCpl")
+        //                         )
+        //                 )
+        //         )
+        // ));
 
         log.info("Sending prompt to ChatGPT for niche {}: {}", niche.getId(), promptData.prompt());
         log.debug("ChatGPT payload: {}", payload);
@@ -79,18 +100,9 @@ public class ChatGptClient {
             List<CreateHypothesisRequest> parsed = parseContent(content, niche, promptData);
             log.info("Parsed hypotheses: {}", parsed);
             return parsed;
-        } catch (Exception e) {
-            log.error("Failed to parse ChatGPT response: {}", content, e);
-            try {
-                // ChatGPT may return JSON with escaped quotes. Attempt to unescape them and parse again.
-                String unescaped = content.replace("\\\"", "\"");
-                List<CreateHypothesisRequest> parsed = parseContent(unescaped, niche, promptData);
-                log.info("Parsed hypotheses after unescaping: {}", parsed);
-                return parsed;
-            } catch (Exception ex) {
-                log.error("Failed to parse unescaped ChatGPT response: {}", content, ex);
-                throw new RuntimeException("Failed to parse ChatGPT response", ex);
-            }
+        } catch (JsonProcessingException e) {
+            log.error("Failed to parse ChatGPT response: {}", truncate(content), e);
+            throw new RuntimeException("Failed to parse ChatGPT response", e);
         }
     }
 
@@ -146,8 +158,10 @@ public class ChatGptClient {
     private record Choice(Message message) {}
     private record Message(String content) {}
 
-    private List<CreateHypothesisRequest> parseContent(String content, MarketNiche niche, PromptData data) throws Exception {
-        CreateHypothesisRequest[] arr = objectMapper.readValue(content, CreateHypothesisRequest[].class);
+    private List<CreateHypothesisRequest> parseContent(String content, MarketNiche niche, PromptData data)
+            throws JsonProcessingException {
+        CreateHypothesisRequest[] arr = JsonUtils.parsePossiblyDoubleEncoded(
+                content, new TypeReference<CreateHypothesisRequest[]>() {});
         for (CreateHypothesisRequest req : arr) {
             req.setMarketNicheId(niche.getId());
             req.setPrompt(data.prompt());
@@ -155,6 +169,11 @@ public class ChatGptClient {
             req.setPromptAttributeDescriptionIds(data.descriptionIds());
         }
         return Arrays.asList(arr);
+    }
+
+    private static String truncate(String s) {
+        if (s == null) return null;
+        return s.length() > 200 ? s.substring(0, 200) : s;
     }
 
     private record PromptData(String prompt, List<Long> descriptionIds) {}

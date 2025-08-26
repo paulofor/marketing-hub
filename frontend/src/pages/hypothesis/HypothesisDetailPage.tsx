@@ -121,7 +121,9 @@ export default function HypothesisDetailPage() {
       {data.prompt && (
         <div className="mt-4">
           <h5>Prompt de criação</h5>
-          <pre>{data.prompt}</pre>
+          <pre className="text-break" style={{ whiteSpace: "pre-wrap" }}>
+            {data.prompt}
+          </pre>
         </div>
       )}
     </div>

@@ -30,6 +30,7 @@ public class PromptAttributeDescription {
     private String description;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean active = true;
 
     @CreationTimestamp
@@ -39,5 +40,6 @@ public class PromptAttributeDescription {
     private Instant updatedAt;
 
     @ManyToMany(mappedBy = "promptAttributeDescriptions")
+    @Builder.Default
     private Set<com.marketinghub.hypothesis.Hypothesis> hypotheses = new HashSet<>();
 }

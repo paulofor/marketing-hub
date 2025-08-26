@@ -6,6 +6,7 @@ import com.marketinghub.prompt.dto.PromptEntityDescriptionDto;
 import com.marketinghub.prompt.dto.UpdatePromptEntityDescriptionRequest;
 import com.marketinghub.prompt.repository.PromptEntityDescriptionRepository;
 import com.marketinghub.prompt.repository.PromptEntityRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,8 +20,8 @@ public class PromptEntityDescriptionService {
         this.entityRepository = entityRepository;
     }
 
-    public PromptEntityDescriptionDto getLatest(String entityName) {
-        return descriptionRepository.findByEntity_NameAndActiveTrue(entityName)
+    public PromptEntityDescriptionDto getLatest(Long entityId) {
+        return descriptionRepository.findByEntity_IdAndActiveTrue(entityId)
                 .map(desc -> {
                     PromptEntityDescriptionDto dto = new PromptEntityDescriptionDto();
                     dto.setDescription(desc.getDescription());
@@ -29,10 +30,10 @@ public class PromptEntityDescriptionService {
                 .orElse(null);
     }
 
-    public PromptEntityDescriptionDto update(String entityName, UpdatePromptEntityDescriptionRequest req) {
-        PromptEntity entity = entityRepository.findByName(entityName)
-                .orElseGet(() -> entityRepository.save(PromptEntity.builder().name(entityName).build()));
-        descriptionRepository.findByEntity_NameAndActiveTrue(entityName)
+    public PromptEntityDescriptionDto update(Long entityId, UpdatePromptEntityDescriptionRequest req) {
+        PromptEntity entity = entityRepository.findById(entityId)
+                .orElseThrow(() -> new EntityNotFoundException("PromptEntity not found"));
+        descriptionRepository.findByEntity_IdAndActiveTrue(entityId)
                 .ifPresent(prev -> {
                     prev.setActive(false);
                     descriptionRepository.save(prev);

@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface PromptEntityDescriptionRepository extends JpaRepository<PromptEntityDescription, Long> {
-    Optional<PromptEntityDescription> findByEntity_NameAndActiveTrue(String entityName);
+    Optional<PromptEntityDescription> findByEntity_IdAndActiveTrue(Long entityId);
 }

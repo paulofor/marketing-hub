@@ -118,10 +118,12 @@ public class ChatGptClient {
         var descriptions = attrs.stream()
                 .map(attr -> {
                     var opt = descriptionRepository.findByAttribute_IdAndActiveTrue(attr.getId());
-                    opt.ifPresent(d -> descriptionIds.add(d.getId()));
-                    return Map.entry(attr.getName(), opt.map(PromptAttributeDescription::getDescription).orElse(null));
+                    return opt.map(d -> {
+                        descriptionIds.add(d.getId());
+                        return Map.entry(attr.getName(), d.getDescription());
+                    });
                 })
-                .filter(e -> e.getValue() != null)
+                .flatMap(java.util.Optional::stream)
                 .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         if (!descriptions.isEmpty()) {
             sb.append("Cada objeto deve conter as chaves: ")

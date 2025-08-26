@@ -189,4 +189,40 @@ class NicheHypothesisServiceTest {
         assertThat(hyps).hasSize(1);
         assertThat(hyps.get(0).getOfferType()).isNull();
     }
+
+    @Test
+    void promptIncludesDefaultFields() throws Exception {
+        PromptEntity entity = entityRepository.save(PromptEntity.builder().name("hypothesis").build());
+        PromptAttribute attr = attributeRepository.save(PromptAttribute.builder().entity(entity).name("title").build());
+        descriptionRepository.save(PromptAttributeDescription.builder().attribute(attr).description("d").build());
+
+        MarketNiche niche = MarketNiche.builder()
+                .name("Tech")
+                .hypothesesToGenerate(1)
+                .build();
+        nicheRepository.save(niche);
+
+        String content = "[" +
+                "{\\\"title\\\":\\\"H1\\\",\\\"promise\\\":\\\"p1\\\",\\\"problem\\\":\\\"pr1\\\"," +
+                "\\\"persona\\\":\\\"pe1\\\",\\\"mechanism\\\":\\\"m\\\",\\\"uniqueMechanism\\\":\\\"um\\\"," +
+                "\\\"successRule\\\":\\\"sr\\\",\\\"offerType\\\":\\\"LEAD\\\",\\\"price\\\":1}]";
+        String body = new ObjectMapper().writeValueAsString(
+                Map.of("choices", List.of(Map.of("message", Map.of("content", content)))));
+        mockWebServer.enqueue(new MockResponse()
+                .addHeader("Content-Type", "application/json")
+                .setBody(body));
+
+        service.generate();
+
+        var request = mockWebServer.takeRequest();
+        String requestBody = request.getBody().readUtf8();
+        Map<String, Object> json = new ObjectMapper().readValue(requestBody, Map.class);
+        List<Map<String, String>> messages = (List<Map<String, String>>) json.get("messages");
+        String prompt = messages.get(1).get("content");
+
+        assertThat(prompt).contains(
+                "\"title\"", "\"promise\"", "\"problem\"", "\"persona\"",
+                "\"mechanism\"", "\"uniqueMechanism\"", "\"successRule\"",
+                "\"offerType\"", "\"price\"");
+    }
 }

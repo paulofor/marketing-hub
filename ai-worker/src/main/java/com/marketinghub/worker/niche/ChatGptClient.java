@@ -116,26 +116,27 @@ public class ChatGptClient {
         }
         var attrs = attributeRepository.findByEntity_Name("hypothesis");
         var descriptionIds = new java.util.ArrayList<Long>();
+        var fields = new java.util.LinkedHashSet<>(
+                java.util.List.of("title", "promise", "problem", "persona",
+                        "mechanism", "uniqueMechanism", "successRule",
+                        "offerType", "price"));
         var descriptions = attrs.stream()
                 .map(attr -> {
                     var opt = descriptionRepository.findByAttribute_IdAndActiveTrue(attr.getId());
                     return opt.map(d -> {
                         descriptionIds.add(d.getId());
+                        fields.add(attr.getName());
                         return Map.entry(attr.getName(), d.getDescription());
                     });
                 })
                 .flatMap(java.util.Optional::stream)
                 .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        if (!descriptions.isEmpty()) {
-            sb.append("Cada objeto deve conter as chaves: ")
-                    .append(descriptions.keySet().stream().map(n -> "\\\"" + n + "\\\"")
-                            .collect(java.util.stream.Collectors.joining(", ")))
-                    .append(". ");
-            descriptions.forEach((name, desc) ->
-                    sb.append("Campo \\\"" + name + "\\\": " + desc + ". "));
-        } else {
-            sb.append("Cada objeto deve conter as chaves: \"title\", \"promise\", \"problem\", \"persona\", \"mechanism\", \"uniqueMechanism\", \"successRule\", \"offerType\", \"price\". ");
-        }
+        sb.append("Cada objeto deve conter as chaves: ")
+                .append(fields.stream().map(n -> "\\\"" + n + "\\\"")
+                        .collect(java.util.stream.Collectors.joining(", ")))
+                .append(". ");
+        descriptions.forEach((name, desc) ->
+                sb.append("Campo \\\"" + name + "\\\": " + desc + ". "));
         sb.append("O campo \"offerType\" deve ser \"LEAD\" ou \"TRIPWIRE\". ");
         sb.append("O campo \"price\" deve ser um número. ");
         sb.append("Retorne apenas um array JSON com esses objetos, sem texto adicional.");

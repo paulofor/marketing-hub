@@ -4,10 +4,12 @@ import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
 import PageTitle from "../../components/PageTitle";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
+import { useChatDialog } from "../../api/chatDialog/useChatDialog";
 
 export default function NicheDetailPage() {
   const { nicheId } = useParams();
   const { data, isLoading } = useNiche(Number(nicheId));
+  const { data: chatDialog } = useChatDialog(data?.chatDialogId);
   const { data: hypotheses } = useHypothesesByNiche(nicheId, "ALL");
   useBreadcrumbs([
     { label: "Nichos", to: "/niches" },
@@ -28,7 +30,14 @@ export default function NicheDetailPage() {
     { label: "Interesses", value: data.interests },
     { label: "Filtros demográficos", value: data.demographicFilters },
     { label: "Dicas extras", value: data.extraTips },
-    { label: "Chat Dialog", value: data.chatDialogId },
+    {
+      label: "Chat Dialog",
+      value: chatDialog ? (
+        <a href={chatDialog.url} target="_blank" rel="noopener noreferrer">
+          {chatDialog.description}
+        </a>
+      ) : undefined,
+    },
     {
       label: "Criado em",
       value: data.createdAt

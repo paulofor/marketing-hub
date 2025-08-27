@@ -20,4 +20,31 @@ describe("NicheListPage", () => {
     );
     expect(await screen.findByText(/Novo Nicho/)).toBeTruthy();
   });
+
+  it("shows detail button", async () => {
+    const niche = {
+      id: 1,
+      name: "Teste",
+      description: "",
+      demandVolume: "",
+      promises: "",
+      offers: "",
+      baseSegmentation: "",
+      interests: "",
+      demographicFilters: "",
+      extraTips: "",
+    };
+    (axios.get as any)
+      .mockResolvedValueOnce({ data: [niche] })
+      .mockResolvedValue({ data: [] });
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <BrowserRouter>
+          <NicheListPage />
+        </BrowserRouter>
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText("Detalhes")).toBeTruthy();
+  });
 });

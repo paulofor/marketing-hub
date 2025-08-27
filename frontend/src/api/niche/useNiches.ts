@@ -14,6 +14,8 @@ export interface MarketNiche {
   extraTips: string;
   hypothesesToGenerate?: number;
   chatDialogId?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export function useNiches() {

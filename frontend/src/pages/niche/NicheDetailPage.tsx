@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
@@ -15,10 +16,50 @@ export default function NicheDetailPage() {
 
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
+
   const list = Array.isArray(hypotheses) ? hypotheses : [];
+  const rows = [
+    { label: "Descrição", value: data.description },
+    { label: "Volume de demanda", value: data.demandVolume },
+    { label: "Promessas", value: data.promises },
+    { label: "Ofertas", value: data.offers },
+    { label: "Hipóteses a gerar", value: data.hypothesesToGenerate },
+    { label: "Segmentação base", value: data.baseSegmentation },
+    { label: "Interesses", value: data.interests },
+    { label: "Filtros demográficos", value: data.demographicFilters },
+    { label: "Dicas extras", value: data.extraTips },
+    { label: "Chat Dialog", value: data.chatDialogId },
+    {
+      label: "Criado em",
+      value: data.createdAt
+        ? new Date(data.createdAt).toLocaleString("pt-BR")
+        : undefined,
+    },
+    {
+      label: "Atualizado em",
+      value: data.updatedAt
+        ? new Date(data.updatedAt).toLocaleString("pt-BR")
+        : undefined,
+    },
+  ];
+
   return (
     <div>
       <PageTitle>{data.name}</PageTitle>
+      <dl className="row mb-4">
+        {rows.map((r, idx) => (
+          <Fragment key={r.label}>
+            <dt className={`col-sm-3 py-2${idx % 2 === 0 ? " bg-light" : ""}`}>
+              {r.label}
+            </dt>
+            <dd className={`col-sm-9 py-2${idx % 2 === 0 ? " bg-light" : ""}`}>
+              <span className="text-break" style={{ whiteSpace: "pre-wrap" }}>
+                {r.value ?? "-"}
+              </span>
+            </dd>
+          </Fragment>
+        ))}
+      </dl>
       {list.length === 0 ? (
         <p>Nenhuma hipótese ainda.</p>
       ) : (

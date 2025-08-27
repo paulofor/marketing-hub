@@ -19,8 +19,7 @@ export default function NicheListPage() {
       </Link>
       {niches.length === 0 ? (
         <p>
-          Nenhum nicho encontrado.{' '}
-          <Link to="/niches/new">Crie um agora</Link>.
+          Nenhum nicho encontrado. <Link to="/niches/new">Crie um agora</Link>.
         </p>
       ) : (
         <div className="table-responsive">
@@ -57,7 +56,13 @@ function NicheRow({ niche }: { niche: { id: number; name: string } }) {
       <td>{Array.isArray(exps) ? exps.length : 0}</td>
       <td>
         <Link
-          className="btn btn-sm btn-outline-secondary me-1"
+          className="btn btn-sm btn-outline-primary me-1"
+          to={`/niches/${niche.id}`}
+        >
+          Detalhes
+        </Link>
+        <Link
+          className="btn btn-sm btn-outline-secondary"
           to={`/niches/${niche.id}/edit`}
         >
           Editar

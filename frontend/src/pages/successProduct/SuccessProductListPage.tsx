@@ -17,7 +17,7 @@ export default function SuccessProductListPage() {
         <thead>
           <tr>
             <th>ID</th>
-            <th>Descrição</th>
+            <th style={{ width: "40%" }}>Descrição</th>
             <th>Plataforma</th>
             <th>Novo</th>
             <th>Ações</th>
@@ -27,7 +27,9 @@ export default function SuccessProductListPage() {
           {products.map((p) => (
             <tr key={p.id}>
               <td>{p.id}</td>
-              <td>{p.description}</td>
+              <td className="text-break" style={{ width: "40%" }}>
+                {p.description}
+              </td>
               <td>{p.platform}</td>
               <td>{p.novo ? "Yes" : "No"}</td>
               <td>

@@ -67,6 +67,10 @@ public class NicheHypothesisService {
                 saved.add(hypothesisService.create(req));
             }
             result.put(niche.getId(), saved);
+
+            // Reset quantity after generating hypotheses for this niche
+            niche.setHypothesesToGenerate(0);
+            nicheRepository.save(niche);
         }
         return result;
     }

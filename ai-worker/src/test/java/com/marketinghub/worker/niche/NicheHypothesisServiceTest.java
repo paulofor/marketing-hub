@@ -124,6 +124,7 @@ class NicheHypothesisServiceTest {
         assertThat(first.getPromptAttributeDescriptions()).extracting(PromptAttributeDescription::getId).contains(desc.getId());
         assertThat(hypothesisRepository.count()).isEqualTo(2);
         assertThat(mockWebServer.getRequestCount() - initialCount).isEqualTo(1);
+        assertThat(nicheRepository.findById(niche.getId()).orElseThrow().getHypothesesToGenerate()).isZero();
     }
 
     @Test
@@ -157,6 +158,7 @@ class NicheHypothesisServiceTest {
         assertThat(hyps).hasSize(1);
         assertThat(hypothesisRepository.count()).isEqualTo(1);
         assertThat(mockWebServer.getRequestCount() - initialCount).isEqualTo(1);
+        assertThat(nicheRepository.findById(niche.getId()).orElseThrow().getHypothesesToGenerate()).isZero();
     }
 
     @Test
@@ -188,5 +190,6 @@ class NicheHypothesisServiceTest {
         List<Hypothesis> hyps = result.get(niche.getId());
         assertThat(hyps).hasSize(1);
         assertThat(hyps.get(0).getOfferType()).isNull();
+        assertThat(nicheRepository.findById(niche.getId()).orElseThrow().getHypothesesToGenerate()).isZero();
     }
 }

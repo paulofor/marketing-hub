@@ -124,6 +124,7 @@ class NicheHypothesisServiceTest {
         assertThat(first.getPromptAttributeDescriptions()).extracting(PromptAttributeDescription::getId).contains(desc.getId());
         assertThat(hypothesisRepository.count()).isEqualTo(2);
         assertThat(mockWebServer.getRequestCount() - initialCount).isEqualTo(1);
+        assertThat(nicheRepository.findById(niche.getId()).orElseThrow().getHypothesesToGenerate()).isZero();
     }
 
     @Test
@@ -157,6 +158,7 @@ class NicheHypothesisServiceTest {
         assertThat(hyps).hasSize(1);
         assertThat(hypothesisRepository.count()).isEqualTo(1);
         assertThat(mockWebServer.getRequestCount() - initialCount).isEqualTo(1);
+        assertThat(nicheRepository.findById(niche.getId()).orElseThrow().getHypothesesToGenerate()).isZero();
     }
 
     @Test
@@ -188,5 +190,34 @@ class NicheHypothesisServiceTest {
         List<Hypothesis> hyps = result.get(niche.getId());
         assertThat(hyps).hasSize(1);
         assertThat(hyps.get(0).getOfferType()).isNull();
+        assertThat(nicheRepository.findById(niche.getId()).orElseThrow().getHypothesesToGenerate()).isZero();
+    }
+
+    @Test
+    void keepQuantityWhenNoHypothesisCreated() {
+        MarketNiche niche = MarketNiche.builder()
+                .name("Health")
+                .hypothesesToGenerate(1)
+                .build();
+        nicheRepository.save(niche);
+
+        String content = """[
+          {"promise":"p1","problem":"pr1","persona":"pe1","successRule":"sr1","offerType":"LEAD","kpiTargetCpl":1}
+        ]""";
+        try {
+            String body = new ObjectMapper().writeValueAsString(
+                    Map.of("choices", List.of(Map.of("message", Map.of("content", content)))));
+            mockWebServer.enqueue(new MockResponse()
+                    .addHeader("Content-Type", "application/json")
+                    .setBody(body));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        Map<Long, List<Hypothesis>> result = service.generate();
+        assertThat(result).containsKey(niche.getId());
+        assertThat(result.get(niche.getId())).isEmpty();
+        assertThat(hypothesisRepository.count()).isZero();
+        assertThat(nicheRepository.findById(niche.getId()).orElseThrow().getHypothesesToGenerate()).isEqualTo(1);
     }
 }

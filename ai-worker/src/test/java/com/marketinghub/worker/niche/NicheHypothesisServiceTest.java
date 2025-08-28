@@ -194,7 +194,7 @@ class NicheHypothesisServiceTest {
     }
 
     @Test
-    void keepQuantityWhenNoHypothesisCreated() {
+    void resetQuantityWhenNoHypothesisCreated() {
         MarketNiche niche = MarketNiche.builder()
                 .name("Health")
                 .hypothesesToGenerate(1)
@@ -218,6 +218,6 @@ class NicheHypothesisServiceTest {
         assertThat(result).containsKey(niche.getId());
         assertThat(result.get(niche.getId())).isEmpty();
         assertThat(hypothesisRepository.count()).isZero();
-        assertThat(nicheRepository.findById(niche.getId()).orElseThrow().getHypothesesToGenerate()).isEqualTo(1);
+        assertThat(nicheRepository.findById(niche.getId()).orElseThrow().getHypothesesToGenerate()).isZero();
     }
 }

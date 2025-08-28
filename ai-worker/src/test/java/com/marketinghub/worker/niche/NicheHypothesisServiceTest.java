@@ -201,9 +201,11 @@ class NicheHypothesisServiceTest {
                 .build();
         nicheRepository.save(niche);
 
-        String content = """[
-          {"promise":"p1","problem":"pr1","persona":"pe1","successRule":"sr1","offerType":"LEAD","kpiTargetCpl":1}
-        ]""";
+        String content = """
+                [
+                  {"promise":"p1","problem":"pr1","persona":"pe1","successRule":"sr1","offerType":"LEAD","kpiTargetCpl":1}
+                ]
+                """;
         try {
             String body = new ObjectMapper().writeValueAsString(
                     Map.of("choices", List.of(Map.of("message", Map.of("content", content)))));

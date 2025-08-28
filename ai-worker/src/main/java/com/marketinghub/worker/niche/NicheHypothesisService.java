@@ -66,6 +66,11 @@ public class NicheHypothesisService {
                 log.info("Saving hypothesis for niche {}: {}", niche.getId(), req);
                 saved.add(hypothesisService.create(req));
             }
+            if (!saved.isEmpty()) {
+                log.info("Resetting hypothesesToGenerate for niche {} to 0", niche.getId());
+                niche.setHypothesesToGenerate(0);
+                nicheRepository.save(niche);
+            }
             result.put(niche.getId(), saved);
         }
         return result;

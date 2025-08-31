@@ -19,6 +19,26 @@ export default function NicheDetailPage() {
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
 
+  const handleSaveMarkdown = () => {
+    const md = `# Nicho: ${data.name}\n\n` +
+      `**ID:** ${data.id}\n\n` +
+      `**Descrição:**\n${data.description}\n\n` +
+      `**Volume de Demanda:**\n${data.demandVolume}\n\n` +
+      `**Promessas:**\n${data.promises}\n\n` +
+      `**Ofertas:**\n${data.offers}\n\n` +
+      `**Segmentação-base (Brasil):**\n${data.baseSegmentation}\n\n` +
+      `**Principais interesses / comportamentos:**\n${data.interests}\n\n` +
+      `**Filtros demográficos & cargos:**\n${data.demographicFilters}\n\n` +
+      `**Dicas extras:**\n${data.extraTips}\n`;
+    const blob = new Blob([md], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${data.name}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const list = Array.isArray(hypotheses) ? hypotheses : [];
   const rows = [
     { label: "Descrição", value: data.description },
@@ -54,7 +74,16 @@ export default function NicheDetailPage() {
 
   return (
     <div>
-      <PageTitle>{data.name}</PageTitle>
+      <div className="d-flex justify-content-between align-items-center">
+        <PageTitle>{data.name}</PageTitle>
+        <button
+          type="button"
+          className="btn btn-outline-secondary btn-sm"
+          onClick={handleSaveMarkdown}
+        >
+          Salvar em Markdown
+        </button>
+      </div>
       <dl className="row mb-4">
         {rows.map((r, idx) => (
           <Fragment key={r.label}>

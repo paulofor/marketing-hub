@@ -43,6 +43,7 @@ class HypothesisControllerTest {
         mockMvc.perform(get("/api/niches/" + niche.getId() + "/hypotheses")
                         .param("status", "ALL"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].createdAt").exists());
     }
 }

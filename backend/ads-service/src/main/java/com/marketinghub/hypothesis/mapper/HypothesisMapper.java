@@ -10,5 +10,6 @@ public interface HypothesisMapper {
     @Mapping(target = "marketNicheId", source = "marketNiche.id")
     @Mapping(target = "premiseAngleId", source = "premiseAngle.id")
     @Mapping(target = "promptAttributeDescriptionIds", expression = "java(hypothesis.getPromptAttributeDescriptions().stream().map(com.marketinghub.prompt.PromptAttributeDescription::getId).toList())")
+    @Mapping(target = "createdAt", source = "createdAt")
     HypothesisDto toDto(Hypothesis hypothesis);
 }

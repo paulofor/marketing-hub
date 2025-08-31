@@ -39,7 +39,13 @@ export default function NicheDetailPage() {
     URL.revokeObjectURL(url);
   };
 
-  const list = Array.isArray(hypotheses) ? hypotheses : [];
+  const list = Array.isArray(hypotheses)
+    ? [...hypotheses].sort((a, b) => {
+        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bDate - aDate;
+      })
+    : [];
   const rows = [
     { label: "Descrição", value: data.description },
     { label: "Volume de demanda", value: data.demandVolume },
@@ -104,7 +110,7 @@ export default function NicheDetailPage() {
         <div className="row row-cols-1 row-cols-md-2 g-4">
           {list.map((h) => (
             <div key={h.id} className="col">
-              <div className="card h-100">
+              <div className="card h-100 rounded-3">
                 <div className="card-body">
                   <h5 className="card-title">{h.title}</h5>
                   <p className="card-text">
@@ -128,6 +134,9 @@ export default function NicheDetailPage() {
                   >
                     Ver detalhes
                   </Link>
+                </div>
+                <div className="card-footer text-muted">
+                  {`Gerado com ${h.model || "-"} em ${h.createdAt ? new Date(h.createdAt).toLocaleString("pt-BR") : "-"}`}
                 </div>
               </div>
             </div>

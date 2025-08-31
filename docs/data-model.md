@@ -116,10 +116,25 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
+### hypothesis
+
+- `id` BINARY(16) PRIMARY KEY
+- `experiment_id` BIGINT NOT NULL
+- `market_niche_id` BIGINT NOT NULL
+- `title` VARCHAR(255) NOT NULL
+- `premise_angle_id` BIGINT NOT NULL
+- `offer_type` VARCHAR(20) NOT NULL
+- `price` DECIMAL(6,2)
+- `kpi_target_cpl` DECIMAL(7,2) NOT NULL
+- `status` VARCHAR(20) DEFAULT 'BACKLOG' NOT NULL
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
 ### experiment
 
 - `id` BIGINT AUTO_INCREMENT PRIMARY KEY
 - `niche_id` BIGINT NOT NULL
+- `hypothesis_id` BINARY(16) NOT NULL
 - `name` VARCHAR(255) NOT NULL
 - `hypothesis` VARCHAR(255)
 - `kpi_target_cpl` DECIMAL(10,2) DEFAULT 45.00
@@ -316,7 +331,9 @@ erDiagram
         BIGINT prompt_attribute_description_id PK
     }
 
+    MARKET_NICHE ||--o{ HYPOTHESIS : generates
     MARKET_NICHE ||--o{ EXPERIMENT : contains
+    HYPOTHESIS ||--o{ EXPERIMENT : tests
     EXPERIMENT ||--o{ CREATIVE_VARIANT : has
     EXPERIMENT ||--o{ AD_SET : configures
     EXPERIMENT ||--o{ LANDING_PAGE : uses

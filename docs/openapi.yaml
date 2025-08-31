@@ -410,12 +410,14 @@ components:
           type: string
         problem:
           type: string
-        persona:
-          type: string
-        mechanism:
-          type: string
-        uniqueMechanism:
-          type: string
+          persona:
+            type: string
+          entrega:
+            type: string
+          mechanism:
+            type: string
+          uniqueMechanism:
+            type: string
         successRule:
           type: string
         prompt:

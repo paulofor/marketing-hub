@@ -14,6 +14,7 @@ const schema = z
     promise: z.string().min(1, "obrigatório").max(140, "máx. 140"),
     problem: z.string().min(1, "obrigatório"),
     persona: z.string().min(1, "obrigatório"),
+    entrega: z.string().optional(),
     successRule: z.string().min(1, "obrigatório"),
     premiseAngleId: z.string().optional(),
     offerType: z.enum(["LEAD", "TRIPWIRE"]),
@@ -67,6 +68,7 @@ export default function NewHypothesisModal({
       promise: values.promise,
       problem: values.problem,
       persona: values.persona,
+      entrega: values.entrega,
       successRule: values.successRule,
       premiseAngleId: values.premiseAngleId
         ? Number(values.premiseAngleId)
@@ -153,6 +155,20 @@ export default function NewHypothesisModal({
                 {errors.persona && (
                   <div id="persona-error" className="invalid-feedback d-block">
                     {errors.persona.message}
+                  </div>
+                )}
+
+                <label className="form-label" htmlFor="entrega">Entrega</label>
+                <textarea
+                  id="entrega"
+                  rows={2}
+                  {...register("entrega")}
+                  className={`form-control mb-2 ${errors.entrega ? "is-invalid" : ""}`}
+                  aria-describedby="entrega-error"
+                />
+                {errors.entrega && (
+                  <div id="entrega-error" className="invalid-feedback d-block">
+                    {errors.entrega.message}
                   </div>
                 )}
 

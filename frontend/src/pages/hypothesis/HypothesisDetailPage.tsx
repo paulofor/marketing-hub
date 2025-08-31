@@ -32,6 +32,7 @@ export default function HypothesisDetailPage() {
     { label: "Persona", value: data.persona },
     { label: "Mecanismo", value: data.mechanism },
     { label: "Mecanismo único", value: data.uniqueMechanism },
+    { label: "Entrega", value: data.entrega },
     { label: "Regra de sucesso", value: data.successRule },
     { label: "Ângulo", value: angleName },
     {

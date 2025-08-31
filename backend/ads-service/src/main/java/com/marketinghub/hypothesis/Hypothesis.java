@@ -57,6 +57,11 @@ public class Hypothesis {
     @Lob
     private String uniqueMechanism;
 
+    /** Entrega ou deliverable associado à hipótese. */
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String entrega;
+
     /** Prompt usado quando a hipótese é gerada por IA. */
     @Lob
     @Column(columnDefinition = "LONGTEXT")

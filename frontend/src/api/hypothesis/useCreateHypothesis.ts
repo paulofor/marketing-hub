@@ -12,6 +12,7 @@ export interface CreateHypothesis {
   persona: string;
   mechanism?: string;
   uniqueMechanism?: string;
+  entrega?: string;
   successRule: string;
   prompt?: string;
   model?: string;

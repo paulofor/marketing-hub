@@ -20,6 +20,7 @@ public class HypothesisDto {
     private String persona;
     private String mechanism;
     private String uniqueMechanism;
+    private String entrega;
     private String successRule;
     private String prompt;
     private String model;

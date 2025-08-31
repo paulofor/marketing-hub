@@ -28,5 +28,6 @@ public class HypothesisDto {
     private BigDecimal kpiTargetCpl;
     private HypothesisStatus status;
     private Instant generatedAt;
+    private Instant createdAt;
     private List<Long> promptAttributeDescriptionIds;
 }

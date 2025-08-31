@@ -17,6 +17,7 @@ const schema = z
     persona: z.string().min(1),
     mechanism: z.string().optional(),
     uniqueMechanism: z.string().optional(),
+    entrega: z.string().optional(),
     successRule: z.string().min(1),
     premiseAngleId: z.string().optional(),
     offerType: z.enum(["LEAD", "TRIPWIRE"]),
@@ -63,6 +64,7 @@ export default function EditHypothesisPage() {
         persona: data.persona || "",
         mechanism: data.mechanism || "",
         uniqueMechanism: data.uniqueMechanism || "",
+        entrega: data.entrega || "",
         successRule: data.successRule || "",
         premiseAngleId: String(data.premiseAngleId ?? ""),
         offerType: (data.offerType as "LEAD" | "TRIPWIRE") || "LEAD",
@@ -84,6 +86,7 @@ export default function EditHypothesisPage() {
       persona: values.persona,
       mechanism: values.mechanism,
       uniqueMechanism: values.uniqueMechanism,
+      entrega: values.entrega,
       successRule: values.successRule,
       premiseAngleId: values.premiseAngleId
         ? Number(values.premiseAngleId)
@@ -194,6 +197,22 @@ export default function EditHypothesisPage() {
         {errors.uniqueMechanism && (
           <div id="uniqueMechanism-error" className="invalid-feedback d-block">
             {errors.uniqueMechanism.message}
+          </div>
+        )}
+
+        <label className="form-label" htmlFor="entrega">
+          Entrega
+        </label>
+        <textarea
+          id="entrega"
+          rows={2}
+          {...register("entrega")}
+          className={`form-control mb-2 ${errors.entrega ? "is-invalid" : ""}`}
+          aria-describedby="entrega-error"
+        />
+        {errors.entrega && (
+          <div id="entrega-error" className="invalid-feedback d-block">
+            {errors.entrega.message}
           </div>
         )}
 

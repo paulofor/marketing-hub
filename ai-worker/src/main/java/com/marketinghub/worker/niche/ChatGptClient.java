@@ -134,7 +134,7 @@ public class ChatGptClient {
             descriptions.forEach((name, desc) ->
                     sb.append("Campo \\\"" + name + "\\\": " + desc + ". "));
         } else {
-            sb.append("Cada objeto deve conter as chaves: \"title\", \"promise\", \"problem\", \"persona\", \"mechanism\", \"uniqueMechanism\", \"successRule\", \"offerType\", \"price\". ");
+            sb.append("Cada objeto deve conter as chaves: \"title\", \"promise\", \"problem\", \"persona\", \"mechanism\", \"uniqueMechanism\", \"entrega\", \"successRule\", \"offerType\", \"price\". ");
         }
         sb.append("O campo \"offerType\" deve ser \"LEAD\" ou \"TRIPWIRE\". ");
         sb.append("O campo \"price\" deve ser um número. ");

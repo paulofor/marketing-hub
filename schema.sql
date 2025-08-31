@@ -246,3 +246,5 @@ CREATE TABLE hypothesis_prompt_attribute_description (
     CONSTRAINT fk_hpah_hypothesis FOREIGN KEY (hypothesis_id) REFERENCES hypothesis(id),
     CONSTRAINT fk_hpah_description FOREIGN KEY (prompt_attribute_description_id) REFERENCES prompt_attribute_description(id)
 );
+
+ALTER TABLE hypothesis ADD COLUMN entrega LONGTEXT;

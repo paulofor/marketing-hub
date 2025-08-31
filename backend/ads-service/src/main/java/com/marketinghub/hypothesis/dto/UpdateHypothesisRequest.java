@@ -10,6 +10,7 @@ public class UpdateHypothesisRequest {
     private String persona;
     private String mechanism;
     private String uniqueMechanism;
+    private String entrega;
     private String successRule;
     private String prompt;
     private String model;
@@ -37,6 +38,9 @@ public class UpdateHypothesisRequest {
 
     public String getUniqueMechanism() { return uniqueMechanism; }
     public void setUniqueMechanism(String uniqueMechanism) { this.uniqueMechanism = uniqueMechanism; }
+
+    public String getEntrega() { return entrega; }
+    public void setEntrega(String entrega) { this.entrega = entrega; }
 
     public String getSuccessRule() { return successRule; }
     public void setSuccessRule(String successRule) { this.successRule = successRule; }

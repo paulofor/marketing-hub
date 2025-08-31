@@ -124,6 +124,7 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `title` VARCHAR(255) NOT NULL
 - `premise_angle_id` BIGINT NOT NULL
 - `offer_type` VARCHAR(20) NOT NULL
+- `entrega` LONGTEXT
 - `price` DECIMAL(6,2)
 - `kpi_target_cpl` DECIMAL(7,2) NOT NULL
 - `status` VARCHAR(20) DEFAULT 'BACKLOG' NOT NULL

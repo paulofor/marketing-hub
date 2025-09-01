@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useCreateExperiment } from "../../api/experiment/useCreateExperiment";
 import { useNiches } from "../../api/niche/useNiches";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
+import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
 import PageTitle from "../../components/PageTitle";
 
@@ -25,9 +26,19 @@ export default function NewExperimentPage() {
     endDate: "",
   });
   const { data: hypotheses } = useHypothesesByNiche(form.nicheId);
+  const { data: selectedHypothesis } = useHypothesis(
+    form.nicheId,
+    form.hypothesisId,
+  );
   const { data: presets } = useMetricPresets();
   const showNicheSelect = nicheIdParam === "";
   const showHypSelect = hypothesisIdParam === "";
+
+  useEffect(() => {
+    if (!form.hypothesis && selectedHypothesis?.title) {
+      setForm((f) => ({ ...f, hypothesis: selectedHypothesis.title }));
+    }
+  }, [selectedHypothesis, form.hypothesis]);
 
   const submit = async () => {
     try {
@@ -56,7 +67,8 @@ export default function NewExperimentPage() {
         endDate: "",
       });
       alert("Teste salvo!");
-    } catch {
+    } catch (errors) {
+      console.log("Validation errors", errors);
       alert("Erro ao salvar Teste");
     }
   };

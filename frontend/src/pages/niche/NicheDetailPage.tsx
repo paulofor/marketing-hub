@@ -20,7 +20,8 @@ export default function NicheDetailPage() {
   if (!data) return <p>Não encontrado</p>;
 
   const handleSaveMarkdown = () => {
-    const md = `# Nicho: ${data.name}\n\n` +
+    const md =
+      `# Nicho: ${data.name}\n\n` +
       `**ID:** ${data.id}\n\n` +
       `**Descrição:**\n${data.description}\n\n` +
       `**Volume de Demanda:**\n${data.demandVolume}\n\n` +
@@ -127,6 +128,9 @@ export default function NicheDetailPage() {
                   </p>
                   <p className="card-text">
                     <strong>Persona:</strong> {h.persona || "-"}
+                  </p>
+                  <p className="card-text">
+                    <strong>Entrega:</strong> {h.entrega || "-"}
                   </p>
                   <Link
                     className="btn btn-sm btn-outline-primary mt-2"

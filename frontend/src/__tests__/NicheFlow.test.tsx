@@ -87,6 +87,7 @@ describe("niche navigation", () => {
     await screen.findByText("Fitness");
     userEvent.click(screen.getByText("Fitness"));
     await screen.findByText("Ver detalhes");
+    await screen.findByText(/Entrega:/);
     await screen.findByRole("button", { name: /salvar em markdown/i });
     userEvent.click(screen.getByText("Ver detalhes"));
     await screen.findByText("Criar Experimento");

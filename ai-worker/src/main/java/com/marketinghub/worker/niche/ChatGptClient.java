@@ -1,6 +1,8 @@
 package com.marketinghub.worker.niche;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.prompt.PromptAttribute;
@@ -17,6 +19,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * Simple wrapper around the OpenAI chat completions API.
@@ -147,7 +151,19 @@ public class ChatGptClient {
     private record Message(String content) {}
 
     private List<CreateHypothesisRequest> parseContent(String content, MarketNiche niche, PromptData data) throws Exception {
-        CreateHypothesisRequest[] arr = objectMapper.readValue(content, CreateHypothesisRequest[].class);
+        JsonNode root = objectMapper.readTree(content);
+        if (root.isArray()) {
+            for (JsonNode node : root) {
+                JsonNode entregaNode = node.get("entrega");
+                if (entregaNode != null && entregaNode.isArray()) {
+                    String joined = StreamSupport.stream(entregaNode.spliterator(), false)
+                            .map(JsonNode::asText)
+                            .collect(Collectors.joining("\n"));
+                    ((ObjectNode) node).put("entrega", joined);
+                }
+            }
+        }
+        CreateHypothesisRequest[] arr = objectMapper.treeToValue(root, CreateHypothesisRequest[].class);
         for (CreateHypothesisRequest req : arr) {
             req.setMarketNicheId(niche.getId());
             req.setPrompt(data.prompt());

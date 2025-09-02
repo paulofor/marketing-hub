@@ -9,6 +9,7 @@ import { useVisualProofs } from "../../api/visualProof/useVisualProofs";
 import { useEmotionalTriggers } from "../../api/emotionalTrigger/useEmotionalTriggers";
 import { useUpdateCreativeLabels } from "../../api/creative/useUpdateCreativeLabels";
 import { useRequestCreatives } from "../../api/experiment/useRequestCreatives";
+import { useExperiment } from "../../api/experiment/useExperiment";
 
 interface Props {
   experimentId: string;
@@ -17,6 +18,7 @@ interface Props {
 export default function CriativosTab({ experimentId }: Props) {
   const { data } = useCreatives(experimentId);
   const creatives = Array.isArray(data) ? data : [];
+  const { data: experiment } = useExperiment(experimentId);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Creative | null>(null);
   const [form, setForm] = useState({
@@ -124,6 +126,9 @@ export default function CriativosTab({ experimentId }: Props) {
       >
         Gerar Criativos
       </button>
+      <span className="ms-2">
+        Solicitados: {experiment?.creativesToGenerate ?? 0}
+      </span>
       <div className="table-responsive">
         <table className="table">
           <thead>

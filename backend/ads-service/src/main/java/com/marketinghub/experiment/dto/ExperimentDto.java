@@ -1,7 +1,8 @@
 package com.marketinghub.experiment.dto;
 
-import com.marketinghub.experiment.ExperimentStatus;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.marketinghub.experiment.ExperimentPlatform;
+import com.marketinghub.experiment.ExperimentStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -17,11 +18,13 @@ public class ExperimentDto {
     private java.util.UUID hypothesisId;
     private String name;
     private String hypothesis;
+    @JsonProperty("kpiTarget")
     private BigDecimal kpiTargetCpl;
     private BigDecimal stopLossCpl;
     private Integer sampleSize;
     private BigDecimal baselineCvr;
     private BigDecimal targetCvr;
+    @JsonProperty("mde")
     private BigDecimal mdePercent;
     private LocalDate startDate;
     private LocalDate endDate;

@@ -3,7 +3,6 @@ import { Link, useParams } from "react-router-dom";
 import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import { useExperimentsByHypothesis } from "../../api/experiment/useExperimentsByHypothesis";
-import { useAngles } from "../../api/angle/useAngles";
 import PageTitle from "../../components/PageTitle";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 
@@ -15,7 +14,6 @@ export default function HypothesisDetailPage() {
     nicheId,
     hypothesisId,
   );
-  const { data: angles } = useAngles();
   useBreadcrumbs([
     { label: "Nichos", to: "/niches" },
     { label: niche?.name || "...", to: `/niches/${nicheId}` },
@@ -25,7 +23,6 @@ export default function HypothesisDetailPage() {
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
   const list = Array.isArray(experiments) ? experiments : [];
-  const angleName = angles?.find((a) => a.id === data.premiseAngleId)?.name;
   const rows = [
     { label: "Promessa", value: data.promise },
     { label: "Problema", value: data.problem },
@@ -33,17 +30,6 @@ export default function HypothesisDetailPage() {
     { label: "Mecanismo", value: data.mechanism },
     { label: "Mecanismo único", value: data.uniqueMechanism },
     { label: "Entrega", value: data.entrega },
-    { label: "Regra de sucesso", value: data.successRule },
-    { label: "Ângulo", value: angleName },
-    {
-      label: "Oferta",
-      value:
-        data.offerType === "TRIPWIRE"
-          ? `Tripwire R$ ${data.price ?? ""}`
-          : "Lead Magnet",
-    },
-    { label: "KPI", value: data.kpiTargetCpl },
-    { label: "Status", value: data.status },
   ];
 
   const handleSaveMarkdown = () => {
@@ -65,16 +51,7 @@ export default function HypothesisDetailPage() {
       `**Persona:**\n${data.persona ?? ""}\n\n` +
       `**Mecanismo:**\n${data.mechanism ?? ""}\n\n` +
       `**Mecanismo único:**\n${data.uniqueMechanism ?? ""}\n\n` +
-      `**Entrega:**\n${data.entrega ?? ""}\n\n` +
-      `**Regra de sucesso:**\n${data.successRule ?? ""}\n\n` +
-      `**Ângulo:**\n${angleName ?? ""}\n\n` +
-      `**Oferta:**\n${
-        data.offerType === "TRIPWIRE"
-          ? `Tripwire R$ ${data.price ?? ""}`
-          : "Lead Magnet"
-      }\n\n` +
-      `**KPI:**\n${data.kpiTargetCpl ?? ""}\n\n` +
-      `**Status:**\n${data.status ?? ""}\n`;
+      `**Entrega:**\n${data.entrega ?? ""}\n`;
     const md = `${nicheMd}\n\n${hypothesisMd}`;
     const blob = new Blob([md], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);

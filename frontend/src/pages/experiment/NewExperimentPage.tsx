@@ -30,15 +30,18 @@ export default function NewExperimentPage() {
     form.nicheId,
     form.hypothesisId,
   );
+  const selectedNiche = niches?.find(
+    (n) => n.id === Number(form.nicheId),
+  );
   const { data: presets } = useMetricPresets();
   const showNicheSelect = nicheIdParam === "";
   const showHypSelect = hypothesisIdParam === "";
 
   useEffect(() => {
-    if (!form.hypothesis && selectedHypothesis?.title) {
+    if (selectedHypothesis?.title) {
       setForm((f) => ({ ...f, hypothesis: selectedHypothesis.title }));
     }
-  }, [selectedHypothesis, form.hypothesis]);
+  }, [selectedHypothesis]);
 
   const submit = async () => {
     try {
@@ -75,13 +78,18 @@ export default function NewExperimentPage() {
 
   return (
     <div>
-      <PageTitle>Novo Teste de Nicho</PageTitle>
+      <PageTitle>{selectedNiche?.name || "Novo Teste de Nicho"}</PageTitle>
       {showNicheSelect && (
         <select
           className="form-select mb-2"
           value={form.nicheId}
           onChange={(e) =>
-            setForm({ ...form, nicheId: e.target.value, hypothesisId: "" })
+            setForm({
+              ...form,
+              nicheId: e.target.value,
+              hypothesisId: "",
+              hypothesis: "",
+            })
           }
         >
           <option value="">Selecione o Nicho</option>
@@ -98,7 +106,13 @@ export default function NewExperimentPage() {
           <select
             className="form-select mb-2"
             value={form.hypothesisId}
-            onChange={(e) => setForm({ ...form, hypothesisId: e.target.value })}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                hypothesisId: e.target.value,
+                hypothesis: "",
+              })
+            }
           >
             <option value="">Selecione Hipótese</option>
             {Array.isArray(hypotheses) && hypotheses.length > 0 ? (
@@ -122,17 +136,14 @@ export default function NewExperimentPage() {
           )}
         </>
       )}
+      {form.hypothesis && (
+        <h2 className="h5 mb-2">{form.hypothesis}</h2>
+      )}
       <input
         className="form-control mb-2"
         placeholder="Nome"
         value={form.name}
         onChange={(e) => setForm({ ...form, name: e.target.value })}
-      />
-      <input
-        className="form-control mb-2"
-        placeholder="Hipótese"
-        value={form.hypothesis}
-        onChange={(e) => setForm({ ...form, hypothesis: e.target.value })}
       />
       <input
         className="form-control mb-2"

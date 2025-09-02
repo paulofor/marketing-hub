@@ -33,4 +33,5 @@ public class ExperimentDto {
     private Instant createdAt;
     private Instant updatedAt;
     private String metricPresetId;
+    private Integer creativesToGenerate;
 }

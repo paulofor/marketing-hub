@@ -61,4 +61,9 @@ public class ExperimentController {
         return mapper.toDto(service.update(id, request));
     }
 
+    @PatchMapping("/{id}/creatives-to-generate")
+    public ExperimentDto requestCreatives(@PathVariable Long id, @RequestParam("quantity") int quantity) {
+        return mapper.toDto(service.requestCreatives(id, quantity));
+    }
+
 }

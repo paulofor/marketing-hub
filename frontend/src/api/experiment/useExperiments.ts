@@ -21,6 +21,7 @@ export interface Experiment {
   startDate: string | null;
   endDate: string | null;
   metricPresetId?: string | null;
+  creativesToGenerate?: number | null;
   status: string;
   platform: string;
   createdAt: string;

@@ -65,6 +65,7 @@ export default function ExperimentDetailPage() {
       label: "Sample size",
       value: data.sampleSize ?? preset?.sampleSize ?? "—",
     },
+    { label: "Criativos a gerar", value: data.creativesToGenerate ?? "—" },
     {
       label: "MDE (p.p.)",
       value: data.mdePercent ?? preset?.defaultMdePp ?? "—",

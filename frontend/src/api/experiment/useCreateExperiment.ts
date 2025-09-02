@@ -13,6 +13,7 @@ export interface CreateExperiment {
   mde?: number;
   startDate?: string;
   endDate?: string;
+  creativesToGenerate?: number;
 }
 
 export function useCreateExperiment() {

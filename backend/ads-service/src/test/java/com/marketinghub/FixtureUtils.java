@@ -73,6 +73,7 @@ public class FixtureUtils {
                 .targetCvr(java.math.BigDecimal.valueOf(5))
                 .status(ExperimentStatus.PLANNED)
                 .platform(ExperimentPlatform.FACEBOOK)
+                .creativesToGenerate(0)
                 .build();
         return experimentRepository.save(exp);
     }

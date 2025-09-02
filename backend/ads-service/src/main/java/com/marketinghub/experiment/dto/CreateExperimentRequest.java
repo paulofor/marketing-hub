@@ -27,4 +27,5 @@ public class CreateExperimentRequest {
     private BigDecimal mdePercent;
     private LocalDate startDate;
     private LocalDate endDate;
+    private Integer creativesToGenerate;
 }

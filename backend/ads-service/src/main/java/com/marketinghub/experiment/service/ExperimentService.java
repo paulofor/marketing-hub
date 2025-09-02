@@ -107,6 +107,7 @@ public class ExperimentService {
                 .endDate(request.getEndDate())
                 .status(ExperimentStatus.PLANNED)
                 .platform(ExperimentPlatform.FACEBOOK)
+                .creativesToGenerate(request.getCreativesToGenerate())
                 .build();
         return repository.save(exp);
     }
@@ -150,6 +151,7 @@ public class ExperimentService {
                 .endDate(original.getEndDate())
                 .status(ExperimentStatus.PLANNED)
                 .platform(original.getPlatform())
+                .creativesToGenerate(original.getCreativesToGenerate())
                 .build();
         return repository.save(copy);
     }
@@ -216,6 +218,19 @@ public class ExperimentService {
         }
         exp.setStartDate(request.getStartDate());
         exp.setEndDate(request.getEndDate());
+        if (request.getCreativesToGenerate() != null) {
+            exp.setCreativesToGenerate(request.getCreativesToGenerate());
+        }
+        return exp;
+    }
+
+    /**
+     * Requests generation of new creatives by setting the pending quantity.
+     */
+    @Transactional
+    public Experiment requestCreatives(Long id, int quantity) {
+        Experiment exp = repository.findById(id).orElseThrow();
+        exp.setCreativesToGenerate(quantity);
         return exp;
     }
 }

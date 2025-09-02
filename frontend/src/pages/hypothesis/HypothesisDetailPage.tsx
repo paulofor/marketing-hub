@@ -63,7 +63,7 @@ export default function HypothesisDetailPage() {
   };
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center">
+      <div className="d-flex justify-content-between align-items-center mb-4">
         <PageTitle>{data.title}</PageTitle>
         <div className="d-flex gap-2">
           {data.status === "BACKLOG" && (
@@ -89,65 +89,90 @@ export default function HypothesisDetailPage() {
           </button>
         </div>
       </div>
-      <dl className="row mb-0">
-        {rows.map((r, idx) => (
-          <Fragment key={r.label}>
-            <dt className={`col-sm-3 py-2${idx % 2 === 0 ? " bg-light" : ""}`}>
-              {r.label}
-            </dt>
-            <dd className={`col-sm-9 py-2${idx % 2 === 0 ? " bg-light" : ""}`}>
-              {r.value}
-            </dd>
-          </Fragment>
-        ))}
-      </dl>
-      {list.length === 0 ? (
-        <p>Nenhum experimento ainda. Crie um agora.</p>
-      ) : (
-        <div className="table-responsive">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Nome</th>
-                <th>Plataforma</th>
-                <th>Status</th>
-                <th>KPI</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((e) => (
-                <tr key={e.id}>
-                  <td>{e.name}</td>
-                  <td>{e.platform}</td>
-                  <td>{e.status}</td>
-                  <td>{e.kpiTarget}</td>
-                  <td>
-                    <Link
-                      className="btn btn-sm btn-outline-primary"
-                      to={`/experiments/${e.id}`}
-                    >
-                      Abrir
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+
+      <div className="card mb-4">
+        <div className="card-header">
+          <h5 className="mb-0">Informações da hipótese</h5>
         </div>
-      )}
-      {data.createdAt && (
-        <div className="mt-4">
-          <h5>Data de criação</h5>
-          <p>{new Date(data.createdAt).toLocaleString("pt-BR")}</p>
+        <div className="card-body">
+          <dl className="row mb-0">
+            {rows.map((r, idx) => (
+              <Fragment key={r.label}>
+                <dt
+                  className={`col-sm-3 py-2${idx % 2 === 0 ? " bg-light" : ""}`}
+                >
+                  {r.label}
+                </dt>
+                <dd
+                  className={`col-sm-9 py-2${idx % 2 === 0 ? " bg-light" : ""}`}
+                >
+                  {r.value}
+                </dd>
+              </Fragment>
+            ))}
+          </dl>
+          {data.createdAt && (
+            <div className="mt-4">
+              <h6>Data de criação</h6>
+              <p>{new Date(data.createdAt).toLocaleString("pt-BR")}</p>
+            </div>
+          )}
         </div>
-      )}
+      </div>
+
+      <div className="card mb-4">
+        <div className="card-header">
+          <h5 className="mb-0">Experimentos</h5>
+        </div>
+        <div className="card-body">
+          {list.length === 0 ? (
+            <p>Nenhum experimento ainda. Crie um agora.</p>
+          ) : (
+            <div className="table-responsive">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Plataforma</th>
+                    <th>Status</th>
+                    <th>KPI</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {list.map((e) => (
+                    <tr key={e.id}>
+                      <td>{e.name}</td>
+                      <td>{e.platform}</td>
+                      <td>{e.status}</td>
+                      <td>{e.kpiTarget}</td>
+                      <td>
+                        <Link
+                          className="btn btn-sm btn-outline-primary"
+                          to={`/experiments/${e.id}`}
+                        >
+                          Abrir
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
       {data.prompt && (
-        <div className="mt-4">
-          <h5>Prompt de criação</h5>
-          <pre className="text-break" style={{ whiteSpace: "pre-wrap" }}>
-            {data.prompt}
-          </pre>
+        <div className="card mb-4">
+          <div className="card-header">
+            <h5 className="mb-0">Prompt de criação</h5>
+          </div>
+          <div className="card-body">
+            <pre className="text-break" style={{ whiteSpace: "pre-wrap" }}>
+              {data.prompt}
+            </pre>
+          </div>
         </div>
       )}
     </div>

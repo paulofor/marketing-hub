@@ -45,6 +45,45 @@ export default function HypothesisDetailPage() {
     { label: "KPI", value: data.kpiTargetCpl },
     { label: "Status", value: data.status },
   ];
+
+  const handleSaveMarkdown = () => {
+    const nicheMd =
+      `# Nicho: ${niche?.name ?? ""}\n\n` +
+      `**ID:** ${niche?.id ?? ""}\n\n` +
+      `**Descrição:**\n${niche?.description ?? ""}\n\n` +
+      `**Volume de Demanda:**\n${niche?.demandVolume ?? ""}\n\n` +
+      `**Promessas:**\n${niche?.promises ?? ""}\n\n` +
+      `**Ofertas:**\n${niche?.offers ?? ""}\n\n` +
+      `**Segmentação-base (Brasil):**\n${niche?.baseSegmentation ?? ""}\n\n` +
+      `**Principais interesses / comportamentos:**\n${niche?.interests ?? ""}\n\n` +
+      `**Filtros demográficos & cargos:**\n${niche?.demographicFilters ?? ""}\n\n` +
+      `**Dicas extras:**\n${niche?.extraTips ?? ""}\n`;
+    const hypothesisMd =
+      `# Hipótese: ${data.title}\n\n` +
+      `**Promessa:**\n${data.promise ?? ""}\n\n` +
+      `**Problema:**\n${data.problem ?? ""}\n\n` +
+      `**Persona:**\n${data.persona ?? ""}\n\n` +
+      `**Mecanismo:**\n${data.mechanism ?? ""}\n\n` +
+      `**Mecanismo único:**\n${data.uniqueMechanism ?? ""}\n\n` +
+      `**Entrega:**\n${data.entrega ?? ""}\n\n` +
+      `**Regra de sucesso:**\n${data.successRule ?? ""}\n\n` +
+      `**Ângulo:**\n${angleName ?? ""}\n\n` +
+      `**Oferta:**\n${
+        data.offerType === "TRIPWIRE"
+          ? `Tripwire R$ ${data.price ?? ""}`
+          : "Lead Magnet"
+      }\n\n` +
+      `**KPI:**\n${data.kpiTargetCpl ?? ""}\n\n` +
+      `**Status:**\n${data.status ?? ""}\n`;
+    const md = `${nicheMd}\n\n${hypothesisMd}`;
+    const blob = new Blob([md], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${niche?.name ?? "nicho"}-${data.title}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center">
@@ -64,6 +103,13 @@ export default function HypothesisDetailPage() {
           >
             Criar Experimento
           </Link>
+          <button
+            type="button"
+            className="btn btn-outline-secondary btn-sm"
+            onClick={handleSaveMarkdown}
+          >
+            Salvar em Markdown
+          </button>
         </div>
       </div>
       <dl className="row mb-0">

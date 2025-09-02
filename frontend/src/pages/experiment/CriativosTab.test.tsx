@@ -16,6 +16,6 @@ describe("CriativosTab", () => {
       </QueryClientProvider>,
     );
     screen.getByText("Novo Criativo").click();
-    expect(await screen.findByText(/Criativo/)).toBeTruthy();
+    expect(await screen.findByText("Novo Criativo")).toBeTruthy();
   });
 });

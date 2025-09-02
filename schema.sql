@@ -121,6 +121,7 @@ CREATE TABLE experiment (
     baseline_cvr DECIMAL(5,2) DEFAULT 3.00,
     target_cvr DECIMAL(5,2) DEFAULT 5.00,
     mde_percent DECIMAL(5,2) DEFAULT 40.0,
+    creatives_to_generate INT,
     start_date DATE,
     end_date DATE,
     status VARCHAR(20),

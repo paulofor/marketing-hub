@@ -138,4 +138,16 @@ class ExperimentControllerTest {
         assertThat(updated.getSampleSize()).isEqualTo(200);
         assertThat(updated.getMdePercent()).isEqualByComparingTo("30");
     }
+
+    @Test
+    void requestCreativesEndpointUpdatesQuantity() throws Exception {
+        var niche = nicheRepo.findById(nicheId).orElseThrow();
+        var exp = fixtures.createAndSaveExperiment(niche);
+        mockMvc.perform(
+                        patch("/api/experiments/" + exp.getId() + "/creatives-to-generate")
+                                .param("quantity", "3"))
+                .andExpect(status().isOk());
+        var updated = repository.findById(exp.getId()).orElseThrow();
+        assertThat(updated.getCreativesToGenerate()).isEqualTo(3);
+    }
 }

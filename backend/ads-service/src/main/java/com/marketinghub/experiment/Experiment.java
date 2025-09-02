@@ -75,6 +75,10 @@ public class Experiment {
     @Enumerated(EnumType.STRING)
     private ExperimentPlatform platform;
 
+    /** Quantidade de criativos a serem gerados pelo worker. */
+    @Column(name = "creatives_to_generate")
+    private Integer creativesToGenerate;
+
     @CreationTimestamp
     private Instant createdAt;
 

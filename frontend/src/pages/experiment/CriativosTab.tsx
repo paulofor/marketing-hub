@@ -8,6 +8,7 @@ import { useAngles } from "../../api/angle/useAngles";
 import { useVisualProofs } from "../../api/visualProof/useVisualProofs";
 import { useEmotionalTriggers } from "../../api/emotionalTrigger/useEmotionalTriggers";
 import { useUpdateCreativeLabels } from "../../api/creative/useUpdateCreativeLabels";
+import { useRequestCreatives } from "../../api/experiment/useRequestCreatives";
 
 interface Props {
   experimentId: string;
@@ -39,6 +40,7 @@ export default function CriativosTab({ experimentId }: Props) {
     false,
   );
   const [showPreview, setShowPreview] = useState(false);
+  const requestCreatives = useRequestCreatives(experimentId);
 
   const openNew = () => {
     setEditing(null);
@@ -97,10 +99,30 @@ export default function CriativosTab({ experimentId }: Props) {
     img.src = URL.createObjectURL(file);
   };
 
+  const generateCreatives = async () => {
+    const qtyStr = prompt("Quantos criativos gerar?");
+    if (!qtyStr) return;
+    const qty = Number(qtyStr);
+    if (!qty || qty <= 0) return;
+    try {
+      await requestCreatives.mutateAsync(qty);
+      alert("Solicitação enviada!");
+    } catch {
+      alert("Erro ao solicitar criativos");
+    }
+  };
+
   return (
     <div className="mt-3">
       <button className="btn btn-primary mb-2" onClick={openNew}>
         Novo Criativo
+      </button>
+      <button
+        className="btn btn-secondary mb-2 ms-2"
+        onClick={generateCreatives}
+        disabled={requestCreatives.isPending}
+      >
+        Gerar Criativos
       </button>
       <div className="table-responsive">
         <table className="table">

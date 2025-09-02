@@ -11,6 +11,7 @@ export interface UpdateExperiment {
   mde?: number;
   startDate?: string;
   endDate?: string;
+  creativesToGenerate?: number;
 }
 
 export function useUpdateExperiment(id: string) {

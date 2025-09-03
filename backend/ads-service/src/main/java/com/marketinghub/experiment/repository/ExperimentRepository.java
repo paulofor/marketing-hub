@@ -24,6 +24,7 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
      */
     @Query("""
             select e from Experiment e
+            join fetch e.hypothesisRef
             where e.creativesToGenerate is not null
               and e.creativesToGenerate > 0
             """)

@@ -153,6 +153,10 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
+Defines a marketing experiment for a specific niche and hypothesis. Each
+experiment aggregates the creative variants, ad sets and landing pages that
+will be executed and measured during the test cycle.
+
 ### creative
 
 - `id` BIGINT AUTO_INCREMENT PRIMARY KEY
@@ -174,6 +178,10 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `descriptions` LONGTEXT
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+Stores the individual assets generated for an experiment. The
+`experiment_id` column is a foreign key to `experiment.id` and is optional to
+allow variants to be created before an experiment is defined.
 
 ### ad_set
 

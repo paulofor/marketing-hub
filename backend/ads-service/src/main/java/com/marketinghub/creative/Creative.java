@@ -11,7 +11,7 @@ import lombok.*;
  * Creative linked to an experiment.
  */
 @Entity
-@Table(name = "creative_variant")
+@Table(name = "creative")
 @Data
 @Builder
 @NoArgsConstructor

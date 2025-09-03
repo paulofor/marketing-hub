@@ -11,13 +11,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class ExperimentCreativeScheduler {
     private static final Logger log = LoggerFactory.getLogger(ExperimentCreativeScheduler.class);
+    private static final String CRON_EVERY_FIVE_MINUTES = "0 */5 * * * *";
+
     private final ExperimentCreativeService service;
 
     public ExperimentCreativeScheduler(ExperimentCreativeService service) {
         this.service = service;
     }
 
-    @Scheduled(cron = "0 */5 * * * *")
+    /**
+     * Executes creative generation every five minutes.
+     */
+    @Scheduled(cron = CRON_EVERY_FIVE_MINUTES)
     public void run() {
         log.info("ExperimentCreativeScheduler started");
         try {

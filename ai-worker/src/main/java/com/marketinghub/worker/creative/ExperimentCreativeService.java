@@ -8,6 +8,7 @@ import com.marketinghub.experiment.repository.ExperimentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,6 +39,7 @@ public class ExperimentCreativeService {
      *
      * @return map keyed by experiment id containing the generated creatives
      */
+    @Transactional
     public Map<Long, List<Creative>> generate() {
         Map<Long, List<Creative>> result = new HashMap<>();
         Iterable<Experiment> experiments = experimentRepository.findAllToGenerateCreatives();

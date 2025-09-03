@@ -139,18 +139,20 @@ CREATE TABLE creative (
     image_url VARCHAR(500),
     image_hash VARCHAR(255),
     video_id VARCHAR(255),
-    status VARCHAR(20)
+    status VARCHAR(20),
+    CONSTRAINT fk_creative_experiment_id FOREIGN KEY (experiment_id) REFERENCES experiment(id)
 );
 
 CREATE TABLE creative_variant (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    experiment_id BIGINT,
+    experiment_id BIGINT NOT NULL,
     type VARCHAR(20),
     asset_url VARCHAR(500),
     titles LONGTEXT,
     descriptions LONGTEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_creative_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id)
 );
 
 CREATE TABLE ad_set (

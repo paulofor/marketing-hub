@@ -80,3 +80,6 @@ databaseChangeLog:
   - include:
       file: V2025_09_29__link_hypothesis_prompt_attribute_description.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2025_09_30__create_creative_table.sql
+      relativeToChangelogFile: true

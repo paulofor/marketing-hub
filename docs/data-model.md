@@ -153,6 +153,17 @@ This document summarizes the current database schema defined in `schema.sql`.
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
+### creative
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `experiment_id` BIGINT NOT NULL
+- `headline` VARCHAR(255)
+- `primary_text` VARCHAR(255)
+- `image_url` VARCHAR(500)
+- `image_hash` VARCHAR(255)
+- `video_id` VARCHAR(255)
+- `status` VARCHAR(20)
+
 ### creative_variant
 
 - `id` BIGINT AUTO_INCREMENT PRIMARY KEY

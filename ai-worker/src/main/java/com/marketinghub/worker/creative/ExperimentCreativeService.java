@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Arrays;
 
 /**
  * Service that loops through experiments with {@code creativesToGenerate > 0}
@@ -61,7 +62,11 @@ public class ExperimentCreativeService {
                     continue;
                 }
                 req.setHeadline(truncate(req.getHeadline(), HEADLINE_MAX));
-                req.setPrimaryText(truncate(limitHashtags(req.getPrimaryText(), MAX_HASHTAGS), PRIMARY_TEXT_MAX));
+                String primary = limitHashtags(req.getPrimaryText(), MAX_HASHTAGS);
+                if (countHashtags(primary) < MAX_HASHTAGS) {
+                    primary = truncate(primary, PRIMARY_TEXT_MAX);
+                }
+                req.setPrimaryText(primary);
                 try {
                     String imageUrl = imageClient.generateImage(req.getHeadline());
                     req.setImageUrl(imageUrl);
@@ -106,5 +111,12 @@ public class ExperimentCreativeService {
             sb.append(part);
         }
         return sb.toString();
+    }
+
+    private static long countHashtags(String text) {
+        if (text == null || text.isBlank()) {
+            return 0;
+        }
+        return Arrays.stream(text.split("\\s+")).filter(p -> p.startsWith("#")).count();
     }
 }

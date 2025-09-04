@@ -61,7 +61,11 @@ public class ExperimentCreativeService {
                     continue;
                 }
                 req.setHeadline(truncate(req.getHeadline(), HEADLINE_MAX));
-                req.setPrimaryText(truncate(limitHashtags(req.getPrimaryText(), MAX_HASHTAGS), PRIMARY_TEXT_MAX));
+                String primary = limitHashtags(req.getPrimaryText(), MAX_HASHTAGS);
+                if (primary != null && !primary.contains("#")) {
+                    primary = truncate(primary, PRIMARY_TEXT_MAX);
+                }
+                req.setPrimaryText(primary);
                 try {
                     String imageUrl = imageClient.generateImage(req.getHeadline());
                     req.setImageUrl(imageUrl);

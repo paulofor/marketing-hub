@@ -26,6 +26,9 @@ public class ExperimentCreativeService {
     private final CreativeImageClient imageClient;
     private final CreativeService creativeService;
     private static final Logger log = LoggerFactory.getLogger(ExperimentCreativeService.class);
+    private static final int HEADLINE_MAX = 40;
+    private static final int PRIMARY_TEXT_MAX = 125;
+    private static final int MAX_HASHTAGS = 30;
 
     public ExperimentCreativeService(ExperimentRepository experimentRepository,
                                      CreativeChatGptClient chatGptClient,
@@ -57,6 +60,8 @@ public class ExperimentCreativeService {
                     log.error("Skipping creative without headline for experiment {}: {}", exp.getId(), req);
                     continue;
                 }
+                req.setHeadline(truncate(req.getHeadline(), HEADLINE_MAX));
+                req.setPrimaryText(truncate(limitHashtags(req.getPrimaryText(), MAX_HASHTAGS), PRIMARY_TEXT_MAX));
                 try {
                     String imageUrl = imageClient.generateImage(req.getHeadline());
                     req.setImageUrl(imageUrl);
@@ -72,5 +77,34 @@ public class ExperimentCreativeService {
             result.put(exp.getId(), saved);
         }
         return result;
+    }
+
+    private static String truncate(String value, int max) {
+        if (value == null) {
+            return null;
+        }
+        return value.length() > max ? value.substring(0, max) : value;
+    }
+
+    private static String limitHashtags(String text, int maxHashtags) {
+        if (text == null) {
+            return null;
+        }
+        String[] parts = text.split("\\s+");
+        StringBuilder sb = new StringBuilder();
+        int count = 0;
+        for (String part : parts) {
+            if (part.startsWith("#")) {
+                count++;
+                if (count > maxHashtags) {
+                    continue;
+                }
+            }
+            if (sb.length() > 0) {
+                sb.append(' ');
+            }
+            sb.append(part);
+        }
+        return sb.toString();
     }
 }

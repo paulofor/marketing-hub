@@ -1,4 +1,18 @@
 # AGENTS.md — Facebook Ads Worker
 
-- Utilize o `facebook-ads-client` para todas as chamadas à API do Facebook.
+- Este projeto utiliza o modelo de dados definido no **backend**.
+- Não duplique ou mantenha modelo de dados aqui; importe-o do backend.
+- Em produção utilizamos **MySql 5**.
+- Tipos de dados permitidos (MySql 5): `INT`, `BIGINT`, `DECIMAL`, `DOUBLE`, `FLOAT`, `CHAR`, `VARCHAR`, `TEXT`, `LONGTEXT`, `BINARY(16)` para `UUID`, `DATE`, `DATETIME`, `TIMESTAMP`, `BOOLEAN`.
+- Utilize o `facebook-ads-worker` para todas as chamadas à API do Facebook.
 - Não mantenha segredos no repositório; use variáveis de ambiente ou GitHub Secrets.
+
+## Serviços existentes
+- **Campanhas de Instagram** (`instagram-campaign`): cria campanhas de Instagram utilizando o `facebook-ads-worker` com criativos gerados pelo **AI Worker** e aprovados pelo usuário no frontend.
+
+## Orientação para novos serviços
+- Siga o mesmo padrão do serviço de **campanhas de Instagram**:
+  - criar um pacote com o nome do domínio (ex: `instagramcampaign`);
+  - implementar uma classe `*Service` com a lógica de integração com a API do Facebook;
+  - criar um `*Scheduler` com `@Scheduled` para executar o serviço periodicamente;
+  - encapsular qualquer cliente do Facebook dentro do mesmo pacote.

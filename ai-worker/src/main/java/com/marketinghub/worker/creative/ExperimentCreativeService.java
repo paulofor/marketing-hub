@@ -26,6 +26,7 @@ public class ExperimentCreativeService {
     private final CreativeImageClient imageClient;
     private final CreativeService creativeService;
     private static final Logger log = LoggerFactory.getLogger(ExperimentCreativeService.class);
+    private static final int MAX_LENGTH = 255;
 
     public ExperimentCreativeService(ExperimentRepository experimentRepository,
                                      CreativeChatGptClient chatGptClient,
@@ -57,6 +58,8 @@ public class ExperimentCreativeService {
                     log.error("Skipping creative without headline for experiment {}: {}", exp.getId(), req);
                     continue;
                 }
+                req.setHeadline(truncate(req.getHeadline(), MAX_LENGTH));
+                req.setPrimaryText(truncate(req.getPrimaryText(), MAX_LENGTH));
                 try {
                     String imageUrl = imageClient.generateImage(req.getHeadline());
                     req.setImageUrl(imageUrl);
@@ -72,5 +75,12 @@ public class ExperimentCreativeService {
             result.put(exp.getId(), saved);
         }
         return result;
+    }
+
+    private static String truncate(String value, int max) {
+        if (value == null) {
+            return null;
+        }
+        return value.length() > max ? value.substring(0, max) : value;
     }
 }

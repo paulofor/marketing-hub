@@ -9,6 +9,7 @@ import com.marketinghub.hypothesis.Hypothesis;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -63,5 +65,26 @@ class ExperimentCreativeServiceTest {
         verify(experimentRepository).save(experiment);
         assertThat(experiment.getCreativesToGenerate()).isZero();
         assertThat(result.get(1L)).containsExactly(saved);
+    }
+
+    @Test
+    void truncateLongTextsBeforeSaving() {
+        when(experimentRepository.findAllToGenerateCreatives()).thenReturn(List.of(experiment));
+        String longText = "a".repeat(300);
+        CreateCreativeRequest req = new CreateCreativeRequest();
+        req.setHeadline(longText);
+        req.setPrimaryText(longText);
+        when(chatGptClient.generateCreatives(experiment, 1)).thenReturn(List.of(req));
+        when(imageClient.generateImage(anyString())).thenReturn("img");
+        Creative saved = new Creative();
+        when(creativeService.create(eq(1L), any(CreateCreativeRequest.class))).thenReturn(saved);
+
+        service.generate();
+
+        ArgumentCaptor<CreateCreativeRequest> captor = ArgumentCaptor.forClass(CreateCreativeRequest.class);
+        verify(creativeService).create(eq(1L), captor.capture());
+        CreateCreativeRequest captured = captor.getValue();
+        assertThat(captured.getHeadline().length()).isEqualTo(255);
+        assertThat(captured.getPrimaryText().length()).isEqualTo(255);
     }
 }

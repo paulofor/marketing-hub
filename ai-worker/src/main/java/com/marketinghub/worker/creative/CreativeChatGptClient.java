@@ -102,7 +102,8 @@ public class CreativeChatGptClient {
             if (h.getOfferType() != null) sb.append("Tipo de oferta: ").append(h.getOfferType()).append("\n");
             if (h.getPrice() != null) sb.append("Preço: ").append(h.getPrice()).append("\n");
         }
-        sb.append("Cada objeto deve conter as chaves: \"headline\" (máximo 255 caracteres), \"primaryText\" (máximo 255 caracteres). ");
+        sb.append("Cada objeto deve conter as chaves: \"headline\" (máximo 40 caracteres), ");
+        sb.append("\"primaryText\" (máximo 125 caracteres e até 30 hashtags). ");
         sb.append("Retorne apenas um array JSON com esses objetos, sem texto adicional.");
         return sb.toString();
     }

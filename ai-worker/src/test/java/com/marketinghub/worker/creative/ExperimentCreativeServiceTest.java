@@ -16,6 +16,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -84,7 +87,29 @@ class ExperimentCreativeServiceTest {
         ArgumentCaptor<CreateCreativeRequest> captor = ArgumentCaptor.forClass(CreateCreativeRequest.class);
         verify(creativeService).create(eq(1L), captor.capture());
         CreateCreativeRequest captured = captor.getValue();
-        assertThat(captured.getHeadline().length()).isEqualTo(255);
-        assertThat(captured.getPrimaryText().length()).isEqualTo(255);
+        assertThat(captured.getHeadline().length()).isEqualTo(40);
+        assertThat(captured.getPrimaryText().length()).isEqualTo(125);
+    }
+
+    @Test
+    void limitHashtagsToThirty() {
+        when(experimentRepository.findAllToGenerateCreatives()).thenReturn(List.of(experiment));
+        String hashtags = IntStream.rangeClosed(1, 35)
+                .mapToObj(i -> "#t" + i)
+                .collect(Collectors.joining(" "));
+        CreateCreativeRequest req = new CreateCreativeRequest();
+        req.setHeadline("headline");
+        req.setPrimaryText(hashtags);
+        when(chatGptClient.generateCreatives(experiment, 1)).thenReturn(List.of(req));
+        when(imageClient.generateImage(anyString())).thenReturn("img");
+        when(creativeService.create(eq(1L), any(CreateCreativeRequest.class))).thenReturn(new Creative());
+
+        service.generate();
+
+        ArgumentCaptor<CreateCreativeRequest> captor = ArgumentCaptor.forClass(CreateCreativeRequest.class);
+        verify(creativeService).create(eq(1L), captor.capture());
+        String savedText = captor.getValue().getPrimaryText();
+        long count = Arrays.stream(savedText.split("\\s+")).filter(p -> p.startsWith("#")).count();
+        assertThat(count).isEqualTo(30);
     }
 }

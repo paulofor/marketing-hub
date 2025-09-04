@@ -26,6 +26,8 @@ class ExperimentCreativeServiceTest {
     @Mock
     CreativeChatGptClient chatGptClient;
     @Mock
+    CreativeImageClient imageClient;
+    @Mock
     CreativeService creativeService;
     @InjectMocks
     ExperimentCreativeService service;
@@ -48,13 +50,15 @@ class ExperimentCreativeServiceTest {
         CreateCreativeRequest req = new CreateCreativeRequest();
         req.setHeadline("h1");
         req.setPrimaryText("p1");
-        req.setImageUrl("img");
         when(chatGptClient.generateCreatives(experiment, 1)).thenReturn(List.of(req));
+        when(imageClient.generateImage("h1")).thenReturn("img");
         Creative saved = new Creative();
         when(creativeService.create(1L, req)).thenReturn(saved);
 
         Map<Long, List<Creative>> result = service.generate();
 
+        verify(imageClient).generateImage("h1");
+        assertThat(req.getImageUrl()).isEqualTo("img");
         verify(creativeService).create(1L, req);
         verify(experimentRepository).save(experiment);
         assertThat(experiment.getCreativesToGenerate()).isZero();

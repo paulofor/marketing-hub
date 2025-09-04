@@ -23,14 +23,17 @@ import java.util.Map;
 public class ExperimentCreativeService {
     private final ExperimentRepository experimentRepository;
     private final CreativeChatGptClient chatGptClient;
+    private final CreativeImageClient imageClient;
     private final CreativeService creativeService;
     private static final Logger log = LoggerFactory.getLogger(ExperimentCreativeService.class);
 
     public ExperimentCreativeService(ExperimentRepository experimentRepository,
                                      CreativeChatGptClient chatGptClient,
+                                     CreativeImageClient imageClient,
                                      CreativeService creativeService) {
         this.experimentRepository = experimentRepository;
         this.chatGptClient = chatGptClient;
+        this.imageClient = imageClient;
         this.creativeService = creativeService;
     }
 
@@ -53,6 +56,12 @@ public class ExperimentCreativeService {
                 if (req.getHeadline() == null || req.getHeadline().isBlank()) {
                     log.error("Skipping creative without headline for experiment {}: {}", exp.getId(), req);
                     continue;
+                }
+                try {
+                    String imageUrl = imageClient.generateImage(req.getHeadline());
+                    req.setImageUrl(imageUrl);
+                } catch (Exception e) {
+                    log.error("Failed to generate image for experiment {}: {}", exp.getId(), req.getHeadline(), e);
                 }
                 log.info("Saving creative for experiment {}: {}", exp.getId(), req);
                 saved.add(creativeService.create(exp.getId(), req));

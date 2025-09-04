@@ -62,4 +62,59 @@ public class DefaultFacebookAdsClient implements FacebookAdsClient {
             return MAPPER.createObjectNode();
         }
     }
+
+    @Override
+    public JsonNode createCampaign(String adAccountId, String name, String objective) {
+        if (token == null || token.isBlank()) {
+            log.warn("Facebook token not configured, returning empty result");
+            return MAPPER.createObjectNode();
+        }
+        try {
+            String endpoint = String.format("%s/%s/act_%s/campaigns?access_token=%s",
+                    baseUrl,
+                    apiVersion,
+                    URLEncoder.encode(adAccountId, StandardCharsets.UTF_8),
+                    URLEncoder.encode(token, StandardCharsets.UTF_8));
+            String body = "name=" + URLEncoder.encode(name, StandardCharsets.UTF_8)
+                    + "&objective=" + URLEncoder.encode(objective, StandardCharsets.UTF_8);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(endpoint))
+                    .timeout(Duration.ofSeconds(30))
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            log.debug("Facebook response: {}", response.body());
+            return MAPPER.readTree(response.body());
+        } catch (Exception e) {
+            log.error("Failed to call Facebook API", e);
+            return MAPPER.createObjectNode();
+        }
+    }
+
+    @Override
+    public JsonNode getCampaignInsights(String campaignId) {
+        if (token == null || token.isBlank()) {
+            log.warn("Facebook token not configured, returning empty result");
+            return MAPPER.createObjectNode();
+        }
+        try {
+            String endpoint = String.format("%s/%s/%s/insights?access_token=%s",
+                    baseUrl,
+                    apiVersion,
+                    URLEncoder.encode(campaignId, StandardCharsets.UTF_8),
+                    URLEncoder.encode(token, StandardCharsets.UTF_8));
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(endpoint))
+                    .timeout(Duration.ofSeconds(30))
+                    .GET()
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            log.debug("Facebook response: {}", response.body());
+            return MAPPER.readTree(response.body());
+        } catch (Exception e) {
+            log.error("Failed to call Facebook API", e);
+            return MAPPER.createObjectNode();
+        }
+    }
 }

@@ -29,4 +29,24 @@ public class DummyFacebookAdsClient implements FacebookAdsClient {
         data.add(acc);
         return root;
     }
+
+    @Override
+    public JsonNode createCampaign(String adAccountId, String name, String objective) {
+        log.debug("Returning dummy campaign");
+        ObjectNode root = MAPPER.createObjectNode();
+        root.put("id", "999");
+        return root;
+    }
+
+    @Override
+    public JsonNode getCampaignInsights(String campaignId) {
+        log.debug("Returning dummy insights");
+        ObjectNode root = MAPPER.createObjectNode();
+        ArrayNode data = root.putArray("data");
+        ObjectNode metric = MAPPER.createObjectNode();
+        metric.put("campaign_id", campaignId);
+        metric.put("impressions", 0);
+        data.add(metric);
+        return root;
+    }
 }

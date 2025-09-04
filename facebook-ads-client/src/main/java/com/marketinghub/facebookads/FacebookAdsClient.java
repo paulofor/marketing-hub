@@ -9,8 +9,12 @@ import com.fasterxml.jackson.databind.JsonNode;
  * should never log its full value for security reasons.</p>
  */
 public interface FacebookAdsClient {
-    /**
-     * Lists ad accounts associated with the current token owner.
-     */
+    /** Lists ad accounts associated with the current token owner. */
     JsonNode getAdAccounts();
+
+    /** Creates a campaign under the given ad account. */
+    JsonNode createCampaign(String adAccountId, String name, String objective);
+
+    /** Retrieves metrics for a campaign. */
+    JsonNode getCampaignInsights(String campaignId);
 }

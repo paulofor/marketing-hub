@@ -1,20 +1,43 @@
 package com.marketinghub.facebookadsworker;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.marketinghub.facebookads.FacebookAdsClient;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
 public class FacebookAdsService {
-    private final FacebookAdsClient client;
+    private final WebClient webClient;
+    private final String accessToken;
+
+    public FacebookAdsService(WebClient.Builder builder,
+                              @Value("${facebook.graph-api.base-url:https://graph.facebook.com}") String baseUrl,
+                              @Value("${facebook.access-token}") String accessToken) {
+        this.webClient = builder.baseUrl(baseUrl).build();
+        this.accessToken = accessToken;
+    }
 
     public String createInstagramCampaign(String adAccountId, String name) {
-        return client.createCampaign(adAccountId, name, "OUTCOME_TRAFFIC").path("id").asText();
+        JsonNode response = webClient.post()
+            .uri("/v20.0/act_" + adAccountId + "/campaigns")
+            .bodyValue(Map.of(
+                "name", name,
+                "objective", "OUTCOME_TRAFFIC",
+                "access_token", accessToken
+            ))
+            .retrieve()
+            .bodyToMono(JsonNode.class)
+            .block();
+        return response.path("id").asText();
     }
 
     public JsonNode getCampaignMetrics(String campaignId) {
-        return client.getCampaignInsights(campaignId);
+        return webClient.get()
+            .uri("/v20.0/" + campaignId + "/insights?access_token=" + accessToken)
+            .retrieve()
+            .bodyToMono(JsonNode.class)
+            .block();
     }
 }

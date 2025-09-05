@@ -1,42 +1,52 @@
 package com.marketinghub.facebookadsworker;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.marketinghub.facebookads.FacebookAdsClient;
+import com.fasterxml.jackson.databind.JsonNode;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.BDDMockito.given;
 
-@SpringBootTest
 class FacebookAdsServiceTest {
-
-    @Autowired
+    private MockWebServer server;
     private FacebookAdsService service;
 
-    @MockBean
-    private FacebookAdsClient client;
+    @BeforeEach
+    void setUp() throws IOException {
+        server = new MockWebServer();
+        server.start();
+        String baseUrl = server.url("/").toString();
+        service = new FacebookAdsService(WebClient.builder(), baseUrl, "token");
+    }
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    @AfterEach
+    void tearDown() throws IOException {
+        server.shutdown();
+    }
 
     @Test
-    void createCampaignDelegatesToClient() {
-        ObjectNode node = mapper.createObjectNode();
-        node.put("id", "123");
-        given(client.createCampaign(anyString(), anyString(), anyString())).willReturn(node);
+    void createCampaignPostsCorrectRequest() throws Exception {
+        server.enqueue(new MockResponse().setBody("{\"id\":\"123\"}")
+            .addHeader("Content-Type", "application/json"));
         String id = service.createInstagramCampaign("1", "Camp");
+        RecordedRequest request = server.takeRequest();
+        assertEquals("/v20.0/act_1/campaigns", request.getPath());
         assertEquals("123", id);
     }
 
     @Test
-    void metricsDelegatesToClient() {
-        ObjectNode node = mapper.createObjectNode();
-        given(client.getCampaignInsights(anyString())).willReturn(node);
-        ObjectNode result = service.getCampaignMetrics("77");
-        assertEquals(node, result);
+    void metricsRequestsCampaignInsights() throws Exception {
+        server.enqueue(new MockResponse().setBody("{\"data\":[{\"impressions\":\"10\"}]}")
+            .addHeader("Content-Type", "application/json"));
+        JsonNode node = service.getCampaignMetrics("77");
+        RecordedRequest request = server.takeRequest();
+        assertEquals("/v20.0/77/insights?access_token=token", request.getPath());
+        assertEquals("10", node.get("data").get(0).path("impressions").asText());
     }
 }

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Modelo de Dados</title>
+</head>
+<body>
+<h1>MarketingHub Data Model</h1>
+<p>This document summarizes the current database schema defined in <code>schema.sql</code>.</p>
+<h2>Tables</h2>
+<h3>asset</h3>
+<ul>
+<li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>
+<li><code>type</code> VARCHAR(20)</li>
+<li><code>provider</code> VARCHAR(20)</li>
+<li><code>external_id</code> VARCHAR(100)</li>
+<li><code>status</code> VARCHAR(20)</li>
+<li><code>url</code> VARCHAR(500)</li>
+<li><code>payload</code> TEXT</li>
+<li><code>campaign_id</code> BIGINT</li>
+<li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
+<li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
+</ul>
+<h3>course_plan</h3>
+<ul>
+<li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>
+<li><code>target_audience</code> VARCHAR(255)</li>
+<li><code>transformation</code> VARCHAR(255)</li>
+<li><code>macro_topics</code> TEXT</li>
+<li><code>modules</code> TEXT</li>
+<li><code>objectives</code> TEXT</li>
+<li><code>resources</code> TEXT</li>
+<li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
+<li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
+</ul>
+<h3>ai_service</h3>
+<ul>
+<li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>
+<li><code>name</code> VARCHAR(255)</li>
+<li><code>objective</code> LONGTEXT</li>
+<li><code>url</code> VARCHAR(255)</li>
+<li><code>phase</code> VARCHAR(255)</li>
+<li><code>price</code> DECIMAL(10,2)</li>
+<li><code>cost</code> DECIMAL(10,2)</li>
+<li><code>observation</code> LONGTEXT</li>
+<li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
+<li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
+</ul>
+<h3>product</h3>
+<ul>
+<li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>
+<li><code>niche</code> VARCHAR(255)</li>
+<li><code>avatar</code> VARCHAR(255)</li>
+<li><code>instagram_account_id</code> BIGINT</li>
+<li><code>explicit_pain</code> LONGTEXT</li>
+<li><code>promise</code> LONGTEXT</li>
+<li><code>unique_mechanism</code> LONGTEXT</li>
+<li><code>tripwire</code> LONGTEXT</li>
+<li><code>risk_reversal</code> LONGTEXT</li>
+<li><code>social_proof</code> LONGTEXT</li>
+<li><code>checkout_monetization</code> LONGTEXT</li>
+<li><code>funnel</code> LONGTEXT</li>
+<li><code>creative_volume</code> LONGTEXT</li>
+<li><code>storytelling</code> LONGTEXT</li>
+<li><code>ai_cost</code> DECIMAL(10,2) DEFAULT 0</li>
+<li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
+<li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
+</ul>
+<h3>success_product</h3>
+<ul>
+<li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>
+<li><code>description</code> LONGTEXT</li>
+<li><code>name</code> VARCHAR(255)</li>
+<li><code>novo</code> BOOLEAN DEFAULT TRUE</li>
+<li><code>platform</code> VARCHAR(20) NOT NULL DEFAULT &#39;COFRE&#39;</li>
+<li><code>niche</code> VARCHAR(255)</li>
+<li><code>avatar</code> VARCHAR(255)</li>
+<li><code>audience_type</code> VARCHAR(255)</li>
+<li><code>sales_page_url</code> VARCHAR(500)</li>
+<li><code>instagram_url</code> VARCHAR(500)</li>
+<li><code>facebook_url</code> VARCHAR(500)</li>
+<li><code>youtube_url</code> VARCHAR(500)</li>
+<li><code>instagram_account_id</code> BIGINT</li>
+<li><code>explicit_pain</code> LONGTEXT</li>
+<li><code>promise</code> LONGTEXT</li>
+<li><code>unique_mechanism</code> LONGTEXT</li>
+<li><code>tripwire</code> LONGTEXT</li>
+<li><code>risk_reversal</code> LONGTEXT</li>
+<li><code>social_proof</code> LONGTEXT</li>
+<li><code>checkout_monetization</code> LONGTEXT</li>
+<li><code>sales_funnel</code> LONGTEXT</li>
+<li><code>creative_volume</code> LONGTEXT</li>
+<li><code>storytelling</code> LONGTEXT</li>
+<li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
+<li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
+</ul>
+<h3>instagram_post</h3>
+<ul>
+<li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>
+<li><code>instagram_account_id</code> BIGINT</li>
+<li><code>caption</code> TEXT</li>
+<li><code>media_url</code> VARCHAR(500)</li>
+<li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
+<li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
+</ul>
+<h3>market_niche</h3>
+<ul>
+<li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>
+<li><code>name</code> VARCHAR(255)</li>
+<li><code>description</code> LONGTEXT</li>
+<li><code>demand_volume</code> LONGTEXT</li>
+<li><code>promises</code> LONGTEXT</li>
+<li><code>offers</code> LONGTEXT</li>
+<li><code>hypotheses_to_generate</code> INT</li>
+<li><code>base_segmentation</code> LONGTEXT</li>
+<li><code>interests</code> LONGTEXT</li>
+<li><code>demographic_filters</code> LONGTEXT</li>
+<li><code>extra_tips</code> LONGTEXT</li>
+<li><code>chat_dialog_id</code> BIGINT</li>
+<li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
+<li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
+</ul>
+<h3>hypothesis</h3>
+<ul>
+<li><code>id</code> BINARY(16) PRIMARY KEY</li>
+<li><code>experiment_id</code> BIGINT NOT NULL</li>
+<li><code>market_niche_id</code> BIGINT NOT NULL</li>
+<li><code>title</code> VARCHAR(255) NOT NULL</li>
+<li><code>premise_angle_id</code> BIGINT NOT NULL</li>
+<li><code>offer_type</code> VARCHAR(20) NOT NULL</li>
+<li><code>entrega</code> LONGTEXT</li>
+<li><code>price</code> DECIMAL(6,2)</li>
+<li><code>kpi_target_cpl</code> DECIMAL(7,2) NOT NULL</li>
+<li><code>status</code> VARCHAR(20) DEFAULT &#39;BACKLOG&#39; NOT NULL</li>
+<li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
+<li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
+</ul>
+<h3>experiment</h3>
+<ul>
+<li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>
+<li><code>niche_id</code> BIGINT NOT NULL</li>
+<li><code>hypothesis_id</code> BINARY(16) NOT NULL</li>
+<li><code>name</code> VARCHAR(255) NOT NULL</li>
+<li><code>hypothesis</code> VARCHAR(255)</li>
+<li><code>kpi_target_cpl</code> DECIMAL(10,2) DEFAULT 45.00</li>
+<li><code>stop_loss_cpl</code> DECIMAL(10,2) DEFAULT 90.00</li>
+<li><code>sample_size</code> INT DEFAULT 1500</li>
+<li><code>baseline_cvr</code> DECIMAL(5,2) DEFAULT 3.00</li>
+<li><code>target_cvr</code> DECIMAL(5,2) DEFAULT 5.00</li>
+<li><code>mde_percent</code> DECIMAL(5,2) DEFAULT 40.0</li>
+<li><code>creatives_to_generate</code> INT</li>
+<li><code>start_date</code> DATE</li>
+<li><code>end_date</code> DATE</li>
+<li><code>status</code> VARCHAR(20)</li>
+<li><code>platform</code> VARCHAR(50)</li>
+<li><code>sales_funnel_id</code> BINARY(16)</li>
+<li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
+<li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
+</ul>
+<p>Defines a marketing experiment for a specific niche and hypothesis. Each
+experiment aggregates the creative variants, ad sets and landing pages that
+will be executed and measured during the test cycle.</p>
+<h3>creative</h3>
+<ul>
+<li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>
+<li><code>experiment_id</code> BIGINT NOT NULL</li>
+<li><code>headline</code> VARCHAR(255)</li>
+<li><code>primary_text</code> VARCHAR(255)</li>
+<li><code>image_url</code> VARCHAR(500)</li>
+<li><code>image_hash</code> VARCHAR(255)</li>
+<li><code>video_id</code> VARCHAR(255)</li>
+<li><code>status</code> VARCHAR(20)</li>
+</ul>
+<p>Stores ad creatives generated by the AI Worker for each experiment.
+These records can later be sent to the Facebook API and are displayed on
+the experiment detail page in the frontend.</p>
+<h3>creative_variant</h3>
+<ul>
+<li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>
+<li><code>experiment_id</code> BIGINT</li>
+<li><code>type</code> VARCHAR(20)</li>
+<li><code>asset_url</code> VARCHAR(500)</li>
+<li><code>titles</code> LONGTEXT</li>
+<li><code>descriptions</code> LONGTEXT</li>
+<li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
+<li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
+</ul>
+<p>Stores the individual assets generated for an experiment. The
+<code>experiment_id</code> column is a foreign key to <code>experiment.id</code> and is optional to
+allow variants to be created before an experiment is defined.</p>
+<h3>ad_set</h3>
+<ul>
+<li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>
+<li><code>experiment_id</code> BIGINT</li>
+<li><code>location</code> VARCHAR(255)</li>
+<li><code>interests</code> LONGTEXT</li>
+<li><code>lookalikes</code> LONGTEXT</li>
+<li><code>budget</code> DECIMAL(10,2)</li>
+<li><code>duration_days</code> INT</li>
+<li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
+<li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
+</ul>
+<h3>metric_snapshot</h3>
+<ul>
+<li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>
+<li><code>creative_id</code> BIGINT</li>
+<li><code>ad_set_id</code> BIGINT</li>
+<li><code>impressions</code> INT</li>
+<li><code>clicks</code> INT</li>
+<li><code>cost</code> DECIMAL(10,2)</li>
+<li><code>roas</code> DECIMAL(10,2)</li>
+<li><code>ctr</code> DOUBLE</li>
+<li><code>cpa</code> DECIMAL(10,2)</li>
+<li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
+</ul>
+<h3>landing_page</h3>
+<ul>
+<li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>
+<li><code>experiment_id</code> BIGINT NOT NULL</li>
+<li><code>url</code> VARCHAR(500)</li>
+<li><code>type</code> VARCHAR(20)</li>
+<li><code>status</code> VARCHAR(20)</li>
+<li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
+<li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
+</ul>
+<h3>chat_session</h3>
+<ul>
+<li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>
+<li><code>user_id</code> VARCHAR(255)</li>
+<li><code>channel</code> VARCHAR(50)</li>
+<li><code>state</code> VARCHAR(20)</li>
+<li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
+<li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
+</ul>
+<h3>chat_message</h3>
+<ul>
+<li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>
+<li><code>session_id</code> BIGINT</li>
+<li><code>origin</code> VARCHAR(50)</li>
+<li><code>content</code> LONGTEXT</li>
+<li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
+<li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
+</ul>
+<h3>chat_dialog</h3>
+<ul>
+<li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>
+<li><code>url</code> VARCHAR(500)</li>
+<li><code>description</code> LONGTEXT</li>
+<li><code>theme</code> VARCHAR(255)</li>
+<li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
+<li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
+</ul>
+<h3>prompt_entity</h3>
+<ul>
+<li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>
+<li><code>name</code> VARCHAR(255) UNIQUE</li>
+<li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
+<li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
+</ul>
+<h3>prompt_attribute</h3>
+<ul>
+<li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>
+<li><code>prompt_entity_id</code> BIGINT</li>
+<li><code>name</code> VARCHAR(255)</li>
+<li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
+<li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
+</ul>
+<h3>prompt_entity_description</h3>
+<ul>
+<li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>
+<li><code>prompt_entity_id</code> BIGINT</li>
+<li><code>description</code> LONGTEXT</li>
+<li><code>active</code> BOOLEAN</li>
+<li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
+<li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
+</ul>
+<h3>prompt_attribute_description</h3>
+<ul>
+<li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>
+<li><code>prompt_attribute_id</code> BIGINT</li>
+<li><code>description</code> LONGTEXT</li>
+<li><code>active</code> BOOLEAN</li>
+<li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
+<li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
+</ul>
+<h3>hypothesis_prompt_attribute_description</h3>
+<ul>
+<li><code>hypothesis_id</code> BINARY(16)</li>
+<li><code>prompt_attribute_description_id</code> BIGINT</li>
+</ul>
+<h2>Diagram</h2>
+<pre><code class="language-mermaid">erDiagram
+    ASSET {
+        BIGINT id PK
+    }
+    COURSE_PLAN {
+        BIGINT id PK
+    }
+    AI_SERVICE {
+        BIGINT id PK
+    }
+    PRODUCT {
+        BIGINT id PK
+    }
+    SUCCESS_PRODUCT {
+        BIGINT id PK
+    }
+    INSTAGRAM_POST {
+        BIGINT id PK
+    }
+    MARKET_NICHE {
+        BIGINT id PK
+    }
+    EXPERIMENT {
+        BIGINT id PK
+    }
+    CREATIVE_VARIANT {
+        BIGINT id PK
+    }
+    AD_SET {
+        BIGINT id PK
+    }
+    METRIC_SNAPSHOT {
+        BIGINT id PK
+    }
+    LANDING_PAGE {
+        BIGINT id PK
+    }
+    CHAT_SESSION {
+        BIGINT id PK
+    }
+    CHAT_MESSAGE {
+        BIGINT id PK
+    }
+    CHAT_DIALOG {
+        BIGINT id PK
+    }
+    PROMPT_ENTITY {
+        BIGINT id PK
+    }
+    PROMPT_ATTRIBUTE {
+        BIGINT id PK
+    }
+    PROMPT_ENTITY_DESCRIPTION {
+        BIGINT id PK
+    }
+    PROMPT_ATTRIBUTE_DESCRIPTION {
+        BIGINT id PK
+    }
+    HYPOTHESIS {
+        BINARY(16) id PK
+    }
+    HYPOTHESIS_PROMPT_ATTRIBUTE_DESCRIPTION {
+        BINARY(16) hypothesis_id PK
+        BIGINT prompt_attribute_description_id PK
+    }
+
+    MARKET_NICHE ||--o{ HYPOTHESIS : generates
+    MARKET_NICHE ||--o{ EXPERIMENT : contains
+    HYPOTHESIS ||--o{ EXPERIMENT : tests
+    EXPERIMENT ||--o{ CREATIVE_VARIANT : has
+    EXPERIMENT ||--o{ AD_SET : configures
+    EXPERIMENT ||--o{ LANDING_PAGE : uses
+    CREATIVE_VARIANT ||--o{ METRIC_SNAPSHOT : reports
+    AD_SET ||--o{ METRIC_SNAPSHOT : tracks
+    CHAT_SESSION ||--o{ CHAT_MESSAGE : includes
+    PROMPT_ENTITY ||--o{ PROMPT_ATTRIBUTE : defines
+    PROMPT_ENTITY ||--o{ PROMPT_ENTITY_DESCRIPTION : described_by
+    PROMPT_ATTRIBUTE ||--o{ PROMPT_ATTRIBUTE_DESCRIPTION : described_by
+    HYPOTHESIS ||--o{ HYPOTHESIS_PROMPT_ATTRIBUTE_DESCRIPTION : uses
+    PROMPT_ATTRIBUTE_DESCRIPTION ||--o{ HYPOTHESIS_PROMPT_ATTRIBUTE_DESCRIPTION : referenced_by
+</code></pre>
+
+</body>\n</html>

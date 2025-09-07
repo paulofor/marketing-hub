@@ -1,18 +1,29 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { Creative, useCreatives } from "../../api/creative/useCreatives";
 import { useCreateCreative } from "../../api/creative/useCreateCreative";
 import { useUpdateCreative } from "../../api/creative/useUpdateCreative";
 import { useDeleteCreative } from "../../api/creative/useDeleteCreative";
 import { usePreviewCreative } from "../../api/creative/usePreviewCreative";
-import { useAngles } from "../../api/angle/useAngles";
-import { useVisualProofs } from "../../api/visualProof/useVisualProofs";
-import { useEmotionalTriggers } from "../../api/emotionalTrigger/useEmotionalTriggers";
-import { useUpdateCreativeLabels } from "../../api/creative/useUpdateCreativeLabels";
 import { useRequestCreatives } from "../../api/experiment/useRequestCreatives";
 import { useExperiment } from "../../api/experiment/useExperiment";
 
 interface Props {
   experimentId: string;
+}
+
+interface CreativeForm {
+  format: string;
+  primaryText: string;
+  headline: string;
+  description: string;
+  cta: string;
+  url: string;
+  imageUrl: string;
+  videoId: string;
+  pageId: string;
+  instagramUserId: string;
+  status: string;
 }
 
 export default function CriativosTab({ experimentId }: Props) {
@@ -21,22 +32,23 @@ export default function CriativosTab({ experimentId }: Props) {
   const { data: experiment } = useExperiment(experimentId);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Creative | null>(null);
-  const [form, setForm] = useState({
-    headline: "",
-    primaryText: "",
-    imageUrl: "",
-    status: "DRAFT",
+  const { register, handleSubmit, reset, setValue } = useForm<CreativeForm>({
+    defaultValues: {
+      format: "LINK",
+      primaryText: "",
+      headline: "",
+      description: "",
+      cta: "",
+      url: "",
+      imageUrl: "",
+      videoId: "",
+      pageId: "",
+      instagramUserId: "",
+      status: "DRAFT",
+    },
   });
-  const { data: angles } = useAngles();
-  const { data: proofs } = useVisualProofs();
-  const { data: triggers } = useEmotionalTriggers();
-  const [selectedAngle, setSelectedAngle] = useState<string>("");
-  const [selectedProof, setSelectedProof] = useState<string>("");
-  const [selectedTrigger, setSelectedTrigger] = useState<string>("");
-  const patchLabels = useUpdateCreativeLabels(experimentId);
   const create = useCreateCreative(experimentId);
   const update = editing ? useUpdateCreative(editing.id, experimentId) : null;
-  const del = useDeleteCreative(0, experimentId); // id changed dynamically
   const { data: previewHtml, refetch } = usePreviewCreative(
     editing?.id ?? 0,
     false,
@@ -46,30 +58,22 @@ export default function CriativosTab({ experimentId }: Props) {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ headline: "", primaryText: "", imageUrl: "", status: "DRAFT" });
-    setSelectedAngle("");
-    setSelectedProof("");
-    setSelectedTrigger("");
+    reset();
     setShowForm(true);
   };
 
-  const submit = async () => {
+  const onSubmit = async (data: CreativeForm) => {
     if (editing) {
-      await update?.mutateAsync(form);
+      await update?.mutateAsync(data);
     } else {
-      const created = await create.mutateAsync(form);
-      await patchLabels.mutateAsync({
-        id: created.id,
-        labels: {
-          angleId: selectedAngle ? Number(selectedAngle) : undefined,
-          visualProofId: selectedProof ? Number(selectedProof) : undefined,
-          emotionalTriggerId: selectedTrigger
-            ? Number(selectedTrigger)
-            : undefined,
-        },
-      });
+      await create.mutateAsync(data);
     }
     setShowForm(false);
+  };
+
+  const duplicate = async (c: Creative) => {
+    const { id, ...rest } = c as any;
+    await create.mutateAsync(rest);
   };
 
   const startPreview = async (c: Creative) => {
@@ -96,7 +100,7 @@ export default function CriativosTab({ experimentId }: Props) {
       fd.append("file", file);
       const res = await fetch("/api/assets", { method: "POST", body: fd });
       const url = await res.text();
-      setForm({ ...form, imageUrl: url });
+      setValue("imageUrl", url);
     };
     img.src = URL.createObjectURL(file);
   };
@@ -164,16 +168,17 @@ export default function CriativosTab({ experimentId }: Props) {
                     className="btn btn-sm btn-outline-primary me-1"
                     onClick={() => {
                       setEditing(c);
-                      setForm({
-                        headline: c.headline,
-                        primaryText: c.primaryText,
-                        imageUrl: c.imageUrl,
-                        status: c.status,
-                      });
+                      reset(c);
                       setShowForm(true);
                     }}
                   >
                     🖊
+                  </button>
+                  <button
+                    className="btn btn-sm btn-outline-secondary me-1"
+                    onClick={() => duplicate(c)}
+                  >
+                    ⧉
                   </button>
                   <button
                     className="btn btn-sm btn-outline-danger me-1"
@@ -208,6 +213,39 @@ export default function CriativosTab({ experimentId }: Props) {
                 />
               </div>
               <div className="modal-body">
+                <select className="form-select mb-2" {...register("format")}>
+                  <option value="LINK">LINK</option>
+                  <option value="VIDEO">VIDEO</option>
+                  <option value="CAROUSEL">CAROUSEL</option>
+                </select>
+                <textarea
+                  className="form-control mb-2"
+                  placeholder="Primary Text"
+                  maxLength={125}
+                  {...register("primaryText")}
+                />
+                <input
+                  className="form-control mb-2"
+                  placeholder="Headline"
+                  maxLength={40}
+                  title="máx. 40 caracteres"
+                  {...register("headline")}
+                />
+                <input
+                  className="form-control mb-2"
+                  placeholder="Descrição"
+                  {...register("description")}
+                />
+                <input
+                  className="form-control mb-2"
+                  placeholder="CTA"
+                  {...register("cta")}
+                />
+                <input
+                  className="form-control mb-2"
+                  placeholder="URL"
+                  {...register("url")}
+                />
                 <input
                   type="file"
                   className="form-control mb-2"
@@ -215,69 +253,15 @@ export default function CriativosTab({ experimentId }: Props) {
                 />
                 <input
                   className="form-control mb-2"
-                  placeholder="Headline"
-                  maxLength={40}
-                  value={form.headline}
-                  title="máx. 40 caracteres"
-                  onChange={(e) =>
-                    setForm({ ...form, headline: e.target.value })
-                  }
+                  placeholder="page_id"
+                  {...register("pageId")}
                 />
-                <textarea
+                <input
                   className="form-control mb-2"
-                  placeholder="Primary Text"
-                  maxLength={125}
-                  value={form.primaryText}
-                  title="máx. 125 caracteres"
-                  onChange={(e) =>
-                    setForm({ ...form, primaryText: e.target.value })
-                  }
+                  placeholder="instagram_user_id"
+                  {...register("instagramUserId")}
                 />
-                {!editing && (
-                  <>
-                    <select
-                      className="form-select mb-2"
-                      value={selectedAngle}
-                      onChange={(e) => setSelectedAngle(e.target.value)}
-                    >
-                      {Array.isArray(angles) &&
-                        angles.map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.name}
-                          </option>
-                        ))}
-                    </select>
-                    <select
-                      className="form-select mb-2"
-                      value={selectedProof}
-                      onChange={(e) => setSelectedProof(e.target.value)}
-                    >
-                      {Array.isArray(proofs) &&
-                        proofs.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name}
-                          </option>
-                        ))}
-                    </select>
-                    <select
-                      className="form-select mb-2"
-                      value={selectedTrigger}
-                      onChange={(e) => setSelectedTrigger(e.target.value)}
-                    >
-                      {Array.isArray(triggers) &&
-                        triggers.map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.name}
-                          </option>
-                        ))}
-                    </select>
-                  </>
-                )}
-                <select
-                  className="form-select"
-                  value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
-                >
+                <select className="form-select" {...register("status")}>
                   <option value="DRAFT">DRAFT</option>
                   <option value="READY">READY</option>
                 </select>
@@ -289,7 +273,15 @@ export default function CriativosTab({ experimentId }: Props) {
                 >
                   Cancelar
                 </button>
-                <button className="btn btn-primary" onClick={submit}>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleSubmit(
+                    onSubmit,
+                    (errors) => {
+                      console.log("Validation errors", errors);
+                    },
+                  )}
+                >
                   Salvar
                 </button>
               </div>

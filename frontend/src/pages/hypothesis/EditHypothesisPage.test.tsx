@@ -55,12 +55,12 @@ describe("EditHypothesisPage", () => {
   it("envia dados ao backend", async () => {
     setup();
     const titleInput = await screen.findByLabelText("Título");
-    fireEvent.change(titleInput, { target: { value: "Nova Hip" } });
+    fireEvent.change(titleInput, { target: { value: "Nova Hipotese" } });
     fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
     await waitFor(() => expect((axios.put as any).mock.calls.length).toBe(1));
     expect((axios.put as any).mock.calls[0][0]).toBe("/api/hypotheses/10");
     expect((axios.put as any).mock.calls[0][1]).toMatchObject({
-      title: "Nova Hip",
+      title: "Nova Hipotese",
     });
   });
 });

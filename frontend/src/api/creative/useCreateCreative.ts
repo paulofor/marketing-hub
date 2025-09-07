@@ -3,9 +3,16 @@ import axios from "axios";
 import { Creative } from "./useCreatives";
 
 export interface CreateCreative {
-  headline: string;
+  format: string;
   primaryText: string;
-  imageUrl: string;
+  headline: string;
+  description?: string;
+  cta?: string;
+  url?: string;
+  imageUrl?: string;
+  videoId?: string;
+  pageId?: string;
+  instagramUserId?: string;
   status: string;
 }
 

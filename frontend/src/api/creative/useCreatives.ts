@@ -4,9 +4,16 @@ import axios from "axios";
 export interface Creative {
   id: number;
   experimentId: number;
-  headline: string;
+  format: string;
   primaryText: string;
-  imageUrl: string;
+  headline: string;
+  description?: string;
+  cta?: string;
+  url?: string;
+  imageUrl?: string;
+  videoId?: string;
+  pageId?: string;
+  instagramUserId?: string;
   status: string;
 }
 

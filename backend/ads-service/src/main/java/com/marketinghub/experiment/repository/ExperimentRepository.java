@@ -1,6 +1,8 @@
 package com.marketinghub.experiment.repository;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentPlatform;
+import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.niche.MarketNiche;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -13,7 +15,8 @@ import java.util.UUID;
 public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
     List<Experiment> findByNicheId(Long nicheId);
     boolean existsByNicheAndName(MarketNiche niche, String name);
-    List<Experiment> findByStatus(com.marketinghub.experiment.ExperimentStatus status);
+    List<Experiment> findByStatus(ExperimentStatus status);
+    List<Experiment> findByStatusAndPlatform(ExperimentStatus status, ExperimentPlatform platform);
     long countBySalesFunnelId(UUID salesFunnelId);
 
     /**

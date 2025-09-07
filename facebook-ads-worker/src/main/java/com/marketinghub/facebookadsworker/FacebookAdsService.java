@@ -33,6 +33,10 @@ public class FacebookAdsService {
         return response.path("id").asText();
     }
 
+    public String createCampaign(String adAccountId, String name) {
+        return createInstagramCampaign(adAccountId, name);
+    }
+
     public JsonNode getCampaignMetrics(String campaignId) {
         return webClient.get()
             .uri("/v20.0/" + campaignId + "/insights?access_token=" + accessToken)

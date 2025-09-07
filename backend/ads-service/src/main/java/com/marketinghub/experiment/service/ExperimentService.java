@@ -132,6 +132,10 @@ public class ExperimentService {
         return repository.findByNicheId(nicheId);
     }
 
+    public java.util.List<Experiment> listReadyForCampaign() {
+        return repository.findByStatusAndPlatform(ExperimentStatus.PLANNED, ExperimentPlatform.FACEBOOK);
+    }
+
     @Transactional
     public Experiment duplicate(Long id) {
         Experiment original = repository.findById(id).orElseThrow();

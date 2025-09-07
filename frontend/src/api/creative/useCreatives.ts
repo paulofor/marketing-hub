@@ -8,6 +8,12 @@ export interface Creative {
   primaryText: string;
   imageUrl: string;
   status: string;
+  format?: string;
+  description?: string;
+  cta?: string;
+  destinationUrl?: string;
+  pageId?: string;
+  instagramUserId?: string;
 }
 
 export function useCreatives(expId: string) {

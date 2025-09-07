@@ -6,6 +6,7 @@ import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import PageTitle from "../../components/PageTitle";
 import CriativosTab from "./CriativosTab";
+import PublicosTab from "./PublicosTab";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import * as Tabs from "@radix-ui/react-tabs";
 
@@ -104,9 +105,6 @@ export default function ExperimentDetailPage() {
           <Tabs.Trigger value="overview" className="nav-link">
             Overview
           </Tabs.Trigger>
-          <Tabs.Trigger value="landings" className="nav-link">
-            Landings
-          </Tabs.Trigger>
           <Tabs.Trigger value="audiences" className="nav-link">
             Públicos
           </Tabs.Trigger>
@@ -136,11 +134,8 @@ export default function ExperimentDetailPage() {
             </div>
           </div>
         </Tabs.Content>
-        <Tabs.Content value="landings">
-          <p>Landings aqui</p>
-        </Tabs.Content>
-        <Tabs.Content value="audiences">
-          <p>Públicos aqui</p>
+        <Tabs.Content value="audiences" asChild>
+          <PublicosTab />
         </Tabs.Content>
         <Tabs.Content value="creatives" asChild>
           <CriativosTab experimentId={expId} />

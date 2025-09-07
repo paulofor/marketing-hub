@@ -9,10 +9,14 @@ export interface UpdateCreative {
   status: string;
 }
 
-export function useUpdateCreative(id: number, expId: string) {
+export interface UpdateCreativePayload extends UpdateCreative {
+  id: number;
+}
+
+export function useUpdateCreative(expId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: UpdateCreative) => {
+    mutationFn: async ({ id, ...data }: UpdateCreativePayload) => {
       const { data: creative } = await axios.put<Creative>(
         `/api/creatives/${id}`,
         data,

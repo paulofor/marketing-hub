@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
-export function useDeleteCreative(id: number, expId: string) {
+export function useDeleteCreative(expId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (id: number) => {
       await axios.delete(`/api/creatives/${id}`);
     },
     onSuccess: () => {

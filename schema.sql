@@ -262,3 +262,109 @@ CREATE TABLE hypothesis_prompt_attribute_description (
 );
 
 ALTER TABLE hypothesis ADD COLUMN entrega LONGTEXT;
+
+CREATE TABLE facebook_ads_campaign (
+  id CHAR(36) NOT NULL,
+  external_id VARCHAR(64),
+  ad_account_id VARCHAR(64) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  objective VARCHAR(64) NOT NULL,
+  status ENUM('PAUSED','ACTIVE','ARCHIVED','DELETED') NOT NULL DEFAULT 'PAUSED',
+  budget_mode ENUM('CAMPAIGN','ADSET') NOT NULL,
+  daily_budget_minor BIGINT UNSIGNED,
+  lifetime_budget_minor BIGINT UNSIGNED,
+  api_version VARCHAR(16),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE facebook_ads_campaign_special_ad_category (
+  campaign_id CHAR(36) NOT NULL,
+  category ENUM('NONE','CREDIT','EMPLOYMENT','HOUSING','ISSUES_ELECTIONS_POLITICS') NOT NULL,
+  PRIMARY KEY (campaign_id, category),
+  CONSTRAINT fk_facebook_ads_csac_campaign FOREIGN KEY (campaign_id) REFERENCES facebook_ads_campaign(id) ON DELETE CASCADE ON UPDATE RESTRICT
+);
+
+CREATE TABLE facebook_ads_campaign_special_ad_country (
+  campaign_id CHAR(36) NOT NULL,
+  country_iso2 CHAR(2) NOT NULL,
+  PRIMARY KEY (campaign_id, country_iso2),
+  CONSTRAINT fk_facebook_ads_csacountry_campaign FOREIGN KEY (campaign_id) REFERENCES facebook_ads_campaign(id) ON DELETE CASCADE ON UPDATE RESTRICT
+);
+
+CREATE TABLE facebook_ads_ad_set (
+  id CHAR(36) NOT NULL,
+  external_id VARCHAR(64),
+  campaign_id CHAR(36) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  status ENUM('PAUSED','ACTIVE','ARCHIVED','DELETED') NOT NULL DEFAULT 'PAUSED',
+  daily_budget_minor BIGINT UNSIGNED,
+  lifetime_budget_minor BIGINT UNSIGNED,
+  start_time DATETIME,
+  end_time DATETIME,
+  billing_event VARCHAR(32) NOT NULL,
+  optimization_goal VARCHAR(64) NOT NULL,
+  bid_strategy VARCHAR(64) NOT NULL,
+  bid_amount_minor BIGINT UNSIGNED,
+  promoted_object_json LONGTEXT,
+  targeting_json LONGTEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  CONSTRAINT fk_facebook_ads_adset_campaign FOREIGN KEY (campaign_id) REFERENCES facebook_ads_campaign(id) ON DELETE CASCADE ON UPDATE RESTRICT
+);
+
+CREATE TABLE facebook_ads_media_asset (
+  id CHAR(36) NOT NULL,
+  kind ENUM('IMAGE','VIDEO') NOT NULL,
+  source_uri VARCHAR(1024),
+  image_hash VARCHAR(128),
+  video_id VARCHAR(64),
+  width INT UNSIGNED,
+  height INT UNSIGNED,
+  duration_ms INT UNSIGNED,
+  checksum VARCHAR(128),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE facebook_ads_ad_creative (
+  id CHAR(36) NOT NULL,
+  external_id VARCHAR(64),
+  page_id VARCHAR(64) NOT NULL,
+  instagram_user_id VARCHAR(64),
+  kind ENUM('LINK','VIDEO','CAROUSEL') NOT NULL,
+  link_data_json LONGTEXT,
+  video_data_json LONGTEXT,
+  carousel_data_json LONGTEXT,
+  last_preview_url VARCHAR(1024),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE facebook_ads_ad (
+  id CHAR(36) NOT NULL,
+  external_id VARCHAR(64),
+  adset_id CHAR(36) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  creative_id CHAR(36) NOT NULL,
+  status ENUM('PAUSED','ACTIVE','ARCHIVED','DELETED') NOT NULL DEFAULT 'PAUSED',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  CONSTRAINT fk_facebook_ads_ad_adset FOREIGN KEY (adset_id) REFERENCES facebook_ads_ad_set(id) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT fk_facebook_ads_ad_creative FOREIGN KEY (creative_id) REFERENCES facebook_ads_ad_creative(id) ON DELETE RESTRICT ON UPDATE RESTRICT
+);
+
+CREATE TABLE facebook_ads_ad_tracking_utm (
+  ad_id CHAR(36) NOT NULL,
+  utm_source VARCHAR(64),
+  utm_medium VARCHAR(64),
+  utm_campaign VARCHAR(128),
+  utm_content VARCHAR(128),
+  utm_term VARCHAR(128),
+  PRIMARY KEY (ad_id),
+  CONSTRAINT fk_facebook_ads_utm_ad FOREIGN KEY (ad_id) REFERENCES facebook_ads_ad(id) ON DELETE CASCADE ON UPDATE RESTRICT
+);

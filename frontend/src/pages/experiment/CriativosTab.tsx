@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { Creative, useCreatives } from "../../api/creative/useCreatives";
 import { useCreateCreative } from "../../api/creative/useCreateCreative";
 import { useUpdateCreative } from "../../api/creative/useUpdateCreative";
@@ -15,18 +16,38 @@ interface Props {
   experimentId: string;
 }
 
+interface CreativeForm {
+  format: string;
+  primaryText: string;
+  headline: string;
+  description: string;
+  cta: string;
+  destinationUrl: string;
+  imageUrl: string;
+  pageId: string;
+  instagramUserId: string;
+  status: string;
+}
+
 export default function CriativosTab({ experimentId }: Props) {
   const { data } = useCreatives(experimentId);
   const creatives = Array.isArray(data) ? data : [];
   const { data: experiment } = useExperiment(experimentId);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Creative | null>(null);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<CreativeForm>({
+    format: "LINK",
     headline: "",
     primaryText: "",
+    description: "",
+    cta: "LEARN_MORE",
+    destinationUrl: "",
     imageUrl: "",
+    pageId: "",
+    instagramUserId: "",
     status: "DRAFT",
   });
+  const { handleSubmit: handleFormSubmit } = useForm<CreativeForm>();
   const { data: angles } = useAngles();
   const { data: proofs } = useVisualProofs();
   const { data: triggers } = useEmotionalTriggers();
@@ -46,7 +67,18 @@ export default function CriativosTab({ experimentId }: Props) {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ headline: "", primaryText: "", imageUrl: "", status: "DRAFT" });
+    setForm({
+      format: "LINK",
+      headline: "",
+      primaryText: "",
+      description: "",
+      cta: "LEARN_MORE",
+      destinationUrl: "",
+      imageUrl: "",
+      pageId: "",
+      instagramUserId: "",
+      status: "DRAFT",
+    });
     setSelectedAngle("");
     setSelectedProof("");
     setSelectedTrigger("");
@@ -54,10 +86,16 @@ export default function CriativosTab({ experimentId }: Props) {
   };
 
   const submit = async () => {
+    const payload = {
+      headline: form.headline,
+      primaryText: form.primaryText,
+      imageUrl: form.imageUrl,
+      status: form.status,
+    };
     if (editing) {
-      await update?.mutateAsync(form);
+      await update?.mutateAsync(payload);
     } else {
-      const created = await create.mutateAsync(form);
+      const created = await create.mutateAsync(payload);
       await patchLabels.mutateAsync({
         id: created.id,
         labels: {
@@ -81,6 +119,23 @@ export default function CriativosTab({ experimentId }: Props) {
   const remove = async (c: Creative) => {
     if (!confirm("Excluir criativo?")) return;
     await useDeleteCreative(c.id, experimentId).mutateAsync();
+  };
+
+  const duplicate = (c: Creative) => {
+    setEditing(null);
+    setForm({
+      format: c.format || "LINK",
+      headline: c.headline,
+      primaryText: c.primaryText,
+      description: c.description || "",
+      cta: c.cta || "LEARN_MORE",
+      destinationUrl: c.destinationUrl || "",
+      imageUrl: c.imageUrl,
+      pageId: c.pageId || "",
+      instagramUserId: c.instagramUserId || "",
+      status: c.status,
+    });
+    setShowForm(true);
   };
 
   const upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -165,15 +220,27 @@ export default function CriativosTab({ experimentId }: Props) {
                     onClick={() => {
                       setEditing(c);
                       setForm({
+                        format: c.format || "LINK",
                         headline: c.headline,
                         primaryText: c.primaryText,
+                        description: c.description || "",
+                        cta: c.cta || "LEARN_MORE",
+                        destinationUrl: c.destinationUrl || "",
                         imageUrl: c.imageUrl,
+                        pageId: c.pageId || "",
+                        instagramUserId: c.instagramUserId || "",
                         status: c.status,
                       });
                       setShowForm(true);
                     }}
                   >
                     🖊
+                  </button>
+                  <button
+                    className="btn btn-sm btn-outline-secondary me-1"
+                    onClick={() => duplicate(c)}
+                  >
+                    Duplicar
                   </button>
                   <button
                     className="btn btn-sm btn-outline-danger me-1"
@@ -208,10 +275,24 @@ export default function CriativosTab({ experimentId }: Props) {
                 />
               </div>
               <div className="modal-body">
-                <input
-                  type="file"
+                <select
+                  className="form-select mb-2"
+                  value={form.format}
+                  onChange={(e) => setForm({ ...form, format: e.target.value })}
+                >
+                  <option value="LINK">LINK</option>
+                  <option value="VIDEO">VIDEO</option>
+                  <option value="CAROUSEL">CAROUSEL</option>
+                </select>
+                <textarea
                   className="form-control mb-2"
-                  onChange={upload}
+                  placeholder="Primary Text"
+                  maxLength={125}
+                  value={form.primaryText}
+                  title="máx. 125 caracteres"
+                  onChange={(e) =>
+                    setForm({ ...form, primaryText: e.target.value })
+                  }
                 />
                 <input
                   className="form-control mb-2"
@@ -223,16 +304,53 @@ export default function CriativosTab({ experimentId }: Props) {
                     setForm({ ...form, headline: e.target.value })
                   }
                 />
-                <textarea
+                <input
                   className="form-control mb-2"
-                  placeholder="Primary Text"
-                  maxLength={125}
-                  value={form.primaryText}
-                  title="máx. 125 caracteres"
+                  placeholder="Descrição (opcional)"
+                  value={form.description}
                   onChange={(e) =>
-                    setForm({ ...form, primaryText: e.target.value })
+                    setForm({ ...form, description: e.target.value })
                   }
                 />
+                <select
+                  className="form-select mb-2"
+                  value={form.cta}
+                  onChange={(e) => setForm({ ...form, cta: e.target.value })}
+                >
+                  <option value="LEARN_MORE">LEARN_MORE</option>
+                  <option value="SHOP_NOW">SHOP_NOW</option>
+                </select>
+                <input
+                  className="form-control mb-2"
+                  placeholder="URL de destino"
+                  value={form.destinationUrl}
+                  onChange={(e) =>
+                    setForm({ ...form, destinationUrl: e.target.value })
+                  }
+                />
+                <input
+                  type="file"
+                  className="form-control mb-2"
+                  onChange={upload}
+                />
+                <div className="d-flex mb-2">
+                  <input
+                    className="form-control me-2"
+                    placeholder="page_id"
+                    value={form.pageId}
+                    onChange={(e) =>
+                      setForm({ ...form, pageId: e.target.value })
+                    }
+                  />
+                  <input
+                    className="form-control"
+                    placeholder="instagram_user_id"
+                    value={form.instagramUserId}
+                    onChange={(e) =>
+                      setForm({ ...form, instagramUserId: e.target.value })
+                    }
+                  />
+                </div>
                 {!editing && (
                   <>
                     <select
@@ -289,7 +407,14 @@ export default function CriativosTab({ experimentId }: Props) {
                 >
                   Cancelar
                 </button>
-                <button className="btn btn-primary" onClick={submit}>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleFormSubmit(async () => {
+                    await submit();
+                  }, (errors) => {
+                    console.log('Validation errors', errors);
+                  })}
+                >
                   Salvar
                 </button>
               </div>

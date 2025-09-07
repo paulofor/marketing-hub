@@ -56,8 +56,8 @@ export default function CriativosTab({ experimentId }: Props) {
   const [selectedTrigger, setSelectedTrigger] = useState<string>("");
   const patchLabels = useUpdateCreativeLabels(experimentId);
   const create = useCreateCreative(experimentId);
-  const update = editing ? useUpdateCreative(editing.id, experimentId) : null;
-  const del = useDeleteCreative(0, experimentId); // id changed dynamically
+  const update = useUpdateCreative(experimentId);
+  const del = useDeleteCreative(experimentId);
   const { data: previewHtml, refetch } = usePreviewCreative(
     editing?.id ?? 0,
     false,
@@ -93,7 +93,7 @@ export default function CriativosTab({ experimentId }: Props) {
       status: form.status,
     };
     if (editing) {
-      await update?.mutateAsync(payload);
+      await update.mutateAsync({ id: editing.id, ...payload });
     } else {
       const created = await create.mutateAsync(payload);
       await patchLabels.mutateAsync({
@@ -118,7 +118,17 @@ export default function CriativosTab({ experimentId }: Props) {
 
   const remove = async (c: Creative) => {
     if (!confirm("Excluir criativo?")) return;
-    await useDeleteCreative(c.id, experimentId).mutateAsync();
+    await del.mutateAsync(c.id);
+  };
+
+  const approve = async (c: Creative) => {
+    await update.mutateAsync({
+      id: c.id,
+      headline: c.headline,
+      primaryText: c.primaryText,
+      imageUrl: c.imageUrl,
+      status: "READY",
+    });
   };
 
   const duplicate = (c: Creative) => {
@@ -171,10 +181,11 @@ export default function CriativosTab({ experimentId }: Props) {
 
   return (
     <div className="mt-3">
-      <button className="btn btn-primary mb-2" onClick={openNew}>
+      <button type="button" className="btn btn-primary mb-2" onClick={openNew}>
         Novo Criativo
       </button>
       <button
+        type="button"
         className="btn btn-secondary mb-2 ms-2"
         onClick={generateCreatives}
         disabled={requestCreatives.isPending}
@@ -216,6 +227,7 @@ export default function CriativosTab({ experimentId }: Props) {
                 </td>
                 <td>
                   <button
+                    type="button"
                     className="btn btn-sm btn-outline-primary me-1"
                     onClick={() => {
                       setEditing(c);
@@ -237,18 +249,30 @@ export default function CriativosTab({ experimentId }: Props) {
                     🖊
                   </button>
                   <button
+                    type="button"
                     className="btn btn-sm btn-outline-secondary me-1"
                     onClick={() => duplicate(c)}
                   >
                     Duplicar
                   </button>
                   <button
+                    type="button"
                     className="btn btn-sm btn-outline-danger me-1"
                     onClick={() => remove(c)}
                   >
                     🗑
                   </button>
+                  {c.status !== "READY" && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-success me-1"
+                      onClick={() => approve(c)}
+                    >
+                      Aprovar
+                    </button>
+                  )}
                   <button
+                    type="button"
                     className="btn btn-sm btn-outline-secondary"
                     onClick={() => startPreview(c)}
                   >
@@ -270,6 +294,7 @@ export default function CriativosTab({ experimentId }: Props) {
                   {editing ? "Editar" : "Novo"} Criativo
                 </h5>
                 <button
+                  type="button"
                   className="btn-close"
                   onClick={() => setShowForm(false)}
                 />
@@ -402,18 +427,23 @@ export default function CriativosTab({ experimentId }: Props) {
               </div>
               <div className="modal-footer">
                 <button
+                  type="button"
                   className="btn btn-secondary"
                   onClick={() => setShowForm(false)}
                 >
                   Cancelar
                 </button>
                 <button
+                  type="button"
                   className="btn btn-primary"
-                  onClick={handleFormSubmit(async () => {
-                    await submit();
-                  }, (errors) => {
-                    console.log('Validation errors', errors);
-                  })}
+                  onClick={handleFormSubmit(
+                    async () => {
+                      await submit();
+                    },
+                    (errors) => {
+                      console.log("Validation errors", errors);
+                    },
+                  )}
                 >
                   Salvar
                 </button>
@@ -430,6 +460,7 @@ export default function CriativosTab({ experimentId }: Props) {
               <div className="modal-header">
                 <h5 className="modal-title">Preview</h5>
                 <button
+                  type="button"
                   className="btn-close"
                   onClick={() => setShowPreview(false)}
                 />

@@ -58,11 +58,11 @@ export default function CriativosTab({ experimentId }: Props) {
   const create = useCreateCreative(experimentId);
   const update = useUpdateCreative(experimentId);
   const del = useDeleteCreative(experimentId);
-  const { data: previewHtml, refetch } = usePreviewCreative(
-    editing?.id ?? 0,
-    false,
-  );
   const [showPreview, setShowPreview] = useState(false);
+  const { data: previewHtml } = usePreviewCreative(
+    editing?.id ?? 0,
+    !!editing && showPreview,
+  );
   const requestCreatives = useRequestCreatives(experimentId);
 
   const openNew = () => {
@@ -110,10 +110,9 @@ export default function CriativosTab({ experimentId }: Props) {
     setShowForm(false);
   };
 
-  const startPreview = async (c: Creative) => {
+  const startPreview = (c: Creative) => {
     setEditing(c);
     setShowPreview(true);
-    await refetch();
   };
 
   const remove = async (c: Creative) => {
@@ -275,6 +274,7 @@ export default function CriativosTab({ experimentId }: Props) {
                     type="button"
                     className="btn btn-sm btn-outline-secondary"
                     onClick={() => startPreview(c)}
+                    aria-label="Preview"
                   >
                     👁
                   </button>

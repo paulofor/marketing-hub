@@ -1,6 +1,8 @@
 # MarketingHub Data Model
 
 This document summarizes the current database schema defined in `schema.sql`.
+It also highlights the tables used by the [Facebook Ads Worker](../facebook-ads-worker/README.md)
+for managing campaigns and tracking their performance.
 
 ## Tables
 

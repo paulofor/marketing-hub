@@ -4,7 +4,6 @@ import { Creative, useCreatives } from "../../api/creative/useCreatives";
 import { useCreateCreative } from "../../api/creative/useCreateCreative";
 import { useUpdateCreative } from "../../api/creative/useUpdateCreative";
 import { useDeleteCreative } from "../../api/creative/useDeleteCreative";
-import { usePreviewCreative } from "../../api/creative/usePreviewCreative";
 import { useAngles } from "../../api/angle/useAngles";
 import { useVisualProofs } from "../../api/visualProof/useVisualProofs";
 import { useEmotionalTriggers } from "../../api/emotionalTrigger/useEmotionalTriggers";
@@ -59,10 +58,7 @@ export default function CriativosTab({ experimentId }: Props) {
   const update = useUpdateCreative(experimentId);
   const del = useDeleteCreative(experimentId);
   const [showPreview, setShowPreview] = useState(false);
-  const { data: previewHtml } = usePreviewCreative(
-    editing?.id ?? 0,
-    !!editing && showPreview,
-  );
+  const previewUrl = editing ? `/api/creatives/${editing.id}/preview` : "";
   const requestCreatives = useRequestCreatives(experimentId);
 
   const openNew = () => {
@@ -469,7 +465,7 @@ export default function CriativosTab({ experimentId }: Props) {
                 <iframe
                   title="preview"
                   style={{ width: "100%", height: "80vh" }}
-                  srcDoc={previewHtml || ""}
+                  src={previewUrl}
                 />
               </div>
             </div>

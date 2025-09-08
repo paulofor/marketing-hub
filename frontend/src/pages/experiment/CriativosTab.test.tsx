@@ -49,9 +49,6 @@ describe("CriativosTab", () => {
       if (url.endsWith("/experiments/1")) {
         return Promise.resolve({ data: { creativesToGenerate: 0 } });
       }
-      if (url.endsWith("/creatives/42/preview")) {
-        return Promise.resolve({ data: "<html>preview</html>" });
-      }
       return Promise.resolve({ data: [] });
     });
     const client = new QueryClient();
@@ -62,11 +59,7 @@ describe("CriativosTab", () => {
     );
     await screen.findByText("Solicitados: 0");
     (await screen.findByLabelText("Preview")).click();
-    await screen.findByTitle("preview");
-    expect(
-      (axios.get as any).mock.calls.some((c: any) =>
-        c[0].endsWith("/creatives/42/preview"),
-      ),
-    ).toBe(true);
+    const iframe = await screen.findByTitle("preview");
+    expect(iframe.getAttribute("src")).toBe("/api/creatives/42/preview");
   });
 });

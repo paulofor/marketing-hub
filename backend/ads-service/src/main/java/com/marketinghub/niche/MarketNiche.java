@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import com.marketinghub.chat.ChatDialog;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.audience.Audience;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -77,6 +78,9 @@ public class MarketNiche {
 
     @OneToMany(mappedBy = "niche")
     private java.util.List<Experiment> experiments;
+
+    @OneToMany(mappedBy = "niche")
+    private java.util.List<Audience> audiences;
 
     @CreationTimestamp
     private Instant createdAt;

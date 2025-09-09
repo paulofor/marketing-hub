@@ -21,5 +21,7 @@ public class UpdateExperimentRequest {
     private LocalDate startDate;
     private LocalDate endDate;
     private Integer creativesToGenerate;
+    private Boolean audienceApproved;
+    private Boolean creativeApproved;
 }
 

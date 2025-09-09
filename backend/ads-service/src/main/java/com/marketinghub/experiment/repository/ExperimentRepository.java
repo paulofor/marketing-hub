@@ -17,6 +17,8 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
     boolean existsByNicheAndName(MarketNiche niche, String name);
     List<Experiment> findByStatus(ExperimentStatus status);
     List<Experiment> findByStatusAndPlatform(ExperimentStatus status, ExperimentPlatform platform);
+    List<Experiment> findByStatusAndPlatformAndAudienceApprovedTrueAndCreativeApprovedTrue(
+            ExperimentStatus status, ExperimentPlatform platform);
     long countBySalesFunnelId(UUID salesFunnelId);
 
     /**

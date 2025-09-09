@@ -59,7 +59,6 @@ describe("CriativosTab", () => {
     );
     await screen.findByText("Solicitados: 0");
     (await screen.findByLabelText("Preview")).click();
-    const iframe = await screen.findByTitle("preview");
-    expect(iframe.getAttribute("src")).toBe("/api/creatives/42/preview");
+    await screen.findByText("Patrocinado");
   });
 });

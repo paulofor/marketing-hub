@@ -10,6 +10,7 @@ import { useEmotionalTriggers } from "../../api/emotionalTrigger/useEmotionalTri
 import { useUpdateCreativeLabels } from "../../api/creative/useUpdateCreativeLabels";
 import { useRequestCreatives } from "../../api/experiment/useRequestCreatives";
 import { useExperiment } from "../../api/experiment/useExperiment";
+import InstagramAdPreview from "../../components/InstagramAdPreview";
 
 interface Props {
   experimentId: string;
@@ -58,7 +59,6 @@ export default function CriativosTab({ experimentId }: Props) {
   const update = useUpdateCreative(experimentId);
   const del = useDeleteCreative(experimentId);
   const [showPreview, setShowPreview] = useState(false);
-  const previewUrl = editing ? `/api/creatives/${editing.id}/preview` : "";
   const requestCreatives = useRequestCreatives(experimentId);
 
   const openNew = () => {
@@ -449,9 +449,9 @@ export default function CriativosTab({ experimentId }: Props) {
         </div>
       )}
 
-      {showPreview && (
+      {showPreview && editing && (
         <div className="modal d-block" tabIndex={-1}>
-          <div className="modal-dialog modal-xl">
+          <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Preview</h5>
@@ -462,11 +462,7 @@ export default function CriativosTab({ experimentId }: Props) {
                 />
               </div>
               <div className="modal-body">
-                <iframe
-                  title="preview"
-                  style={{ width: "100%", height: "80vh" }}
-                  src={previewUrl}
-                />
+                <InstagramAdPreview creative={editing} />
               </div>
             </div>
           </div>

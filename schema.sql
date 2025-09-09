@@ -133,6 +133,18 @@ CREATE TABLE experiment (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+CREATE TABLE audience (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255),
+    description LONGTEXT,
+    market_niche_id BIGINT,
+    hypothesis_id BINARY(16),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_audience_market_niche FOREIGN KEY (market_niche_id) REFERENCES market_niche(id),
+    CONSTRAINT fk_audience_hypothesis FOREIGN KEY (hypothesis_id) REFERENCES hypothesis(id)
+);
+
 CREATE TABLE creative (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     experiment_id BIGINT NOT NULL,

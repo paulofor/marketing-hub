@@ -3,6 +3,7 @@ package com.marketinghub.hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.creative.label.Angle;
 import com.marketinghub.prompt.PromptAttributeDescription;
+import com.marketinghub.audience.Audience;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -103,4 +104,7 @@ public class Hypothesis {
 
     @UpdateTimestamp
     private Instant updatedAt;
+
+    @OneToMany(mappedBy = "hypothesis")
+    private java.util.List<Audience> audiences;
 }

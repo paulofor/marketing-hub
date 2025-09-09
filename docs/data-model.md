@@ -133,6 +133,16 @@ for managing campaigns and tracking their performance.
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
+### audience
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `name` VARCHAR(255)
+- `description` LONGTEXT
+- `market_niche_id` BIGINT
+- `hypothesis_id` BINARY(16)
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
 ### experiment
 
 - `id` BIGINT AUTO_INCREMENT PRIMARY KEY
@@ -410,6 +420,9 @@ erDiagram
     MARKET_NICHE {
         BIGINT id PK
     }
+    AUDIENCE {
+        BIGINT id PK
+    }
     EXPERIMENT {
         BIGINT id PK
     }
@@ -477,7 +490,9 @@ erDiagram
 
     MARKET_NICHE ||--o{ HYPOTHESIS : generates
     MARKET_NICHE ||--o{ EXPERIMENT : contains
+    MARKET_NICHE ||--o{ AUDIENCE : has
     HYPOTHESIS ||--o{ EXPERIMENT : tests
+    HYPOTHESIS ||--o{ AUDIENCE : defines
     EXPERIMENT ||--o{ CREATIVE_VARIANT : has
     EXPERIMENT ||--o{ AD_SET : configures
     EXPERIMENT ||--o{ LANDING_PAGE : uses

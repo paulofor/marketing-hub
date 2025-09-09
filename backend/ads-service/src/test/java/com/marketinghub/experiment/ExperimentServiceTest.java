@@ -7,6 +7,7 @@ import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.creative.label.repository.AngleRepository;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.experiment.repository.ExperimentRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -36,6 +37,8 @@ class ExperimentServiceTest {
     com.marketinghub.creative.label.repository.AngleRepository angleRepository;
     @Autowired
     com.marketinghub.experiment.repository.MetricPresetRepository metricPresetRepository;
+    @Autowired
+    ExperimentRepository experimentRepository;
 
     @Test
     void createNewExperimentWithExistingNiche() {
@@ -143,5 +146,54 @@ class ExperimentServiceTest {
         req.setMdePercent(new BigDecimal("40"));
         assertThatThrownBy(() -> service.create(req))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    }
+
+    @Test
+    void listReadyForCampaignRequiresApprovals() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("H1")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+
+        CreateExperimentRequest req1 = new CreateExperimentRequest();
+        req1.setMarketNicheId(niche.getId());
+        req1.setHypothesisId(hyp.getId());
+        req1.setName("ExpA");
+        req1.setHypothesis("H");
+        req1.setKpiTargetCpl(new BigDecimal("45"));
+        req1.setMetricPresetId("LEAN_150");
+        var expApproved = service.create(req1);
+        expApproved.setAudienceApproved(true);
+        expApproved.setCreativeApproved(true);
+        experimentRepository.save(expApproved);
+
+        CreateExperimentRequest req2 = new CreateExperimentRequest();
+        req2.setMarketNicheId(niche.getId());
+        req2.setHypothesisId(hyp.getId());
+        req2.setName("ExpB");
+        req2.setHypothesis("H");
+        req2.setKpiTargetCpl(new BigDecimal("45"));
+        req2.setMetricPresetId("LEAN_150");
+        var expNotApproved = service.create(req2);
+        expNotApproved.setAudienceApproved(true);
+        experimentRepository.save(expNotApproved);
+
+        var result = service.listReadyForCampaign();
+        assertThat(result).extracting(Experiment::getId).containsExactly(expApproved.getId());
     }
 }

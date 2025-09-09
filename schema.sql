@@ -126,6 +126,8 @@ CREATE TABLE experiment (
     end_date DATE,
     status VARCHAR(20),
     platform VARCHAR(50),
+    audience_approved BOOLEAN DEFAULT FALSE,
+    creative_approved BOOLEAN DEFAULT FALSE,
     sales_funnel_id BINARY(16),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

@@ -75,6 +75,14 @@ public class Experiment {
     @Enumerated(EnumType.STRING)
     private ExperimentPlatform platform;
 
+    /** Indica se o público está aprovado pelo usuário. */
+    @Column(nullable = false)
+    private boolean audienceApproved;
+
+    /** Indica se o criativo está aprovado pelo usuário. */
+    @Column(nullable = false)
+    private boolean creativeApproved;
+
     /** Quantidade de criativos a serem gerados pelo worker. */
     @Column(name = "creatives_to_generate")
     private Integer creativesToGenerate;

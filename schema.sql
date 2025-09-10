@@ -101,6 +101,7 @@ CREATE TABLE market_niche (
     promises LONGTEXT,
     offers LONGTEXT,
     hypotheses_to_generate INT,
+    audiences_to_generate INT,
     base_segmentation LONGTEXT,
     interests LONGTEXT,
     demographic_filters LONGTEXT,

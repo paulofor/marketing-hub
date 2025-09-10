@@ -110,6 +110,7 @@ for managing campaigns and tracking their performance.
 - `promises` LONGTEXT
 - `offers` LONGTEXT
 - `hypotheses_to_generate` INT
+- `audiences_to_generate` INT
 - `base_segmentation` LONGTEXT
 - `interests` LONGTEXT
 - `demographic_filters` LONGTEXT

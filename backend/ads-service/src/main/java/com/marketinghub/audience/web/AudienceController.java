@@ -13,7 +13,7 @@ import java.util.stream.StreamSupport;
  * REST controller for audiences.
  */
 @RestController
-@RequestMapping("/api/audiences")
+@RequestMapping("/api")
 public class AudienceController {
     private final AudienceService service;
     private final AudienceMapper mapper;
@@ -23,19 +23,26 @@ public class AudienceController {
         this.mapper = mapper;
     }
 
-    @PostMapping
+    @PostMapping("/audiences")
     public AudienceDto create(@RequestBody CreateAudienceRequest request) {
         return mapper.toDto(service.create(request));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/audiences/{id}")
     public AudienceDto get(@PathVariable Long id) {
         return mapper.toDto(service.get(id));
     }
 
-    @GetMapping
+    @GetMapping("/audiences")
     public List<AudienceDto> list() {
         return StreamSupport.stream(service.list().spliterator(), false)
+                .map(mapper::toDto)
+                .toList();
+    }
+
+    @GetMapping("/niches/{nicheId}/audiences")
+    public List<AudienceDto> listByNiche(@PathVariable Long nicheId) {
+        return StreamSupport.stream(service.listByMarketNiche(nicheId).spliterator(), false)
                 .map(mapper::toDto)
                 .toList();
     }

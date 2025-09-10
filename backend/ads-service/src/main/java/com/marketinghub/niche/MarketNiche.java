@@ -50,6 +50,9 @@ public class MarketNiche {
     /** Quantidade de hipóteses a serem geradas para este nicho. */
     private Integer hypothesesToGenerate;
 
+    /** Quantidade de públicos a serem gerados para este nicho. */
+    private Integer audiencesToGenerate;
+
     /** Base segmentation for the Brazilian market. */
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)

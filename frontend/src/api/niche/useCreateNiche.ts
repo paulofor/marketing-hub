@@ -14,6 +14,7 @@ export interface CreateNiche {
   extraTips: string;
   chatDialogId?: number;
   hypothesesToGenerate?: number;
+  audiencesToGenerate?: number;
 }
 
 export function useCreateNiche() {

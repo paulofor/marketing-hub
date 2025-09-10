@@ -109,7 +109,9 @@ export default function NicheDetailPage() {
           </Fragment>
         ))}
       </dl>
-      <h4 className="mt-4">Públicos</h4>
+      <h4 className="mt-4">
+        Públicos ({audienceList.length}/{data.audiencesToGenerate ?? 0})
+      </h4>
       {audienceList.length === 0 ? (
         <p>Nenhum público ainda.</p>
       ) : (

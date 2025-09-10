@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import { useExperimentsByHypothesis } from "../../api/experiment/useExperimentsByHypothesis";
+import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
 import PageTitle from "../../components/PageTitle";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 
@@ -14,6 +15,7 @@ export default function HypothesisDetailPage() {
     nicheId,
     hypothesisId,
   );
+  const { data: audiences } = useAudiencesByNiche(nicheId);
   useBreadcrumbs([
     { label: "Nichos", to: "/niches" },
     { label: niche?.name || "...", to: `/niches/${nicheId}` },
@@ -23,6 +25,7 @@ export default function HypothesisDetailPage() {
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
   const list = Array.isArray(experiments) ? experiments : [];
+  const audienceList = Array.isArray(audiences) ? audiences : [];
   const rows = [
     { label: "Promessa", value: data.promise },
     { label: "Problema", value: data.problem },
@@ -89,6 +92,11 @@ export default function HypothesisDetailPage() {
           </button>
         </div>
       </div>
+
+      <p className="mb-4">
+        Públicos gerados: {audienceList.length}/
+        {niche?.audiencesToGenerate ?? 0}
+      </p>
 
       <div className="card mb-4">
         <div className="card-header">

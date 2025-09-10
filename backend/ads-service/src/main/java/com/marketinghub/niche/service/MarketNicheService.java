@@ -41,6 +41,7 @@ public class MarketNicheService {
                 .demographicFilters(request.getDemographicFilters())
                 .extraTips(request.getExtraTips())
                 .hypothesesToGenerate(request.getHypothesesToGenerate())
+                .audiencesToGenerate(request.getAudiencesToGenerate())
                 .chatDialog(chat)
                 .build();
         return repository.save(niche);
@@ -63,6 +64,7 @@ public class MarketNicheService {
         niche.setDemographicFilters(request.getDemographicFilters());
         niche.setExtraTips(request.getExtraTips());
         niche.setHypothesesToGenerate(request.getHypothesesToGenerate());
+        niche.setAudiencesToGenerate(request.getAudiencesToGenerate());
         ChatDialog chat = null;
         if (request.getChatDialogId() != null) {
             chat = chatDialogRepository.findById(request.getChatDialogId()).orElseThrow();

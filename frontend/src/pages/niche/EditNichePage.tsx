@@ -28,6 +28,7 @@ export default function EditNichePage() {
     extraTips: "",
     chatDialogId: undefined,
     hypothesesToGenerate: 0,
+    audiencesToGenerate: 0,
   });
 
   useEffect(() => {
@@ -79,6 +80,15 @@ export default function EditNichePage() {
         value={form.hypothesesToGenerate}
         onChange={(e) =>
           setForm({ ...form, hypothesesToGenerate: Number(e.target.value) })
+        }
+      />
+      <label className="form-label">Qtd. de públicos para gerar</label>
+      <input
+        type="number"
+        className="form-control mb-2"
+        value={form.audiencesToGenerate}
+        onChange={(e) =>
+          setForm({ ...form, audiencesToGenerate: Number(e.target.value) })
         }
       />
       <label className="form-label">Descrição</label>

@@ -52,4 +52,8 @@ public class AudienceService {
     public Iterable<Audience> list() {
         return repository.findAll();
     }
+
+    public Iterable<Audience> listByMarketNiche(Long nicheId) {
+        return repository.findByNicheId(nicheId);
+    }
 }

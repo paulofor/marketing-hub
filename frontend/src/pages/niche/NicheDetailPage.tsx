@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
+import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
 import PageTitle from "../../components/PageTitle";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import { useChatDialog } from "../../api/chatDialog/useChatDialog";
@@ -11,6 +12,7 @@ export default function NicheDetailPage() {
   const { data, isLoading } = useNiche(Number(nicheId));
   const { data: chatDialog } = useChatDialog(data?.chatDialogId);
   const { data: hypotheses } = useHypothesesByNiche(nicheId, "ALL");
+  const { data: audiences } = useAudiencesByNiche(nicheId);
   useBreadcrumbs([
     { label: "Nichos", to: "/niches" },
     { label: data?.name || "..." },
@@ -47,12 +49,14 @@ export default function NicheDetailPage() {
         return bDate - aDate;
       })
     : [];
+  const audienceList = Array.isArray(audiences) ? audiences : [];
   const rows = [
     { label: "Descrição", value: data.description },
     { label: "Volume de demanda", value: data.demandVolume },
     { label: "Promessas", value: data.promises },
     { label: "Ofertas", value: data.offers },
     { label: "Hipóteses a gerar", value: data.hypothesesToGenerate },
+    { label: "Públicos a gerar", value: data.audiencesToGenerate },
     { label: "Segmentação base", value: data.baseSegmentation },
     { label: "Interesses", value: data.interests },
     { label: "Filtros demográficos", value: data.demographicFilters },
@@ -105,6 +109,24 @@ export default function NicheDetailPage() {
           </Fragment>
         ))}
       </dl>
+      <h4 className="mt-4">Públicos</h4>
+      {audienceList.length === 0 ? (
+        <p>Nenhum público ainda.</p>
+      ) : (
+        <div className="row row-cols-1 row-cols-md-2 g-4 mb-4">
+          {audienceList.map((a) => (
+            <div key={a.id} className="col">
+              <div className="card h-100 rounded-3">
+                <div className="card-body">
+                  <h5 className="card-title">{a.name}</h5>
+                  <p className="card-text">{a.description || "-"}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <h4 className="mt-4">Hipóteses</h4>
       {list.length === 0 ? (
         <p>Nenhuma hipótese ainda.</p>
       ) : (

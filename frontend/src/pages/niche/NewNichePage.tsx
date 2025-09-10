@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { useCreateNiche } from "../../api/niche/useCreateNiche";
 import { useChatDialogs } from "../../api/chatDialog/useChatDialogs";
 import PageTitle from "../../components/PageTitle";
@@ -6,6 +7,7 @@ import PageTitle from "../../components/PageTitle";
 export default function NewNichePage() {
   const create = useCreateNiche();
   const { data: chatDialogs } = useChatDialogs();
+  const { handleSubmit } = useForm();
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -18,6 +20,7 @@ export default function NewNichePage() {
     extraTips: "",
     chatDialogId: undefined as number | undefined,
     hypothesesToGenerate: 0,
+    audiencesToGenerate: 0,
   });
 
   const submit = () => {
@@ -88,6 +91,15 @@ export default function NewNichePage() {
           setForm({ ...form, hypothesesToGenerate: Number(e.target.value) })
         }
       />
+      <input
+        type="number"
+        className="form-control mb-2"
+        placeholder="Qtd. de públicos para gerar"
+        value={form.audiencesToGenerate}
+        onChange={(e) =>
+          setForm({ ...form, audiencesToGenerate: Number(e.target.value) })
+        }
+      />
       <textarea
         className="form-control mb-2"
         placeholder="Segmentação-base (Brasil)"
@@ -120,7 +132,12 @@ export default function NewNichePage() {
         onChange={(e) => setForm({ ...form, extraTips: e.target.value })}
         rows={3}
       />
-      <button className="btn btn-primary" onClick={submit}>
+      <button
+        className="btn btn-primary"
+        onClick={handleSubmit(() => submit(), (errors) => {
+          console.log("Validation errors", errors);
+        })}
+      >
         Salvar
       </button>
     </div>

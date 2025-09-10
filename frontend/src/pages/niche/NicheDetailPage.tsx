@@ -6,6 +6,8 @@ import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
 import PageTitle from "../../components/PageTitle";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import { useChatDialog } from "../../api/chatDialog/useChatDialog";
+import { useForm } from "react-hook-form";
+import { useRequestAudiences } from "../../api/niche/useRequestAudiences";
 
 export default function NicheDetailPage() {
   const { nicheId } = useParams();
@@ -13,6 +15,10 @@ export default function NicheDetailPage() {
   const { data: chatDialog } = useChatDialog(data?.chatDialogId);
   const { data: hypotheses } = useHypothesesByNiche(nicheId, "ALL");
   const { data: audiences } = useAudiencesByNiche(nicheId);
+  const requestAudiences = useRequestAudiences(nicheId ?? "");
+  const { register, handleSubmit, reset } = useForm<{ quantity: number }>({
+    defaultValues: { quantity: 1 },
+  });
   useBreadcrumbs([
     { label: "Nichos", to: "/niches" },
     { label: data?.name || "..." },
@@ -112,6 +118,39 @@ export default function NicheDetailPage() {
       <h4 className="mt-4">
         Públicos ({audienceList.length}/{data.audiencesToGenerate ?? 0})
       </h4>
+      <div className="d-flex align-items-center mb-2">
+        <input
+          type="number"
+          min={1}
+          className="form-control w-auto me-2"
+          {...register("quantity", { valueAsNumber: true })}
+        />
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={handleSubmit(
+            async ({ quantity }) => {
+              if (!quantity || quantity <= 0) return;
+              try {
+                await requestAudiences.mutateAsync(quantity);
+                alert("Solicitação enviada!");
+                reset();
+              } catch {
+                alert("Erro ao solicitar públicos");
+              }
+            },
+            (errors) => {
+              console.log("Validation errors", errors);
+            },
+          )}
+          disabled={requestAudiences.isPending}
+        >
+          Gerar Públicos
+        </button>
+        <span className="ms-2">
+          Solicitados: {data.audiencesToGenerate ?? 0}
+        </span>
+      </div>
       {audienceList.length === 0 ? (
         <p>Nenhum público ainda.</p>
       ) : (

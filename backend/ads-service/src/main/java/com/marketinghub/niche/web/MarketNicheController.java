@@ -38,6 +38,11 @@ public class MarketNicheController {
         return mapper.toDto(service.update(id, request));
     }
 
+    @PatchMapping("/{id}/audiences-to-generate")
+    public MarketNicheDto requestAudiences(@PathVariable Long id, @RequestParam("quantity") int quantity) {
+        return mapper.toDto(service.requestAudiences(id, quantity));
+    }
+
     @GetMapping
     public List<MarketNicheDto> list() {
         return StreamSupport.stream(service.list().spliterator(), false)

@@ -73,6 +73,16 @@ public class MarketNicheService {
         return repository.save(niche);
     }
 
+    /**
+     * Requests generation of new audiences by setting the pending quantity.
+     */
+    @Transactional
+    public MarketNiche requestAudiences(Long id, int quantity) {
+        MarketNiche niche = repository.findById(id).orElseThrow();
+        niche.setAudiencesToGenerate(quantity);
+        return niche;
+    }
+
     public Iterable<MarketNiche> list() {
         return repository.findAll();
     }

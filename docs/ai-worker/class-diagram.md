@@ -14,6 +14,15 @@ classDiagram
     WorkerSuccessProductRepository --> SuccessProductAnalyzer
     SuccessProductScheduler --> SuccessProductAnalyzer
 
+    class SuccessProductNicheHypothesisService
+    class SuccessProductNicheHypothesisScheduler
+    class SPChatGptClient {
+        +extract(SuccessProduct) NicheHypothesis
+    }
+    SuccessProductNicheHypothesisService --> SPChatGptClient
+    WorkerSuccessProductRepository --> SuccessProductNicheHypothesisService
+    SuccessProductNicheHypothesisScheduler --> SuccessProductNicheHypothesisService
+
     class NicheHypothesisService
     class NicheHypothesisScheduler
     class ExperimentCreativeService

@@ -11,6 +11,7 @@ public class UpdateSuccessProductRequest {
     private String description;
     private String name;
     private Boolean novo;
+    private Boolean generateNicheHypothesis;
     private String niche;
     private String avatar;
     private SuccessProductPlatform platform;

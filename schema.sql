@@ -62,6 +62,7 @@ CREATE TABLE success_product (
     name VARCHAR(255),
     novo BOOLEAN DEFAULT TRUE,
     platform VARCHAR(20) NOT NULL DEFAULT 'COFRE',
+    generate_niche_hypothesis BOOLEAN DEFAULT FALSE,
     niche VARCHAR(255),
     avatar VARCHAR(255),
     audience_type VARCHAR(255),

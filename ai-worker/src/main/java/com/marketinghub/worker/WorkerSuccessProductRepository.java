@@ -25,4 +25,9 @@ public interface WorkerSuccessProductRepository extends SuccessProductRepository
      * Retrieves products already processed (novo = false).
      */
     List<SuccessProduct> findByNovoFalse();
+
+    /**
+     * Retrieves products flagged for niche/hypothesis generation.
+     */
+    List<SuccessProduct> findByGenerateNicheHypothesisTrue();
 }

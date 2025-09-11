@@ -38,6 +38,10 @@ public class SuccessProduct {
     @Builder.Default
     private SuccessProductPlatform platform = SuccessProductPlatform.COFRE;
 
+    /** Indicates if the AI worker should generate niche and hypothesis. */
+    @Builder.Default
+    private boolean generateNicheHypothesis = false;
+
     private String niche;
     private String avatar;
 

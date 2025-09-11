@@ -28,6 +28,7 @@ class SuccessProductRepositoryTest {
         repository.save(product);
         SuccessProduct saved = repository.findById(product.getId()).orElseThrow();
         assertThat(saved.isNovo()).isTrue();
+        assertThat(saved.isGenerateNicheHypothesis()).isFalse();
         assertThat(saved.getPlatform()).isEqualTo(SuccessProductPlatform.COFRE);
         assertThat(saved.getName()).isNull();
         assertThat(saved.getSalesPageUrl()).contains("example.com");

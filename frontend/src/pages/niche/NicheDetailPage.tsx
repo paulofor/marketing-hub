@@ -11,7 +11,7 @@ import { useRequestAudiences } from "../../api/niche/useRequestAudiences";
 
 export default function NicheDetailPage() {
   const { nicheId } = useParams();
-  const { data, isLoading } = useNiche(Number(nicheId));
+  const { data, isLoading, isFetching } = useNiche(Number(nicheId));
   const { data: chatDialog } = useChatDialog(data?.chatDialogId);
   const { data: hypotheses } = useHypothesesByNiche(nicheId, "ALL");
   const { data: audiences } = useAudiencesByNiche(nicheId);
@@ -148,7 +148,9 @@ export default function NicheDetailPage() {
           Gerar Públicos
         </button>
         <span className="ms-2">
-          Solicitados: {data.audiencesToGenerate ?? 0}
+          {requestAudiences.isPending || (isFetching && !isLoading)
+            ? "Atualizando..."
+            : `Solicitados: ${data.audiencesToGenerate ?? 0}`}
         </span>
       </div>
       {audienceList.length === 0 ? (

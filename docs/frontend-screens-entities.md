@@ -2,6 +2,8 @@
 
 Este documento lista todas as telas do frontend do Marketing Hub e as entidades de dados consultadas e/ou gravadas em cada uma delas.
 
+Consulte também o [Diagrama de Navegação do Frontend](./frontend-navigation.md) e o [Modelo de Dados](./data-model.md) para detalhes das entidades mencionadas.
+
 | Rota | Tela | Entidades consultadas | Entidades gravadas/alteradas |
 |------|------|----------------------|------------------------------|
 | `/accounts/facebook` | Contas do Facebook | FacebookAccount | FacebookAccount |

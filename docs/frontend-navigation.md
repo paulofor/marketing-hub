@@ -2,6 +2,8 @@
 
 This document provides an overview of the routes available in the Marketing Hub frontend. The diagram below summarizes the navigation structure starting from the application's home page.
 
+For data entities associated with each screen, see [Mapping of Screens and Entities](./frontend-screens-entities.md).
+
 ```mermaid
 flowchart TD
     root("/")

@@ -4,6 +4,8 @@ This document summarizes the current database schema defined in `schema.sql`.
 It also highlights the tables used by the [Facebook Ads Worker](../facebook-ads-worker/README.md)
 for managing campaigns and tracking their performance.
 
+For a mapping between frontend screens and these entities, see [Frontend Screens and Entities](./frontend-screens-entities.md).
+
 ## Tables
 
 ### asset

@@ -2,6 +2,8 @@
 
 Este documento descreve um fluxo simples para guiar a criação e validação de um produto digital.
 
+Para entender como essas etapas se refletem na aplicação, veja o [Diagrama de Navegação do Frontend](./frontend-navigation.md).
+
 ## Visão Geral do Fluxo
 
 ```mermaid

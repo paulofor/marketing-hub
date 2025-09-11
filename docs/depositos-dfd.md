@@ -12,6 +12,8 @@ flowchart TD
 
 Este diagrama destaca os depósitos como repositório principal e os processos que realizam leitura e escrita nesses dados: tela de usuário, worker de IA e worker do Facebook.
 
+Para detalhes sobre a estrutura dessas tabelas, consulte o [Modelo de Dados](./data-model.md).
+
 ## Entidades Principais
 
 - **Usuário**: origem das interações com o sistema.

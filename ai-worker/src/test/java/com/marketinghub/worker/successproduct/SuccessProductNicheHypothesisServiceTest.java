@@ -1,0 +1,56 @@
+package com.marketinghub.worker.successproduct;
+
+import com.marketinghub.successproduct.SuccessProduct;
+import com.marketinghub.worker.WorkerSuccessProductRepository;
+import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringBootTest
+@ActiveProfiles("test")
+class SuccessProductNicheHypothesisServiceTest {
+
+    @Autowired
+    SuccessProductNicheHypothesisService service;
+
+    @Autowired
+    WorkerSuccessProductRepository productRepository;
+
+    @Autowired
+    MarketNicheRepository marketNicheRepository;
+
+    @Autowired
+    HypothesisRepository hypothesisRepository;
+
+    @Test
+    void generateCreatesNicheAndHypothesisFromProduct() {
+        SuccessProduct product = SuccessProduct.builder()
+                .description("Produto de sucesso")
+                .name("Produto Original")
+                .novo(false)
+                .build();
+        productRepository.save(product);
+
+        service.generate();
+
+        assertThat(marketNicheRepository.count()).isEqualTo(1);
+        assertThat(hypothesisRepository.count()).isEqualTo(1);
+
+        var niche = marketNicheRepository.findAll().get(0);
+        var hypothesis = hypothesisRepository.findAll().get(0);
+        assertThat(niche.getName()).isEqualTo("Saude");
+        assertThat(niche.getDescription()).isEqualTo("Nicho de saude");
+        assertThat(hypothesis.getTitle()).isEqualTo("Hipotese A");
+        assertThat(hypothesis.getMarketNiche().getId()).isEqualTo(niche.getId());
+        assertThat(hypothesis.getPersona()).isEqualTo("Persona A");
+        assertThat(hypothesis.getProblem()).isEqualTo("Problema A");
+        assertThat(hypothesis.getPromise()).isEqualTo("Promessa A");
+        assertThat(hypothesis.getUniqueMechanism()).isEqualTo("Mecanismo A");
+    }
+}
+

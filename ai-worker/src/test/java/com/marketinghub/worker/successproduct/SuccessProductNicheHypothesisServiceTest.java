@@ -31,12 +31,7 @@ class SuccessProductNicheHypothesisServiceTest {
     void generateCreatesNicheAndHypothesisFromProduct() {
         SuccessProduct product = SuccessProduct.builder()
                 .description("Produto de sucesso")
-                .name("Produto A")
-                .niche("Saude")
-                .avatar("Mulheres")
-                .explicitPain("Dor nas costas")
-                .promise("Alivio imediato")
-                .uniqueMechanism("Metodo XYZ")
+                .name("Produto Original")
                 .novo(false)
                 .build();
         productRepository.save(product);
@@ -49,9 +44,13 @@ class SuccessProductNicheHypothesisServiceTest {
         var niche = marketNicheRepository.findAll().get(0);
         var hypothesis = hypothesisRepository.findAll().get(0);
         assertThat(niche.getName()).isEqualTo("Saude");
-        assertThat(hypothesis.getTitle()).isEqualTo("Produto A");
+        assertThat(niche.getDescription()).isEqualTo("Nicho de saude");
+        assertThat(hypothesis.getTitle()).isEqualTo("Hipotese A");
         assertThat(hypothesis.getMarketNiche().getId()).isEqualTo(niche.getId());
-        assertThat(hypothesis.getPersona()).isEqualTo("Mulheres");
+        assertThat(hypothesis.getPersona()).isEqualTo("Persona A");
+        assertThat(hypothesis.getProblem()).isEqualTo("Problema A");
+        assertThat(hypothesis.getPromise()).isEqualTo("Promessa A");
+        assertThat(hypothesis.getUniqueMechanism()).isEqualTo("Mecanismo A");
     }
 }
 

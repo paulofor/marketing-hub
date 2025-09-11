@@ -33,6 +33,7 @@ public class SuccessProductService {
                 .description(request.getDescription())
                 .novo(true)
                 .platform(request.getPlatform() != null ? request.getPlatform() : SuccessProductPlatform.COFRE)
+                .generateNicheHypothesis(Boolean.TRUE.equals(request.getGenerateNicheHypothesis()))
                 .build();
         return repository.save(product);
     }
@@ -53,6 +54,9 @@ public class SuccessProductService {
         product.setName(request.getName());
         if (request.getNovo() != null) {
             product.setNovo(request.getNovo());
+        }
+        if (request.getGenerateNicheHypothesis() != null) {
+            product.setGenerateNicheHypothesis(request.getGenerateNicheHypothesis());
         }
         product.setNiche(request.getNiche());
         product.setAvatar(request.getAvatar());

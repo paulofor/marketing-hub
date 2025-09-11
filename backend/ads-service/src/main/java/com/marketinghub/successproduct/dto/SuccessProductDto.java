@@ -14,6 +14,7 @@ public class SuccessProductDto {
     private String name;
     private boolean novo;
     private SuccessProductPlatform platform;
+    private boolean generateNicheHypothesis;
     private String niche;
     private String avatar;
     private String audienceType;

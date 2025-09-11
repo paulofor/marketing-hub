@@ -5,7 +5,7 @@ Este documento descreve o serviço do AI Worker que gera **NICHO** e **HIPOTESE*
 ## Visão Geral
 
 O serviço realiza as seguintes etapas:
-1. Busca produtos de sucesso com `novo=false` e descrição preenchida.
+1. Busca produtos de sucesso com `generate_niche_hypothesis=true` e descrição preenchida.
 2. Consulta o ChatGPT para extrair dados de nicho e hipótese.
 3. Cria os registros de `MarketNiche` e `Hypothesis` correspondentes.
 

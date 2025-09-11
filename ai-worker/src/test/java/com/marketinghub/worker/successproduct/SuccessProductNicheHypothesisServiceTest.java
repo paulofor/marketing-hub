@@ -32,7 +32,7 @@ class SuccessProductNicheHypothesisServiceTest {
         SuccessProduct product = SuccessProduct.builder()
                 .description("Produto de sucesso")
                 .name("Produto Original")
-                .novo(false)
+                .generateNicheHypothesis(true)
                 .build();
         productRepository.save(product);
 
@@ -40,6 +40,9 @@ class SuccessProductNicheHypothesisServiceTest {
 
         assertThat(marketNicheRepository.count()).isEqualTo(1);
         assertThat(hypothesisRepository.count()).isEqualTo(1);
+
+        assertThat(productRepository.findById(product.getId()).orElseThrow().isGenerateNicheHypothesis())
+                .isFalse();
 
         var niche = marketNicheRepository.findAll().get(0);
         var hypothesis = hypothesisRepository.findAll().get(0);

@@ -10,4 +10,5 @@ import lombok.Data;
 public class CreateSuccessProductRequest {
     private String description;
     private SuccessProductPlatform platform;
+    private Boolean generateNicheHypothesis;
 }

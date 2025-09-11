@@ -5,6 +5,7 @@ import { SuccessProduct, SuccessProductPlatform } from "./useSuccessProducts";
 export interface CreateSuccessProduct {
   description: string;
   platform: SuccessProductPlatform;
+  generateNicheHypothesis?: boolean;
 }
 
 export function useCreateSuccessProduct() {

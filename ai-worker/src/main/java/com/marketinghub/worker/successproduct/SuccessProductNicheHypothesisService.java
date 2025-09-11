@@ -41,12 +41,12 @@ public class SuccessProductNicheHypothesisService {
     }
 
     /**
-     * Process all success products marked as not new and create corresponding
+     * Process all success products flagged for generation and create corresponding
      * niche and hypothesis entries.
      */
     @Transactional
     public void generate() {
-        List<SuccessProduct> products = productRepository.findByNovoFalse();
+        List<SuccessProduct> products = productRepository.findByGenerateNicheHypothesisTrue();
         log.info("Processing {} success products for niche/hypothesis generation", products.size());
         for (SuccessProduct product : products) {
             if (product.getDescription() == null || product.getDescription().isBlank()) {
@@ -73,6 +73,10 @@ public class SuccessProductNicheHypothesisService {
             hypReq.setPromise(data.promise());
             hypReq.setUniqueMechanism(data.uniqueMechanism());
             hypothesisService.create(hypReq);
+
+            log.info("Resetting generateNicheHypothesis for product {}", product.getId());
+            product.setGenerateNicheHypothesis(false);
+            productRepository.save(product);
         }
     }
 }

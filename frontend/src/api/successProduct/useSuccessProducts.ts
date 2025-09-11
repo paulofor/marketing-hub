@@ -9,6 +9,7 @@ export interface SuccessProduct {
   name?: string;
   novo: boolean;
   platform: SuccessProductPlatform;
+  generateNicheHypothesis: boolean;
   niche: string;
   avatar: string;
   audienceType: string;

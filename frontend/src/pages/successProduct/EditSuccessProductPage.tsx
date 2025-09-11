@@ -47,6 +47,17 @@ export default function EditSuccessProductPage() {
             Novo
           </label>
         </div>
+        <div className="form-check form-switch mb-2">
+          <input
+            className="form-check-input"
+            type="checkbox"
+            id="generateNicheHypothesis"
+            {...register("generateNicheHypothesis")}
+          />
+          <label className="form-check-label" htmlFor="generateNicheHypothesis">
+            Gerar Nicho e Hipótese
+          </label>
+        </div>
         <input
           className="form-control mb-2"
           placeholder="Nome"

@@ -123,6 +123,7 @@ export default function NicheDetailPage() {
           type="number"
           min={1}
           className="form-control w-auto me-2"
+          title="Quantidade de públicos que o Worker IA irá gerar"
           {...register("quantity", { valueAsNumber: true })}
         />
         <button

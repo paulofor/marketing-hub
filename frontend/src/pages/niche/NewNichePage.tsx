@@ -87,6 +87,7 @@ export default function NewNichePage() {
         className="form-control mb-2"
         placeholder="Qtd. de hipóteses para gerar"
         value={form.hypothesesToGenerate}
+        title="Quantidade de hipóteses que o Worker IA irá gerar"
         onChange={(e) =>
           setForm({ ...form, hypothesesToGenerate: Number(e.target.value) })
         }
@@ -96,6 +97,7 @@ export default function NewNichePage() {
         className="form-control mb-2"
         placeholder="Qtd. de públicos para gerar"
         value={form.audiencesToGenerate}
+        title="Quantidade de públicos que o Worker IA irá gerar"
         onChange={(e) =>
           setForm({ ...form, audiencesToGenerate: Number(e.target.value) })
         }
@@ -104,9 +106,7 @@ export default function NewNichePage() {
         className="form-control mb-2"
         placeholder="Segmentação-base (Brasil)"
         value={form.baseSegmentation}
-        onChange={(e) =>
-          setForm({ ...form, baseSegmentation: e.target.value })
-        }
+        onChange={(e) => setForm({ ...form, baseSegmentation: e.target.value })}
         rows={3}
       />
       <textarea
@@ -134,9 +134,12 @@ export default function NewNichePage() {
       />
       <button
         className="btn btn-primary"
-        onClick={handleSubmit(() => submit(), (errors) => {
-          console.log("Validation errors", errors);
-        })}
+        onClick={handleSubmit(
+          () => submit(),
+          (errors) => {
+            console.log("Validation errors", errors);
+          },
+        )}
       >
         Salvar
       </button>

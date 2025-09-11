@@ -78,6 +78,7 @@ export default function EditNichePage() {
         type="number"
         className="form-control mb-2"
         value={form.hypothesesToGenerate}
+        title="Quantidade de hipóteses que o Worker IA irá gerar"
         onChange={(e) =>
           setForm({ ...form, hypothesesToGenerate: Number(e.target.value) })
         }
@@ -87,6 +88,7 @@ export default function EditNichePage() {
         type="number"
         className="form-control mb-2"
         value={form.audiencesToGenerate}
+        title="Quantidade de públicos que o Worker IA irá gerar"
         onChange={(e) =>
           setForm({ ...form, audiencesToGenerate: Number(e.target.value) })
         }

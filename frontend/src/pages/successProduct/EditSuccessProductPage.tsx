@@ -41,6 +41,7 @@ export default function EditSuccessProductPage() {
             className="form-check-input"
             type="checkbox"
             id="novo"
+            title="Quando marcado, o Worker IA analisará este produto."
             {...register("novo")}
           />
           <label className="form-check-label" htmlFor="novo">
@@ -52,6 +53,7 @@ export default function EditSuccessProductPage() {
             className="form-check-input"
             type="checkbox"
             id="generateNicheHypothesis"
+            title="Gera nicho e hipótese automaticamente usando o Worker IA."
             {...register("generateNicheHypothesis")}
           />
           <label className="form-check-label" htmlFor="generateNicheHypothesis">

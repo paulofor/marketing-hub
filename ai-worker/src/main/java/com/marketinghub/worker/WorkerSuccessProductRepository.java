@@ -20,4 +20,9 @@ public interface WorkerSuccessProductRepository extends SuccessProductRepository
      * Retrieves products marked as new in the database.
      */
     List<SuccessProduct> findByNovoTrue();
+
+    /**
+     * Retrieves products already processed (novo = false).
+     */
+    List<SuccessProduct> findByNovoFalse();
 }

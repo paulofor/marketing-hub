@@ -8,6 +8,7 @@
 ## Serviços existentes
 - **Nicho** (`niche`): gera hipóteses para nichos com `hypothesesToGenerate > 0` usando o ChatGPT. Implementado por `NicheHypothesisService` e agendado por `NicheHypothesisScheduler`.
 - **Criativos** (`creative`): gera criativos para experimentos com `creativesToGenerate > 0` usando o ChatGPT. Implementado por `ExperimentCreativeService` e agendado por `ExperimentCreativeScheduler`.
+- **Produto de Sucesso** (`successproduct`): gera nicho e hipótese a partir de produtos com `novo=false` usando o ChatGPT. Implementado por `SuccessProductNicheHypothesisService` e agendado por `SuccessProductNicheHypothesisScheduler`.
 
 ## Orientação para novos serviços
 - Siga o mesmo padrão do serviço de **nicho**:

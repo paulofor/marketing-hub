@@ -1,5 +1,6 @@
 # AGENTS.md — Facebook Ads Worker
 
+- 🚨 **Muito importante:** qualquer alteração neste módulo deve ser refletida em todos os arquivos `.md` deste diretório. Mantenha a documentação atualizada.
 - Este projeto utiliza o modelo de dados definido no **backend**.
 - Não duplique ou mantenha modelo de dados aqui; importe-o do backend.
 - Em produção utilizamos **MySql 5**.

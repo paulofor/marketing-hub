@@ -132,6 +132,11 @@ public class ExperimentService {
         return repository.findByNicheId(nicheId);
     }
 
+    public java.util.List<Experiment> listByStatusAndPlatform(
+            ExperimentStatus status, ExperimentPlatform platform) {
+        return repository.findByStatusAndPlatform(status, platform);
+    }
+
     public java.util.List<Experiment> listReadyForCampaign() {
         return repository.findByStatusAndPlatformAndAudienceApprovedTrueAndCreativeApprovedTrue(
                 ExperimentStatus.PLANNED, ExperimentPlatform.FACEBOOK);

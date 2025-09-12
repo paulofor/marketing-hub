@@ -27,6 +27,16 @@ public class FacebookAdsCampaignController {
                 .toList();
     }
 
+    @GetMapping("/experiments")
+    public List<ExperimentSummary> experiments(@RequestParam("status")
+            com.marketinghub.experiment.ExperimentStatus status) {
+        return experimentService
+                .listByStatusAndPlatform(status, com.marketinghub.experiment.ExperimentPlatform.FACEBOOK)
+                .stream()
+                .map(e -> new ExperimentSummary(e.getId(), e.getName()))
+                .toList();
+    }
+
     @PostMapping
     public FacebookAdsCampaign create(@RequestBody CreateCampaignRequest req) {
         FacebookAdsCampaign campaign = new FacebookAdsCampaign();

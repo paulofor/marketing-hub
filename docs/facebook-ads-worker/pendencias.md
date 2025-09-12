@@ -1,32 +1,20 @@
 # Pendências para campanha no Facebook Ads
 
-Com os dados de experimento, criativos e públicos já conseguimos criar uma campanha. Ainda faltam os itens abaixo, organizados por tema:
+Com os dados de experimento, criativos e públicos já conseguimos criar uma campanha. Ainda faltam os itens abaixo, agrupados em temas mais amplos:
 
-## Planejamento
+## Planejamento e configuração
 
 - Definir o objetivo da campanha (ex.: conversões, tráfego, reconhecimento).
+- Configurar orçamento, limites de gasto, calendário e duração.
+- Escolher posicionamentos, dispositivos e estratégia de lance/otimização.
+- Definir limites de frequência e regras de entrega.
 
-## Orçamento e cronograma
+## Rastreamento e conformidade
 
-- Configurar orçamento e limites de gasto.
-- Estabelecer calendário e duração.
-
-## Posicionamentos e lances
-
-- Escolher posicionamentos e dispositivos.
-- Selecionar estratégia de lance/otimização.
-
-## Rastreamento e conversão
-
-- Configurar eventos de conversão e Pixel.
-- Definir URL da landing page e call-to-action.
+- Configurar eventos de conversão, Pixel e URL da landing page com call-to-action.
 - Criar parâmetros UTM para rastreamento.
-
-## Entrega e conformidade
-
-- Configurar limites de frequência e regras de entrega.
 - Validar conformidade com políticas do Facebook.
 
 ## Métricas e monitoramento
 
-- Definir métricas de sucesso e plano de monitoramento.
+- Definir métricas de sucesso e plano de acompanhamento.

@@ -1,17 +1,13 @@
 # Facebook Ads Worker Class Diagram
 
+Only the classes that contain campaign data sent to the Facebook API are represented.
+
 ```mermaid
 classDiagram
-    class FacebookAdsWorkerApplication
     class FacebookAdsService
     class InstagramCampaignService
-    class InstagramCampaignScheduler
     class FacebookCampaignService
-    class FacebookCampaignScheduler
 
-    FacebookAdsWorkerApplication --> FacebookAdsService
     InstagramCampaignService --> FacebookAdsService
-    InstagramCampaignScheduler --> InstagramCampaignService
     FacebookCampaignService --> FacebookAdsService
-    FacebookCampaignScheduler --> FacebookCampaignService
 ```

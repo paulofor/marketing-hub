@@ -196,4 +196,30 @@ class ExperimentServiceTest {
         var result = service.listReadyForCampaign();
         assertThat(result).extracting(Experiment::getId).containsExactly(expApproved.getId());
     }
+
+    @Test
+    void listByStatusAndPlatform() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche2").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A2").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("T2")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("ExpRun");
+        var exp = service.create(req);
+        exp.setStatus(ExperimentStatus.RUNNING);
+        experimentRepository.save(exp);
+
+        var result = service.listByStatusAndPlatform(ExperimentStatus.RUNNING, ExperimentPlatform.FACEBOOK);
+        assertThat(result).extracting(Experiment::getId).containsExactly(exp.getId());
+    }
 }

@@ -30,6 +30,7 @@
 - Zustand for state, TanStack Query for data fetching
 - Prettier (frontend) and Spotless (backend) for formatting
 - Campos de formulário que acionam serviços do Worker IA devem incluir um tooltip explicativo
+- Todo registro de entidade produzido por um processo do **Worker IA** deve possuir os atributos `modelo` e `prompt`, que devem ser preenchidos no momento da criação do registro.
 
 ## Secrets
 

@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { MarketNiche } from "./useNiches";
 
-export function useRequestAudiences(id: string) {
+export function useRequestAudiences(id: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (quantity: number) => {
@@ -13,11 +13,13 @@ export function useRequestAudiences(id: string) {
       );
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["niche", id] });
+    onSuccess: (data) => {
+      // Update niche detail immediately and refetch related queries
+      queryClient.setQueryData(["niche", id], data);
       queryClient.invalidateQueries({ queryKey: ["niches"] });
-      queryClient.invalidateQueries({ queryKey: ["niche-audiences", id] });
+      queryClient.invalidateQueries({
+        queryKey: ["niche-audiences", String(id)],
+      });
     },
   });
 }
-

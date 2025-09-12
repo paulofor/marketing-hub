@@ -11,11 +11,12 @@ import { useRequestAudiences } from "../../api/niche/useRequestAudiences";
 
 export default function NicheDetailPage() {
   const { nicheId } = useParams();
-  const { data, isLoading, isFetching } = useNiche(Number(nicheId));
+  const id = Number(nicheId);
+  const { data, isLoading, isFetching } = useNiche(id);
   const { data: chatDialog } = useChatDialog(data?.chatDialogId);
   const { data: hypotheses } = useHypothesesByNiche(nicheId, "ALL");
   const { data: audiences } = useAudiencesByNiche(nicheId);
-  const requestAudiences = useRequestAudiences(nicheId ?? "");
+  const requestAudiences = useRequestAudiences(id);
   const { register, handleSubmit, reset } = useForm<{ quantity: number }>({
     defaultValues: { quantity: 1 },
   });

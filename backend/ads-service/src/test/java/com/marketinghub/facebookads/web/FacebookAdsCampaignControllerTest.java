@@ -1,11 +1,14 @@
 package com.marketinghub.facebookads.web;
 
+import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.service.ExperimentService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -14,7 +17,15 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(FacebookAdsCampaignController.class)
+@SpringBootTest(classes = AdsServiceApplication.class)
+@AutoConfigureMockMvc
+@TestPropertySource(properties = {
+        "spring.datasource.url=jdbc:h2:mem:testdb",
+        "spring.datasource.driverClassName=org.h2.Driver",
+        "spring.datasource.username=sa",
+        "spring.jpa.hibernate.ddl-auto=create",
+        "spring.liquibase.enabled=false"
+})
 class FacebookAdsCampaignControllerTest {
     @Autowired
     MockMvc mockMvc;

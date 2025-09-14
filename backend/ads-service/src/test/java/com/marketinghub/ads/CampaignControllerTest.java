@@ -39,7 +39,7 @@ public class CampaignControllerTest {
                 .build());
 
         InstagramAccount ig = igRepo.save(InstagramAccount.builder()
-                .username("iguser")
+                .name("IG Account")
                 .build());
 
         mockMvc.perform(post("/accounts/" + fb.getId() + "/campaigns?platform=facebook")

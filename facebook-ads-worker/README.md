@@ -1,10 +1,11 @@
 # Facebook Ads Worker
 
-Worker responsável por criar campanhas no Facebook e Instagram e coletar
-métricas usando a API de Marketing do Facebook. O serviço reutiliza o modelo de
+Worker responsável por criar campanhas no Facebook Ads, incluindo
+posicionamentos no Facebook e no Instagram, e coletar métricas usando a API de
+Marketing do Facebook. O serviço reutiliza o modelo de
 dados definido no projeto `backend`, evitando duplicação de entidades.
 
-As chamadas ao backend utilizam o prefixo `/api` (por exemplo, `/api/facebook-campaigns`).
+As chamadas ao backend utilizam o prefixo `/api` (por exemplo, `/api/accounts/{id}/campaigns`).
 
 ## Data Model
 

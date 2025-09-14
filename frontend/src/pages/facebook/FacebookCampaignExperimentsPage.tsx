@@ -32,11 +32,30 @@ export default function FacebookCampaignExperimentsPage() {
       {isLoading ? (
         <p>Carregando...</p>
       ) : (
-        <ul>
-          {experiments.map((e) => (
-            <li key={e.id}>{e.name}</li>
-          ))}
-        </ul>
+        <div className="table-responsive">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Hipótese</th>
+                <th>KPI alvo</th>
+                <th>Início</th>
+                <th>Término</th>
+              </tr>
+            </thead>
+            <tbody>
+              {experiments.map((e) => (
+                <tr key={e.id}>
+                  <td>{e.name}</td>
+                  <td>{e.hypothesis}</td>
+                  <td>{e.kpiTargetCpl}</td>
+                  <td>{e.startDate}</td>
+                  <td>{e.endDate}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

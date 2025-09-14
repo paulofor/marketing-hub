@@ -4,6 +4,8 @@ Worker responsável por criar campanhas no Facebook e Instagram e coletar
 métricas usando a API de Marketing do Facebook. O serviço reutiliza o modelo de
 dados definido no projeto `backend`, evitando duplicação de entidades.
 
+As chamadas ao backend utilizam o prefixo `/api` (por exemplo, `/api/facebook-campaigns`).
+
 ## Data Model
 
 As tabelas prefixadas com `facebook_ads_` descritas em

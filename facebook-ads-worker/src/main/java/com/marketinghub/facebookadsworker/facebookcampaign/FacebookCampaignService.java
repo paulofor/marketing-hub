@@ -24,7 +24,7 @@ public class FacebookCampaignService {
 
     public void createCampaignsFromExperiments() {
         List<Experiment> experiments = backendClient.get()
-            .uri("/facebook-campaigns/experiments-ready")
+            .uri("/api/facebook-campaigns/experiments-ready")
             .retrieve()
             .bodyToFlux(Experiment.class)
             .collectList()
@@ -39,7 +39,7 @@ public class FacebookCampaignService {
         String campaignId = facebookAdsService.createCampaign(adAccountId, exp.name());
         CreateCampaignRequest req = new CreateCampaignRequest(campaignId, adAccountId, exp.name(), "OUTCOME_TRAFFIC", "CAMPAIGN");
         backendClient.post()
-            .uri("/facebook-campaigns")
+            .uri("/api/facebook-campaigns")
             .bodyValue(req)
             .retrieve()
             .toBodilessEntity()

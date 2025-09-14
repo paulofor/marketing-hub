@@ -50,11 +50,11 @@ class InstagramCampaignServiceTest {
         service.createCampaignsFromAuthorizedCreatives();
 
         RecordedRequest get = backend.takeRequest();
-        assertEquals("/instagram-creatives/approved", get.getPath());
+        assertEquals("/api/instagram-creatives/approved", get.getPath());
         RecordedRequest postFb = facebook.takeRequest();
         assertEquals("/v20.0/act_1/campaigns", postFb.getPath());
         RecordedRequest postBackend = backend.takeRequest();
-        assertEquals("/instagram-creatives/1/campaign", postBackend.getPath());
+        assertEquals("/api/instagram-creatives/1/campaign", postBackend.getPath());
     }
 }
 

@@ -21,7 +21,7 @@ public class InstagramCampaignService {
 
     public void createCampaignsFromAuthorizedCreatives() {
         List<Creative> creatives = backendClient.get()
-            .uri("/instagram-creatives/approved")
+            .uri("/api/instagram-creatives/approved")
             .retrieve()
             .bodyToFlux(Creative.class)
             .collectList()
@@ -35,7 +35,7 @@ public class InstagramCampaignService {
     private void processCreative(Creative creative) {
         String campaignId = facebookAdsService.createInstagramCampaign(creative.adAccountId(), creative.name());
         backendClient.post()
-            .uri("/instagram-creatives/" + creative.id() + "/campaign")
+            .uri("/api/instagram-creatives/" + creative.id() + "/campaign")
             .bodyValue(Map.of("campaignId", campaignId))
             .retrieve()
             .toBodilessEntity()

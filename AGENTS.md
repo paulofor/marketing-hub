@@ -16,6 +16,7 @@
 
 ## Conventions
 
+- Na pasta `manual do usuario`, todos os links devem abrir em uma nova aba utilizando `target="_blank"` para manter o usuário no documento.
 - DataBase: MySql 5
 - Modelo de Dados atualizado: docs/data-model.md
   - Todo o modelo de dados deve permanecer no projeto **backend**. O projeto

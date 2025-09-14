@@ -4,6 +4,10 @@ import axios from "axios";
 export interface ExperimentSummary {
   id: number;
   name: string;
+  hypothesis: string;
+  kpiTargetCpl: number | null;
+  startDate: string | null;
+  endDate: string | null;
 }
 
 export function useFacebookCampaignExperiments(status: string) {

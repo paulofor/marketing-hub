@@ -11,6 +11,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.Mockito.when;
@@ -36,7 +38,14 @@ class FacebookAdsCampaignControllerTest {
 
     @Test
     void listExperimentsByStatus() throws Exception {
-        var exp = Experiment.builder().id(1L).name("Exp").build();
+        var exp = Experiment.builder()
+                .id(1L)
+                .name("Exp")
+                .hypothesis("Hipótese")
+                .kpiTargetCpl(BigDecimal.TEN)
+                .startDate(LocalDate.of(2024, 1, 1))
+                .endDate(LocalDate.of(2024, 1, 31))
+                .build();
         when(experimentService.listByStatusAndPlatform(
                 com.marketinghub.experiment.ExperimentStatus.PLANNED,
                 com.marketinghub.experiment.ExperimentPlatform.FACEBOOK))
@@ -44,6 +53,10 @@ class FacebookAdsCampaignControllerTest {
         mockMvc.perform(get("/api/facebook-campaigns/experiments").param("status", "PLANNED"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0].name").value("Exp"));
+                .andExpect(jsonPath("$[0].name").value("Exp"))
+                .andExpect(jsonPath("$[0].hypothesis").value("Hipótese"))
+                .andExpect(jsonPath("$[0].kpiTargetCpl").value(10))
+                .andExpect(jsonPath("$[0].startDate").value("2024-01-01"))
+                .andExpect(jsonPath("$[0].endDate").value("2024-01-31"));
     }
 }

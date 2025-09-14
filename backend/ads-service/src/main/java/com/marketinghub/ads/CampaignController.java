@@ -19,29 +19,26 @@ public class CampaignController {
         this.campaignRepo = campaignRepo;
     }
 
-    @GetMapping("/accounts/facebook/{id}/campaigns")
-    public List<Campaign> listFbCampaigns(@PathVariable Long id) {
-        return campaignRepo.findByFacebookAccountId(id);
+    @GetMapping("/accounts/{id}/campaigns")
+    public List<Campaign> listCampaigns(@PathVariable Long id) {
+        return campaignRepo.findByFacebookAccountIdOrInstagramAccountId(id, id);
     }
 
-    @PostMapping("/accounts/facebook/{id}/campaigns")
-    public Campaign createFbCampaign(@PathVariable Long id, @RequestBody Campaign campaign) {
-        FacebookAccount account = fbRepo.findById(id).orElseThrow();
-        campaign.setFacebookAccount(account);
-        campaign.setInstagramAccount(null);
-        return campaignRepo.save(campaign);
-    }
-
-    @GetMapping("/accounts/instagram/{id}/campaigns")
-    public List<Campaign> listIgCampaigns(@PathVariable Long id) {
-        return campaignRepo.findByInstagramAccountId(id);
-    }
-
-    @PostMapping("/accounts/instagram/{id}/campaigns")
-    public Campaign createIgCampaign(@PathVariable Long id, @RequestBody Campaign campaign) {
-        InstagramAccount account = igRepo.findById(id).orElseThrow();
-        campaign.setInstagramAccount(account);
-        campaign.setFacebookAccount(null);
+    @PostMapping("/accounts/{id}/campaigns")
+    public Campaign createCampaign(@PathVariable Long id,
+                                  @RequestParam("platform") String platform,
+                                  @RequestBody Campaign campaign) {
+        if ("facebook".equalsIgnoreCase(platform)) {
+            FacebookAccount account = fbRepo.findById(id).orElseThrow();
+            campaign.setFacebookAccount(account);
+            campaign.setInstagramAccount(null);
+        } else if ("instagram".equalsIgnoreCase(platform)) {
+            InstagramAccount account = igRepo.findById(id).orElseThrow();
+            campaign.setInstagramAccount(account);
+            campaign.setFacebookAccount(null);
+        } else {
+            throw new IllegalArgumentException("platform must be facebook or instagram");
+        }
         return campaignRepo.save(campaign);
     }
 }

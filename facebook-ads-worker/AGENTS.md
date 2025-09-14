@@ -10,11 +10,11 @@
 - Endpoints do backend devem ser acessados com o prefixo `/api`.
 
 ## Serviços existentes
-- **Campanhas de Instagram** (`instagram-campaign`): cria campanhas de Instagram utilizando o `facebook-ads-worker` com criativos gerados pelo **AI Worker** e aprovados pelo usuário no frontend.
+- **Campanhas de Facebook Ads** (`campaign`): cria campanhas para Facebook e Instagram utilizando o `facebook-ads-worker` com criativos gerados pelo **AI Worker** e aprovados pelo usuário no frontend.
 
 ## Orientação para novos serviços
-- Siga o mesmo padrão do serviço de **campanhas de Instagram**:
-  - criar um pacote com o nome do domínio (ex: `instagramcampaign`);
+- Siga o mesmo padrão do serviço de **campanhas de Facebook Ads**:
+  - criar um pacote com o nome do domínio (ex: `campaign`);
   - implementar uma classe `*Service` com a lógica de integração com a API do Facebook;
   - criar um `*Scheduler` com `@Scheduled` para executar o serviço periodicamente;
   - encapsular qualquer cliente do Facebook dentro do mesmo pacote.

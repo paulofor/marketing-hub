@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/facebook-campaigns")
+@RequestMapping("/api/facebook-campaigns")
 public class FacebookAdsCampaignController {
     private final ExperimentService experimentService;
     private final FacebookAdsCampaignRepository campaignRepository;

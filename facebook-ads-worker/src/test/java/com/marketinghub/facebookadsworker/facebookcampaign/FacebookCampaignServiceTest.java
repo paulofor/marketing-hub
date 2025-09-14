@@ -50,10 +50,10 @@ class FacebookCampaignServiceTest {
         service.createCampaignsFromExperiments();
 
         RecordedRequest get = backend.takeRequest();
-        assertEquals("/facebook-campaigns/experiments-ready", get.getPath());
+        assertEquals("/api/facebook-campaigns/experiments-ready", get.getPath());
         RecordedRequest postFb = facebook.takeRequest();
         assertEquals("/v20.0/act_1/campaigns", postFb.getPath());
         RecordedRequest postBackend = backend.takeRequest();
-        assertEquals("/facebook-campaigns", postBackend.getPath());
+        assertEquals("/api/facebook-campaigns", postBackend.getPath());
     }
 }

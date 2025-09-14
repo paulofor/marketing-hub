@@ -41,7 +41,7 @@ class FacebookAdsCampaignControllerTest {
                 com.marketinghub.experiment.ExperimentStatus.PLANNED,
                 com.marketinghub.experiment.ExperimentPlatform.FACEBOOK))
                 .thenReturn(List.of(exp));
-        mockMvc.perform(get("/facebook-campaigns/experiments").param("status", "PLANNED"))
+        mockMvc.perform(get("/api/facebook-campaigns/experiments").param("status", "PLANNED"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].name").value("Exp"));

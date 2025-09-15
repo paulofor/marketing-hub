@@ -1,5 +1,7 @@
 # AGENTS.md — Contract for Codex agent
 
+> Sempre consulte este arquivo antes de realizar qualquer alteração no repositório.
+
 ## Build & Test
 
 - **Backend**

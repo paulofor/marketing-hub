@@ -6,7 +6,8 @@ Marketing do Facebook. O serviço reutiliza o modelo de
 dados definido no projeto `backend`, evitando duplicação de entidades.
 
 As chamadas ao backend utilizam o prefixo `/api`. Atualmente o worker consome
-`/api/facebook-campaigns/experiments-ready`. O endpoint
+`/api/facebook-campaigns/experiments-ready`, tratando respostas `404` como
+"nenhum experimento disponível" para evitar falhas no agendamento. O endpoint
 `/api/instagram-creatives/approved` permanece documentado para uso futuro.
 
 Os acessos são configurados pelas propriedades:

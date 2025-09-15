@@ -1,64 +1,75 @@
 # Mapeamento de Campos de Entrada e Saída do Facebook Ads Worker
 
-Este documento descreve como o **Facebook Ads Worker** transforma dados de planejamento em registros nas tabelas `facebook_ads_*` que são usados para chamadas à API do Facebook. Os campos de entrada vêm das tabelas `experiment`, `ad_set` e `creative_variant` descritas no [modelo de dados](../data-model.md), e são convertidos em campos de saída persistidos nas tabelas de destino.
+Este documento descreve como o **Facebook Ads Worker** converte os
+experimentos aprovados pelo backend em chamadas à Graph API do Facebook e em
+registros persistidos nas tabelas `facebook_ads_*`. O fluxo atual utiliza apenas
+os dados necessários para registrar a campanha criada; o enriquecimento com
+informações de conjuntos de anúncios, criativos e UTM permanece listado em
+[pendencias.md](./pendencias.md).
 
 ## Visão Geral do Fluxo
 
 ```mermaid
-flowchart LR
-    experiment["Tabela experiment"] --> campaign["facebook_ads_campaign"]
-    adset_in["Tabela ad_set"] --> adset_out["facebook_ads_ad_set"]
-    creative_variant["Tabela creative_variant"] --> media_asset["facebook_ads_media_asset"]
-    media_asset --> ad_creative["facebook_ads_ad_creative"]
-    adset_out --> ad["facebook_ads_ad"]
-    ad_creative --> ad
-    ad --> utm["facebook_ads_ad_tracking_utm"]
+flowchart TD
+    scheduler["FacebookCampaignScheduler"] --> service["FacebookCampaignService"]
+    service --> fetch["GET /facebook-campaigns/experiments-ready"]
+    fetch --> experiments["Experimentos prontos"]
+    experiments --> service
+    service --> graph["POST /v20.0/act_{adAccountId}/campaigns"]
+    graph --> fbResponse["ID da campanha no Facebook"]
+    fbResponse --> service
+    service --> persist["POST /facebook-campaigns"]
+    persist --> db["Tabelas facebook_ads_*"]
 ```
 
-## facebook_ads_campaign
+## 1. Coleta de experimentos prontos
 
-| Campo de Entrada (`experiment`) | Campo de Saída | Transformação |
+* **Endpoint consultado:** `GET {backend.base-url}{api-prefix}/facebook-campaigns/experiments-ready`
+* **Tratamento de respostas:** se o backend retornar `404 NOT FOUND`, o worker
+  considera que não há experimentos pendentes e encerra o ciclo atual.
+* **Contrato esperado:** uma lista de objetos `Experiment` com a estrutura abaixo.
+
+| Campo | Tipo | Uso atual |
 | --- | --- | --- |
-| `name` | `facebook_ads_campaign.name` | Copiado diretamente do experimento |
-| `start_date`, `end_date` | `facebook_ads_campaign.budget_mode`, `daily_budget_minor` | Define modo de orçamento e converte valores de `ad_set.budget` para a menor unidade monetária |
-| `platform` | `facebook_ads_campaign.objective` | Objetivo configurado conforme a plataforma do experimento |
+| `id` | `long` | Disponível para evoluções futuras (não utilizado na criação da campanha) |
+| `name` | `string` | Usado como nome da campanha no Facebook e no backend |
 
-## facebook_ads_ad_set
+## 2. Criação de campanha no Facebook
 
-| Campo de Entrada (`ad_set`, `experiment`) | Campo de Saída | Transformação |
+* **Endpoint da Graph API:** `POST https://graph.facebook.com/v20.0/act_{adAccountId}/campaigns`
+* **Payload enviado:**
+
+| Campo | Origem | Observações |
 | --- | --- | --- |
-| `ad_set.location`, `interests`, `lookalikes` | `facebook_ads_ad_set.targeting_json` | Monta JSON de segmentação |
-| `ad_set.budget` | `facebook_ads_ad_set.daily_budget_minor` | Converte orçamento em centavos |
-| `experiment.start_date`, `ad_set.duration_days` | `facebook_ads_ad_set.start_time`, `end_time` | Calcula datas de início e fim |
+| `name` | `Experiment.name` | Nome exibido no Gerenciador de Anúncios |
+| `objective` | Constante | Valor fixo `OUTCOME_TRAFFIC` |
+| `access_token` | Configuração `facebook.access-token` | Token com permissão para o Ad Account |
 
-## facebook_ads_media_asset
+* **Resposta tratada:** apenas o identificador retornado em `id` é utilizado.
 
-| Campo de Entrada (`creative_variant`) | Campo de Saída | Transformação |
+## 3. Persistência da campanha no backend
+
+Após receber o `id` da Graph API, o worker envia um `CreateCampaignRequest` para
+o backend.
+
+* **Endpoint chamado:** `POST {backend.base-url}{api-prefix}/facebook-campaigns`
+* **Campos enviados:**
+
+| Campo | Fonte | Transformação |
 | --- | --- | --- |
-| `type` | `facebook_ads_media_asset.kind` | Mapeia tipo do criativo (imagem ou vídeo) |
-| `asset_url` | `facebook_ads_media_asset.source_uri` | Usa URL do ativo original |
+| `id` | Resposta da Graph API | Copiado diretamente do `id` retornado na criação |
+| `adAccountId` | Propriedade `facebook.ad-account-id` | Mantido conforme configuração do worker |
+| `name` | `Experiment.name` | Replicado para manter rastreabilidade entre backend e Facebook |
+| `objective` | Constante | Valor fixo `OUTCOME_TRAFFIC` (mesmo utilizado na Graph API) |
+| `budgetMode` | Constante | Valor fixo `CAMPAIGN` até que o backend passe a enviar planejamento detalhado |
 
-## facebook_ads_ad_creative
+## Observações
 
-| Campo de Entrada (`creative_variant`) | Campo de Saída | Transformação |
-| --- | --- | --- |
-| `titles`, `descriptions` | `facebook_ads_ad_creative.link_data_json`/`video_data_json` | Gera payload JSON para pré-visualização |
-| `type` | `facebook_ads_ad_creative.kind` | Define o tipo do criativo |
-| `asset_url` | `facebook_ads_ad_creative.last_preview_url` | Usa URL gerada após upload do ativo |
-
-## facebook_ads_ad
-
-| Campo de Entrada | Campo de Saída | Transformação |
-| --- | --- | --- |
-| `facebook_ads_ad_set.id` | `facebook_ads_ad.adset_id` | Relaciona anúncio ao conjunto de anúncios |
-| `facebook_ads_ad_creative.id` | `facebook_ads_ad.creative_id` | Relaciona anúncio ao criativo |
-| `creative_variant.id` | `facebook_ads_ad.name` | Gera nome amigável para o anúncio |
-
-## facebook_ads_ad_tracking_utm
-
-| Campo de Entrada | Campo de Saída | Transformação |
-| --- | --- | --- |
-| `experiment.name` | `utm_campaign` | Utiliza nome do experimento como identificador de campanha |
-| `ad_set.location` ou `creative_variant.id` | `utm_content` | Identifica variações do anúncio |
-| Configuração global | `utm_source`, `utm_medium`, `utm_term` | Valores padrão definidos pelo produto |
-
+* As tabelas `facebook_ads_campaign`, `facebook_ads_ad_set`, `facebook_ads_ad`
+  e demais estruturas descritas em [../data-model.md](../data-model.md) recebem
+  atualmente apenas os dados relacionados à criação da campanha. O preenchimento
+  de campos adicionais será implementado junto com as pendências listadas em
+  [pendencias.md](./pendencias.md).
+* A composição das URLs dos endpoints do backend utiliza `UrlUtils.joinPath`
+  para garantir que `backend.base-url`, `backend.api-prefix` e o caminho do
+  recurso não gerem barras duplicadas.

@@ -29,7 +29,7 @@ class FacebookCampaignServiceTest {
         String facebookUrl = facebook.url("/").toString();
 
         FacebookAdsService adsService = new FacebookAdsService(WebClient.builder(), facebookUrl, "token");
-        service = new FacebookCampaignService(adsService, WebClient.builder(), backendUrl, "1");
+        service = new FacebookCampaignService(adsService, WebClient.builder(), backendUrl, "/api", "1");
     }
 
     @AfterEach

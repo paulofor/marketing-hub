@@ -9,6 +9,11 @@ As chamadas ao backend utilizam o prefixo `/api`. Atualmente o worker consome
 `/api/facebook-campaigns/experiments-ready`. O endpoint
 `/api/instagram-creatives/approved` permanece documentado para uso futuro.
 
+Os acessos são configurados pelas propriedades:
+
+- `backend.base-url` (default: `http://localhost:8000`)
+- `backend.api-prefix` (default: `/api`)
+
 ## Data Model
 
 As tabelas prefixadas com `facebook_ads_` descritas em

@@ -395,6 +395,30 @@ components:
       responses:
         '200':
           description: OK
+  /api/instagram-creatives/approved:
+    get:
+      summary: Listar criativos do Instagram aprovados
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InstagramCreative'
+  /api/facebook-campaigns/experiments-ready:
+    get:
+      summary: Listar experimentos prontos para campanhas no Facebook
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Experiment'
 components:
   schemas:
     CreateHypothesisRequest:
@@ -434,3 +458,19 @@ components:
           type: array
           items:
             type: integer
+    InstagramCreative:
+      type: object
+      properties:
+        id:
+          type: integer
+        instagramUserId:
+          type: string
+        content:
+          type: string
+    Experiment:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string

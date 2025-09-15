@@ -3,8 +3,11 @@ package com.marketinghub.facebookadsworker.facebookcampaign;
 import com.marketinghub.facebookadsworker.FacebookAdsService;
 import com.marketinghub.facebookadsworker.util.UrlUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -31,14 +34,25 @@ public class FacebookCampaignService {
     public void createCampaignsFromExperiments() {
         List<Experiment> experiments = backendClient.get()
             .uri(UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns/experiments-ready"))
-            .retrieve()
-            .bodyToFlux(Experiment.class)
+            .exchangeToFlux(response -> {
+                if (response.statusCode().value() == HttpStatus.NOT_FOUND.value()) {
+                    return Flux.empty();
+                }
+
+                if (response.statusCode().isError()) {
+                    return response.createException().flatMapMany(Mono::error);
+                }
+
+                return response.bodyToFlux(Experiment.class);
+            })
             .collectList()
             .block();
 
-        if (experiments != null) {
-            experiments.forEach(this::processExperiment);
+        if (experiments == null || experiments.isEmpty()) {
+            return;
         }
+
+        experiments.forEach(this::processExperiment);
     }
 
     private void processExperiment(Experiment exp) {

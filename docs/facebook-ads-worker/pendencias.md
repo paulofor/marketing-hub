@@ -1,20 +1,49 @@
 # Pendências para campanha no Facebook Ads
 
-Com os dados de experimento, criativos e públicos já conseguimos criar uma campanha. Ainda faltam os itens abaixo, agrupados em temas mais amplos:
+O worker já consulta o backend por experimentos aprovados e cria uma campanha no
+Facebook Ads com objetivo `OUTCOME_TRAFFIC`, registrando o resultado no backend.
+Para completar o fluxo de veiculação e governança, ainda faltam os itens abaixo,
+agrupados por tema.
 
 ## Planejamento e configuração
 
-- Definir o objetivo da campanha (ex.: conversões, tráfego, reconhecimento).
-- Configurar orçamento, limites de gasto, calendário e duração.
-- Escolher posicionamentos, dispositivos e estratégia de lance/otimização.
-- Definir limites de frequência e regras de entrega.
+- Mapear o objetivo da campanha a partir dos dados do experimento, permitindo
+  valores distintos de `OUTCOME_TRAFFIC`.
+- Persistir modo de orçamento, orçamento diário e limites de gasto reais em vez
+  de constantes.
+- Suportar janelas de veiculação (datas de início/fim) e status da campanha
+  (ex.: programada, ativa, pausada).
+
+## Segmentação, criativos e lances
+
+- Criar conjuntos de anúncios com segmentação derivada de localização,
+  interesses, públicos semelhantes e demais filtros definidos no planejamento.
+- Carregar e associar criativos aprovados (media assets, ad creatives e ads) às
+  campanhas geradas.
+- Implementar configuração de posicionamentos, dispositivos e estratégia de
+  lance/otimização.
 
 ## Rastreamento e conformidade
 
-- Configurar eventos de conversão, Pixel e URL da landing page com call-to-action.
-- Criar parâmetros UTM para rastreamento.
-- Validar conformidade com políticas do Facebook.
+- Configurar eventos de conversão, Pixel e URL da landing page com
+  call-to-action apropriado.
+- Gerar parâmetros UTM padronizados (`utm_source`, `utm_medium`, `utm_campaign`,
+  `utm_content`, `utm_term`) e persistir em `facebook_ads_ad_tracking_utm`.
+- Validar conformidade com políticas do Facebook antes de criar ou publicar as
+  campanhas.
 
 ## Métricas e monitoramento
 
-- Definir métricas de sucesso e plano de acompanhamento.
+- Utilizar `FacebookAdsService.getCampaignMetrics` para consultar métricas
+  periódicas das campanhas.
+- Persistir insights no backend para alimentar dashboards e alertas.
+- Definir métricas de sucesso e plano de acompanhamento junto ao time de
+  marketing.
+
+## Robustez operacional
+
+- Adicionar tratamento de erros detalhado para respostas da Graph API (limites
+  de requisição, falhas de autenticação, validações).
+- Registrar logs e métricas de execução do worker para observabilidade.
+- Implementar reprocessamento idempotente e políticas de retry para evitar
+  duplicação de campanhas.

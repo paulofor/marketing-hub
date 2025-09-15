@@ -7,7 +7,7 @@
 - Tipos de dados permitidos (MySql 5): `INT`, `BIGINT`, `DECIMAL`, `DOUBLE`, `FLOAT`, `CHAR`, `VARCHAR`, `TEXT`, `LONGTEXT`, `BINARY(16)` para `UUID`, `DATE`, `DATETIME`, `TIMESTAMP`, `BOOLEAN`.
 - Utilize o `facebook-ads-worker` para todas as chamadas à API do Facebook.
 - Não mantenha segredos no repositório; use variáveis de ambiente ou GitHub Secrets.
-- Endpoints do backend devem ser acessados com o prefixo `/api`.
+- Endpoints do backend devem ser acessados com o prefixo configurado em `backend.api-prefix` (default `/api`).
 
 ## Serviços existentes
 - **Campanhas de Facebook Ads** (`campaign`): cria campanhas para Facebook e Instagram utilizando o `facebook-ads-worker` com criativos gerados pelo **AI Worker** e aprovados pelo usuário no frontend.

@@ -5,7 +5,9 @@ posicionamentos no Facebook e no Instagram, e coletar métricas usando a API de
 Marketing do Facebook. O serviço reutiliza o modelo de
 dados definido no projeto `backend`, evitando duplicação de entidades.
 
-As chamadas ao backend utilizam o prefixo `/api` (por exemplo, `/api/facebook-campaigns/experiments-ready` e `/api/instagram-creatives/approved`).
+As chamadas ao backend utilizam o prefixo `/api`. Atualmente o worker consome
+`/api/facebook-campaigns/experiments-ready`. O endpoint
+`/api/instagram-creatives/approved` permanece documentado para uso futuro.
 
 ## Data Model
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useFacebookCampaignExperiments } from "../../api/useFacebookCampaignExperiments";
 import PageTitle from "../../components/PageTitle";
 
@@ -33,7 +34,7 @@ export default function FacebookCampaignExperimentsPage() {
         <p>Carregando...</p>
       ) : (
         <div className="table-responsive">
-          <table className="table">
+          <table className="table table-hover">
             <thead>
               <tr>
                 <th>Nome</th>
@@ -46,7 +47,9 @@ export default function FacebookCampaignExperimentsPage() {
             <tbody>
               {experiments.map((e) => (
                 <tr key={e.id}>
-                  <td>{e.name}</td>
+                  <td>
+                    <Link to={`/experiments/${e.id}`}>{e.name}</Link>
+                  </td>
                   <td>{e.hypothesis}</td>
                   <td>{e.kpiTargetCpl}</td>
                   <td>{e.startDate}</td>

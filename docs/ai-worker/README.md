@@ -32,6 +32,14 @@ de volta no serviço principal.
   `ChatGptClient` específico do domínio, valida os dados e zera o contador após salvar os registros.
 - **Referências:** documentação complementar em [nicho-hypotese-service.md](nicho-hypotese-service.md).
 
+### Nicho → Públicos
+- **Disparo:** `NicheAudienceScheduler` (cron `0 */5 * * * *`).
+- **Fonte dos dados:** nichos com `audiencesToGenerate > 0`.
+- **O que faz:** `NicheAudienceService` coleta informações do nicho e de suas hipóteses relacionadas,
+  envia o contexto para o `AudienceChatGptClient` gerar públicos via ChatGPT e persiste os registros
+  através do `AudienceService`, preenchendo os campos `model` e `prompt` exigidos pela plataforma.
+- **Referências:** detalhes adicionais em [nicho-publico-service.md](nicho-publico-service.md).
+
 ### Experimento → Criativos
 - **Disparo:** `ExperimentCreativeScheduler` (cron `0 */5 * * * *`).
 - **Fonte dos dados:** experimentos com `creativesToGenerate > 0`.
@@ -42,6 +50,6 @@ de volta no serviço principal.
 ## Perguntas frequentes
 
 ### Existe serviço para criar público?
-Ainda não. O campo `audiencesToGenerate` pode ser marcado via backend (ver
-`backend/ads-service/src/main/java/com/marketinghub/niche/service/MarketNicheService.java`), mas o Worker
-não possui rotina que consuma esse valor para gerar públicos automaticamente.
+Sim. Basta solicitar públicos para um nicho (`audiencesToGenerate`) e aguardar a execução do
+`NicheAudienceScheduler`. O serviço usa ChatGPT para gerar os registros em `audience`, mantendo o
+histórico do `prompt` e do `model` utilizado.

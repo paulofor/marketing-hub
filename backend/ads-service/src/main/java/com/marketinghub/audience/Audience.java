@@ -32,6 +32,14 @@ public class Audience {
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String description;
 
+    /** Prompt utilizado para gerar o público via IA. */
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    private String prompt;
+
+    /** Modelo responsável pela criação automática. */
+    private String model;
+
     /** Associated market niche, if this is a generic audience. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "market_niche_id")

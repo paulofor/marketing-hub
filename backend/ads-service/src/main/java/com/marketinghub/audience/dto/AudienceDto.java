@@ -16,4 +16,6 @@ public class AudienceDto {
     private String description;
     private Long marketNicheId;
     private UUID hypothesisId;
+    private String prompt;
+    private String model;
 }

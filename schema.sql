@@ -139,6 +139,8 @@ CREATE TABLE audience (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255),
     description LONGTEXT,
+    prompt LONGTEXT,
+    model VARCHAR(255),
     market_niche_id BIGINT,
     hypothesis_id BINARY(16),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

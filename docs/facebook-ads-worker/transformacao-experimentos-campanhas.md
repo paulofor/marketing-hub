@@ -4,6 +4,10 @@ Este documento descreve como o MarketingHub converte experimentos aprovados em
 campanhas no Facebook Ads e os próximos passos para incluir entidades
 relacionadas (conjuntos de anúncios, criativos e rastreamento).
 
+A fila de trabalho usada aqui é a mesma exibida na tela "Experimentos para
+Campanha" do frontend, que lista os experimentos aprovados e prontos para serem
+transformados em campanhas.
+
 ## Visão geral do fluxo
 
 ```mermaid

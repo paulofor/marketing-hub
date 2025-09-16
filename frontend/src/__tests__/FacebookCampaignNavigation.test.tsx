@@ -21,7 +21,7 @@ afterEach(() => {
 describe("facebook campaigns navigation", () => {
   it("has menu link to /facebook-campaigns", () => {
     setup(<App />, ["/"]); 
-    const link = screen.getByRole("link", { name: /campanhas facebook/i });
+    const link = screen.getByRole("link", { name: /experimentos para campanha/i });
     expect(link).toBeTruthy();
     expect(link.getAttribute("href")).toBe("/facebook-campaigns");
   });

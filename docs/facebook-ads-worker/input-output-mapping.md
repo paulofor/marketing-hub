@@ -7,6 +7,10 @@ os dados necessários para registrar a campanha criada; o enriquecimento com
 informações de conjuntos de anúncios, criativos e UTM permanece listado em
 [pendencias.md](./pendencias.md).
 
+Os experimentos que alimentam esse fluxo são apresentados ao time na tela
+"Experimentos para Campanha" do frontend, garantindo o alinhamento entre a visão
+operacional e a automação do worker.
+
 ## Visão Geral do Fluxo
 
 ```mermaid

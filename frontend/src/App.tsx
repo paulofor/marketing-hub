@@ -105,7 +105,7 @@ export default function App() {
               Funil de Vendas
             </Link>
             <Link className="nav-link" to="/facebook-campaigns">
-              Campanhas Facebook
+              Experimentos para Campanha
             </Link>
             <Link className="nav-link" to="/prompt-entities">
               Objetos de Prompt

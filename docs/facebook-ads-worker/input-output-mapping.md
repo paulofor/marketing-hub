@@ -19,8 +19,8 @@ flowchart TD
     service --> fetch["GET /facebook-campaigns/experiments-ready"]
     fetch --> experiments["Experimentos prontos"]
     experiments --> service
-    service --> graph["POST /v20.0/act_{adAccountId}/campaigns"]
-    graph --> fbResponse["ID da campanha no Facebook"]
+    service --> graphApi["POST /v20.0/act_<adAccountId>/campaigns"]
+    graphApi --> fbResponse["ID da campanha no Facebook"]
     fbResponse --> service
     service --> persist["POST /facebook-campaigns"]
     persist --> db["Tabelas facebook_ads_*"]
@@ -40,7 +40,7 @@ flowchart TD
 
 ## 2. Criação de campanha no Facebook
 
-* **Endpoint da Graph API:** `POST https://graph.facebook.com/v20.0/act_{adAccountId}/campaigns`
+* **Endpoint da Graph API:** `POST https://graph.facebook.com/v20.0/act_<adAccountId>/campaigns`
 * **Payload enviado:**
 
 | Campo | Origem | Observações |

@@ -9,6 +9,7 @@ import CriativosTab from "./CriativosTab";
 import PublicosTab from "./PublicosTab";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import * as Tabs from "@radix-ui/react-tabs";
+import FunnelPreviewModal from "./FunnelPreviewModal";
 
 export default function ExperimentDetailPage() {
   const { id } = useParams();
@@ -21,6 +22,7 @@ export default function ExperimentDetailPage() {
   );
   const { data: presets } = useMetricPresets();
   const [tab, setTab] = useState("overview");
+  const [isFunnelPreviewOpen, setFunnelPreviewOpen] = useState(false);
   useBreadcrumbs([
     { label: "Nichos", to: "/niches" },
     { label: niche?.name || "...", to: `/niches/${data?.nicheId}` },
@@ -66,9 +68,13 @@ export default function ExperimentDetailPage() {
           {
             label: "Funil de Vendas",
             value: data.salesFunnelId ? (
-              <Link to={`/funnels/${data.salesFunnelId}/edit`}>
+              <button
+                type="button"
+                className="btn btn-link p-0 align-baseline"
+                onClick={() => setFunnelPreviewOpen(true)}
+              >
                 {data.salesFunnelName}
-              </Link>
+              </button>
             ) : (
               data.salesFunnelName
             ),
@@ -155,6 +161,13 @@ export default function ExperimentDetailPage() {
           <CriativosTab experimentId={expId} />
         </Tabs.Content>
       </Tabs.Root>
+      {isFunnelPreviewOpen && data.salesFunnelId && (
+        <FunnelPreviewModal
+          funnelId={data.salesFunnelId}
+          fallbackName={data.salesFunnelName}
+          onClose={() => setFunnelPreviewOpen(false)}
+        />
+      )}
     </div>
   );
 }

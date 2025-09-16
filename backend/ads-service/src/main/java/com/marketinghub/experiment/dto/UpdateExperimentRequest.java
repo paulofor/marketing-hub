@@ -23,5 +23,6 @@ public class UpdateExperimentRequest {
     private Integer creativesToGenerate;
     private Boolean audienceApproved;
     private Boolean creativeApproved;
+    private String salesFunnelName;
 }
 

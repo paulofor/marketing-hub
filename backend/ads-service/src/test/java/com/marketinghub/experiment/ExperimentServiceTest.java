@@ -2,12 +2,15 @@ package com.marketinghub.experiment;
 
 import com.marketinghub.experiment.MetricPreset;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
+import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.creative.label.repository.AngleRepository;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.funnel.SalesFunnel;
+import com.marketinghub.funnel.SalesFunnelRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -39,6 +42,8 @@ class ExperimentServiceTest {
     com.marketinghub.experiment.repository.MetricPresetRepository metricPresetRepository;
     @Autowired
     ExperimentRepository experimentRepository;
+    @Autowired
+    SalesFunnelRepository salesFunnelRepository;
 
     @Test
     void createNewExperimentWithExistingNiche() {
@@ -235,5 +240,132 @@ class ExperimentServiceTest {
 
         var result = service.listByStatusAndPlatform(ExperimentStatus.RUNNING, ExperimentPlatform.FACEBOOK);
         assertThat(result).extracting(Experiment::getId).containsExactly(exp.getId());
+    }
+
+    @Test
+    void createAssociatesSalesFunnelByName() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("T")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        SalesFunnel funnel = salesFunnelRepository.save(SalesFunnel.builder().name("Topo").build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("Exp1");
+        req.setHypothesis("Teste");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_150");
+        req.setSalesFunnelName("Topo");
+
+        Experiment exp = service.create(req);
+
+        assertThat(exp.getSalesFunnel()).isNotNull();
+        assertThat(exp.getSalesFunnel().getId()).isEqualTo(funnel.getId());
+    }
+
+    @Test
+    void updateChangesSalesFunnelWhenProvided() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("T")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        SalesFunnel first = salesFunnelRepository.save(SalesFunnel.builder().name("Topo").build());
+        SalesFunnel second = salesFunnelRepository.save(SalesFunnel.builder().name("Meio").build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("Exp1");
+        req.setHypothesis("Teste");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_150");
+        req.setSalesFunnelName(first.getName());
+        Experiment exp = service.create(req);
+
+        UpdateExperimentRequest updateReq = new UpdateExperimentRequest();
+        updateReq.setName("Exp1");
+        updateReq.setHypothesis("Teste");
+        updateReq.setKpiTargetCpl(new BigDecimal("45"));
+        updateReq.setMetricPresetId("LEAN_150");
+        updateReq.setSalesFunnelName(second.getName());
+
+        Experiment updated = service.update(exp.getId(), updateReq);
+
+        assertThat(updated.getSalesFunnel()).isNotNull();
+        assertThat(updated.getSalesFunnel().getId()).isEqualTo(second.getId());
+    }
+
+    @Test
+    void updateClearsSalesFunnelWhenBlank() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("T")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        SalesFunnel funnel = salesFunnelRepository.save(SalesFunnel.builder().name("Topo").build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("Exp1");
+        req.setHypothesis("Teste");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_150");
+        req.setSalesFunnelName(funnel.getName());
+        Experiment exp = service.create(req);
+
+        UpdateExperimentRequest updateReq = new UpdateExperimentRequest();
+        updateReq.setName("Exp1");
+        updateReq.setHypothesis("Teste");
+        updateReq.setKpiTargetCpl(new BigDecimal("45"));
+        updateReq.setMetricPresetId("LEAN_150");
+        updateReq.setSalesFunnelName("");
+
+        Experiment updated = service.update(exp.getId(), updateReq);
+
+        assertThat(updated.getSalesFunnel()).isNull();
     }
 }

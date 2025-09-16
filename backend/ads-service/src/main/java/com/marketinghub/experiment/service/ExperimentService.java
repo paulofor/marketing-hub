@@ -4,6 +4,8 @@ import com.marketinghub.experiment.*;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.funnel.SalesFunnel;
+import com.marketinghub.funnel.SalesFunnelRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import jakarta.persistence.EntityManager;
@@ -23,16 +25,19 @@ public class ExperimentService {
     private final com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository;
     private final MetricPresetService metricPresetService;
     private final EntityManager entityManager;
+    private final SalesFunnelRepository salesFunnelRepository;
 
     public ExperimentService(ExperimentRepository repository, MarketNicheRepository nicheRepository,
                              com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository,
                              MetricPresetService metricPresetService,
-                             EntityManager entityManager) {
+                             EntityManager entityManager,
+                             SalesFunnelRepository salesFunnelRepository) {
         this.repository = repository;
         this.nicheRepository = nicheRepository;
         this.hypothesisRepository = hypothesisRepository;
         this.metricPresetService = metricPresetService;
         this.entityManager = entityManager;
+        this.salesFunnelRepository = salesFunnelRepository;
     }
 
     /**
@@ -54,6 +59,12 @@ public class ExperimentService {
             throw new EntityNotFoundException("Hypothesis not found: " + id);
         }
         return entityManager.getReference(com.marketinghub.hypothesis.Hypothesis.class, id);
+    }
+
+    private SalesFunnel resolveSalesFunnel(String name) {
+        return salesFunnelRepository.findByNameIgnoreCase(name)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "salesFunnelName not found: " + name));
     }
 
     /**
@@ -91,6 +102,10 @@ public class ExperimentService {
                 request.getBaselineCvr().compareTo(request.getTargetCvr()) >= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "baselineCvr must be < targetCvr");
         }
+        SalesFunnel salesFunnel = null;
+        if (request.getSalesFunnelName() != null && !request.getSalesFunnelName().isBlank()) {
+            salesFunnel = resolveSalesFunnel(request.getSalesFunnelName());
+        }
         Experiment exp = Experiment.builder()
                 .niche(niche)
                 .name(request.getName())
@@ -108,6 +123,7 @@ public class ExperimentService {
                 .status(ExperimentStatus.PLANNED)
                 .platform(ExperimentPlatform.FACEBOOK)
                 .creativesToGenerate(request.getCreativesToGenerate())
+                .salesFunnel(salesFunnel)
                 .build();
         return repository.save(exp);
     }
@@ -162,6 +178,7 @@ public class ExperimentService {
                 .status(ExperimentStatus.PLANNED)
                 .platform(original.getPlatform())
                 .creativesToGenerate(original.getCreativesToGenerate())
+                .salesFunnel(original.getSalesFunnel())
                 .build();
         return repository.save(copy);
     }
@@ -236,6 +253,13 @@ public class ExperimentService {
         }
         if (request.getCreativeApproved() != null) {
             exp.setCreativeApproved(request.getCreativeApproved());
+        }
+        if (request.getSalesFunnelName() != null) {
+            if (request.getSalesFunnelName().isBlank()) {
+                exp.setSalesFunnel(null);
+            } else {
+                exp.setSalesFunnel(resolveSalesFunnel(request.getSalesFunnelName()));
+            }
         }
         return exp;
     }

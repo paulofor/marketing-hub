@@ -80,6 +80,8 @@ components:
         endDate:
           type: string
           format: date
+        salesFunnelName:
+          type: string
   /api/experiments/{id}/creatives:
     post:
       summary: Criar criativo
@@ -263,6 +265,11 @@ components:
       type: object
       properties:
         name:
+          type: string
+        salesFunnelId:
+          type: string
+          format: uuid
+        salesFunnelName:
           type: string
         description:
           type: string
@@ -473,4 +480,9 @@ components:
         id:
           type: integer
         name:
+          type: string
+        salesFunnelId:
+          type: string
+          format: uuid
+        salesFunnelName:
           type: string

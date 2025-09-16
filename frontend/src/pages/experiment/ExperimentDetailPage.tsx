@@ -61,6 +61,20 @@ export default function ExperimentDetailPage() {
         </Link>
       ),
     },
+    ...(data.salesFunnelName
+      ? [
+          {
+            label: "Funil de Vendas",
+            value: data.salesFunnelId ? (
+              <Link to={`/funnels/${data.salesFunnelId}/edit`}>
+                {data.salesFunnelName}
+              </Link>
+            ) : (
+              data.salesFunnelName
+            ),
+          },
+        ]
+      : []),
     { label: "Preset de Métricas", value: preset?.name || "—" },
     {
       label: "Sample size",

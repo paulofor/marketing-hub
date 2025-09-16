@@ -10,6 +10,8 @@ import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.creative.label.repository.AngleRepository;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.FixtureUtils;
+import com.marketinghub.funnel.SalesFunnel;
+import com.marketinghub.funnel.SalesFunnelRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,6 +61,8 @@ class ExperimentControllerTest {
     private com.marketinghub.creative.repository.CreativeRepository creativeRepo;
     @Autowired
     private FixtureUtils fixtures;
+    @Autowired
+    private SalesFunnelRepository salesFunnelRepository;
 
     Long nicheId;
 
@@ -66,6 +70,7 @@ class ExperimentControllerTest {
     void cleanDb() {
         creativeRepo.deleteAll();
         repository.deleteAll();
+        salesFunnelRepository.deleteAll();
         hypothesisRepository.deleteAll();
         angleRepository.deleteAll();
         nicheRepo.deleteAll();
@@ -93,6 +98,7 @@ class ExperimentControllerTest {
                 .stopLossFactor(new BigDecimal("2"))
                 .defaultMdePp(new BigDecimal("12"))
                 .build());
+        SalesFunnel funnel = salesFunnelRepository.save(SalesFunnel.builder().name("Topo").build());
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setName("Exp1");
         req.setHypothesisId(hyp.getId());
@@ -105,19 +111,27 @@ class ExperimentControllerTest {
         req.setMdePercent(new BigDecimal("40"));
         req.setStartDate(LocalDate.now());
         req.setEndDate(LocalDate.now().plusDays(5));
+        req.setSalesFunnelName(funnel.getName());
 
         mockMvc.perform(post("/api/niches/" + nicheId + "/experiments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(req)))
                 .andExpect(status().isOk());
 
-        assertThat(repository.count()).isEqualTo(1);
+        var saved = repository.findAll();
+        assertThat(saved).hasSize(1);
+        assertThat(saved.get(0).getSalesFunnel()).isNotNull();
+        assertThat(saved.get(0).getSalesFunnel().getId()).isEqualTo(funnel.getId());
     }
 
     @Test
     void updateEndpointUpdatesFields() throws Exception {
         var niche = nicheRepo.findById(nicheId).orElseThrow();
         var exp = fixtures.createAndSaveExperiment(niche);
+        SalesFunnel startFunnel = salesFunnelRepository.save(SalesFunnel.builder().name("Topo").build());
+        SalesFunnel newFunnel = salesFunnelRepository.save(SalesFunnel.builder().name("Meio").build());
+        exp.setSalesFunnel(startFunnel);
+        repository.save(exp);
         UpdateExperimentRequest req = new UpdateExperimentRequest();
         req.setName("Updated");
         req.setHypothesis("Hyp");
@@ -127,6 +141,7 @@ class ExperimentControllerTest {
         req.setMdePercent(new BigDecimal("30"));
         req.setStartDate(LocalDate.now());
         req.setEndDate(LocalDate.now().plusDays(2));
+        req.setSalesFunnelName(newFunnel.getName());
 
         mockMvc.perform(patch("/api/experiments/" + exp.getId())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -137,6 +152,8 @@ class ExperimentControllerTest {
         assertThat(updated.getName()).isEqualTo("Updated");
         assertThat(updated.getSampleSize()).isEqualTo(200);
         assertThat(updated.getMdePercent()).isEqualByComparingTo("30");
+        assertThat(updated.getSalesFunnel()).isNotNull();
+        assertThat(updated.getSalesFunnel().getId()).isEqualTo(newFunnel.getId());
     }
 
     @Test

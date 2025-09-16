@@ -10,4 +10,6 @@ import java.util.UUID;
 public interface SalesFunnelRepository extends JpaRepository<SalesFunnel, UUID> {
     @EntityGraph(attributePaths = "steps")
     Optional<SalesFunnel> findWithStepsById(UUID id);
+
+    Optional<SalesFunnel> findByNameIgnoreCase(String name);
 }

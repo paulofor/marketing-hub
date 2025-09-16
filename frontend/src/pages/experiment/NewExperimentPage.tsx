@@ -5,6 +5,7 @@ import { useNiches } from "../../api/niche/useNiches";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
+import { useFunnels } from "../../api/funnel/useFunnels";
 import PageTitle from "../../components/PageTitle";
 
 export default function NewExperimentPage() {
@@ -24,6 +25,7 @@ export default function NewExperimentPage() {
     mde: "",
     startDate: "",
     endDate: "",
+    salesFunnelName: "",
   });
   const { data: hypotheses } = useHypothesesByNiche(form.nicheId);
   const { data: selectedHypothesis } = useHypothesis(
@@ -34,6 +36,7 @@ export default function NewExperimentPage() {
     (n) => n.id === Number(form.nicheId),
   );
   const { data: presets } = useMetricPresets();
+  const { data: funnels } = useFunnels();
   const showNicheSelect = nicheIdParam === "";
   const showHypSelect = hypothesisIdParam === "";
 
@@ -56,6 +59,7 @@ export default function NewExperimentPage() {
         mde: form.mde ? Number(form.mde) : undefined,
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
+        salesFunnelName: form.salesFunnelName || undefined,
       });
       setForm({
         nicheId: nicheIdParam,
@@ -68,6 +72,7 @@ export default function NewExperimentPage() {
         mde: "",
         startDate: "",
         endDate: "",
+        salesFunnelName: "",
       });
       alert("Teste salvo!");
     } catch (errors) {
@@ -162,6 +167,23 @@ export default function NewExperimentPage() {
           presets.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
+            </option>
+          ))}
+      </select>
+      <label className="form-label" htmlFor="salesFunnel">
+        Funil de Vendas
+      </label>
+      <select
+        id="salesFunnel"
+        className="form-select mb-2"
+        value={form.salesFunnelName}
+        onChange={(e) => setForm({ ...form, salesFunnelName: e.target.value })}
+      >
+        <option value="">Selecione Funil de Vendas (opcional)</option>
+        {Array.isArray(funnels) &&
+          funnels.map((f) => (
+            <option key={f.id} value={f.name}>
+              {f.name}
             </option>
           ))}
       </select>

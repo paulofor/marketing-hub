@@ -14,6 +14,7 @@ export interface CreateExperiment {
   startDate?: string;
   endDate?: string;
   creativesToGenerate?: number;
+  salesFunnelName?: string;
 }
 
 export function useCreateExperiment() {

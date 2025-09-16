@@ -4,12 +4,14 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useExperiment } from "../../api/experiment/useExperiment";
 import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
+import { useFunnels } from "../../api/funnel/useFunnels";
 import PageTitle from "../../components/PageTitle";
 
 interface FormData {
   name: string;
   kpiTarget: string;
   metricPresetId: string;
+  salesFunnelName: string;
 }
 
 export default function EditExperimentPage() {
@@ -18,6 +20,7 @@ export default function EditExperimentPage() {
   const navigate = useNavigate();
   const { data, isLoading } = useExperiment(expId);
   const { data: presets } = useMetricPresets();
+  const { data: funnels } = useFunnels();
   const update = useUpdateExperiment(expId);
   const { register, handleSubmit, reset } = useForm<FormData>();
 
@@ -27,6 +30,7 @@ export default function EditExperimentPage() {
         name: data.name || "",
         kpiTarget: data.kpiTarget ? String(data.kpiTarget) : "",
         metricPresetId: data.metricPresetId || "",
+        salesFunnelName: data.salesFunnelName || "",
       });
     }
   }, [data, reset]);
@@ -43,6 +47,7 @@ export default function EditExperimentPage() {
         mde: data.mdePercent ?? undefined,
         startDate: data.startDate ?? undefined,
         endDate: data.endDate ?? undefined,
+        salesFunnelName: values.salesFunnelName,
       });
       navigate(-1);
     } catch {
@@ -84,6 +89,22 @@ export default function EditExperimentPage() {
             presets.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
+              </option>
+            ))}
+        </select>
+        <label className="form-label" htmlFor="salesFunnel">
+          Funil de Vendas
+        </label>
+        <select
+          id="salesFunnel"
+          className="form-select mb-2"
+          {...register("salesFunnelName")}
+        >
+          <option value="">Nenhum</option>
+          {Array.isArray(funnels) &&
+            funnels.map((f) => (
+              <option key={f.id} value={f.name}>
+                {f.name}
               </option>
             ))}
         </select>

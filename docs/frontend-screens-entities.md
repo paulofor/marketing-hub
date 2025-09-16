@@ -29,9 +29,9 @@ Consulte também o [Diagrama de Navegação do Frontend](./frontend-navigation.m
 | `/niches/:nicheId/hypotheses/:hypothesisId` | Detalhe da Hipótese | Hypothesis | - |
 | `/niches/:nicheId/hypotheses/:hypothesisId/edit` | Editar Hipótese | Hypothesis | Hypothesis |
 | `/experiments` | Lista de Experimentos | Experiment | - |
-| `/experiments/new` | Novo Experimento | - | Experiment |
-| `/experiments/:id` | Detalhe do Experimento | Experiment, Creative, AdSet, MetricSnapshot, LandingPage | - |
-| `/experiments/:id/edit` | Editar Experimento | Experiment | Experiment |
+| `/experiments/new` | Novo Experimento | MarketNiche, Hypothesis, MetricPreset, SalesFunnel | Experiment |
+| `/experiments/:id` | Detalhe do Experimento | Experiment, SalesFunnel, Creative, AdSet, MetricSnapshot, LandingPage | - |
+| `/experiments/:id/edit` | Editar Experimento | Experiment, SalesFunnel | Experiment |
 | `/hypotheses` | Lista de Hipóteses | Hypothesis | - |
 | `/hypotheses/board` | Quadro de Hipóteses | Hypothesis | Hypothesis |
 | `/ai-services` | Serviços de IA | AiService | - |

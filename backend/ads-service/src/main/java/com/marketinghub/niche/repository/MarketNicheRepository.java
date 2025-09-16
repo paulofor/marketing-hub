@@ -22,4 +22,14 @@ public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> 
               and n.hypothesesToGenerate > 0
             """)
     List<MarketNiche> findAllToGenerateHypotheses();
+
+    /**
+     * Retrieves niches configured to generate audiences.
+     */
+    @Query("""
+            select n from MarketNiche n
+            where n.audiencesToGenerate is not null
+              and n.audiencesToGenerate > 0
+            """)
+    List<MarketNiche> findAllToGenerateAudiences();
 }

@@ -39,6 +39,8 @@ public class AudienceService {
         Audience audience = Audience.builder()
                 .name(request.getName())
                 .description(request.getDescription())
+                .prompt(request.getPrompt())
+                .model(request.getModel())
                 .niche(niche)
                 .hypothesis(hypothesis)
                 .build();

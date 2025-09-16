@@ -121,6 +121,18 @@
 <li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
 <li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
 </ul>
+<h3>audience</h3>
+<ul>
+<li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>
+<li><code>name</code> VARCHAR(255)</li>
+<li><code>description</code> LONGTEXT</li>
+<li><code>prompt</code> LONGTEXT</li>
+<li><code>model</code> VARCHAR(255)</li>
+<li><code>market_niche_id</code> BIGINT</li>
+<li><code>hypothesis_id</code> BINARY(16)</li>
+<li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
+<li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
+</ul>
 <h3>hypothesis</h3>
 <ul>
 <li><code>id</code> BINARY(16) PRIMARY KEY</li>

@@ -7,6 +7,8 @@ export interface Audience {
   description: string;
   marketNicheId?: number;
   hypothesisId?: string;
+  prompt?: string;
+  model?: string;
 }
 
 export function useAudiencesByNiche(nicheId?: string) {

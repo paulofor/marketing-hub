@@ -13,4 +13,6 @@ public class CreateAudienceRequest {
     private String description;
     private Long marketNicheId;
     private UUID hypothesisId;
+    private String prompt;
+    private String model;
 }

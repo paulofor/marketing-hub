@@ -27,10 +27,15 @@ classDiagram
     class NicheHypothesisScheduler
     class ExperimentCreativeService
     class ExperimentCreativeScheduler
+    class NicheAudienceService
+    class NicheAudienceScheduler
+    class AudienceChatGptClient
 
     NicheHypothesisScheduler --> NicheHypothesisService
     ExperimentCreativeScheduler --> ExperimentCreativeService
     NicheHypothesisService --> NicheChatGptClient
     ExperimentCreativeService --> CreativeChatGptClient
     ExperimentCreativeService --> CreativeImageClient
+    NicheAudienceScheduler --> NicheAudienceService
+    NicheAudienceService --> AudienceChatGptClient
 ```

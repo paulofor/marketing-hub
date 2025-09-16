@@ -12,4 +12,6 @@ public interface SalesFunnelRepository extends JpaRepository<SalesFunnel, UUID> 
     Optional<SalesFunnel> findWithStepsById(UUID id);
 
     Optional<SalesFunnel> findByNameIgnoreCase(String name);
+
+    Optional<SalesFunnel> findFirstByNameIgnoreCaseOrderByCreatedAtDesc(String name);
 }

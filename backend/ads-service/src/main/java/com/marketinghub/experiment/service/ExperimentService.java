@@ -62,7 +62,8 @@ public class ExperimentService {
     }
 
     private SalesFunnel resolveSalesFunnel(String name) {
-        return salesFunnelRepository.findByNameIgnoreCase(name)
+        return salesFunnelRepository.findFirstByNameIgnoreCaseOrderByCreatedAtDesc(name)
+                .or(() -> salesFunnelRepository.findByNameIgnoreCase(name))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "salesFunnelName not found: " + name));
     }

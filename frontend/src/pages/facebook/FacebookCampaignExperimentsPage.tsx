@@ -8,7 +8,7 @@ export default function FacebookCampaignExperimentsPage() {
   const experiments = Array.isArray(data) ? data : [];
   return (
     <div>
-      <PageTitle>Campanhas do Facebook</PageTitle>
+      <PageTitle>Experimentos para Campanha</PageTitle>
       <div className="btn-group mb-3">
         <button
           className={`btn btn-outline-primary${status === "PLANNED" ? " active" : ""}`}

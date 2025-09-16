@@ -19,14 +19,14 @@ import org.springframework.web.reactive.function.client.WebClient;
  */
 @Component
 @Profile("!test & !dummy")
-public class OpenAiChatGptClient implements ChatGptClient {
-    private static final Logger log = LoggerFactory.getLogger(OpenAiChatGptClient.class);
+public class SuccessProductOpenAiChatGptClient implements ChatGptClient {
+    private static final Logger log = LoggerFactory.getLogger(SuccessProductOpenAiChatGptClient.class);
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
     private final String model;
 
-    public OpenAiChatGptClient(
+    public SuccessProductOpenAiChatGptClient(
             WebClient.Builder builder,
             ObjectMapper objectMapper,
             @Value("${openai.api-key:}") String apiKey,

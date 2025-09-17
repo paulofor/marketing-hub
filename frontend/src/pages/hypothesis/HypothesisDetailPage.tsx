@@ -6,16 +6,23 @@ import { useExperimentsByHypothesis } from "../../api/experiment/useExperimentsB
 import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
 import PageTitle from "../../components/PageTitle";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
+import { useForm } from "react-hook-form";
+import { useRequestAudiences } from "../../api/niche/useRequestAudiences";
 
 export default function HypothesisDetailPage() {
   const { nicheId, hypothesisId } = useParams();
-  const { data: niche } = useNiche(Number(nicheId));
+  const nicheNumericId = Number(nicheId);
+  const { data: niche, isFetching: isFetchingNiche } = useNiche(nicheNumericId);
   const { data, isLoading } = useHypothesis(nicheId, hypothesisId);
   const { data: experiments } = useExperimentsByHypothesis(
     nicheId,
     hypothesisId,
   );
   const { data: audiences } = useAudiencesByNiche(nicheId);
+  const requestAudiences = useRequestAudiences(nicheNumericId);
+  const { register, handleSubmit, reset } = useForm<{ quantity: number }>({
+    defaultValues: { quantity: 1 },
+  });
   useBreadcrumbs([
     { label: "Nichos", to: "/niches" },
     { label: niche?.name || "...", to: `/niches/${nicheId}` },
@@ -93,10 +100,46 @@ export default function HypothesisDetailPage() {
         </div>
       </div>
 
-      <p className="mb-4">
+      <p className="mb-2">
         Públicos gerados: {audienceList.length}/
         {niche?.audiencesToGenerate ?? 0}
       </p>
+      <div className="d-flex align-items-center mb-4">
+        <input
+          type="number"
+          min={1}
+          className="form-control w-auto me-2"
+          title="Quantidade de públicos que o Worker IA irá gerar"
+          {...register("quantity", { valueAsNumber: true })}
+        />
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={handleSubmit(
+            async ({ quantity }) => {
+              if (!quantity || quantity <= 0) return;
+              try {
+                await requestAudiences.mutateAsync(quantity);
+                alert("Solicitação enviada!");
+                reset();
+              } catch {
+                alert("Erro ao solicitar públicos");
+              }
+            },
+            (errors) => {
+              console.log("Validation errors", errors);
+            },
+          )}
+          disabled={requestAudiences.isPending}
+        >
+          Gerar Públicos
+        </button>
+        <span className="ms-2">
+          {requestAudiences.isPending || isFetchingNiche
+            ? "Atualizando..."
+            : `Solicitados: ${niche?.audiencesToGenerate ?? 0}`}
+        </span>
+      </div>
 
       <div className="card mb-4">
         <div className="card-header">

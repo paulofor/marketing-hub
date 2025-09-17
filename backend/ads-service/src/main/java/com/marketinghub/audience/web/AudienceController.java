@@ -2,6 +2,7 @@ package com.marketinghub.audience.web;
 
 import com.marketinghub.audience.dto.AudienceDto;
 import com.marketinghub.audience.dto.CreateAudienceRequest;
+import com.marketinghub.audience.dto.UpdateAudienceApprovalRequest;
 import com.marketinghub.audience.mapper.AudienceMapper;
 import com.marketinghub.audience.service.AudienceService;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +27,12 @@ public class AudienceController {
     @PostMapping("/audiences")
     public AudienceDto create(@RequestBody CreateAudienceRequest request) {
         return mapper.toDto(service.create(request));
+    }
+
+    @PatchMapping("/audiences/{id}/approval")
+    public AudienceDto updateApproval(@PathVariable Long id,
+                                      @RequestBody UpdateAudienceApprovalRequest request) {
+        return mapper.toDto(service.updateApproval(id, request.isApproved()));
     }
 
     @GetMapping("/audiences/{id}")

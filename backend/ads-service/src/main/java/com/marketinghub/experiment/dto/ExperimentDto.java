@@ -30,7 +30,6 @@ public class ExperimentDto {
     private LocalDate endDate;
     private ExperimentStatus status;
     private ExperimentPlatform platform;
-    private boolean audienceApproved;
     private boolean creativeApproved;
     private Instant createdAt;
     private Instant updatedAt;

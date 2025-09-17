@@ -47,6 +47,16 @@ public class AudienceService {
         return repository.save(audience);
     }
 
+    /**
+     * Atualiza o status de aprovação de um público existente.
+     */
+    @Transactional
+    public Audience updateApproval(Long id, boolean approved) {
+        Audience audience = repository.findById(id).orElseThrow();
+        audience.setApproved(approved);
+        return audience;
+    }
+
     public Audience get(Long id) {
         return repository.findById(id).orElseThrow();
     }

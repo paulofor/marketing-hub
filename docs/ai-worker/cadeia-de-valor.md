@@ -36,7 +36,7 @@ flowchart LR
     Publicos -->|Públicos aprovados| Experimentos
 
     Experimentos -->|ExperimentCreativeService (creativesToGenerate)| Criativos
-    Experimentos -->|AudienceAdSetService (audienceApproved)| AdSets
+    Experimentos -->|AudienceAdSetService (audience.approved)| AdSets
     Publicos -->|Contexto para targeting| AdSets
 ```
 
@@ -85,7 +85,7 @@ O diagrama destaca:
 
 ### 6. Experimento + Públicos aprovados → Conjuntos de anúncios
 - **Disparo:** `AudienceAdSetScheduler`.
-- **Gatilho:** experimentos para Facebook com `audienceApproved = true` e sem ad sets existentes.
+- **Gatilho:** experimentos para Facebook com criativos aprovados e pelo menos um público aprovado (`audience.approved = true`), desde que ainda não existam ad sets.
 - **Transformação:** `AudienceAdSetService` cruza públicos aprovados do nicho/hipótese, gera segmentações detalhadas via `AudienceAdSetChatGptClient` e persiste conjuntos de anúncios (`location`, `interests`, `targetingJson`, `budget`, `durationDays`, `prompt`, `model`).
 - **Resultado:** planejamento de mídia estruturado para ativação na Meta.
 - **Referências:** [`experimento-adset-service.md`](experimento-adset-service.md).

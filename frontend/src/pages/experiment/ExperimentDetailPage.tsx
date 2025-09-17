@@ -10,6 +10,7 @@ import PublicosTab from "./PublicosTab";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import * as Tabs from "@radix-ui/react-tabs";
 import FunnelPreviewModal from "./FunnelPreviewModal";
+import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
 
 export default function ExperimentDetailPage() {
   const { id } = useParams();
@@ -20,6 +21,8 @@ export default function ExperimentDetailPage() {
     data ? String(data.nicheId) : undefined,
     data ? String(data.hypothesisId) : undefined,
   );
+  const nicheIdParam = data?.nicheId != null ? String(data.nicheId) : undefined;
+  const { data: audiences } = useAudiencesByNiche(nicheIdParam);
   const { data: presets } = useMetricPresets();
   const [tab, setTab] = useState("overview");
   const [isFunnelPreviewOpen, setFunnelPreviewOpen] = useState(false);
@@ -35,6 +38,17 @@ export default function ExperimentDetailPage() {
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
   const preset = presets?.find((p) => p.id === data.metricPresetId);
+  const audienceList = Array.isArray(audiences) ? audiences : undefined;
+  const relevantAudiences = audienceList
+    ? audienceList.filter(
+        (a) => !a.hypothesisId || a.hypothesisId === data.hypothesisId,
+      )
+    : undefined;
+  const approvedAudienceSummary = relevantAudiences
+    ? `${relevantAudiences.filter((a) => a.approved).length} de ${
+        relevantAudiences.length
+      }`
+    : "—";
   const formatCurrency = (n?: number | null) =>
     n != null
       ? new Intl.NumberFormat("pt-BR", {
@@ -89,7 +103,7 @@ export default function ExperimentDetailPage() {
     { label: "Criativos a gerar", value: data.creativesToGenerate ?? "—" },
     {
       label: "Públicos aprovados",
-      value: data.audienceApproved ? "Sim" : "Não",
+      value: approvedAudienceSummary,
     },
     {
       label: "MDE (p.p.)",

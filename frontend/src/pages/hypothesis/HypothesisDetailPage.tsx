@@ -5,6 +5,7 @@ import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import { useExperimentsByHypothesis } from "../../api/experiment/useExperimentsByHypothesis";
 import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
 import PageTitle from "../../components/PageTitle";
+import { AudienceApprovalCard } from "../../components/AudienceApprovalCard";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import { useForm } from "react-hook-form";
 import { useRequestAudiences } from "../../api/niche/useRequestAudiences";
@@ -140,6 +141,24 @@ export default function HypothesisDetailPage() {
             : `Solicitados: ${niche?.audiencesToGenerate ?? 0}`}
         </span>
       </div>
+
+      {audienceList.length === 0 ? (
+        <p className="text-muted">Nenhum público cadastrado para este nicho.</p>
+      ) : (
+        <div className="row row-cols-1 row-cols-md-2 g-4 mb-4">
+          {audienceList.map((a) => (
+            <div key={a.id} className="col">
+              <AudienceApprovalCard
+                audience={a}
+                nicheId={nicheId}
+                badgeLabel={
+                  a.hypothesisId === hypothesisId ? "Hipótese" : "Nicho"
+                }
+              />
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="card mb-4">
         <div className="card-header">

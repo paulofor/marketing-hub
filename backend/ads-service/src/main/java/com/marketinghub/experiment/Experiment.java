@@ -75,10 +75,6 @@ public class Experiment {
     @Enumerated(EnumType.STRING)
     private ExperimentPlatform platform;
 
-    /** Indica se o público está aprovado pelo usuário. */
-    @Column(nullable = false)
-    private boolean audienceApproved;
-
     /** Indica se o criativo está aprovado pelo usuário. */
     @Column(nullable = false)
     private boolean creativeApproved;

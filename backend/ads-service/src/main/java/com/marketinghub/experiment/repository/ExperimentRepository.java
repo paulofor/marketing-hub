@@ -18,8 +18,20 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
     boolean existsByNicheAndName(MarketNiche niche, String name);
     List<Experiment> findByStatus(ExperimentStatus status);
     List<Experiment> findByStatusAndPlatform(ExperimentStatus status, ExperimentPlatform platform);
-    List<Experiment> findByStatusAndPlatformAndAudienceApprovedTrueAndCreativeApprovedTrue(
-            ExperimentStatus status, ExperimentPlatform platform);
+    @Query("""
+            select e from Experiment e
+            where e.status = :status
+              and e.platform = :platform
+              and e.creativeApproved = true
+              and exists (
+                    select 1 from Audience a
+                    where a.niche = e.niche
+                      and a.approved = true
+                      and (a.hypothesis is null or a.hypothesis = e.hypothesisRef)
+              )
+            """)
+    List<Experiment> findReadyForCampaign(@Param("status") ExperimentStatus status,
+                                          @Param("platform") ExperimentPlatform platform);
     long countBySalesFunnelId(UUID salesFunnelId);
 
     /**
@@ -40,9 +52,15 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
             select distinct e from Experiment e
             join fetch e.niche n
             join fetch e.hypothesisRef h
-            where e.audienceApproved = true
-              and e.platform = :platform
+            where e.platform = :platform
               and e.status in :statuses
+              and e.creativeApproved = true
+              and exists (
+                    select 1 from Audience a
+                    where a.niche = e.niche
+                      and a.approved = true
+                      and (a.hypothesis is null or a.hypothesis = e.hypothesisRef)
+              )
             """)
     List<Experiment> findAllReadyForAdSets(@Param("platform") ExperimentPlatform platform,
                                            @Param("statuses") List<ExperimentStatus> statuses);

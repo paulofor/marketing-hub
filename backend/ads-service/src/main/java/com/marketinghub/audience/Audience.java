@@ -40,6 +40,10 @@ public class Audience {
     /** Modelo responsável pela criação automática. */
     private String model;
 
+    /** Indica se o público foi aprovado para uso em mídia. */
+    @Column(nullable = false)
+    private boolean approved;
+
     /** Associated market niche, if this is a generic audience. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "market_niche_id")

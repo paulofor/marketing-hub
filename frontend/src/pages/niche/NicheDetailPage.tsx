@@ -4,6 +4,7 @@ import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
 import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
 import PageTitle from "../../components/PageTitle";
+import { AudienceApprovalCard } from "../../components/AudienceApprovalCard";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import { useChatDialog } from "../../api/chatDialog/useChatDialog";
 import { useForm } from "react-hook-form";
@@ -161,12 +162,7 @@ export default function NicheDetailPage() {
         <div className="row row-cols-1 row-cols-md-2 g-4 mb-4">
           {audienceList.map((a) => (
             <div key={a.id} className="col">
-              <div className="card h-100 rounded-3">
-                <div className="card-body">
-                  <h5 className="card-title">{a.name}</h5>
-                  <p className="card-text">{a.description || "-"}</p>
-                </div>
-              </div>
+              <AudienceApprovalCard audience={a} nicheId={nicheId} />
             </div>
           ))}
         </div>

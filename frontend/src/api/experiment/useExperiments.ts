@@ -22,7 +22,6 @@ export interface Experiment {
   endDate: string | null;
   metricPresetId?: string | null;
   creativesToGenerate?: number | null;
-  audienceApproved: boolean;
   creativeApproved: boolean;
   status: string;
   platform: string;

@@ -8,8 +8,9 @@ experimento.
 
 O `AudienceAdSetService` executa o fluxo abaixo:
 
-1. Busca experimentos na plataforma Facebook com `audienceApproved = true` e
-   sem registros prévios na tabela `ad_set`.
+1. Busca experimentos na plataforma Facebook com criativos aprovados e com
+   públicos (`audience.approved = true`) disponíveis, garantindo também que não
+   existam registros prévios na tabela `ad_set`.
 2. Carrega os públicos do nicho relacionados ao experimento, priorizando os que
    pertencem à hipótese associada.
 3. Envia cada público para o `AudienceAdSetChatGptClient`, que estrutura

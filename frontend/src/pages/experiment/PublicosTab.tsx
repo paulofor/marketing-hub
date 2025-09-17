@@ -1,5 +1,6 @@
 import type { Audience } from "../../api/audience/useAudiencesByNiche";
 import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
+import { AudienceApprovalCard } from "../../components/AudienceApprovalCard";
 
 interface PublicosTabProps {
   nicheId?: number;
@@ -68,12 +69,14 @@ export default function PublicosTab({
         audiences={relatedToHypothesis}
         emptyMessage="Nenhum público relacionado diretamente a esta hipótese."
         badgeLabel="Hipótese"
+        nicheId={nicheIdAsString}
       />
       <AudienceSection
         title={`Públicos disponíveis no nicho${nicheTitleSuffix}`}
         audiences={relatedToNiche}
         emptyMessage="Nenhum outro público cadastrado para este nicho."
         badgeLabel="Nicho"
+        nicheId={nicheIdAsString}
       />
     </div>
   );
@@ -84,11 +87,13 @@ function AudienceSection({
   audiences,
   emptyMessage,
   badgeLabel,
+  nicheId,
 }: {
   title: string;
   audiences: Audience[];
   emptyMessage: string;
   badgeLabel: string;
+  nicheId: string;
 }) {
   return (
     <section className="mb-4">
@@ -102,45 +107,15 @@ function AudienceSection({
         <div className="row row-cols-1 row-cols-md-2 g-4">
           {audiences.map((audience) => (
             <div key={audience.id} className="col">
-              <AudienceCard audience={audience} badgeLabel={badgeLabel} />
+              <AudienceApprovalCard
+                audience={audience}
+                badgeLabel={badgeLabel}
+                nicheId={nicheId}
+              />
             </div>
           ))}
         </div>
       )}
     </section>
-  );
-}
-
-function AudienceCard({
-  audience,
-  badgeLabel,
-}: {
-  audience: Audience;
-  badgeLabel: string;
-}) {
-  return (
-    <div className="card h-100 rounded-3">
-      <div className="card-body">
-        <div className="d-flex justify-content-between align-items-start">
-          <h5 className="card-title mb-0">{audience.name}</h5>
-          <span className="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">
-            {badgeLabel}
-          </span>
-        </div>
-        <p
-          className="card-text mt-2"
-          style={{ whiteSpace: "pre-wrap" }}
-        >
-          {audience.description || "—"}
-        </p>
-        {audience.model && (
-          <p className="card-text">
-            <small className="text-muted">
-              Gerado pelo modelo {audience.model}
-            </small>
-          </p>
-        )}
-      </div>
-    </div>
   );
 }

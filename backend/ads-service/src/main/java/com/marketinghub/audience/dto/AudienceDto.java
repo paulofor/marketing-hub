@@ -18,4 +18,5 @@ public class AudienceDto {
     private UUID hypothesisId;
     private String prompt;
     private String model;
+    private boolean approved;
 }

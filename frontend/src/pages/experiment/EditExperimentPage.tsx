@@ -12,7 +12,6 @@ interface FormData {
   kpiTarget: string;
   metricPresetId: string;
   salesFunnelName: string;
-  audienceApproved: boolean;
 }
 
 export default function EditExperimentPage() {
@@ -23,9 +22,7 @@ export default function EditExperimentPage() {
   const { data: presets } = useMetricPresets();
   const { data: funnels } = useFunnels();
   const update = useUpdateExperiment(expId);
-  const { register, handleSubmit, reset } = useForm<FormData>({
-    defaultValues: { audienceApproved: false },
-  });
+  const { register, handleSubmit, reset } = useForm<FormData>();
 
   useEffect(() => {
     if (data) {
@@ -34,7 +31,6 @@ export default function EditExperimentPage() {
         kpiTarget: data.kpiTarget ? String(data.kpiTarget) : "",
         metricPresetId: data.metricPresetId || "",
         salesFunnelName: data.salesFunnelName || "",
-        audienceApproved: data.audienceApproved,
       });
     }
   }, [data, reset]);
@@ -52,7 +48,6 @@ export default function EditExperimentPage() {
         startDate: data.startDate ?? undefined,
         endDate: data.endDate ?? undefined,
         salesFunnelName: values.salesFunnelName,
-        audienceApproved: values.audienceApproved,
       });
       navigate(-1);
     } catch {
@@ -113,20 +108,10 @@ export default function EditExperimentPage() {
               </option>
             ))}
         </select>
-        <div className="form-check form-switch mb-3">
-          <input
-            id="audienceApproved"
-            type="checkbox"
-            className="form-check-input"
-            {...register("audienceApproved")}
-            title="Quando ativado, o Worker IA criará conjuntos de anúncios com os públicos aprovados."
-          />
-          <label className="form-check-label" htmlFor="audienceApproved">
-            Aprovar públicos para mídia
-          </label>
-          <div className="form-text">
-            Marque após revisar os públicos gerados e autorizar o uso em campanhas.
-          </div>
+        <div className="alert alert-info" role="status">
+          A aprovação dos públicos agora é feita individualmente na aba
+          {" "}
+          <strong>Públicos</strong> deste experimento.
         </div>
         <div className="mt-3 d-flex justify-content-end">
           <button

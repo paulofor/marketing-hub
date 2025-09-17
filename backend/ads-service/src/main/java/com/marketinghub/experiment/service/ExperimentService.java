@@ -155,8 +155,7 @@ public class ExperimentService {
     }
 
     public java.util.List<Experiment> listReadyForCampaign() {
-        return repository.findByStatusAndPlatformAndAudienceApprovedTrueAndCreativeApprovedTrue(
-                ExperimentStatus.PLANNED, ExperimentPlatform.FACEBOOK);
+        return repository.findReadyForCampaign(ExperimentStatus.PLANNED, ExperimentPlatform.FACEBOOK);
     }
 
     @Transactional
@@ -248,9 +247,6 @@ public class ExperimentService {
         exp.setEndDate(request.getEndDate());
         if (request.getCreativesToGenerate() != null) {
             exp.setCreativesToGenerate(request.getCreativesToGenerate());
-        }
-        if (request.getAudienceApproved() != null) {
-            exp.setAudienceApproved(request.getAudienceApproved());
         }
         if (request.getCreativeApproved() != null) {
             exp.setCreativeApproved(request.getCreativeApproved());

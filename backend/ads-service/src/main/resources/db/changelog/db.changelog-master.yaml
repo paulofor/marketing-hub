@@ -89,3 +89,6 @@ databaseChangeLog:
   - include:
       file: V2025_10_06__add_audiences_to_generate_to_niche.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2025_10_10__move_audience_approval.sql
+      relativeToChangelogFile: true

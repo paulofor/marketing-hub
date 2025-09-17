@@ -1,16 +1,16 @@
 package com.marketinghub.experiment;
 
+import com.marketinghub.audience.Audience;
+import com.marketinghub.audience.repository.AudienceRepository;
 import com.marketinghub.experiment.MetricPreset;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
-import com.marketinghub.experiment.service.ExperimentService;
-import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.repository.MarketNicheRepository;
-import com.marketinghub.creative.label.repository.AngleRepository;
-import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.funnel.SalesFunnel;
 import com.marketinghub.funnel.SalesFunnelRepository;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.repository.MarketNicheRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -44,6 +44,8 @@ class ExperimentServiceTest {
     ExperimentRepository experimentRepository;
     @Autowired
     SalesFunnelRepository salesFunnelRepository;
+    @Autowired
+    AudienceRepository audienceRepository;
 
     @Test
     void createNewExperimentWithExistingNiche() {
@@ -183,9 +185,21 @@ class ExperimentServiceTest {
         req1.setKpiTargetCpl(new BigDecimal("45"));
         req1.setMetricPresetId("LEAN_150");
         var expApproved = service.create(req1);
-        expApproved.setAudienceApproved(true);
         expApproved.setCreativeApproved(true);
         experimentRepository.save(expApproved);
+
+        audienceRepository.save(Audience.builder()
+                .name("Aprovado")
+                .niche(niche)
+                .hypothesis(hyp)
+                .approved(true)
+                .build());
+        audienceRepository.save(Audience.builder()
+                .name("Pendente")
+                .niche(niche)
+                .hypothesis(hyp)
+                .approved(false)
+                .build());
 
         CreateExperimentRequest req2 = new CreateExperimentRequest();
         req2.setMarketNicheId(niche.getId());
@@ -195,7 +209,6 @@ class ExperimentServiceTest {
         req2.setKpiTargetCpl(new BigDecimal("45"));
         req2.setMetricPresetId("LEAN_150");
         var expNotApproved = service.create(req2);
-        expNotApproved.setAudienceApproved(true);
         experimentRepository.save(expNotApproved);
 
         var result = service.listReadyForCampaign();

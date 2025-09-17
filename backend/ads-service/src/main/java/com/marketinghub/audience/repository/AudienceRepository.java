@@ -16,6 +16,7 @@ public interface AudienceRepository extends CrudRepository<Audience, Long> {
             select a from Audience a
             left join fetch a.hypothesis
             where a.niche.id = :nicheId
+              and a.approved = true
             """)
     List<Audience> findDetailedByNicheId(@Param("nicheId") Long nicheId);
 }

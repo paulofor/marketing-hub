@@ -2,6 +2,7 @@ package com.marketinghub.experiment.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.AdsServiceApplication;
+import com.marketinghub.audience.repository.AudienceRepository;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.repository.ExperimentRepository;
@@ -63,6 +64,8 @@ class ExperimentControllerTest {
     private FixtureUtils fixtures;
     @Autowired
     private SalesFunnelRepository salesFunnelRepository;
+    @Autowired
+    private AudienceRepository audienceRepository;
 
     Long nicheId;
 
@@ -71,6 +74,7 @@ class ExperimentControllerTest {
         creativeRepo.deleteAll();
         repository.deleteAll();
         salesFunnelRepository.deleteAll();
+        audienceRepository.deleteAll();
         hypothesisRepository.deleteAll();
         angleRepository.deleteAll();
         nicheRepo.deleteAll();

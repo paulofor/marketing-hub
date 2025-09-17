@@ -70,6 +70,15 @@ public class AudienceAdSetService {
             }
             List<AdSetDto> saved = new ArrayList<>();
             for (Audience audience : audiences) {
+                if (audience == null) {
+                    log.warn("Skipping null audience entry for experiment {}", experimentId);
+                    continue;
+                }
+                Long audienceId = audience.getId();
+                if (audienceId == null) {
+                    log.warn("Skipping audience without identifier for experiment {}", experimentId);
+                    continue;
+                }
                 try {
                     AdSetPlan plan = chatGptClient.planAdSet(experiment, audience);
                     CreateAdSetRequest request = new CreateAdSetRequest();
@@ -86,12 +95,12 @@ public class AudienceAdSetService {
                     if (adSet != null) {
                         saved.add(adSet);
                     } else {
-                        log.warn("Backend returned null ad set for experiment {} audience {}", experimentId, audience.getId());
+                        log.warn("Backend returned null ad set for experiment {} audience {}", experimentId, audienceId);
                     }
                 } catch (BackendClientException e) {
-                    log.error("Backend rejected ad set for experiment {} audience {}: {}", experimentId, audience.getId(), e.getMessage());
+                    log.error("Backend rejected ad set for experiment {} audience {}: {}", experimentId, audienceId, e.getMessage());
                 } catch (Exception e) {
-                    log.error("Failed to create ad set for experiment {} audience {}", experimentId, audience.getId(), e);
+                    log.error("Failed to create ad set for experiment {} audience {}", experimentId, audienceId, e);
                 }
             }
             result.put(experimentId, saved);

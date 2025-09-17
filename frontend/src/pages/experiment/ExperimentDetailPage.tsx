@@ -155,7 +155,12 @@ export default function ExperimentDetailPage() {
           </div>
         </Tabs.Content>
         <Tabs.Content value="audiences" asChild>
-          <PublicosTab />
+          <PublicosTab
+            nicheId={data.nicheId}
+            hypothesisId={data.hypothesisId}
+            nicheName={niche?.name}
+            hypothesisTitle={hyp?.title ?? data.hypothesis}
+          />
         </Tabs.Content>
         <Tabs.Content value="creatives" asChild>
           <CriativosTab experimentId={expId} />

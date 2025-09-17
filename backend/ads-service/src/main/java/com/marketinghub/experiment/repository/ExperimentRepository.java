@@ -6,6 +6,7 @@ import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.niche.MarketNiche;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,4 +35,15 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
               and e.creativesToGenerate > 0
             """)
     List<Experiment> findAllToGenerateCreatives();
+
+    @Query("""
+            select distinct e from Experiment e
+            join fetch e.niche n
+            join fetch e.hypothesisRef h
+            where e.audienceApproved = true
+              and e.platform = :platform
+              and e.status in :statuses
+            """)
+    List<Experiment> findAllReadyForAdSets(@Param("platform") ExperimentPlatform platform,
+                                           @Param("statuses") List<ExperimentStatus> statuses);
 }

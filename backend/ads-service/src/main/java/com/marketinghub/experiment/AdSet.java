@@ -3,7 +3,9 @@ package com.marketinghub.experiment;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
@@ -27,13 +29,25 @@ public class AdSet {
     private String location;
 
     @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String interests;
 
     @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String lookalikes;
+
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    private String targetingJson;
 
     private java.math.BigDecimal budget;
     private Integer durationDays;
+
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    private String prompt;
+
+    private String model;
 
     @CreationTimestamp
     private Instant createdAt;

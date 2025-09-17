@@ -12,6 +12,9 @@ public class CreateAdSetRequest {
     private String location;
     private String interests;
     private String lookalikes;
+    private String targetingJson;
     private BigDecimal budget;
     private Integer durationDays;
+    private String prompt;
+    private String model;
 }

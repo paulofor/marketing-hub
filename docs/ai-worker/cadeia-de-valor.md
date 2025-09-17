@@ -7,9 +7,9 @@ Este documento consolida como o Worker IA encadeia suas rotinas para transformar
 ```mermaid
 flowchart LR
     subgraph Descoberta
-        SPNovo["Produto de Sucesso\n(novo = true)"]
-        SPEnriquecido["Produto de Sucesso enriquecido\n(copy, funil, links)"]
-        SPNovo -->|SuccessProductScheduler\n→ SuccessProductAnalyzer| SPEnriquecido
+        SPNovo["Produto de Sucesso<br/>(novo = true)"]
+        SPEnriquecido["Produto de Sucesso enriquecido<br/>(copy, funil, links)"]
+        SPNovo -->|SuccessProductScheduler → SuccessProductAnalyzer| SPEnriquecido
     end
 
     subgraph Exploração do mercado
@@ -19,11 +19,11 @@ flowchart LR
         Publicos["Públicos segmentados"]
     end
 
-    SPEnriquecido -->|SuccessProductNicheHypothesisService\n(generate_niche_hypothesis)| Nicho
+    SPEnriquecido -->|SuccessProductNicheHypothesisService (generate_niche_hypothesis)| Nicho
     SPEnriquecido -->|SuccessProductNicheHypothesisService| HipotesesSP
 
-    Nicho -->|NicheHypothesisService\n(hypothesesToGenerate)| HipoteseNovas
-    Nicho -->|NicheAudienceService\n(audiencesToGenerate)| Publicos
+    Nicho -->|NicheHypothesisService (hypothesesToGenerate)| HipoteseNovas
+    Nicho -->|NicheAudienceService (audiencesToGenerate)| Publicos
 
     subgraph Execução de campanhas
         Experimentos["Experimento aprovado"]
@@ -35,8 +35,8 @@ flowchart LR
     HipoteseNovas -->|Seleção manual| Experimentos
     Publicos -->|Públicos aprovados| Experimentos
 
-    Experimentos -->|ExperimentCreativeService\n(creativesToGenerate)| Criativos
-    Experimentos -->|AudienceAdSetService\n(audienceApproved)| AdSets
+    Experimentos -->|ExperimentCreativeService (creativesToGenerate)| Criativos
+    Experimentos -->|AudienceAdSetService (audienceApproved)| AdSets
     Publicos -->|Contexto para targeting| AdSets
 ```
 

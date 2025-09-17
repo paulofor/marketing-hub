@@ -33,6 +33,7 @@ classDiagram
     class AudienceAdSetService
     class AudienceAdSetScheduler
     class AudienceAdSetChatGptClient
+    class BackendExperimentClient
 
     NicheHypothesisScheduler --> NicheHypothesisService
     ExperimentCreativeScheduler --> ExperimentCreativeService
@@ -43,4 +44,5 @@ classDiagram
     NicheAudienceService --> AudienceChatGptClient
     AudienceAdSetScheduler --> AudienceAdSetService
     AudienceAdSetService --> AudienceAdSetChatGptClient
+    AudienceAdSetService --> BackendExperimentClient
 ```

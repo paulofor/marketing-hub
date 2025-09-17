@@ -85,8 +85,8 @@ O diagrama destaca:
 
 ### 6. Experimento + Públicos aprovados → Conjuntos de anúncios
 - **Disparo:** `AudienceAdSetScheduler`.
-- **Gatilho:** experimentos para Facebook com criativos aprovados e pelo menos um público aprovado (`audience.approved = true`), desde que ainda não existam ad sets.
-- **Transformação:** `AudienceAdSetService` cruza públicos aprovados do nicho/hipótese, gera segmentações detalhadas via `AudienceAdSetChatGptClient` e persiste conjuntos de anúncios (`location`, `interests`, `targetingJson`, `budget`, `durationDays`, `prompt`, `model`).
+- **Gatilho:** experimentos para Facebook com criativos aprovados e pelo menos um público aprovado (`audience.approved = true`), retornados pelo backend em `GET /api/facebook-adsets/experiments-ready`, desde que ainda não existam ad sets para o experimento.
+- **Transformação:** `AudienceAdSetService` consulta o backend para confirmar a ausência de ad sets, cruza os públicos aprovados do nicho/hipótese, gera segmentações detalhadas via `AudienceAdSetChatGptClient` e persiste conjuntos de anúncios (`location`, `interests`, `targetingJson`, `budget`, `durationDays`, `prompt`, `model`) com `POST /api/adsets`.
 - **Resultado:** planejamento de mídia estruturado para ativação na Meta.
 - **Referências:** [`experimento-adset-service.md`](experimento-adset-service.md).
 

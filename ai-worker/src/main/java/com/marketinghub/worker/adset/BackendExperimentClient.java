@@ -184,6 +184,15 @@ public class BackendExperimentClient {
         UUID hypothesisId = hypothesis != null ? hypothesis.getId() : null;
         List<Audience> result = new ArrayList<>();
         for (AudienceDto dto : dtos) {
+            if (dto == null) {
+                log.warn("Backend returned null audience entry when listing experiment audiences");
+                continue;
+            }
+            Long dtoId = dto.getId();
+            if (dtoId == null) {
+                log.warn("Skipping audience without identifier when listing experiment audiences");
+                continue;
+            }
             if (!dto.isApproved()) {
                 continue;
             }
@@ -192,7 +201,7 @@ public class BackendExperimentClient {
                 continue;
             }
             Audience audience = new Audience();
-            audience.setId(dto.getId());
+            audience.setId(dtoId);
             audience.setName(dto.getName());
             audience.setDescription(dto.getDescription());
             audience.setPrompt(dto.getPrompt());

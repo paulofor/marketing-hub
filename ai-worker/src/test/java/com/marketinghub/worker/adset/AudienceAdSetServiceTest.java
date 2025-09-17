@@ -128,9 +128,13 @@ class AudienceAdSetServiceTest {
                         """)
                 .setHeader("Content-Type", "application/json"));
 
-        when(chatGptClient.planAdSet(org.mockito.Mockito.any(), org.mockito.Mockito.argThat(a -> a.getId().equals(1L))))
+        when(chatGptClient.planAdSet(
+                        org.mockito.Mockito.any(),
+                        org.mockito.Mockito.argThat(a -> a != null && a.getId().equals(1L))))
                 .thenReturn(new AdSetPlan("BR", List.of("Interest"), List.of(), BigDecimal.TEN, 7, "{}", "prompt1", "gpt-4"));
-        when(chatGptClient.planAdSet(org.mockito.Mockito.any(), org.mockito.Mockito.argThat(a -> a.getId().equals(3L))))
+        when(chatGptClient.planAdSet(
+                        org.mockito.Mockito.any(),
+                        org.mockito.Mockito.argThat(a -> a != null && a.getId().equals(3L))))
                 .thenReturn(new AdSetPlan("US", List.of("Another"), List.of("Look"), BigDecimal.valueOf(5), 5,
                         "{\"key\":\"value\"}", "prompt2", "gpt-4"));
 

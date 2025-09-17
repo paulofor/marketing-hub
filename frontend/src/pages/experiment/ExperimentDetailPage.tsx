@@ -88,6 +88,10 @@ export default function ExperimentDetailPage() {
     },
     { label: "Criativos a gerar", value: data.creativesToGenerate ?? "—" },
     {
+      label: "Públicos aprovados",
+      value: data.audienceApproved ? "Sim" : "Não",
+    },
+    {
       label: "MDE (p.p.)",
       value: data.mdePercent ?? preset?.defaultMdePp ?? "—",
     },

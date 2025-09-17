@@ -4,6 +4,7 @@ import { useExperiment } from "../../api/experiment/useExperiment";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
 import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
+import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
 import PageTitle from "../../components/PageTitle";
 import CriativosTab from "./CriativosTab";
 import PublicosTab from "./PublicosTab";
@@ -15,6 +16,9 @@ export default function ExperimentDetailPage() {
   const { id } = useParams();
   const expId = id as string;
   const { data, isLoading } = useExperiment(expId);
+  const { data: audienceData } = useAudiencesByNiche(
+    data ? String(data.nicheId) : undefined,
+  );
   const { data: niche } = useNiche(data?.nicheId ?? 0);
   const { data: hyp } = useHypothesis(
     data ? String(data.nicheId) : undefined,
@@ -50,6 +54,12 @@ export default function ExperimentDetailPage() {
     (baseKpi != null && stopLossFactor != null
       ? baseKpi * stopLossFactor
       : null);
+  const audienceList = Array.isArray(audienceData) ? audienceData : [];
+  const relevantAudiences = audienceList.filter(
+    (a) => !a.hypothesisId || a.hypothesisId === data.hypothesisId,
+  );
+  const approvedRelevantCount = relevantAudiences.filter((a) => a.approved).length;
+
   const rows = [
     {
       label: "Nicho",
@@ -89,7 +99,7 @@ export default function ExperimentDetailPage() {
     { label: "Criativos a gerar", value: data.creativesToGenerate ?? "—" },
     {
       label: "Públicos aprovados",
-      value: data.audienceApproved ? "Sim" : "Não",
+      value: `${approvedRelevantCount}/${relevantAudiences.length}`,
     },
     {
       label: "MDE (p.p.)",

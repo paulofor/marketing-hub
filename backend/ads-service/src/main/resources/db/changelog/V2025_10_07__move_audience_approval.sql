@@ -1,0 +1,2 @@
+ALTER TABLE audience ADD COLUMN approved BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE experiment DROP COLUMN audience_approved;

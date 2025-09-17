@@ -33,6 +33,7 @@ export default function HypothesisDetailPage() {
   if (!data) return <p>Não encontrado</p>;
   const list = Array.isArray(experiments) ? experiments : [];
   const audienceList = Array.isArray(audiences) ? audiences : [];
+  const approvedAudienceCount = audienceList.filter((a) => a.approved).length;
   const rows = [
     { label: "Promessa", value: data.promise },
     { label: "Problema", value: data.problem },
@@ -102,7 +103,7 @@ export default function HypothesisDetailPage() {
 
       <p className="mb-2">
         Públicos gerados: {audienceList.length}/
-        {niche?.audiencesToGenerate ?? 0}
+        {niche?.audiencesToGenerate ?? 0} · Aprovados: {approvedAudienceCount}
       </p>
       <div className="d-flex align-items-center mb-4">
         <input

@@ -2,6 +2,7 @@ package com.marketinghub.audience.service;
 
 import com.marketinghub.audience.Audience;
 import com.marketinghub.audience.dto.CreateAudienceRequest;
+import com.marketinghub.audience.dto.UpdateAudienceRequest;
 import com.marketinghub.audience.repository.AudienceRepository;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.niche.repository.MarketNicheRepository;
@@ -57,5 +58,17 @@ public class AudienceService {
 
     public Iterable<Audience> listByMarketNiche(Long nicheId) {
         return repository.findByNicheId(nicheId);
+    }
+
+    /**
+     * Updates mutable fields of an audience.
+     */
+    @Transactional
+    public Audience update(Long id, UpdateAudienceRequest request) {
+        Audience audience = repository.findById(id).orElseThrow();
+        if (request.getApproved() != null) {
+            audience.setApproved(request.getApproved());
+        }
+        return audience;
     }
 }

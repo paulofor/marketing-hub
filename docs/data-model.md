@@ -146,6 +146,7 @@ For a mapping between frontend screens and these entities, see [Frontend Screens
 - `model` VARCHAR(255)
 - `market_niche_id` BIGINT
 - `hypothesis_id` BINARY(16)
+- `approved` BOOLEAN DEFAULT FALSE
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
@@ -167,7 +168,6 @@ For a mapping between frontend screens and these entities, see [Frontend Screens
 - `end_date` DATE
 - `status` VARCHAR(20)
 - `platform` VARCHAR(50)
-- `audience_approved` BOOLEAN DEFAULT FALSE
 - `creative_approved` BOOLEAN DEFAULT FALSE
 - `sales_funnel_id` BINARY(16)
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP

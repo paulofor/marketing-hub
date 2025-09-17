@@ -9,6 +9,7 @@ export interface Audience {
   hypothesisId?: string;
   prompt?: string;
   model?: string;
+  approved: boolean;
 }
 
 export function useAudiencesByNiche(nicheId?: string) {

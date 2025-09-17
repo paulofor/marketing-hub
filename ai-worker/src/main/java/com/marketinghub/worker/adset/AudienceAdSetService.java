@@ -102,6 +102,9 @@ public class AudienceAdSetService {
         UUID hypothesisId = experiment.getHypothesisRef() != null ? experiment.getHypothesisRef().getId() : null;
         List<Audience> filtered = new ArrayList<>();
         for (Audience audience : audiences) {
+            if (!audience.isApproved()) {
+                continue;
+            }
             if (audience.getHypothesis() == null) {
                 filtered.add(audience);
             } else if (hypothesisId != null && hypothesisId.equals(audience.getHypothesis().getId())) {

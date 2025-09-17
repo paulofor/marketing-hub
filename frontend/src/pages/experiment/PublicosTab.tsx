@@ -1,5 +1,6 @@
 import type { Audience } from "../../api/audience/useAudiencesByNiche";
 import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
+import { useUpdateAudience } from "../../api/audience/useUpdateAudience";
 
 interface PublicosTabProps {
   nicheId?: number;
@@ -21,6 +22,21 @@ export default function PublicosTab({
     isFetching,
     isError,
   } = useAudiencesByNiche(nicheIdAsString);
+  const updateAudience = useUpdateAudience(nicheIdAsString);
+
+  const handleToggleApproval = async (audience: Audience) => {
+    try {
+      await updateAudience.mutateAsync({
+        id: audience.id,
+        approved: !audience.approved,
+      });
+    } catch {
+      alert("Não foi possível atualizar a aprovação do público.");
+    }
+  };
+
+  const isAudienceUpdating = (audienceId: number) =>
+    updateAudience.isPending && updateAudience.variables?.id === audienceId;
 
   if (nicheIdAsString == null || !hypothesisId) {
     return (
@@ -68,12 +84,16 @@ export default function PublicosTab({
         audiences={relatedToHypothesis}
         emptyMessage="Nenhum público relacionado diretamente a esta hipótese."
         badgeLabel="Hipótese"
+        onToggleApproval={handleToggleApproval}
+        isUpdating={isAudienceUpdating}
       />
       <AudienceSection
         title={`Públicos disponíveis no nicho${nicheTitleSuffix}`}
         audiences={relatedToNiche}
         emptyMessage="Nenhum outro público cadastrado para este nicho."
         badgeLabel="Nicho"
+        onToggleApproval={handleToggleApproval}
+        isUpdating={isAudienceUpdating}
       />
     </div>
   );
@@ -84,11 +104,15 @@ function AudienceSection({
   audiences,
   emptyMessage,
   badgeLabel,
+  onToggleApproval,
+  isUpdating,
 }: {
   title: string;
   audiences: Audience[];
   emptyMessage: string;
   badgeLabel: string;
+  onToggleApproval: (audience: Audience) => void;
+  isUpdating: (audienceId: number) => boolean;
 }) {
   return (
     <section className="mb-4">
@@ -102,7 +126,12 @@ function AudienceSection({
         <div className="row row-cols-1 row-cols-md-2 g-4">
           {audiences.map((audience) => (
             <div key={audience.id} className="col">
-              <AudienceCard audience={audience} badgeLabel={badgeLabel} />
+              <AudienceCard
+                audience={audience}
+                badgeLabel={badgeLabel}
+                onToggleApproval={onToggleApproval}
+                disabled={isUpdating(audience.id)}
+              />
             </div>
           ))}
         </div>
@@ -114,18 +143,32 @@ function AudienceSection({
 function AudienceCard({
   audience,
   badgeLabel,
+  onToggleApproval,
+  disabled,
 }: {
   audience: Audience;
   badgeLabel: string;
+  onToggleApproval: (audience: Audience) => void;
+  disabled: boolean;
 }) {
+  const inputId = `audience-approved-${audience.id}`;
   return (
     <div className="card h-100 rounded-3">
       <div className="card-body">
         <div className="d-flex justify-content-between align-items-start">
           <h5 className="card-title mb-0">{audience.name}</h5>
-          <span className="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">
-            {badgeLabel}
-          </span>
+          <div className="d-flex gap-2">
+            <span className="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">
+              {badgeLabel}
+            </span>
+            <span
+              className={`badge ${
+                audience.approved ? "bg-success" : "bg-warning text-dark"
+              }`}
+            >
+              {audience.approved ? "Aprovado" : "Pendente"}
+            </span>
+          </div>
         </div>
         <p
           className="card-text mt-2"
@@ -140,6 +183,23 @@ function AudienceCard({
             </small>
           </p>
         )}
+        <div className="form-check form-switch mt-3">
+          <input
+            id={inputId}
+            type="checkbox"
+            className="form-check-input"
+            checked={audience.approved}
+            onChange={() => onToggleApproval(audience)}
+            disabled={disabled}
+            title="Ao aprovar, o Worker IA poderá usar este público para gerar conjuntos de anúncios."
+          />
+          <label className="form-check-label" htmlFor={inputId}>
+            Aprovar para mídia
+          </label>
+          <div className="form-text">
+            Públicos aprovados alimentam a geração automática de conjuntos de anúncios.
+          </div>
+        </div>
       </div>
     </div>
   );

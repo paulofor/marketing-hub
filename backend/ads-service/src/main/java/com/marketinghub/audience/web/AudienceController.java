@@ -4,6 +4,7 @@ import com.marketinghub.audience.dto.AudienceDto;
 import com.marketinghub.audience.dto.CreateAudienceRequest;
 import com.marketinghub.audience.mapper.AudienceMapper;
 import com.marketinghub.audience.service.AudienceService;
+import com.marketinghub.audience.dto.UpdateAudienceRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -45,5 +46,10 @@ public class AudienceController {
         return StreamSupport.stream(service.listByMarketNiche(nicheId).spliterator(), false)
                 .map(mapper::toDto)
                 .toList();
+    }
+
+    @PatchMapping("/audiences/{id}")
+    public AudienceDto update(@PathVariable Long id, @RequestBody UpdateAudienceRequest request) {
+        return mapper.toDto(service.update(id, request));
     }
 }

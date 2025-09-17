@@ -57,6 +57,7 @@ export default function NicheDetailPage() {
       })
     : [];
   const audienceList = Array.isArray(audiences) ? audiences : [];
+  const approvedAudienceCount = audienceList.filter((a) => a.approved).length;
   const rows = [
     { label: "Descrição", value: data.description },
     { label: "Volume de demanda", value: data.demandVolume },
@@ -117,7 +118,8 @@ export default function NicheDetailPage() {
         ))}
       </dl>
       <h4 className="mt-4">
-        Públicos ({audienceList.length}/{data.audiencesToGenerate ?? 0})
+        Públicos ({audienceList.length}/{data.audiencesToGenerate ?? 0}) · Aprovados: {" "}
+        {approvedAudienceCount}
       </h4>
       <div className="d-flex align-items-center mb-2">
         <input
@@ -163,7 +165,16 @@ export default function NicheDetailPage() {
             <div key={a.id} className="col">
               <div className="card h-100 rounded-3">
                 <div className="card-body">
-                  <h5 className="card-title">{a.name}</h5>
+                  <div className="d-flex justify-content-between align-items-start">
+                    <h5 className="card-title mb-0">{a.name}</h5>
+                    <span
+                      className={`badge ${
+                        a.approved ? "bg-success" : "bg-warning text-dark"
+                      }`}
+                    >
+                      {a.approved ? "Aprovado" : "Pendente"}
+                    </span>
+                  </div>
                   <p className="card-text">{a.description || "-"}</p>
                 </div>
               </div>

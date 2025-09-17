@@ -50,6 +50,10 @@ public class Audience {
     @JoinColumn(name = "hypothesis_id")
     private Hypothesis hypothesis;
 
+    /** Indicates whether the audience is approved for campaign activation. */
+    @Column(nullable = false)
+    private boolean approved;
+
     @CreationTimestamp
     private Instant createdAt;
 

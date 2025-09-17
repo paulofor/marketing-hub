@@ -1,5 +1,7 @@
 package com.marketinghub.experiment;
 
+import com.marketinghub.audience.Audience;
+import com.marketinghub.audience.repository.AudienceRepository;
 import com.marketinghub.experiment.MetricPreset;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
@@ -44,6 +46,8 @@ class ExperimentServiceTest {
     ExperimentRepository experimentRepository;
     @Autowired
     SalesFunnelRepository salesFunnelRepository;
+    @Autowired
+    AudienceRepository audienceRepository;
 
     @Test
     void createNewExperimentWithExistingNiche() {
@@ -167,6 +171,16 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
+        var hyp2 = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("H2")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
         metricPresetRepository.save(MetricPreset.builder()
                 .id("LEAN_150")
                 .name("Lean-Startup 150")
@@ -183,20 +197,32 @@ class ExperimentServiceTest {
         req1.setKpiTargetCpl(new BigDecimal("45"));
         req1.setMetricPresetId("LEAN_150");
         var expApproved = service.create(req1);
-        expApproved.setAudienceApproved(true);
         expApproved.setCreativeApproved(true);
         experimentRepository.save(expApproved);
 
         CreateExperimentRequest req2 = new CreateExperimentRequest();
         req2.setMarketNicheId(niche.getId());
-        req2.setHypothesisId(hyp.getId());
+        req2.setHypothesisId(hyp2.getId());
         req2.setName("ExpB");
         req2.setHypothesis("H");
         req2.setKpiTargetCpl(new BigDecimal("45"));
         req2.setMetricPresetId("LEAN_150");
         var expNotApproved = service.create(req2);
-        expNotApproved.setAudienceApproved(true);
+        expNotApproved.setCreativeApproved(true);
         experimentRepository.save(expNotApproved);
+
+        audienceRepository.save(Audience.builder()
+                .name("Approved audience")
+                .niche(niche)
+                .hypothesis(hyp)
+                .approved(true)
+                .build());
+        audienceRepository.save(Audience.builder()
+                .name("Pending audience")
+                .niche(niche)
+                .hypothesis(hyp2)
+                .approved(false)
+                .build());
 
         var result = service.listReadyForCampaign();
         assertThat(result).extracting(Experiment::getId).containsExactly(expApproved.getId());

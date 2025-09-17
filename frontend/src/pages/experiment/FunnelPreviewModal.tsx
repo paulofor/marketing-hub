@@ -57,34 +57,43 @@ export default function FunnelPreviewModal({
                   Este funil ainda não possui etapas cadastradas.
                 </div>
               ) : (
-                <ol className="list-group list-group-numbered">
-                  {steps.map((step) => (
-                    <li
-                      key={step.id}
-                      className="list-group-item border-0 mb-3 shadow-sm rounded-3"
-                    >
-                      <div className="d-flex flex-wrap justify-content-between gap-3">
-                        <div>
-                          <span className="badge bg-primary bg-opacity-10 text-primary fw-semibold text-uppercase small">
-                            {formatLabel(step.stimulusType)}
-                          </span>
-                          <div className="fs-5 fw-semibold text-dark mt-2">
-                            {formatLabel(step.expectedAction)}
+                <ol className="list-unstyled mb-0 d-flex flex-column gap-2">
+                  {steps.map((step, index) => {
+                    const stimulusLabel = formatLabel(step.stimulusType);
+                    return (
+                      <li key={step.id} className="card border-0 shadow-sm rounded-3">
+                        <div className="card-body p-3">
+                          <div className="d-flex flex-wrap justify-content-between gap-3">
+                            <div className="d-flex flex-column flex-grow-1 gap-2">
+                              <div className="d-flex align-items-center flex-wrap gap-2">
+                                <span className="badge rounded-pill text-bg-secondary">
+                                  {index + 1}
+                                </span>
+                                {stimulusLabel && (
+                                  <span className="badge bg-primary bg-opacity-10 text-primary fw-semibold text-uppercase small">
+                                    {stimulusLabel}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="fs-5 fw-semibold text-dark">
+                                {formatLabel(step.expectedAction)}
+                              </div>
+                              {step.note && (
+                                <p className="text-muted small mb-0">{step.note}</p>
+                              )}
+                            </div>
+                            {step.scoreInc != null && step.scoreInc !== 0 && (
+                              <div className="d-flex align-items-start">
+                                <span className="badge bg-success rounded-pill">
+                                  +{step.scoreInc}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <div className="d-flex flex-column align-items-end gap-2">
-                          {step.scoreInc != null && step.scoreInc !== 0 && (
-                            <span className="badge bg-success rounded-pill">
-                              +{step.scoreInc}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {step.note && (
-                        <p className="text-muted small mb-0 mt-3">{step.note}</p>
-                      )}
-                    </li>
-                  ))}
+                      </li>
+                    );
+                  })}
                 </ol>
               )}
             </div>

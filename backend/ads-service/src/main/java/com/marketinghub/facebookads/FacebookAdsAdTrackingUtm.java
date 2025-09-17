@@ -12,12 +12,12 @@ import lombok.Setter;
 @NoArgsConstructor
 public class FacebookAdsAdTrackingUtm {
     @Id
-    @Column(name = "ad_id", length = 36)
+    @Column(name = "ad_id", length = 36, columnDefinition = "CHAR(36)")
     private String adId;
 
     @OneToOne
     @MapsId
-    @JoinColumn(name = "ad_id")
+    @JoinColumn(name = "ad_id", columnDefinition = "CHAR(36)")
     private FacebookAdsAd ad;
 
     @Column(name = "utm_source")

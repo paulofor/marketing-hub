@@ -15,7 +15,7 @@ import java.time.Instant;
 @NoArgsConstructor
 public class FacebookAdsMediaAsset {
     @Id
-    @Column(length = 36)
+    @Column(length = 36, columnDefinition = "CHAR(36)")
     private String id;
 
     @Enumerated(EnumType.STRING)

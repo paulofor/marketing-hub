@@ -17,14 +17,14 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class FacebookAdsAdSet {
     @Id
-    @Column(length = 36)
+    @Column(length = 36, columnDefinition = "CHAR(36)")
     private String id;
 
     @Column(name = "external_id")
     private String externalId;
 
     @ManyToOne
-    @JoinColumn(name = "campaign_id", nullable = false)
+    @JoinColumn(name = "campaign_id", nullable = false, columnDefinition = "CHAR(36)")
     private FacebookAdsCampaign campaign;
 
     @Column(nullable = false)

@@ -36,8 +36,11 @@ public class AdSetService {
                 .location(request.getLocation())
                 .interests(request.getInterests())
                 .lookalikes(request.getLookalikes())
+                .targetingJson(request.getTargetingJson())
                 .budget(request.getBudget())
                 .durationDays(request.getDurationDays())
+                .prompt(request.getPrompt())
+                .model(request.getModel())
                 .build();
         return repository.save(adSet);
     }

@@ -179,8 +179,11 @@ CREATE TABLE ad_set (
     location VARCHAR(255),
     interests LONGTEXT,
     lookalikes LONGTEXT,
+    targeting_json LONGTEXT,
     budget DECIMAL(10,2),
     duration_days INT,
+    prompt LONGTEXT,
+    model VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

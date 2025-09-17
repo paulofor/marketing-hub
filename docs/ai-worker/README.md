@@ -47,6 +47,14 @@ de volta no serviço principal.
   `CreativeImageClient` para sugerir imagens, salvando os criativos com `CreativeService`.
 - **Referências:** detalhes e fluxo em [experimento-criativo-service.md](experimento-criativo-service.md).
 
+### Experimento → Conjuntos de anúncios
+- **Disparo:** `AudienceAdSetScheduler` (cron `0 */5 * * * *`).
+- **Fonte dos dados:** experimentos aprovados para Facebook com `audienceApproved = true` e sem ad sets já cadastrados.
+- **O que faz:** `AudienceAdSetService` coleta os públicos do nicho e da hipótese relacionados ao experimento,
+  envia o contexto para o `AudienceAdSetChatGptClient` estruturar localização, interesses, lookalikes e `targetingJson`,
+  e persiste os registros via `AdSetService` preenchendo também `prompt` e `model`.
+- **Referências:** documentação complementar em [experimento-adset-service.md](experimento-adset-service.md).
+
 ## Perguntas frequentes
 
 ### Existe serviço para criar público?

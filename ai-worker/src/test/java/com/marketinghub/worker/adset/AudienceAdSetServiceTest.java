@@ -1,101 +1,164 @@
 package com.marketinghub.worker.adset;
 
-import com.marketinghub.audience.Audience;
-import com.marketinghub.audience.repository.AudienceRepository;
-import com.marketinghub.experiment.AdSet;
-import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.ExperimentPlatform;
-import com.marketinghub.experiment.ExperimentStatus;
-import com.marketinghub.experiment.dto.CreateAdSetRequest;
-import com.marketinghub.experiment.repository.AdSetRepository;
-import com.marketinghub.experiment.repository.ExperimentRepository;
-import com.marketinghub.experiment.service.AdSetService;
-import com.marketinghub.hypothesis.Hypothesis;
-import com.marketinghub.niche.MarketNiche;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
+import com.marketinghub.experiment.dto.AdSetDto;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.reactive.function.client.WebClient;
 
 @ExtendWith(MockitoExtension.class)
 class AudienceAdSetServiceTest {
-    @Mock
-    ExperimentRepository experimentRepository;
-    @Mock
-    AudienceRepository audienceRepository;
-    @Mock
-    AdSetRepository adSetRepository;
-    @Mock
-    AdSetService adSetService;
+    private MockWebServer server;
+    private AudienceAdSetService service;
+    private BackendExperimentClient backendClient;
+
     @Mock
     AudienceAdSetChatGptClient chatGptClient;
-    @InjectMocks
-    AudienceAdSetService service;
-
-    private Experiment experiment;
-    private Audience approvedAudience;
-    private Audience pendingAudience;
 
     @BeforeEach
-    void setUp() {
-        MarketNiche niche = new MarketNiche();
-        niche.setId(5L);
+    void setUp() throws IOException {
+        server = new MockWebServer();
+        server.start();
+        backendClient = new BackendExperimentClient(
+                WebClient.builder(),
+                server.url("/").toString(),
+                "/api");
+        service = new AudienceAdSetService(backendClient, chatGptClient);
+    }
 
-        Hypothesis hypothesis = new Hypothesis();
-        hypothesis.setId(UUID.randomUUID());
-        hypothesis.setMarketNiche(niche);
-
-        experiment = new Experiment();
-        experiment.setId(10L);
-        experiment.setNiche(niche);
-        experiment.setHypothesisRef(hypothesis);
-        experiment.setStatus(ExperimentStatus.PLANNED);
-        experiment.setPlatform(ExperimentPlatform.FACEBOOK);
-        experiment.setCreativeApproved(true);
-
-        approvedAudience = new Audience();
-        approvedAudience.setId(1L);
-        approvedAudience.setApproved(true);
-        approvedAudience.setNiche(niche);
-        approvedAudience.setHypothesis(hypothesis);
-        approvedAudience.setName("Approved audience");
-
-        pendingAudience = new Audience();
-        pendingAudience.setId(2L);
-        pendingAudience.setApproved(false);
-        pendingAudience.setNiche(niche);
-        pendingAudience.setHypothesis(hypothesis);
-        pendingAudience.setName("Pending audience");
+    @AfterEach
+    void tearDown() throws IOException {
+        server.shutdown();
     }
 
     @Test
-    void generateSkipsUnapprovedAudiences() {
-        when(experimentRepository.findAllReadyForAdSets(eq(ExperimentPlatform.FACEBOOK), anyList()))
-                .thenReturn(List.of(experiment));
-        when(adSetRepository.countByExperimentId(10L)).thenReturn(0L);
-        when(audienceRepository.findDetailedByNicheId(5L))
-                .thenReturn(List.of(approvedAudience, pendingAudience));
-        AdSetPlan plan = new AdSetPlan("BR", List.of("Interest"), List.of(), BigDecimal.TEN, 7, "{}", "prompt", "gpt-4");
-        when(chatGptClient.planAdSet(experiment, approvedAudience)).thenReturn(plan);
-        AdSet saved = new AdSet();
-        when(adSetService.create(any(CreateAdSetRequest.class))).thenReturn(saved);
+    void generateCreatesAdSetsForRelevantAudiences() throws Exception {
+        UUID hypothesisId = UUID.randomUUID();
+        String experimentsPayload = """
+                [
+                  {
+                    "experiment": {
+                      "id": 10,
+                      "nicheId": 5,
+                      "hypothesisId": "%s",
+                      "name": "Experiment",
+                      "hypothesis": "Hypothesis",
+                      "status": "PLANNED",
+                      "platform": "FACEBOOK",
+                      "creativeApproved": true
+                    },
+                    "niche": {
+                      "id": 5,
+                      "name": "Health",
+                      "baseSegmentation": "Base",
+                      "interests": "Interest",
+                      "demographicFilters": "Filters",
+                      "extraTips": "Tips"
+                    },
+                    "hypothesis": {
+                      "id": "%s",
+                      "title": "Title",
+                      "promise": "Promise",
+                      "persona": "Persona",
+                      "mechanism": "Mechanism",
+                      "uniqueMechanism": "Unique"
+                    },
+                    "audiences": [
+                      {
+                        "id": 1,
+                        "name": "Matching",
+                        "description": "Desc",
+                        "marketNicheId": 5,
+                        "hypothesisId": "%s",
+                        "approved": true
+                      },
+                      {
+                        "id": 2,
+                        "name": "Irrelevant",
+                        "description": "Desc",
+                        "marketNicheId": 5,
+                        "hypothesisId": "%s",
+                        "approved": true
+                      },
+                      {
+                        "id": 3,
+                        "name": "Generic",
+                        "description": "Desc",
+                        "marketNicheId": 5,
+                        "hypothesisId": null,
+                        "approved": true
+                      }
+                    ]
+                  }
+                ]
+                """.formatted(hypothesisId, hypothesisId, hypothesisId, UUID.randomUUID());
 
-        Map<Long, List<AdSet>> result = service.generate();
+        server.enqueue(new MockResponse()
+                .setBody(experimentsPayload)
+                .setHeader("Content-Type", "application/json"));
+        server.enqueue(new MockResponse()
+                .setBody("[]")
+                .setHeader("Content-Type", "application/json"));
+        server.enqueue(new MockResponse()
+                .setBody("""
+                        {"id":101,"experimentId":10,"location":"BR","interests":"Interest","lookalikes":null,
+                         "targetingJson":"{}","budget":10,"durationDays":7,"prompt":"prompt1","model":"gpt-4"}
+                        """)
+                .setHeader("Content-Type", "application/json"));
+        server.enqueue(new MockResponse()
+                .setBody("""
+                        {"id":102,"experimentId":10,"location":"US","interests":"Another","lookalikes":"Look",
+                         "targetingJson":"{\\"key\\":\\"value\\"}","budget":5,"durationDays":5,
+                         "prompt":"prompt2","model":"gpt-4"}
+                        """)
+                .setHeader("Content-Type", "application/json"));
 
-        verify(chatGptClient).planAdSet(experiment, approvedAudience);
-        verify(chatGptClient, never()).planAdSet(any(), eq(pendingAudience));
-        verify(adSetService).create(any(CreateAdSetRequest.class));
-        assertThat(result).containsEntry(10L, List.of(saved));
+        when(chatGptClient.planAdSet(org.mockito.Mockito.any(), org.mockito.Mockito.argThat(a -> a.getId().equals(1L))))
+                .thenReturn(new AdSetPlan("BR", List.of("Interest"), List.of(), BigDecimal.TEN, 7, "{}", "prompt1", "gpt-4"));
+        when(chatGptClient.planAdSet(org.mockito.Mockito.any(), org.mockito.Mockito.argThat(a -> a.getId().equals(3L))))
+                .thenReturn(new AdSetPlan("US", List.of("Another"), List.of("Look"), BigDecimal.valueOf(5), 5,
+                        "{\"key\":\"value\"}", "prompt2", "gpt-4"));
+
+        Map<Long, List<AdSetDto>> result = service.generate();
+
+        assertThat(result).containsKey(10L);
+        assertThat(result.get(10L)).hasSize(2);
+        assertThat(result.get(10L).stream().map(AdSetDto::getId)).containsExactlyInAnyOrder(101L, 102L);
+
+        RecordedRequest experimentsRequest = server.takeRequest();
+        assertThat(experimentsRequest.getPath()).isEqualTo("/api/facebook-adsets/experiments-ready");
+        RecordedRequest existingRequest = server.takeRequest();
+        assertThat(existingRequest.getPath()).isEqualTo("/api/adsets?experimentId=10");
+        RecordedRequest firstCreate = server.takeRequest();
+        assertThat(firstCreate.getMethod()).isEqualTo("POST");
+        assertThat(firstCreate.getPath()).isEqualTo("/api/adsets");
+        assertThat(firstCreate.getBody().readUtf8()).contains("\"location\":\"BR\"");
+        RecordedRequest secondCreate = server.takeRequest();
+        assertThat(secondCreate.getBody().readUtf8()).contains("\"location\":\"US\"");
+    }
+
+    @Test
+    void generateReturnsEmptyWhenBackendFails() {
+        server.enqueue(new MockResponse().setResponseCode(500).setBody("backend error"));
+
+        Map<Long, List<AdSetDto>> result = service.generate();
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(chatGptClient);
     }
 }

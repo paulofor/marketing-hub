@@ -2,8 +2,8 @@
 
 O Worker IA é um aplicativo Spring Boot separado do backend `ads-service`. Ele consome o mesmo
 modelo de dados para executar rotinas assíncronas agendadas a cada cinco minutos (`0 */5 * * * *`).
-Essas rotinas consultam o banco, acionam modelos de IA quando necessário e persistem os resultados
-de volta no serviço principal.
+Essas rotinas consultam o banco ou consomem endpoints REST expostos pelo backend, acionam modelos
+de IA quando necessário e persistem os resultados de volta no serviço principal.
 
 ## Rotinas ativas
 
@@ -48,11 +48,12 @@ de volta no serviço principal.
 - **Referências:** detalhes e fluxo em [experimento-criativo-service.md](experimento-criativo-service.md).
 
 - **Disparo:** `AudienceAdSetScheduler` (cron `0 */5 * * * *`).
-- **Fonte dos dados:** experimentos na plataforma Facebook com criativos aprovados e pelo menos um público aprovado
-  (`audience.approved = true`), desde que ainda não existam ad sets cadastrados.
-- **O que faz:** `AudienceAdSetService` coleta os públicos do nicho e da hipótese relacionados ao experimento,
-  envia o contexto para o `AudienceAdSetChatGptClient` estruturar localização, interesses, lookalikes e `targetingJson`,
-  e persiste os registros via `AdSetService` preenchendo também `prompt` e `model`.
+- **Fonte dos dados:** experimentos na plataforma Facebook com criativos aprovados e pelo menos um público aprovado,
+  obtidos pelo `BackendExperimentClient` em `GET /api/facebook-adsets/experiments-ready`.
+- **O que faz:** `AudienceAdSetService` filtra os públicos retornados pelo backend, verifica se já existem registros com
+  `GET /api/adsets?experimentId=...`, envia o contexto para o `AudienceAdSetChatGptClient` estruturar localização,
+  interesses, lookalikes e `targetingJson`, e persiste os registros com `POST /api/adsets`, preenchendo também `prompt`
+  e `model`.
 - **Referências:** documentação complementar em [experimento-adset-service.md](experimento-adset-service.md).
 
 ## Perguntas frequentes

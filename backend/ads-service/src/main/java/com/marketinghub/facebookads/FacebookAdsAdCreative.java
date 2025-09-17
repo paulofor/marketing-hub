@@ -16,7 +16,7 @@ import java.time.Instant;
 @NoArgsConstructor
 public class FacebookAdsAdCreative {
     @Id
-    @Column(length = 36)
+    @Column(length = 36, columnDefinition = "CHAR(36)")
     private String id;
 
     @Column(name = "external_id")

@@ -18,7 +18,7 @@ import java.util.Set;
 @NoArgsConstructor
 public class FacebookAdsCampaign {
     @Id
-    @Column(length = 36)
+    @Column(length = 36, columnDefinition = "CHAR(36)")
     private String id;
 
     @Column(name = "external_id")
@@ -51,13 +51,19 @@ public class FacebookAdsCampaign {
     private String apiVersion;
 
     @ElementCollection(targetClass = SpecialAdCategory.class)
-    @CollectionTable(name = "facebook_ads_campaign_special_ad_category", joinColumns = @JoinColumn(name = "campaign_id"))
+    @CollectionTable(
+            name = "facebook_ads_campaign_special_ad_category",
+            joinColumns = @JoinColumn(name = "campaign_id", columnDefinition = "CHAR(36)")
+    )
     @Enumerated(EnumType.STRING)
     @Column(name = "category", nullable = false)
     private Set<SpecialAdCategory> specialAdCategories = new HashSet<>();
 
     @ElementCollection
-    @CollectionTable(name = "facebook_ads_campaign_special_ad_country", joinColumns = @JoinColumn(name = "campaign_id"))
+    @CollectionTable(
+            name = "facebook_ads_campaign_special_ad_country",
+            joinColumns = @JoinColumn(name = "campaign_id", columnDefinition = "CHAR(36)")
+    )
     @Column(name = "country_iso2", length = 2, nullable = false)
     private Set<String> specialAdCountries = new HashSet<>();
 

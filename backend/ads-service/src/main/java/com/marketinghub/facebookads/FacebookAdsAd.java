@@ -16,21 +16,21 @@ import java.time.Instant;
 @NoArgsConstructor
 public class FacebookAdsAd {
     @Id
-    @Column(length = 36)
+    @Column(length = 36, columnDefinition = "CHAR(36)")
     private String id;
 
     @Column(name = "external_id")
     private String externalId;
 
     @ManyToOne
-    @JoinColumn(name = "adset_id", nullable = false)
+    @JoinColumn(name = "adset_id", nullable = false, columnDefinition = "CHAR(36)")
     private FacebookAdsAdSet adSet;
 
     @Column(nullable = false)
     private String name;
 
     @ManyToOne
-    @JoinColumn(name = "creative_id", nullable = false)
+    @JoinColumn(name = "creative_id", nullable = false, columnDefinition = "CHAR(36)")
     private FacebookAdsAdCreative creative;
 
     @Enumerated(EnumType.STRING)

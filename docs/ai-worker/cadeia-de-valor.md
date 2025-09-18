@@ -9,7 +9,7 @@ flowchart LR
     subgraph Descoberta
         SPNovo["Produto de Sucesso<br/>(novo = true)"]
         SPEnriquecido["Produto de Sucesso enriquecido<br/>(copy, funil, links)"]
-        SPNovo -->|SuccessProductScheduler → SuccessProductAnalyzer| SPEnriquecido
+        SPNovo -- SuccessProductScheduler → SuccessProductAnalyzer --> SPEnriquecido
     end
 
     subgraph Exploração do mercado
@@ -19,11 +19,11 @@ flowchart LR
         Publicos["Públicos segmentados"]
     end
 
-    SPEnriquecido -->|SuccessProductNicheHypothesisService (generate_niche_hypothesis)| Nicho
-    SPEnriquecido -->|SuccessProductNicheHypothesisService| HipotesesSP
+    SPEnriquecido -- SuccessProductNicheHypothesisService (generate_niche_hypothesis) --> Nicho
+    SPEnriquecido -- SuccessProductNicheHypothesisService --> HipotesesSP
 
-    Nicho -->|NicheHypothesisService (hypothesesToGenerate)| HipoteseNovas
-    Nicho -->|NicheAudienceService (audiencesToGenerate)| Publicos
+    Nicho -- NicheHypothesisService (hypothesesToGenerate) --> HipoteseNovas
+    Nicho -- NicheAudienceService (audiencesToGenerate) --> Publicos
 
     subgraph Execução de campanhas
         Experimentos["Experimento aprovado"]
@@ -31,13 +31,13 @@ flowchart LR
         AdSets["Conjuntos de anúncios"]
     end
 
-    HipotesesSP -->|Seleção manual| Experimentos
-    HipoteseNovas -->|Seleção manual| Experimentos
-    Publicos -->|Públicos aprovados| Experimentos
+    HipotesesSP -- Seleção manual --> Experimentos
+    HipoteseNovas -- Seleção manual --> Experimentos
+    Publicos -- Públicos aprovados --> Experimentos
 
-    Experimentos -->|ExperimentCreativeService (creativesToGenerate)| Criativos
-    Experimentos -->|AudienceAdSetService (audience.approved)| AdSets
-    Publicos -->|Contexto para targeting| AdSets
+    Experimentos -- ExperimentCreativeService (creativesToGenerate) --> Criativos
+    Experimentos -- AudienceAdSetService (audience.approved) --> AdSets
+    Publicos -- Contexto para targeting --> AdSets
 ```
 
 O diagrama destaca:

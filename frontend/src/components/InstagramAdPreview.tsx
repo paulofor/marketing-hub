@@ -1,4 +1,5 @@
 import { Creative } from "../api/creative/useCreatives";
+import { resolveAssetUrl } from "../utils/resolveAssetUrl";
 
 interface Props {
   creative: Creative;
@@ -39,7 +40,7 @@ export default function InstagramAdPreview({ creative }: Props) {
         </div>
       </div>
       <img
-        src={creative.imageUrl}
+        src={resolveAssetUrl(creative.imageUrl)}
         alt="creative"
         style={{ width: "100%", display: "block" }}
       />

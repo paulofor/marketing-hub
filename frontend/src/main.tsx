@@ -6,9 +6,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { io } from "socket.io-client";
 import App from "./App";
 import axios from "axios";
+import { apiBaseUrl } from "./config/api";
 
-const defaultBaseURL = `${window.location.protocol}//${window.location.hostname}:8000`;
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || defaultBaseURL;
+axios.defaults.baseURL = apiBaseUrl;
 
 const queryClient = new QueryClient();
 const socket = io({ path: "/ws" });

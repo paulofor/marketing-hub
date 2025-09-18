@@ -43,7 +43,7 @@ public class BackendExperimentClient {
                                    @Value("${backend.bae-urls:http://191.252.92.222:8080}") String backendBaseUrl,
                                    @Value("${backend.api-prefix:/api}") String apiPrefix) {
         this.webClient = builder.build();
-        this.backendBaseUrlAudienceAdSetScheduler = backendBaseUrl;
+        this.backendBaseUrl = backendBaseUrl;
         this.apiPrefix = apiPrefix;
     }
 
@@ -52,6 +52,7 @@ public class BackendExperimentClient {
      */
     public List<ReadyExperiment> listExperimentsReadyForAdSets() {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-adsets/experiments-ready");
+        logBackendRequest("GET", url);
         List<ExperimentReadyForAdSetDto> payload = webClient.get()
                 .uri(url)
                 .exchangeToFlux(response -> {
@@ -86,6 +87,7 @@ public class BackendExperimentClient {
         String uri = UriComponentsBuilder.fromHttpUrl(base)
                 .queryParam("experimentId", experimentId)
                 .toUriString();
+        logBackendRequest("GET", uri);
         Boolean result = webClient.get()
                 .uri(uri)
                 .exchangeToMono(response -> {
@@ -110,6 +112,7 @@ public class BackendExperimentClient {
      */
     public AdSetDto createAdSet(CreateAdSetRequest request) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/adsets");
+        logBackendRequest("POST", url);
         return webClient.post()
                 .uri(url)
                 .bodyValue(request)
@@ -124,6 +127,12 @@ public class BackendExperimentClient {
                     return response.bodyToMono(AdSetDto.class);
                 })
                 .block();
+    }
+
+    private void logBackendRequest(String method, String url) {
+        if (log.isInfoEnabled()) {
+            log.info("Calling backend {} {}", method, url);
+        }
     }
 
     private ReadyExperiment toReadyExperiment(ExperimentReadyForAdSetDto dto) {

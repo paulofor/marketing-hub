@@ -11,6 +11,7 @@ import { useUpdateCreativeLabels } from "../../api/creative/useUpdateCreativeLab
 import { useRequestCreatives } from "../../api/experiment/useRequestCreatives";
 import { useExperiment } from "../../api/experiment/useExperiment";
 import InstagramAdPreview from "../../components/InstagramAdPreview";
+import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 
 interface Props {
   experimentId: string;
@@ -205,7 +206,11 @@ export default function CriativosTab({ experimentId }: Props) {
             {creatives.map((c) => (
               <tr key={c.id}>
                 <td>
-                  <img src={c.imageUrl} style={{ width: 80 }} />
+                  <img
+                    src={resolveAssetUrl(c.imageUrl)}
+                    alt={c.headline || "Criativo"}
+                    style={{ width: 80 }}
+                  />
                 </td>
                 <td>{c.headline}</td>
                 <td>{c.primaryText.slice(0, 60)}</td>

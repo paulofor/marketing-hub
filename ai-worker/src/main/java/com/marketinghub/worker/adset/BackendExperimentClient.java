@@ -40,10 +40,10 @@ public class BackendExperimentClient {
     private final String apiPrefix;
 
     public BackendExperimentClient(WebClient.Builder builder,
-                                   @Value("${backend.base-url:http://localhost:8080}") String backendBaseUrl,
+                                   @Value("${backend.bae-urls:http://191.252.92.222:8080}") String backendBaseUrl,
                                    @Value("${backend.api-prefix:/api}") String apiPrefix) {
         this.webClient = builder.build();
-        this.backendBaseUrl = backendBaseUrl;
+        this.backendBaseUrlAudienceAdSetScheduler = backendBaseUrl;
         this.apiPrefix = apiPrefix;
     }
 

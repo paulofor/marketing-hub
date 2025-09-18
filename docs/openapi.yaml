@@ -1,36 +1,59 @@
-openapi: 3.0.0
+openapi: 3.1.0
 info:
   title: Marketing Hub API
   version: 1.0.0
+  description: |
+    REST surface used by MarketingHub frontends, workers and integrations.
+    This document highlights the orchestration endpoints introduced in Journey
+    Orchestration Stage 2 while keeping the existing experiment and creative
+    resources available.
+servers:
+  - url: https://api.marketinghub.local
+    description: Production (placeholder)
+  - url: http://localhost:8000
+    description: Local development
+tags:
+  - name: Journeys
+    description: Modelagem de templates, passos e instâncias operacionais da jornada AIDA.
+  - name: Journey Assignments
+    description: Vínculo de leads ou segmentos às jornadas em execução.
+  - name: Journey Events
+    description: Ingestão de eventos multicanal utilizados para medir e avançar a jornada.
 paths:
   /api/niches/{nicheId}/experiments:
     post:
+      tags: [Experiments]
       summary: Criar experimento
       parameters:
-        - in: path
-          name: nicheId
-          required: true
-          schema:
-            type: integer
+        - $ref: '#/components/parameters/NicheIdParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateExperimentRequest'
+      responses:
+        '201':
+          description: Experimento criado com sucesso
+        '400':
+          description: Dados inválidos
     get:
+      tags: [Experiments]
       summary: Listar experimentos do nicho
       parameters:
-        - in: path
-          name: nicheId
-          required: true
-          schema:
-            type: integer
+        - $ref: '#/components/parameters/NicheIdParam'
       responses:
         '200':
-          description: OK
+          description: Lista de experimentos do nicho
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Experiment'
   /api/experiments:
     post:
+      tags: [Experiments]
       summary: Criar experimento
       requestBody:
         required: true
@@ -39,10 +62,11 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateExperimentRequest'
       responses:
-        '200':
-          description: OK
+        '201':
+          description: Experimento criado
   /api/experiments/{id}/duplicate:
     post:
+      tags: [Experiments]
       summary: Duplicar experimento
       parameters:
         - in: path
@@ -52,9 +76,827 @@ paths:
             type: string
       responses:
         '200':
-          description: OK
+          description: Experimento duplicado
+  /api/experiments/{id}/creatives:
+    post:
+      tags: [Creatives]
+      summary: Criar criativo
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCreativeRequest'
+      responses:
+        '201':
+          description: Criativo criado
+    get:
+      tags: [Creatives]
+      summary: Listar criativos do experimento
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de criativos
+  /api/creatives/{id}/preview:
+    get:
+      tags: [Creatives]
+      summary: Preview do criativo
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Preview retornado
+  /api/experiments/{experimentId}/landing:
+    post:
+      tags: [Landing Pages]
+      summary: Criar landing page
+      parameters:
+        - in: path
+          name: experimentId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLandingPageRequest'
+      responses:
+        '201':
+          description: Landing criada
+    get:
+      tags: [Landing Pages]
+      summary: Listar landing pages do experimento
+      parameters:
+        - in: path
+          name: experimentId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de landings
+  /api/angles:
+    get:
+      tags: [Creatives]
+      summary: Listar angles
+      responses:
+        '200':
+          description: Lista de angles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AngleDto'
+    post:
+      tags: [Creatives]
+      summary: Criar angle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAngleRequest'
+      responses:
+        '201':
+          description: Angle criado
+        '400':
+          description: Dados inválidos
+  /api/angles/{id}:
+    put:
+      tags: [Creatives]
+      summary: Atualizar angle
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AngleDto'
+      responses:
+        '200':
+          description: Angle atualizado
+  /api/visual-proofs:
+    get:
+      tags: [Creatives]
+      summary: Listar visual proofs
+      responses:
+        '200':
+          description: Lista de visual proofs
+    post:
+      tags: [Creatives]
+      summary: Criar visual proof
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVisualProofRequest'
+      responses:
+        '201':
+          description: Visual proof criado
+  /api/emotional-triggers:
+    get:
+      tags: [Creatives]
+      summary: Listar emotional triggers
+      responses:
+        '200':
+          description: Lista de gatilhos emocionais
+    post:
+      tags: [Creatives]
+      summary: Criar emotional trigger
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEmotionalTriggerRequest'
+      responses:
+        '201':
+          description: Trigger criado
+  /api/creatives/{id}/labels:
+    patch:
+      tags: [Creatives]
+      summary: Atualizar labels do criativo
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCreativeLabelsRequest'
+      responses:
+        '200':
+          description: Labels atualizadas
+  /api/niches/{nicheId}/hypotheses:
+    get:
+      tags: [Hypotheses]
+      summary: Listar hipóteses do nicho
+      parameters:
+        - $ref: '#/components/parameters/NicheIdParam'
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de hipóteses
+  /api/hypotheses:
+    post:
+      tags: [Hypotheses]
+      summary: Criar hipótese
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHypothesisRequest'
+      responses:
+        '201':
+          description: Hipótese criada
+    get:
+      tags: [Hypotheses]
+      summary: Listar hipóteses
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de hipóteses
+  /api/hypotheses/{id}:
+    put:
+      tags: [Hypotheses]
+      summary: Atualizar hipótese
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHypothesisRequest'
+      responses:
+        '200':
+          description: Hipótese atualizada
+  /api/hypotheses/{id}/status:
+    patch:
+      tags: [Hypotheses]
+      summary: Atualizar status da hipótese
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+      responses:
+        '200':
+          description: Status atualizado
+  /api/experiments/{experimentId}/hypotheses/board:
+    get:
+      tags: [Hypotheses]
+      summary: Visualizar hipóteses em formato Kanban
+      parameters:
+        - in: path
+          name: experimentId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Quadro retornado
+  /api/instagram-creatives/approved:
+    get:
+      tags: [Creatives]
+      summary: Listar criativos do Instagram aprovados
+      responses:
+        '200':
+          description: Lista de criativos aprovados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InstagramCreative'
+  /api/facebook-campaigns/experiments-ready:
+    get:
+      tags: [Experiments]
+      summary: Listar experimentos prontos para campanhas no Facebook
+      responses:
+        '200':
+          description: Lista de experimentos prontos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Experiment'
+
+  /api/journey-templates:
+    get:
+      tags: [Journeys]
+      summary: Listar templates de jornada
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Lista paginada de templates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JourneyTemplateSummary'
+                  totalElements:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  number:
+                    type: integer
+    post:
+      tags: [Journeys]
+      summary: Criar template de jornada
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JourneyTemplateRequest'
+      responses:
+        '201':
+          description: Template criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JourneyTemplate'
+        '400':
+          description: Erro de validação ao criar o template
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+  /api/journey-templates/{id}:
+    get:
+      tags: [Journeys]
+      summary: Consultar template de jornada
+      parameters:
+        - $ref: '#/components/parameters/JourneyTemplateIdParam'
+      responses:
+        '200':
+          description: Template encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JourneyTemplate'
+        '404':
+          description: Template não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+    patch:
+      tags: [Journeys]
+      summary: Atualizar template de jornada
+      parameters:
+        - $ref: '#/components/parameters/JourneyTemplateIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JourneyTemplateUpdateRequest'
+      responses:
+        '200':
+          description: Template atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JourneyTemplate'
+        '400':
+          description: Erro de validação ao atualizar o template
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+        '404':
+          description: Template não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+    delete:
+      tags: [Journeys]
+      summary: Remover template de jornada
+      parameters:
+        - $ref: '#/components/parameters/JourneyTemplateIdParam'
+      responses:
+        '204':
+          description: Template removido
+        '404':
+          description: Template não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+  /api/journey-templates/{id}/steps:
+    get:
+      tags: [Journeys]
+      summary: Listar passos de um template
+      parameters:
+        - $ref: '#/components/parameters/JourneyTemplateIdParam'
+      responses:
+        '200':
+          description: Passos ordenados do template
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JourneyStep'
+        '404':
+          description: Template não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+    post:
+      tags: [Journeys]
+      summary: Adicionar passo ao template
+      parameters:
+        - $ref: '#/components/parameters/JourneyTemplateIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JourneyStepRequest'
+      responses:
+        '201':
+          description: Passo criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JourneyStep'
+        '400':
+          description: Erro de validação ao criar o passo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+        '404':
+          description: Template não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+  /api/journey-steps/{id}:
+    get:
+      tags: [Journeys]
+      summary: Consultar passo específico
+      parameters:
+        - $ref: '#/components/parameters/JourneyStepIdParam'
+      responses:
+        '200':
+          description: Passo encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JourneyStep'
+        '404':
+          description: Passo não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+    patch:
+      tags: [Journeys]
+      summary: Atualizar passo de jornada
+      parameters:
+        - $ref: '#/components/parameters/JourneyStepIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JourneyStepUpdateRequest'
+      responses:
+        '200':
+          description: Passo atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JourneyStep'
+        '400':
+          description: Erro de validação ao atualizar o passo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+        '404':
+          description: Passo não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+    delete:
+      tags: [Journeys]
+      summary: Remover passo de jornada
+      parameters:
+        - $ref: '#/components/parameters/JourneyStepIdParam'
+      responses:
+        '204':
+          description: Passo removido
+        '404':
+          description: Passo não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+  /api/journeys:
+    get:
+      tags: [Journeys]
+      summary: Listar jornadas
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - in: query
+          name: templateId
+          schema:
+            type: integer
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/JourneyStatus'
+      responses:
+        '200':
+          description: Lista paginada de jornadas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Journey'
+                  totalElements:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  number:
+                    type: integer
+    post:
+      tags: [Journeys]
+      summary: Criar jornada operacional
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JourneyRequest'
+      responses:
+        '201':
+          description: Jornada criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Journey'
+        '400':
+          description: Erro de validação ao criar a jornada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+        '404':
+          description: Recursos relacionados não encontrados (template, nicho ou experimento)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+  /api/journeys/{id}:
+    get:
+      tags: [Journeys]
+      summary: Consultar jornada
+      parameters:
+        - $ref: '#/components/parameters/JourneyIdParam'
+      responses:
+        '200':
+          description: Jornada encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Journey'
+        '404':
+          description: Jornada não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+    patch:
+      tags: [Journeys]
+      summary: Atualizar jornada
+      parameters:
+        - $ref: '#/components/parameters/JourneyIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JourneyUpdateRequest'
+      responses:
+        '200':
+          description: Jornada atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Journey'
+        '400':
+          description: Erro de validação ao atualizar a jornada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+        '404':
+          description: Jornada não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+    delete:
+      tags: [Journeys]
+      summary: Remover jornada
+      parameters:
+        - $ref: '#/components/parameters/JourneyIdParam'
+      responses:
+        '204':
+          description: Jornada removida
+        '404':
+          description: Jornada não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+  /api/journeys/{id}/assignments:
+    get:
+      tags: [Journey Assignments]
+      summary: Listar vínculos da jornada
+      parameters:
+        - $ref: '#/components/parameters/JourneyIdParam'
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/JourneyAssignmentStatus'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Lista paginada de vínculos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JourneyAssignment'
+                  totalElements:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  number:
+                    type: integer
+        '404':
+          description: Jornada não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+    post:
+      tags: [Journey Assignments]
+      summary: Vincular leads ou segmentos à jornada
+      parameters:
+        - $ref: '#/components/parameters/JourneyIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JourneyAssignmentRequest'
+      responses:
+        '201':
+          description: Vínculos criados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JourneyAssignment'
+        '400':
+          description: Erro de validação ao atribuir leads ou segmentos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+        '404':
+          description: Jornada ou passo relacionado não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+  /api/journey-assignments/{assignmentId}:
+    delete:
+      tags: [Journey Assignments]
+      summary: Remover vínculo de jornada
+      parameters:
+        - $ref: '#/components/parameters/JourneyAssignmentIdParam'
+      responses:
+        '204':
+          description: Vínculo removido
+        '404':
+          description: Vínculo não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+  /api/events:
+    post:
+      tags: [Journey Events]
+      summary: Registrar evento multicanal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventLogRequest'
+      responses:
+        '201':
+          description: Evento armazenado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventLog'
+        '400':
+          description: Payload inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+        '404':
+          description: Jornada ou passo de jornada não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemResponse'
+
 components:
+  parameters:
+    NicheIdParam:
+      in: path
+      name: nicheId
+      required: true
+      schema:
+        type: integer
+    JourneyTemplateIdParam:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+    JourneyStepIdParam:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+    JourneyIdParam:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+    JourneyAssignmentIdParam:
+      in: path
+      name: assignmentId
+      required: true
+      schema:
+        type: integer
+    PageParam:
+      in: query
+      name: page
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    SizeParam:
+      in: query
+      name: size
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 20
+
   schemas:
+    ProblemResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
     CreateExperimentRequest:
       type: object
       properties:
@@ -82,77 +924,17 @@ components:
           format: date
         salesFunnelName:
           type: string
-  /api/experiments/{id}/creatives:
-    post:
-      summary: Criar criativo
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateCreativeRequest'
-    get:
-      summary: Listar criativos do experimento
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: OK
-  /api/creatives/{id}/preview:
-    get:
-      summary: Preview do criativo
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: OK
-  /api/experiments/{experimentId}/landing:
-    post:
-      summary: Criar landing page
-      parameters:
-        - in: path
-          name: experimentId
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                type:
-                  type: string
-                html:
-                  type: string
-    get:
-      summary: Listar landing pages do experimento
-      parameters:
-        - in: path
-          name: experimentId
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: OK
-components:
-  schemas:
+    Experiment:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        hypothesis:
+          type: string
+        status:
+          type: string
     CreateCreativeRequest:
       type: object
       properties:
@@ -165,102 +947,13 @@ components:
         status:
           type: string
           enum: [DRAFT, READY]
-
-  /api/angles:
-    get:
-      summary: Listar angles
-      responses:
-        '200':
-          description: OK
-    post:
-      summary: Criar angle
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateAngleRequest'
-      responses:
-        '200':
-          description: OK
-        '400':
-          description: Invalid data
-  /api/angles/{id}:
-    put:
-      summary: Atualizar angle
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AngleDto'
-      responses:
-        '200':
-          description: OK
-        '400':
-          description: Invalid data
-        '404':
-          description: Not found
-  /api/visual-proofs:
-    get:
-      summary: Listar visual proofs
-      responses:
-        '200':
-          description: OK
-    post:
-      summary: Criar visual proof
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateVisualProofRequest'
-      responses:
-        '200':
-          description: OK
-  /api/emotional-triggers:
-    get:
-      summary: Listar emotional triggers
-      responses:
-        '200':
-          description: OK
-    post:
-      summary: Criar emotional trigger
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateEmotionalTriggerRequest'
-      responses:
-        '200':
-          description: OK
-  /api/creatives/{id}/labels:
-    patch:
-      summary: Atualizar labels do criativo
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateCreativeLabelsRequest'
-      responses:
-        '200':
-          description: OK
-components:
-  schemas:
+    CreateLandingPageRequest:
+      type: object
+      properties:
+        type:
+          type: string
+        html:
+          type: string
     CreateAngleRequest:
       type: object
       properties:
@@ -275,15 +968,15 @@ components:
           type: string
         frameType:
           type: string
-  AngleDto:
-    type: object
-    properties:
-      id:
-        type: integer
-      name:
-        type: string
-      description:
-        type: string
+    AngleDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
     CreateVisualProofRequest:
       type: object
       properties:
@@ -311,123 +1004,6 @@ components:
           type: integer
         emotionalTriggerId:
           type: integer
-  /api/niches/{nicheId}/hypotheses:
-    get:
-      summary: Listar hipóteses do nicho
-      parameters:
-        - in: path
-          name: nicheId
-          required: true
-          schema:
-            type: integer
-        - in: query
-          name: status
-          required: false
-          schema:
-            type: string
-      responses:
-        '200':
-          description: OK
-  /api/hypotheses:
-    post:
-      summary: Criar hipótese
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateHypothesisRequest'
-      responses:
-        '201':
-          description: Created
-    get:
-      summary: Listar hipóteses
-      parameters:
-        - in: query
-          name: status
-          required: false
-          schema:
-            type: string
-      responses:
-        '200':
-          description: OK
-  /api/hypotheses/{id}:
-    put:
-      summary: Atualizar hipótese
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateHypothesisRequest'
-      responses:
-        '200':
-          description: OK
-  /api/hypotheses/{id}/status:
-    patch:
-      summary: Atualizar status da hipótese
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                status:
-                  type: string
-      responses:
-        '200':
-          description: OK
-  /api/experiments/{experimentId}/hypotheses/board:
-    get:
-      summary: Kanban de hipóteses
-      parameters:
-        - in: path
-          name: experimentId
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: OK
-  /api/instagram-creatives/approved:
-    get:
-      summary: Listar criativos do Instagram aprovados
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/InstagramCreative'
-  /api/facebook-campaigns/experiments-ready:
-    get:
-      summary: Listar experimentos prontos para campanhas no Facebook
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Experiment'
-components:
-  schemas:
     CreateHypothesisRequest:
       type: object
       properties:
@@ -441,14 +1017,14 @@ components:
           type: string
         problem:
           type: string
-          persona:
-            type: string
-          entrega:
-            type: string
-          mechanism:
-            type: string
-          uniqueMechanism:
-            type: string
+        persona:
+          type: string
+        entrega:
+          type: string
+        mechanism:
+          type: string
+        uniqueMechanism:
+          type: string
         successRule:
           type: string
         prompt:
@@ -474,15 +1050,413 @@ components:
           type: string
         content:
           type: string
-    Experiment:
+
+    JourneyPhase:
+      type: string
+      enum: [ATTENTION, INTEREST, DESIRE, ACTION]
+      description: Fases do modelo AIDA utilizadas no template.
+    JourneyStimulusType:
+      type: string
+      enum: [AD, EMAIL, WHATSAPP, LANDING_PAGE]
+    JourneyStatus:
+      type: string
+      enum: [DRAFT, ACTIVE, PAUSED, COMPLETED, ARCHIVED]
+    JourneyAssignmentStatus:
+      type: string
+      enum: [PENDING, IN_PROGRESS, COMPLETED, STOPPED]
+    JourneyAssignmentType:
+      type: string
+      enum: [LEAD, SEGMENT]
+
+    JourneyTemplateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        objective:
+          type: string
+        phases:
+          type: array
+          items:
+            $ref: '#/components/schemas/JourneyPhase'
+        preferredChannel:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+    JourneyTemplateUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        objective:
+          type: string
+        phases:
+          type: array
+          items:
+            $ref: '#/components/schemas/JourneyPhase'
+        preferredChannel:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+    JourneyTemplateSummary:
       type: object
       properties:
         id:
           type: integer
         name:
           type: string
-        salesFunnelId:
+        objective:
+          type: string
+        phases:
+          type: array
+          items:
+            $ref: '#/components/schemas/JourneyPhase'
+        preferredChannel:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    JourneyTemplate:
+      allOf:
+        - $ref: '#/components/schemas/JourneyTemplateSummary'
+        - type: object
+          properties:
+            description:
+              type: string
+            steps:
+              type: array
+              items:
+                $ref: '#/components/schemas/JourneyStep'
+    JourneyStepRequest:
+      type: object
+      required: [phase, stimulusType]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        phase:
+          $ref: '#/components/schemas/JourneyPhase'
+        stimulusType:
+          $ref: '#/components/schemas/JourneyStimulusType'
+        position:
+          type: integer
+        creativeId:
+          type: integer
+        angleId:
+          type: integer
+        visualProofId:
+          type: integer
+        emotionalTriggerId:
+          type: integer
+        entryCondition:
+          type: string
+        exitCondition:
+          type: string
+        delayMinutes:
+          type: integer
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+    JourneyStepUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        phase:
+          $ref: '#/components/schemas/JourneyPhase'
+        stimulusType:
+          $ref: '#/components/schemas/JourneyStimulusType'
+        position:
+          type: integer
+        creativeId:
+          type: integer
+        angleId:
+          type: integer
+        visualProofId:
+          type: integer
+        emotionalTriggerId:
+          type: integer
+        entryCondition:
+          type: string
+        exitCondition:
+          type: string
+        delayMinutes:
+          type: integer
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+    JourneyStep:
+      type: object
+      properties:
+        id:
+          type: integer
+        templateId:
+          type: integer
+        position:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        phase:
+          $ref: '#/components/schemas/JourneyPhase'
+        stimulusType:
+          $ref: '#/components/schemas/JourneyStimulusType'
+        creativeId:
+          type: integer
+        angleId:
+          type: integer
+        visualProofId:
+          type: integer
+        emotionalTriggerId:
+          type: integer
+        entryCondition:
+          type: string
+        exitCondition:
+          type: string
+        delayMinutes:
+          type: integer
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+    JourneyRequest:
+      type: object
+      required: [templateId, name]
+      properties:
+        templateId:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/JourneyStatus'
+        marketNicheId:
+          type: integer
+        experimentId:
+          type: integer
+        segmentReference:
+          type: string
+        segmentFilter:
+          type: string
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+    JourneyUpdateRequest:
+      type: object
+      properties:
+        templateId:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/JourneyStatus'
+        marketNicheId:
+          type: integer
+        experimentId:
+          type: integer
+        segmentReference:
+          type: string
+        segmentFilter:
+          type: string
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+    Journey:
+      type: object
+      properties:
+        id:
+          type: integer
+        templateId:
+          type: integer
+        templateName:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/JourneyStatus'
+        marketNicheId:
+          type: integer
+        experimentId:
+          type: integer
+        segmentReference:
+          type: string
+        segmentFilter:
+          type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    JourneyAssignmentRequest:
+      type: object
+      properties:
+        leadIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        segmentIdentifiers:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: '#/components/schemas/JourneyAssignmentStatus'
+        currentStepId:
+          type: integer
+        nextStepId:
+          type: integer
+        contextPayload:
+          type: string
+      description: Pelo menos um dos campos `leadIds` ou `segmentIdentifiers` é obrigatório.
+    JourneyAssignment:
+      type: object
+      properties:
+        id:
+          type: integer
+        journeyId:
+          type: integer
+        type:
+          $ref: '#/components/schemas/JourneyAssignmentType'
+        status:
+          $ref: '#/components/schemas/JourneyAssignmentStatus'
+        leadId:
           type: string
           format: uuid
-        salesFunnelName:
+        segmentIdentifier:
           type: string
+        currentStepId:
+          type: integer
+        nextStepId:
+          type: integer
+        lastEventAt:
+          type: string
+          format: date-time
+        contextPayload:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    EventLogRequest:
+      type: object
+      required: [eventType]
+      properties:
+        actorId:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+        journeyId:
+          type: integer
+        journeyStepId:
+          type: integer
+        source:
+          type: string
+        campaignId:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: {}
+        value:
+          type: number
+          format: float
+        occurredAt:
+          type: string
+          format: date-time
+          description: Data/hora do evento; quando omitido, o backend aplica o horário de ingestão.
+    EventLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        actorId:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+        journeyId:
+          type: integer
+        journeyStepId:
+          type: integer
+        source:
+          type: string
+        campaignId:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: {}
+        value:
+          type: number
+          format: float
+        occurredAt:
+          type: string
+          format: date-time
+        receivedAt:
+          type: string
+          format: date-time

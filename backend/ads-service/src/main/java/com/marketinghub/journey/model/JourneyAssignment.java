@@ -56,6 +56,13 @@ public class JourneyAssignment {
     @Column(name = "context_payload")
     private String contextPayload;
 
+    @Column(name = "next_attempt_at")
+    private Instant nextAttemptAt;
+
+    @Builder.Default
+    @Column(name = "retry_count")
+    private Integer retryCount = 0;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;

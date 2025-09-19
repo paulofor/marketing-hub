@@ -55,19 +55,19 @@ public class LeadService {
             exp.setId(dto.experimentId());
             lead.setExperiment(exp);
         }
-        lead = leadRepository.save(lead);
+        Lead savedLead = leadRepository.save(lead);
 
         OutboxEvent event = OutboxEvent.builder()
-                .aggregateId(lead.getId())
+                .aggregateId(savedLead.getId())
                 .eventType("LEAD_CREATED")
-                .payload(String.format("{\"leadId\":\"%s\"}", lead.getId()))
+                .payload(String.format("{\"leadId\":\"%s\"}", savedLead.getId()))
                 .createdAt(Instant.now())
                 .build();
         outboxRepository.save(event);
 
         SequenceTemplate template = welcomeSequenceFactory.createWelcomeTemplate();
 
-        taskExecutor.execute(() -> graphApiClient.sendWelcomeAsync(lead, template));
-        return lead;
+        taskExecutor.execute(() -> graphApiClient.sendWelcomeAsync(savedLead, template));
+        return savedLead;
     }
 }

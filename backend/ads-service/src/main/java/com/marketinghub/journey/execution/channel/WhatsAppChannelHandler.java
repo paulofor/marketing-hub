@@ -114,12 +114,18 @@ public class WhatsAppChannelHandler implements JourneyChannelHandler {
         } else {
             payload.put("type", "text");
             Map<String, Object> text = new HashMap<>();
-            Object body = step.getMetadata().getOrDefault("body", context.get("message"));
+            String body = step.getMetadata().get("body");
+            if (body == null) {
+                Object message = context.get("message");
+                if (message != null) {
+                    body = message.toString();
+                }
+            }
             if (body == null) {
                 throw new IllegalArgumentException("Missing WhatsApp message body");
             }
             text.put("preview_url", Boolean.FALSE);
-            text.put("body", body.toString());
+            text.put("body", body);
             payload.put("text", text);
         }
         return payload;

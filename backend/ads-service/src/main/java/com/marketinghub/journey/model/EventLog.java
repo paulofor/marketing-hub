@@ -47,7 +47,7 @@ public class EventLog {
     @Lob
     private String metadata;
 
-    @Column(precision = 12, scale = 2)
+    @Column(name = "event_value", precision = 12, scale = 2)
     private BigDecimal value;
 
     @Column(name = "occurred_at", nullable = false)

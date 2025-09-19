@@ -128,7 +128,7 @@ CREATE TABLE journey_event_log (
     source VARCHAR(100),
     campaign_id VARCHAR(100),
     metadata LONGTEXT,
-    value DECIMAL(12,2),
+    event_value DECIMAL(12,2),
     occurred_at DATETIME NOT NULL,
     received_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_event_log_journey FOREIGN KEY (journey_id) REFERENCES journey(id),

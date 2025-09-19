@@ -5,6 +5,7 @@ import com.marketinghub.journey.model.JourneyAssignment;
 import com.marketinghub.journey.model.JourneyStep;
 import com.marketinghub.journey.model.JourneyStimulusType;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -33,6 +34,7 @@ public class SendGridEmailChannelHandler implements JourneyChannelHandler {
     private final RestTemplate restTemplate;
     private final SendGridProperties properties;
 
+    @Autowired
     public SendGridEmailChannelHandler(RestTemplateBuilder restTemplateBuilder,
                                        SendGridProperties properties) {
         this(restTemplateBuilder.build(), properties);

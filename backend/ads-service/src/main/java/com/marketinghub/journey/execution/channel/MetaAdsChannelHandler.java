@@ -5,6 +5,7 @@ import com.marketinghub.journey.model.JourneyAssignment;
 import com.marketinghub.journey.model.JourneyStep;
 import com.marketinghub.journey.model.JourneyStimulusType;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
@@ -27,6 +28,7 @@ public class MetaAdsChannelHandler implements JourneyChannelHandler {
     private final RestTemplate restTemplate;
     private final MetaMarketingProperties properties;
 
+    @Autowired
     public MetaAdsChannelHandler(RestTemplateBuilder restTemplateBuilder,
                                  MetaMarketingProperties properties) {
         this(restTemplateBuilder.build(), properties);

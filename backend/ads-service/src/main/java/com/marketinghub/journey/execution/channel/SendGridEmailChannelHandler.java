@@ -74,7 +74,7 @@ public class SendGridEmailChannelHandler implements JourneyChannelHandler {
             if (response.getStatusCode().value() == 202 || response.getStatusCode().is2xxSuccessful()) {
                 Map<String, Object> metadata = new HashMap<>();
                 metadata.put("to", toEmail);
-                metadata.put("templateId", step.getMetadata().get("templateId"));
+                metadata.put("templateId", safeMetadata(step).get("templateId"));
                 return ChannelDispatchResult.success(null, metadata);
             }
             if (response.getStatusCode().is5xxServerError() || response.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
@@ -108,19 +108,25 @@ public class SendGridEmailChannelHandler implements JourneyChannelHandler {
         personalization.put("dynamic_template_data", context);
         payload.put("personalizations", List.of(personalization));
 
-        if (step.getMetadata().containsKey("templateId")) {
-            payload.put("template_id", step.getMetadata().get("templateId"));
+        Map<String, String> metadata = safeMetadata(step);
+        if (metadata.containsKey("templateId")) {
+            payload.put("template_id", metadata.get("templateId"));
         }
-        if (step.getMetadata().containsKey("subject")) {
-            personalization.put("subject", step.getMetadata().get("subject"));
+        if (metadata.containsKey("subject")) {
+            personalization.put("subject", metadata.get("subject"));
         }
-        if (step.getMetadata().containsKey("content")) {
+        if (metadata.containsKey("content")) {
             payload.put("content", List.of(Map.of(
                     "type", "text/plain",
-                    "value", Objects.toString(step.getMetadata().get("content"))
+                    "value", Objects.toString(metadata.get("content"))
             )));
         }
         return payload;
+    }
+
+    private Map<String, String> safeMetadata(JourneyStep step) {
+        Map<String, String> metadata = step.getMetadata();
+        return metadata != null ? metadata : Map.of();
     }
 
     private String resolveRecipient(Map<String, Object> context) {

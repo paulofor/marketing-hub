@@ -65,7 +65,7 @@ public class MetaAdsChannelHandler implements JourneyChannelHandler {
                 MetaAdResponse body = response.getBody();
                 Map<String, Object> metadata = new HashMap<>();
                 metadata.put("adId", body.id());
-                metadata.put("creativeId", step.getMetadata().get("creativeId"));
+                metadata.put("creativeId", safeMetadata(step).get("creativeId"));
                 metadata.put("status", payload.get("status"));
                 return ChannelDispatchResult.success(body.id(), metadata);
             }
@@ -89,23 +89,29 @@ public class MetaAdsChannelHandler implements JourneyChannelHandler {
     private Map<String, Object> buildPayload(JourneyStep step) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("name", step.getName() != null ? step.getName() : "Journey Step " + step.getId());
-        String status = step.getMetadata().getOrDefault("status", properties.getDefaultAdStatus());
+        Map<String, String> metadata = safeMetadata(step);
+        String status = metadata.getOrDefault("status", properties.getDefaultAdStatus());
         payload.put("status", status);
-        if (step.getMetadata().containsKey("adsetId")) {
-            payload.put("adset_id", step.getMetadata().get("adsetId"));
+        if (metadata.containsKey("adsetId")) {
+            payload.put("adset_id", metadata.get("adsetId"));
         }
-        if (step.getMetadata().containsKey("campaignId")) {
-            payload.put("campaign_id", step.getMetadata().get("campaignId"));
+        if (metadata.containsKey("campaignId")) {
+            payload.put("campaign_id", metadata.get("campaignId"));
         }
-        if (step.getMetadata().containsKey("creativeId")) {
+        if (metadata.containsKey("creativeId")) {
             Map<String, Object> creative = new HashMap<>();
-            creative.put("creative_id", step.getMetadata().get("creativeId"));
+            creative.put("creative_id", metadata.get("creativeId"));
             payload.put("creative", creative);
         }
-        if (step.getMetadata().containsKey("bidAmount")) {
-            payload.put("bid_amount", step.getMetadata().get("bidAmount"));
+        if (metadata.containsKey("bidAmount")) {
+            payload.put("bid_amount", metadata.get("bidAmount"));
         }
         return payload;
+    }
+
+    private Map<String, String> safeMetadata(JourneyStep step) {
+        Map<String, String> metadata = step.getMetadata();
+        return metadata != null ? metadata : Map.of();
     }
 
     private Instant resolveRetryAt(HttpHeaders headers) {

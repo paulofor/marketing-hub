@@ -103,18 +103,19 @@ public class WhatsAppChannelHandler implements JourneyChannelHandler {
         Map<String, Object> payload = new HashMap<>();
         payload.put("messaging_product", "whatsapp");
         payload.put("to", to);
-        if (step.getMetadata().containsKey("templateName")) {
+        Map<String, String> metadata = safeMetadata(step);
+        if (metadata.containsKey("templateName")) {
             payload.put("type", "template");
             Map<String, Object> template = new HashMap<>();
-            template.put("name", step.getMetadata().get("templateName"));
+            template.put("name", metadata.get("templateName"));
             Map<String, Object> language = new HashMap<>();
-            language.put("code", step.getMetadata().getOrDefault("templateLanguage", "en_US"));
+            language.put("code", metadata.getOrDefault("templateLanguage", "en_US"));
             template.put("language", language);
             payload.put("template", template);
         } else {
             payload.put("type", "text");
             Map<String, Object> text = new HashMap<>();
-            String body = step.getMetadata().get("body");
+            String body = metadata.get("body");
             if (body == null) {
                 Object message = context.get("message");
                 if (message != null) {
@@ -129,6 +130,11 @@ public class WhatsAppChannelHandler implements JourneyChannelHandler {
             payload.put("text", text);
         }
         return payload;
+    }
+
+    private Map<String, String> safeMetadata(JourneyStep step) {
+        Map<String, String> metadata = step.getMetadata();
+        return metadata != null ? metadata : Map.of();
     }
 
     private String resolvePhone(Map<String, Object> context) {

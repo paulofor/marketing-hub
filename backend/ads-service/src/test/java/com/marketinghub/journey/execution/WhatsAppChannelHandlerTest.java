@@ -66,6 +66,7 @@ class WhatsAppChannelHandlerTest {
                 .andExpect(header("Authorization", "Bearer token"))
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andRespond(withStatus(org.springframework.http.HttpStatus.OK)
+                        .contentType(MediaType.APPLICATION_JSON)
                         .body("{\"messages\":[{\"id\":\"wamid.123\"}]}"));
 
         ChannelDispatchResult result = handler.dispatch(assignment, step, Map.of("phone", "+551100000000"));

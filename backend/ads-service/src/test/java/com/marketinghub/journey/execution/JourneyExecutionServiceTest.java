@@ -19,7 +19,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.transaction.support.ResourcelessTransactionManager;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -70,7 +73,7 @@ class JourneyExecutionServiceTest {
                 conditionEvaluator,
                 telemetryService,
                 objectMapper,
-                new ResourcelessTransactionManager(),
+                new NoOpTransactionManager(),
                 List.of(emailHandler));
     }
 
@@ -186,5 +189,22 @@ class JourneyExecutionServiceTest {
                 .build();
         assignment.setCreatedAt(Instant.now().minus(Duration.ofHours(2)));
         return assignment;
+    }
+
+    private static class NoOpTransactionManager implements PlatformTransactionManager {
+        @Override
+        public TransactionStatus getTransaction(TransactionDefinition definition) {
+            return new SimpleTransactionStatus();
+        }
+
+        @Override
+        public void commit(TransactionStatus status) {
+            // no-op
+        }
+
+        @Override
+        public void rollback(TransactionStatus status) {
+            // no-op
+        }
     }
 }

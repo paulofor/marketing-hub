@@ -3,6 +3,7 @@ package com.marketinghub.service;
 import com.marketinghub.dto.LeadDTO;
 import com.marketinghub.model.Lead;
 import com.marketinghub.model.NurtureStage;
+import com.marketinghub.model.OutboxEvent;
 import com.marketinghub.repository.LeadRepository;
 import com.marketinghub.repository.OutboxRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,12 +30,14 @@ class LeadServiceTest {
     GraphApiClient graphApiClient;
 
     TaskExecutor taskExecutor = Runnable::run;
+    WelcomeSequenceFactory welcomeSequenceFactory;
 
     LeadService leadService;
 
     @BeforeEach
     void setUp() {
-        leadService = new LeadService(leadRepository, outboxRepository, graphApiClient, taskExecutor);
+        welcomeSequenceFactory = new WelcomeSequenceFactory();
+        leadService = new LeadService(leadRepository, outboxRepository, graphApiClient, taskExecutor, welcomeSequenceFactory);
     }
 
     @Test
@@ -49,7 +52,11 @@ class LeadServiceTest {
         Lead lead = leadService.saveFromWebhook(dto);
 
         verify(leadRepository).save(any());
-        verify(outboxRepository).save(any());
+        var eventCaptor = org.mockito.ArgumentCaptor.forClass(OutboxEvent.class);
+        verify(outboxRepository).save(eventCaptor.capture());
+        OutboxEvent savedEvent = eventCaptor.getValue();
+        assertEquals(lead.getId(), savedEvent.getAggregateId());
+        assertEquals("{\"leadId\":\"" + lead.getId() + "\"}", savedEvent.getPayload());
         verify(graphApiClient).sendWelcomeAsync(any(), any());
         assertEquals(dto.leadgenId(), lead.getLeadgenId());
     }

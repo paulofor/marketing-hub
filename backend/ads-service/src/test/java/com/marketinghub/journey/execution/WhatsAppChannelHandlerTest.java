@@ -13,12 +13,15 @@ import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.model.Lead;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,13 +35,14 @@ class WhatsAppChannelHandlerTest {
 
     @BeforeEach
     void setup() {
-        RestTemplate restTemplate = new RestTemplate();
-        server = MockRestServiceServer.createServer(restTemplate);
         WhatsAppProperties properties = new WhatsAppProperties();
         properties.setEnabled(true);
         properties.setAccessToken("token");
         properties.setPhoneNumberId("1234");
-        handler = new WhatsAppChannelHandler(restTemplate, properties);
+        handler = new WhatsAppChannelHandler(new RestTemplateBuilder(), properties);
+        RestTemplate restTemplate = (RestTemplate) Objects.requireNonNull(
+                ReflectionTestUtils.getField(handler, "restTemplate"));
+        server = MockRestServiceServer.createServer(restTemplate);
     }
 
     @Test

@@ -14,14 +14,17 @@ import com.marketinghub.journey.model.JourneyStatus;
 import com.marketinghub.model.Lead;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,14 +38,15 @@ class SendGridEmailChannelHandlerTest {
 
     @BeforeEach
     void setup() {
-        RestTemplate restTemplate = new RestTemplate();
-        server = MockRestServiceServer.createServer(restTemplate);
         SendGridProperties properties = new SendGridProperties();
         properties.setEnabled(true);
         properties.setApiKey("test-key");
         properties.setFromEmail("hello@example.com");
         properties.setFromName("Marketing Hub");
-        handler = new SendGridEmailChannelHandler(restTemplate, properties);
+        handler = new SendGridEmailChannelHandler(new RestTemplateBuilder(), properties);
+        RestTemplate restTemplate = (RestTemplate) Objects.requireNonNull(
+                ReflectionTestUtils.getField(handler, "restTemplate"));
+        server = MockRestServiceServer.createServer(restTemplate);
     }
 
     @Test

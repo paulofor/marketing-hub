@@ -13,12 +13,15 @@ import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.model.Lead;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,13 +35,14 @@ class MetaAdsChannelHandlerTest {
 
     @BeforeEach
     void setup() {
-        RestTemplate restTemplate = new RestTemplate();
-        server = MockRestServiceServer.createServer(restTemplate);
         MetaMarketingProperties properties = new MetaMarketingProperties();
         properties.setEnabled(true);
         properties.setAccessToken("token");
         properties.setAdAccountId("123");
-        handler = new MetaAdsChannelHandler(restTemplate, properties);
+        handler = new MetaAdsChannelHandler(new RestTemplateBuilder(), properties);
+        RestTemplate restTemplate = (RestTemplate) Objects.requireNonNull(
+                ReflectionTestUtils.getField(handler, "restTemplate"));
+        server = MockRestServiceServer.createServer(restTemplate);
     }
 
     @Test
@@ -74,7 +78,7 @@ class MetaAdsChannelHandlerTest {
     void returnsPermanentFailureWhenDisabled() {
         MetaMarketingProperties properties = new MetaMarketingProperties();
         properties.setEnabled(false);
-        MetaAdsChannelHandler disabledHandler = new MetaAdsChannelHandler(new RestTemplate(), properties);
+        MetaAdsChannelHandler disabledHandler = new MetaAdsChannelHandler(new RestTemplateBuilder(), properties);
         JourneyStep step = JourneyStep.builder()
                 .id(1L)
                 .template(JourneyTemplate.builder().id(2L).name("template").build())

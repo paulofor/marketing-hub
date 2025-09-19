@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.List;
 
 /**
  * Handles lead persistence and outbox creation.
@@ -21,15 +20,18 @@ public class LeadService {
     private final OutboxRepository outboxRepository;
     private final GraphApiClient graphApiClient;
     private final TaskExecutor taskExecutor;
+    private final WelcomeSequenceFactory welcomeSequenceFactory;
 
     public LeadService(LeadRepository leadRepository,
                        OutboxRepository outboxRepository,
                        GraphApiClient graphApiClient,
-                       TaskExecutor taskExecutor) {
+                       TaskExecutor taskExecutor,
+                       WelcomeSequenceFactory welcomeSequenceFactory) {
         this.leadRepository = leadRepository;
         this.outboxRepository = outboxRepository;
         this.graphApiClient = graphApiClient;
         this.taskExecutor = taskExecutor;
+        this.welcomeSequenceFactory = welcomeSequenceFactory;
     }
 
     /**
@@ -53,24 +55,17 @@ public class LeadService {
             exp.setId(dto.experimentId());
             lead.setExperiment(exp);
         }
-        leadRepository.save(lead);
+        lead = leadRepository.save(lead);
 
         OutboxEvent event = OutboxEvent.builder()
                 .aggregateId(lead.getId())
                 .eventType("LEAD_CREATED")
-                .payload("{}")
+                .payload(String.format("{\"leadId\":\"%s\"}", lead.getId()))
                 .createdAt(Instant.now())
                 .build();
         outboxRepository.save(event);
 
-        SequenceTemplate template = SequenceTemplate.builder()
-                .name("Welcome")
-                .steps(List.of(
-                        SequenceStep.builder().stepOrder(1).content("Welcome!").delaySeconds(0).build(),
-                        SequenceStep.builder().stepOrder(2).content("How can we help?").delaySeconds(5).build()
-                ))
-                .build();
-        template.getSteps().forEach(s -> s.setSequenceTemplate(template));
+        SequenceTemplate template = welcomeSequenceFactory.createWelcomeTemplate();
 
         taskExecutor.execute(() -> graphApiClient.sendWelcomeAsync(lead, template));
         return lead;

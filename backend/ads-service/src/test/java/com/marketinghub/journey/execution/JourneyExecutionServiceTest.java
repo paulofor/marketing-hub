@@ -8,6 +8,7 @@ import com.marketinghub.journey.execution.policy.FrequencyCapService;
 import com.marketinghub.journey.execution.policy.RetryBackoffCalculator;
 import com.marketinghub.journey.model.*;
 import com.marketinghub.journey.model.EventLog;
+import com.marketinghub.model.Lead;
 import com.marketinghub.journey.repository.EventLogRepository;
 import com.marketinghub.journey.repository.JourneyAssignmentRepository;
 import com.marketinghub.journey.repository.JourneyStepRepository;

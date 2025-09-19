@@ -5,6 +5,7 @@ import com.marketinghub.journey.model.JourneyAssignment;
 import com.marketinghub.journey.model.JourneyStep;
 import com.marketinghub.journey.model.JourneyStimulusType;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -32,6 +33,7 @@ public class WhatsAppChannelHandler implements JourneyChannelHandler {
     private final RestTemplate restTemplate;
     private final WhatsAppProperties properties;
 
+    @Autowired
     public WhatsAppChannelHandler(RestTemplateBuilder restTemplateBuilder,
                                   WhatsAppProperties properties) {
         this(restTemplateBuilder.build(), properties);

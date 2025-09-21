@@ -7,7 +7,8 @@ Este documento descreve o serviço do AI Worker que gera criativos para **EXPERI
 O serviço realiza as seguintes etapas:
 1. Busca experimentos com `creativesToGenerate > 0`.
 2. Consulta o ChatGPT para gerar textos dos criativos.
-3. Gera imagens com a API de imagens do OpenAI.
+3. Gera imagens com a API de imagens do OpenAI e envia o arquivo resultante para o backend por meio do `POST /api/assets`,
+   armazenando a URL pública retornada.
 4. Salva os criativos e zera o contador `creativesToGenerate`.
 
 ## Diagrama de fluxo

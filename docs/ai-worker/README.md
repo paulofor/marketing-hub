@@ -44,7 +44,8 @@ de IA quando necessário e persistem os resultados de volta no serviço principa
 - **Disparo:** `ExperimentCreativeScheduler` (cron `0 */5 * * * *`).
 - **Fonte dos dados:** experimentos com `creativesToGenerate > 0`.
 - **O que faz:** `ExperimentCreativeService` chama o `CreativeChatGptClient` para gerar textos e o
-  `CreativeImageClient` para sugerir imagens, salvando os criativos com `CreativeService`.
+  `CreativeImageClient` para gerar as imagens. As imagens são enviadas para o backend com `POST /api/assets`
+  via `BackendAssetClient`, e os criativos são salvos com `CreativeService`.
 - **Referências:** detalhes e fluxo em [experimento-criativo-service.md](experimento-criativo-service.md).
 
 - **Disparo:** `AudienceAdSetScheduler` (cron `0 */5 * * * *`).

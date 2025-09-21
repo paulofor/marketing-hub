@@ -1,6 +1,10 @@
 package com.marketinghub.worker.creative;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -8,9 +12,14 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.BodyExtractors;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 /**
  * Simple wrapper around the OpenAI images API for creative image generation.
@@ -20,6 +29,7 @@ public class CreativeImageClient {
     private final WebClient webClient;
     private final BackendAssetClient assetClient;
     private final String model;
+    private final ObjectMapper objectMapper;
     private static final Logger log = LoggerFactory.getLogger(CreativeImageClient.class);
     private static final int DEFAULT_MAX_IN_MEMORY_SIZE = 10 * 1024 * 1024; // 10 MB
 
@@ -35,6 +45,7 @@ public class CreativeImageClient {
                 .build();
         this.assetClient = assetClient;
         this.model = model;
+        this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
     public String generateImage(String prompt) {
@@ -48,8 +59,7 @@ public class CreativeImageClient {
         ImageResponse response = webClient.post()
                 .uri("/images/generations")
                 .bodyValue(payload)
-                .retrieve()
-                .bodyToMono(ImageResponse.class)
+                .exchangeToMono(this::readImageResponse)
                 .block();
 
         log.info("OpenAI image response: {}", response);
@@ -72,6 +82,40 @@ public class CreativeImageClient {
             return data.url();
         }
         throw new RuntimeException("No image returned from OpenAI");
+    }
+
+    private Mono<ImageResponse> readImageResponse(ClientResponse response) {
+        return response.body(BodyExtractors.toDataBuffers())
+                .map(this::toByteArray)
+                .reduceWith(ByteArrayOutputStream::new, this::appendChunk)
+                .map(ByteArrayOutputStream::toByteArray)
+                .map(this::parseResponse);
+    }
+
+    private byte[] toByteArray(DataBuffer buffer) {
+        try {
+            byte[] bytes = new byte[buffer.readableByteCount()];
+            buffer.read(bytes);
+            return bytes;
+        } finally {
+            DataBufferUtils.release(buffer);
+        }
+    }
+
+    private ByteArrayOutputStream appendChunk(ByteArrayOutputStream output, byte[] chunk) {
+        if (output.size() + chunk.length > DEFAULT_MAX_IN_MEMORY_SIZE) {
+            throw new IllegalStateException("OpenAI image payload exceeds allowed size");
+        }
+        output.write(chunk, 0, chunk.length);
+        return output;
+    }
+
+    private ImageResponse parseResponse(byte[] bytes) {
+        try {
+            return objectMapper.readValue(bytes, ImageResponse.class);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to decode image payload", e);
+        }
     }
 
     private record ImageResponse(List<ImageData> data) {}

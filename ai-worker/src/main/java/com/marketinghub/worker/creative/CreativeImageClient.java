@@ -21,6 +21,7 @@ public class CreativeImageClient {
     private final BackendAssetClient assetClient;
     private final String model;
     private static final Logger log = LoggerFactory.getLogger(CreativeImageClient.class);
+    private static final int DEFAULT_MAX_IN_MEMORY_SIZE = 10 * 1024 * 1024; // 10 MB
 
     public CreativeImageClient(WebClient.Builder builder,
                                BackendAssetClient assetClient,
@@ -30,6 +31,7 @@ public class CreativeImageClient {
         this.webClient = builder
                 .baseUrl(baseUrl)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(DEFAULT_MAX_IN_MEMORY_SIZE))
                 .build();
         this.assetClient = assetClient;
         this.model = model;

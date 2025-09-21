@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +51,26 @@ class CreativeImageClientTest {
 
         assertThat(result).isEqualTo("/uploads/img.png");
         verify(backendAssetClient).uploadImage(any(byte[].class), argThat(name -> name.startsWith("creative-") && name.endsWith(".png")));
+    }
+
+    @Test
+    void supportsLargeBase64Payloads() {
+        byte[] imageBytes = new byte[512 * 1024];
+        Arrays.fill(imageBytes, (byte) 1);
+        String imagePayload = Base64.getEncoder().encodeToString(imageBytes);
+        String body = "{\"data\":[{\"b64_json\":\"" + imagePayload + "\"}]}";
+        ExchangeFunction exchange = request -> Mono.just(ClientResponse.create(HttpStatus.OK)
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .body(body)
+                .build());
+        WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);
+        CreativeImageClient largeClient = new CreativeImageClient(builder, backendAssetClient, "key", "http://openai", "image-model");
+        when(backendAssetClient.uploadImage(any(), any())).thenReturn("/uploads/large.png");
+
+        String result = largeClient.generateImage("prompt");
+
+        assertThat(result).isEqualTo("/uploads/large.png");
+        verify(backendAssetClient).uploadImage(argThat(bytes -> bytes.length == imageBytes.length), any());
     }
 }
 

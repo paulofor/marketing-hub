@@ -26,12 +26,14 @@
     própria.
   - Todos os métodos de consulta e manipulação de banco de dados deve ser códificado
     no projeto **backend** e pode ser utilizado no projeto **ai-worker**
-  - Sempre prefira fazer filtros na consulta ao banco de dados, evite buscar muitos registros
-    para tratamento em memória.
+- Sempre prefira fazer filtros na consulta ao banco de dados, evite buscar muitos registros
+  para tratamento em memória.
 - Java 21 + Spring Boot 3
 - React 18 + Vite + TypeScript
 - Zustand for state, TanStack Query for data fetching
 - Prettier (frontend) and Spotless (backend) for formatting
+- Sempre que ocorrer um erro HTTP 404 em chamada ao backend, verificar se a chamada faz sentido;
+  caso positivo, o endpoint correspondente deve ser implementado.
 - Campos de formulário que acionam serviços do Worker IA devem incluir um tooltip explicativo
 - Todo registro de entidade produzido por um processo do **Worker IA** deve possuir os atributos `modelo` e `prompt`, que devem ser preenchidos no momento da criação do registro.
 

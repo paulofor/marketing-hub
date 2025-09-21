@@ -12,6 +12,16 @@ import { useRequestCreatives } from "../../api/experiment/useRequestCreatives";
 import { useExperiment } from "../../api/experiment/useExperiment";
 import InstagramAdPreview from "../../components/InstagramAdPreview";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
+import {
+  CheckCircle2,
+  Copy,
+  Edit3,
+  Eye,
+  Plus,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
+import "./CriativosTab.css";
 
 interface Props {
   experimentId: string;
@@ -30,8 +40,32 @@ interface CreativeForm {
   status: string;
 }
 
+const ICON_SIZE = 16;
+
+const statusVariant = (status: string) => {
+  switch (status) {
+    case "READY":
+      return "text-bg-success";
+    case "DRAFT":
+      return "text-bg-secondary";
+    default:
+      return "text-bg-warning";
+  }
+};
+
+const statusLabel = (status: string) => {
+  switch (status) {
+    case "READY":
+      return "Aprovado";
+    case "DRAFT":
+      return "Rascunho";
+    default:
+      return status;
+  }
+};
+
 export default function CriativosTab({ experimentId }: Props) {
-  const { data } = useCreatives(experimentId);
+  const { data, isLoading } = useCreatives(experimentId);
   const creatives = Array.isArray(data) ? data : [];
   const { data: experiment } = useExperiment(experimentId);
   const [showForm, setShowForm] = useState(false);
@@ -62,6 +96,21 @@ export default function CriativosTab({ experimentId }: Props) {
   const [showPreview, setShowPreview] = useState(false);
   const requestCreatives = useRequestCreatives(experimentId);
 
+  const fillFormFromCreative = (c: Creative) => {
+    setForm({
+      format: c.format || "LINK",
+      headline: c.headline,
+      primaryText: c.primaryText,
+      description: c.description || "",
+      cta: c.cta || "LEARN_MORE",
+      destinationUrl: c.destinationUrl || "",
+      imageUrl: c.imageUrl,
+      pageId: c.pageId || "",
+      instagramUserId: c.instagramUserId || "",
+      status: c.status,
+    });
+  };
+
   const openNew = () => {
     setEditing(null);
     setForm({
@@ -79,6 +128,12 @@ export default function CriativosTab({ experimentId }: Props) {
     setSelectedAngle("");
     setSelectedProof("");
     setSelectedTrigger("");
+    setShowForm(true);
+  };
+
+  const openEdit = (c: Creative) => {
+    setEditing(c);
+    fillFormFromCreative(c);
     setShowForm(true);
   };
 
@@ -129,18 +184,7 @@ export default function CriativosTab({ experimentId }: Props) {
 
   const duplicate = (c: Creative) => {
     setEditing(null);
-    setForm({
-      format: c.format || "LINK",
-      headline: c.headline,
-      primaryText: c.primaryText,
-      description: c.description || "",
-      cta: c.cta || "LEARN_MORE",
-      destinationUrl: c.destinationUrl || "",
-      imageUrl: c.imageUrl,
-      pageId: c.pageId || "",
-      instagramUserId: c.instagramUserId || "",
-      status: c.status,
-    });
+    fillFormFromCreative(c);
     setShowForm(true);
   };
 
@@ -175,116 +219,166 @@ export default function CriativosTab({ experimentId }: Props) {
     }
   };
 
+  const totalCreatives = creatives.length;
+  const solicitedCreatives = experiment?.creativesToGenerate ?? 0;
+
   return (
     <div className="mt-3">
-      <button type="button" className="btn btn-primary mb-2" onClick={openNew}>
-        Novo Criativo
-      </button>
-      <button
-        type="button"
-        className="btn btn-secondary mb-2 ms-2"
-        onClick={generateCreatives}
-        disabled={requestCreatives.isPending}
-      >
-        Gerar Criativos
-      </button>
-      <span className="ms-2">
-        Solicitados: {experiment?.creativesToGenerate ?? 0}
-      </span>
-      <div className="table-responsive">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Imagem</th>
-              <th>Headline</th>
-              <th>Primary Text</th>
-              <th>Status</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {creatives.map((c) => (
-              <tr key={c.id}>
-                <td>
+      <div className="creative-toolbar">
+        <div>
+          <h2 className="h5 mb-1">Biblioteca de criativos</h2>
+          <div className="d-flex flex-wrap align-items-center gap-2 text-muted small">
+            <span className="badge rounded-pill text-bg-primary">
+              {totalCreatives} {totalCreatives === 1 ? "item" : "itens"}
+            </span>
+            <span className="badge rounded-pill text-bg-info">
+              Solicitados: {solicitedCreatives}
+            </span>
+          </div>
+        </div>
+        <div className="d-flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="btn btn-outline-secondary d-flex align-items-center gap-2"
+            onClick={generateCreatives}
+            disabled={requestCreatives.isPending}
+          >
+            {requestCreatives.isPending ? (
+              <span className="spinner-border spinner-border-sm" role="status" />
+            ) : (
+              <Sparkles size={ICON_SIZE} />
+            )}
+            <span>{requestCreatives.isPending ? "Solicitando..." : "Gerar criativos"}</span>
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary d-flex align-items-center gap-2"
+            onClick={openNew}
+          >
+            <Plus size={ICON_SIZE} />
+            <span>Novo Criativo</span>
+          </button>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="d-flex justify-content-center py-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Carregando...</span>
+          </div>
+        </div>
+      ) : totalCreatives === 0 ? (
+        <div className="creative-empty-state">
+          <div className="creative-empty-icon" aria-hidden>
+            🎨
+          </div>
+          <h3 className="h6 fw-semibold mb-1">Nenhum criativo cadastrado</h3>
+          <p className="text-muted mb-0">
+            Gere sugestões com IA ou cadastre um novo criativo para começar a testar
+            variações.
+          </p>
+        </div>
+      ) : (
+        <div className="creative-grid">
+          {creatives.map((c) => {
+            const imageUrl = c.imageUrl ? resolveAssetUrl(c.imageUrl) : undefined;
+            return (
+              <article key={c.id} className="creative-card">
+                {imageUrl ? (
                   <img
-                    src={resolveAssetUrl(c.imageUrl)}
+                    src={imageUrl}
                     alt={c.headline || "Criativo"}
-                    style={{ width: 80 }}
+                    className="creative-card-img"
                   />
-                </td>
-                <td>{c.headline}</td>
-                <td>{c.primaryText.slice(0, 60)}</td>
-                <td>
-                  <span
-                    className={
-                      c.status === "READY"
-                        ? "badge bg-success"
-                        : "badge bg-secondary"
-                    }
-                  >
-                    {c.status}
-                  </span>
-                </td>
-                <td>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline-primary me-1"
-                    onClick={() => {
-                      setEditing(c);
-                      setForm({
-                        format: c.format || "LINK",
-                        headline: c.headline,
-                        primaryText: c.primaryText,
-                        description: c.description || "",
-                        cta: c.cta || "LEARN_MORE",
-                        destinationUrl: c.destinationUrl || "",
-                        imageUrl: c.imageUrl,
-                        pageId: c.pageId || "",
-                        instagramUserId: c.instagramUserId || "",
-                        status: c.status,
-                      });
-                      setShowForm(true);
-                    }}
-                  >
-                    🖊
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline-secondary me-1"
-                    onClick={() => duplicate(c)}
-                  >
-                    Duplicar
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline-danger me-1"
-                    onClick={() => remove(c)}
-                  >
-                    🗑
-                  </button>
-                  {c.status !== "READY" && (
+                ) : (
+                  <div className="creative-card-placeholder">
+                    <span className="text-muted">Imagem não disponível</span>
+                  </div>
+                )}
+                <div className="creative-card-body">
+                  <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <span className={`badge rounded-pill ${statusVariant(c.status)}`}>
+                      {statusLabel(c.status)}
+                    </span>
+                    {c.format && (
+                      <span className="badge rounded-pill text-bg-light text-uppercase text-muted">
+                        {c.format}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="creative-card-headline">
+                    {c.headline || "Sem headline"}
+                  </h3>
+                  <p className="creative-card-text mb-0">{c.primaryText}</p>
+                  {(c.cta || c.destinationUrl) && (
+                    <div className="creative-card-meta small text-muted">
+                      {c.cta && <span className="me-2">CTA: {c.cta}</span>}
+                      {c.destinationUrl && (
+                        <a
+                          href={c.destinationUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-decoration-none text-muted text-truncate d-block"
+                          title={c.destinationUrl}
+                        >
+                          {c.destinationUrl}
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="creative-card-footer">
+                  <div className="creative-card-actions">
                     <button
                       type="button"
-                      className="btn btn-sm btn-outline-success me-1"
-                      onClick={() => approve(c)}
+                      className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center gap-1"
+                      onClick={() => openEdit(c)}
                     >
-                      Aprovar
+                      <Edit3 size={ICON_SIZE} />
+                      <span>Editar</span>
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline-secondary"
-                    onClick={() => startPreview(c)}
-                    aria-label="Preview"
-                  >
-                    👁
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center gap-1"
+                      onClick={() => duplicate(c)}
+                    >
+                      <Copy size={ICON_SIZE} />
+                      <span>Duplicar</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center gap-1"
+                      onClick={() => remove(c)}
+                    >
+                      <Trash2 size={ICON_SIZE} />
+                      <span>Excluir</span>
+                    </button>
+                    {c.status !== "READY" && (
+                      <button
+                        type="button"
+                        className="btn btn-outline-success btn-sm d-flex align-items-center justify-content-center gap-1"
+                        onClick={() => approve(c)}
+                      >
+                        <CheckCircle2 size={ICON_SIZE} />
+                        <span>Aprovar</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center gap-1"
+                      onClick={() => startPreview(c)}
+                      aria-label="Preview"
+                    >
+                      <Eye size={ICON_SIZE} />
+                      <span>Preview</span>
+                    </button>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
 
       {showForm && (
         <div className="modal d-block" tabIndex={-1}>

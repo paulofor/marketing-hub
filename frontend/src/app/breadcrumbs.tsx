@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import "./breadcrumbs.css";
+
 export interface Crumb {
   label: string;
   to?: string;
@@ -23,15 +25,32 @@ export default function BreadcrumbsProvider({
   const [crumbs, setCrumbs] = useState<Crumb[]>([]);
   return (
     <SetCrumbsContext.Provider value={setCrumbs}>
-      <nav aria-label="breadcrumb" className="mb-3">
-        <ol className="breadcrumb mb-0">
-          {crumbs.map((c, i) => (
-            <li key={i} className="breadcrumb-item">
-              {c.to ? <Link to={c.to}>{c.label}</Link> : c.label}
-            </li>
-          ))}
-        </ol>
-      </nav>
+      {crumbs.length > 0 ? (
+        <nav aria-label="breadcrumb" className="app-breadcrumbs">
+          <ol className="app-breadcrumbs__list">
+            {crumbs.map((c, i) => {
+              const isActive = i === crumbs.length - 1;
+              const label = (
+                <span className="app-breadcrumbs__item-label">{c.label}</span>
+              );
+              return (
+                <li
+                  key={i}
+                  className={`app-breadcrumbs__item${
+                    isActive ? " is-active" : ""
+                  }`}
+                >
+                  {c.to && !isActive ? (
+                    <Link to={c.to}>{label}</Link>
+                  ) : (
+                    <span aria-current={isActive ? "page" : undefined}>{label}</span>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
+      ) : null}
       {children}
     </SetCrumbsContext.Provider>
   );

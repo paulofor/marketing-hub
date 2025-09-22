@@ -6,9 +6,13 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.awt.AlphaComposite;
+import java.awt.Color;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Base64;
+import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -26,11 +30,13 @@ class CreativeImageClientTest {
     BackendAssetClient backendAssetClient;
 
     CreativeImageClient client;
+    CreativeImageOptimizer optimizer;
 
     @BeforeEach
-    void setup() {
+    void setup() throws Exception {
         MockitoAnnotations.openMocks(this);
-        String imagePayload = Base64.getEncoder().encodeToString("img".getBytes(StandardCharsets.UTF_8));
+        optimizer = new CreativeImageOptimizer(900_000, 1024);
+        String imagePayload = Base64.getEncoder().encodeToString(createSolidPng(128, 128));
         String body = "{\"data\":[{\"b64_json\":\"" + imagePayload + "\"}]}";
         ExchangeFunction exchange = request -> {
             assertThat(request.url().toString()).endsWith("/images/generations");
@@ -40,26 +46,25 @@ class CreativeImageClientTest {
                     .build());
         };
         WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);
-        client = new CreativeImageClient(builder, backendAssetClient, "key", "http://openai", "image-model");
+        client = new CreativeImageClient(builder, backendAssetClient, optimizer, "key", "http://openai", "image-model");
     }
 
     @Test
     void uploadsReturnedImageToBackend() {
-        when(backendAssetClient.uploadImage(any(), any(), any(), any())).thenReturn("/uploads/img.png");
+        when(backendAssetClient.uploadImage(any(), any(), any(), any())).thenReturn("/uploads/img.jpg");
 
         String result = client.generateImage("prompt");
 
-        assertThat(result).isEqualTo("/uploads/img.png");
+        assertThat(result).isEqualTo("/uploads/img.jpg");
         verify(backendAssetClient).uploadImage(any(byte[].class),
-                argThat(name -> name.startsWith("creative-") && name.endsWith(".png")),
+                argThat(name -> name.startsWith("creative-") && name.endsWith(".jpg")),
                 argThat(model -> model.equals("image-model")),
                 argThat(prompt -> prompt.equals("prompt")));
     }
 
     @Test
     void supportsLargeBase64Payloads() {
-        byte[] imageBytes = new byte[512 * 1024];
-        Arrays.fill(imageBytes, (byte) 1);
+        byte[] imageBytes = createRandomPng(1024, 1024);
         String imagePayload = Base64.getEncoder().encodeToString(imageBytes);
         String body = "{\"data\":[{\"b64_json\":\"" + imagePayload + "\"}]}";
         ExchangeFunction exchange = request -> Mono.just(ClientResponse.create(HttpStatus.OK)
@@ -67,13 +72,52 @@ class CreativeImageClientTest {
                 .body(body)
                 .build());
         WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);
-        CreativeImageClient largeClient = new CreativeImageClient(builder, backendAssetClient, "key", "http://openai", "image-model");
-        when(backendAssetClient.uploadImage(any(), any(), any(), any())).thenReturn("/uploads/large.png");
+        CreativeImageClient largeClient = new CreativeImageClient(builder, backendAssetClient, optimizer, "key", "http://openai", "image-model");
+        when(backendAssetClient.uploadImage(any(), any(), any(), any())).thenReturn("/uploads/large.jpg");
 
         String result = largeClient.generateImage("prompt");
 
-        assertThat(result).isEqualTo("/uploads/large.png");
-        verify(backendAssetClient).uploadImage(argThat(bytes -> bytes.length == imageBytes.length), any(), any(), any());
+        assertThat(result).isEqualTo("/uploads/large.jpg");
+        verify(backendAssetClient).uploadImage(argThat(bytes -> bytes.length > 0),
+                argThat(name -> name.endsWith(".jpg")), any(), any());
+    }
+
+    private static byte[] createSolidPng(int width, int height) throws IOException {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        var graphics = image.createGraphics();
+        try {
+            graphics.setComposite(AlphaComposite.SrcOver);
+            graphics.setColor(new Color(30, 144, 255, 200));
+            graphics.fillRect(0, 0, width, height);
+        } finally {
+            graphics.dispose();
+        }
+        return writePng(image);
+    }
+
+    private static byte[] createRandomPng(int width, int height) {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Random random = new Random(42);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int r = random.nextInt(256);
+                int g = random.nextInt(256);
+                int b = random.nextInt(256);
+                int a = 255;
+                int argb = (a << 24) | (r << 16) | (g << 8) | b;
+                image.setRGB(x, y, argb);
+            }
+        }
+        return writePng(image);
+    }
+
+    private static byte[] writePng(BufferedImage image) {
+        try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            javax.imageio.ImageIO.write(image, "png", output);
+            return output.toByteArray();
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to encode PNG", e);
+        }
     }
 }
 

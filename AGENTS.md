@@ -32,7 +32,7 @@
 - React 18 + Vite + TypeScript
 - Zustand for state, TanStack Query for data fetching
 - Prettier (frontend) and Spotless (backend) for formatting
-- Sempre que ocorrer um erro HTTP 404 em chamada ao backend, verificar se a chamada faz sentido;
+- Sempre que crir uma nova chamado ao backend verifique se ela existe. Se não existir entenda se faz sentido e se sim construa no backend o endpoint documentando ele.
   caso positivo, o endpoint correspondente deve ser implementado.
 - Campos de formulário que acionam serviços do Worker IA devem incluir um tooltip explicativo
 - Todo registro de entidade produzido por um processo do **Worker IA** deve possuir os atributos `modelo` e `prompt`, que devem ser preenchidos no momento da criação do registro.

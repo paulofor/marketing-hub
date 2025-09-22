@@ -1,3 +1,5 @@
+--liquibase formatted sql
+
 --changeset marketinghub:2025-10-30-create-asset-table
 --preconditions onFail=MARK_RAN
 --precondition-sql-check expectedResult=0 dbms=mysql SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'asset'

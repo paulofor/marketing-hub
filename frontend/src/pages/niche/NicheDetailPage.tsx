@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
@@ -9,6 +8,15 @@ import { useBreadcrumbs } from "../../app/breadcrumbs";
 import { useChatDialog } from "../../api/chatDialog/useChatDialog";
 import { useForm } from "react-hook-form";
 import { useRequestAudiences } from "../../api/niche/useRequestAudiences";
+import {
+  ArrowUpRight,
+  Clock3,
+  FileDown,
+  Lightbulb,
+  Sparkles,
+  Users,
+} from "lucide-react";
+import "./NicheDetailPage.css";
 
 export default function NicheDetailPage() {
   const { nicheId } = useParams();
@@ -58,7 +66,13 @@ export default function NicheDetailPage() {
       })
     : [];
   const audienceList = Array.isArray(audiences) ? audiences : [];
-  const rows = [
+  const createdAtLabel = data.createdAt
+    ? new Date(data.createdAt).toLocaleString("pt-BR")
+    : undefined;
+  const updatedAtLabel = data.updatedAt
+    ? new Date(data.updatedAt).toLocaleString("pt-BR")
+    : undefined;
+  const infoCards = [
     { label: "Descrição", value: data.description },
     { label: "Volume de demanda", value: data.demandVolume },
     { label: "Promessas", value: data.promises },
@@ -72,144 +86,241 @@ export default function NicheDetailPage() {
     {
       label: "Chat Dialog",
       value: chatDialog ? (
-        <a href={chatDialog.url} target="_blank" rel="noopener noreferrer">
+        <a
+          className="niche-detail__card-link"
+          href={chatDialog.url}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           {chatDialog.description}
         </a>
       ) : undefined,
     },
+  ];
+  const stats = [
     {
-      label: "Criado em",
-      value: data.createdAt
-        ? new Date(data.createdAt).toLocaleString("pt-BR")
-        : undefined,
+      icon: Users,
+      label: "Públicos",
+      value: `${audienceList.length}`,
+      helper: `Meta: ${data.audiencesToGenerate ?? 0}`,
     },
     {
+      icon: Lightbulb,
+      label: "Hipóteses",
+      value: `${list.length}`,
+      helper: `Meta: ${data.hypothesesToGenerate ?? 0}`,
+    },
+    {
+      icon: Clock3,
       label: "Atualizado em",
-      value: data.updatedAt
-        ? new Date(data.updatedAt).toLocaleString("pt-BR")
-        : undefined,
+      value: updatedAtLabel ?? "-",
+      helper: createdAtLabel ? `Criado em ${createdAtLabel}` : undefined,
     },
   ];
+  const audienceStatusLabel =
+    requestAudiences.isPending || (isFetching && !isLoading)
+      ? "Atualizando públicos..."
+      : `Solicitados ao Worker: ${data.audiencesToGenerate ?? 0}`;
+  const onRequestAudiences = handleSubmit(
+    async ({ quantity }) => {
+      if (!quantity || quantity <= 0) return;
+      try {
+        await requestAudiences.mutateAsync(quantity);
+        alert("Solicitação enviada!");
+        reset({ quantity: 1 });
+      } catch {
+        alert("Erro ao solicitar públicos");
+      }
+    },
+    (errors) => {
+      console.log("Validation errors", errors);
+    },
+  );
 
   return (
-    <div>
-      <div className="d-flex justify-content-between align-items-center">
-        <PageTitle>{data.name}</PageTitle>
-        <button
-          type="button"
-          className="btn btn-outline-secondary btn-sm"
-          onClick={handleSaveMarkdown}
-        >
-          Salvar em Markdown
-        </button>
+    <div className="niche-detail">
+      <div className="niche-detail__header">
+        <div className="niche-detail__title">
+          <PageTitle>{data.name}</PageTitle>
+          <p className="niche-detail__subtitle">
+            {`Nicho #${data.id}`}
+            {updatedAtLabel ? ` • Atualizado em ${updatedAtLabel}` : ""}
+          </p>
+        </div>
+        <div className="niche-detail__actions">
+          <button
+            type="button"
+            className="btn btn-outline-secondary niche-detail__export-btn"
+            onClick={handleSaveMarkdown}
+          >
+            <FileDown size={18} />
+            <span>Salvar em Markdown</span>
+          </button>
+        </div>
       </div>
-      <dl className="row mb-4">
-        {rows.map((r, idx) => (
-          <Fragment key={r.label}>
-            <dt className={`col-sm-3 py-2${idx % 2 === 0 ? " bg-light" : ""}`}>
-              {r.label}
-            </dt>
-            <dd className={`col-sm-9 py-2${idx % 2 === 0 ? " bg-light" : ""}`}>
-              <span className="text-break" style={{ whiteSpace: "pre-wrap" }}>
-                {r.value ?? "-"}
-              </span>
-            </dd>
-          </Fragment>
+      <ul className="niche-detail__stats">
+        {stats.map((stat) => (
+          <li key={stat.label} className="niche-detail__stat">
+            <span className="niche-detail__stat-icon">
+              <stat.icon size={20} strokeWidth={1.75} />
+            </span>
+            <div className="niche-detail__stat-content">
+              <span className="niche-detail__stat-value">{stat.value}</span>
+              <span className="niche-detail__stat-label">{stat.label}</span>
+              {stat.helper ? (
+                <span className="niche-detail__stat-helper">{stat.helper}</span>
+              ) : null}
+            </div>
+          </li>
         ))}
-      </dl>
-      <h4 className="mt-4">
-        Públicos ({audienceList.length}/{data.audiencesToGenerate ?? 0})
-      </h4>
-      <div className="d-flex align-items-center mb-2">
-        <input
-          type="number"
-          min={1}
-          className="form-control w-auto me-2"
-          title="Quantidade de públicos que o Worker IA irá gerar"
-          {...register("quantity", { valueAsNumber: true })}
-        />
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={handleSubmit(
-            async ({ quantity }) => {
-              if (!quantity || quantity <= 0) return;
-              try {
-                await requestAudiences.mutateAsync(quantity);
-                alert("Solicitação enviada!");
-                reset();
-              } catch {
-                alert("Erro ao solicitar públicos");
-              }
-            },
-            (errors) => {
-              console.log("Validation errors", errors);
-            },
-          )}
-          disabled={requestAudiences.isPending}
-        >
-          Gerar Públicos
-        </button>
-        <span className="ms-2">
-          {requestAudiences.isPending || (isFetching && !isLoading)
-            ? "Atualizando..."
-            : `Solicitados: ${data.audiencesToGenerate ?? 0}`}
-        </span>
-      </div>
-      {audienceList.length === 0 ? (
-        <p>Nenhum público ainda.</p>
-      ) : (
-        <div className="row row-cols-1 row-cols-md-2 g-4 mb-4">
-          {audienceList.map((a) => (
-            <div key={a.id} className="col">
-              <AudienceApprovalCard audience={a} nicheId={nicheId} />
-            </div>
-          ))}
-        </div>
-      )}
-      <h4 className="mt-4">Hipóteses</h4>
-      {list.length === 0 ? (
-        <p>Nenhuma hipótese ainda.</p>
-      ) : (
-        <div className="row row-cols-1 row-cols-md-2 g-4">
-          {list.map((h) => (
-            <div key={h.id} className="col">
-              <div className="card h-100 rounded-3">
-                <div className="card-body">
-                  <h5 className="card-title">{h.title}</h5>
-                  <p className="card-text">
-                    <strong>Promessa:</strong> {h.promise || "-"}
-                  </p>
-                  <p className="card-text">
-                    <strong>Problema:</strong> {h.problem || "-"}
-                  </p>
-                  <p className="card-text">
-                    <strong>Mecanismo:</strong> {h.mechanism || "-"}
-                  </p>
-                  <p className="card-text">
-                    <strong>Mecanismo único:</strong> {h.uniqueMechanism || "-"}
-                  </p>
-                  <p className="card-text">
-                    <strong>Persona:</strong> {h.persona || "-"}
-                  </p>
-                  <p className="card-text">
-                    <strong>Entrega:</strong> {h.entrega || "-"}
-                  </p>
-                  <Link
-                    className="btn btn-sm btn-outline-primary mt-2"
-                    to={`hypotheses/${h.id}`}
-                  >
-                    Ver detalhes
-                  </Link>
-                </div>
-                <div className="card-footer text-muted">
-                  {`Gerado com ${h.model || "-"} em ${h.createdAt ? new Date(h.createdAt).toLocaleString("pt-BR") : "-"}`}
-                </div>
+      </ul>
+      <section aria-label="Informações do nicho">
+        <div className="niche-detail__grid">
+          {infoCards.map((card) => (
+            <article key={card.label} className="niche-detail__card">
+              <h3 className="niche-detail__card-title">{card.label}</h3>
+              <div className="niche-detail__card-content">
+                {card.value === null || card.value === undefined || card.value === ""
+                  ? (
+                      <span className="niche-detail__card-empty">-</span>
+                    )
+                  : typeof card.value === "string" || typeof card.value === "number"
+                    ? (
+                        <span className="niche-detail__card-text">{card.value}</span>
+                      )
+                    : (
+                        card.value
+                      )}
               </div>
-            </div>
+            </article>
           ))}
         </div>
-      )}
+      </section>
+      <section className="niche-section" aria-labelledby="niche-audiences">
+        <div className="niche-section__header">
+          <div>
+            <h2 className="niche-section__title" id="niche-audiences">
+              Públicos
+            </h2>
+            <p className="niche-section__subtitle">
+              {`${audienceList.length}/${data.audiencesToGenerate ?? 0} gerados ou pendentes`}
+            </p>
+            <p className="niche-section__status">{audienceStatusLabel}</p>
+          </div>
+          <form className="niche-section__actions" onSubmit={onRequestAudiences}>
+            <label htmlFor="audience-quantity" className="visually-hidden">
+              Quantidade de públicos que o Worker IA irá gerar
+            </label>
+            <input
+              id="audience-quantity"
+              type="number"
+              min={1}
+              className="form-control"
+              title="Quantidade de públicos que o Worker IA irá gerar"
+              disabled={requestAudiences.isPending}
+              {...register("quantity", { valueAsNumber: true })}
+            />
+            <button
+              type="submit"
+              className="btn btn-secondary"
+              disabled={requestAudiences.isPending}
+            >
+              {requestAudiences.isPending ? (
+                <span
+                  className="spinner-border spinner-border-sm"
+                  role="status"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Sparkles size={18} />
+              )}
+              <span>Gerar Públicos</span>
+            </button>
+          </form>
+        </div>
+        {audienceList.length === 0 ? (
+          <p className="niche-section__empty">Nenhum público ainda.</p>
+        ) : (
+          <div className="niche-section__grid">
+            {audienceList.map((a) => (
+              <AudienceApprovalCard
+                key={a.id}
+                audience={a}
+                nicheId={nicheId}
+                className="niche-section__card"
+              />
+            ))}
+          </div>
+        )}
+      </section>
+      <section className="niche-section" aria-labelledby="niche-hypotheses">
+        <div className="niche-section__header">
+          <div>
+            <h2 className="niche-section__title" id="niche-hypotheses">
+              Hipóteses
+            </h2>
+            <p className="niche-section__subtitle">
+              {list.length === 0
+                ? "As hipóteses aparecerão aqui quando forem geradas pela IA."
+                : "Principais ângulos sugeridos pela IA para o nicho."}
+            </p>
+          </div>
+        </div>
+        {list.length === 0 ? (
+          <p className="niche-section__empty">Nenhuma hipótese ainda.</p>
+        ) : (
+          <div className="niche-section__grid">
+            {list.map((h) => {
+              const fields = [
+                { label: "Promessa", value: h.promise },
+                { label: "Problema", value: h.problem },
+                { label: "Mecanismo", value: h.mechanism },
+                { label: "Mecanismo único", value: h.uniqueMechanism },
+                { label: "Persona", value: h.persona },
+                { label: "Entrega", value: h.entrega },
+              ];
+              return (
+                <div key={h.id} className="card h-100 niche-section__card">
+                  <div className="card-body niche-hypothesis-card__body">
+                    <h3 className="niche-hypothesis-card__title">{h.title}</h3>
+                    <div className="niche-hypothesis-card__fields">
+                      {fields.map((field) => (
+                        <div
+                          key={field.label}
+                          className="niche-hypothesis-card__field"
+                        >
+                          <span className="niche-hypothesis-card__field-label">
+                            {field.label}
+                          </span>
+                          <p className="niche-hypothesis-card__field-value">
+                            {field.value || "-"}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="niche-hypothesis-card__actions">
+                      <Link
+                        className="btn btn-sm btn-outline-primary"
+                        to={`hypotheses/${h.id}`}
+                      >
+                        <span>Ver detalhes</span>
+                        <ArrowUpRight size={16} />
+                      </Link>
+                    </div>
+                  </div>
+                  <div className="card-footer niche-hypothesis-card__footer">
+                    {`Gerado com ${h.model || "-"} em ${
+                      h.createdAt
+                        ? new Date(h.createdAt).toLocaleString("pt-BR")
+                        : "-"
+                    }`}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

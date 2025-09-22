@@ -21,8 +21,31 @@
   box-shadow: 0 24px 48px -30px rgba(var(--bs-primary-rgb, 13, 110, 253), 0.38);
 }
 
+.niche-detail__title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
 .niche-detail__header .page-title {
   margin-bottom: 0;
+  font-size: clamp(1.75rem, 1.35rem + 0.9vw, 2.2rem);
+}
+
+.niche-detail__badge {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--bs-primary-rgb, 13, 110, 253), 0.3);
+  background: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.15);
+  color: rgb(var(--bs-primary-rgb, 13, 110, 253));
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .niche-detail__subtitle {
@@ -127,7 +150,7 @@
 .niche-detail__grid {
   display: grid;
   gap: clamp(1rem, 0.85rem + 0.8vw, 1.75rem);
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .niche-detail__card {
@@ -290,11 +313,34 @@
   gap: 1.1rem;
 }
 
+.niche-hypothesis-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
 .niche-hypothesis-card__title {
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--bs-emphasis-color, #212529);
+}
+
+.niche-hypothesis-card__counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--bs-primary-rgb, 13, 110, 253), 0.25);
+  background: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.12);
+  color: rgb(var(--bs-primary-rgb, 13, 110, 253));
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .niche-hypothesis-card__fields {

@@ -8,6 +8,7 @@ import { useBreadcrumbs } from "../../app/breadcrumbs";
 import { useChatDialog } from "../../api/chatDialog/useChatDialog";
 import { useForm } from "react-hook-form";
 import { useRequestAudiences } from "../../api/niche/useRequestAudiences";
+import { useExperimentsByNiche } from "../../api/experiment/useExperimentsByNiche";
 import {
   ArrowUpRight,
   Clock3,
@@ -25,6 +26,7 @@ export default function NicheDetailPage() {
   const { data: chatDialog } = useChatDialog(data?.chatDialogId);
   const { data: hypotheses } = useHypothesesByNiche(nicheId, "ALL");
   const { data: audiences } = useAudiencesByNiche(nicheId);
+  const { data: experiments } = useExperimentsByNiche(nicheId);
   const requestAudiences = useRequestAudiences(id);
   const { register, handleSubmit, reset } = useForm<{ quantity: number }>({
     defaultValues: { quantity: 1 },
@@ -66,6 +68,14 @@ export default function NicheDetailPage() {
       })
     : [];
   const audienceList = Array.isArray(audiences) ? audiences : [];
+  const experimentsList = Array.isArray(experiments) ? experiments : [];
+  const experimentsCountByHypothesis = experimentsList.reduce<
+    Record<string, number>
+  >((acc, experiment) => {
+    const key = experiment.hypothesisId;
+    acc[key] = (acc[key] ?? 0) + 1;
+    return acc;
+  }, {});
   const createdAtLabel = data.createdAt
     ? new Date(data.createdAt).toLocaleString("pt-BR")
     : undefined;
@@ -141,6 +151,7 @@ export default function NicheDetailPage() {
     <div className="niche-detail">
       <div className="niche-detail__header">
         <div className="niche-detail__title">
+          <span className="niche-detail__badge">Nicho</span>
           <PageTitle>{data.name}</PageTitle>
           <p className="niche-detail__subtitle">
             {`Nicho #${data.id}`}
@@ -271,6 +282,11 @@ export default function NicheDetailPage() {
         ) : (
           <div className="niche-section__grid">
             {list.map((h) => {
+              const experimentCount = experimentsCountByHypothesis[h.id] ?? 0;
+              const experimentLabel =
+                experimentCount === 1
+                  ? "1 experimento criado"
+                  : `${experimentCount} experimentos criados`;
               const fields = [
                 { label: "Promessa", value: h.promise },
                 { label: "Problema", value: h.problem },
@@ -282,7 +298,12 @@ export default function NicheDetailPage() {
               return (
                 <div key={h.id} className="card h-100 niche-section__card">
                   <div className="card-body niche-hypothesis-card__body">
-                    <h3 className="niche-hypothesis-card__title">{h.title}</h3>
+                    <div className="niche-hypothesis-card__head">
+                      <h3 className="niche-hypothesis-card__title">{h.title}</h3>
+                      <span className="niche-hypothesis-card__counter">
+                        {experimentLabel}
+                      </span>
+                    </div>
                     <div className="niche-hypothesis-card__fields">
                       {fields.map((field) => (
                         <div
@@ -290,7 +311,7 @@ export default function NicheDetailPage() {
                           className="niche-hypothesis-card__field"
                         >
                           <span className="niche-hypothesis-card__field-label">
-                            {field.label}
+                            {`${field.label}:`}
                           </span>
                           <p className="niche-hypothesis-card__field-value">
                             {field.value || "-"}

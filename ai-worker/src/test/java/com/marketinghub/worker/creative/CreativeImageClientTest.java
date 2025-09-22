@@ -45,12 +45,15 @@ class CreativeImageClientTest {
 
     @Test
     void uploadsReturnedImageToBackend() {
-        when(backendAssetClient.uploadImage(any(), any())).thenReturn("/uploads/img.png");
+        when(backendAssetClient.uploadImage(any(), any(), any(), any())).thenReturn("/uploads/img.png");
 
         String result = client.generateImage("prompt");
 
         assertThat(result).isEqualTo("/uploads/img.png");
-        verify(backendAssetClient).uploadImage(any(byte[].class), argThat(name -> name.startsWith("creative-") && name.endsWith(".png")));
+        verify(backendAssetClient).uploadImage(any(byte[].class),
+                argThat(name -> name.startsWith("creative-") && name.endsWith(".png")),
+                argThat(model -> model.equals("image-model")),
+                argThat(prompt -> prompt.equals("prompt")));
     }
 
     @Test
@@ -65,12 +68,12 @@ class CreativeImageClientTest {
                 .build());
         WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);
         CreativeImageClient largeClient = new CreativeImageClient(builder, backendAssetClient, "key", "http://openai", "image-model");
-        when(backendAssetClient.uploadImage(any(), any())).thenReturn("/uploads/large.png");
+        when(backendAssetClient.uploadImage(any(), any(), any(), any())).thenReturn("/uploads/large.png");
 
         String result = largeClient.generateImage("prompt");
 
         assertThat(result).isEqualTo("/uploads/large.png");
-        verify(backendAssetClient).uploadImage(argThat(bytes -> bytes.length == imageBytes.length), any());
+        verify(backendAssetClient).uploadImage(argThat(bytes -> bytes.length == imageBytes.length), any(), any(), any());
     }
 }
 

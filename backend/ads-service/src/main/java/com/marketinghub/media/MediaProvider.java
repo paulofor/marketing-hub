@@ -7,5 +7,6 @@ public enum MediaProvider {
     SYNTHESIA,
     HEYGEN,
     ELEVENLABS,
-    RUNWAY
+    RUNWAY,
+    OPENAI
 }

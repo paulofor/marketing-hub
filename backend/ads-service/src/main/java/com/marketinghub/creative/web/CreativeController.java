@@ -55,8 +55,10 @@ public class CreativeController {
     }
 
     @PostMapping("/api/assets")
-    public String upload(@RequestParam("file") MultipartFile file) throws IOException {
-        return service.uploadImage(file);
+    public String upload(@RequestParam("file") MultipartFile file,
+                         @RequestParam("prompt") String prompt,
+                         @RequestParam(value = "model", required = false) String model) throws IOException {
+        return service.uploadImage(file, model, prompt);
     }
 
     @GetMapping("/api/creatives/{id}/preview")

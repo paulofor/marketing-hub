@@ -72,7 +72,7 @@ public class CreativeImageClient {
             try {
                 byte[] imageBytes = Base64.getDecoder().decode(data.base64());
                 String filename = "creative-" + UUID.randomUUID() + ".png";
-                return assetClient.uploadImage(imageBytes, filename);
+                return assetClient.uploadImage(imageBytes, filename, model, prompt);
             } catch (IllegalArgumentException e) {
                 throw new RuntimeException("Failed to decode image payload", e);
             }

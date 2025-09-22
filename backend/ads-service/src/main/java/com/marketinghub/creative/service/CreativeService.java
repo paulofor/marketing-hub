@@ -10,10 +10,16 @@ import com.marketinghub.creative.label.repository.VisualProofRepository;
 import com.marketinghub.creative.label.repository.EmotionalTriggerRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.media.Asset;
+import com.marketinghub.media.AssetStatus;
+import com.marketinghub.media.AssetType;
+import com.marketinghub.media.MediaProvider;
+import com.marketinghub.media.repository.AssetRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import lombok.RequiredArgsConstructor;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -39,6 +45,7 @@ public class CreativeService {
     private final AngleRepository angleRepository;
     private final VisualProofRepository visualProofRepository;
     private final EmotionalTriggerRepository emotionalTriggerRepository;
+    private final AssetRepository assetRepository;
     private final HttpClient httpClient;
 
     /**
@@ -99,12 +106,30 @@ public class CreativeService {
     /**
      * Saves the uploaded image and returns a public URL.
      */
-    public String uploadImage(MultipartFile file) throws IOException {
+    public String uploadImage(MultipartFile file, String model, String prompt) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("File must not be empty");
+        }
+        if (!StringUtils.hasText(prompt)) {
+            throw new IllegalArgumentException("Prompt must not be blank");
+        }
         Path dir = Path.of("uploads");
         Files.createDirectories(dir);
-        Path path = Files.createTempFile(dir, "img", file.getOriginalFilename());
+        String extension = StringUtils.getFilenameExtension(file.getOriginalFilename());
+        String suffix = extension != null && !extension.isBlank() ? "." + extension : ".bin";
+        Path path = Files.createTempFile(dir, "img-", suffix);
         file.transferTo(path);
-        return "/uploads/" + path.getFileName();
+        String relativeUrl = "/uploads/" + path.getFileName();
+        Asset asset = Asset.builder()
+                .type(AssetType.IMAGE)
+                .provider(MediaProvider.OPENAI)
+                .status(AssetStatus.READY)
+                .url(relativeUrl)
+                .model(StringUtils.hasText(model) ? model : null)
+                .prompt(prompt)
+                .build();
+        assetRepository.save(asset);
+        return relativeUrl;
     }
 
     /**

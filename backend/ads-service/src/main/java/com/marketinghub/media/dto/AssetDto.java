@@ -19,6 +19,8 @@ public class AssetDto {
     private AssetStatus status;
     private String url;
     private String payload;
+    private String model;
+    private String prompt;
     private Long campaignId;
     private Instant createdAt;
     private Instant updatedAt;

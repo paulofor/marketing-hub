@@ -11,6 +11,10 @@ import com.marketinghub.creative.label.repository.VisualProofRepository;
 import com.marketinghub.creative.label.repository.EmotionalTriggerRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.FixtureUtils;
+import com.marketinghub.media.Asset;
+import com.marketinghub.media.AssetStatus;
+import com.marketinghub.media.AssetType;
+import com.marketinghub.media.repository.AssetRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -49,18 +53,22 @@ class CreativeServiceTest {
     EmotionalTriggerRepository emotionalTriggerRepository;
     @Autowired
     FixtureUtils fixtures;
+    @Autowired
+    AssetRepository assetRepository;
 
     CreativeService service;
 
     @BeforeEach
     void setup() {
         HttpClient client = Mockito.mock(HttpClient.class);
+        assetRepository.deleteAll();
         service = new CreativeService(
                 repository,
                 experimentRepository,
                 angleRepository,
                 visualProofRepository,
                 emotionalTriggerRepository,
+                assetRepository,
                 client);
     }
 
@@ -68,8 +76,17 @@ class CreativeServiceTest {
     void uploadImageReturnsPath() throws Exception {
         MultipartFile file = new org.springframework.mock.web.MockMultipartFile(
                 "file", "test.png", "image/png", new byte[]{1,2});
-        String url = service.uploadImage(file);
+        assetRepository.deleteAll();
+
+        String url = service.uploadImage(file, "dall-e-3", "prompt text");
+
         assertThat(url).contains("/uploads/");
+        Asset saved = assetRepository.findAll().stream().findFirst().orElseThrow();
+        assertThat(saved.getUrl()).isEqualTo(url);
+        assertThat(saved.getType()).isEqualTo(AssetType.IMAGE);
+        assertThat(saved.getStatus()).isEqualTo(AssetStatus.READY);
+        assertThat(saved.getModel()).isEqualTo("dall-e-3");
+        assertThat(saved.getPrompt()).isEqualTo("prompt text");
     }
 
     @Test
@@ -90,6 +107,7 @@ class CreativeServiceTest {
                     angleRepository,
                     visualProofRepository,
                     emotionalTriggerRepository,
+                    assetRepository,
                     client);
             String html = service.preview(1L);
             assertThat(html).contains("ok");

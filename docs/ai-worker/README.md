@@ -45,7 +45,11 @@ de IA quando necessário e persistem os resultados de volta no serviço principa
 - **Fonte dos dados:** experimentos com `creativesToGenerate > 0`.
 - **O que faz:** `ExperimentCreativeService` chama o `CreativeChatGptClient` para gerar textos e o
   `CreativeImageClient` para gerar as imagens. As imagens são enviadas para o backend com `POST /api/assets`
-  via `BackendAssetClient`, e os criativos são salvos com `CreativeService`.
+  via `BackendAssetClient`, incluindo os campos de `prompt` e `model` utilizados na geração, e os criativos são
+  salvos com `CreativeService`.
+  Caso o endpoint de upload esteja exposto em outro caminho ou domínio, utilize as variáveis
+  `BACKEND_ASSET_PATH` ou `BACKEND_ASSET_URL` para ajustá-lo. O worker tenta repetir a chamada sem o
+  prefixo configurado quando recebe `404`, evitando falhas em ambientes com roteamento diferente.
 - **Referências:** detalhes e fluxo em [experimento-criativo-service.md](experimento-criativo-service.md).
 
 - **Disparo:** `AudienceAdSetScheduler` (cron `0 */5 * * * *`).

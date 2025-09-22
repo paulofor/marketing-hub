@@ -6,5 +6,6 @@ package com.marketinghub.media;
 public enum AssetType {
     VIDEO,
     AUDIO,
-    BROLL
+    BROLL,
+    IMAGE
 }

@@ -38,6 +38,11 @@ public class Asset {
 
     private Long campaignId;
 
+    private String model;
+
+    @Lob
+    private String prompt;
+
     @CreationTimestamp
     private Instant createdAt;
 

@@ -36,7 +36,21 @@
   caso positivo, o endpoint correspondente deve ser implementado.
 - Campos de formulário que acionam serviços do Worker IA devem incluir um tooltip explicativo
 - Todo registro de entidade produzido por um processo do **Worker IA** deve possuir os atributos `modelo` e `prompt`, que devem ser preenchidos no momento da criação do registro.
-
+- Todo changelog `.sql` **DEVE** começar na **primeira linha** com: `--liquibase formatted sql`
+- Para scripts específicos de MySQL, use `dbms:mysql` **na mesma linha** do changeset: `--changeset <autor>:<id> dbms:mysql`
+- Use precondições para idempotência, por exemplo:
+  ```
+  --preconditions onFail:MARK_RAN
+  --precondition-sql-check expectedResult:0 <SQL que retorna 0 quando deve executar>
+  ```
+- **Template mínimo sugerido**:
+  ```sql
+  --liquibase formatted sql
+  --changeset repo:<yyyy-mm-dd>-<id> dbms:mysql
+  --preconditions onFail:MARK_RAN
+  --precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'sua_tabela';
+  -- seu SQL aqui
+  ```
 ## Secrets
 
 - Do **NOT** commit `.env`. Use GitHub Actions secrets for tokens.

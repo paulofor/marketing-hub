@@ -138,7 +138,15 @@ class JourneyExecutionServiceTest {
         assertThat(assignment.getStatus()).isEqualTo(JourneyAssignmentStatus.IN_PROGRESS);
         assertThat(assignment.getRetryCount()).isEqualTo(1);
         assertThat(assignment.getNextAttemptAt()).isNotNull();
-        verify(eventLogRepository).save(argThat(log -> log.getEventType().equals(JourneyEventType.STIMULUS_FAILED.getCode())));
+        ArgumentCaptor<EventLog> logCaptor = ArgumentCaptor.forClass(EventLog.class);
+        verify(eventLogRepository, atLeastOnce()).save(logCaptor.capture());
+        EventLog failedLog = logCaptor.getAllValues().stream()
+                .filter(log -> JourneyEventType.STIMULUS_FAILED.getCode().equals(log.getEventType()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(failedLog.getMetadata()).isNotNull();
+        assertThat(failedLog.getMetadata()).contains("\"retryCount\":1");
+        assertThat(failedLog.getMetadata()).contains("\"nextAttemptAt\"");
     }
 
     @Test

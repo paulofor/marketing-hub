@@ -18,7 +18,6 @@ import {
   Copy,
   Edit3,
   Eye,
-  Plus,
   Sparkles,
   Trash2,
   X,
@@ -136,26 +135,6 @@ export default function CriativosTab({ experimentId }: Props) {
       instagramUserId: c.instagramUserId || "",
       status: c.status,
     });
-  };
-
-  const openNew = () => {
-    setEditing(null);
-    setForm({
-      format: "LINK",
-      headline: "",
-      primaryText: "",
-      description: "",
-      cta: "LEARN_MORE",
-      destinationUrl: "",
-      imageUrl: "",
-      pageId: "",
-      instagramUserId: "",
-      status: "DRAFT",
-    });
-    setSelectedAngle("");
-    setSelectedProof("");
-    setSelectedTrigger("");
-    setShowForm(true);
   };
 
   const openEdit = (c: Creative) => {
@@ -365,14 +344,6 @@ export default function CriativosTab({ experimentId }: Props) {
             )}
             <span>{requestCreatives.isPending ? "Solicitando..." : "Gerar criativos"}</span>
           </button>
-          <button
-            type="button"
-            className="btn btn-primary d-flex align-items-center gap-2"
-            onClick={openNew}
-          >
-            <Plus size={ICON_SIZE} />
-            <span>Novo Criativo</span>
-          </button>
         </div>
       </div>
 
@@ -389,8 +360,8 @@ export default function CriativosTab({ experimentId }: Props) {
           </div>
           <h3 className="h6 fw-semibold mb-1">Nenhum criativo cadastrado</h3>
           <p className="text-muted mb-0">
-            Gere sugestões com IA ou cadastre um novo criativo para começar a testar
-            variações.
+            Gere sugestões com IA para começar a testar variações e construa seu
+            acervo criativo com os resultados aprovados.
           </p>
         </div>
       ) : (

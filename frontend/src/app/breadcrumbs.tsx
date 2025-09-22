@@ -31,7 +31,12 @@ export default function BreadcrumbsProvider({
             {crumbs.map((c, i) => {
               const isActive = i === crumbs.length - 1;
               const label = (
-                <span className="app-breadcrumbs__item-label">{c.label}</span>
+                <>
+                  <span className="app-breadcrumbs__separator" aria-hidden="true">
+                    /
+                  </span>
+                  <span className="app-breadcrumbs__item-label">{c.label}</span>
+                </>
               );
               return (
                 <li

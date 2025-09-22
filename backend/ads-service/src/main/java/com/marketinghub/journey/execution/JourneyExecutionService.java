@@ -62,7 +62,9 @@ public class JourneyExecutionService {
         this.retryBackoffCalculator = retryBackoffCalculator;
         this.conditionEvaluator = conditionEvaluator;
         this.telemetryService = telemetryService;
-        this.objectMapper = objectMapper;
+        ObjectMapper mapper = objectMapper.copy();
+        mapper.findAndRegisterModules();
+        this.objectMapper = mapper;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         this.handlerByType = handlers.stream()

@@ -29,12 +29,14 @@ public class CreativeImageClient {
     private final WebClient webClient;
     private final BackendAssetClient assetClient;
     private final String model;
+    private final CreativeImageOptimizer imageOptimizer;
     private final ObjectMapper objectMapper;
     private static final Logger log = LoggerFactory.getLogger(CreativeImageClient.class);
     private static final int DEFAULT_MAX_IN_MEMORY_SIZE = 10 * 1024 * 1024; // 10 MB
 
     public CreativeImageClient(WebClient.Builder builder,
                                BackendAssetClient assetClient,
+                               CreativeImageOptimizer imageOptimizer,
                                @Value("${openai.api-key:}") String apiKey,
                                @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
                                @Value("${openai.image-model:dall-e-3}") String model) {
@@ -44,6 +46,7 @@ public class CreativeImageClient {
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(DEFAULT_MAX_IN_MEMORY_SIZE))
                 .build();
         this.assetClient = assetClient;
+        this.imageOptimizer = imageOptimizer;
         this.model = model;
         this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
@@ -71,8 +74,13 @@ public class CreativeImageClient {
         if (data.base64() != null && !data.base64().isBlank()) {
             try {
                 byte[] imageBytes = Base64.getDecoder().decode(data.base64());
-                String filename = "creative-" + UUID.randomUUID() + ".png";
-                return assetClient.uploadImage(imageBytes, filename, model, prompt);
+                CreativeImageOptimizer.OptimizedImage optimized = imageOptimizer.optimize(imageBytes);
+                if (log.isInfoEnabled()) {
+                    log.info("Optimized OpenAI image from {} bytes to {} bytes", imageBytes.length,
+                            optimized.content().length);
+                }
+                String filename = "creative-" + UUID.randomUUID() + "." + optimized.extension();
+                return assetClient.uploadImage(optimized.content(), filename, model, prompt);
             } catch (IllegalArgumentException e) {
                 throw new RuntimeException("Failed to decode image payload", e);
             }

@@ -10,7 +10,7 @@ describe("CriativosTab", () => {
   beforeEach(() => {
     vi.resetAllMocks();
   });
-  it("opens modal", async () => {
+  it("opens request dialog", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url.endsWith("/experiments/1/creatives")) {
         return Promise.resolve({ data: [] });
@@ -27,8 +27,10 @@ describe("CriativosTab", () => {
       </QueryClientProvider>,
     );
     expect(await screen.findByText("Solicitados: 3")).toBeTruthy();
-    screen.getByText("Novo Criativo").click();
-    expect(await screen.findByText("Novo Criativo")).toBeTruthy();
+    screen.getByText("Gerar criativos").click();
+    expect(
+      await screen.findByLabelText("Quantidade de criativos"),
+    ).toBeTruthy();
   });
 
   it("shows preview", async () => {

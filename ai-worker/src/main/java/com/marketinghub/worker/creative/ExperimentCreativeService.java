@@ -51,34 +51,43 @@ public class ExperimentCreativeService {
         Iterable<Experiment> experiments = experimentRepository.findAllToGenerateCreatives();
         for (Experiment exp : experiments) {
             Integer qty = exp.getCreativesToGenerate();
-            log.info("Generating {} creatives for experiment {}", qty, exp.getId());
-            List<CreateCreativeRequest> requests = chatGptClient.generateCreatives(exp, qty);
-            log.info("ChatGPT returned {} creatives for experiment {}", requests.size(), exp.getId());
-            List<Creative> saved = new ArrayList<>();
-            for (CreateCreativeRequest req : requests) {
-                if (req.getHeadline() == null || req.getHeadline().isBlank()) {
-                    log.error("Skipping creative without headline for experiment {}: {}", exp.getId(), req);
-                    continue;
-                }
-                req.setHeadline(truncate(req.getHeadline(), HEADLINE_MAX));
-                String primary = limitHashtags(req.getPrimaryText(), MAX_HASHTAGS);
-                if (primary != null && !primary.contains("#")) {
-                    primary = truncate(primary, PRIMARY_TEXT_MAX);
-                }
-                req.setPrimaryText(primary);
-                try {
-                    String imageUrl = imageClient.generateImage(req.getHeadline());
-                    req.setImageUrl(imageUrl);
-                } catch (Exception e) {
-                    log.error("Failed to generate image for experiment {}: {}", exp.getId(), req.getHeadline(), e);
-                }
-                log.info("Saving creative for experiment {}: {}", exp.getId(), req);
-                saved.add(creativeService.create(exp.getId(), req));
+            if (qty == null || qty <= 0) {
+                log.info("Skipping experiment {} because creativesToGenerate is {}", exp.getId(), qty);
+                continue;
             }
-            log.info("Resetting creativesToGenerate for experiment {} to 0", exp.getId());
-            exp.setCreativesToGenerate(0);
-            experimentRepository.save(exp);
-            result.put(exp.getId(), saved);
+            log.info("Generating {} creatives for experiment {}", qty, exp.getId());
+            try {
+                List<CreateCreativeRequest> requests = chatGptClient.generateCreatives(exp, qty);
+                log.info("ChatGPT returned {} creatives for experiment {}", requests.size(), exp.getId());
+                List<Creative> saved = new ArrayList<>();
+                for (CreateCreativeRequest req : requests) {
+                    if (req.getHeadline() == null || req.getHeadline().isBlank()) {
+                        log.error("Skipping creative without headline for experiment {}: {}", exp.getId(), req);
+                        continue;
+                    }
+                    req.setHeadline(truncate(req.getHeadline(), HEADLINE_MAX));
+                    String primary = limitHashtags(req.getPrimaryText(), MAX_HASHTAGS);
+                    if (primary != null && !primary.contains("#")) {
+                        primary = truncate(primary, PRIMARY_TEXT_MAX);
+                    }
+                    req.setPrimaryText(primary);
+                    try {
+                        String imageUrl = imageClient.generateImage(req.getHeadline());
+                        req.setImageUrl(imageUrl);
+                    } catch (Exception e) {
+                        log.error("Failed to generate image for experiment {}: {}", exp.getId(), req.getHeadline(), e);
+                    }
+                    log.info("Saving creative for experiment {}: {}", exp.getId(), req);
+                    saved.add(creativeService.create(exp.getId(), req));
+                }
+                log.info("Resetting creativesToGenerate for experiment {} to 0", exp.getId());
+                exp.setCreativesToGenerate(0);
+                experimentRepository.save(exp);
+                result.put(exp.getId(), saved);
+                log.info("Finished experiment {} with {} creatives persisted", exp.getId(), saved.size());
+            } catch (Exception e) {
+                log.error("Failed to generate creatives for experiment {}", exp.getId(), e);
+            }
         }
         return result;
     }

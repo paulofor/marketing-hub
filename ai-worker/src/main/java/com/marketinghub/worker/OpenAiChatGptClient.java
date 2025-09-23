@@ -3,6 +3,8 @@ package com.marketinghub.worker;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.successproduct.SuccessProduct;
+import com.marketinghub.worker.openai.OpenAiRequestUtils;
+import com.marketinghub.worker.openai.OpenAiResponse;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -12,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -58,17 +61,13 @@ public class OpenAiChatGptClient implements ChatGptClient {
         log.info("Enriching product {} with OpenAI", product.getId());
 
         // ===== 1. Mensagens iniciais
-        List<Map<String, Object>> messages = new ArrayList<>();
-        messages.add(Map.of("role", "system", "content", "Você é um especialista em marketing."));
         String prompt = "Preencha os campos name, explicitPain, promise, uniqueMechanism, " +
                 "tripwire, riskReversal, socialProof, checkoutMonetization, salesFunnel, audienceType, " +
                 "creativeVolume, storytelling, salesPageUrl, instagramUrl, facebookUrl, " +
                 "youtubeUrl em formato JSON. Se houver um link de p\u00e1gina de vendas na\n" +
                 "descri\u00e7\u00e3o, visite a p\u00e1gina para coletar esses detalhes de copy e\n" +
                 "marketing, incluindo links de redes sociais.";
-        messages.add(Map.of("role", "user", "content", prompt + "\n" + product.getDescription()));
 
-        // ===== 2. Definição do tool search_web
         Map<String, Object> searchTool = Map.of(
                 "type", "function",
                 "function", Map.of(
@@ -81,79 +80,65 @@ public class OpenAiChatGptClient implements ChatGptClient {
         List<Object> tools = List.of(searchTool);
 
         try {
-            // ===== 3. Loop principal (tool calling)
+            List<Map<String, Object>> input = new ArrayList<>();
+            input.add(OpenAiRequestUtils.message("system", "Você é um especialista em marketing."));
+            input.add(OpenAiRequestUtils.message("user", prompt + "\n" + product.getDescription()));
+
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("model", model);
+            payload.put("input", input);
+            payload.put("tools", tools);
+            payload.put("tool_choice", "auto");
+            OpenAiRequestUtils.maybeAddReasoning(payload, model);
+
+            OpenAiResponse response = executeResponseRequest(payload);
+
             while (true) {
-                String requestBody = MAPPER.writeValueAsString(Map.of(
-                        "model", model,
-                        "messages", messages,
-                        "tools", tools,
-                        "tool_choice", "auto"));
-
-                log.info("Sending ChatGPT request with {} messages", messages.size());
-                log.info("ChatGPT request body: {}", requestBody);
-
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create("https://api.openai.com/v1/chat/completions"))
-                        .timeout(Duration.ofMinutes(2))
-                        .header("Authorization", "Bearer " + apiKey)
-                        .header("Content-Type", "application/json")
-                        .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
-                        .build();
-
-                HttpResponse<String> response =
-                        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-                log.info("ChatGPT response body: {}", response.body());
-
-                JsonNode root = MAPPER.readTree(response.body());
-                if (root.has("error")) {
-                    log.error("OpenAI error: {}", root.path("error").path("message").asText());
+                if (response == null) {
+                    log.error("OpenAI returned null response for product {}", product.getId());
+                    return product;
+                }
+                if (response.hasError()) {
+                    log.error("OpenAI error: {}", response.errorMessage());
                     return product;
                 }
 
-                JsonNode choice = root.path("choices").get(0);
-                if (choice == null || choice.isNull()) {
-                    log.error("OpenAI response missing choices");
-                    return product;
-                }
-
-                JsonNode messageNode = choice.path("message");
-                // add the assistant message so the next request keeps the conversation context
-                @SuppressWarnings("unchecked")
-                Map<String, Object> assistantMsg = MAPPER.convertValue(messageNode, Map.class);
-                messages.add(assistantMsg);
-
-                String finishReason = choice.path("finish_reason").asText();
-
-                log.info("OpenAI finish reason: {}", finishReason);
-
-                // ===== 3a. Modelo quer usar o tool search_web
-                if ("tool".equals(finishReason) || "tool_calls".equals(finishReason)) {
-                    JsonNode toolCall = choice.path("message").path("tool_call");
-                    if (toolCall == null || toolCall.isMissingNode() || toolCall.isNull()) {
-                        JsonNode array = choice.path("message").path("tool_calls");
-                        if (array.isArray() && array.size() > 0) {
-                            toolCall = array.get(0);
-                        }
+                List<OpenAiResponse.OpenAiToolCall> toolCalls = response.firstToolCalls();
+                if (!toolCalls.isEmpty()) {
+                    OpenAiResponse.OpenAiToolCall toolCall = toolCalls.get(0);
+                    String functionName = toolCall.function() != null ? toolCall.function().name() : null;
+                    if (!"search_web".equals(functionName)) {
+                        log.warn("Ignoring unsupported tool {} for product {}", functionName, product.getId());
+                        return product;
                     }
-
-                    String callId = toolCall.path("id").asText();
-                    String query = toolCall.path("function").path("arguments").path("query").asText();
+                    String query = extractSearchQuery(toolCall);
+                    if (query == null || query.isBlank()) {
+                        log.warn("Search tool call without query for product {}", product.getId());
+                        return product;
+                    }
                     log.info("Searching web for '{}'", query);
                     List<SearchResult> results = searchWeb(query);
                     log.info("Search returned {} results", results.size());
                     String toolContent = MAPPER.writeValueAsString(Map.of("results", results));
 
-                    messages.add(Map.of(
-                            "role", "tool",
-                            "tool_call_id", callId,
-                            "name", "search_web",
-                            "content", toolContent));
-                    continue; // volta ao início do loop
+                    Map<String, Object> followUp = new LinkedHashMap<>();
+                    followUp.put("model", model);
+                    followUp.put("previous_response_id", response.id());
+                    followUp.put("input", List.of(OpenAiRequestUtils.toolOutput(toolCall.effectiveCallId(), toolContent)));
+                    followUp.put("tools", tools);
+                    followUp.put("tool_choice", "auto");
+                    OpenAiRequestUtils.maybeAddReasoning(followUp, model);
+
+                    response = executeResponseRequest(followUp);
+                    continue;
                 }
 
-                // ===== 3b. Resposta final do modelo
-                String content = choice.path("message").path("content").asText();
+                String content = response.firstText();
+                if (content == null || content.isBlank()) {
+                    log.error("OpenAI returned empty content for product {}", product.getId());
+                    return product;
+                }
+
                 content = stripCodeFence(content);
                 JsonNode data = MAPPER.readTree(content);
 
@@ -212,6 +197,46 @@ public class OpenAiChatGptClient implements ChatGptClient {
             }
         }
         return list;
+    }
+
+    private OpenAiResponse executeResponseRequest(Map<String, Object> payload) throws Exception {
+        String requestBody = MAPPER.writeValueAsString(payload);
+        log.info("Sending OpenAI Responses request: {}", requestBody);
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.openai.com/v1/responses"))
+                .timeout(Duration.ofMinutes(2))
+                .header("Authorization", "Bearer " + apiKey)
+                .header("Content-Type", "application/json");
+        if (OpenAiRequestUtils.requiresReasoning(model)) {
+            builder.header("OpenAI-Beta", "reasoning=1");
+        }
+        HttpRequest request = builder
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        log.info("OpenAI response body: {}", response.body());
+        return MAPPER.readValue(response.body(), OpenAiResponse.class);
+    }
+
+    private String extractSearchQuery(OpenAiResponse.OpenAiToolCall toolCall) {
+        if (toolCall == null || toolCall.function() == null) {
+            return null;
+        }
+        String args = toolCall.function().arguments();
+        if (args == null || args.isBlank()) {
+            return null;
+        }
+        try {
+            JsonNode node = MAPPER.readTree(args);
+            JsonNode queryNode = node.path("query");
+            if (queryNode.isTextual()) {
+                return queryNode.asText();
+            }
+            return queryNode.isNull() ? null : queryNode.toString();
+        } catch (Exception e) {
+            log.warn("Failed to parse tool arguments: {}", args, e);
+            return null;
+        }
     }
 
     private static String stripCodeFence(String text) {

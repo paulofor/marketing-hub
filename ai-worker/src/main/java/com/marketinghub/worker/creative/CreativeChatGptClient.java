@@ -19,8 +19,12 @@ import reactor.netty.http.client.HttpClient;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.marketinghub.worker.openai.OpenAiRequestUtils;
+import com.marketinghub.worker.openai.OpenAiResponse;
 
 /**
  * Simple wrapper around the OpenAI chat completions API for creative generation.
@@ -52,6 +56,9 @@ public class CreativeChatGptClient {
                 .clientConnector(new ReactorClientHttpConnector(httpClient));
         if (enabled) {
             clientBuilder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
+            if (OpenAiRequestUtils.requiresReasoning(model)) {
+                clientBuilder.defaultHeader("OpenAI-Beta", "reasoning=1");
+            }
         }
         this.webClient = clientBuilder.build();
         this.objectMapper = objectMapper;
@@ -67,24 +74,26 @@ public class CreativeChatGptClient {
             return List.of();
         }
         String prompt = buildPrompt(experiment, quantity);
-        Map<String, Object> payload = Map.of(
-                "model", model,
-                "messages", List.of(
-                        Map.of("role", "system", "content", "Você é um especialista em marketing."),
-                        Map.of("role", "user", "content", prompt)
-                )
+        List<Map<String, Object>> input = List.of(
+                OpenAiRequestUtils.message("system", "Você é um especialista em marketing."),
+                OpenAiRequestUtils.message("user", prompt)
         );
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("model", model);
+        payload.put("input", input);
+        OpenAiRequestUtils.maybeAddReasoning(payload, model);
 
         log.info("Sending prompt to ChatGPT for experiment {}: {}", experiment.getId(), prompt);
         log.debug("ChatGPT payload: {}", payload);
 
-        ChatCompletionResponse response;
+        OpenAiResponse response;
         try {
             response = webClient.post()
-                    .uri("/chat/completions")
+                    .uri("/responses")
                     .bodyValue(payload)
                     .retrieve()
-                    .bodyToMono(ChatCompletionResponse.class)
+                    .bodyToMono(OpenAiResponse.class)
                     .block(REQUEST_TIMEOUT);
         } catch (Exception ex) {
             log.error("ChatGPT request failed for experiment {} after {} seconds", experiment.getId(),
@@ -94,11 +103,18 @@ public class CreativeChatGptClient {
 
         log.info("ChatGPT raw response: {}", response);
 
-        if (response == null || response.choices().isEmpty()) {
+        if (response == null) {
             log.warn("ChatGPT returned no choices for experiment {}", experiment.getId());
             return List.of();
         }
-        String content = response.choices().get(0).message().content();
+        if (response.hasError()) {
+            throw new RuntimeException("OpenAI error: " + response.errorMessage());
+        }
+        String content = response.firstText();
+        if (content == null || content.isBlank()) {
+            log.warn("ChatGPT returned empty content for experiment {}", experiment.getId());
+            return List.of();
+        }
         log.info("ChatGPT content: {}", content);
         try {
             List<CreateCreativeRequest> parsed = parseContent(content);
@@ -151,7 +167,4 @@ public class CreativeChatGptClient {
         return Arrays.asList(arr);
     }
 
-    private record ChatCompletionResponse(List<Choice> choices) {}
-    private record Choice(Message message) {}
-    private record Message(String content) {}
 }

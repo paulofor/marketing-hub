@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.audience.dto.CreateAudienceRequest;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.worker.openai.OpenAiRequestUtils;
+import com.marketinghub.worker.openai.OpenAiResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -35,10 +38,13 @@ public class AudienceChatGptClient {
                                  @Value("${openai.api-key:}") String apiKey,
                                  @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
                                  @Value("${openai.model:gpt-3.5-turbo}") String model) {
-        this.webClient = builder
+        WebClient.Builder clientBuilder = builder
                 .baseUrl(baseUrl)
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
-                .build();
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
+        if (OpenAiRequestUtils.requiresReasoning(model)) {
+            clientBuilder.defaultHeader("OpenAI-Beta", "reasoning=1");
+        }
+        this.webClient = clientBuilder.build();
         this.objectMapper = objectMapper;
         this.model = model;
     }
@@ -47,30 +53,40 @@ public class AudienceChatGptClient {
                                                          List<Hypothesis> hypotheses,
                                                          int quantity) {
         PromptData promptData = buildPrompt(niche, hypotheses, quantity);
-        Map<String, Object> payload = Map.of(
-                "model", model,
-                "messages", List.of(
-                        Map.of("role", "system", "content", "Você é um especialista em marketing e segmentação para anúncios da Meta."),
-                        Map.of("role", "user", "content", promptData.prompt())
-                )
+        List<Map<String, Object>> input = List.of(
+                OpenAiRequestUtils.message("system", "Você é um especialista em marketing e segmentação para anúncios da Meta."),
+                OpenAiRequestUtils.message("user", promptData.prompt())
         );
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("model", model);
+        payload.put("input", input);
+        OpenAiRequestUtils.maybeAddReasoning(payload, model);
 
         log.info("Sending prompt to ChatGPT for niche {}: {}", niche.getId(), promptData.prompt());
         log.debug("ChatGPT payload: {}", payload);
 
-        ChatCompletionResponse response = webClient.post()
-                .uri("/chat/completions")
+        OpenAiResponse response = webClient.post()
+                .uri("/responses")
                 .bodyValue(payload)
                 .retrieve()
-                .bodyToMono(ChatCompletionResponse.class)
+                .bodyToMono(OpenAiResponse.class)
                 .block();
 
-        if (response == null || response.choices().isEmpty()) {
+        if (response == null) {
             log.warn("ChatGPT returned no choices for niche {}", niche.getId());
             return List.of();
         }
 
-        String content = response.choices().get(0).message().content();
+        if (response.hasError()) {
+            throw new RuntimeException("OpenAI error: " + response.errorMessage());
+        }
+
+        String content = response.firstText();
+        if (content == null || content.isBlank()) {
+            log.warn("ChatGPT returned empty content for niche {}", niche.getId());
+            return List.of();
+        }
         log.info("ChatGPT content: {}", content);
 
         try {
@@ -198,8 +214,5 @@ public class AudienceChatGptClient {
         return trimmed.substring(0, maxLength);
     }
 
-    private record ChatCompletionResponse(List<Choice> choices) {}
-    private record Choice(Message message) {}
-    private record Message(String content) {}
     private record PromptData(String prompt, Set<UUID> hypothesisIds) {}
 }

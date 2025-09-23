@@ -9,6 +9,8 @@ import com.marketinghub.audience.Audience;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.worker.openai.OpenAiRequestUtils;
+import com.marketinghub.worker.openai.OpenAiResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +20,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -41,35 +44,45 @@ public class AudienceAdSetChatGptClient {
                                       @Value("${openai.api-key:}") String apiKey,
                                       @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
                                       @Value("${openai.model:gpt-3.5-turbo}") String model) {
-        this.webClient = builder
+        WebClient.Builder clientBuilder = builder
                 .baseUrl(baseUrl)
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
-                .build();
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
+        if (OpenAiRequestUtils.requiresReasoning(model)) {
+            clientBuilder.defaultHeader("OpenAI-Beta", "reasoning=1");
+        }
+        this.webClient = clientBuilder.build();
         this.objectMapper = objectMapper;
         this.model = model;
     }
 
     public AdSetPlan planAdSet(Experiment experiment, Audience audience) {
         String prompt = buildPrompt(experiment, audience);
-        Map<String, Object> payload = Map.of(
-                "model", model,
-                "messages", List.of(
-                        Map.of("role", "system", "content", "Você é um especialista em mídia paga para Meta Ads."),
-                        Map.of("role", "user", "content", prompt)
-                )
+        List<Map<String, Object>> input = List.of(
+                OpenAiRequestUtils.message("system", "Você é um especialista em mídia paga para Meta Ads."),
+                OpenAiRequestUtils.message("user", prompt)
         );
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("model", model);
+        payload.put("input", input);
+        OpenAiRequestUtils.maybeAddReasoning(payload, model);
         log.info("Sending ad set planning prompt for experiment {} audience {}", experiment.getId(), audience.getId());
         log.debug("Ad set planning payload: {}", payload);
-        ChatCompletionResponse response = webClient.post()
-                .uri("/chat/completions")
+        OpenAiResponse response = webClient.post()
+                .uri("/responses")
                 .bodyValue(payload)
                 .retrieve()
-                .bodyToMono(ChatCompletionResponse.class)
+                .bodyToMono(OpenAiResponse.class)
                 .block();
-        if (response == null || response.choices().isEmpty()) {
+        if (response == null) {
             throw new IllegalStateException("ChatGPT returned no choices for ad set planning");
         }
-        String content = response.choices().get(0).message().content();
+        if (response.hasError()) {
+            throw new RuntimeException("OpenAI error: " + response.errorMessage());
+        }
+        String content = response.firstText();
+        if (content == null || content.isBlank()) {
+            throw new IllegalStateException("ChatGPT returned empty content for ad set planning");
+        }
         log.info("ChatGPT ad set content: {}", content);
         try {
             return parseContent(content, prompt);
@@ -309,10 +322,4 @@ public class AudienceAdSetChatGptClient {
             sb.append(label).append(": ").append(value.trim()).append('\n');
         }
     }
-
-    private record ChatCompletionResponse(List<Choice> choices) {}
-
-    private record Choice(Message message) {}
-
-    private record Message(String content) {}
 }

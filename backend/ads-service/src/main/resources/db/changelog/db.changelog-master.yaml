@@ -113,3 +113,6 @@ databaseChangeLog:
   - include:
       file: V2025_11_15__widen_asset_prompt.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2025_11_20__ensure_asset_prompt_longtext.sql
+      relativeToChangelogFile: true

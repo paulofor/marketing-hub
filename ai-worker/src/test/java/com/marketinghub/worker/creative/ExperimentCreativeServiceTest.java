@@ -43,9 +43,14 @@ class ExperimentCreativeServiceTest {
     void setup() {
         experiment = new Experiment();
         experiment.setId(1L);
+        experiment.setName("Experimento A");
+        experiment.setHypothesis("Validar proposta principal para o público-alvo");
         experiment.setCreativesToGenerate(1);
         Hypothesis h = new Hypothesis();
         h.setTitle("title");
+        h.setPersona("profissionais autônomos");
+        h.setProblem("não conseguem manter um fluxo constante de clientes");
+        h.setPromise("aumentar a base de clientes com campanhas digitais");
         experiment.setHypothesisRef(h);
     }
 
@@ -56,13 +61,19 @@ class ExperimentCreativeServiceTest {
         req.setHeadline("h1");
         req.setPrimaryText("p1");
         when(chatGptClient.generateCreatives(experiment, 1)).thenReturn(List.of(req));
-        when(imageClient.generateImage("h1")).thenReturn("img");
+        when(imageClient.generateImage(anyString())).thenReturn("img");
         Creative saved = new Creative();
         when(creativeService.create(1L, req)).thenReturn(saved);
 
         Map<Long, List<Creative>> result = service.generate();
 
-        verify(imageClient).generateImage("h1");
+        ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
+        verify(imageClient).generateImage(promptCaptor.capture());
+        String usedPrompt = promptCaptor.getValue();
+        assertThat(usedPrompt).contains("Facebook e Instagram");
+        assertThat(usedPrompt).contains("headline \"h1\"");
+        assertThat(usedPrompt).contains("Experimento: Experimento A");
+        assertThat(usedPrompt).contains("hipótese \"title\"");
         assertThat(req.getImageUrl()).isEqualTo("img");
         verify(creativeService).create(1L, req);
         verify(experimentRepository).save(experiment);

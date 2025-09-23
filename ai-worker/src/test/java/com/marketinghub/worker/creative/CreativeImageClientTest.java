@@ -17,7 +17,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,10 +30,13 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.codec.HttpMessageWriter;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.mock.http.client.reactive.MockClientHttpRequest;
-import org.springframework.web.reactive.function.BodyInserterContext;
+import org.springframework.web.reactive.function.BodyInserter;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.ExchangeFunction;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
@@ -126,7 +132,7 @@ class CreativeImageClientTest {
         return request -> {
             assertThat(request.url().toString()).endsWith("/images/generations");
             MockClientHttpRequest httpRequest = new MockClientHttpRequest(request.method(), request.url());
-            request.body().insert(httpRequest, new BodyInserterContext());
+            request.body().insert(httpRequest, BODY_INSERTER_CONTEXT).block();
             String requestBody = httpRequest.getBodyAsString().block();
             try {
                 Map<String, Object> payload = MAPPER.readValue(requestBody, new TypeReference<Map<String, Object>>() { });
@@ -142,6 +148,25 @@ class CreativeImageClientTest {
                     .build());
         };
     }
+
+    private static final BodyInserter.Context BODY_INSERTER_CONTEXT = new BodyInserter.Context() {
+        private final List<HttpMessageWriter<?>> messageWriters = ExchangeStrategies.withDefaults().messageWriters();
+
+        @Override
+        public List<HttpMessageWriter<?>> messageWriters() {
+            return messageWriters;
+        }
+
+        @Override
+        public Optional<ServerHttpRequest> serverRequest() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Map<String, Object> hints() {
+            return Collections.emptyMap();
+        }
+    };
 
     private static byte[] createSolidPng(int width, int height) throws IOException {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);

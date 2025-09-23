@@ -7,7 +7,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import io.netty.channel.ChannelOption;
@@ -78,11 +80,12 @@ public class CreativeImageClient {
             log.warn("Skipping image generation because OpenAI API key is missing");
             return null;
         }
-        Map<String, Object> payload = Map.of(
-                "model", model,
-                "prompt", prompt,
-                "response_format", "b64_json"
-        );
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("model", model);
+        payload.put("prompt", prompt);
+        if (supportsResponseFormat(model)) {
+            payload.put("response_format", "b64_json");
+        }
 
         log.info("Sending image generation prompt to OpenAI: {}", prompt);
         ImageResponse response;
@@ -99,10 +102,19 @@ public class CreativeImageClient {
 
         log.info("OpenAI image response: {}", response);
 
-        if (response == null || response.data().isEmpty()) {
+        if (response == null) {
             throw new RuntimeException("No image returned from OpenAI");
         }
-        ImageData data = response.data().get(0);
+        List<ImageData> dataList = response.data();
+        if (dataList == null || dataList.isEmpty()) {
+            ApiError error = response.error();
+            if (error != null && error.message() != null && !error.message().isBlank()) {
+                log.error("OpenAI image API returned error: {}", error.message());
+                throw new RuntimeException("OpenAI image API returned error: " + error.message());
+            }
+            throw new RuntimeException("No image returned from OpenAI");
+        }
+        ImageData data = dataList.get(0);
         if (data.base64() != null && !data.base64().isBlank()) {
             try {
                 byte[] imageBytes = Base64.getDecoder().decode(data.base64());
@@ -158,6 +170,14 @@ public class CreativeImageClient {
         }
     }
 
-    private record ImageResponse(List<ImageData> data) {}
+    private boolean supportsResponseFormat(String selectedModel) {
+        if (selectedModel == null || selectedModel.isBlank()) {
+            return true;
+        }
+        return !selectedModel.toLowerCase(Locale.ROOT).startsWith("gpt-image-");
+    }
+
+    private record ImageResponse(List<ImageData> data, ApiError error) {}
     private record ImageData(String url, @JsonProperty("b64_json") String base64) {}
+    private record ApiError(String message, String type, String param, String code) {}
 }

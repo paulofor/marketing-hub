@@ -34,6 +34,7 @@ public class Asset {
     private String url;
 
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String payload;
 
     private Long campaignId;
@@ -41,6 +42,7 @@ public class Asset {
     private String model;
 
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String prompt;
 
     @CreationTimestamp

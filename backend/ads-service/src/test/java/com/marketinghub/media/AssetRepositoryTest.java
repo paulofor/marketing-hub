@@ -28,4 +28,22 @@ class AssetRepositoryTest {
         repository.save(asset);
         assertThat(repository.findById(asset.getId())).isPresent();
     }
+
+    @Test
+    void shouldPersistLargePromptWithoutTruncation() {
+        String prompt = "x".repeat(120_000);
+        Asset asset = Asset.builder()
+                .type(AssetType.IMAGE)
+                .provider(MediaProvider.OPENAI)
+                .status(AssetStatus.READY)
+                .prompt(prompt)
+                .payload("{}").build();
+
+        Asset saved = repository.save(asset);
+
+        assertThat(repository.findById(saved.getId()))
+                .get()
+                .extracting(Asset::getPrompt)
+                .isEqualTo(prompt);
+    }
 }

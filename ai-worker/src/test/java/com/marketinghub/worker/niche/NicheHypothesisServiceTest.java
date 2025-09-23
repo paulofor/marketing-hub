@@ -100,7 +100,14 @@ class NicheHypothesisServiceTest {
                 """;
         try {
             String body = new ObjectMapper().writeValueAsString(
-                    Map.of("choices", List.of(Map.of("message", Map.of("content", content)))));
+                    Map.of(
+                            "output", List.of(Map.of(
+                                    "type", "message",
+                                    "role", "assistant",
+                                    "content", List.of(Map.of(
+                                            "type", "output_text",
+                                            "text", content))))),
+                            "output_text", content));
             mockWebServer.enqueue(new MockResponse()
                     .addHeader("Content-Type", "application/json")
                     .setBody(body));
@@ -143,7 +150,14 @@ class NicheHypothesisServiceTest {
                 """;
         try {
             String body = new ObjectMapper().writeValueAsString(
-                    Map.of("choices", List.of(Map.of("message", Map.of("content", content)))));
+                    Map.of(
+                            "output", List.of(Map.of(
+                                    "type", "message",
+                                    "role", "assistant",
+                                    "content", List.of(Map.of(
+                                            "type", "output_text",
+                                            "text", content))))),
+                            "output_text", content));
             mockWebServer.enqueue(new MockResponse()
                     .addHeader("Content-Type", "application/json")
                     .setBody(body));
@@ -177,7 +191,14 @@ class NicheHypothesisServiceTest {
                 """;
         try {
             String body = new ObjectMapper().writeValueAsString(
-                    Map.of("choices", List.of(Map.of("message", Map.of("content", content)))));
+                    Map.of(
+                            "output", List.of(Map.of(
+                                    "type", "message",
+                                    "role", "assistant",
+                                    "content", List.of(Map.of(
+                                            "type", "output_text",
+                                            "text", content))))),
+                            "output_text", content));
             mockWebServer.enqueue(new MockResponse()
                     .addHeader("Content-Type", "application/json")
                     .setBody(body));
@@ -208,7 +229,14 @@ class NicheHypothesisServiceTest {
                 """;
         try {
             String body = new ObjectMapper().writeValueAsString(
-                    Map.of("choices", List.of(Map.of("message", Map.of("content", content)))));
+                    Map.of(
+                            "output", List.of(Map.of(
+                                    "type", "message",
+                                    "role", "assistant",
+                                    "content", List.of(Map.of(
+                                            "type", "output_text",
+                                            "text", content))))),
+                            "output_text", content));
             mockWebServer.enqueue(new MockResponse()
                     .addHeader("Content-Type", "application/json")
                     .setBody(body));

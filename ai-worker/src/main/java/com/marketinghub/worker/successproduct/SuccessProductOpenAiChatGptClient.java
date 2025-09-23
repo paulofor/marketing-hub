@@ -3,6 +3,9 @@ package com.marketinghub.worker.successproduct;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.successproduct.SuccessProduct;
+import com.marketinghub.worker.openai.OpenAiRequestUtils;
+import com.marketinghub.worker.openai.OpenAiResponse;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -32,37 +35,51 @@ public class SuccessProductOpenAiChatGptClient implements ChatGptClient {
             @Value("${openai.api-key:}") String apiKey,
             @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
             @Value("${openai.model:gpt-3.5-turbo}") String model) {
-        this.webClient = builder
+        WebClient.Builder clientBuilder = builder
                 .baseUrl(baseUrl)
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
-                .build();
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
+        if (OpenAiRequestUtils.requiresReasoning(model)) {
+            clientBuilder.defaultHeader("OpenAI-Beta", "reasoning=1");
+        }
+        this.webClient = clientBuilder.build();
         this.objectMapper = objectMapper;
         this.model = model;
     }
 
     @Override
     public NicheHypothesis extract(SuccessProduct product) {
-        Map<String, Object> payload = Map.of(
-                "model", model,
-                "messages", List.of(
-                        Map.of("role", "system", "content", "Você é um especialista em marketing."),
-                        Map.of("role", "user", "content", buildPrompt(product))));
+        List<Map<String, Object>> input = List.of(
+                OpenAiRequestUtils.message("system", "Você é um especialista em marketing."),
+                OpenAiRequestUtils.message("user", buildPrompt(product))
+        );
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("model", model);
+        payload.put("input", input);
+        OpenAiRequestUtils.maybeAddReasoning(payload, model);
 
         log.info("Sending prompt to ChatGPT for product {}", product.getId());
-        ChatCompletionResponse response = webClient.post()
-                .uri("/chat/completions")
+        OpenAiResponse response = webClient.post()
+                .uri("/responses")
                 .bodyValue(payload)
                 .retrieve()
-                .bodyToMono(ChatCompletionResponse.class)
+                .bodyToMono(OpenAiResponse.class)
                 .block();
 
         log.info("ChatGPT raw response: {}", response);
 
-        if (response == null || response.choices().isEmpty()) {
+        if (response == null) {
             log.warn("ChatGPT returned no choices for product {}", product.getId());
             return null;
         }
-        String content = response.choices().get(0).message().content();
+        if (response.hasError()) {
+            log.error("OpenAI error while processing product {}: {}", product.getId(), response.errorMessage());
+            return null;
+        }
+        String content = response.firstText();
+        if (content == null || content.isBlank()) {
+            log.warn("ChatGPT returned empty content for product {}", product.getId());
+            return null;
+        }
         log.info("ChatGPT content: {}", content);
         try {
             JsonNode node = objectMapper.readTree(content);
@@ -98,7 +115,4 @@ public class SuccessProductOpenAiChatGptClient implements ChatGptClient {
         return v != null && !v.isNull() ? v.asText() : null;
     }
 
-    private record ChatCompletionResponse(List<Choice> choices) {}
-    private record Choice(Message message) {}
-    private record Message(String content) {}
 }

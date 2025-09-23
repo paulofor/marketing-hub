@@ -52,6 +52,7 @@
   -- seu SQL aqui
   ```
 - **Processamento de imagens**
+  - 🚨 **Regra imutável**: a criação e utilização de imagens "ficou incrível" e deve seguir o fluxo abaixo em absolutamente qualquer cenário ou projeto, sem exceções.
   - Sempre siga o fluxo adotado no Worker IA (`CreativeImageOptimizer`) e na aba **Criativos** da tela de detalhe de experimentos.
     - **Validação de entrada**: antes do upload, garanta que a imagem tenha largura mínima de 600px e forneça feedback claro ao usuário em caso de falha.
     - **Normalização**: remova o canal alfa aplicando fundo branco e limite as dimensões máximas (1024px) antes de outras otimizações.

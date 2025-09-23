@@ -5,13 +5,19 @@ import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.hypothesis.Hypothesis;
+import io.netty.channel.ChannelOption;
+import io.netty.handler.timeout.ReadTimeoutHandler;
+import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.client.HttpClient;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -24,22 +30,42 @@ public class CreativeChatGptClient {
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
     private final String model;
+    private final boolean enabled;
     private static final Logger log = LoggerFactory.getLogger(CreativeChatGptClient.class);
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(90);
 
     public CreativeChatGptClient(WebClient.Builder builder,
                                  ObjectMapper objectMapper,
                                  @Value("${openai.api-key:}") String apiKey,
                                  @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
                                  @Value("${openai.model:gpt-3.5-turbo}") String model) {
-        this.webClient = builder
+        this.enabled = apiKey != null && !apiKey.isBlank();
+        HttpClient httpClient = HttpClient.create()
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) CONNECT_TIMEOUT.toMillis())
+                .responseTimeout(REQUEST_TIMEOUT)
+                .doOnConnected(conn -> conn
+                        .addHandlerLast(new ReadTimeoutHandler((int) REQUEST_TIMEOUT.getSeconds()))
+                        .addHandlerLast(new WriteTimeoutHandler((int) REQUEST_TIMEOUT.getSeconds())));
+        WebClient.Builder clientBuilder = builder.clone()
                 .baseUrl(baseUrl)
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
-                .build();
+                .clientConnector(new ReactorClientHttpConnector(httpClient));
+        if (enabled) {
+            clientBuilder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
+        }
+        this.webClient = clientBuilder.build();
         this.objectMapper = objectMapper;
         this.model = model;
+        if (!enabled) {
+            log.warn("OpenAI API key not configured; creative generation will be skipped");
+        }
     }
 
     public List<CreateCreativeRequest> generateCreatives(Experiment experiment, int quantity) {
+        if (!enabled) {
+            log.warn("Skipping creative generation for experiment {} because OpenAI API key is missing", experiment.getId());
+            return List.of();
+        }
         String prompt = buildPrompt(experiment, quantity);
         Map<String, Object> payload = Map.of(
                 "model", model,
@@ -52,12 +78,19 @@ public class CreativeChatGptClient {
         log.info("Sending prompt to ChatGPT for experiment {}: {}", experiment.getId(), prompt);
         log.debug("ChatGPT payload: {}", payload);
 
-        ChatCompletionResponse response = webClient.post()
-                .uri("/chat/completions")
-                .bodyValue(payload)
-                .retrieve()
-                .bodyToMono(ChatCompletionResponse.class)
-                .block();
+        ChatCompletionResponse response;
+        try {
+            response = webClient.post()
+                    .uri("/chat/completions")
+                    .bodyValue(payload)
+                    .retrieve()
+                    .bodyToMono(ChatCompletionResponse.class)
+                    .block(REQUEST_TIMEOUT);
+        } catch (Exception ex) {
+            log.error("ChatGPT request failed for experiment {} after {} seconds", experiment.getId(),
+                    REQUEST_TIMEOUT.getSeconds(), ex);
+            throw new RuntimeException("Failed to call ChatGPT", ex);
+        }
 
         log.info("ChatGPT raw response: {}", response);
 

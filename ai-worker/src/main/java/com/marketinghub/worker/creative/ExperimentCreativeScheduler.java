@@ -19,11 +19,15 @@ public class ExperimentCreativeScheduler {
 
     @Scheduled(cron = "0 */5 * * * *")
     public void run() {
+        long start = System.currentTimeMillis();
         log.info("ExperimentCreativeScheduler started");
         try {
             service.generate();
+        } catch (Exception ex) {
+            log.error("ExperimentCreativeScheduler failed", ex);
         } finally {
-            log.info("ExperimentCreativeScheduler finished");
+            long elapsed = System.currentTimeMillis() - start;
+            log.info("ExperimentCreativeScheduler finished in {} ms", elapsed);
         }
     }
 }

@@ -112,7 +112,13 @@ class CreativeImageClientTest {
 
     @Test
     void requestsBase64PayloadExplicitlyForNonGptModels() {
-        String body = "{\"data\":[{\"b64_json\":\"" + Base64.getEncoder().encodeToString(new byte[] {1, 2, 3}) + "\"}]}";
+        String imagePayload;
+        try {
+            imagePayload = Base64.getEncoder().encodeToString(createSolidPng(64, 64));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        String body = "{\"data\":[{\"b64_json\":\"" + imagePayload + "\"}]}";
         AtomicReference<Map<String, Object>> requestPayload = new AtomicReference<>();
         ExchangeFunction exchange = stubImageApi(requestPayload, body, HttpStatus.OK);
         WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);

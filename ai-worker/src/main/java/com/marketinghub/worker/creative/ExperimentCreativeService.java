@@ -5,6 +5,7 @@ import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.creative.service.CreativeService;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.hypothesis.Hypothesis;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -72,7 +73,8 @@ public class ExperimentCreativeService {
                     }
                     req.setPrimaryText(primary);
                     try {
-                        String imageUrl = imageClient.generateImage(req.getHeadline());
+                        String imagePrompt = buildImagePrompt(exp, req);
+                        String imageUrl = imageClient.generateImage(imagePrompt);
                         req.setImageUrl(imageUrl);
                     } catch (Exception e) {
                         log.error("Failed to generate image for experiment {}: {}", exp.getId(), req.getHeadline(), e);
@@ -119,5 +121,54 @@ public class ExperimentCreativeService {
             sb.append(part);
         }
         return sb.toString();
+    }
+
+    private static String buildImagePrompt(Experiment experiment, CreateCreativeRequest request) {
+        List<String> parts = new ArrayList<>();
+        parts.add("Crie uma imagem envolvente para um anúncio de Facebook e Instagram que desperte interesse e desejo.");
+        if (hasText(request.getHeadline())) {
+            parts.add("A imagem deve acompanhar a headline \"" + request.getHeadline() + "\".");
+        }
+        if (experiment != null) {
+            if (hasText(experiment.getName())) {
+                parts.add("Experimento: " + experiment.getName() + ".");
+            } else if (experiment.getId() != null) {
+                parts.add("Experimento ID: " + experiment.getId() + ".");
+            }
+            if (hasText(experiment.getHypothesis())) {
+                parts.add("Resumo do experimento: " + experiment.getHypothesis() + ".");
+            }
+        }
+        Hypothesis hypothesis = experiment != null ? experiment.getHypothesisRef() : null;
+        if (hypothesis != null) {
+            if (hasText(hypothesis.getTitle())) {
+                parts.add("Baseie-se na hipótese \"" + hypothesis.getTitle() + "\".");
+            } else if (hypothesis.getId() != null) {
+                parts.add("Baseie-se na hipótese de ID " + hypothesis.getId() + ".");
+            }
+            if (hasText(hypothesis.getPersona())) {
+                parts.add("Persona: " + hypothesis.getPersona() + ".");
+            }
+            if (hasText(hypothesis.getProblem())) {
+                parts.add("Problema: " + hypothesis.getProblem() + ".");
+            }
+            if (hasText(hypothesis.getPromise())) {
+                parts.add("Promessa: " + hypothesis.getPromise() + ".");
+            }
+            if (hasText(hypothesis.getMechanism())) {
+                parts.add("Mecanismo: " + hypothesis.getMechanism() + ".");
+            }
+            if (hasText(hypothesis.getUniqueMechanism())) {
+                parts.add("Mecanismo único: " + hypothesis.getUniqueMechanism() + ".");
+            }
+            if (hasText(hypothesis.getEntrega())) {
+                parts.add("Entrega: " + hypothesis.getEntrega() + ".");
+            }
+        }
+        return String.join(" ", parts);
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }

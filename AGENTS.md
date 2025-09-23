@@ -52,10 +52,11 @@
   -- seu SQL aqui
   ```
 - **Processamento de imagens**
-  - Sempre siga o fluxo adotado no Worker IA (`CreativeImageOptimizer`) e na aba **Criativos** da tela de detalhe de experimentos.
-    - **Validação de entrada**: antes do upload, garanta que a imagem tenha largura mínima de 600px e forneça feedback claro ao usuário em caso de falha.
-    - **Normalização**: remova o canal alfa aplicando fundo branco e limite as dimensões máximas (1024px) antes de outras otimizações.
-    - **Otimização incremental**: converta para JPEG e execute uma estratégia iterativa de compressão/escala, reduzindo qualidade (0.85 até 0.45) e tamanho (100% até 50%) até ficar abaixo do orçamento configurado de bytes (padrão 900 KB) antes de enviar ao backend.
+  - 🚨 **Regra imutável**: a criação e utilização de imagens "ficou incrível" e deve seguir o fluxo abaixo em absolutamente qualquer cenário ou projeto, sem exceções.
+  - Pipeline atual (não altere sem alinhar todas as camadas):
+    1. **Validação de entrada no frontend** (`frontend/src/pages/experiment/CriativosTab.tsx`): antes do upload a aba **Criativos** garante largura mínima de 600px e exibe feedback claro quando o arquivo não atende ao requisito.
+    2. **Normalização e otimização no Worker IA** (`CreativeImageOptimizer`): remove o canal alfa aplicando fundo branco, redimensiona quando ultrapassa a dimensão máxima configurada (`creative.image.max-dimension`, padrão 1024px) e converte para JPEG. Em seguida percorre combinações de qualidade (0.85 → 0.45) e escala (100% → 50%) respeitando o orçamento `creative.image.max-bytes` (padrão 900 KB); se nenhuma variante atingir o limite, retorna o menor candidato possível registrando o alerta correspondente.
+    3. **Upload para o backend** (`BackendAssetClient`/`POST /api/assets` → `CreativeService.uploadImage`): envia o arquivo otimizado, preservando `model` (opcional) e `prompt` (obrigatório) para cumprir os atributos exigidos (`modelo` e `prompt`).
   - Novos fluxos de processamento de imagem devem reutilizar esse pipeline ou estender `CreativeImageOptimizer`, mantendo compatibilidade com o backend (`POST /api/assets`).
 ## Secrets
 

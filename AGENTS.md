@@ -51,6 +51,12 @@
   --precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'sua_tabela';
   -- seu SQL aqui
   ```
+- **Processamento de imagens**
+  - Sempre siga o fluxo adotado no Worker IA (`CreativeImageOptimizer`) e na aba **Criativos** da tela de detalhe de experimentos.
+    - **Validação de entrada**: antes do upload, garanta que a imagem tenha largura mínima de 600px e forneça feedback claro ao usuário em caso de falha.
+    - **Normalização**: remova o canal alfa aplicando fundo branco e limite as dimensões máximas (1024px) antes de outras otimizações.
+    - **Otimização incremental**: converta para JPEG e execute uma estratégia iterativa de compressão/escala, reduzindo qualidade (0.85 até 0.45) e tamanho (100% até 50%) até ficar abaixo do orçamento configurado de bytes (padrão 900 KB) antes de enviar ao backend.
+  - Novos fluxos de processamento de imagem devem reutilizar esse pipeline ou estender `CreativeImageOptimizer`, mantendo compatibilidade com o backend (`POST /api/assets`).
 ## Secrets
 
 - Do **NOT** commit `.env`. Use GitHub Actions secrets for tokens.

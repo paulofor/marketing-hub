@@ -30,7 +30,6 @@ export default function ExperimentDetailPage() {
   const [tab, setTab] = useState("overview");
   const [isFunnelPreviewOpen, setFunnelPreviewOpen] = useState(false);
   useBreadcrumbs([
-    { label: "Nichos", to: "/niches", icon: nicheIcon },
     {
       label: niche?.name || "...",
       to: `/niches/${data?.nicheId}`,

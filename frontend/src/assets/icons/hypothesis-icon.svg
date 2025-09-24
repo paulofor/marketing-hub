@@ -1,0 +1,61 @@
+<svg width="160" height="160" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="hypothesisBg" x1="36" y1="18" x2="134" y2="150" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff7eb" />
+      <stop offset="1" stop-color="#ffe3d4" />
+    </linearGradient>
+    <linearGradient id="hypothesisBulb" x1="60" y1="40" x2="108" y2="108" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f9b516" />
+      <stop offset="1" stop-color="#f76707" />
+    </linearGradient>
+    <linearGradient id="hypothesisBase" x1="68" y1="108" x2="92" y2="130" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6f42c1" />
+      <stop offset="1" stop-color="#4dabf7" />
+    </linearGradient>
+    <linearGradient id="hypothesisGlow" x1="80" y1="32" x2="80" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffe8cc" stop-opacity="0.95" />
+      <stop offset="1" stop-color="#ffd8a8" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+  <rect width="160" height="160" rx="36" fill="url(#hypothesisBg)" />
+  <circle cx="80" cy="80" r="60" fill="url(#hypothesisGlow)" />
+  <path
+    d="M80 40c-19 0-34 15-34 33.5 0 10.5 5 20.3 13.3 26.8 4 3.2 6.7 7.9 6.7 13v4.7c0 2.1 1.7 3.8 3.8 3.8h20.4c2.1 0 3.8-1.7 3.8-3.8v-4.7c0-5.1 2.7-9.8 6.7-13 8.3-6.5 13.3-16.3 13.3-26.8C114 55 99 40 80 40z"
+    fill="url(#hypothesisBulb)"
+  />
+  <path
+    d="M64 113h32"
+    stroke="white"
+    stroke-width="6"
+    stroke-linecap="round"
+    stroke-opacity="0.65"
+  />
+  <path
+    d="M68 122h24"
+    stroke="white"
+    stroke-width="6"
+    stroke-linecap="round"
+    stroke-opacity="0.5"
+  />
+  <path
+    d="M70 128h20"
+    stroke="white"
+    stroke-width="4"
+    stroke-linecap="round"
+    stroke-opacity="0.45"
+  />
+  <path
+    d="M68 103h24c4.4 0 8-3.6 8-8v-1c0-1.5-.5-3-1.4-4.3l-6.2-8.6a4 4 0 0 0-3.2-1.6H70.8a4 4 0 0 0-3.2 1.6l-6.2 8.6c-.9 1.3-1.4 2.8-1.4 4.3v1c0 4.4 3.6 8 8 8z"
+    fill="url(#hypothesisBase)"
+  />
+  <g stroke="#f08c00" stroke-linecap="round" stroke-width="6" opacity="0.75">
+    <line x1="80" y1="26" x2="80" y2="14" />
+    <line x1="60" y1="32" x2="52" y2="22" />
+    <line x1="100" y1="32" x2="108" y2="22" />
+  </g>
+  <g stroke="#6f42c1" stroke-linecap="round" stroke-width="4" opacity="0.6">
+    <line x1="52" y1="52" x2="40" y2="48" />
+    <line x1="108" y1="52" x2="120" y2="48" />
+  </g>
+  <circle cx="80" cy="80" r="64" stroke="white" stroke-opacity="0.2" stroke-width="8" />
+</svg>

@@ -5,6 +5,7 @@ import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import { useExperimentsByHypothesis } from "../../api/experiment/useExperimentsByHypothesis";
 import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
 import PageTitle from "../../components/PageTitle";
+import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
 import { AudienceApprovalCard } from "../../components/AudienceApprovalCard";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import { useForm } from "react-hook-form";
@@ -75,7 +76,7 @@ export default function HypothesisDetailPage() {
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <PageTitle>{data.title}</PageTitle>
+        <PageTitle icon={hypothesisIcon}>{data.title}</PageTitle>
         <div className="d-flex gap-2">
           {data.status === "BACKLOG" && (
             <Link

@@ -5,6 +5,7 @@ import { useMetricPresets } from "../../api/experiment/useMetricPresets";
 import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import PageTitle from "../../components/PageTitle";
+import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import CriativosTab from "./CriativosTab";
 import PublicosTab from "./PublicosTab";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
@@ -128,7 +129,7 @@ export default function ExperimentDetailPage() {
     <div>
       <div className="d-flex justify-content-between align-items-start">
         <div>
-          <PageTitle>{data.name}</PageTitle>
+          <PageTitle icon={experimentIcon}>{data.name}</PageTitle>
           <p className="text-muted mb-0">{data.hypothesis}</p>
         </div>
         <div className="d-flex align-items-center">

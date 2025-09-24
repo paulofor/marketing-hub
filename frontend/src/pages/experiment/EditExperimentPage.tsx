@@ -6,6 +6,7 @@ import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
 import { useFunnels } from "../../api/funnel/useFunnels";
 import PageTitle from "../../components/PageTitle";
+import experimentIcon from "../../assets/icons/experiment-icon.svg";
 
 interface FormData {
   name: string;
@@ -59,7 +60,7 @@ export default function EditExperimentPage() {
 
   return (
     <div style={{ maxWidth: 480 }}>
-      <PageTitle>Editar Experimento</PageTitle>
+      <PageTitle icon={experimentIcon}>Editar Experimento</PageTitle>
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <label className="form-label" htmlFor="name">
           Nome

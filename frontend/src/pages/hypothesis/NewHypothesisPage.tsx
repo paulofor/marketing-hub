@@ -5,6 +5,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
+import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
 import { useNiche } from "../../api/niche/useNiche";
 
 const schema = z
@@ -102,7 +103,7 @@ export default function NewHypothesisPage() {
 
   return (
     <div style={{ maxWidth: 480 }}>
-      <PageTitle>Nova Hipótese</PageTitle>
+      <PageTitle icon={hypothesisIcon}>Nova Hipótese</PageTitle>
       {niche && (
         <div className="mb-3">
           <div className="d-flex justify-content-between align-items-center">

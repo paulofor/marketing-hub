@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import PageTitle from "../../components/PageTitle";
+import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
 import { useAngles } from "../../api/angle/useAngles";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import { useUpdateHypothesis } from "../../api/hypothesis/useUpdateHypothesis";
@@ -106,7 +107,7 @@ export default function EditHypothesisPage() {
 
   return (
     <div style={{ maxWidth: 480 }}>
-      <PageTitle>Editar Hipótese</PageTitle>
+      <PageTitle icon={hypothesisIcon}>Editar Hipótese</PageTitle>
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <label className="form-label" htmlFor="title">
           Título

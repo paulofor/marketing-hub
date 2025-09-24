@@ -4,6 +4,7 @@ import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche"
 import { useExperimentsByNiche } from "../../api/experiment/useExperimentsByNiche";
 import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
 import PageTitle from "../../components/PageTitle";
+import nicheIcon from "../../assets/icons/niche-icon.svg";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 
 export default function NicheListPage() {
@@ -14,7 +15,7 @@ export default function NicheListPage() {
   if (isLoading) return <p>Carregando...</p>;
   return (
     <div>
-      <PageTitle>Nichos de Mercado</PageTitle>
+      <PageTitle icon={nicheIcon}>Nichos de Mercado</PageTitle>
       <Link className="btn btn-primary mb-3" to="/niches/new">
         Novo Nicho
       </Link>

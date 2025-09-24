@@ -1,0 +1,79 @@
+<svg width="160" height="160" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="experimentBg" x1="24" y1="20" x2="136" y2="148" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e7fbf7" />
+      <stop offset="1" stop-color="#d5f0ff" />
+    </linearGradient>
+    <linearGradient id="experimentGlass" x1="64" y1="36" x2="104" y2="132" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7cd9ff" />
+      <stop offset="1" stop-color="#3bc9db" />
+    </linearGradient>
+    <linearGradient id="experimentLiquid" x1="60" y1="86" x2="112" y2="132" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#63e6be" />
+      <stop offset="1" stop-color="#12b886" />
+    </linearGradient>
+    <linearGradient id="experimentHighlight" x1="72" y1="58" x2="92" y2="102" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f8fff4" stop-opacity="0.9" />
+      <stop offset="1" stop-color="#c8fff5" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+  <rect width="160" height="160" rx="36" fill="url(#experimentBg)" />
+  <path
+    d="M94 40H66c-2.2 0-3.6 2.3-2.6 4.3l14.6 29.4a8 8 0 0 1 .8 3.6v10.7c0 2.1-.8 4.2-2.2 5.8l-18.6 20.6c-3.5 3.9-.7 10.1 4.5 10.1h55.4c5.2 0 8-6.2 4.5-10.1L103.8 94c-1.4-1.6-2.2-3.7-2.2-5.8V77.3c0-1.2.3-2.4.8-3.6L117 44.3c1-2-.5-4.3-2.6-4.3H94z"
+    fill="url(#experimentGlass)"
+    opacity="0.9"
+  />
+  <path
+    d="M62 101h36c2.6 0 5.1 1 6.9 2.9l13.6 14.4H55.5l12.3-13c1.7-1.8 4.1-2.8 6.6-2.8z"
+    fill="url(#experimentLiquid)"
+  />
+  <path
+    d="M74 82h12"
+    stroke="#ffffff"
+    stroke-width="6"
+    stroke-linecap="round"
+    stroke-opacity="0.65"
+  />
+  <path
+    d="M70 70h20"
+    stroke="#ffffff"
+    stroke-width="5"
+    stroke-linecap="round"
+    stroke-opacity="0.45"
+  />
+  <circle cx="88" cy="94" r="8" fill="#0d6efd" fill-opacity="0.18" />
+  <circle cx="88" cy="94" r="4" fill="#4dabf7" />
+  <circle cx="104" cy="66" r="6" fill="#12b886" fill-opacity="0.35" />
+  <circle cx="106" cy="50" r="5" fill="#0d6efd" fill-opacity="0.25" />
+  <circle cx="54" cy="62" r="7" fill="#4dabf7" fill-opacity="0.35" />
+  <path
+    d="M66 40h28"
+    stroke="#0d6efd"
+    stroke-width="6"
+    stroke-linecap="round"
+    stroke-opacity="0.45"
+  />
+  <path
+    d="M82 46v30"
+    stroke="#6f42c1"
+    stroke-width="5"
+    stroke-linecap="round"
+    stroke-opacity="0.4"
+  />
+  <ellipse cx="82" cy="104" rx="26" ry="6" fill="#0d6efd" fill-opacity="0.18" />
+  <path
+    d="M86 94c-4.5 0-8.5 2.4-10.7 6.2L64 118"
+    stroke="#12b886"
+    stroke-width="5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    opacity="0.55"
+  />
+  <circle cx="80" cy="80" r="64" stroke="white" stroke-opacity="0.2" stroke-width="8" />
+  <path
+    d="M92 52c0 5.5-4.5 10-10 10s-10-4.5-10-10"
+    stroke="url(#experimentHighlight)"
+    stroke-width="6"
+    stroke-linecap="round"
+  />
+</svg>

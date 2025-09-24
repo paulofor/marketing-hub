@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { useCreateNiche } from "../../api/niche/useCreateNiche";
 import { useChatDialogs } from "../../api/chatDialog/useChatDialogs";
 import PageTitle from "../../components/PageTitle";
+import nicheIcon from "../../assets/icons/niche-icon.svg";
 
 export default function NewNichePage() {
   const create = useCreateNiche();
@@ -29,7 +30,7 @@ export default function NewNichePage() {
 
   return (
     <div>
-      <PageTitle>Novo Nicho de Mercado</PageTitle>
+      <PageTitle icon={nicheIcon}>Novo Nicho de Mercado</PageTitle>
       <input
         className="form-control mb-2"
         placeholder="Nome"

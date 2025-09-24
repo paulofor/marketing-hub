@@ -5,6 +5,7 @@ import { useUpdateNiche } from "../../api/niche/useUpdateNiche";
 import { useNiche } from "../../api/niche/useNiche";
 import { useChatDialogs } from "../../api/chatDialog/useChatDialogs";
 import PageTitle from "../../components/PageTitle";
+import nicheIcon from "../../assets/icons/niche-icon.svg";
 import { MarketNiche } from "../../api/niche/useNiches";
 
 export default function EditNichePage() {
@@ -48,7 +49,7 @@ export default function EditNichePage() {
 
   return (
     <div>
-      <PageTitle>Editar Nicho</PageTitle>
+      <PageTitle icon={nicheIcon}>Editar Nicho</PageTitle>
       <label className="form-label">Nome</label>
       <input
         className="form-control mb-2"

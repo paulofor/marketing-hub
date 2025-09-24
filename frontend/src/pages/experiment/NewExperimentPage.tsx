@@ -7,6 +7,7 @@ import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
 import { useFunnels } from "../../api/funnel/useFunnels";
 import PageTitle from "../../components/PageTitle";
+import experimentIcon from "../../assets/icons/experiment-icon.svg";
 
 export default function NewExperimentPage() {
   const [params] = useSearchParams();
@@ -83,7 +84,9 @@ export default function NewExperimentPage() {
 
   return (
     <div>
-      <PageTitle>{selectedNiche?.name || "Novo Teste de Nicho"}</PageTitle>
+      <PageTitle icon={experimentIcon}>
+        {selectedNiche?.name || "Novo Teste de Nicho"}
+      </PageTitle>
       {showNicheSelect && (
         <select
           className="form-select mb-2"

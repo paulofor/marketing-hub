@@ -3,6 +3,7 @@ import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
 import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
 import PageTitle from "../../components/PageTitle";
+import nicheIcon from "../../assets/icons/niche-icon.svg";
 import { AudienceApprovalCard } from "../../components/AudienceApprovalCard";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import { useChatDialog } from "../../api/chatDialog/useChatDialog";
@@ -152,7 +153,7 @@ export default function NicheDetailPage() {
       <div className="niche-detail__header">
         <div className="niche-detail__title">
           <span className="niche-detail__badge">Nicho</span>
-          <PageTitle>{data.name}</PageTitle>
+          <PageTitle icon={nicheIcon}>{data.name}</PageTitle>
           <p className="niche-detail__subtitle">
             {`Nicho #${data.id}`}
             {updatedAtLabel ? ` • Atualizado em ${updatedAtLabel}` : ""}

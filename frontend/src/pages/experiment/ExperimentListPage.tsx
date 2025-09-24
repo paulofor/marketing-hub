@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useExperiments } from "../../api/experiment/useExperiments";
 import { useNiches } from "../../api/niche/useNiches";
 import PageTitle from "../../components/PageTitle";
+import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { useState } from "react";
 
 export default function ExperimentListPage() {
@@ -20,7 +21,7 @@ export default function ExperimentListPage() {
   if (isLoading) return <p>Carregando...</p>;
   return (
     <div>
-      <PageTitle>Testes de Nicho</PageTitle>
+      <PageTitle icon={experimentIcon}>Testes de Nicho</PageTitle>
       <Link className="btn btn-primary mb-3" to="/experiments/new">
         Novo Teste
       </Link>

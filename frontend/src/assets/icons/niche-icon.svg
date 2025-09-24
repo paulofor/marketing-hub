@@ -1,0 +1,54 @@
+<svg width="160" height="160" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="nicheBg" x1="30" y1="18" x2="132" y2="150" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f8f9ff" />
+      <stop offset="1" stop-color="#e9edff" />
+    </linearGradient>
+    <linearGradient id="nicheRing" x1="40" y1="40" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0d6efd" />
+      <stop offset="1" stop-color="#6f42c1" />
+    </linearGradient>
+    <linearGradient id="nicheCenter" x1="68" y1="64" x2="102" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0d6efd" />
+      <stop offset="1" stop-color="#4dabf7" />
+    </linearGradient>
+    <linearGradient id="nicheArc" x1="48" y1="54" x2="120" y2="106" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6f42c1" />
+      <stop offset="1" stop-color="#51cf66" stop-opacity="0.85" />
+    </linearGradient>
+  </defs>
+  <rect width="160" height="160" rx="36" fill="url(#nicheBg)" />
+  <g opacity="0.9">
+    <circle cx="80" cy="80" r="54" fill="#ffffff" fill-opacity="0.85" />
+    <circle cx="80" cy="80" r="54" stroke="url(#nicheRing)" stroke-width="4" />
+    <circle cx="80" cy="80" r="38" fill="#ffffff" fill-opacity="0.75" />
+    <circle cx="80" cy="80" r="38" stroke="url(#nicheRing)" stroke-width="3" opacity="0.65" />
+    <circle cx="80" cy="80" r="22" fill="url(#nicheCenter)" />
+    <circle cx="80" cy="80" r="12" fill="#ffffff" fill-opacity="0.65" />
+  </g>
+  <g stroke-linecap="round" stroke-width="4" stroke="url(#nicheRing)" opacity="0.65">
+    <line x1="80" y1="40" x2="80" y2="64" />
+    <line x1="80" y1="96" x2="80" y2="120" />
+    <line x1="40" y1="80" x2="64" y2="80" />
+    <line x1="96" y1="80" x2="120" y2="80" />
+  </g>
+  <path
+    d="M108.5 55.5c5.6 7.7 7.7 18.1 5.1 27.5-2.6 9.4-9.3 17.5-18.2 22.1"
+    stroke="url(#nicheArc)"
+    stroke-width="5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+    opacity="0.75"
+  />
+  <path
+    d="M108 55l-17 4.5c-1.6.4-2.1 2.4-.9 3.5l6 5.4"
+    fill="none"
+    stroke="#6f42c1"
+    stroke-width="4"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    opacity="0.8"
+  />
+  <circle cx="80" cy="80" r="64" stroke="white" stroke-opacity="0.25" stroke-width="8" />
+</svg>

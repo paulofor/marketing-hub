@@ -45,10 +45,11 @@ export default function ExperimentDetailPage() {
         (a) => !a.hypothesisId || a.hypothesisId === data.hypothesisId,
       )
     : undefined;
+  const totalRelevantAudiences = relevantAudiences?.length ?? 0;
+  const approvedAudiencesCount =
+    relevantAudiences?.filter((a) => a.approved).length ?? 0;
   const approvedAudienceSummary = relevantAudiences
-    ? `${relevantAudiences.filter((a) => a.approved).length} de ${
-        relevantAudiences.length
-      }`
+    ? `${approvedAudiencesCount} de ${relevantAudiences.length}`
     : "—";
   const formatCurrency = (n?: number | null) =>
     n != null
@@ -65,6 +66,55 @@ export default function ExperimentDetailPage() {
     (baseKpi != null && stopLossFactor != null
       ? baseKpi * stopLossFactor
       : null);
+  const readinessChecks = [
+    {
+      id: "platform",
+      title: "Plataforma configurada para Facebook Ads",
+      isMet: data.platform === "FACEBOOK",
+      hint:
+        data.platform === "FACEBOOK"
+          ? "Este experimento já usa a plataforma do Facebook."
+          : `Plataforma atual: ${data.platform}. Ajuste para Facebook Ads para liberar a campanha.`,
+      actionLabel: undefined,
+    },
+    {
+      id: "status",
+      title: "Status marcado como Planejado",
+      isMet: data.status === "PLANNED",
+      hint:
+        data.status === "PLANNED"
+          ? "O worker poderá buscar este experimento quando os demais itens estiverem prontos."
+          : "Altere o status para Planejado na lista de experimentos para liberar o worker de Facebook.",
+      actionLabel: undefined,
+    },
+    {
+      id: "creatives",
+      title: "Criativos aprovados",
+      isMet: data.creativeApproved,
+      hint: data.creativeApproved
+        ? "Os criativos já estão aprovados."
+        : "Revise e aprove pelo menos um criativo na aba Criativos.",
+      action: data.creativeApproved
+        ? undefined
+        : () => setTab("creatives"),
+      actionLabel: "Ir para Criativos",
+    },
+    {
+      id: "audiences",
+      title: "Pelo menos um público aprovado",
+      isMet: approvedAudiencesCount > 0,
+      hint:
+        approvedAudiencesCount > 0
+          ? `${approvedAudiencesCount} público(s) aprovado(s) para este experimento.`
+          : totalRelevantAudiences > 0
+            ? "Aprove pelo menos um público na aba Públicos."
+            : "Cadastre públicos para este nicho e aprove pelo menos um deles.",
+      action:
+        approvedAudiencesCount > 0 ? undefined : () => setTab("audiences"),
+      actionLabel: "Ir para Públicos",
+    },
+  ];
+  const isReadyForFacebook = readinessChecks.every((c) => c.isMet);
   const rows = [
     {
       label: "Nicho",
@@ -137,6 +187,56 @@ export default function ExperimentDetailPage() {
             Editar
           </Link>
           <span className="badge bg-secondary">{data.status}</span>
+        </div>
+      </div>
+      <div className="card border-0 shadow-sm rounded-3 mt-3">
+        <div className="card-body">
+          <div className="d-flex justify-content-between align-items-start">
+            <h5 className="card-title mb-0">Campanha de Facebook Ads</h5>
+            <span
+              className={`badge ${
+                isReadyForFacebook ? "text-bg-success" : "text-bg-warning"
+              }`}
+            >
+              {isReadyForFacebook ? "Pronto" : "Pendente"}
+            </span>
+          </div>
+          <p className="card-text mt-2">
+            {isReadyForFacebook
+              ? "Este experimento já atende aos requisitos mínimos para virar uma campanha no Facebook Ads quando o worker executar."
+              : "Para liberar este experimento para campanha no Facebook Ads, resolva os itens abaixo."}
+          </p>
+          <ul className="list-unstyled mb-0 d-flex flex-column gap-2">
+            {readinessChecks.map((check) => (
+              <li
+                key={check.id}
+                className="d-flex align-items-start gap-3 p-3 bg-body-tertiary rounded-3"
+              >
+                <span
+                  className={`badge flex-shrink-0 ${
+                    check.isMet ? "text-bg-success" : "text-bg-warning"
+                  }`}
+                >
+                  {check.isMet ? "Pronto" : "Pendente"}
+                </span>
+                <div className="flex-grow-1">
+                  <div className="fw-semibold text-body">{check.title}</div>
+                  {check.hint ? (
+                    <div className="text-muted small mt-1">{check.hint}</div>
+                  ) : null}
+                  {!check.isMet && check.action ? (
+                    <button
+                      type="button"
+                      className="btn btn-link btn-sm p-0 align-baseline mt-2"
+                      onClick={check.action}
+                    >
+                      {check.actionLabel}
+                    </button>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
       <Tabs.Root value={tab} onValueChange={setTab} className="mt-3">

@@ -63,7 +63,6 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  max-width: min(100%, 32ch);
   line-height: 1.2;
   white-space: nowrap;
 }
@@ -87,8 +86,6 @@
   display: inline-block;
   min-width: 0;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 @media (max-width: 576px) {

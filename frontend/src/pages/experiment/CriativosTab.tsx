@@ -306,16 +306,16 @@ export default function CriativosTab({ experimentId }: Props) {
   const pendingCreatives = creatives.filter((c) => c.status !== "READY");
   const creativeSections = [
     {
-      id: "pending",
-      title: "Aguardando aprovação",
-      badgeClass: "text-bg-warning",
-      creatives: pendingCreatives,
-    },
-    {
       id: "approved",
       title: "Aprovados",
       badgeClass: "text-bg-success",
       creatives: readyCreatives,
+    },
+    {
+      id: "pending",
+      title: "Aguardando aprovação",
+      badgeClass: "text-bg-warning",
+      creatives: pendingCreatives,
     },
   ].filter((section) => section.creatives.length > 0);
 

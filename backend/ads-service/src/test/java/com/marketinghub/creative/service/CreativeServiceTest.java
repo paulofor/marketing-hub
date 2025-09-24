@@ -18,9 +18,9 @@ import com.marketinghub.media.repository.AssetRepository;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,6 +29,7 @@ import java.net.http.HttpResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(classes = AdsServiceApplication.class)
@@ -57,20 +58,15 @@ class CreativeServiceTest {
     @Autowired
     AssetRepository assetRepository;
 
+    @Autowired
     CreativeService service;
+
+    @MockBean
+    HttpClient httpClient;
 
     @BeforeEach
     void setup() {
-        HttpClient client = Mockito.mock(HttpClient.class);
         assetRepository.deleteAll();
-        service = new CreativeService(
-                repository,
-                experimentRepository,
-                angleRepository,
-                visualProofRepository,
-                emotionalTriggerRepository,
-                assetRepository,
-                client);
     }
 
     @Test
@@ -96,20 +92,11 @@ class CreativeServiceTest {
         Experiment exp = fixtures.createAndSaveExperiment(niche);
         fixtures.createAndSaveCreative(exp);
 
-        HttpClient client = Mockito.mock(HttpClient.class);
-        HttpResponse<String> resp = Mockito.mock(HttpResponse.class);
+        HttpResponse<String> resp = mock(HttpResponse.class);
         when(resp.body()).thenReturn("{\"data\":[{\"body\":\"<div>ok</div>\"}]}");
-        when(client.send(any(), any())).thenReturn((HttpResponse) resp);
+        when(httpClient.send(any(), any())).thenReturn((HttpResponse) resp);
         System.setProperty("FB_ACCESS_TOKEN", "dummy");
         try {
-            service = new CreativeService(
-                    repository,
-                    experimentRepository,
-                    angleRepository,
-                    visualProofRepository,
-                    emotionalTriggerRepository,
-                    assetRepository,
-                    client);
             String html = service.preview(1L);
             assertThat(html).contains("ok");
         } finally {

@@ -15,13 +15,16 @@ import java.time.LocalDate;
  */
 @Entity
 @Table(uniqueConstraints = @UniqueConstraint(columnNames = {"niche_id", "name"}))
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Experiment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)

@@ -12,13 +12,16 @@ import lombok.*;
  */
 @Entity
 @Table(name = "creative")
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Creative {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

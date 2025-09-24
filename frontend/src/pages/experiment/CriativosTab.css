@@ -23,6 +23,16 @@
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
+@media (min-width: 992px) {
+  .creative-grid {
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(260px, clamp(260px, 32vw, 360px))
+    );
+    justify-content: center;
+  }
+}
+
 .creative-card {
   border-radius: 1rem;
   border: 1px solid var(--bs-border-color, rgba(0, 0, 0, 0.1));

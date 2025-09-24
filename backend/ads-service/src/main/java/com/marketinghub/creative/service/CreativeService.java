@@ -61,7 +61,9 @@ public class CreativeService {
                 .imageUrl(request.getImageUrl())
                 .status(request.getStatus())
                 .build();
-        return repository.save(creative);
+        Creative saved = repository.save(creative);
+        refreshExperimentApproval(exp);
+        return saved;
     }
 
     /**
@@ -74,12 +76,16 @@ public class CreativeService {
         creative.setPrimaryText(request.getPrimaryText());
         creative.setImageUrl(request.getImageUrl());
         creative.setStatus(request.getStatus());
+        refreshExperimentApproval(creative.getExperiment());
         return creative;
     }
 
     @Transactional
     public void delete(Long id) {
-        repository.deleteById(id);
+        Creative creative = repository.findById(id).orElseThrow();
+        Experiment experiment = creative.getExperiment();
+        repository.delete(creative);
+        refreshExperimentApproval(experiment);
     }
 
     public Iterable<Creative> listByExperiment(Long experimentId) {
@@ -101,6 +107,12 @@ public class CreativeService {
             creative.setEmotionalTriggers(java.util.Set.of(emotionalTriggerRepository.findById(triggerId).orElseThrow()));
         }
         return creative;
+    }
+
+    private void refreshExperimentApproval(Experiment experiment) {
+        boolean hasApprovedCreatives = repository.existsByExperimentIdAndStatus(
+                experiment.getId(), CreativeStatus.READY);
+        experiment.setCreativeApproved(hasApprovedCreatives);
     }
 
     /**

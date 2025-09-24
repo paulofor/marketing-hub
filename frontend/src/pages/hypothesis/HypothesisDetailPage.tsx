@@ -6,6 +6,7 @@ import { useExperimentsByHypothesis } from "../../api/experiment/useExperimentsB
 import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
 import PageTitle from "../../components/PageTitle";
 import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
+import nicheIcon from "../../assets/icons/niche-icon.svg";
 import { AudienceApprovalCard } from "../../components/AudienceApprovalCard";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import { useForm } from "react-hook-form";
@@ -26,9 +27,13 @@ export default function HypothesisDetailPage() {
     defaultValues: { quantity: 1 },
   });
   useBreadcrumbs([
-    { label: "Nichos", to: "/niches" },
-    { label: niche?.name || "...", to: `/niches/${nicheId}` },
-    { label: data?.title || "..." },
+    { label: "Nichos", to: "/niches", icon: nicheIcon },
+    {
+      label: niche?.name || "...",
+      to: `/niches/${nicheId}`,
+      icon: nicheIcon,
+    },
+    { label: data?.title || "...", icon: hypothesisIcon },
   ]);
 
   if (isLoading) return <p>Carregando...</p>;

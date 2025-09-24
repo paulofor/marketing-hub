@@ -6,6 +6,8 @@ import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
+import nicheIcon from "../../assets/icons/niche-icon.svg";
+import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
 import CriativosTab from "./CriativosTab";
 import PublicosTab from "./PublicosTab";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
@@ -28,13 +30,18 @@ export default function ExperimentDetailPage() {
   const [tab, setTab] = useState("overview");
   const [isFunnelPreviewOpen, setFunnelPreviewOpen] = useState(false);
   useBreadcrumbs([
-    { label: "Nichos", to: "/niches" },
-    { label: niche?.name || "...", to: `/niches/${data?.nicheId}` },
+    { label: "Nichos", to: "/niches", icon: nicheIcon },
+    {
+      label: niche?.name || "...",
+      to: `/niches/${data?.nicheId}`,
+      icon: nicheIcon,
+    },
     {
       label: hyp?.title || "...",
       to: `/niches/${data?.nicheId}/hypotheses/${data?.hypothesisId}`,
+      icon: hypothesisIcon,
     },
-    { label: data?.name || "..." },
+    { label: data?.name || "...", icon: experimentIcon },
   ]);
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;

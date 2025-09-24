@@ -33,8 +33,8 @@ export default function NicheDetailPage() {
     defaultValues: { quantity: 1 },
   });
   useBreadcrumbs([
-    { label: "Nichos", to: "/niches" },
-    { label: data?.name || "..." },
+    { label: "Nichos", to: "/niches", icon: nicheIcon },
+    { label: data?.name || "...", icon: nicheIcon },
   ]);
 
   if (isLoading) return <p>Carregando...</p>;

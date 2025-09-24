@@ -6,6 +6,7 @@ import "./breadcrumbs.css";
 export interface Crumb {
   label: string;
   to?: string;
+  icon?: string;
 }
 
 const SetCrumbsContext = createContext<(c: Crumb[]) => void>(() => {});
@@ -35,7 +36,14 @@ export default function BreadcrumbsProvider({
                   <span className="app-breadcrumbs__separator" aria-hidden="true">
                     /
                   </span>
-                  <span className="app-breadcrumbs__item-label">{c.label}</span>
+                  <span className="app-breadcrumbs__item-label">
+                    {c.icon ? (
+                      <span className="app-breadcrumbs__item-icon" aria-hidden="true">
+                        <img src={c.icon} alt="" />
+                      </span>
+                    ) : null}
+                    <span className="app-breadcrumbs__item-text">{c.label}</span>
+                  </span>
                 </>
               );
               return (

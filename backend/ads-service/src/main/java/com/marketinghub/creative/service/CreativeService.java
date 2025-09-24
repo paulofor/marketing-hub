@@ -69,6 +69,7 @@ public class CreativeService {
     /**
      * Updates an existing creative.
      */
+    @Transactional
     public Creative update(Long id, CreateCreativeRequest request) {
         Creative creative = repository.findByIdWithExperiment(id).orElseThrow();
         creative.setHeadline(request.getHeadline());
@@ -80,6 +81,7 @@ public class CreativeService {
         return saved;
     }
 
+    @Transactional
     public void delete(Long id) {
         Creative creative = repository.findByIdWithExperiment(id).orElseThrow();
         Experiment experiment = creative.getExperiment();

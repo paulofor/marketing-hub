@@ -69,20 +69,19 @@ public class CreativeService {
     /**
      * Updates an existing creative.
      */
-    @Transactional
     public Creative update(Long id, CreateCreativeRequest request) {
-        Creative creative = repository.findById(id).orElseThrow();
+        Creative creative = repository.findByIdWithExperiment(id).orElseThrow();
         creative.setHeadline(request.getHeadline());
         creative.setPrimaryText(request.getPrimaryText());
         creative.setImageUrl(request.getImageUrl());
         creative.setStatus(request.getStatus());
-        refreshExperimentApproval(creative.getExperiment());
-        return creative;
+        Creative saved = repository.save(creative);
+        refreshExperimentApproval(saved.getExperiment());
+        return saved;
     }
 
-    @Transactional
     public void delete(Long id) {
-        Creative creative = repository.findById(id).orElseThrow();
+        Creative creative = repository.findByIdWithExperiment(id).orElseThrow();
         Experiment experiment = creative.getExperiment();
         repository.delete(creative);
         refreshExperimentApproval(experiment);
@@ -113,6 +112,7 @@ public class CreativeService {
         boolean hasApprovedCreatives = repository.existsByExperimentIdAndStatus(
                 experiment.getId(), CreativeStatus.READY);
         experiment.setCreativeApproved(hasApprovedCreatives);
+        experimentRepository.save(experiment);
     }
 
     /**

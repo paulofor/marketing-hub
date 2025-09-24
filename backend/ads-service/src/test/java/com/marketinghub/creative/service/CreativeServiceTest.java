@@ -15,6 +15,7 @@ import com.marketinghub.media.Asset;
 import com.marketinghub.media.AssetStatus;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.media.repository.AssetRepository;
+import com.marketinghub.creative.dto.CreateCreativeRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -114,5 +115,52 @@ class CreativeServiceTest {
         } finally {
             System.clearProperty("FB_ACCESS_TOKEN");
         }
+    }
+
+    @Test
+    void approvingCreativeMarksExperimentAsReady() {
+        MarketNiche niche = fixtures.createAndSaveNiche();
+        Experiment exp = fixtures.createAndSaveExperiment(niche);
+
+        CreateCreativeRequest createRequest = new CreateCreativeRequest();
+        createRequest.setHeadline("Headline");
+        createRequest.setPrimaryText("Primary");
+        createRequest.setImageUrl("/img.png");
+        createRequest.setStatus(CreativeStatus.DRAFT);
+        Creative creative = service.create(exp.getId(), createRequest);
+
+        Experiment afterCreate = experimentRepository.findById(exp.getId()).orElseThrow();
+        assertThat(afterCreate.isCreativeApproved()).isFalse();
+
+        CreateCreativeRequest approveRequest = new CreateCreativeRequest();
+        approveRequest.setHeadline("Headline");
+        approveRequest.setPrimaryText("Primary");
+        approveRequest.setImageUrl("/img.png");
+        approveRequest.setStatus(CreativeStatus.READY);
+        service.update(creative.getId(), approveRequest);
+
+        Experiment afterApproval = experimentRepository.findById(exp.getId()).orElseThrow();
+        assertThat(afterApproval.isCreativeApproved()).isTrue();
+    }
+
+    @Test
+    void deletingLastApprovedCreativeResetsFlag() {
+        MarketNiche niche = fixtures.createAndSaveNiche();
+        Experiment exp = fixtures.createAndSaveExperiment(niche);
+
+        CreateCreativeRequest createRequest = new CreateCreativeRequest();
+        createRequest.setHeadline("Headline");
+        createRequest.setPrimaryText("Primary");
+        createRequest.setImageUrl("/img.png");
+        createRequest.setStatus(CreativeStatus.READY);
+        Creative creative = service.create(exp.getId(), createRequest);
+
+        Experiment afterApproval = experimentRepository.findById(exp.getId()).orElseThrow();
+        assertThat(afterApproval.isCreativeApproved()).isTrue();
+
+        service.delete(creative.getId());
+
+        Experiment afterDelete = experimentRepository.findById(exp.getId()).orElseThrow();
+        assertThat(afterDelete.isCreativeApproved()).isFalse();
     }
 }

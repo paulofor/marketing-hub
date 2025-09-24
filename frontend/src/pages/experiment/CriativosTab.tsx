@@ -15,7 +15,6 @@ import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import {
   AlertTriangle,
   CheckCircle2,
-  Copy,
   Edit3,
   Eye,
   Sparkles,
@@ -108,6 +107,9 @@ export default function CriativosTab({ experimentId }: Props) {
   const update = useUpdateCreative(experimentId);
   const del = useDeleteCreative(experimentId);
   const [showPreview, setShowPreview] = useState(false);
+  const [processingCreativeId, setProcessingCreativeId] = useState<number | null>(
+    null,
+  );
   const requestCreatives = useRequestCreatives(experimentId);
 
   useEffect(() => {
@@ -187,23 +189,39 @@ export default function CriativosTab({ experimentId }: Props) {
 
   const remove = async (c: Creative) => {
     if (!confirm("Excluir criativo?")) return;
-    await del.mutateAsync(c.id);
+    setProcessingCreativeId(c.id);
+    try {
+      await del.mutateAsync(c.id);
+    } catch {
+      setFeedback({
+        variant: "error",
+        title: "Não foi possível excluir o criativo",
+        description: "Tente novamente em instantes.",
+      });
+    } finally {
+      setProcessingCreativeId(null);
+    }
   };
 
   const approve = async (c: Creative) => {
-    await update.mutateAsync({
-      id: c.id,
-      headline: c.headline,
-      primaryText: c.primaryText,
-      imageUrl: c.imageUrl,
-      status: "READY",
-    });
-  };
-
-  const duplicate = (c: Creative) => {
-    setEditing(null);
-    fillFormFromCreative(c);
-    setShowForm(true);
+    setProcessingCreativeId(c.id);
+    try {
+      await update.mutateAsync({
+        id: c.id,
+        headline: c.headline,
+        primaryText: c.primaryText,
+        imageUrl: c.imageUrl,
+        status: "READY",
+      });
+    } catch {
+      setFeedback({
+        variant: "error",
+        title: "Não foi possível aprovar o criativo",
+        description: "Tente novamente em instantes.",
+      });
+    } finally {
+      setProcessingCreativeId(null);
+    }
   };
 
   const upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -284,6 +302,129 @@ export default function CriativosTab({ experimentId }: Props) {
 
   const totalCreatives = creatives.length;
   const solicitedCreatives = experiment?.creativesToGenerate ?? 0;
+  const readyCreatives = creatives.filter((c) => c.status === "READY");
+  const pendingCreatives = creatives.filter((c) => c.status !== "READY");
+  const creativeSections = [
+    {
+      id: "pending",
+      title: "Aguardando aprovação",
+      badgeClass: "text-bg-warning",
+      creatives: pendingCreatives,
+    },
+    {
+      id: "approved",
+      title: "Aprovados",
+      badgeClass: "text-bg-success",
+      creatives: readyCreatives,
+    },
+  ].filter((section) => section.creatives.length > 0);
+
+  const renderCreativeCard = (c: Creative) => {
+    const imageUrl = c.imageUrl ? resolveAssetUrl(c.imageUrl) : undefined;
+    const isProcessing = processingCreativeId === c.id;
+    return (
+      <article
+        key={c.id}
+        className="creative-card"
+        aria-busy={isProcessing}
+        aria-live={isProcessing ? "polite" : undefined}
+      >
+        {isProcessing && (
+          <div className="creative-card-processing">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Processando criativo...</span>
+            </div>
+          </div>
+        )}
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={c.headline || "Criativo"}
+            className="creative-card-img"
+          />
+        ) : (
+          <div className="creative-card-placeholder">
+            <span className="text-muted">Imagem não disponível</span>
+          </div>
+        )}
+        <div className="creative-card-body">
+          <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <span className={`badge rounded-pill ${statusVariant(c.status)}`}>
+              {statusLabel(c.status)}
+            </span>
+            {c.format && (
+              <span className="badge rounded-pill text-bg-light text-uppercase text-muted">
+                {c.format}
+              </span>
+            )}
+          </div>
+          <h3 className="creative-card-headline">
+            {c.headline || "Sem headline"}
+          </h3>
+          <p className="creative-card-text mb-0">{c.primaryText}</p>
+          {(c.cta || c.destinationUrl) && (
+            <div className="creative-card-meta small text-muted">
+              {c.cta && <span className="me-2">CTA: {c.cta}</span>}
+              {c.destinationUrl && (
+                <a
+                  href={c.destinationUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-decoration-none text-muted text-truncate d-block"
+                  title={c.destinationUrl}
+                >
+                  {c.destinationUrl}
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="creative-card-footer">
+          <div className="creative-card-actions">
+            <button
+              type="button"
+              className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center gap-1"
+              onClick={() => openEdit(c)}
+              disabled={isProcessing}
+            >
+              <Edit3 size={ICON_SIZE} />
+              <span>Editar</span>
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center gap-1"
+              onClick={() => remove(c)}
+              disabled={isProcessing}
+            >
+              <Trash2 size={ICON_SIZE} />
+              <span>Excluir</span>
+            </button>
+            {c.status !== "READY" && (
+              <button
+                type="button"
+                className="btn btn-outline-success btn-sm d-flex align-items-center justify-content-center gap-1"
+                onClick={() => approve(c)}
+                disabled={isProcessing}
+              >
+                <CheckCircle2 size={ICON_SIZE} />
+                <span>Aprovar</span>
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center gap-1"
+              onClick={() => startPreview(c)}
+              aria-label="Preview"
+              disabled={isProcessing}
+            >
+              <Eye size={ICON_SIZE} />
+              <span>Preview</span>
+            </button>
+          </div>
+        </div>
+      </article>
+    );
+  };
 
   return (
     <div className="mt-3">
@@ -364,105 +505,33 @@ export default function CriativosTab({ experimentId }: Props) {
             acervo criativo com os resultados aprovados.
           </p>
         </div>
-      ) : (
+      ) : creativeSections.length === 0 ? (
         <div className="creative-grid">
-          {creatives.map((c) => {
-            const imageUrl = c.imageUrl ? resolveAssetUrl(c.imageUrl) : undefined;
-            return (
-              <article key={c.id} className="creative-card">
-                {imageUrl ? (
-                  <img
-                    src={imageUrl}
-                    alt={c.headline || "Criativo"}
-                    className="creative-card-img"
-                  />
-                ) : (
-                  <div className="creative-card-placeholder">
-                    <span className="text-muted">Imagem não disponível</span>
-                  </div>
-                )}
-                <div className="creative-card-body">
-                  <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                    <span className={`badge rounded-pill ${statusVariant(c.status)}`}>
-                      {statusLabel(c.status)}
-                    </span>
-                    {c.format && (
-                      <span className="badge rounded-pill text-bg-light text-uppercase text-muted">
-                        {c.format}
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="creative-card-headline">
-                    {c.headline || "Sem headline"}
-                  </h3>
-                  <p className="creative-card-text mb-0">{c.primaryText}</p>
-                  {(c.cta || c.destinationUrl) && (
-                    <div className="creative-card-meta small text-muted">
-                      {c.cta && <span className="me-2">CTA: {c.cta}</span>}
-                      {c.destinationUrl && (
-                        <a
-                          href={c.destinationUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-decoration-none text-muted text-truncate d-block"
-                          title={c.destinationUrl}
-                        >
-                          {c.destinationUrl}
-                        </a>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="creative-card-footer">
-                  <div className="creative-card-actions">
-                    <button
-                      type="button"
-                      className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center gap-1"
-                      onClick={() => openEdit(c)}
-                    >
-                      <Edit3 size={ICON_SIZE} />
-                      <span>Editar</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center gap-1"
-                      onClick={() => duplicate(c)}
-                    >
-                      <Copy size={ICON_SIZE} />
-                      <span>Duplicar</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center gap-1"
-                      onClick={() => remove(c)}
-                    >
-                      <Trash2 size={ICON_SIZE} />
-                      <span>Excluir</span>
-                    </button>
-                    {c.status !== "READY" && (
-                      <button
-                        type="button"
-                        className="btn btn-outline-success btn-sm d-flex align-items-center justify-content-center gap-1"
-                        onClick={() => approve(c)}
-                      >
-                        <CheckCircle2 size={ICON_SIZE} />
-                        <span>Aprovar</span>
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center gap-1"
-                      onClick={() => startPreview(c)}
-                      aria-label="Preview"
-                    >
-                      <Eye size={ICON_SIZE} />
-                      <span>Preview</span>
-                    </button>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+          {creatives.map(renderCreativeCard)}
+        </div>
+      ) : (
+        <div className="creative-sections">
+          {creativeSections.map((section) => (
+            <section
+              key={section.id}
+              className="creative-section"
+              aria-labelledby={`${section.id}-title`}
+            >
+              <div className="creative-section-header">
+                <h3 id={`${section.id}-title`} className="creative-section-title">
+                  {section.title}
+                </h3>
+                <span className={`badge rounded-pill ${section.badgeClass}`}>
+                  {`${section.creatives.length} ${
+                    section.creatives.length === 1 ? "item" : "itens"
+                  }`}
+                </span>
+              </div>
+              <div className="creative-grid">
+                {section.creatives.map(renderCreativeCard)}
+              </div>
+            </section>
+          ))}
         </div>
       )}
 

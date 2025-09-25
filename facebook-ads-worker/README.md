@@ -32,6 +32,7 @@ rastreamento.
 
 Um diagrama de classes simplificado pode ser encontrado em
 [docs/facebook-ads-worker/class-diagram.md](../docs/facebook-ads-worker/class-diagram.md).
+Consulte também a documentação oficial da Graph API sempre que precisar interagir com a plataforma: https://developers.facebook.com/docs/graph-api e https://developers.facebook.com/docs/graph-api/reference.
 
 ## Build
 ```

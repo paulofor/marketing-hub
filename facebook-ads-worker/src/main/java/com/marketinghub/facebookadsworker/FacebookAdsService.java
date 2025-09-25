@@ -29,7 +29,7 @@ public class FacebookAdsService {
                 "name", name,
                 "objective", "OUTCOME_TRAFFIC",
                 "status", "PAUSED",
-                "special_ad_categories", List.of("NONE"),
+                "special_ad_categories", List.of(),
                 "access_token", accessToken
             ))
             .retrieve()

@@ -44,7 +44,7 @@ class FacebookAdsServiceTest {
         assertEquals("Camp", body.get("name").asText());
         assertEquals("OUTCOME_TRAFFIC", body.get("objective").asText());
         assertEquals("PAUSED", body.get("status").asText());
-        assertEquals("NONE", body.get("special_ad_categories").get(0).asText());
+        assertEquals(0, body.get("special_ad_categories").size());
         assertEquals("123", id);
     }
 

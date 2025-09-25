@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -25,6 +26,8 @@ public class FacebookAdsService {
             .bodyValue(Map.of(
                 "name", name,
                 "objective", "OUTCOME_TRAFFIC",
+                "status", "PAUSED",
+                "special_ad_categories", List.of("NONE"),
                 "access_token", accessToken
             ))
             .retrieve()

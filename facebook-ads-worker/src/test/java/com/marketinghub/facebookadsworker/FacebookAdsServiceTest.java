@@ -1,6 +1,7 @@
 package com.marketinghub.facebookadsworker;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -16,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class FacebookAdsServiceTest {
     private MockWebServer server;
     private FacebookAdsService service;
+    private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -23,6 +25,7 @@ class FacebookAdsServiceTest {
         server.start();
         String baseUrl = server.url("/").toString();
         service = new FacebookAdsService(WebClient.builder(), baseUrl, "token");
+        objectMapper = new ObjectMapper();
     }
 
     @AfterEach
@@ -37,6 +40,11 @@ class FacebookAdsServiceTest {
         String id = service.createInstagramCampaign("1", "Camp");
         RecordedRequest request = server.takeRequest();
         assertEquals("/v20.0/act_1/campaigns", request.getPath());
+        JsonNode body = objectMapper.readTree(request.getBody().inputStream());
+        assertEquals("Camp", body.get("name").asText());
+        assertEquals("OUTCOME_TRAFFIC", body.get("objective").asText());
+        assertEquals("PAUSED", body.get("status").asText());
+        assertEquals("NONE", body.get("special_ad_categories").get(0).asText());
         assertEquals("123", id);
     }
 

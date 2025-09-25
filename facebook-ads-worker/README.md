@@ -5,6 +5,10 @@ posicionamentos no Facebook e no Instagram, e coletar métricas usando a API de
 Marketing do Facebook. O serviço reutiliza o modelo de
 dados definido no projeto `backend`, evitando duplicação de entidades.
 
+As campanhas criadas utilizam o objetivo `OUTCOME_TRAFFIC`, são iniciadas com
+status `PAUSED` e preenchem `special_ad_categories` com `NONE`, atendendo às
+novas regras da Graph API para criação de campanhas.
+
 As chamadas ao backend utilizam o prefixo `/api`. Atualmente o worker consome
 `/api/facebook-campaigns/experiments-ready`, tratando respostas `404` como
 "nenhum experimento disponível" para evitar falhas no agendamento. Falhas de

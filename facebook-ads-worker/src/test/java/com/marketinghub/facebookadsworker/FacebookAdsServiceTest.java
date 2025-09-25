@@ -13,6 +13,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FacebookAdsServiceTest {
     private MockWebServer server;
@@ -133,5 +135,33 @@ class FacebookAdsServiceTest {
         RecordedRequest request = server.takeRequest();
         assertEquals("/v23.0/77/insights?access_token=token", request.getPath());
         assertEquals("10", node.get("data").get(0).path("impressions").asText());
+    }
+
+    @Test
+    void wrapsFacebookErrorsWithStructuredException() {
+        server.enqueue(new MockResponse()
+            .setResponseCode(400)
+            .setBody("{" +
+                "\"error\":{" +
+                "\"type\":\"OAuthException\"," +
+                "\"code\":200," +
+                "\"error_subcode\":1815066," +
+                "\"message\":\"Permissions error\"," +
+                "\"error_user_title\":\"O usuário não tem permissão\"," +
+                "\"error_user_msg\":\"O usuário não tem permissão para criar anúncios com esta conta de anúncios\"," +
+                "\"fbtrace_id\":\"trace\"}" +
+                "}")
+            .addHeader("Content-Type", "application/json"));
+
+        FacebookApiException ex = assertThrows(
+            FacebookApiException.class,
+            () -> service.createInstagramCampaign("1", "Camp")
+        );
+
+        assertEquals(400, ex.getStatus());
+        assertTrue(ex.isPermissionsError());
+        assertEquals("O usuário não tem permissão para criar anúncios com esta conta de anúncios",
+            ex.getErrorDetails().errorUserMsg());
+        assertTrue(ex.getMessage().contains("Permissions error"));
     }
 }

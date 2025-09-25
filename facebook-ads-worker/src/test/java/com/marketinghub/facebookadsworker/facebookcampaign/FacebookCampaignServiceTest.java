@@ -123,4 +123,28 @@ class FacebookCampaignServiceTest {
         assertEquals(1, backend.getRequestCount());
         assertEquals(0, facebook.getRequestCount());
     }
+
+    @Test
+    void stopsProcessingWhenFacebookReturnsPermissionError() {
+        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\"},{\"id\":2,\"name\":\"Exp 2\"}]")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse()
+            .setResponseCode(400)
+            .setBody("{" +
+                "\"error\":{" +
+                "\"type\":\"OAuthException\"," +
+                "\"code\":200," +
+                "\"error_subcode\":1815066," +
+                "\"message\":\"Permissions error\"," +
+                "\"error_user_title\":\"O usuário não tem permissão\"," +
+                "\"error_user_msg\":\"O usuário não tem permissão para criar anúncios com esta conta de anúncios\"," +
+                "\"fbtrace_id\":\"trace\"}" +
+                "}")
+            .addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        assertEquals(1, backend.getRequestCount());
+        assertEquals(1, facebook.getRequestCount());
+    }
 }

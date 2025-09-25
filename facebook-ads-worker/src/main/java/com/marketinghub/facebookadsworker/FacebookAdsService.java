@@ -142,15 +142,17 @@ public class FacebookAdsService {
             return response;
         } catch (WebClientResponseException ex) {
             String responseBody = ex.getResponseBodyAsString();
+            ObjectNode errorDetailsNode = extractErrorDetails(responseBody);
+            FacebookApiException.ErrorDetails errorDetails = FacebookApiException.ErrorDetails.from(errorDetailsNode);
             LOGGER.error(
                 "Facebook API GET request failed: path={}, status={}, responseBody={}, errorDetails={}",
                 maskedPath,
                 ex.getRawStatusCode(),
                 maskAccessToken(responseBody),
-                extractErrorDetails(responseBody),
+                errorDetailsNode,
                 ex
             );
-            throw ex;
+            throw buildFacebookApiException("GET", maskedPath, ex, errorDetails);
         } catch (WebClientRequestException ex) {
             LOGGER.error("Facebook API GET request could not be completed: path={}, message={}", maskedPath, ex.getMessage(), ex);
             throw ex;
@@ -159,7 +161,8 @@ public class FacebookAdsService {
 
     private JsonNode executePost(String path, Map<String, Object> body) {
         Map<String, Object> sanitizedBody = sanitizeBody(body);
-        LOGGER.info("Sending POST request to Facebook API: path={}, body={}", maskAccessTokenInPath(path), sanitizedBody);
+        String sanitizedPath = maskAccessTokenInPath(path);
+        LOGGER.info("Sending POST request to Facebook API: path={}, body={}", sanitizedPath, sanitizedBody);
         try {
             JsonNode response = webClient.post()
                 .uri(path)
@@ -167,29 +170,70 @@ public class FacebookAdsService {
                 .retrieve()
                 .bodyToMono(JsonNode.class)
                 .block();
-            LOGGER.info("Received response from Facebook API: path={}, response={}", maskAccessTokenInPath(path), response);
+            LOGGER.info("Received response from Facebook API: path={}, response={}", sanitizedPath, response);
             return response;
         } catch (WebClientResponseException ex) {
             String responseBody = ex.getResponseBodyAsString();
+            ObjectNode errorDetailsNode = extractErrorDetails(responseBody);
+            FacebookApiException.ErrorDetails errorDetails = FacebookApiException.ErrorDetails.from(errorDetailsNode);
             LOGGER.error(
                 "Facebook API POST request failed: path={}, status={}, responseBody={}, errorDetails={}, headers={}",
-                maskAccessTokenInPath(path),
+                sanitizedPath,
                 ex.getRawStatusCode(),
                 maskAccessToken(responseBody),
-                extractErrorDetails(responseBody),
+                errorDetailsNode,
                 ex.getHeaders(),
                 ex
             );
-            throw ex;
+            throw buildFacebookApiException("POST", sanitizedPath, ex, errorDetails);
         } catch (WebClientRequestException ex) {
             LOGGER.error(
                 "Facebook API POST request could not be completed: path={}, message={}",
-                maskAccessTokenInPath(path),
+                sanitizedPath,
                 ex.getMessage(),
                 ex
             );
             throw ex;
         }
+    }
+
+    private FacebookApiException buildFacebookApiException(String method,
+                                                           String sanitizedPath,
+                                                           WebClientResponseException ex,
+                                                           FacebookApiException.ErrorDetails errorDetails) {
+        String message = buildExceptionMessage(method, sanitizedPath, ex, errorDetails);
+        return new FacebookApiException(message, ex.getRawStatusCode(), sanitizedPath, errorDetails, ex);
+    }
+
+    private String buildExceptionMessage(String method,
+                                         String path,
+                                         WebClientResponseException ex,
+                                         FacebookApiException.ErrorDetails errorDetails) {
+        StringBuilder builder = new StringBuilder("Facebook API ")
+            .append(method)
+            .append(" request failed with status ")
+            .append(ex.getRawStatusCode());
+
+        if (ex.getStatusText() != null && !ex.getStatusText().isBlank()) {
+            builder.append(" (").append(ex.getStatusText()).append(')');
+        }
+
+        if (errorDetails != null) {
+            String summary = errorDetails.summary();
+            if (summary != null && !summary.isBlank()) {
+                builder.append(": ").append(summary);
+            }
+            if (errorDetails.code() != null) {
+                builder.append(" [code=").append(errorDetails.code());
+                if (errorDetails.errorSubcode() != null) {
+                    builder.append(", subcode=").append(errorDetails.errorSubcode());
+                }
+                builder.append(']');
+            }
+        }
+
+        builder.append(" - path=").append(path);
+        return builder.toString();
     }
 
     private Map<String, Object> sanitizeBody(Map<String, Object> body) {

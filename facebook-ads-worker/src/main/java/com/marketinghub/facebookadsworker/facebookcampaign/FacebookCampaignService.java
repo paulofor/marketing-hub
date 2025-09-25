@@ -1,6 +1,7 @@
 package com.marketinghub.facebookadsworker.facebookcampaign;
 
 import com.marketinghub.facebookadsworker.FacebookAdsService;
+import com.marketinghub.facebookadsworker.FacebookApiException;
 import com.marketinghub.facebookadsworker.util.UrlUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,7 +95,44 @@ public class FacebookCampaignService {
             return;
         }
 
-        experiments.forEach(this::processExperiment);
+        for (Experiment experiment : experiments) {
+            try {
+                processExperiment(experiment);
+            } catch (FacebookApiException ex) {
+                if (ex.isPermissionsError()) {
+                    String reason = extractReadableReason(ex);
+                    LOGGER.error(
+                        "Facebook rejeitou a criação da campanha do experimento {} (id={}): {}. " +
+                            "Revise o token configurado e confirme se a conta de anúncios {} possui permissão 'ads_management' habilitada.",
+                        experiment.name(),
+                        experiment.id(),
+                        reason,
+                        adAccountId,
+                        ex
+                    );
+                    break;
+                }
+                LOGGER.error(
+                    "Falha ao criar campanha do experimento {} (id={}): {}",
+                    experiment.name(),
+                    experiment.id(),
+                    ex.getMessage(),
+                    ex
+                );
+                throw ex;
+            }
+        }
+    }
+
+    private String extractReadableReason(FacebookApiException exception) {
+        FacebookApiException.ErrorDetails details = exception.getErrorDetails();
+        if (details != null) {
+            String summary = details.summary();
+            if (summary != null && !summary.isBlank()) {
+                return summary;
+            }
+        }
+        return exception.getMessage();
     }
 
     private void processExperiment(Experiment exp) {

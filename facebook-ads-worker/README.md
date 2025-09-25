@@ -79,6 +79,12 @@ de [códigos de erro da Marketing API](https://developers.facebook.com/docs/mark
 para confirmar os requisitos de permissão. Após ajustar as permissões,
 reinicie o worker para que o novo token seja utilizado.
 
+O worker captura automaticamente esse erro, interrompe o processamento dos
+demais experimentos na execução atual e registra no log uma mensagem com o
+`error_user_msg` retornado pela API. Isso evita múltiplas tentativas na mesma
+execução e fornece contexto adicional para o time operacional verificar as
+credenciais.
+
 ## Build
 ```
 mvn -s settings.xml package

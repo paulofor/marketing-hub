@@ -1,6 +1,7 @@
 package com.marketinghub.facebookadsworker.facebookcampaign;
 
 import com.marketinghub.facebookadsworker.FacebookAdsService;
+import com.marketinghub.facebookadsworker.FacebookPermissionException;
 import com.marketinghub.facebookadsworker.util.UrlUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,37 +99,48 @@ public class FacebookCampaignService {
     }
 
     private void processExperiment(Experiment exp) {
-        String campaignId = facebookAdsService.createCampaign(adAccountId, exp.name());
-        String adSetId = facebookAdsService.createAdSet(adAccountId, new FacebookAdsService.AdSetRequest(
-            exp.name() + " - Ad Set",
-            campaignId,
-            adSetDailyBudget,
-            adSetBillingEvent,
-            adSetOptimizationGoal,
-            adSetDestinationType,
-            pageId,
-            adSetTargetCountry
-        ));
-        String creativeId = facebookAdsService.createAdCreative(adAccountId, new FacebookAdsService.AdCreativeRequest(
-            exp.name() + " - Creative",
-            pageId,
-            instagramActorId,
-            websiteUrl,
-            formatCreativeMessage(exp.name()),
-            callToActionType
-        ));
-        facebookAdsService.createAd(adAccountId, new FacebookAdsService.AdRequest(
-            exp.name() + " - Ad",
-            adSetId,
-            creativeId
-        ));
-        CreateCampaignRequest req = new CreateCampaignRequest(campaignId, adAccountId, exp.name(), "OUTCOME_TRAFFIC", "CAMPAIGN");
-        backendClient.post()
-            .uri(UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns"))
-            .bodyValue(req)
-            .retrieve()
-            .toBodilessEntity()
-            .block();
+        try {
+            String campaignId = facebookAdsService.createCampaign(adAccountId, exp.name());
+            String adSetId = facebookAdsService.createAdSet(adAccountId, new FacebookAdsService.AdSetRequest(
+                exp.name() + " - Ad Set",
+                campaignId,
+                adSetDailyBudget,
+                adSetBillingEvent,
+                adSetOptimizationGoal,
+                adSetDestinationType,
+                pageId,
+                adSetTargetCountry
+            ));
+            String creativeId = facebookAdsService.createAdCreative(adAccountId, new FacebookAdsService.AdCreativeRequest(
+                exp.name() + " - Creative",
+                pageId,
+                instagramActorId,
+                websiteUrl,
+                formatCreativeMessage(exp.name()),
+                callToActionType
+            ));
+            facebookAdsService.createAd(adAccountId, new FacebookAdsService.AdRequest(
+                exp.name() + " - Ad",
+                adSetId,
+                creativeId
+            ));
+            CreateCampaignRequest req = new CreateCampaignRequest(campaignId, adAccountId, exp.name(), "OUTCOME_TRAFFIC", "CAMPAIGN");
+            backendClient.post()
+                .uri(UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns"))
+                .bodyValue(req)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+        } catch (FacebookPermissionException ex) {
+            LOGGER.warn(
+                "Skipping experiment due to Facebook permission error: id={}, name={}, message={}, details={}",
+                exp.id(),
+                exp.name(),
+                ex.getMessage(),
+                ex.getErrorDetails()
+            );
+            markExperimentAsFailed(exp.id());
+        }
     }
 
     private String formatCreativeMessage(String experimentName) {
@@ -143,4 +155,18 @@ public class FacebookCampaignService {
 
     public record Experiment(long id, String name) {}
     public record CreateCampaignRequest(String id, String adAccountId, String name, String objective, String budgetMode) {}
+
+    private void markExperimentAsFailed(long experimentId) {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/status?status=FAILED");
+        try {
+            backendClient.patch()
+                .uri(url)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+            LOGGER.info("Marked experiment {} as FAILED after Facebook permission error", experimentId);
+        } catch (Exception ex) {
+            LOGGER.warn("Could not mark experiment {} as FAILED after Facebook permission error: {}", experimentId, ex.getMessage(), ex);
+        }
+    }
 }

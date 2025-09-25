@@ -123,4 +123,32 @@ class FacebookCampaignServiceTest {
         assertEquals(1, backend.getRequestCount());
         assertEquals(0, facebook.getRequestCount());
     }
+
+    @Test
+    void marksExperimentAsFailedWhenFacebookReturnsPermissionError() throws Exception {
+        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\"}]")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse()
+            .setResponseCode(400)
+            .setBody("{\"error\":{\"message\":\"Permissions error\",\"type\":\"OAuthException\",\"code\":200,\"error_subcode\":1815066,\"error_user_msg\":\"O usuário não tem permissão para criar anúncios com esta conta de anúncios\"}}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        RecordedRequest get = backend.takeRequest();
+        assertEquals("GET", get.getMethod());
+        assertEquals("/api/facebook-campaigns/experiments-ready", get.getPath());
+
+        RecordedRequest postCampaign = facebook.takeRequest();
+        assertEquals("POST", postCampaign.getMethod());
+        assertEquals("/v23.0/act_1/campaigns", postCampaign.getPath());
+        assertEquals(1, facebook.getRequestCount());
+
+        RecordedRequest patch = backend.takeRequest();
+        assertEquals("PATCH", patch.getMethod());
+        assertEquals("/api/experiments/1/status?status=FAILED", patch.getPath());
+        assertEquals(2, backend.getRequestCount());
+    }
 }

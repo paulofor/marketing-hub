@@ -77,8 +77,12 @@ Ao criar campanhas o Facebook pode devolver `400 Bad Request` com
 token utilizado não possui o escopo `ads_management` aprovado ou que a conta
 de anúncios não tem acesso padrão liberado para produção. Consulte a tabela
 de [códigos de erro da Marketing API](https://developers.facebook.com/docs/marketing-api/error-reference/#ErrorCodes)
-para confirmar os requisitos de permissão. Após ajustar as permissões,
-reinicie o worker para que o novo token seja utilizado.
+para confirmar os requisitos de permissão. Quando esse cenário ocorre, o
+worker marca automaticamente o experimento como `FAILED` via
+`PATCH /api/experiments/{id}/status?status=FAILED` para evitar novas tentativas
+sem intervenção humana. Após ajustar as permissões, atualize manualmente o
+status do experimento para que ele volte a ser elegível e reinicie o worker
+para que o novo token seja utilizado.
 
 ## Build
 ```

@@ -6,6 +6,7 @@
 - Em produção utilizamos **MySql 5**.
 - Tipos de dados permitidos (MySql 5): `INT`, `BIGINT`, `DECIMAL`, `DOUBLE`, `FLOAT`, `CHAR`, `VARCHAR`, `TEXT`, `LONGTEXT`, `BINARY(16)` para `UUID`, `DATE`, `DATETIME`, `TIMESTAMP`, `BOOLEAN`.
 - Utilize o `facebook-ads-worker` para todas as chamadas à API do Facebook.
+- Consulte sempre a documentação oficial da Graph API ao trabalhar neste módulo: https://developers.facebook.com/docs/graph-api e https://developers.facebook.com/docs/graph-api/reference.
 - Não mantenha segredos no repositório; use variáveis de ambiente ou GitHub Secrets.
 - Endpoints do backend devem ser acessados com o prefixo configurado em `backend.api-prefix` (default `/api`).
 

@@ -1,6 +1,8 @@
 package com.marketinghub.facebookadsworker;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,14 +24,17 @@ public class FacebookAdsService {
     private final WebClient webClient;
     private final String accessToken;
     private final String apiVersion;
+    private final ObjectMapper objectMapper;
 
     public FacebookAdsService(WebClient.Builder builder,
                               @Value("${facebook.graph-api.base-url:https://graph.facebook.com}") String baseUrl,
                               @Value("${facebook.access-token}") String accessToken,
-                              @Value("${facebook.graph-api.version:v23.0}") String apiVersion) {
+                              @Value("${facebook.graph-api.version:v23.0}") String apiVersion,
+                              ObjectMapper objectMapper) {
         this.webClient = builder.baseUrl(baseUrl).build();
         this.accessToken = accessToken;
         this.apiVersion = normalizeVersion(apiVersion);
+        this.objectMapper = objectMapper;
         LOGGER.info("Configured Facebook Graph API version: {}", this.apiVersion);
     }
 
@@ -136,11 +141,13 @@ public class FacebookAdsService {
             LOGGER.info("Received response from Facebook API: path={}, response={}", maskedPath, response);
             return response;
         } catch (WebClientResponseException ex) {
+            String responseBody = ex.getResponseBodyAsString();
             LOGGER.error(
-                "Facebook API GET request failed: path={}, status={}, responseBody={}",
+                "Facebook API GET request failed: path={}, status={}, responseBody={}, errorDetails={}",
                 maskedPath,
                 ex.getRawStatusCode(),
-                maskAccessToken(ex.getResponseBodyAsString()),
+                maskAccessToken(responseBody),
+                extractErrorDetails(responseBody),
                 ex
             );
             throw ex;
@@ -163,11 +170,13 @@ public class FacebookAdsService {
             LOGGER.info("Received response from Facebook API: path={}, response={}", maskAccessTokenInPath(path), response);
             return response;
         } catch (WebClientResponseException ex) {
+            String responseBody = ex.getResponseBodyAsString();
             LOGGER.error(
-                "Facebook API POST request failed: path={}, status={}, responseBody={}, headers={}",
+                "Facebook API POST request failed: path={}, status={}, responseBody={}, errorDetails={}, headers={}",
                 maskAccessTokenInPath(path),
                 ex.getRawStatusCode(),
-                maskAccessToken(ex.getResponseBodyAsString()),
+                maskAccessToken(responseBody),
+                extractErrorDetails(responseBody),
                 ex.getHeaders(),
                 ex
             );
@@ -225,6 +234,44 @@ public class FacebookAdsService {
             return path;
         }
         return path.replace(accessToken, maskAccessToken(accessToken));
+    }
+
+    private ObjectNode extractErrorDetails(String responseBody) {
+        if (responseBody == null || responseBody.isBlank()) {
+            return null;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(responseBody);
+            JsonNode errorNode = root.path("error");
+            if (errorNode.isMissingNode() || errorNode.isNull()) {
+                return null;
+            }
+
+            ObjectNode details = objectMapper.createObjectNode();
+            copyIfPresent(errorNode, details, "type");
+            copyIfPresent(errorNode, details, "code");
+            copyIfPresent(errorNode, details, "error_subcode");
+            copyIfPresent(errorNode, details, "message");
+            copyIfPresent(errorNode, details, "error_user_title");
+            copyIfPresent(errorNode, details, "error_user_msg");
+            copyIfPresent(errorNode, details, "fbtrace_id");
+
+            if (errorNode.has("error_data")) {
+                details.set("error_data", errorNode.get("error_data"));
+            }
+
+            return details;
+        } catch (Exception parsingError) {
+            LOGGER.warn("Could not parse Facebook error payload: message={}", parsingError.getMessage(), parsingError);
+            return null;
+        }
+    }
+
+    private void copyIfPresent(JsonNode source, ObjectNode target, String fieldName) {
+        JsonNode value = source.get(fieldName);
+        if (value != null && !value.isNull()) {
+            target.set(fieldName, value);
+        }
     }
 
     private String buildVersionedPath(String resourcePath) {

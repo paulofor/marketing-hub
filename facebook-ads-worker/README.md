@@ -84,6 +84,18 @@ sem intervenção humana. Após ajustar as permissões, atualize manualmente o
 status do experimento para que ele volte a ser elegível e reinicie o worker
 para que o novo token seja utilizado.
 
+### Erro `(#100) Invalid parameter` ao criar o criativo
+
+O endpoint [`POST /{ad_account_id}/adcreatives`](https://developers.facebook.com/docs/marketing-api/reference/ad-creative#Creating)
+exige um `page_id` válido no `object_story_spec` quando o criativo representa
+uma Página do Facebook. Se a propriedade `facebook.page-id` estiver vazia, a
+API responde com `error_subcode = 1443121` e a mensagem "A Página do Facebook
+está ausente". Desde a versão atual o worker interrompe o fluxo assim que a
+Graph API devolve qualquer status de erro, evitando que IDs vazios sejam
+propagados para chamadas subsequentes. Configure o identificador da Página
+antes de reiniciar o serviço para que a criação dos criativos seja bem
+sucedida.
+
 ## Build
 ```
 mvn -s settings.xml package

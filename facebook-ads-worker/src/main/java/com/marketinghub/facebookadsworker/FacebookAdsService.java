@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -139,12 +140,15 @@ public class FacebookAdsService {
             FacebookApiResponse apiResponse = webClient
                 .get()
                 .uri(path)
-                .exchangeToMono(response ->
-                    response
+                .exchangeToMono(response -> {
+                    if (response.statusCode().isError()) {
+                        return response.createException().flatMap(Mono::error);
+                    }
+                    return response
                         .bodyToMono(JsonNode.class)
                         .defaultIfEmpty(objectMapper.nullNode())
-                        .map(body -> new FacebookApiResponse(response.statusCode(), response.headers().asHttpHeaders(), body))
-                )
+                        .map(body -> new FacebookApiResponse(response.statusCode(), response.headers().asHttpHeaders(), body));
+                })
                 .block();
             FacebookApiResponse nonNullResponse =
                 apiResponse != null ? apiResponse : new FacebookApiResponse(null, HttpHeaders.EMPTY, objectMapper.nullNode());
@@ -176,12 +180,15 @@ public class FacebookAdsService {
                 .post()
                 .uri(path)
                 .bodyValue(body)
-                .exchangeToMono(response ->
-                    response
+                .exchangeToMono(response -> {
+                    if (response.statusCode().isError()) {
+                        return response.createException().flatMap(Mono::error);
+                    }
+                    return response
                         .bodyToMono(JsonNode.class)
                         .defaultIfEmpty(objectMapper.nullNode())
-                        .map(bodyNode -> new FacebookApiResponse(response.statusCode(), response.headers().asHttpHeaders(), bodyNode))
-                )
+                        .map(bodyNode -> new FacebookApiResponse(response.statusCode(), response.headers().asHttpHeaders(), bodyNode));
+                })
                 .block();
             FacebookApiResponse nonNullResponse =
                 apiResponse != null ? apiResponse : new FacebookApiResponse(null, HttpHeaders.EMPTY, objectMapper.nullNode());

@@ -8,7 +8,9 @@ projeto `backend`, evitando duplicação de entidades.
 O fluxo automatizado cria toda a hierarquia necessária para veiculação:
 
 1. **Campanha** (`POST /campaigns`) com objetivo `OUTCOME_TRAFFIC`, status
-   inicial `PAUSED` e `special_ad_categories = NONE`.
+   inicial `PAUSED` e `special_ad_categories = []`, conforme documentado na
+   [Marketing API](https://developers.facebook.com/docs/marketing-api/reference/ad-campaign-group#Creating) para contas que
+   não se enquadram em categorias especiais.
 2. **Conjunto de anúncios** (`POST /adsets`) atrelado à campanha, também em
    `PAUSED`, com segmentação geográfica simples e destino `WEBSITE`.
 3. **Criativo** (`POST /adcreatives`) baseado em um `object_story_spec`

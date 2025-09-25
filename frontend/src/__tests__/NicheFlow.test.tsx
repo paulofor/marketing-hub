@@ -95,8 +95,8 @@ describe("niche navigation", () => {
     expect(await screen.findByText("Exp 1")).toBeTruthy();
     const bc = screen.getByRole("navigation", { name: /breadcrumb/i });
     expect(bc).toBeTruthy();
-    expect(within(bc).getByText("Nichos")).toBeTruthy();
     expect(within(bc).getByText("Fitness")).toBeTruthy();
     expect(await within(bc).findByText("Hip 1")).toBeTruthy();
+    expect(within(bc).queryByText("Nichos")).toBeNull();
   });
 });

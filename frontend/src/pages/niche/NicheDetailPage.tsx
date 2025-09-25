@@ -32,10 +32,7 @@ export default function NicheDetailPage() {
   const { register, handleSubmit, reset } = useForm<{ quantity: number }>({
     defaultValues: { quantity: 1 },
   });
-  useBreadcrumbs([
-    { label: "Nichos", to: "/niches", icon: nicheIcon },
-    { label: data?.name || "...", icon: nicheIcon },
-  ]);
+  useBreadcrumbs([{ label: data?.name || "...", icon: nicheIcon }]);
 
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;

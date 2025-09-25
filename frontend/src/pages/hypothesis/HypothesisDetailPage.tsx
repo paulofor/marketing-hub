@@ -27,7 +27,6 @@ export default function HypothesisDetailPage() {
     defaultValues: { quantity: 1 },
   });
   useBreadcrumbs([
-    { label: "Nichos", to: "/niches", icon: nicheIcon },
     {
       label: niche?.name || "...",
       to: `/niches/${nicheId}`,

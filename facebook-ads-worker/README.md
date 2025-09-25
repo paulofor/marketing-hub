@@ -28,6 +28,11 @@ que o agendamento continue saudável. Após criar campanha, conjunto, criativo e
 anúncio, o worker persiste o identificador da campanha via
 `POST /api/facebook-campaigns`.
 
+Todas as chamadas à Graph API são logadas detalhadamente para facilitar
+investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs
+registram caminho da requisição, payload enviado (com `access_token`
+anonimizado) e o corpo da resposta retornada pelo Facebook.
+
 Os acessos são configurados pelas propriedades:
 
 - `backend.base-url` (default: `http://191.252.92.222:8000`)

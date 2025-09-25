@@ -32,7 +32,14 @@ class FacebookCampaignServiceTest {
         String backendUrl = backend.url("/").toString();
         String facebookUrl = facebook.url("/").toString();
 
-        FacebookAdsService adsService = new FacebookAdsService(WebClient.builder(), facebookUrl, "token", "v23.0");
+        objectMapper = new ObjectMapper();
+        FacebookAdsService adsService = new FacebookAdsService(
+            WebClient.builder(),
+            facebookUrl,
+            "token",
+            "v23.0",
+            objectMapper
+        );
         service = new FacebookCampaignService(
             adsService,
             WebClient.builder(),
@@ -50,7 +57,6 @@ class FacebookCampaignServiceTest {
             "Conheça %s",
             "LEARN_MORE"
         );
-        objectMapper = new ObjectMapper();
     }
 
     @AfterEach

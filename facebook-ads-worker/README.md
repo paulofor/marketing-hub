@@ -14,7 +14,7 @@ que o agendamento continue saudável. O endpoint
 
 Os acessos são configurados pelas propriedades:
 
-- `backend.base-url` (default: `http://localhost:8000`)
+- `backend.base-url` (default: `http://191.252.92.222:8000`)
 - `backend.api-prefix` (default: `/api`)
 
 ## Data Model

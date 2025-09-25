@@ -171,15 +171,19 @@ public class FacebookAdsService {
             return response;
         } catch (WebClientResponseException ex) {
             String responseBody = ex.getResponseBodyAsString();
+            ObjectNode errorDetails = extractErrorDetails(responseBody);
             LOGGER.error(
                 "Facebook API POST request failed: path={}, status={}, responseBody={}, errorDetails={}, headers={}",
                 maskAccessTokenInPath(path),
                 ex.getRawStatusCode(),
                 maskAccessToken(responseBody),
-                extractErrorDetails(responseBody),
+                errorDetails,
                 ex.getHeaders(),
                 ex
             );
+            if (isPermissionError(errorDetails)) {
+                throw new FacebookPermissionException(resolvePermissionMessage(errorDetails), errorDetails, ex);
+            }
             throw ex;
         } catch (WebClientRequestException ex) {
             LOGGER.error(
@@ -272,6 +276,46 @@ public class FacebookAdsService {
         if (value != null && !value.isNull()) {
             target.set(fieldName, value);
         }
+    }
+
+    private boolean isPermissionError(ObjectNode errorDetails) {
+        if (errorDetails == null) {
+            return false;
+        }
+        int code = errorDetails.path("code").asInt();
+        if (code != 200) {
+            return false;
+        }
+
+        int subcode = errorDetails.path("error_subcode").asInt();
+        if (subcode == 1815066) {
+            return true;
+        }
+
+        StringBuilder messageBuilder = new StringBuilder();
+        if (errorDetails.has("message")) {
+            messageBuilder.append(errorDetails.path("message").asText(""));
+        }
+        if (errorDetails.has("error_user_title")) {
+            messageBuilder.append(' ').append(errorDetails.path("error_user_title").asText(""));
+        }
+        if (errorDetails.has("error_user_msg")) {
+            messageBuilder.append(' ').append(errorDetails.path("error_user_msg").asText(""));
+        }
+        return messageBuilder.toString().toLowerCase().contains("permission");
+    }
+
+    private String resolvePermissionMessage(ObjectNode errorDetails) {
+        if (errorDetails == null) {
+            return "Facebook API returned a permissions error";
+        }
+        if (errorDetails.hasNonNull("error_user_msg")) {
+            return errorDetails.get("error_user_msg").asText();
+        }
+        if (errorDetails.hasNonNull("message")) {
+            return errorDetails.get("message").asText();
+        }
+        return "Facebook API returned a permissions error";
     }
 
     private String buildVersionedPath(String resourcePath) {

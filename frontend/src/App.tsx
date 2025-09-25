@@ -49,6 +49,7 @@ import PromptEntityDescriptionPage from "./pages/prompt/PromptEntityDescriptionP
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import FacebookCampaignExperimentsPage from "./pages/facebook/FacebookCampaignExperimentsPage";
+import FacebookExperimentsReadyPage from "./pages/facebook/FacebookExperimentsReadyPage";
 
 export default function App() {
   return (
@@ -106,6 +107,9 @@ export default function App() {
             </Link>
             <Link className="nav-link" to="/facebook-campaigns">
               Experimentos para Campanha
+            </Link>
+            <Link className="nav-link" to="/facebook-campaigns/ready">
+              Experimentos prontos
             </Link>
             <Link className="nav-link" to="/prompt-entities">
               Objetos de Prompt
@@ -232,6 +236,10 @@ export default function App() {
           element={<PromptAttributesPage />}
         />
         <Route path="/facebook-campaigns" element={<FacebookCampaignExperimentsPage />} />
+        <Route
+          path="/facebook-campaigns/ready"
+          element={<FacebookExperimentsReadyPage />}
+        />
         <Route path="*" element={<div>Início</div>} />
       </Routes>
       <ToastContainer position="top-right" />

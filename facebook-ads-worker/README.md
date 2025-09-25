@@ -7,7 +7,9 @@ dados definido no projeto `backend`, evitando duplicação de entidades.
 
 As chamadas ao backend utilizam o prefixo `/api`. Atualmente o worker consome
 `/api/facebook-campaigns/experiments-ready`, tratando respostas `404` como
-"nenhum experimento disponível" para evitar falhas no agendamento. O endpoint
+"nenhum experimento disponível" para evitar falhas no agendamento. Falhas de
+conexão ao recuperar os experimentos são registradas em log e ignoradas para
+que o agendamento continue saudável. O endpoint
 `/api/instagram-creatives/approved` permanece documentado para uso futuro.
 
 Os acessos são configurados pelas propriedades:

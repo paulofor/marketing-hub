@@ -4,6 +4,7 @@ import com.marketinghub.facebookadsworker.FacebookAdsService;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
+import okhttp3.mockwebserver.SocketPolicy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,5 +56,15 @@ class FacebookCampaignServiceTest {
         assertEquals("/v20.0/act_1/campaigns", postFb.getPath());
         RecordedRequest postBackend = backend.takeRequest();
         assertEquals("/api/facebook-campaigns", postBackend.getPath());
+    }
+
+    @Test
+    void ignoresConnectionIssuesFetchingExperiments() {
+        backend.enqueue(new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START));
+
+        service.createCampaignsFromExperiments();
+
+        assertEquals(1, backend.getRequestCount());
+        assertEquals(0, facebook.getRequestCount());
     }
 }

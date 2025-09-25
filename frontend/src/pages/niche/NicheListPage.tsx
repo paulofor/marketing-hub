@@ -8,7 +8,7 @@ import nicheIcon from "../../assets/icons/niche-icon.svg";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 
 export default function NicheListPage() {
-  useBreadcrumbs([{ label: "Nichos", icon: nicheIcon }]);
+  useBreadcrumbs([]);
   const { data, isLoading } = useNiches();
   const niches = Array.isArray(data) ? data : [];
 

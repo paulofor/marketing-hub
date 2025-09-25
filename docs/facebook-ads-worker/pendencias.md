@@ -1,9 +1,9 @@
 # Pendências para campanha no Facebook Ads
 
-O worker já consulta o backend por experimentos aprovados e cria uma campanha no
-Facebook Ads com objetivo `OUTCOME_TRAFFIC`, registrando o resultado no backend.
-Para completar o fluxo de veiculação e governança, ainda faltam os itens abaixo,
-agrupados por tema.
+O worker já consulta o backend por experimentos aprovados, cria a campanha com
+objetivo `OUTCOME_TRAFFIC`, gera o ad set, criativo e anúncio correspondentes na
+Graph API e registra a campanha no backend. Para completar o fluxo de veiculação
+e governança, ainda faltam os itens abaixo, agrupados por tema.
 
 ## Planejamento e configuração
 
@@ -13,13 +13,15 @@ agrupados por tema.
   de constantes.
 - Suportar janelas de veiculação (datas de início/fim) e status da campanha
   (ex.: programada, ativa, pausada).
+- Alimentar o backend com os identificadores de ad set, criativo e anúncio para
+  manter rastreabilidade completa no modelo de dados.
 
 ## Segmentação, criativos e lances
 
 - Criar conjuntos de anúncios com segmentação derivada de localização,
   interesses, públicos semelhantes e demais filtros definidos no planejamento.
 - Carregar e associar criativos aprovados (media assets, ad creatives e ads) às
-  campanhas geradas.
+  campanhas geradas, substituindo os placeholders atuais.
 - Implementar configuração de posicionamentos, dispositivos e estratégia de
   lance/otimização.
 

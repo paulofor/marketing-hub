@@ -24,17 +24,47 @@ public class FacebookCampaignService {
     private final String backendBaseUrl;
     private final String apiPrefix;
     private final String adAccountId;
+    private final String adSetDailyBudget;
+    private final String adSetBillingEvent;
+    private final String adSetOptimizationGoal;
+    private final String adSetDestinationType;
+    private final String adSetTargetCountry;
+    private final String pageId;
+    private final String instagramActorId;
+    private final String websiteUrl;
+    private final String creativeMessageTemplate;
+    private final String callToActionType;
 
     public FacebookCampaignService(FacebookAdsService facebookAdsService,
                                    WebClient.Builder builder,
                                    @Value("${backend.base-url:http://localhost:8000}") String backendBaseUrl,
                                    @Value("${backend.api-prefix:/api}") String apiPrefix,
-                                   @Value("${facebook.ad-account-id}") String adAccountId) {
+                                   @Value("${facebook.ad-account-id}") String adAccountId,
+                                   @Value("${facebook.ad-set.daily-budget:1000}") String adSetDailyBudget,
+                                   @Value("${facebook.ad-set.billing-event:IMPRESSIONS}") String adSetBillingEvent,
+                                   @Value("${facebook.ad-set.optimization-goal:LINK_CLICKS}") String adSetOptimizationGoal,
+                                   @Value("${facebook.ad-set.destination-type:WEBSITE}") String adSetDestinationType,
+                                   @Value("${facebook.ad-set.target-country:BR}") String adSetTargetCountry,
+                                   @Value("${facebook.page-id}") String pageId,
+                                   @Value("${facebook.instagram-actor-id:}") String instagramActorId,
+                                   @Value("${facebook.website-url}") String websiteUrl,
+                                   @Value("${facebook.creative.message-template:%s}") String creativeMessageTemplate,
+                                   @Value("${facebook.creative.call-to-action-type:LEARN_MORE}") String callToActionType) {
         this.facebookAdsService = facebookAdsService;
         this.backendClient = builder.build();
         this.backendBaseUrl = backendBaseUrl;
         this.apiPrefix = apiPrefix;
         this.adAccountId = adAccountId;
+        this.adSetDailyBudget = adSetDailyBudget;
+        this.adSetBillingEvent = adSetBillingEvent;
+        this.adSetOptimizationGoal = adSetOptimizationGoal;
+        this.adSetDestinationType = adSetDestinationType;
+        this.adSetTargetCountry = adSetTargetCountry;
+        this.pageId = pageId;
+        this.instagramActorId = instagramActorId;
+        this.websiteUrl = websiteUrl;
+        this.creativeMessageTemplate = creativeMessageTemplate;
+        this.callToActionType = callToActionType;
     }
 
     public void createCampaignsFromExperiments() {
@@ -69,6 +99,29 @@ public class FacebookCampaignService {
 
     private void processExperiment(Experiment exp) {
         String campaignId = facebookAdsService.createCampaign(adAccountId, exp.name());
+        String adSetId = facebookAdsService.createAdSet(adAccountId, new FacebookAdsService.AdSetRequest(
+            exp.name() + " - Ad Set",
+            campaignId,
+            adSetDailyBudget,
+            adSetBillingEvent,
+            adSetOptimizationGoal,
+            adSetDestinationType,
+            pageId,
+            adSetTargetCountry
+        ));
+        String creativeId = facebookAdsService.createAdCreative(adAccountId, new FacebookAdsService.AdCreativeRequest(
+            exp.name() + " - Creative",
+            pageId,
+            instagramActorId,
+            websiteUrl,
+            formatCreativeMessage(exp.name()),
+            callToActionType
+        ));
+        facebookAdsService.createAd(adAccountId, new FacebookAdsService.AdRequest(
+            exp.name() + " - Ad",
+            adSetId,
+            creativeId
+        ));
         CreateCampaignRequest req = new CreateCampaignRequest(campaignId, adAccountId, exp.name(), "OUTCOME_TRAFFIC", "CAMPAIGN");
         backendClient.post()
             .uri(UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns"))
@@ -76,6 +129,16 @@ public class FacebookCampaignService {
             .retrieve()
             .toBodilessEntity()
             .block();
+    }
+
+    private String formatCreativeMessage(String experimentName) {
+        if (creativeMessageTemplate == null || creativeMessageTemplate.isBlank()) {
+            return experimentName;
+        }
+        if (creativeMessageTemplate.contains("%s")) {
+            return String.format(creativeMessageTemplate, experimentName);
+        }
+        return creativeMessageTemplate;
     }
 
     public record Experiment(long id, String name) {}

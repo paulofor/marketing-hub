@@ -17,15 +17,58 @@ classDiagram
         -backendBaseUrl : String
         -apiPrefix : String
         -adAccountId : String
+        -adSetDailyBudget : String
+        -adSetBillingEvent : String
+        -adSetOptimizationGoal : String
+        -adSetDestinationType : String
+        -adSetTargetCountry : String
+        -pageId : String
+        -instagramActorId : String
+        -websiteUrl : String
+        -creativeMessageTemplate : String
+        -callToActionType : String
         +createCampaignsFromExperiments()
         -processExperiment(exp)
+        -formatCreativeMessage(name) String
     }
 
     class FacebookAdsService {
         -webClient : WebClient
         -accessToken : String
         +createCampaign(adAccountId, name) String
+        +createAdSet(adAccountId, request) String
+        +createAdCreative(adAccountId, request) String
+        +createAd(adAccountId, request) String
         +getCampaignMetrics(campaignId) JsonNode
+    }
+
+    class AdSetRequest {
+        <<record>>
+        +name : String
+        +campaignId : String
+        +dailyBudget : String
+        +billingEvent : String
+        +optimizationGoal : String
+        +destinationType : String
+        +pageId : String
+        +targetCountry : String
+    }
+
+    class AdCreativeRequest {
+        <<record>>
+        +name : String
+        +pageId : String
+        +instagramActorId : String
+        +websiteUrl : String
+        +message : String
+        +callToActionType : String
+    }
+
+    class AdRequest {
+        <<record>>
+        +name : String
+        +adSetId : String
+        +creativeId : String
     }
 
     class CreateCampaignRequest {
@@ -84,7 +127,10 @@ classDiagram
     }
 
     FacebookCampaignScheduler --> FacebookCampaignService : dispara ciclo
-    FacebookCampaignService --> FacebookAdsService : cria campanhas
+    FacebookCampaignService --> FacebookAdsService : cria campanha/ad set/ad
+    FacebookAdsService --> AdSetRequest
+    FacebookAdsService --> AdCreativeRequest
+    FacebookAdsService --> AdRequest
     FacebookCampaignService --> CreateCampaignRequest : monta payload do backend
     CreateCampaignRequest ..> FacebookAdsCampaign : persiste entidade
     FacebookAdsCampaign --> FacebookAdStatus
@@ -96,9 +142,10 @@ classDiagram
 * `FacebookCampaignScheduler` agenda a execução periódica do worker utilizando
   `@Scheduled`.
 * `FacebookCampaignService` consulta o backend por experimentos prontos, cria a
-  campanha na Graph API e registra o resultado de volta no backend.
-* `FacebookAdsService` encapsula as chamadas à Graph API (criação de campanhas e
-  consulta de métricas).
+  campanha, conjunto, criativo e anúncio na Graph API e registra o resultado da
+  campanha no backend.
+* `FacebookAdsService` encapsula as chamadas à Graph API (criação da hierarquia
+  de mídia e consulta de métricas).
 * `CreateCampaignRequest` representa o payload enviado ao backend contendo os
   campos mínimos para materializar a entidade de campanha.
 * `FacebookAdsCampaign` é a entidade JPA do backend responsável por armazenar a

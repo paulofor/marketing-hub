@@ -24,8 +24,8 @@ class FacebookAdsServiceTest {
         server = new MockWebServer();
         server.start();
         String baseUrl = server.url("/").toString();
-        service = new FacebookAdsService(WebClient.builder(), baseUrl, "token", "v23.0");
         objectMapper = new ObjectMapper();
+        service = new FacebookAdsService(WebClient.builder(), baseUrl, "token", "v23.0", objectMapper);
     }
 
     @AfterEach

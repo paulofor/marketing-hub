@@ -31,7 +31,10 @@ anúncio, o worker persiste o identificador da campanha via
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar
 investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs
 registram caminho da requisição, payload enviado (com `access_token`
-anonimizado) e o corpo da resposta retornada pelo Facebook.
+anonimizado), corpo da resposta retornada pelo Facebook e, quando presente,
+os campos estruturados de erro (`type`, `code`, `error_subcode`,
+`error_user_title`, `error_user_msg`, `fbtrace_id` e `error_data`). Isso
+permite cruzar rapidamente o incidente com a documentação oficial.
 
 Os acessos são configurados pelas propriedades:
 
@@ -65,6 +68,16 @@ Um diagrama de classes simplificado pode ser encontrado em
 Consulte também a documentação oficial da Graph API sempre que precisar
 interagir com a plataforma: https://developers.facebook.com/docs/graph-api e
 https://developers.facebook.com/docs/graph-api/reference.
+
+### Troubleshooting de campanhas com erro `(#200) Permissions error`
+
+Ao criar campanhas o Facebook pode devolver `400 Bad Request` com
+`error.code = 200` e mensagem `Permissions error`. Esse retorno indica que o
+token utilizado não possui o escopo `ads_management` aprovado ou que a conta
+de anúncios não tem acesso padrão liberado para produção. Consulte a tabela
+de [códigos de erro da Marketing API](https://developers.facebook.com/docs/marketing-api/error-reference/#ErrorCodes)
+para confirmar os requisitos de permissão. Após ajustar as permissões,
+reinicie o worker para que o novo token seja utilizado.
 
 ## Build
 ```

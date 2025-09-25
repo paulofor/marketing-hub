@@ -31,8 +31,9 @@ anúncio, o worker persiste o identificador da campanha via
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar
 investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs
 registram caminho da requisição, payload enviado (com `access_token`
-anonimizado), corpo da resposta retornada pelo Facebook e, quando presente,
-os campos estruturados de erro (`type`, `code`, `error_subcode`,
+anonimizado), status HTTP retornado, cabeçalhos de resposta (também com
+valores sensíveis mascarados), corpo devolvido pelo Facebook e, quando
+presente, os campos estruturados de erro (`type`, `code`, `error_subcode`,
 `error_user_title`, `error_user_msg`, `fbtrace_id` e `error_data`). Isso
 permite cruzar rapidamente o incidente com a documentação oficial.
 

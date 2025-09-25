@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
@@ -16,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 public class FacebookAdsService {
@@ -133,13 +136,20 @@ public class FacebookAdsService {
         String maskedPath = maskAccessTokenInPath(path);
         LOGGER.info("Sending GET request to Facebook API: path={}", maskedPath);
         try {
-            JsonNode response = webClient.get()
+            FacebookApiResponse apiResponse = webClient
+                .get()
                 .uri(path)
-                .retrieve()
-                .bodyToMono(JsonNode.class)
+                .exchangeToMono(response ->
+                    response
+                        .bodyToMono(JsonNode.class)
+                        .defaultIfEmpty(objectMapper.nullNode())
+                        .map(body -> new FacebookApiResponse(response.statusCode(), response.headers().asHttpHeaders(), body))
+                )
                 .block();
-            LOGGER.info("Received response from Facebook API: path={}, response={}", maskedPath, response);
-            return response;
+            FacebookApiResponse nonNullResponse =
+                apiResponse != null ? apiResponse : new FacebookApiResponse(null, HttpHeaders.EMPTY, objectMapper.nullNode());
+            logSuccessfulResponse("GET", maskedPath, nonNullResponse);
+            return nonNullResponse.body();
         } catch (WebClientResponseException ex) {
             String responseBody = ex.getResponseBodyAsString();
             LOGGER.error(
@@ -159,21 +169,29 @@ public class FacebookAdsService {
 
     private JsonNode executePost(String path, Map<String, Object> body) {
         Map<String, Object> sanitizedBody = sanitizeBody(body);
-        LOGGER.info("Sending POST request to Facebook API: path={}, body={}", maskAccessTokenInPath(path), sanitizedBody);
+        String maskedPath = maskAccessTokenInPath(path);
+        LOGGER.info("Sending POST request to Facebook API: path={}, body={}", maskedPath, sanitizedBody);
         try {
-            JsonNode response = webClient.post()
+            FacebookApiResponse apiResponse = webClient
+                .post()
                 .uri(path)
                 .bodyValue(body)
-                .retrieve()
-                .bodyToMono(JsonNode.class)
+                .exchangeToMono(response ->
+                    response
+                        .bodyToMono(JsonNode.class)
+                        .defaultIfEmpty(objectMapper.nullNode())
+                        .map(bodyNode -> new FacebookApiResponse(response.statusCode(), response.headers().asHttpHeaders(), bodyNode))
+                )
                 .block();
-            LOGGER.info("Received response from Facebook API: path={}, response={}", maskAccessTokenInPath(path), response);
-            return response;
+            FacebookApiResponse nonNullResponse =
+                apiResponse != null ? apiResponse : new FacebookApiResponse(null, HttpHeaders.EMPTY, objectMapper.nullNode());
+            logSuccessfulResponse("POST", maskedPath, nonNullResponse);
+            return nonNullResponse.body();
         } catch (WebClientResponseException ex) {
             String responseBody = ex.getResponseBodyAsString();
             LOGGER.error(
                 "Facebook API POST request failed: path={}, status={}, responseBody={}, errorDetails={}, headers={}",
-                maskAccessTokenInPath(path),
+                maskedPath,
                 ex.getRawStatusCode(),
                 maskAccessToken(responseBody),
                 extractErrorDetails(responseBody),
@@ -184,12 +202,46 @@ public class FacebookAdsService {
         } catch (WebClientRequestException ex) {
             LOGGER.error(
                 "Facebook API POST request could not be completed: path={}, message={}",
-                maskAccessTokenInPath(path),
+                maskedPath,
                 ex.getMessage(),
                 ex
             );
             throw ex;
         }
+    }
+
+    private void logSuccessfulResponse(String method, String maskedPath, FacebookApiResponse response) {
+        LOGGER.info(
+            "Facebook API response received: method={}, path={}, status={}, headers={}, body={}",
+            method,
+            maskedPath,
+            formatStatus(response.statusCode()),
+            sanitizeHeaders(response.headers()),
+            response.body()
+        );
+    }
+
+    private String formatStatus(HttpStatusCode statusCode) {
+        if (statusCode == null) {
+            return "unknown";
+        }
+        return statusCode.value() + " " + statusCode;
+    }
+
+    private Map<String, List<String>> sanitizeHeaders(HttpHeaders headers) {
+        if (headers == null || headers.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, List<String>> sanitized = new HashMap<>();
+        headers.forEach((key, values) ->
+            sanitized.put(
+                key,
+                values.stream()
+                    .map(this::maskAccessToken)
+                    .collect(Collectors.toList())
+            )
+        );
+        return sanitized;
     }
 
     private Map<String, Object> sanitizeBody(Map<String, Object> body) {
@@ -315,4 +367,6 @@ public class FacebookAdsService {
         String adSetId,
         String creativeId
     ) {}
+
+    private record FacebookApiResponse(HttpStatusCode statusCode, HttpHeaders headers, JsonNode body) {}
 }

@@ -46,6 +46,7 @@ Os acessos são configurados pelas propriedades:
 - `facebook.page-id` (sem default – obrigatório)
 - `facebook.instagram-actor-id` (opcional)
 - `facebook.website-url` (sem default – obrigatório)
+- `facebook.graph-api.version` (default: `v23.0` – utilizado para montar os caminhos da Graph API)
 - `facebook.creative.message-template` (default: `%s` – utiliza o nome do
   experimento quando contém `%s`)
 - `facebook.creative.call-to-action-type` (default: `LEARN_MORE`)

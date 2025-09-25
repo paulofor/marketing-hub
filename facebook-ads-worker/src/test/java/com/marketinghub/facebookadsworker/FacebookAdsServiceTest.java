@@ -24,7 +24,7 @@ class FacebookAdsServiceTest {
         server = new MockWebServer();
         server.start();
         String baseUrl = server.url("/").toString();
-        service = new FacebookAdsService(WebClient.builder(), baseUrl, "token");
+        service = new FacebookAdsService(WebClient.builder(), baseUrl, "token", "v23.0");
         objectMapper = new ObjectMapper();
     }
 
@@ -39,7 +39,7 @@ class FacebookAdsServiceTest {
             .addHeader("Content-Type", "application/json"));
         String id = service.createInstagramCampaign("1", "Camp");
         RecordedRequest request = server.takeRequest();
-        assertEquals("/v20.0/act_1/campaigns", request.getPath());
+        assertEquals("/v23.0/act_1/campaigns", request.getPath());
         JsonNode body = objectMapper.readTree(request.getBody().inputStream());
         assertEquals("Camp", body.get("name").asText());
         assertEquals("OUTCOME_TRAFFIC", body.get("objective").asText());
@@ -64,7 +64,7 @@ class FacebookAdsServiceTest {
         );
         String id = service.createAdSet("1", request);
         RecordedRequest recorded = server.takeRequest();
-        assertEquals("/v20.0/act_1/adsets", recorded.getPath());
+        assertEquals("/v23.0/act_1/adsets", recorded.getPath());
         JsonNode body = objectMapper.readTree(recorded.getBody().inputStream());
         assertEquals("Camp - Ad Set", body.get("name").asText());
         assertEquals("123", body.get("campaign_id").asText());
@@ -92,7 +92,7 @@ class FacebookAdsServiceTest {
         );
         String id = service.createAdCreative("1", request);
         RecordedRequest recorded = server.takeRequest();
-        assertEquals("/v20.0/act_1/adcreatives", recorded.getPath());
+        assertEquals("/v23.0/act_1/adcreatives", recorded.getPath());
         JsonNode body = objectMapper.readTree(recorded.getBody().inputStream());
         JsonNode storySpec = body.get("object_story_spec");
         assertEquals("42", storySpec.get("page_id").asText());
@@ -116,7 +116,7 @@ class FacebookAdsServiceTest {
         );
         String id = service.createAd("1", request);
         RecordedRequest recorded = server.takeRequest();
-        assertEquals("/v20.0/act_1/ads", recorded.getPath());
+        assertEquals("/v23.0/act_1/ads", recorded.getPath());
         JsonNode body = objectMapper.readTree(recorded.getBody().inputStream());
         assertEquals("Camp - Ad", body.get("name").asText());
         assertEquals("adset", body.get("adset_id").asText());
@@ -131,7 +131,7 @@ class FacebookAdsServiceTest {
             .addHeader("Content-Type", "application/json"));
         JsonNode node = service.getCampaignMetrics("77");
         RecordedRequest request = server.takeRequest();
-        assertEquals("/v20.0/77/insights?access_token=token", request.getPath());
+        assertEquals("/v23.0/77/insights?access_token=token", request.getPath());
         assertEquals("10", node.get("data").get(0).path("impressions").asText());
     }
 }

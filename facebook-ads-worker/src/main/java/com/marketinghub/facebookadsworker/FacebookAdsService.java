@@ -21,16 +21,20 @@ public class FacebookAdsService {
 
     private final WebClient webClient;
     private final String accessToken;
+    private final String apiVersion;
 
     public FacebookAdsService(WebClient.Builder builder,
                               @Value("${facebook.graph-api.base-url:https://graph.facebook.com}") String baseUrl,
-                              @Value("${facebook.access-token}") String accessToken) {
+                              @Value("${facebook.access-token}") String accessToken,
+                              @Value("${facebook.graph-api.version:v23.0}") String apiVersion) {
         this.webClient = builder.baseUrl(baseUrl).build();
         this.accessToken = accessToken;
+        this.apiVersion = normalizeVersion(apiVersion);
+        LOGGER.info("Configured Facebook Graph API version: {}", this.apiVersion);
     }
 
     public String createInstagramCampaign(String adAccountId, String name) {
-        String path = "/v20.0/act_" + adAccountId + "/campaigns";
+        String path = buildVersionedPath("/act_" + adAccountId + "/campaigns");
         Map<String, Object> body = Map.of(
             "name", name,
             "objective", "OUTCOME_TRAFFIC",
@@ -68,7 +72,7 @@ public class FacebookAdsService {
         }
         body.put("access_token", accessToken);
 
-        String path = "/v20.0/act_" + adAccountId + "/adsets";
+        String path = buildVersionedPath("/act_" + adAccountId + "/adsets");
 
         JsonNode response = executePost(path, body);
         return response.path("id").asText();
@@ -97,7 +101,7 @@ public class FacebookAdsService {
         body.put("object_story_spec", objectStorySpec);
         body.put("access_token", accessToken);
 
-        String path = "/v20.0/act_" + adAccountId + "/adcreatives";
+        String path = buildVersionedPath("/act_" + adAccountId + "/adcreatives");
 
         JsonNode response = executePost(path, body);
         return response.path("id").asText();
@@ -113,14 +117,14 @@ public class FacebookAdsService {
         body.put("status", "PAUSED");
         body.put("access_token", accessToken);
 
-        String path = "/v20.0/act_" + adAccountId + "/ads";
+        String path = buildVersionedPath("/act_" + adAccountId + "/ads");
 
         JsonNode response = executePost(path, body);
         return response.path("id").asText();
     }
 
     public JsonNode getCampaignMetrics(String campaignId) {
-        String path = "/v20.0/" + campaignId + "/insights?access_token=" + accessToken;
+        String path = buildVersionedPath("/" + campaignId + "/insights?access_token=" + accessToken);
         String maskedPath = maskAccessTokenInPath(path);
         LOGGER.info("Sending GET request to Facebook API: path={}", maskedPath);
         try {
@@ -221,6 +225,22 @@ public class FacebookAdsService {
             return path;
         }
         return path.replace(accessToken, maskAccessToken(accessToken));
+    }
+
+    private String buildVersionedPath(String resourcePath) {
+        String normalizedResource = resourcePath.startsWith("/") ? resourcePath : "/" + resourcePath;
+        return "/" + apiVersion + normalizedResource;
+    }
+
+    private String normalizeVersion(String version) {
+        if (version == null || version.isBlank()) {
+            return "v23.0";
+        }
+        String trimmed = version.trim();
+        if (trimmed.startsWith("/")) {
+            trimmed = trimmed.substring(1);
+        }
+        return trimmed.startsWith("v") ? trimmed : "v" + trimmed;
     }
 
     public record AdSetRequest(

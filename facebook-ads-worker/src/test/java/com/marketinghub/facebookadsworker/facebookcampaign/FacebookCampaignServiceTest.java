@@ -32,7 +32,7 @@ class FacebookCampaignServiceTest {
         String backendUrl = backend.url("/").toString();
         String facebookUrl = facebook.url("/").toString();
 
-        FacebookAdsService adsService = new FacebookAdsService(WebClient.builder(), facebookUrl, "token");
+        FacebookAdsService adsService = new FacebookAdsService(WebClient.builder(), facebookUrl, "token", "v23.0");
         service = new FacebookCampaignService(
             adsService,
             WebClient.builder(),
@@ -80,17 +80,17 @@ class FacebookCampaignServiceTest {
         assertEquals("/api/facebook-campaigns/experiments-ready", get.getPath());
 
         RecordedRequest postCampaign = facebook.takeRequest();
-        assertEquals("/v20.0/act_1/campaigns", postCampaign.getPath());
+        assertEquals("/v23.0/act_1/campaigns", postCampaign.getPath());
 
         RecordedRequest postAdSet = facebook.takeRequest();
-        assertEquals("/v20.0/act_1/adsets", postAdSet.getPath());
+        assertEquals("/v23.0/act_1/adsets", postAdSet.getPath());
         JsonNode adSetPayload = objectMapper.readTree(postAdSet.getBody().inputStream());
         assertEquals("Exp - Ad Set", adSetPayload.get("name").asText());
         assertEquals("10", adSetPayload.get("campaign_id").asText());
         assertEquals("2000", adSetPayload.get("daily_budget").asText());
 
         RecordedRequest postCreative = facebook.takeRequest();
-        assertEquals("/v20.0/act_1/adcreatives", postCreative.getPath());
+        assertEquals("/v23.0/act_1/adcreatives", postCreative.getPath());
         JsonNode creativePayload = objectMapper.readTree(postCreative.getBody().inputStream());
         assertEquals("Exp - Creative", creativePayload.get("name").asText());
         JsonNode storySpec = creativePayload.get("object_story_spec");
@@ -98,7 +98,7 @@ class FacebookCampaignServiceTest {
         assertEquals("Conheça Exp", storySpec.get("link_data").get("message").asText());
 
         RecordedRequest postAd = facebook.takeRequest();
-        assertEquals("/v20.0/act_1/ads", postAd.getPath());
+        assertEquals("/v23.0/act_1/ads", postAd.getPath());
         JsonNode adPayload = objectMapper.readTree(postAd.getBody().inputStream());
         assertEquals("Exp - Ad", adPayload.get("name").asText());
         assertEquals("20", adPayload.get("adset_id").asText());

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
 export interface FacebookAccount {
-  id: string;
+  id: number;
   name: string;
   currency: string;
 }

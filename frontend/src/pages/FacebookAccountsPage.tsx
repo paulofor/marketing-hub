@@ -1,105 +1,291 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import PageTitle from "../components/PageTitle";
 import { useFacebookAccounts } from "../api/useFacebookAccounts";
 import {
   useCreateFacebookAccount,
-  useUpdateFacebookAccount,
   useDeleteFacebookAccount,
+  useUpdateFacebookAccount,
+  FacebookAccountPayload,
 } from "../api/facebookAccountMutations";
-import PageTitle from "../components/PageTitle";
+import { useFacebookPages } from "../api/useFacebookPages";
+import {
+  useCreateFacebookPage,
+  useDeleteFacebookPage,
+  useUpdateFacebookPage,
+} from "../api/facebookPageMutations";
+
+interface AccountFormState {
+  id?: number;
+  name: string;
+  currency: string;
+}
+
+interface PageFormState {
+  id?: number;
+  pageId: string;
+  name: string;
+}
+
+const emptyAccountForm: AccountFormState = { name: "", currency: "" };
+const emptyPageForm: PageFormState = { pageId: "", name: "" };
 
 export default function FacebookAccountsPage() {
   const { data, isLoading, error } = useFacebookAccounts();
-  const accounts = Array.isArray(data) ? data : [];
-  const createMutation = useCreateFacebookAccount();
-  const updateMutation = useUpdateFacebookAccount();
-  const deleteMutation = useDeleteFacebookAccount();
+  const accounts = useMemo(() => (Array.isArray(data) ? data : []), [data]);
+  const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
+  const [accountForm, setAccountForm] = useState<AccountFormState>(emptyAccountForm);
+  const [pageForm, setPageForm] = useState<PageFormState>(emptyPageForm);
 
-  const [form, setForm] = useState({ id: "", name: "", currency: "" });
-  const [editing, setEditing] = useState<boolean | string>(false);
+  const createAccountMutation = useCreateFacebookAccount();
+  const updateAccountMutation = useUpdateFacebookAccount();
+  const deleteAccountMutation = useDeleteFacebookAccount();
+
+  const { data: pagesData, isLoading: pagesLoading } = useFacebookPages(
+    selectedAccountId ?? undefined,
+  );
+  const pages = useMemo(() => (Array.isArray(pagesData) ? pagesData : []), [pagesData]);
+
+  const createPageMutation = useCreateFacebookPage(selectedAccountId ?? undefined);
+  const updatePageMutation = useUpdateFacebookPage(selectedAccountId ?? undefined);
+  const deletePageMutation = useDeleteFacebookPage(selectedAccountId ?? undefined);
+
+  useEffect(() => {
+    if (accounts.length === 0) {
+      setSelectedAccountId(null);
+      return;
+    }
+    if (!selectedAccountId || !accounts.some((account) => account.id === selectedAccountId)) {
+      setSelectedAccountId(accounts[0].id);
+    }
+  }, [accounts, selectedAccountId]);
+
+  useEffect(() => {
+    setPageForm(emptyPageForm);
+  }, [selectedAccountId]);
 
   if (isLoading) return <p>Carregando...</p>;
   if (error) return <p>Erro ao carregar contas</p>;
 
-  const submit = () => {
-    if (editing) {
-      updateMutation.mutate(form);
-    } else {
-      createMutation.mutate(form);
-    }
-    setForm({ id: "", name: "", currency: "" });
-    setEditing(false);
+  const isEditingAccount = typeof accountForm.id === "number";
+  const isEditingPage = typeof pageForm.id === "number";
+
+  const submitAccount = () => {
+    const payload: FacebookAccountPayload = {
+      id: accountForm.id,
+      name: accountForm.name,
+      currency: accountForm.currency,
+    };
+    const mutation = isEditingAccount ? updateAccountMutation : createAccountMutation;
+    mutation.mutate(payload, {
+      onSuccess: () => {
+        setAccountForm(emptyAccountForm);
+      },
+    });
+  };
+
+  const submitPage = () => {
+    if (!selectedAccountId) return;
+    const payload: PageFormState = {
+      id: pageForm.id,
+      pageId: pageForm.pageId,
+      name: pageForm.name,
+    };
+    const mutation = isEditingPage ? updatePageMutation : createPageMutation;
+    mutation.mutate(payload, {
+      onSuccess: () => {
+        setPageForm(emptyPageForm);
+      },
+    });
   };
 
   return (
     <div>
       <PageTitle>Contas do Facebook</PageTitle>
-      <div className="table-responsive">
-        <table className="table table-striped">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nome</th>
-            <th>Moeda</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {accounts.map(({ id, name, currency }) => (
-            <tr key={id}>
-              <td>{id}</td>
-              <td>{name}</td>
-              <td>{currency}</td>
-              <td>
-                <button
-                  className="btn btn-sm btn-outline-primary me-2"
-                  onClick={() => {
-                    setForm({ id, name, currency });
-                    setEditing(id);
-                  }}
-                >
-                  Editar
-                </button>
-                <button
-                  className="btn btn-sm btn-outline-danger"
-                  onClick={() => deleteMutation.mutate(id)}
-                >
-                  Excluir
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-        </table>
-      </div>
-      <div className="row g-2">
-        <div className="col-md-2">
-          <input
-            className="form-control"
-            placeholder="id"
-            value={form.id}
-            onChange={(e) => setForm({ ...form, id: e.target.value })}
-          />
+      <div className="row g-4">
+        <div className="col-12 col-xl-6">
+          <div className="card h-100">
+            <div className="card-body">
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h2 className="h5 mb-0">Contas conectadas</h2>
+                <span className="badge text-bg-primary">{accounts.length} conta(s)</span>
+              </div>
+              <div className="table-responsive mb-3">
+                <table className="table table-striped align-middle">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Nome</th>
+                      <th>Moeda</th>
+                      <th className="text-end">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {accounts.map(({ id, name, currency }) => (
+                      <tr key={id} className={selectedAccountId === id ? "table-primary" : ""}>
+                        <td>{id}</td>
+                        <td>{name}</td>
+                        <td>{currency}</td>
+                        <td className="text-end d-flex justify-content-end gap-2">
+                          <button
+                            className="btn btn-sm btn-outline-primary"
+                            onClick={() => {
+                              setAccountForm({ id, name, currency });
+                            }}
+                          >
+                            Editar
+                          </button>
+                          <button
+                            className="btn btn-sm btn-outline-secondary"
+                            onClick={() => setSelectedAccountId(id)}
+                          >
+                            Páginas
+                          </button>
+                          <button
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={() => deleteAccountMutation.mutate(id)}
+                          >
+                            Excluir
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="row g-2">
+                <div className="col-md-5">
+                  <input
+                    className="form-control"
+                    placeholder="Nome da conta"
+                    value={accountForm.name}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        name: event.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div className="col-md-3">
+                  <input
+                    className="form-control"
+                    placeholder="Moeda"
+                    value={accountForm.currency}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        currency: event.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div className="col-md-4">
+                  <button className="btn btn-primary w-100" onClick={submitAccount}>
+                    {isEditingAccount ? "Atualizar conta" : "Adicionar conta"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="col-md-4">
-          <input
-            className="form-control"
-            placeholder="nome"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
-        </div>
-        <div className="col-md-2">
-          <input
-            className="form-control"
-            placeholder="moeda"
-            value={form.currency}
-            onChange={(e) => setForm({ ...form, currency: e.target.value })}
-          />
-        </div>
-        <div className="col-md-2">
-          <button className="btn btn-primary w-100" onClick={submit}>
-            {editing ? "Atualizar" : "Criar"}
-          </button>
+        <div className="col-12 col-xl-6">
+          <div className="card h-100">
+            <div className="card-body">
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h2 className="h5 mb-0">Páginas vinculadas</h2>
+                <span className="badge text-bg-primary">
+                  {selectedAccountId ? pages.length : 0} página(s)
+                </span>
+              </div>
+              {!selectedAccountId ? (
+                <p className="text-muted mb-0">
+                  Cadastre ou selecione uma conta para configurar as páginas utilizadas nas
+                  campanhas.
+                </p>
+              ) : pagesLoading ? (
+                <p>Carregando páginas...</p>
+              ) : (
+                <div className="table-responsive mb-3">
+                  <table className="table table-hover align-middle">
+                    <thead>
+                      <tr>
+                        <th>ID da página</th>
+                        <th>Nome</th>
+                        <th className="text-end">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pages.map((page) => (
+                        <tr key={page.id}>
+                          <td>{page.pageId}</td>
+                          <td>{page.name}</td>
+                          <td className="text-end d-flex justify-content-end gap-2">
+                            <button
+                              className="btn btn-sm btn-outline-primary"
+                              onClick={() =>
+                                setPageForm({
+                                  id: page.id,
+                                  pageId: page.pageId,
+                                  name: page.name,
+                                })
+                              }
+                            >
+                              Editar
+                            </button>
+                            <button
+                              className="btn btn-sm btn-outline-danger"
+                              onClick={() => deletePageMutation.mutate(page.id)}
+                            >
+                              Excluir
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <div className="row g-2">
+                <div className="col-md-5">
+                  <input
+                    className="form-control"
+                    placeholder="ID da página"
+                    value={pageForm.pageId}
+                    onChange={(event) =>
+                      setPageForm((current) => ({
+                        ...current,
+                        pageId: event.target.value,
+                      }))
+                    }
+                    disabled={!selectedAccountId}
+                  />
+                </div>
+                <div className="col-md-4">
+                  <input
+                    className="form-control"
+                    placeholder="Nome da página"
+                    value={pageForm.name}
+                    onChange={(event) =>
+                      setPageForm((current) => ({
+                        ...current,
+                        name: event.target.value,
+                      }))
+                    }
+                    disabled={!selectedAccountId}
+                  />
+                </div>
+                <div className="col-md-3">
+                  <button
+                    className="btn btn-primary w-100"
+                    onClick={submitPage}
+                    disabled={!selectedAccountId}
+                  >
+                    {isEditingPage ? "Atualizar página" : "Adicionar página"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

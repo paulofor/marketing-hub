@@ -1,15 +1,28 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { AlertTriangle } from "lucide-react";
 import { useFacebookCampaignExperiments } from "../../api/useFacebookCampaignExperiments";
 import PageTitle from "../../components/PageTitle";
+import { useFacebookConfigurationStatus } from "../../api/useFacebookConfigurationStatus";
 
 export default function FacebookCampaignExperimentsPage() {
   const [status, setStatus] = useState("PLANNED");
   const { data, isLoading } = useFacebookCampaignExperiments(status);
+  const { data: configuration } = useFacebookConfigurationStatus();
   const experiments = Array.isArray(data) ? data : [];
+  const requiresPageSetup = configuration && !configuration.hasConfiguredPages;
   return (
     <div>
       <PageTitle>Experimentos para Campanha</PageTitle>
+      {requiresPageSetup ? (
+        <div className="alert alert-warning d-flex align-items-center gap-2" role="alert">
+          <AlertTriangle size={18} />
+          <div>
+            Configure ao menos uma página do Facebook para continuar publicando
+            campanhas.
+          </div>
+        </div>
+      ) : null}
       <div className="btn-group mb-3">
         <button
           className={`btn btn-outline-primary${status === "PLANNED" ? " active" : ""}`}

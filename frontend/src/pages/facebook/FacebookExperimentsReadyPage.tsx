@@ -1,9 +1,10 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { CalendarDays, Flag, Gauge, Target } from "lucide-react";
+import { AlertTriangle, CalendarDays, Flag, Gauge, Target } from "lucide-react";
 
 import PageTitle from "../../components/PageTitle";
 import { useFacebookReadyExperiments } from "../../api/useFacebookReadyExperiments";
+import { useFacebookConfigurationStatus } from "../../api/useFacebookConfigurationStatus";
 import "./FacebookExperimentsReadyPage.css";
 
 function formatCurrency(value: number | null) {
@@ -25,12 +26,23 @@ function formatDate(value: string | null) {
 export default function FacebookExperimentsReadyPage() {
   const { data, isLoading, isError, refetch, isRefetching } =
     useFacebookReadyExperiments();
+  const { data: configuration } = useFacebookConfigurationStatus();
   const experiments = useMemo(() => (Array.isArray(data) ? data : []), [data]);
   const isEmpty = !isLoading && experiments.length === 0 && !isError;
+  const requiresPageSetup = configuration && !configuration.hasConfiguredPages;
 
   return (
     <div>
       <PageTitle>Experimentos prontos para campanha</PageTitle>
+      {requiresPageSetup ? (
+        <div className="alert alert-warning d-flex align-items-center gap-2" role="alert">
+          <AlertTriangle size={18} />
+          <div>
+            Configure ao menos uma página do Facebook para liberar as campanhas
+            automáticas.
+          </div>
+        </div>
+      ) : null}
       <div className="experiments-ready-toolbar">
         <span className="experiments-ready-toolbar-title">
           <Flag size={18} className="text-primary" />

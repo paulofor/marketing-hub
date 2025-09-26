@@ -1,4 +1,4 @@
-import { Route, Routes, Link } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 
 import FacebookAccountsPage from "./pages/FacebookAccountsPage";
 import InstagramAccountsPage from "./pages/InstagramAccountsPage";
@@ -50,114 +50,12 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import FacebookCampaignExperimentsPage from "./pages/facebook/FacebookCampaignExperimentsPage";
 import FacebookExperimentsReadyPage from "./pages/facebook/FacebookExperimentsReadyPage";
+import MainNavigation from "./components/MainNavigation";
 
 export default function App() {
   return (
     <div className="container py-4">
-      <nav className="navbar navbar-expand-lg navbar-light bg-light mb-4">
-        <div className="container-fluid">
-          <Link className="navbar-brand" to="/">
-            Marketing Hub
-          </Link>
-          <div className="navbar-nav">
-            <Link className="nav-link" to="/accounts/facebook">
-              Contas do Facebook
-            </Link>
-            <Link className="nav-link" to="/accounts/instagram">
-              Contas do Instagram
-            </Link>
-            <Link className="nav-link" to="/media">
-              Mídia
-            </Link>
-            <Link className="nav-link" to="/courses">
-              Cursos
-            </Link>
-            <Link className="nav-link" to="/products">
-              Produtos
-            </Link>
-            <Link className="nav-link" to="/success-products">
-              Produtos de Sucesso
-            </Link>
-            <Link className="nav-link" to="/niches">
-              Nichos
-            </Link>
-            <Link className="nav-link" to="/experiments">
-              Testes de Nicho
-            </Link>
-            <Link className="nav-link" to="/hypotheses">
-              Hipóteses
-            </Link>
-            <Link className="nav-link" to="/ai-services">
-              IA
-            </Link>
-            <Link className="nav-link" to="/chat-dialogs">
-              ChatGPT
-            </Link>
-            <Link className="nav-link" to="/angles">
-              Angles
-            </Link>
-            <Link className="nav-link" to="/visual-proofs">
-              Provas Visuais
-            </Link>
-            <Link className="nav-link" to="/emotional-triggers">
-              Gatilhos Emocionais
-            </Link>
-            <Link className="nav-link" to="/funnels">
-              Funil de Vendas
-            </Link>
-            <Link className="nav-link" to="/facebook-campaigns">
-              Experimentos para Campanha
-            </Link>
-            <Link className="nav-link" to="/facebook-campaigns/ready">
-              Experimentos prontos
-            </Link>
-            <Link className="nav-link" to="/prompt-entities">
-              Objetos de Prompt
-            </Link>
-            <div className="nav-item dropdown">
-              <span
-                className="nav-link dropdown-toggle"
-                id="market-test-dropdown"
-                role="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-              >
-                Teste de Mercado
-              </span>
-              <ul
-                className="dropdown-menu"
-                aria-labelledby="market-test-dropdown"
-              >
-                <li>
-                  <a className="dropdown-item" href="#">
-                    1- Hipotese e Oferta Isca
-                  </a>
-                </li>
-                <li>
-                  <a className="dropdown-item" href="#">
-                    2- Funil Mínimo
-                  </a>
-                </li>
-                <li>
-                  <a className="dropdown-item" href="#">
-                    3- Trafego e Segmentação
-                  </a>
-                </li>
-                <li>
-                  <a className="dropdown-item" href="#">
-                    4- KPIs e limiares de decisão
-                  </a>
-                </li>
-                <li>
-                  <a className="dropdown-item" href="#">
-                    5- Automação analítica
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <MainNavigation />
       <Routes>
         <Route path="/accounts/facebook" element={<FacebookAccountsPage />} />
         <Route path="/accounts/instagram" element={<InstagramAccountsPage />} />

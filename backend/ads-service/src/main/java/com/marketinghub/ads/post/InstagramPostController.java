@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/accounts/instagram/{accountId}/posts")
+@RequestMapping("/api/accounts/instagram/{accountId}/posts")
 public class InstagramPostController {
     private final InstagramAccountRepository accountRepository;
     private final InstagramPostRepository repository;

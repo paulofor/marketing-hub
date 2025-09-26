@@ -45,19 +45,19 @@ public class CampaignControllerTest {
                 .name("IG Account")
                 .build());
 
-        mockMvc.perform(post("/accounts/" + fb.getId() + "/campaigns?platform=facebook")
+        mockMvc.perform(post("/api/accounts/" + fb.getId() + "/campaigns?platform=facebook")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"FB Campaign\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").exists());
 
-        mockMvc.perform(post("/accounts/" + ig.getId() + "/campaigns?platform=instagram")
+        mockMvc.perform(post("/api/accounts/" + ig.getId() + "/campaigns?platform=instagram")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"IG Campaign\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").exists());
 
-        mockMvc.perform(get("/accounts/" + fb.getId() + "/campaigns"))
+        mockMvc.perform(get("/api/accounts/" + fb.getId() + "/campaigns"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2));
     }

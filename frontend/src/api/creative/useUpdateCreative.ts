@@ -3,9 +3,15 @@ import axios from "axios";
 import { Creative } from "./useCreatives";
 
 export interface UpdateCreative {
+  format: string;
   headline: string;
   primaryText: string;
   imageUrl: string;
+  description: string;
+  cta: string;
+  destinationUrl: string;
+  pageId: string;
+  instagramUserId: string;
   status: string;
 }
 

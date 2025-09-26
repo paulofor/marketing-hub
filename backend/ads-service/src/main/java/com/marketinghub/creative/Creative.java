@@ -41,6 +41,24 @@ public class Creative {
     @Column(name = "video_id")
     private String videoId;
 
+    @Column(name = "ad_format")
+    private String format;
+
+    @Column(name = "description")
+    private String description;
+
+    @Column(name = "call_to_action")
+    private String cta;
+
+    @Column(name = "destination_url")
+    private String destinationUrl;
+
+    @Column(name = "page_id")
+    private String pageId;
+
+    @Column(name = "instagram_user_id")
+    private String instagramUserId;
+
     @Enumerated(EnumType.STRING)
     private CreativeStatus status;
 

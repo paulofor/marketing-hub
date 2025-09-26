@@ -159,9 +159,15 @@ export default function CriativosTab({ experimentId }: Props) {
 
   const submit = async () => {
     const payload = {
+      format: form.format,
       headline: form.headline,
       primaryText: form.primaryText,
       imageUrl: form.imageUrl,
+      description: form.description,
+      cta: form.cta,
+      destinationUrl: form.destinationUrl,
+      pageId: form.pageId,
+      instagramUserId: form.instagramUserId,
       status: form.status,
     };
     if (editing) {
@@ -208,9 +214,15 @@ export default function CriativosTab({ experimentId }: Props) {
     try {
       await update.mutateAsync({
         id: c.id,
+        format: c.format || "LINK",
         headline: c.headline,
         primaryText: c.primaryText,
         imageUrl: c.imageUrl,
+        description: c.description || "",
+        cta: c.cta || "LEARN_MORE",
+        destinationUrl: c.destinationUrl || "",
+        pageId: c.pageId || "",
+        instagramUserId: c.instagramUserId || "",
         status: "READY",
       });
     } catch {

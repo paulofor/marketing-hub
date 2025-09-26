@@ -14,8 +14,9 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
 2. **Conjunto de anúncios** (`POST /adsets`) atrelado à campanha, também em
    `PAUSED`, com segmentação geográfica simples e destino `WEBSITE`.
 3. **Criativo** (`POST /adcreatives`) baseado em um `object_story_spec`
-   contendo `page_id`, opcionalmente `instagram_actor_id`, mensagem formatada a
-   partir do experimento e call-to-action configurável.
+   contendo `page_id` obtido do criativo aprovado (ou o fallback configurado em
+   `facebook.page-id`), opcionalmente `instagram_actor_id`, mensagem e
+   call-to-action vindos do próprio criativo.
 4. **Anúncio** (`POST /ads`) que referencia o conjunto e o criativo recém
    criados, mantido pausado até que o time operacional revise os detalhes no
    Gerenciador de Anúncios.
@@ -52,7 +53,7 @@ Os acessos são configurados pelas propriedades:
 - `facebook.ad-set.bid-amount` (opcional – defina um valor fixo de lance em
   centavos quando a conta exigir)
 - `facebook.ad-set.target-country` (default: `BR`)
-- `facebook.page-id` (sem default – obrigatório)
+- `facebook.page-id` (opcional – usado como fallback quando o criativo não define `pageId`)
 - `facebook.instagram-actor-id` (opcional)
 - `facebook.website-url` (sem default – obrigatório)
 - `facebook.graph-api.version` (default: `v23.0` – utilizado para montar os caminhos da Graph API)
@@ -95,13 +96,13 @@ volte a ser elegível e reinicie o worker para que o novo token seja utilizado.
 
 O endpoint [`POST /{ad_account_id}/adcreatives`](https://developers.facebook.com/docs/marketing-api/reference/ad-creative#Creating)
 exige um `page_id` válido no `object_story_spec` quando o criativo representa
-uma Página do Facebook. Se a propriedade `facebook.page-id` estiver vazia, a
-API responde com `error_subcode = 1443121` e a mensagem "A Página do Facebook
-está ausente". Desde a versão atual o worker interrompe o fluxo assim que a
-Graph API devolve qualquer status de erro, evitando que IDs vazios sejam
-propagados para chamadas subsequentes. Configure o identificador da Página
-antes de reiniciar o serviço para que a criação dos criativos seja bem
-sucedida.
+uma Página do Facebook. Agora o worker busca o `pageId` diretamente no criativo
+aprovado do experimento, utilizando a propriedade `facebook.page-id` apenas
+como fallback. Caso nenhum desses valores esteja preenchido, a API responde com
+`error_subcode = 1443121` e a mensagem "A Página do Facebook está ausente". O
+fluxo é interrompido imediatamente, registrando o aviso em log. Preencha o
+campo `pageId` do criativo (ou configure o fallback) antes da próxima execução
+para que a criação seja bem sucedida.
 
 ### Erro `(#100) Invalid parameter` ao criar o conjunto de anúncios
 

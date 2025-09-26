@@ -8,8 +8,14 @@ import lombok.Data;
  */
 @Data
 public class CreateCreativeRequest {
+    private String format;
     private String headline;
     private String primaryText;
     private String imageUrl;
+    private String description;
+    private String cta;
+    private String destinationUrl;
+    private String pageId;
+    private String instagramUserId;
     private CreativeStatus status;
 }

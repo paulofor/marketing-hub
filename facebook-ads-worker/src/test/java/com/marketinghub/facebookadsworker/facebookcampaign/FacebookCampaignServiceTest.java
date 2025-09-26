@@ -79,6 +79,8 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
             .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"pageId\":\"84\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+            .addHeader("Content-Type", "application/json"));
         backend.enqueue(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
 
@@ -86,6 +88,9 @@ class FacebookCampaignServiceTest {
 
         RecordedRequest get = backend.takeRequest();
         assertEquals("/api/facebook-campaigns/experiments-ready", get.getPath());
+
+        RecordedRequest creativesGet = backend.takeRequest();
+        assertEquals("/api/experiments/1/creatives", creativesGet.getPath());
 
         RecordedRequest postCampaign = facebook.takeRequest();
         assertEquals("/v23.0/act_1/campaigns", postCampaign.getPath());
@@ -98,14 +103,20 @@ class FacebookCampaignServiceTest {
         assertEquals("2000", adSetPayload.get("daily_budget").asText());
         assertEquals("LOWEST_COST_WITHOUT_CAP", adSetPayload.get("bid_strategy").asText());
         assertEquals("150", adSetPayload.get("bid_amount").asText());
+        assertEquals("84", adSetPayload.get("promoted_object").get("page_id").asText());
 
         RecordedRequest postCreative = facebook.takeRequest();
         assertEquals("/v23.0/act_1/adcreatives", postCreative.getPath());
         JsonNode creativePayload = objectMapper.readTree(postCreative.getBody().inputStream());
         assertEquals("Exp - Creative", creativePayload.get("name").asText());
         JsonNode storySpec = creativePayload.get("object_story_spec");
-        assertEquals("42", storySpec.get("page_id").asText());
-        assertEquals("Conheça Exp", storySpec.get("link_data").get("message").asText());
+        assertEquals("84", storySpec.get("page_id").asText());
+        JsonNode linkData = storySpec.get("link_data");
+        assertEquals("Texto Criativo", linkData.get("message").asText());
+        assertEquals("https://exp.example/landing", linkData.get("link").asText());
+        assertEquals("SHOP_NOW", linkData.get("call_to_action").get("type").asText());
+        assertEquals("HL", linkData.get("name").asText());
+        assertEquals("Desc", linkData.get("description").asText());
 
         RecordedRequest postAd = facebook.takeRequest();
         assertEquals("/v23.0/act_1/ads", postAd.getPath());
@@ -136,6 +147,8 @@ class FacebookCampaignServiceTest {
             .setResponseCode(400)
             .setBody("{\"error\":{\"message\":\"Permissions error\",\"type\":\"OAuthException\",\"code\":200,\"error_subcode\":1815066,\"error_user_msg\":\"O usuário não tem permissão para criar anúncios com esta conta de anúncios\"}}")
             .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"pageId\":\"84\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+            .addHeader("Content-Type", "application/json"));
         backend.enqueue(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
 
@@ -145,6 +158,10 @@ class FacebookCampaignServiceTest {
         assertEquals("GET", get.getMethod());
         assertEquals("/api/facebook-campaigns/experiments-ready", get.getPath());
 
+        RecordedRequest creativesGet = backend.takeRequest();
+        assertEquals("GET", creativesGet.getMethod());
+        assertEquals("/api/experiments/1/creatives", creativesGet.getPath());
+
         RecordedRequest postCampaign = facebook.takeRequest();
         assertEquals("POST", postCampaign.getMethod());
         assertEquals("/v23.0/act_1/campaigns", postCampaign.getPath());
@@ -153,7 +170,7 @@ class FacebookCampaignServiceTest {
         RecordedRequest patch = backend.takeRequest();
         assertEquals("PATCH", patch.getMethod());
         assertEquals("/api/experiments/1/status?status=FAILED", patch.getPath());
-        assertEquals(2, backend.getRequestCount());
+        assertEquals(3, backend.getRequestCount());
     }
 
     @Test
@@ -163,6 +180,8 @@ class FacebookCampaignServiceTest {
         facebook.enqueue(new MockResponse()
             .setResponseCode(400)
             .setBody("{\"error\":{\"message\":\"Permissions error\",\"type\":\"OAuthException\",\"code\":200,\"error_subcode\":1815066}}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"pageId\":\"84\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueue(new MockResponse().setResponseCode(500));
         backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\"}]")
@@ -174,6 +193,10 @@ class FacebookCampaignServiceTest {
         RecordedRequest firstGet = backend.takeRequest();
         assertEquals("GET", firstGet.getMethod());
         assertEquals("/api/facebook-campaigns/experiments-ready", firstGet.getPath());
+
+        RecordedRequest firstCreativesGet = backend.takeRequest();
+        assertEquals("GET", firstCreativesGet.getMethod());
+        assertEquals("/api/experiments/1/creatives", firstCreativesGet.getPath());
 
         RecordedRequest campaignPost = facebook.takeRequest();
         assertEquals("POST", campaignPost.getMethod());
@@ -188,6 +211,6 @@ class FacebookCampaignServiceTest {
         assertEquals("/api/facebook-campaigns/experiments-ready", secondGet.getPath());
 
         assertEquals(1, facebook.getRequestCount());
-        assertEquals(3, backend.getRequestCount());
+        assertEquals(4, backend.getRequestCount());
     }
 }

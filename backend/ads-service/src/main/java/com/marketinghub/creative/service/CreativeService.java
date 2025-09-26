@@ -56,9 +56,15 @@ public class CreativeService {
         Experiment exp = experimentRepository.findById(experimentId).orElseThrow();
         Creative creative = Creative.builder()
                 .experiment(exp)
+                .format(request.getFormat())
                 .headline(request.getHeadline())
                 .primaryText(request.getPrimaryText())
                 .imageUrl(request.getImageUrl())
+                .description(request.getDescription())
+                .cta(request.getCta())
+                .destinationUrl(request.getDestinationUrl())
+                .pageId(request.getPageId())
+                .instagramUserId(request.getInstagramUserId())
                 .status(request.getStatus())
                 .build();
         Creative saved = repository.save(creative);
@@ -72,9 +78,15 @@ public class CreativeService {
     @Transactional
     public Creative update(Long id, CreateCreativeRequest request) {
         Creative creative = repository.findByIdWithExperiment(id).orElseThrow();
+        creative.setFormat(request.getFormat());
         creative.setHeadline(request.getHeadline());
         creative.setPrimaryText(request.getPrimaryText());
         creative.setImageUrl(request.getImageUrl());
+        creative.setDescription(request.getDescription());
+        creative.setCta(request.getCta());
+        creative.setDestinationUrl(request.getDestinationUrl());
+        creative.setPageId(request.getPageId());
+        creative.setInstagramUserId(request.getInstagramUserId());
         creative.setStatus(request.getStatus());
         Creative saved = repository.save(creative);
         refreshExperimentApproval(saved.getExperiment());

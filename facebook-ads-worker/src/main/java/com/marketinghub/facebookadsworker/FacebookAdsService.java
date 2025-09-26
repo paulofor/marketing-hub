@@ -99,6 +99,12 @@ public class FacebookAdsService {
         Map<String, Object> linkData = new HashMap<>();
         linkData.put("link", request.websiteUrl());
         linkData.put("message", request.message());
+        if (request.headline() != null && !request.headline().isBlank()) {
+            linkData.put("name", request.headline());
+        }
+        if (request.description() != null && !request.description().isBlank()) {
+            linkData.put("description", request.description());
+        }
         linkData.put("call_to_action", Map.of(
             "type", request.callToActionType(),
             "value", Map.of("link", request.websiteUrl())
@@ -418,7 +424,9 @@ public class FacebookAdsService {
         String instagramActorId,
         String websiteUrl,
         String message,
-        String callToActionType
+        String callToActionType,
+        String headline,
+        String description
     ) {}
 
     public record AdRequest(

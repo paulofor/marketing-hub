@@ -92,7 +92,9 @@ class FacebookAdsServiceTest {
             "11",
             "https://example.com",
             "Mensagem",
-            "LEARN_MORE"
+            "LEARN_MORE",
+            "Headline",
+            "Descrição"
         );
         String id = service.createAdCreative("1", request);
         RecordedRequest recorded = server.takeRequest();
@@ -104,6 +106,8 @@ class FacebookAdsServiceTest {
         JsonNode linkData = storySpec.get("link_data");
         assertEquals("https://example.com", linkData.get("link").asText());
         assertEquals("Mensagem", linkData.get("message").asText());
+        assertEquals("Headline", linkData.get("name").asText());
+        assertEquals("Descrição", linkData.get("description").asText());
         assertEquals("LEARN_MORE", linkData.get("call_to_action").get("type").asText());
         assertEquals("https://example.com", linkData.get("call_to_action").get("value").get("link").asText());
         assertEquals("333", id);

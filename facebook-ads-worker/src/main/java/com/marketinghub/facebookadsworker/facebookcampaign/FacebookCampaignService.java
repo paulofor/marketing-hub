@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import reactor.core.publisher.Flux;
@@ -34,11 +35,11 @@ public class FacebookCampaignService {
     private final String adSetBidStrategy;
     private final String adSetBidAmount;
     private final String adSetTargetCountry;
-    private final String pageId;
-    private final String instagramActorId;
-    private final String websiteUrl;
-    private final String creativeMessageTemplate;
-    private final String callToActionType;
+    private final String defaultPageId;
+    private final String defaultInstagramActorId;
+    private final String defaultWebsiteUrl;
+    private final String defaultCreativeMessageTemplate;
+    private final String defaultCallToActionType;
     private final Set<Long> experimentsBlockedByPermissions;
 
     public FacebookCampaignService(FacebookAdsService facebookAdsService,
@@ -70,11 +71,11 @@ public class FacebookCampaignService {
         this.adSetBidStrategy = adSetBidStrategy;
         this.adSetBidAmount = adSetBidAmount;
         this.adSetTargetCountry = adSetTargetCountry;
-        this.pageId = pageId;
-        this.instagramActorId = instagramActorId;
-        this.websiteUrl = websiteUrl;
-        this.creativeMessageTemplate = creativeMessageTemplate;
-        this.callToActionType = callToActionType;
+        this.defaultPageId = pageId;
+        this.defaultInstagramActorId = instagramActorId;
+        this.defaultWebsiteUrl = websiteUrl;
+        this.defaultCreativeMessageTemplate = creativeMessageTemplate;
+        this.defaultCallToActionType = callToActionType;
         this.experimentsBlockedByPermissions = ConcurrentHashMap.newKeySet();
     }
 
@@ -119,6 +120,30 @@ public class FacebookCampaignService {
 
     private void processExperiment(Experiment exp) {
         try {
+            Creative creative = resolveCreative(exp.id());
+            if (creative == null) {
+                LOGGER.warn("Skipping experiment {} because no creative is available or could be fetched", exp.id());
+                return;
+            }
+
+            String resolvedPageId = coalesce(creative.pageId(), defaultPageId);
+            if (!StringUtils.hasText(resolvedPageId)) {
+                LOGGER.warn("Skipping experiment {} because no Facebook page ID is configured", exp.id());
+                return;
+            }
+
+            String resolvedWebsiteUrl = coalesce(creative.destinationUrl(), defaultWebsiteUrl);
+            if (!StringUtils.hasText(resolvedWebsiteUrl)) {
+                LOGGER.warn("Skipping experiment {} because no destination URL is configured", exp.id());
+                return;
+            }
+
+            String resolvedMessage = StringUtils.hasText(creative.primaryText())
+                ? creative.primaryText()
+                : formatCreativeMessage(exp.name());
+            String resolvedCallToAction = coalesce(creative.cta(), defaultCallToActionType);
+            String resolvedInstagramActorId = coalesce(creative.instagramUserId(), defaultInstagramActorId);
+
             String campaignId = facebookAdsService.createCampaign(adAccountId, exp.name());
             String adSetId = facebookAdsService.createAdSet(adAccountId, new FacebookAdsService.AdSetRequest(
                 exp.name() + " - Ad Set",
@@ -129,16 +154,18 @@ public class FacebookCampaignService {
                 adSetDestinationType,
                 adSetBidStrategy,
                 adSetBidAmount,
-                pageId,
+                resolvedPageId,
                 adSetTargetCountry
             ));
             String creativeId = facebookAdsService.createAdCreative(adAccountId, new FacebookAdsService.AdCreativeRequest(
                 exp.name() + " - Creative",
-                pageId,
-                instagramActorId,
-                websiteUrl,
-                formatCreativeMessage(exp.name()),
-                callToActionType
+                resolvedPageId,
+                resolvedInstagramActorId,
+                resolvedWebsiteUrl,
+                resolvedMessage,
+                resolvedCallToAction,
+                creative.headline(),
+                creative.description()
             ));
             facebookAdsService.createAd(adAccountId, new FacebookAdsService.AdRequest(
                 exp.name() + " - Ad",
@@ -170,17 +197,44 @@ public class FacebookCampaignService {
     }
 
     private String formatCreativeMessage(String experimentName) {
-        if (creativeMessageTemplate == null || creativeMessageTemplate.isBlank()) {
+        if (defaultCreativeMessageTemplate == null || defaultCreativeMessageTemplate.isBlank()) {
             return experimentName;
         }
-        if (creativeMessageTemplate.contains("%s")) {
-            return String.format(creativeMessageTemplate, experimentName);
+        if (defaultCreativeMessageTemplate.contains("%s")) {
+            return String.format(defaultCreativeMessageTemplate, experimentName);
         }
-        return creativeMessageTemplate;
+        return defaultCreativeMessageTemplate;
     }
 
     public record Experiment(long id, String name) {}
     public record CreateCampaignRequest(String id, String adAccountId, String name, String objective, String budgetMode) {}
+
+    private Creative resolveCreative(long experimentId) {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/creatives");
+        try {
+            List<Creative> creatives = backendClient.get()
+                .uri(url)
+                .retrieve()
+                .bodyToFlux(Creative.class)
+                .collectList()
+                .block();
+            if (creatives == null || creatives.isEmpty()) {
+                return null;
+            }
+            return creatives.stream()
+                .filter(c -> c.status() != null && "READY".equalsIgnoreCase(c.status()))
+                .findFirst()
+                .orElse(creatives.get(0));
+        } catch (Exception ex) {
+            LOGGER.warn("Failed to fetch creatives for experiment {}: {}", experimentId, ex.getMessage());
+            LOGGER.debug("Stacktrace while fetching creatives for experiment {}", experimentId, ex);
+            return null;
+        }
+    }
+
+    private static String coalesce(String primary, String fallback) {
+        return StringUtils.hasText(primary) ? primary : fallback;
+    }
 
     private void markExperimentAsFailed(long experimentId) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/status?status=FAILED");
@@ -195,4 +249,19 @@ public class FacebookCampaignService {
             LOGGER.warn("Could not mark experiment {} as FAILED after Facebook permission error: {}", experimentId, ex.getMessage(), ex);
         }
     }
+
+    public record Creative(
+        Long id,
+        Long experimentId,
+        String format,
+        String headline,
+        String primaryText,
+        String imageUrl,
+        String description,
+        String cta,
+        String destinationUrl,
+        String pageId,
+        String instagramUserId,
+        String status
+    ) {}
 }

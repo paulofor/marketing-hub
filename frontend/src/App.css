@@ -11,12 +11,14 @@
   display: flex;
   flex-direction: column;
   padding: clamp(1.5rem, 4vw, 2.5rem);
+  min-width: 0;
 }
 
 .app-shell__main {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .app-shell__main > .container-fluid {

@@ -1,4 +1,4 @@
-import { Route, Routes, Link } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 
 import FacebookAccountsPage from "./pages/FacebookAccountsPage";
 import InstagramAccountsPage from "./pages/InstagramAccountsPage";
@@ -48,201 +48,130 @@ import NewPromptEntityPage from "./pages/prompt/NewPromptEntityPage";
 import PromptEntityDescriptionPage from "./pages/prompt/PromptEntityDescriptionPage";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import MainNavigation from "./components/MainNavigation";
+import "./App.css";
 import FacebookCampaignExperimentsPage from "./pages/facebook/FacebookCampaignExperimentsPage";
 import FacebookExperimentsReadyPage from "./pages/facebook/FacebookExperimentsReadyPage";
 
 export default function App() {
   return (
-    <div className="container py-4">
-      <nav className="navbar navbar-expand-lg navbar-light bg-light mb-4">
-        <div className="container-fluid">
-          <Link className="navbar-brand" to="/">
-            Marketing Hub
-          </Link>
-          <div className="navbar-nav">
-            <Link className="nav-link" to="/accounts/facebook">
-              Contas do Facebook
-            </Link>
-            <Link className="nav-link" to="/accounts/instagram">
-              Contas do Instagram
-            </Link>
-            <Link className="nav-link" to="/media">
-              Mídia
-            </Link>
-            <Link className="nav-link" to="/courses">
-              Cursos
-            </Link>
-            <Link className="nav-link" to="/products">
-              Produtos
-            </Link>
-            <Link className="nav-link" to="/success-products">
-              Produtos de Sucesso
-            </Link>
-            <Link className="nav-link" to="/niches">
-              Nichos
-            </Link>
-            <Link className="nav-link" to="/experiments">
-              Testes de Nicho
-            </Link>
-            <Link className="nav-link" to="/hypotheses">
-              Hipóteses
-            </Link>
-            <Link className="nav-link" to="/ai-services">
-              IA
-            </Link>
-            <Link className="nav-link" to="/chat-dialogs">
-              ChatGPT
-            </Link>
-            <Link className="nav-link" to="/angles">
-              Angles
-            </Link>
-            <Link className="nav-link" to="/visual-proofs">
-              Provas Visuais
-            </Link>
-            <Link className="nav-link" to="/emotional-triggers">
-              Gatilhos Emocionais
-            </Link>
-            <Link className="nav-link" to="/funnels">
-              Funil de Vendas
-            </Link>
-            <Link className="nav-link" to="/facebook-campaigns">
-              Experimentos para Campanha
-            </Link>
-            <Link className="nav-link" to="/facebook-campaigns/ready">
-              Experimentos prontos
-            </Link>
-            <Link className="nav-link" to="/prompt-entities">
-              Objetos de Prompt
-            </Link>
-            <div className="nav-item dropdown">
-              <span
-                className="nav-link dropdown-toggle"
-                id="market-test-dropdown"
-                role="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-              >
-                Teste de Mercado
-              </span>
-              <ul
-                className="dropdown-menu"
-                aria-labelledby="market-test-dropdown"
-              >
-                <li>
-                  <a className="dropdown-item" href="#">
-                    1- Hipotese e Oferta Isca
-                  </a>
-                </li>
-                <li>
-                  <a className="dropdown-item" href="#">
-                    2- Funil Mínimo
-                  </a>
-                </li>
-                <li>
-                  <a className="dropdown-item" href="#">
-                    3- Trafego e Segmentação
-                  </a>
-                </li>
-                <li>
-                  <a className="dropdown-item" href="#">
-                    4- KPIs e limiares de decisão
-                  </a>
-                </li>
-                <li>
-                  <a className="dropdown-item" href="#">
-                    5- Automação analítica
-                  </a>
-                </li>
-              </ul>
-            </div>
+    <div className="app-shell">
+      <MainNavigation />
+      <div className="app-shell__content">
+        <main className="app-shell__main">
+          <div className="container-fluid py-4">
+            <Routes>
+              <Route
+                path="/accounts/facebook"
+                element={<FacebookAccountsPage />}
+              />
+              <Route
+                path="/accounts/instagram"
+                element={<InstagramAccountsPage />}
+              />
+              <Route
+                path="/accounts/instagram/:id/posts"
+                element={<InstagramPostsPage />}
+              />
+              <Route path="/media" element={<MediaListPage />} />
+              <Route path="/media/new" element={<NewMediaPage />} />
+              <Route path="/media/:id" element={<MediaDetailPage />} />
+              <Route path="/courses" element={<CoursePlanListPage />} />
+              <Route path="/courses/new" element={<NewCoursePlanPage />} />
+              <Route path="/courses/:id" element={<CoursePlanDetailPage />} />
+              <Route path="/products" element={<ProductListPage />} />
+              <Route path="/products/new" element={<NewProductPage />} />
+              <Route
+                path="/success-products"
+                element={<SuccessProductListPage />}
+              />
+              <Route
+                path="/success-products/new"
+                element={<NewSuccessProductPage />}
+              />
+              <Route
+                path="/success-products/:id"
+                element={<SuccessProductDetailPage />}
+              />
+              <Route
+                path="/success-products/:id/edit"
+                element={<EditSuccessProductPage />}
+              />
+              <Route path="/niches" element={<AppLayout />}>
+                <Route index element={<NicheListPage />} />
+                <Route path="new" element={<NewNichePage />} />
+                <Route path=":nicheId" element={<NicheDetailPage />} />
+                <Route path=":nicheId/edit" element={<EditNichePage />} />
+                <Route
+                  path=":nicheId/hypotheses/new"
+                  element={<NewHypothesisPage />}
+                />
+                <Route
+                  path=":nicheId/hypotheses/:hypothesisId"
+                  element={<HypothesisDetailPage />}
+                />
+                <Route
+                  path=":nicheId/hypotheses/:hypothesisId/edit"
+                  element={<EditHypothesisPage />}
+                />
+              </Route>
+              <Route path="/experiments" element={<ExperimentListPage />} />
+              <Route path="/experiments/new" element={<NewExperimentPage />} />
+              <Route path="/experiments/:id" element={<AppLayout />}>
+                <Route index element={<ExperimentDetailPage />} />
+                <Route path="edit" element={<EditExperimentPage />} />
+              </Route>
+              <Route path="/hypotheses" element={<HypothesisListPage />} />
+              <Route path="/hypotheses/board" element={<HypothesesPage />} />
+              <Route path="/ai-services" element={<AiServiceListPage />} />
+              <Route path="/ai-services/new" element={<NewAiServicePage />} />
+              <Route
+                path="/ai-services/:id/edit"
+                element={<EditAiServicePage />}
+              />
+              <Route path="/angles" element={<AnglesPage />} />
+              <Route path="/visual-proofs" element={<VisualProofsPage />} />
+              <Route
+                path="/emotional-triggers"
+                element={<EmotionalTriggersPage />}
+              />
+              <Route path="/landing/:id" element={<LandingPreview />} />
+              <Route path="/analytics" element={<AnalyticsDashboard />} />
+              <Route path="/funnels" element={<FunnelListPage />} />
+              <Route path="/funnels/new" element={<NewFunnelPage />} />
+              <Route
+                path="/funnels/:id/edit"
+                element={<EditFunnelPage />}
+              />
+              <Route path="/chat-dialogs" element={<ChatDialogListPage />} />
+              <Route path="/chat-dialogs/new" element={<NewChatDialogPage />} />
+              <Route path="/prompt-entities" element={<PromptEntitiesPage />} />
+              <Route
+                path="/prompt-entities/new"
+                element={<NewPromptEntityPage />}
+              />
+              <Route
+                path="/prompt-entities/:entityId"
+                element={<PromptEntityDescriptionPage />}
+              />
+              <Route
+                path="/prompt-entities/:entityId/attributes"
+                element={<PromptAttributesPage />}
+              />
+              <Route
+                path="/facebook-campaigns"
+                element={<FacebookCampaignExperimentsPage />}
+              />
+              <Route
+                path="/facebook-campaigns/ready"
+                element={<FacebookExperimentsReadyPage />}
+              />
+              <Route path="*" element={<div>Início</div>} />
+            </Routes>
           </div>
-        </div>
-      </nav>
-      <Routes>
-        <Route path="/accounts/facebook" element={<FacebookAccountsPage />} />
-        <Route path="/accounts/instagram" element={<InstagramAccountsPage />} />
-        <Route
-          path="/accounts/instagram/:id/posts"
-          element={<InstagramPostsPage />}
-        />
-        <Route path="/media" element={<MediaListPage />} />
-        <Route path="/media/new" element={<NewMediaPage />} />
-        <Route path="/media/:id" element={<MediaDetailPage />} />
-        <Route path="/courses" element={<CoursePlanListPage />} />
-        <Route path="/courses/new" element={<NewCoursePlanPage />} />
-        <Route path="/courses/:id" element={<CoursePlanDetailPage />} />
-        <Route path="/products" element={<ProductListPage />} />
-        <Route path="/products/new" element={<NewProductPage />} />
-        <Route path="/success-products" element={<SuccessProductListPage />} />
-        <Route
-          path="/success-products/new"
-          element={<NewSuccessProductPage />}
-        />
-        <Route
-          path="/success-products/:id"
-          element={<SuccessProductDetailPage />}
-        />
-        <Route
-          path="/success-products/:id/edit"
-          element={<EditSuccessProductPage />}
-        />
-        <Route path="/niches" element={<AppLayout />}>
-          <Route index element={<NicheListPage />} />
-          <Route path="new" element={<NewNichePage />} />
-          <Route path=":nicheId" element={<NicheDetailPage />} />
-          <Route path=":nicheId/edit" element={<EditNichePage />} />
-          <Route
-            path=":nicheId/hypotheses/new"
-            element={<NewHypothesisPage />}
-          />
-          <Route
-            path=":nicheId/hypotheses/:hypothesisId"
-            element={<HypothesisDetailPage />}
-          />
-          <Route
-            path=":nicheId/hypotheses/:hypothesisId/edit"
-            element={<EditHypothesisPage />}
-          />
-        </Route>
-        <Route path="/experiments" element={<ExperimentListPage />} />
-        <Route path="/experiments/new" element={<NewExperimentPage />} />
-        <Route path="/experiments/:id" element={<AppLayout />}>
-          <Route index element={<ExperimentDetailPage />} />
-          <Route path="edit" element={<EditExperimentPage />} />
-        </Route>
-        <Route path="/hypotheses" element={<HypothesisListPage />} />
-        <Route path="/hypotheses/board" element={<HypothesesPage />} />
-        <Route path="/ai-services" element={<AiServiceListPage />} />
-        <Route path="/ai-services/new" element={<NewAiServicePage />} />
-        <Route path="/ai-services/:id/edit" element={<EditAiServicePage />} />
-        <Route path="/angles" element={<AnglesPage />} />
-        <Route path="/visual-proofs" element={<VisualProofsPage />} />
-        <Route path="/emotional-triggers" element={<EmotionalTriggersPage />} />
-        <Route path="/landing/:id" element={<LandingPreview />} />
-        <Route path="/analytics" element={<AnalyticsDashboard />} />
-        <Route path="/funnels" element={<FunnelListPage />} />
-        <Route path="/funnels/new" element={<NewFunnelPage />} />
-        <Route path="/funnels/:id/edit" element={<EditFunnelPage />} />
-        <Route path="/chat-dialogs" element={<ChatDialogListPage />} />
-        <Route path="/chat-dialogs/new" element={<NewChatDialogPage />} />
-        <Route path="/prompt-entities" element={<PromptEntitiesPage />} />
-        <Route path="/prompt-entities/new" element={<NewPromptEntityPage />} />
-        <Route
-          path="/prompt-entities/:entityId"
-          element={<PromptEntityDescriptionPage />}
-        />
-        <Route
-          path="/prompt-entities/:entityId/attributes"
-          element={<PromptAttributesPage />}
-        />
-        <Route path="/facebook-campaigns" element={<FacebookCampaignExperimentsPage />} />
-        <Route
-          path="/facebook-campaigns/ready"
-          element={<FacebookExperimentsReadyPage />}
-        />
-        <Route path="*" element={<div>Início</div>} />
-      </Routes>
-      <ToastContainer position="top-right" />
+        </main>
+        <ToastContainer position="top-right" />
+      </div>
     </div>
   );
 }

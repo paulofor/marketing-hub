@@ -1,0 +1,199 @@
+import { useState } from "react";
+import { NavLink } from "react-router-dom";
+import type { LucideIcon } from "lucide-react";
+import {
+  BadgeCheck,
+  BarChart3,
+  Bot,
+  ClipboardCheck,
+  Compass,
+  FlaskConical,
+  Flag,
+  GraduationCap,
+  Image,
+  Instagram,
+  Lightbulb,
+  MessageSquare,
+  Package,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Shapes,
+  Sparkles,
+  Target,
+  Trophy,
+  Users,
+  Workflow,
+} from "lucide-react";
+import "./MainNavigation.css";
+
+type NavItem = {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+};
+
+type NavSection = {
+  title: string;
+  items: NavItem[];
+};
+
+const NAV_SECTIONS: NavSection[] = [
+  {
+    title: "Contas",
+    items: [
+      {
+        to: "/accounts/facebook",
+        label: "Contas do Facebook",
+        icon: Users,
+      },
+      {
+        to: "/accounts/instagram",
+        label: "Contas do Instagram",
+        icon: Instagram,
+      },
+    ],
+  },
+  {
+    title: "Biblioteca",
+    items: [
+      { to: "/media", label: "Mídia", icon: Image },
+      { to: "/courses", label: "Cursos", icon: GraduationCap },
+      { to: "/products", label: "Produtos", icon: Package },
+      {
+        to: "/success-products",
+        label: "Produtos de Sucesso",
+        icon: Trophy,
+      },
+    ],
+  },
+  {
+    title: "Testes",
+    items: [
+      { to: "/niches", label: "Nichos", icon: Target },
+      { to: "/experiments", label: "Testes de Nicho", icon: FlaskConical },
+      { to: "/hypotheses", label: "Hipóteses", icon: Lightbulb },
+    ],
+  },
+  {
+    title: "IA e Conteúdo",
+    items: [
+      { to: "/ai-services", label: "IA", icon: Bot },
+      { to: "/chat-dialogs", label: "ChatGPT", icon: MessageSquare },
+      { to: "/prompt-entities", label: "Objetos de Prompt", icon: Shapes },
+      { to: "/angles", label: "Angles", icon: Compass },
+      { to: "/visual-proofs", label: "Provas Visuais", icon: BadgeCheck },
+      {
+        to: "/emotional-triggers",
+        label: "Gatilhos Emocionais",
+        icon: Sparkles,
+      },
+    ],
+  },
+  {
+    title: "Campanhas",
+    items: [
+      { to: "/funnels", label: "Funil de Vendas", icon: Workflow },
+      {
+        to: "/facebook-campaigns",
+        label: "Experimentos para Campanha",
+        icon: Flag,
+      },
+      {
+        to: "/facebook-campaigns/ready",
+        label: "Experimentos prontos",
+        icon: ClipboardCheck,
+      },
+      { to: "/analytics", label: "Analytics", icon: BarChart3 },
+    ],
+  },
+];
+
+const MARKET_TEST_STEPS = [
+  "1- Hipótese e Oferta Isca",
+  "2- Funil Mínimo",
+  "3- Tráfego e Segmentação",
+  "4- KPIs e limiares de decisão",
+  "5- Automação analítica",
+];
+
+export default function MainNavigation() {
+  const [isPinned, setIsPinned] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const isExpanded = isPinned || isHovered;
+
+  return (
+    <aside
+      className={`main-navigation${isExpanded ? " is-expanded" : ""}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="main-navigation__header">
+        <button
+          type="button"
+          className="main-navigation__toggle"
+          onClick={() => setIsPinned((value) => !value)}
+          aria-label={
+            isPinned ? "Recolher menu principal" : "Expandir menu principal"
+          }
+        >
+          {isExpanded ? (
+            <PanelLeftClose aria-hidden="true" size={18} />
+          ) : (
+            <PanelLeftOpen aria-hidden="true" size={18} />
+          )}
+        </button>
+        <div className="main-navigation__brand">
+          <span className="main-navigation__logo" aria-hidden="true">
+            MH
+          </span>
+          <span className="main-navigation__brand-name">Marketing Hub</span>
+        </div>
+      </div>
+      <nav
+        className="main-navigation__sections"
+        aria-label="Navegação principal"
+      >
+        {NAV_SECTIONS.map((section) => (
+          <div className="main-navigation__section" key={section.title}>
+            <p className="main-navigation__section-title">{section.title}</p>
+            <div className="main-navigation__items">
+              {section.items.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    [
+                      "main-navigation__link",
+                      isActive ? "is-active" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")
+                  }
+                  aria-label={item.label}
+                  title={item.label}
+                >
+                  <item.icon
+                    className="main-navigation__icon"
+                    size={20}
+                    aria-hidden="true"
+                  />
+                  <span className="main-navigation__label">{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
+          </div>
+        ))}
+      </nav>
+      <div className="main-navigation__market-test" aria-label="Etapas do teste de mercado">
+        <p className="main-navigation__section-title">Teste de Mercado</p>
+        <ol className="main-navigation__market-list">
+          {MARKET_TEST_STEPS.map((step) => (
+            <li key={step} className="main-navigation__market-step">
+              {step}
+            </li>
+          ))}
+        </ol>
+      </div>
+    </aside>
+  );
+}

@@ -27,6 +27,7 @@ classDiagram
         -websiteUrl : String
         -creativeMessageTemplate : String
         -callToActionType : String
+        -experimentsBlockedByPermissions : Set<Long>
         +createCampaignsFromExperiments()
         -processExperiment(exp)
         -formatCreativeMessage(name) String
@@ -143,7 +144,9 @@ classDiagram
   `@Scheduled`.
 * `FacebookCampaignService` consulta o backend por experimentos prontos, cria a
   campanha, conjunto, criativo e anúncio na Graph API e registra o resultado da
-  campanha no backend.
+  campanha no backend. Quando o Facebook devolve erro de permissão, o serviço
+  adiciona o experimento a uma lista de bloqueio em memória para evitar novas
+  tentativas até que o worker seja reiniciado.
 * `FacebookAdsService` encapsula as chamadas à Graph API (criação da hierarquia
   de mídia e consulta de métricas).
 * `CreateCampaignRequest` representa o payload enviado ao backend contendo os

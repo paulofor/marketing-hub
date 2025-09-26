@@ -15,6 +15,8 @@ import reactor.core.publisher.Mono;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class FacebookCampaignService {
@@ -35,6 +37,7 @@ public class FacebookCampaignService {
     private final String websiteUrl;
     private final String creativeMessageTemplate;
     private final String callToActionType;
+    private final Set<Long> experimentsBlockedByPermissions;
 
     public FacebookCampaignService(FacebookAdsService facebookAdsService,
                                    WebClient.Builder builder,
@@ -66,6 +69,7 @@ public class FacebookCampaignService {
         this.websiteUrl = websiteUrl;
         this.creativeMessageTemplate = creativeMessageTemplate;
         this.callToActionType = callToActionType;
+        this.experimentsBlockedByPermissions = ConcurrentHashMap.newKeySet();
     }
 
     public void createCampaignsFromExperiments() {
@@ -95,7 +99,16 @@ public class FacebookCampaignService {
             return;
         }
 
-        experiments.forEach(this::processExperiment);
+        experiments.forEach(exp -> {
+            if (experimentsBlockedByPermissions.contains(exp.id())) {
+                LOGGER.warn(
+                    "Skipping experiment {} due to unresolved Facebook permission error; retry requires manual intervention",
+                    exp.id()
+                );
+                return;
+            }
+            processExperiment(exp);
+        });
     }
 
     private void processExperiment(Experiment exp) {
@@ -132,6 +145,11 @@ public class FacebookCampaignService {
                 .toBodilessEntity()
                 .block();
         } catch (FacebookPermissionException ex) {
+            experimentsBlockedByPermissions.add(exp.id());
+            LOGGER.warn(
+                "Experiment {} blocked after Facebook permission error; the worker will keep it skipped until restart",
+                exp.id()
+            );
             LOGGER.warn(
                 "Skipping experiment due to Facebook permission error: id={}, name={}, message={}, details={}",
                 exp.id(),

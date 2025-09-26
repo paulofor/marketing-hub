@@ -80,9 +80,11 @@ de [códigos de erro da Marketing API](https://developers.facebook.com/docs/mark
 para confirmar os requisitos de permissão. Quando esse cenário ocorre, o
 worker marca automaticamente o experimento como `FAILED` via
 `PATCH /api/experiments/{id}/status?status=FAILED` para evitar novas tentativas
-sem intervenção humana. Após ajustar as permissões, atualize manualmente o
-status do experimento para que ele volte a ser elegível e reinicie o worker
-para que o novo token seja utilizado.
+sem intervenção humana. Caso o backend retorne erro e não consiga atualizar o
+status, o worker mantém o identificador do experimento em uma lista de bloqueio
+em memória e ignora execuções seguintes até que o serviço seja reiniciado. Após
+ajustar as permissões, atualize manualmente o status do experimento para que ele
+volte a ser elegível e reinicie o worker para que o novo token seja utilizado.
 
 ### Erro `(#100) Invalid parameter` ao criar o criativo
 

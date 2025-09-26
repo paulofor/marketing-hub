@@ -151,4 +151,39 @@ class FacebookCampaignServiceTest {
         assertEquals("/api/experiments/1/status?status=FAILED", patch.getPath());
         assertEquals(2, backend.getRequestCount());
     }
+
+    @Test
+    void skipsExperimentAfterPermissionErrorEvenIfBackendKeepsReturningIt() throws Exception {
+        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\"}]")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse()
+            .setResponseCode(400)
+            .setBody("{\"error\":{\"message\":\"Permissions error\",\"type\":\"OAuthException\",\"code\":200,\"error_subcode\":1815066}}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setResponseCode(500));
+        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\"}]")
+            .addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+        service.createCampaignsFromExperiments();
+
+        RecordedRequest firstGet = backend.takeRequest();
+        assertEquals("GET", firstGet.getMethod());
+        assertEquals("/api/facebook-campaigns/experiments-ready", firstGet.getPath());
+
+        RecordedRequest campaignPost = facebook.takeRequest();
+        assertEquals("POST", campaignPost.getMethod());
+        assertEquals("/v23.0/act_1/campaigns", campaignPost.getPath());
+
+        RecordedRequest failedPatch = backend.takeRequest();
+        assertEquals("PATCH", failedPatch.getMethod());
+        assertEquals("/api/experiments/1/status?status=FAILED", failedPatch.getPath());
+
+        RecordedRequest secondGet = backend.takeRequest();
+        assertEquals("GET", secondGet.getMethod());
+        assertEquals("/api/facebook-campaigns/experiments-ready", secondGet.getPath());
+
+        assertEquals(1, facebook.getRequestCount());
+        assertEquals(3, backend.getRequestCount());
+    }
 }

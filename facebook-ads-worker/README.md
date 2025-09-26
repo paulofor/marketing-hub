@@ -46,6 +46,11 @@ Os acessos são configurados pelas propriedades:
 - `facebook.ad-set.billing-event` (default: `IMPRESSIONS`)
 - `facebook.ad-set.optimization-goal` (default: `LINK_CLICKS`)
 - `facebook.ad-set.destination-type` (default: `WEBSITE`)
+- `facebook.ad-set.bid-strategy` (default: `LOWEST_COST_WITHOUT_CAP` – evita a
+  exigência de limites de lance em contas que utilizam estratégias de custo
+  máximo)
+- `facebook.ad-set.bid-amount` (opcional – defina um valor fixo de lance em
+  centavos quando a conta exigir)
 - `facebook.ad-set.target-country` (default: `BR`)
 - `facebook.page-id` (sem default – obrigatório)
 - `facebook.instagram-actor-id` (opcional)
@@ -97,6 +102,18 @@ Graph API devolve qualquer status de erro, evitando que IDs vazios sejam
 propagados para chamadas subsequentes. Configure o identificador da Página
 antes de reiniciar o serviço para que a criação dos criativos seja bem
 sucedida.
+
+### Erro `(#100) Invalid parameter` ao criar o conjunto de anúncios
+
+Algumas contas de anúncios exigem que cada conjunto informe limites explícitos
+de lance (`bid_cap`) ou metas de retorno (`ROAS`). Nesses casos, a Graph API
+responde com `error_subcode = 2490487` e a mensagem "Valor ou restrições de
+lance obrigatórios". Para manter o fluxo padrão funcional, o worker agora envia
+`bid_strategy = LOWEST_COST_WITHOUT_CAP` por default, estratégia que não exige
+valores adicionais. Caso sua conta utilize políticas diferentes, preencha
+`facebook.ad-set.bid-amount` com o lance desejado (em centavos) ou ajuste
+`facebook.ad-set.bid-strategy` para refletir a configuração do Gerenciador de
+Anúncios antes de reiniciar o serviço.
 
 ## Build
 ```

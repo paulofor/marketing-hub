@@ -59,6 +59,8 @@ class FacebookAdsServiceTest {
             "IMPRESSIONS",
             "LINK_CLICKS",
             "WEBSITE",
+            "LOWEST_COST_WITHOUT_CAP",
+            "200",
             "42",
             "BR"
         );
@@ -73,6 +75,8 @@ class FacebookAdsServiceTest {
         assertEquals("LINK_CLICKS", body.get("optimization_goal").asText());
         assertEquals("PAUSED", body.get("status").asText());
         assertEquals("WEBSITE", body.get("destination_type").asText());
+        assertEquals("LOWEST_COST_WITHOUT_CAP", body.get("bid_strategy").asText());
+        assertEquals("200", body.get("bid_amount").asText());
         assertEquals("BR", body.get("targeting").get("geo_locations").get("countries").get(0).asText());
         assertEquals("42", body.get("promoted_object").get("page_id").asText());
         assertEquals("222", id);

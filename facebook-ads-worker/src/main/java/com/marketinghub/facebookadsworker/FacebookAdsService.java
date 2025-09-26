@@ -76,6 +76,12 @@ public class FacebookAdsService {
         body.put("status", "PAUSED");
         body.put("destination_type", request.destinationType());
         body.put("targeting", targeting);
+        if (request.bidStrategy() != null && !request.bidStrategy().isBlank()) {
+            body.put("bid_strategy", request.bidStrategy());
+        }
+        if (request.bidAmount() != null && !request.bidAmount().isBlank()) {
+            body.put("bid_amount", request.bidAmount());
+        }
         if (request.pageId() != null && !request.pageId().isBlank()) {
             body.put("promoted_object", Map.of("page_id", request.pageId()));
         }
@@ -400,6 +406,8 @@ public class FacebookAdsService {
         String billingEvent,
         String optimizationGoal,
         String destinationType,
+        String bidStrategy,
+        String bidAmount,
         String pageId,
         String targetCountry
     ) {}

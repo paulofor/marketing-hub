@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@RequestMapping("/api/accounts/facebook")
 public class FacebookAccountController {
     private final FacebookAccountRepository repository;
 
@@ -12,23 +13,23 @@ public class FacebookAccountController {
         this.repository = repository;
     }
 
-    @GetMapping("/accounts/facebook")
+    @GetMapping
     public List<FacebookAccount> findAll() {
         return repository.findAll();
     }
 
-    @PostMapping("/accounts/facebook")
+    @PostMapping
     public FacebookAccount create(@RequestBody FacebookAccount account) {
         return repository.save(account);
     }
 
-    @PutMapping("/accounts/facebook/{id}")
+    @PutMapping("/{id}")
     public FacebookAccount update(@PathVariable Long id, @RequestBody FacebookAccount account) {
         account.setId(id);
         return repository.save(account);
     }
 
-    @DeleteMapping("/accounts/facebook/{id}")
+    @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         repository.deleteById(id);
     }

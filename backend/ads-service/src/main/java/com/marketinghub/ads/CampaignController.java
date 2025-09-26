@@ -19,12 +19,12 @@ public class CampaignController {
         this.campaignRepo = campaignRepo;
     }
 
-    @GetMapping("/accounts/{id}/campaigns")
+    @GetMapping("/api/accounts/{id}/campaigns")
     public List<Campaign> listCampaigns(@PathVariable Long id) {
         return campaignRepo.findByFacebookAccountIdOrInstagramAccountId(id, id);
     }
 
-    @PostMapping("/accounts/{id}/campaigns")
+    @PostMapping("/api/accounts/{id}/campaigns")
     public Campaign createCampaign(@PathVariable Long id,
                                   @RequestParam("platform") String platform,
                                   @RequestBody Campaign campaign) {

@@ -41,7 +41,7 @@ public class FacebookAccountControllerTest {
                         .currency("USD")
                         .build()));
 
-        mockMvc.perform(get("/accounts/facebook"))
+        mockMvc.perform(get("/api/accounts/facebook"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(3));
     }

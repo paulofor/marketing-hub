@@ -7,7 +7,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 @RestController
-@RequestMapping("/accounts/facebook/{accountId}/pages")
+@RequestMapping("/api/accounts/facebook/{accountId}/pages")
 public class FacebookPageController {
     private final FacebookAccountRepository accountRepository;
     private final FacebookPageRepository pageRepository;

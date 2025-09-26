@@ -56,7 +56,7 @@ class FacebookPageControllerTest {
                 "Página Principal"
         );
 
-        mockMvc.perform(post("/accounts/facebook/" + account.getId() + "/pages")
+        mockMvc.perform(post("/api/accounts/facebook/" + account.getId() + "/pages")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -70,22 +70,22 @@ class FacebookPageControllerTest {
                 "Página Atualizada"
         );
 
-        mockMvc.perform(put("/accounts/facebook/" + account.getId() + "/pages/" + saved.getId())
+        mockMvc.perform(put("/api/accounts/facebook/" + account.getId() + "/pages/" + saved.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(update)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.pageId").value("654321"))
                 .andExpect(jsonPath("$.name").value("Página Atualizada"));
 
-        mockMvc.perform(get("/accounts/facebook/" + account.getId() + "/pages"))
+        mockMvc.perform(get("/api/accounts/facebook/" + account.getId() + "/pages"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].pageId").value("654321"));
 
-        mockMvc.perform(delete("/accounts/facebook/" + account.getId() + "/pages/" + saved.getId()))
+        mockMvc.perform(delete("/api/accounts/facebook/" + account.getId() + "/pages/" + saved.getId()))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/accounts/facebook/" + account.getId() + "/pages"))
+        mockMvc.perform(get("/api/accounts/facebook/" + account.getId() + "/pages"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }

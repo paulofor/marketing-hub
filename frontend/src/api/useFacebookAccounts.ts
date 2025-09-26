@@ -12,7 +12,7 @@ export function useFacebookAccounts() {
     queryKey: ["facebook-accounts"],
     queryFn: async () => {
       const { data } = await axios.get<FacebookAccount[]>(
-        "/api/accounts/facebook",
+        "/accounts/facebook",
       );
       return data;
     },

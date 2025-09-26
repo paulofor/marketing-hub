@@ -50,6 +50,8 @@ class FacebookCampaignServiceTest {
             "IMPRESSIONS",
             "LINK_CLICKS",
             "WEBSITE",
+            "LOWEST_COST_WITHOUT_CAP",
+            "150",
             "BR",
             "42",
             "11",
@@ -94,6 +96,8 @@ class FacebookCampaignServiceTest {
         assertEquals("Exp - Ad Set", adSetPayload.get("name").asText());
         assertEquals("10", adSetPayload.get("campaign_id").asText());
         assertEquals("2000", adSetPayload.get("daily_budget").asText());
+        assertEquals("LOWEST_COST_WITHOUT_CAP", adSetPayload.get("bid_strategy").asText());
+        assertEquals("150", adSetPayload.get("bid_amount").asText());
 
         RecordedRequest postCreative = facebook.takeRequest();
         assertEquals("/v23.0/act_1/adcreatives", postCreative.getPath());

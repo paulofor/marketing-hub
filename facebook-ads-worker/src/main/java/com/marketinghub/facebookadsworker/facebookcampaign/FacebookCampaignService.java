@@ -31,6 +31,8 @@ public class FacebookCampaignService {
     private final String adSetBillingEvent;
     private final String adSetOptimizationGoal;
     private final String adSetDestinationType;
+    private final String adSetBidStrategy;
+    private final String adSetBidAmount;
     private final String adSetTargetCountry;
     private final String pageId;
     private final String instagramActorId;
@@ -48,6 +50,8 @@ public class FacebookCampaignService {
                                    @Value("${facebook.ad-set.billing-event:IMPRESSIONS}") String adSetBillingEvent,
                                    @Value("${facebook.ad-set.optimization-goal:LINK_CLICKS}") String adSetOptimizationGoal,
                                    @Value("${facebook.ad-set.destination-type:WEBSITE}") String adSetDestinationType,
+                                   @Value("${facebook.ad-set.bid-strategy:LOWEST_COST_WITHOUT_CAP}") String adSetBidStrategy,
+                                   @Value("${facebook.ad-set.bid-amount:}") String adSetBidAmount,
                                    @Value("${facebook.ad-set.target-country:BR}") String adSetTargetCountry,
                                    @Value("${facebook.page-id}") String pageId,
                                    @Value("${facebook.instagram-actor-id:}") String instagramActorId,
@@ -63,6 +67,8 @@ public class FacebookCampaignService {
         this.adSetBillingEvent = adSetBillingEvent;
         this.adSetOptimizationGoal = adSetOptimizationGoal;
         this.adSetDestinationType = adSetDestinationType;
+        this.adSetBidStrategy = adSetBidStrategy;
+        this.adSetBidAmount = adSetBidAmount;
         this.adSetTargetCountry = adSetTargetCountry;
         this.pageId = pageId;
         this.instagramActorId = instagramActorId;
@@ -121,6 +127,8 @@ public class FacebookCampaignService {
                 adSetBillingEvent,
                 adSetOptimizationGoal,
                 adSetDestinationType,
+                adSetBidStrategy,
+                adSetBidAmount,
                 pageId,
                 adSetTargetCountry
             ));

@@ -7,6 +7,7 @@ import { io } from "socket.io-client";
 import App from "./App";
 import axios from "axios";
 import { apiBaseUrl } from "./config/api";
+import "./api/http";
 
 axios.defaults.baseURL = apiBaseUrl;
 

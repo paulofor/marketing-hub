@@ -6,7 +6,7 @@ export function useCreateInstagramAccount() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (account: InstagramAccount) =>
-      axios.post("/accounts/instagram", account),
+      axios.post("/api/accounts/instagram", account),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["instagram-accounts"] }),
   });
@@ -16,7 +16,7 @@ export function useUpdateInstagramAccount() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (account: InstagramAccount) =>
-      axios.put(`/accounts/instagram/${account.id}`, account),
+      axios.put(`/api/accounts/instagram/${account.id}`, account),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["instagram-accounts"] }),
   });
@@ -25,7 +25,8 @@ export function useUpdateInstagramAccount() {
 export function useDeleteInstagramAccount() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => axios.delete(`/accounts/instagram/${id}`),
+    mutationFn: (id: string) =>
+      axios.delete(`/api/accounts/instagram/${id}`),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["instagram-accounts"] }),
   });

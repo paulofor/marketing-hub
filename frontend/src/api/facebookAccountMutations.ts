@@ -10,7 +10,7 @@ export function useCreateFacebookAccount() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (account: FacebookAccountPayload) =>
-      axios.post("/accounts/facebook", account),
+      axios.post("/api/accounts/facebook", account),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["facebook-accounts"] }),
   });
@@ -20,7 +20,7 @@ export function useUpdateFacebookAccount() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (account: FacebookAccountPayload) =>
-      axios.put(`/accounts/facebook/${account.id}`, account),
+      axios.put(`/api/accounts/facebook/${account.id}`, account),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["facebook-accounts"] }),
   });
@@ -29,7 +29,8 @@ export function useUpdateFacebookAccount() {
 export function useDeleteFacebookAccount() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => axios.delete(`/accounts/facebook/${id}`),
+    mutationFn: (id: number) =>
+      axios.delete(`/api/accounts/facebook/${id}`),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["facebook-accounts"] }),
   });

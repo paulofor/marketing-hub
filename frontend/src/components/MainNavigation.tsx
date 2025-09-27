@@ -32,6 +32,7 @@ type NavItem = {
   to: string;
   label: string;
   icon: NavIcon;
+  end?: boolean;
 };
 
 type NavSection = {
@@ -99,6 +100,7 @@ const NAV_SECTIONS: NavSection[] = [
         to: "/facebook-campaigns",
         label: "Experimentos para Campanha",
         icon: Flag,
+        end: true,
       },
       {
         to: "/facebook-campaigns/ready",
@@ -163,6 +165,7 @@ export default function MainNavigation() {
                 <NavLink
                   key={item.to}
                   to={item.to}
+                  end={item.end}
                   className={({ isActive }) =>
                     [
                       "main-navigation__link",

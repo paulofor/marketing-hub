@@ -146,7 +146,13 @@ export default function MainNavigation() {
         </button>
         <div className="main-navigation__brand">
           <span className="main-navigation__logo" aria-hidden="true">
-            MH
+            <img
+              src="/favicon.ico"
+              alt=""
+              width={32}
+              height={32}
+              className="main-navigation__logo-image"
+            />
           </span>
           <span className="main-navigation__brand-name">Marketing Hub</span>
         </div>

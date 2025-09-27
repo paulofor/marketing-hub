@@ -4,6 +4,7 @@
   align-self: flex-start;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
   width: 72px;
   height: 100vh;
   padding: 1.5rem 0.75rem;

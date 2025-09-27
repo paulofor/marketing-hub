@@ -59,6 +59,36 @@
   text-decoration: underline;
 }
 
+.experiments-ready-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.experiments-ready-card-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background-color: var(--bs-tertiary-bg);
+  color: var(--bs-secondary-color);
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid var(--bs-border-color);
+}
+
+.experiments-ready-card-tag svg {
+  color: var(--bs-primary);
+}
+
+.experiments-ready-card-subtitle {
+  margin: 0;
+  color: var(--bs-secondary-color);
+  font-size: 0.95rem;
+}
+
 .experiments-ready-meta {
   display: grid;
   gap: 0.5rem;
@@ -95,4 +125,45 @@
   margin: 0;
   color: var(--bs-secondary-color);
   max-width: 420px;
+}
+
+.experiments-ready-card-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+}
+
+.experiments-ready-card-status strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.95rem;
+}
+
+.experiments-ready-card-status ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.experiments-ready-card-status-warning {
+  background-color: var(--bs-warning-bg-subtle);
+  border-color: var(--bs-warning-border-subtle);
+  color: var(--bs-warning-text-emphasis);
+}
+
+.experiments-ready-card-status-warning svg {
+  color: var(--bs-warning-text-emphasis);
+}
+
+.experiments-ready-card-status-ready {
+  background-color: var(--bs-success-bg-subtle);
+  border-color: var(--bs-success-border-subtle);
+  color: var(--bs-success-text-emphasis);
+}
+
+.experiments-ready-card-status-ready svg {
+  color: var(--bs-success-text-emphasis);
 }

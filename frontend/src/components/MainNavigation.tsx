@@ -7,12 +7,10 @@ import {
   Bot,
   ClipboardCheck,
   Compass,
-  FlaskConical,
   Flag,
   GraduationCap,
   Image,
   Instagram,
-  Lightbulb,
   MessageSquare,
   Package,
   PanelLeftClose,
@@ -23,6 +21,8 @@ import {
   Users,
   Workflow,
 } from "lucide-react";
+import experimentIcon from "../assets/icons/experiment-icon.svg";
+import hypothesisIcon from "../assets/icons/hypothesis-icon.svg";
 import nicheIcon from "../assets/icons/niche-icon.svg";
 import "./MainNavigation.css";
 
@@ -72,8 +72,8 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Testes",
     items: [
       { to: "/niches", label: "Nichos", icon: nicheIcon },
-      { to: "/experiments", label: "Testes de Nicho", icon: FlaskConical },
-      { to: "/hypotheses", label: "Hipóteses", icon: Lightbulb },
+      { to: "/experiments", label: "Testes de Nicho", icon: experimentIcon },
+      { to: "/hypotheses", label: "Hipóteses", icon: hypothesisIcon },
     ],
   },
   {

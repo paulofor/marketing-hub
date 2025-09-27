@@ -17,7 +17,6 @@ import {
 interface AccountFormState {
   id?: number;
   name: string;
-  currency: string;
 }
 
 interface PageFormState {
@@ -26,7 +25,9 @@ interface PageFormState {
   name: string;
 }
 
-const emptyAccountForm: AccountFormState = { name: "", currency: "" };
+const BRAZILIAN_REAL = "BRL";
+
+const emptyAccountForm: AccountFormState = { name: "" };
 const emptyPageForm: PageFormState = { pageId: "", name: "" };
 
 export default function FacebookAccountsPage() {
@@ -73,7 +74,7 @@ export default function FacebookAccountsPage() {
     const payload: FacebookAccountPayload = {
       id: accountForm.id,
       name: accountForm.name,
-      currency: accountForm.currency,
+      currency: BRAZILIAN_REAL,
     };
     const mutation = isEditingAccount ? updateAccountMutation : createAccountMutation;
     mutation.mutate(payload, {
@@ -129,7 +130,7 @@ export default function FacebookAccountsPage() {
                           <button
                             className="btn btn-sm btn-outline-primary"
                             onClick={() => {
-                              setAccountForm({ id, name, currency });
+                              setAccountForm({ id, name });
                             }}
                           >
                             Editar
@@ -166,25 +167,15 @@ export default function FacebookAccountsPage() {
                     }
                   />
                 </div>
-                <div className="col-md-3">
-                  <input
-                    className="form-control"
-                    placeholder="Moeda"
-                    value={accountForm.currency}
-                    onChange={(event) =>
-                      setAccountForm((current) => ({
-                        ...current,
-                        currency: event.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="col-md-4">
+                <div className="col-md-7">
                   <button className="btn btn-primary w-100" onClick={submitAccount}>
                     {isEditingAccount ? "Atualizar conta" : "Adicionar conta"}
                   </button>
                 </div>
               </div>
+              <p className="text-muted small mt-2 mb-0">
+                A moeda das contas do Facebook é sempre o Real brasileiro (BRL).
+              </p>
             </div>
           </div>
         </div>

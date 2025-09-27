@@ -36,6 +36,8 @@ export default function FacebookAccountsPage() {
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
   const [accountForm, setAccountForm] = useState<AccountFormState>(emptyAccountForm);
   const [pageForm, setPageForm] = useState<PageFormState>(emptyPageForm);
+  const [deletingAccountId, setDeletingAccountId] = useState<number | null>(null);
+  const [deletingPageId, setDeletingPageId] = useState<number | null>(null);
 
   const createAccountMutation = useCreateFacebookAccount();
   const updateAccountMutation = useUpdateFacebookAccount();
@@ -70,7 +72,13 @@ export default function FacebookAccountsPage() {
   const isEditingAccount = typeof accountForm.id === "number";
   const isEditingPage = typeof pageForm.id === "number";
 
+  const isAccountMutationPending =
+    createAccountMutation.isPending || updateAccountMutation.isPending;
+  const isPageMutationPending =
+    createPageMutation.isPending || updatePageMutation.isPending;
+
   const submitAccount = () => {
+    if (isAccountMutationPending) return;
     const payload: FacebookAccountPayload = {
       id: accountForm.id,
       name: accountForm.name,
@@ -86,6 +94,7 @@ export default function FacebookAccountsPage() {
 
   const submitPage = () => {
     if (!selectedAccountId) return;
+    if (isPageMutationPending) return;
     const payload: PageFormState = {
       id: pageForm.id,
       pageId: pageForm.pageId,
@@ -96,6 +105,20 @@ export default function FacebookAccountsPage() {
       onSuccess: () => {
         setPageForm(emptyPageForm);
       },
+    });
+  };
+
+  const handleDeleteAccount = (id: number) => {
+    setDeletingAccountId(id);
+    deleteAccountMutation.mutate(id, {
+      onSettled: () => setDeletingAccountId(null),
+    });
+  };
+
+  const handleDeletePage = (pageId: number) => {
+    setDeletingPageId(pageId);
+    deletePageMutation.mutate(pageId, {
+      onSettled: () => setDeletingPageId(null),
     });
   };
 
@@ -127,26 +150,47 @@ export default function FacebookAccountsPage() {
                         <td>{name}</td>
                         <td>{currency}</td>
                         <td className="text-end d-flex justify-content-end gap-2">
-                          <button
-                            className="btn btn-sm btn-outline-primary"
-                            onClick={() => {
-                              setAccountForm({ id, name });
-                            }}
-                          >
-                            Editar
-                          </button>
-                          <button
-                            className="btn btn-sm btn-outline-secondary"
-                            onClick={() => setSelectedAccountId(id)}
-                          >
-                            Páginas
-                          </button>
-                          <button
-                            className="btn btn-sm btn-outline-danger"
-                            onClick={() => deleteAccountMutation.mutate(id)}
-                          >
-                            Excluir
-                          </button>
+                          {(() => {
+                            const isDeletingThisAccount =
+                              deleteAccountMutation.isPending && deletingAccountId === id;
+                            return (
+                              <>
+                                <button
+                                  className="btn btn-sm btn-outline-primary"
+                                  onClick={() => {
+                                    setAccountForm({ id, name });
+                                  }}
+                                  disabled={isDeletingThisAccount}
+                                >
+                                  Editar
+                                </button>
+                                <button
+                                  className="btn btn-sm btn-outline-secondary"
+                                  onClick={() => setSelectedAccountId(id)}
+                                  disabled={isDeletingThisAccount}
+                                >
+                                  Páginas
+                                </button>
+                                <button
+                                  className="btn btn-sm btn-outline-danger"
+                                  onClick={() => handleDeleteAccount(id)}
+                                  disabled={deleteAccountMutation.isPending}
+                                >
+                                  {isDeletingThisAccount ? (
+                                    <>
+                                      <span
+                                        className="spinner-border spinner-border-sm me-2"
+                                        role="status"
+                                      />
+                                      Excluindo...
+                                    </>
+                                  ) : (
+                                    "Excluir"
+                                  )}
+                                </button>
+                              </>
+                            );
+                          })()}
                         </td>
                       </tr>
                     ))}
@@ -168,8 +212,24 @@ export default function FacebookAccountsPage() {
                   />
                 </div>
                 <div className="col-md-7">
-                  <button className="btn btn-primary w-100" onClick={submitAccount}>
-                    {isEditingAccount ? "Atualizar conta" : "Adicionar conta"}
+                  <button
+                    className="btn btn-primary w-100"
+                    onClick={submitAccount}
+                    disabled={isAccountMutationPending}
+                  >
+                    {isAccountMutationPending ? (
+                      <>
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          role="status"
+                        />
+                        {isEditingAccount ? "Atualizando conta..." : "Adicionando conta..."}
+                      </>
+                    ) : isEditingAccount ? (
+                      "Atualizar conta"
+                    ) : (
+                      "Adicionar conta"
+                    )}
                   </button>
                 </div>
               </div>
@@ -211,24 +271,44 @@ export default function FacebookAccountsPage() {
                           <td>{page.pageId}</td>
                           <td>{page.name}</td>
                           <td className="text-end d-flex justify-content-end gap-2">
-                            <button
-                              className="btn btn-sm btn-outline-primary"
-                              onClick={() =>
-                                setPageForm({
-                                  id: page.id,
-                                  pageId: page.pageId,
-                                  name: page.name,
-                                })
-                              }
-                            >
-                              Editar
-                            </button>
-                            <button
-                              className="btn btn-sm btn-outline-danger"
-                              onClick={() => deletePageMutation.mutate(page.id)}
-                            >
-                              Excluir
-                            </button>
+                            {(() => {
+                              const isDeletingThisPage =
+                                deletePageMutation.isPending && deletingPageId === page.id;
+                              return (
+                                <>
+                                  <button
+                                    className="btn btn-sm btn-outline-primary"
+                                    onClick={() =>
+                                      setPageForm({
+                                        id: page.id,
+                                        pageId: page.pageId,
+                                        name: page.name,
+                                      })
+                                    }
+                                    disabled={isDeletingThisPage}
+                                  >
+                                    Editar
+                                  </button>
+                                  <button
+                                    className="btn btn-sm btn-outline-danger"
+                                    onClick={() => handleDeletePage(page.id)}
+                                    disabled={deletePageMutation.isPending}
+                                  >
+                                    {isDeletingThisPage ? (
+                                      <>
+                                        <span
+                                          className="spinner-border spinner-border-sm me-2"
+                                          role="status"
+                                        />
+                                        Excluindo...
+                                      </>
+                                    ) : (
+                                      "Excluir"
+                                    )}
+                                  </button>
+                                </>
+                              );
+                            })()}
                           </td>
                         </tr>
                       ))}
@@ -269,9 +349,21 @@ export default function FacebookAccountsPage() {
                   <button
                     className="btn btn-primary w-100"
                     onClick={submitPage}
-                    disabled={!selectedAccountId}
+                    disabled={!selectedAccountId || isPageMutationPending}
                   >
-                    {isEditingPage ? "Atualizar página" : "Adicionar página"}
+                    {isPageMutationPending ? (
+                      <>
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          role="status"
+                        />
+                        {isEditingPage ? "Atualizando página..." : "Adicionando página..."}
+                      </>
+                    ) : isEditingPage ? (
+                      "Atualizar página"
+                    ) : (
+                      "Adicionar página"
+                    )}
                   </button>
                 </div>
               </div>

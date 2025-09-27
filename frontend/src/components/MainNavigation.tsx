@@ -19,17 +19,19 @@ import {
   PanelLeftOpen,
   Shapes,
   Sparkles,
-  Target,
   Trophy,
   Users,
   Workflow,
 } from "lucide-react";
+import nicheIcon from "../assets/icons/niche-icon.svg";
 import "./MainNavigation.css";
+
+type NavIcon = LucideIcon | string;
 
 type NavItem = {
   to: string;
   label: string;
-  icon: LucideIcon;
+  icon: NavIcon;
 };
 
 type NavSection = {
@@ -69,7 +71,7 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "Testes",
     items: [
-      { to: "/niches", label: "Nichos", icon: Target },
+      { to: "/niches", label: "Nichos", icon: nicheIcon },
       { to: "/experiments", label: "Testes de Nicho", icon: FlaskConical },
       { to: "/hypotheses", label: "Hipóteses", icon: Lightbulb },
     ],
@@ -172,11 +174,20 @@ export default function MainNavigation() {
                   aria-label={item.label}
                   title={item.label}
                 >
-                  <item.icon
-                    className="main-navigation__icon"
-                    size={20}
-                    aria-hidden="true"
-                  />
+                  {typeof item.icon === "string" ? (
+                    <img
+                      src={item.icon}
+                      className="main-navigation__icon"
+                      alt=""
+                      loading="lazy"
+                    />
+                  ) : (
+                    <item.icon
+                      className="main-navigation__icon"
+                      size={20}
+                      aria-hidden="true"
+                    />
+                  )}
                   <span className="main-navigation__label">{item.label}</span>
                 </NavLink>
               ))}

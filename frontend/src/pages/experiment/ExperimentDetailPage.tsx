@@ -1,5 +1,5 @@
 import { Fragment, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useExperiment } from "../../api/experiment/useExperiment";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
 import { useNiche } from "../../api/niche/useNiche";
@@ -14,10 +14,12 @@ import { useBreadcrumbs } from "../../app/breadcrumbs";
 import * as Tabs from "@radix-ui/react-tabs";
 import FunnelPreviewModal from "./FunnelPreviewModal";
 import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
+import { useFacebookConfigurationStatus } from "../../api/useFacebookConfigurationStatus";
 
 export default function ExperimentDetailPage() {
   const { id } = useParams();
   const expId = id as string;
+  const navigate = useNavigate();
   const { data, isLoading } = useExperiment(expId);
   const { data: niche } = useNiche(data?.nicheId ?? 0);
   const { data: hyp } = useHypothesis(
@@ -29,6 +31,8 @@ export default function ExperimentDetailPage() {
   const { data: presets } = useMetricPresets();
   const [tab, setTab] = useState("overview");
   const [isFunnelPreviewOpen, setFunnelPreviewOpen] = useState(false);
+  const { data: facebookConfig, isLoading: isLoadingFacebookConfig } =
+    useFacebookConfigurationStatus();
   useBreadcrumbs([
     {
       label: niche?.name || "...",
@@ -72,7 +76,26 @@ export default function ExperimentDetailPage() {
     (baseKpi != null && stopLossFactor != null
       ? baseKpi * stopLossFactor
       : null);
+  const hasConfiguredFacebookPage = facebookConfig?.hasConfiguredPages ?? false;
   const readinessChecks = [
+    {
+      id: "facebook-page",
+      title: "Página do Facebook configurada",
+      isMet: hasConfiguredFacebookPage,
+      hint: hasConfiguredFacebookPage
+        ? "Já existe ao menos uma página configurada para publicar campanhas."
+        : isLoadingFacebookConfig
+          ? "Verificando páginas configuradas..."
+          : "Cadastre e relacione uma página do Facebook na tela Contas do Facebook.",
+      action:
+        !isLoadingFacebookConfig && !hasConfiguredFacebookPage
+          ? () => navigate("/accounts/facebook")
+          : undefined,
+      actionLabel:
+        !isLoadingFacebookConfig && !hasConfiguredFacebookPage
+          ? "Abrir Contas do Facebook"
+          : undefined,
+    },
     {
       id: "platform",
       title: "Plataforma configurada para Facebook Ads",

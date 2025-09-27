@@ -205,15 +205,16 @@
 
   .main-navigation__sections {
     flex-direction: row;
-    gap: 1rem;
-    overflow-x: auto;
-    overflow-y: visible;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    overflow: visible;
     padding-right: 0;
   }
 
   .main-navigation__section {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.5rem;
   }
 
@@ -224,6 +225,7 @@
 
   .main-navigation__items {
     flex-direction: row;
+    flex-wrap: wrap;
     gap: 0.5rem;
   }
 

@@ -8,6 +8,9 @@ export interface ExperimentSummary {
   kpiTargetCpl: number | null;
   startDate: string | null;
   endDate: string | null;
+  nicheName: string | null;
+  hypothesisTitle: string | null;
+  missingConfiguration: string[];
 }
 
 export function useFacebookCampaignExperiments(status: string) {

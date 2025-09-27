@@ -1,6 +1,16 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, CalendarDays, Flag, Gauge, Target } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarDays,
+  CheckCircle2,
+  FlaskConical,
+  Flag,
+  Gauge,
+  Layers,
+  Lightbulb,
+  Target,
+} from "lucide-react";
 
 import PageTitle from "../../components/PageTitle";
 import { useFacebookReadyExperiments } from "../../api/useFacebookReadyExperiments";
@@ -30,6 +40,15 @@ export default function FacebookExperimentsReadyPage() {
   const experiments = useMemo(() => (Array.isArray(data) ? data : []), [data]);
   const isEmpty = !isLoading && experiments.length === 0 && !isError;
   const requiresPageSetup = configuration && !configuration.hasConfiguredPages;
+  const missingLabels: Record<string, string> = {
+    creativeApproval: "Aprovar pelo menos um criativo",
+    kpiTargetCpl: "Definir o KPI alvo (CPL)",
+    stopLossCpl: "Definir o stop-loss de CPL",
+    sampleSize: "Informar o tamanho da amostra",
+    startDate: "Definir a data de início",
+    endDate: "Definir a data de término",
+    salesFunnel: "Associar um funil de vendas",
+  };
 
   return (
     <div>
@@ -90,17 +109,58 @@ export default function FacebookExperimentsReadyPage() {
           {experiments.map((experiment) => (
             <article key={experiment.id} className="experiments-ready-card">
               <div className="experiments-ready-card-header">
-                <h2 className="experiments-ready-card-title">
-                  <Link to={`/experiments/${experiment.id}`}>
-                    {experiment.name}
-                  </Link>
-                </h2>
+                <div>
+                  <h2 className="experiments-ready-card-title">
+                    <Link
+                      to={`/experiments/${experiment.id}`}
+                      className="experiments-ready-card-title-link"
+                    >
+                      <FlaskConical
+                        size={18}
+                        aria-hidden="true"
+                        className="experiments-ready-card-title-icon"
+                      />
+                      {experiment.name}
+                    </Link>
+                  </h2>
+                  <div className="experiments-ready-card-tags">
+                    {experiment.nicheName ? (
+                      <span className="experiments-ready-card-tag">
+                        <Layers size={14} />
+                        {experiment.nicheName}
+                      </span>
+                    ) : null}
+                    {experiment.hypothesisTitle ? (
+                      <span className="experiments-ready-card-tag">
+                        <Lightbulb size={14} />
+                        {experiment.hypothesisTitle}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
                 <span className="badge text-bg-success">Pronto</span>
               </div>
+              {experiment.hypothesis ? (
+                <p className="experiments-ready-card-subtitle">
+                  {experiment.hypothesis}
+                </p>
+              ) : null}
               <div className="experiments-ready-meta">
                 <div className="experiments-ready-meta-item">
+                  <Layers size={16} className="text-primary" />
+                  <span>Nicho: {experiment.nicheName || "Sem nicho"}</span>
+                </div>
+                <div className="experiments-ready-meta-item">
+                  <Lightbulb size={16} className="text-primary" />
+                  <span>
+                    Hipótese: {experiment.hypothesisTitle || "Sem título"}
+                  </span>
+                </div>
+                <div className="experiments-ready-meta-item">
                   <Target size={16} className="text-primary" />
-                  <span>{experiment.hypothesis || "Sem hipótese vinculada"}</span>
+                  <span>
+                    Narrativa: {experiment.hypothesis || "Sem hipótese vinculada"}
+                  </span>
                 </div>
                 <div className="experiments-ready-meta-item">
                   <Gauge size={16} className="text-primary" />
@@ -114,6 +174,40 @@ export default function FacebookExperimentsReadyPage() {
                   <CalendarDays size={16} className="text-secondary" />
                   <span>Término: {formatDate(experiment.endDate)}</span>
                 </div>
+              </div>
+              <div
+                className={`experiments-ready-card-status ${
+                  experiment.missingConfiguration.length > 0
+                    ? "experiments-ready-card-status-warning"
+                    : "experiments-ready-card-status-ready"
+                }`}
+              >
+                {experiment.missingConfiguration.length > 0 ? (
+                  <>
+                    <AlertTriangle size={18} />
+                    <div>
+                      <strong>Pendências antes da campanha</strong>
+                      <ul>
+                        {experiment.missingConfiguration.map((item) => (
+                          <li key={item}>
+                            {missingLabels[item] || "Revise o experimento"}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 size={18} />
+                    <div>
+                      <strong>Pronto para o worker</strong>
+                      <p className="mb-0">
+                        O agendador criará a campanha assim que encontrar este
+                        experimento.
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
               <div className="d-flex justify-content-end">
                 <Link

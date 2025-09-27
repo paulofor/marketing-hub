@@ -2,6 +2,9 @@ package com.marketinghub.facebookads.web;
 
 import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.funnel.SalesFunnel;
+import com.marketinghub.hypothesis.Hypothesis;
+import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.experiment.service.ExperimentService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,13 +42,31 @@ class FacebookAdsCampaignControllerTest {
 
     @Test
     void listExperimentsByStatus() throws Exception {
+        var niche = MarketNiche.builder()
+                .id(10L)
+                .name("Test Nicho")
+                .build();
+        var hypothesis = Hypothesis.builder()
+                .id(java.util.UUID.randomUUID())
+                .title("Hipótese do Nicho")
+                .build();
+        var funnel = SalesFunnel.builder()
+                .id(java.util.UUID.randomUUID())
+                .name("Funil de Conversão")
+                .build();
         var exp = Experiment.builder()
                 .id(1L)
+                .niche(niche)
                 .name("Exp")
                 .hypothesis("Hipótese")
+                .hypothesisRef(hypothesis)
                 .kpiTargetCpl(BigDecimal.TEN)
+                .stopLossCpl(BigDecimal.valueOf(20))
+                .sampleSize(1200)
                 .startDate(LocalDate.of(2024, 1, 1))
                 .endDate(LocalDate.of(2024, 1, 31))
+                .creativeApproved(true)
+                .salesFunnel(funnel)
                 .build();
         when(experimentService.listByStatusAndPlatform(
                 com.marketinghub.experiment.ExperimentStatus.PLANNED,
@@ -58,6 +79,10 @@ class FacebookAdsCampaignControllerTest {
                 .andExpect(jsonPath("$[0].hypothesis").value("Hipótese"))
                 .andExpect(jsonPath("$[0].kpiTargetCpl").value(10))
                 .andExpect(jsonPath("$[0].startDate").value("2024-01-01"))
-                .andExpect(jsonPath("$[0].endDate").value("2024-01-31"));
+                .andExpect(jsonPath("$[0].endDate").value("2024-01-31"))
+                .andExpect(jsonPath("$[0].nicheName").value("Test Nicho"))
+                .andExpect(jsonPath("$[0].hypothesisTitle").value("Hipótese do Nicho"))
+                .andExpect(jsonPath("$[0].missingConfiguration").isArray())
+                .andExpect(jsonPath("$[0].missingConfiguration").isEmpty());
     }
 }

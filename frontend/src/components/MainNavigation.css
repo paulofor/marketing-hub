@@ -136,6 +136,9 @@
 
 .main-navigation__icon {
   flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
 }
 
 .main-navigation__label {

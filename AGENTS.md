@@ -15,6 +15,7 @@
 - **Frontend**
   - Build: `npm run build`
   - Tests: `npm run test`
+  - Sempre que adicionar uma chamada ou funcionalidade que consuma o backend, valide que a URL configurada está correta para evitar erros 404.
 
 ## Conventions
 

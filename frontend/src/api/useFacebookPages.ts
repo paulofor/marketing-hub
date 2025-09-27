@@ -16,7 +16,7 @@ export function useFacebookPages(accountId?: string | number) {
         return [] as FacebookPage[];
       }
       const { data } = await axios.get<FacebookPage[]>(
-        `/accounts/facebook/${accountId}/pages`,
+        `/api/accounts/facebook/${accountId}/pages`,
       );
       return data;
     },

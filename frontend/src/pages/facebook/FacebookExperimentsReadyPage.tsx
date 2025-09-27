@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   CalendarDays,
   CheckCircle2,
+  FlaskConical,
   Flag,
   Gauge,
   Layers,
@@ -110,7 +111,15 @@ export default function FacebookExperimentsReadyPage() {
               <div className="experiments-ready-card-header">
                 <div>
                   <h2 className="experiments-ready-card-title">
-                    <Link to={`/experiments/${experiment.id}`}>
+                    <Link
+                      to={`/experiments/${experiment.id}`}
+                      className="experiments-ready-card-title-link"
+                    >
+                      <FlaskConical
+                        size={18}
+                        aria-hidden="true"
+                        className="experiments-ready-card-title-icon"
+                      />
                       {experiment.name}
                     </Link>
                   </h2>

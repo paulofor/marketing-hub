@@ -12,7 +12,7 @@ export function useInstagramAccounts() {
     queryKey: ["instagram-accounts"],
     queryFn: async () => {
       const { data } = await axios.get<InstagramAccount[]>(
-        "/accounts/instagram",
+        "/api/accounts/instagram",
       );
       return data;
     },

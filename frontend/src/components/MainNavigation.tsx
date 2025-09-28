@@ -31,8 +31,9 @@ type NavIcon = LucideIcon | string;
 type NavItem = {
   to: string;
   label: string;
-  icon: NavIcon;
+  icon?: NavIcon;
   end?: boolean;
+  children?: NavItem[];
 };
 
 type NavSection = {
@@ -73,7 +74,19 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Testes",
     items: [
       { to: "/niches", label: "Nichos", icon: nicheIcon },
-      { to: "/experiments", label: "Testes de Nicho", icon: experimentIcon },
+      {
+        to: "/experiments",
+        label: "Experimentos",
+        icon: experimentIcon,
+        children: [
+          {
+            to: "/facebook-campaigns",
+            label: "Experimentos para Campanha",
+            icon: Flag,
+            end: true,
+          },
+        ],
+      },
       { to: "/hypotheses", label: "Hipóteses", icon: hypothesisIcon },
     ],
   },
@@ -96,12 +109,6 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Campanhas",
     items: [
       { to: "/funnels", label: "Funil de Vendas", icon: Workflow },
-      {
-        to: "/facebook-campaigns",
-        label: "Experimentos para Campanha",
-        icon: Flag,
-        end: true,
-      },
       {
         to: "/facebook-campaigns/ready",
         label: "Experimentos prontos",
@@ -167,39 +174,110 @@ export default function MainNavigation() {
           <div className="main-navigation__section" key={section.title}>
             <p className="main-navigation__section-title">{section.title}</p>
             <div className="main-navigation__items">
-              {section.items.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.end}
-                  className={({ isActive }) =>
-                    [
-                      "main-navigation__link",
-                      isActive ? "is-active" : "",
+              {section.items.map((item) => {
+                const hasChildren = Boolean(item.children?.length);
+
+                return (
+                  <div
+                    className={[
+                      "main-navigation__item-group",
+                      hasChildren ? "has-children" : "",
                     ]
                       .filter(Boolean)
-                      .join(" ")
-                  }
-                  aria-label={item.label}
-                  title={item.label}
-                >
-                  {typeof item.icon === "string" ? (
-                    <img
-                      src={item.icon}
-                      className="main-navigation__icon"
-                      alt=""
-                      loading="lazy"
-                    />
-                  ) : (
-                    <item.icon
-                      className="main-navigation__icon"
-                      size={20}
-                      aria-hidden="true"
-                    />
-                  )}
-                  <span className="main-navigation__label">{item.label}</span>
-                </NavLink>
-              ))}
+                      .join(" ")}
+                    key={item.to}
+                  >
+                    <NavLink
+                      to={item.to}
+                      end={item.end}
+                      className={({ isActive }) =>
+                        [
+                          "main-navigation__link",
+                          isActive ? "is-active" : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")
+                      }
+                      aria-label={item.label}
+                      title={item.label}
+                    >
+                      {item.icon ? (
+                        typeof item.icon === "string" ? (
+                          <img
+                            src={item.icon}
+                            className="main-navigation__icon"
+                            alt=""
+                            loading="lazy"
+                          />
+                        ) : (
+                          <item.icon
+                            className="main-navigation__icon"
+                            size={20}
+                            aria-hidden="true"
+                          />
+                        )
+                      ) : (
+                        <span
+                          className="main-navigation__icon main-navigation__icon--spacer"
+                          aria-hidden="true"
+                        />
+                      )}
+                      <span className="main-navigation__label">{item.label}</span>
+                    </NavLink>
+                    {hasChildren ? (
+                      <div
+                        className="main-navigation__subitems"
+                        role="group"
+                        aria-label={`Subseções de ${item.label}`}
+                      >
+                        {item.children?.map((child) => (
+                          <NavLink
+                            key={child.to}
+                            to={child.to}
+                            end={child.end}
+                            className={({ isActive }) =>
+                              [
+                                "main-navigation__link",
+                                "main-navigation__sublink",
+                                isActive ? "is-active" : "",
+                              ]
+                                .filter(Boolean)
+                                .join(" ")
+                            }
+                            aria-label={child.label}
+                            title={child.label}
+                          >
+                            {child.icon ? (
+                              typeof child.icon === "string" ? (
+                                <img
+                                  src={child.icon}
+                                  className="main-navigation__icon"
+                                  alt=""
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <child.icon
+                                  className="main-navigation__icon"
+                                  size={18}
+                                  aria-hidden="true"
+                                />
+                              )
+                            ) : (
+                              <span
+                                className="main-navigation__icon main-navigation__icon--spacer"
+                                aria-hidden="true"
+                              />
+                            )}
+                            <span className="main-navigation__label">
+                              {child.label}
+                            </span>
+                          </NavLink>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
           </div>
         ))}

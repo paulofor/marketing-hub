@@ -4,6 +4,12 @@ export interface FacebookAccountPayload {
   id?: number;
   name: string;
   currency: string;
+  accessToken?: string | null;
+  tokenExpiresAt?: string | null;
+  tokenLastRefreshedAt?: string | null;
+  authorizedUserId?: string | null;
+  authorizedUserName?: string | null;
+  authorizedUserEmail?: string | null;
 }
 
 export function useCreateFacebookAccount() {

@@ -17,7 +17,6 @@ public class CreativeDto {
     private String description;
     private String cta;
     private String destinationUrl;
-    private String pageId;
     private String instagramUserId;
     private CreativeStatus status;
 }

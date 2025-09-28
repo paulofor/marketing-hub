@@ -161,6 +161,7 @@ triggering ad set generation.
 - `hypothesis_id` BINARY(16) NOT NULL
 - `name` VARCHAR(255) NOT NULL
 - `hypothesis` VARCHAR(255)
+- `page_id` VARCHAR(128)
 - `kpi_target_cpl` DECIMAL(10,2) DEFAULT 45.00
 - `stop_loss_cpl` DECIMAL(10,2) DEFAULT 90.00
 - `sample_size` INT DEFAULT 1500
@@ -192,7 +193,6 @@ will be executed and measured during the test cycle.
 - `description` VARCHAR(255)
 - `call_to_action` VARCHAR(32)
 - `destination_url` VARCHAR(512)
-- `page_id` VARCHAR(64)
 - `instagram_user_id` VARCHAR(64)
 - `image_hash` VARCHAR(255)
 - `video_id` VARCHAR(255)

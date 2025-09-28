@@ -124,6 +124,7 @@ public class ExperimentService {
                 .status(ExperimentStatus.PLANNED)
                 .platform(ExperimentPlatform.FACEBOOK)
                 .creativesToGenerate(request.getCreativesToGenerate())
+                .pageId(normalizePageId(request.getPageId()))
                 .salesFunnel(salesFunnel)
                 .build();
         return repository.save(exp);
@@ -178,6 +179,7 @@ public class ExperimentService {
                 .status(ExperimentStatus.PLANNED)
                 .platform(original.getPlatform())
                 .creativesToGenerate(original.getCreativesToGenerate())
+                .pageId(original.getPageId())
                 .salesFunnel(original.getSalesFunnel())
                 .build();
         return repository.save(copy);
@@ -258,6 +260,9 @@ public class ExperimentService {
                 exp.setSalesFunnel(resolveSalesFunnel(request.getSalesFunnelName()));
             }
         }
+        if (request.getPageId() != null) {
+            exp.setPageId(normalizePageId(request.getPageId()));
+        }
         return exp;
     }
 
@@ -269,5 +274,13 @@ public class ExperimentService {
         Experiment exp = repository.findById(id).orElseThrow();
         exp.setCreativesToGenerate(quantity);
         return exp;
+    }
+
+    private static String normalizePageId(String pageId) {
+        if (pageId == null) {
+            return null;
+        }
+        String trimmed = pageId.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

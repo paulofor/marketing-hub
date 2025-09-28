@@ -34,6 +34,9 @@ public class Experiment {
     @Column(length = 255)
     private String hypothesis;
 
+    @Column(name = "page_id", length = 128)
+    private String pageId;
+
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "hypothesis_id", nullable = false)
     private com.marketinghub.hypothesis.Hypothesis hypothesisRef;

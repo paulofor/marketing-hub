@@ -7,6 +7,7 @@ export interface Experiment {
   hypothesisId: string;
   name: string;
   hypothesis: string;
+  pageId?: string | null;
   /**
    * KPI alvo em CPL. Mantém `kpiTarget` para compatibilidade com APIs
    * antigas que usavam este nome.

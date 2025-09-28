@@ -122,3 +122,6 @@ databaseChangeLog:
   - include:
       file: V2025_12_05__create_fb_page_table.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2025_12_10__move_page_id_to_experiment.sql
+      relativeToChangelogFile: true

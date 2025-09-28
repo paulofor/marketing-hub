@@ -10,6 +10,7 @@ import { useEmotionalTriggers } from "../../api/emotionalTrigger/useEmotionalTri
 import { useUpdateCreativeLabels } from "../../api/creative/useUpdateCreativeLabels";
 import { useRequestCreatives } from "../../api/experiment/useRequestCreatives";
 import { useExperiment } from "../../api/experiment/useExperiment";
+import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
 import InstagramAdPreview from "../../components/InstagramAdPreview";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import {
@@ -36,7 +37,6 @@ interface CreativeForm {
   cta: string;
   destinationUrl: string;
   imageUrl: string;
-  pageId: string;
   instagramUserId: string;
   status: string;
 }
@@ -77,6 +77,7 @@ export default function CriativosTab({ experimentId }: Props) {
   const { data, isLoading } = useCreatives(experimentId);
   const creatives = Array.isArray(data) ? data : [];
   const { data: experiment } = useExperiment(experimentId);
+  const updateExperimentMutation = useUpdateExperiment(experimentId);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Creative | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
@@ -88,10 +89,10 @@ export default function CriativosTab({ experimentId }: Props) {
     cta: "LEARN_MORE",
     destinationUrl: "",
     imageUrl: "",
-    pageId: "",
     instagramUserId: "",
     status: "DRAFT",
   });
+  const [experimentPageId, setExperimentPageId] = useState("");
   const { handleSubmit: handleFormSubmit } = useForm<CreativeForm>();
   const { data: angles } = useAngles();
   const { data: proofs } = useVisualProofs();
@@ -124,6 +125,55 @@ export default function CriativosTab({ experimentId }: Props) {
 
   const dismissFeedback = () => setFeedback(null);
 
+  useEffect(() => {
+    setExperimentPageId(experiment?.pageId ?? "");
+  }, [experiment?.pageId]);
+
+  const handleSavePageId = async () => {
+    if (!experiment) return;
+    const kpiTargetValue = experiment.kpiTarget ?? experiment.kpiTargetCpl;
+    if (kpiTargetValue == null || !experiment.metricPresetId) {
+      setFeedback({
+        variant: "error",
+        title: "Não foi possível salvar a página",
+        description:
+          "Defina a meta de KPI e o preset de métricas antes de configurar a página do experimento.",
+      });
+      return;
+    }
+    const trimmedPageId = experimentPageId.trim();
+    try {
+      await updateExperimentMutation.mutateAsync({
+        name: experiment.name,
+        hypothesis: experiment.hypothesis,
+        kpiTarget: Number(kpiTargetValue),
+        metricPresetId: experiment.metricPresetId,
+        sampleSize: experiment.sampleSize ?? undefined,
+        mde: experiment.mdePercent ?? undefined,
+        startDate: experiment.startDate ?? undefined,
+        endDate: experiment.endDate ?? undefined,
+        creativesToGenerate: experiment.creativesToGenerate ?? undefined,
+        salesFunnelName: experiment.salesFunnelName ?? null,
+        pageId: trimmedPageId === "" ? null : trimmedPageId,
+      });
+      setFeedback({
+        variant: "success",
+        title: "Página atualizada",
+        description: trimmedPageId
+          ? "Todos os criativos deste experimento usarão a página informada."
+          : "Sem página definida o worker utilizará o fallback configurado.",
+      });
+    } catch {
+      setFeedback({
+        variant: "error",
+        title: "Não foi possível salvar a página",
+        description: "Tente novamente em instantes.",
+      });
+    }
+  };
+
+  const isSavingPageId = updateExperimentMutation.isPending;
+
   const fillFormFromCreative = (c: Creative) => {
     setForm({
       format: c.format || "LINK",
@@ -133,7 +183,6 @@ export default function CriativosTab({ experimentId }: Props) {
       cta: c.cta || "LEARN_MORE",
       destinationUrl: c.destinationUrl || "",
       imageUrl: c.imageUrl,
-      pageId: c.pageId || "",
       instagramUserId: c.instagramUserId || "",
       status: c.status,
     });
@@ -166,7 +215,6 @@ export default function CriativosTab({ experimentId }: Props) {
       description: form.description,
       cta: form.cta,
       destinationUrl: form.destinationUrl,
-      pageId: form.pageId,
       instagramUserId: form.instagramUserId,
       status: form.status,
     };
@@ -221,7 +269,6 @@ export default function CriativosTab({ experimentId }: Props) {
         description: c.description || "",
         cta: c.cta || "LEARN_MORE",
         destinationUrl: c.destinationUrl || "",
-        pageId: c.pageId || "",
         instagramUserId: c.instagramUserId || "",
         status: "READY",
       });
@@ -471,6 +518,44 @@ export default function CriativosTab({ experimentId }: Props) {
           </button>
         </div>
       )}
+      <div className="mb-4">
+        <label className="form-label" htmlFor="experiment-page-id">
+          Página do Facebook deste experimento
+        </label>
+        <div className="d-flex flex-wrap gap-2">
+          <input
+            id="experiment-page-id"
+            className="form-control"
+            placeholder="ID da página do Facebook"
+            value={experimentPageId}
+            onChange={(e) => setExperimentPageId(e.target.value)}
+            disabled={isSavingPageId}
+          />
+          <button
+            type="button"
+            className="btn btn-primary d-flex align-items-center gap-2"
+            onClick={handleSavePageId}
+            disabled={isSavingPageId || !experiment}
+          >
+            {isSavingPageId ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm"
+                  role="status"
+                  aria-hidden
+                />
+                <span>Salvando...</span>
+              </>
+            ) : (
+              <span>Salvar página</span>
+            )}
+          </button>
+        </div>
+        <div className="form-text">
+          Todos os criativos aprovados publicarão nesta página. Deixe em branco
+          para usar o fallback configurado no worker.
+        </div>
+      </div>
       <div className="creative-toolbar">
         <div>
           <h2 className="h5 mb-1">Biblioteca de criativos</h2>
@@ -692,24 +777,14 @@ export default function CriativosTab({ experimentId }: Props) {
                   className="form-control mb-2"
                   onChange={upload}
                 />
-                <div className="d-flex mb-2">
-                  <input
-                    className="form-control me-2"
-                    placeholder="page_id"
-                    value={form.pageId}
-                    onChange={(e) =>
-                      setForm({ ...form, pageId: e.target.value })
-                    }
-                  />
-                  <input
-                    className="form-control"
-                    placeholder="instagram_user_id"
-                    value={form.instagramUserId}
-                    onChange={(e) =>
-                      setForm({ ...form, instagramUserId: e.target.value })
-                    }
-                  />
-                </div>
+                <input
+                  className="form-control mb-2"
+                  placeholder="instagram_user_id"
+                  value={form.instagramUserId}
+                  onChange={(e) =>
+                    setForm({ ...form, instagramUserId: e.target.value })
+                  }
+                />
                 {!editing && (
                   <>
                     <select

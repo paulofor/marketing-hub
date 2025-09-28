@@ -13,6 +13,7 @@ interface FormData {
   kpiTarget: string;
   metricPresetId: string;
   salesFunnelName: string;
+  pageId: string;
 }
 
 export default function EditExperimentPage() {
@@ -32,6 +33,7 @@ export default function EditExperimentPage() {
         kpiTarget: data.kpiTarget ? String(data.kpiTarget) : "",
         metricPresetId: data.metricPresetId || "",
         salesFunnelName: data.salesFunnelName || "",
+        pageId: data.pageId || "",
       });
     }
   }, [data, reset]);
@@ -49,6 +51,7 @@ export default function EditExperimentPage() {
         startDate: data.startDate ?? undefined,
         endDate: data.endDate ?? undefined,
         salesFunnelName: values.salesFunnelName,
+        pageId: values.pageId || null,
       });
       navigate(-1);
     } catch {
@@ -109,6 +112,15 @@ export default function EditExperimentPage() {
               </option>
             ))}
         </select>
+        <label className="form-label" htmlFor="pageId">
+          ID da página do Facebook
+        </label>
+        <input
+          id="pageId"
+          className="form-control mb-2"
+          {...register("pageId")}
+          placeholder="Ex.: 123456789"
+        />
         <div className="alert alert-info" role="status">
           A aprovação dos públicos agora é feita individualmente na aba
           {" "}

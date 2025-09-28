@@ -29,4 +29,5 @@ public class CreateExperimentRequest {
     private LocalDate endDate;
     private Integer creativesToGenerate;
     private String salesFunnelName;
+    private String pageId;
 }

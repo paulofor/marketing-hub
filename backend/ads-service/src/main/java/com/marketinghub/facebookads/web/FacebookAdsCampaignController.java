@@ -5,6 +5,7 @@ import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.facebookads.BudgetMode;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookAdsCampaignRepository;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -57,6 +58,7 @@ public class FacebookAdsCampaignController {
                 experiment.getId(),
                 experiment.getName(),
                 experiment.getHypothesis(),
+                experiment.getPageId(),
                 experiment.getKpiTargetCpl(),
                 experiment.getStartDate(),
                 experiment.getEndDate(),
@@ -88,6 +90,9 @@ public class FacebookAdsCampaignController {
         if (experiment.getSalesFunnel() == null) {
             missing.add("salesFunnel");
         }
+        if (!StringUtils.hasText(experiment.getPageId())) {
+            missing.add("pageId");
+        }
         return missing;
     }
 
@@ -95,6 +100,7 @@ public class FacebookAdsCampaignController {
             Long id,
             String name,
             String hypothesis,
+            String pageId,
             BigDecimal kpiTargetCpl,
             LocalDate startDate,
             LocalDate endDate,

@@ -27,6 +27,7 @@ export default function NewExperimentPage() {
     startDate: "",
     endDate: "",
     salesFunnelName: "",
+    pageId: "",
   });
   const { data: hypotheses } = useHypothesesByNiche(form.nicheId);
   const { data: selectedHypothesis } = useHypothesis(
@@ -61,6 +62,7 @@ export default function NewExperimentPage() {
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
         salesFunnelName: form.salesFunnelName || undefined,
+        pageId: form.pageId || undefined,
       });
       setForm({
         nicheId: nicheIdParam,
@@ -74,6 +76,7 @@ export default function NewExperimentPage() {
         startDate: "",
         endDate: "",
         salesFunnelName: "",
+        pageId: "",
       });
       alert("Teste salvo!");
     } catch (errors) {
@@ -190,6 +193,12 @@ export default function NewExperimentPage() {
             </option>
           ))}
       </select>
+      <input
+        className="form-control mb-2"
+        placeholder="ID da página do Facebook (opcional)"
+        value={form.pageId}
+        onChange={(e) => setForm({ ...form, pageId: e.target.value })}
+      />
       <input
         className="form-control mb-2"
         placeholder="Tamanho da amostra"

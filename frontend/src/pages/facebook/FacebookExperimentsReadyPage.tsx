@@ -16,6 +16,7 @@ import PageTitle from "../../components/PageTitle";
 import { useFacebookReadyExperiments } from "../../api/useFacebookReadyExperiments";
 import { useFacebookConfigurationStatus } from "../../api/useFacebookConfigurationStatus";
 import "./FacebookExperimentsReadyPage.css";
+import { getMissingConfigurationLabel } from "./missingConfigurationLabels";
 
 function formatCurrency(value: number | null) {
   if (value === null) return "Sem KPI";
@@ -40,16 +41,6 @@ export default function FacebookExperimentsReadyPage() {
   const experiments = useMemo(() => (Array.isArray(data) ? data : []), [data]);
   const isEmpty = !isLoading && experiments.length === 0 && !isError;
   const requiresPageSetup = configuration && !configuration.hasConfiguredPages;
-  const missingLabels: Record<string, string> = {
-    creativeApproval: "Aprovar pelo menos um criativo",
-    kpiTargetCpl: "Definir o KPI alvo (CPL)",
-    stopLossCpl: "Definir o stop-loss de CPL",
-    sampleSize: "Informar o tamanho da amostra",
-    startDate: "Definir a data de início",
-    endDate: "Definir a data de término",
-    salesFunnel: "Associar um funil de vendas",
-  };
-
   return (
     <div>
       <PageTitle>Experimentos prontos para campanha</PageTitle>
@@ -190,7 +181,7 @@ export default function FacebookExperimentsReadyPage() {
                       <ul>
                         {experiment.missingConfiguration.map((item) => (
                           <li key={item}>
-                            {missingLabels[item] || "Revise o experimento"}
+                            {getMissingConfigurationLabel(item)}
                           </li>
                         ))}
                       </ul>

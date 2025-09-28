@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import PageTitle from "../components/PageTitle";
 import { useFacebookAccounts } from "../api/useFacebookAccounts";
+import type { FacebookAccount as RemoteFacebookAccount } from "../api/useFacebookAccounts";
 import {
   useCreateFacebookAccount,
   useDeleteFacebookAccount,
@@ -17,6 +18,11 @@ import {
 interface AccountFormState {
   id?: number;
   name: string;
+  accessToken: string;
+  tokenExpiresAt: string;
+  authorizedUserId: string;
+  authorizedUserName: string;
+  authorizedUserEmail: string;
 }
 
 interface PageFormState {
@@ -27,15 +33,68 @@ interface PageFormState {
 
 const BRAZILIAN_REAL = "BRL";
 
-const emptyAccountForm: AccountFormState = { name: "" };
+const emptyAccountForm: AccountFormState = {
+  name: "",
+  accessToken: "",
+  tokenExpiresAt: "",
+  authorizedUserId: "",
+  authorizedUserName: "",
+  authorizedUserEmail: "",
+};
 const emptyPageForm: PageFormState = { pageId: "", name: "" };
+
+const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
+  dateStyle: "short",
+  timeStyle: "short",
+});
+
+function toInputDateValue(value?: string | null): string {
+  if (!value) return "";
+  return value.slice(0, 16);
+}
+
+function toBackendDateValue(value?: string): string | null {
+  if (!value) return null;
+  return value.length === 16 ? `${value}:00` : value;
+}
+
+function formatDateTime(value?: string | null): string {
+  if (!value) return "—";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "—";
+  return dateTimeFormatter.format(parsed);
+}
+
+function describeTokenExpiration(account: RemoteFacebookAccount): string {
+  if (!account.accessToken) {
+    return "Token não informado";
+  }
+  if (!account.tokenExpiresAt) {
+    return "Validade não informada";
+  }
+  if (account.tokenExpired) {
+    if (typeof account.tokenExpiresInDays === "number") {
+      const absoluteDays = Math.abs(account.tokenExpiresInDays);
+      if (absoluteDays === 0) return "Expirou hoje";
+      if (absoluteDays === 1) return "Expirou há 1 dia";
+      return `Expirou há ${absoluteDays} dias`;
+    }
+    return "Token expirado";
+  }
+  if (typeof account.tokenExpiresInDays === "number") {
+    if (account.tokenExpiresInDays <= 0) return "Expira hoje";
+    if (account.tokenExpiresInDays === 1) return "Expira em 1 dia";
+    return `Expira em ${account.tokenExpiresInDays} dias`;
+  }
+  return "Validade não informada";
+}
 
 export default function FacebookAccountsPage() {
   const { data, isLoading, error } = useFacebookAccounts();
   const accounts = useMemo(() => (Array.isArray(data) ? data : []), [data]);
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
-  const [accountForm, setAccountForm] = useState<AccountFormState>(emptyAccountForm);
-  const [pageForm, setPageForm] = useState<PageFormState>(emptyPageForm);
+  const [accountForm, setAccountForm] = useState<AccountFormState>({ ...emptyAccountForm });
+  const [pageForm, setPageForm] = useState<PageFormState>({ ...emptyPageForm });
   const [deletingAccountId, setDeletingAccountId] = useState<number | null>(null);
   const [deletingPageId, setDeletingPageId] = useState<number | null>(null);
 
@@ -47,6 +106,13 @@ export default function FacebookAccountsPage() {
     selectedAccountId ?? undefined,
   );
   const pages = useMemo(() => (Array.isArray(pagesData) ? pagesData : []), [pagesData]);
+  const accountsNeedingRenewal = useMemo(
+    () =>
+      accounts.filter(
+        (account) => Boolean(account.requiresTokenRenewal) || !account.accessToken,
+      ),
+    [accounts],
+  );
 
   const createPageMutation = useCreateFacebookPage(selectedAccountId ?? undefined);
   const updatePageMutation = useUpdateFacebookPage(selectedAccountId ?? undefined);
@@ -63,7 +129,7 @@ export default function FacebookAccountsPage() {
   }, [accounts, selectedAccountId]);
 
   useEffect(() => {
-    setPageForm(emptyPageForm);
+    setPageForm({ ...emptyPageForm });
   }, [selectedAccountId]);
 
   if (isLoading) return <p>Carregando...</p>;
@@ -83,11 +149,16 @@ export default function FacebookAccountsPage() {
       id: accountForm.id,
       name: accountForm.name,
       currency: BRAZILIAN_REAL,
+      accessToken: accountForm.accessToken.trim() || null,
+      tokenExpiresAt: toBackendDateValue(accountForm.tokenExpiresAt),
+      authorizedUserId: accountForm.authorizedUserId.trim() || null,
+      authorizedUserName: accountForm.authorizedUserName.trim() || null,
+      authorizedUserEmail: accountForm.authorizedUserEmail.trim() || null,
     };
     const mutation = isEditingAccount ? updateAccountMutation : createAccountMutation;
     mutation.mutate(payload, {
       onSuccess: () => {
-        setAccountForm(emptyAccountForm);
+        setAccountForm({ ...emptyAccountForm });
       },
     });
   };
@@ -103,7 +174,7 @@ export default function FacebookAccountsPage() {
     const mutation = isEditingPage ? updatePageMutation : createPageMutation;
     mutation.mutate(payload, {
       onSuccess: () => {
-        setPageForm(emptyPageForm);
+        setPageForm({ ...emptyPageForm });
       },
     });
   };
@@ -125,6 +196,22 @@ export default function FacebookAccountsPage() {
   return (
     <div>
       <PageTitle>Contas do Facebook</PageTitle>
+      {accountsNeedingRenewal.length > 0 && (
+        <div className="alert alert-warning" role="alert">
+          <h2 className="h6 mb-2">Renovação de token necessária</h2>
+          <p className="mb-2">
+            Atualize o token de acesso de longa duração para evitar que as integrações com o
+            Facebook Ads sejam interrompidas.
+          </p>
+          <ul className="mb-0 ps-3">
+            {accountsNeedingRenewal.map((account) => (
+              <li key={account.id}>
+                <strong>{account.name}</strong>: {describeTokenExpiration(account)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className="row g-4">
         <div className="col-12 col-xl-6">
           <div className="card h-100">
@@ -140,65 +227,116 @@ export default function FacebookAccountsPage() {
                       <th>ID</th>
                       <th>Nome</th>
                       <th>Moeda</th>
+                      <th>Status do token</th>
                       <th className="text-end">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {accounts.map(({ id, name, currency }) => (
-                      <tr key={id} className={selectedAccountId === id ? "table-primary" : ""}>
-                        <td>{id}</td>
-                        <td>{name}</td>
-                        <td>{currency}</td>
-                        <td className="text-end d-flex justify-content-end gap-2">
-                          {(() => {
-                            const isDeletingThisAccount =
-                              deleteAccountMutation.isPending && deletingAccountId === id;
-                            return (
-                              <>
-                                <button
-                                  className="btn btn-sm btn-outline-primary"
-                                  onClick={() => {
-                                    setAccountForm({ id, name });
-                                  }}
-                                  disabled={isDeletingThisAccount}
-                                >
-                                  Editar
-                                </button>
-                                <button
-                                  className="btn btn-sm btn-outline-secondary"
-                                  onClick={() => setSelectedAccountId(id)}
-                                  disabled={isDeletingThisAccount}
-                                >
-                                  Páginas
-                                </button>
-                                <button
-                                  className="btn btn-sm btn-outline-danger"
-                                  onClick={() => handleDeleteAccount(id)}
-                                  disabled={deleteAccountMutation.isPending}
-                                >
-                                  {isDeletingThisAccount ? (
-                                    <>
-                                      <span
-                                        className="spinner-border spinner-border-sm me-2"
-                                        role="status"
-                                      />
-                                      Excluindo...
-                                    </>
-                                  ) : (
-                                    "Excluir"
-                                  )}
-                                </button>
-                              </>
-                            );
-                          })()}
-                        </td>
-                      </tr>
-                    ))}
+                    {accounts.map((account) => {
+                      const { id, name, currency } = account;
+                      const isDeletingThisAccount =
+                        deleteAccountMutation.isPending && deletingAccountId === id;
+                      const rowClasses = [
+                        selectedAccountId === id ? "table-primary" : "",
+                        account.requiresTokenRenewal || !account.accessToken ? "table-warning" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ");
+                      const badgeClass = !account.accessToken
+                        ? "text-bg-danger"
+                        : account.tokenExpired
+                        ? "text-bg-danger"
+                        : account.requiresTokenRenewal
+                        ? "text-bg-warning"
+                        : "text-bg-success";
+                      const badgeLabel = !account.accessToken
+                        ? "Token ausente"
+                        : account.tokenExpired
+                        ? "Token expirado"
+                        : account.requiresTokenRenewal
+                        ? "Renovar token"
+                        : "Token válido";
+                      return (
+                        <tr key={id} className={rowClasses}>
+                          <td>{id}</td>
+                          <td>{name}</td>
+                          <td>{currency}</td>
+                          <td>
+                            <div className="d-flex flex-column gap-1">
+                              <span className={`badge ${badgeClass}`}>{badgeLabel}</span>
+                              <small className="text-muted">
+                                {describeTokenExpiration(account)}
+                              </small>
+                              <small className="text-muted">
+                                Validade: {formatDateTime(account.tokenExpiresAt)}
+                              </small>
+                              {account.authorizedUserName && (
+                                <small className="text-muted">
+                                  Usuário autorizado: {account.authorizedUserName}
+                                  {account.authorizedUserEmail
+                                    ? ` (${account.authorizedUserEmail})`
+                                    : ""}
+                                </small>
+                              )}
+                              {account.authorizedUserId && (
+                                <small className="text-muted">
+                                  ID do usuário: {account.authorizedUserId}
+                                </small>
+                              )}
+                            </div>
+                          </td>
+                          <td className="text-end d-flex justify-content-end gap-2">
+                            <button
+                              className="btn btn-sm btn-outline-primary"
+                              onClick={() => {
+                                setAccountForm({
+                                  id,
+                                  name,
+                                  accessToken: account.accessToken ?? "",
+                                  tokenExpiresAt: toInputDateValue(account.tokenExpiresAt ?? undefined),
+                                  authorizedUserId: account.authorizedUserId ?? "",
+                                  authorizedUserName: account.authorizedUserName ?? "",
+                                  authorizedUserEmail: account.authorizedUserEmail ?? "",
+                                });
+                              }}
+                              disabled={isDeletingThisAccount}
+                            >
+                              Editar
+                            </button>
+                            <button
+                              className="btn btn-sm btn-outline-secondary"
+                              onClick={() => setSelectedAccountId(id)}
+                              disabled={isDeletingThisAccount}
+                            >
+                              Páginas
+                            </button>
+                            <button
+                              className="btn btn-sm btn-outline-danger"
+                              onClick={() => handleDeleteAccount(id)}
+                              disabled={deleteAccountMutation.isPending}
+                            >
+                              {isDeletingThisAccount ? (
+                                <>
+                                  <span
+                                    className="spinner-border spinner-border-sm me-2"
+                                    role="status"
+                                  />
+                                  Excluindo...
+                                </>
+                              ) : (
+                                "Excluir"
+                              )}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
-              <div className="row g-2">
-                <div className="col-md-5">
+              <div className="row g-3">
+                <div className="col-12">
+                  <label className="form-label">Nome da conta</label>
                   <input
                     className="form-control"
                     placeholder="Nome da conta"
@@ -209,9 +347,94 @@ export default function FacebookAccountsPage() {
                         name: event.target.value,
                       }))
                     }
+                    disabled={isAccountMutationPending}
                   />
                 </div>
-                <div className="col-md-7">
+                <div className="col-12">
+                  <label className="form-label">Token de acesso (longa duração)</label>
+                  <textarea
+                    className="form-control"
+                    placeholder="Cole o token de acesso gerado no Business Manager"
+                    rows={3}
+                    value={accountForm.accessToken}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        accessToken: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                  <div className="form-text">
+                    Utilize sempre um token de longa duração para que o Marketing Hub possa
+                    renovar o acesso automaticamente.
+                  </div>
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Validade do token</label>
+                  <input
+                    type="datetime-local"
+                    className="form-control"
+                    value={accountForm.tokenExpiresAt}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        tokenExpiresAt: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                  <div className="form-text">
+                    Exibiremos um alerta 7 dias antes do vencimento.
+                  </div>
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label">ID do usuário autorizado</label>
+                  <input
+                    className="form-control"
+                    placeholder="ID do usuário do Facebook"
+                    value={accountForm.authorizedUserId}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        authorizedUserId: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Nome do usuário autorizado</label>
+                  <input
+                    className="form-control"
+                    placeholder="Nome completo"
+                    value={accountForm.authorizedUserName}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        authorizedUserName: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label">E-mail do usuário autorizado</label>
+                  <input
+                    type="email"
+                    className="form-control"
+                    placeholder="email@exemplo.com"
+                    value={accountForm.authorizedUserEmail}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        authorizedUserEmail: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                </div>
+                <div className="col-12">
                   <button
                     className="btn btn-primary w-100"
                     onClick={submitAccount}

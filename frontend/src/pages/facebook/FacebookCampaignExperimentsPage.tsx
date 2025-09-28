@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useFacebookCampaignExperiments } from "../../api/useFacebookCampaignExperiments";
 import PageTitle from "../../components/PageTitle";
 import { useFacebookConfigurationStatus } from "../../api/useFacebookConfigurationStatus";
+import { getMissingConfigurationLabel } from "./missingConfigurationLabels";
 
 export default function FacebookCampaignExperimentsPage() {
   const [status, setStatus] = useState("PLANNED");
@@ -55,6 +56,7 @@ export default function FacebookCampaignExperimentsPage() {
                 <th>KPI alvo</th>
                 <th>Início</th>
                 <th>Término</th>
+                <th>Pendências</th>
               </tr>
             </thead>
             <tbody>
@@ -67,6 +69,26 @@ export default function FacebookCampaignExperimentsPage() {
                   <td>{e.kpiTargetCpl}</td>
                   <td>{e.startDate}</td>
                   <td>{e.endDate}</td>
+                  <td>
+                    {e.missingConfiguration.length > 0 ? (
+                      <div>
+                        <span className="badge text-bg-warning d-inline-flex align-items-center gap-1 mb-1">
+                          <AlertTriangle size={14} aria-hidden="true" />
+                          Pendências
+                        </span>
+                        <ul className="mb-0 ps-3 small">
+                          {e.missingConfiguration.map((item) => (
+                            <li key={item}>{getMissingConfigurationLabel(item)}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <span className="badge text-bg-success d-inline-flex align-items-center gap-1">
+                        <CheckCircle2 size={14} aria-hidden="true" />
+                        Em dia
+                      </span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

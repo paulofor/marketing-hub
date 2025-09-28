@@ -10,7 +10,6 @@ export interface UpdateCreative {
   description: string;
   cta: string;
   destinationUrl: string;
-  pageId: string;
   instagramUserId: string;
   status: string;
 }

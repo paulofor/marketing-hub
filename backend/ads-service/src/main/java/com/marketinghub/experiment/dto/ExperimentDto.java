@@ -18,6 +18,7 @@ public class ExperimentDto {
     private java.util.UUID hypothesisId;
     private String name;
     private String hypothesis;
+    private String pageId;
     @JsonProperty("kpiTarget")
     private BigDecimal kpiTargetCpl;
     private BigDecimal stopLossCpl;

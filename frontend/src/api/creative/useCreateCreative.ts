@@ -10,7 +10,6 @@ export interface CreateCreative {
   description: string;
   cta: string;
   destinationUrl: string;
-  pageId: string;
   instagramUserId: string;
   status: string;
 }

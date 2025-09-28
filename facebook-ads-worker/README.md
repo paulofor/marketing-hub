@@ -14,7 +14,7 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
 2. **Conjunto de anúncios** (`POST /adsets`) atrelado à campanha, também em
    `PAUSED`, com segmentação geográfica simples e destino `WEBSITE`.
 3. **Criativo** (`POST /adcreatives`) baseado em um `object_story_spec`
-   contendo `page_id` obtido do criativo aprovado (ou o fallback configurado em
+   contendo `page_id` definido no experimento (ou o fallback configurado em
    `facebook.page-id`), opcionalmente `instagram_actor_id`, mensagem e
    call-to-action vindos do próprio criativo.
 4. **Anúncio** (`POST /ads`) que referencia o conjunto e o criativo recém
@@ -96,13 +96,14 @@ volte a ser elegível e reinicie o worker para que o novo token seja utilizado.
 
 O endpoint [`POST /{ad_account_id}/adcreatives`](https://developers.facebook.com/docs/marketing-api/reference/ad-creative#Creating)
 exige um `page_id` válido no `object_story_spec` quando o criativo representa
-uma Página do Facebook. Agora o worker busca o `pageId` diretamente no criativo
-aprovado do experimento, utilizando a propriedade `facebook.page-id` apenas
-como fallback. Caso nenhum desses valores esteja preenchido, a API responde com
-`error_subcode = 1443121` e a mensagem "A Página do Facebook está ausente". O
-fluxo é interrompido imediatamente, registrando o aviso em log. Preencha o
-campo `pageId` do criativo (ou configure o fallback) antes da próxima execução
-para que a criação seja bem sucedida.
+uma Página do Facebook. O worker agora busca o `pageId` diretamente no
+experimento, garantindo que todos os criativos compartilhem a mesma página e
+utilizando a propriedade `facebook.page-id` apenas como fallback. Caso nenhum
+destes valores esteja preenchido, a API responde com `error_subcode = 1443121`
+e a mensagem "A Página do Facebook está ausente". O fluxo é interrompido
+imediatamente, registrando o aviso em log. Preencha o campo `pageId` do
+experimento (ou configure o fallback) antes da próxima execução para que a
+criação seja bem sucedida.
 
 ### Erro `(#100) Invalid parameter` ao criar o conjunto de anúncios
 

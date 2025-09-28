@@ -53,9 +53,6 @@ public class Creative {
     @Column(name = "destination_url")
     private String destinationUrl;
 
-    @Column(name = "page_id")
-    private String pageId;
-
     @Column(name = "instagram_user_id")
     private String instagramUserId;
 

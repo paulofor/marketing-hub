@@ -67,6 +67,7 @@ class FacebookAdsCampaignControllerTest {
                 .endDate(LocalDate.of(2024, 1, 31))
                 .creativeApproved(true)
                 .salesFunnel(funnel)
+                .pageId("84")
                 .build();
         when(experimentService.listByStatusAndPlatform(
                 com.marketinghub.experiment.ExperimentStatus.PLANNED,
@@ -78,6 +79,7 @@ class FacebookAdsCampaignControllerTest {
                 .andExpect(jsonPath("$[0].name").value("Exp"))
                 .andExpect(jsonPath("$[0].hypothesis").value("Hipótese"))
                 .andExpect(jsonPath("$[0].kpiTargetCpl").value(10))
+                .andExpect(jsonPath("$[0].pageId").value("84"))
                 .andExpect(jsonPath("$[0].startDate").value("2024-01-01"))
                 .andExpect(jsonPath("$[0].endDate").value("2024-01-31"))
                 .andExpect(jsonPath("$[0].nicheName").value("Test Nicho"))

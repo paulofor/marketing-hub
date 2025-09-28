@@ -126,7 +126,7 @@ public class FacebookCampaignService {
                 return;
             }
 
-            String resolvedPageId = coalesce(creative.pageId(), defaultPageId);
+            String resolvedPageId = coalesce(exp.pageId(), defaultPageId);
             if (!StringUtils.hasText(resolvedPageId)) {
                 LOGGER.warn("Skipping experiment {} because no Facebook page ID is configured", exp.id());
                 return;
@@ -206,7 +206,7 @@ public class FacebookCampaignService {
         return defaultCreativeMessageTemplate;
     }
 
-    public record Experiment(long id, String name) {}
+    public record Experiment(long id, String name, String pageId) {}
     public record CreateCampaignRequest(String id, String adAccountId, String name, String objective, String budgetMode) {}
 
     private Creative resolveCreative(long experimentId) {
@@ -260,7 +260,6 @@ public class FacebookCampaignService {
         String description,
         String cta,
         String destinationUrl,
-        String pageId,
         String instagramUserId,
         String status
     ) {}

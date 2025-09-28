@@ -77,6 +77,7 @@ export default function ExperimentDetailPage() {
       ? baseKpi * stopLossFactor
       : null);
   const hasConfiguredFacebookPage = facebookConfig?.hasConfiguredPages ?? false;
+  const hasExperimentPage = Boolean(data.pageId && data.pageId.trim().length > 0);
   const readinessChecks = [
     {
       id: "facebook-page",
@@ -95,6 +96,16 @@ export default function ExperimentDetailPage() {
         !isLoadingFacebookConfig && !hasConfiguredFacebookPage
           ? "Abrir Contas do Facebook"
           : undefined,
+    },
+    {
+      id: "experiment-page",
+      title: "Página definida no experimento",
+      isMet: hasExperimentPage,
+      hint: hasExperimentPage
+        ? `Este experimento usa a página ${data.pageId}.`
+        : "Defina a página na aba Criativos para garantir que os anúncios publiquem no local correto.",
+      action: hasExperimentPage ? undefined : () => setTab("creatives"),
+      actionLabel: hasExperimentPage ? undefined : "Ir para Criativos",
     },
     {
       id: "platform",
@@ -157,6 +168,7 @@ export default function ExperimentDetailPage() {
         </Link>
       ),
     },
+    { label: "Página do Facebook", value: data.pageId || "—" },
     ...(data.salesFunnelName
       ? [
           {

@@ -69,7 +69,7 @@ class FacebookCampaignServiceTest {
 
     @Test
     void createsCampaignHierarchyForEachExperiment() throws Exception {
-        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\"}]")
+        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\"}]")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"10\"}")
             .addHeader("Content-Type", "application/json"));
@@ -79,7 +79,7 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"pageId\":\"84\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueue(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
@@ -141,13 +141,13 @@ class FacebookCampaignServiceTest {
 
     @Test
     void marksExperimentAsFailedWhenFacebookReturnsPermissionError() throws Exception {
-        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\"}]")
+        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\"}]")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse()
             .setResponseCode(400)
             .setBody("{\"error\":{\"message\":\"Permissions error\",\"type\":\"OAuthException\",\"code\":200,\"error_subcode\":1815066,\"error_user_msg\":\"O usuário não tem permissão para criar anúncios com esta conta de anúncios\"}}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"pageId\":\"84\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueue(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
@@ -175,13 +175,13 @@ class FacebookCampaignServiceTest {
 
     @Test
     void skipsExperimentAfterPermissionErrorEvenIfBackendKeepsReturningIt() throws Exception {
-        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\"}]")
+        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\"}]")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse()
             .setResponseCode(400)
             .setBody("{\"error\":{\"message\":\"Permissions error\",\"type\":\"OAuthException\",\"code\":200,\"error_subcode\":1815066}}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"pageId\":\"84\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueue(new MockResponse().setResponseCode(500));
         backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\"}]")

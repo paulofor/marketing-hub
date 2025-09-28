@@ -81,7 +81,7 @@ const NAV_SECTIONS: NavSection[] = [
         children: [
           {
             to: "/facebook-campaigns",
-            label: "Experimentos para Campanha",
+            label: "Para Campanha",
             icon: Flag,
             end: true,
           },

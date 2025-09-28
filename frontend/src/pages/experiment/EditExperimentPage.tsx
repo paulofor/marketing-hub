@@ -5,6 +5,7 @@ import { useExperiment } from "../../api/experiment/useExperiment";
 import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
 import { useFunnels } from "../../api/funnel/useFunnels";
+import { useAllFacebookPages } from "../../api/useAllFacebookPages";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 
@@ -25,6 +26,8 @@ export default function EditExperimentPage() {
   const { data: funnels } = useFunnels();
   const update = useUpdateExperiment(expId);
   const { register, handleSubmit, reset } = useForm<FormData>();
+  const { data: facebookPages, isLoading: isLoadingFacebookPages } =
+    useAllFacebookPages();
 
   useEffect(() => {
     if (data) {
@@ -113,14 +116,25 @@ export default function EditExperimentPage() {
             ))}
         </select>
         <label className="form-label" htmlFor="pageId">
-          ID da página do Facebook
+          Página do Facebook
         </label>
-        <input
+        <select
           id="pageId"
-          className="form-control mb-2"
+          className="form-select mb-2"
           {...register("pageId")}
-          placeholder="Ex.: 123456789"
-        />
+        >
+          <option value="">
+            {isLoadingFacebookPages
+              ? "Carregando páginas cadastradas..."
+              : "Nenhuma página selecionada"}
+          </option>
+          {Array.isArray(facebookPages) &&
+            facebookPages.map((page) => (
+              <option key={page.id} value={page.pageId}>
+                {page.name}
+              </option>
+            ))}
+        </select>
         <div className="alert alert-info" role="status">
           A aprovação dos públicos agora é feita individualmente na aba
           {" "}

@@ -103,7 +103,7 @@ export default function ExperimentDetailPage() {
       isMet: hasExperimentPage,
       hint: hasExperimentPage
         ? `Este experimento usa a página ${data.pageId}.`
-        : "Defina a página na aba Criativos para garantir que os anúncios publiquem no local correto.",
+        : "Defina a página na aba Criativos deste experimento para garantir que os anúncios publiquem no local correto. A edição deve ser feita no experimento.",
       action: hasExperimentPage ? undefined : () => setTab("creatives"),
       actionLabel: hasExperimentPage ? undefined : "Ir para Criativos",
     },

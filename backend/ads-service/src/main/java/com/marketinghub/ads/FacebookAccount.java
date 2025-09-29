@@ -43,6 +43,9 @@ public class FacebookAccount {
     private String authorizedUserEmail;
     private String appId;
 
+    @Column(name = "business_manager_app_id")
+    private String businessManagerAppId;
+
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Setter(AccessLevel.NONE)
     @Column(columnDefinition = "LONGTEXT")

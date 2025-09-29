@@ -54,6 +54,7 @@ public class FacebookAccountController {
         persisted.setAuthorizedUserName(account.getAuthorizedUserName());
         persisted.setAuthorizedUserEmail(account.getAuthorizedUserEmail());
         persisted.setAppId(account.getAppId());
+        persisted.setBusinessManagerAppId(account.getBusinessManagerAppId());
         persisted.setTokenRenewalEnabled(account.isTokenRenewalEnabled());
 
         String newToken = account.getAccessToken();
@@ -149,6 +150,7 @@ public class FacebookAccountController {
         account.setAuthorizedUserName(trimToNull(account.getAuthorizedUserName()));
         account.setAuthorizedUserEmail(trimToNull(account.getAuthorizedUserEmail()));
         account.setAppId(trimToNull(account.getAppId()));
+        account.setBusinessManagerAppId(trimToNull(account.getBusinessManagerAppId()));
         if (account.isAppSecretProvided()) {
             account.overwriteAppSecret(trimToNull(account.getAppSecret()));
         }

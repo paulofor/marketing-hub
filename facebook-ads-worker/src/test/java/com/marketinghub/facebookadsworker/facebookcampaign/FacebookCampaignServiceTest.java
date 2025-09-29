@@ -314,6 +314,96 @@ class FacebookCampaignServiceTest {
         assertEquals("/api/facebook-campaigns", finalBackendPost.getPath());
     }
 
+    @Test
+    void resumesProcessingAfterBackendRenewsTokenWithoutAppCredentials() throws Exception {
+        StubFacebookAccessTokenManager manager = new StubFacebookAccessTokenManager(adsService);
+        manager.enqueue(new FacebookAccessTokenManager.RenewalAttemptResult(
+            FacebookAccessTokenManager.RenewalOutcome.NOT_CONFIGURED,
+            null,
+            null
+        ));
+        manager.enqueue(new FacebookAccessTokenManager.RenewalAttemptResult(
+            FacebookAccessTokenManager.RenewalOutcome.NOT_CONFIGURED,
+            null,
+            null
+        ));
+
+        service = new FacebookCampaignService(
+            adsService,
+            manager,
+            WebClient.builder(),
+            backend.url("/").toString(),
+            "/api",
+            "1",
+            "2000",
+            "IMPRESSIONS",
+            "LINK_CLICKS",
+            "WEBSITE",
+            "LOWEST_COST_WITHOUT_CAP",
+            "150",
+            "BR",
+            "42",
+            "11",
+            "https://example.com",
+            "Conheça %s",
+            "LEARN_MORE"
+        );
+
+        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse()
+            .setResponseCode(400)
+            .setBody("{\"error\":{\"message\":\"Error validating access token: Session has expired\",\"type\":\"OAuthException\",\"code\":190,\"error_subcode\":463}}")
+            .addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        adsService.updateAccessToken("renewed-by-backend");
+
+        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"10\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        RecordedRequest firstExperiment = backend.takeRequest();
+        assertEquals("/api/facebook-campaigns/experiments-ready", firstExperiment.getPath());
+        RecordedRequest firstCreative = backend.takeRequest();
+        assertEquals("/api/experiments/1/creatives", firstCreative.getPath());
+        RecordedRequest expiredCampaign = facebook.takeRequest();
+        assertEquals("/v23.0/act_1/campaigns", expiredCampaign.getPath());
+
+        RecordedRequest secondExperiment = backend.takeRequest();
+        assertEquals("/api/facebook-campaigns/experiments-ready", secondExperiment.getPath());
+        RecordedRequest secondCreative = backend.takeRequest();
+        assertEquals("/api/experiments/1/creatives", secondCreative.getPath());
+        RecordedRequest renewedCampaign = facebook.takeRequest();
+        assertEquals("/v23.0/act_1/campaigns", renewedCampaign.getPath());
+
+        JsonNode renewedPayload = objectMapper.readTree(renewedCampaign.getBody().inputStream());
+        assertEquals("renewed-by-backend", renewedPayload.get("access_token").asText());
+
+        facebook.takeRequest(); // ad set
+        facebook.takeRequest(); // creative
+        facebook.takeRequest(); // ad
+
+        RecordedRequest backendPost = backend.takeRequest();
+        assertEquals("/api/facebook-campaigns", backendPost.getPath());
+    }
+
     private static class StubFacebookAccessTokenManager extends FacebookAccessTokenManager {
         private final Queue<FacebookAccessTokenManager.RenewalAttemptResult> results = new ArrayDeque<>();
         private final FacebookAdsService adsService;

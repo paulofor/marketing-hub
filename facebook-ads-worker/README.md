@@ -55,11 +55,12 @@ O fluxo funciona da seguinte forma:
 3. O backend é notificado com `POST /api/accounts/facebook/{id}/token/renewal`,
    atualizando o token, a nova data de expiração e registrando o status da
    tentativa (`SUCCESS` ou `FAILED`).
-4. Quando a Graph API devolve `(#190) OAuthException` o worker tenta imediatamente
-   revalidar o token atual utilizando o mesmo fluxo descrito acima. Caso o
-   aplicativo (`facebook.app-id`/`facebook.app-secret`) esteja configurado, o
-   novo token é aplicado em memória e a fila de experimentos volta a ser
-   processada sem necessidade de reiniciar o serviço.
+4. Quando a Graph API devolve `(#190) OAuthException` o `FacebookCampaignService`
+   intercepta a exceção, pausa o processamento de experimentos e delega para o
+   `FacebookAccessTokenManager` revalidar o token atual utilizando o mesmo fluxo
+   descrito acima. Caso o aplicativo (`facebook.app-id`/`facebook.app-secret`)
+   esteja configurado, o novo token é aplicado em memória e a fila de
+   experimentos volta a ser processada sem necessidade de reiniciar o serviço.
 5. Esses dados são exibidos na tela de contas do frontend, permitindo acompanhar
    a última tentativa, o último sucesso e eventuais mensagens de erro.
 
@@ -154,13 +155,16 @@ Anúncios antes de reiniciar o serviço.
 
 Quando o Facebook devolve `code = 190` com `error_subcode = 463/467` ou
 mensagem "Session has expired", o worker interpreta que o token configurado em
-`facebook.access-token` não é mais válido. O serviço tenta renovar o token
-automaticamente via Graph API quando `facebook.app-id` e `facebook.app-secret`
-estão configurados. Em caso de sucesso, o novo token é aplicado sem reiniciar o
-worker e os experimentos voltam a ser processados na próxima execução. Se a
-renovação automática estiver desabilitada ou falhar, o log registra uma mensagem
-de erro única com os detalhes retornados pela Graph API, orientando a atualizar
-o token manualmente e reiniciar o serviço após a substituição.
+`facebook.access-token` não é mais válido. O `FacebookCampaignService` interrompe
+temporariamente a transformação de novos experimentos, registra o aviso apenas
+uma vez e delega a renovação para o `FacebookAccessTokenManager`. O serviço tenta
+renovar o token automaticamente via Graph API quando `facebook.app-id` e
+`facebook.app-secret` estão configurados. Em caso de sucesso, o novo token é
+aplicado sem reiniciar o worker e os experimentos voltam a ser processados na
+próxima execução. Se a renovação automática estiver desabilitada ou falhar, o log
+registra uma mensagem de erro única com os detalhes retornados pela Graph API,
+orientando a atualizar o token manualmente e reiniciar o serviço após a
+substituição.
 
 ## Build
 ```

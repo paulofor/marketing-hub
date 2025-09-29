@@ -22,6 +22,20 @@ export interface FacebookAccount {
   tokenRenewalLastAttemptAt?: string | null;
   tokenRenewedAt?: string | null;
   tokenRenewalLastError?: string | null;
+  adAccountId?: string | null;
+  defaultPageId?: string | null;
+  defaultWebsiteUrl?: string | null;
+  defaultInstagramActorId?: string | null;
+  defaultCreativeMessageTemplate?: string | null;
+  defaultCallToActionType?: string | null;
+  adSetDailyBudget?: string | null;
+  adSetBillingEvent?: string | null;
+  adSetOptimizationGoal?: string | null;
+  adSetDestinationType?: string | null;
+  adSetBidStrategy?: string | null;
+  adSetBidAmount?: string | null;
+  adSetTargetCountry?: string | null;
+  workerEnabled?: boolean;
 }
 
 export function useFacebookAccounts() {

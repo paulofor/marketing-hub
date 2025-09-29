@@ -134,3 +134,6 @@ databaseChangeLog:
   - include:
       file: V2026_02_15__add_fb_account_business_manager_app_id.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2026_03_20__extend_fb_account_worker_config.sql
+      relativeToChangelogFile: true

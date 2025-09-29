@@ -1,7 +1,9 @@
 package com.marketinghub.ads;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -40,7 +42,9 @@ public class FacebookAccountController {
         if (!account.isTokenRenewalEnabled()) {
             account.setTokenRenewalEnabled(false);
         }
-        return repository.save(account);
+        FacebookAccount saved = repository.save(account);
+        enforceSingleWorkerEnabled(saved);
+        return saved;
     }
 
     @PutMapping("/{id}")
@@ -55,7 +59,21 @@ public class FacebookAccountController {
         persisted.setAuthorizedUserEmail(account.getAuthorizedUserEmail());
         persisted.setAppId(account.getAppId());
         persisted.setBusinessManagerAppId(account.getBusinessManagerAppId());
+        persisted.setAdAccountId(account.getAdAccountId());
+        persisted.setDefaultPageId(account.getDefaultPageId());
+        persisted.setDefaultWebsiteUrl(account.getDefaultWebsiteUrl());
+        persisted.setDefaultInstagramActorId(account.getDefaultInstagramActorId());
+        persisted.setDefaultCreativeMessageTemplate(account.getDefaultCreativeMessageTemplate());
+        persisted.setDefaultCallToActionType(account.getDefaultCallToActionType());
+        persisted.setAdSetDailyBudget(account.getAdSetDailyBudget());
+        persisted.setAdSetBillingEvent(account.getAdSetBillingEvent());
+        persisted.setAdSetOptimizationGoal(account.getAdSetOptimizationGoal());
+        persisted.setAdSetDestinationType(account.getAdSetDestinationType());
+        persisted.setAdSetBidStrategy(account.getAdSetBidStrategy());
+        persisted.setAdSetBidAmount(account.getAdSetBidAmount());
+        persisted.setAdSetTargetCountry(account.getAdSetTargetCountry());
         persisted.setTokenRenewalEnabled(account.isTokenRenewalEnabled());
+        persisted.setWorkerEnabled(account.isWorkerEnabled());
 
         String newToken = account.getAccessToken();
         if (newToken == null) {
@@ -82,7 +100,18 @@ public class FacebookAccountController {
             persisted.setTokenRenewalStatus(account.getTokenRenewalStatus());
         }
         
-        return repository.save(persisted);
+        FacebookAccount updated = repository.save(persisted);
+        enforceSingleWorkerEnabled(updated);
+        return updated;
+    }
+
+    @GetMapping("/worker-config")
+    public FacebookWorkerConfiguration workerConfiguration() {
+        FacebookAccount account = repository
+            .findFirstByWorkerEnabledTrue()
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Facebook worker configuration not found"));
+        validateWorkerConfiguration(account);
+        return toWorkerConfiguration(account);
     }
 
     @GetMapping("/renewal/eligible")
@@ -151,6 +180,19 @@ public class FacebookAccountController {
         account.setAuthorizedUserEmail(trimToNull(account.getAuthorizedUserEmail()));
         account.setAppId(trimToNull(account.getAppId()));
         account.setBusinessManagerAppId(trimToNull(account.getBusinessManagerAppId()));
+        account.setAdAccountId(trimToNull(account.getAdAccountId()));
+        account.setDefaultPageId(trimToNull(account.getDefaultPageId()));
+        account.setDefaultWebsiteUrl(trimToNull(account.getDefaultWebsiteUrl()));
+        account.setDefaultInstagramActorId(trimToNull(account.getDefaultInstagramActorId()));
+        account.setDefaultCreativeMessageTemplate(trimToNull(account.getDefaultCreativeMessageTemplate()));
+        account.setDefaultCallToActionType(trimToNull(account.getDefaultCallToActionType()));
+        account.setAdSetDailyBudget(trimToNull(account.getAdSetDailyBudget()));
+        account.setAdSetBillingEvent(trimToNull(account.getAdSetBillingEvent()));
+        account.setAdSetOptimizationGoal(trimToNull(account.getAdSetOptimizationGoal()));
+        account.setAdSetDestinationType(trimToNull(account.getAdSetDestinationType()));
+        account.setAdSetBidStrategy(trimToNull(account.getAdSetBidStrategy()));
+        account.setAdSetBidAmount(trimToNull(account.getAdSetBidAmount()));
+        account.setAdSetTargetCountry(trimToNull(account.getAdSetTargetCountry()));
         if (account.isAppSecretProvided()) {
             account.overwriteAppSecret(trimToNull(account.getAppSecret()));
         }
@@ -162,6 +204,76 @@ public class FacebookAccountController {
             } catch (IllegalArgumentException ex) {
                 account.setTokenRenewalStatus(FacebookTokenRenewalStatus.NEVER_ATTEMPTED.name());
             }
+        }
+    }
+
+    private void enforceSingleWorkerEnabled(FacebookAccount saved) {
+        if (!saved.isWorkerEnabled()) {
+            return;
+        }
+        repository
+            .findAll()
+            .stream()
+            .filter(other -> !other.getId().equals(saved.getId()))
+            .filter(FacebookAccount::isWorkerEnabled)
+            .forEach(other -> {
+                other.setWorkerEnabled(false);
+                repository.save(other);
+            });
+    }
+
+    private FacebookWorkerConfiguration toWorkerConfiguration(FacebookAccount account) {
+        String creativeMessageTemplate = StringUtils.hasText(account.getDefaultCreativeMessageTemplate())
+            ? account.getDefaultCreativeMessageTemplate()
+            : "%s";
+        String callToAction = StringUtils.hasText(account.getDefaultCallToActionType())
+            ? account.getDefaultCallToActionType()
+            : "LEARN_MORE";
+        return new FacebookWorkerConfiguration(
+            account.getId(),
+            account.getAdAccountId(),
+            account.getAccessToken(),
+            account.getAppId(),
+            account.getAppSecret(),
+            account.getDefaultPageId(),
+            account.getDefaultInstagramActorId(),
+            account.getDefaultWebsiteUrl(),
+            creativeMessageTemplate,
+            callToAction,
+            account.getAdSetDailyBudget(),
+            account.getAdSetBillingEvent(),
+            account.getAdSetOptimizationGoal(),
+            account.getAdSetDestinationType(),
+            account.getAdSetBidStrategy(),
+            account.getAdSetBidAmount(),
+            account.getAdSetTargetCountry()
+        );
+    }
+
+    private void validateWorkerConfiguration(FacebookAccount account) {
+        if (!StringUtils.hasText(account.getAccessToken())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Facebook worker account is missing access token");
+        }
+        if (!StringUtils.hasText(account.getAdAccountId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Facebook worker account is missing ad account id");
+        }
+        if (!StringUtils.hasText(account.getDefaultWebsiteUrl())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Facebook worker account is missing default website URL");
+        }
+        if (!StringUtils.hasText(account.getAdSetDailyBudget())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Facebook worker account is missing ad set daily budget");
+        }
+        if (!StringUtils.hasText(account.getAdSetBillingEvent())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Facebook worker account is missing ad set billing event");
+        }
+        if (!StringUtils.hasText(account.getAdSetOptimizationGoal())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Facebook worker account is missing ad set optimization goal");
+        }
+        if (!StringUtils.hasText(account.getAdSetDestinationType())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Facebook worker account is missing ad set destination type");
+        }
+        if (!StringUtils.hasText(account.getAdSetTargetCountry())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Facebook worker account is missing target country");
         }
     }
 
@@ -196,5 +308,25 @@ public class FacebookAccountController {
         LocalDateTime renewedAt,
         LocalDateTime attemptedAt,
         String errorMessage
+    ) {}
+
+    public record FacebookWorkerConfiguration(
+        Long accountId,
+        String adAccountId,
+        String accessToken,
+        String appId,
+        String appSecret,
+        String defaultPageId,
+        String defaultInstagramActorId,
+        String defaultWebsiteUrl,
+        String defaultCreativeMessageTemplate,
+        String defaultCallToActionType,
+        String adSetDailyBudget,
+        String adSetBillingEvent,
+        String adSetOptimizationGoal,
+        String adSetDestinationType,
+        String adSetBidStrategy,
+        String adSetBidAmount,
+        String adSetTargetCountry
     ) {}
 }

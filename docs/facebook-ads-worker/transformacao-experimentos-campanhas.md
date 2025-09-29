@@ -49,22 +49,23 @@ montar a hierarquia completa:
    `PAUSED` e `special_ad_categories = NONE`. O identificador retornado alimenta
    as etapas seguintes ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L101-L105)).
 2. **Conjunto de anúncios**: `POST /adsets` com orçamento diário, billing event,
-   objetivo de otimização e destino (`WEBSITE`) definidos por propriedades de
-   configuração. A segmentação inicial utiliza apenas país (`facebook.ad-set.target-country`) até que o backend envie dados mais
-   ricos. O `id` retornado é usado na criação do anúncio ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L102-L111)).
+   objetivo de otimização e destino (`WEBSITE`) vindos da conta configurada no
+   backend (`worker-config`). A segmentação inicial utiliza apenas o país padrão
+   enquanto o backend não envia dados mais ricos. O `id` retornado é usado na
+   criação do anúncio ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L102-L111)).
 3. **Criativo**: `POST /adcreatives` baseado em um `object_story_spec` que inclui
    `page_id`, `instagram_actor_id` opcional, template de mensagem com o nome do
-   experimento e call-to-action configurável. O `id` retornado alimenta o anúncio
-   ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L112-L119)).
+   experimento e call-to-action vindos da mesma configuração. O `id` retornado
+   alimenta o anúncio ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L112-L119)).
 4. **Anúncio**: `POST /ads` referenciando o ad set e o criativo recém-criados, em
    status `PAUSED` para permitir revisão manual antes da ativação
    ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L120-L124)).
 
-Todos os pontos de contato com a Graph API reutilizam o mesmo `access_token`
-configurado para o worker. Quando a Graph API responde com `(#190) OAuthException`
+Todos os pontos de contato com a Graph API reutilizam o `access_token` exposto
+pelo `worker-config`. Quando a Graph API responde com `(#190) OAuthException`
 indicando expiração do token, o `FacebookCampaignService` interrompe o fluxo
-temporariamente e delega a renovação para o `FacebookAccessTokenManager`. O
-processamento normal é retomado assim que o token é atualizado.
+temporariamente e delega a renovação para o `FacebookAccessTokenManager`, que
+consulta novamente o backend antes de atualizar o token em memória.
 
 ### 3. Persistência no backend
 
@@ -80,13 +81,13 @@ mesmo nome do experimento e preenche `objective` e `budgetMode` com constantes
 | --- | --- | --- |
 | `Experiment.name` | `Graph API - name` | Nome base para campanha, ad set, criativo e anúncio ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L101-L124)) |
 | `Experiment.name` | `CreateCampaignRequest.name` | Mantém rastreabilidade entre backend e Facebook ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L125-L132)) |
-| `facebook.ad-account-id` | `Graph API - URLs` | Define o Ad Account usado em todas as chamadas `POST` ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L38-L67)) |
-| `facebook.access-token` | `Graph API - access_token` | Token reutilizado em campanha, ad set, criativo e anúncio ([FacebookAdsService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/FacebookAdsService.java#L18-L127)) |
-| `facebook.ad-set.*` | `Graph API - adsets` | Define orçamento, otimização e país padrão ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L102-L111)) |
-| `facebook.page-id` | `Graph API - promoted_object` / `object_story_spec.page_id` | Necessário para ad sets e criativos ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L102-L119)) |
-| `facebook.instagram-actor-id` | `Graph API - object_story_spec.instagram_actor_id` | Opcional, incluído apenas quando configurado ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L112-L118)) |
-| `facebook.creative.message-template` | `Graph API - object_story_spec.link_data.message` | Template com suporte a `%s` para o nome do experimento ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L134-L141)) |
-| `facebook.website-url` | `Graph API - link_data.link` e `call_to_action.value.link` | URL padrão de destino ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L112-L118)) |
+| `worker-config.adAccountId` | `Graph API - URLs` | Define o Ad Account usado em todas as chamadas `POST` ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L38-L67)) |
+| `worker-config.accessToken` | `Graph API - access_token` | Token reutilizado em campanha, ad set, criativo e anúncio ([FacebookAdsService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/FacebookAdsService.java#L18-L132)) |
+| `worker-config.adSet*` | `Graph API - adsets` | Define orçamento, otimização e país padrão ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L102-L111)) |
+| `worker-config.defaultPageId` | `Graph API - promoted_object` / `object_story_spec.page_id` | Necessário para ad sets e criativos ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L102-L119)) |
+| `worker-config.defaultInstagramActorId` | `Graph API - object_story_spec.instagram_actor_id` | Opcional, incluído apenas quando configurado ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L112-L118)) |
+| `worker-config.defaultCreativeMessageTemplate` | `Graph API - object_story_spec.link_data.message` | Template com suporte a `%s` para o nome do experimento ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L134-L141)) |
+| `worker-config.defaultWebsiteUrl` | `Graph API - link_data.link` e `call_to_action.value.link` | URL padrão de destino ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L112-L118)) |
 | Resposta da Graph API (`id`) | `CreateCampaignRequest.id` | Persistido como identificador principal da campanha ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L125-L132)) |
 | Constante `OUTCOME_TRAFFIC` | `Graph API - objective` e `CreateCampaignRequest.objective` | Objetivo padrão até existir planejamento específico |
 | Constante `CAMPAIGN` | `CreateCampaignRequest.budgetMode` | Modo de orçamento usado atualmente pelo backend |

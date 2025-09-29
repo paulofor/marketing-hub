@@ -426,19 +426,37 @@ allow variants to be created before an experiment is defined.
 - `authorized_user_name` VARCHAR(255)
 - `authorized_user_email` VARCHAR(320)
 - `app_id` VARCHAR(255)
+- `business_manager_app_id` VARCHAR(255)
 - `app_secret` LONGTEXT
 - `token_renewal_enabled` TINYINT(1) DEFAULT 0
 - `token_renewal_status` VARCHAR(40)
 - `token_renewal_last_attempt_at` DATETIME
 - `token_renewed_at` DATETIME
 - `token_renewal_last_error` LONGTEXT
+- `ad_account_id` VARCHAR(64)
+- `default_page_id` VARCHAR(128)
+- `default_website_url` VARCHAR(512)
+- `default_instagram_actor_id` VARCHAR(64)
+- `default_creative_message_template` VARCHAR(255)
+- `default_call_to_action_type` VARCHAR(64)
+- `ad_set_daily_budget` VARCHAR(32)
+- `ad_set_billing_event` VARCHAR(64)
+- `ad_set_optimization_goal` VARCHAR(64)
+- `ad_set_destination_type` VARCHAR(64)
+- `ad_set_bid_strategy` VARCHAR(64)
+- `ad_set_bid_amount` VARCHAR(32)
+- `ad_set_target_country` VARCHAR(32)
+- `worker_enabled` TINYINT(1) DEFAULT 0
 
 Registra as credenciais do Facebook Ads configuradas no backend. Quando a
 renovação automática está habilitada (`token_renewal_enabled = 1`), o Facebook
 Ads Worker monitora `token_expires_at` e solicita um novo token de longa duração
 antes do vencimento. Cada tentativa atualiza `token_renewal_status`,
 `token_renewal_last_attempt_at`, `token_renewed_at` e armazena mensagens de erro
-em `token_renewal_last_error` quando a renovação falha.
+em `token_renewal_last_error` quando a renovação falha. A conta marcada como
+`worker_enabled = 1` é exposta pelo endpoint `GET /api/accounts/facebook/worker-config`
+e fornece os parâmetros padrão utilizados pelo `facebook-ads-worker` (ID da conta
+de anúncios, token, App ID/Secret, página fallback, orçamento diário etc.).
 
 ## Diagram
 

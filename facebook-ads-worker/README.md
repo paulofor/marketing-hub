@@ -14,8 +14,8 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
 2. **Conjunto de anúncios** (`POST /adsets`) atrelado à campanha, também em
    `PAUSED`, com segmentação geográfica simples e destino `WEBSITE`.
 3. **Criativo** (`POST /adcreatives`) baseado em um `object_story_spec`
-   contendo `page_id` definido no experimento (ou o fallback configurado em
-   `facebook.page-id`), opcionalmente `instagram_actor_id`, mensagem e
+   contendo `page_id` definido no experimento (ou o fallback configurado na
+   conta selecionada no backend), opcionalmente `instagram_actor_id`, mensagem e
    call-to-action vindos do próprio criativo.
 4. **Anúncio** (`POST /ads`) que referencia o conjunto e o criativo recém
    criados, mantido pausado até que o time operacional revise os detalhes no
@@ -73,32 +73,32 @@ Caso a chamada à Graph API falhe, o backend recebe o status `FAILED` com a
 mensagem de erro no campo `tokenRenewalLastError`, mantendo o token anterior e
 exigindo uma ação manual.
 
-Os acessos são configurados pelas propriedades:
+## Configuração via backend
 
-- `backend.base-url` (default: `http://191.252.92.222:8000`)
-- `backend.api-prefix` (default: `/api`)
-- `facebook.ad-set.daily-budget` (default: `2000`, em centavos da moeda da
-  conta)
-- `facebook.ad-set.billing-event` (default: `IMPRESSIONS`)
-- `facebook.ad-set.optimization-goal` (default: `LINK_CLICKS`)
-- `facebook.ad-set.destination-type` (default: `WEBSITE`)
-- `facebook.ad-set.bid-strategy` (default: `LOWEST_COST_WITHOUT_CAP` – evita a
-  exigência de limites de lance em contas que utilizam estratégias de custo
-  máximo)
-- `facebook.ad-set.bid-amount` (opcional – defina um valor fixo de lance em
-  centavos quando a conta exigir)
-- `facebook.ad-set.target-country` (default: `BR`)
-- `facebook.page-id` (opcional – usado como fallback quando o criativo não define `pageId`)
-- `facebook.instagram-actor-id` (opcional)
-- `facebook.website-url` (sem default – obrigatório)
-- `facebook.graph-api.version` (default: `v23.0` – utilizado para montar os caminhos da Graph API)
-- `facebook.app-id` (opcional – obrigatório para renovação automática quando o token expira em produção)
-- `facebook.app-secret` (opcional – obrigatório para renovação automática quando o token expira em produção)
-- `facebook.creative.message-template` (default: `%s` – utiliza o nome do
-  experimento quando contém `%s`)
-- `facebook.creative.call-to-action-type` (default: `LEARN_MORE`)
-- `facebook.token-renewal.scheduler.delay` (default: `21600000`, em
-  milissegundos – intervalo entre as tentativas de renovação automática)
+O worker não lê mais variáveis de ambiente para parametrizar o Facebook. Todas
+as credenciais e defaults operacionais são preenchidos pela equipe através da
+tela **Contas do Facebook** no frontend. A conta marcada com "Utilizar esta
+conta no Facebook Ads Worker" é exposta pelo endpoint
+`GET /api/accounts/facebook/worker-config` e contém:
+
+- **Token de acesso de longa duração**, **App ID** e **App Secret** usados para
+  autenticação e renovação automática;
+- **ID da conta de anúncios**, **Página padrão**, **Instagram Actor ID**,
+  **URL padrão** e **call-to-action** utilizados como fallback quando o
+  experimento não define esses valores;
+- Parâmetros padrão do conjunto de anúncios (orçamento diário, billing event,
+  optimization goal, destination type, estratégia de lance, bid amount e país
+  alvo);
+- Template de mensagem do criativo (com suporte a `%s` para incluir o nome do
+  experimento).
+
+Ao carregar uma execução o `FacebookCampaignService` consulta essa configuração,
+sincroniza o token em memória (`FacebookAdsService`) e aplica todos os valores
+nas chamadas à Graph API. Dessa forma basta atualizar os campos na interface web
+para trocar de conta, ajustar orçamento ou modificar o destino padrão sem
+reiniciar o worker. As únicas propriedades externas mantidas em arquivo de
+configuração são `backend.base-url`, `backend.api-prefix` e
+`facebook.graph-api.version`.
 
 ## Data Model
 
@@ -137,12 +137,13 @@ O endpoint [`POST /{ad_account_id}/adcreatives`](https://developers.facebook.com
 exige um `page_id` válido no `object_story_spec` quando o criativo representa
 uma Página do Facebook. O worker agora busca o `pageId` diretamente no
 experimento, garantindo que todos os criativos compartilhem a mesma página e
-utilizando a propriedade `facebook.page-id` apenas como fallback. Caso nenhum
-destes valores esteja preenchido, a API responde com `error_subcode = 1443121`
-e a mensagem "A Página do Facebook está ausente". O fluxo é interrompido
-imediatamente, registrando o aviso em log. Preencha o campo `pageId` do
-experimento (ou configure o fallback) antes da próxima execução para que a
-criação seja bem sucedida.
+utilizando o fallback cadastrado na conta do backend apenas quando o experimento
+não informa uma página específica. Caso nenhum destes valores esteja
+preenchido, a API responde com `error_subcode = 1443121` e a mensagem "A Página
+do Facebook está ausente". O fluxo é interrompido imediatamente, registrando o
+aviso em log. Preencha o campo `pageId` do experimento (ou informe a página
+padrão na interface de contas) antes da próxima execução para que a criação seja
+bem sucedida.
 
 ### Erro `(#100) Invalid parameter` ao criar o conjunto de anúncios
 
@@ -151,27 +152,29 @@ de lance (`bid_cap`) ou metas de retorno (`ROAS`). Nesses casos, a Graph API
 responde com `error_subcode = 2490487` e a mensagem "Valor ou restrições de
 lance obrigatórios". Para manter o fluxo padrão funcional, o worker agora envia
 `bid_strategy = LOWEST_COST_WITHOUT_CAP` por default, estratégia que não exige
-valores adicionais. Caso sua conta utilize políticas diferentes, preencha
-`facebook.ad-set.bid-amount` com o lance desejado (em centavos) ou ajuste
-`facebook.ad-set.bid-strategy` para refletir a configuração do Gerenciador de
-Anúncios antes de reiniciar o serviço.
+valores adicionais. Caso sua conta utilize políticas diferentes, atualize os
+campos **Valor do lance (centavos, opcional)** e **Estratégia de lance** na tela
+**Contas do Facebook** do frontend para refletir a configuração real do
+Gerenciador de Anúncios. O backend persiste essas alterações e o worker passa a
+utilizar os novos valores automaticamente no ciclo seguinte, sem necessidade de
+reiniciar o serviço.
 
 ### Erro `(#190) OAuthException` indicando token expirado
 
 Quando o Facebook devolve `code = 190` com `error_subcode = 463/467` ou
-mensagem "Session has expired", o worker interpreta que o token configurado em
-`facebook.access-token` não é mais válido. O `FacebookCampaignService` interrompe
+mensagem "Session has expired", o worker interpreta que o token fornecido pelo
+backend não é mais válido. O `FacebookCampaignService` interrompe
 temporariamente a transformação de novos experimentos, registra o aviso apenas
 uma vez e delega a renovação para o `FacebookAccessTokenManager`. O serviço tenta
-renovar o token automaticamente via Graph API quando `facebook.app-id` e
-`facebook.app-secret` estão configurados. Em caso de sucesso, o novo token é
-aplicado sem reiniciar o worker e os experimentos voltam a ser processados na
-próxima execução. Caso a primeira tentativa falhe, o worker continua tentando a
+renovar o token automaticamente via Graph API quando `appId` e `appSecret` estão
+preenchidos na conta selecionada. Em caso de sucesso, o novo token é aplicado sem
+reiniciar o worker e os experimentos voltam a ser processados na próxima
+execução. Caso a primeira tentativa falhe, o worker continua tentando a
 renovação em cada ciclo agendado e retoma o processamento assim que obtiver um
 token válido novamente. Se a renovação automática estiver desabilitada ou falhar
 repetidamente, o log registra uma mensagem de erro com os detalhes retornados
-pela Graph API, orientando a atualizar o token manualmente e reiniciar o serviço
-após a substituição.
+pela Graph API, orientando a atualizar o token manualmente na interface e
+reiniciar o serviço após a substituição.
 
 ## Build
 ```

@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,7 +27,7 @@ public class FacebookAdsService {
     private static final Logger LOGGER = LoggerFactory.getLogger(FacebookAdsService.class);
 
     private final WebClient webClient;
-    private final String accessToken;
+    private final AtomicReference<String> accessToken;
     private final String apiVersion;
     private final ObjectMapper objectMapper;
 
@@ -36,10 +37,26 @@ public class FacebookAdsService {
                               @Value("${facebook.graph-api.version:v23.0}") String apiVersion,
                               ObjectMapper objectMapper) {
         this.webClient = builder.baseUrl(baseUrl).build();
-        this.accessToken = accessToken;
+        this.accessToken = new AtomicReference<>(Objects.requireNonNull(accessToken, "facebook.access-token"));
         this.apiVersion = normalizeVersion(apiVersion);
         this.objectMapper = objectMapper;
         LOGGER.info("Configured Facebook Graph API version: {}", this.apiVersion);
+    }
+
+    public String getCurrentAccessToken() {
+        return accessToken.get();
+    }
+
+    public void updateAccessToken(String newToken) {
+        Objects.requireNonNull(newToken, "newToken");
+        String maskedOldToken = maskAccessToken(accessToken.get());
+        String maskedNewToken = maskAccessToken(newToken);
+        accessToken.set(newToken);
+        LOGGER.info(
+            "Facebook access token updated: previousToken={}, newToken={}",
+            maskedOldToken,
+            maskedNewToken
+        );
     }
 
     public String createInstagramCampaign(String adAccountId, String name) {
@@ -49,7 +66,7 @@ public class FacebookAdsService {
             "objective", "OUTCOME_TRAFFIC",
             "status", "PAUSED",
             "special_ad_categories", List.of(),
-            "access_token", accessToken
+            "access_token", getCurrentAccessToken()
         );
 
         JsonNode response = executePost(path, body);
@@ -85,7 +102,7 @@ public class FacebookAdsService {
         if (request.pageId() != null && !request.pageId().isBlank()) {
             body.put("promoted_object", Map.of("page_id", request.pageId()));
         }
-        body.put("access_token", accessToken);
+        body.put("access_token", getCurrentAccessToken());
 
         String path = buildVersionedPath("/act_" + adAccountId + "/adsets");
 
@@ -120,7 +137,7 @@ public class FacebookAdsService {
         Map<String, Object> body = new HashMap<>();
         body.put("name", request.name());
         body.put("object_story_spec", objectStorySpec);
-        body.put("access_token", accessToken);
+        body.put("access_token", getCurrentAccessToken());
 
         String path = buildVersionedPath("/act_" + adAccountId + "/adcreatives");
 
@@ -136,7 +153,7 @@ public class FacebookAdsService {
         body.put("adset_id", request.adSetId());
         body.put("creative", Map.of("creative_id", request.creativeId()));
         body.put("status", "PAUSED");
-        body.put("access_token", accessToken);
+        body.put("access_token", getCurrentAccessToken());
 
         String path = buildVersionedPath("/act_" + adAccountId + "/ads");
 
@@ -145,7 +162,7 @@ public class FacebookAdsService {
     }
 
     public JsonNode getCampaignMetrics(String campaignId) {
-        String path = buildVersionedPath("/" + campaignId + "/insights?access_token=" + accessToken);
+        String path = buildVersionedPath("/" + campaignId + "/insights?access_token=" + getCurrentAccessToken());
         String maskedPath = maskAccessTokenInPath(path);
         LOGGER.info("Sending GET request to Facebook API: path={}", maskedPath);
         try {
@@ -168,14 +185,18 @@ public class FacebookAdsService {
             return nonNullResponse.body();
         } catch (WebClientResponseException ex) {
             String responseBody = ex.getResponseBodyAsString();
+            ObjectNode errorDetails = extractErrorDetails(responseBody);
             LOGGER.error(
                 "Facebook API GET request failed: path={}, status={}, responseBody={}, errorDetails={}",
                 maskedPath,
                 ex.getRawStatusCode(),
                 maskAccessToken(responseBody),
-                extractErrorDetails(responseBody),
+                errorDetails,
                 ex
             );
+            if (isAccessTokenExpired(errorDetails)) {
+                throw new FacebookAccessTokenExpiredException(resolveAccessTokenExpiredMessage(errorDetails), errorDetails, ex);
+            }
             throw ex;
         } catch (WebClientRequestException ex) {
             LOGGER.error("Facebook API GET request could not be completed: path={}, message={}", maskedPath, ex.getMessage(), ex);
@@ -218,6 +239,9 @@ public class FacebookAdsService {
                 ex.getHeaders(),
                 ex
             );
+            if (isAccessTokenExpired(errorDetails)) {
+                throw new FacebookAccessTokenExpiredException(resolveAccessTokenExpiredMessage(errorDetails), errorDetails, ex);
+            }
             if (isPermissionError(errorDetails)) {
                 throw new FacebookPermissionException(resolvePermissionMessage(errorDetails), errorDetails, ex);
             }
@@ -305,10 +329,11 @@ public class FacebookAdsService {
     }
 
     private String maskAccessTokenInPath(String path) {
-        if (path == null || path.isBlank() || accessToken == null || accessToken.isBlank()) {
+        String currentToken = accessToken.get();
+        if (path == null || path.isBlank() || currentToken == null || currentToken.isBlank()) {
             return path;
         }
-        return path.replace(accessToken, maskAccessToken(accessToken));
+        return path.replace(currentToken, maskAccessToken(currentToken));
     }
 
     private ObjectNode extractErrorDetails(String responseBody) {
@@ -387,6 +412,37 @@ public class FacebookAdsService {
             return errorDetails.get("message").asText();
         }
         return "Facebook API returned a permissions error";
+    }
+
+    private boolean isAccessTokenExpired(ObjectNode errorDetails) {
+        if (errorDetails == null) {
+            return false;
+        }
+        int code = errorDetails.path("code").asInt();
+        if (code != 190) {
+            return false;
+        }
+
+        int subcode = errorDetails.path("error_subcode").asInt();
+        if (subcode == 463 || subcode == 467) {
+            return true;
+        }
+
+        String message = errorDetails.path("message").asText("").toLowerCase();
+        return message.contains("session has expired") || message.contains("token has expired");
+    }
+
+    private String resolveAccessTokenExpiredMessage(ObjectNode errorDetails) {
+        if (errorDetails == null) {
+            return "Facebook access token has expired";
+        }
+        if (errorDetails.hasNonNull("error_user_msg")) {
+            return errorDetails.get("error_user_msg").asText();
+        }
+        if (errorDetails.hasNonNull("message")) {
+            return errorDetails.get("message").asText();
+        }
+        return "Facebook access token has expired";
     }
 
     private String buildVersionedPath(String resourcePath) {

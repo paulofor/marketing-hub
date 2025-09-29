@@ -24,6 +24,7 @@ interface AccountFormState {
   authorizedUserName: string;
   authorizedUserEmail: string;
   appId: string;
+  businessManagerAppId: string;
   appSecret: string;
   tokenRenewalEnabled: boolean;
   clearAppSecret: boolean;
@@ -45,6 +46,7 @@ const emptyAccountForm: AccountFormState = {
   authorizedUserName: "",
   authorizedUserEmail: "",
   appId: "",
+  businessManagerAppId: "",
   appSecret: "",
   tokenRenewalEnabled: false,
   clearAppSecret: false,
@@ -196,6 +198,7 @@ export default function FacebookAccountsPage() {
       authorizedUserName: accountForm.authorizedUserName.trim() || null,
       authorizedUserEmail: accountForm.authorizedUserEmail.trim() || null,
       appId: accountForm.appId.trim() || null,
+      businessManagerAppId: accountForm.businessManagerAppId.trim() || null,
       tokenRenewalEnabled: accountForm.tokenRenewalEnabled,
     };
     if (accountForm.clearAppSecret) {
@@ -261,7 +264,7 @@ export default function FacebookAccountsPage() {
         </div>
       )}
       <div className="row g-4">
-        <div className="col-12 col-xl-6">
+        <div className="col-12">
           <div className="card h-100">
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-center mb-3">
@@ -368,6 +371,8 @@ export default function FacebookAccountsPage() {
                                   authorizedUserName: account.authorizedUserName ?? "",
                                   authorizedUserEmail: account.authorizedUserEmail ?? "",
                                   appId: account.appId ?? "",
+                                  businessManagerAppId:
+                                    account.businessManagerAppId ?? "",
                                   appSecret: "",
                                   tokenRenewalEnabled: Boolean(account.tokenRenewalEnabled),
                                   clearAppSecret: false,
@@ -454,6 +459,21 @@ export default function FacebookAccountsPage() {
                       setAccountForm((current) => ({
                         ...current,
                         appId: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label">ID do aplicativo vinculado ao Business Manager</label>
+                  <input
+                    className="form-control"
+                    placeholder="ID do aplicativo no Business Manager"
+                    value={accountForm.businessManagerAppId}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        businessManagerAppId: event.target.value,
                       }))
                     }
                     disabled={isAccountMutationPending}
@@ -622,7 +642,7 @@ export default function FacebookAccountsPage() {
             </div>
           </div>
         </div>
-        <div className="col-12 col-xl-6">
+        <div className="col-12">
           <div className="card h-100">
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-center mb-3">

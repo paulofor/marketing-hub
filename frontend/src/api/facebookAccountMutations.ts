@@ -11,6 +11,7 @@ export interface FacebookAccountPayload {
   authorizedUserName?: string | null;
   authorizedUserEmail?: string | null;
   appId?: string | null;
+  businessManagerAppId?: string | null;
   appSecret?: string | null;
   tokenRenewalEnabled?: boolean;
 }

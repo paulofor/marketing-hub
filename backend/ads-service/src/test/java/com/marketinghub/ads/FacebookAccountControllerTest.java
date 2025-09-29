@@ -73,6 +73,33 @@ public class FacebookAccountControllerTest {
     }
 
     @Test
+    void shouldPersistAppCredentialsOnCreate() throws Exception {
+        repository.deleteAll();
+
+        String payload = "{" +
+            "\"name\":\"Conta BM\"," +
+            "\"currency\":\"BRL\"," +
+            "\"appId\":\" 123456 \"," +
+            "\"businessManagerAppId\":\" 654321 \"," +
+            "\"appSecret\":\" segredo-super-seguro \"," +
+            "\"tokenRenewalEnabled\":true" +
+            "}";
+
+        mockMvc.perform(post("/api/accounts/facebook")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(payload))
+            .andExpect(status().isOk());
+
+        FacebookAccount saved = repository.findAll().stream().findFirst().orElseThrow();
+        assertThat(saved.getAppId()).isEqualTo("123456");
+        assertThat(saved.getBusinessManagerAppId()).isEqualTo("654321");
+        assertThat(saved.getAppSecret()).isEqualTo("segredo-super-seguro");
+        assertThat(saved.isTokenRenewalEnabled()).isTrue();
+
+        repository.deleteAll();
+    }
+
+    @Test
     void shouldReturnAccountsEligibleForRenewal() throws Exception {
         FacebookAccount eligible = repository.save(FacebookAccount.builder()
             .name("Eligible")

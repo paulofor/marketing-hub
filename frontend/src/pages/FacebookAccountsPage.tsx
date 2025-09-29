@@ -264,7 +264,7 @@ export default function FacebookAccountsPage() {
         </div>
       )}
       <div className="row g-4">
-        <div className="col-12 col-xl-6">
+        <div className="col-12">
           <div className="card h-100">
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-center mb-3">
@@ -642,7 +642,7 @@ export default function FacebookAccountsPage() {
             </div>
           </div>
         </div>
-        <div className="col-12 col-xl-6">
+        <div className="col-12">
           <div className="card h-100">
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-center mb-3">

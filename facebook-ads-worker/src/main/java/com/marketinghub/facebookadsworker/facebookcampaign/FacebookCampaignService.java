@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public class FacebookCampaignService {
@@ -46,6 +47,7 @@ public class FacebookCampaignService {
     private final Set<Long> experimentsBlockedByPermissions;
     private final AtomicBoolean accessTokenExpired;
     private final AtomicBoolean accessTokenExpiryWarningLogged;
+    private final AtomicReference<String> lastExpiredAccessToken;
     private final FacebookAccessTokenManager accessTokenManager;
 
     public FacebookCampaignService(FacebookAdsService facebookAdsService,
@@ -87,10 +89,19 @@ public class FacebookCampaignService {
         this.experimentsBlockedByPermissions = ConcurrentHashMap.newKeySet();
         this.accessTokenExpired = new AtomicBoolean(false);
         this.accessTokenExpiryWarningLogged = new AtomicBoolean(false);
+        this.lastExpiredAccessToken = new AtomicReference<>(null);
     }
 
     public void createCampaignsFromExperiments() {
         if (accessTokenExpired.get()) {
+            if (hasTokenChangedSinceExpiration()) {
+                LOGGER.info(
+                    "Detected refreshed Facebook access token after a previous expiration; resuming campaign processing."
+                );
+                accessTokenExpired.set(false);
+                accessTokenExpiryWarningLogged.set(false);
+                lastExpiredAccessToken.set(null);
+            } else {
             FacebookAccessTokenManager.RenewalAttemptResult renewalResult = accessTokenManager.tryRenewAccessTokenIfPossible();
             if (renewalResult.outcome() == FacebookAccessTokenManager.RenewalOutcome.SUCCESS) {
                 LOGGER.info(
@@ -98,6 +109,7 @@ public class FacebookCampaignService {
                 );
                 accessTokenExpired.set(false);
                 accessTokenExpiryWarningLogged.set(false);
+                lastExpiredAccessToken.set(null);
             } else {
                 if (accessTokenExpiryWarningLogged.compareAndSet(false, true)) {
                     LOGGER.warn(
@@ -106,6 +118,7 @@ public class FacebookCampaignService {
                     logAutomaticRenewalOutcome(renewalResult);
                 }
                 return;
+            }
             }
         } else {
             accessTokenExpiryWarningLogged.set(false);
@@ -225,6 +238,7 @@ public class FacebookCampaignService {
             );
             markExperimentAsFailed(exp.id());
         } catch (FacebookAccessTokenExpiredException ex) {
+            lastExpiredAccessToken.compareAndSet(null, facebookAdsService.getCurrentAccessToken());
             FacebookAccessTokenManager.RenewalAttemptResult renewalResult = accessTokenManager.tryRenewAccessTokenIfPossible();
             if (renewalResult.outcome() == FacebookAccessTokenManager.RenewalOutcome.SUCCESS) {
                 LOGGER.info(
@@ -233,6 +247,7 @@ public class FacebookCampaignService {
                 );
                 accessTokenExpired.set(false);
                 accessTokenExpiryWarningLogged.set(false);
+                lastExpiredAccessToken.set(null);
                 return;
             }
 
@@ -255,6 +270,15 @@ public class FacebookCampaignService {
                 exp.id()
             );
         }
+    }
+
+    private boolean hasTokenChangedSinceExpiration() {
+        String expiredToken = lastExpiredAccessToken.get();
+        if (expiredToken == null) {
+            return false;
+        }
+        String currentToken = facebookAdsService.getCurrentAccessToken();
+        return currentToken != null && !currentToken.equals(expiredToken);
     }
 
     private String formatCreativeMessage(String experimentName) {

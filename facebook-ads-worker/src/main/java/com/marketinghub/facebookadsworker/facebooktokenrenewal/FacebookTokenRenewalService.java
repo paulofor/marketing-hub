@@ -13,6 +13,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class FacebookTokenRenewalService {
@@ -84,6 +85,23 @@ public class FacebookTokenRenewalService {
 
             LocalDateTime renewedAt = attemptTime;
             LocalDateTime expiresAt = attemptTime.plusSeconds(Math.max(response.expiresInSeconds(), 0));
+
+            boolean matchesCurrentToken = Objects.equals(
+                candidate.accessToken(),
+                facebookAdsService.getCurrentAccessToken()
+            );
+            if (matchesCurrentToken) {
+                facebookAdsService.updateAccessToken(response.accessToken());
+                LOGGER.info(
+                    "Updated in-memory Facebook access token after backend renewal for account id={}",
+                    candidate.id()
+                );
+            } else {
+                LOGGER.debug(
+                    "Skipping in-memory Facebook token update because candidate token does not match the worker configuration: accountId={}",
+                    candidate.id()
+                );
+            }
 
             reportResult(candidate.id(), new RenewalResultPayload(
                 TokenRenewalStatus.SUCCESS,

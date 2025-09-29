@@ -61,6 +61,11 @@ O fluxo funciona da seguinte forma:
    descrito acima. Caso o aplicativo (`facebook.app-id`/`facebook.app-secret`)
    esteja configurado, o novo token é aplicado em memória e a fila de
    experimentos volta a ser processada sem necessidade de reiniciar o serviço.
+   Quando as credenciais não estão configuradas, o agendador de renovação do
+   backend continua responsável por gerar um novo token. Ao detectar que o token
+   configurado foi trocado por esse processo externo, o worker aplica a nova
+   credencial em memória e retoma automaticamente o processamento, eliminando a
+   necessidade de reinicialização manual após a renovação via backend.
 5. Esses dados são exibidos na tela de contas do frontend, permitindo acompanhar
    a última tentativa, o último sucesso e eventuais mensagens de erro.
 

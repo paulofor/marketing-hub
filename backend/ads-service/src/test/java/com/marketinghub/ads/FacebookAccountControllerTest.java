@@ -160,4 +160,56 @@ public class FacebookAccountControllerTest {
         assertThat(updated.getTokenRenewalStatus()).isEqualTo(FacebookTokenRenewalStatus.SUCCESS.name());
         assertThat(updated.getTokenRenewalLastError()).isNull();
     }
+
+    @Test
+    void shouldExposeWorkerConfigurationWhenAccountEnabled() throws Exception {
+        repository.deleteAll();
+        FacebookAccount account = repository.save(FacebookAccount.builder()
+            .name("Worker Account")
+            .currency("BRL")
+            .accessToken("worker-token")
+            .adAccountId("1234567890")
+            .defaultWebsiteUrl("https://example.com")
+            .defaultCreativeMessageTemplate("Campanha %s")
+            .defaultCallToActionType("SIGN_UP")
+            .adSetDailyBudget("2000")
+            .adSetBillingEvent("IMPRESSIONS")
+            .adSetOptimizationGoal("LINK_CLICKS")
+            .adSetDestinationType("WEBSITE")
+            .adSetBidStrategy("LOWEST_COST_WITHOUT_CAP")
+            .adSetTargetCountry("BR")
+            .workerEnabled(true)
+            .build());
+
+        mockMvc.perform(get("/api/accounts/facebook/worker-config"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.accountId").value(account.getId()))
+            .andExpect(jsonPath("$.accessToken").value("worker-token"))
+            .andExpect(jsonPath("$.adAccountId").value("1234567890"))
+            .andExpect(jsonPath("$.defaultWebsiteUrl").value("https://example.com"))
+            .andExpect(jsonPath("$.adSetDailyBudget").value("2000"))
+            .andExpect(jsonPath("$.adSetBillingEvent").value("IMPRESSIONS"))
+            .andExpect(jsonPath("$.defaultCallToActionType").value("SIGN_UP"))
+            .andExpect(jsonPath("$.defaultCreativeMessageTemplate").value("Campanha %s"));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenWorkerConfigurationIncomplete() throws Exception {
+        repository.deleteAll();
+        repository.save(FacebookAccount.builder()
+            .name("Worker Account")
+            .currency("BRL")
+            .accessToken("worker-token")
+            .defaultWebsiteUrl("https://example.com")
+            .adSetDailyBudget("2000")
+            .adSetBillingEvent("IMPRESSIONS")
+            .adSetOptimizationGoal("LINK_CLICKS")
+            .adSetDestinationType("WEBSITE")
+            .adSetTargetCountry("BR")
+            .workerEnabled(true)
+            .build());
+
+        mockMvc.perform(get("/api/accounts/facebook/worker-config"))
+            .andExpect(status().isBadRequest());
+    }
 }

@@ -27,6 +27,20 @@ interface AccountFormState {
   businessManagerAppId: string;
   appSecret: string;
   tokenRenewalEnabled: boolean;
+  adAccountId: string;
+  defaultPageId: string;
+  defaultWebsiteUrl: string;
+  defaultInstagramActorId: string;
+  defaultCreativeMessageTemplate: string;
+  defaultCallToActionType: string;
+  adSetDailyBudget: string;
+  adSetBillingEvent: string;
+  adSetOptimizationGoal: string;
+  adSetDestinationType: string;
+  adSetBidStrategy: string;
+  adSetBidAmount: string;
+  adSetTargetCountry: string;
+  workerEnabled: boolean;
   clearAppSecret: boolean;
 }
 
@@ -49,6 +63,20 @@ const emptyAccountForm: AccountFormState = {
   businessManagerAppId: "",
   appSecret: "",
   tokenRenewalEnabled: false,
+  adAccountId: "",
+  defaultPageId: "",
+  defaultWebsiteUrl: "",
+  defaultInstagramActorId: "",
+  defaultCreativeMessageTemplate: "%s",
+  defaultCallToActionType: "LEARN_MORE",
+  adSetDailyBudget: "",
+  adSetBillingEvent: "IMPRESSIONS",
+  adSetOptimizationGoal: "LINK_CLICKS",
+  adSetDestinationType: "WEBSITE",
+  adSetBidStrategy: "LOWEST_COST_WITHOUT_CAP",
+  adSetBidAmount: "",
+  adSetTargetCountry: "BR",
+  workerEnabled: false,
   clearAppSecret: false,
 };
 const emptyPageForm: PageFormState = { pageId: "", name: "" };
@@ -200,6 +228,25 @@ export default function FacebookAccountsPage() {
       appId: accountForm.appId.trim() || null,
       businessManagerAppId: accountForm.businessManagerAppId.trim() || null,
       tokenRenewalEnabled: accountForm.tokenRenewalEnabled,
+      adAccountId: accountForm.adAccountId.trim() || null,
+      defaultPageId: accountForm.defaultPageId.trim() || null,
+      defaultWebsiteUrl: accountForm.defaultWebsiteUrl.trim() || null,
+      defaultInstagramActorId:
+        accountForm.defaultInstagramActorId.trim() || null,
+      defaultCreativeMessageTemplate:
+        accountForm.defaultCreativeMessageTemplate.trim() || "%s",
+      defaultCallToActionType:
+        accountForm.defaultCallToActionType.trim() || "LEARN_MORE",
+      adSetDailyBudget: accountForm.adSetDailyBudget.trim() || null,
+      adSetBillingEvent: accountForm.adSetBillingEvent.trim() || null,
+      adSetOptimizationGoal:
+        accountForm.adSetOptimizationGoal.trim() || null,
+      adSetDestinationType:
+        accountForm.adSetDestinationType.trim() || null,
+      adSetBidStrategy: accountForm.adSetBidStrategy.trim() || null,
+      adSetBidAmount: accountForm.adSetBidAmount.trim() || null,
+      adSetTargetCountry: accountForm.adSetTargetCountry.trim() || null,
+      workerEnabled: accountForm.workerEnabled,
     };
     if (accountForm.clearAppSecret) {
       payload.appSecret = null;
@@ -375,6 +422,26 @@ export default function FacebookAccountsPage() {
                                     account.businessManagerAppId ?? "",
                                   appSecret: "",
                                   tokenRenewalEnabled: Boolean(account.tokenRenewalEnabled),
+                                  adAccountId: account.adAccountId ?? "",
+                                  defaultPageId: account.defaultPageId ?? "",
+                                  defaultWebsiteUrl: account.defaultWebsiteUrl ?? "",
+                                  defaultInstagramActorId:
+                                    account.defaultInstagramActorId ?? "",
+                                  defaultCreativeMessageTemplate:
+                                    account.defaultCreativeMessageTemplate ?? "%s",
+                                  defaultCallToActionType:
+                                    account.defaultCallToActionType ?? "LEARN_MORE",
+                                  adSetDailyBudget: account.adSetDailyBudget ?? "",
+                                  adSetBillingEvent: account.adSetBillingEvent ?? "IMPRESSIONS",
+                                  adSetOptimizationGoal:
+                                    account.adSetOptimizationGoal ?? "LINK_CLICKS",
+                                  adSetDestinationType:
+                                    account.adSetDestinationType ?? "WEBSITE",
+                                  adSetBidStrategy:
+                                    account.adSetBidStrategy ?? "LOWEST_COST_WITHOUT_CAP",
+                                  adSetBidAmount: account.adSetBidAmount ?? "",
+                                  adSetTargetCountry: account.adSetTargetCountry ?? "BR",
+                                  workerEnabled: Boolean(account.workerEnabled),
                                   clearAppSecret: false,
                                 });
                               }}
@@ -567,6 +634,232 @@ export default function FacebookAccountsPage() {
                     Mantenha o App ID e o App Secret atualizados para que o worker consiga solicitar um novo token antes do
                     vencimento.
                   </div>
+                </div>
+                <div className="col-12">
+                  <div className="form-check form-switch">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id="worker-enabled"
+                      checked={accountForm.workerEnabled}
+                      onChange={(event) =>
+                        setAccountForm((current) => ({
+                          ...current,
+                          workerEnabled: event.target.checked,
+                        }))
+                      }
+                      disabled={isAccountMutationPending}
+                    />
+                    <label className="form-check-label" htmlFor="worker-enabled">
+                      Utilizar esta conta no Facebook Ads Worker
+                    </label>
+                  </div>
+                  <div className="form-text">
+                    Apenas uma conta pode estar ativa no worker. Ao marcar esta opção, as demais contas serão desativadas.
+                  </div>
+                </div>
+                <div className="col-12">
+                  <hr />
+                  <h3 className="h6">Parâmetros padrão para criação de campanhas</h3>
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label">ID da conta de anúncios (act_)</label>
+                  <input
+                    className="form-control"
+                    placeholder="Ex.: 123456789012345"
+                    value={accountForm.adAccountId}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        adAccountId: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Página padrão (ID)</label>
+                  <input
+                    className="form-control"
+                    placeholder="ID numérico da página"
+                    value={accountForm.defaultPageId}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        defaultPageId: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                  <div className="form-text">
+                    Utilizamos este valor quando o experimento não informa uma página específica.
+                  </div>
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Instagram Actor ID (opcional)</label>
+                  <input
+                    className="form-control"
+                    placeholder="ID do perfil profissional no Instagram"
+                    value={accountForm.defaultInstagramActorId}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        defaultInstagramActorId: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label">URL padrão do site</label>
+                  <input
+                    type="url"
+                    className="form-control"
+                    placeholder="https://www.exemplo.com/landing-page"
+                    value={accountForm.defaultWebsiteUrl}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        defaultWebsiteUrl: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Template da mensagem do criativo</label>
+                  <input
+                    className="form-control"
+                    placeholder="Use %s para inserir o nome do experimento"
+                    value={accountForm.defaultCreativeMessageTemplate}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        defaultCreativeMessageTemplate: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Call to Action padrão</label>
+                  <input
+                    className="form-control"
+                    placeholder="LEARN_MORE, SIGN_UP, APPLY_NOW..."
+                    value={accountForm.defaultCallToActionType}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        defaultCallToActionType: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Orçamento diário do conjunto (centavos)</label>
+                  <input
+                    className="form-control"
+                    placeholder="Ex.: 2000 para R$ 20,00"
+                    value={accountForm.adSetDailyBudget}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        adSetDailyBudget: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Evento de cobrança</label>
+                  <input
+                    className="form-control"
+                    placeholder="IMPRESSIONS, LINK_CLICKS..."
+                    value={accountForm.adSetBillingEvent}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        adSetBillingEvent: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Objetivo de otimização</label>
+                  <input
+                    className="form-control"
+                    placeholder="LINK_CLICKS, REACH..."
+                    value={accountForm.adSetOptimizationGoal}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        adSetOptimizationGoal: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Tipo de destino</label>
+                  <input
+                    className="form-control"
+                    placeholder="WEBSITE, APP, MESSENGER..."
+                    value={accountForm.adSetDestinationType}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        adSetDestinationType: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Estratégia de lance</label>
+                  <input
+                    className="form-control"
+                    placeholder="LOWEST_COST_WITHOUT_CAP, COST_CAP..."
+                    value={accountForm.adSetBidStrategy}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        adSetBidStrategy: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Valor do lance (centavos, opcional)</label>
+                  <input
+                    className="form-control"
+                    placeholder="Informe apenas quando usar estratégias com limite"
+                    value={accountForm.adSetBidAmount}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        adSetBidAmount: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label">País de destino</label>
+                  <input
+                    className="form-control"
+                    placeholder="Ex.: BR"
+                    value={accountForm.adSetTargetCountry}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        adSetTargetCountry: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
                 </div>
                 <div className="col-12 col-md-6">
                   <label className="form-label">ID do usuário autorizado</label>

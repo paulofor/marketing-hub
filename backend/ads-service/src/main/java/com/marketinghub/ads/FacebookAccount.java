@@ -46,10 +46,52 @@ public class FacebookAccount {
     @Column(name = "business_manager_app_id")
     private String businessManagerAppId;
 
+    @Column(name = "ad_account_id")
+    private String adAccountId;
+
+    @Column(name = "default_page_id")
+    private String defaultPageId;
+
+    @Column(name = "default_website_url", length = 512)
+    private String defaultWebsiteUrl;
+
+    @Column(name = "default_instagram_actor_id")
+    private String defaultInstagramActorId;
+
+    @Column(name = "default_creative_message_template")
+    private String defaultCreativeMessageTemplate;
+
+    @Column(name = "default_call_to_action_type")
+    private String defaultCallToActionType;
+
+    @Column(name = "ad_set_daily_budget")
+    private String adSetDailyBudget;
+
+    @Column(name = "ad_set_billing_event")
+    private String adSetBillingEvent;
+
+    @Column(name = "ad_set_optimization_goal")
+    private String adSetOptimizationGoal;
+
+    @Column(name = "ad_set_destination_type")
+    private String adSetDestinationType;
+
+    @Column(name = "ad_set_bid_strategy")
+    private String adSetBidStrategy;
+
+    @Column(name = "ad_set_bid_amount")
+    private String adSetBidAmount;
+
+    @Column(name = "ad_set_target_country")
+    private String adSetTargetCountry;
+
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Setter(AccessLevel.NONE)
     @Column(columnDefinition = "LONGTEXT")
     private String appSecret;
+
+    @Column(name = "worker_enabled")
+    private boolean workerEnabled;
 
     private boolean tokenRenewalEnabled;
     private String tokenRenewalStatus;

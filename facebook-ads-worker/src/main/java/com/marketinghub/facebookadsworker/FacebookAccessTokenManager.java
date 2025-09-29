@@ -1,8 +1,8 @@
 package com.marketinghub.facebookadsworker;
 
+import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -11,26 +11,36 @@ public class FacebookAccessTokenManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(FacebookAccessTokenManager.class);
 
     private final FacebookAdsService facebookAdsService;
-    private final String appId;
-    private final String appSecret;
+    private final FacebookWorkerConfigurationClient configurationClient;
 
     public FacebookAccessTokenManager(
         FacebookAdsService facebookAdsService,
-        @Value("${facebook.app-id:}") String appId,
-        @Value("${facebook.app-secret:}") String appSecret
+        FacebookWorkerConfigurationClient configurationClient
     ) {
         this.facebookAdsService = facebookAdsService;
-        this.appId = normalize(appId);
-        this.appSecret = normalize(appSecret);
+        this.configurationClient = configurationClient;
     }
 
     public RenewalAttemptResult tryRenewAccessTokenIfPossible() {
-        if (!isConfigured()) {
-            LOGGER.debug("Skipping automatic Facebook token renewal because app credentials are missing");
+        var configuration = configurationClient.fetchConfiguration();
+        if (configuration.isEmpty()) {
+            LOGGER.debug("Skipping automatic Facebook token renewal because worker configuration is unavailable");
+            return new RenewalAttemptResult(RenewalOutcome.NOT_CONFIGURED, null, null);
+        }
+
+        String appId = normalize(configuration.get().appId());
+        String appSecret = normalize(configuration.get().appSecret());
+        if (!StringUtils.hasText(appId) || !StringUtils.hasText(appSecret)) {
+            LOGGER.debug("Skipping automatic Facebook token renewal because app credentials are missing in the worker configuration");
             return new RenewalAttemptResult(RenewalOutcome.NOT_CONFIGURED, null, null);
         }
 
         String currentToken = facebookAdsService.getCurrentAccessToken();
+        if (!StringUtils.hasText(currentToken)) {
+            LOGGER.warn("Skipping automatic Facebook token renewal because the current access token is not configured");
+            return new RenewalAttemptResult(RenewalOutcome.NOT_CONFIGURED, null, null);
+        }
+
         try {
             FacebookAdsService.TokenRenewalResponse response = facebookAdsService.renewLongLivedToken(
                 appId,
@@ -47,10 +57,6 @@ public class FacebookAccessTokenManager {
             LOGGER.error("Failed to renew Facebook access token automatically: {}", ex.getMessage(), ex);
             return new RenewalAttemptResult(RenewalOutcome.FAILED, null, ex.getMessage());
         }
-    }
-
-    private boolean isConfigured() {
-        return StringUtils.hasText(appId) && StringUtils.hasText(appSecret);
     }
 
     private String normalize(String value) {

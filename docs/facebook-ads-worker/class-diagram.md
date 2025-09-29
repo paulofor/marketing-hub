@@ -16,32 +16,23 @@ classDiagram
         -backendClient : WebClient
         -backendBaseUrl : String
         -apiPrefix : String
-        -adAccountId : String
-        -adSetDailyBudget : String
-        -adSetBillingEvent : String
-        -adSetOptimizationGoal : String
-        -adSetDestinationType : String
-        -adSetTargetCountry : String
-        -pageId : String
-        -instagramActorId : String
-        -websiteUrl : String
-        -creativeMessageTemplate : String
-        -callToActionType : String
+        -configurationClient : FacebookWorkerConfigurationClient
         -experimentsBlockedByPermissions : Set<Long>
         +createCampaignsFromExperiments()
-        -processExperiment(exp)
-        -formatCreativeMessage(name) String
+        -processExperiment(exp, config)
+        -formatCreativeMessage(name, config) String
     }
 
     class FacebookAdsService {
         -webClient : WebClient
-        -accessToken : String
+        -accessToken : AtomicReference<String>
         +createCampaign(adAccountId, name) String
         +createAdSet(adAccountId, request) String
         +createAdCreative(adAccountId, request) String
         +createAd(adAccountId, request) String
         +getCampaignMetrics(campaignId) JsonNode
         +renewLongLivedToken(appId, appSecret, token) TokenRenewalResponse
+        +updateAccessToken(token)
     }
 
     class AdSetRequest {
@@ -90,8 +81,7 @@ classDiagram
 
     class FacebookAccessTokenManager {
         -facebookAdsService : FacebookAdsService
-        -appId : String
-        -appSecret : String
+        -configurationClient : FacebookWorkerConfigurationClient
         +tryRenewAccessTokenIfPossible() : RenewalAttemptResult
     }
 
@@ -167,6 +157,7 @@ classDiagram
     FacebookCampaignScheduler --> FacebookCampaignService : dispara ciclo
     FacebookCampaignService --> FacebookAdsService : cria campanha/ad set/ad
     FacebookCampaignService --> FacebookAccessTokenManager : gerencia expiração de token
+    FacebookCampaignService --> FacebookWorkerConfigurationClient : carrega configuração
     FacebookAdsService --> AdSetRequest
     FacebookAdsService --> AdCreativeRequest
     FacebookAdsService --> AdRequest
@@ -178,18 +169,19 @@ classDiagram
     FacebookCampaignService ..> UrlUtils : compõe URLs do backend
     FacebookTokenRenewalScheduler --> FacebookTokenRenewalService : agenda renovação
     FacebookTokenRenewalService --> FacebookAdsService : renova token
+    FacebookAccessTokenManager --> FacebookWorkerConfigurationClient : lê credenciais do backend
     FacebookTokenRenewalService ..> UrlUtils : reutiliza composição de URLs
 ```
 
 * `FacebookCampaignScheduler` agenda a execução periódica do worker utilizando
   `@Scheduled`.
-* `FacebookCampaignService` consulta o backend por experimentos prontos, cria a
-  campanha, conjunto, criativo e anúncio na Graph API e registra o resultado da
-  campanha no backend. O serviço resolve o `pageId` a partir do experimento,
-  garantindo que todos os criativos publicados compartilhem a mesma página.
-  Quando o Facebook devolve erro de permissão, o serviço adiciona o
-  experimento a uma lista de bloqueio em memória para evitar novas tentativas
-  até que o worker seja reiniciado.
+* `FacebookCampaignService` consulta o backend por experimentos prontos, carrega
+  a configuração ativa (`worker-config`), sincroniza o token em memória e cria a
+  hierarquia de campanha na Graph API. O serviço resolve o `pageId` a partir do
+  experimento, utilizando o fallback da conta quando necessário, e registra o
+  resultado da campanha no backend. Quando o Facebook devolve erro de permissão,
+  o serviço adiciona o experimento a uma lista de bloqueio em memória para evitar
+  novas tentativas até que o worker seja reiniciado.
 * `FacebookAdsService` encapsula as chamadas à Graph API (criação da hierarquia
   de mídia, consulta de métricas e renovação de tokens de longa duração).
 * `FacebookTokenRenewalScheduler` agenda o fluxo periódico de renovação de token
@@ -199,7 +191,11 @@ classDiagram
   `/api/accounts/facebook/{id}/token/renewal`.
 * `FacebookAccessTokenManager` encapsula a renovação imediata de tokens quando o
   `FacebookCampaignService` detecta expiração durante a criação de campanhas,
-  reutilizando o `FacebookAdsService` para atualizar o `access_token` em memória.
+  consultando novamente o backend para reutilizar as credenciais e atualizar o
+  `access_token` em memória.
+* `FacebookWorkerConfigurationClient` fornece acesso ao endpoint
+  `/api/accounts/facebook/worker-config`, permitindo que os serviços leiam as
+  credenciais e parâmetros padrão preenchidos na interface web.
 * `CreateCampaignRequest` representa o payload enviado ao backend contendo os
   campos mínimos para materializar a entidade de campanha.
 * `FacebookAdsCampaign` é a entidade JPA do backend responsável por armazenar a
@@ -217,3 +213,31 @@ orçamento (`dailyBudgetMinor`, `lifetimeBudgetMinor`), versão da API utilizada
 listas para categorias e países especiais (`specialAdCategories` e
 `specialAdCountries`). Esses dados são enriquecidos conforme novas informações
 forem fornecidas pelo worker e pelo backend.
+    class FacebookWorkerConfigurationClient {
+        -backendClient : WebClient
+        -backendBaseUrl : String
+        -apiPrefix : String
+        +fetchConfiguration() Optional<FacebookWorkerConfiguration>
+    }
+
+    class FacebookWorkerConfiguration {
+        <<record>>
+        +accountId : Long
+        +adAccountId : String
+        +accessToken : String
+        +appId : String
+        +appSecret : String
+        +defaultPageId : String
+        +defaultInstagramActorId : String
+        +defaultWebsiteUrl : String
+        +defaultCreativeMessageTemplate : String
+        +defaultCallToActionType : String
+        +adSetDailyBudget : String
+        +adSetBillingEvent : String
+        +adSetOptimizationGoal : String
+        +adSetDestinationType : String
+        +adSetBidStrategy : String
+        +adSetBidAmount : String
+        +adSetTargetCountry : String
+    }
+

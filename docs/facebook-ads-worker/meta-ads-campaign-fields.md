@@ -1,6 +1,6 @@
 # Campos necessários para criar uma campanha no Meta Ads
 
-Este documento descreve todos os campos que precisam ser coletados e preenchidos para configurar uma campanha completa no Meta Ads (Facebook e Instagram). A estrutura segue os três níveis usados pela plataforma — **Campanha**, **Conjunto de Anúncios** e **Anúncio** — e explica o objetivo de cada campo, além de observações úteis para preenchimento.
+Este documento descreve todos os campos que precisam ser coletados e preenchidos para configurar uma campanha completa no Meta Ads (Facebook e Instagram). A estrutura segue os três níveis usados pela plataforma — **Campanha**, **Conjunto de Anúncios** e **Anúncio** — e explica o objetivo de cada campo, além de observações úteis para preenchimento. Os valores padrão aplicados pelo `facebook-ads-worker` são parametrizados na tela **Contas do Facebook** e consumidos pelo endpoint `GET /api/accounts/facebook/worker-config`.
 
 ## 1. Configurações no nível de Campanha
 

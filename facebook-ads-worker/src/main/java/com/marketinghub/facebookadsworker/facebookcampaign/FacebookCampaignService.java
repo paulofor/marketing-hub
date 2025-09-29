@@ -4,6 +4,8 @@ import com.marketinghub.facebookadsworker.FacebookAccessTokenExpiredException;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenManager;
 import com.marketinghub.facebookadsworker.FacebookAdsService;
 import com.marketinghub.facebookadsworker.FacebookPermissionException;
+import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient;
+import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient.FacebookWorkerConfiguration;
 import com.marketinghub.facebookadsworker.util.UrlUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +20,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,19 +34,7 @@ public class FacebookCampaignService {
     private final WebClient backendClient;
     private final String backendBaseUrl;
     private final String apiPrefix;
-    private final String adAccountId;
-    private final String adSetDailyBudget;
-    private final String adSetBillingEvent;
-    private final String adSetOptimizationGoal;
-    private final String adSetDestinationType;
-    private final String adSetBidStrategy;
-    private final String adSetBidAmount;
-    private final String adSetTargetCountry;
-    private final String defaultPageId;
-    private final String defaultInstagramActorId;
-    private final String defaultWebsiteUrl;
-    private final String defaultCreativeMessageTemplate;
-    private final String defaultCallToActionType;
+    private final FacebookWorkerConfigurationClient configurationClient;
     private final Set<Long> experimentsBlockedByPermissions;
     private final AtomicBoolean accessTokenExpired;
     private final AtomicBoolean accessTokenExpiryWarningLogged;
@@ -53,39 +44,15 @@ public class FacebookCampaignService {
     public FacebookCampaignService(FacebookAdsService facebookAdsService,
                                    FacebookAccessTokenManager accessTokenManager,
                                    WebClient.Builder builder,
+                                   FacebookWorkerConfigurationClient configurationClient,
                                    @Value("${backend.base-url:http://localhost:8000}") String backendBaseUrl,
-                                   @Value("${backend.api-prefix:/api}") String apiPrefix,
-                                   @Value("${facebook.ad-account-id}") String adAccountId,
-                                   @Value("${facebook.ad-set.daily-budget:1000}") String adSetDailyBudget,
-                                   @Value("${facebook.ad-set.billing-event:IMPRESSIONS}") String adSetBillingEvent,
-                                   @Value("${facebook.ad-set.optimization-goal:LINK_CLICKS}") String adSetOptimizationGoal,
-                                   @Value("${facebook.ad-set.destination-type:WEBSITE}") String adSetDestinationType,
-                                   @Value("${facebook.ad-set.bid-strategy:LOWEST_COST_WITHOUT_CAP}") String adSetBidStrategy,
-                                   @Value("${facebook.ad-set.bid-amount:}") String adSetBidAmount,
-                                   @Value("${facebook.ad-set.target-country:BR}") String adSetTargetCountry,
-                                   @Value("${facebook.page-id}") String pageId,
-                                   @Value("${facebook.instagram-actor-id:}") String instagramActorId,
-                                   @Value("${facebook.website-url}") String websiteUrl,
-                                   @Value("${facebook.creative.message-template:%s}") String creativeMessageTemplate,
-                                   @Value("${facebook.creative.call-to-action-type:LEARN_MORE}") String callToActionType) {
+                                   @Value("${backend.api-prefix:/api}") String apiPrefix) {
         this.facebookAdsService = facebookAdsService;
         this.accessTokenManager = accessTokenManager;
         this.backendClient = builder.build();
         this.backendBaseUrl = backendBaseUrl;
         this.apiPrefix = apiPrefix;
-        this.adAccountId = adAccountId;
-        this.adSetDailyBudget = adSetDailyBudget;
-        this.adSetBillingEvent = adSetBillingEvent;
-        this.adSetOptimizationGoal = adSetOptimizationGoal;
-        this.adSetDestinationType = adSetDestinationType;
-        this.adSetBidStrategy = adSetBidStrategy;
-        this.adSetBidAmount = adSetBidAmount;
-        this.adSetTargetCountry = adSetTargetCountry;
-        this.defaultPageId = pageId;
-        this.defaultInstagramActorId = instagramActorId;
-        this.defaultWebsiteUrl = websiteUrl;
-        this.defaultCreativeMessageTemplate = creativeMessageTemplate;
-        this.defaultCallToActionType = callToActionType;
+        this.configurationClient = configurationClient;
         this.experimentsBlockedByPermissions = ConcurrentHashMap.newKeySet();
         this.accessTokenExpired = new AtomicBoolean(false);
         this.accessTokenExpiryWarningLogged = new AtomicBoolean(false);
@@ -124,6 +91,28 @@ public class FacebookCampaignService {
             accessTokenExpiryWarningLogged.set(false);
         }
 
+        var configuration = configurationClient.fetchConfiguration();
+        if (configuration.isEmpty()) {
+            LOGGER.warn("Facebook worker configuration is unavailable; skipping campaign creation");
+            return;
+        }
+
+        FacebookWorkerConfiguration config = configuration.get();
+        String configuredToken = config.accessToken();
+        if (!StringUtils.hasText(configuredToken)) {
+            LOGGER.error("Facebook worker configuration is missing an access token; skipping campaign processing");
+            return;
+        }
+        String currentToken = facebookAdsService.getCurrentAccessToken();
+        if (!Objects.equals(configuredToken, currentToken)) {
+            try {
+                facebookAdsService.updateAccessToken(configuredToken);
+            } catch (IllegalArgumentException ex) {
+                LOGGER.error("Facebook worker configuration returned an invalid access token: {}", ex.getMessage());
+                return;
+            }
+        }
+
         List<Experiment> experiments = Collections.emptyList();
 
         try {
@@ -158,11 +147,11 @@ public class FacebookCampaignService {
                 );
                 return;
             }
-            processExperiment(exp);
+            processExperiment(exp, config);
         });
     }
 
-    private void processExperiment(Experiment exp) {
+    private void processExperiment(Experiment exp, FacebookWorkerConfiguration config) {
         try {
             Creative creative = resolveCreative(exp.id());
             if (creative == null) {
@@ -170,13 +159,13 @@ public class FacebookCampaignService {
                 return;
             }
 
-            String resolvedPageId = coalesce(exp.pageId(), defaultPageId);
+            String resolvedPageId = coalesce(exp.pageId(), config.defaultPageId());
             if (!StringUtils.hasText(resolvedPageId)) {
                 LOGGER.warn("Skipping experiment {} because no Facebook page ID is configured", exp.id());
                 return;
             }
 
-            String resolvedWebsiteUrl = coalesce(creative.destinationUrl(), defaultWebsiteUrl);
+            String resolvedWebsiteUrl = coalesce(creative.destinationUrl(), config.defaultWebsiteUrl());
             if (!StringUtils.hasText(resolvedWebsiteUrl)) {
                 LOGGER.warn("Skipping experiment {} because no destination URL is configured", exp.id());
                 return;
@@ -184,24 +173,24 @@ public class FacebookCampaignService {
 
             String resolvedMessage = StringUtils.hasText(creative.primaryText())
                 ? creative.primaryText()
-                : formatCreativeMessage(exp.name());
-            String resolvedCallToAction = coalesce(creative.cta(), defaultCallToActionType);
-            String resolvedInstagramActorId = coalesce(creative.instagramUserId(), defaultInstagramActorId);
+                : formatCreativeMessage(exp.name(), config);
+            String resolvedCallToAction = coalesce(creative.cta(), config.defaultCallToActionType());
+            String resolvedInstagramActorId = coalesce(creative.instagramUserId(), config.defaultInstagramActorId());
 
-            String campaignId = facebookAdsService.createCampaign(adAccountId, exp.name());
-            String adSetId = facebookAdsService.createAdSet(adAccountId, new FacebookAdsService.AdSetRequest(
+            String campaignId = facebookAdsService.createCampaign(config.adAccountId(), exp.name());
+            String adSetId = facebookAdsService.createAdSet(config.adAccountId(), new FacebookAdsService.AdSetRequest(
                 exp.name() + " - Ad Set",
                 campaignId,
-                adSetDailyBudget,
-                adSetBillingEvent,
-                adSetOptimizationGoal,
-                adSetDestinationType,
-                adSetBidStrategy,
-                adSetBidAmount,
+                config.adSetDailyBudget(),
+                config.adSetBillingEvent(),
+                config.adSetOptimizationGoal(),
+                config.adSetDestinationType(),
+                config.adSetBidStrategy(),
+                config.adSetBidAmount(),
                 resolvedPageId,
-                adSetTargetCountry
+                config.adSetTargetCountry()
             ));
-            String creativeId = facebookAdsService.createAdCreative(adAccountId, new FacebookAdsService.AdCreativeRequest(
+            String creativeId = facebookAdsService.createAdCreative(config.adAccountId(), new FacebookAdsService.AdCreativeRequest(
                 exp.name() + " - Creative",
                 resolvedPageId,
                 resolvedInstagramActorId,
@@ -211,12 +200,12 @@ public class FacebookCampaignService {
                 creative.headline(),
                 creative.description()
             ));
-            facebookAdsService.createAd(adAccountId, new FacebookAdsService.AdRequest(
+            facebookAdsService.createAd(config.adAccountId(), new FacebookAdsService.AdRequest(
                 exp.name() + " - Ad",
                 adSetId,
                 creativeId
             ));
-            CreateCampaignRequest req = new CreateCampaignRequest(campaignId, adAccountId, exp.name(), "OUTCOME_TRAFFIC", "CAMPAIGN");
+            CreateCampaignRequest req = new CreateCampaignRequest(campaignId, config.adAccountId(), exp.name(), "OUTCOME_TRAFFIC", "CAMPAIGN");
             backendClient.post()
                 .uri(UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns"))
                 .bodyValue(req)
@@ -281,14 +270,15 @@ public class FacebookCampaignService {
         return currentToken != null && !currentToken.equals(expiredToken);
     }
 
-    private String formatCreativeMessage(String experimentName) {
-        if (defaultCreativeMessageTemplate == null || defaultCreativeMessageTemplate.isBlank()) {
+    private String formatCreativeMessage(String experimentName, FacebookWorkerConfiguration config) {
+        String template = config.defaultCreativeMessageTemplate();
+        if (template == null || template.isBlank()) {
             return experimentName;
         }
-        if (defaultCreativeMessageTemplate.contains("%s")) {
-            return String.format(defaultCreativeMessageTemplate, experimentName);
+        if (template.contains("%s")) {
+            return String.format(template, experimentName);
         }
-        return defaultCreativeMessageTemplate;
+        return template;
     }
 
     public record Experiment(long id, String name, String pageId) {}

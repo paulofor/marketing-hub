@@ -18,9 +18,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+
+import static org.springframework.util.StringUtils.hasText;
 
 @Service
 public class FacebookAdsService {
@@ -33,11 +34,10 @@ public class FacebookAdsService {
 
     public FacebookAdsService(WebClient.Builder builder,
                               @Value("${facebook.graph-api.base-url:https://graph.facebook.com}") String baseUrl,
-                              @Value("${facebook.access-token}") String accessToken,
                               @Value("${facebook.graph-api.version:v23.0}") String apiVersion,
                               ObjectMapper objectMapper) {
         this.webClient = builder.baseUrl(baseUrl).build();
-        this.accessToken = new AtomicReference<>(Objects.requireNonNull(accessToken, "facebook.access-token"));
+        this.accessToken = new AtomicReference<>(null);
         this.apiVersion = normalizeVersion(apiVersion);
         this.objectMapper = objectMapper;
         LOGGER.info("Configured Facebook Graph API version: {}", this.apiVersion);
@@ -47,11 +47,21 @@ public class FacebookAdsService {
         return accessToken.get();
     }
 
+    private String requireAccessToken() {
+        String token = accessToken.get();
+        if (!hasText(token)) {
+            throw new IllegalStateException("Facebook access token is not configured");
+        }
+        return token;
+    }
+
     public void updateAccessToken(String newToken) {
-        Objects.requireNonNull(newToken, "newToken");
+        if (!hasText(newToken)) {
+            throw new IllegalArgumentException("newToken must not be blank");
+        }
         String maskedOldToken = maskAccessToken(accessToken.get());
         String maskedNewToken = maskAccessToken(newToken);
-        accessToken.set(newToken);
+        accessToken.set(newToken.trim());
         LOGGER.info(
             "Facebook access token updated: previousToken={}, newToken={}",
             maskedOldToken,
@@ -66,7 +76,7 @@ public class FacebookAdsService {
             "objective", "OUTCOME_TRAFFIC",
             "status", "PAUSED",
             "special_ad_categories", List.of(),
-            "access_token", getCurrentAccessToken()
+            "access_token", requireAccessToken()
         );
 
         JsonNode response = executePost(path, body);
@@ -102,7 +112,7 @@ public class FacebookAdsService {
         if (request.pageId() != null && !request.pageId().isBlank()) {
             body.put("promoted_object", Map.of("page_id", request.pageId()));
         }
-        body.put("access_token", getCurrentAccessToken());
+        body.put("access_token", requireAccessToken());
 
         String path = buildVersionedPath("/act_" + adAccountId + "/adsets");
 
@@ -137,7 +147,7 @@ public class FacebookAdsService {
         Map<String, Object> body = new HashMap<>();
         body.put("name", request.name());
         body.put("object_story_spec", objectStorySpec);
-        body.put("access_token", getCurrentAccessToken());
+        body.put("access_token", requireAccessToken());
 
         String path = buildVersionedPath("/act_" + adAccountId + "/adcreatives");
 
@@ -153,7 +163,7 @@ public class FacebookAdsService {
         body.put("adset_id", request.adSetId());
         body.put("creative", Map.of("creative_id", request.creativeId()));
         body.put("status", "PAUSED");
-        body.put("access_token", getCurrentAccessToken());
+        body.put("access_token", requireAccessToken());
 
         String path = buildVersionedPath("/act_" + adAccountId + "/ads");
 
@@ -162,7 +172,7 @@ public class FacebookAdsService {
     }
 
     public JsonNode getCampaignMetrics(String campaignId) {
-        String path = buildVersionedPath("/" + campaignId + "/insights?access_token=" + getCurrentAccessToken());
+        String path = buildVersionedPath("/" + campaignId + "/insights?access_token=" + requireAccessToken());
         String maskedPath = maskAccessTokenInPath(path);
         LOGGER.info("Sending GET request to Facebook API: path={}", maskedPath);
         try {

@@ -3,9 +3,10 @@
 Este documento descreve como o **Facebook Ads Worker** converte os
 experimentos aprovados pelo backend em chamadas à Graph API do Facebook e em
 registros persistidos nas tabelas `facebook_ads_*`. O fluxo atual cria a
-hierarquia completa (campanha → ad set → criativo → anúncio) utilizando valores
-padrão configuráveis enquanto o backend evolui para fornecer parâmetros mais
-ricos.
+hierarquia completa (campanha → ad set → criativo → anúncio) utiliza os valores
+definidos na conta marcada para o worker na tela **Contas do Facebook**. O
+backend expõe esses dados via `GET /api/accounts/facebook/worker-config`, que
+reúne token, App ID/Secret e parâmetros padrão de orçamento, destino e criativos.
 
 Os experimentos que alimentam esse fluxo são apresentados ao time na tela
 "Experimentos para Campanha" do frontend, garantindo o alinhamento entre a visão
@@ -50,7 +51,7 @@ flowchart TD
 | `objective` | Constante | Valor fixo `OUTCOME_TRAFFIC` |
 | `status` | Constante | `PAUSED` para evitar publicação automática |
 | `special_ad_categories` | Constante | Lista com `NONE`, atendendo às políticas atuais |
-| `access_token` | Configuração `facebook.access-token` | Token com permissão para o Ad Account |
+| `access_token` | Conta configurada (`worker-config.accessToken`) | Token com permissão para o Ad Account |
 
 * **Resposta tratada:** o identificador retornado em `id` abastece as etapas seguintes.
 
@@ -63,14 +64,14 @@ flowchart TD
 | --- | --- | --- |
 | `name` | `Experiment.name` + sufixo | Mantém rastreabilidade visual no Gerenciador |
 | `campaign_id` | Resposta da campanha | Vincula o ad set à campanha recém-criada |
-| `daily_budget` | Configuração `facebook.ad-set.daily-budget` | Valor em centavos da moeda da conta |
-| `billing_event` | Configuração `facebook.ad-set.billing-event` | Default `IMPRESSIONS` |
-| `optimization_goal` | Configuração `facebook.ad-set.optimization-goal` | Default `LINK_CLICKS` |
-| `destination_type` | Configuração `facebook.ad-set.destination-type` | Default `WEBSITE` |
-| `targeting.geo_locations.countries` | Configuração `facebook.ad-set.target-country` | Segmentação inicial simplificada |
-| `promoted_object.page_id` | Configuração `facebook.page-id` | Necessário para campanhas de tráfego |
+| `daily_budget` | Conta configurada (`worker-config.adSetDailyBudget`) | Valor em centavos da moeda da conta |
+| `billing_event` | Conta configurada (`worker-config.adSetBillingEvent`) | Default `IMPRESSIONS` |
+| `optimization_goal` | Conta configurada (`worker-config.adSetOptimizationGoal`) | Default `LINK_CLICKS` |
+| `destination_type` | Conta configurada (`worker-config.adSetDestinationType`) | Default `WEBSITE` |
+| `targeting.geo_locations.countries` | Conta configurada (`worker-config.adSetTargetCountry`) | Segmentação inicial simplificada |
+| `promoted_object.page_id` | Conta configurada (`worker-config.defaultPageId`) | Necessário para campanhas de tráfego |
 | `status` | Constante | `PAUSED` |
-| `access_token` | Configuração `facebook.access-token` | Token com permissão para o Ad Account |
+| `access_token` | Conta configurada (`worker-config.accessToken`) | Token com permissão para o Ad Account |
 
 * **Resposta tratada:** o `id` do ad set é utilizado na criação do anúncio.
 
@@ -82,13 +83,13 @@ flowchart TD
 | Campo | Origem | Observações |
 | --- | --- | --- |
 | `name` | `Experiment.name` + sufixo | Nome amigável para o criativo |
-| `object_story_spec.page_id` | Configuração `facebook.page-id` | Página responsável pelo anúncio |
-| `object_story_spec.instagram_actor_id` | Configuração `facebook.instagram-actor-id` | Opcional; usado quando há Instagram vinculado |
-| `object_story_spec.link_data.message` | Template `facebook.creative.message-template` | Substitui `%s` pelo nome do experimento |
-| `object_story_spec.link_data.link` | Configuração `facebook.website-url` | URL de destino padrão |
-| `object_story_spec.link_data.call_to_action.type` | Configuração `facebook.creative.call-to-action-type` | Default `LEARN_MORE` |
-| `object_story_spec.link_data.call_to_action.value.link` | Configuração `facebook.website-url` | Mesmo destino do link principal |
-| `access_token` | Configuração `facebook.access-token` | Token com permissão para o Ad Account |
+| `object_story_spec.page_id` | Conta configurada (`worker-config.defaultPageId`) | Página responsável pelo anúncio |
+| `object_story_spec.instagram_actor_id` | Conta configurada (`worker-config.defaultInstagramActorId`) | Opcional; usado quando há Instagram vinculado |
+| `object_story_spec.link_data.message` | Template (`worker-config.defaultCreativeMessageTemplate`) | Substitui `%s` pelo nome do experimento |
+| `object_story_spec.link_data.link` | Conta configurada (`worker-config.defaultWebsiteUrl`) | URL de destino padrão |
+| `object_story_spec.link_data.call_to_action.type` | Conta configurada (`worker-config.defaultCallToActionType`) | Default `LEARN_MORE` |
+| `object_story_spec.link_data.call_to_action.value.link` | Conta configurada (`worker-config.defaultWebsiteUrl`) | Mesmo destino do link principal |
+| `access_token` | Conta configurada (`worker-config.accessToken`) | Token com permissão para o Ad Account |
 
 * **Resposta tratada:** o `id` do criativo abastece a criação do anúncio.
 
@@ -103,7 +104,7 @@ flowchart TD
 | `adset_id` | Resposta do ad set | Mantém o vínculo com a etapa anterior |
 | `creative.creative_id` | Resposta do criativo | Referencia o criativo recém-criado |
 | `status` | Constante | `PAUSED` |
-| `access_token` | Configuração `facebook.access-token` | Token com permissão para o Ad Account |
+| `access_token` | Conta configurada (`worker-config.accessToken`) | Token com permissão para o Ad Account |
 
 * **Resposta tratada:** o identificador é armazenado apenas para auditoria de execução (não é persistido no backend ainda).
 
@@ -118,7 +119,7 @@ para o backend.
 | Campo | Fonte | Transformação |
 | --- | --- | --- |
 | `id` | Resposta da Graph API (campanha) | Copiado diretamente do `id` retornado na criação |
-| `adAccountId` | Propriedade `facebook.ad-account-id` | Mantido conforme configuração do worker |
+| `adAccountId` | Conta configurada (`worker-config.adAccountId`) | Mantido conforme configuração do worker |
 | `name` | `Experiment.name` | Replicado para manter rastreabilidade entre backend e Facebook |
 | `objective` | Constante | Valor fixo `OUTCOME_TRAFFIC` |
 | `budgetMode` | Constante | Valor fixo `CAMPAIGN` até que o backend passe a enviar planejamento detalhado |

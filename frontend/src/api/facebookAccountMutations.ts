@@ -14,6 +14,20 @@ export interface FacebookAccountPayload {
   businessManagerAppId?: string | null;
   appSecret?: string | null;
   tokenRenewalEnabled?: boolean;
+  adAccountId?: string | null;
+  defaultPageId?: string | null;
+  defaultWebsiteUrl?: string | null;
+  defaultInstagramActorId?: string | null;
+  defaultCreativeMessageTemplate?: string | null;
+  defaultCallToActionType?: string | null;
+  adSetDailyBudget?: string | null;
+  adSetBillingEvent?: string | null;
+  adSetOptimizationGoal?: string | null;
+  adSetDestinationType?: string | null;
+  adSetBidStrategy?: string | null;
+  adSetBidAmount?: string | null;
+  adSetTargetCountry?: string | null;
+  workerEnabled?: boolean;
 }
 
 export function useCreateFacebookAccount() {

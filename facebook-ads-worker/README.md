@@ -38,6 +38,30 @@ presente, os campos estruturados de erro (`type`, `code`, `error_subcode`,
 `error_user_title`, `error_user_msg`, `fbtrace_id` e `error_data`). Isso
 permite cruzar rapidamente o incidente com a documentação oficial.
 
+## Renovação automática de tokens
+
+Além da criação de campanhas, o worker monitora tokens configurados nas
+contas do backend e renova automaticamente aqueles que estão prestes a expirar.
+O fluxo funciona da seguinte forma:
+
+1. A cada execução do agendador (`FacebookTokenRenewalScheduler`) o worker
+   consulta o endpoint `/api/accounts/facebook/renewal/eligible`, que devolve
+   apenas as contas com `tokenRenewalEnabled = true`, token prestes a expirar e
+   credenciais completas (`appId`, `appSecret`).
+2. Para cada conta elegível, o serviço `FacebookTokenRenewalService` chama a
+   rota `/{version}/oauth/access_token` da Graph API utilizando o `appId`,
+   `appSecret` e o token atual, seguindo o mesmo fluxo utilizado no script em
+   PowerShell (grant type `fb_exchange_token`).
+3. O backend é notificado com `POST /api/accounts/facebook/{id}/token/renewal`,
+   atualizando o token, a nova data de expiração e registrando o status da
+   tentativa (`SUCCESS` ou `FAILED`).
+4. Esses dados são exibidos na tela de contas do frontend, permitindo acompanhar
+   a última tentativa, o último sucesso e eventuais mensagens de erro.
+
+Caso a chamada à Graph API falhe, o backend recebe o status `FAILED` com a
+mensagem de erro no campo `tokenRenewalLastError`, mantendo o token anterior e
+exigindo uma ação manual.
+
 Os acessos são configurados pelas propriedades:
 
 - `backend.base-url` (default: `http://191.252.92.222:8000`)
@@ -60,6 +84,8 @@ Os acessos são configurados pelas propriedades:
 - `facebook.creative.message-template` (default: `%s` – utiliza o nome do
   experimento quando contém `%s`)
 - `facebook.creative.call-to-action-type` (default: `LEARN_MORE`)
+- `facebook.token-renewal.scheduler.delay` (default: `21600000`, em
+  milissegundos – intervalo entre as tentativas de renovação automática)
 
 ## Data Model
 

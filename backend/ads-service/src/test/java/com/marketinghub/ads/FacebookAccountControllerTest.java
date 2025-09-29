@@ -4,17 +4,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 
-import com.marketinghub.ads.FacebookAccount;
-import com.marketinghub.ads.FacebookAccountRepository;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -65,5 +66,67 @@ public class FacebookAccountControllerTest {
                 .andExpect(jsonPath("$[?(@.name=='Account expiring')].requiresTokenRenewal", contains(true)))
                 .andExpect(jsonPath("$[?(@.name=='Account missing token')].requiresTokenRenewal", contains(true)))
                 .andExpect(jsonPath("$[?(@.name=='Account expiring')].tokenExpired", contains(false)));
+    }
+
+    @Test
+    void shouldReturnAccountsEligibleForRenewal() throws Exception {
+        FacebookAccount eligible = repository.save(FacebookAccount.builder()
+            .name("Eligible")
+            .currency("USD")
+            .accessToken("token-eligible")
+            .tokenExpiresAt(LocalDateTime.now().plusDays(1))
+            .appId("123")
+            .appSecret("secret")
+            .tokenRenewalEnabled(true)
+            .build());
+
+        repository.save(FacebookAccount.builder()
+            .name("Disabled")
+            .currency("USD")
+            .accessToken("token-disabled")
+            .tokenExpiresAt(LocalDateTime.now().plusDays(1))
+            .appId("123")
+            .appSecret("secret")
+            .tokenRenewalEnabled(false)
+            .build());
+
+        mockMvc.perform(get("/api/accounts/facebook/renewal/eligible"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].id").value(eligible.getId()))
+            .andExpect(jsonPath("$[0].accessToken").value("token-eligible"))
+            .andExpect(jsonPath("$[0].appSecret").value("secret"));
+    }
+
+    @Test
+    void shouldRegisterSuccessfulRenewal() throws Exception {
+        FacebookAccount account = repository.save(FacebookAccount.builder()
+            .name("Needs Renewal")
+            .currency("USD")
+            .accessToken("old-token")
+            .tokenExpiresAt(LocalDateTime.now().plusDays(1))
+            .appId("app-1")
+            .appSecret("secret")
+            .tokenRenewalEnabled(true)
+            .build());
+
+        String payload = "{" +
+            "\"status\":\"SUCCESS\"," +
+            "\"accessToken\":\"new-token\"," +
+            "\"tokenExpiresAt\":\"2030-01-01T00:00:00\"," +
+            "\"renewedAt\":\"2029-12-31T23:00:00\"" +
+            "}";
+
+        mockMvc.perform(post("/api/accounts/facebook/" + account.getId() + "/token/renewal")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(payload))
+            .andExpect(status().isAccepted());
+
+        FacebookAccount updated = repository.findById(account.getId()).orElseThrow();
+        assertThat(updated.getAccessToken()).isEqualTo("new-token");
+        assertThat(updated.getTokenExpiresAt()).isEqualTo(LocalDateTime.parse("2030-01-01T00:00:00"));
+        assertThat(updated.getTokenRenewedAt()).isEqualTo(LocalDateTime.parse("2029-12-31T23:00:00"));
+        assertThat(updated.getTokenRenewalStatus()).isEqualTo(FacebookTokenRenewalStatus.SUCCESS.name());
+        assertThat(updated.getTokenRenewalLastError()).isNull();
     }
 }

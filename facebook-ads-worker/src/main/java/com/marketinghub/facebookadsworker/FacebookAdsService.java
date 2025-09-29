@@ -405,6 +405,72 @@ public class FacebookAdsService {
         return trimmed.startsWith("v") ? trimmed : "v" + trimmed;
     }
 
+    public TokenRenewalResponse renewLongLivedToken(String appId, String appSecret, String currentToken) {
+        Objects.requireNonNull(appId, "appId");
+        Objects.requireNonNull(appSecret, "appSecret");
+        Objects.requireNonNull(currentToken, "currentToken");
+
+        String path = buildVersionedPath("/oauth/access_token");
+        LOGGER.info(
+            "Requesting Facebook long-lived token renewal: appId={}, token={}",
+            appId,
+            maskAccessToken(currentToken)
+        );
+
+        try {
+            JsonNode response = webClient
+                .get()
+                .uri(uriBuilder ->
+                    uriBuilder
+                        .path(path)
+                        .queryParam("grant_type", "fb_exchange_token")
+                        .queryParam("client_id", appId)
+                        .queryParam("client_secret", appSecret)
+                        .queryParam("fb_exchange_token", currentToken)
+                        .build()
+                )
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .block();
+
+            if (response == null || response.isMissingNode()) {
+                throw new IllegalStateException("Facebook returned an empty response while renewing the token");
+            }
+
+            String newToken = response.path("access_token").asText(null);
+            long expiresInSeconds = response.path("expires_in").asLong(0L);
+            if (newToken == null || newToken.isBlank()) {
+                throw new IllegalStateException("Facebook response does not contain access_token");
+            }
+
+            LOGGER.info(
+                "Facebook token renewal succeeded for appId={}, expiresInSeconds={}, token={}",
+                appId,
+                expiresInSeconds,
+                maskAccessToken(newToken)
+            );
+            return new TokenRenewalResponse(newToken, expiresInSeconds);
+        } catch (WebClientResponseException ex) {
+            String body = ex.getResponseBodyAsString();
+            LOGGER.error(
+                "Facebook token renewal failed: appId={}, status={}, responseBody={}",
+                appId,
+                ex.getRawStatusCode(),
+                maskAccessToken(body),
+                ex
+            );
+            throw ex;
+        } catch (WebClientRequestException ex) {
+            LOGGER.error(
+                "Facebook token renewal request could not be completed: appId={}, message={}",
+                appId,
+                ex.getMessage(),
+                ex
+            );
+            throw ex;
+        }
+    }
+
     public record AdSetRequest(
         String name,
         String campaignId,
@@ -434,6 +500,8 @@ public class FacebookAdsService {
         String adSetId,
         String creativeId
     ) {}
+
+    public record TokenRenewalResponse(String accessToken, long expiresInSeconds) {}
 
     private record FacebookApiResponse(HttpStatusCode statusCode, HttpHeaders headers, JsonNode body) {}
 }

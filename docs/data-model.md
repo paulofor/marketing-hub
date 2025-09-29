@@ -414,6 +414,32 @@ allow variants to be created before an experiment is defined.
 - `utm_content` VARCHAR(128)
 - `utm_term` VARCHAR(128)
 
+### fb_account
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `name` VARCHAR(255)
+- `currency` VARCHAR(10)
+- `access_token` LONGTEXT
+- `token_expires_at` DATETIME
+- `token_last_refreshed_at` DATETIME
+- `authorized_user_id` VARCHAR(128)
+- `authorized_user_name` VARCHAR(255)
+- `authorized_user_email` VARCHAR(320)
+- `app_id` VARCHAR(255)
+- `app_secret` LONGTEXT
+- `token_renewal_enabled` TINYINT(1) DEFAULT 0
+- `token_renewal_status` VARCHAR(40)
+- `token_renewal_last_attempt_at` DATETIME
+- `token_renewed_at` DATETIME
+- `token_renewal_last_error` LONGTEXT
+
+Registra as credenciais do Facebook Ads configuradas no backend. Quando a
+renovação automática está habilitada (`token_renewal_enabled = 1`), o Facebook
+Ads Worker monitora `token_expires_at` e solicita um novo token de longa duração
+antes do vencimento. Cada tentativa atualiza `token_renewal_status`,
+`token_renewal_last_attempt_at`, `token_renewed_at` e armazena mensagens de erro
+em `token_renewal_last_error` quando a renovação falha.
+
 ## Diagram
 
 ```mermaid

@@ -41,6 +41,7 @@ classDiagram
         +createAdCreative(adAccountId, request) String
         +createAd(adAccountId, request) String
         +getCampaignMetrics(campaignId) JsonNode
+        +renewLongLivedToken(appId, appSecret, token) TokenRenewalResponse
     }
 
     class AdSetRequest {
@@ -70,6 +71,21 @@ classDiagram
         +name : String
         +adSetId : String
         +creativeId : String
+    }
+
+    class FacebookTokenRenewalScheduler {
+        +scheduleRenewal()
+    }
+
+    class FacebookTokenRenewalService {
+        -backendClient : WebClient
+        -facebookAdsService : FacebookAdsService
+        -backendBaseUrl : String
+        -apiPrefix : String
+        +renewTokensIfNeeded()
+        -fetchEligibleAccounts()
+        -renewCandidateToken(candidate)
+        -reportResult(id, payload)
     }
 
     class CreateCampaignRequest {
@@ -138,6 +154,9 @@ classDiagram
     FacebookAdsCampaign --> BudgetMode
     FacebookAdsCampaign --> SpecialAdCategory
     FacebookCampaignService ..> UrlUtils : compõe URLs do backend
+    FacebookTokenRenewalScheduler --> FacebookTokenRenewalService : agenda renovação
+    FacebookTokenRenewalService --> FacebookAdsService : renova token
+    FacebookTokenRenewalService ..> UrlUtils : reutiliza composição de URLs
 ```
 
 * `FacebookCampaignScheduler` agenda a execução periódica do worker utilizando
@@ -150,7 +169,12 @@ classDiagram
   experimento a uma lista de bloqueio em memória para evitar novas tentativas
   até que o worker seja reiniciado.
 * `FacebookAdsService` encapsula as chamadas à Graph API (criação da hierarquia
-  de mídia e consulta de métricas).
+  de mídia, consulta de métricas e renovação de tokens de longa duração).
+* `FacebookTokenRenewalScheduler` agenda o fluxo periódico de renovação de token
+  e delega para `FacebookTokenRenewalService`.
+* `FacebookTokenRenewalService` busca as contas elegíveis no backend, chama a
+  Graph API para obter um novo token e registra o resultado por meio do endpoint
+  `/api/accounts/facebook/{id}/token/renewal`.
 * `CreateCampaignRequest` representa o payload enviado ao backend contendo os
   campos mínimos para materializar a entidade de campanha.
 * `FacebookAdsCampaign` é a entidade JPA do backend responsável por armazenar a

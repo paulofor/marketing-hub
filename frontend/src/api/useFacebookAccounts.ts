@@ -14,6 +14,13 @@ export interface FacebookAccount {
   tokenExpired?: boolean;
   requiresTokenRenewal?: boolean;
   tokenExpiresInDays?: number | null;
+  appId?: string | null;
+  hasAppSecret?: boolean;
+  tokenRenewalEnabled?: boolean;
+  tokenRenewalStatus?: string | null;
+  tokenRenewalLastAttemptAt?: string | null;
+  tokenRenewedAt?: string | null;
+  tokenRenewalLastError?: string | null;
 }
 
 export function useFacebookAccounts() {

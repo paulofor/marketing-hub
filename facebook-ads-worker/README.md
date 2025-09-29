@@ -55,7 +55,12 @@ O fluxo funciona da seguinte forma:
 3. O backend é notificado com `POST /api/accounts/facebook/{id}/token/renewal`,
    atualizando o token, a nova data de expiração e registrando o status da
    tentativa (`SUCCESS` ou `FAILED`).
-4. Esses dados são exibidos na tela de contas do frontend, permitindo acompanhar
+4. Quando a Graph API devolve `(#190) OAuthException` o worker tenta imediatamente
+   revalidar o token atual utilizando o mesmo fluxo descrito acima. Caso o
+   aplicativo (`facebook.app-id`/`facebook.app-secret`) esteja configurado, o
+   novo token é aplicado em memória e a fila de experimentos volta a ser
+   processada sem necessidade de reiniciar o serviço.
+5. Esses dados são exibidos na tela de contas do frontend, permitindo acompanhar
    a última tentativa, o último sucesso e eventuais mensagens de erro.
 
 Caso a chamada à Graph API falhe, o backend recebe o status `FAILED` com a
@@ -81,6 +86,8 @@ Os acessos são configurados pelas propriedades:
 - `facebook.instagram-actor-id` (opcional)
 - `facebook.website-url` (sem default – obrigatório)
 - `facebook.graph-api.version` (default: `v23.0` – utilizado para montar os caminhos da Graph API)
+- `facebook.app-id` (opcional – obrigatório para renovação automática quando o token expira em produção)
+- `facebook.app-secret` (opcional – obrigatório para renovação automática quando o token expira em produção)
 - `facebook.creative.message-template` (default: `%s` – utiliza o nome do
   experimento quando contém `%s`)
 - `facebook.creative.call-to-action-type` (default: `LEARN_MORE`)
@@ -142,6 +149,18 @@ valores adicionais. Caso sua conta utilize políticas diferentes, preencha
 `facebook.ad-set.bid-amount` com o lance desejado (em centavos) ou ajuste
 `facebook.ad-set.bid-strategy` para refletir a configuração do Gerenciador de
 Anúncios antes de reiniciar o serviço.
+
+### Erro `(#190) OAuthException` indicando token expirado
+
+Quando o Facebook devolve `code = 190` com `error_subcode = 463/467` ou
+mensagem "Session has expired", o worker interpreta que o token configurado em
+`facebook.access-token` não é mais válido. O serviço tenta renovar o token
+automaticamente via Graph API quando `facebook.app-id` e `facebook.app-secret`
+estão configurados. Em caso de sucesso, o novo token é aplicado sem reiniciar o
+worker e os experimentos voltam a ser processados na próxima execução. Se a
+renovação automática estiver desabilitada ou falhar, o log registra uma mensagem
+de erro única com os detalhes retornados pela Graph API, orientando a atualizar
+o token manualmente e reiniciar o serviço após a substituição.
 
 ## Build
 ```

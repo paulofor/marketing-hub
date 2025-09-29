@@ -1,5 +1,7 @@
 package com.marketinghub.facebookadsworker.facebookcampaign;
 
+import com.marketinghub.facebookadsworker.FacebookAccessTokenExpiredException;
+import com.marketinghub.facebookadsworker.FacebookAccessTokenManager;
 import com.marketinghub.facebookadsworker.FacebookAdsService;
 import com.marketinghub.facebookadsworker.FacebookPermissionException;
 import com.marketinghub.facebookadsworker.util.UrlUtils;
@@ -18,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 public class FacebookCampaignService {
@@ -41,8 +44,12 @@ public class FacebookCampaignService {
     private final String defaultCreativeMessageTemplate;
     private final String defaultCallToActionType;
     private final Set<Long> experimentsBlockedByPermissions;
+    private final AtomicBoolean accessTokenExpired;
+    private final AtomicBoolean accessTokenExpiryWarningLogged;
+    private final FacebookAccessTokenManager accessTokenManager;
 
     public FacebookCampaignService(FacebookAdsService facebookAdsService,
+                                   FacebookAccessTokenManager accessTokenManager,
                                    WebClient.Builder builder,
                                    @Value("${backend.base-url:http://localhost:8000}") String backendBaseUrl,
                                    @Value("${backend.api-prefix:/api}") String apiPrefix,
@@ -60,6 +67,7 @@ public class FacebookCampaignService {
                                    @Value("${facebook.creative.message-template:%s}") String creativeMessageTemplate,
                                    @Value("${facebook.creative.call-to-action-type:LEARN_MORE}") String callToActionType) {
         this.facebookAdsService = facebookAdsService;
+        this.accessTokenManager = accessTokenManager;
         this.backendClient = builder.build();
         this.backendBaseUrl = backendBaseUrl;
         this.apiPrefix = apiPrefix;
@@ -77,9 +85,21 @@ public class FacebookCampaignService {
         this.defaultCreativeMessageTemplate = creativeMessageTemplate;
         this.defaultCallToActionType = callToActionType;
         this.experimentsBlockedByPermissions = ConcurrentHashMap.newKeySet();
+        this.accessTokenExpired = new AtomicBoolean(false);
+        this.accessTokenExpiryWarningLogged = new AtomicBoolean(false);
     }
 
     public void createCampaignsFromExperiments() {
+        if (accessTokenExpired.get()) {
+            if (accessTokenExpiryWarningLogged.compareAndSet(false, true)) {
+                LOGGER.warn(
+                    "Skipping Facebook campaign processing because the configured access token has expired; renew the token and restart the worker."
+                );
+            }
+            return;
+        }
+        accessTokenExpiryWarningLogged.set(false);
+
         List<Experiment> experiments = Collections.emptyList();
 
         try {
@@ -193,6 +213,41 @@ public class FacebookCampaignService {
                 ex.getErrorDetails()
             );
             markExperimentAsFailed(exp.id());
+        } catch (FacebookAccessTokenExpiredException ex) {
+            FacebookAccessTokenManager.RenewalAttemptResult renewalResult = accessTokenManager.tryRenewAccessTokenIfPossible();
+            if (renewalResult.outcome() == FacebookAccessTokenManager.RenewalOutcome.SUCCESS) {
+                LOGGER.info(
+                    "Facebook access token renewed automatically after detecting expiration while processing experiment {}; the worker will retry on the next cycle.",
+                    exp.id()
+                );
+                accessTokenExpired.set(false);
+                accessTokenExpiryWarningLogged.set(false);
+                return;
+            }
+
+            boolean firstDetection = accessTokenExpired.compareAndSet(false, true);
+            accessTokenExpiryWarningLogged.set(false);
+            if (firstDetection) {
+                LOGGER.error(
+                    "Facebook access token expired; the worker will pause campaign creation until the token is renewed. message={}, details={}",
+                    ex.getMessage(),
+                    ex.getErrorDetails()
+                );
+                if (renewalResult.outcome() == FacebookAccessTokenManager.RenewalOutcome.NOT_CONFIGURED) {
+                    LOGGER.error(
+                        "Automatic token renewal is not configured. Provide facebook.app-id and facebook.app-secret so the worker can revalidate the access token without manual intervention."
+                    );
+                } else if (renewalResult.outcome() == FacebookAccessTokenManager.RenewalOutcome.FAILED) {
+                    LOGGER.error(
+                        "Automatic token renewal attempt failed: {}",
+                        StringUtils.hasText(renewalResult.errorMessage()) ? renewalResult.errorMessage() : "unknown error"
+                    );
+                }
+            }
+            LOGGER.warn(
+                "Skipping experiment {} because the Facebook access token has expired; it will be retried after updating the token.",
+                exp.id()
+            );
         }
     }
 

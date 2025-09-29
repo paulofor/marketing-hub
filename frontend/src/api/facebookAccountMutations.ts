@@ -10,6 +10,9 @@ export interface FacebookAccountPayload {
   authorizedUserId?: string | null;
   authorizedUserName?: string | null;
   authorizedUserEmail?: string | null;
+  appId?: string | null;
+  appSecret?: string | null;
+  tokenRenewalEnabled?: boolean;
 }
 
 export function useCreateFacebookAccount() {

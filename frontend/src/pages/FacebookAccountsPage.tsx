@@ -23,6 +23,10 @@ interface AccountFormState {
   authorizedUserId: string;
   authorizedUserName: string;
   authorizedUserEmail: string;
+  appId: string;
+  appSecret: string;
+  tokenRenewalEnabled: boolean;
+  clearAppSecret: boolean;
 }
 
 interface PageFormState {
@@ -40,6 +44,10 @@ const emptyAccountForm: AccountFormState = {
   authorizedUserId: "",
   authorizedUserName: "",
   authorizedUserEmail: "",
+  appId: "",
+  appSecret: "",
+  tokenRenewalEnabled: false,
+  clearAppSecret: false,
 };
 const emptyPageForm: PageFormState = { pageId: "", name: "" };
 
@@ -87,6 +95,39 @@ function describeTokenExpiration(account: RemoteFacebookAccount): string {
     return `Expira em ${account.tokenExpiresInDays} dias`;
   }
   return "Validade não informada";
+}
+
+function describeRenewalStatus(account: RemoteFacebookAccount): string {
+  if (!account.tokenRenewalEnabled) {
+    return "Renovação automática desativada";
+  }
+  const status = account.tokenRenewalStatus ?? "NEVER_ATTEMPTED";
+  switch (status) {
+    case "SUCCESS":
+      return "Última renovação concluída";
+    case "FAILED":
+      return "Falha na última tentativa";
+    case "NEVER_ATTEMPTED":
+    default:
+      return "Nunca tentamos renovar automaticamente";
+  }
+}
+
+function formatRenewalStatusBadge(account: RemoteFacebookAccount): {
+  className: string;
+  label: string;
+} {
+  const status = account.tokenRenewalStatus ?? "NEVER_ATTEMPTED";
+  if (!account.tokenRenewalEnabled) {
+    return { className: "text-bg-secondary", label: "Automação inativa" };
+  }
+  if (status === "SUCCESS") {
+    return { className: "text-bg-success", label: "Renovação em dia" };
+  }
+  if (status === "FAILED") {
+    return { className: "text-bg-danger", label: "Erro ao renovar" };
+  }
+  return { className: "text-bg-info", label: "Aguardando primeira tentativa" };
 }
 
 export default function FacebookAccountsPage() {
@@ -154,7 +195,14 @@ export default function FacebookAccountsPage() {
       authorizedUserId: accountForm.authorizedUserId.trim() || null,
       authorizedUserName: accountForm.authorizedUserName.trim() || null,
       authorizedUserEmail: accountForm.authorizedUserEmail.trim() || null,
+      appId: accountForm.appId.trim() || null,
+      tokenRenewalEnabled: accountForm.tokenRenewalEnabled,
     };
+    if (accountForm.clearAppSecret) {
+      payload.appSecret = null;
+    } else if (accountForm.appSecret.trim()) {
+      payload.appSecret = accountForm.appSecret.trim();
+    }
     const mutation = isEditingAccount ? updateAccountMutation : createAccountMutation;
     mutation.mutate(payload, {
       onSuccess: () => {
@@ -256,6 +304,7 @@ export default function FacebookAccountsPage() {
                         : account.requiresTokenRenewal
                         ? "Renovar token"
                         : "Token válido";
+                      const renewalBadge = formatRenewalStatusBadge(account);
                       return (
                         <tr key={id} className={rowClasses}>
                           <td>{id}</td>
@@ -270,6 +319,27 @@ export default function FacebookAccountsPage() {
                               <small className="text-muted">
                                 Validade: {formatDateTime(account.tokenExpiresAt)}
                               </small>
+                              <span className={`badge ${renewalBadge.className}`}>
+                                {renewalBadge.label}
+                              </span>
+                              <small className="text-muted">
+                                {describeRenewalStatus(account)}
+                              </small>
+                              {account.tokenRenewedAt && (
+                                <small className="text-muted">
+                                  Última renovação: {formatDateTime(account.tokenRenewedAt)}
+                                </small>
+                              )}
+                              {account.tokenRenewalLastAttemptAt && (
+                                <small className="text-muted">
+                                  Última tentativa: {formatDateTime(account.tokenRenewalLastAttemptAt)}
+                                </small>
+                              )}
+                              {account.tokenRenewalLastError && (
+                                <small className="text-danger">
+                                  Erro recente: {account.tokenRenewalLastError}
+                                </small>
+                              )}
                               {account.authorizedUserName && (
                                 <small className="text-muted">
                                   Usuário autorizado: {account.authorizedUserName}
@@ -297,6 +367,10 @@ export default function FacebookAccountsPage() {
                                   authorizedUserId: account.authorizedUserId ?? "",
                                   authorizedUserName: account.authorizedUserName ?? "",
                                   authorizedUserEmail: account.authorizedUserEmail ?? "",
+                                  appId: account.appId ?? "",
+                                  appSecret: "",
+                                  tokenRenewalEnabled: Boolean(account.tokenRenewalEnabled),
+                                  clearAppSecret: false,
                                 });
                               }}
                               disabled={isDeletingThisAccount}
@@ -371,6 +445,67 @@ export default function FacebookAccountsPage() {
                   </div>
                 </div>
                 <div className="col-12 col-md-6">
+                  <label className="form-label">ID do aplicativo (App ID)</label>
+                  <input
+                    className="form-control"
+                    placeholder="ID do aplicativo vinculado ao Business Manager"
+                    value={accountForm.appId}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        appId: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Segredo do aplicativo (App Secret)</label>
+                  <input
+                    type="password"
+                    className="form-control"
+                    placeholder={
+                      isEditingAccount && accounts.find((acc) => acc.id === accountForm.id)?.hasAppSecret
+                        ? "Informe um novo segredo para atualizar"
+                        : "Cole o segredo do aplicativo"
+                    }
+                    value={accountForm.appSecret}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        appSecret: event.target.value,
+                        clearAppSecret: false,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                  {isEditingAccount &&
+                    accounts.find((acc) => acc.id === accountForm.id)?.hasAppSecret && (
+                      <div className="form-check mt-2">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id="clear-app-secret"
+                          checked={accountForm.clearAppSecret}
+                          onChange={(event) =>
+                            setAccountForm((current) => ({
+                              ...current,
+                              clearAppSecret: event.target.checked,
+                              appSecret: event.target.checked ? "" : current.appSecret,
+                            }))
+                          }
+                          disabled={isAccountMutationPending}
+                        />
+                        <label className="form-check-label" htmlFor="clear-app-secret">
+                          Remover segredo salvo
+                        </label>
+                      </div>
+                    )}
+                  <div className="form-text">
+                    Guardamos o segredo apenas para renovar tokens automaticamente. Ele não é exibido novamente.
+                  </div>
+                </div>
+                <div className="col-12 col-md-6">
                   <label className="form-label">Validade do token</label>
                   <input
                     type="datetime-local"
@@ -386,6 +521,31 @@ export default function FacebookAccountsPage() {
                   />
                   <div className="form-text">
                     Exibiremos um alerta 7 dias antes do vencimento.
+                  </div>
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Renovação automática</label>
+                  <div className="form-check form-switch">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id="token-renewal-enabled"
+                      checked={accountForm.tokenRenewalEnabled}
+                      onChange={(event) =>
+                        setAccountForm((current) => ({
+                          ...current,
+                          tokenRenewalEnabled: event.target.checked,
+                        }))
+                      }
+                      disabled={isAccountMutationPending}
+                    />
+                    <label className="form-check-label" htmlFor="token-renewal-enabled">
+                      Permitir que o Marketing Hub renove o token automaticamente
+                    </label>
+                  </div>
+                  <div className="form-text">
+                    Mantenha o App ID e o App Secret atualizados para que o worker consiga solicitar um novo token antes do
+                    vencimento.
                   </div>
                 </div>
                 <div className="col-12 col-md-6">

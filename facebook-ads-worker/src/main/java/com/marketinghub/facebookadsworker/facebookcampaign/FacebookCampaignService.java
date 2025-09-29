@@ -91,14 +91,25 @@ public class FacebookCampaignService {
 
     public void createCampaignsFromExperiments() {
         if (accessTokenExpired.get()) {
-            if (accessTokenExpiryWarningLogged.compareAndSet(false, true)) {
-                LOGGER.warn(
-                    "Skipping Facebook campaign processing because the configured access token has expired; renew the token and restart the worker."
+            FacebookAccessTokenManager.RenewalAttemptResult renewalResult = accessTokenManager.tryRenewAccessTokenIfPossible();
+            if (renewalResult.outcome() == FacebookAccessTokenManager.RenewalOutcome.SUCCESS) {
+                LOGGER.info(
+                    "Facebook access token renewed automatically after a previous expiration; resuming campaign processing."
                 );
+                accessTokenExpired.set(false);
+                accessTokenExpiryWarningLogged.set(false);
+            } else {
+                if (accessTokenExpiryWarningLogged.compareAndSet(false, true)) {
+                    LOGGER.warn(
+                        "Skipping Facebook campaign processing because the configured access token has expired; renew the token and restart the worker."
+                    );
+                    logAutomaticRenewalOutcome(renewalResult);
+                }
+                return;
             }
-            return;
+        } else {
+            accessTokenExpiryWarningLogged.set(false);
         }
-        accessTokenExpiryWarningLogged.set(false);
 
         List<Experiment> experiments = Collections.emptyList();
 
@@ -234,14 +245,9 @@ public class FacebookCampaignService {
                     ex.getErrorDetails()
                 );
                 if (renewalResult.outcome() == FacebookAccessTokenManager.RenewalOutcome.NOT_CONFIGURED) {
-                    LOGGER.error(
-                        "Automatic token renewal is not configured. Provide facebook.app-id and facebook.app-secret so the worker can revalidate the access token without manual intervention."
-                    );
+                    logAutomaticRenewalOutcome(renewalResult);
                 } else if (renewalResult.outcome() == FacebookAccessTokenManager.RenewalOutcome.FAILED) {
-                    LOGGER.error(
-                        "Automatic token renewal attempt failed: {}",
-                        StringUtils.hasText(renewalResult.errorMessage()) ? renewalResult.errorMessage() : "unknown error"
-                    );
+                    logAutomaticRenewalOutcome(renewalResult);
                 }
             }
             LOGGER.warn(
@@ -302,6 +308,22 @@ public class FacebookCampaignService {
             LOGGER.info("Marked experiment {} as FAILED after Facebook permission error", experimentId);
         } catch (Exception ex) {
             LOGGER.warn("Could not mark experiment {} as FAILED after Facebook permission error: {}", experimentId, ex.getMessage(), ex);
+        }
+    }
+
+    private void logAutomaticRenewalOutcome(FacebookAccessTokenManager.RenewalAttemptResult renewalResult) {
+        if (renewalResult.outcome() == FacebookAccessTokenManager.RenewalOutcome.NOT_CONFIGURED) {
+            LOGGER.error(
+                "Automatic token renewal is not configured. Provide facebook.app-id and facebook.app-secret so the worker can revalidate the access token without manual intervention."
+            );
+            return;
+        }
+
+        if (renewalResult.outcome() == FacebookAccessTokenManager.RenewalOutcome.FAILED) {
+            LOGGER.error(
+                "Automatic token renewal attempt failed: {}",
+                StringUtils.hasText(renewalResult.errorMessage()) ? renewalResult.errorMessage() : "unknown error"
+            );
         }
     }
 

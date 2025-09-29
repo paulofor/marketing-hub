@@ -161,10 +161,12 @@ uma vez e delega a renovação para o `FacebookAccessTokenManager`. O serviço t
 renovar o token automaticamente via Graph API quando `facebook.app-id` e
 `facebook.app-secret` estão configurados. Em caso de sucesso, o novo token é
 aplicado sem reiniciar o worker e os experimentos voltam a ser processados na
-próxima execução. Se a renovação automática estiver desabilitada ou falhar, o log
-registra uma mensagem de erro única com os detalhes retornados pela Graph API,
-orientando a atualizar o token manualmente e reiniciar o serviço após a
-substituição.
+próxima execução. Caso a primeira tentativa falhe, o worker continua tentando a
+renovação em cada ciclo agendado e retoma o processamento assim que obtiver um
+token válido novamente. Se a renovação automática estiver desabilitada ou falhar
+repetidamente, o log registra uma mensagem de erro com os detalhes retornados
+pela Graph API, orientando a atualizar o token manualmente e reiniciar o serviço
+após a substituição.
 
 ## Build
 ```

@@ -2,6 +2,7 @@ package com.marketinghub.facebookadsworker.facebookcampaign;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.facebookadsworker.FacebookAccessTokenManager;
 import com.marketinghub.facebookadsworker.FacebookAdsService;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -40,8 +41,14 @@ class FacebookCampaignServiceTest {
             "v23.0",
             objectMapper
         );
+        FacebookAccessTokenManager accessTokenManager = new FacebookAccessTokenManager(
+            adsService,
+            "",
+            ""
+        );
         service = new FacebookCampaignService(
             adsService,
+            accessTokenManager,
             WebClient.builder(),
             backendUrl,
             "/api",

@@ -88,6 +88,27 @@ classDiagram
         -reportResult(id, payload)
     }
 
+    class FacebookAccessTokenManager {
+        -facebookAdsService : FacebookAdsService
+        -appId : String
+        -appSecret : String
+        +tryRenewAccessTokenIfPossible() : RenewalAttemptResult
+    }
+
+    class RenewalAttemptResult {
+        <<record>>
+        +outcome : RenewalOutcome
+        +newToken : String
+        +errorMessage : String
+    }
+
+    class RenewalOutcome {
+        <<enum>>
+        SUCCESS
+        NOT_CONFIGURED
+        FAILED
+    }
+
     class CreateCampaignRequest {
         <<record>>
         +id : String
@@ -145,6 +166,7 @@ classDiagram
 
     FacebookCampaignScheduler --> FacebookCampaignService : dispara ciclo
     FacebookCampaignService --> FacebookAdsService : cria campanha/ad set/ad
+    FacebookCampaignService --> FacebookAccessTokenManager : gerencia expiração de token
     FacebookAdsService --> AdSetRequest
     FacebookAdsService --> AdCreativeRequest
     FacebookAdsService --> AdRequest
@@ -175,6 +197,9 @@ classDiagram
 * `FacebookTokenRenewalService` busca as contas elegíveis no backend, chama a
   Graph API para obter um novo token e registra o resultado por meio do endpoint
   `/api/accounts/facebook/{id}/token/renewal`.
+* `FacebookAccessTokenManager` encapsula a renovação imediata de tokens quando o
+  `FacebookCampaignService` detecta expiração durante a criação de campanhas,
+  reutilizando o `FacebookAdsService` para atualizar o `access_token` em memória.
 * `CreateCampaignRequest` representa o payload enviado ao backend contendo os
   campos mínimos para materializar a entidade de campanha.
 * `FacebookAdsCampaign` é a entidade JPA do backend responsável por armazenar a

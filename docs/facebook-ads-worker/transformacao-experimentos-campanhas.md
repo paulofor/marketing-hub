@@ -61,7 +61,10 @@ montar a hierarquia completa:
    ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L120-L124)).
 
 Todos os pontos de contato com a Graph API reutilizam o mesmo `access_token`
-configurado para o worker.
+configurado para o worker. Quando a Graph API responde com `(#190) OAuthException`
+indicando expiração do token, o `FacebookCampaignService` interrompe o fluxo
+temporariamente e delega a renovação para o `FacebookAccessTokenManager`. O
+processamento normal é retomado assim que o token é atualizado.
 
 ### 3. Persistência no backend
 

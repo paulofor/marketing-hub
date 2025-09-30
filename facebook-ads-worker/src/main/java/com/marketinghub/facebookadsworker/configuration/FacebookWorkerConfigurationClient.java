@@ -4,11 +4,13 @@ import com.marketinghub.facebookadsworker.util.UrlUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.NestedExceptionUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
+import reactor.netty.http.client.PrematureCloseException;
 
 import java.util.Optional;
 
@@ -52,7 +54,15 @@ public class FacebookWorkerConfigurationClient {
                 ex
             );
         } catch (WebClientRequestException ex) {
-            LOGGER.error("Failed to fetch Facebook worker configuration from backend: {}", ex.getMessage(), ex);
+            Throwable rootCause = NestedExceptionUtils.getMostSpecificCause(ex);
+            if (rootCause instanceof PrematureCloseException) {
+                LOGGER.warn(
+                    "Failed to fetch Facebook worker configuration from backend: {}. Connection will be retried on the next cycle.",
+                    rootCause.getMessage()
+                );
+            } else {
+                LOGGER.error("Failed to fetch Facebook worker configuration from backend: {}", ex.getMessage(), ex);
+            }
         }
         return Optional.empty();
     }

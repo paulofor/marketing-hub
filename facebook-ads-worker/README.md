@@ -27,7 +27,9 @@ As chamadas ao backend utilizam o prefixo `/api`. O worker consome
 conexão ao recuperar os experimentos são registradas em log e ignoradas para
 que o agendamento continue saudável. Após criar campanha, conjunto, criativo e
 anúncio, o worker persiste o identificador da campanha via
-`POST /api/facebook-campaigns`.
+`POST /api/facebook-campaigns`. Todas as chamadas HTTP ao backend devem
+registrar a URL completa, parâmetros, payload e resposta recebida para
+acelerar o diagnóstico de incidentes em produção.
 
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar
 investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs

@@ -1,6 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
+export interface FacebookAccountFinancialStrategy {
+  dailyBudget?: string | null;
+  billingEvent?: string | null;
+  optimizationGoal?: string | null;
+  destinationType?: string | null;
+  bidStrategy?: string | null;
+  bidAmount?: string | null;
+  targetCountry?: string | null;
+}
+
 export interface FacebookAccount {
   id: number;
   name: string;
@@ -23,11 +33,10 @@ export interface FacebookAccount {
   tokenRenewedAt?: string | null;
   tokenRenewalLastError?: string | null;
   adAccountId?: string | null;
-  defaultPageId?: string | null;
   defaultWebsiteUrl?: string | null;
-  defaultInstagramActorId?: string | null;
   defaultCreativeMessageTemplate?: string | null;
   defaultCallToActionType?: string | null;
+  financialStrategy?: FacebookAccountFinancialStrategy;
   adSetDailyBudget?: string | null;
   adSetBillingEvent?: string | null;
   adSetOptimizationGoal?: string | null;

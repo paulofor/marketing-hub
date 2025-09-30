@@ -176,6 +176,14 @@ repetidamente, o log registra uma mensagem de erro com os detalhes retornados
 pela Graph API, orientando a atualizar o token manualmente na interface e
 reiniciar o serviço após a substituição.
 
+### Erro de compilação `cannot find symbol: variable Objects`
+
+Ao adicionar novos métodos no `FacebookAdsService`, certifique-se de importar
+`java.util.Objects` quando utilizar `Objects.requireNonNull`. A ausência do
+import impede a compilação do módulo e exibe a mensagem acima. Após sincronizar
+o import, execute `mvn -s settings.xml compile` para validar o projeto antes de
+publicar o pacote.
+
 ## Build
 ```
 mvn -s settings.xml package

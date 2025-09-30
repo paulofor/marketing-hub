@@ -12,6 +12,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.PrematureCloseException;
 
+import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -39,6 +40,11 @@ public class FacebookWorkerConfigurationClient {
 
     public Optional<FacebookWorkerConfiguration> fetchConfiguration() {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/accounts/facebook/worker-config");
+        LOGGER.info(
+            "Requesting Facebook worker configuration from backend: url={}, params={}",
+            url,
+            Collections.emptyMap()
+        );
         try {
             FacebookWorkerConfiguration configuration = backendClient
                 .get()
@@ -49,9 +55,19 @@ public class FacebookWorkerConfigurationClient {
                     if (configurationNotFoundLogged.compareAndSet(false, true)) {
                         LOGGER.warn("Facebook worker configuration not found in backend; skipping Facebook automation");
                     }
+                    LOGGER.info(
+                        "Backend responded with HTTP 404 when fetching Facebook worker configuration: url={}, response={}",
+                        url,
+                        ex.getResponseBodyAsString()
+                    );
                     return Mono.empty();
                 })
                 .block();
+            LOGGER.info(
+                "Received Facebook worker configuration response from backend: url={}, response={}",
+                url,
+                configuration
+            );
             if (configuration != null) {
                 configurationNotFoundLogged.set(false);
                 prematureCloseWarningLogged.set(false);

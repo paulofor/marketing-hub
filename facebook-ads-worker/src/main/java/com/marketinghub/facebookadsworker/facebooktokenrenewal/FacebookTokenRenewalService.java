@@ -47,18 +47,31 @@ public class FacebookTokenRenewalService {
     }
 
     private List<FacebookAccountRenewalCandidate> fetchEligibleAccounts() {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/accounts/facebook/renewal/eligible");
+        LOGGER.info(
+            "Requesting Facebook accounts eligible for token renewal from backend: url={}, params={}",
+            url,
+            Collections.emptyMap()
+        );
         try {
-            return backendClient
+            List<FacebookAccountRenewalCandidate> response = backendClient
                 .get()
-                .uri(UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/accounts/facebook/renewal/eligible"))
+                .uri(url)
                 .retrieve()
                 .bodyToFlux(FacebookAccountRenewalCandidate.class)
                 .collectList()
                 .blockOptional()
                 .orElse(Collections.emptyList());
+            LOGGER.info(
+                "Received eligible Facebook accounts response from backend: url={}, response={}",
+                url,
+                response
+            );
+            return response;
         } catch (WebClientResponseException | WebClientRequestException ex) {
             LOGGER.error(
-                "Failed to fetch Facebook accounts for token renewal: status={}, message={}",
+                "Failed to fetch Facebook accounts for token renewal: url={}, status={}, message={}",
+                url,
                 ex instanceof WebClientResponseException responseException ? responseException.getRawStatusCode() : "N/A",
                 ex.getMessage(),
                 ex
@@ -132,18 +145,31 @@ public class FacebookTokenRenewalService {
 
     private void reportResult(Long accountId, RenewalResultPayload payload) {
         String path = "/accounts/facebook/" + accountId + "/token/renewal";
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, path);
+        LOGGER.info(
+            "Reporting Facebook token renewal result to backend: url={}, params={}, payload={}",
+            url,
+            Collections.emptyMap(),
+            payload
+        );
         try {
             backendClient
                 .post()
-                .uri(UrlUtils.joinPath(backendBaseUrl, apiPrefix, path))
+                .uri(url)
                 .bodyValue(payload)
                 .retrieve()
                 .toBodilessEntity()
                 .block();
+            LOGGER.info(
+                "Successfully reported Facebook token renewal result to backend: url={}, accountId={}",
+                url,
+                accountId
+            );
         } catch (WebClientResponseException | WebClientRequestException ex) {
             LOGGER.error(
-                "Failed to report token renewal result to backend for account {}: status={}, message={}",
+                "Failed to report token renewal result to backend for account {}: url={}, status={}, message={}",
                 accountId,
+                url,
                 ex instanceof WebClientResponseException responseException ? responseException.getRawStatusCode() : "N/A",
                 ex.getMessage(),
                 ex

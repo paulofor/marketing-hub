@@ -119,10 +119,15 @@ public class FacebookCampaignService {
         }
 
         List<Experiment> experiments = Collections.emptyList();
-
+        String experimentsUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns/experiments-ready");
+        LOGGER.info(
+            "Requesting experiments ready for Facebook campaigns from backend: url={}, params={}",
+            experimentsUrl,
+            Collections.emptyMap()
+        );
         try {
             experiments = backendClient.get()
-                .uri(UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns/experiments-ready"))
+                .uri(experimentsUrl)
                 .exchangeToFlux(response -> {
                     if (response.statusCode().value() == HttpStatus.NOT_FOUND.value()) {
                         return Flux.empty();
@@ -136,8 +141,13 @@ public class FacebookCampaignService {
                 })
                 .collectList()
                 .block();
+            LOGGER.info(
+                "Received experiments response from backend: url={}, response={}",
+                experimentsUrl,
+                experiments
+            );
         } catch (WebClientRequestException ex) {
-            LOGGER.warn("Failed to fetch experiments from backend", ex);
+            LOGGER.warn("Failed to fetch experiments from backend: url={}", experimentsUrl, ex);
         }
 
         if (experiments == null || experiments.isEmpty()) {
@@ -211,12 +221,25 @@ public class FacebookCampaignService {
                 creativeId
             ));
             CreateCampaignRequest req = new CreateCampaignRequest(campaignId, config.adAccountId(), exp.name(), "OUTCOME_TRAFFIC", "CAMPAIGN");
+            String createCampaignUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns");
+            LOGGER.info(
+                "Reporting Facebook campaign creation to backend: url={}, params={}, payload={}",
+                createCampaignUrl,
+                Collections.emptyMap(),
+                req
+            );
             backendClient.post()
-                .uri(UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns"))
+                .uri(createCampaignUrl)
                 .bodyValue(req)
                 .retrieve()
                 .toBodilessEntity()
                 .block();
+            LOGGER.info(
+                "Successfully reported Facebook campaign creation to backend: url={}, experimentId={}, campaignId={}",
+                createCampaignUrl,
+                exp.id(),
+                campaignId
+            );
         } catch (FacebookPermissionException ex) {
             experimentsBlockedByPermissions.add(exp.id());
             LOGGER.warn(
@@ -291,6 +314,11 @@ public class FacebookCampaignService {
 
     private Creative resolveCreative(long experimentId) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/creatives");
+        LOGGER.info(
+            "Requesting creatives for experiment from backend: url={}, params={}",
+            url,
+            Collections.emptyMap()
+        );
         try {
             List<Creative> creatives = backendClient.get()
                 .uri(url)
@@ -298,6 +326,11 @@ public class FacebookCampaignService {
                 .bodyToFlux(Creative.class)
                 .collectList()
                 .block();
+            LOGGER.info(
+                "Received creatives response from backend: url={}, response={}",
+                url,
+                creatives
+            );
             if (creatives == null || creatives.isEmpty()) {
                 return null;
             }
@@ -306,7 +339,7 @@ public class FacebookCampaignService {
                 .findFirst()
                 .orElse(creatives.get(0));
         } catch (Exception ex) {
-            LOGGER.warn("Failed to fetch creatives for experiment {}: {}", experimentId, ex.getMessage());
+            LOGGER.warn("Failed to fetch creatives for experiment {} from backend: url={}, message={}", experimentId, url, ex.getMessage());
             LOGGER.debug("Stacktrace while fetching creatives for experiment {}", experimentId, ex);
             return null;
         }
@@ -318,6 +351,11 @@ public class FacebookCampaignService {
 
     private void markExperimentAsFailed(long experimentId) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/status?status=FAILED");
+        LOGGER.info(
+            "Marking experiment as FAILED in backend: url={}, params={}",
+            url,
+            Collections.emptyMap()
+        );
         try {
             backendClient.patch()
                 .uri(url)
@@ -326,7 +364,13 @@ public class FacebookCampaignService {
                 .block();
             LOGGER.info("Marked experiment {} as FAILED after Facebook permission error", experimentId);
         } catch (Exception ex) {
-            LOGGER.warn("Could not mark experiment {} as FAILED after Facebook permission error: {}", experimentId, ex.getMessage(), ex);
+            LOGGER.warn(
+                "Could not mark experiment {} as FAILED after Facebook permission error: url={}, message={}",
+                experimentId,
+                url,
+                ex.getMessage(),
+                ex
+            );
         }
     }
 

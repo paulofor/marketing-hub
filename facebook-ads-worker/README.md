@@ -100,6 +100,12 @@ reiniciar o worker. As únicas propriedades externas mantidas em arquivo de
 configuração são `backend.base-url`, `backend.api-prefix` e
 `facebook.graph-api.version`.
 
+Os testes unitários também simulam esse fluxo completo de configuração,
+atualizando o token retornado pelo backend antes de cada ciclo quando o cenário
+requer renovação automática ou intervenção manual. Isso garante que a lógica de
+sincronização entre backend e worker permaneça alinhada com o comportamento em
+produção.
+
 ## Data Model
 
 As tabelas prefixadas com `facebook_ads_` descritas em

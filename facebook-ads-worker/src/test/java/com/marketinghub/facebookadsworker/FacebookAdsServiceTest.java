@@ -25,7 +25,8 @@ class FacebookAdsServiceTest {
         server.start();
         String baseUrl = server.url("/").toString();
         objectMapper = new ObjectMapper();
-        service = new FacebookAdsService(WebClient.builder(), baseUrl, "token", "v23.0", objectMapper);
+        service = new FacebookAdsService(WebClient.builder(), baseUrl, "v23.0", objectMapper);
+        service.updateAccessToken("token");
     }
 
     @AfterEach

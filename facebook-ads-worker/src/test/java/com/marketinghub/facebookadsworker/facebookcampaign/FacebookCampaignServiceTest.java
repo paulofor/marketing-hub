@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenManager;
 import com.marketinghub.facebookadsworker.FacebookAdsService;
+import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient;
+import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient.FacebookWorkerConfiguration;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -15,6 +17,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.Optional;
 import java.util.Queue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,6 +28,7 @@ class FacebookCampaignServiceTest {
     private FacebookCampaignService service;
     private ObjectMapper objectMapper;
     private FacebookAdsService adsService;
+    private StubFacebookWorkerConfigurationClient configurationClient;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -33,41 +37,29 @@ class FacebookCampaignServiceTest {
         facebook = new MockWebServer();
         facebook.start();
 
-        String backendUrl = backend.url("/").toString();
         String facebookUrl = facebook.url("/").toString();
 
         objectMapper = new ObjectMapper();
+        configurationClient = new StubFacebookWorkerConfigurationClient();
+        configurationClient.setConfiguration(configurationWithAccessToken("token"));
         adsService = new FacebookAdsService(
             WebClient.builder(),
             facebookUrl,
-            "token",
             "v23.0",
             objectMapper
         );
+        adsService.updateAccessToken("token");
         FacebookAccessTokenManager accessTokenManager = new FacebookAccessTokenManager(
             adsService,
-            "",
-            ""
+            configurationClient
         );
         service = new FacebookCampaignService(
             adsService,
             accessTokenManager,
             WebClient.builder(),
-            backendUrl,
-            "/api",
-            "1",
-            "2000",
-            "IMPRESSIONS",
-            "LINK_CLICKS",
-            "WEBSITE",
-            "LOWEST_COST_WITHOUT_CAP",
-            "150",
-            "BR",
-            "42",
-            "11",
-            "https://example.com",
-            "Conheça %s",
-            "LEARN_MORE"
+            configurationClient,
+            backend.url("/").toString(),
+            "/api"
         );
     }
 
@@ -226,7 +218,7 @@ class FacebookCampaignServiceTest {
 
     @Test
     void resumesProcessingAfterAutomaticTokenRenewalWhenPreviouslyExpired() throws Exception {
-        StubFacebookAccessTokenManager renewingManager = new StubFacebookAccessTokenManager(adsService);
+        StubFacebookAccessTokenManager renewingManager = new StubFacebookAccessTokenManager(adsService, configurationClient);
         renewingManager.enqueue(new FacebookAccessTokenManager.RenewalAttemptResult(
             FacebookAccessTokenManager.RenewalOutcome.NOT_CONFIGURED,
             null,
@@ -242,21 +234,9 @@ class FacebookCampaignServiceTest {
             adsService,
             renewingManager,
             WebClient.builder(),
+            configurationClient,
             backend.url("/").toString(),
-            "/api",
-            "1",
-            "2000",
-            "IMPRESSIONS",
-            "LINK_CLICKS",
-            "WEBSITE",
-            "LOWEST_COST_WITHOUT_CAP",
-            "150",
-            "BR",
-            "42",
-            "11",
-            "https://example.com",
-            "Conheça %s",
-            "LEARN_MORE"
+            "/api"
         );
 
         backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\"}]")
@@ -284,6 +264,7 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
 
         service.createCampaignsFromExperiments();
+        configurationClient.setConfiguration(configurationWithAccessToken("fresh-token"));
         service.createCampaignsFromExperiments();
 
         RecordedRequest firstExperimentRequest = backend.takeRequest();
@@ -316,7 +297,7 @@ class FacebookCampaignServiceTest {
 
     @Test
     void resumesProcessingAfterBackendRenewsTokenWithoutAppCredentials() throws Exception {
-        StubFacebookAccessTokenManager manager = new StubFacebookAccessTokenManager(adsService);
+        StubFacebookAccessTokenManager manager = new StubFacebookAccessTokenManager(adsService, configurationClient);
         manager.enqueue(new FacebookAccessTokenManager.RenewalAttemptResult(
             FacebookAccessTokenManager.RenewalOutcome.NOT_CONFIGURED,
             null,
@@ -332,21 +313,9 @@ class FacebookCampaignServiceTest {
             adsService,
             manager,
             WebClient.builder(),
+            configurationClient,
             backend.url("/").toString(),
-            "/api",
-            "1",
-            "2000",
-            "IMPRESSIONS",
-            "LINK_CLICKS",
-            "WEBSITE",
-            "LOWEST_COST_WITHOUT_CAP",
-            "150",
-            "BR",
-            "42",
-            "11",
-            "https://example.com",
-            "Conheça %s",
-            "LEARN_MORE"
+            "/api"
         );
 
         backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\"}]")
@@ -361,6 +330,7 @@ class FacebookCampaignServiceTest {
         service.createCampaignsFromExperiments();
 
         adsService.updateAccessToken("renewed-by-backend");
+        configurationClient.setConfiguration(configurationWithAccessToken("renewed-by-backend"));
 
         backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\"}]")
             .addHeader("Content-Type", "application/json"));
@@ -404,12 +374,54 @@ class FacebookCampaignServiceTest {
         assertEquals("/api/facebook-campaigns", backendPost.getPath());
     }
 
+    private FacebookWorkerConfiguration configurationWithAccessToken(String accessToken) {
+        return new FacebookWorkerConfiguration(
+            1L,
+            "1",
+            accessToken,
+            "app",
+            "secret",
+            "42",
+            "11",
+            "https://example.com",
+            "Conheça %s",
+            "LEARN_MORE",
+            "2000",
+            "IMPRESSIONS",
+            "LINK_CLICKS",
+            "WEBSITE",
+            "LOWEST_COST_WITHOUT_CAP",
+            "150",
+            "BR"
+        );
+    }
+
+    private static class StubFacebookWorkerConfigurationClient extends FacebookWorkerConfigurationClient {
+        private FacebookWorkerConfiguration configuration;
+
+        StubFacebookWorkerConfigurationClient() {
+            super(WebClient.builder(), "http://localhost", "/api");
+        }
+
+        void setConfiguration(FacebookWorkerConfiguration configuration) {
+            this.configuration = configuration;
+        }
+
+        @Override
+        public Optional<FacebookWorkerConfiguration> fetchConfiguration() {
+            return Optional.ofNullable(configuration);
+        }
+    }
+
     private static class StubFacebookAccessTokenManager extends FacebookAccessTokenManager {
         private final Queue<FacebookAccessTokenManager.RenewalAttemptResult> results = new ArrayDeque<>();
         private final FacebookAdsService adsService;
 
-        StubFacebookAccessTokenManager(FacebookAdsService adsService) {
-            super(adsService, "", "");
+        StubFacebookAccessTokenManager(
+            FacebookAdsService adsService,
+            FacebookWorkerConfigurationClient configurationClient
+        ) {
+            super(adsService, configurationClient);
             this.adsService = adsService;
         }
 

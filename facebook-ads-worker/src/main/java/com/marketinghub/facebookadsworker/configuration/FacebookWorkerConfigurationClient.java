@@ -13,6 +13,7 @@ import reactor.core.publisher.Mono;
 import reactor.netty.http.client.PrematureCloseException;
 
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
 public class FacebookWorkerConfigurationClient {
@@ -21,6 +22,8 @@ public class FacebookWorkerConfigurationClient {
     private final WebClient backendClient;
     private final String backendBaseUrl;
     private final String apiPrefix;
+    private final AtomicBoolean configurationNotFoundLogged;
+    private final AtomicBoolean prematureCloseWarningLogged;
 
     public FacebookWorkerConfigurationClient(
         WebClient.Builder builder,
@@ -30,6 +33,8 @@ public class FacebookWorkerConfigurationClient {
         this.backendClient = builder.build();
         this.backendBaseUrl = backendBaseUrl;
         this.apiPrefix = apiPrefix;
+        this.configurationNotFoundLogged = new AtomicBoolean(false);
+        this.prematureCloseWarningLogged = new AtomicBoolean(false);
     }
 
     public Optional<FacebookWorkerConfiguration> fetchConfiguration() {
@@ -41,10 +46,16 @@ public class FacebookWorkerConfigurationClient {
                 .retrieve()
                 .bodyToMono(FacebookWorkerConfiguration.class)
                 .onErrorResume(WebClientResponseException.NotFound.class, ex -> {
-                    LOGGER.warn("Facebook worker configuration not found in backend; skipping Facebook automation");
+                    if (configurationNotFoundLogged.compareAndSet(false, true)) {
+                        LOGGER.warn("Facebook worker configuration not found in backend; skipping Facebook automation");
+                    }
                     return Mono.empty();
                 })
                 .block();
+            if (configuration != null) {
+                configurationNotFoundLogged.set(false);
+                prematureCloseWarningLogged.set(false);
+            }
             return Optional.ofNullable(configuration);
         } catch (WebClientResponseException ex) {
             LOGGER.error(
@@ -56,10 +67,12 @@ public class FacebookWorkerConfigurationClient {
         } catch (WebClientRequestException ex) {
             Throwable rootCause = NestedExceptionUtils.getMostSpecificCause(ex);
             if (rootCause instanceof PrematureCloseException) {
-                LOGGER.warn(
-                    "Failed to fetch Facebook worker configuration from backend: {}. Connection will be retried on the next cycle.",
-                    rootCause.getMessage()
-                );
+                if (prematureCloseWarningLogged.compareAndSet(false, true)) {
+                    LOGGER.warn(
+                        "Failed to fetch Facebook worker configuration from backend: {}. Connection will be retried on the next cycle.",
+                        rootCause.getMessage()
+                    );
+                }
             } else {
                 LOGGER.error("Failed to fetch Facebook worker configuration from backend: {}", ex.getMessage(), ex);
             }

@@ -79,7 +79,14 @@ Em ambientes instáveis pode ocorrer do backend encerrar a conexão HTTP antes d
 enviar a resposta do endpoint `GET /api/accounts/facebook/worker-config`. Nessa
 situação o worker registra apenas um aviso indicando a falha de comunicação e
 prossegue normalmente com o ciclo agendado, tentando novamente na próxima
-execução sem interromper o processamento de campanhas.
+execução sem interromper o processamento de campanhas. Para evitar poluição dos
+logs, o aviso é emitido apenas uma vez enquanto a indisponibilidade persiste e é
+reabilitado automaticamente assim que o backend voltar a responder.
+
+Quando o backend ainda não possui uma conta marcada para o worker e responde
+`404 Not Found`, o serviço segue a mesma abordagem: registra o primeiro aviso e
+silencia tentativas subsequentes até que a configuração esteja disponível
+novamente.
 
 ## Configuração via backend
 

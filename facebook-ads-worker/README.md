@@ -73,6 +73,14 @@ Caso a chamada à Graph API falhe, o backend recebe o status `FAILED` com a
 mensagem de erro no campo `tokenRenewalLastError`, mantendo o token anterior e
 exigindo uma ação manual.
 
+### Falha momentânea ao consultar a configuração do backend
+
+Em ambientes instáveis pode ocorrer do backend encerrar a conexão HTTP antes de
+enviar a resposta do endpoint `GET /api/accounts/facebook/worker-config`. Nessa
+situação o worker registra apenas um aviso indicando a falha de comunicação e
+prossegue normalmente com o ciclo agendado, tentando novamente na próxima
+execução sem interromper o processamento de campanhas.
+
 ## Configuração via backend
 
 O worker não lê mais variáveis de ambiente para parametrizar o Facebook. Todas

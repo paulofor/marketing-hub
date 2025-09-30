@@ -15,6 +15,8 @@ import {
   useDeleteFacebookPage,
   useUpdateFacebookPage,
 } from "../api/facebookPageMutations";
+import { useFacebookConfigurationStatus } from "../api/useFacebookConfigurationStatus";
+import FacebookAutomationAlerts from "../components/FacebookAutomationAlerts";
 
 interface FinancialStrategyFormState {
   dailyBudget: string;
@@ -208,6 +210,8 @@ export default function FacebookAccountsPage() {
     [accounts],
   );
 
+  const { data: configuration } = useFacebookConfigurationStatus();
+
   const accountBeingEdited = useMemo(
     () =>
       typeof accountForm.id === "number"
@@ -331,6 +335,7 @@ export default function FacebookAccountsPage() {
   return (
     <div>
       <PageTitle>Contas do Facebook</PageTitle>
+      <FacebookAutomationAlerts status={configuration} />
       {accountsNeedingRenewal.length > 0 && (
         <div className="alert alert-warning" role="alert">
           <h2 className="h6 mb-2">Renovação de token necessária</h2>

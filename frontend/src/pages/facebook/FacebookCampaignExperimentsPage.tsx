@@ -4,6 +4,7 @@ import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useFacebookCampaignExperiments } from "../../api/useFacebookCampaignExperiments";
 import PageTitle from "../../components/PageTitle";
 import { useFacebookConfigurationStatus } from "../../api/useFacebookConfigurationStatus";
+import FacebookAutomationAlerts from "../../components/FacebookAutomationAlerts";
 import { getMissingConfigurationLabel } from "./missingConfigurationLabels";
 
 export default function FacebookCampaignExperimentsPage() {
@@ -24,6 +25,7 @@ export default function FacebookCampaignExperimentsPage() {
           </div>
         </div>
       ) : null}
+      <FacebookAutomationAlerts status={configuration} />
       <div className="btn-group mb-3">
         <button
           className={`btn btn-outline-primary${status === "PLANNED" ? " active" : ""}`}

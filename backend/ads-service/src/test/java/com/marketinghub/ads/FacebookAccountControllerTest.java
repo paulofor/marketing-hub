@@ -100,6 +100,23 @@ public class FacebookAccountControllerTest {
     }
 
     @Test
+    void shouldExposeHasAppSecretFlagAfterSavingSecret() throws Exception {
+        repository.deleteAll();
+
+        repository.save(FacebookAccount.builder()
+            .name("Conta com segredo")
+            .currency("BRL")
+            .appSecret("segredo-armazenado")
+            .build());
+
+        mockMvc.perform(get("/api/accounts/facebook"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].hasAppSecret").value(true));
+
+        repository.deleteAll();
+    }
+
+    @Test
     void shouldReturnAccountsEligibleForRenewal() throws Exception {
         FacebookAccount eligible = repository.save(FacebookAccount.builder()
             .name("Eligible")

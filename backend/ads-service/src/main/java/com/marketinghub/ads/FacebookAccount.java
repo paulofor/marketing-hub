@@ -1,5 +1,6 @@
 package com.marketinghub.ads;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
@@ -153,7 +154,8 @@ public class FacebookAccount {
     }
 
     @Transient
-    @JsonProperty("hasAppSecret")
+    @JsonGetter("hasAppSecret")
+    @JsonProperty(value = "hasAppSecret", access = JsonProperty.Access.READ_ONLY)
     public boolean hasAppSecret() {
         return appSecret != null && !appSecret.isBlank();
     }

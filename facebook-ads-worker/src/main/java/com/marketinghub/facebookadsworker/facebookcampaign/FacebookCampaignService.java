@@ -40,6 +40,7 @@ public class FacebookCampaignService {
     private final AtomicBoolean accessTokenExpiryWarningLogged;
     private final AtomicReference<String> lastExpiredAccessToken;
     private final FacebookAccessTokenManager accessTokenManager;
+    private final AtomicBoolean configurationUnavailableWarningLogged;
 
     public FacebookCampaignService(FacebookAdsService facebookAdsService,
                                    FacebookAccessTokenManager accessTokenManager,
@@ -57,6 +58,7 @@ public class FacebookCampaignService {
         this.accessTokenExpired = new AtomicBoolean(false);
         this.accessTokenExpiryWarningLogged = new AtomicBoolean(false);
         this.lastExpiredAccessToken = new AtomicReference<>(null);
+        this.configurationUnavailableWarningLogged = new AtomicBoolean(false);
     }
 
     public void createCampaignsFromExperiments() {
@@ -93,9 +95,12 @@ public class FacebookCampaignService {
 
         var configuration = configurationClient.fetchConfiguration();
         if (configuration.isEmpty()) {
-            LOGGER.warn("Facebook worker configuration is unavailable; skipping campaign creation");
+            if (configurationUnavailableWarningLogged.compareAndSet(false, true)) {
+                LOGGER.warn("Facebook worker configuration is unavailable; skipping campaign creation");
+            }
             return;
         }
+        configurationUnavailableWarningLogged.set(false);
 
         FacebookWorkerConfiguration config = configuration.get();
         String configuredToken = config.accessToken();

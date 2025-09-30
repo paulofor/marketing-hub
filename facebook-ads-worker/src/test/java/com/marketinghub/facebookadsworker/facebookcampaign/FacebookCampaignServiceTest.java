@@ -1,5 +1,9 @@
 package com.marketinghub.facebookadsworker.facebookcampaign;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenManager;
@@ -13,10 +17,12 @@ import okhttp3.mockwebserver.SocketPolicy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 
@@ -139,6 +145,41 @@ class FacebookCampaignServiceTest {
 
         assertEquals(1, backend.getRequestCount());
         assertEquals(0, facebook.getRequestCount());
+    }
+
+    @Test
+    void logsConfigurationUnavailableWarningOnlyOncePerOutage() {
+        configurationClient.setConfiguration(null);
+
+        Logger logger = (Logger) LoggerFactory.getLogger(FacebookCampaignService.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        try {
+            service.createCampaignsFromExperiments();
+            service.createCampaignsFromExperiments();
+
+            backend.enqueue(new MockResponse().setResponseCode(404));
+            configurationClient.setConfiguration(configurationWithAccessToken("token"));
+            service.createCampaignsFromExperiments();
+
+            configurationClient.setConfiguration(null);
+            service.createCampaignsFromExperiments();
+
+            List<ILoggingEvent> warnings = appender.list.stream()
+                .filter(event -> event.getLevel() == Level.WARN)
+                .toList();
+
+            assertEquals(2, warnings.size());
+            warnings.forEach(event -> assertEquals(
+                "Facebook worker configuration is unavailable; skipping campaign creation",
+                event.getFormattedMessage()
+            ));
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
+        }
     }
 
     @Test

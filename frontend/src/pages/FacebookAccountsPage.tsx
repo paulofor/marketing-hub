@@ -7,6 +7,7 @@ import {
   useDeleteFacebookAccount,
   useUpdateFacebookAccount,
   FacebookAccountPayload,
+  FinancialStrategyPayload,
 } from "../api/facebookAccountMutations";
 import { useFacebookPages } from "../api/useFacebookPages";
 import {
@@ -15,11 +16,18 @@ import {
   useUpdateFacebookPage,
 } from "../api/facebookPageMutations";
 
+interface FinancialStrategyFormState {
+  dailyBudget: string;
+  billingEvent: string;
+  optimizationGoal: string;
+  destinationType: string;
+  bidStrategy: string;
+  bidAmount: string;
+}
+
 interface AccountFormState {
   id?: number;
   name: string;
-  accessToken: string;
-  tokenExpiresAt: string;
   authorizedUserId: string;
   authorizedUserName: string;
   authorizedUserEmail: string;
@@ -28,18 +36,10 @@ interface AccountFormState {
   appSecret: string;
   tokenRenewalEnabled: boolean;
   adAccountId: string;
-  defaultPageId: string;
   defaultWebsiteUrl: string;
-  defaultInstagramActorId: string;
   defaultCreativeMessageTemplate: string;
   defaultCallToActionType: string;
-  adSetDailyBudget: string;
-  adSetBillingEvent: string;
-  adSetOptimizationGoal: string;
-  adSetDestinationType: string;
-  adSetBidStrategy: string;
-  adSetBidAmount: string;
-  adSetTargetCountry: string;
+  financialStrategy: FinancialStrategyFormState;
   workerEnabled: boolean;
   clearAppSecret: boolean;
 }
@@ -51,11 +51,19 @@ interface PageFormState {
 }
 
 const BRAZILIAN_REAL = "BRL";
+const BRAZIL = "BR";
+
+const emptyFinancialStrategyForm: FinancialStrategyFormState = {
+  dailyBudget: "",
+  billingEvent: "IMPRESSIONS",
+  optimizationGoal: "LINK_CLICKS",
+  destinationType: "WEBSITE",
+  bidStrategy: "LOWEST_COST_WITHOUT_CAP",
+  bidAmount: "",
+};
 
 const emptyAccountForm: AccountFormState = {
   name: "",
-  accessToken: "",
-  tokenExpiresAt: "",
   authorizedUserId: "",
   authorizedUserName: "",
   authorizedUserEmail: "",
@@ -64,18 +72,10 @@ const emptyAccountForm: AccountFormState = {
   appSecret: "",
   tokenRenewalEnabled: false,
   adAccountId: "",
-  defaultPageId: "",
   defaultWebsiteUrl: "",
-  defaultInstagramActorId: "",
   defaultCreativeMessageTemplate: "%s",
   defaultCallToActionType: "LEARN_MORE",
-  adSetDailyBudget: "",
-  adSetBillingEvent: "IMPRESSIONS",
-  adSetOptimizationGoal: "LINK_CLICKS",
-  adSetDestinationType: "WEBSITE",
-  adSetBidStrategy: "LOWEST_COST_WITHOUT_CAP",
-  adSetBidAmount: "",
-  adSetTargetCountry: "BR",
+  financialStrategy: { ...emptyFinancialStrategyForm },
   workerEnabled: false,
   clearAppSecret: false,
 };
@@ -86,14 +86,37 @@ const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
   timeStyle: "short",
 });
 
-function toInputDateValue(value?: string | null): string {
-  if (!value) return "";
-  return value.slice(0, 16);
+function createEmptyAccountForm(): AccountFormState {
+  return {
+    ...emptyAccountForm,
+    financialStrategy: { ...emptyFinancialStrategyForm },
+  };
 }
 
-function toBackendDateValue(value?: string): string | null {
-  if (!value) return null;
-  return value.length === 16 ? `${value}:00` : value;
+function toFinancialStrategyForm(
+  account?: RemoteFacebookAccount,
+): FinancialStrategyFormState {
+  const strategy = account?.financialStrategy;
+  return {
+    dailyBudget: strategy?.dailyBudget ?? account?.adSetDailyBudget ?? "",
+    billingEvent:
+      strategy?.billingEvent ??
+      account?.adSetBillingEvent ??
+      emptyFinancialStrategyForm.billingEvent,
+    optimizationGoal:
+      strategy?.optimizationGoal ??
+      account?.adSetOptimizationGoal ??
+      emptyFinancialStrategyForm.optimizationGoal,
+    destinationType:
+      strategy?.destinationType ??
+      account?.adSetDestinationType ??
+      emptyFinancialStrategyForm.destinationType,
+    bidStrategy:
+      strategy?.bidStrategy ??
+      account?.adSetBidStrategy ??
+      emptyFinancialStrategyForm.bidStrategy,
+    bidAmount: strategy?.bidAmount ?? account?.adSetBidAmount ?? "",
+  };
 }
 
 function formatDateTime(value?: string | null): string {
@@ -164,7 +187,7 @@ export default function FacebookAccountsPage() {
   const { data, isLoading, error } = useFacebookAccounts();
   const accounts = useMemo(() => (Array.isArray(data) ? data : []), [data]);
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
-  const [accountForm, setAccountForm] = useState<AccountFormState>({ ...emptyAccountForm });
+  const [accountForm, setAccountForm] = useState<AccountFormState>(createEmptyAccountForm);
   const [pageForm, setPageForm] = useState<PageFormState>({ ...emptyPageForm });
   const [deletingAccountId, setDeletingAccountId] = useState<number | null>(null);
   const [deletingPageId, setDeletingPageId] = useState<number | null>(null);
@@ -183,6 +206,14 @@ export default function FacebookAccountsPage() {
         (account) => Boolean(account.requiresTokenRenewal) || !account.accessToken,
       ),
     [accounts],
+  );
+
+  const accountBeingEdited = useMemo(
+    () =>
+      typeof accountForm.id === "number"
+        ? accounts.find((account) => account.id === accountForm.id) ?? null
+        : null,
+    [accountForm.id, accounts],
   );
 
   const createPageMutation = useCreateFacebookPage(selectedAccountId ?? undefined);
@@ -216,12 +247,22 @@ export default function FacebookAccountsPage() {
 
   const submitAccount = () => {
     if (isAccountMutationPending) return;
+    const financialStrategyPayload: FinancialStrategyPayload = {
+      dailyBudget: accountForm.financialStrategy.dailyBudget.trim() || null,
+      billingEvent: accountForm.financialStrategy.billingEvent.trim() || null,
+      optimizationGoal:
+        accountForm.financialStrategy.optimizationGoal.trim() || null,
+      destinationType:
+        accountForm.financialStrategy.destinationType.trim() || null,
+      bidStrategy: accountForm.financialStrategy.bidStrategy.trim() || null,
+      bidAmount: accountForm.financialStrategy.bidAmount.trim() || null,
+      targetCountry: BRAZIL,
+    };
+
     const payload: FacebookAccountPayload = {
       id: accountForm.id,
       name: accountForm.name,
       currency: BRAZILIAN_REAL,
-      accessToken: accountForm.accessToken.trim() || null,
-      tokenExpiresAt: toBackendDateValue(accountForm.tokenExpiresAt),
       authorizedUserId: accountForm.authorizedUserId.trim() || null,
       authorizedUserName: accountForm.authorizedUserName.trim() || null,
       authorizedUserEmail: accountForm.authorizedUserEmail.trim() || null,
@@ -229,23 +270,19 @@ export default function FacebookAccountsPage() {
       businessManagerAppId: accountForm.businessManagerAppId.trim() || null,
       tokenRenewalEnabled: accountForm.tokenRenewalEnabled,
       adAccountId: accountForm.adAccountId.trim() || null,
-      defaultPageId: accountForm.defaultPageId.trim() || null,
       defaultWebsiteUrl: accountForm.defaultWebsiteUrl.trim() || null,
-      defaultInstagramActorId:
-        accountForm.defaultInstagramActorId.trim() || null,
       defaultCreativeMessageTemplate:
         accountForm.defaultCreativeMessageTemplate.trim() || "%s",
       defaultCallToActionType:
         accountForm.defaultCallToActionType.trim() || "LEARN_MORE",
-      adSetDailyBudget: accountForm.adSetDailyBudget.trim() || null,
-      adSetBillingEvent: accountForm.adSetBillingEvent.trim() || null,
-      adSetOptimizationGoal:
-        accountForm.adSetOptimizationGoal.trim() || null,
-      adSetDestinationType:
-        accountForm.adSetDestinationType.trim() || null,
-      adSetBidStrategy: accountForm.adSetBidStrategy.trim() || null,
-      adSetBidAmount: accountForm.adSetBidAmount.trim() || null,
-      adSetTargetCountry: accountForm.adSetTargetCountry.trim() || null,
+      financialStrategy: financialStrategyPayload,
+      adSetDailyBudget: financialStrategyPayload.dailyBudget,
+      adSetBillingEvent: financialStrategyPayload.billingEvent,
+      adSetOptimizationGoal: financialStrategyPayload.optimizationGoal,
+      adSetDestinationType: financialStrategyPayload.destinationType,
+      adSetBidStrategy: financialStrategyPayload.bidStrategy,
+      adSetBidAmount: financialStrategyPayload.bidAmount,
+      adSetTargetCountry: financialStrategyPayload.targetCountry,
       workerEnabled: accountForm.workerEnabled,
     };
     if (accountForm.clearAppSecret) {
@@ -256,7 +293,7 @@ export default function FacebookAccountsPage() {
     const mutation = isEditingAccount ? updateAccountMutation : createAccountMutation;
     mutation.mutate(payload, {
       onSuccess: () => {
-        setAccountForm({ ...emptyAccountForm });
+        setAccountForm(createEmptyAccountForm());
       },
     });
   };
@@ -409,11 +446,10 @@ export default function FacebookAccountsPage() {
                             <button
                               className="btn btn-sm btn-outline-primary"
                               onClick={() => {
+                                const strategyForm = toFinancialStrategyForm(account);
                                 setAccountForm({
                                   id,
                                   name,
-                                  accessToken: account.accessToken ?? "",
-                                  tokenExpiresAt: toInputDateValue(account.tokenExpiresAt ?? undefined),
                                   authorizedUserId: account.authorizedUserId ?? "",
                                   authorizedUserName: account.authorizedUserName ?? "",
                                   authorizedUserEmail: account.authorizedUserEmail ?? "",
@@ -423,24 +459,12 @@ export default function FacebookAccountsPage() {
                                   appSecret: "",
                                   tokenRenewalEnabled: Boolean(account.tokenRenewalEnabled),
                                   adAccountId: account.adAccountId ?? "",
-                                  defaultPageId: account.defaultPageId ?? "",
                                   defaultWebsiteUrl: account.defaultWebsiteUrl ?? "",
-                                  defaultInstagramActorId:
-                                    account.defaultInstagramActorId ?? "",
                                   defaultCreativeMessageTemplate:
                                     account.defaultCreativeMessageTemplate ?? "%s",
                                   defaultCallToActionType:
                                     account.defaultCallToActionType ?? "LEARN_MORE",
-                                  adSetDailyBudget: account.adSetDailyBudget ?? "",
-                                  adSetBillingEvent: account.adSetBillingEvent ?? "IMPRESSIONS",
-                                  adSetOptimizationGoal:
-                                    account.adSetOptimizationGoal ?? "LINK_CLICKS",
-                                  adSetDestinationType:
-                                    account.adSetDestinationType ?? "WEBSITE",
-                                  adSetBidStrategy:
-                                    account.adSetBidStrategy ?? "LOWEST_COST_WITHOUT_CAP",
-                                  adSetBidAmount: account.adSetBidAmount ?? "",
-                                  adSetTargetCountry: account.adSetTargetCountry ?? "BR",
+                                  financialStrategy: strategyForm,
                                   workerEnabled: Boolean(account.workerEnabled),
                                   clearAppSecret: false,
                                 });
@@ -497,23 +521,25 @@ export default function FacebookAccountsPage() {
                   />
                 </div>
                 <div className="col-12">
-                  <label className="form-label">Token de acesso (longa duração)</label>
-                  <textarea
-                    className="form-control"
-                    placeholder="Cole o token de acesso gerado no Business Manager"
-                    rows={3}
-                    value={accountForm.accessToken}
-                    onChange={(event) =>
-                      setAccountForm((current) => ({
-                        ...current,
-                        accessToken: event.target.value,
-                      }))
-                    }
-                    disabled={isAccountMutationPending}
-                  />
-                  <div className="form-text">
-                    Utilize sempre um token de longa duração para que o Marketing Hub possa
-                    renovar o acesso automaticamente.
+                  <div className="alert alert-info mb-0">
+                    <h3 className="h6 mb-1">Token de acesso gerenciado automaticamente</h3>
+                    <p className="mb-1">
+                      O Marketing Hub gera e renova o token sempre que necessário.
+                    </p>
+                    {accountBeingEdited ? (
+                      <>
+                        <p className="mb-1">
+                          Status: {describeTokenExpiration(accountBeingEdited)}
+                        </p>
+                        <p className="mb-0">
+                          Validade atual: {formatDateTime(accountBeingEdited.tokenExpiresAt)}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="mb-0">
+                        Após salvar a conta exibiremos a validade do token gerado automaticamente.
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="col-12 col-md-6">
@@ -552,7 +578,7 @@ export default function FacebookAccountsPage() {
                     type="password"
                     className="form-control"
                     placeholder={
-                      isEditingAccount && accounts.find((acc) => acc.id === accountForm.id)?.hasAppSecret
+                      isEditingAccount && accountBeingEdited?.hasAppSecret
                         ? "Informe um novo segredo para atualizar"
                         : "Cole o segredo do aplicativo"
                     }
@@ -566,48 +592,29 @@ export default function FacebookAccountsPage() {
                     }
                     disabled={isAccountMutationPending}
                   />
-                  {isEditingAccount &&
-                    accounts.find((acc) => acc.id === accountForm.id)?.hasAppSecret && (
-                      <div className="form-check mt-2">
-                        <input
-                          className="form-check-input"
-                          type="checkbox"
-                          id="clear-app-secret"
-                          checked={accountForm.clearAppSecret}
-                          onChange={(event) =>
-                            setAccountForm((current) => ({
-                              ...current,
-                              clearAppSecret: event.target.checked,
-                              appSecret: event.target.checked ? "" : current.appSecret,
-                            }))
-                          }
-                          disabled={isAccountMutationPending}
-                        />
-                        <label className="form-check-label" htmlFor="clear-app-secret">
-                          Remover segredo salvo
-                        </label>
-                      </div>
-                    )}
+                  {isEditingAccount && accountBeingEdited?.hasAppSecret && (
+                    <div className="form-check mt-2">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="clear-app-secret"
+                        checked={accountForm.clearAppSecret}
+                        onChange={(event) =>
+                          setAccountForm((current) => ({
+                            ...current,
+                            clearAppSecret: event.target.checked,
+                            appSecret: event.target.checked ? "" : current.appSecret,
+                          }))
+                        }
+                        disabled={isAccountMutationPending}
+                      />
+                      <label className="form-check-label" htmlFor="clear-app-secret">
+                        Remover segredo salvo
+                      </label>
+                    </div>
+                  )}
                   <div className="form-text">
                     Guardamos o segredo apenas para renovar tokens automaticamente. Ele não é exibido novamente.
-                  </div>
-                </div>
-                <div className="col-12 col-md-6">
-                  <label className="form-label">Validade do token</label>
-                  <input
-                    type="datetime-local"
-                    className="form-control"
-                    value={accountForm.tokenExpiresAt}
-                    onChange={(event) =>
-                      setAccountForm((current) => ({
-                        ...current,
-                        tokenExpiresAt: event.target.value,
-                      }))
-                    }
-                    disabled={isAccountMutationPending}
-                  />
-                  <div className="form-text">
-                    Exibiremos um alerta 7 dias antes do vencimento.
                   </div>
                 </div>
                 <div className="col-12 col-md-6">
@@ -658,10 +665,6 @@ export default function FacebookAccountsPage() {
                     Apenas uma conta pode estar ativa no worker. Ao marcar esta opção, as demais contas serão desativadas.
                   </div>
                 </div>
-                <div className="col-12">
-                  <hr />
-                  <h3 className="h6">Parâmetros padrão para criação de campanhas</h3>
-                </div>
                 <div className="col-12 col-md-6">
                   <label className="form-label">ID da conta de anúncios (act_)</label>
                   <input
@@ -672,39 +675,6 @@ export default function FacebookAccountsPage() {
                       setAccountForm((current) => ({
                         ...current,
                         adAccountId: event.target.value,
-                      }))
-                    }
-                    disabled={isAccountMutationPending}
-                  />
-                </div>
-                <div className="col-12 col-md-6">
-                  <label className="form-label">Página padrão (ID)</label>
-                  <input
-                    className="form-control"
-                    placeholder="ID numérico da página"
-                    value={accountForm.defaultPageId}
-                    onChange={(event) =>
-                      setAccountForm((current) => ({
-                        ...current,
-                        defaultPageId: event.target.value,
-                      }))
-                    }
-                    disabled={isAccountMutationPending}
-                  />
-                  <div className="form-text">
-                    Utilizamos este valor quando o experimento não informa uma página específica.
-                  </div>
-                </div>
-                <div className="col-12 col-md-6">
-                  <label className="form-label">Instagram Actor ID (opcional)</label>
-                  <input
-                    className="form-control"
-                    placeholder="ID do perfil profissional no Instagram"
-                    value={accountForm.defaultInstagramActorId}
-                    onChange={(event) =>
-                      setAccountForm((current) => ({
-                        ...current,
-                        defaultInstagramActorId: event.target.value,
                       }))
                     }
                     disabled={isAccountMutationPending}
@@ -756,110 +726,123 @@ export default function FacebookAccountsPage() {
                     disabled={isAccountMutationPending}
                   />
                 </div>
-                <div className="col-12 col-md-6">
-                  <label className="form-label">Orçamento diário do conjunto (centavos)</label>
-                  <input
-                    className="form-control"
-                    placeholder="Ex.: 2000 para R$ 20,00"
-                    value={accountForm.adSetDailyBudget}
-                    onChange={(event) =>
-                      setAccountForm((current) => ({
-                        ...current,
-                        adSetDailyBudget: event.target.value,
-                      }))
-                    }
-                    disabled={isAccountMutationPending}
-                  />
-                </div>
-                <div className="col-12 col-md-6">
-                  <label className="form-label">Evento de cobrança</label>
-                  <input
-                    className="form-control"
-                    placeholder="IMPRESSIONS, LINK_CLICKS..."
-                    value={accountForm.adSetBillingEvent}
-                    onChange={(event) =>
-                      setAccountForm((current) => ({
-                        ...current,
-                        adSetBillingEvent: event.target.value,
-                      }))
-                    }
-                    disabled={isAccountMutationPending}
-                  />
-                </div>
-                <div className="col-12 col-md-6">
-                  <label className="form-label">Objetivo de otimização</label>
-                  <input
-                    className="form-control"
-                    placeholder="LINK_CLICKS, REACH..."
-                    value={accountForm.adSetOptimizationGoal}
-                    onChange={(event) =>
-                      setAccountForm((current) => ({
-                        ...current,
-                        adSetOptimizationGoal: event.target.value,
-                      }))
-                    }
-                    disabled={isAccountMutationPending}
-                  />
-                </div>
-                <div className="col-12 col-md-6">
-                  <label className="form-label">Tipo de destino</label>
-                  <input
-                    className="form-control"
-                    placeholder="WEBSITE, APP, MESSENGER..."
-                    value={accountForm.adSetDestinationType}
-                    onChange={(event) =>
-                      setAccountForm((current) => ({
-                        ...current,
-                        adSetDestinationType: event.target.value,
-                      }))
-                    }
-                    disabled={isAccountMutationPending}
-                  />
-                </div>
-                <div className="col-12 col-md-6">
-                  <label className="form-label">Estratégia de lance</label>
-                  <input
-                    className="form-control"
-                    placeholder="LOWEST_COST_WITHOUT_CAP, COST_CAP..."
-                    value={accountForm.adSetBidStrategy}
-                    onChange={(event) =>
-                      setAccountForm((current) => ({
-                        ...current,
-                        adSetBidStrategy: event.target.value,
-                      }))
-                    }
-                    disabled={isAccountMutationPending}
-                  />
-                </div>
-                <div className="col-12 col-md-6">
-                  <label className="form-label">Valor do lance (centavos, opcional)</label>
-                  <input
-                    className="form-control"
-                    placeholder="Informe apenas quando usar estratégias com limite"
-                    value={accountForm.adSetBidAmount}
-                    onChange={(event) =>
-                      setAccountForm((current) => ({
-                        ...current,
-                        adSetBidAmount: event.target.value,
-                      }))
-                    }
-                    disabled={isAccountMutationPending}
-                  />
-                </div>
-                <div className="col-12 col-md-6">
-                  <label className="form-label">País de destino</label>
-                  <input
-                    className="form-control"
-                    placeholder="Ex.: BR"
-                    value={accountForm.adSetTargetCountry}
-                    onChange={(event) =>
-                      setAccountForm((current) => ({
-                        ...current,
-                        adSetTargetCountry: event.target.value,
-                      }))
-                    }
-                    disabled={isAccountMutationPending}
-                  />
+                <div className="col-12">
+                  <div className="border rounded p-3">
+                    <h3 className="h6 mb-3">Estratégia financeira</h3>
+                    <div className="row g-3">
+                      <div className="col-12 col-md-6">
+                        <label className="form-label">Orçamento diário do conjunto (centavos)</label>
+                        <input
+                          className="form-control"
+                          placeholder="Ex.: 2000 para R$ 20,00"
+                          value={accountForm.financialStrategy.dailyBudget}
+                          onChange={(event) =>
+                            setAccountForm((current) => ({
+                              ...current,
+                              financialStrategy: {
+                                ...current.financialStrategy,
+                                dailyBudget: event.target.value,
+                              },
+                            }))
+                          }
+                          disabled={isAccountMutationPending}
+                        />
+                      </div>
+                      <div className="col-12 col-md-6">
+                        <label className="form-label">Evento de cobrança</label>
+                        <input
+                          className="form-control"
+                          placeholder="IMPRESSIONS, LINK_CLICKS..."
+                          value={accountForm.financialStrategy.billingEvent}
+                          onChange={(event) =>
+                            setAccountForm((current) => ({
+                              ...current,
+                              financialStrategy: {
+                                ...current.financialStrategy,
+                                billingEvent: event.target.value,
+                              },
+                            }))
+                          }
+                          disabled={isAccountMutationPending}
+                        />
+                      </div>
+                      <div className="col-12 col-md-6">
+                        <label className="form-label">Objetivo de otimização</label>
+                        <input
+                          className="form-control"
+                          placeholder="LINK_CLICKS, REACH..."
+                          value={accountForm.financialStrategy.optimizationGoal}
+                          onChange={(event) =>
+                            setAccountForm((current) => ({
+                              ...current,
+                              financialStrategy: {
+                                ...current.financialStrategy,
+                                optimizationGoal: event.target.value,
+                              },
+                            }))
+                          }
+                          disabled={isAccountMutationPending}
+                        />
+                      </div>
+                      <div className="col-12 col-md-6">
+                        <label className="form-label">Tipo de destino</label>
+                        <input
+                          className="form-control"
+                          placeholder="WEBSITE, APP, MESSENGER..."
+                          value={accountForm.financialStrategy.destinationType}
+                          onChange={(event) =>
+                            setAccountForm((current) => ({
+                              ...current,
+                              financialStrategy: {
+                                ...current.financialStrategy,
+                                destinationType: event.target.value,
+                              },
+                            }))
+                          }
+                          disabled={isAccountMutationPending}
+                        />
+                      </div>
+                      <div className="col-12 col-md-6">
+                        <label className="form-label">Estratégia de lance</label>
+                        <input
+                          className="form-control"
+                          placeholder="LOWEST_COST_WITHOUT_CAP, COST_CAP..."
+                          value={accountForm.financialStrategy.bidStrategy}
+                          onChange={(event) =>
+                            setAccountForm((current) => ({
+                              ...current,
+                              financialStrategy: {
+                                ...current.financialStrategy,
+                                bidStrategy: event.target.value,
+                              },
+                            }))
+                          }
+                          disabled={isAccountMutationPending}
+                        />
+                      </div>
+                      <div className="col-12 col-md-6">
+                        <label className="form-label">Valor do lance (centavos, opcional)</label>
+                        <input
+                          className="form-control"
+                          placeholder="Informe apenas quando usar estratégias com limite"
+                          value={accountForm.financialStrategy.bidAmount}
+                          onChange={(event) =>
+                            setAccountForm((current) => ({
+                              ...current,
+                              financialStrategy: {
+                                ...current.financialStrategy,
+                                bidAmount: event.target.value,
+                              },
+                            }))
+                          }
+                          disabled={isAccountMutationPending}
+                        />
+                      </div>
+                    </div>
+                    <div className="form-text mt-2">
+                      O país de destino é definido automaticamente como Brasil (BR).
+                    </div>
+                  </div>
                 </div>
                 <div className="col-12 col-md-6">
                   <label className="form-label">ID do usuário autorizado</label>

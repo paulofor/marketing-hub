@@ -1,11 +1,19 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+export interface FinancialStrategyPayload {
+  dailyBudget?: string | null;
+  billingEvent?: string | null;
+  optimizationGoal?: string | null;
+  destinationType?: string | null;
+  bidStrategy?: string | null;
+  bidAmount?: string | null;
+  targetCountry?: string | null;
+}
+
 export interface FacebookAccountPayload {
   id?: number;
   name: string;
   currency: string;
-  accessToken?: string | null;
-  tokenExpiresAt?: string | null;
   tokenLastRefreshedAt?: string | null;
   authorizedUserId?: string | null;
   authorizedUserName?: string | null;
@@ -15,11 +23,10 @@ export interface FacebookAccountPayload {
   appSecret?: string | null;
   tokenRenewalEnabled?: boolean;
   adAccountId?: string | null;
-  defaultPageId?: string | null;
   defaultWebsiteUrl?: string | null;
-  defaultInstagramActorId?: string | null;
   defaultCreativeMessageTemplate?: string | null;
   defaultCallToActionType?: string | null;
+  financialStrategy?: FinancialStrategyPayload;
   adSetDailyBudget?: string | null;
   adSetBillingEvent?: string | null;
   adSetOptimizationGoal?: string | null;

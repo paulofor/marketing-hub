@@ -3,11 +3,14 @@ package com.marketinghub.facebookads.web;
 import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.ads.FacebookAccountRepository;
 import com.marketinghub.ads.FacebookPageRepository;
+import com.marketinghub.ads.FacebookWorkerValidationError;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -53,70 +56,40 @@ public class FacebookConfigurationController {
         }
 
         List<FacebookConfigurationStatus.DiagnosticMessage> messages = new ArrayList<>();
-        if (!StringUtils.hasText(workerAccount.getAccessToken())) {
-            messages.add(
-                new FacebookConfigurationStatus.DiagnosticMessage(
-                    "ACCESS_TOKEN_MISSING",
-                    "Informe um token de acesso válido na conta selecionada para o worker."
-                )
-            );
-        }
-        if (!StringUtils.hasText(workerAccount.getAdAccountId())) {
-            messages.add(
-                new FacebookConfigurationStatus.DiagnosticMessage(
-                    "AD_ACCOUNT_ID_MISSING",
-                    "Preencha o ID da conta de anúncios (act_...) na conta ativa do worker."
-                )
-            );
-        }
-        if (!StringUtils.hasText(workerAccount.getDefaultWebsiteUrl())) {
-            messages.add(
-                new FacebookConfigurationStatus.DiagnosticMessage(
-                    "DEFAULT_WEBSITE_URL_MISSING",
-                    "Informe a URL padrão do site para que o worker possa criar anúncios."
-                )
-            );
-        }
-        if (!StringUtils.hasText(workerAccount.getAdSetDailyBudget())) {
-            messages.add(
-                new FacebookConfigurationStatus.DiagnosticMessage(
-                    "AD_SET_DAILY_BUDGET_MISSING",
-                    "Defina o orçamento diário do conjunto de anúncios em centavos."
-                )
-            );
-        }
-        if (!StringUtils.hasText(workerAccount.getAdSetBillingEvent())) {
-            messages.add(
-                new FacebookConfigurationStatus.DiagnosticMessage(
-                    "AD_SET_BILLING_EVENT_MISSING",
-                    "Informe o evento de cobrança padrão (por exemplo, IMPRESSIONS)."
-                )
-            );
-        }
-        if (!StringUtils.hasText(workerAccount.getAdSetOptimizationGoal())) {
-            messages.add(
-                new FacebookConfigurationStatus.DiagnosticMessage(
-                    "AD_SET_OPTIMIZATION_GOAL_MISSING",
-                    "Defina o objetivo de otimização do conjunto (por exemplo, LINK_CLICKS)."
-                )
-            );
-        }
-        if (!StringUtils.hasText(workerAccount.getAdSetDestinationType())) {
-            messages.add(
-                new FacebookConfigurationStatus.DiagnosticMessage(
-                    "AD_SET_DESTINATION_TYPE_MISSING",
-                    "Informe o tipo de destino padrão (WEBSITE, APP, MESSENGER...)."
-                )
-            );
-        }
-        if (!StringUtils.hasText(workerAccount.getAdSetTargetCountry())) {
-            messages.add(
-                new FacebookConfigurationStatus.DiagnosticMessage(
-                    "AD_SET_TARGET_COUNTRY_MISSING",
-                    "Informe pelo menos um país de segmentação para o conjunto de anúncios."
-                )
-            );
-        }
+        addMessageIfMissing(messages, workerAccount.getAccessToken(), FacebookWorkerValidationError.ACCESS_TOKEN_MISSING);
+        addMessageIfMissing(messages, workerAccount.getAdAccountId(), FacebookWorkerValidationError.AD_ACCOUNT_ID_MISSING);
+        addMessageIfMissing(
+            messages,
+            workerAccount.getDefaultWebsiteUrl(),
+            FacebookWorkerValidationError.DEFAULT_WEBSITE_URL_MISSING
+        );
+        addMessageIfMissing(
+            messages,
+            workerAccount.getAdSetDailyBudget(),
+            FacebookWorkerValidationError.AD_SET_DAILY_BUDGET_MISSING
+        );
+        addMessageIfMissing(
+            messages,
+            workerAccount.getAdSetBillingEvent(),
+            FacebookWorkerValidationError.AD_SET_BILLING_EVENT_MISSING
+        );
+        addMessageIfMissing(
+            messages,
+            workerAccount.getAdSetOptimizationGoal(),
+            FacebookWorkerValidationError.AD_SET_OPTIMIZATION_GOAL_MISSING
+        );
+        addMessageIfMissing(
+            messages,
+            workerAccount.getAdSetDestinationType(),
+            FacebookWorkerValidationError.AD_SET_DESTINATION_TYPE_MISSING
+        );
+        addMessageIfMissing(
+            messages,
+            workerAccount.getAdSetTargetCountry(),
+            FacebookWorkerValidationError.TARGET_COUNTRY_MISSING
+        );
+
+        appendRecordedWorkerValidation(messages, workerAccount);
 
         boolean ready = messages.isEmpty();
         return new FacebookConfigurationStatus.WorkerDiagnostics(
@@ -126,6 +99,53 @@ public class FacebookConfigurationController {
             workerAccount.getName(),
             messages
         );
+    }
+
+    private void appendRecordedWorkerValidation(
+        List<FacebookConfigurationStatus.DiagnosticMessage> messages,
+        FacebookAccount workerAccount
+    ) {
+        String code = workerAccount.getWorkerLastValidationErrorCode();
+        if (!StringUtils.hasText(code)) {
+            return;
+        }
+        FacebookWorkerValidationError error = FacebookWorkerValidationError.fromCode(code);
+        if (error == null) {
+            return;
+        }
+        String userMessage = error.userMessage();
+        if (!StringUtils.hasText(userMessage)) {
+            userMessage = workerAccount.getWorkerLastValidationErrorDetail();
+        }
+        String formattedTimestamp = null;
+        if (workerAccount.getWorkerLastValidationAt() != null) {
+            formattedTimestamp = workerAccount
+                .getWorkerLastValidationAt()
+                .atZone(ZoneId.systemDefault())
+                .format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", new Locale("pt", "BR")));
+        }
+        StringBuilder messageBuilder = new StringBuilder();
+        if (formattedTimestamp != null) {
+            messageBuilder.append("Última validação do worker em ").append(formattedTimestamp).append(": ");
+        } else {
+            messageBuilder.append("Última validação do worker falhou: ");
+        }
+        messageBuilder.append(userMessage);
+        messages.add(
+            0,
+            new FacebookConfigurationStatus.DiagnosticMessage(code + "_RECORDED", messageBuilder.toString())
+        );
+    }
+
+    private void addMessageIfMissing(
+        List<FacebookConfigurationStatus.DiagnosticMessage> messages,
+        String value,
+        FacebookWorkerValidationError error
+    ) {
+        if (StringUtils.hasText(value)) {
+            return;
+        }
+        messages.add(new FacebookConfigurationStatus.DiagnosticMessage(error.code(), error.userMessage()));
     }
 
     private FacebookConfigurationStatus.TokenRenewalDiagnostics buildTokenRenewalDiagnostics(List<FacebookAccount> accounts) {

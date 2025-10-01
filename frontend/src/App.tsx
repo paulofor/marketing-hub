@@ -52,6 +52,7 @@ import MainNavigation from "./components/MainNavigation";
 import "./App.css";
 import FacebookCampaignExperimentsPage from "./pages/facebook/FacebookCampaignExperimentsPage";
 import FacebookExperimentsReadyPage from "./pages/facebook/FacebookExperimentsReadyPage";
+import GlobalAutomationAlerts from "./components/GlobalAutomationAlerts";
 
 export default function App() {
   return (
@@ -60,6 +61,7 @@ export default function App() {
       <div className="app-shell__content">
         <main className="app-shell__main">
           <div className="container-fluid py-4">
+            <GlobalAutomationAlerts />
             <Routes>
               <Route
                 path="/accounts/facebook"

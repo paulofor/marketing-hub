@@ -252,52 +252,86 @@ public class FacebookAccountController {
     }
 
     private void validateWorkerConfiguration(FacebookAccount account) {
-        requireField(account, account.getAccessToken(), "access token", "Facebook worker account is missing access token");
-        requireField(account, account.getAdAccountId(), "ad account id", "Facebook worker account is missing ad account id");
+        requireField(account, account.getAccessToken(), "access token", FacebookWorkerValidationError.ACCESS_TOKEN_MISSING);
+        requireField(account, account.getAdAccountId(), "ad account id", FacebookWorkerValidationError.AD_ACCOUNT_ID_MISSING);
         requireField(
             account,
             account.getDefaultWebsiteUrl(),
             "default website URL",
-            "Facebook worker account is missing default website URL"
+            FacebookWorkerValidationError.DEFAULT_WEBSITE_URL_MISSING
         );
         requireField(
             account,
             account.getAdSetDailyBudget(),
             "ad set daily budget",
-            "Facebook worker account is missing ad set daily budget"
+            FacebookWorkerValidationError.AD_SET_DAILY_BUDGET_MISSING
         );
         requireField(
             account,
             account.getAdSetBillingEvent(),
             "ad set billing event",
-            "Facebook worker account is missing ad set billing event"
+            FacebookWorkerValidationError.AD_SET_BILLING_EVENT_MISSING
         );
         requireField(
             account,
             account.getAdSetOptimizationGoal(),
             "ad set optimization goal",
-            "Facebook worker account is missing ad set optimization goal"
+            FacebookWorkerValidationError.AD_SET_OPTIMIZATION_GOAL_MISSING
         );
         requireField(
             account,
             account.getAdSetDestinationType(),
             "ad set destination type",
-            "Facebook worker account is missing ad set destination type"
+            FacebookWorkerValidationError.AD_SET_DESTINATION_TYPE_MISSING
         );
-        requireField(account, account.getAdSetTargetCountry(), "target country", "Facebook worker account is missing target country");
+        requireField(
+            account,
+            account.getAdSetTargetCountry(),
+            "target country",
+            FacebookWorkerValidationError.TARGET_COUNTRY_MISSING
+        );
+        recordWorkerValidationSuccess(account);
     }
 
-    private void requireField(FacebookAccount account, String value, String fieldDescription, String errorMessage) {
+    private void requireField(
+        FacebookAccount account,
+        String value,
+        String fieldDescription,
+        FacebookWorkerValidationError error
+    ) {
         if (StringUtils.hasText(value)) {
             return;
         }
         log.warn(
-            "Facebook worker configuration validation failed for account id={} name='{}': missing {}.",
+            "Facebook worker configuration validation failed for account id={} name='{}': missing {} (code={}).",
             account.getId(),
             StringUtils.hasText(account.getName()) ? account.getName() : "(unnamed)",
-            fieldDescription
+            fieldDescription,
+            error.code()
         );
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, errorMessage);
+        recordWorkerValidationFailure(account, error);
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, error.apiMessage());
+    }
+
+    private void recordWorkerValidationFailure(FacebookAccount account, FacebookWorkerValidationError error) {
+        LocalDateTime now = LocalDateTime.now();
+        account.setWorkerLastValidationAt(now);
+        account.setWorkerLastValidationErrorCode(error.code());
+        account.setWorkerLastValidationErrorDetail(error.apiMessage());
+        repository.save(account);
+    }
+
+    private void recordWorkerValidationSuccess(FacebookAccount account) {
+        LocalDateTime now = LocalDateTime.now();
+        account.setWorkerLastValidationAt(now);
+        if (
+            account.getWorkerLastValidationErrorCode() != null ||
+            account.getWorkerLastValidationErrorDetail() != null
+        ) {
+            account.setWorkerLastValidationErrorCode(null);
+            account.setWorkerLastValidationErrorDetail(null);
+        }
+        repository.save(account);
     }
 
     private static String trim(String value) {

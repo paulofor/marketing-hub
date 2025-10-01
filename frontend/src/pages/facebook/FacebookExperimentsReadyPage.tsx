@@ -15,7 +15,6 @@ import {
 import PageTitle from "../../components/PageTitle";
 import { useFacebookReadyExperiments } from "../../api/useFacebookReadyExperiments";
 import { useFacebookConfigurationStatus } from "../../api/useFacebookConfigurationStatus";
-import FacebookAutomationAlerts from "../../components/FacebookAutomationAlerts";
 import "./FacebookExperimentsReadyPage.css";
 import { getMissingConfigurationLabel } from "./missingConfigurationLabels";
 
@@ -54,7 +53,6 @@ export default function FacebookExperimentsReadyPage() {
           </div>
         </div>
       ) : null}
-      <FacebookAutomationAlerts status={configuration} />
       <div className="experiments-ready-toolbar">
         <span className="experiments-ready-toolbar-title">
           <Flag size={18} className="text-primary" />

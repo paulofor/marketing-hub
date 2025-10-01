@@ -543,7 +543,10 @@ export default function FacebookAccountsPage() {
               </div>
               <div className="row g-3">
                 <div className="col-12">
-                  <label className="form-label">Nome da conta</label>
+                  <label className="form-label">
+                    Nome da conta
+                    <RequiredMark />
+                  </label>
                   <input
                     className="form-control"
                     placeholder="Nome da conta"
@@ -580,7 +583,10 @@ export default function FacebookAccountsPage() {
                   </div>
                 </div>
                 <div className="col-12 col-md-6">
-                  <label className="form-label">ID do aplicativo (App ID)</label>
+                  <label className="form-label">
+                    ID do aplicativo (App ID)
+                    <RequiredMark />
+                  </label>
                   <input
                     className="form-control"
                     placeholder="ID do aplicativo vinculado ao Business Manager"
@@ -595,7 +601,10 @@ export default function FacebookAccountsPage() {
                   />
                 </div>
                 <div className="col-12 col-md-6">
-                  <label className="form-label">ID do aplicativo vinculado ao Business Manager</label>
+                  <label className="form-label">
+                    ID do aplicativo vinculado ao Business Manager
+                    <RequiredMark />
+                  </label>
                   <input
                     className="form-control"
                     placeholder="ID do aplicativo no Business Manager"
@@ -610,7 +619,10 @@ export default function FacebookAccountsPage() {
                   />
                 </div>
                 <div className="col-12 col-md-6">
-                  <label className="form-label">Segredo do aplicativo (App Secret)</label>
+                  <label className="form-label">
+                    Segredo do aplicativo (App Secret)
+                    <RequiredMark />
+                  </label>
                   <input
                     type="password"
                     className="form-control"
@@ -934,7 +946,10 @@ export default function FacebookAccountsPage() {
                   </div>
                 </div>
                 <div className="col-12 col-md-6">
-                  <label className="form-label">ID do usuário autorizado</label>
+                  <label className="form-label">
+                    ID do usuário autorizado
+                    <RequiredMark />
+                  </label>
                   <input
                     className="form-control"
                     placeholder="ID do usuário do Facebook"
@@ -949,7 +964,10 @@ export default function FacebookAccountsPage() {
                   />
                 </div>
                 <div className="col-12 col-md-6">
-                  <label className="form-label">Nome do usuário autorizado</label>
+                  <label className="form-label">
+                    Nome do usuário autorizado
+                    <RequiredMark />
+                  </label>
                   <input
                     className="form-control"
                     placeholder="Nome completo"
@@ -964,7 +982,10 @@ export default function FacebookAccountsPage() {
                   />
                 </div>
                 <div className="col-12 col-md-6">
-                  <label className="form-label">E-mail do usuário autorizado</label>
+                  <label className="form-label">
+                    E-mail do usuário autorizado
+                    <RequiredMark />
+                  </label>
                   <input
                     type="email"
                     className="form-control"

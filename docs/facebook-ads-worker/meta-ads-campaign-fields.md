@@ -28,6 +28,12 @@ Opcional. Informe se a campanha fará parte de um experimento A/B e qual variant
 ### Status inicial
 Define se a campanha será criada como **Ativa**, **Em rascunho** ou **Pausada**. Útil para processos que exigem revisão antes da publicação.
 
+### Rastreabilidade com planejamento
+Ao automatizar a criação pelo `facebook-ads-worker`, registre o identificador do
+experimento aprovado e da conta de Facebook utilizada. Esses valores alimentam
+as colunas `facebook_ads_campaign.experiment_id` e
+`facebook_ads_campaign.facebook_account_id`, garantindo auditoria de origem.
+
 ## 2. Configurações no nível de Conjunto de Anúncios
 
 ### Nome do conjunto de anúncios

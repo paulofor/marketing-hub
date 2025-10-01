@@ -123,9 +123,14 @@ para o backend.
 | `name` | `Experiment.name` | Replicado para manter rastreabilidade entre backend e Facebook |
 | `objective` | Constante | Valor fixo `OUTCOME_TRAFFIC` |
 | `budgetMode` | Constante | Valor fixo `CAMPAIGN` até que o backend passe a enviar planejamento detalhado |
+| `experimentId` | `Experiment.id` | Garante vínculo direto com o experimento que originou a campanha |
+| `facebookAccountId` | `worker-config.accountId` | Mantém rastreabilidade com a conta utilizada pelo worker |
 
 ## Observações
 
+* O payload enviado ao backend agora inclui `experimentId` e `facebookAccountId`,
+  permitindo que a tabela `facebook_ads_campaign` mantenha chaves estrangeiras
+  para rastreabilidade e auditoria do fluxo automatizado.
 * As tabelas `facebook_ads_ad_set`, `facebook_ads_ad` e entidades auxiliares já
   estão preparadas no backend, mas ainda não recebem dados adicionais além do
   identificador da campanha. O enriquecimento com segmentação detalhada, criativos

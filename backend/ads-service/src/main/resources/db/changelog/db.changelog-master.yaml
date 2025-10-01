@@ -137,3 +137,6 @@ databaseChangeLog:
   - include:
       file: V2026_03_20__extend_fb_account_worker_config.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2026_04_05__link_facebook_ads_campaign_to_experiment_and_account.sql
+      relativeToChangelogFile: true

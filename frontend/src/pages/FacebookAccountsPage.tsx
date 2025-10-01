@@ -36,6 +36,7 @@ interface AccountFormState {
   appId: string;
   businessManagerAppId: string;
   appSecret: string;
+  appSecretKept: boolean;
   tokenRenewalEnabled: boolean;
   adAccountId: string;
   defaultWebsiteUrl: string;
@@ -54,6 +55,7 @@ interface PageFormState {
 
 const BRAZILIAN_REAL = "BRL";
 const BRAZIL = "BR";
+const MASKED_APP_SECRET_PLACEHOLDER = "*****";
 
 const emptyFinancialStrategyForm: FinancialStrategyFormState = {
   dailyBudget: "",
@@ -72,6 +74,7 @@ const emptyAccountForm: AccountFormState = {
   appId: "",
   businessManagerAppId: "",
   appSecret: "",
+  appSecretKept: false,
   tokenRenewalEnabled: false,
   adAccountId: "",
   defaultWebsiteUrl: "",
@@ -300,8 +303,11 @@ export default function FacebookAccountsPage() {
     };
     if (accountForm.clearAppSecret) {
       payload.appSecret = null;
-    } else if (accountForm.appSecret.trim()) {
-      payload.appSecret = accountForm.appSecret.trim();
+    } else if (!accountForm.appSecretKept) {
+      const trimmedSecret = accountForm.appSecret.trim();
+      if (trimmedSecret) {
+        payload.appSecret = trimmedSecret;
+      }
     }
     const mutation = isEditingAccount ? updateAccountMutation : createAccountMutation;
     mutation.mutate(payload, {
@@ -487,6 +493,7 @@ export default function FacebookAccountsPage() {
                                   businessManagerAppId:
                                     account.businessManagerAppId ?? "",
                                   appSecret: "",
+                                  appSecretKept: Boolean(account.hasAppSecret),
                                   tokenRenewalEnabled: Boolean(account.tokenRenewalEnabled),
                                   adAccountId: account.adAccountId ?? "",
                                   defaultWebsiteUrl: account.defaultWebsiteUrl ?? "",
@@ -612,11 +619,26 @@ export default function FacebookAccountsPage() {
                         ? "Informe um novo segredo para atualizar"
                         : "Cole o segredo do aplicativo"
                     }
-                    value={accountForm.appSecret}
+                    value={
+                      accountForm.appSecretKept
+                        ? MASKED_APP_SECRET_PLACEHOLDER
+                        : accountForm.appSecret
+                    }
+                    onFocus={() => {
+                      if (accountForm.appSecretKept) {
+                        setAccountForm((current) => ({
+                          ...current,
+                          appSecret: "",
+                          appSecretKept: false,
+                          clearAppSecret: false,
+                        }));
+                      }
+                    }}
                     onChange={(event) =>
                       setAccountForm((current) => ({
                         ...current,
                         appSecret: event.target.value,
+                        appSecretKept: false,
                         clearAppSecret: false,
                       }))
                     }
@@ -630,11 +652,30 @@ export default function FacebookAccountsPage() {
                         id="clear-app-secret"
                         checked={accountForm.clearAppSecret}
                         onChange={(event) =>
-                          setAccountForm((current) => ({
-                            ...current,
-                            clearAppSecret: event.target.checked,
-                            appSecret: event.target.checked ? "" : current.appSecret,
-                          }))
+                          setAccountForm((current) => {
+                            const checked = event.target.checked;
+                            if (checked) {
+                              return {
+                                ...current,
+                                clearAppSecret: true,
+                                appSecret: "",
+                                appSecretKept: false,
+                              };
+                            }
+                            const shouldRestoreMask =
+                              Boolean(accountBeingEdited?.hasAppSecret) &&
+                              !current.appSecret;
+                            return {
+                              ...current,
+                              clearAppSecret: false,
+                              appSecret: shouldRestoreMask
+                                ? ""
+                                : current.appSecret,
+                              appSecretKept: shouldRestoreMask
+                                ? true
+                                : current.appSecretKept,
+                            };
+                          })
                         }
                         disabled={isAccountMutationPending}
                       />

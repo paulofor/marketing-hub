@@ -1,5 +1,7 @@
 package com.marketinghub.facebookads;
 
+import com.marketinghub.ads.FacebookAccount;
+import com.marketinghub.experiment.Experiment;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,6 +28,14 @@ public class FacebookAdsCampaign {
 
     @Column(name = "ad_account_id", nullable = false)
     private String adAccountId;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "experiment_id", nullable = false)
+    private Experiment experiment;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "facebook_account_id", nullable = false)
+    private FacebookAccount facebookAccount;
 
     @Column(nullable = false)
     private String name;

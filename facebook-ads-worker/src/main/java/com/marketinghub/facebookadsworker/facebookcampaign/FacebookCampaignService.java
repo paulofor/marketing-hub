@@ -220,7 +220,15 @@ public class FacebookCampaignService {
                 adSetId,
                 creativeId
             ));
-            CreateCampaignRequest req = new CreateCampaignRequest(campaignId, config.adAccountId(), exp.name(), "OUTCOME_TRAFFIC", "CAMPAIGN");
+            CreateCampaignRequest req = new CreateCampaignRequest(
+                campaignId,
+                config.adAccountId(),
+                exp.name(),
+                "OUTCOME_TRAFFIC",
+                "CAMPAIGN",
+                exp.id(),
+                config.accountId()
+            );
             String createCampaignUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns");
             LOGGER.info(
                 "Reporting Facebook campaign creation to backend: url={}, params={}, payload={}",
@@ -310,7 +318,15 @@ public class FacebookCampaignService {
     }
 
     public record Experiment(long id, String name, String pageId) {}
-    public record CreateCampaignRequest(String id, String adAccountId, String name, String objective, String budgetMode) {}
+    public record CreateCampaignRequest(
+        String id,
+        String adAccountId,
+        String name,
+        String objective,
+        String budgetMode,
+        Long experimentId,
+        Long facebookAccountId
+    ) {}
 
     private Creative resolveCreative(long experimentId) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/creatives");

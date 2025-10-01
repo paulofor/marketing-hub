@@ -1,6 +1,7 @@
 package com.marketinghub.facebookads.web;
 
 import com.marketinghub.ads.AdsServiceApplication;
+import com.marketinghub.ads.FacebookAccountRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.funnel.SalesFunnel;
 import com.marketinghub.hypothesis.Hypothesis;
@@ -39,6 +40,8 @@ class FacebookAdsCampaignControllerTest {
     ExperimentService experimentService;
     @MockBean
     com.marketinghub.facebookads.FacebookAdsCampaignRepository campaignRepository;
+    @MockBean
+    FacebookAccountRepository facebookAccountRepository;
 
     @Test
     void listExperimentsByStatus() throws Exception {

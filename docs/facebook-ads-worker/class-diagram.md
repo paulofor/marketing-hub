@@ -106,6 +106,8 @@ classDiagram
         +name : String
         +objective : String
         +budgetMode : BudgetMode
+        +experimentId : Long
+        +facebookAccountId : Long
     }
 
     class FacebookAdsCampaign {
@@ -120,6 +122,8 @@ classDiagram
         +dailyBudgetMinor : Long
         +lifetimeBudgetMinor : Long
         +apiVersion : String
+        +experiment : Experiment
+        +facebookAccount : FacebookAccount
         +specialAdCategories : Set<SpecialAdCategory>
         +specialAdCountries : Set<String>
         +createdAt : Instant
@@ -166,6 +170,8 @@ classDiagram
     FacebookAdsCampaign --> FacebookAdStatus
     FacebookAdsCampaign --> BudgetMode
     FacebookAdsCampaign --> SpecialAdCategory
+    FacebookAdsCampaign --> Experiment
+    FacebookAdsCampaign --> FacebookAccount
     FacebookCampaignService ..> UrlUtils : compõe URLs do backend
     FacebookTokenRenewalScheduler --> FacebookTokenRenewalService : agenda renovação
     FacebookTokenRenewalService --> FacebookAdsService : renova token
@@ -197,7 +203,9 @@ classDiagram
   `/api/accounts/facebook/worker-config`, permitindo que os serviços leiam as
   credenciais e parâmetros padrão preenchidos na interface web.
 * `CreateCampaignRequest` representa o payload enviado ao backend contendo os
-  campos mínimos para materializar a entidade de campanha.
+  campos mínimos para materializar a entidade de campanha, incluindo os
+  identificadores do experimento e da conta de Facebook responsáveis pela
+  geração automática.
 * `FacebookAdsCampaign` é a entidade JPA do backend responsável por armazenar a
   campanha criada com seus metadados básicos e enums auxiliares.
 * `UrlUtils` garante a composição correta das URLs ao concatenar `base-url`,

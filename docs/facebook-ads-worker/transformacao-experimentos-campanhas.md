@@ -70,10 +70,12 @@ consulta novamente o backend antes de atualizar o token em memória.
 ### 3. Persistência no backend
 
 Após concluir as chamadas à Graph API, o worker envia um
-`CreateCampaignRequest` para o backend com os campos mínimos necessários para
-registrar a campanha na tabela `facebook_ads_campaign`. A chamada utiliza o
-mesmo nome do experimento e preenche `objective` e `budgetMode` com constantes
-(`OUTCOME_TRAFFIC` e `CAMPAIGN`) ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L125-L132), [FacebookAdsCampaignController.java](../../backend/ads-service/src/main/java/com/marketinghub/facebookads/web/FacebookAdsCampaignController.java#L39-L57)).
+`CreateCampaignRequest` para o backend com os campos necessários para registrar
+a campanha na tabela `facebook_ads_campaign`. Além dos atributos já utilizados
+(`id`, `adAccountId`, `objective`, `budgetMode`), o payload agora leva o
+`experimentId` e o `facebookAccountId`, garantindo chaves estrangeiras para o
+planejamento que originou a campanha
+([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L125-L136), [FacebookAdsCampaignController.java](../../backend/ads-service/src/main/java/com/marketinghub/facebookads/web/FacebookAdsCampaignController.java#L39-L66)).
 
 ## Mapeamento de campos
 
@@ -91,6 +93,8 @@ mesmo nome do experimento e preenche `objective` e `budgetMode` com constantes
 | Resposta da Graph API (`id`) | `CreateCampaignRequest.id` | Persistido como identificador principal da campanha ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L125-L132)) |
 | Constante `OUTCOME_TRAFFIC` | `Graph API - objective` e `CreateCampaignRequest.objective` | Objetivo padrão até existir planejamento específico |
 | Constante `CAMPAIGN` | `CreateCampaignRequest.budgetMode` | Modo de orçamento usado atualmente pelo backend |
+| `Experiment.id` | `CreateCampaignRequest.experimentId` | Usado para preencher a FK `facebook_ads_campaign.experiment_id` |
+| `FacebookWorkerConfiguration.accountId` | `CreateCampaignRequest.facebookAccountId` | Alimenta a FK `facebook_ads_campaign.facebook_account_id` |
 
 ## Informações de experimento ainda não utilizadas
 

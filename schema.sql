@@ -296,6 +296,8 @@ CREATE TABLE facebook_ads_campaign (
   id CHAR(36) NOT NULL,
   external_id VARCHAR(64),
   ad_account_id VARCHAR(64) NOT NULL,
+  experiment_id BIGINT NOT NULL,
+  facebook_account_id BIGINT NOT NULL,
   name VARCHAR(255) NOT NULL,
   objective VARCHAR(64) NOT NULL,
   status ENUM('PAUSED','ACTIVE','ARCHIVED','DELETED') NOT NULL DEFAULT 'PAUSED',
@@ -305,7 +307,9 @@ CREATE TABLE facebook_ads_campaign (
   api_version VARCHAR(16),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id)
+  PRIMARY KEY (id),
+  CONSTRAINT fk_facebook_ads_campaign_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id),
+  CONSTRAINT fk_facebook_ads_campaign_account FOREIGN KEY (facebook_account_id) REFERENCES fb_account(id)
 );
 
 CREATE TABLE facebook_ads_campaign_special_ad_category (

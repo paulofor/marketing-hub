@@ -1,28 +1,36 @@
 package com.marketinghub.facebookads.web;
 
+import com.marketinghub.ads.FacebookAccount;
+import com.marketinghub.ads.FacebookAccountRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.facebookads.BudgetMode;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookAdsCampaignRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/api/facebook-campaigns")
 public class FacebookAdsCampaignController {
     private final ExperimentService experimentService;
     private final FacebookAdsCampaignRepository campaignRepository;
+    private final FacebookAccountRepository accountRepository;
 
     public FacebookAdsCampaignController(ExperimentService experimentService,
-                                         FacebookAdsCampaignRepository campaignRepository) {
+                                         FacebookAdsCampaignRepository campaignRepository,
+                                         FacebookAccountRepository accountRepository) {
         this.experimentService = experimentService;
         this.campaignRepository = campaignRepository;
+        this.accountRepository = accountRepository;
     }
 
     @GetMapping("/experiments-ready")
@@ -44,12 +52,24 @@ public class FacebookAdsCampaignController {
 
     @PostMapping
     public FacebookAdsCampaign create(@RequestBody CreateCampaignRequest req) {
+        Experiment experiment;
+        try {
+            experiment = experimentService.get(req.experimentId());
+        } catch (NoSuchElementException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Experiment not found: " + req.experimentId(), ex);
+        }
+        FacebookAccount account = accountRepository.findById(req.facebookAccountId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Facebook account not found: " + req.facebookAccountId()));
         FacebookAdsCampaign campaign = new FacebookAdsCampaign();
         campaign.setId(req.id());
         campaign.setAdAccountId(req.adAccountId());
         campaign.setName(req.name());
         campaign.setObjective(req.objective());
         campaign.setBudgetMode(req.budgetMode());
+        campaign.setExperiment(experiment);
+        campaign.setFacebookAccount(account);
         return campaignRepository.save(campaign);
     }
 
@@ -113,5 +133,7 @@ public class FacebookAdsCampaignController {
             String adAccountId,
             String name,
             String objective,
-            BudgetMode budgetMode) {}
+            BudgetMode budgetMode,
+            Long experimentId,
+            Long facebookAccountId) {}
 }

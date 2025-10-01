@@ -325,6 +325,8 @@ allow variants to be created before an experiment is defined.
 - `id` CHAR(36) PRIMARY KEY
 - `external_id` VARCHAR(64)
 - `ad_account_id` VARCHAR(64) NOT NULL
+- `experiment_id` BIGINT NOT NULL → FK `experiment.id`
+- `facebook_account_id` BIGINT NOT NULL → FK `fb_account.id`
 - `name` VARCHAR(255) NOT NULL
 - `objective` VARCHAR(64) NOT NULL
 - `status` ENUM(PAUSED,ACTIVE,ARCHIVED,DELETED) DEFAULT "PAUSED"

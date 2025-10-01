@@ -11,6 +11,8 @@ para navegar entre as entidades citadas.
 - Alguns **pré-requisitos obrigatórios** (ID da conta de anúncios, token,
   página e CTA padrão etc.) não constam na lista original, mas são carregados a
   partir de `FacebookWorkerConfigurationClient` e das entidades `fb_account`.
+- O backend agora persiste chaves estrangeiras para o experimento e a conta de
+  Facebook que originaram cada campanha, viabilizando auditoria ponta a ponta.
 - Há **campos planejados** no documento que ainda não são enviados pelo worker
   nem possuem suporte completo no banco (ex.: teste A/B, limites de gasto,
   segmentações avançadas).
@@ -25,6 +27,7 @@ para navegar entre as entidades citadas.
 | --- | --- | --- |
 | Nome da campanha | Derivado de `Experiment.name` e replicado em campanha, conjunto, criativo e anúncio para rastreabilidade. | Persistido em `facebook_ads_campaign.name` (ver `FacebookAdsCampaign` no diagrama). |
 | Objetivo | Worker envia sempre `OUTCOME_TRAFFIC`; demais opções ainda não foram expostas. | `facebook_ads_campaign.objective`; origem em `CreateCampaignRequest.objective`. |
+| Vínculo com planejamento | Novo payload inclui `experimentId` e `facebookAccountId`, garantindo rastreabilidade de origem. | `facebook_ads_campaign.experiment_id` → `experiment.id`; `facebook_ads_campaign.facebook_account_id` → `fb_account.id`. |
 | Tipo de compra | Não enviado atualmente; ausência de coluna `buying_type`. | Não implementado em `FacebookAdsCampaign`. |
 | Categoria especial | Enviada como lista vazia; países especiais também não são coletados. | Tabelas/tipos `facebook_ads_campaign.specialAdCategories` e `specialAdCountries`. |
 | Limite de gasto da campanha | Não manipulado (`spending_limit` não enviado). | `dailyBudgetMinor` / `lifetimeBudgetMinor` permanecem nulos. |

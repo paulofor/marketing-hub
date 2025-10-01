@@ -225,6 +225,7 @@ public class FacebookAccountControllerTest {
             .build());
 
         mockMvc.perform(get("/api/accounts/facebook/worker-config"))
-            .andExpect(status().isBadRequest());
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("Facebook worker account is missing ad account id"));
     }
 }

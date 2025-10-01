@@ -106,7 +106,8 @@ flowchart TD
 | `status` | Constante | `PAUSED` |
 | `access_token` | Conta configurada (`worker-config.accessToken`) | Token com permissão para o Ad Account |
 
-* **Resposta tratada:** o identificador é armazenado apenas para auditoria de execução (não é persistido no backend ainda).
+* **Resposta tratada:** o identificador alimenta o payload enviado ao backend,
+  mantendo o vínculo entre anúncio, conjunto e criativo na base própria.
 
 ## 6. Persistência da campanha no backend
 
@@ -125,16 +126,21 @@ para o backend.
 | `budgetMode` | Constante | Valor fixo `CAMPAIGN` até que o backend passe a enviar planejamento detalhado |
 | `experimentId` | `Experiment.id` | Garante vínculo direto com o experimento que originou a campanha |
 | `facebookAccountId` | `worker-config.accountId` | Mantém rastreabilidade com a conta utilizada pelo worker |
+| `adSet.id` | Resposta da Graph API (ad set) | Persistido como `facebook_ads_ad_set.id` |
+| `adSet.targetCountry` | `worker-config.adSetTargetCountry` | Serializado para JSON em `facebook_ads_ad_set.targeting_json` |
+| `adSet.pageId` | `worker-config.defaultPageId` ou `Experiment.pageId` | Serializado como `promoted_object_json` |
+| `adCreative.id` | Resposta da Graph API (criativo) | Persistido como `facebook_ads_ad_creative.id` |
+| `adCreative.websiteUrl` | Configuração do worker ou criativo aprovado | Serializado em `link_data_json` |
+| `ad.id` | Resposta da Graph API (anúncio) | Persistido como `facebook_ads_ad.id` e vinculado ao ad set/criativo salvos |
 
 ## Observações
 
-* O payload enviado ao backend agora inclui `experimentId` e `facebookAccountId`,
-  permitindo que a tabela `facebook_ads_campaign` mantenha chaves estrangeiras
-  para rastreabilidade e auditoria do fluxo automatizado.
-* As tabelas `facebook_ads_ad_set`, `facebook_ads_ad` e entidades auxiliares já
-  estão preparadas no backend, mas ainda não recebem dados adicionais além do
-  identificador da campanha. O enriquecimento com segmentação detalhada, criativos
-  aprovados pelo usuário e UTMs permanece listado em [pendencias.md](./pendencias.md).
+* O payload enviado ao backend inclui `experimentId`, `facebookAccountId` e as
+  estruturas completas de `adSet`, `adCreative` e `ad`, garantindo que todas as
+  tabelas `facebook_ads_*` recebam os identificadores gerados na Graph API.
+* A persistência do ad set replica a segmentação simplificada utilizada hoje
+  (`geo_locations.countries`) e o `page_id` promovido. Evoluções futuras podem
+  complementar esse JSON com segmentações ricas e planejamento de orçamento.
 * A composição das URLs dos endpoints do backend utiliza `UrlUtils.joinPath`
   para garantir que `backend.base-url`, `backend.api-prefix` e o caminho do
   recurso não gerem barras duplicadas.

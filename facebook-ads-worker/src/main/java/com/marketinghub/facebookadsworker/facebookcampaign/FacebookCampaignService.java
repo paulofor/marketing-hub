@@ -193,7 +193,7 @@ public class FacebookCampaignService {
             String resolvedInstagramActorId = coalesce(creative.instagramUserId(), config.defaultInstagramActorId());
 
             String campaignId = facebookAdsService.createCampaign(config.adAccountId(), exp.name());
-            String adSetId = facebookAdsService.createAdSet(config.adAccountId(), new FacebookAdsService.AdSetRequest(
+            FacebookAdsService.AdSetRequest adSetRequest = new FacebookAdsService.AdSetRequest(
                 exp.name() + " - Ad Set",
                 campaignId,
                 config.adSetDailyBudget(),
@@ -204,8 +204,9 @@ public class FacebookCampaignService {
                 config.adSetBidAmount(),
                 resolvedPageId,
                 config.adSetTargetCountry()
-            ));
-            String creativeId = facebookAdsService.createAdCreative(config.adAccountId(), new FacebookAdsService.AdCreativeRequest(
+            );
+            String adSetId = facebookAdsService.createAdSet(config.adAccountId(), adSetRequest);
+            FacebookAdsService.AdCreativeRequest adCreativeRequest = new FacebookAdsService.AdCreativeRequest(
                 exp.name() + " - Creative",
                 resolvedPageId,
                 resolvedInstagramActorId,
@@ -214,12 +215,14 @@ public class FacebookCampaignService {
                 resolvedCallToAction,
                 creative.headline(),
                 creative.description()
-            ));
-            facebookAdsService.createAd(config.adAccountId(), new FacebookAdsService.AdRequest(
+            );
+            String creativeId = facebookAdsService.createAdCreative(config.adAccountId(), adCreativeRequest);
+            FacebookAdsService.AdRequest adRequest = new FacebookAdsService.AdRequest(
                 exp.name() + " - Ad",
                 adSetId,
                 creativeId
-            ));
+            );
+            String adId = facebookAdsService.createAd(config.adAccountId(), adRequest);
             CreateCampaignRequest req = new CreateCampaignRequest(
                 campaignId,
                 config.adAccountId(),
@@ -227,7 +230,36 @@ public class FacebookCampaignService {
                 "OUTCOME_TRAFFIC",
                 "CAMPAIGN",
                 exp.id(),
-                config.accountId()
+                config.accountId(),
+                new CreateCampaignRequest.AdSet(
+                    adSetId,
+                    adSetRequest.name(),
+                    adSetRequest.billingEvent(),
+                    adSetRequest.optimizationGoal(),
+                    adSetRequest.bidStrategy(),
+                    adSetRequest.bidAmount(),
+                    adSetRequest.dailyBudget(),
+                    null,
+                    adSetRequest.targetCountry(),
+                    adSetRequest.destinationType(),
+                    adSetRequest.pageId()
+                ),
+                new CreateCampaignRequest.AdCreative(
+                    creativeId,
+                    adCreativeRequest.pageId(),
+                    adCreativeRequest.instagramActorId(),
+                    adCreativeRequest.websiteUrl(),
+                    adCreativeRequest.message(),
+                    adCreativeRequest.callToActionType(),
+                    adCreativeRequest.headline(),
+                    adCreativeRequest.description()
+                ),
+                new CreateCampaignRequest.Ad(
+                    adId,
+                    adRequest.name(),
+                    adRequest.adSetId(),
+                    adRequest.creativeId()
+                )
             );
             String createCampaignUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns");
             LOGGER.info(
@@ -325,8 +357,43 @@ public class FacebookCampaignService {
         String objective,
         String budgetMode,
         Long experimentId,
-        Long facebookAccountId
-    ) {}
+        Long facebookAccountId,
+        AdSet adSet,
+        AdCreative adCreative,
+        Ad ad
+    ) {
+        public record AdSet(
+            String id,
+            String name,
+            String billingEvent,
+            String optimizationGoal,
+            String bidStrategy,
+            String bidAmount,
+            String dailyBudget,
+            String lifetimeBudget,
+            String targetCountry,
+            String destinationType,
+            String pageId
+        ) {}
+
+        public record AdCreative(
+            String id,
+            String pageId,
+            String instagramActorId,
+            String websiteUrl,
+            String message,
+            String callToActionType,
+            String headline,
+            String description
+        ) {}
+
+        public record Ad(
+            String id,
+            String name,
+            String adSetId,
+            String creativeId
+        ) {}
+    }
 
     private Creative resolveCreative(long experimentId) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/creatives");

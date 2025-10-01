@@ -13,10 +13,9 @@ e governança, ainda faltam os itens abaixo, agrupados por tema.
   de constantes.
 - Suportar janelas de veiculação (datas de início/fim) e status da campanha
   (ex.: programada, ativa, pausada).
-- Alimentar o backend com os identificadores de ad set, criativo e anúncio para
-  manter rastreabilidade completa no modelo de dados.
-- As campanhas já registram `experiment_id` e `facebook_account_id`, faltando
-  estender o mesmo nível de rastreabilidade para as demais entidades.
+- Enriquecer `facebook_ads_ad_set`, `facebook_ads_ad_creative` e `facebook_ads_ad`
+  com planejamento completo (orçamento detalhado, segmentações avançadas e UTMs)
+  além dos identificadores básicos já persistidos.
 - Versionar e auditar alterações na configuração do worker (`worker-config`),
   registrando quem atualizou parâmetros sensíveis (token, orçamento padrão,
   página fallback).

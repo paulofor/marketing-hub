@@ -65,7 +65,8 @@ class FacebookCampaignServiceTest {
             WebClient.builder(),
             configurationClient,
             backend.url("/").toString(),
-            "/api"
+            "/api",
+            objectMapper
         );
     }
 
@@ -135,6 +136,32 @@ class FacebookCampaignServiceTest {
 
         RecordedRequest postBackend = backend.takeRequest();
         assertEquals("/api/facebook-campaigns", postBackend.getPath());
+        JsonNode backendPayload = objectMapper.readTree(postBackend.getBody().inputStream());
+        assertEquals("10", backendPayload.get("id").asText());
+        assertEquals("1", backendPayload.get("adAccountId").asText());
+        assertEquals("OUTCOME_TRAFFIC", backendPayload.get("objective").asText());
+        JsonNode adSetNode = backendPayload.get("adSet");
+        assertEquals("20", adSetNode.get("id").asText());
+        assertEquals("Exp - Ad Set", adSetNode.get("name").asText());
+        assertEquals("PAUSED", adSetNode.get("status").asText());
+        assertEquals(2000L, adSetNode.get("dailyBudgetMinor").asLong());
+        assertEquals("IMPRESSIONS", adSetNode.get("billingEvent").asText());
+        assertEquals("LINK_CLICKS", adSetNode.get("optimizationGoal").asText());
+        assertEquals("LOWEST_COST_WITHOUT_CAP", adSetNode.get("bidStrategy").asText());
+        assertEquals(150L, adSetNode.get("bidAmountMinor").asLong());
+        assertEquals("{\"page_id\":\"84\"}", adSetNode.get("promotedObjectJson").asText());
+        assertEquals("{\"geo_locations\":{\"countries\":[\"BR\"]}}", adSetNode.get("targetingJson").asText());
+        JsonNode creativeNode = backendPayload.get("adCreative");
+        assertEquals("30", creativeNode.get("id").asText());
+        assertEquals("84", creativeNode.get("pageId").asText());
+        assertEquals("11", creativeNode.get("instagramUserId").asText());
+        assertEquals("LINK", creativeNode.get("kind").asText());
+        JsonNode adNode = backendPayload.get("ad");
+        assertEquals("40", adNode.get("id").asText());
+        assertEquals("Exp - Ad", adNode.get("name").asText());
+        assertEquals("PAUSED", adNode.get("status").asText());
+        assertEquals("20", adNode.get("adSetId").asText());
+        assertEquals("30", adNode.get("creativeId").asText());
     }
 
     @Test
@@ -277,7 +304,8 @@ class FacebookCampaignServiceTest {
             WebClient.builder(),
             configurationClient,
             backend.url("/").toString(),
-            "/api"
+            "/api",
+            objectMapper
         );
 
         backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\"}]")
@@ -356,7 +384,8 @@ class FacebookCampaignServiceTest {
             WebClient.builder(),
             configurationClient,
             backend.url("/").toString(),
-            "/api"
+            "/api",
+            objectMapper
         );
 
         backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\"}]")

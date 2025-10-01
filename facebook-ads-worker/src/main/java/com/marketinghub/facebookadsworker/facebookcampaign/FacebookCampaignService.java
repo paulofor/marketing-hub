@@ -1,5 +1,7 @@
 package com.marketinghub.facebookadsworker.facebookcampaign;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenExpiredException;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenManager;
 import com.marketinghub.facebookadsworker.FacebookAdsService;
@@ -19,7 +21,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,13 +45,15 @@ public class FacebookCampaignService {
     private final AtomicReference<String> lastExpiredAccessToken;
     private final FacebookAccessTokenManager accessTokenManager;
     private final AtomicBoolean configurationUnavailableWarningLogged;
+    private final ObjectMapper objectMapper;
 
     public FacebookCampaignService(FacebookAdsService facebookAdsService,
                                    FacebookAccessTokenManager accessTokenManager,
                                    WebClient.Builder builder,
                                    FacebookWorkerConfigurationClient configurationClient,
                                    @Value("${backend.base-url:http://localhost:8000}") String backendBaseUrl,
-                                   @Value("${backend.api-prefix:/api}") String apiPrefix) {
+                                   @Value("${backend.api-prefix:/api}") String apiPrefix,
+                                   ObjectMapper objectMapper) {
         this.facebookAdsService = facebookAdsService;
         this.accessTokenManager = accessTokenManager;
         this.backendClient = builder.build();
@@ -59,6 +65,7 @@ public class FacebookCampaignService {
         this.accessTokenExpiryWarningLogged = new AtomicBoolean(false);
         this.lastExpiredAccessToken = new AtomicReference<>(null);
         this.configurationUnavailableWarningLogged = new AtomicBoolean(false);
+        this.objectMapper = objectMapper;
     }
 
     public void createCampaignsFromExperiments() {
@@ -193,7 +200,8 @@ public class FacebookCampaignService {
             String resolvedInstagramActorId = coalesce(creative.instagramUserId(), config.defaultInstagramActorId());
 
             String campaignId = facebookAdsService.createCampaign(config.adAccountId(), exp.name());
-            String adSetId = facebookAdsService.createAdSet(config.adAccountId(), new FacebookAdsService.AdSetRequest(
+
+            FacebookAdsService.AdSetRequest adSetRequest = new FacebookAdsService.AdSetRequest(
                 exp.name() + " - Ad Set",
                 campaignId,
                 config.adSetDailyBudget(),
@@ -204,8 +212,10 @@ public class FacebookCampaignService {
                 config.adSetBidAmount(),
                 resolvedPageId,
                 config.adSetTargetCountry()
-            ));
-            String creativeId = facebookAdsService.createAdCreative(config.adAccountId(), new FacebookAdsService.AdCreativeRequest(
+            );
+            String adSetId = facebookAdsService.createAdSet(config.adAccountId(), adSetRequest);
+
+            FacebookAdsService.AdCreativeRequest adCreativeRequest = new FacebookAdsService.AdCreativeRequest(
                 exp.name() + " - Creative",
                 resolvedPageId,
                 resolvedInstagramActorId,
@@ -214,13 +224,26 @@ public class FacebookCampaignService {
                 resolvedCallToAction,
                 creative.headline(),
                 creative.description()
-            ));
-            facebookAdsService.createAd(config.adAccountId(), new FacebookAdsService.AdRequest(
+            );
+            String creativeId = facebookAdsService.createAdCreative(config.adAccountId(), adCreativeRequest);
+
+            FacebookAdsService.AdRequest adRequest = new FacebookAdsService.AdRequest(
                 exp.name() + " - Ad",
                 adSetId,
                 creativeId
-            ));
-            CreateCampaignRequest req = new CreateCampaignRequest(campaignId, config.adAccountId(), exp.name(), "OUTCOME_TRAFFIC", "CAMPAIGN");
+            );
+            String adId = facebookAdsService.createAd(config.adAccountId(), adRequest);
+
+            CreateCampaignRequest req = new CreateCampaignRequest(
+                campaignId,
+                config.adAccountId(),
+                exp.name(),
+                "OUTCOME_TRAFFIC",
+                "CAMPAIGN",
+                buildAdSetPayload(adSetId, adSetRequest),
+                buildAdCreativePayload(creativeId, adCreativeRequest),
+                buildAdPayload(adId, adRequest)
+            );
             String createCampaignUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns");
             LOGGER.info(
                 "Reporting Facebook campaign creation to backend: url={}, params={}, payload={}",
@@ -310,7 +333,49 @@ public class FacebookCampaignService {
     }
 
     public record Experiment(long id, String name, String pageId) {}
-    public record CreateCampaignRequest(String id, String adAccountId, String name, String objective, String budgetMode) {}
+    public record CreateCampaignRequest(
+        String id,
+        String adAccountId,
+        String name,
+        String objective,
+        String budgetMode,
+        AdSetPayload adSet,
+        AdCreativePayload adCreative,
+        AdPayload ad
+    ) {
+        public record AdSetPayload(
+            String id,
+            String name,
+            String status,
+            Long dailyBudgetMinor,
+            Long lifetimeBudgetMinor,
+            String billingEvent,
+            String optimizationGoal,
+            String bidStrategy,
+            Long bidAmountMinor,
+            String promotedObjectJson,
+            String targetingJson
+        ) {}
+
+        public record AdCreativePayload(
+            String id,
+            String pageId,
+            String instagramUserId,
+            String kind,
+            String linkDataJson,
+            String videoDataJson,
+            String carouselDataJson,
+            String lastPreviewUrl
+        ) {}
+
+        public record AdPayload(
+            String id,
+            String name,
+            String status,
+            String adSetId,
+            String creativeId
+        ) {}
+    }
 
     private Creative resolveCreative(long experimentId) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/creatives");
@@ -371,6 +436,114 @@ public class FacebookCampaignService {
                 ex.getMessage(),
                 ex
             );
+        }
+    }
+
+    private CreateCampaignRequest.AdSetPayload buildAdSetPayload(
+        String adSetId,
+        FacebookAdsService.AdSetRequest request
+    ) {
+        Long dailyBudgetMinor = parseLongOrNull(request.dailyBudget());
+        Long bidAmountMinor = parseLongOrNull(request.bidAmount());
+        String bidStrategy = StringUtils.hasText(request.bidStrategy())
+            ? request.bidStrategy()
+            : "LOWEST_COST_WITHOUT_CAP";
+
+        Map<String, Object> targeting = new HashMap<>();
+        Map<String, Object> geoLocations = new HashMap<>();
+        if (StringUtils.hasText(request.targetCountry())) {
+            geoLocations.put("countries", List.of(request.targetCountry()));
+        } else {
+            geoLocations.put("countries", List.of());
+        }
+        targeting.put("geo_locations", geoLocations);
+
+        String targetingJson = writeJson(targeting);
+        String promotedObjectJson = StringUtils.hasText(request.pageId())
+            ? writeJson(Map.of("page_id", request.pageId()))
+            : null;
+
+        return new CreateCampaignRequest.AdSetPayload(
+            adSetId,
+            request.name(),
+            "PAUSED",
+            dailyBudgetMinor,
+            null,
+            request.billingEvent(),
+            request.optimizationGoal(),
+            bidStrategy,
+            bidAmountMinor,
+            promotedObjectJson,
+            targetingJson
+        );
+    }
+
+    private CreateCampaignRequest.AdCreativePayload buildAdCreativePayload(
+        String creativeId,
+        FacebookAdsService.AdCreativeRequest request
+    ) {
+        Map<String, Object> callToActionValue = Map.of("link", request.websiteUrl());
+        Map<String, Object> callToAction = Map.of(
+            "type",
+            request.callToActionType(),
+            "value",
+            callToActionValue
+        );
+
+        Map<String, Object> linkData = new HashMap<>();
+        linkData.put("link", request.websiteUrl());
+        linkData.put("message", request.message());
+        if (StringUtils.hasText(request.headline())) {
+            linkData.put("name", request.headline());
+        }
+        if (StringUtils.hasText(request.description())) {
+            linkData.put("description", request.description());
+        }
+        linkData.put("call_to_action", callToAction);
+
+        String linkDataJson = writeJson(linkData);
+
+        return new CreateCampaignRequest.AdCreativePayload(
+            creativeId,
+            request.pageId(),
+            request.instagramActorId(),
+            "LINK",
+            linkDataJson,
+            null,
+            null,
+            null
+        );
+    }
+
+    private CreateCampaignRequest.AdPayload buildAdPayload(
+        String adId,
+        FacebookAdsService.AdRequest request
+    ) {
+        return new CreateCampaignRequest.AdPayload(
+            adId,
+            request.name(),
+            "PAUSED",
+            request.adSetId(),
+            request.creativeId()
+        );
+    }
+
+    private String writeJson(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException ex) {
+            throw new IllegalStateException("Failed to serialize payload for backend tracking", ex);
+        }
+    }
+
+    private static Long parseLongOrNull(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException ex) {
+            return null;
         }
     }
 

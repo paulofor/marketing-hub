@@ -6,6 +6,9 @@ import com.marketinghub.funnel.SalesFunnel;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.experiment.service.ExperimentService;
+import com.marketinghub.facebookads.AdCreativeKind;
+import com.marketinghub.facebookads.BudgetMode;
+import com.marketinghub.facebookads.FacebookAdStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -18,6 +21,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -35,10 +40,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class FacebookAdsCampaignControllerTest {
     @Autowired
     MockMvc mockMvc;
+    @Autowired
+    FacebookAdsCampaignController controller;
     @MockBean
     ExperimentService experimentService;
     @MockBean
     com.marketinghub.facebookads.FacebookAdsCampaignRepository campaignRepository;
+    @MockBean
+    com.marketinghub.facebookads.FacebookAdsAdSetRepository adSetRepository;
+    @MockBean
+    com.marketinghub.facebookads.FacebookAdsAdCreativeRepository adCreativeRepository;
+    @MockBean
+    com.marketinghub.facebookads.FacebookAdsAdRepository adRepository;
 
     @Test
     void listExperimentsByStatus() throws Exception {
@@ -86,5 +99,66 @@ class FacebookAdsCampaignControllerTest {
                 .andExpect(jsonPath("$[0].hypothesisTitle").value("Hipótese do Nicho"))
                 .andExpect(jsonPath("$[0].missingConfiguration").isArray())
                 .andExpect(jsonPath("$[0].missingConfiguration").isEmpty());
+    }
+
+    @Test
+    void persistsHierarchyWhenCampaignIsReported() {
+        when(campaignRepository.save(org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(adSetRepository.save(org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(adCreativeRepository.save(org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        FacebookAdsCampaignController.CreateCampaignRequest request =
+                new FacebookAdsCampaignController.CreateCampaignRequest(
+                        "10",
+                        "act_1",
+                        "Campanha",
+                        "OUTCOME_TRAFFIC",
+                        BudgetMode.CAMPAIGN,
+                        new FacebookAdsCampaignController.CreateCampaignRequest.AdSetPayload(
+                                "20",
+                                "Campanha - Ad Set",
+                                FacebookAdStatus.PAUSED,
+                                2000L,
+                                null,
+                                "IMPRESSIONS",
+                                "LINK_CLICKS",
+                                "LOWEST_COST_WITHOUT_CAP",
+                                150L,
+                                "{\"page_id\":\"84\"}",
+                                "{\"geo_locations\":{\"countries\":[\"BR\"]}}"
+                        ),
+                        new FacebookAdsCampaignController.CreateCampaignRequest.AdCreativePayload(
+                                "30",
+                                "84",
+                                "11",
+                                AdCreativeKind.LINK,
+                                "{}",
+                                null,
+                                null,
+                                null
+                        ),
+                        new FacebookAdsCampaignController.CreateCampaignRequest.AdPayload(
+                                "40",
+                                "Campanha - Ad",
+                                FacebookAdStatus.PAUSED,
+                                "20",
+                                "30"
+                        )
+                );
+
+        controller.create(request);
+
+        verify(adSetRepository).save(argThat(adSet ->
+                adSet.getId().equals("20") && adSet.getCampaign() != null && "10".equals(adSet.getCampaign().getId())));
+        verify(adCreativeRepository).save(argThat(creative -> creative.getId().equals("30")));
+        verify(adRepository).save(argThat(ad ->
+                ad.getId().equals("40")
+                        && ad.getAdSet() != null
+                        && ad.getAdSet().getId().equals("20")
+                        && ad.getCreative() != null
+                        && ad.getCreative().getId().equals("30")));
     }
 }

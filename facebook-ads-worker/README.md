@@ -26,8 +26,9 @@ As chamadas ao backend utilizam o prefixo `/api`. O worker consome
 "nenhum experimento disponível" para evitar falhas no agendamento. Falhas de
 conexão ao recuperar os experimentos são registradas em log e ignoradas para
 que o agendamento continue saudável. Após criar campanha, conjunto, criativo e
-anúncio, o worker persiste o identificador da campanha via
-`POST /api/facebook-campaigns`. Todas as chamadas HTTP ao backend devem
+anúncio, o worker envia para o backend os identificadores da campanha, do ad set,
+do criativo e do anúncio (incluindo os metadados necessários para rastreabilidade)
+via `POST /api/facebook-campaigns`. Todas as chamadas HTTP ao backend devem
 registrar a URL completa, parâmetros, payload e resposta recebida para
 acelerar o diagnóstico de incidentes em produção.
 

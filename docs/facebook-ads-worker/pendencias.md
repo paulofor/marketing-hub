@@ -13,8 +13,6 @@ e governança, ainda faltam os itens abaixo, agrupados por tema.
   de constantes.
 - Suportar janelas de veiculação (datas de início/fim) e status da campanha
   (ex.: programada, ativa, pausada).
-- Alimentar o backend com os identificadores de ad set, criativo e anúncio para
-  manter rastreabilidade completa no modelo de dados.
 - Versionar e auditar alterações na configuração do worker (`worker-config`),
   registrando quem atualizou parâmetros sensíveis (token, orçamento padrão,
   página fallback).

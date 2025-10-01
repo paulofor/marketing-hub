@@ -106,6 +106,41 @@ classDiagram
         +name : String
         +objective : String
         +budgetMode : BudgetMode
+        +adSet : AdSetPayload
+        +adCreative : AdCreativePayload
+        +ad : AdPayload
+    }
+
+    class AdSetPayload {
+        <<record>>
+        +id : String
+        +name : String
+        +status : String
+        +dailyBudgetMinor : Long
+        +billingEvent : String
+        +optimizationGoal : String
+        +bidStrategy : String
+        +bidAmountMinor : Long
+        +promotedObjectJson : String
+        +targetingJson : String
+    }
+
+    class AdCreativePayload {
+        <<record>>
+        +id : String
+        +pageId : String
+        +instagramUserId : String
+        +kind : String
+        +linkDataJson : String
+    }
+
+    class AdPayload {
+        <<record>>
+        +id : String
+        +name : String
+        +status : String
+        +adSetId : String
+        +creativeId : String
     }
 
     class FacebookAdsCampaign {
@@ -162,6 +197,12 @@ classDiagram
     FacebookAdsService --> AdCreativeRequest
     FacebookAdsService --> AdRequest
     FacebookCampaignService --> CreateCampaignRequest : monta payload do backend
+    CreateCampaignRequest --> AdSetPayload
+    CreateCampaignRequest --> AdCreativePayload
+    CreateCampaignRequest --> AdPayload
+    AdSetPayload ..> FacebookAdsAdSet
+    AdCreativePayload ..> FacebookAdsAdCreative
+    AdPayload ..> FacebookAdsAd
     CreateCampaignRequest ..> FacebookAdsCampaign : persiste entidade
     FacebookAdsCampaign --> FacebookAdStatus
     FacebookAdsCampaign --> BudgetMode
@@ -197,7 +238,8 @@ classDiagram
   `/api/accounts/facebook/worker-config`, permitindo que os serviços leiam as
   credenciais e parâmetros padrão preenchidos na interface web.
 * `CreateCampaignRequest` representa o payload enviado ao backend contendo os
-  campos mínimos para materializar a entidade de campanha.
+  dados necessários para materializar a campanha e registrar os identificadores
+  do conjunto, do criativo e do anúncio gerados na Graph API.
 * `FacebookAdsCampaign` é a entidade JPA do backend responsável por armazenar a
   campanha criada com seus metadados básicos e enums auxiliares.
 * `UrlUtils` garante a composição correta das URLs ao concatenar `base-url`,

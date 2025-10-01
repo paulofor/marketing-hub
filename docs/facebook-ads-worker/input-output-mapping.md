@@ -106,7 +106,7 @@ flowchart TD
 | `status` | Constante | `PAUSED` |
 | `access_token` | Conta configurada (`worker-config.accessToken`) | Token com permissão para o Ad Account |
 
-* **Resposta tratada:** o identificador é armazenado apenas para auditoria de execução (não é persistido no backend ainda).
+* **Resposta tratada:** o identificador do anúncio agora é enviado ao backend para persistência junto ao conjunto e ao criativo correspondentes.
 
 ## 6. Persistência da campanha no backend
 
@@ -123,13 +123,17 @@ para o backend.
 | `name` | `Experiment.name` | Replicado para manter rastreabilidade entre backend e Facebook |
 | `objective` | Constante | Valor fixo `OUTCOME_TRAFFIC` |
 | `budgetMode` | Constante | Valor fixo `CAMPAIGN` até que o backend passe a enviar planejamento detalhado |
+| `adSet` | Resposta da Graph API + configuração da conta | Inclui `id`, status `PAUSED`, orçamento diário, estratégia de lance e `targeting_json` com o país configurado |
+| `adCreative` | Resposta da Graph API + dados do criativo aprovado | Transporta `id`, `pageId`, `instagramUserId`, `kind = LINK` e `linkDataJson` utilizado na criação |
+| `ad` | Resposta da Graph API | Contém `id`, nome com sufixo “- Ad”, status `PAUSED`, além dos vínculos com `adSetId` e `creativeId` |
 
 ## Observações
 
-* As tabelas `facebook_ads_ad_set`, `facebook_ads_ad` e entidades auxiliares já
-  estão preparadas no backend, mas ainda não recebem dados adicionais além do
-  identificador da campanha. O enriquecimento com segmentação detalhada, criativos
-  aprovados pelo usuário e UTMs permanece listado em [pendencias.md](./pendencias.md).
+* As tabelas `facebook_ads_ad_set`, `facebook_ads_ad_creative` e `facebook_ads_ad`
+  passam a receber os identificadores e metadados básicos (targeting, promoted
+  object e `object_story_spec`) enviados pelo worker. O enriquecimento com
+  segmentação detalhada, criativos alternativos aprovados pelo usuário e UTMs
+  permanece listado em [pendencias.md](./pendencias.md).
 * A composição das URLs dos endpoints do backend utiliza `UrlUtils.joinPath`
   para garantir que `backend.base-url`, `backend.api-prefix` e o caminho do
   recurso não gerem barras duplicadas.

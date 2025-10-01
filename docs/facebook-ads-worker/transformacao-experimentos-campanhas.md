@@ -70,10 +70,14 @@ consulta novamente o backend antes de atualizar o token em memória.
 ### 3. Persistência no backend
 
 Após concluir as chamadas à Graph API, o worker envia um
-`CreateCampaignRequest` para o backend com os campos mínimos necessários para
-registrar a campanha na tabela `facebook_ads_campaign`. A chamada utiliza o
-mesmo nome do experimento e preenche `objective` e `budgetMode` com constantes
-(`OUTCOME_TRAFFIC` e `CAMPAIGN`) ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L125-L132), [FacebookAdsCampaignController.java](../../backend/ads-service/src/main/java/com/marketinghub/facebookads/web/FacebookAdsCampaignController.java#L39-L57)).
+`CreateCampaignRequest` para o backend contendo a campanha e os identificadores
+do ad set, do criativo e do anúncio recém-gerados. O payload também leva os
+metadados utilizados para criação (orçamento, segmentação e `object_story_spec`),
+permitindo que o backend materialize toda a hierarquia nas tabelas
+`facebook_ads_campaign`, `facebook_ads_ad_set`, `facebook_ads_ad_creative` e
+`facebook_ads_ad`. A chamada utiliza o mesmo nome do experimento e preenche
+`objective` e `budgetMode` com constantes (`OUTCOME_TRAFFIC` e `CAMPAIGN`)
+([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L202-L245), [FacebookAdsCampaignController.java](../../backend/ads-service/src/main/java/com/marketinghub/facebookads/web/FacebookAdsCampaignController.java#L63-L140)).
 
 ## Mapeamento de campos
 
@@ -88,7 +92,12 @@ mesmo nome do experimento e preenche `objective` e `budgetMode` com constantes
 | `worker-config.defaultInstagramActorId` | `Graph API - object_story_spec.instagram_actor_id` | Opcional, incluído apenas quando configurado ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L112-L118)) |
 | `worker-config.defaultCreativeMessageTemplate` | `Graph API - object_story_spec.link_data.message` | Template com suporte a `%s` para o nome do experimento ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L134-L141)) |
 | `worker-config.defaultWebsiteUrl` | `Graph API - link_data.link` e `call_to_action.value.link` | URL padrão de destino ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L112-L118)) |
-| Resposta da Graph API (`id`) | `CreateCampaignRequest.id` | Persistido como identificador principal da campanha ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L125-L132)) |
+| Resposta da Graph API (`id`) | `CreateCampaignRequest.id` | Persistido como identificador principal da campanha ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L202-L245)) |
+| Resposta da Graph API (`adset.id`) | `CreateCampaignRequest.adSet.id` | Garante rastreabilidade do conjunto no backend ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L202-L246), [FacebookAdsCampaignController.java](../../backend/ads-service/src/main/java/com/marketinghub/facebookads/web/FacebookAdsCampaignController.java#L80-L98)) |
+| Parâmetros do ad set (budget, targeting, promoted object) | `CreateCampaignRequest.adSet.*` | Serializados para manter histórico das configurações utilizadas na Graph API ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L442-L528), [FacebookAdsCampaignController.java](../../backend/ads-service/src/main/java/com/marketinghub/facebookads/web/FacebookAdsCampaignController.java#L80-L98)) |
+| Resposta da Graph API (`adcreative.id`) | `CreateCampaignRequest.adCreative.id` | Rastreia o criativo gerado na Graph API ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L218-L245), [FacebookAdsCampaignController.java](../../backend/ads-service/src/main/java/com/marketinghub/facebookads/web/FacebookAdsCampaignController.java#L100-L114)) |
+| `object_story_spec` utilizado na criação | `CreateCampaignRequest.adCreative.linkDataJson` | Persistido como JSON para auditoria ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L481-L516), [FacebookAdsCampaignController.java](../../backend/ads-service/src/main/java/com/marketinghub/facebookads/web/FacebookAdsCampaignController.java#L100-L114)) |
+| Resposta da Graph API (`ad.id`) | `CreateCampaignRequest.ad.id` | Permite mapear o anúncio às métricas futuras ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L230-L245), [FacebookAdsCampaignController.java](../../backend/ads-service/src/main/java/com/marketinghub/facebookads/web/FacebookAdsCampaignController.java#L116-L140)) |
 | Constante `OUTCOME_TRAFFIC` | `Graph API - objective` e `CreateCampaignRequest.objective` | Objetivo padrão até existir planejamento específico |
 | Constante `CAMPAIGN` | `CreateCampaignRequest.budgetMode` | Modo de orçamento usado atualmente pelo backend |
 

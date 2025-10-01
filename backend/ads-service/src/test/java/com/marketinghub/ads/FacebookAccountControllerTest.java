@@ -228,4 +228,43 @@ public class FacebookAccountControllerTest {
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.message").value("Facebook worker account is missing ad account id"));
     }
+
+    @Test
+    void shouldPersistWorkerValidationErrorsAndClearOnSuccess() throws Exception {
+        repository.deleteAll();
+        FacebookAccount account = repository.save(FacebookAccount.builder()
+            .name("Worker Account")
+            .currency("BRL")
+            .accessToken("worker-token")
+            .defaultWebsiteUrl("https://example.com")
+            .adSetDailyBudget("2000")
+            .adSetBillingEvent("IMPRESSIONS")
+            .adSetOptimizationGoal("LINK_CLICKS")
+            .adSetDestinationType("WEBSITE")
+            .adSetTargetCountry("BR")
+            .workerEnabled(true)
+            .build());
+
+        mockMvc.perform(get("/api/accounts/facebook/worker-config"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("Facebook worker account is missing ad account id"));
+
+        FacebookAccount failed = repository.findById(account.getId()).orElseThrow();
+        assertThat(failed.getWorkerLastValidationAt()).isNotNull();
+        assertThat(failed.getWorkerLastValidationErrorCode()).isEqualTo("AD_ACCOUNT_ID_MISSING");
+        assertThat(failed.getWorkerLastValidationErrorDetail())
+            .isEqualTo("Facebook worker account is missing ad account id");
+
+        failed.setAdAccountId("1234567890");
+        repository.save(failed);
+
+        mockMvc.perform(get("/api/accounts/facebook/worker-config"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.adAccountId").value("1234567890"));
+
+        FacebookAccount succeeded = repository.findById(account.getId()).orElseThrow();
+        assertThat(succeeded.getWorkerLastValidationAt()).isNotNull();
+        assertThat(succeeded.getWorkerLastValidationErrorCode()).isNull();
+        assertThat(succeeded.getWorkerLastValidationErrorDetail()).isNull();
+    }
 }

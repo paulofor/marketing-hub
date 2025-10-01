@@ -15,8 +15,6 @@ import {
   useDeleteFacebookPage,
   useUpdateFacebookPage,
 } from "../api/facebookPageMutations";
-import { useFacebookConfigurationStatus } from "../api/useFacebookConfigurationStatus";
-import FacebookAutomationAlerts from "../components/FacebookAutomationAlerts";
 
 interface FinancialStrategyFormState {
   dailyBudget: string;
@@ -55,6 +53,25 @@ interface PageFormState {
 const BRAZILIAN_REAL = "BRL";
 const BRAZIL = "BR";
 const MASKED_APP_SECRET_PLACEHOLDER = "*****";
+
+const workerValidationMessages: Record<string, string> = {
+  ACCESS_TOKEN_MISSING:
+    "Informe um token de acesso válido na conta selecionada para o worker.",
+  AD_ACCOUNT_ID_MISSING:
+    "Preencha o ID da conta de anúncios (act_...) na conta ativa do worker.",
+  DEFAULT_WEBSITE_URL_MISSING:
+    "Informe a URL padrão do site para que o worker possa criar anúncios.",
+  AD_SET_DAILY_BUDGET_MISSING:
+    "Defina o orçamento diário do conjunto de anúncios em centavos.",
+  AD_SET_BILLING_EVENT_MISSING:
+    "Informe o evento de cobrança padrão (por exemplo, IMPRESSIONS).",
+  AD_SET_OPTIMIZATION_GOAL_MISSING:
+    "Defina o objetivo de otimização do conjunto (por exemplo, LINK_CLICKS).",
+  AD_SET_DESTINATION_TYPE_MISSING:
+    "Informe o tipo de destino padrão (WEBSITE, APP, MESSENGER...).",
+  TARGET_COUNTRY_MISSING:
+    "Informe pelo menos um país de segmentação para o conjunto de anúncios.",
+};
 
 const emptyFinancialStrategyForm: FinancialStrategyFormState = {
   dailyBudget: "",
@@ -178,6 +195,23 @@ function describeRenewalStatus(account: RemoteFacebookAccount): string {
   }
 }
 
+function describeWorkerValidationIssue(
+  account: RemoteFacebookAccount,
+): string | null {
+  const code = account.workerLastValidationErrorCode;
+  if (!code) {
+    return null;
+  }
+  const baseMessage =
+    workerValidationMessages[code] ??
+    account.workerLastValidationErrorDetail ??
+    "Revise a configuração do worker para liberar as campanhas.";
+  if (account.workerLastValidationAt) {
+    return `Validação do worker em ${formatDateTime(account.workerLastValidationAt)}: ${baseMessage}`;
+  }
+  return `Validação do worker falhou: ${baseMessage}`;
+}
+
 function formatRenewalStatusBadge(account: RemoteFacebookAccount): {
   className: string;
   label: string;
@@ -220,7 +254,6 @@ export default function FacebookAccountsPage() {
     [accounts],
   );
 
-  const { data: configuration } = useFacebookConfigurationStatus();
 
   const accountBeingEdited = useMemo(
     () =>
@@ -347,7 +380,6 @@ export default function FacebookAccountsPage() {
   return (
     <div>
       <PageTitle>Contas do Facebook</PageTitle>
-      <FacebookAutomationAlerts status={configuration} />
       <div className="alert alert-info" role="alert">
         <h2 className="h6 mb-2">Campos obrigatórios para o Facebook Ads Worker</h2>
         <p className="mb-2">
@@ -425,6 +457,7 @@ export default function FacebookAccountsPage() {
                         ? "Renovar token"
                         : "Token válido";
                       const renewalBadge = formatRenewalStatusBadge(account);
+                      const workerValidationIssue = describeWorkerValidationIssue(account);
                       return (
                         <tr key={id} className={rowClasses}>
                           <td>{id}</td>
@@ -459,6 +492,14 @@ export default function FacebookAccountsPage() {
                                 <small className="text-danger">
                                   Erro recente: {account.tokenRenewalLastError}
                                 </small>
+                              )}
+                              {account.workerLastValidationAt && (
+                                <small className="text-muted">
+                                  Última validação do worker: {formatDateTime(account.workerLastValidationAt)}
+                                </small>
+                              )}
+                              {workerValidationIssue && (
+                                <small className="text-danger">{workerValidationIssue}</small>
                               )}
                               {account.authorizedUserName && (
                                 <small className="text-muted">

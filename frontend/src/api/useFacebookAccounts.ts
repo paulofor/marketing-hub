@@ -44,6 +44,9 @@ export interface FacebookAccount {
   adSetBidAmount?: string | null;
   adSetTargetCountry?: string | null;
   workerEnabled?: boolean;
+  workerLastValidationAt?: string | null;
+  workerLastValidationErrorCode?: string | null;
+  workerLastValidationErrorDetail?: string | null;
 }
 
 export function useFacebookAccounts() {

@@ -83,6 +83,18 @@ public class FacebookAccount {
     @Column(name = "ad_set_target_country")
     private String adSetTargetCountry;
 
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Column(name = "worker_last_validation_at")
+    private LocalDateTime workerLastValidationAt;
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Column(name = "worker_last_validation_error_code", length = 128)
+    private String workerLastValidationErrorCode;
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Column(name = "worker_last_validation_error_detail", length = 512)
+    private String workerLastValidationErrorDetail;
+
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Setter(AccessLevel.NONE)
     @Column(columnDefinition = "LONGTEXT")

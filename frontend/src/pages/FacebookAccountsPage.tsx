@@ -95,6 +95,15 @@ function createEmptyAccountForm(): AccountFormState {
   };
 }
 
+function RequiredMark() {
+  return (
+    <span className="ms-1 text-danger">
+      <span aria-hidden="true">*</span>
+      <span className="visually-hidden">Campo obrigatório</span>
+    </span>
+  );
+}
+
 function toFinancialStrategyForm(
   account?: RemoteFacebookAccount,
 ): FinancialStrategyFormState {
@@ -336,6 +345,22 @@ export default function FacebookAccountsPage() {
     <div>
       <PageTitle>Contas do Facebook</PageTitle>
       <FacebookAutomationAlerts status={configuration} />
+      <div className="alert alert-info" role="alert">
+        <h2 className="h6 mb-2">Campos obrigatórios para o Facebook Ads Worker</h2>
+        <p className="mb-2">
+          Para liberar o worker, mantenha os seguintes campos preenchidos na conta ativa:
+        </p>
+        <ul className="mb-0 ps-3">
+          <li>Token de acesso (gerado automaticamente pelo Marketing Hub)</li>
+          <li>ID da conta de anúncios (act_)</li>
+          <li>URL padrão do site</li>
+          <li>Orçamento diário do conjunto</li>
+          <li>Evento de cobrança</li>
+          <li>Objetivo de otimização</li>
+          <li>Tipo de destino</li>
+          <li>País de destino do conjunto (BR)</li>
+        </ul>
+      </div>
       {accountsNeedingRenewal.length > 0 && (
         <div className="alert alert-warning" role="alert">
           <h2 className="h6 mb-2">Renovação de token necessária</h2>
@@ -671,7 +696,10 @@ export default function FacebookAccountsPage() {
                   </div>
                 </div>
                 <div className="col-12 col-md-6">
-                  <label className="form-label">ID da conta de anúncios (act_)</label>
+                  <label className="form-label">
+                    ID da conta de anúncios (act_)
+                    <RequiredMark />
+                  </label>
                   <input
                     className="form-control"
                     placeholder="Ex.: 123456789012345"
@@ -686,7 +714,10 @@ export default function FacebookAccountsPage() {
                   />
                 </div>
                 <div className="col-12 col-md-6">
-                  <label className="form-label">URL padrão do site</label>
+                  <label className="form-label">
+                    URL padrão do site
+                    <RequiredMark />
+                  </label>
                   <input
                     type="url"
                     className="form-control"
@@ -736,7 +767,10 @@ export default function FacebookAccountsPage() {
                     <h3 className="h6 mb-3">Estratégia financeira</h3>
                     <div className="row g-3">
                       <div className="col-12 col-md-6">
-                        <label className="form-label">Orçamento diário do conjunto (centavos)</label>
+                        <label className="form-label">
+                          Orçamento diário do conjunto (centavos)
+                          <RequiredMark />
+                        </label>
                         <input
                           className="form-control"
                           placeholder="Ex.: 2000 para R$ 20,00"
@@ -754,7 +788,10 @@ export default function FacebookAccountsPage() {
                         />
                       </div>
                       <div className="col-12 col-md-6">
-                        <label className="form-label">Evento de cobrança</label>
+                        <label className="form-label">
+                          Evento de cobrança
+                          <RequiredMark />
+                        </label>
                         <input
                           className="form-control"
                           placeholder="IMPRESSIONS, LINK_CLICKS..."
@@ -772,7 +809,10 @@ export default function FacebookAccountsPage() {
                         />
                       </div>
                       <div className="col-12 col-md-6">
-                        <label className="form-label">Objetivo de otimização</label>
+                        <label className="form-label">
+                          Objetivo de otimização
+                          <RequiredMark />
+                        </label>
                         <input
                           className="form-control"
                           placeholder="LINK_CLICKS, REACH..."
@@ -790,7 +830,10 @@ export default function FacebookAccountsPage() {
                         />
                       </div>
                       <div className="col-12 col-md-6">
-                        <label className="form-label">Tipo de destino</label>
+                        <label className="form-label">
+                          Tipo de destino
+                          <RequiredMark />
+                        </label>
                         <input
                           className="form-control"
                           placeholder="WEBSITE, APP, MESSENGER..."

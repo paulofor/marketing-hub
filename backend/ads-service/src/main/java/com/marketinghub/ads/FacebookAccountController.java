@@ -1,5 +1,7 @@
 package com.marketinghub.ads;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +14,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/accounts/facebook")
 public class FacebookAccountController {
+    private static final Logger log = LoggerFactory.getLogger(FacebookAccountController.class);
     private final FacebookAccountRepository repository;
 
     public FacebookAccountController(FacebookAccountRepository repository) {
@@ -251,30 +254,52 @@ public class FacebookAccountController {
     }
 
     private void validateWorkerConfiguration(FacebookAccount account) {
-        if (!StringUtils.hasText(account.getAccessToken())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Facebook worker account is missing access token");
+        requireField(account, account.getAccessToken(), "access token", "Facebook worker account is missing access token");
+        requireField(account, account.getAdAccountId(), "ad account id", "Facebook worker account is missing ad account id");
+        requireField(
+            account,
+            account.getDefaultWebsiteUrl(),
+            "default website URL",
+            "Facebook worker account is missing default website URL"
+        );
+        requireField(
+            account,
+            account.getAdSetDailyBudget(),
+            "ad set daily budget",
+            "Facebook worker account is missing ad set daily budget"
+        );
+        requireField(
+            account,
+            account.getAdSetBillingEvent(),
+            "ad set billing event",
+            "Facebook worker account is missing ad set billing event"
+        );
+        requireField(
+            account,
+            account.getAdSetOptimizationGoal(),
+            "ad set optimization goal",
+            "Facebook worker account is missing ad set optimization goal"
+        );
+        requireField(
+            account,
+            account.getAdSetDestinationType(),
+            "ad set destination type",
+            "Facebook worker account is missing ad set destination type"
+        );
+        requireField(account, account.getAdSetTargetCountry(), "target country", "Facebook worker account is missing target country");
+    }
+
+    private void requireField(FacebookAccount account, String value, String fieldDescription, String errorMessage) {
+        if (StringUtils.hasText(value)) {
+            return;
         }
-        if (!StringUtils.hasText(account.getAdAccountId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Facebook worker account is missing ad account id");
-        }
-        if (!StringUtils.hasText(account.getDefaultWebsiteUrl())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Facebook worker account is missing default website URL");
-        }
-        if (!StringUtils.hasText(account.getAdSetDailyBudget())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Facebook worker account is missing ad set daily budget");
-        }
-        if (!StringUtils.hasText(account.getAdSetBillingEvent())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Facebook worker account is missing ad set billing event");
-        }
-        if (!StringUtils.hasText(account.getAdSetOptimizationGoal())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Facebook worker account is missing ad set optimization goal");
-        }
-        if (!StringUtils.hasText(account.getAdSetDestinationType())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Facebook worker account is missing ad set destination type");
-        }
-        if (!StringUtils.hasText(account.getAdSetTargetCountry())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Facebook worker account is missing target country");
-        }
+        log.warn(
+            "Facebook worker configuration validation failed for account id={} name='{}': missing {}.",
+            account.getId(),
+            StringUtils.hasText(account.getName()) ? account.getName() : "(unnamed)",
+            fieldDescription
+        );
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, errorMessage);
     }
 
     private static String trim(String value) {

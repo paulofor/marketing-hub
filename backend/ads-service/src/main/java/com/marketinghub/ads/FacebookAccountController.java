@@ -61,7 +61,6 @@ public class FacebookAccountController {
         persisted.setAuthorizedUserName(account.getAuthorizedUserName());
         persisted.setAuthorizedUserEmail(account.getAuthorizedUserEmail());
         persisted.setAppId(account.getAppId());
-        persisted.setBusinessManagerAppId(account.getBusinessManagerAppId());
         persisted.setAdAccountId(account.getAdAccountId());
         persisted.setDefaultPageId(account.getDefaultPageId());
         persisted.setDefaultWebsiteUrl(account.getDefaultWebsiteUrl());
@@ -182,7 +181,6 @@ public class FacebookAccountController {
         account.setAuthorizedUserName(trimToNull(account.getAuthorizedUserName()));
         account.setAuthorizedUserEmail(trimToNull(account.getAuthorizedUserEmail()));
         account.setAppId(trimToNull(account.getAppId()));
-        account.setBusinessManagerAppId(trimToNull(account.getBusinessManagerAppId()));
         account.setAdAccountId(trimToNull(account.getAdAccountId()));
         account.setDefaultPageId(trimToNull(account.getDefaultPageId()));
         account.setDefaultWebsiteUrl(trimToNull(account.getDefaultWebsiteUrl()));

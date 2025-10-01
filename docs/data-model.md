@@ -428,7 +428,6 @@ allow variants to be created before an experiment is defined.
 - `authorized_user_name` VARCHAR(255)
 - `authorized_user_email` VARCHAR(320)
 - `app_id` VARCHAR(255)
-- `business_manager_app_id` VARCHAR(255)
 - `app_secret` LONGTEXT
 - `token_renewal_enabled` TINYINT(1) DEFAULT 0
 - `token_renewal_status` VARCHAR(40)

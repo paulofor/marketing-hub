@@ -49,7 +49,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Conta BM\",\n  \"currency\": \"BRL\",\n  \"accessToken\": \"EAAG...\",\n  \"appId\": \"1234567890\",\n  \"businessManagerAppId\": \"0987654321\",\n  \"defaultPageId\": \"123456789012345\",\n  \"defaultWebsiteUrl\": \"https://example.com\",\n  \"defaultCreativeMessageTemplate\": \"Campanha %s\",\n  \"defaultCallToActionType\": \"LEARN_MORE\",\n  \"adAccountId\": \"act_123456789012345\",\n  \"adSetDailyBudget\": \"2000\",\n  \"adSetBillingEvent\": \"IMPRESSIONS\",\n  \"adSetOptimizationGoal\": \"LINK_CLICKS\",\n  \"adSetDestinationType\": \"WEBSITE\",\n  \"adSetBidStrategy\": \"LOWEST_COST_WITHOUT_CAP\",\n  \"adSetTargetCountry\": \"BR\",\n  \"tokenRenewalEnabled\": true,\n  \"workerEnabled\": true\n}"
+              "raw": "{\n  \"name\": \"Conta BM\",\n  \"currency\": \"BRL\",\n  \"accessToken\": \"EAAG...\",\n  \"appId\": \"1234567890\",\n  \"defaultPageId\": \"123456789012345\",\n  \"defaultWebsiteUrl\": \"https://example.com\",\n  \"defaultCreativeMessageTemplate\": \"Campanha %s\",\n  \"defaultCallToActionType\": \"LEARN_MORE\",\n  \"adAccountId\": \"act_123456789012345\",\n  \"adSetDailyBudget\": \"2000\",\n  \"adSetBillingEvent\": \"IMPRESSIONS\",\n  \"adSetOptimizationGoal\": \"LINK_CLICKS\",\n  \"adSetDestinationType\": \"WEBSITE\",\n  \"adSetBidStrategy\": \"LOWEST_COST_WITHOUT_CAP\",\n  \"adSetTargetCountry\": \"BR\",\n  \"tokenRenewalEnabled\": true,\n  \"workerEnabled\": true\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/accounts/facebook",
@@ -75,7 +75,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Conta BM\",\n  \"currency\": \"BRL\",\n  \"accessToken\": \"EAAG...\",\n  \"appId\": \"1234567890\",\n  \"businessManagerAppId\": \"0987654321\",\n  \"defaultPageId\": \"123456789012345\",\n  \"defaultWebsiteUrl\": \"https://example.com\",\n  \"defaultCreativeMessageTemplate\": \"Campanha %s\",\n  \"defaultCallToActionType\": \"LEARN_MORE\",\n  \"adAccountId\": \"act_123456789012345\",\n  \"adSetDailyBudget\": \"2000\",\n  \"adSetBillingEvent\": \"IMPRESSIONS\",\n  \"adSetOptimizationGoal\": \"LINK_CLICKS\",\n  \"adSetDestinationType\": \"WEBSITE\",\n  \"adSetBidStrategy\": \"LOWEST_COST_WITHOUT_CAP\",\n  \"adSetBidAmount\": null,\n  \"adSetTargetCountry\": \"BR\",\n  \"tokenRenewalEnabled\": true,\n  \"workerEnabled\": true\n}"
+              "raw": "{\n  \"name\": \"Conta BM\",\n  \"currency\": \"BRL\",\n  \"accessToken\": \"EAAG...\",\n  \"appId\": \"1234567890\",\n  \"defaultPageId\": \"123456789012345\",\n  \"defaultWebsiteUrl\": \"https://example.com\",\n  \"defaultCreativeMessageTemplate\": \"Campanha %s\",\n  \"defaultCallToActionType\": \"LEARN_MORE\",\n  \"adAccountId\": \"act_123456789012345\",\n  \"adSetDailyBudget\": \"2000\",\n  \"adSetBillingEvent\": \"IMPRESSIONS\",\n  \"adSetOptimizationGoal\": \"LINK_CLICKS\",\n  \"adSetDestinationType\": \"WEBSITE\",\n  \"adSetBidStrategy\": \"LOWEST_COST_WITHOUT_CAP\",\n  \"adSetBidAmount\": null,\n  \"adSetTargetCountry\": \"BR\",\n  \"tokenRenewalEnabled\": true,\n  \"workerEnabled\": true\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/accounts/facebook/{{accountId}}",

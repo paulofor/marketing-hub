@@ -80,7 +80,6 @@ public class FacebookAccountControllerTest {
             "\"name\":\"Conta BM\"," +
             "\"currency\":\"BRL\"," +
             "\"appId\":\" 123456 \"," +
-            "\"businessManagerAppId\":\" 654321 \"," +
             "\"appSecret\":\" segredo-super-seguro \"," +
             "\"tokenRenewalEnabled\":true" +
             "}";
@@ -92,7 +91,6 @@ public class FacebookAccountControllerTest {
 
         FacebookAccount saved = repository.findAll().stream().findFirst().orElseThrow();
         assertThat(saved.getAppId()).isEqualTo("123456");
-        assertThat(saved.getBusinessManagerAppId()).isEqualTo("654321");
         assertThat(saved.getAppSecret()).isEqualTo("segredo-super-seguro");
         assertThat(saved.isTokenRenewalEnabled()).isTrue();
 

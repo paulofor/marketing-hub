@@ -44,9 +44,6 @@ public class FacebookAccount {
     private String authorizedUserEmail;
     private String appId;
 
-    @Column(name = "business_manager_app_id")
-    private String businessManagerAppId;
-
     @Column(name = "ad_account_id")
     private String adAccountId;
 

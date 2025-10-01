@@ -25,7 +25,6 @@ export interface FacebookAccount {
   requiresTokenRenewal?: boolean;
   tokenExpiresInDays?: number | null;
   appId?: string | null;
-  businessManagerAppId?: string | null;
   hasAppSecret?: boolean;
   tokenRenewalEnabled?: boolean;
   tokenRenewalStatus?: string | null;

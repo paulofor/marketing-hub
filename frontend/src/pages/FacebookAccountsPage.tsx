@@ -34,7 +34,6 @@ interface AccountFormState {
   authorizedUserName: string;
   authorizedUserEmail: string;
   appId: string;
-  businessManagerAppId: string;
   appSecret: string;
   appSecretKept: boolean;
   tokenRenewalEnabled: boolean;
@@ -72,7 +71,6 @@ const emptyAccountForm: AccountFormState = {
   authorizedUserName: "",
   authorizedUserEmail: "",
   appId: "",
-  businessManagerAppId: "",
   appSecret: "",
   appSecretKept: false,
   tokenRenewalEnabled: false,
@@ -283,7 +281,6 @@ export default function FacebookAccountsPage() {
       authorizedUserName: accountForm.authorizedUserName.trim() || null,
       authorizedUserEmail: accountForm.authorizedUserEmail.trim() || null,
       appId: accountForm.appId.trim() || null,
-      businessManagerAppId: accountForm.businessManagerAppId.trim() || null,
       tokenRenewalEnabled: accountForm.tokenRenewalEnabled,
       adAccountId: accountForm.adAccountId.trim() || null,
       defaultWebsiteUrl: accountForm.defaultWebsiteUrl.trim() || null,
@@ -490,8 +487,6 @@ export default function FacebookAccountsPage() {
                                   authorizedUserName: account.authorizedUserName ?? "",
                                   authorizedUserEmail: account.authorizedUserEmail ?? "",
                                   appId: account.appId ?? "",
-                                  businessManagerAppId:
-                                    account.businessManagerAppId ?? "",
                                   appSecret: "",
                                   appSecretKept: Boolean(account.hasAppSecret),
                                   tokenRenewalEnabled: Boolean(account.tokenRenewalEnabled),
@@ -589,30 +584,12 @@ export default function FacebookAccountsPage() {
                   </label>
                   <input
                     className="form-control"
-                    placeholder="ID do aplicativo vinculado ao Business Manager"
+                    placeholder="ID do aplicativo registrado no Facebook for Developers"
                     value={accountForm.appId}
                     onChange={(event) =>
                       setAccountForm((current) => ({
                         ...current,
                         appId: event.target.value,
-                      }))
-                    }
-                    disabled={isAccountMutationPending}
-                  />
-                </div>
-                <div className="col-12 col-md-6">
-                  <label className="form-label">
-                    ID do aplicativo vinculado ao Business Manager
-                    <RequiredMark />
-                  </label>
-                  <input
-                    className="form-control"
-                    placeholder="ID do aplicativo no Business Manager"
-                    value={accountForm.businessManagerAppId}
-                    onChange={(event) =>
-                      setAccountForm((current) => ({
-                        ...current,
-                        businessManagerAppId: event.target.value,
                       }))
                     }
                     disabled={isAccountMutationPending}

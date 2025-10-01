@@ -42,8 +42,10 @@ export function useCreateFacebookAccount() {
   return useMutation({
     mutationFn: (account: FacebookAccountPayload) =>
       axios.post("/api/accounts/facebook", account),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["facebook-accounts"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["facebook-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["facebook-configuration-status"] });
+    },
   });
 }
 
@@ -52,8 +54,10 @@ export function useUpdateFacebookAccount() {
   return useMutation({
     mutationFn: (account: FacebookAccountPayload) =>
       axios.put(`/api/accounts/facebook/${account.id}`, account),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["facebook-accounts"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["facebook-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["facebook-configuration-status"] });
+    },
   });
 }
 
@@ -62,7 +66,9 @@ export function useDeleteFacebookAccount() {
   return useMutation({
     mutationFn: (id: number) =>
       axios.delete(`/api/accounts/facebook/${id}`),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["facebook-accounts"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["facebook-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["facebook-configuration-status"] });
+    },
   });
 }

@@ -43,6 +43,8 @@ classDiagram
         +billingEvent : String
         +optimizationGoal : String
         +destinationType : String
+        +bidStrategy : String
+        +bidAmount : String
         +pageId : String
         +targetCountry : String
     }
@@ -55,6 +57,8 @@ classDiagram
         +websiteUrl : String
         +message : String
         +callToActionType : String
+        +headline : String
+        +description : String
     }
 
     class AdRequest {
@@ -108,6 +112,44 @@ classDiagram
         +budgetMode : BudgetMode
         +experimentId : Long
         +facebookAccountId : Long
+        +adSet : AdSetPayload
+        +adCreative : AdCreativePayload
+        +ad : AdPayload
+    }
+
+    class AdSetPayload {
+        <<record>>
+        +id : String
+        +name : String
+        +billingEvent : String
+        +optimizationGoal : String
+        +bidStrategy : String
+        +bidAmount : String
+        +dailyBudget : String
+        +lifetimeBudget : String
+        +targetCountry : String
+        +destinationType : String
+        +pageId : String
+    }
+
+    class AdCreativePayload {
+        <<record>>
+        +id : String
+        +pageId : String
+        +instagramActorId : String
+        +websiteUrl : String
+        +message : String
+        +callToActionType : String
+        +headline : String
+        +description : String
+    }
+
+    class AdPayload {
+        <<record>>
+        +id : String
+        +name : String
+        +adSetId : String
+        +creativeId : String
     }
 
     class FacebookAdsCampaign {
@@ -128,6 +170,37 @@ classDiagram
         +specialAdCountries : Set<String>
         +createdAt : Instant
         +updatedAt : Instant
+    }
+
+    class FacebookAdsAdSet {
+        <<entity>>
+        +id : String
+        +campaign : FacebookAdsCampaign
+        +name : String
+        +billingEvent : String
+        +optimizationGoal : String
+        +bidStrategy : String
+        +bidAmountMinor : Long
+        +dailyBudgetMinor : Long
+        +targetingJson : String
+        +promotedObjectJson : String
+    }
+
+    class FacebookAdsAdCreative {
+        <<entity>>
+        +id : String
+        +pageId : String
+        +instagramUserId : String
+        +kind : AdCreativeKind
+        +linkDataJson : String
+    }
+
+    class FacebookAdsAd {
+        <<entity>>
+        +id : String
+        +adSet : FacebookAdsAdSet
+        +creative : FacebookAdsAdCreative
+        +name : String
     }
 
     class FacebookAdStatus {
@@ -166,12 +239,20 @@ classDiagram
     FacebookAdsService --> AdCreativeRequest
     FacebookAdsService --> AdRequest
     FacebookCampaignService --> CreateCampaignRequest : monta payload do backend
-    CreateCampaignRequest ..> FacebookAdsCampaign : persiste entidade
+    CreateCampaignRequest --> AdSetPayload
+    CreateCampaignRequest --> AdCreativePayload
+    CreateCampaignRequest --> AdPayload
+    CreateCampaignRequest ..> FacebookAdsCampaign : persiste campanha
+    CreateCampaignRequest ..> FacebookAdsAdSet : persiste ad set
+    CreateCampaignRequest ..> FacebookAdsAdCreative : persiste criativo
+    CreateCampaignRequest ..> FacebookAdsAd : persiste anúncio
     FacebookAdsCampaign --> FacebookAdStatus
     FacebookAdsCampaign --> BudgetMode
     FacebookAdsCampaign --> SpecialAdCategory
     FacebookAdsCampaign --> Experiment
     FacebookAdsCampaign --> FacebookAccount
+    FacebookAdsAd --> FacebookAdsAdSet
+    FacebookAdsAd --> FacebookAdsAdCreative
     FacebookCampaignService ..> UrlUtils : compõe URLs do backend
     FacebookTokenRenewalScheduler --> FacebookTokenRenewalService : agenda renovação
     FacebookTokenRenewalService --> FacebookAdsService : renova token
@@ -185,9 +266,10 @@ classDiagram
   a configuração ativa (`worker-config`), sincroniza o token em memória e cria a
   hierarquia de campanha na Graph API. O serviço resolve o `pageId` a partir do
   experimento, utilizando o fallback da conta quando necessário, e registra o
-  resultado da campanha no backend. Quando o Facebook devolve erro de permissão,
-  o serviço adiciona o experimento a uma lista de bloqueio em memória para evitar
-  novas tentativas até que o worker seja reiniciado.
+  resultado completo (campanha, ad set, criativo e anúncio) no backend. Quando o
+  Facebook devolve erro de permissão, o serviço adiciona o experimento a uma
+  lista de bloqueio em memória para evitar novas tentativas até que o worker
+  seja reiniciado.
 * `FacebookAdsService` encapsula as chamadas à Graph API (criação da hierarquia
   de mídia, consulta de métricas e renovação de tokens de longa duração).
 * `FacebookTokenRenewalScheduler` agenda o fluxo periódico de renovação de token

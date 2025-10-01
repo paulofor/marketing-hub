@@ -1,12 +1,21 @@
 package com.marketinghub.facebookads.web;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.AdsServiceApplication;
+import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.ads.FacebookAccountRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.funnel.SalesFunnel;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.experiment.service.ExperimentService;
+import com.marketinghub.facebookads.FacebookAdsAd;
+import com.marketinghub.facebookads.FacebookAdsAdCreative;
+import com.marketinghub.facebookads.FacebookAdsAdCreativeRepository;
+import com.marketinghub.facebookads.FacebookAdsAdRepository;
+import com.marketinghub.facebookads.FacebookAdsAdSet;
+import com.marketinghub.facebookads.FacebookAdsAdSetRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -14,13 +23,21 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.http.MediaType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
+import org.mockito.ArgumentCaptor;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest(classes = AdsServiceApplication.class)
@@ -36,12 +53,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class FacebookAdsCampaignControllerTest {
     @Autowired
     MockMvc mockMvc;
+    @Autowired
+    ObjectMapper objectMapper;
     @MockBean
     ExperimentService experimentService;
     @MockBean
     com.marketinghub.facebookads.FacebookAdsCampaignRepository campaignRepository;
     @MockBean
     FacebookAccountRepository facebookAccountRepository;
+    @MockBean
+    FacebookAdsAdSetRepository adSetRepository;
+    @MockBean
+    FacebookAdsAdCreativeRepository adCreativeRepository;
+    @MockBean
+    FacebookAdsAdRepository adRepository;
 
     @Test
     void listExperimentsByStatus() throws Exception {
@@ -89,5 +114,101 @@ class FacebookAdsCampaignControllerTest {
                 .andExpect(jsonPath("$[0].hypothesisTitle").value("Hipótese do Nicho"))
                 .andExpect(jsonPath("$[0].missingConfiguration").isArray())
                 .andExpect(jsonPath("$[0].missingConfiguration").isEmpty());
+    }
+
+    @Test
+    void createCampaignPersistsHierarchy() throws Exception {
+        var experiment = Experiment.builder()
+                .id(42L)
+                .name("Exp")
+                .creativeApproved(true)
+                .build();
+        when(experimentService.get(42L)).thenReturn(experiment);
+
+        FacebookAccount account = new FacebookAccount();
+        account.setId(77L);
+        when(facebookAccountRepository.findById(77L)).thenReturn(Optional.of(account));
+
+        when(campaignRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(adSetRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(adCreativeRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(adRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        String payload = """
+            {
+              "id": "cmp123",
+              "adAccountId": "act_555",
+              "name": "Exp",
+              "objective": "OUTCOME_TRAFFIC",
+              "budgetMode": "CAMPAIGN",
+              "experimentId": 42,
+              "facebookAccountId": 77,
+              "adSet": {
+                "id": "adset123",
+                "name": "Exp - Ad Set",
+                "billingEvent": "IMPRESSIONS",
+                "optimizationGoal": "LINK_CLICKS",
+                "bidStrategy": "LOWEST_COST_WITHOUT_CAP",
+                "bidAmount": "1000",
+                "dailyBudget": "5000",
+                "lifetimeBudget": null,
+                "targetCountry": "BR",
+                "destinationType": "WEBSITE",
+                "pageId": "12345"
+              },
+              "adCreative": {
+                "id": "creative123",
+                "pageId": "12345",
+                "instagramActorId": "6789",
+                "websiteUrl": "https://example.com",
+                "message": "Mensagem",
+                "callToActionType": "LEARN_MORE",
+                "headline": "Headline",
+                "description": "Description"
+              },
+              "ad": {
+                "id": "ad987",
+                "name": "Exp - Ad",
+                "adSetId": "adset123",
+                "creativeId": "creative123"
+              }
+            }
+            """;
+
+        mockMvc.perform(post("/api/facebook-campaigns")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("cmp123"))
+                .andExpect(jsonPath("$.adAccountId").value("act_555"))
+                .andExpect(jsonPath("$.experiment.id").value(42));
+
+        ArgumentCaptor<FacebookAdsAdSet> adSetCaptor = ArgumentCaptor.forClass(FacebookAdsAdSet.class);
+        verify(adSetRepository).save(adSetCaptor.capture());
+        FacebookAdsAdSet savedAdSet = adSetCaptor.getValue();
+        assertThat(savedAdSet.getId()).isEqualTo("adset123");
+        assertThat(savedAdSet.getCampaign().getId()).isEqualTo("cmp123");
+        JsonNode targetingJson = objectMapper.readTree(savedAdSet.getTargetingJson());
+        assertThat(targetingJson.path("geo_locations").path("countries").get(0).asText()).isEqualTo("BR");
+        JsonNode promotedObject = savedAdSet.getPromotedObjectJson() != null
+                ? objectMapper.readTree(savedAdSet.getPromotedObjectJson())
+                : objectMapper.nullNode();
+        assertThat(promotedObject.path("page_id").asText()).isEqualTo("12345");
+
+        ArgumentCaptor<FacebookAdsAdCreative> creativeCaptor = ArgumentCaptor.forClass(FacebookAdsAdCreative.class);
+        verify(adCreativeRepository).save(creativeCaptor.capture());
+        FacebookAdsAdCreative savedCreative = creativeCaptor.getValue();
+        assertThat(savedCreative.getId()).isEqualTo("creative123");
+        assertThat(savedCreative.getPageId()).isEqualTo("12345");
+        JsonNode linkData = objectMapper.readTree(savedCreative.getLinkDataJson());
+        assertThat(linkData.path("link").asText()).isEqualTo("https://example.com");
+        assertThat(linkData.path("call_to_action").path("type").asText()).isEqualTo("LEARN_MORE");
+
+        ArgumentCaptor<FacebookAdsAd> adCaptor = ArgumentCaptor.forClass(FacebookAdsAd.class);
+        verify(adRepository).save(adCaptor.capture());
+        FacebookAdsAd savedAd = adCaptor.getValue();
+        assertThat(savedAd.getId()).isEqualTo("ad987");
+        assertThat(savedAd.getAdSet().getId()).isEqualTo("adset123");
+        assertThat(savedAd.getCreative().getId()).isEqualTo("creative123");
     }
 }

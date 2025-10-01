@@ -1,16 +1,27 @@
 package com.marketinghub.facebookads.web;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.ads.FacebookAccountRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.service.ExperimentService;
+import com.marketinghub.facebookads.AdCreativeKind;
 import com.marketinghub.facebookads.BudgetMode;
+import com.marketinghub.facebookads.FacebookAdsAd;
+import com.marketinghub.facebookads.FacebookAdsAdCreative;
+import com.marketinghub.facebookads.FacebookAdsAdCreativeRepository;
+import com.marketinghub.facebookads.FacebookAdsAdRepository;
+import com.marketinghub.facebookads.FacebookAdsAdSet;
+import com.marketinghub.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookAdsCampaignRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -24,13 +35,25 @@ public class FacebookAdsCampaignController {
     private final ExperimentService experimentService;
     private final FacebookAdsCampaignRepository campaignRepository;
     private final FacebookAccountRepository accountRepository;
+    private final FacebookAdsAdSetRepository adSetRepository;
+    private final FacebookAdsAdCreativeRepository adCreativeRepository;
+    private final FacebookAdsAdRepository adRepository;
+    private final ObjectMapper objectMapper;
 
     public FacebookAdsCampaignController(ExperimentService experimentService,
                                          FacebookAdsCampaignRepository campaignRepository,
-                                         FacebookAccountRepository accountRepository) {
+                                         FacebookAccountRepository accountRepository,
+                                         FacebookAdsAdSetRepository adSetRepository,
+                                         FacebookAdsAdCreativeRepository adCreativeRepository,
+                                         FacebookAdsAdRepository adRepository,
+                                         ObjectMapper objectMapper) {
         this.experimentService = experimentService;
         this.campaignRepository = campaignRepository;
         this.accountRepository = accountRepository;
+        this.adSetRepository = adSetRepository;
+        this.adCreativeRepository = adCreativeRepository;
+        this.adRepository = adRepository;
+        this.objectMapper = objectMapper;
     }
 
     @GetMapping("/experiments-ready")
@@ -51,6 +74,7 @@ public class FacebookAdsCampaignController {
     }
 
     @PostMapping
+    @Transactional
     public FacebookAdsCampaign create(@RequestBody CreateCampaignRequest req) {
         Experiment experiment;
         try {
@@ -70,7 +94,122 @@ public class FacebookAdsCampaignController {
         campaign.setBudgetMode(req.budgetMode());
         campaign.setExperiment(experiment);
         campaign.setFacebookAccount(account);
-        return campaignRepository.save(campaign);
+        FacebookAdsCampaign savedCampaign = campaignRepository.save(campaign);
+
+        FacebookAdsAdSet savedAdSet = null;
+        if (req.adSet() != null) {
+            savedAdSet = adSetRepository.save(mapAdSet(req.adSet(), savedCampaign));
+        }
+
+        FacebookAdsAdCreative savedCreative = null;
+        if (req.adCreative() != null) {
+            savedCreative = adCreativeRepository.save(mapAdCreative(req.adCreative()));
+        }
+
+        if (req.ad() != null) {
+            if (savedAdSet == null || savedCreative == null) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Ad set and ad creative must be provided when reporting an ad"
+                );
+            }
+            adRepository.save(mapAd(req.ad(), savedAdSet, savedCreative));
+        }
+
+        return savedCampaign;
+    }
+
+    private FacebookAdsAdSet mapAdSet(CreateCampaignRequest.AdSet adSetReq, FacebookAdsCampaign campaign) {
+        FacebookAdsAdSet adSet = new FacebookAdsAdSet();
+        adSet.setId(adSetReq.id());
+        adSet.setCampaign(campaign);
+        adSet.setName(adSetReq.name());
+        adSet.setBillingEvent(adSetReq.billingEvent());
+        adSet.setOptimizationGoal(adSetReq.optimizationGoal());
+        adSet.setBidStrategy(resolveBidStrategy(adSetReq.bidStrategy()));
+        adSet.setDailyBudgetMinor(parseLong(adSetReq.dailyBudget()));
+        adSet.setLifetimeBudgetMinor(parseLong(adSetReq.lifetimeBudget()));
+        adSet.setBidAmountMinor(parseLong(adSetReq.bidAmount()));
+        adSet.setPromotedObjectJson(buildPromotedObjectJson(adSetReq.pageId()));
+        adSet.setTargetingJson(buildTargetingJson(adSetReq.targetCountry()));
+        return adSet;
+    }
+
+    private FacebookAdsAdCreative mapAdCreative(CreateCampaignRequest.AdCreative creativeReq) {
+        FacebookAdsAdCreative creative = new FacebookAdsAdCreative();
+        creative.setId(creativeReq.id());
+        creative.setPageId(creativeReq.pageId());
+        creative.setInstagramUserId(creativeReq.instagramActorId());
+        creative.setKind(AdCreativeKind.LINK);
+        creative.setLinkDataJson(buildLinkDataJson(creativeReq));
+        return creative;
+    }
+
+    private FacebookAdsAd mapAd(CreateCampaignRequest.Ad adReq,
+                                 FacebookAdsAdSet adSet,
+                                 FacebookAdsAdCreative creative) {
+        FacebookAdsAd ad = new FacebookAdsAd();
+        ad.setId(adReq.id());
+        ad.setName(adReq.name());
+        ad.setAdSet(adSet);
+        ad.setCreative(creative);
+        return ad;
+    }
+
+    private String resolveBidStrategy(String bidStrategy) {
+        if (StringUtils.hasText(bidStrategy)) {
+            return bidStrategy.trim();
+        }
+        return "LOWEST_COST_WITHOUT_CAP";
+    }
+
+    private Long parseLong(String numeric) {
+        if (!StringUtils.hasText(numeric)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(numeric.trim());
+        } catch (NumberFormatException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid numeric value: " + numeric, ex);
+        }
+    }
+
+    private String buildPromotedObjectJson(String pageId) {
+        if (!StringUtils.hasText(pageId)) {
+            return null;
+        }
+        ObjectNode node = objectMapper.createObjectNode();
+        node.put("page_id", pageId);
+        return node.toString();
+    }
+
+    private String buildTargetingJson(String targetCountry) {
+        ObjectNode node = objectMapper.createObjectNode();
+        ObjectNode geoLocations = node.putObject("geo_locations");
+        ArrayNode countries = geoLocations.putArray("countries");
+        if (StringUtils.hasText(targetCountry)) {
+            countries.add(targetCountry);
+        }
+        return node.toString();
+    }
+
+    private String buildLinkDataJson(CreateCampaignRequest.AdCreative creativeReq) {
+        ObjectNode linkData = objectMapper.createObjectNode();
+        linkData.put("link", creativeReq.websiteUrl());
+        linkData.put("message", creativeReq.message());
+        if (StringUtils.hasText(creativeReq.headline())) {
+            linkData.put("name", creativeReq.headline());
+        }
+        if (StringUtils.hasText(creativeReq.description())) {
+            linkData.put("description", creativeReq.description());
+        }
+        if (StringUtils.hasText(creativeReq.callToActionType())) {
+            ObjectNode callToAction = linkData.putObject("call_to_action");
+            callToAction.put("type", creativeReq.callToActionType());
+            ObjectNode value = callToAction.putObject("value");
+            value.put("link", creativeReq.websiteUrl());
+        }
+        return linkData.toString();
     }
 
     private ExperimentSummary toSummary(Experiment experiment) {
@@ -135,5 +274,38 @@ public class FacebookAdsCampaignController {
             String objective,
             BudgetMode budgetMode,
             Long experimentId,
-            Long facebookAccountId) {}
+            Long facebookAccountId,
+            AdSet adSet,
+            AdCreative adCreative,
+            Ad ad) {
+
+        public record AdSet(
+                String id,
+                String name,
+                String billingEvent,
+                String optimizationGoal,
+                String bidStrategy,
+                String bidAmount,
+                String dailyBudget,
+                String lifetimeBudget,
+                String targetCountry,
+                String destinationType,
+                String pageId) {}
+
+        public record AdCreative(
+                String id,
+                String pageId,
+                String instagramActorId,
+                String websiteUrl,
+                String message,
+                String callToActionType,
+                String headline,
+                String description) {}
+
+        public record Ad(
+                String id,
+                String name,
+                String adSetId,
+                String creativeId) {}
+    }
 }

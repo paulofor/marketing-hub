@@ -12,7 +12,9 @@ para navegar entre as entidades citadas.
   página e CTA padrão etc.) não constam na lista original, mas são carregados a
   partir de `FacebookWorkerConfigurationClient` e das entidades `fb_account`.
 - O backend agora persiste chaves estrangeiras para o experimento e a conta de
-  Facebook que originaram cada campanha, viabilizando auditoria ponta a ponta.
+  Facebook que originaram cada campanha, bem como os identificadores dos ad
+  sets, criativos e anúncios correspondentes, viabilizando auditoria ponta a
+  ponta.
 - Há **campos planejados** no documento que ainda não são enviados pelo worker
   nem possuem suporte completo no banco (ex.: teste A/B, limites de gasto,
   segmentações avançadas).
@@ -48,9 +50,9 @@ para navegar entre as entidades citadas.
 | Campo (documento) | Tratamento atual no worker | Entidades / Propriedades relacionadas |
 | --- | --- | --- |
 | Nome do conjunto | Usa `Experiment.name` com sufixo “- Ad Set”. | `facebook_ads_ad_set.name` (`FacebookAdsAdSet` no diagrama). |
-| Evento de conversão / Meta | `promoted_object_json` permanece vazio; pixel/evento ainda não configurados. | `facebook_ads_ad_set.promoted_object_json`. |
+| Evento de conversão / Meta | `promoted_object_json` armazena o `page_id` promovido; pixel/evento ainda não configurados. | `facebook_ads_ad_set.promoted_object_json`. |
 | Estratégia de otimização | Valor padrão da conta (`fb_account.ad_set_optimization_goal`). | `facebook_ads_ad_set.optimization_goal`. |
-| Estratégia de lance | `bid_strategy` e `bid_amount` herdados da conta; podem ficar em branco. | `facebook_ads_ad_set.bid_strategy`, `bid_amount_minor`. |
+| Estratégia de lance | `bid_strategy` e `bid_amount` herdados da conta; quando ausentes, o backend assume `LOWEST_COST_WITHOUT_CAP`. | `facebook_ads_ad_set.bid_strategy`, `bid_amount_minor`. |
 | Orçamento (sem CBO) | Envia `daily_budget` a partir de `fb_account.ad_set_daily_budget`. | `facebook_ads_ad_set.daily_budget_minor` / `lifetime_budget_minor`. |
 | Período de veiculação | `start_time`/`end_time` não configurados. | Colunas homônimas no ad set. |
 | Públicos personalizados / semelhantes | Planejado para `targeting_json`; ainda não serializado. | `facebook_ads_ad_set.targeting_json`. |
@@ -67,7 +69,7 @@ para navegar entre as entidades citadas.
 | --- | --- | --- |
 | Nome do anúncio | Derivado de `Experiment.name` com sufixo “- Ad”. | `facebook_ads_ad.name`. |
 | Identidade (Página/Instagram) | Resolve `pageId` e `instagram_user_id` a partir do experimento ou defaults da conta. | `facebook_ads_ad_creative.page_id`, `instagram_user_id`. |
-| Formato do anúncio | Apenas link ads; valor armazenado em `Creative.format`, não enviado ainda. | `facebook_ads_ad_creative.kind`. |
+| Formato do anúncio | Apenas link ads; backend registra `AdCreativeKind.LINK` em todos os criativos. | `facebook_ads_ad_creative.kind`. |
 | Mídia principal | Dados do criativo aprovado (`imageUrl`, `imageHash`, `videoId`); assets futuros usarão `facebook_ads_media_asset`. | `facebook_ads_media_asset` e JSON do criativo. |
 | Mídias adicionais | Carrossel/coleção não suportados. | `facebook_ads_ad_creative.carousel_data_json` / `video_data_json`. |
 | Texto primário | `Creative.primaryText` ou fallback da conta. | `facebook_ads_ad_creative.link_data_json.message`. |

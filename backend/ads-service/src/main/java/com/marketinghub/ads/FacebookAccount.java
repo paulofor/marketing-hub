@@ -63,6 +63,10 @@ public class FacebookAccount {
 
     @Column(name = "default_lead_gen_form_id")
     private String defaultLeadGenFormId;
+    @Transient
+    @JsonIgnore
+    @Setter(AccessLevel.NONE)
+    private boolean defaultLeadGenFormIdProvided;
 
     @Column(name = "default_instagram_actor_id")
     private String defaultInstagramActorId;
@@ -207,6 +211,18 @@ public class FacebookAccount {
     @JsonIgnore
     public boolean isDefaultInstagramActorIdProvided() {
         return defaultInstagramActorIdProvided;
+    }
+
+    @JsonSetter("defaultLeadGenFormId")
+    public void jsonDefaultLeadGenFormIdSetter(String defaultLeadGenFormId) {
+        this.defaultLeadGenFormIdProvided = true;
+        this.defaultLeadGenFormId = defaultLeadGenFormId;
+    }
+
+    @Transient
+    @JsonIgnore
+    public boolean isDefaultLeadGenFormIdProvided() {
+        return defaultLeadGenFormIdProvided;
     }
 
     @JsonSetter("appSecret")

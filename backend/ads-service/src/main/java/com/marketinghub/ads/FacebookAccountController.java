@@ -86,6 +86,9 @@ public class FacebookAccountController {
         if (account.isDefaultInstagramActorIdProvided()) {
             persisted.setDefaultInstagramActorId(account.getDefaultInstagramActorId());
         }
+        if (account.isDefaultLeadGenFormIdProvided()) {
+            persisted.setDefaultLeadGenFormId(account.getDefaultLeadGenFormId());
+        }
 
         if (account.isAccessTokenProvided()) {
             String newToken = account.getAccessToken();

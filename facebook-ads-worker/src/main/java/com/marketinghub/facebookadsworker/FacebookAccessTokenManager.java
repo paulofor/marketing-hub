@@ -1,6 +1,7 @@
 package com.marketinghub.facebookadsworker;
 
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient;
+import com.marketinghub.facebookadsworker.facebooktokenrenewal.FacebookTokenRevalidationClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -12,13 +13,16 @@ public class FacebookAccessTokenManager {
 
     private final FacebookAdsService facebookAdsService;
     private final FacebookWorkerConfigurationClient configurationClient;
+    private final FacebookTokenRevalidationClient tokenRevalidationClient;
 
     public FacebookAccessTokenManager(
         FacebookAdsService facebookAdsService,
-        FacebookWorkerConfigurationClient configurationClient
+        FacebookWorkerConfigurationClient configurationClient,
+        FacebookTokenRevalidationClient tokenRevalidationClient
     ) {
         this.facebookAdsService = facebookAdsService;
         this.configurationClient = configurationClient;
+        this.tokenRevalidationClient = tokenRevalidationClient;
     }
 
     public RenewalAttemptResult tryRenewAccessTokenIfPossible() {
@@ -28,10 +32,9 @@ public class FacebookAccessTokenManager {
             return new RenewalAttemptResult(RenewalOutcome.NOT_CONFIGURED, null, null);
         }
 
-        String appId = normalize(configuration.get().appId());
-        String appSecret = normalize(configuration.get().appSecret());
-        if (!StringUtils.hasText(appId) || !StringUtils.hasText(appSecret)) {
-            LOGGER.debug("Skipping automatic Facebook token renewal because app credentials are missing in the worker configuration");
+        Long accountId = configuration.get().accountId();
+        if (accountId == null) {
+            LOGGER.debug("Skipping automatic Facebook token renewal because the worker configuration is missing the account identifier");
             return new RenewalAttemptResult(RenewalOutcome.NOT_CONFIGURED, null, null);
         }
 
@@ -42,25 +45,32 @@ public class FacebookAccessTokenManager {
         }
 
         try {
-            FacebookAdsService.TokenRenewalResponse response = facebookAdsService.renewLongLivedToken(
-                appId,
-                appSecret,
-                currentToken
-            );
-            facebookAdsService.updateAccessToken(response.accessToken());
-            LOGGER.info(
-                "Facebook access token renewed successfully via Graph API; expiresInSeconds={}",
-                response.expiresInSeconds()
-            );
-            return new RenewalAttemptResult(RenewalOutcome.SUCCESS, response.accessToken(), null);
+            FacebookTokenRevalidationClient.TokenRevalidationResponse response = tokenRevalidationClient
+                .revalidate(accountId)
+                .orElse(null);
+
+            if (response == null) {
+                LOGGER.error("Failed to renew Facebook access token automatically: backend returned an empty response");
+                return new RenewalAttemptResult(RenewalOutcome.FAILED, null, "Empty response from backend");
+            }
+
+            if (response.status() == FacebookTokenRevalidationClient.TokenRevalidationStatus.SUCCESS) {
+                if (StringUtils.hasText(response.accessToken())) {
+                    facebookAdsService.updateAccessToken(response.accessToken());
+                }
+                LOGGER.info("Facebook access token renewed successfully via backend revalidation");
+                return new RenewalAttemptResult(RenewalOutcome.SUCCESS, response.accessToken(), null);
+            }
+
+            String errorMessage = StringUtils.hasText(response.errorMessage())
+                ? response.errorMessage()
+                : "unknown error";
+            LOGGER.error("Failed to renew Facebook access token automatically: {}", errorMessage);
+            return new RenewalAttemptResult(RenewalOutcome.FAILED, null, errorMessage);
         } catch (Exception ex) {
             LOGGER.error("Failed to renew Facebook access token automatically: {}", ex.getMessage(), ex);
             return new RenewalAttemptResult(RenewalOutcome.FAILED, null, ex.getMessage());
         }
-    }
-
-    private String normalize(String value) {
-        return value == null ? null : value.trim();
     }
 
     public enum RenewalOutcome {

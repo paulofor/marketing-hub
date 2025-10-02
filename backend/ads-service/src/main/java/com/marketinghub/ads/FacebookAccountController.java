@@ -16,9 +16,14 @@ import java.util.stream.Collectors;
 public class FacebookAccountController {
     private static final Logger log = LoggerFactory.getLogger(FacebookAccountController.class);
     private final FacebookAccountRepository repository;
+    private final FacebookTokenRevalidationService tokenRevalidationService;
 
-    public FacebookAccountController(FacebookAccountRepository repository) {
+    public FacebookAccountController(
+        FacebookAccountRepository repository,
+        FacebookTokenRevalidationService tokenRevalidationService
+    ) {
         this.repository = repository;
+        this.tokenRevalidationService = tokenRevalidationService;
     }
 
     @GetMapping
@@ -166,6 +171,21 @@ public class FacebookAccountController {
         }
 
         return repository.save(account);
+    }
+
+    @PostMapping("/{id}/token/revalidation")
+    public FacebookTokenRevalidationResponse revalidateToken(@PathVariable Long id) {
+        FacebookAccount account = repository.findById(id).orElseThrow();
+        validateRevalidationPrerequisites(account);
+        FacebookTokenRevalidationService.RevalidationResult result = tokenRevalidationService.revalidate(account);
+        return new FacebookTokenRevalidationResponse(
+            result.status(),
+            result.accessToken(),
+            result.tokenExpiresAt(),
+            result.renewedAt(),
+            result.attemptedAt(),
+            result.errorMessage()
+        );
     }
 
     @DeleteMapping("/{id}")
@@ -346,6 +366,18 @@ public class FacebookAccountController {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    private void validateRevalidationPrerequisites(FacebookAccount account) {
+        if (!StringUtils.hasText(account.getAccessToken())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Conta sem token configurado para revalidação");
+        }
+        if (!StringUtils.hasText(account.getAppId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe o App ID antes de revalidar o token");
+        }
+        if (!StringUtils.hasText(account.getAppSecret())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe o App Secret antes de revalidar o token");
+        }
+    }
+
     public record FacebookAccountRenewalCandidate(
         Long id,
         String name,
@@ -359,6 +391,15 @@ public class FacebookAccountController {
     ) {}
 
     public record FacebookTokenRenewalRequest(
+        FacebookTokenRenewalStatus status,
+        String accessToken,
+        LocalDateTime tokenExpiresAt,
+        LocalDateTime renewedAt,
+        LocalDateTime attemptedAt,
+        String errorMessage
+    ) {}
+
+    public record FacebookTokenRevalidationResponse(
         FacebookTokenRenewalStatus status,
         String accessToken,
         LocalDateTime tokenExpiresAt,

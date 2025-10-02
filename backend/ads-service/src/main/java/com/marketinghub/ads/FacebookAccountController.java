@@ -274,12 +274,13 @@ public class FacebookAccountController {
     private void validateWorkerConfiguration(FacebookAccount account) {
         requireField(account, account.getAccessToken(), "access token", FacebookWorkerValidationError.ACCESS_TOKEN_MISSING);
         requireField(account, account.getAdAccountId(), "ad account id", FacebookWorkerValidationError.AD_ACCOUNT_ID_MISSING);
-        requireField(
-            account,
-            account.getDefaultWebsiteUrl(),
-            "default website URL",
-            FacebookWorkerValidationError.DEFAULT_WEBSITE_URL_MISSING
-        );
+        if (!StringUtils.hasText(account.getDefaultWebsiteUrl())) {
+            log.warn(
+                "Facebook worker configuration for account id={} name='{}' is missing default website URL; continuing with null value.",
+                account.getId(),
+                StringUtils.hasText(account.getName()) ? account.getName() : "(unnamed)"
+            );
+        }
         requireField(
             account,
             account.getAdSetDailyBudget(),

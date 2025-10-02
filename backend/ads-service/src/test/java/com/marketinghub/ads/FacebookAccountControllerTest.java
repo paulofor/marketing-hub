@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -231,6 +232,36 @@ public class FacebookAccountControllerTest {
             .andExpect(jsonPath("$.adSetBillingEvent").value("IMPRESSIONS"))
             .andExpect(jsonPath("$.defaultCallToActionType").value("SIGN_UP"))
             .andExpect(jsonPath("$.defaultCreativeMessageTemplate").value("Campanha %s"));
+    }
+
+    @Test
+    void shouldExposeWorkerConfigurationWhenDefaultWebsiteMissing() throws Exception {
+        repository.deleteAll();
+        FacebookAccount account = repository.save(FacebookAccount.builder()
+            .name("Worker Account")
+            .currency("BRL")
+            .accessToken("worker-token")
+            .adAccountId("1234567890")
+            .defaultCreativeMessageTemplate("Campanha %s")
+            .defaultCallToActionType("SIGN_UP")
+            .adSetDailyBudget("2000")
+            .adSetBillingEvent("IMPRESSIONS")
+            .adSetOptimizationGoal("LINK_CLICKS")
+            .adSetDestinationType("WEBSITE")
+            .adSetBidStrategy("LOWEST_COST_WITHOUT_CAP")
+            .adSetTargetCountry("BR")
+            .workerEnabled(true)
+            .build());
+
+        mockMvc.perform(get("/api/accounts/facebook/worker-config"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.accountId").value(account.getId()))
+            .andExpect(jsonPath("$.defaultWebsiteUrl").value(nullValue()));
+
+        FacebookAccount persisted = repository.findById(account.getId()).orElseThrow();
+        assertThat(persisted.getWorkerLastValidationAt()).isNotNull();
+        assertThat(persisted.getWorkerLastValidationErrorCode()).isNull();
+        assertThat(persisted.getWorkerLastValidationErrorDetail()).isNull();
     }
 
     @Test

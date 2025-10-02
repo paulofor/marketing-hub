@@ -17,6 +17,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -200,6 +201,101 @@ public class FacebookAccountControllerTest {
 
         mockMvc.perform(post("/api/accounts/facebook/" + account.getId() + "/token/revalidation"))
             .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldPreserveTokenAndHiddenFieldsWhenUpdatingAccountWithoutExplicitValues() throws Exception {
+        FacebookAccount account = repository.save(FacebookAccount.builder()
+            .name("Original")
+            .currency("BRL")
+            .accessToken("original-token")
+            .tokenExpiresAt(LocalDateTime.parse("2024-01-05T10:00:00"))
+            .tokenLastRefreshedAt(LocalDateTime.parse("2024-01-01T08:00:00"))
+            .tokenRenewalStatus(FacebookTokenRenewalStatus.SUCCESS.name())
+            .tokenRenewalLastAttemptAt(LocalDateTime.parse("2023-12-31T12:00:00"))
+            .tokenRenewedAt(LocalDateTime.parse("2023-12-30T15:00:00"))
+            .tokenRenewalLastError("previous-error")
+            .defaultPageId("page-123")
+            .defaultInstagramActorId("ig-456")
+            .defaultWebsiteUrl("https://old.example.com")
+            .defaultLeadGenFormId("form-old")
+            .defaultCreativeMessageTemplate("Campanha antiga %s")
+            .defaultCallToActionType("SIGN_UP")
+            .adAccountId("act_old")
+            .adSetDailyBudget("1500")
+            .adSetBillingEvent("IMPRESSIONS")
+            .adSetOptimizationGoal("LINK_CLICKS")
+            .adSetDestinationType("WEBSITE")
+            .adSetBidStrategy("LOWEST_COST_WITHOUT_CAP")
+            .adSetBidAmount("500")
+            .adSetTargetCountry("BR")
+            .tokenRenewalEnabled(true)
+            .workerEnabled(true)
+            .authorizedUserId("auth-1")
+            .authorizedUserName("Original User")
+            .authorizedUserEmail("original@example.com")
+            .appId("old-app")
+            .build());
+
+        String payload = ("{" +
+            "\"id\":" + account.getId() + ',' +
+            "\"name\":\"Atualizada\"," +
+            "\"currency\":\"BRL\"," +
+            "\"authorizedUserId\":\"auth-2\"," +
+            "\"authorizedUserName\":\"Usuário Atualizado\"," +
+            "\"authorizedUserEmail\":\"updated@example.com\"," +
+            "\"appId\":\"new-app\"," +
+            "\"tokenRenewalEnabled\":false," +
+            "\"adAccountId\":\"act_new\"," +
+            "\"defaultWebsiteUrl\":\"https://new.example.com\"," +
+            "\"defaultLeadGenFormId\":\"form-new\"," +
+            "\"defaultCreativeMessageTemplate\":\"Nova campanha %s\"," +
+            "\"defaultCallToActionType\":\"LEARN_MORE\"," +
+            "\"adSetDailyBudget\":\"2000\"," +
+            "\"adSetBillingEvent\":\"IMPRESSIONS\"," +
+            "\"adSetOptimizationGoal\":\"LINK_CLICKS\"," +
+            "\"adSetDestinationType\":\"WEBSITE\"," +
+            "\"adSetBidStrategy\":\"LOWEST_COST_WITHOUT_CAP\"," +
+            "\"adSetBidAmount\":\"600\"," +
+            "\"adSetTargetCountry\":\"BR\"," +
+            "\"workerEnabled\":false" +
+            "}");
+
+        mockMvc.perform(put("/api/accounts/facebook/" + account.getId())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(payload))
+            .andExpect(status().isOk());
+
+        FacebookAccount updated = repository.findById(account.getId()).orElseThrow();
+        assertThat(updated.getAccessToken()).isEqualTo("original-token");
+        assertThat(updated.getTokenExpiresAt()).isEqualTo(LocalDateTime.parse("2024-01-05T10:00:00"));
+        assertThat(updated.getTokenLastRefreshedAt()).isEqualTo(LocalDateTime.parse("2024-01-01T08:00:00"));
+        assertThat(updated.getTokenRenewalStatus()).isEqualTo(FacebookTokenRenewalStatus.SUCCESS.name());
+        assertThat(updated.getTokenRenewalLastAttemptAt()).isEqualTo(LocalDateTime.parse("2023-12-31T12:00:00"));
+        assertThat(updated.getTokenRenewedAt()).isEqualTo(LocalDateTime.parse("2023-12-30T15:00:00"));
+        assertThat(updated.getTokenRenewalLastError()).isEqualTo("previous-error");
+        assertThat(updated.getDefaultPageId()).isEqualTo("page-123");
+        assertThat(updated.getDefaultInstagramActorId()).isEqualTo("ig-456");
+
+        assertThat(updated.getName()).isEqualTo("Atualizada");
+        assertThat(updated.getAuthorizedUserId()).isEqualTo("auth-2");
+        assertThat(updated.getAuthorizedUserName()).isEqualTo("Usuário Atualizado");
+        assertThat(updated.getAuthorizedUserEmail()).isEqualTo("updated@example.com");
+        assertThat(updated.getAppId()).isEqualTo("new-app");
+        assertThat(updated.isTokenRenewalEnabled()).isFalse();
+        assertThat(updated.getAdAccountId()).isEqualTo("act_new");
+        assertThat(updated.getDefaultWebsiteUrl()).isEqualTo("https://new.example.com");
+        assertThat(updated.getDefaultLeadGenFormId()).isEqualTo("form-new");
+        assertThat(updated.getDefaultCreativeMessageTemplate()).isEqualTo("Nova campanha %s");
+        assertThat(updated.getDefaultCallToActionType()).isEqualTo("LEARN_MORE");
+        assertThat(updated.getAdSetDailyBudget()).isEqualTo("2000");
+        assertThat(updated.getAdSetBillingEvent()).isEqualTo("IMPRESSIONS");
+        assertThat(updated.getAdSetOptimizationGoal()).isEqualTo("LINK_CLICKS");
+        assertThat(updated.getAdSetDestinationType()).isEqualTo("WEBSITE");
+        assertThat(updated.getAdSetBidStrategy()).isEqualTo("LOWEST_COST_WITHOUT_CAP");
+        assertThat(updated.getAdSetBidAmount()).isEqualTo("600");
+        assertThat(updated.getAdSetTargetCountry()).isEqualTo("BR");
+        assertThat(updated.isWorkerEnabled()).isFalse();
     }
 
     @Test

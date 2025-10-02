@@ -6,3 +6,4 @@
 - Liquibase: nunca altere arquivos de changelog já aplicados para evitar erros de checksum. Em vez disso, crie um novo changelog incremental e, se necessário, atualize os `include` do master.
 - Liquibase (MySQL 5): ao escrever `preConditions`, utilize apenas SQL válida no MySQL 5 (testando as consultas antes de incluí-las) e configure `dbms="mysql"` quando a condição depender do banco para evitar erros de sintaxe.
 - Liquibase (SQL formatado): mantenha os atributos (`expectedResult`, `dbms`, etc.) na mesma linha do `--precondition-sql-check` junto com a consulta SQL (`SELECT ...`) exatamente como suportado pelo Liquibase para evitar falhas de parsing.
+- Os endpoints de contas do Facebook não podem descartar valores que não aparecem na UI (por exemplo, tokens de acesso ou IDs padrão). Ao atualizar um registro existente, preserve qualquer campo que não tenha sido enviado explicitamente na requisição.

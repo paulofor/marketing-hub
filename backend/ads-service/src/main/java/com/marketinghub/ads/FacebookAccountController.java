@@ -67,9 +67,7 @@ public class FacebookAccountController {
         persisted.setAuthorizedUserEmail(account.getAuthorizedUserEmail());
         persisted.setAppId(account.getAppId());
         persisted.setAdAccountId(account.getAdAccountId());
-        persisted.setDefaultPageId(account.getDefaultPageId());
         persisted.setDefaultWebsiteUrl(account.getDefaultWebsiteUrl());
-        persisted.setDefaultInstagramActorId(account.getDefaultInstagramActorId());
         persisted.setDefaultCreativeMessageTemplate(account.getDefaultCreativeMessageTemplate());
         persisted.setDefaultCallToActionType(account.getDefaultCallToActionType());
         persisted.setAdSetDailyBudget(account.getAdSetDailyBudget());
@@ -82,21 +80,30 @@ public class FacebookAccountController {
         persisted.setTokenRenewalEnabled(account.isTokenRenewalEnabled());
         persisted.setWorkerEnabled(account.isWorkerEnabled());
 
-        String newToken = account.getAccessToken();
-        if (newToken == null) {
-            persisted.setAccessToken(null);
-            persisted.setTokenExpiresAt(null);
-            persisted.setTokenLastRefreshedAt(null);
-            persisted.setTokenRenewalStatus(FacebookTokenRenewalStatus.NEVER_ATTEMPTED.name());
-            persisted.setTokenRenewalLastAttemptAt(null);
-            persisted.setTokenRenewedAt(null);
-            persisted.setTokenRenewalLastError(null);
-        } else {
-            if (!newToken.equals(persisted.getAccessToken())) {
-                persisted.setTokenLastRefreshedAt(LocalDateTime.now());
+        if (account.isDefaultPageIdProvided()) {
+            persisted.setDefaultPageId(account.getDefaultPageId());
+        }
+        if (account.isDefaultInstagramActorIdProvided()) {
+            persisted.setDefaultInstagramActorId(account.getDefaultInstagramActorId());
+        }
+
+        if (account.isAccessTokenProvided()) {
+            String newToken = account.getAccessToken();
+            if (newToken == null) {
+                persisted.setAccessToken(null);
+                persisted.setTokenExpiresAt(null);
+                persisted.setTokenLastRefreshedAt(null);
+                persisted.setTokenRenewalStatus(FacebookTokenRenewalStatus.NEVER_ATTEMPTED.name());
+                persisted.setTokenRenewalLastAttemptAt(null);
+                persisted.setTokenRenewedAt(null);
+                persisted.setTokenRenewalLastError(null);
+            } else {
+                if (!newToken.equals(persisted.getAccessToken())) {
+                    persisted.setTokenLastRefreshedAt(LocalDateTime.now());
+                }
+                persisted.setAccessToken(newToken);
+                persisted.setTokenExpiresAt(account.getTokenExpiresAt());
             }
-            persisted.setAccessToken(newToken);
-            persisted.setTokenExpiresAt(account.getTokenExpiresAt());
         }
 
         if (account.isAppSecretProvided()) {

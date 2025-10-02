@@ -17,6 +17,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -96,6 +97,106 @@ public class FacebookAccountControllerTest {
         assertThat(saved.isTokenRenewalEnabled()).isTrue();
 
         repository.deleteAll();
+    }
+
+    @Test
+    void shouldPreserveTokenAndHiddenFieldsWhenUpdatingWithoutThem() throws Exception {
+        LocalDateTime expiresAt = LocalDateTime.of(2030, 1, 1, 12, 0);
+        FacebookAccount existing = repository.save(FacebookAccount.builder()
+            .name("Conta original")
+            .currency("BRL")
+            .accessToken("token-atual")
+            .tokenExpiresAt(expiresAt)
+            .defaultPageId("1234567890")
+            .defaultInstagramActorId("ig-actor-1")
+            .defaultWebsiteUrl("https://example.com")
+            .defaultCreativeMessageTemplate("Mensagem %s")
+            .defaultCallToActionType("LEARN_MORE")
+            .adSetDailyBudget("1000")
+            .adSetBillingEvent("IMPRESSIONS")
+            .adSetOptimizationGoal("LINK_CLICKS")
+            .adSetDestinationType("WEBSITE")
+            .adSetBidStrategy("LOWEST_COST_WITHOUT_CAP")
+            .adSetBidAmount("500")
+            .adSetTargetCountry("BR")
+            .tokenRenewalEnabled(true)
+            .workerEnabled(true)
+            .build());
+
+        String payload = """
+            {
+              "name": "Conta atualizada",
+              "currency": "BRL",
+              "authorizedUserId": "123",
+              "authorizedUserName": "Marketing Hub",
+              "authorizedUserEmail": "contato@example.com",
+              "appId": "app-123",
+              "adAccountId": "act_123",
+              "defaultWebsiteUrl": "https://atualizado.example.com",
+              "defaultCreativeMessageTemplate": "Atualizada %s",
+              "defaultCallToActionType": "LEARN_MORE",
+              "adSetDailyBudget": "2000",
+              "adSetBillingEvent": "IMPRESSIONS",
+              "adSetOptimizationGoal": "LINK_CLICKS",
+              "adSetDestinationType": "WEBSITE",
+              "adSetBidStrategy": "LOWEST_COST_WITHOUT_CAP",
+              "adSetBidAmount": "800",
+              "adSetTargetCountry": "BR",
+              "tokenRenewalEnabled": true,
+              "workerEnabled": true
+            }
+            """;
+
+        mockMvc.perform(put("/api/accounts/facebook/" + existing.getId())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(payload))
+            .andExpect(status().isOk());
+
+        FacebookAccount updated = repository.findById(existing.getId()).orElseThrow();
+        assertThat(updated.getAccessToken()).isEqualTo("token-atual");
+        assertThat(updated.getTokenExpiresAt()).isEqualTo(expiresAt);
+        assertThat(updated.getDefaultPageId()).isEqualTo("1234567890");
+        assertThat(updated.getDefaultInstagramActorId()).isEqualTo("ig-actor-1");
+        assertThat(updated.getDefaultWebsiteUrl()).isEqualTo("https://atualizado.example.com");
+        assertThat(updated.getAdSetBidAmount()).isEqualTo("800");
+    }
+
+    @Test
+    void shouldClearTokenWhenNullIsExplicitlyProvidedOnUpdate() throws Exception {
+        FacebookAccount existing = repository.save(FacebookAccount.builder()
+            .name("Conta com token")
+            .currency("BRL")
+            .accessToken("token-antigo")
+            .tokenExpiresAt(LocalDateTime.of(2030, 1, 1, 0, 0))
+            .tokenRenewalStatus(FacebookTokenRenewalStatus.SUCCESS.name())
+            .tokenRenewalLastError("erro antigo")
+            .tokenRenewalLastAttemptAt(LocalDateTime.of(2029, 12, 31, 23, 0))
+            .tokenRenewedAt(LocalDateTime.of(2029, 12, 31, 23, 0))
+            .build());
+
+        String payload = """
+            {
+              "name": "Conta com token",
+              "currency": "BRL",
+              "accessToken": null,
+              "tokenRenewalEnabled": false,
+              "workerEnabled": false
+            }
+            """;
+
+        mockMvc.perform(put("/api/accounts/facebook/" + existing.getId())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(payload))
+            .andExpect(status().isOk());
+
+        FacebookAccount updated = repository.findById(existing.getId()).orElseThrow();
+        assertThat(updated.getAccessToken()).isNull();
+        assertThat(updated.getTokenExpiresAt()).isNull();
+        assertThat(updated.getTokenLastRefreshedAt()).isNull();
+        assertThat(updated.getTokenRenewalStatus()).isEqualTo(FacebookTokenRenewalStatus.NEVER_ATTEMPTED.name());
+        assertThat(updated.getTokenRenewalLastAttemptAt()).isNull();
+        assertThat(updated.getTokenRenewalLastError()).isNull();
+        assertThat(updated.getTokenRenewedAt()).isNull();
     }
 
     @Test

@@ -67,9 +67,13 @@ public class FacebookAccountController {
         persisted.setAuthorizedUserEmail(account.getAuthorizedUserEmail());
         persisted.setAppId(account.getAppId());
         persisted.setAdAccountId(account.getAdAccountId());
-        persisted.setDefaultPageId(account.getDefaultPageId());
+        if (account.isDefaultPageIdProvided()) {
+            persisted.setDefaultPageId(account.getDefaultPageId());
+        }
         persisted.setDefaultWebsiteUrl(account.getDefaultWebsiteUrl());
-        persisted.setDefaultInstagramActorId(account.getDefaultInstagramActorId());
+        if (account.isDefaultInstagramActorIdProvided()) {
+            persisted.setDefaultInstagramActorId(account.getDefaultInstagramActorId());
+        }
         persisted.setDefaultCreativeMessageTemplate(account.getDefaultCreativeMessageTemplate());
         persisted.setDefaultCallToActionType(account.getDefaultCallToActionType());
         persisted.setAdSetDailyBudget(account.getAdSetDailyBudget());
@@ -82,21 +86,23 @@ public class FacebookAccountController {
         persisted.setTokenRenewalEnabled(account.isTokenRenewalEnabled());
         persisted.setWorkerEnabled(account.isWorkerEnabled());
 
-        String newToken = account.getAccessToken();
-        if (newToken == null) {
-            persisted.setAccessToken(null);
-            persisted.setTokenExpiresAt(null);
-            persisted.setTokenLastRefreshedAt(null);
-            persisted.setTokenRenewalStatus(FacebookTokenRenewalStatus.NEVER_ATTEMPTED.name());
-            persisted.setTokenRenewalLastAttemptAt(null);
-            persisted.setTokenRenewedAt(null);
-            persisted.setTokenRenewalLastError(null);
-        } else {
-            if (!newToken.equals(persisted.getAccessToken())) {
-                persisted.setTokenLastRefreshedAt(LocalDateTime.now());
+        if (account.isAccessTokenProvided()) {
+            String newToken = account.getAccessToken();
+            if (newToken == null) {
+                persisted.setAccessToken(null);
+                persisted.setTokenExpiresAt(null);
+                persisted.setTokenLastRefreshedAt(null);
+                persisted.setTokenRenewalStatus(FacebookTokenRenewalStatus.NEVER_ATTEMPTED.name());
+                persisted.setTokenRenewalLastAttemptAt(null);
+                persisted.setTokenRenewedAt(null);
+                persisted.setTokenRenewalLastError(null);
+            } else {
+                if (!newToken.equals(persisted.getAccessToken())) {
+                    persisted.setTokenLastRefreshedAt(LocalDateTime.now());
+                }
+                persisted.setAccessToken(newToken);
+                persisted.setTokenExpiresAt(account.getTokenExpiresAt());
             }
-            persisted.setAccessToken(newToken);
-            persisted.setTokenExpiresAt(account.getTokenExpiresAt());
         }
 
         if (account.isAppSecretProvided()) {
@@ -196,15 +202,21 @@ public class FacebookAccountController {
     private void normalizeAccount(FacebookAccount account) {
         account.setName(trim(account.getName()));
         account.setCurrency(trim(account.getCurrency()));
-        account.setAccessToken(trimToNull(account.getAccessToken()));
+        if (account.isAccessTokenProvided()) {
+            account.setAccessToken(trimToNull(account.getAccessToken()));
+        }
         account.setAuthorizedUserId(trimToNull(account.getAuthorizedUserId()));
         account.setAuthorizedUserName(trimToNull(account.getAuthorizedUserName()));
         account.setAuthorizedUserEmail(trimToNull(account.getAuthorizedUserEmail()));
         account.setAppId(trimToNull(account.getAppId()));
         account.setAdAccountId(trimToNull(account.getAdAccountId()));
-        account.setDefaultPageId(trimToNull(account.getDefaultPageId()));
+        if (account.isDefaultPageIdProvided()) {
+            account.setDefaultPageId(trimToNull(account.getDefaultPageId()));
+        }
         account.setDefaultWebsiteUrl(trimToNull(account.getDefaultWebsiteUrl()));
-        account.setDefaultInstagramActorId(trimToNull(account.getDefaultInstagramActorId()));
+        if (account.isDefaultInstagramActorIdProvided()) {
+            account.setDefaultInstagramActorId(trimToNull(account.getDefaultInstagramActorId()));
+        }
         account.setDefaultCreativeMessageTemplate(trimToNull(account.getDefaultCreativeMessageTemplate()));
         account.setDefaultCallToActionType(trimToNull(account.getDefaultCallToActionType()));
         account.setAdSetDailyBudget(trimToNull(account.getAdSetDailyBudget()));

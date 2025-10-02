@@ -35,6 +35,7 @@ public class FacebookAccount {
     private String name;
     private String currency;
 
+    @Setter(AccessLevel.NONE)
     @Column(columnDefinition = "LONGTEXT")
     private String accessToken;
     private LocalDateTime tokenExpiresAt;
@@ -47,12 +48,14 @@ public class FacebookAccount {
     @Column(name = "ad_account_id")
     private String adAccountId;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "default_page_id")
     private String defaultPageId;
 
     @Column(name = "default_website_url", length = 512)
     private String defaultWebsiteUrl;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "default_instagram_actor_id")
     private String defaultInstagramActorId;
 
@@ -117,6 +120,21 @@ public class FacebookAccount {
     private boolean appSecretProvided;
 
     @Transient
+    @JsonIgnore
+    @Setter(AccessLevel.NONE)
+    private boolean accessTokenProvided;
+
+    @Transient
+    @JsonIgnore
+    @Setter(AccessLevel.NONE)
+    private boolean defaultPageIdProvided;
+
+    @Transient
+    @JsonIgnore
+    @Setter(AccessLevel.NONE)
+    private boolean defaultInstagramActorIdProvided;
+
+    @Transient
     @JsonProperty("tokenExpired")
     public boolean isTokenExpired() {
         return tokenExpiresAt != null && tokenExpiresAt.isBefore(LocalDateTime.now());
@@ -156,10 +174,58 @@ public class FacebookAccount {
         this.appSecret = appSecret;
     }
 
+    public void setAccessToken(String accessToken) {
+        this.accessToken = accessToken;
+    }
+
+    @JsonSetter("accessToken")
+    public void jsonAccessTokenSetter(String accessToken) {
+        this.accessToken = accessToken;
+        this.accessTokenProvided = true;
+    }
+
     @Transient
     @JsonIgnore
     public boolean isAppSecretProvided() {
         return appSecretProvided;
+    }
+
+    @Transient
+    @JsonIgnore
+    public boolean isAccessTokenProvided() {
+        return accessTokenProvided;
+    }
+
+    public void setDefaultPageId(String defaultPageId) {
+        this.defaultPageId = defaultPageId;
+    }
+
+    @JsonSetter("defaultPageId")
+    public void jsonDefaultPageIdSetter(String defaultPageId) {
+        this.defaultPageId = defaultPageId;
+        this.defaultPageIdProvided = true;
+    }
+
+    @Transient
+    @JsonIgnore
+    public boolean isDefaultPageIdProvided() {
+        return defaultPageIdProvided;
+    }
+
+    public void setDefaultInstagramActorId(String defaultInstagramActorId) {
+        this.defaultInstagramActorId = defaultInstagramActorId;
+    }
+
+    @JsonSetter("defaultInstagramActorId")
+    public void jsonDefaultInstagramActorIdSetter(String defaultInstagramActorId) {
+        this.defaultInstagramActorId = defaultInstagramActorId;
+        this.defaultInstagramActorIdProvided = true;
+    }
+
+    @Transient
+    @JsonIgnore
+    public boolean isDefaultInstagramActorIdProvided() {
+        return defaultInstagramActorIdProvided;
     }
 
     @Transient

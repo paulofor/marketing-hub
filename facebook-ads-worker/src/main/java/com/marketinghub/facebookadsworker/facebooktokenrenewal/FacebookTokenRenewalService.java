@@ -21,17 +21,20 @@ public class FacebookTokenRenewalService {
 
     private final WebClient backendClient;
     private final FacebookAdsService facebookAdsService;
+    private final FacebookTokenRevalidationClient tokenRevalidationClient;
     private final String backendBaseUrl;
     private final String apiPrefix;
 
     public FacebookTokenRenewalService(
         WebClient.Builder builder,
         FacebookAdsService facebookAdsService,
+        FacebookTokenRevalidationClient tokenRevalidationClient,
         @Value("${backend.base-url:http://localhost:8000}") String backendBaseUrl,
         @Value("${backend.api-prefix:/api}") String apiPrefix
     ) {
         this.backendClient = builder.build();
         this.facebookAdsService = facebookAdsService;
+        this.tokenRevalidationClient = tokenRevalidationClient;
         this.backendBaseUrl = backendBaseUrl;
         this.apiPrefix = apiPrefix;
     }
@@ -89,97 +92,47 @@ public class FacebookTokenRenewalService {
             candidate.tokenExpiresAt()
         );
 
-        try {
-            FacebookAdsService.TokenRenewalResponse response = facebookAdsService.renewLongLivedToken(
-                candidate.appId(),
-                candidate.appSecret(),
-                candidate.accessToken()
+        FacebookTokenRevalidationClient.TokenRevalidationResponse response = tokenRevalidationClient
+            .revalidate(candidate.id())
+            .orElse(null);
+
+        if (response == null) {
+            LOGGER.error(
+                "Token revalidation request did not return a response: accountId={}, name={}",
+                candidate.id(),
+                candidate.name()
             );
+            return;
+        }
 
-            LocalDateTime renewedAt = attemptTime;
-            LocalDateTime expiresAt = attemptTime.plusSeconds(Math.max(response.expiresInSeconds(), 0));
-
+        if (response.status() == FacebookTokenRevalidationClient.TokenRevalidationStatus.SUCCESS) {
             boolean matchesCurrentToken = Objects.equals(
                 candidate.accessToken(),
                 facebookAdsService.getCurrentAccessToken()
             );
-            if (matchesCurrentToken) {
+            if (matchesCurrentToken && response.accessToken() != null) {
                 facebookAdsService.updateAccessToken(response.accessToken());
                 LOGGER.info(
-                    "Updated in-memory Facebook access token after backend renewal for account id={}",
+                    "Updated in-memory Facebook access token after backend revalidation for account id={}",
                     candidate.id()
                 );
-            } else {
+            } else if (!matchesCurrentToken) {
                 LOGGER.debug(
                     "Skipping in-memory Facebook token update because candidate token does not match the worker configuration: accountId={}",
                     candidate.id()
                 );
             }
-
-            reportResult(candidate.id(), new RenewalResultPayload(
-                TokenRenewalStatus.SUCCESS,
-                response.accessToken(),
-                expiresAt,
-                renewedAt,
-                attemptTime,
-                null
-            ));
-        } catch (Exception ex) {
+            LOGGER.info(
+                "Facebook token revalidation succeeded for account id={} via backend", candidate.id()
+            );
+        } else {
             LOGGER.error(
-                "Token renewal failed for Facebook account id={}, name={}: {}",
+                "Token revalidation failed for Facebook account id={}, name={}: {}",
                 candidate.id(),
                 candidate.name(),
-                ex.getMessage(),
-                ex
-            );
-            reportResult(candidate.id(), new RenewalResultPayload(
-                TokenRenewalStatus.FAILED,
-                null,
-                null,
-                null,
-                attemptTime,
-                ex.getMessage()
-            ));
-        }
-    }
-
-    private void reportResult(Long accountId, RenewalResultPayload payload) {
-        String path = "/accounts/facebook/" + accountId + "/token/renewal";
-        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, path);
-        LOGGER.info(
-            "Reporting Facebook token renewal result to backend: url={}, params={}, payload={}",
-            url,
-            Collections.emptyMap(),
-            payload
-        );
-        try {
-            backendClient
-                .post()
-                .uri(url)
-                .bodyValue(payload)
-                .retrieve()
-                .toBodilessEntity()
-                .block();
-            LOGGER.info(
-                "Successfully reported Facebook token renewal result to backend: url={}, accountId={}",
-                url,
-                accountId
-            );
-        } catch (WebClientResponseException | WebClientRequestException ex) {
-            LOGGER.error(
-                "Failed to report token renewal result to backend for account {}: url={}, status={}, message={}",
-                accountId,
-                url,
-                ex instanceof WebClientResponseException responseException ? responseException.getRawStatusCode() : "N/A",
-                ex.getMessage(),
-                ex
+                response.errorMessage()
             );
         }
-    }
-
-    public enum TokenRenewalStatus {
-        SUCCESS,
-        FAILED
     }
 
     public record FacebookAccountRenewalCandidate(
@@ -189,14 +142,5 @@ public class FacebookTokenRenewalService {
         String appSecret,
         String accessToken,
         LocalDateTime tokenExpiresAt
-    ) {}
-
-    public record RenewalResultPayload(
-        TokenRenewalStatus status,
-        String accessToken,
-        LocalDateTime tokenExpiresAt,
-        LocalDateTime renewedAt,
-        LocalDateTime attemptedAt,
-        String errorMessage
     ) {}
 }

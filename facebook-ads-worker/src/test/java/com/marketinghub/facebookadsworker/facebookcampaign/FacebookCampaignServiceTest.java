@@ -10,6 +10,7 @@ import com.marketinghub.facebookadsworker.FacebookAccessTokenManager;
 import com.marketinghub.facebookadsworker.FacebookAdsService;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient.FacebookWorkerConfiguration;
+import com.marketinghub.facebookadsworker.facebooktokenrenewal.FacebookTokenRevalidationClient;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -55,9 +56,15 @@ class FacebookCampaignServiceTest {
             objectMapper
         );
         adsService.updateAccessToken("token");
+        FacebookTokenRevalidationClient tokenRevalidationClient = new FacebookTokenRevalidationClient(
+            WebClient.builder(),
+            backend.url("/").toString(),
+            "/api"
+        );
         FacebookAccessTokenManager accessTokenManager = new FacebookAccessTokenManager(
             adsService,
-            configurationClient
+            configurationClient,
+            tokenRevalidationClient
         );
         service = new FacebookCampaignService(
             adsService,
@@ -462,7 +469,11 @@ class FacebookCampaignServiceTest {
             FacebookAdsService adsService,
             FacebookWorkerConfigurationClient configurationClient
         ) {
-            super(adsService, configurationClient);
+            super(
+                adsService,
+                configurationClient,
+                new FacebookTokenRevalidationClient(WebClient.builder(), "http://localhost", "/api")
+            );
             this.adsService = adsService;
         }
 

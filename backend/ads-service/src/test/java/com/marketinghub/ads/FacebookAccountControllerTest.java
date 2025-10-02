@@ -177,6 +177,31 @@ public class FacebookAccountControllerTest {
     }
 
     @Test
+    void shouldRejectRevalidationWhenTokenMissing() throws Exception {
+        FacebookAccount account = repository.save(FacebookAccount.builder()
+            .name("Missing token")
+            .currency("USD")
+            .appId("app-1")
+            .appSecret("secret")
+            .build());
+
+        mockMvc.perform(post("/api/accounts/facebook/" + account.getId() + "/token/revalidation"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldRejectRevalidationWhenAppCredentialsMissing() throws Exception {
+        FacebookAccount account = repository.save(FacebookAccount.builder()
+            .name("Missing app id")
+            .currency("USD")
+            .accessToken("token")
+            .build());
+
+        mockMvc.perform(post("/api/accounts/facebook/" + account.getId() + "/token/revalidation"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void shouldExposeWorkerConfigurationWhenAccountEnabled() throws Exception {
         repository.deleteAll();
         FacebookAccount account = repository.save(FacebookAccount.builder()

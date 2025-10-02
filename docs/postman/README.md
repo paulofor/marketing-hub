@@ -8,4 +8,4 @@ Esta pasta concentra collections prontas para importar no Postman e exercitar os
 3. Ajuste a variável `baseUrl` para apontar para a instância do backend que deseja testar (por padrão `http://191.252.92.222:8000/api`).
 4. Defina a variável `accountId` com o identificador da conta que deseja atualizar, renovar ou excluir.
 
-A collection inclui requisições para listar, criar, atualizar e remover contas, consultar o `worker-config` ativo e registrar tentativas de renovação de token do Facebook Ads Worker.
+A collection inclui requisições para listar, criar, atualizar e remover contas, consultar o `worker-config` ativo, solicitar a revalidação automática de tokens e registrar tentativas manualmente quando necessário.

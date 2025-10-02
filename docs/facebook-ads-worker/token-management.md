@@ -32,18 +32,16 @@ expiração automática.
    `GET /api/accounts/facebook/renewal/eligible` para descobrir quais contas
    possuem `tokenRenewalEnabled = true`, credenciais completas e expiração
    iminente.
-2. Para cada conta elegível, o `FacebookTokenRenewalService` chama a Graph API na
-   rota `/{version}/oauth/access_token` com `grant_type=fb_exchange_token`,
-   reaproveitando `appId`, `appSecret` e o token atual para solicitar um novo
-   token de longa duração.
-3. Se a resposta indicar sucesso, o worker atualiza seu `FacebookAdsService` em
-   memória quando o token renovado pertence à mesma conta configurada e, em
-   seguida, informa o backend via `POST /api/accounts/facebook/{id}/token/renewal`
-   com o novo token, data de expiração calculada e o instante de renovação.
-4. Em caso de erro (por exemplo, `(#190) OAuthException`), o worker envia o mesmo
-   endpoint com `status=FAILED` e a mensagem retornada pela Graph API. O token
-   antigo permanece em uso até uma intervenção manual ou uma nova tentativa bem
-   sucedida.
+2. Para cada conta elegível, o `FacebookTokenRenewalService` aciona o endpoint
+   `POST /api/accounts/facebook/{id}/token/revalidation`. O backend reutiliza o
+   `appId`, o `appSecret` e o token atual armazenados na conta para trocar o
+   token diretamente na Graph API.
+3. Ao receber `status=SUCCESS`, o worker atualiza seu `FacebookAdsService` em
+   memória quando o token renovado pertence à mesma conta configurada. O backend
+   já registra o novo token, a data de expiração e o horário da tentativa.
+4. Em caso de falha (por exemplo, `(#190) OAuthException`), o backend devolve
+   `status=FAILED` com a mensagem da Graph API, mantendo o token anterior até que
+   uma intervenção manual ou nova tentativa automática seja bem-sucedida.
 
 ## 3. Comportamento do backend
 
@@ -52,15 +50,16 @@ expiração automática.
   `appId`, `appSecret`, renovação automática ativada e que estão dentro da janela
   configurada para expiração. O backend devolve a lista de candidatos contendo
   identificador, nome, credenciais e a data atual de expiração.
-- **Registro da tentativa** – Ao receber `POST /api/accounts/facebook/{id}/token/renewal`
-  o backend atualiza `tokenRenewalStatus` e `tokenRenewalLastAttemptAt` com o
-  horário informado (ou o horário da requisição quando ausente).
-- **Sucesso** – Quando `status=SUCCESS`, o backend exige `accessToken`
-  preenchido, atualiza `tokenExpiresAt`, `tokenLastRefreshedAt` e `tokenRenewedAt`
-  e limpa `tokenRenewalLastError`. O novo token passa a ser utilizado pelo
-  frontend e por futuras execuções do worker.
+- **Registro da tentativa** – O endpoint `POST /api/accounts/facebook/{id}/token/revalidation`
+  atualiza `tokenRenewalStatus`, `tokenRenewalLastAttemptAt`, `tokenRenewedAt` e
+  `tokenExpiresAt` automaticamente após consultar a Graph API, registrando o
+  token recebido ou a mensagem de erro.
+- **Sucesso** – Quando `status=SUCCESS`, o backend salva o novo `accessToken`,
+  atualiza `tokenExpiresAt`, `tokenLastRefreshedAt` e `tokenRenewedAt` e limpa
+  `tokenRenewalLastError`. O novo token passa a ser utilizado pelo frontend e por
+  futuras execuções do worker.
 - **Falha** – Quando `status=FAILED`, o backend mantém o token anterior e grava a
-  mensagem recebida em `tokenRenewalLastError`, permitindo que o frontend
+  mensagem retornada em `tokenRenewalLastError`, permitindo que o frontend
   exiba o motivo da falha e que operadores decidam por uma nova tentativa ou
   substituição manual do token.
 

@@ -255,8 +255,9 @@ classDiagram
     FacebookAdsAd --> FacebookAdsAdCreative
     FacebookCampaignService ..> UrlUtils : compõe URLs do backend
     FacebookTokenRenewalScheduler --> FacebookTokenRenewalService : agenda renovação
-    FacebookTokenRenewalService --> FacebookAdsService : renova token
+    FacebookTokenRenewalService --> FacebookTokenRevalidationClient : solicita revalidação
     FacebookAccessTokenManager --> FacebookWorkerConfigurationClient : lê credenciais do backend
+    FacebookAccessTokenManager --> FacebookTokenRevalidationClient : revalida token expirado
     FacebookTokenRenewalService ..> UrlUtils : reutiliza composição de URLs
 ```
 
@@ -271,16 +272,18 @@ classDiagram
   lista de bloqueio em memória para evitar novas tentativas até que o worker
   seja reiniciado.
 * `FacebookAdsService` encapsula as chamadas à Graph API (criação da hierarquia
-  de mídia, consulta de métricas e renovação de tokens de longa duração).
+  de mídia e consulta de métricas). A revalidação de tokens de longa duração é
+  realizada pelo backend através do `FacebookTokenRevalidationClient`.
 * `FacebookTokenRenewalScheduler` agenda o fluxo periódico de renovação de token
   e delega para `FacebookTokenRenewalService`.
-* `FacebookTokenRenewalService` busca as contas elegíveis no backend, chama a
-  Graph API para obter um novo token e registra o resultado por meio do endpoint
-  `/api/accounts/facebook/{id}/token/renewal`.
+* `FacebookTokenRenewalService` busca as contas elegíveis no backend, solicita a
+  revalidação automática via `POST /api/accounts/facebook/{id}/token/revalidation`
+  e sincroniza o token em memória quando a resposta pertence à conta configurada
+  no worker.
 * `FacebookAccessTokenManager` encapsula a renovação imediata de tokens quando o
   `FacebookCampaignService` detecta expiração durante a criação de campanhas,
-  consultando novamente o backend para reutilizar as credenciais e atualizar o
-  `access_token` em memória.
+  consultando o backend pelo mesmo endpoint para atualizar o `access_token` em
+  memória.
 * `FacebookWorkerConfigurationClient` fornece acesso ao endpoint
   `/api/accounts/facebook/worker-config`, permitindo que os serviços leiam as
   credenciais e parâmetros padrão preenchidos na interface web.

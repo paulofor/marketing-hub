@@ -156,6 +156,26 @@
           }
         },
         {
+          "name": "Disparar revalidação automática",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/accounts/facebook/{{accountId}}/token/revalidation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "accounts",
+                "facebook",
+                "{{accountId}}",
+                "token",
+                "revalidation"
+              ]
+            }
+          }
+        },
+        {
           "name": "Registrar tentativa de renovação",
           "request": {
             "method": "POST",

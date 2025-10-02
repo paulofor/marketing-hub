@@ -35,3 +35,20 @@
     padding: clamp(1rem, 4vw, 1.5rem);
   }
 }
+
+.funnel-card {
+  background: linear-gradient(135deg, #f7f9ff 0%, #f4f7ff 100%);
+  border: 1px solid rgba(88, 102, 242, 0.12);
+}
+
+.funnel-step-card {
+  background: linear-gradient(135deg, #f8faff 0%, #eef3ff 100%);
+  border: 1px solid rgba(88, 102, 242, 0.18);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.funnel-step-card:hover,
+.funnel-step-card:focus-within {
+  transform: translateY(-2px);
+  box-shadow: 0 0.75rem 2rem -1rem rgba(88, 102, 242, 0.45);
+}

@@ -146,3 +146,6 @@ databaseChangeLog:
   - include:
       file: V2026_05_01__track_fb_worker_config_errors.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2026_05_10__support_lead_forms.sql
+      relativeToChangelogFile: true

@@ -12,6 +12,7 @@ export interface Creative {
   description?: string;
   cta?: string;
   destinationUrl?: string;
+  leadGenFormId?: string;
   instagramUserId?: string;
 }
 

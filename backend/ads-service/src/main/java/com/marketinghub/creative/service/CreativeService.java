@@ -63,6 +63,7 @@ public class CreativeService {
                 .description(request.getDescription())
                 .cta(request.getCta())
                 .destinationUrl(request.getDestinationUrl())
+                .leadGenFormId(request.getLeadGenFormId())
                 .instagramUserId(request.getInstagramUserId())
                 .status(request.getStatus())
                 .build();
@@ -84,6 +85,7 @@ public class CreativeService {
         creative.setDescription(request.getDescription());
         creative.setCta(request.getCta());
         creative.setDestinationUrl(request.getDestinationUrl());
+        creative.setLeadGenFormId(request.getLeadGenFormId());
         creative.setInstagramUserId(request.getInstagramUserId());
         creative.setStatus(request.getStatus());
         Creative saved = repository.save(creative);

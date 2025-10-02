@@ -73,3 +73,6 @@ expiração automática.
 - Monitore periodicamente os campos **Última tentativa de renovação** e **Último
   erro** na tela de contas para confirmar que o agendador está funcionando e que
   nenhuma credencial está próxima do vencimento.
+- Revise também os novos campos opcionais (como `defaultLeadGenFormId`) ao
+  atualizar tokens: eles não impactam a autenticação, mas garantem que campanhas
+  de leads continuem direcionando corretamente os formulários.

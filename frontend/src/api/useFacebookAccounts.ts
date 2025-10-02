@@ -33,6 +33,7 @@ export interface FacebookAccount {
   tokenRenewalLastError?: string | null;
   adAccountId?: string | null;
   defaultWebsiteUrl?: string | null;
+  defaultLeadGenFormId?: string | null;
   defaultCreativeMessageTemplate?: string | null;
   defaultCallToActionType?: string | null;
   financialStrategy?: FacebookAccountFinancialStrategy;

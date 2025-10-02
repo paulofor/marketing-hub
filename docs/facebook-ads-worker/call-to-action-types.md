@@ -1,0 +1,111 @@
+# Tipos de Call to Action suportados
+
+A Graph API expõe os tipos de call to action aceitos em campanhas via enumeração `AdCreative.CallToActionType`. O `facebook-ads-worker` replica essa lista tanto no backend quanto no frontend (ver `frontend/src/constants/facebookCallToActions.ts`) para evitar divergências. Utilize esta referência ao configurar o campo **Call to Action** na tela de criativos ou ao definir o fallback padrão em **Contas do Facebook**.
+
+> Fonte: [Facebook Business SDK – `AdCreative.CallToActionType`](https://github.com/facebook/facebook-business-sdk-codegen)
+
+## Lista completa (97 valores)
+
+- ADD_TO_CART
+- APPLY_NOW
+- ASK_ABOUT_SERVICES
+- ASK_FOR_MORE_INFO
+- AUDIO_CALL
+- BOOK_A_CONSULTATION
+- BOOK_NOW
+- BOOK_TRAVEL
+- BROWSE_SHOP
+- BUY
+- BUY_NOW
+- BUY_TICKETS
+- BUY_VIA_MESSAGE
+- CALL
+- CALL_ME
+- CALL_NOW
+- CHAT_WITH_US
+- CONFIRM
+- CONTACT
+- CONTACT_US
+- DONATE
+- DONATE_NOW
+- DOWNLOAD
+- EVENT_RSVP
+- FIND_A_GROUP
+- FIND_OUT_MORE
+- FIND_YOUR_GROUPS
+- FOLLOW_NEWS_STORYLINE
+- FOLLOW_PAGE
+- FOLLOW_USER
+- GET_A_QUOTE
+- GET_DETAILS
+- GET_DIRECTIONS
+- GET_IN_TOUCH
+- GET_OFFER
+- GET_OFFER_VIEW
+- GET_PROMOTIONS
+- GET_QUOTE
+- GET_SHOWTIMES
+- GET_STARTED
+- INQUIRE_NOW
+- INSTALL_APP
+- INSTALL_MOBILE_APP
+- JOIN_CHANNEL
+- LEARN_MORE
+- LIKE_PAGE
+- LISTEN_MUSIC
+- LISTEN_NOW
+- MAKE_AN_APPOINTMENT
+- MESSAGE_PAGE
+- MOBILE_DOWNLOAD
+- NO_BUTTON
+- OPEN_INSTANT_APP
+- OPEN_LINK
+- ORDER_NOW
+- PAY_TO_ACCESS
+- PLAY_GAME
+- PLAY_GAME_ON_FACEBOOK
+- PURCHASE_GIFT_CARDS
+- RAISE_MONEY
+- RECORD_NOW
+- REFER_FRIENDS
+- REQUEST_TIME
+- SAY_THANKS
+- SEE_MORE
+- SEE_SHOP
+- SELL_NOW
+- SEND_A_GIFT
+- SEND_GIFT_MONEY
+- SEND_UPDATES
+- SHARE
+- SHOP_NOW
+- SHOP_WITH_AI
+- SIGN_UP
+- SOTTO_SUBSCRIBE
+- START_ORDER
+- SUBSCRIBE
+- SWIPE_UP_PRODUCT
+- SWIPE_UP_SHOP
+- TRY_DEMO
+- TRY_ON_WITH_AI
+- UPDATE_APP
+- USE_APP
+- USE_MOBILE_APP
+- VIDEO_ANNOTATION
+- VIDEO_CALL
+- VIEW_CART
+- VIEW_CHANNEL
+- VIEW_IN_CART
+- VIEW_PRODUCT
+- VISIT_PAGES_FEED
+- VISIT_WEBSITE
+- WATCH_LIVE_VIDEO
+- WATCH_MORE
+- WATCH_VIDEO
+- WHATSAPP_MESSAGE
+- WOODHENGE_SUPPORT
+
+## Observações
+
+- Os botões **NO_BUTTON** e **VISIT_WEBSITE** são expostos pela API, mas raramente utilizados em campanhas de tráfego; mantenha-os somente quando houver requisito claro.
+- Alguns CTAs podem exigir permissões adicionais ou formatos específicos (por exemplo, `WHATSAPP_MESSAGE` demanda conta validada no WhatsApp Business). Consulte sempre a [documentação da Graph API](https://developers.facebook.com/docs/marketing-api/reference/ad-creative-call-to-action) antes de publicar.
+- Para campanhas que direcionam para formulários (`lead_gen_form_id`), prefira CTAs orientados a conversão como `SIGN_UP`, `APPLY_NOW` ou `GET_STARTED`.

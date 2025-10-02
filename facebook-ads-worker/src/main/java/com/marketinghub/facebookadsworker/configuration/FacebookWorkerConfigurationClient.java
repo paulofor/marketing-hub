@@ -105,6 +105,7 @@ public class FacebookWorkerConfigurationClient {
         String defaultPageId,
         String defaultInstagramActorId,
         String defaultWebsiteUrl,
+        String defaultLeadGenFormId,
         String defaultCreativeMessageTemplate,
         String defaultCallToActionType,
         String adSetDailyBudget,

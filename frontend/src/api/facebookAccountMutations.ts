@@ -23,6 +23,7 @@ export interface FacebookAccountPayload {
   tokenRenewalEnabled?: boolean;
   adAccountId?: string | null;
   defaultWebsiteUrl?: string | null;
+  defaultLeadGenFormId?: string | null;
   defaultCreativeMessageTemplate?: string | null;
   defaultCallToActionType?: string | null;
   financialStrategy?: FinancialStrategyPayload;

@@ -118,6 +118,7 @@ class FacebookCampaignServiceTest {
         assertEquals("2000", adSetPayload.get("daily_budget").asText());
         assertEquals("LOWEST_COST_WITHOUT_CAP", adSetPayload.get("bid_strategy").asText());
         assertEquals("150", adSetPayload.get("bid_amount").asText());
+        assertEquals("WEBSITE", adSetPayload.get("destination_type").asText());
         assertEquals("84", adSetPayload.get("promoted_object").get("page_id").asText());
 
         RecordedRequest postCreative = facebook.takeRequest();
@@ -142,6 +143,65 @@ class FacebookCampaignServiceTest {
 
         RecordedRequest postBackend = backend.takeRequest();
         assertEquals("/api/facebook-campaigns", postBackend.getPath());
+    }
+
+    @Test
+    void createsLeadGenCampaignWhenCreativeProvidesFormId() throws Exception {
+        configurationClient.setConfiguration(new FacebookWorkerConfiguration(
+            1L,
+            "1",
+            "token",
+            "app",
+            "secret",
+            "42",
+            "11",
+            null,
+            "987654321098765",
+            "Conheça %s",
+            "SIGN_UP",
+            "2000",
+            "IMPRESSIONS",
+            "LEAD_GENERATION",
+            "WEBSITE",
+            "LOWEST_COST_WITHOUT_CAP",
+            "150",
+            "BR"
+        ));
+        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\"}]")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"10\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SIGN_UP\",\"leadGenFormId\":\"321123321123321\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        facebook.takeRequest(); // campaign
+        RecordedRequest adSetRequest = facebook.takeRequest();
+        JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
+        assertEquals("LEAD_GENERATION", adSetPayload.get("destination_type").asText());
+
+        RecordedRequest creativeRequest = facebook.takeRequest();
+        JsonNode creativePayload = objectMapper.readTree(creativeRequest.getBody().inputStream());
+        JsonNode linkData = creativePayload.get("object_story_spec").get("link_data");
+        JsonNode cta = linkData.get("call_to_action");
+        assertEquals("SIGN_UP", cta.get("type").asText());
+        assertEquals("321123321123321", cta.get("value").get("lead_gen_form_id").asText());
+
+        backend.takeRequest(); // experiments-ready
+        backend.takeRequest(); // creatives fetch
+        RecordedRequest backendReport = backend.takeRequest();
+        JsonNode reportedCreative = objectMapper.readTree(backendReport.getBody().inputStream())
+            .get("adCreative");
+        assertEquals("321123321123321", reportedCreative.get("leadGenFormId").asText());
     }
 
     @Test
@@ -432,6 +492,7 @@ class FacebookCampaignServiceTest {
             "42",
             "11",
             "https://example.com",
+            null,
             "Conheça %s",
             "LEARN_MORE",
             "2000",

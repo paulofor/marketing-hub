@@ -125,7 +125,9 @@ public class FacebookAdsService {
         Objects.requireNonNull(request, "request");
 
         Map<String, Object> linkData = new HashMap<>();
-        linkData.put("link", request.websiteUrl());
+        if (hasText(request.websiteUrl())) {
+            linkData.put("link", request.websiteUrl());
+        }
         linkData.put("message", request.message());
         if (request.headline() != null && !request.headline().isBlank()) {
             linkData.put("name", request.headline());
@@ -133,10 +135,21 @@ public class FacebookAdsService {
         if (request.description() != null && !request.description().isBlank()) {
             linkData.put("description", request.description());
         }
-        linkData.put("call_to_action", Map.of(
-            "type", request.callToActionType(),
-            "value", Map.of("link", request.websiteUrl())
-        ));
+        if (request.callToActionType() != null && !request.callToActionType().isBlank()) {
+            Map<String, Object> callToAction = new HashMap<>();
+            callToAction.put("type", request.callToActionType());
+            Map<String, Object> value = new HashMap<>();
+            if (hasText(request.websiteUrl())) {
+                value.put("link", request.websiteUrl());
+            }
+            if (hasText(request.leadGenFormId())) {
+                value.put("lead_gen_form_id", request.leadGenFormId());
+            }
+            if (!value.isEmpty()) {
+                callToAction.put("value", value);
+            }
+            linkData.put("call_to_action", callToAction);
+        }
 
         Map<String, Object> objectStorySpec = new HashMap<>();
         objectStorySpec.put("page_id", request.pageId());
@@ -561,6 +574,7 @@ public class FacebookAdsService {
         String pageId,
         String instagramActorId,
         String websiteUrl,
+        String leadGenFormId,
         String message,
         String callToActionType,
         String headline,

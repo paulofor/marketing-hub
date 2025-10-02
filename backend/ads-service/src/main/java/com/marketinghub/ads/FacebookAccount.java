@@ -53,6 +53,9 @@ public class FacebookAccount {
     @Column(name = "default_website_url", length = 512)
     private String defaultWebsiteUrl;
 
+    @Column(name = "default_lead_gen_form_id")
+    private String defaultLeadGenFormId;
+
     @Column(name = "default_instagram_actor_id")
     private String defaultInstagramActorId;
 

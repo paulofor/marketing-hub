@@ -15,6 +15,7 @@ import {
   useDeleteFacebookPage,
   useUpdateFacebookPage,
 } from "../api/facebookPageMutations";
+import { FACEBOOK_CALL_TO_ACTIONS } from "../constants/facebookCallToActions";
 
 interface FinancialStrategyFormState {
   dailyBudget: string;
@@ -37,6 +38,7 @@ interface AccountFormState {
   tokenRenewalEnabled: boolean;
   adAccountId: string;
   defaultWebsiteUrl: string;
+  defaultLeadGenFormId: string;
   defaultCreativeMessageTemplate: string;
   defaultCallToActionType: string;
   financialStrategy: FinancialStrategyFormState;
@@ -60,7 +62,7 @@ const workerValidationMessages: Record<string, string> = {
   AD_ACCOUNT_ID_MISSING:
     "Preencha o ID da conta de anúncios (act_...) na conta ativa do worker.",
   DEFAULT_WEBSITE_URL_MISSING:
-    "Informe a URL padrão do site para que o worker possa criar anúncios.",
+    "Informe uma URL padrão ou o ID de formulário de leads para que o worker possa criar anúncios.",
   AD_SET_DAILY_BUDGET_MISSING:
     "Defina o orçamento diário do conjunto de anúncios em centavos.",
   AD_SET_BILLING_EVENT_MISSING:
@@ -93,6 +95,7 @@ const emptyAccountForm: AccountFormState = {
   tokenRenewalEnabled: false,
   adAccountId: "",
   defaultWebsiteUrl: "",
+  defaultLeadGenFormId: "",
   defaultCreativeMessageTemplate: "%s",
   defaultCallToActionType: "LEARN_MORE",
   financialStrategy: { ...emptyFinancialStrategyForm },
@@ -317,6 +320,7 @@ export default function FacebookAccountsPage() {
       tokenRenewalEnabled: accountForm.tokenRenewalEnabled,
       adAccountId: accountForm.adAccountId.trim() || null,
       defaultWebsiteUrl: accountForm.defaultWebsiteUrl.trim() || null,
+      defaultLeadGenFormId: accountForm.defaultLeadGenFormId.trim() || null,
       defaultCreativeMessageTemplate:
         accountForm.defaultCreativeMessageTemplate.trim() || "%s",
       defaultCallToActionType:
@@ -533,6 +537,7 @@ export default function FacebookAccountsPage() {
                                   tokenRenewalEnabled: Boolean(account.tokenRenewalEnabled),
                                   adAccountId: account.adAccountId ?? "",
                                   defaultWebsiteUrl: account.defaultWebsiteUrl ?? "",
+                                  defaultLeadGenFormId: account.defaultLeadGenFormId ?? "",
                                   defaultCreativeMessageTemplate:
                                     account.defaultCreativeMessageTemplate ?? "%s",
                                   defaultCallToActionType:
@@ -804,6 +809,24 @@ export default function FacebookAccountsPage() {
                   />
                 </div>
                 <div className="col-12 col-md-6">
+                  <label className="form-label">ID de formulário de leads padrão</label>
+                  <input
+                    className="form-control"
+                    placeholder="Ex.: 123456789012345"
+                    value={accountForm.defaultLeadGenFormId}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        defaultLeadGenFormId: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                  <div className="form-text">
+                    Usado quando o criativo aprovado não informa um formulário específico.
+                  </div>
+                </div>
+                <div className="col-12 col-md-6">
                   <label className="form-label">Template da mensagem do criativo</label>
                   <input
                     className="form-control"
@@ -820,9 +843,8 @@ export default function FacebookAccountsPage() {
                 </div>
                 <div className="col-12 col-md-6">
                   <label className="form-label">Call to Action padrão</label>
-                  <input
-                    className="form-control"
-                    placeholder="LEARN_MORE, SIGN_UP, APPLY_NOW..."
+                  <select
+                    className="form-select"
                     value={accountForm.defaultCallToActionType}
                     onChange={(event) =>
                       setAccountForm((current) => ({
@@ -831,7 +853,13 @@ export default function FacebookAccountsPage() {
                       }))
                     }
                     disabled={isAccountMutationPending}
-                  />
+                  >
+                    {FACEBOOK_CALL_TO_ACTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="col-12">
                   <div className="border rounded p-3">

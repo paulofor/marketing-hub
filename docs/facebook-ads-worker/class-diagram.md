@@ -55,6 +55,7 @@ classDiagram
         +pageId : String
         +instagramActorId : String
         +websiteUrl : String
+        +leadGenFormId : String
         +message : String
         +callToActionType : String
         +headline : String
@@ -138,6 +139,7 @@ classDiagram
         +pageId : String
         +instagramActorId : String
         +websiteUrl : String
+        +leadGenFormId : String
         +message : String
         +callToActionType : String
         +headline : String
@@ -323,6 +325,7 @@ forem fornecidas pelo worker e pelo backend.
         +defaultPageId : String
         +defaultInstagramActorId : String
         +defaultWebsiteUrl : String
+        +defaultLeadGenFormId : String
         +defaultCreativeMessageTemplate : String
         +defaultCallToActionType : String
         +adSetDailyBudget : String

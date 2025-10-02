@@ -160,3 +160,16 @@ O retorno esperado é um JSON com o status `"UP"` quando a aplicação estiver f
 ---
 
 Com esses passos o backend ficará publicado na instância Lightsail com um serviço systemd gerenciando o processo Java. Ajuste as configurações de acordo com as necessidades específicas do ambiente (por exemplo, domínios personalizados, certificados TLS ou integrações externas).
+
+## 11. Automatizar o deploy com GitHub Actions
+
+O repositório já inclui o workflow [`backend-lightsail-deploy.yml`](../.github/workflows/backend-lightsail-deploy.yml), eliminando a necessidade de criar o arquivo manualmente. Ele compila o backend, transfere o artefato para a VPS e reinicia o serviço systemd.
+
+1. Configure os seguintes *secrets* no repositório do GitHub:
+   - `LIGHTSAIL_HOST`: endereço público (ou domínio) da VPS.
+   - `LIGHTSAIL_USER`: usuário SSH com permissão de deploy (por exemplo `ubuntu` ou `marketinghub`).
+   - `LIGHTSAIL_SSH_KEY`: chave privada no formato PEM com acesso ao servidor.
+2. Opcionalmente ajuste os caminhos-padrão editando as variáveis `APP_DIR` e `SERVICE_NAME` no workflow.
+3. Execute o workflow a partir da aba **Actions** do GitHub usando o gatilho `Run workflow` (evento `workflow_dispatch`).
+
+Após a conclusão, o artefato será movido para `/opt/marketinghub/app/app.jar` e o serviço `marketinghub-backend.service` será reiniciado automaticamente na VPS.

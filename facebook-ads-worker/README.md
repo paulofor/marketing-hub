@@ -31,7 +31,10 @@ anúncio, o worker envia um `CreateCampaignRequest` para o backend via
 hierarquia para manter rastreabilidade completa (`facebook_ads_campaign`,
 `facebook_ads_ad_set`, `facebook_ads_ad_creative` e `facebook_ads_ad`). Todas as
 chamadas HTTP ao backend devem registrar a URL completa, parâmetros, payload e
-resposta recebida para acelerar o diagnóstico de incidentes em produção.
+resposta recebida para acelerar o diagnóstico de incidentes em produção. Os logs
+seguem o padrão visual `==>` para requisições (por exemplo, `url==>https://...`)
+e `<==` para respostas, inclusive em cenários de erro, permitindo identificar
+rapidamente a direção do tráfego durante uma análise.
 
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar
 investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs

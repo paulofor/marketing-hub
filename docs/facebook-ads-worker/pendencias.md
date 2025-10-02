@@ -18,7 +18,7 @@ e governança, ainda faltam os itens abaixo, agrupados por tema.
   além dos identificadores básicos já persistidos.
 - Versionar e auditar alterações na configuração do worker (`worker-config`),
   registrando quem atualizou parâmetros sensíveis (token, orçamento padrão,
-  página fallback).
+  página fallback, formulários de leads padrão).
 
 ## Segmentação, criativos e lances
 
@@ -28,6 +28,7 @@ e governança, ainda faltam os itens abaixo, agrupados por tema.
   campanhas geradas, substituindo os placeholders atuais.
 - Implementar configuração de posicionamentos, dispositivos e estratégia de
   lance/otimização.
+- Validar dinamicamente a presença de URL ou formulário (`leadGenFormId`) nos criativos e exibir alertas amigáveis no frontend.
 
 ## Rastreamento e conformidade
 

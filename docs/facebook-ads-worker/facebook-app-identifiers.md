@@ -17,5 +17,6 @@ O App ID é o identificador público do aplicativo registrado no [Facebook for D
 | Campo na UI | Onde localizar | Observações |
 |-------------|----------------|-------------|
 | **ID do aplicativo (App ID)** | Painel do app em developers.facebook.com → Configurações → Básico | Mesmo valor exibido no cabeçalho do portal de desenvolvedores. |
+| **Formulário de leads padrão (opcional)** | Gerenciador de Anúncios → Biblioteca de formulários | Copie o `ID` mostrado na tabela de formulários caso deseje habilitar Lead Ads automáticos. |
 
-Confirme que o número informado corresponde ao aplicativo autorizado a gerar tokens para a conta do Business Manager. Isso evita erros de autorização durante o disparo de campanhas e a renovação automática de tokens.
+Confirme que o número informado corresponde ao aplicativo autorizado a gerar tokens para a conta do Business Manager. Isso evita erros de autorização durante o disparo de campanhas e a renovação automática de tokens. Quando utilizar formulários instantâneos, aproveite para registrar também o novo campo **Formulário de leads padrão**.

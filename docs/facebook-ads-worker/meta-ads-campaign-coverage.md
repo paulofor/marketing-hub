@@ -15,6 +15,9 @@ para navegar entre as entidades citadas.
   Facebook que originaram cada campanha, bem como os identificadores dos ad
   sets, criativos e anúncios correspondentes, viabilizando auditoria ponta a
   ponta.
+- Formulários instantâneos (Lead Ads) passaram a ser aceitos como destino: basta
+  informar `leadGenFormId` no criativo ou `defaultLeadGenFormId` na conta para o
+  worker ajustar o ad set e o CTA automaticamente.
 - Há **campos planejados** no documento que ainda não são enviados pelo worker
   nem possuem suporte completo no banco (ex.: teste A/B, limites de gasto,
   segmentações avançadas).
@@ -52,6 +55,7 @@ para navegar entre as entidades citadas.
 | Nome do conjunto | Usa `Experiment.name` com sufixo “- Ad Set”. | `facebook_ads_ad_set.name` (`FacebookAdsAdSet` no diagrama). |
 | Evento de conversão / Meta | `promoted_object_json` armazena o `page_id` promovido; pixel/evento ainda não configurados. | `facebook_ads_ad_set.promoted_object_json`. |
 | Estratégia de otimização | Valor padrão da conta (`fb_account.ad_set_optimization_goal`). | `facebook_ads_ad_set.optimization_goal`. |
+| Tipo de destino | Configurado como `WEBSITE`; automaticamente trocado para `LEAD_GENERATION` quando existe formulário de leads. | `facebook_ads_ad_set.destination_type` via payload reportado. |
 | Estratégia de lance | `bid_strategy` e `bid_amount` herdados da conta; quando ausentes, o backend assume `LOWEST_COST_WITHOUT_CAP`. | `facebook_ads_ad_set.bid_strategy`, `bid_amount_minor`. |
 | Orçamento (sem CBO) | Envia `daily_budget` a partir de `fb_account.ad_set_daily_budget`. | `facebook_ads_ad_set.daily_budget_minor` / `lifetime_budget_minor`. |
 | Período de veiculação | `start_time`/`end_time` não configurados. | Colunas homônimas no ad set. |
@@ -75,9 +79,10 @@ para navegar entre as entidades citadas.
 | Texto primário | `Creative.primaryText` ou fallback da conta. | `facebook_ads_ad_creative.link_data_json.message`. |
 | Título (Headline) | `Creative.headline`. | `link_data_json.name`. |
 | Descrição | `Creative.description`. | `link_data_json.description`. |
-| URL de destino | `Creative.destinationUrl` com fallback configurado. | `link_data_json.link` e `call_to_action.value.link`. |
+| URL de destino | `Creative.destinationUrl` com fallback configurado; torna-se opcional quando há formulário de leads. | `link_data_json.link` e `call_to_action.value.link`. |
 | Display Link | Estrutura disponível mas não utilizada. | `link_data_json.display_link`. |
-| CTA | `Creative.cta` ou `fb_account.default_call_to_action_type`. | `link_data_json.call_to_action`. |
+| Formulário de leads | `Creative.leadGenFormId` ou `fb_account.default_lead_gen_form_id`. | `link_data_json.call_to_action.value.lead_gen_form_id`. |
+| CTA | `Creative.cta` ou `fb_account.default_call_to_action_type`. Lista completa em [call-to-action-types.md](call-to-action-types.md). | `link_data_json.call_to_action`. |
 | Parâmetros UTM | Planejado; tabela `facebook_ads_ad_tracking_utm` ainda vazia. | `facebook_ads_ad_tracking_utm`. |
 | Pixel / eventos | Dependem do `promoted_object_json` no ad set. | `facebook_ads_ad_set.promoted_object_json`. |
 | Deep link / App link | Não implementado. | Potencial no `call_to_action.value`. |

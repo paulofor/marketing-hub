@@ -181,8 +181,14 @@ public class FacebookCampaignService {
             }
 
             String resolvedWebsiteUrl = coalesce(creative.destinationUrl(), config.defaultWebsiteUrl());
-            if (!StringUtils.hasText(resolvedWebsiteUrl)) {
-                LOGGER.warn("Skipping experiment {} because no destination URL is configured", exp.id());
+            String resolvedLeadGenFormId = coalesce(creative.leadGenFormId(), config.defaultLeadGenFormId());
+            boolean hasWebsiteDestination = StringUtils.hasText(resolvedWebsiteUrl);
+            boolean hasLeadFormDestination = StringUtils.hasText(resolvedLeadGenFormId);
+            if (!hasWebsiteDestination && !hasLeadFormDestination) {
+                LOGGER.warn(
+                    "Skipping experiment {} because no destination URL or lead form is configured",
+                    exp.id()
+                );
                 return;
             }
 
@@ -191,6 +197,7 @@ public class FacebookCampaignService {
                 : formatCreativeMessage(exp.name(), config);
             String resolvedCallToAction = coalesce(creative.cta(), config.defaultCallToActionType());
             String resolvedInstagramActorId = coalesce(creative.instagramUserId(), config.defaultInstagramActorId());
+            String resolvedDestinationType = hasLeadFormDestination ? "LEAD_GENERATION" : config.adSetDestinationType();
 
             String campaignId = facebookAdsService.createCampaign(config.adAccountId(), exp.name());
             FacebookAdsService.AdSetRequest adSetRequest = new FacebookAdsService.AdSetRequest(
@@ -199,7 +206,7 @@ public class FacebookCampaignService {
                 config.adSetDailyBudget(),
                 config.adSetBillingEvent(),
                 config.adSetOptimizationGoal(),
-                config.adSetDestinationType(),
+                resolvedDestinationType,
                 config.adSetBidStrategy(),
                 config.adSetBidAmount(),
                 resolvedPageId,
@@ -211,6 +218,7 @@ public class FacebookCampaignService {
                 resolvedPageId,
                 resolvedInstagramActorId,
                 resolvedWebsiteUrl,
+                resolvedLeadGenFormId,
                 resolvedMessage,
                 resolvedCallToAction,
                 creative.headline(),
@@ -249,6 +257,7 @@ public class FacebookCampaignService {
                     adCreativeRequest.pageId(),
                     adCreativeRequest.instagramActorId(),
                     adCreativeRequest.websiteUrl(),
+                    adCreativeRequest.leadGenFormId(),
                     adCreativeRequest.message(),
                     adCreativeRequest.callToActionType(),
                     adCreativeRequest.headline(),
@@ -381,6 +390,7 @@ public class FacebookCampaignService {
             String pageId,
             String instagramActorId,
             String websiteUrl,
+            String leadGenFormId,
             String message,
             String callToActionType,
             String headline,
@@ -483,6 +493,7 @@ public class FacebookCampaignService {
         String description,
         String cta,
         String destinationUrl,
+        String leadGenFormId,
         String instagramUserId,
         String status
     ) {}

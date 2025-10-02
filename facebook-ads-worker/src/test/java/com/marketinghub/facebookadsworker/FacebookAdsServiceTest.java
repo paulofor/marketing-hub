@@ -92,6 +92,7 @@ class FacebookAdsServiceTest {
             "42",
             "11",
             "https://example.com",
+            null,
             "Mensagem",
             "LEARN_MORE",
             "Headline",
@@ -112,6 +113,30 @@ class FacebookAdsServiceTest {
         assertEquals("LEARN_MORE", linkData.get("call_to_action").get("type").asText());
         assertEquals("https://example.com", linkData.get("call_to_action").get("value").get("link").asText());
         assertEquals("333", id);
+    }
+
+    @Test
+    void createAdCreativeSupportsLeadForms() throws Exception {
+        server.enqueue(new MockResponse().setBody("{\"id\":\"999\"}")
+            .addHeader("Content-Type", "application/json"));
+        FacebookAdsService.AdCreativeRequest request = new FacebookAdsService.AdCreativeRequest(
+            "Camp - Lead",
+            "42",
+            null,
+            null,
+            "123456789012345",
+            "Mensagem",
+            "SIGN_UP",
+            null,
+            null
+        );
+        String id = service.createAdCreative("1", request);
+        RecordedRequest recorded = server.takeRequest();
+        JsonNode body = objectMapper.readTree(recorded.getBody().inputStream());
+        JsonNode callToAction = body.get("object_story_spec").get("link_data").get("call_to_action");
+        assertEquals("SIGN_UP", callToAction.get("type").asText());
+        assertEquals("123456789012345", callToAction.get("value").get("lead_gen_form_id").asText());
+        assertEquals("999", id);
     }
 
     @Test

@@ -119,11 +119,19 @@ Texto complementar opcional (aparece em alguns posicionamentos). Use para benef�
 ### URL de destino
 Link final que o usuário acessará. Deve incluir protocolo (`https://`). Garanta compatibilidade com a política de domínio verificado.
 
+Quando o experimento ou a conta configurada também informam um **formulário de leads** (Lead Ads/Instant Form), o worker passa a tratar o link como opcional: se existir `lead_gen_form_id`, o CTA abrirá o formulário dentro do Facebook/Instagram mesmo que não haja URL.
+
+### Formulário de leads (Lead Ads)
+Informe o identificador do formulário publicado no Gerenciador de Anúncios. O campo é aceito tanto nos criativos aprovados quanto como fallback em **Contas do Facebook** (`defaultLeadGenFormId`).
+
+- Se apenas o formulário estiver preenchido, o worker ajusta automaticamente `destination_type=LEAD_GENERATION` no conjunto de anúncios.
+- Caso URL e formulário estejam presentes, o CTA prioriza o formulário e mantém o link como destino secundário.
+
 ### Display Link
 Versão amigável do link exibida no anúncio. Normalmente o domínio raiz.
 
 ### Chamada para ação (CTA)
-Selecione o botão apropriado (Saiba mais, Comprar agora, Fale conosco etc.). Deve alinhar com o objetivo da campanha.
+Selecione o botão apropriado (Saiba mais, Comprar agora, Fale conosco etc.). Deve alinhar com o objetivo da campanha. Consulte [call-to-action-types.md](call-to-action-types.md) para a lista completa suportada pela Graph API e replicada no frontend/worker.
 
 ### Parâmetros UTM / Template de rastreamento
 Inclua UTMs ou parâmetros dinâmicos (ex.: `utm_source=facebook&utm_campaign={{campaign.name}}`). Importante para mensuração em ferramentas externas.

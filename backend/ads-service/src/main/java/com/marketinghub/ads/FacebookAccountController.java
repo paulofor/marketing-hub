@@ -204,6 +204,7 @@ public class FacebookAccountController {
         account.setAdAccountId(trimToNull(account.getAdAccountId()));
         account.setDefaultPageId(trimToNull(account.getDefaultPageId()));
         account.setDefaultWebsiteUrl(trimToNull(account.getDefaultWebsiteUrl()));
+        account.setDefaultLeadGenFormId(trimToNull(account.getDefaultLeadGenFormId()));
         account.setDefaultInstagramActorId(trimToNull(account.getDefaultInstagramActorId()));
         account.setDefaultCreativeMessageTemplate(trimToNull(account.getDefaultCreativeMessageTemplate()));
         account.setDefaultCallToActionType(trimToNull(account.getDefaultCallToActionType()));
@@ -259,6 +260,7 @@ public class FacebookAccountController {
             account.getDefaultPageId(),
             account.getDefaultInstagramActorId(),
             account.getDefaultWebsiteUrl(),
+            account.getDefaultLeadGenFormId(),
             creativeMessageTemplate,
             callToAction,
             account.getAdSetDailyBudget(),
@@ -274,9 +276,9 @@ public class FacebookAccountController {
     private void validateWorkerConfiguration(FacebookAccount account) {
         requireField(account, account.getAccessToken(), "access token", FacebookWorkerValidationError.ACCESS_TOKEN_MISSING);
         requireField(account, account.getAdAccountId(), "ad account id", FacebookWorkerValidationError.AD_ACCOUNT_ID_MISSING);
-        if (!StringUtils.hasText(account.getDefaultWebsiteUrl())) {
+        if (!StringUtils.hasText(account.getDefaultWebsiteUrl()) && !StringUtils.hasText(account.getDefaultLeadGenFormId())) {
             log.warn(
-                "Facebook worker configuration for account id={} name='{}' is missing default website URL; continuing with null value.",
+                "Facebook worker configuration for account id={} name='{}' is missing both default website URL and default lead form ID; creatives without overrides will be skipped.",
                 account.getId(),
                 StringUtils.hasText(account.getName()) ? account.getName() : "(unnamed)"
             );
@@ -418,6 +420,7 @@ public class FacebookAccountController {
         String defaultPageId,
         String defaultInstagramActorId,
         String defaultWebsiteUrl,
+        String defaultLeadGenFormId,
         String defaultCreativeMessageTemplate,
         String defaultCallToActionType,
         String adSetDailyBudget,

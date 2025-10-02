@@ -49,14 +49,17 @@ montar a hierarquia completa:
    `PAUSED` e `special_ad_categories = NONE`. O identificador retornado alimenta
    as etapas seguintes ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L195-L205)).
 2. **Conjunto de anúncios**: `POST /adsets` com orçamento diário, billing event,
-   objetivo de otimização e destino (`WEBSITE`) vindos da conta configurada no
-   backend (`worker-config`). A segmentação inicial utiliza apenas o país padrão
-   enquanto o backend não envia dados mais ricos. O `id` retornado é usado na
-   criação do anúncio ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L196-L208)).
+   objetivo de otimização e tipo de destino vindos da conta configurada no
+   backend (`worker-config`). Quando o criativo ou o fallback informam
+   `leadGenFormId`, o worker troca `destination_type` para `LEAD_GENERATION`.
+   A segmentação inicial utiliza apenas o país padrão enquanto o backend não
+   envia dados mais ricos. O `id` retornado é usado na criação do anúncio ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L196-L208)).
 3. **Criativo**: `POST /adcreatives` baseado em um `object_story_spec` que inclui
    `page_id`, `instagram_actor_id` opcional, template de mensagem com o nome do
-   experimento e call-to-action vindos da mesma configuração. O `id` retornado
-   alimenta o anúncio ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L209-L219)).
+   experimento e call-to-action vindos da mesma configuração. Quando o criativo
+   ou a conta informam `leadGenFormId`, o worker adiciona `call_to_action.value.lead_gen_form_id`
+   e torna o campo `link` opcional, habilitando formulários instantâneos no
+   Facebook/Instagram. O `id` retornado alimenta o anúncio ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L209-L219)).
 4. **Anúncio**: `POST /ads` referenciando o ad set e o criativo recém-criados, em
    status `PAUSED` para permitir revisão manual antes da ativação
    ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L220-L225)).
@@ -91,7 +94,8 @@ utilizados (`targetCountry`, `pageId`) e os metadados do criativo (`websiteUrl`,
 | `worker-config.defaultPageId` | `Graph API - promoted_object` / `object_story_spec.page_id` / `CreateCampaignRequest.adSet.pageId` | Necessário para ad sets e criativos, persistido em `promoted_object_json` ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L177-L245)) |
 | `worker-config.defaultInstagramActorId` | `Graph API - object_story_spec.instagram_actor_id` / `CreateCampaignRequest.adCreative.instagramActorId` | Opcional, incluído apenas quando configurado ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L209-L255)) |
 | `worker-config.defaultCreativeMessageTemplate` | `Graph API - object_story_spec.link_data.message` | Template com suporte a `%s` para o nome do experimento ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L189-L193)) |
-| `worker-config.defaultWebsiteUrl` | `Graph API - link_data.link`/`call_to_action.value.link` e `CreateCampaignRequest.adCreative.websiteUrl` | URL padrão de destino persistida no backend ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L209-L255)) |
+| `worker-config.defaultWebsiteUrl` | `Graph API - link_data.link`/`call_to_action.value.link` e `CreateCampaignRequest.adCreative.websiteUrl` | URL padrão de destino persistida no backend; opcional quando há formulário configurado ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L209-L255)) |
+| `worker-config.defaultLeadGenFormId` | `Graph API - call_to_action.value.lead_gen_form_id` e `CreateCampaignRequest.adCreative.leadGenFormId` | Fallback para formulários Instant/Lead Ads quando o criativo não define `leadGenFormId` |
 | Resposta da Graph API (`id`) | `CreateCampaignRequest.id`/`adSet.id`/`adCreative.id`/`ad.id` | Identificadores de campanha, ad set, criativo e anúncio persistidos nas respectivas tabelas |
 | Constante `OUTCOME_TRAFFIC` | `Graph API - objective` e `CreateCampaignRequest.objective` | Objetivo padrão até existir planejamento específico |
 | Constante `CAMPAIGN` | `CreateCampaignRequest.budgetMode` | Modo de orçamento usado atualmente pelo backend |

@@ -53,6 +53,9 @@ public class Creative {
     @Column(name = "destination_url")
     private String destinationUrl;
 
+    @Column(name = "lead_gen_form_id")
+    private String leadGenFormId;
+
     @Column(name = "instagram_user_id")
     private String instagramUserId;
 

@@ -13,6 +13,7 @@ import { useExperiment } from "../../api/experiment/useExperiment";
 import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
 import InstagramAdPreview from "../../components/InstagramAdPreview";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
+import { FACEBOOK_CALL_TO_ACTIONS } from "../../constants/facebookCallToActions";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -36,6 +37,7 @@ interface CreativeForm {
   description: string;
   cta: string;
   destinationUrl: string;
+  leadGenFormId: string;
   imageUrl: string;
   instagramUserId: string;
   status: string;
@@ -88,6 +90,7 @@ export default function CriativosTab({ experimentId }: Props) {
     description: "",
     cta: "LEARN_MORE",
     destinationUrl: "",
+    leadGenFormId: "",
     imageUrl: "",
     instagramUserId: "",
     status: "DRAFT",
@@ -182,6 +185,7 @@ export default function CriativosTab({ experimentId }: Props) {
       description: c.description || "",
       cta: c.cta || "LEARN_MORE",
       destinationUrl: c.destinationUrl || "",
+      leadGenFormId: c.leadGenFormId || "",
       imageUrl: c.imageUrl,
       instagramUserId: c.instagramUserId || "",
       status: c.status,
@@ -207,6 +211,8 @@ export default function CriativosTab({ experimentId }: Props) {
   };
 
   const submit = async () => {
+    const trimmedDestinationUrl = form.destinationUrl.trim();
+    const trimmedLeadGenFormId = form.leadGenFormId.trim();
     const payload = {
       format: form.format,
       headline: form.headline,
@@ -214,7 +220,8 @@ export default function CriativosTab({ experimentId }: Props) {
       imageUrl: form.imageUrl,
       description: form.description,
       cta: form.cta,
-      destinationUrl: form.destinationUrl,
+      destinationUrl: trimmedDestinationUrl,
+      leadGenFormId: trimmedLeadGenFormId,
       instagramUserId: form.instagramUserId,
       status: form.status,
     };
@@ -265,13 +272,14 @@ export default function CriativosTab({ experimentId }: Props) {
         format: c.format || "LINK",
         headline: c.headline,
         primaryText: c.primaryText,
-        imageUrl: c.imageUrl,
-        description: c.description || "",
-        cta: c.cta || "LEARN_MORE",
-        destinationUrl: c.destinationUrl || "",
-        instagramUserId: c.instagramUserId || "",
-        status: "READY",
-      });
+      imageUrl: c.imageUrl,
+      description: c.description || "",
+      cta: c.cta || "LEARN_MORE",
+      destinationUrl: c.destinationUrl || "",
+      leadGenFormId: c.leadGenFormId || "",
+      instagramUserId: c.instagramUserId || "",
+      status: "READY",
+    });
     } catch {
       setFeedback({
         variant: "error",
@@ -421,7 +429,7 @@ export default function CriativosTab({ experimentId }: Props) {
             {c.headline || "Sem headline"}
           </h3>
           <p className="creative-card-text mb-0">{c.primaryText}</p>
-          {(c.cta || c.destinationUrl) && (
+          {(c.cta || c.destinationUrl || c.leadGenFormId) && (
             <div className="creative-card-meta small text-muted">
               {c.cta && <span className="me-2">CTA: {c.cta}</span>}
               {c.destinationUrl && (
@@ -434,6 +442,9 @@ export default function CriativosTab({ experimentId }: Props) {
                 >
                   {c.destinationUrl}
                 </a>
+              )}
+              {c.leadGenFormId && (
+                <span className="d-block mt-1">Formulário: {c.leadGenFormId}</span>
               )}
             </div>
           )}
@@ -756,22 +767,48 @@ export default function CriativosTab({ experimentId }: Props) {
                     setForm({ ...form, description: e.target.value })
                   }
                 />
+                <label className="form-label" htmlFor="creative-cta">
+                  Chamada para ação
+                </label>
                 <select
+                  id="creative-cta"
                   className="form-select mb-2"
                   value={form.cta}
                   onChange={(e) => setForm({ ...form, cta: e.target.value })}
                 >
-                  <option value="LEARN_MORE">LEARN_MORE</option>
-                  <option value="SHOP_NOW">SHOP_NOW</option>
+                  {FACEBOOK_CALL_TO_ACTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
                 </select>
+                <label className="form-label" htmlFor="creative-destination-url">
+                  URL de destino
+                </label>
                 <input
+                  id="creative-destination-url"
                   className="form-control mb-2"
-                  placeholder="URL de destino"
+                  placeholder="https://exemplo.com/pagina"
                   value={form.destinationUrl}
                   onChange={(e) =>
                     setForm({ ...form, destinationUrl: e.target.value })
                   }
                 />
+                <label className="form-label" htmlFor="creative-lead-form">
+                  ID do formulário de leads (Instagram/Facebook)
+                </label>
+                <input
+                  id="creative-lead-form"
+                  className="form-control mb-2"
+                  placeholder="Ex.: 123456789012345"
+                  value={form.leadGenFormId}
+                  onChange={(e) =>
+                    setForm({ ...form, leadGenFormId: e.target.value })
+                  }
+                />
+                <div className="form-text mb-2">
+                  Informe ao menos uma das opções de destino (URL ou formulário). O worker usará o formulário quando ambos estiverem preenchidos.
+                </div>
                 <input
                   type="file"
                   className="form-control mb-2"

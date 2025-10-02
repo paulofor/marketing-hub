@@ -67,7 +67,7 @@ flowchart TD
 | `daily_budget` | Conta configurada (`worker-config.adSetDailyBudget`) | Valor em centavos da moeda da conta |
 | `billing_event` | Conta configurada (`worker-config.adSetBillingEvent`) | Default `IMPRESSIONS` |
 | `optimization_goal` | Conta configurada (`worker-config.adSetOptimizationGoal`) | Default `LINK_CLICKS` |
-| `destination_type` | Conta configurada (`worker-config.adSetDestinationType`) | Default `WEBSITE` |
+| `destination_type` | Conta configurada (`worker-config.adSetDestinationType`) ou `LEAD_GENERATION` quando o criativo referencia um formulário de leads | Ajustado dinamicamente conforme o destino resolvido |
 | `targeting.geo_locations.countries` | Conta configurada (`worker-config.adSetTargetCountry`) | Segmentação inicial simplificada |
 | `promoted_object.page_id` | Conta configurada (`worker-config.defaultPageId`) | Necessário para campanhas de tráfego |
 | `status` | Constante | `PAUSED` |
@@ -86,9 +86,10 @@ flowchart TD
 | `object_story_spec.page_id` | Conta configurada (`worker-config.defaultPageId`) | Página responsável pelo anúncio |
 | `object_story_spec.instagram_actor_id` | Conta configurada (`worker-config.defaultInstagramActorId`) | Opcional; usado quando há Instagram vinculado |
 | `object_story_spec.link_data.message` | Template (`worker-config.defaultCreativeMessageTemplate`) | Substitui `%s` pelo nome do experimento |
-| `object_story_spec.link_data.link` | Conta configurada (`worker-config.defaultWebsiteUrl`) | URL de destino padrão |
-| `object_story_spec.link_data.call_to_action.type` | Conta configurada (`worker-config.defaultCallToActionType`) | Default `LEARN_MORE` |
-| `object_story_spec.link_data.call_to_action.value.link` | Conta configurada (`worker-config.defaultWebsiteUrl`) | Mesmo destino do link principal |
+| `object_story_spec.link_data.link` | Conta configurada (`worker-config.defaultWebsiteUrl`) ou `Creative.destinationUrl` | O worker envia apenas quando existe URL; formulários de leads funcionam sem este campo |
+| `object_story_spec.link_data.call_to_action.type` | Conta configurada (`worker-config.defaultCallToActionType`) ou `Creative.cta` | Lista completa documentada em [call-to-action-types.md](call-to-action-types.md) |
+| `object_story_spec.link_data.call_to_action.value.link` | Mesmo valor de `link` | Omitido quando a campanha utiliza formulário de leads |
+| `object_story_spec.link_data.call_to_action.value.lead_gen_form_id` | `Creative.leadGenFormId` ou `worker-config.defaultLeadGenFormId` | Permite direcionar o CTA para formulários do Facebook ou Instagram |
 | `access_token` | Conta configurada (`worker-config.accessToken`) | Token com permissão para o Ad Account |
 
 * **Resposta tratada:** o `id` do criativo abastece a criação do anúncio.
@@ -131,6 +132,7 @@ para o backend.
 | `adSet.pageId` | `worker-config.defaultPageId` ou `Experiment.pageId` | Serializado como `promoted_object_json` |
 | `adCreative.id` | Resposta da Graph API (criativo) | Persistido como `facebook_ads_ad_creative.id` |
 | `adCreative.websiteUrl` | Configuração do worker ou criativo aprovado | Serializado em `link_data_json` |
+| `adCreative.leadGenFormId` | `Creative.leadGenFormId` ou fallback da conta | Persistido em `link_data_json.call_to_action.value.lead_gen_form_id` |
 | `ad.id` | Resposta da Graph API (anúncio) | Persistido como `facebook_ads_ad.id` e vinculado ao ad set/criativo salvos |
 
 ## Observações

@@ -195,7 +195,9 @@ public class FacebookAdsCampaignController {
 
     private String buildLinkDataJson(CreateCampaignRequest.AdCreative creativeReq) {
         ObjectNode linkData = objectMapper.createObjectNode();
-        linkData.put("link", creativeReq.websiteUrl());
+        if (StringUtils.hasText(creativeReq.websiteUrl())) {
+            linkData.put("link", creativeReq.websiteUrl());
+        }
         linkData.put("message", creativeReq.message());
         if (StringUtils.hasText(creativeReq.headline())) {
             linkData.put("name", creativeReq.headline());
@@ -207,7 +209,15 @@ public class FacebookAdsCampaignController {
             ObjectNode callToAction = linkData.putObject("call_to_action");
             callToAction.put("type", creativeReq.callToActionType());
             ObjectNode value = callToAction.putObject("value");
-            value.put("link", creativeReq.websiteUrl());
+            if (StringUtils.hasText(creativeReq.websiteUrl())) {
+                value.put("link", creativeReq.websiteUrl());
+            }
+            if (StringUtils.hasText(creativeReq.leadGenFormId())) {
+                value.put("lead_gen_form_id", creativeReq.leadGenFormId());
+            }
+            if (value.isEmpty()) {
+                callToAction.remove("value");
+            }
         }
         return linkData.toString();
     }
@@ -297,6 +307,7 @@ public class FacebookAdsCampaignController {
                 String pageId,
                 String instagramActorId,
                 String websiteUrl,
+                String leadGenFormId,
                 String message,
                 String callToActionType,
                 String headline,

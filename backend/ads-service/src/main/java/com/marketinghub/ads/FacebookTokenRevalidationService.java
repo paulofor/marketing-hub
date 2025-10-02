@@ -1,6 +1,8 @@
 package com.marketinghub.ads;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,17 +22,20 @@ public class FacebookTokenRevalidationService {
 
     private final RestTemplate restTemplate;
     private final FacebookAccountRepository repository;
+    private final ObjectMapper objectMapper;
     private final String graphApiBaseUrl;
     private final String graphApiVersion;
 
     public FacebookTokenRevalidationService(
         RestTemplateBuilder restTemplateBuilder,
         FacebookAccountRepository repository,
+        ObjectMapper objectMapper,
         @Value("${facebook.graph-api.base-url:https://graph.facebook.com}") String graphApiBaseUrl,
         @Value("${facebook.graph-api.version:v23.0}") String graphApiVersion
     ) {
         this.restTemplate = restTemplateBuilder.build();
         this.repository = repository;
+        this.objectMapper = objectMapper;
         this.graphApiBaseUrl = trimTrailingSlash(graphApiBaseUrl);
         this.graphApiVersion = trimSlashes(graphApiVersion);
     }
@@ -39,9 +44,17 @@ public class FacebookTokenRevalidationService {
         LocalDateTime attemptedAt = LocalDateTime.now();
         String url = buildTokenExchangeUrl(account);
         log.info(
-            "Requesting Facebook token revalidation via Graph API: accountId={}, url={}",
+            "Requesting Facebook token revalidation via Graph API: accountId={}, endpoint={}/{}",
             account.getId(),
-            url
+            graphApiBaseUrl,
+            graphApiVersion
+        );
+        log.debug(
+            "Facebook token revalidation parameters: accountId={}, appId={}, accessToken={}, tokenRenewalEnabled={}",
+            account.getId(),
+            maskForLogs(account.getAppId()),
+            maskForLogs(account.getAccessToken()),
+            account.isTokenRenewalEnabled()
         );
 
         try {
@@ -70,6 +83,12 @@ public class FacebookTokenRevalidationService {
                 account.getId(),
                 expiresAt
             );
+            log.debug(
+                "Facebook token revalidation updated credentials: accountId={}, renewedAt={}, expiresInSeconds={}",
+                account.getId(),
+                renewedAt,
+                response.expiresIn()
+            );
 
             return new RevalidationResult(
                 FacebookTokenRenewalStatus.SUCCESS,
@@ -80,18 +99,31 @@ public class FacebookTokenRevalidationService {
                 null
             );
         } catch (RestClientResponseException ex) {
-            String message = String.format(
-                "HTTP %d: %s",
-                ex.getRawStatusCode(),
-                ex.getResponseBodyAsString()
-            );
-            log.error(
-                "Facebook token revalidation failed: accountId={}, status={}, response={}",
-                account.getId(),
-                ex.getRawStatusCode(),
-                ex.getResponseBodyAsString(),
-                ex
-            );
+            GraphErrorResponse error = parseGraphError(ex.getResponseBodyAsString());
+            String message = buildFailureMessage(ex, error);
+            if (error != null && error.error() != null) {
+                GraphError graphError = error.error();
+                log.error(
+                    "Facebook token revalidation failed: accountId={}, status={}, type={}, code={}, subCode={}, transient={}, fbtraceId={}, message={}",
+                    account.getId(),
+                    ex.getRawStatusCode(),
+                    graphError.type(),
+                    graphError.code(),
+                    graphError.errorSubcode(),
+                    graphError.isTransient(),
+                    graphError.fbtraceId(),
+                    graphError.message(),
+                    ex
+                );
+            } else {
+                log.error(
+                    "Facebook token revalidation failed: accountId={}, status={}, response={}",
+                    account.getId(),
+                    ex.getRawStatusCode(),
+                    sanitizeBody(ex.getResponseBodyAsString()),
+                    ex
+                );
+            }
             return registerFailure(account, attemptedAt, message);
         } catch (RestClientException ex) {
             log.error(
@@ -127,6 +159,55 @@ public class FacebookTokenRevalidationService {
         );
     }
 
+    private String buildFailureMessage(RestClientResponseException ex, GraphErrorResponse error) {
+        if (error != null && error.error() != null) {
+            GraphError graphError = error.error();
+            StringBuilder builder = new StringBuilder("Graph API error");
+            if (StringUtils.hasText(graphError.type())) {
+                builder.append(" (type=").append(graphError.type()).append(')');
+            }
+            if (graphError.code() != null) {
+                builder.append(" [code=").append(graphError.code()).append(']');
+            }
+            if (graphError.errorSubcode() != null) {
+                builder.append(" [subcode=").append(graphError.errorSubcode()).append(']');
+            }
+            boolean hasDetails =
+                StringUtils.hasText(graphError.message()) ||
+                Boolean.TRUE.equals(graphError.isTransient()) ||
+                StringUtils.hasText(graphError.fbtraceId());
+            if (hasDetails) {
+                builder.append(':');
+                if (StringUtils.hasText(graphError.message())) {
+                    builder.append(' ').append(graphError.message());
+                }
+                if (Boolean.TRUE.equals(graphError.isTransient())) {
+                    builder.append(' ').append("(transient error)");
+                }
+                if (StringUtils.hasText(graphError.fbtraceId())) {
+                    builder.append(' ')
+                        .append("[fbtrace_id=")
+                        .append(graphError.fbtraceId())
+                        .append(']');
+                }
+            }
+            return builder.toString();
+        }
+        return String.format("HTTP %d: %s", ex.getRawStatusCode(), sanitizeBody(ex.getResponseBodyAsString()));
+    }
+
+    private GraphErrorResponse parseGraphError(String responseBody) {
+        if (!StringUtils.hasText(responseBody)) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(responseBody, GraphErrorResponse.class);
+        } catch (JsonProcessingException parsingException) {
+            log.debug("Unable to parse Graph API error response: {}", responseBody, parsingException);
+            return null;
+        }
+    }
+
     private String buildTokenExchangeUrl(FacebookAccount account) {
         return UriComponentsBuilder
             .fromHttpUrl(graphApiBaseUrl)
@@ -139,6 +220,28 @@ public class FacebookTokenRevalidationService {
             .queryParam("fb_exchange_token", account.getAccessToken())
             .build()
             .toUriString();
+    }
+
+    private String maskForLogs(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "<empty>";
+        }
+        int length = value.length();
+        if (length <= 8) {
+            return "<redacted>";
+        }
+        return value.substring(0, 4) + "..." + value.substring(length - 4);
+    }
+
+    private String sanitizeBody(String body) {
+        if (!StringUtils.hasText(body)) {
+            return "<empty>";
+        }
+        String trimmed = body.trim();
+        if (trimmed.length() > 2048) {
+            return trimmed.substring(0, 2048) + "...";
+        }
+        return trimmed;
     }
 
     private String trimTrailingSlash(String value) {
@@ -175,5 +278,18 @@ public class FacebookTokenRevalidationService {
         @JsonProperty("access_token") String accessToken,
         @JsonProperty("token_type") String tokenType,
         @JsonProperty("expires_in") Long expiresIn
+    ) {}
+
+    private record GraphErrorResponse(
+        GraphError error
+    ) {}
+
+    private record GraphError(
+        String message,
+        String type,
+        Integer code,
+        @JsonProperty("error_subcode") Integer errorSubcode,
+        @JsonProperty("is_transient") Boolean isTransient,
+        @JsonProperty("fbtrace_id") String fbtraceId
     ) {}
 }

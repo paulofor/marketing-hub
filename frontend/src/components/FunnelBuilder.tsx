@@ -173,7 +173,7 @@ export default function FunnelBuilder({ funnel }: FunnelProps) {
 
       <div className="row g-4">
         <div className="col-12 col-lg-4">
-          <section className="card shadow-sm border-0 h-100">
+          <section className="card shadow-sm border-0 h-100 funnel-card">
             <div className="card-body">
               <h2 className="h5 mb-2">Nova etapa</h2>
               <p className="text-muted small mb-4">
@@ -255,7 +255,7 @@ export default function FunnelBuilder({ funnel }: FunnelProps) {
           </section>
         </div>
         <div className="col-12 col-lg-8">
-          <section className="card shadow-sm border-0 mb-4">
+          <section className="card shadow-sm border-0 mb-4 funnel-card">
             <div className="card-body">
               <label className="form-label fw-semibold" htmlFor="funnel_name">
                 Nome do funil *
@@ -273,7 +273,7 @@ export default function FunnelBuilder({ funnel }: FunnelProps) {
             </div>
           </section>
 
-          <section className="card shadow-sm border-0">
+          <section className="card shadow-sm border-0 funnel-card">
             <div className="card-body">
               <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
                 <div>
@@ -312,7 +312,7 @@ export default function FunnelBuilder({ funnel }: FunnelProps) {
                             <div
                               ref={prov.innerRef}
                               {...prov.draggableProps}
-                              className="card border-0 shadow-sm"
+                              className="card border-0 shadow-sm funnel-step-card"
                             >
                               <div className="card-body p-4">
                                 <div className="d-flex align-items-start justify-content-between gap-3 mb-3">

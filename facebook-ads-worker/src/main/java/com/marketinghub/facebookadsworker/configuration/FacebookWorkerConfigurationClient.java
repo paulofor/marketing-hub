@@ -41,7 +41,7 @@ public class FacebookWorkerConfigurationClient {
     public Optional<FacebookWorkerConfiguration> fetchConfiguration() {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/accounts/facebook/worker-config");
         LOGGER.info(
-            "Requesting Facebook worker configuration from backend: url={}, params={}",
+            "Requesting Facebook worker configuration from backend: url==>{}, params={}",
             url,
             Collections.emptyMap()
         );
@@ -56,7 +56,7 @@ public class FacebookWorkerConfigurationClient {
                         LOGGER.warn("Facebook worker configuration not found in backend; skipping Facebook automation");
                     }
                     LOGGER.info(
-                        "Backend responded with HTTP 404 when fetching Facebook worker configuration: url={}, response={}",
+                        "Backend responded with HTTP 404 when fetching Facebook worker configuration: url<=={}, response={}",
                         url,
                         ex.getResponseBodyAsString()
                     );
@@ -64,7 +64,7 @@ public class FacebookWorkerConfigurationClient {
                 })
                 .block();
             LOGGER.info(
-                "Received Facebook worker configuration response from backend: url={}, response={}",
+                "Received Facebook worker configuration response from backend: url<=={}, response={}",
                 url,
                 configuration
             );

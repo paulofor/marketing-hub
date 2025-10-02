@@ -175,7 +175,7 @@ public class FacebookAdsService {
     public JsonNode getCampaignMetrics(String campaignId) {
         String path = buildVersionedPath("/" + campaignId + "/insights?access_token=" + requireAccessToken());
         String maskedPath = maskAccessTokenInPath(path);
-        LOGGER.info("Sending GET request to Facebook API: path={}", maskedPath);
+        LOGGER.info("Sending GET request to Facebook API: path==>{}", maskedPath);
         try {
             FacebookApiResponse apiResponse = webClient
                 .get()
@@ -198,7 +198,7 @@ public class FacebookAdsService {
             String responseBody = ex.getResponseBodyAsString();
             ObjectNode errorDetails = extractErrorDetails(responseBody);
             LOGGER.error(
-                "Facebook API GET request failed: path={}, status={}, responseBody={}, errorDetails={}",
+                "Facebook API GET request failed: path<=={}, status={}, responseBody={}, errorDetails={}",
                 maskedPath,
                 ex.getRawStatusCode(),
                 maskAccessToken(responseBody),
@@ -210,7 +210,12 @@ public class FacebookAdsService {
             }
             throw ex;
         } catch (WebClientRequestException ex) {
-            LOGGER.error("Facebook API GET request could not be completed: path={}, message={}", maskedPath, ex.getMessage(), ex);
+            LOGGER.error(
+                "Facebook API GET request could not be completed: path==>{}, message={}",
+                maskedPath,
+                ex.getMessage(),
+                ex
+            );
             throw ex;
         }
     }
@@ -218,7 +223,7 @@ public class FacebookAdsService {
     private JsonNode executePost(String path, Map<String, Object> body) {
         Map<String, Object> sanitizedBody = sanitizeBody(body);
         String maskedPath = maskAccessTokenInPath(path);
-        LOGGER.info("Sending POST request to Facebook API: path={}, body={}", maskedPath, sanitizedBody);
+        LOGGER.info("Sending POST request to Facebook API: path==>{}, body={}", maskedPath, sanitizedBody);
         try {
             FacebookApiResponse apiResponse = webClient
                 .post()
@@ -242,7 +247,7 @@ public class FacebookAdsService {
             String responseBody = ex.getResponseBodyAsString();
             ObjectNode errorDetails = extractErrorDetails(responseBody);
             LOGGER.error(
-                "Facebook API POST request failed: path={}, status={}, responseBody={}, errorDetails={}, headers={}",
+                "Facebook API POST request failed: path<=={}, status={}, responseBody={}, errorDetails={}, headers={}",
                 maskedPath,
                 ex.getRawStatusCode(),
                 maskAccessToken(responseBody),
@@ -259,7 +264,7 @@ public class FacebookAdsService {
             throw ex;
         } catch (WebClientRequestException ex) {
             LOGGER.error(
-                "Facebook API POST request could not be completed: path={}, message={}",
+                "Facebook API POST request could not be completed: path==>{}, message={}",
                 maskedPath,
                 ex.getMessage(),
                 ex
@@ -270,7 +275,7 @@ public class FacebookAdsService {
 
     private void logSuccessfulResponse(String method, String maskedPath, FacebookApiResponse response) {
         LOGGER.info(
-            "Facebook API response received: method={}, path={}, status={}, headers={}, body={}",
+            "Facebook API response received: method={}, path<=={}, status={}, headers={}, body={}",
             method,
             maskedPath,
             formatStatus(response.statusCode()),

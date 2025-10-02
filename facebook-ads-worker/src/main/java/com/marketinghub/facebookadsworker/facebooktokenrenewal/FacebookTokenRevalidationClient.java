@@ -34,7 +34,7 @@ public class FacebookTokenRevalidationClient {
         String path = "/accounts/facebook/" + accountId + "/token/revalidation";
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, path);
         LOGGER.info(
-            "Requesting Facebook token revalidation from backend: url={}, params={}",
+            "Requesting Facebook token revalidation from backend: url==>{}, params={}",
             url,
             Collections.emptyMap()
         );
@@ -46,14 +46,14 @@ public class FacebookTokenRevalidationClient {
                 .bodyToMono(TokenRevalidationResponse.class)
                 .block();
             LOGGER.info(
-                "Received Facebook token revalidation response from backend: url={}, response={}",
+                "Received Facebook token revalidation response from backend: url<=={}, response={}",
                 url,
                 response
             );
             return Optional.ofNullable(response);
         } catch (WebClientResponseException | WebClientRequestException ex) {
             LOGGER.error(
-                "Failed to revalidate Facebook token via backend: url={}, status={}, message={}",
+                "Failed to revalidate Facebook token via backend: url<=={}, status={}, message={}",
                 url,
                 ex instanceof WebClientResponseException responseException ? responseException.getRawStatusCode() : "N/A",
                 ex.getMessage(),

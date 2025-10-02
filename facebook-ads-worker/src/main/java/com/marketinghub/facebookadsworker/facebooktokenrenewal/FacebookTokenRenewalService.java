@@ -52,7 +52,7 @@ public class FacebookTokenRenewalService {
     private List<FacebookAccountRenewalCandidate> fetchEligibleAccounts() {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/accounts/facebook/renewal/eligible");
         LOGGER.info(
-            "Requesting Facebook accounts eligible for token renewal from backend: url={}, params={}",
+            "Requesting Facebook accounts eligible for token renewal from backend: url==>{}, params={}",
             url,
             Collections.emptyMap()
         );
@@ -66,14 +66,14 @@ public class FacebookTokenRenewalService {
                 .blockOptional()
                 .orElse(Collections.emptyList());
             LOGGER.info(
-                "Received eligible Facebook accounts response from backend: url={}, response={}",
+                "Received eligible Facebook accounts response from backend: url<=={}, response={}",
                 url,
                 response
             );
             return response;
         } catch (WebClientResponseException | WebClientRequestException ex) {
             LOGGER.error(
-                "Failed to fetch Facebook accounts for token renewal: url={}, status={}, message={}",
+                "Failed to fetch Facebook accounts for token renewal: url<=={}, status={}, message={}",
                 url,
                 ex instanceof WebClientResponseException responseException ? responseException.getRawStatusCode() : "N/A",
                 ex.getMessage(),

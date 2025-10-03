@@ -22,9 +22,9 @@ expiração automática.
    no frontend. O backend persiste esses valores em `facebook_account` e inicia o
    controle de expiração (`tokenExpiresAt`, `tokenLastRefreshedAt`).
 
-> O worker também executa essa mesma chamada quando precisa transformar um token
-> recém renovado em memória, garantindo que a lógica seja idêntica ao processo
-> manual descrito acima.
+> O worker também executa essa mesma chamada quando precisa gerar um novo token
+> automaticamente, garantindo que a lógica seja idêntica ao processo manual
+> descrito acima.
 
 ## 2. Como o Facebook Ads Worker monitora o token
 
@@ -34,11 +34,12 @@ expiração automática.
    iminente.
 2. Para cada conta elegível, o `FacebookTokenRenewalService` aciona o endpoint
    `POST /api/accounts/facebook/{id}/token/revalidation`. O backend reutiliza o
-   `appId`, o `appSecret` e o token atual armazenados na conta para trocar o
-   token diretamente na Graph API.
+   `appId`, o `appSecret` e o token atual armazenados na conta para gerar um
+   novo token de 60 dias diretamente na Graph API.
 3. Ao receber `status=SUCCESS`, o worker atualiza seu `FacebookAdsService` em
-   memória quando o token renovado pertence à mesma conta configurada. O backend
-   já registra o novo token, a data de expiração e o horário da tentativa.
+   memória quando o token recém-gerado pertence à mesma conta configurada. O
+   backend já registra o novo token, a data de expiração (60 dias a partir da
+   tentativa) e o horário da execução.
 4. Em caso de falha (por exemplo, `(#190) OAuthException`), o backend devolve
    `status=FAILED` com a mensagem da Graph API, mantendo o token anterior até que
    uma intervenção manual ou nova tentativa automática seja bem-sucedida.
@@ -55,9 +56,10 @@ expiração automática.
   `tokenExpiresAt` automaticamente após consultar a Graph API, registrando o
   token recebido ou a mensagem de erro.
 - **Sucesso** – Quando `status=SUCCESS`, o backend salva o novo `accessToken`,
-  atualiza `tokenExpiresAt`, `tokenLastRefreshedAt` e `tokenRenewedAt` e limpa
-  `tokenRenewalLastError`. O novo token passa a ser utilizado pelo frontend e por
-  futuras execuções do worker.
+  atualiza `tokenExpiresAt` para 60 dias após a tentativa, bem como
+  `tokenLastRefreshedAt` e `tokenRenewedAt`, e limpa `tokenRenewalLastError`. O
+  novo token passa a ser utilizado pelo frontend e por futuras execuções do
+  worker.
 - **Falha** – Quando `status=FAILED`, o backend mantém o token anterior e grava a
   mensagem retornada em `tokenRenewalLastError`, permitindo que o frontend
   exiba o motivo da falha e que operadores decidam por uma nova tentativa ou

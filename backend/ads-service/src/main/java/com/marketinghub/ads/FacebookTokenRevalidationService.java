@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 @Service
 public class FacebookTokenRevalidationService {
     private static final Logger log = LoggerFactory.getLogger(FacebookTokenRevalidationService.class);
+    private static final long LONG_LIVED_TOKEN_VALIDITY_DAYS = 60L;
 
     private final RestTemplate restTemplate;
     private final FacebookAccountRepository repository;
@@ -44,13 +45,13 @@ public class FacebookTokenRevalidationService {
         LocalDateTime attemptedAt = LocalDateTime.now();
         String url = buildTokenExchangeUrl(account);
         log.info(
-            "Requesting Facebook token revalidation via Graph API: accountId={}, endpoint={}/{}",
+            "Requesting Facebook long-lived token via Graph API: accountId={}, endpoint={}/{}",
             account.getId(),
             graphApiBaseUrl,
             graphApiVersion
         );
         log.debug(
-            "Facebook token revalidation parameters: accountId={}, appId={}, accessToken={}, tokenRenewalEnabled={}",
+            "Facebook token generation parameters: accountId={}, appId={}, accessToken={}, tokenRenewalEnabled={}",
             account.getId(),
             maskForLogs(account.getAppId()),
             maskForLogs(account.getAccessToken()),
@@ -60,13 +61,11 @@ public class FacebookTokenRevalidationService {
         try {
             GraphTokenResponse response = restTemplate.getForObject(url, GraphTokenResponse.class);
             if (response == null || !StringUtils.hasText(response.accessToken())) {
-                throw new IllegalStateException("Facebook returned an empty token while revalidating the access token");
+                throw new IllegalStateException("Facebook returned an empty token while generating a new access token");
             }
 
             LocalDateTime renewedAt = attemptedAt;
-            LocalDateTime expiresAt = response.expiresIn() != null
-                ? attemptedAt.plusSeconds(Math.max(response.expiresIn(), 0))
-                : null;
+            LocalDateTime expiresAt = attemptedAt.plusDays(LONG_LIVED_TOKEN_VALIDITY_DAYS);
 
             account.setAccessToken(response.accessToken());
             account.setTokenExpiresAt(expiresAt);
@@ -78,16 +77,13 @@ public class FacebookTokenRevalidationService {
 
             repository.save(account);
 
-            log.info(
-                "Facebook token revalidation succeeded: accountId={}, expiresAt={}",
-                account.getId(),
-                expiresAt
-            );
+            log.info("Generated new Facebook access token: accountId={}, expiresAt={}", account.getId(), expiresAt);
             log.debug(
-                "Facebook token revalidation updated credentials: accountId={}, renewedAt={}, expiresInSeconds={}",
+                "Facebook token generation updated credentials: accountId={}, renewedAt={}, expiresInSeconds={}, configuredValidityDays={}",
                 account.getId(),
                 renewedAt,
-                response.expiresIn()
+                response.expiresIn(),
+                LONG_LIVED_TOKEN_VALIDITY_DAYS
             );
 
             return new RevalidationResult(
@@ -104,7 +100,7 @@ public class FacebookTokenRevalidationService {
             if (error != null && error.error() != null) {
                 GraphError graphError = error.error();
                 log.error(
-                    "Facebook token revalidation failed: accountId={}, status={}, type={}, code={}, subCode={}, transient={}, fbtraceId={}, message={}",
+                    "Facebook token generation failed: accountId={}, status={}, type={}, code={}, subCode={}, transient={}, fbtraceId={}, message={}",
                     account.getId(),
                     ex.getRawStatusCode(),
                     graphError.type(),
@@ -117,7 +113,7 @@ public class FacebookTokenRevalidationService {
                 );
             } else {
                 log.error(
-                    "Facebook token revalidation failed: accountId={}, status={}, response={}",
+                    "Facebook token generation failed: accountId={}, status={}, response={}",
                     account.getId(),
                     ex.getRawStatusCode(),
                     sanitizeBody(ex.getResponseBodyAsString()),
@@ -127,7 +123,7 @@ public class FacebookTokenRevalidationService {
             return registerFailure(account, attemptedAt, message);
         } catch (RestClientException ex) {
             log.error(
-                "Facebook token revalidation failed: accountId={}, message={}",
+                "Facebook token generation failed: accountId={}, message={}",
                 account.getId(),
                 ex.getMessage(),
                 ex
@@ -135,7 +131,7 @@ public class FacebookTokenRevalidationService {
             return registerFailure(account, attemptedAt, ex.getMessage());
         } catch (RuntimeException ex) {
             log.error(
-                "Facebook token revalidation failed: accountId={}, message={}",
+                "Facebook token generation failed: accountId={}, message={}",
                 account.getId(),
                 ex.getMessage(),
                 ex
@@ -162,7 +158,7 @@ public class FacebookTokenRevalidationService {
     private String buildFailureMessage(RestClientResponseException ex, GraphErrorResponse error) {
         if (error != null && error.error() != null) {
             GraphError graphError = error.error();
-            StringBuilder builder = new StringBuilder("Graph API error");
+            StringBuilder builder = new StringBuilder("Graph API error during token generation");
             if (StringUtils.hasText(graphError.type())) {
                 builder.append(" (type=").append(graphError.type()).append(')');
             }

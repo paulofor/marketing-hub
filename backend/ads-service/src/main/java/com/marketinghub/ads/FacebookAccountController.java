@@ -381,13 +381,13 @@ public class FacebookAccountController {
 
     private void validateRevalidationPrerequisites(FacebookAccount account) {
         if (!StringUtils.hasText(account.getAccessToken())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Conta sem token configurado para revalidação");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Conta sem token configurado para gerar um novo acesso");
         }
         if (!StringUtils.hasText(account.getAppId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe o App ID antes de revalidar o token");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe o App ID antes de gerar um novo token");
         }
         if (!StringUtils.hasText(account.getAppSecret())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe o App Secret antes de revalidar o token");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe o App Secret antes de gerar um novo token");
         }
     }
 

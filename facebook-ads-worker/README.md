@@ -56,14 +56,15 @@ O fluxo funciona da seguinte forma:
    apenas as contas com `tokenRenewalEnabled = true`, token prestes a expirar e
    credenciais completas (`appId`, `appSecret`).
 2. Para cada conta elegível, o serviço `FacebookTokenRenewalService` chama o
-   endpoint `POST /api/accounts/facebook/{id}/token/revalidation`, que executa a
-   troca do token diretamente no backend utilizando as credenciais já
-   persistidas (App ID, App Secret e token atual). O backend devolve o novo
-   token e a data de expiração calculada.
+   endpoint `POST /api/accounts/facebook/{id}/token/revalidation`, que agora
+   gera um novo token de longa duração (60 dias) diretamente no backend
+   utilizando as credenciais já persistidas (App ID, App Secret e token atual).
+   O backend devolve o token recém-gerado e a data de expiração calculada a
+   partir da tentativa.
 3. Quando a Graph API devolve `(#190) OAuthException` o `FacebookCampaignService`
    intercepta a exceção, pausa o processamento de experimentos e delega para o
-   `FacebookAccessTokenManager` revalidar o token atual através do mesmo
-   endpoint do backend. Caso o aplicativo (`facebook.app-id`/`facebook.app-secret`)
+   `FacebookAccessTokenManager` solicitar a geração de um novo token através do
+   mesmo endpoint do backend. Caso o aplicativo (`facebook.app-id`/`facebook.app-secret`)
    esteja configurado, o novo token é aplicado em memória e a fila de
    experimentos volta a ser processada sem necessidade de reiniciar o serviço.
    Quando as credenciais não estão configuradas, o agendador de renovação do
@@ -74,9 +75,10 @@ O fluxo funciona da seguinte forma:
 4. Esses dados são exibidos na tela de contas do frontend, permitindo acompanhar
    a última tentativa, o último sucesso e eventuais mensagens de erro.
 
-Caso a revalidação dispare um erro da Graph API, o backend registra o status
-`FAILED` com a mensagem retornada em `tokenRenewalLastError`, mantendo o token
-anterior até que uma nova tentativa (manual ou automática) seja bem-sucedida.
+Caso a geração do token dispare um erro da Graph API, o backend registra o
+status `FAILED` com a mensagem retornada em `tokenRenewalLastError`, mantendo o
+token anterior até que uma nova tentativa (manual ou automática) seja
+bem-sucedida.
 
 ### Falha momentânea ao consultar a configuração do backend
 

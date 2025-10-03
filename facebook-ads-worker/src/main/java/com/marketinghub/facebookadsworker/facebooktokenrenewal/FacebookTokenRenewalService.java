@@ -98,7 +98,7 @@ public class FacebookTokenRenewalService {
 
         if (response == null) {
             LOGGER.error(
-                "Token revalidation request did not return a response: accountId={}, name={}",
+                "Token generation request did not return a response: accountId={}, name={}",
                 candidate.id(),
                 candidate.name()
             );
@@ -113,7 +113,7 @@ public class FacebookTokenRenewalService {
             if (matchesCurrentToken && response.accessToken() != null) {
                 facebookAdsService.updateAccessToken(response.accessToken());
                 LOGGER.info(
-                    "Updated in-memory Facebook access token after backend revalidation for account id={}",
+                    "Updated in-memory Facebook access token after backend generation for account id={}",
                     candidate.id()
                 );
             } else if (!matchesCurrentToken) {
@@ -123,11 +123,11 @@ public class FacebookTokenRenewalService {
                 );
             }
             LOGGER.info(
-                "Facebook token revalidation succeeded for account id={} via backend", candidate.id()
+                "Facebook token generation succeeded for account id={} via backend", candidate.id()
             );
         } else {
             LOGGER.error(
-                "Token revalidation failed for Facebook account id={}, name={}: {}",
+                "Token generation failed for Facebook account id={}, name={}: {}",
                 candidate.id(),
                 candidate.name(),
                 response.errorMessage()

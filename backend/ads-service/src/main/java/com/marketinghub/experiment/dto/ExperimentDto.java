@@ -39,11 +39,3 @@ public class ExperimentDto {
     private java.util.UUID salesFunnelId;
     private String salesFunnelName;
 }
-
-@Data
-class FacebookPageDto {
-    private Long id;
-    private Long accountId;
-    private String pageId;
-    private String name;
-}

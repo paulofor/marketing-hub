@@ -30,7 +30,7 @@ public class UpdateExperimentRequest {
     @JsonIgnore
     private boolean facebookPageIdPresent;
 
-    @JsonSetter(value = "facebookPageId", nulls = Nulls.AS_NULL)
+    @JsonSetter(value = "facebookPageId", nulls = Nulls.SET)
     public void setFacebookPageId(Long facebookPageId) {
         this.facebookPageId = facebookPageId;
         this.facebookPageIdPresent = true;

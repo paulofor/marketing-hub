@@ -58,7 +58,7 @@ public class FacebookAccessTokenManager {
                 if (StringUtils.hasText(response.accessToken())) {
                     facebookAdsService.updateAccessToken(response.accessToken());
                 }
-                LOGGER.info("Facebook access token renewed successfully via backend revalidation");
+                LOGGER.info("Facebook access token renewed successfully via backend token generation");
                 return new RenewalAttemptResult(RenewalOutcome.SUCCESS, response.accessToken(), null);
             }
 

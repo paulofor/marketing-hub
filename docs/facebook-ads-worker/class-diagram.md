@@ -257,9 +257,9 @@ classDiagram
     FacebookAdsAd --> FacebookAdsAdCreative
     FacebookCampaignService ..> UrlUtils : compõe URLs do backend
     FacebookTokenRenewalScheduler --> FacebookTokenRenewalService : agenda renovação
-    FacebookTokenRenewalService --> FacebookTokenRevalidationClient : solicita revalidação
+    FacebookTokenRenewalService --> FacebookTokenRevalidationClient : solicita geração de novo token
     FacebookAccessTokenManager --> FacebookWorkerConfigurationClient : lê credenciais do backend
-    FacebookAccessTokenManager --> FacebookTokenRevalidationClient : revalida token expirado
+    FacebookAccessTokenManager --> FacebookTokenRevalidationClient : solicita novo token após expiração
     FacebookTokenRenewalService ..> UrlUtils : reutiliza composição de URLs
 ```
 
@@ -274,18 +274,19 @@ classDiagram
   lista de bloqueio em memória para evitar novas tentativas até que o worker
   seja reiniciado.
 * `FacebookAdsService` encapsula as chamadas à Graph API (criação da hierarquia
-  de mídia e consulta de métricas). A revalidação de tokens de longa duração é
-  realizada pelo backend através do `FacebookTokenRevalidationClient`.
+  de mídia e consulta de métricas). A geração automática de novos tokens de
+  longa duração é realizada pelo backend através do
+  `FacebookTokenRevalidationClient`.
 * `FacebookTokenRenewalScheduler` agenda o fluxo periódico de renovação de token
   e delega para `FacebookTokenRenewalService`.
 * `FacebookTokenRenewalService` busca as contas elegíveis no backend, solicita a
-  revalidação automática via `POST /api/accounts/facebook/{id}/token/revalidation`
-  e sincroniza o token em memória quando a resposta pertence à conta configurada
-  no worker.
+  geração automática do novo token de 60 dias via
+  `POST /api/accounts/facebook/{id}/token/revalidation` e sincroniza o token em
+  memória quando a resposta pertence à conta configurada no worker.
 * `FacebookAccessTokenManager` encapsula a renovação imediata de tokens quando o
   `FacebookCampaignService` detecta expiração durante a criação de campanhas,
   consultando o backend pelo mesmo endpoint para atualizar o `access_token` em
-  memória.
+  memória com o novo valor gerado.
 * `FacebookWorkerConfigurationClient` fornece acesso ao endpoint
   `/api/accounts/facebook/worker-config`, permitindo que os serviços leiam as
   credenciais e parâmetros padrão preenchidos na interface web.

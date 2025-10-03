@@ -3,6 +3,10 @@
 A Graph API expõe os tipos de call to action aceitos em campanhas via enumeração `AdCreative.CallToActionType`. O `facebook-ads-worker` replica essa lista tanto no backend quanto no frontend (ver `frontend/src/constants/facebookCallToActions.ts`) para evitar divergências. Utilize esta referência ao configurar o campo **Call to Action** na tela de criativos ou ao definir o fallback padrão em **Contas do Facebook**.
 
 > Fonte: [Facebook Business SDK – `AdCreative.CallToActionType`](https://github.com/facebook/facebook-business-sdk-codegen)
+>
+> Atualização 2025-05-20: os criativos agora dependem da página associada ao
+> experimento quando não há `defaultPageId` configurado. Garanta que a página
+> exista antes de acionar o worker para publicar anúncios com os CTAs abaixo.
 
 ## Lista completa (97 valores)
 

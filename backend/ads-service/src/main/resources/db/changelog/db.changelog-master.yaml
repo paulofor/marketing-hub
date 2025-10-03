@@ -149,3 +149,6 @@ databaseChangeLog:
   - include:
       file: V2026_05_10__support_lead_forms.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2026_05_20__link_experiment_to_fb_page.sql
+      relativeToChangelogFile: true

@@ -223,17 +223,19 @@ public class FacebookAdsCampaignController {
     }
 
     private ExperimentSummary toSummary(Experiment experiment) {
+        String pageId = resolveExperimentPageId(experiment);
         return new ExperimentSummary(
                 experiment.getId(),
                 experiment.getName(),
                 experiment.getHypothesis(),
-                experiment.getPageId(),
+                pageId,
                 experiment.getKpiTargetCpl(),
                 experiment.getStartDate(),
                 experiment.getEndDate(),
                 experiment.getNiche() != null ? experiment.getNiche().getName() : null,
                 experiment.getHypothesisRef() != null ? experiment.getHypothesisRef().getTitle() : null,
-                computeMissingConfiguration(experiment));
+                computeMissingConfiguration(experiment),
+                toFacebookPageSummary(experiment));
     }
 
     private List<String> computeMissingConfiguration(Experiment experiment) {
@@ -259,10 +261,26 @@ public class FacebookAdsCampaignController {
         if (experiment.getSalesFunnel() == null) {
             missing.add("salesFunnel");
         }
-        if (!StringUtils.hasText(experiment.getPageId())) {
+        if (!StringUtils.hasText(resolveExperimentPageId(experiment))) {
             missing.add("pageId");
         }
         return missing;
+    }
+
+    private String resolveExperimentPageId(Experiment experiment) {
+        if (experiment.getFacebookPage() == null) {
+            return null;
+        }
+        return experiment.getFacebookPage().getPageId();
+    }
+
+    private FacebookPageSummary toFacebookPageSummary(Experiment experiment) {
+        if (experiment.getFacebookPage() == null) {
+            return null;
+        }
+        var page = experiment.getFacebookPage();
+        Long accountId = page.getAccount() != null ? page.getAccount().getId() : null;
+        return new FacebookPageSummary(page.getId(), accountId, page.getPageId(), page.getName());
     }
 
     public record ExperimentSummary(
@@ -275,7 +293,10 @@ public class FacebookAdsCampaignController {
             LocalDate endDate,
             String nicheName,
             String hypothesisTitle,
-            List<String> missingConfiguration) {}
+            List<String> missingConfiguration,
+            FacebookPageSummary facebookPage) {}
+
+    public record FacebookPageSummary(Long id, Long accountId, String pageId, String name) {}
 
     public record CreateCampaignRequest(
             String id,

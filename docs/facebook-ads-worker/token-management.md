@@ -6,6 +6,11 @@ backend persiste o resultado das renovações. Utilize este guia sempre que
 precisar atualizar o token utilizado em produção ou investigar problemas de
 expiração automática.
 
+> Atualização 2025-05-20: experimento sem `defaultPageId` requer uma página
+> associada (`fb_page`). Certifique-se de que o token gerado tenha acesso à
+> página vinculada ao experimento, caso contrário o worker ignorará a criação da
+> campanha.
+
 ## 1. Geração inicial do token
 
 1. Gere um token de usuário curto através do

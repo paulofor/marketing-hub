@@ -11,6 +11,10 @@ O App ID é o identificador público do aplicativo registrado no [Facebook for D
 3. Preencha esse valor no campo **ID do aplicativo (App ID)** da tela do Marketing Hub.
 
 > O App ID também é usado em chamadas à Graph API, Login com Facebook e na renovação de tokens pelo worker.
+>
+> Atualização 2025-05-20: experimento sem `defaultPageId` agora exige uma página
+> associada no backend. Certifique-se de que o aplicativo selecionado tenha
+> acesso à página vinculada ao experimento antes de atualizar as credenciais.
 
 ## Checklist rápido
 

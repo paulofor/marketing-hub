@@ -174,7 +174,7 @@ public class FacebookCampaignService {
                 return;
             }
 
-            String resolvedPageId = coalesce(exp.pageId(), config.defaultPageId());
+            String resolvedPageId = resolvePageId(config, exp);
             if (!StringUtils.hasText(resolvedPageId)) {
                 LOGGER.warn("Skipping experiment {} because no Facebook page ID is configured", exp.id());
                 return;
@@ -358,7 +358,26 @@ public class FacebookCampaignService {
         return template;
     }
 
-    public record Experiment(long id, String name, String pageId) {}
+    private String resolvePageId(FacebookWorkerConfiguration config, Experiment experiment) {
+        String configPageId = config.defaultPageId();
+        Experiment.FacebookPage associatedPage = experiment.associatedPage();
+        String experimentPageId = associatedPage != null ? associatedPage.pageId() : null;
+        return coalesce(configPageId, experimentPageId);
+    }
+
+    public record Experiment(
+        long id,
+        String name,
+        String pageId,
+        FacebookPage page,
+        FacebookPage facebookPage
+    ) {
+        public FacebookPage associatedPage() {
+            return page != null ? page : facebookPage;
+        }
+
+        public record FacebookPage(Long id, String pageId, String name) {}
+    }
     public record CreateCampaignRequest(
         String id,
         String adAccountId,
@@ -438,8 +457,16 @@ public class FacebookCampaignService {
         }
     }
 
-    private static String coalesce(String primary, String fallback) {
-        return StringUtils.hasText(primary) ? primary : fallback;
+    private static String coalesce(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value;
+            }
+        }
+        return null;
     }
 
     private void markExperimentAsFailed(long experimentId) {

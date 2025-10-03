@@ -1,5 +1,7 @@
 package com.marketinghub.experiment.service;
 
+import com.marketinghub.ads.FacebookPage;
+import com.marketinghub.ads.FacebookPageRepository;
 import com.marketinghub.experiment.*;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
@@ -26,18 +28,21 @@ public class ExperimentService {
     private final MetricPresetService metricPresetService;
     private final EntityManager entityManager;
     private final SalesFunnelRepository salesFunnelRepository;
+    private final FacebookPageRepository facebookPageRepository;
 
     public ExperimentService(ExperimentRepository repository, MarketNicheRepository nicheRepository,
                              com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository,
                              MetricPresetService metricPresetService,
                              EntityManager entityManager,
-                             SalesFunnelRepository salesFunnelRepository) {
+                             SalesFunnelRepository salesFunnelRepository,
+                             FacebookPageRepository facebookPageRepository) {
         this.repository = repository;
         this.nicheRepository = nicheRepository;
         this.hypothesisRepository = hypothesisRepository;
         this.metricPresetService = metricPresetService;
         this.entityManager = entityManager;
         this.salesFunnelRepository = salesFunnelRepository;
+        this.facebookPageRepository = facebookPageRepository;
     }
 
     /**
@@ -59,6 +64,16 @@ public class ExperimentService {
             throw new EntityNotFoundException("Hypothesis not found: " + id);
         }
         return entityManager.getReference(com.marketinghub.hypothesis.Hypothesis.class, id);
+    }
+
+    private FacebookPage attachFacebookPage(Long facebookPageId) {
+        if (facebookPageId == null) {
+            return null;
+        }
+        if (!facebookPageRepository.existsById(facebookPageId)) {
+            throw new EntityNotFoundException("FacebookPage not found: " + facebookPageId);
+        }
+        return entityManager.getReference(FacebookPage.class, facebookPageId);
     }
 
     private SalesFunnel resolveSalesFunnel(String name) {
@@ -124,7 +139,7 @@ public class ExperimentService {
                 .status(ExperimentStatus.PLANNED)
                 .platform(ExperimentPlatform.FACEBOOK)
                 .creativesToGenerate(request.getCreativesToGenerate())
-                .pageId(normalizePageId(request.getPageId()))
+                .facebookPage(attachFacebookPage(request.getFacebookPageId()))
                 .salesFunnel(salesFunnel)
                 .build();
         return repository.save(exp);
@@ -179,7 +194,7 @@ public class ExperimentService {
                 .status(ExperimentStatus.PLANNED)
                 .platform(original.getPlatform())
                 .creativesToGenerate(original.getCreativesToGenerate())
-                .pageId(original.getPageId())
+                .facebookPage(original.getFacebookPage())
                 .salesFunnel(original.getSalesFunnel())
                 .build();
         return repository.save(copy);
@@ -260,8 +275,8 @@ public class ExperimentService {
                 exp.setSalesFunnel(resolveSalesFunnel(request.getSalesFunnelName()));
             }
         }
-        if (request.getPageId() != null) {
-            exp.setPageId(normalizePageId(request.getPageId()));
+        if (request.isFacebookPageIdPresent()) {
+            exp.setFacebookPage(attachFacebookPage(request.getFacebookPageId()));
         }
         return exp;
     }
@@ -276,11 +291,4 @@ public class ExperimentService {
         return exp;
     }
 
-    private static String normalizePageId(String pageId) {
-        if (pageId == null) {
-            return null;
-        }
-        String trimmed = pageId.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
 }

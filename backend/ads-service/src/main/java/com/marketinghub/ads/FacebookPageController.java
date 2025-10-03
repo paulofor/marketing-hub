@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/accounts/facebook/{accountId}/pages")
@@ -55,19 +54,10 @@ public class FacebookPageController {
                 .filter(existing -> existing.getAccount().getId().equals(accountId))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-        String previousPageId = page.getPageId();
         String normalizedPageId = normalize(request.pageId());
         page.setName(request.name());
         page.setPageId(normalizedPageId);
         FacebookPage saved = pageRepository.save(page);
-
-        if (StringUtils.hasText(previousPageId) && !Objects.equals(previousPageId, normalizedPageId)) {
-            if (!StringUtils.hasText(normalizedPageId)) {
-                experimentRepository.clearPageIdByValue(previousPageId);
-            } else {
-                experimentRepository.updatePageIdByValue(previousPageId, normalizedPageId);
-            }
-        }
 
         return toDto(saved);
     }
@@ -80,11 +70,8 @@ public class FacebookPageController {
         FacebookPage page = pageRepository.findById(pageRecordId)
                 .filter(existing -> existing.getAccount().getId().equals(accountId))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        String previousPageId = page.getPageId();
+        experimentRepository.clearFacebookPageById(page.getId());
         pageRepository.delete(page);
-        if (StringUtils.hasText(previousPageId)) {
-            experimentRepository.clearPageIdByValue(previousPageId);
-        }
     }
 
     private FacebookAccount ensureAccountExists(Long accountId) {

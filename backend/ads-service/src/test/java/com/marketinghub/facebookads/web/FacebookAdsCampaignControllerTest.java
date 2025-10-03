@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.ads.FacebookAccountRepository;
+import com.marketinghub.ads.FacebookPage;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.funnel.SalesFunnel;
 import com.marketinghub.hypothesis.Hypothesis;
@@ -82,6 +83,16 @@ class FacebookAdsCampaignControllerTest {
                 .id(java.util.UUID.randomUUID())
                 .name("Funil de Conversão")
                 .build();
+        var account = FacebookAccount.builder()
+                .id(55L)
+                .name("Conta Worker")
+                .build();
+        var page = FacebookPage.builder()
+                .id(9L)
+                .account(account)
+                .pageId("84")
+                .name("Estúdio")
+                .build();
         var exp = Experiment.builder()
                 .id(1L)
                 .niche(niche)
@@ -95,7 +106,7 @@ class FacebookAdsCampaignControllerTest {
                 .endDate(LocalDate.of(2024, 1, 31))
                 .creativeApproved(true)
                 .salesFunnel(funnel)
-                .pageId("84")
+                .facebookPage(page)
                 .build();
         when(experimentService.listByStatusAndPlatform(
                 com.marketinghub.experiment.ExperimentStatus.PLANNED,
@@ -108,6 +119,8 @@ class FacebookAdsCampaignControllerTest {
                 .andExpect(jsonPath("$[0].hypothesis").value("Hipótese"))
                 .andExpect(jsonPath("$[0].kpiTargetCpl").value(10))
                 .andExpect(jsonPath("$[0].pageId").value("84"))
+                .andExpect(jsonPath("$[0].facebookPage.pageId").value("84"))
+                .andExpect(jsonPath("$[0].facebookPage.name").value("Estúdio"))
                 .andExpect(jsonPath("$[0].startDate").value("2024-01-01"))
                 .andExpect(jsonPath("$[0].endDate").value("2024-01-31"))
                 .andExpect(jsonPath("$[0].nicheName").value("Test Nicho"))

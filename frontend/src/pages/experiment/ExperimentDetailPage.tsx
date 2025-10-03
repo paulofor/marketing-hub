@@ -77,7 +77,8 @@ export default function ExperimentDetailPage() {
       ? baseKpi * stopLossFactor
       : null);
   const hasConfiguredFacebookPage = facebookConfig?.hasConfiguredPages ?? false;
-  const hasExperimentPage = Boolean(data.pageId && data.pageId.trim().length > 0);
+  const experimentPage = data.facebookPage;
+  const hasExperimentPage = Boolean(experimentPage?.pageId);
   const readinessChecks = [
     {
       id: "facebook-page",
@@ -102,7 +103,7 @@ export default function ExperimentDetailPage() {
       title: "Página definida no experimento",
       isMet: hasExperimentPage,
       hint: hasExperimentPage
-        ? `Este experimento usa a página ${data.pageId}.`
+        ? `Este experimento usa a página ${experimentPage?.name ?? experimentPage?.pageId}.`
         : "Defina a página na edição do experimento para garantir que os anúncios publiquem no local correto. A edição deve ser feita no experimento.",
       action: hasExperimentPage
         ? undefined
@@ -170,7 +171,12 @@ export default function ExperimentDetailPage() {
         </Link>
       ),
     },
-    { label: "Página do Facebook", value: data.pageId || "—" },
+    {
+      label: "Página do Facebook",
+      value: experimentPage
+        ? `${experimentPage.name} (${experimentPage.pageId})`
+        : "—",
+    },
     ...(data.salesFunnelName
       ? [
           {

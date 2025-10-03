@@ -14,8 +14,10 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
 2. **Conjunto de anúncios** (`POST /adsets`) atrelado à campanha, também em
    `PAUSED`, com segmentação geográfica simples e destino `WEBSITE`.
 3. **Criativo** (`POST /adcreatives`) baseado em um `object_story_spec`
-   contendo `page_id` definido no experimento (ou o fallback configurado na
-   conta selecionada no backend), opcionalmente `instagram_actor_id`, mensagem e
+   contendo o `page_id` definido na conta selecionada no backend. Quando a conta
+   não possui `defaultPageId`, o worker utiliza a página vinculada ao
+   experimento no backend e ignora o experimento caso nenhuma associação exista.
+   Opcionalmente o fluxo inclui `instagram_actor_id`, mensagem e
    call-to-action vindos do próprio criativo.
 4. **Anúncio** (`POST /ads`) que referencia o conjunto e o criativo recém
    criados, mantido pausado até que o time operacional revise os detalhes no
@@ -163,15 +165,12 @@ volte a ser elegível e reinicie o worker para que o novo token seja utilizado.
 
 O endpoint [`POST /{ad_account_id}/adcreatives`](https://developers.facebook.com/docs/marketing-api/reference/ad-creative#Creating)
 exige um `page_id` válido no `object_story_spec` quando o criativo representa
-uma Página do Facebook. O worker agora busca o `pageId` diretamente no
-experimento, garantindo que todos os criativos compartilhem a mesma página e
-utilizando o fallback cadastrado na conta do backend apenas quando o experimento
-não informa uma página específica. Caso nenhum destes valores esteja
-preenchido, a API responde com `error_subcode = 1443121` e a mensagem "A Página
-do Facebook está ausente". O fluxo é interrompido imediatamente, registrando o
-aviso em log. Preencha o campo `pageId` do experimento (ou informe a página
-padrão na interface de contas) antes da próxima execução para que a criação seja
-bem sucedida.
+uma Página do Facebook. O worker resolve esse identificador na seguinte ordem:
+1) página padrão configurada na conta do backend; 2) página associada ao
+experimento. Experimentos sem associação e sem fallback configurado na conta
+são ignorados e permanecem elegíveis para a próxima execução, registrando o
+aviso correspondente nos logs. Cadastre a página na conta ou associe uma página
+ao experimento antes da próxima execução para que a criação seja bem-sucedida.
 
 ### Erro `(#100) Invalid parameter` ao criar o conjunto de anúncios
 

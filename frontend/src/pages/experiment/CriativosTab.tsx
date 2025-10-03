@@ -11,6 +11,7 @@ import { useUpdateCreativeLabels } from "../../api/creative/useUpdateCreativeLab
 import { useRequestCreatives } from "../../api/experiment/useRequestCreatives";
 import { useExperiment } from "../../api/experiment/useExperiment";
 import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
+import { useAllFacebookPages } from "../../api/useAllFacebookPages";
 import InstagramAdPreview from "../../components/InstagramAdPreview";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import { FACEBOOK_CALL_TO_ACTIONS } from "../../constants/facebookCallToActions";
@@ -115,6 +116,8 @@ export default function CriativosTab({ experimentId }: Props) {
     null,
   );
   const requestCreatives = useRequestCreatives(experimentId);
+  const { data: facebookPages, isLoading: isLoadingFacebookPages } =
+    useAllFacebookPages();
 
   useEffect(() => {
     if (!feedback) return;
@@ -129,8 +132,10 @@ export default function CriativosTab({ experimentId }: Props) {
   const dismissFeedback = () => setFeedback(null);
 
   useEffect(() => {
-    setExperimentPageId(experiment?.pageId ?? "");
-  }, [experiment?.pageId]);
+    setExperimentPageId(
+      experiment?.facebookPage?.id ? String(experiment.facebookPage.id) : "",
+    );
+  }, [experiment?.facebookPage?.id]);
 
   const handleSavePageId = async () => {
     if (!experiment) return;
@@ -145,6 +150,15 @@ export default function CriativosTab({ experimentId }: Props) {
       return;
     }
     const trimmedPageId = experimentPageId.trim();
+    const parsedPageId = trimmedPageId === "" ? null : Number(trimmedPageId);
+    if (parsedPageId !== null && Number.isNaN(parsedPageId)) {
+      setFeedback({
+        variant: "error",
+        title: "ID da página inválido",
+        description: "Selecione uma página válida da lista.",
+      });
+      return;
+    }
     try {
       await updateExperimentMutation.mutateAsync({
         name: experiment.name,
@@ -157,14 +171,18 @@ export default function CriativosTab({ experimentId }: Props) {
         endDate: experiment.endDate ?? undefined,
         creativesToGenerate: experiment.creativesToGenerate ?? undefined,
         salesFunnelName: experiment.salesFunnelName ?? null,
-        pageId: trimmedPageId === "" ? null : trimmedPageId,
+        facebookPageId: parsedPageId,
       });
+      const selectedPage =
+        parsedPageId === null
+          ? null
+          : facebookPages?.find((page) => page.id === parsedPageId) ?? null;
       setFeedback({
         variant: "success",
         title: "Página atualizada",
-        description: trimmedPageId
-          ? "Todos os criativos deste experimento usarão a página informada."
-          : "Sem página definida o worker utilizará o fallback configurado.",
+        description: selectedPage
+          ? `Todos os criativos deste experimento usarão a página ${selectedPage.name}.`
+          : "Sem página definida o worker utilizará a página padrão configurada no worker.",
       });
     } catch {
       setFeedback({
@@ -534,14 +552,25 @@ export default function CriativosTab({ experimentId }: Props) {
           Página do Facebook deste experimento
         </label>
         <div className="d-flex flex-wrap gap-2">
-          <input
+          <select
             id="experiment-page-id"
-            className="form-control"
-            placeholder="ID da página do Facebook"
+            className="form-select"
             value={experimentPageId}
             onChange={(e) => setExperimentPageId(e.target.value)}
-            disabled={isSavingPageId}
-          />
+            disabled={isSavingPageId || isLoadingFacebookPages}
+          >
+            <option value="">
+              {isLoadingFacebookPages
+                ? "Carregando páginas cadastradas..."
+                : "Nenhuma página selecionada"}
+            </option>
+            {Array.isArray(facebookPages) &&
+              facebookPages.map((page) => (
+                <option key={page.id} value={page.id}>
+                  {page.name} ({page.pageId})
+                </option>
+              ))}
+          </select>
           <button
             type="button"
             className="btn btn-primary d-flex align-items-center gap-2"
@@ -563,8 +592,8 @@ export default function CriativosTab({ experimentId }: Props) {
           </button>
         </div>
         <div className="form-text">
-          Todos os criativos aprovados publicarão nesta página. Deixe em branco
-          para usar o fallback configurado no worker.
+          Todos os criativos aprovados publicarão na página selecionada. Deixe
+          em branco para usar a página padrão configurada no worker.
         </div>
       </div>
       <div className="creative-toolbar">

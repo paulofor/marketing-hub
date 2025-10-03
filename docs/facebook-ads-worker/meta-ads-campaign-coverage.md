@@ -72,7 +72,7 @@ para navegar entre as entidades citadas.
 | Campo (documento) | Tratamento atual no worker | Entidades / Propriedades relacionadas |
 | --- | --- | --- |
 | Nome do anúncio | Derivado de `Experiment.name` com sufixo “- Ad”. | `facebook_ads_ad.name`. |
-| Identidade (Página/Instagram) | Resolve `pageId` e `instagram_user_id` a partir do experimento ou defaults da conta. | `facebook_ads_ad_creative.page_id`, `instagram_user_id`. |
+| Identidade (Página/Instagram) | Resolve `pageId` usando o default da conta e, em seguida, a página associada ao experimento; se nenhuma opção estiver configurada o experimento é ignorado. O `instagram_user_id` segue o mesmo fallback conta/experimento. | `facebook_ads_ad_creative.page_id`, `instagram_user_id`. |
 | Formato do anúncio | Apenas link ads; backend registra `AdCreativeKind.LINK` em todos os criativos. | `facebook_ads_ad_creative.kind`. |
 | Mídia principal | Dados do criativo aprovado (`imageUrl`, `imageHash`, `videoId`); assets futuros usarão `facebook_ads_media_asset`. | `facebook_ads_media_asset` e JSON do criativo. |
 | Mídias adicionais | Carrossel/coleção não suportados. | `facebook_ads_ad_creative.carousel_data_json` / `video_data_json`. |

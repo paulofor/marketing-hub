@@ -13,7 +13,7 @@ export interface UpdateExperiment {
   endDate?: string;
   creativesToGenerate?: number;
   salesFunnelName?: string | null;
-  pageId?: string | null;
+  facebookPageId?: number | null;
 }
 
 export function useUpdateExperiment(id: string) {

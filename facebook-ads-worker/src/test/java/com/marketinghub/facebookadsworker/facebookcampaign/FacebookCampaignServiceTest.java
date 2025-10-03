@@ -10,7 +10,8 @@ import com.marketinghub.facebookadsworker.FacebookAccessTokenManager;
 import com.marketinghub.facebookadsworker.FacebookAdsService;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient.FacebookWorkerConfiguration;
-import com.marketinghub.facebookadsworker.facebooktokenrenewal.FacebookTokenRevalidationClient;
+import com.marketinghub.facebookadsworker.facebooktokenrenewal.FacebookTokenRenewalClient;
+import com.marketinghub.facebookadsworker.facebooktokenrenewal.FacebookTokenRenewalService;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -56,15 +57,22 @@ class FacebookCampaignServiceTest {
             objectMapper
         );
         adsService.updateAccessToken("token");
-        FacebookTokenRevalidationClient tokenRevalidationClient = new FacebookTokenRevalidationClient(
+        FacebookTokenRenewalClient tokenRenewalClient = new FacebookTokenRenewalClient(
             WebClient.builder(),
+            backend.url("/").toString(),
+            "/api"
+        );
+        FacebookTokenRenewalService tokenRenewalService = new FacebookTokenRenewalService(
+            WebClient.builder(),
+            adsService,
+            tokenRenewalClient,
             backend.url("/").toString(),
             "/api"
         );
         FacebookAccessTokenManager accessTokenManager = new FacebookAccessTokenManager(
             adsService,
             configurationClient,
-            tokenRevalidationClient
+            tokenRenewalService
         );
         service = new FacebookCampaignService(
             adsService,
@@ -533,7 +541,13 @@ class FacebookCampaignServiceTest {
             super(
                 adsService,
                 configurationClient,
-                new FacebookTokenRevalidationClient(WebClient.builder(), "http://localhost", "/api")
+                new FacebookTokenRenewalService(
+                    WebClient.builder(),
+                    adsService,
+                    new FacebookTokenRenewalClient(WebClient.builder(), "http://localhost", "/api"),
+                    "http://localhost",
+                    "/api"
+                )
             );
             this.adsService = adsService;
         }

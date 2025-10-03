@@ -10,6 +10,18 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentPlatform;
+import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.hypothesis.Hypothesis;
+import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.repository.MarketNicheRepository;
+
+import java.math.BigDecimal;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -35,12 +47,24 @@ class FacebookPageControllerTest {
     FacebookPageRepository pageRepository;
 
     @Autowired
+    ExperimentRepository experimentRepository;
+
+    @Autowired
+    MarketNicheRepository nicheRepository;
+
+    @Autowired
+    HypothesisRepository hypothesisRepository;
+
+    @Autowired
     ObjectMapper objectMapper;
 
     FacebookAccount account;
 
     @BeforeEach
     void setup() {
+        experimentRepository.deleteAll();
+        hypothesisRepository.deleteAll();
+        nicheRepository.deleteAll();
         pageRepository.deleteAll();
         accountRepository.deleteAll();
         account = accountRepository.save(FacebookAccount.builder()
@@ -65,6 +89,8 @@ class FacebookPageControllerTest {
 
         FacebookPage saved = pageRepository.findAll().getFirst();
 
+        Experiment experiment = createExperiment("123456");
+
         FacebookPageController.UpsertFacebookPageRequest update = new FacebookPageController.UpsertFacebookPageRequest(
                 "654321",
                 "Página Atualizada"
@@ -82,11 +108,40 @@ class FacebookPageControllerTest {
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].pageId").value("654321"));
 
+        Experiment updatedExperiment = experimentRepository.findById(experiment.getId()).orElseThrow();
+        assertThat(updatedExperiment.getPageId()).isEqualTo("654321");
+
         mockMvc.perform(delete("/api/accounts/facebook/" + account.getId() + "/pages/" + saved.getId()))
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(get("/api/accounts/facebook/" + account.getId() + "/pages"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
+
+        Experiment clearedExperiment = experimentRepository.findById(experiment.getId()).orElseThrow();
+        assertThat(clearedExperiment.getPageId()).isNull();
+    }
+
+    private Experiment createExperiment(String pageId) {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder()
+                .name("Niche " + pageId)
+                .build());
+        Hypothesis hypothesis = hypothesisRepository.save(Hypothesis.builder()
+                .marketNiche(niche)
+                .title("Hypothesis " + pageId)
+                .build());
+        Experiment experiment = Experiment.builder()
+                .niche(niche)
+                .name("Experiment " + pageId)
+                .hypothesis("Hypothesis " + pageId)
+                .hypothesisRef(hypothesis)
+                .status(ExperimentStatus.PLANNED)
+                .platform(ExperimentPlatform.FACEBOOK)
+                .creativeApproved(true)
+                .pageId(pageId)
+                .build();
+        experiment.setCreativesToGenerate(0);
+        experiment.setKpiTargetCpl(BigDecimal.ONE);
+        return experimentRepository.save(experiment);
     }
 }

@@ -119,7 +119,7 @@ CREATE TABLE experiment (
     niche_id BIGINT NOT NULL,
     name VARCHAR(255) NOT NULL,
     hypothesis VARCHAR(255),
-    page_id VARCHAR(128),
+    facebook_page_id BIGINT,
     kpi_target_cpl DECIMAL(10,2) DEFAULT 45.00,
     stop_loss_cpl DECIMAL(10,2) DEFAULT 90.00,
     sample_size INT DEFAULT 1500,
@@ -134,7 +134,8 @@ CREATE TABLE experiment (
     creative_approved BOOLEAN DEFAULT FALSE,
     sales_funnel_id BINARY(16),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_experiment_facebook_page FOREIGN KEY (facebook_page_id) REFERENCES fb_page(id)
 );
 
 CREATE TABLE audience (

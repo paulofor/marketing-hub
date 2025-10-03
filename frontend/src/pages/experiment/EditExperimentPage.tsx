@@ -14,7 +14,7 @@ interface FormData {
   kpiTarget: string;
   metricPresetId: string;
   salesFunnelName: string;
-  pageId: string;
+  facebookPageId: string;
 }
 
 export default function EditExperimentPage() {
@@ -36,7 +36,9 @@ export default function EditExperimentPage() {
         kpiTarget: data.kpiTarget ? String(data.kpiTarget) : "",
         metricPresetId: data.metricPresetId || "",
         salesFunnelName: data.salesFunnelName || "",
-        pageId: data.pageId || "",
+        facebookPageId: data.facebookPage?.id
+          ? String(data.facebookPage.id)
+          : "",
       });
     }
   }, [data, reset]);
@@ -54,7 +56,9 @@ export default function EditExperimentPage() {
         startDate: data.startDate ?? undefined,
         endDate: data.endDate ?? undefined,
         salesFunnelName: values.salesFunnelName,
-        pageId: values.pageId || null,
+        facebookPageId: values.facebookPageId
+          ? Number(values.facebookPageId)
+          : null,
       });
       navigate(-1);
     } catch {
@@ -115,13 +119,13 @@ export default function EditExperimentPage() {
               </option>
             ))}
         </select>
-        <label className="form-label" htmlFor="pageId">
+        <label className="form-label" htmlFor="facebookPageId">
           Página do Facebook
         </label>
         <select
-          id="pageId"
+          id="facebookPageId"
           className="form-select mb-2"
-          {...register("pageId")}
+          {...register("facebookPageId")}
         >
           <option value="">
             {isLoadingFacebookPages
@@ -130,8 +134,8 @@ export default function EditExperimentPage() {
           </option>
           {Array.isArray(facebookPages) &&
             facebookPages.map((page) => (
-              <option key={page.id} value={page.pageId}>
-                {page.name}
+              <option key={page.id} value={page.id}>
+                {page.name} ({page.pageId})
               </option>
             ))}
         </select>

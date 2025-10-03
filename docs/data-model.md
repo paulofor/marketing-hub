@@ -161,7 +161,7 @@ triggering ad set generation.
 - `hypothesis_id` BINARY(16) NOT NULL
 - `name` VARCHAR(255) NOT NULL
 - `hypothesis` VARCHAR(255)
-- `page_id` VARCHAR(128)
+- `facebook_page_id` BIGINT
 - `kpi_target_cpl` DECIMAL(10,2) DEFAULT 45.00
 - `stop_loss_cpl` DECIMAL(10,2) DEFAULT 90.00
 - `sample_size` INT DEFAULT 1500
@@ -180,7 +180,9 @@ triggering ad set generation.
 
 Defines a marketing experiment for a specific niche and hypothesis. Each
 experiment aggregates the creative variants, ad sets and landing pages that
-will be executed and measured during the test cycle.
+will be executed and measured during the test cycle. The optional
+`facebook_page_id` column links the experiment to a record in `fb_page`,
+allowing the worker to publish campaigns using the selected page metadata.
 
 ### creative
 

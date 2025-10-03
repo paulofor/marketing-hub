@@ -2,6 +2,10 @@
 
 Este documento descreve todos os campos que precisam ser coletados e preenchidos para configurar uma campanha completa no Meta Ads (Facebook e Instagram). A estrutura segue os três níveis usados pela plataforma — **Campanha**, **Conjunto de Anúncios** e **Anúncio** — e explica o objetivo de cada campo, além de observações úteis para preenchimento. Os valores padrão aplicados pelo `facebook-ads-worker` são parametrizados na tela **Contas do Facebook** e consumidos pelo endpoint `GET /api/accounts/facebook/worker-config`.
 
+> Atualização 2025-05-20: os experimentos agora dependem de uma página associada
+> quando a conta não informa `defaultPageId`. Revise os campos de campanha e
+> criativo considerando a nova obrigatoriedade.
+
 ## 1. Configurações no nível de Campanha
 
 ### Nome da campanha

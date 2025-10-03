@@ -6,6 +6,7 @@ import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche"
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
 import { useFunnels } from "../../api/funnel/useFunnels";
+import { useAllFacebookPages } from "../../api/useAllFacebookPages";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 
@@ -27,7 +28,7 @@ export default function NewExperimentPage() {
     startDate: "",
     endDate: "",
     salesFunnelName: "",
-    pageId: "",
+    facebookPageId: "",
   });
   const { data: hypotheses } = useHypothesesByNiche(form.nicheId);
   const { data: selectedHypothesis } = useHypothesis(
@@ -39,6 +40,8 @@ export default function NewExperimentPage() {
   );
   const { data: presets } = useMetricPresets();
   const { data: funnels } = useFunnels();
+  const { data: facebookPages, isLoading: isLoadingFacebookPages } =
+    useAllFacebookPages();
   const showNicheSelect = nicheIdParam === "";
   const showHypSelect = hypothesisIdParam === "";
 
@@ -62,7 +65,9 @@ export default function NewExperimentPage() {
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
         salesFunnelName: form.salesFunnelName || undefined,
-        pageId: form.pageId || undefined,
+        facebookPageId: form.facebookPageId
+          ? Number(form.facebookPageId)
+          : undefined,
       });
       setForm({
         nicheId: nicheIdParam,
@@ -76,7 +81,7 @@ export default function NewExperimentPage() {
         startDate: "",
         endDate: "",
         salesFunnelName: "",
-        pageId: "",
+        facebookPageId: "",
       });
       alert("Teste salvo!");
     } catch (errors) {
@@ -193,12 +198,29 @@ export default function NewExperimentPage() {
             </option>
           ))}
       </select>
-      <input
-        className="form-control mb-2"
-        placeholder="ID da página do Facebook (opcional)"
-        value={form.pageId}
-        onChange={(e) => setForm({ ...form, pageId: e.target.value })}
-      />
+      <label className="form-label" htmlFor="facebookPage">
+        Página do Facebook
+      </label>
+      <select
+        id="facebookPage"
+        className="form-select mb-2"
+        value={form.facebookPageId}
+        onChange={(e) =>
+          setForm({ ...form, facebookPageId: e.target.value })
+        }
+      >
+        <option value="">
+          {isLoadingFacebookPages
+            ? "Carregando páginas cadastradas..."
+            : "Nenhuma página selecionada"}
+        </option>
+        {Array.isArray(facebookPages) &&
+          facebookPages.map((page) => (
+            <option key={page.id} value={page.id}>
+              {page.name} ({page.pageId})
+            </option>
+          ))}
+      </select>
       <input
         className="form-control mb-2"
         placeholder="Tamanho da amostra"

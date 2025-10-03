@@ -2,6 +2,7 @@ package com.marketinghub.experiment;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.marketinghub.ads.FacebookPage;
 import com.marketinghub.niche.MarketNiche;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -34,8 +35,9 @@ public class Experiment {
     @Column(length = 255)
     private String hypothesis;
 
-    @Column(name = "page_id", length = 128)
-    private String pageId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "facebook_page_id")
+    private FacebookPage facebookPage;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "hypothesis_id", nullable = false)

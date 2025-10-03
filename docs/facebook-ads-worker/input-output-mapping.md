@@ -69,7 +69,7 @@ flowchart TD
 | `optimization_goal` | Conta configurada (`worker-config.adSetOptimizationGoal`) | Default `LINK_CLICKS` |
 | `destination_type` | Conta configurada (`worker-config.adSetDestinationType`) ou `LEAD_GENERATION` quando o criativo referencia um formulário de leads | Ajustado dinamicamente conforme o destino resolvido |
 | `targeting.geo_locations.countries` | Conta configurada (`worker-config.adSetTargetCountry`) | Segmentação inicial simplificada |
-| `promoted_object.page_id` | Conta configurada (`worker-config.defaultPageId`) | Necessário para campanhas de tráfego |
+| `promoted_object.page_id` | Conta configurada (`worker-config.defaultPageId`) ou página associada ao experimento | Necessário para campanhas de tráfego |
 | `status` | Constante | `PAUSED` |
 | `access_token` | Conta configurada (`worker-config.accessToken`) | Token com permissão para o Ad Account |
 
@@ -83,7 +83,7 @@ flowchart TD
 | Campo | Origem | Observações |
 | --- | --- | --- |
 | `name` | `Experiment.name` + sufixo | Nome amigável para o criativo |
-| `object_story_spec.page_id` | Conta configurada (`worker-config.defaultPageId`) | Página responsável pelo anúncio |
+| `object_story_spec.page_id` | Conta configurada (`worker-config.defaultPageId`) ou página associada ao experimento | Página responsável pelo anúncio |
 | `object_story_spec.instagram_actor_id` | Conta configurada (`worker-config.defaultInstagramActorId`) | Opcional; usado quando há Instagram vinculado |
 | `object_story_spec.link_data.message` | Template (`worker-config.defaultCreativeMessageTemplate`) | Substitui `%s` pelo nome do experimento |
 | `object_story_spec.link_data.link` | Conta configurada (`worker-config.defaultWebsiteUrl`) ou `Creative.destinationUrl` | O worker envia apenas quando existe URL; formulários de leads funcionam sem este campo |
@@ -129,7 +129,7 @@ para o backend.
 | `facebookAccountId` | `worker-config.accountId` | Mantém rastreabilidade com a conta utilizada pelo worker |
 | `adSet.id` | Resposta da Graph API (ad set) | Persistido como `facebook_ads_ad_set.id` |
 | `adSet.targetCountry` | `worker-config.adSetTargetCountry` | Serializado para JSON em `facebook_ads_ad_set.targeting_json` |
-| `adSet.pageId` | `worker-config.defaultPageId`, página associada ao experimento ou `Experiment.pageId` (legado) | Serializado como `promoted_object_json` |
+| `adSet.pageId` | `worker-config.defaultPageId` ou página associada ao experimento | Serializado como `promoted_object_json` |
 | `adCreative.id` | Resposta da Graph API (criativo) | Persistido como `facebook_ads_ad_creative.id` |
 | `adCreative.websiteUrl` | Configuração do worker ou criativo aprovado | Serializado em `link_data_json` |
 | `adCreative.leadGenFormId` | `Creative.leadGenFormId` ou fallback da conta | Persistido em `link_data_json.call_to_action.value.lead_gen_form_id` |

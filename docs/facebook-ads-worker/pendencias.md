@@ -5,6 +5,10 @@ objetivo `OUTCOME_TRAFFIC`, gera o ad set, criativo e anúncio correspondentes n
 Graph API e registra a campanha no backend. Para completar o fluxo de veiculação
 e governança, ainda faltam os itens abaixo, agrupados por tema.
 
+> Atualização 2025-05-20: a seleção da página agora depende da associação entre
+> experimento e `fb_page` quando a conta não define `defaultPageId`. Planeje os
+> itens abaixo considerando essa nova exigência de configuração.
+
 ## Planejamento e configuração
 
 - Mapear o objetivo da campanha a partir dos dados do experimento, permitindo

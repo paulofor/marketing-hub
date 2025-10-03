@@ -1,6 +1,9 @@
 package com.marketinghub.experiment.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import lombok.Data;
@@ -23,6 +26,14 @@ public class UpdateExperimentRequest {
     private Integer creativesToGenerate;
     private Boolean creativeApproved;
     private String salesFunnelName;
-    private String pageId;
+    private Long facebookPageId;
+    @JsonIgnore
+    private boolean facebookPageIdPresent;
+
+    @JsonSetter(value = "facebookPageId", nulls = Nulls.AS_NULL)
+    public void setFacebookPageId(Long facebookPageId) {
+        this.facebookPageId = facebookPageId;
+        this.facebookPageIdPresent = true;
+    }
 }
 

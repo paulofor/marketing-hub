@@ -362,7 +362,7 @@ public class FacebookCampaignService {
         String configPageId = config.defaultPageId();
         Experiment.FacebookPage associatedPage = experiment.associatedPage();
         String experimentPageId = associatedPage != null ? associatedPage.pageId() : null;
-        return coalesce(configPageId, experimentPageId, experiment.pageId());
+        return coalesce(configPageId, experimentPageId);
     }
 
     public record Experiment(

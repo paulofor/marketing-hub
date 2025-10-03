@@ -89,7 +89,7 @@ class FacebookPageControllerTest {
 
         FacebookPage saved = pageRepository.findAll().getFirst();
 
-        Experiment experiment = createExperiment("123456");
+        Experiment experiment = createExperiment(saved);
 
         FacebookPageController.UpsertFacebookPageRequest update = new FacebookPageController.UpsertFacebookPageRequest(
                 "654321",
@@ -109,7 +109,9 @@ class FacebookPageControllerTest {
                 .andExpect(jsonPath("$[0].pageId").value("654321"));
 
         Experiment updatedExperiment = experimentRepository.findById(experiment.getId()).orElseThrow();
-        assertThat(updatedExperiment.getPageId()).isEqualTo("654321");
+        assertThat(updatedExperiment.getFacebookPage()).isNotNull();
+        assertThat(updatedExperiment.getFacebookPage().getId()).isEqualTo(saved.getId());
+        assertThat(updatedExperiment.getFacebookPage().getPageId()).isEqualTo("654321");
 
         mockMvc.perform(delete("/api/accounts/facebook/" + account.getId() + "/pages/" + saved.getId()))
                 .andExpect(status().isNoContent());
@@ -119,26 +121,26 @@ class FacebookPageControllerTest {
                 .andExpect(jsonPath("$.length()").value(0));
 
         Experiment clearedExperiment = experimentRepository.findById(experiment.getId()).orElseThrow();
-        assertThat(clearedExperiment.getPageId()).isNull();
+        assertThat(clearedExperiment.getFacebookPage()).isNull();
     }
 
-    private Experiment createExperiment(String pageId) {
+    private Experiment createExperiment(FacebookPage page) {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder()
-                .name("Niche " + pageId)
+                .name("Niche " + page.getPageId())
                 .build());
         Hypothesis hypothesis = hypothesisRepository.save(Hypothesis.builder()
                 .marketNiche(niche)
-                .title("Hypothesis " + pageId)
+                .title("Hypothesis " + page.getPageId())
                 .build());
         Experiment experiment = Experiment.builder()
                 .niche(niche)
-                .name("Experiment " + pageId)
-                .hypothesis("Hypothesis " + pageId)
+                .name("Experiment " + page.getPageId())
+                .hypothesis("Hypothesis " + page.getPageId())
                 .hypothesisRef(hypothesis)
                 .status(ExperimentStatus.PLANNED)
                 .platform(ExperimentPlatform.FACEBOOK)
                 .creativeApproved(true)
-                .pageId(pageId)
+                .facebookPage(page)
                 .build();
         experiment.setCreativesToGenerate(0);
         experiment.setKpiTargetCpl(BigDecimal.ONE);

@@ -15,7 +15,7 @@ export interface CreateExperiment {
   endDate?: string;
   creativesToGenerate?: number;
   salesFunnelName?: string;
-  pageId?: string;
+  facebookPageId?: number;
 }
 
 export function useCreateExperiment() {
@@ -23,10 +23,10 @@ export function useCreateExperiment() {
   return useMutation({
     mutationFn: async (data: CreateExperiment) => {
       const { nicheId, ...payload } = data;
-      const { data: experiment } = await axios.post<Experiment>(
-        `/api/experiments`,
-        { ...payload, marketNicheId: nicheId },
-      );
+      const { data: experiment } = await axios.post<Experiment>(`/api/experiments`, {
+        ...payload,
+        marketNicheId: nicheId,
+      });
       return experiment;
     },
     onSuccess: () => {

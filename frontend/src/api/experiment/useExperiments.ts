@@ -1,6 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
+export interface FacebookPageSummary {
+  id: number;
+  accountId: number;
+  pageId: string;
+  name: string;
+}
+
 export interface Experiment {
   id: string;
   nicheId: number;
@@ -8,6 +15,7 @@ export interface Experiment {
   name: string;
   hypothesis: string;
   pageId?: string | null;
+  facebookPage?: FacebookPageSummary | null;
   /**
    * KPI alvo em CPL. Mantém `kpiTarget` para compatibilidade com APIs
    * antigas que usavam este nome.

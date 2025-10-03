@@ -18,7 +18,7 @@ public class ExperimentDto {
     private java.util.UUID hypothesisId;
     private String name;
     private String hypothesis;
-    private String pageId;
+    private FacebookPageDto facebookPage;
     @JsonProperty("kpiTarget")
     private BigDecimal kpiTargetCpl;
     private BigDecimal stopLossCpl;
@@ -38,4 +38,12 @@ public class ExperimentDto {
     private Integer creativesToGenerate;
     private java.util.UUID salesFunnelId;
     private String salesFunnelName;
+}
+
+@Data
+class FacebookPageDto {
+    private Long id;
+    private Long accountId;
+    private String pageId;
+    private String name;
 }

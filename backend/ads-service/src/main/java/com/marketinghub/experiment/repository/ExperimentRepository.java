@@ -69,11 +69,6 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
                                            @Param("statuses") List<ExperimentStatus> statuses);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("update Experiment e set e.pageId = :newPageId where e.pageId = :oldPageId")
-    int updatePageIdByValue(@Param("oldPageId") String oldPageId,
-                            @Param("newPageId") String newPageId);
-
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("update Experiment e set e.pageId = null where e.pageId = :pageId")
-    int clearPageIdByValue(@Param("pageId") String pageId);
+    @Query("update Experiment e set e.facebookPage = null where e.facebookPage.id = :facebookPageId")
+    int clearFacebookPageById(@Param("facebookPageId") Long facebookPageId);
 }

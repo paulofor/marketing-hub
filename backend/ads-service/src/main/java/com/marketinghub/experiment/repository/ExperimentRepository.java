@@ -5,6 +5,7 @@ import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.niche.MarketNiche;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.util.List;
@@ -66,4 +67,13 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
             """)
     List<Experiment> findAllReadyForAdSets(@Param("platform") ExperimentPlatform platform,
                                            @Param("statuses") List<ExperimentStatus> statuses);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("update Experiment e set e.pageId = :newPageId where e.pageId = :oldPageId")
+    int updatePageIdByValue(@Param("oldPageId") String oldPageId,
+                            @Param("newPageId") String newPageId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("update Experiment e set e.pageId = null where e.pageId = :pageId")
+    int clearPageIdByValue(@Param("pageId") String pageId);
 }

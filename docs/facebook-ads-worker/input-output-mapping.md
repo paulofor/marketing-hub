@@ -129,7 +129,7 @@ para o backend.
 | `facebookAccountId` | `worker-config.accountId` | Mantém rastreabilidade com a conta utilizada pelo worker |
 | `adSet.id` | Resposta da Graph API (ad set) | Persistido como `facebook_ads_ad_set.id` |
 | `adSet.targetCountry` | `worker-config.adSetTargetCountry` | Serializado para JSON em `facebook_ads_ad_set.targeting_json` |
-| `adSet.pageId` | `worker-config.defaultPageId` ou `Experiment.pageId` | Serializado como `promoted_object_json` |
+| `adSet.pageId` | `worker-config.defaultPageId`, página associada ao experimento ou `Experiment.pageId` (legado) | Serializado como `promoted_object_json` |
 | `adCreative.id` | Resposta da Graph API (criativo) | Persistido como `facebook_ads_ad_creative.id` |
 | `adCreative.websiteUrl` | Configuração do worker ou criativo aprovado | Serializado em `link_data_json` |
 | `adCreative.leadGenFormId` | `Creative.leadGenFormId` ou fallback da conta | Persistido em `link_data_json.call_to_action.value.lead_gen_form_id` |

@@ -277,8 +277,9 @@ classDiagram
   `@Scheduled`.
 * `FacebookCampaignService` consulta o backend por experimentos prontos, carrega
   a configuração ativa (`worker-config`), sincroniza o token em memória e cria a
-  hierarquia de campanha na Graph API. O serviço resolve o `pageId` a partir do
-  experimento, utilizando o fallback da conta quando necessário, e registra o
+  hierarquia de campanha na Graph API. O serviço resolve o `pageId` priorizando o
+  valor padrão da conta, depois a página associada ao experimento e, por último,
+  o identificador legado armazenado no próprio experimento, registrando o
   resultado completo (campanha, ad set, criativo e anúncio) no backend. Quando o
   Facebook devolve erro de permissão, o serviço adiciona o experimento a uma
   lista de bloqueio em memória para evitar novas tentativas até que o worker

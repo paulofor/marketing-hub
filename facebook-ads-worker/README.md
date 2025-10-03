@@ -16,7 +16,9 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
 3. **Criativo** (`POST /adcreatives`) baseado em um `object_story_spec`
    contendo o `page_id` definido na conta selecionada no backend. Quando a conta
    não possui `defaultPageId`, o worker utiliza a página vinculada ao
-   experimento no backend e ignora o experimento caso nenhuma associação exista.
+   experimento no backend (exposta como `facebookPage`, `associatedFacebookPage`
+   ou `facebookPageAssociation`) e ignora o experimento caso nenhuma associação
+   exista.
    Opcionalmente o fluxo inclui `instagram_actor_id`, mensagem e
    call-to-action vindos do próprio criativo.
 4. **Anúncio** (`POST /ads`) que referencia o conjunto e o criativo recém

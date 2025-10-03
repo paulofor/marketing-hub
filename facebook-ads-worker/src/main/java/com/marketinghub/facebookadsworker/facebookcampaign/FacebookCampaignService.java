@@ -1,5 +1,6 @@
 package com.marketinghub.facebookadsworker.facebookcampaign;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenExpiredException;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenManager;
 import com.marketinghub.facebookadsworker.FacebookAdsService;
@@ -362,18 +363,18 @@ public class FacebookCampaignService {
         String configPageId = config.defaultPageId();
         Experiment.FacebookPage associatedPage = experiment.associatedPage();
         String experimentPageId = associatedPage != null ? associatedPage.pageId() : null;
-        return coalesce(configPageId, experimentPageId);
+        return coalesce(configPageId, experimentPageId, experiment.pageId());
     }
 
     public record Experiment(
         long id,
         String name,
         String pageId,
-        FacebookPage page,
+        @JsonAlias({ "page", "associatedFacebookPage", "facebookPageAssociation" })
         FacebookPage facebookPage
     ) {
         public FacebookPage associatedPage() {
-            return page != null ? page : facebookPage;
+            return facebookPage;
         }
 
         public record FacebookPage(Long id, String pageId, String name) {}

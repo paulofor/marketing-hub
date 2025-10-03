@@ -522,6 +522,40 @@ class FacebookCampaignServiceTest {
     }
 
     @Test
+    void resolvesPageIdFromAssociatedFacebookPageAlias() throws Exception {
+        configurationClient.setConfiguration(configurationWithoutDefaultPageId("token"));
+
+        backend.enqueue(
+            new MockResponse()
+                .setBody("[{\"id\":1,\"name\":\"Exp\",\"associatedFacebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"}}]")
+                .addHeader("Content-Type", "application/json")
+        );
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"10\"}").addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}").addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}").addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}").addHeader("Content-Type", "application/json"));
+        backend.enqueue(
+            new MockResponse()
+                .setBody(
+                    "[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]"
+                )
+                .addHeader("Content-Type", "application/json")
+        );
+        backend.enqueue(new MockResponse().setBody("{}").addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        facebook.takeRequest();
+        RecordedRequest adSetRequest = facebook.takeRequest();
+        JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
+        assertEquals("84", adSetPayload.get("promoted_object").get("page_id").asText());
+
+        RecordedRequest creativeRequest = facebook.takeRequest();
+        JsonNode creativePayload = objectMapper.readTree(creativeRequest.getBody().inputStream());
+        assertEquals("84", creativePayload.get("object_story_spec").get("page_id").asText());
+    }
+
+    @Test
     void skipsExperimentWhenNoPageCanBeResolved() throws Exception {
         configurationClient.setConfiguration(configurationWithoutDefaultPageId("token"));
 

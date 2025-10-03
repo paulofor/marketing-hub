@@ -174,7 +174,7 @@ public class FacebookCampaignService {
                 return;
             }
 
-            String resolvedPageId = coalesce(exp.pageId(), config.defaultPageId());
+            String resolvedPageId = coalesce(config.defaultPageId(), exp.pageId());
             if (!StringUtils.hasText(resolvedPageId)) {
                 LOGGER.warn("Skipping experiment {} because no Facebook page ID is configured", exp.id());
                 return;

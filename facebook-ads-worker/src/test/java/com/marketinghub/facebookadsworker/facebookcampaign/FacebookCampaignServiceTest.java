@@ -127,14 +127,14 @@ class FacebookCampaignServiceTest {
         assertEquals("LOWEST_COST_WITHOUT_CAP", adSetPayload.get("bid_strategy").asText());
         assertEquals("150", adSetPayload.get("bid_amount").asText());
         assertEquals("WEBSITE", adSetPayload.get("destination_type").asText());
-        assertEquals("84", adSetPayload.get("promoted_object").get("page_id").asText());
+        assertEquals("42", adSetPayload.get("promoted_object").get("page_id").asText());
 
         RecordedRequest postCreative = facebook.takeRequest();
         assertEquals("/v23.0/act_1/adcreatives", postCreative.getPath());
         JsonNode creativePayload = objectMapper.readTree(postCreative.getBody().inputStream());
         assertEquals("Exp - Creative", creativePayload.get("name").asText());
         JsonNode storySpec = creativePayload.get("object_story_spec");
-        assertEquals("84", storySpec.get("page_id").asText());
+        assertEquals("42", storySpec.get("page_id").asText());
         JsonNode linkData = storySpec.get("link_data");
         assertEquals("Texto Criativo", linkData.get("message").asText());
         assertEquals("https://exp.example/landing", linkData.get("link").asText());
@@ -490,6 +490,37 @@ class FacebookCampaignServiceTest {
         assertEquals("/api/facebook-campaigns", backendPost.getPath());
     }
 
+    @Test
+    void fallsBackToExperimentPageIdWhenConfigurationDoesNotProvideOne() throws Exception {
+        configurationClient.setConfiguration(configurationWithoutDefaultPageId("token"));
+
+        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\"}]")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"10\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        facebook.takeRequest(); // campaign
+        RecordedRequest adSetRequest = facebook.takeRequest();
+        JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
+        assertEquals("84", adSetPayload.get("promoted_object").get("page_id").asText());
+
+        RecordedRequest creativeRequest = facebook.takeRequest();
+        JsonNode creativePayload = objectMapper.readTree(creativeRequest.getBody().inputStream());
+        assertEquals("84", creativePayload.get("object_story_spec").get("page_id").asText());
+    }
+
     private FacebookWorkerConfiguration configurationWithAccessToken(String accessToken) {
         return new FacebookWorkerConfiguration(
             1L,
@@ -498,6 +529,29 @@ class FacebookCampaignServiceTest {
             "app",
             "secret",
             "42",
+            "11",
+            "https://example.com",
+            null,
+            "Conheça %s",
+            "LEARN_MORE",
+            "2000",
+            "IMPRESSIONS",
+            "LINK_CLICKS",
+            "WEBSITE",
+            "LOWEST_COST_WITHOUT_CAP",
+            "150",
+            "BR"
+        );
+    }
+
+    private FacebookWorkerConfiguration configurationWithoutDefaultPageId(String accessToken) {
+        return new FacebookWorkerConfiguration(
+            1L,
+            "1",
+            accessToken,
+            "app",
+            "secret",
+            null,
             "11",
             "https://example.com",
             null,

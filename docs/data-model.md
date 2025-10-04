@@ -180,9 +180,26 @@ triggering ad set generation.
 
 Defines a marketing experiment for a specific niche and hypothesis. Each
 experiment aggregates the creative variants, ad sets and landing pages that
-will be executed and measured during the test cycle. The optional
-`facebook_page_id` column links the experiment to a record in `fb_page`,
-allowing the worker to publish campaigns using the selected page metadata.
+will be executed and measured during the test cycle.
+
+**Relationships**
+
+- `facebook_page_id` → FK `fb_page.id`: optional link that identifies the
+  Facebook Page to be used when publishing campaigns for the experiment. When
+  defined, the worker can override the account default and push ads using the
+  selected page metadata.
+
+### fb_page
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `account_id` BIGINT NOT NULL → FK `fb_account.id`
+- `page_id` VARCHAR(128) NOT NULL
+- `name` VARCHAR(255) NOT NULL
+
+Stores the Facebook Pages that were authorized for each Ads account. The
+combination `(account_id, page_id)` is unique, ensuring the same page is not
+registered twice for the same account. Experiments reference this table through
+`experiment.facebook_page_id` when a campaign must run on a specific page.
 
 ### creative
 
@@ -548,6 +565,12 @@ erDiagram
     FACEBOOK_ADS_AD_TRACKING_UTM {
         CHAR(36) ad_id PK
     }
+    FB_ACCOUNT {
+        BIGINT id PK
+    }
+    FB_PAGE {
+        BIGINT id PK
+    }
 
     FACEBOOK_ADS_CAMPAIGN ||--o{ FACEBOOK_ADS_AD_SET : contains
     FACEBOOK_ADS_AD_SET ||--o{ FACEBOOK_ADS_AD : includes
@@ -570,4 +593,6 @@ erDiagram
     PROMPT_ATTRIBUTE ||--o{ PROMPT_ATTRIBUTE_DESCRIPTION : described_by
     HYPOTHESIS ||--o{ HYPOTHESIS_PROMPT_ATTRIBUTE_DESCRIPTION : uses
     PROMPT_ATTRIBUTE_DESCRIPTION ||--o{ HYPOTHESIS_PROMPT_ATTRIBUTE_DESCRIPTION : referenced_by
+    FB_ACCOUNT ||--o{ FB_PAGE : owns
+    FB_PAGE ||--o{ EXPERIMENT : assigned_to
 ```

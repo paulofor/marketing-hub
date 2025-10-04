@@ -1,6 +1,7 @@
 package com.marketinghub.facebookadsworker.facebookcampaign;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenExpiredException;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenManager;
 import com.marketinghub.facebookadsworker.FacebookAdsService;
@@ -214,8 +215,9 @@ public class FacebookCampaignService {
                 config.adSetTargetCountry()
             );
             String adSetId = facebookAdsService.createAdSet(config.adAccountId(), adSetRequest);
-            FacebookAdsService.AdCreativeRequest adCreativeRequest = new FacebookAdsService.AdCreativeRequest(
-                exp.name() + " - Creative",
+            AdCreativeCreation adCreativeCreation = createAdCreativeWithFallback(
+                config.adAccountId(),
+                exp,
                 resolvedPageId,
                 resolvedInstagramActorId,
                 resolvedWebsiteUrl,
@@ -225,7 +227,8 @@ public class FacebookCampaignService {
                 creative.headline(),
                 creative.description()
             );
-            String creativeId = facebookAdsService.createAdCreative(config.adAccountId(), adCreativeRequest);
+            FacebookAdsService.AdCreativeRequest adCreativeRequest = adCreativeCreation.request();
+            String creativeId = adCreativeCreation.id();
             FacebookAdsService.AdRequest adRequest = new FacebookAdsService.AdRequest(
                 exp.name() + " - Ad",
                 adSetId,
@@ -470,6 +473,98 @@ public class FacebookCampaignService {
         return null;
     }
 
+    private AdCreativeCreation createAdCreativeWithFallback(
+        String adAccountId,
+        Experiment experiment,
+        String pageId,
+        String instagramActorId,
+        String websiteUrl,
+        String leadGenFormId,
+        String message,
+        String callToAction,
+        String headline,
+        String description
+    ) {
+        FacebookAdsService.AdCreativeRequest primaryRequest = new FacebookAdsService.AdCreativeRequest(
+            experiment.name() + " - Creative",
+            pageId,
+            instagramActorId,
+            websiteUrl,
+            leadGenFormId,
+            message,
+            callToAction,
+            headline,
+            description
+        );
+
+        try {
+            String creativeId = facebookAdsService.createAdCreative(adAccountId, primaryRequest);
+            return new AdCreativeCreation(creativeId, primaryRequest);
+        } catch (FacebookPermissionException ex) {
+            if (!StringUtils.hasText(instagramActorId) || !isInstagramPermissionError(ex)) {
+                throw ex;
+            }
+
+            LOGGER.warn(
+                "Retrying Facebook ad creative creation without Instagram actor ID after permission error: experimentId={}, instagramActorId={}, message={}, details={}",
+                experiment.id(),
+                instagramActorId,
+                ex.getMessage(),
+                ex.getErrorDetails()
+            );
+
+            FacebookAdsService.AdCreativeRequest fallbackRequest = new FacebookAdsService.AdCreativeRequest(
+                experiment.name() + " - Creative",
+                pageId,
+                null,
+                websiteUrl,
+                leadGenFormId,
+                message,
+                callToAction,
+                headline,
+                description
+            );
+
+            String creativeId = facebookAdsService.createAdCreative(adAccountId, fallbackRequest);
+            LOGGER.info(
+                "Created Facebook ad creative without Instagram actor ID after permission error: experimentId={}, creativeId={}",
+                experiment.id(),
+                creativeId
+            );
+            return new AdCreativeCreation(creativeId, fallbackRequest);
+        }
+    }
+
+    private boolean isInstagramPermissionError(FacebookPermissionException ex) {
+        if (ex == null) {
+            return false;
+        }
+        ObjectNode errorDetails = ex.getErrorDetails();
+        if (errorDetails != null) {
+            if (errorDetails.path("error_subcode").asInt() == 1815199) {
+                return true;
+            }
+            StringBuilder combined = new StringBuilder();
+            appendIfPresent(errorDetails, combined, "message");
+            appendIfPresent(errorDetails, combined, "error_user_title");
+            appendIfPresent(errorDetails, combined, "error_user_msg");
+            if (combined.toString().toLowerCase().contains("instagram")) {
+                return true;
+            }
+        }
+        String message = ex.getMessage();
+        return message != null && message.toLowerCase().contains("instagram");
+    }
+
+    private void appendIfPresent(ObjectNode errorDetails, StringBuilder builder, String field) {
+        if (errorDetails.hasNonNull(field)) {
+            if (builder.length() > 0) {
+                builder.append(' ');
+            }
+            builder.append(errorDetails.get(field).asText(""));
+        }
+    }
+
     private void markExperimentAsFailed(long experimentId) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/status?status=FAILED");
         LOGGER.info(
@@ -494,6 +589,8 @@ public class FacebookCampaignService {
             );
         }
     }
+
+    private record AdCreativeCreation(String id, FacebookAdsService.AdCreativeRequest request) {}
 
     private void logAutomaticRenewalOutcome(FacebookAccessTokenManager.RenewalAttemptResult renewalResult) {
         if (renewalResult.outcome() == FacebookAccessTokenManager.RenewalOutcome.NOT_CONFIGURED) {

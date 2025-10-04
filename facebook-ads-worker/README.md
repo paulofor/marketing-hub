@@ -154,8 +154,14 @@ Ao criar campanhas o Facebook pode devolver `400 Bad Request` com
 token utilizado não possui o escopo `ads_management` aprovado ou que a conta
 de anúncios não tem acesso padrão liberado para produção. Consulte a tabela
 de [códigos de erro da Marketing API](https://developers.facebook.com/docs/marketing-api/error-reference/#ErrorCodes)
-para confirmar os requisitos de permissão. Quando esse cenário ocorre, o
-worker marca automaticamente o experimento como `FAILED` via
+para confirmar os requisitos de permissão. Quando o erro vem acompanhado do
+`error_subcode = 1815199` ("A conta de anúncios não tem acesso a esta conta do
+Instagram"), o worker tenta novamente criar o criativo sem enviar o
+`instagram_actor_id`, permitindo que a campanha prossiga apenas com o Facebook
+quando a conta não possui acesso ao Instagram informado pelo backend. Caso o
+Facebook ainda rejeite a requisição — seja por outras permissões ausentes ou
+por continuar exigindo o Instagram — o worker marca automaticamente o
+experimento como `FAILED` via
 `PATCH /api/experiments/{id}/status?status=FAILED` para evitar novas tentativas
 sem intervenção humana. Caso o backend retorne erro e não consiga atualizar o
 status, o worker mantém o identificador do experimento em uma lista de bloqueio

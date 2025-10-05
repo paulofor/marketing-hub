@@ -1,5 +1,10 @@
 # Mapeamento de Campos de Entrada e Saída do Facebook Ads Worker
 
+> **Atualização 2025-08-22:** o backend passou a enviar o campo
+> `instagramAccount` junto com cada experimento. O worker usa o código dessa
+> conta para preencher `instagram_actor_id` e ignora registros sem essa
+> informação.
+
 Este documento descreve como o **Facebook Ads Worker** converte os
 experimentos aprovados pelo backend em chamadas à Graph API do Facebook e em
 registros persistidos nas tabelas `facebook_ads_*`. O fluxo atual cria a

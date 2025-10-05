@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import type { InstagramAccountSummary } from "./experiment/useExperiments";
 
 export interface FacebookReadyExperiment {
   id: number;
@@ -11,6 +12,7 @@ export interface FacebookReadyExperiment {
   nicheName: string | null;
   hypothesisTitle: string | null;
   missingConfiguration: string[];
+  instagramAccount?: InstagramAccountSummary | null;
 }
 
 export function useFacebookReadyExperiments() {

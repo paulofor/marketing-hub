@@ -5,6 +5,11 @@ criação de campanhas no Facebook Ads a partir de experimentos aprovados pelo
 backend. Estão incluídos o agendador, o serviço responsável por orquestrar as
 chamadas e o cliente usado para conversar com a Graph API do Facebook.
 
+> **Atualização:** Experimentos enviados pelo backend agora precisam informar o
+> campo `instagramAccount`. O `FacebookCampaignService` ignora qualquer
+> experimento sem essa associação para garantir que o criativo receba um
+> `instagram_actor_id` válido.
+
 ```mermaid
 classDiagram
     class FacebookCampaignScheduler {

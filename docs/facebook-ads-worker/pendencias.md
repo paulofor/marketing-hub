@@ -1,5 +1,9 @@
 # Pendências para campanha no Facebook Ads
 
+> **Atualização 2025-08-22:** vincule uma conta do Instagram em cada experimento
+> antes de liberar o worker. Sem essa informação o serviço ignora o experimento
+> ao montar o criativo.
+
 O worker já consulta o backend por experimentos aprovados, cria a campanha com
 objetivo `OUTCOME_TRAFFIC`, gera o ad set, criativo e anúncio correspondentes na
 Graph API e registra a campanha no backend. Para completar o fluxo de veiculação

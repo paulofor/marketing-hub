@@ -120,6 +120,7 @@ CREATE TABLE experiment (
     name VARCHAR(255) NOT NULL,
     hypothesis VARCHAR(255),
     facebook_page_id BIGINT,
+    instagram_account_id BIGINT,
     kpi_target_cpl DECIMAL(10,2) DEFAULT 45.00,
     stop_loss_cpl DECIMAL(10,2) DEFAULT 90.00,
     sample_size INT DEFAULT 1500,
@@ -135,7 +136,8 @@ CREATE TABLE experiment (
     sales_funnel_id BINARY(16),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_experiment_facebook_page FOREIGN KEY (facebook_page_id) REFERENCES fb_page(id)
+    CONSTRAINT fk_experiment_facebook_page FOREIGN KEY (facebook_page_id) REFERENCES fb_page(id),
+    CONSTRAINT fk_experiment_instagram_account FOREIGN KEY (instagram_account_id) REFERENCES ig_account(id)
 );
 
 CREATE TABLE audience (

@@ -30,4 +30,5 @@ public class CreateExperimentRequest {
     private Integer creativesToGenerate;
     private String salesFunnelName;
     private Long facebookPageId;
+    private Long instagramAccountId;
 }

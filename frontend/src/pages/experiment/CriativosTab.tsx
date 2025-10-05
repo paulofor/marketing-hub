@@ -12,6 +12,7 @@ import { useRequestCreatives } from "../../api/experiment/useRequestCreatives";
 import { useExperiment } from "../../api/experiment/useExperiment";
 import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
 import { useAllFacebookPages } from "../../api/useAllFacebookPages";
+import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 import InstagramAdPreview from "../../components/InstagramAdPreview";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import { FACEBOOK_CALL_TO_ACTIONS } from "../../constants/facebookCallToActions";
@@ -97,6 +98,8 @@ export default function CriativosTab({ experimentId }: Props) {
     status: "DRAFT",
   });
   const [experimentPageId, setExperimentPageId] = useState("");
+  const [experimentInstagramAccountId, setExperimentInstagramAccountId] =
+    useState("");
   const { handleSubmit: handleFormSubmit } = useForm<CreativeForm>();
   const { data: angles } = useAngles();
   const { data: proofs } = useVisualProofs();
@@ -118,6 +121,12 @@ export default function CriativosTab({ experimentId }: Props) {
   const requestCreatives = useRequestCreatives(experimentId);
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
     useAllFacebookPages();
+  const { data: instagramAccounts, isLoading: isLoadingInstagramAccounts } =
+    useInstagramAccounts();
+  const noInstagramAccounts =
+    !isLoadingInstagramAccounts &&
+    Array.isArray(instagramAccounts) &&
+    instagramAccounts.length === 0;
 
   useEffect(() => {
     if (!feedback) return;
@@ -137,6 +146,14 @@ export default function CriativosTab({ experimentId }: Props) {
     );
   }, [experiment?.facebookPage?.id]);
 
+  useEffect(() => {
+    setExperimentInstagramAccountId(
+      experiment?.instagramAccount?.id
+        ? String(experiment.instagramAccount.id)
+        : "",
+    );
+  }, [experiment?.instagramAccount?.id]);
+
   const handleSavePageId = async () => {
     if (!experiment) return;
     const kpiTargetValue = experiment.kpiTarget ?? experiment.kpiTargetCpl;
@@ -146,6 +163,24 @@ export default function CriativosTab({ experimentId }: Props) {
         title: "Não foi possível salvar a página",
         description:
           "Defina a meta de KPI e o preset de métricas antes de configurar a página do experimento.",
+      });
+      return;
+    }
+    if (noInstagramAccounts) {
+      setFeedback({
+        variant: "error",
+        title: "Cadastre uma conta do Instagram",
+        description:
+          "Cadastre uma conta de Instagram na tela Contas do Instagram antes de salvar as configurações.",
+      });
+      return;
+    }
+    if (!experimentInstagramAccountId) {
+      setFeedback({
+        variant: "error",
+        title: "Selecione a conta do Instagram",
+        description:
+          "Relacione uma conta de Instagram para que o worker possa publicar os criativos.",
       });
       return;
     }
@@ -172,17 +207,33 @@ export default function CriativosTab({ experimentId }: Props) {
         creativesToGenerate: experiment.creativesToGenerate ?? undefined,
         salesFunnelName: experiment.salesFunnelName ?? null,
         facebookPageId: parsedPageId,
+        instagramAccountId: Number(experimentInstagramAccountId),
       });
       const selectedPage =
         parsedPageId === null
           ? null
           : facebookPages?.find((page) => page.id === parsedPageId) ?? null;
+      const selectedInstagramAccount = Array.isArray(instagramAccounts)
+        ? instagramAccounts.find(
+            (account) => account.id === Number(experimentInstagramAccountId),
+          ) ?? null
+        : null;
+      const rawHandle =
+        selectedInstagramAccount?.handle ?? experiment.instagramAccount?.handle ?? "";
+      const formattedHandle = rawHandle
+        ? rawHandle.startsWith("@")
+          ? rawHandle
+          : `@${rawHandle}`
+        : null;
+      const instagramDescription = formattedHandle
+        ? `a conta ${formattedHandle}`
+        : "a conta do Instagram selecionada";
       setFeedback({
         variant: "success",
-        title: "Página atualizada",
+        title: "Configurações atualizadas",
         description: selectedPage
-          ? `Todos os criativos deste experimento usarão a página ${selectedPage.name}.`
-          : "Sem página definida o worker utilizará a página padrão configurada no worker.",
+          ? `Os criativos publicarão na página ${selectedPage.name} com ${instagramDescription}.`
+          : `Sem página definida o worker utilizará a página padrão do Facebook, mantendo ${instagramDescription}.`,
       });
     } catch {
       setFeedback({
@@ -548,6 +599,49 @@ export default function CriativosTab({ experimentId }: Props) {
         </div>
       )}
       <div className="mb-4">
+        <label className="form-label" htmlFor="experiment-instagram-id">
+          Conta do Instagram <span className="text-danger">*</span>
+        </label>
+        <select
+          id="experiment-instagram-id"
+          className="form-select mb-2"
+          value={experimentInstagramAccountId}
+          onChange={(e) => setExperimentInstagramAccountId(e.target.value)}
+          disabled={
+            isSavingPageId || isLoadingInstagramAccounts || noInstagramAccounts
+          }
+        >
+          <option value="">
+            {isLoadingInstagramAccounts
+              ? "Carregando contas cadastradas..."
+              : noInstagramAccounts
+                ? "Cadastre uma conta para continuar"
+                : "Selecione uma conta"}
+          </option>
+          {Array.isArray(instagramAccounts) &&
+            instagramAccounts.map((account) => (
+              <option key={account.id} value={account.id}>
+                {account.name} ({account.handle})
+              </option>
+            ))}
+        </select>
+        <div className="form-text mb-2">
+          O worker utilizará esta conta como identidade do Instagram nas campanhas.
+        </div>
+        {noInstagramAccounts && (
+          <div className="alert alert-warning" role="alert">
+            Nenhuma conta do Instagram está cadastrada. Cadastre uma conta antes
+            de publicar criativos neste experimento.
+            <div className="mt-2">
+              <a
+                className="btn btn-outline-primary btn-sm"
+                href="/accounts/instagram"
+              >
+                Abrir Contas do Instagram
+              </a>
+            </div>
+          </div>
+        )}
         <label className="form-label" htmlFor="experiment-page-id">
           Página do Facebook deste experimento
         </label>
@@ -575,7 +669,7 @@ export default function CriativosTab({ experimentId }: Props) {
             type="button"
             className="btn btn-primary d-flex align-items-center gap-2"
             onClick={handleSavePageId}
-            disabled={isSavingPageId || !experiment}
+            disabled={isSavingPageId || !experiment || noInstagramAccounts}
           >
             {isSavingPageId ? (
               <>

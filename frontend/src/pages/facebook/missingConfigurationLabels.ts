@@ -6,6 +6,7 @@ export const missingConfigurationLabels: Record<string, string> = {
   startDate: "Definir a data de início",
   endDate: "Definir a data de término",
   salesFunnel: "Associar um funil de vendas",
+  instagramAccount: "Vincular uma conta do Instagram",
 };
 
 export function getMissingConfigurationLabel(key: string) {

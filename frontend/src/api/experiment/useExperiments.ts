@@ -8,6 +8,13 @@ export interface FacebookPageSummary {
   name: string;
 }
 
+export interface InstagramAccountSummary {
+  id: number;
+  handle: string;
+  code: string;
+  name: string;
+}
+
 export interface Experiment {
   id: string;
   nicheId: number;
@@ -16,6 +23,7 @@ export interface Experiment {
   hypothesis: string;
   pageId?: string | null;
   facebookPage?: FacebookPageSummary | null;
+  instagramAccount?: InstagramAccountSummary | null;
   /**
    * KPI alvo em CPL. Mantém `kpiTarget` para compatibilidade com APIs
    * antigas que usavam este nome.

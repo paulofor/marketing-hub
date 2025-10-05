@@ -19,6 +19,7 @@ public class ExperimentDto {
     private String name;
     private String hypothesis;
     private FacebookPageDto facebookPage;
+    private InstagramAccountDto instagramAccount;
     @JsonProperty("kpiTarget")
     private BigDecimal kpiTargetCpl;
     private BigDecimal stopLossCpl;

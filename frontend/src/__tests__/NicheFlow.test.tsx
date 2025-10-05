@@ -43,6 +43,7 @@ function mockApi() {
             platform: "FACEBOOK",
             createdAt: "",
             updatedAt: "",
+            instagramAccount: null,
           },
         ],
       });
@@ -65,6 +66,7 @@ function mockApi() {
           platform: "FACEBOOK",
           createdAt: "",
           updatedAt: "",
+          instagramAccount: null,
         },
       });
     }

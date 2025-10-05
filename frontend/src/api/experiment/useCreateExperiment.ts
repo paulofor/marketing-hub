@@ -16,6 +16,7 @@ export interface CreateExperiment {
   creativesToGenerate?: number;
   salesFunnelName?: string;
   facebookPageId?: number;
+  instagramAccountId: number;
 }
 
 export function useCreateExperiment() {

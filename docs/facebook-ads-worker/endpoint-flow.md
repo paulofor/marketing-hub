@@ -1,5 +1,9 @@
 # Fluxo de chamadas do Facebook Ads Worker
 
+> **Atualização 2025-08-22:** os experimentos retornados pelo backend devem
+> conter `instagramAccount`. O worker ignora qualquer item sem essa associação,
+> garantindo que o criativo seja criado com um `instagram_actor_id` válido.
+
 Este documento detalha como o **Facebook Ads Worker** conversa com o backend do
 Marketing Hub e com a **Facebook Graph API** em dois contextos principais:
 criação de campanhas e renovação automática de tokens. Sempre que possível os

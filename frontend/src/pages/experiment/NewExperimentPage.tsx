@@ -7,6 +7,7 @@ import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
 import { useFunnels } from "../../api/funnel/useFunnels";
 import { useAllFacebookPages } from "../../api/useAllFacebookPages";
+import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 
@@ -29,6 +30,7 @@ export default function NewExperimentPage() {
     endDate: "",
     salesFunnelName: "",
     facebookPageId: "",
+    instagramAccountId: "",
   });
   const { data: hypotheses } = useHypothesesByNiche(form.nicheId);
   const { data: selectedHypothesis } = useHypothesis(
@@ -42,6 +44,12 @@ export default function NewExperimentPage() {
   const { data: funnels } = useFunnels();
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
     useAllFacebookPages();
+  const { data: instagramAccounts, isLoading: isLoadingInstagramAccounts } =
+    useInstagramAccounts();
+  const noInstagramAccounts =
+    !isLoadingInstagramAccounts &&
+    Array.isArray(instagramAccounts) &&
+    instagramAccounts.length === 0;
   const showNicheSelect = nicheIdParam === "";
   const showHypSelect = hypothesisIdParam === "";
 
@@ -53,6 +61,16 @@ export default function NewExperimentPage() {
 
   const submit = async () => {
     try {
+      if (noInstagramAccounts) {
+        alert(
+          "Cadastre uma conta do Instagram em Contas do Instagram antes de criar o experimento.",
+        );
+        return;
+      }
+      if (!form.instagramAccountId) {
+        alert("Selecione uma conta do Instagram");
+        return;
+      }
       await create.mutateAsync({
         nicheId: Number(form.nicheId),
         hypothesisId: form.hypothesisId || undefined,
@@ -68,6 +86,7 @@ export default function NewExperimentPage() {
         facebookPageId: form.facebookPageId
           ? Number(form.facebookPageId)
           : undefined,
+        instagramAccountId: Number(form.instagramAccountId),
       });
       setForm({
         nicheId: nicheIdParam,
@@ -82,6 +101,7 @@ export default function NewExperimentPage() {
         endDate: "",
         salesFunnelName: "",
         facebookPageId: "",
+        instagramAccountId: "",
       });
       alert("Teste salvo!");
     } catch (errors) {
@@ -198,6 +218,49 @@ export default function NewExperimentPage() {
             </option>
           ))}
       </select>
+      <label className="form-label" htmlFor="instagramAccount">
+        Conta do Instagram <span className="text-danger">*</span>
+      </label>
+      <select
+        id="instagramAccount"
+        className="form-select mb-2"
+        value={form.instagramAccountId}
+        onChange={(e) =>
+          setForm({ ...form, instagramAccountId: e.target.value })
+        }
+        disabled={isLoadingInstagramAccounts || noInstagramAccounts}
+      >
+        <option value="">
+          {isLoadingInstagramAccounts
+            ? "Carregando contas cadastradas..."
+            : noInstagramAccounts
+              ? "Cadastre uma conta para continuar"
+              : "Selecione uma conta"}
+        </option>
+        {Array.isArray(instagramAccounts) &&
+          instagramAccounts.map((account) => (
+            <option key={account.id} value={account.id}>
+              {account.name} ({account.handle})
+            </option>
+          ))}
+      </select>
+      <div className="form-text mb-2">
+        Essa conta será usada como identidade do Instagram nas campanhas geradas.
+      </div>
+      {noInstagramAccounts && (
+        <div className="alert alert-warning" role="alert">
+          Nenhuma conta do Instagram está cadastrada. Cadastre uma conta antes de
+          criar novos experimentos.
+          <div className="mt-2">
+            <a
+              className="btn btn-outline-primary btn-sm"
+              href="/accounts/instagram"
+            >
+              Abrir Contas do Instagram
+            </a>
+          </div>
+        </div>
+      )}
       <label className="form-label" htmlFor="facebookPage">
         Página do Facebook
       </label>
@@ -249,8 +312,23 @@ export default function NewExperimentPage() {
         value={form.endDate}
         onChange={(e) => setForm({ ...form, endDate: e.target.value })}
       />
-      <button className="btn btn-primary" onClick={submit}>
-        Salvar
+      <button
+        className="btn btn-primary d-flex align-items-center gap-2"
+        onClick={submit}
+        disabled={create.isPending || noInstagramAccounts}
+      >
+        {create.isPending ? (
+          <>
+            <span
+              className="spinner-border spinner-border-sm"
+              role="status"
+              aria-hidden
+            />
+            <span>Salvando...</span>
+          </>
+        ) : (
+          <span>Salvar</span>
+        )}
       </button>
     </div>
   );

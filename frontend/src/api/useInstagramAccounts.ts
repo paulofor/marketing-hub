@@ -4,12 +4,8 @@ import axios from "axios";
 export interface InstagramAccount {
   id: number;
   name: string;
-  avatarUrl?: string | null;
-  currency: string;
-  instagramUserId: string;
-  facebookPageId: string;
-  adAccountId: string;
-  accessToken?: string | null;
+  handle: string;
+  code: string;
 }
 
 export function useInstagramAccounts() {

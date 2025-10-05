@@ -24,7 +24,6 @@ public class InstagramAccountController {
     @PostMapping
     public InstagramAccount create(@RequestBody InstagramAccount account) {
         validateRequiredFields(account);
-        account.setCurrency("BRL");
         return repository.save(account);
     }
 
@@ -36,15 +35,8 @@ public class InstagramAccountController {
         validateRequiredFields(account);
 
         existing.setName(account.getName());
-        existing.setAvatarUrl(account.getAvatarUrl());
-        existing.setInstagramUserId(account.getInstagramUserId());
-        existing.setFacebookPageId(account.getFacebookPageId());
-        existing.setAdAccountId(account.getAdAccountId());
-        existing.setCurrency("BRL");
-
-        if (account.isAccessTokenProvided()) {
-            existing.setAccessToken(account.getAccessToken());
-        }
+        existing.setHandle(account.getHandle());
+        existing.setCode(account.getCode());
 
         return repository.save(existing);
     }
@@ -58,14 +50,11 @@ public class InstagramAccountController {
         if (!StringUtils.hasText(account.getName())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nome é obrigatório");
         }
-        if (!StringUtils.hasText(account.getInstagramUserId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Instagram user ID é obrigatório");
+        if (!StringUtils.hasText(account.getHandle())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usuário (@) é obrigatório");
         }
-        if (!StringUtils.hasText(account.getAdAccountId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ad account ID é obrigatório");
-        }
-        if (!StringUtils.hasText(account.getFacebookPageId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Facebook Page ID é obrigatório");
+        if (!StringUtils.hasText(account.getCode())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Código é obrigatório");
         }
     }
 }

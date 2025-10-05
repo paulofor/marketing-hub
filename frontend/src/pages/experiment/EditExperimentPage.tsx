@@ -2,20 +2,24 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 import { useExperiment } from "../../api/experiment/useExperiment";
-import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
+import {
+  type UpdateExperiment,
+  useUpdateExperiment,
+} from "../../api/experiment/useUpdateExperiment";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
 import { useFunnels } from "../../api/funnel/useFunnels";
 import { useAllFacebookPages } from "../../api/useAllFacebookPages";
 import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
+import { preserveLinkedValue } from "../../utils/preserveLinkedValue";
 
 interface FormData {
   name: string;
   kpiTarget: string;
   metricPresetId: string;
-  salesFunnelName: string;
-  facebookPageId: string;
+  salesFunnelName?: string | null;
+  facebookPageId?: string | null;
   instagramAccountId: string;
 }
 
@@ -67,7 +71,7 @@ export default function EditExperimentPage() {
         alert("Selecione uma conta do Instagram");
         return;
       }
-      await update.mutateAsync({
+      const payload: UpdateExperiment = {
         name: values.name,
         hypothesis: data.hypothesis,
         kpiTarget: Number(values.kpiTarget),
@@ -76,12 +80,29 @@ export default function EditExperimentPage() {
         mde: data.mdePercent ?? undefined,
         startDate: data.startDate ?? undefined,
         endDate: data.endDate ?? undefined,
-        salesFunnelName: values.salesFunnelName,
-        facebookPageId: values.facebookPageId
-          ? Number(values.facebookPageId)
-          : null,
         instagramAccountId: Number(values.instagramAccountId),
+      };
+
+      const salesFunnelName = preserveLinkedValue({
+        input: values.salesFunnelName,
+        persisted: data.salesFunnelName ?? null,
+        emptyInputs: [""],
       });
+      if (salesFunnelName !== undefined) {
+        payload.salesFunnelName = salesFunnelName;
+      }
+
+      const facebookPageId = preserveLinkedValue({
+        input: values.facebookPageId,
+        persisted: data.facebookPage?.id ?? null,
+        emptyInputs: [""],
+        parse: (value: string) => Number(value),
+      });
+      if (facebookPageId !== undefined) {
+        payload.facebookPageId = facebookPageId;
+      }
+
+      await update.mutateAsync(payload);
       navigate(-1);
     } catch {
       alert("Erro ao salvar Experimento");

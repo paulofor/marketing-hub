@@ -2,7 +2,10 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 import { useExperiment } from "../../api/experiment/useExperiment";
-import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
+import {
+  useUpdateExperiment,
+  type UpdateExperiment,
+} from "../../api/experiment/useUpdateExperiment";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
 import { useFunnels } from "../../api/funnel/useFunnels";
 import { useAllFacebookPages } from "../../api/useAllFacebookPages";
@@ -27,7 +30,12 @@ export default function EditExperimentPage() {
   const { data: presets } = useMetricPresets();
   const { data: funnels } = useFunnels();
   const update = useUpdateExperiment(expId);
-  const { register, handleSubmit, reset } = useForm<FormData>();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { dirtyFields },
+  } = useForm<FormData>();
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
     useAllFacebookPages();
   const { data: instagramAccounts, isLoading: isLoadingInstagramAccounts } =
@@ -39,9 +47,10 @@ export default function EditExperimentPage() {
 
   useEffect(() => {
     if (data) {
+      const currentKpi = data.kpiTarget ?? data.kpiTargetCpl;
       reset({
         name: data.name || "",
-        kpiTarget: data.kpiTarget ? String(data.kpiTarget) : "",
+        kpiTarget: currentKpi != null ? String(currentKpi) : "",
         metricPresetId: data.metricPresetId || "",
         salesFunnelName: data.salesFunnelName || "",
         facebookPageId: data.facebookPage?.id
@@ -67,7 +76,7 @@ export default function EditExperimentPage() {
         alert("Selecione uma conta do Instagram");
         return;
       }
-      await update.mutateAsync({
+      const payload: UpdateExperiment = {
         name: values.name,
         hypothesis: data.hypothesis,
         kpiTarget: Number(values.kpiTarget),
@@ -76,12 +85,22 @@ export default function EditExperimentPage() {
         mde: data.mdePercent ?? undefined,
         startDate: data.startDate ?? undefined,
         endDate: data.endDate ?? undefined,
-        salesFunnelName: values.salesFunnelName,
-        facebookPageId: values.facebookPageId
-          ? Number(values.facebookPageId)
-          : null,
         instagramAccountId: Number(values.instagramAccountId),
-      });
+      };
+
+      if (dirtyFields.salesFunnelName) {
+        const funnelName = values.salesFunnelName.trim();
+        payload.salesFunnelName = funnelName ? funnelName : null;
+      }
+
+      if (dirtyFields.facebookPageId) {
+        const selectedPageId = values.facebookPageId.trim();
+        payload.facebookPageId = selectedPageId
+          ? Number(selectedPageId)
+          : null;
+      }
+
+      await update.mutateAsync(payload);
       navigate(-1);
     } catch {
       alert("Erro ao salvar Experimento");

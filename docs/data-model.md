@@ -478,6 +478,26 @@ em `token_renewal_last_error` quando a renovação falha. A conta marcada como
 e fornece os parâmetros padrão utilizados pelo `facebook-ads-worker` (ID da conta
 de anúncios, token, App ID/Secret, página fallback, orçamento diário etc.).
 
+### ig_account
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `name` VARCHAR(255)
+- `currency` VARCHAR(8) DEFAULT "BRL"
+- `avatar_url` VARCHAR(255)
+- `instagram_user_id` VARCHAR(64)
+- `facebook_page_id` VARCHAR(64)
+- `ad_account_id` VARCHAR(64)
+- `access_token` LONGTEXT
+
+Centraliza as informações mínimas para operar contas do Instagram dentro do
+Marketing Hub. O identificador `instagram_user_id` alimenta campanhas no Meta
+Ads e também habilita a coleta/organização automática de posts. O campo
+`facebook_page_id` vincula a página responsável pelos posts impulsionados, enquanto
+`ad_account_id` permite relacionar a conta de anúncios usada para promover o
+conteúdo. O token armazenado em `access_token` precisa ter escopos para leitura e
+publicação em Instagram/Facebook e é mantido sempre em Real brasileiro
+(`currency = 'BRL'`).
+
 ## Diagram
 
 ```mermaid

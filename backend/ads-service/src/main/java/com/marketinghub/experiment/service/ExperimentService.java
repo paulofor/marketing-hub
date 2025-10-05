@@ -124,9 +124,6 @@ public class ExperimentService {
         if (request.getMetricPresetId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "metricPresetId required");
         }
-        if (request.getInstagramAccountId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "instagramAccountId required");
-        }
         MetricPreset preset = metricPresetService.get(request.getMetricPresetId());
         java.math.BigDecimal computedStopLoss = request.getKpiTargetCpl().multiply(preset.getStopLossFactor());
         if (request.getSampleSize() != null && request.getSampleSize() < 100) {

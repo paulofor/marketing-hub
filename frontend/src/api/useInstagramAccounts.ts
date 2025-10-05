@@ -2,9 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
 export interface InstagramAccount {
-  id: string;
+  id: number;
   name: string;
+  avatarUrl?: string | null;
   currency: string;
+  instagramUserId: string;
+  facebookPageId: string;
+  adAccountId: string;
+  accessToken?: string | null;
 }
 
 export function useInstagramAccounts() {

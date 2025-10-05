@@ -162,6 +162,7 @@ triggering ad set generation.
 - `name` VARCHAR(255) NOT NULL
 - `hypothesis` VARCHAR(255)
 - `facebook_page_id` BIGINT
+- `instagram_account_id` BIGINT
 - `kpi_target_cpl` DECIMAL(10,2) DEFAULT 45.00
 - `stop_loss_cpl` DECIMAL(10,2) DEFAULT 90.00
 - `sample_size` INT DEFAULT 1500

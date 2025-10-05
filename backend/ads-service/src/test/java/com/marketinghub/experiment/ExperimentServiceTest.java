@@ -11,6 +11,8 @@ import com.marketinghub.funnel.SalesFunnel;
 import com.marketinghub.funnel.SalesFunnelRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.ads.InstagramAccount;
+import com.marketinghub.ads.InstagramAccountRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -47,6 +49,17 @@ class ExperimentServiceTest {
     SalesFunnelRepository salesFunnelRepository;
     @Autowired
     AudienceRepository audienceRepository;
+    @Autowired
+    InstagramAccountRepository instagramAccountRepository;
+
+    private InstagramAccount createInstagramAccount() {
+        return instagramAccountRepository.save(
+                InstagramAccount.builder()
+                        .name("Conta Teste")
+                        .handle("@contateste")
+                        .code("IG-1")
+                        .build());
+    }
 
     @Test
     void createNewExperimentWithExistingNiche() {
@@ -80,6 +93,7 @@ class ExperimentServiceTest {
         req.setBaselineCvr(new BigDecimal("3"));
         req.setTargetCvr(new BigDecimal("5"));
         req.setMdePercent(new BigDecimal("40"));
+        req.setInstagramAccountId(createInstagramAccount().getId());
         var exp = service.create(req);
         assertThat(exp.getId()).isNotNull();
         assertThat(exp.getPlatform()).isEqualTo(ExperimentPlatform.FACEBOOK);
@@ -117,6 +131,7 @@ class ExperimentServiceTest {
         req.setMdePercent(new BigDecimal("40"));
         req.setStartDate(java.time.LocalDate.of(2024,2,1));
         req.setEndDate(java.time.LocalDate.of(2024,1,1));
+        req.setInstagramAccountId(createInstagramAccount().getId());
         assertThatThrownBy(() -> service.create(req))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     }
@@ -152,6 +167,7 @@ class ExperimentServiceTest {
         req.setBaselineCvr(new BigDecimal("3"));
         req.setTargetCvr(new BigDecimal("5"));
         req.setMdePercent(new BigDecimal("40"));
+        req.setInstagramAccountId(createInstagramAccount().getId());
         assertThatThrownBy(() -> service.create(req))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     }
@@ -185,6 +201,7 @@ class ExperimentServiceTest {
         req1.setHypothesis("H");
         req1.setKpiTargetCpl(new BigDecimal("45"));
         req1.setMetricPresetId("LEAN_150");
+        req1.setInstagramAccountId(createInstagramAccount().getId());
         var expApproved = service.create(req1);
         expApproved.setCreativeApproved(true);
         experimentRepository.save(expApproved);
@@ -209,6 +226,7 @@ class ExperimentServiceTest {
         req2.setHypothesis("H");
         req2.setKpiTargetCpl(new BigDecimal("45"));
         req2.setMetricPresetId("LEAN_150");
+        req2.setInstagramAccountId(createInstagramAccount().getId());
         var expNotApproved = service.create(req2);
         experimentRepository.save(expNotApproved);
 
@@ -248,6 +266,7 @@ class ExperimentServiceTest {
         req.setBaselineCvr(new BigDecimal("3"));
         req.setTargetCvr(new BigDecimal("5"));
         req.setMdePercent(new BigDecimal("40"));
+        req.setInstagramAccountId(createInstagramAccount().getId());
         var exp = service.create(req);
         exp.setStatus(ExperimentStatus.RUNNING);
         experimentRepository.save(exp);
@@ -286,6 +305,7 @@ class ExperimentServiceTest {
         req.setKpiTargetCpl(new BigDecimal("45"));
         req.setMetricPresetId("LEAN_150");
         req.setSalesFunnelName("Topo");
+        req.setInstagramAccountId(createInstagramAccount().getId());
 
         Experiment exp = service.create(req);
 
@@ -324,6 +344,7 @@ class ExperimentServiceTest {
         req.setKpiTargetCpl(new BigDecimal("45"));
         req.setMetricPresetId("LEAN_150");
         req.setSalesFunnelName(first.getName());
+        req.setInstagramAccountId(createInstagramAccount().getId());
         Experiment exp = service.create(req);
 
         UpdateExperimentRequest updateReq = new UpdateExperimentRequest();
@@ -369,6 +390,7 @@ class ExperimentServiceTest {
         req.setKpiTargetCpl(new BigDecimal("45"));
         req.setMetricPresetId("LEAN_150");
         req.setSalesFunnelName(funnel.getName());
+        req.setInstagramAccountId(createInstagramAccount().getId());
         Experiment exp = service.create(req);
 
         UpdateExperimentRequest updateReq = new UpdateExperimentRequest();

@@ -4,6 +4,10 @@ Este documento descreve como o MarketingHub converte experimentos aprovados em
 campanhas no Facebook Ads, criando automaticamente conjuntos de anúncios,
 criativos e anúncios associados antes de registrar os dados no backend.
 
+> Atualização 2025-08-22: apenas experimentos com `instagramAccount`
+> configurada são elegíveis para transformação. O worker ignora qualquer item
+> sem esse vínculo para garantir o envio de um `instagram_actor_id` válido.
+
 A fila de trabalho usada aqui é a mesma exibida na tela "Experimentos para
 Campanha" do frontend, que lista os experimentos aprovados e prontos para serem
 transformados em campanhas.

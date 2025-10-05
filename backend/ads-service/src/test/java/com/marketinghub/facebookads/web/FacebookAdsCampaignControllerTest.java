@@ -6,6 +6,7 @@ import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.ads.FacebookAccountRepository;
 import com.marketinghub.ads.FacebookPage;
+import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.funnel.SalesFunnel;
 import com.marketinghub.hypothesis.Hypothesis;
@@ -87,6 +88,12 @@ class FacebookAdsCampaignControllerTest {
                 .id(55L)
                 .name("Conta Worker")
                 .build();
+        var instagramAccount = InstagramAccount.builder()
+                .id(91L)
+                .handle("@estudio")
+                .code("IG-ESTUDIO")
+                .name("Estúdio")
+                .build();
         var page = FacebookPage.builder()
                 .id(9L)
                 .account(account)
@@ -107,6 +114,7 @@ class FacebookAdsCampaignControllerTest {
                 .creativeApproved(true)
                 .salesFunnel(funnel)
                 .facebookPage(page)
+                .instagramAccount(instagramAccount)
                 .build();
         when(experimentService.listByStatusAndPlatform(
                 com.marketinghub.experiment.ExperimentStatus.PLANNED,
@@ -121,6 +129,8 @@ class FacebookAdsCampaignControllerTest {
                 .andExpect(jsonPath("$[0].pageId").value("84"))
                 .andExpect(jsonPath("$[0].facebookPage.pageId").value("84"))
                 .andExpect(jsonPath("$[0].facebookPage.name").value("Estúdio"))
+                .andExpect(jsonPath("$[0].instagramAccount.handle").value("@estudio"))
+                .andExpect(jsonPath("$[0].instagramAccount.code").value("IG-ESTUDIO"))
                 .andExpect(jsonPath("$[0].startDate").value("2024-01-01"))
                 .andExpect(jsonPath("$[0].endDate").value("2024-01-31"))
                 .andExpect(jsonPath("$[0].nicheName").value("Test Nicho"))
@@ -135,6 +145,12 @@ class FacebookAdsCampaignControllerTest {
                 .id(42L)
                 .name("Exp")
                 .creativeApproved(true)
+                .instagramAccount(InstagramAccount.builder()
+                        .id(5L)
+                        .handle("@acc")
+                        .code("IG-ACC")
+                        .name("Account")
+                        .build())
                 .build();
         when(experimentService.get(42L)).thenReturn(experiment);
 

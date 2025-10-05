@@ -19,7 +19,7 @@ import java.util.UUID;
 
 public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
     @Override
-    @EntityGraph(attributePaths = "facebookPage")
+    @EntityGraph(attributePaths = {"facebookPage", "instagramAccount"})
     Optional<Experiment> findById(Long id);
     List<Experiment> findByNicheId(Long nicheId);
     boolean existsByNicheAndName(MarketNiche niche, String name);
@@ -29,9 +29,11 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
             select e from Experiment e
             join fetch e.niche n
             join fetch e.hypothesisRef h
+            join fetch e.instagramAccount ig
             where e.status = :status
               and e.platform = :platform
               and e.creativeApproved = true
+              and ig is not null
               and exists (
                     select 1 from Audience a
                     where a.niche = e.niche

@@ -176,6 +176,15 @@ public class FacebookCampaignService {
                 return;
             }
 
+            Experiment.InstagramAccount instagramAccount = exp.instagramAccount();
+            if (instagramAccount == null || !StringUtils.hasText(instagramAccount.code())) {
+                LOGGER.warn(
+                    "Skipping experiment {} because no Instagram account is configured",
+                    exp.id()
+                );
+                return;
+            }
+
             String resolvedPageId = resolvePageId(config, exp);
             if (!StringUtils.hasText(resolvedPageId)) {
                 LOGGER.warn("Skipping experiment {} because no Facebook page ID is configured", exp.id());
@@ -198,7 +207,11 @@ public class FacebookCampaignService {
                 ? creative.primaryText()
                 : formatCreativeMessage(exp.name(), config);
             String resolvedCallToAction = coalesce(creative.cta(), config.defaultCallToActionType());
-            String resolvedInstagramActorId = coalesce(creative.instagramUserId(), config.defaultInstagramActorId());
+            String resolvedInstagramActorId = coalesce(
+                creative.instagramUserId(),
+                instagramAccount.code(),
+                config.defaultInstagramActorId()
+            );
             String resolvedDestinationType = hasLeadFormDestination ? "LEAD_GENERATION" : config.adSetDestinationType();
 
             String campaignId = facebookAdsService.createCampaign(config.adAccountId(), exp.name());
@@ -374,13 +387,15 @@ public class FacebookCampaignService {
         String name,
         String pageId,
         @JsonAlias({ "page", "associatedFacebookPage", "facebookPageAssociation" })
-        FacebookPage facebookPage
+        FacebookPage facebookPage,
+        InstagramAccount instagramAccount
     ) {
         public FacebookPage associatedPage() {
             return facebookPage;
         }
 
         public record FacebookPage(Long id, String pageId, String name) {}
+        public record InstagramAccount(Long id, String handle, String code, String name) {}
     }
     public record CreateCampaignRequest(
         String id,

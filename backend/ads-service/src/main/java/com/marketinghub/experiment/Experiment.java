@@ -7,6 +7,7 @@ import com.marketinghub.niche.MarketNiche;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import com.marketinghub.funnel.SalesFunnel;
+import com.marketinghub.ads.InstagramAccount;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -38,6 +39,10 @@ public class Experiment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "facebook_page_id")
     private FacebookPage facebookPage;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "instagram_account_id")
+    private InstagramAccount instagramAccount;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "hypothesis_id", nullable = false)

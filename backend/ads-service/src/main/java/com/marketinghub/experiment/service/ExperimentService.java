@@ -2,6 +2,8 @@ package com.marketinghub.experiment.service;
 
 import com.marketinghub.ads.FacebookPage;
 import com.marketinghub.ads.FacebookPageRepository;
+import com.marketinghub.ads.InstagramAccount;
+import com.marketinghub.ads.InstagramAccountRepository;
 import com.marketinghub.experiment.*;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
@@ -29,13 +31,15 @@ public class ExperimentService {
     private final EntityManager entityManager;
     private final SalesFunnelRepository salesFunnelRepository;
     private final FacebookPageRepository facebookPageRepository;
+    private final InstagramAccountRepository instagramAccountRepository;
 
     public ExperimentService(ExperimentRepository repository, MarketNicheRepository nicheRepository,
                              com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository,
                              MetricPresetService metricPresetService,
                              EntityManager entityManager,
                              SalesFunnelRepository salesFunnelRepository,
-                             FacebookPageRepository facebookPageRepository) {
+                             FacebookPageRepository facebookPageRepository,
+                             InstagramAccountRepository instagramAccountRepository) {
         this.repository = repository;
         this.nicheRepository = nicheRepository;
         this.hypothesisRepository = hypothesisRepository;
@@ -43,6 +47,7 @@ public class ExperimentService {
         this.entityManager = entityManager;
         this.salesFunnelRepository = salesFunnelRepository;
         this.facebookPageRepository = facebookPageRepository;
+        this.instagramAccountRepository = instagramAccountRepository;
     }
 
     /**
@@ -74,6 +79,16 @@ public class ExperimentService {
             throw new EntityNotFoundException("FacebookPage not found: " + facebookPageId);
         }
         return entityManager.getReference(FacebookPage.class, facebookPageId);
+    }
+
+    private InstagramAccount attachInstagramAccount(Long instagramAccountId) {
+        if (instagramAccountId == null) {
+            return null;
+        }
+        if (!instagramAccountRepository.existsById(instagramAccountId)) {
+            throw new EntityNotFoundException("InstagramAccount not found: " + instagramAccountId);
+        }
+        return entityManager.getReference(InstagramAccount.class, instagramAccountId);
     }
 
     private SalesFunnel resolveSalesFunnel(String name) {
@@ -109,6 +124,9 @@ public class ExperimentService {
         if (request.getMetricPresetId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "metricPresetId required");
         }
+        if (request.getInstagramAccountId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "instagramAccountId required");
+        }
         MetricPreset preset = metricPresetService.get(request.getMetricPresetId());
         java.math.BigDecimal computedStopLoss = request.getKpiTargetCpl().multiply(preset.getStopLossFactor());
         if (request.getSampleSize() != null && request.getSampleSize() < 100) {
@@ -140,6 +158,7 @@ public class ExperimentService {
                 .platform(ExperimentPlatform.FACEBOOK)
                 .creativesToGenerate(request.getCreativesToGenerate())
                 .facebookPage(attachFacebookPage(request.getFacebookPageId()))
+                .instagramAccount(attachInstagramAccount(request.getInstagramAccountId()))
                 .salesFunnel(salesFunnel)
                 .build();
         return repository.save(exp);
@@ -195,6 +214,7 @@ public class ExperimentService {
                 .platform(original.getPlatform())
                 .creativesToGenerate(original.getCreativesToGenerate())
                 .facebookPage(original.getFacebookPage())
+                .instagramAccount(original.getInstagramAccount())
                 .salesFunnel(original.getSalesFunnel())
                 .build();
         return repository.save(copy);
@@ -277,6 +297,9 @@ public class ExperimentService {
         }
         if (request.isFacebookPageIdPresent()) {
             exp.setFacebookPage(attachFacebookPage(request.getFacebookPageId()));
+        }
+        if (request.isInstagramAccountIdPresent()) {
+            exp.setInstagramAccount(attachInstagramAccount(request.getInstagramAccountId()));
         }
         return exp;
     }

@@ -6,6 +6,10 @@ e aponta onde cada informação é armazenada no modelo de dados. Utilize-o como
 complemento ao [diagrama de classes](class-diagram.md#diagrama-de-classes-do-facebook-ads-worker)
 para navegar entre as entidades citadas.
 
+> **Atualização 2025-08-22:** os experimentos retornados pelo backend precisam
+> informar o campo `instagramAccount`. O worker usa esse código como
+> `instagram_actor_id` e ignora experimentos sem a associação.
+
 ## Visão Geral
 
 - Alguns **pré-requisitos obrigatórios** (ID da conta de anúncios, token,

@@ -79,6 +79,8 @@ export default function ExperimentDetailPage() {
   const hasConfiguredFacebookPage = facebookConfig?.hasConfiguredPages ?? false;
   const experimentPage = data.facebookPage;
   const hasExperimentPage = Boolean(experimentPage?.pageId);
+  const instagramAccount = data.instagramAccount;
+  const hasInstagramAccount = Boolean(instagramAccount);
   const readinessChecks = [
     {
       id: "facebook-page",
@@ -97,6 +99,16 @@ export default function ExperimentDetailPage() {
         !isLoadingFacebookConfig && !hasConfiguredFacebookPage
           ? "Abrir Contas do Facebook"
           : undefined,
+    },
+    {
+      id: "instagram-account",
+      title: "Conta de Instagram vinculada",
+      isMet: hasInstagramAccount,
+      hint: hasInstagramAccount
+        ? `Este experimento usa a conta ${instagramAccount?.handle}.`
+        : "Associe uma conta do Instagram ao experimento para liberar as campanhas.",
+      action: hasInstagramAccount ? undefined : () => navigate(`/experiments/${expId}/edit`),
+      actionLabel: hasInstagramAccount ? undefined : "Editar experimento",
     },
     {
       id: "experiment-page",
@@ -175,6 +187,12 @@ export default function ExperimentDetailPage() {
       label: "Página do Facebook",
       value: experimentPage
         ? `${experimentPage.name} (${experimentPage.pageId})`
+        : "—",
+    },
+    {
+      label: "Conta do Instagram",
+      value: instagramAccount
+        ? `${instagramAccount.name} (${instagramAccount.handle})`
         : "—",
     },
     ...(data.salesFunnelName

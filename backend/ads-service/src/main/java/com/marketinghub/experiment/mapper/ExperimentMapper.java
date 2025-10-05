@@ -3,7 +3,9 @@ package com.marketinghub.experiment.mapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.dto.ExperimentDto;
 import com.marketinghub.ads.FacebookPage;
+import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.experiment.dto.FacebookPageDto;
+import com.marketinghub.experiment.dto.InstagramAccountDto;
 import org.mapstruct.Mapper;
 
 /**
@@ -20,4 +22,6 @@ public interface ExperimentMapper {
 
     @org.mapstruct.Mapping(target = "accountId", source = "account.id")
     FacebookPageDto toDto(FacebookPage page);
+
+    InstagramAccountDto toDto(InstagramAccount account);
 }

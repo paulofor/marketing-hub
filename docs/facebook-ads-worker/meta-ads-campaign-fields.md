@@ -6,6 +6,10 @@ Este documento descreve todos os campos que precisam ser coletados e preenchidos
 > quando a conta não informa `defaultPageId`. Revise os campos de campanha e
 > criativo considerando a nova obrigatoriedade.
 
+> Atualização 2025-08-22: os experimentos também precisam informar
+> `instagramAccount`. Sem essa conta o worker ignora o experimento para evitar
+> criativos sem `instagram_actor_id`.
+
 ## 1. Configurações no nível de Campanha
 
 ### Nome da campanha

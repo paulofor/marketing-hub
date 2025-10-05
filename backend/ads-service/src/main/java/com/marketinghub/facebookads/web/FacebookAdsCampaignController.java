@@ -235,7 +235,8 @@ public class FacebookAdsCampaignController {
                 experiment.getNiche() != null ? experiment.getNiche().getName() : null,
                 experiment.getHypothesisRef() != null ? experiment.getHypothesisRef().getTitle() : null,
                 computeMissingConfiguration(experiment),
-                toFacebookPageSummary(experiment));
+                toFacebookPageSummary(experiment),
+                toInstagramAccountSummary(experiment));
     }
 
     private List<String> computeMissingConfiguration(Experiment experiment) {
@@ -264,6 +265,9 @@ public class FacebookAdsCampaignController {
         if (!StringUtils.hasText(resolveExperimentPageId(experiment))) {
             missing.add("pageId");
         }
+        if (experiment.getInstagramAccount() == null) {
+            missing.add("instagramAccount");
+        }
         return missing;
     }
 
@@ -283,6 +287,14 @@ public class FacebookAdsCampaignController {
         return new FacebookPageSummary(page.getId(), accountId, page.getPageId(), page.getName());
     }
 
+    private InstagramAccountSummary toInstagramAccountSummary(Experiment experiment) {
+        if (experiment.getInstagramAccount() == null) {
+            return null;
+        }
+        var account = experiment.getInstagramAccount();
+        return new InstagramAccountSummary(account.getId(), account.getHandle(), account.getCode(), account.getName());
+    }
+
     public record ExperimentSummary(
             Long id,
             String name,
@@ -294,9 +306,12 @@ public class FacebookAdsCampaignController {
             String nicheName,
             String hypothesisTitle,
             List<String> missingConfiguration,
-            FacebookPageSummary facebookPage) {}
+            FacebookPageSummary facebookPage,
+            InstagramAccountSummary instagramAccount) {}
 
     public record FacebookPageSummary(Long id, Long accountId, String pageId, String name) {}
+
+    public record InstagramAccountSummary(Long id, String handle, String code, String name) {}
 
     public record CreateCampaignRequest(
             String id,

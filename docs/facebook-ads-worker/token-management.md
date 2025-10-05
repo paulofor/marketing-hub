@@ -10,6 +10,10 @@ expiração automática.
 > associada (`fb_page`). Certifique-se de que o token gerado tenha acesso à
 > página vinculada ao experimento, caso contrário o worker ignorará a criação da
 > campanha.
+>
+> Atualização 2025-08-22: vincule uma `instagramAccount` a cada experimento.
+> Sem esse relacionamento o worker não consegue definir `instagram_actor_id` e
+> deixa o experimento fora da fila até que a conta esteja configurada.
 
 ## 1. Geração inicial do token
 

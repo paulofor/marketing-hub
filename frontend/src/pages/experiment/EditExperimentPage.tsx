@@ -6,6 +6,7 @@ import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
 import { useFunnels } from "../../api/funnel/useFunnels";
 import { useAllFacebookPages } from "../../api/useAllFacebookPages";
+import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 
@@ -15,6 +16,7 @@ interface FormData {
   metricPresetId: string;
   salesFunnelName: string;
   facebookPageId: string;
+  instagramAccountId: string;
 }
 
 export default function EditExperimentPage() {
@@ -28,6 +30,12 @@ export default function EditExperimentPage() {
   const { register, handleSubmit, reset } = useForm<FormData>();
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
     useAllFacebookPages();
+  const { data: instagramAccounts, isLoading: isLoadingInstagramAccounts } =
+    useInstagramAccounts();
+  const noInstagramAccounts =
+    !isLoadingInstagramAccounts &&
+    Array.isArray(instagramAccounts) &&
+    instagramAccounts.length === 0;
 
   useEffect(() => {
     if (data) {
@@ -39,6 +47,9 @@ export default function EditExperimentPage() {
         facebookPageId: data.facebookPage?.id
           ? String(data.facebookPage.id)
           : "",
+        instagramAccountId: data.instagramAccount?.id
+          ? String(data.instagramAccount.id)
+          : "",
       });
     }
   }, [data, reset]);
@@ -46,6 +57,16 @@ export default function EditExperimentPage() {
   const onSubmit = async (values: FormData) => {
     try {
       if (!data) return;
+      if (noInstagramAccounts) {
+        alert(
+          "Cadastre uma conta do Instagram em Contas do Instagram antes de salvar o experimento.",
+        );
+        return;
+      }
+      if (!values.instagramAccountId) {
+        alert("Selecione uma conta do Instagram");
+        return;
+      }
       await update.mutateAsync({
         name: values.name,
         hypothesis: data.hypothesis,
@@ -59,6 +80,7 @@ export default function EditExperimentPage() {
         facebookPageId: values.facebookPageId
           ? Number(values.facebookPageId)
           : null,
+        instagramAccountId: Number(values.instagramAccountId),
       });
       navigate(-1);
     } catch {
@@ -119,6 +141,43 @@ export default function EditExperimentPage() {
               </option>
             ))}
         </select>
+        <label className="form-label" htmlFor="instagramAccountId">
+          Conta do Instagram <span className="text-danger">*</span>
+        </label>
+        <select
+          id="instagramAccountId"
+          className="form-select mb-2"
+          {...register("instagramAccountId")}
+          disabled={isLoadingInstagramAccounts || noInstagramAccounts}
+        >
+          <option value="">
+            {isLoadingInstagramAccounts
+              ? "Carregando contas cadastradas..."
+              : noInstagramAccounts
+                ? "Cadastre uma conta para continuar"
+                : "Selecione uma conta"}
+          </option>
+          {Array.isArray(instagramAccounts) &&
+            instagramAccounts.map((account) => (
+              <option key={account.id} value={account.id}>
+                {account.name} ({account.handle})
+              </option>
+            ))}
+        </select>
+        {noInstagramAccounts && (
+          <div className="alert alert-warning" role="alert">
+            Nenhuma conta do Instagram está cadastrada. Cadastre uma conta antes
+            de editar o experimento.
+            <div className="mt-2">
+              <a
+                className="btn btn-outline-primary btn-sm"
+                href="/accounts/instagram"
+              >
+                Abrir Contas do Instagram
+              </a>
+            </div>
+          </div>
+        )}
         <label className="form-label" htmlFor="facebookPageId">
           Página do Facebook
         </label>
@@ -156,12 +215,23 @@ export default function EditExperimentPage() {
           <button
             type="button"
             className="btn btn-primary"
-            disabled={update.isPending}
+            disabled={update.isPending || noInstagramAccounts}
             onClick={handleSubmit(onSubmit, (errors) => {
               console.log("Validation errors", errors);
             })}
           >
-            Salvar
+            {update.isPending ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm"
+                  role="status"
+                  aria-hidden
+                />
+                <span className="ms-2">Salvando...</span>
+              </>
+            ) : (
+              <span>Salvar</span>
+            )}
           </button>
         </div>
       </form>

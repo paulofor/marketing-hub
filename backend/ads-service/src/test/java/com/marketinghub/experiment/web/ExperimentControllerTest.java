@@ -13,6 +13,7 @@ import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.FixtureUtils;
 import com.marketinghub.funnel.SalesFunnel;
 import com.marketinghub.funnel.SalesFunnelRepository;
+import com.marketinghub.ads.InstagramAccountRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,6 +68,8 @@ class ExperimentControllerTest {
     private SalesFunnelRepository salesFunnelRepository;
     @Autowired
     private AudienceRepository audienceRepository;
+    @Autowired
+    private InstagramAccountRepository instagramAccountRepository;
 
     Long nicheId;
 
@@ -76,6 +79,7 @@ class ExperimentControllerTest {
         repository.deleteAll();
         salesFunnelRepository.deleteAll();
         audienceRepository.deleteAll();
+        instagramAccountRepository.deleteAll();
         hypothesisRepository.deleteAll();
         angleRepository.deleteAll();
         nicheRepo.deleteAll();
@@ -104,6 +108,7 @@ class ExperimentControllerTest {
                 .defaultMdePp(new BigDecimal("12"))
                 .build());
         SalesFunnel funnel = salesFunnelRepository.save(SalesFunnel.builder().name("Topo").build());
+        var instagramAccount = fixtures.createAndSaveInstagramAccount();
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setName("Exp1");
         req.setHypothesisId(hyp.getId());
@@ -117,6 +122,7 @@ class ExperimentControllerTest {
         req.setStartDate(LocalDate.now());
         req.setEndDate(LocalDate.now().plusDays(5));
         req.setSalesFunnelName(funnel.getName());
+        req.setInstagramAccountId(instagramAccount.getId());
 
         mockMvc.perform(post("/api/niches/" + nicheId + "/experiments")
                         .contentType(MediaType.APPLICATION_JSON)

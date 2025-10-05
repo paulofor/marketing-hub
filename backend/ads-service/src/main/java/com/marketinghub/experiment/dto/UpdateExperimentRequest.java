@@ -29,11 +29,20 @@ public class UpdateExperimentRequest {
     private Long facebookPageId;
     @JsonIgnore
     private boolean facebookPageIdPresent;
+    private Long instagramAccountId;
+    @JsonIgnore
+    private boolean instagramAccountIdPresent;
 
     @JsonSetter(value = "facebookPageId", nulls = Nulls.SET)
     public void setFacebookPageId(Long facebookPageId) {
         this.facebookPageId = facebookPageId;
         this.facebookPageIdPresent = true;
+    }
+
+    @JsonSetter(value = "instagramAccountId", nulls = Nulls.SET)
+    public void setInstagramAccountId(Long instagramAccountId) {
+        this.instagramAccountId = instagramAccountId;
+        this.instagramAccountIdPresent = true;
     }
 }
 

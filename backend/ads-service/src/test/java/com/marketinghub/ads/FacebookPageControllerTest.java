@@ -18,6 +18,8 @@ import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.ads.InstagramAccount;
+import com.marketinghub.ads.InstagramAccountRepository;
 
 import java.math.BigDecimal;
 
@@ -58,6 +60,9 @@ class FacebookPageControllerTest {
     @Autowired
     ObjectMapper objectMapper;
 
+    @Autowired
+    InstagramAccountRepository instagramAccountRepository;
+
     FacebookAccount account;
 
     @BeforeEach
@@ -67,6 +72,7 @@ class FacebookPageControllerTest {
         nicheRepository.deleteAll();
         pageRepository.deleteAll();
         accountRepository.deleteAll();
+        instagramAccountRepository.deleteAll();
         account = accountRepository.save(FacebookAccount.builder()
                 .name("Account")
                 .currency("BRL")
@@ -132,6 +138,11 @@ class FacebookPageControllerTest {
                 .marketNiche(niche)
                 .title("Hypothesis " + page.getPageId())
                 .build());
+        InstagramAccount instagramAccount = instagramAccountRepository.save(InstagramAccount.builder()
+                .name("IG " + page.getPageId())
+                .handle("@" + page.getPageId())
+                .code("IG-" + page.getPageId())
+                .build());
         Experiment experiment = Experiment.builder()
                 .niche(niche)
                 .name("Experiment " + page.getPageId())
@@ -141,6 +152,7 @@ class FacebookPageControllerTest {
                 .platform(ExperimentPlatform.FACEBOOK)
                 .creativeApproved(true)
                 .facebookPage(page)
+                .instagramAccount(instagramAccount)
                 .build();
         experiment.setCreativesToGenerate(0);
         experiment.setKpiTargetCpl(BigDecimal.ONE);

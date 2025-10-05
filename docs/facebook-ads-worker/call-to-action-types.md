@@ -8,6 +8,11 @@ A Graph API expõe os tipos de call to action aceitos em campanhas via enumeraç
 > experimento quando não há `defaultPageId` configurado. Garanta que a página
 > exista antes de acionar o worker para publicar anúncios com os CTAs abaixo.
 
+> Atualização 2025-08-22: os experimentos precisam informar `instagramAccount`
+> no backend. O worker ignora CTAs de experimentos sem conta de Instagram
+> definida, garantindo que o `instagram_actor_id` enviado à Graph API seja
+> sempre válido.
+
 ## Lista completa (97 valores)
 
 - ADD_TO_CART

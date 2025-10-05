@@ -18,9 +18,12 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    não possui `defaultPageId`, o worker utiliza a página vinculada ao
    experimento no backend (exposta como `facebookPage`, `associatedFacebookPage`
    ou `facebookPageAssociation`) e ignora o experimento caso nenhuma associação
-   exista.
-   Opcionalmente o fluxo inclui `instagram_actor_id`, mensagem e
-   call-to-action vindos do próprio criativo.
+   exista. A mesma regra vale para a identidade do Instagram: o worker consome o
+   campo `instagramAccount` retornado pelo backend e popula `instagram_actor_id`
+   com o código cadastrado na conta. Caso o experimento não esteja relacionado a
+   uma conta do Instagram, o worker registra o aviso e pula a publicação.
+   Opcionalmente o fluxo inclui mensagem e call-to-action vindos do próprio
+   criativo.
 4. **Anúncio** (`POST /ads`) que referencia o conjunto e o criativo recém
    criados, mantido pausado até que o time operacional revise os detalhes no
    Gerenciador de Anúncios.

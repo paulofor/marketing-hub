@@ -9,6 +9,8 @@ import com.marketinghub.experiment.*;
 import com.marketinghub.experiment.repository.*;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.ads.InstagramAccount;
+import com.marketinghub.ads.InstagramAccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +28,7 @@ public class FixtureUtils {
     private final com.marketinghub.creative.label.repository.AngleRepository angleRepository;
     private final com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository;
     private final com.marketinghub.experiment.repository.MetricPresetRepository metricPresetRepository;
+    private final InstagramAccountRepository instagramAccountRepository;
 
     public MarketNiche createAndSaveNiche() {
         MarketNiche niche = MarketNiche.builder()
@@ -74,8 +77,18 @@ public class FixtureUtils {
                 .status(ExperimentStatus.PLANNED)
                 .platform(ExperimentPlatform.FACEBOOK)
                 .creativesToGenerate(0)
+                .instagramAccount(createAndSaveInstagramAccount())
                 .build();
         return experimentRepository.save(exp);
+    }
+
+    public InstagramAccount createAndSaveInstagramAccount() {
+        InstagramAccount account = InstagramAccount.builder()
+                .name("Instagram Test")
+                .handle("@instagramtest")
+                .code("IG-TEST")
+                .build();
+        return instagramAccountRepository.save(account);
     }
 
     public Creative createAndSaveCreative(Experiment exp) {

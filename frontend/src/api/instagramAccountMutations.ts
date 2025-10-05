@@ -2,17 +2,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 export interface CreateInstagramAccountPayload {
   name: string;
-  instagramUserId: string;
-  facebookPageId: string;
-  adAccountId: string;
-  avatarUrl?: string;
-  accessToken?: string;
+  handle: string;
+  code: string;
 }
 
 export interface UpdateInstagramAccountPayload
   extends CreateInstagramAccountPayload {
   id: number;
-  accessToken?: string;
 }
 
 export function useCreateInstagramAccount() {

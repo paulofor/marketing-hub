@@ -10,20 +10,14 @@ import PageTitle from "../components/PageTitle";
 
 interface FormState {
   name: string;
-  instagramUserId: string;
-  facebookPageId: string;
-  adAccountId: string;
-  accessToken: string;
-  avatarUrl: string;
+  handle: string;
+  code: string;
 }
 
 const emptyForm: FormState = {
   name: "",
-  instagramUserId: "",
-  facebookPageId: "",
-  adAccountId: "",
-  accessToken: "",
-  avatarUrl: "",
+  handle: "",
+  code: "",
 };
 
 export default function InstagramAccountsPage() {
@@ -60,18 +54,9 @@ export default function InstagramAccountsPage() {
   const buildPayload = (): CreateInstagramAccountPayload => {
     const payload: CreateInstagramAccountPayload = {
       name: form.name.trim(),
-      instagramUserId: form.instagramUserId.trim(),
-      facebookPageId: form.facebookPageId.trim(),
-      adAccountId: form.adAccountId.trim(),
+      handle: form.handle.trim(),
+      code: form.code.trim(),
     };
-
-    if (form.avatarUrl.trim()) {
-      payload.avatarUrl = form.avatarUrl.trim();
-    }
-
-    if (form.accessToken.trim()) {
-      payload.accessToken = form.accessToken.trim();
-    }
 
     return payload;
   };
@@ -99,11 +84,8 @@ export default function InstagramAccountsPage() {
     setEditingId(account.id);
     setForm({
       name: account.name ?? "",
-      instagramUserId: account.instagramUserId ?? "",
-      facebookPageId: account.facebookPageId ?? "",
-      adAccountId: account.adAccountId ?? "",
-      avatarUrl: account.avatarUrl ?? "",
-      accessToken: "",
+      handle: account.handle ?? "",
+      code: account.code ?? "",
     });
   };
 
@@ -118,10 +100,8 @@ export default function InstagramAccountsPage() {
             <tr>
               <th scope="col">ID</th>
               <th scope="col">Nome</th>
-              <th scope="col">Instagram Business ID</th>
-              <th scope="col">Página do Facebook</th>
-              <th scope="col">Conta de Anúncios</th>
-              <th scope="col">Token</th>
+              <th scope="col">Usuário (@)</th>
+              <th scope="col">Código</th>
               <th scope="col" className="text-end">
                 Ações
               </th>
@@ -131,30 +111,9 @@ export default function InstagramAccountsPage() {
             {accounts.map((account) => (
               <tr key={account.id}>
                 <td>{account.id}</td>
-                <td>
-                  <div className="d-flex align-items-center gap-2">
-                    {account.avatarUrl && (
-                      <img
-                        src={account.avatarUrl}
-                        alt={account.name}
-                        className="rounded-circle"
-                        width={32}
-                        height={32}
-                      />
-                    )}
-                    <span>{account.name}</span>
-                  </div>
-                </td>
-                <td>{account.instagramUserId}</td>
-                <td>{account.facebookPageId}</td>
-                <td>{account.adAccountId}</td>
-                <td>
-                  {account.accessToken ? (
-                    <span className="badge bg-success">Configurado</span>
-                  ) : (
-                    <span className="badge bg-warning text-dark">Pendente</span>
-                  )}
-                </td>
+                <td>{account.name}</td>
+                <td>{account.handle}</td>
+                <td>{account.code}</td>
                 <td className="text-end">
                   <div className="btn-group" role="group" aria-label="Ações">
                     <a
@@ -219,101 +178,39 @@ export default function InstagramAccountsPage() {
               />
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor="instagramUserId">
-                Instagram Business ID <span className="text-danger">*</span>
+              <label className="form-label" htmlFor="instagramHandle">
+                Usuário (@) <span className="text-danger">*</span>
               </label>
               <input
-                id="instagramUserId"
+                id="instagramHandle"
                 className="form-control"
-                placeholder="ex.: 17841400000000000"
-                value={form.instagramUserId}
+                placeholder="ex.: @minhaempresa"
+                value={form.handle}
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
-                    instagramUserId: event.target.value,
+                    handle: event.target.value,
                   }))
                 }
                 required
               />
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor="facebookPageId">
-                Página do Facebook <span className="text-danger">*</span>
+              <label className="form-label" htmlFor="instagramCode">
+                Código <span className="text-danger">*</span>
               </label>
               <input
-                id="facebookPageId"
+                id="instagramCode"
                 className="form-control"
-                placeholder="ID numérico da página conectada"
-                value={form.facebookPageId}
+                placeholder="Código interno ou identificador"
+                value={form.code}
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
-                    facebookPageId: event.target.value,
+                    code: event.target.value,
                   }))
                 }
                 required
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label" htmlFor="adAccountId">
-                Conta de anúncios <span className="text-danger">*</span>
-              </label>
-              <input
-                id="adAccountId"
-                className="form-control"
-                placeholder="ex.: act_0000000000"
-                value={form.adAccountId}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    adAccountId: event.target.value,
-                  }))
-                }
-                required
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label" htmlFor="accessToken">
-                Token de acesso <span className="text-danger">*</span>
-              </label>
-              <input
-                id="accessToken"
-                className="form-control"
-                placeholder="Use um token com permissões de leitura e publicação"
-                value={form.accessToken}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    accessToken: event.target.value,
-                  }))
-                }
-                required={!editingId}
-              />
-              {editingId ? (
-                <small className="form-text text-muted">
-                  Deixe em branco para manter o token atual.
-                </small>
-              ) : (
-                <small className="form-text text-muted">
-                  O token será armazenado com a moeda padrão em BRL.
-                </small>
-              )}
-            </div>
-            <div className="col-md-6">
-              <label className="form-label" htmlFor="avatarUrl">
-                Avatar (opcional)
-              </label>
-              <input
-                id="avatarUrl"
-                className="form-control"
-                placeholder="URL da foto do perfil"
-                value={form.avatarUrl}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    avatarUrl: event.target.value,
-                  }))
-                }
               />
             </div>
           </div>
@@ -329,9 +226,7 @@ export default function InstagramAccountsPage() {
               Cancelar edição
             </button>
           ) : (
-            <span className="text-muted">
-              Todas as contas usam Real brasileiro (BRL) como moeda padrão.
-            </span>
+            <span className="text-muted">Preencha os dados obrigatórios para salvar.</span>
           )}
           <button
             type="submit"

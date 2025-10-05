@@ -482,21 +482,14 @@ de anúncios, token, App ID/Secret, página fallback, orçamento diário etc.).
 
 - `id` BIGINT AUTO_INCREMENT PRIMARY KEY
 - `name` VARCHAR(255)
-- `currency` VARCHAR(8) DEFAULT "BRL"
-- `avatar_url` VARCHAR(255)
-- `instagram_user_id` VARCHAR(64)
-- `facebook_page_id` VARCHAR(64)
-- `ad_account_id` VARCHAR(64)
-- `access_token` LONGTEXT
+- `handle` VARCHAR(255)
+- `account_code` VARCHAR(255)
 
-Centraliza as informações mínimas para operar contas do Instagram dentro do
-Marketing Hub. O identificador `instagram_user_id` alimenta campanhas no Meta
-Ads e também habilita a coleta/organização automática de posts. O campo
-`facebook_page_id` vincula a página responsável pelos posts impulsionados, enquanto
-`ad_account_id` permite relacionar a conta de anúncios usada para promover o
-conteúdo. O token armazenado em `access_token` precisa ter escopos para leitura e
-publicação em Instagram/Facebook e é mantido sempre em Real brasileiro
-(`currency = 'BRL'`).
+Centraliza as informações essenciais da conta de Instagram que são exibidas na
+interface administrativa. O campo `handle` armazena o nome de usuário exibido
+com o símbolo `@`, enquanto `account_code` guarda o identificador interno usado
+pelas equipes de atendimento ou suporte. Informações adicionais de campanhas
+devem ser fornecidas diretamente nos objetos responsáveis por cada fluxo.
 
 ## Diagram
 

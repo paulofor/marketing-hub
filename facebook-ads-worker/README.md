@@ -19,7 +19,7 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    experimento no backend (exposta como `facebookPage`, `associatedFacebookPage`
    ou `facebookPageAssociation`) e ignora o experimento caso nenhuma associação
    exista. A mesma regra vale para a identidade do Instagram: o worker consome o
-   campo `instagramAccount` retornado pelo backend e popula `instagram_actor_id`
+   campo `instagramAccount` retornado pelo backend e popula `instagram_user_id`
    com o código cadastrado na conta. Caso o experimento não esteja relacionado a
    uma conta do Instagram, o worker registra o aviso e pula a publicação.
    Opcionalmente o fluxo inclui mensagem e call-to-action vindos do próprio
@@ -160,7 +160,7 @@ de [códigos de erro da Marketing API](https://developers.facebook.com/docs/mark
 para confirmar os requisitos de permissão. Quando o erro vem acompanhado do
 `error_subcode = 1815199` ("A conta de anúncios não tem acesso a esta conta do
 Instagram"), o worker tenta novamente criar o criativo sem enviar o
-`instagram_actor_id`, permitindo que a campanha prossiga apenas com o Facebook
+`instagram_user_id`, permitindo que a campanha prossiga apenas com o Facebook
 quando a conta não possui acesso ao Instagram informado pelo backend. Caso o
 Facebook ainda rejeite a requisição — seja por outras permissões ausentes ou
 por continuar exigindo o Instagram — o worker marca automaticamente o

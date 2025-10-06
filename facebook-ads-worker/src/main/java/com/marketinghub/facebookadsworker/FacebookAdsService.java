@@ -154,7 +154,7 @@ public class FacebookAdsService {
         Map<String, Object> objectStorySpec = new HashMap<>();
         objectStorySpec.put("page_id", request.pageId());
         if (request.instagramActorId() != null && !request.instagramActorId().isBlank()) {
-            objectStorySpec.put("instagram_actor_id", request.instagramActorId());
+            objectStorySpec.put("instagram_user_id", request.instagramActorId());
         }
         objectStorySpec.put("link_data", linkData);
 

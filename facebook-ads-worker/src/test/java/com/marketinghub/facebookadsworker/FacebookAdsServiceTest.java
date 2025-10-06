@@ -104,7 +104,7 @@ class FacebookAdsServiceTest {
         JsonNode body = objectMapper.readTree(recorded.getBody().inputStream());
         JsonNode storySpec = body.get("object_story_spec");
         assertEquals("42", storySpec.get("page_id").asText());
-        assertEquals("11", storySpec.get("instagram_actor_id").asText());
+        assertEquals("11", storySpec.get("instagram_user_id").asText());
         JsonNode linkData = storySpec.get("link_data");
         assertEquals("https://example.com", linkData.get("link").asText());
         assertEquals("Mensagem", linkData.get("message").asText());

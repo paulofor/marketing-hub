@@ -8,7 +8,7 @@ chamadas e o cliente usado para conversar com a Graph API do Facebook.
 > **Atualização:** Experimentos enviados pelo backend agora precisam informar o
 > campo `instagramAccount`. O `FacebookCampaignService` ignora qualquer
 > experimento sem essa associação para garantir que o criativo receba um
-> `instagram_actor_id` válido.
+> `instagram_user_id` válido.
 
 ```mermaid
 classDiagram

@@ -3,7 +3,7 @@
 > **Atualização 2025-08-22:** além de configurar App ID e App Secret, certifique-se
 > de que cada experimento retornado pelo backend tenha o campo
 > `instagramAccount`. O worker ignora experimentos sem essa associação para que
-> o `instagram_actor_id` enviado à Graph API seja válido.
+> o `instagram_user_id` enviado à Graph API seja válido.
 
 Este guia explica como localizar o campo obrigatório **ID do aplicativo (App ID)** na tela **Contas do Facebook**.
 

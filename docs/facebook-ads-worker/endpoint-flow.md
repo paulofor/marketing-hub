@@ -2,7 +2,7 @@
 
 > **Atualização 2025-08-22:** os experimentos retornados pelo backend devem
 > conter `instagramAccount`. O worker ignora qualquer item sem essa associação,
-> garantindo que o criativo seja criado com um `instagram_actor_id` válido.
+> garantindo que o criativo seja criado com um `instagram_user_id` válido.
 
 Este documento detalha como o **Facebook Ads Worker** conversa com o backend do
 Marketing Hub e com a **Facebook Graph API** em dois contextos principais:
@@ -65,7 +65,7 @@ sequenceDiagram
    status `READY` (ou o primeiro da lista quando não há aprovados). Falhas nessa
    etapa impedem a criação da campanha específica, mas não interrompem o ciclo.
 5. **Resolver página, destino e mensagens** – Antes de falar com a Graph API o
-   worker calcula página do Facebook, Instagram actor ID, URL/lead form e CTA,
+   worker calcula página do Facebook, Instagram user ID, URL/lead form e CTA,
    combinando valores vindos do experimento com os defaults da conta.
 6. **Criar a hierarquia na Graph API** – A sequência de chamadas `POST` cria a
    campanha (`/campaigns`), conjunto (`/adsets`), criativo (`/adcreatives`) e
@@ -104,7 +104,7 @@ sequenceDiagram
 | --- | --- | --- | --- | --- |
 | POST | `/v23.0/act_<adAccountId>/campaigns` | `FacebookAdsService.createCampaign` | Nome, objetivo `OUTCOME_TRAFFIC`, `special_ad_categories=[]`, `status=PAUSED` | Usado tanto para campanhas Facebook quanto Instagram |
 | POST | `/v23.0/act_<adAccountId>/adsets` | `FacebookAdsService.createAdSet` | Daily budget, billing event, optimization goal, destination type, targeting por país, promoted page | Inclui `bid_strategy` e `bid_amount` quando configurados |
-| POST | `/v23.0/act_<adAccountId>/adcreatives` | `FacebookAdsService.createAdCreative` | `object_story_spec` com `page_id`, `instagram_actor_id`, mensagem, CTA, link ou lead form | CTA só envia `value` quando há URL ou formulário |
+| POST | `/v23.0/act_<adAccountId>/adcreatives` | `FacebookAdsService.createAdCreative` | `object_story_spec` com `page_id`, `instagram_user_id`, mensagem, CTA, link ou lead form | CTA só envia `value` quando há URL ou formulário |
 | POST | `/v23.0/act_<adAccountId>/ads` | `FacebookAdsService.createAd` | Nome, `adset_id`, `creative_id`, `status=PAUSED` | Mantido pausado para revisão manual |
 | GET | `/v23.0/{campaignId}/insights` | `FacebookAdsService.getCampaignMetrics` | Retorna métricas agregadas da campanha | Trata `(#190)` como token expirado |
 | GET | `/v23.0/oauth/access_token` | `FacebookAdsService.renewLongLivedToken` | Query com `grant_type=fb_exchange_token`, `client_id`, `client_secret`, `fb_exchange_token` | Logs mascaram o token e retornam `expires_in` |

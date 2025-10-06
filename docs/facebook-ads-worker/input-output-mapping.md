@@ -2,7 +2,7 @@
 
 > **Atualização 2025-08-22:** o backend passou a enviar o campo
 > `instagramAccount` junto com cada experimento. O worker usa o código dessa
-> conta para preencher `instagram_actor_id` e ignora registros sem essa
+> conta para preencher `instagram_user_id` e ignora registros sem essa
 > informação.
 
 Este documento descreve como o **Facebook Ads Worker** converte os
@@ -89,7 +89,7 @@ flowchart TD
 | --- | --- | --- |
 | `name` | `Experiment.name` + sufixo | Nome amigável para o criativo |
 | `object_story_spec.page_id` | Conta configurada (`worker-config.defaultPageId`) ou página associada ao experimento | Página responsável pelo anúncio |
-| `object_story_spec.instagram_actor_id` | Conta configurada (`worker-config.defaultInstagramActorId`) | Opcional; usado quando há Instagram vinculado |
+| `object_story_spec.instagram_user_id` | Conta configurada (`worker-config.defaultInstagramActorId`) | Opcional; usado quando há Instagram vinculado |
 | `object_story_spec.link_data.message` | Template (`worker-config.defaultCreativeMessageTemplate`) | Substitui `%s` pelo nome do experimento |
 | `object_story_spec.link_data.link` | Conta configurada (`worker-config.defaultWebsiteUrl`) ou `Creative.destinationUrl` | O worker envia apenas quando existe URL; formulários de leads funcionam sem este campo |
 | `object_story_spec.link_data.call_to_action.type` | Conta configurada (`worker-config.defaultCallToActionType`) ou `Creative.cta` | Lista completa documentada em [call-to-action-types.md](call-to-action-types.md) |

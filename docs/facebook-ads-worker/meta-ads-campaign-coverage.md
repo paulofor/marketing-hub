@@ -8,7 +8,7 @@ para navegar entre as entidades citadas.
 
 > **Atualização 2025-08-22:** os experimentos retornados pelo backend precisam
 > informar o campo `instagramAccount`. O worker usa esse código como
-> `instagram_actor_id` e ignora experimentos sem a associação.
+> `instagram_user_id` e ignora experimentos sem a associação.
 
 ## Visão Geral
 

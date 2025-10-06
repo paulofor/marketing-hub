@@ -521,7 +521,7 @@ public class FacebookCampaignService {
             }
 
             LOGGER.warn(
-                "Retrying Facebook ad creative creation without Instagram actor ID after permission error: experimentId={}, instagramActorId={}, message={}, details={}",
+                "Retrying Facebook ad creative creation without Instagram user ID after permission error: experimentId={}, instagramActorId={}, message={}, details={}",
                 experiment.id(),
                 instagramActorId,
                 ex.getMessage(),
@@ -542,7 +542,7 @@ public class FacebookCampaignService {
 
             String creativeId = facebookAdsService.createAdCreative(adAccountId, fallbackRequest);
             LOGGER.info(
-                "Created Facebook ad creative without Instagram actor ID after permission error: experimentId={}, creativeId={}",
+                "Created Facebook ad creative without Instagram user ID after permission error: experimentId={}, creativeId={}",
                 experiment.id(),
                 creativeId
             );

@@ -6,7 +6,7 @@ criativos e anúncios associados antes de registrar os dados no backend.
 
 > Atualização 2025-08-22: apenas experimentos com `instagramAccount`
 > configurada são elegíveis para transformação. O worker ignora qualquer item
-> sem esse vínculo para garantir o envio de um `instagram_actor_id` válido.
+> sem esse vínculo para garantir o envio de um `instagram_user_id` válido.
 
 A fila de trabalho usada aqui é a mesma exibida na tela "Experimentos para
 Campanha" do frontend, que lista os experimentos aprovados e prontos para serem
@@ -59,7 +59,7 @@ montar a hierarquia completa:
    A segmentação inicial utiliza apenas o país padrão enquanto o backend não
    envia dados mais ricos. O `id` retornado é usado na criação do anúncio ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L196-L208)).
 3. **Criativo**: `POST /adcreatives` baseado em um `object_story_spec` que inclui
-   `page_id`, `instagram_actor_id` opcional, template de mensagem com o nome do
+   `page_id`, `instagram_user_id` opcional, template de mensagem com o nome do
    experimento e call-to-action vindos da mesma configuração. Quando o criativo
    ou a conta informam `leadGenFormId`, o worker adiciona `call_to_action.value.lead_gen_form_id`
    e torna o campo `link` opcional, habilitando formulários instantâneos no
@@ -96,7 +96,7 @@ utilizados (`targetCountry`, `pageId`) e os metadados do criativo (`websiteUrl`,
 | `worker-config.accessToken` | `Graph API - access_token` | Token reutilizado em campanha, ad set, criativo e anúncio ([FacebookAdsService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/FacebookAdsService.java#L18-L208)) |
 | `worker-config.adSet*` | `Graph API - adsets` e `CreateCampaignRequest.adSet` | Define orçamento, otimização e país padrão, replicados no backend ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L196-L245)) |
 | `worker-config.defaultPageId` | `Graph API - promoted_object` / `object_story_spec.page_id` / `CreateCampaignRequest.adSet.pageId` | Necessário para ad sets e criativos; caso ausente, o worker usa a página associada ao experimento e ignora o experimento quando nenhuma estiver configurada ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L177-L245)) |
-| `worker-config.defaultInstagramActorId` | `Graph API - object_story_spec.instagram_actor_id` / `CreateCampaignRequest.adCreative.instagramActorId` | Opcional, incluído apenas quando configurado ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L209-L255)) |
+| `worker-config.defaultInstagramActorId` | `Graph API - object_story_spec.instagram_user_id` / `CreateCampaignRequest.adCreative.instagramActorId` | Opcional, incluído apenas quando configurado ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L209-L255)) |
 | `worker-config.defaultCreativeMessageTemplate` | `Graph API - object_story_spec.link_data.message` | Template com suporte a `%s` para o nome do experimento ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L189-L193)) |
 | `worker-config.defaultWebsiteUrl` | `Graph API - link_data.link`/`call_to_action.value.link` e `CreateCampaignRequest.adCreative.websiteUrl` | URL padrão de destino persistida no backend; opcional quando há formulário configurado ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L209-L255)) |
 | `worker-config.defaultLeadGenFormId` | `Graph API - call_to_action.value.lead_gen_form_id` e `CreateCampaignRequest.adCreative.leadGenFormId` | Fallback para formulários Instant/Lead Ads quando o criativo não define `leadGenFormId` |

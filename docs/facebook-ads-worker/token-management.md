@@ -12,7 +12,7 @@ expiração automática.
 > campanha.
 >
 > Atualização 2025-08-22: vincule uma `instagramAccount` a cada experimento.
-> Sem esse relacionamento o worker não consegue definir `instagram_actor_id` e
+> Sem esse relacionamento o worker não consegue definir `instagram_user_id` e
 > deixa o experimento fora da fila até que a conta esteja configurada.
 
 ## 1. Geração inicial do token

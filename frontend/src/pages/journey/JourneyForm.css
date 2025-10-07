@@ -1,0 +1,119 @@
+.journey-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.journey-form__section {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  padding: 1.75rem;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+.journey-form__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+}
+
+.journey-form__section-header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.25rem;
+}
+
+.journey-form__section-header p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.95rem;
+}
+
+.journey-form__grid {
+  display: grid;
+  gap: 1rem 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.journey-form__field--full {
+  grid-column: 1 / -1;
+}
+
+.journey-form__label {
+  display: block;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.35rem;
+}
+
+.journey-form__required {
+  color: #e11d48;
+  margin-left: 0.25rem;
+}
+
+.journey-form__help {
+  display: block;
+  margin-top: 0.35rem;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.journey-form__error {
+  display: block;
+  margin-top: 0.35rem;
+  color: #dc2626;
+  font-size: 0.85rem;
+}
+
+.journey-form__metadata {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.journey-form__metadata-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+}
+
+.journey-form__metadata-input {
+  flex: 1 1 220px;
+}
+
+.journey-form__metadata-remove {
+  align-self: center;
+  white-space: nowrap;
+}
+
+.journey-form__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.journey-form__footer-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .journey-form__section {
+    padding: 1.25rem;
+  }
+
+  .journey-form__section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

@@ -15,6 +15,9 @@ import {
   Package,
   PanelLeftClose,
   PanelLeftOpen,
+  Layers,
+  Map,
+  PlusCircle,
   Shapes,
   Sparkles,
   Trophy,
@@ -115,6 +118,34 @@ const NAV_SECTIONS: NavSection[] = [
         icon: ClipboardCheck,
       },
       { to: "/analytics", label: "Analytics", icon: BarChart3 },
+    ],
+  },
+  {
+    title: "Jornadas",
+    items: [
+      {
+        to: "/journeys",
+        label: "Jornadas",
+        icon: Map,
+        children: [
+          {
+            to: "/journeys",
+            label: "Visão geral",
+            icon: Compass,
+            end: true,
+          },
+          {
+            to: "/journeys/new",
+            label: "Nova jornada",
+            icon: PlusCircle,
+          },
+          {
+            to: "/journey-templates",
+            label: "Templates",
+            icon: Layers,
+          },
+        ],
+      },
     ],
   },
 ];

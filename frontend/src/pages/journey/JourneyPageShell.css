@@ -1,0 +1,18 @@
+.journey-page-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.journey-page-shell__header {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  padding: 1.75rem;
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.08);
+}
+
+.journey-page-shell__header p {
+  margin: 0.75rem 0 0;
+  color: #475569;
+}

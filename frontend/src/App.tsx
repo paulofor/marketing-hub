@@ -46,6 +46,11 @@ import PromptEntitiesPage from "./pages/prompt/PromptEntitiesPage";
 import PromptAttributesPage from "./pages/prompt/PromptAttributesPage";
 import NewPromptEntityPage from "./pages/prompt/NewPromptEntityPage";
 import PromptEntityDescriptionPage from "./pages/prompt/PromptEntityDescriptionPage";
+import JourneyListPage from "./pages/journey/JourneyListPage";
+import JourneyDetailPage from "./pages/journey/JourneyDetailPage";
+import NewJourneyPage from "./pages/journey/NewJourneyPage";
+import EditJourneyPage from "./pages/journey/EditJourneyPage";
+import JourneyTemplatesPage from "./pages/journey/JourneyTemplatesPage";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import MainNavigation from "./components/MainNavigation";
@@ -167,6 +172,17 @@ export default function App() {
               <Route
                 path="/facebook-campaigns/ready"
                 element={<FacebookExperimentsReadyPage />}
+              />
+              <Route path="/journeys" element={<JourneyListPage />} />
+              <Route path="/journeys/new" element={<NewJourneyPage />} />
+              <Route path="/journeys/:id" element={<JourneyDetailPage />} />
+              <Route
+                path="/journeys/:id/edit"
+                element={<EditJourneyPage />}
+              />
+              <Route
+                path="/journey-templates"
+                element={<JourneyTemplatesPage />}
               />
               <Route path="*" element={<div>Início</div>} />
             </Routes>

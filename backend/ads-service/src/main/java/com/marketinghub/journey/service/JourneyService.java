@@ -2,6 +2,7 @@ package com.marketinghub.journey.service;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.journey.dto.JourneyMetricsResponse;
 import com.marketinghub.journey.dto.JourneyRequest;
 import com.marketinghub.journey.dto.JourneyUpdateRequest;
 import com.marketinghub.journey.model.Journey;
@@ -18,9 +19,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Application service orchestrating journey lifecycle operations.
@@ -54,6 +57,17 @@ public class JourneyService {
             return journeyRepository.findByStatus(status, pageable);
         }
         return journeyRepository.findAll(pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public JourneyMetricsResponse metrics() {
+        long totalJourneys = journeyRepository.count();
+        Map<JourneyStatus, Long> statusBreakdown = Arrays.stream(JourneyStatus.values())
+                .collect(Collectors.toMap(status -> status,
+                        journeyRepository::countByStatus,
+                        (left, right) -> left,
+                        LinkedHashMap::new));
+        return new JourneyMetricsResponse(totalJourneys, statusBreakdown);
     }
 
     @Transactional(readOnly = true)

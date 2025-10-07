@@ -15,4 +15,6 @@ public interface JourneyRepository extends JpaRepository<Journey, Long> {
     Page<Journey> findByStatus(JourneyStatus status, Pageable pageable);
 
     Page<Journey> findByTemplateIdAndStatus(Long templateId, JourneyStatus status, Pageable pageable);
+
+    long countByStatus(JourneyStatus status);
 }

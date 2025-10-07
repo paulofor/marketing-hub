@@ -34,6 +34,8 @@ class JourneyServiceTest {
                 .name("Onboarding Experience")
                 .build());
 
+        JourneyMetricsResponse initialMetrics = journeyService.metrics();
+
         journeyRepository.save(Journey.builder()
                 .template(template)
                 .name("Warm-up")
@@ -54,11 +56,11 @@ class JourneyServiceTest {
 
         JourneyMetricsResponse metrics = journeyService.metrics();
 
-        assertThat(metrics.totalJourneys()).isEqualTo(3);
+        assertThat(metrics.totalJourneys()).isEqualTo(initialMetrics.totalJourneys() + 3);
         assertThat(metrics.statusBreakdown())
-                .containsEntry(JourneyStatus.ACTIVE, 1L)
-                .containsEntry(JourneyStatus.DRAFT, 1L)
-                .containsEntry(JourneyStatus.PAUSED, 1L);
+                .containsEntry(JourneyStatus.ACTIVE, initialMetrics.statusBreakdown().getOrDefault(JourneyStatus.ACTIVE, 0L) + 1)
+                .containsEntry(JourneyStatus.DRAFT, initialMetrics.statusBreakdown().getOrDefault(JourneyStatus.DRAFT, 0L) + 1)
+                .containsEntry(JourneyStatus.PAUSED, initialMetrics.statusBreakdown().getOrDefault(JourneyStatus.PAUSED, 0L) + 1);
         for (JourneyStatus status : JourneyStatus.values()) {
             assertThat(metrics.statusBreakdown()).containsKey(status);
         }

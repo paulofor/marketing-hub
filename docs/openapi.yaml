@@ -659,6 +659,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemResponse'
+  /api/journeys/metrics:
+    get:
+      tags: [Journeys]
+      summary: Obter métricas agregadas das jornadas
+      responses:
+        '200':
+          description: Métricas consolidadas das jornadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JourneyMetrics'
   /api/journeys/{id}:
     get:
       tags: [Journeys]
@@ -1351,6 +1362,16 @@ components:
         updatedAt:
           type: string
           format: date-time
+    JourneyMetrics:
+      type: object
+      description: Métricas agregadas das jornadas operacionais.
+      properties:
+        totalJourneys:
+          type: integer
+        statusBreakdown:
+          type: object
+          additionalProperties:
+            type: integer
     JourneyAssignmentRequest:
       type: object
       properties:

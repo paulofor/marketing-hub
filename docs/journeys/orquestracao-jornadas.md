@@ -29,9 +29,15 @@ Sobre esses modelos atua um motor de execução que avalia condições, respeita
 
 ## APIs expostas
 * **Templates de jornada** — CRUD completo em `/api/journey-templates` para blueprinting e manutenção de passos.【F:docs/openapi.yaml†L377-L606】
-* **Jornadas operacionais** — CRUD em `/api/journeys`, filtragem por template/status e vinculação a nichos/experimentos.【F:docs/openapi.yaml†L604-L724】
+* **Jornadas operacionais** — CRUD em `/api/journeys`, filtragem por template/status, métricas agregadas em `/api/journeys/metrics` e vinculação a nichos/experimentos.【F:docs/openapi.yaml†L604-L724】【F:docs/openapi.yaml†L724-L732】
 * **Atribuições** — Paginação e criação em lote de vínculos via `/api/journeys/{id}/assignments`, aceitando leads, segmentos e contexto serializado.【F:docs/openapi.yaml†L725-L806】【F:backend/ads-service/src/main/java/com/marketinghub/journey/dto/JourneyAssignmentRequest.java†L11-L18】
 * **Eventos multicanal** — Ingestão unificada em `/api/events`, validando jornada/passo e persistindo com `occurredAt` customizável.【F:docs/openapi.yaml†L808-L836】【F:backend/ads-service/src/main/java/com/marketinghub/journey/service/EventLogService.java†L40-L84】
+
+## Experiência no Marketing Hub
+* A nova navegação lateral traz o item "Jornadas" com acesso direto à visão geral, criação rápida e templates, reforçando a descoberta das funcionalidades de orquestração.【F:frontend/src/components/MainNavigation.tsx†L34-L118】
+* A lista de jornadas exibe cards responsivos com filtros por template/status, busca textual e indicadores de saúde (totais por status) consumindo o endpoint `/api/journeys/metrics`, além de atalhos para detalhamento, edição e remoção.【F:frontend/src/pages/journey/JourneyListPage.tsx†L1-L260】【F:frontend/src/pages/journey/JourneyListPage.css†L1-L167】
+* A tela de detalhes organiza timeline, metadados e contexto de segmentação em painéis visuais, com atalhos para edição e exclusão segura via modal de confirmação.【F:frontend/src/pages/journey/JourneyDetailPage.tsx†L1-L248】【F:frontend/src/pages/journey/JourneyDetailPage.css†L1-L168】
+* O formulário reutilizável de criação/edição possui validação, edição dinâmica de metadados e seleção assistida de nichos, experimentos e templates, entregando feedback imediato de carregamento/sucesso.【F:frontend/src/pages/journey/JourneyForm.tsx†L1-L330】【F:frontend/src/api/journey/useCreateJourney.ts†L1-L55】【F:frontend/src/api/journey/useUpdateJourney.ts†L1-L55】
 
 ## Tratamento de vínculos (assignments)
 * Atribuições podem ser criadas para leads individuais (verificação de existência) ou identificadores de segmento externos.【F:backend/ads-service/src/main/java/com/marketinghub/journey/service/JourneyAssignmentService.java†L49-L121】

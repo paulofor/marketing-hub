@@ -1,5 +1,6 @@
 package com.marketinghub.journey.web;
 
+import com.marketinghub.journey.dto.JourneyMetricsResponse;
 import com.marketinghub.journey.dto.JourneyRequest;
 import com.marketinghub.journey.dto.JourneyResponse;
 import com.marketinghub.journey.dto.JourneyUpdateRequest;
@@ -33,6 +34,11 @@ public class JourneyController {
                                       @RequestParam(value = "status", required = false) JourneyStatus status,
                                       @PageableDefault(size = 20) Pageable pageable) {
         return journeyService.list(templateId, status, pageable).map(mapper::toJourneyResponse);
+    }
+
+    @GetMapping("/metrics")
+    public JourneyMetricsResponse metrics() {
+        return journeyService.metrics();
     }
 
     @PostMapping

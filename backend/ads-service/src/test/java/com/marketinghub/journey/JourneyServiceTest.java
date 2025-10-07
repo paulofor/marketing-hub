@@ -1,5 +1,6 @@
 package com.marketinghub.journey;
 
+import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.journey.dto.JourneyMetricsResponse;
 import com.marketinghub.journey.model.Journey;
 import com.marketinghub.journey.model.JourneyStatus;
@@ -14,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(classes = AdsServiceApplication.class)
 @Transactional
 class JourneyServiceTest {
 

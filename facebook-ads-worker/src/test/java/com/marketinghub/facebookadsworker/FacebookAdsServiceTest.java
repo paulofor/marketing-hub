@@ -94,6 +94,8 @@ class FacebookAdsServiceTest {
             "https://example.com",
             null,
             "Mensagem",
+            "hash-123",
+            "https://cdn.example/img.jpg",
             "LEARN_MORE",
             "Headline",
             "Descrição"
@@ -110,6 +112,7 @@ class FacebookAdsServiceTest {
         assertEquals("Mensagem", linkData.get("message").asText());
         assertEquals("Headline", linkData.get("name").asText());
         assertEquals("Descrição", linkData.get("description").asText());
+        assertEquals("hash-123", linkData.get("image_hash").asText());
         assertEquals("LEARN_MORE", linkData.get("call_to_action").get("type").asText());
         assertEquals("https://example.com", linkData.get("call_to_action").get("value").get("link").asText());
         assertEquals("333", id);
@@ -126,6 +129,8 @@ class FacebookAdsServiceTest {
             null,
             "123456789012345",
             "Mensagem",
+            null,
+            null,
             "SIGN_UP",
             null,
             null
@@ -137,6 +142,48 @@ class FacebookAdsServiceTest {
         assertEquals("SIGN_UP", callToAction.get("type").asText());
         assertEquals("123456789012345", callToAction.get("value").get("lead_gen_form_id").asText());
         assertEquals("999", id);
+    }
+
+    @Test
+    void createAdCreativeFallsBackToPictureWhenHashMissing() throws Exception {
+        server.enqueue(new MockResponse().setBody("{\"id\":\"777\"}")
+            .addHeader("Content-Type", "application/json"));
+        FacebookAdsService.AdCreativeRequest request = new FacebookAdsService.AdCreativeRequest(
+            "Camp - Creative",
+            "42",
+            null,
+            "https://example.com",
+            null,
+            "Mensagem",
+            null,
+            "https://cdn.example/img.jpg",
+            "LEARN_MORE",
+            null,
+            null
+        );
+
+        service.createAdCreative("1", request);
+
+        RecordedRequest recorded = server.takeRequest();
+        JsonNode linkData = objectMapper
+            .readTree(recorded.getBody().inputStream())
+            .get("object_story_spec")
+            .get("link_data");
+        assertEquals("https://cdn.example/img.jpg", linkData.get("picture").asText());
+    }
+
+    @Test
+    void uploadAdImageReturnsFirstHash() throws Exception {
+        server.enqueue(new MockResponse().setBody("{\"images\":{\"image1\":{\"hash\":\"abc\"}}}")
+            .addHeader("Content-Type", "application/json"));
+
+        String hash = service.uploadAdImage("1", "https://cdn.example/img.jpg");
+
+        RecordedRequest request = server.takeRequest();
+        assertEquals("/v23.0/act_1/adimages", request.getPath());
+        JsonNode body = objectMapper.readTree(request.getBody().inputStream());
+        assertEquals("https://cdn.example/img.jpg", body.get("url").asText());
+        assertEquals("abc", hash);
     }
 
     @Test

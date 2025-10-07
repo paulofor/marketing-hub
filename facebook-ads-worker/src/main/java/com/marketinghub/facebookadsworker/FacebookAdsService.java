@@ -135,6 +135,11 @@ public class FacebookAdsService {
         if (request.description() != null && !request.description().isBlank()) {
             linkData.put("description", request.description());
         }
+        if (hasText(request.imageHash())) {
+            linkData.put("image_hash", request.imageHash());
+        } else if (hasText(request.imageUrl())) {
+            linkData.put("picture", request.imageUrl());
+        }
         if (request.callToActionType() != null && !request.callToActionType().isBlank()) {
             Map<String, Object> callToAction = new HashMap<>();
             callToAction.put("type", request.callToActionType());
@@ -167,6 +172,32 @@ public class FacebookAdsService {
 
         JsonNode response = executePost(path, body);
         return response.path("id").asText();
+    }
+
+    public String uploadAdImage(String adAccountId, String imageUrl) {
+        Objects.requireNonNull(adAccountId, "adAccountId");
+        if (!hasText(imageUrl)) {
+            throw new IllegalArgumentException("imageUrl must not be blank");
+        }
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("url", imageUrl);
+        body.put("access_token", requireAccessToken());
+
+        String path = buildVersionedPath("/act_" + adAccountId + "/adimages");
+        JsonNode response = executePost(path, body);
+        JsonNode imagesNode = response.path("images");
+        if (imagesNode.isMissingNode() || imagesNode.isNull()) {
+            throw new IllegalStateException("Facebook did not return any image hash");
+        }
+
+        for (JsonNode value : imagesNode) {
+            String hash = value.path("hash").asText(null);
+            if (hasText(hash)) {
+                return hash;
+            }
+        }
+        throw new IllegalStateException("Facebook image upload response did not contain a hash");
     }
 
     public String createAd(String adAccountId, AdRequest request) {
@@ -576,6 +607,8 @@ public class FacebookAdsService {
         String websiteUrl,
         String leadGenFormId,
         String message,
+        String imageHash,
+        String imageUrl,
         String callToActionType,
         String headline,
         String description

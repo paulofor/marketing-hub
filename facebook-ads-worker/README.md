@@ -13,7 +13,12 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    não se enquadram em categorias especiais.
 2. **Conjunto de anúncios** (`POST /adsets`) atrelado à campanha, também em
    `PAUSED`, com segmentação geográfica simples e destino `WEBSITE`.
-3. **Criativo** (`POST /adcreatives`) baseado em um `object_story_spec`
+3. **Upload da imagem** (`POST /adimages`) utilizando o campo `imageUrl`
+   retornado pelo backend. Quando o caminho é relativo (por exemplo,
+   `/uploads/arquivo.jpg`), o worker o normaliza para o domínio configurado em
+   `backend.base-url` antes de enviá-lo ao Facebook. O endpoint devolve o
+   `hash` utilizado para referenciar a imagem no criativo.
+4. **Criativo** (`POST /adcreatives`) baseado em um `object_story_spec`
    contendo o `page_id` definido na conta selecionada no backend. Quando a conta
    não possui `defaultPageId`, o worker utiliza a página vinculada ao
    experimento no backend (exposta como `facebookPage`, `associatedFacebookPage`
@@ -23,8 +28,11 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    com o código cadastrado na conta. Caso o experimento não esteja relacionado a
    uma conta do Instagram, o worker registra o aviso e pula a publicação.
    Opcionalmente o fluxo inclui mensagem e call-to-action vindos do próprio
-   criativo.
-4. **Anúncio** (`POST /ads`) que referencia o conjunto e o criativo recém
+   criativo. A imagem sempre é enviada via `link_data.image_hash`; caso o upload
+   falhe por motivos transitórios o worker mantém o processo, preenchendo
+   `link_data.picture` com o URL absoluto como fallback para evitar um anúncio
+   sem mídia.
+5. **Anúncio** (`POST /ads`) que referencia o conjunto e o criativo recém
    criados, mantido pausado até que o time operacional revise os detalhes no
    Gerenciador de Anúncios.
 

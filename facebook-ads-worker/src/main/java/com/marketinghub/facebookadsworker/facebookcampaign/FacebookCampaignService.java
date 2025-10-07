@@ -228,6 +228,7 @@ public class FacebookCampaignService {
                 config.adSetTargetCountry()
             );
             String adSetId = facebookAdsService.createAdSet(config.adAccountId(), adSetRequest);
+            String resolvedImageUrl = resolveCreativeImageUrl(creative.imageUrl());
             AdCreativeCreation adCreativeCreation = createAdCreativeWithFallback(
                 config.adAccountId(),
                 exp,
@@ -238,7 +239,8 @@ public class FacebookCampaignService {
                 resolvedMessage,
                 resolvedCallToAction,
                 creative.headline(),
-                creative.description()
+                creative.description(),
+                resolvedImageUrl
             );
             FacebookAdsService.AdCreativeRequest adCreativeRequest = adCreativeCreation.request();
             String creativeId = adCreativeCreation.id();
@@ -276,6 +278,8 @@ public class FacebookCampaignService {
                     adCreativeRequest.websiteUrl(),
                     adCreativeRequest.leadGenFormId(),
                     adCreativeRequest.message(),
+                    adCreativeRequest.imageHash(),
+                    adCreativeRequest.imageUrl(),
                     adCreativeRequest.callToActionType(),
                     adCreativeRequest.headline(),
                     adCreativeRequest.description()
@@ -430,6 +434,8 @@ public class FacebookCampaignService {
             String websiteUrl,
             String leadGenFormId,
             String message,
+            String imageHash,
+            String imageUrl,
             String callToActionType,
             String headline,
             String description
@@ -498,8 +504,30 @@ public class FacebookCampaignService {
         String message,
         String callToAction,
         String headline,
-        String description
+        String description,
+        String imageUrl
     ) {
+        String imageHash = null;
+        if (StringUtils.hasText(imageUrl)) {
+            try {
+                imageHash = facebookAdsService.uploadAdImage(adAccountId, imageUrl);
+            } catch (FacebookAccessTokenExpiredException | FacebookPermissionException ex) {
+                throw ex;
+            } catch (RuntimeException ex) {
+                LOGGER.warn(
+                    "Could not upload creative image to Facebook; continuing without hash: experimentId={}, imageUrl={}, message={}",
+                    experiment.id(),
+                    imageUrl,
+                    ex.getMessage()
+                );
+                LOGGER.debug(
+                    "Stacktrace while uploading creative image for experiment {}",
+                    experiment.id(),
+                    ex
+                );
+            }
+        }
+
         FacebookAdsService.AdCreativeRequest primaryRequest = new FacebookAdsService.AdCreativeRequest(
             experiment.name() + " - Creative",
             pageId,
@@ -507,6 +535,8 @@ public class FacebookCampaignService {
             websiteUrl,
             leadGenFormId,
             message,
+            imageHash,
+            imageUrl,
             callToAction,
             headline,
             description
@@ -535,6 +565,8 @@ public class FacebookCampaignService {
                 websiteUrl,
                 leadGenFormId,
                 message,
+                imageHash,
+                imageUrl,
                 callToAction,
                 headline,
                 description
@@ -606,6 +638,19 @@ public class FacebookCampaignService {
     }
 
     private record AdCreativeCreation(String id, FacebookAdsService.AdCreativeRequest request) {}
+
+    private String resolveCreativeImageUrl(String imageUrl) {
+        if (!StringUtils.hasText(imageUrl)) {
+            return null;
+        }
+        String trimmed = imageUrl.trim();
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            return trimmed;
+        }
+        String base = backendBaseUrl.endsWith("/") ? backendBaseUrl.substring(0, backendBaseUrl.length() - 1) : backendBaseUrl;
+        String path = trimmed.startsWith("/") ? trimmed : "/" + trimmed;
+        return base + path;
+    }
 
     private void logAutomaticRenewalOutcome(FacebookAccessTokenManager.RenewalAttemptResult renewalResult) {
         if (renewalResult.outcome() == FacebookAccessTokenManager.RenewalOutcome.NOT_CONFIGURED) {

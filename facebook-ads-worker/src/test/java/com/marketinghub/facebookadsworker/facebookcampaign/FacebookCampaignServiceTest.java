@@ -98,6 +98,8 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}")
             .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"images\":{\"image1\":{\"hash\":\"hash-xyz\"}}}")
+            .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
@@ -129,6 +131,11 @@ class FacebookCampaignServiceTest {
         assertEquals("WEBSITE", adSetPayload.get("destination_type").asText());
         assertEquals("42", adSetPayload.get("promoted_object").get("page_id").asText());
 
+        RecordedRequest postImage = facebook.takeRequest();
+        assertEquals("/v23.0/act_1/adimages", postImage.getPath());
+        JsonNode imagePayload = objectMapper.readTree(postImage.getBody().inputStream());
+        assertEquals("https://cdn.example/img.jpg", imagePayload.get("url").asText());
+
         RecordedRequest postCreative = facebook.takeRequest();
         assertEquals("/v23.0/act_1/adcreatives", postCreative.getPath());
         JsonNode creativePayload = objectMapper.readTree(postCreative.getBody().inputStream());
@@ -141,6 +148,7 @@ class FacebookCampaignServiceTest {
         assertEquals("SHOP_NOW", linkData.get("call_to_action").get("type").asText());
         assertEquals("HL", linkData.get("name").asText());
         assertEquals("Desc", linkData.get("description").asText());
+        assertEquals("hash-xyz", linkData.get("image_hash").asText());
 
         RecordedRequest postAd = facebook.takeRequest();
         assertEquals("/v23.0/act_1/ads", postAd.getPath());
@@ -181,6 +189,8 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}")
             .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"images\":{\"image1\":{\"hash\":\"hash-lead\"}}}")
+            .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
@@ -197,12 +207,16 @@ class FacebookCampaignServiceTest {
         JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
         assertEquals("LEAD_GENERATION", adSetPayload.get("destination_type").asText());
 
+        RecordedRequest imageRequest = facebook.takeRequest();
+        assertEquals("/v23.0/act_1/adimages", imageRequest.getPath());
+
         RecordedRequest creativeRequest = facebook.takeRequest();
         JsonNode creativePayload = objectMapper.readTree(creativeRequest.getBody().inputStream());
         JsonNode linkData = creativePayload.get("object_story_spec").get("link_data");
         JsonNode cta = linkData.get("call_to_action");
         assertEquals("SIGN_UP", cta.get("type").asText());
         assertEquals("321123321123321", cta.get("value").get("lead_gen_form_id").asText());
+        assertEquals("hash-lead", linkData.get("image_hash").asText());
 
         backend.takeRequest(); // experiments-ready
         backend.takeRequest(); // creatives fetch
@@ -372,6 +386,8 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}")
             .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"images\":{\"image1\":{\"hash\":\"hash-renew\"}}}")
+            .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
@@ -402,6 +418,8 @@ class FacebookCampaignServiceTest {
 
         RecordedRequest adSetRequest = facebook.takeRequest();
         assertEquals("/v23.0/act_1/adsets", adSetRequest.getPath());
+        RecordedRequest imageRequest = facebook.takeRequest();
+        assertEquals("/v23.0/act_1/adimages", imageRequest.getPath());
         RecordedRequest creativeRequest = facebook.takeRequest();
         assertEquals("/v23.0/act_1/adcreatives", creativeRequest.getPath());
         RecordedRequest adRequest = facebook.takeRequest();
@@ -456,6 +474,8 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}")
             .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"images\":{\"image1\":{\"hash\":\"hash-renew-backend\"}}}")
+            .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
@@ -482,7 +502,10 @@ class FacebookCampaignServiceTest {
         JsonNode renewedPayload = objectMapper.readTree(renewedCampaign.getBody().inputStream());
         assertEquals("renewed-by-backend", renewedPayload.get("access_token").asText());
 
-        facebook.takeRequest(); // ad set
+        RecordedRequest adSetRequest = facebook.takeRequest();
+        assertEquals("/v23.0/act_1/adsets", adSetRequest.getPath());
+        RecordedRequest imageRequest = facebook.takeRequest();
+        assertEquals("/v23.0/act_1/adimages", imageRequest.getPath());
         facebook.takeRequest(); // creative
         facebook.takeRequest(); // ad
 
@@ -500,6 +523,8 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}")
             .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"images\":{\"image1\":{\"hash\":\"hash-fallback\"}}}")
+            .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
@@ -515,6 +540,9 @@ class FacebookCampaignServiceTest {
         RecordedRequest adSetRequest = facebook.takeRequest();
         JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
         assertEquals("84", adSetPayload.get("promoted_object").get("page_id").asText());
+
+        RecordedRequest imageRequest = facebook.takeRequest();
+        assertEquals("/v23.0/act_1/adimages", imageRequest.getPath());
 
         RecordedRequest creativeRequest = facebook.takeRequest();
         JsonNode creativePayload = objectMapper.readTree(creativeRequest.getBody().inputStream());
@@ -532,6 +560,7 @@ class FacebookCampaignServiceTest {
         );
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"10\"}").addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}").addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"images\":{\"image1\":{\"hash\":\"hash-associated\"}}}").addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}").addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}").addHeader("Content-Type", "application/json"));
         backend.enqueue(
@@ -549,6 +578,9 @@ class FacebookCampaignServiceTest {
         RecordedRequest adSetRequest = facebook.takeRequest();
         JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
         assertEquals("84", adSetPayload.get("promoted_object").get("page_id").asText());
+
+        RecordedRequest imageRequest = facebook.takeRequest();
+        assertEquals("/v23.0/act_1/adimages", imageRequest.getPath());
 
         RecordedRequest creativeRequest = facebook.takeRequest();
         JsonNode creativePayload = objectMapper.readTree(creativeRequest.getBody().inputStream());

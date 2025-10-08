@@ -46,12 +46,19 @@
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
-.journey-detail__card {
+.journey-detail__card { 
   background: #ffffff;
   border-radius: 18px;
   border: 1px solid #e2e8f0;
   padding: 1.75rem;
   box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+}
+
+.journey-detail__card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .journey-detail__card h2 {
@@ -99,7 +106,7 @@
   grid-column: 1 / -1;
 }
 
-.journey-detail__timeline {
+.journey-detail__timeline { 
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.25rem;
@@ -177,7 +184,7 @@
   background: radial-gradient(circle at top, #f0fdf4 0%, #bbf7d0 55%, #86efac 100%);
 }
 
-.journey-detail__constellation {
+.journey-detail__constellation { 
   display: grid;
   gap: 1.5rem;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -283,6 +290,159 @@
   margin: 0;
 }
 
+.journey-detail__loading--inline {
+  margin: 0;
+  padding: 1.5rem;
+  border-radius: 14px;
+  border-style: dashed;
+}
+
+.journey-detail__step-count {
+  background: rgba(59, 130, 246, 0.1);
+  color: #1d4ed8;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+}
+
+.journey-detail__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.journey-detail__step {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+  border-radius: 18px;
+  border: 1px solid #cbd5f5;
+  padding: 1.5rem;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.12);
+}
+
+.journey-detail__step-index {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  gap: 0.35rem;
+  min-width: 72px;
+  max-width: 72px;
+  color: #312e81;
+  background: rgba(79, 70, 229, 0.12);
+  border-radius: 16px;
+  padding: 0.75rem 0.5rem;
+  border: 1px solid rgba(79, 70, 229, 0.2);
+}
+
+.journey-detail__step-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.journey-detail__step-phase {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.journey-detail__step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.journey-detail__step-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.journey-detail__step-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #0f172a;
+}
+
+.journey-detail__step-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.1);
+  color: #1d4ed8;
+}
+
+.journey-detail__step-pill--ads {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+}
+
+.journey-detail__step-pill--email {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+}
+
+.journey-detail__step-pill--whatsapp {
+  background: rgba(34, 197, 94, 0.14);
+  color: #047857;
+}
+
+.journey-detail__step-pill--landing {
+  background: rgba(168, 85, 247, 0.12);
+  color: #6b21a8;
+}
+
+.journey-detail__step-description {
+  margin: 0;
+  color: #1f2937;
+  line-height: 1.6;
+}
+
+.journey-detail__step-description--muted {
+  color: #64748b;
+  font-style: italic;
+}
+
+.journey-detail__step-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+.journey-detail__step-meta strong {
+  font-weight: 700;
+  margin-right: 0.25rem;
+  color: #0f172a;
+}
+
+.journey-detail__step-annotations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.journey-detail__step-chip {
+  font-size: 0.8rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.06);
+  color: #1f2937;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
 .journey-detail__loading {
   background: #f8fafc;
   border-radius: 16px;
@@ -344,5 +504,18 @@
 
   .journey-detail__timeline {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+
+  .journey-detail__step {
+    flex-direction: column;
+  }
+
+  .journey-detail__step-index {
+    width: 100%;
+    max-width: none;
+    flex-direction: row;
+    grid-auto-flow: column;
+    justify-content: flex-start;
+    padding: 0.5rem 1rem;
   }
 }

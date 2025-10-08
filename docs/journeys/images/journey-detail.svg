@@ -1,0 +1,32 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1280" height="720" fill="#020617"/>
+  <rect x="48" y="48" width="1184" height="624" rx="24" fill="#0F172A" stroke="#1E293B" stroke-width="2"/>
+  <text x="96" y="116" font-family="'Inter', sans-serif" font-size="34" fill="#E2E8F0" font-weight="600">Campanha de Nutrição • Jornada ativa</text>
+  <rect x="96" y="144" width="696" height="232" rx="20" fill="#111827" stroke="#1E293B" stroke-width="2"/>
+  <text x="120" y="190" font-family="'Inter', sans-serif" font-size="24" fill="#FACC15" font-weight="600">Timeline de estímulos</text>
+  <line x1="160" y1="220" x2="160" y2="348" stroke="#2563EB" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="160" cy="228" r="12" fill="#38BDF8"/>
+  <circle cx="160" cy="276" r="12" fill="#38BDF8"/>
+  <circle cx="160" cy="324" r="12" fill="#38BDF8"/>
+  <text x="200" y="236" font-family="'Inter', sans-serif" font-size="20" fill="#E2E8F0">Email de boas-vindas • Enviado</text>
+  <text x="200" y="284" font-family="'Inter', sans-serif" font-size="20" fill="#E2E8F0">WhatsApp • Agendado para 2h</text>
+  <text x="200" y="332" font-family="'Inter', sans-serif" font-size="20" fill="#E2E8F0">Anúncio • Segmento Lookalike</text>
+  <rect x="824" y="144" width="360" height="232" rx="20" fill="#111827" stroke="#1E293B" stroke-width="2"/>
+  <text x="856" y="190" font-family="'Inter', sans-serif" font-size="22" fill="#38BDF8" font-weight="600">Segmentação</text>
+  <text x="856" y="224" font-family="'Inter', sans-serif" font-size="18" fill="#94A3B8">Nichos, experimentos e filtros externos alinhados com o template ativo.</text>
+  <text x="856" y="268" font-family="'Inter', sans-serif" font-size="18" fill="#94A3B8">• Nicho: Cursos Tech</text>
+  <text x="856" y="300" font-family="'Inter', sans-serif" font-size="18" fill="#94A3B8">• Experimento: Onboarding Beta</text>
+  <text x="856" y="332" font-family="'Inter', sans-serif" font-size="18" fill="#94A3B8">• Público: Leads MQL 2024</text>
+  <rect x="96" y="400" width="520" height="240" rx="20" fill="#111827" stroke="#1E293B" stroke-width="2"/>
+  <text x="120" y="444" font-family="'Inter', sans-serif" font-size="22" fill="#38BDF8" font-weight="600">Métricas em tempo real</text>
+  <text x="120" y="484" font-family="'Inter', sans-serif" font-size="18" fill="#CBD5F5">• Disparos concluídos</text>
+  <text x="120" y="516" font-family="'Inter', sans-serif" font-size="18" fill="#CBD5F5">• Conversões atribuídas</text>
+  <text x="120" y="548" font-family="'Inter', sans-serif" font-size="18" fill="#CBD5F5">• Frequência média</text>
+  <rect x="640" y="400" width="544" height="240" rx="20" fill="#111827" stroke="#1E293B" stroke-width="2"/>
+  <text x="668" y="444" font-family="'Inter', sans-serif" font-size="22" fill="#38BDF8" font-weight="600">Ações rápidas</text>
+  <text x="668" y="484" font-family="'Inter', sans-serif" font-size="18" fill="#CBD5F5">Editar jornada • Pausar execução • Excluir com confirmação</text>
+  <rect x="668" y="512" width="220" height="44" rx="12" fill="#2563EB"/>
+  <text x="692" y="540" font-family="'Inter', sans-serif" font-size="20" fill="#F8FAFC" font-weight="600">Editar jornada</text>
+  <rect x="912" y="512" width="220" height="44" rx="12" fill="#DC2626"/>
+  <text x="936" y="540" font-family="'Inter', sans-serif" font-size="20" fill="#F8FAFC" font-weight="600">Excluir</text>
+</svg>

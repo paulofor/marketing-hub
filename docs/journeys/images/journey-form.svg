@@ -1,0 +1,21 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1280" height="720" fill="#031626"/>
+  <rect x="80" y="60" width="1120" height="600" rx="24" fill="#0F172A" stroke="#1E293B" stroke-width="2"/>
+  <text x="128" y="128" font-family="'Inter', sans-serif" font-size="34" fill="#E2E8F0" font-weight="600">Criar jornada</text>
+  <rect x="128" y="164" width="960" height="88" rx="18" fill="#111827" stroke="#1E293B" stroke-width="2"/>
+  <text x="156" y="214" font-family="'Inter', sans-serif" font-size="22" fill="#FACC15" font-weight="600">Nome e template</text>
+  <text x="156" y="246" font-family="'Inter', sans-serif" font-size="18" fill="#94A3B8">Seleção assistida com busca incremental e pré-visualização das fases.</text>
+  <rect x="128" y="272" width="960" height="120" rx="18" fill="#111827" stroke="#1E293B" stroke-width="2"/>
+  <text x="156" y="320" font-family="'Inter', sans-serif" font-size="22" fill="#38BDF8" font-weight="600">Janela e metas</text>
+  <text x="156" y="352" font-family="'Inter', sans-serif" font-size="18" fill="#94A3B8">Datas, orçamento e objetivo de conversão com feedback imediato.</text>
+  <rect x="128" y="404" width="448" height="180" rx="18" fill="#111827" stroke="#1E293B" stroke-width="2"/>
+  <text x="156" y="452" font-family="'Inter', sans-serif" font-size="22" fill="#38BDF8" font-weight="600">Segmentação</text>
+  <text x="156" y="484" font-family="'Inter', sans-serif" font-size="18" fill="#94A3B8">Nichos, experimentos, listas externas e validação de consistência.</text>
+  <rect x="608" y="404" width="480" height="180" rx="18" fill="#111827" stroke="#1E293B" stroke-width="2"/>
+  <text x="636" y="452" font-family="'Inter', sans-serif" font-size="22" fill="#38BDF8" font-weight="600">Metadados e automações</text>
+  <text x="636" y="484" font-family="'Inter', sans-serif" font-size="18" fill="#94A3B8">Campos dinâmicos, webhooks, políticas de frequência e observações.</text>
+  <rect x="128" y="608" width="220" height="48" rx="14" fill="#2563EB"/>
+  <text x="152" y="640" font-family="'Inter', sans-serif" font-size="22" fill="#F8FAFC" font-weight="600">Salvar jornada</text>
+  <rect x="368" y="608" width="220" height="48" rx="14" fill="#1E293B" stroke="#475569" stroke-width="2"/>
+  <text x="392" y="640" font-family="'Inter', sans-serif" font-size="22" fill="#E2E8F0" font-weight="600">Salvar como rascunho</text>
+</svg>

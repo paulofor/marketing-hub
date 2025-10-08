@@ -15,6 +15,25 @@ vi.mock("../../api/journey/useJourneyTemplates", () => ({
           preferredChannel: null,
           tags: ["facebook", "lifecycle"],
           metadata: {},
+          steps: [
+            {
+              id: 101,
+              templateId: 1,
+              position: 1,
+              name: "Primeiro contato",
+              description: "Enviar email de boas-vindas",
+              phase: "ATTENTION",
+              stimulusType: "EMAIL",
+              creativeId: null,
+              angleId: null,
+              visualProofId: null,
+              emotionalTriggerId: null,
+              entryCondition: null,
+              exitCondition: null,
+              delayMinutes: 0,
+              metadata: {},
+            },
+          ],
           createdAt: null,
           updatedAt: undefined,
         },
@@ -41,5 +60,7 @@ describe("JourneyTemplatesPage", () => {
     expect(screen.getByText("ATTENTION • INTEREST • DESIRE • ACTION")).toBeInTheDocument();
     expect(screen.getByText(/Criado em\s+—/)).toBeInTheDocument();
     expect(screen.getByText(/Atualizado em\s+—/)).toBeInTheDocument();
+    expect(screen.getByText("Primeiro contato")).toBeInTheDocument();
+    expect(screen.getByText("Atenção • Email")).toBeInTheDocument();
   });
 });

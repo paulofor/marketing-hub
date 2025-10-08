@@ -34,7 +34,7 @@ public class JourneyTemplateService {
 
     @Transactional(readOnly = true)
     public Page<JourneyTemplate> list(Pageable pageable) {
-        return templateRepository.findAll(pageable);
+        return templateRepository.findAllWithSteps(pageable);
     }
 
     @Transactional(readOnly = true)

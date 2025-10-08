@@ -1,6 +1,11 @@
 import PageTitle from "../../components/PageTitle";
 import { useJourneyTemplates } from "../../api/journey/useJourneyTemplates";
-import type { JourneyTemplateSummary } from "../../api/journey/types";
+import type {
+  JourneyPhase,
+  JourneyStep,
+  JourneyStimulusType,
+  JourneyTemplateSummary,
+} from "../../api/journey/types";
 import "./JourneyTemplatesPage.css";
 
 function formatChannel(template: JourneyTemplateSummary) {
@@ -29,6 +34,34 @@ function formatPhases(phases?: string[]) {
   }
 
   return phases.join(" • ");
+}
+
+const phaseLabels: Record<JourneyPhase, string> = {
+  ATTENTION: "Atenção",
+  INTEREST: "Interesse",
+  DESIRE: "Desejo",
+  ACTION: "Ação",
+};
+
+const stimulusLabels: Record<JourneyStimulusType, string> = {
+  AD: "Anúncio",
+  EMAIL: "Email",
+  WHATSAPP: "WhatsApp",
+  LANDING_PAGE: "Landing page",
+};
+
+function formatStepTitle(step: JourneyStep, index: number) {
+  return step.name?.trim() || `Passo ${index + 1}`;
+}
+
+function formatStepDetails(step: JourneyStep) {
+  const phase = phaseLabels[step.phase];
+  const stimulus = stimulusLabels[step.stimulusType];
+  const delay = typeof step.delayMinutes === "number" && step.delayMinutes > 0
+    ? `+${step.delayMinutes} min`
+    : null;
+
+  return [phase, stimulus, delay].filter(Boolean).join(" • ");
 }
 
 export default function JourneyTemplatesPage() {
@@ -75,6 +108,34 @@ export default function JourneyTemplatesPage() {
                   ))}
                 </div>
               ) : null}
+              <section className="journey-template-card__steps">
+                <h3 className="journey-template-card__steps-title">Etapas do template</h3>
+                {template.steps && template.steps.length ? (
+                  <ol className="journey-template-card__step-list">
+                    {template.steps.map((step, index) => {
+                      const details = formatStepDetails(step);
+                      return (
+                        <li key={step.id ?? index} className="journey-template-card__step">
+                          <span className="journey-template-card__step-index">{index + 1}</span>
+                          <div className="journey-template-card__step-content">
+                            <p className="journey-template-card__step-name">{formatStepTitle(step, index)}</p>
+                            {details ? (
+                              <p className="journey-template-card__step-details">{details}</p>
+                            ) : null}
+                            {step.description ? (
+                              <p className="journey-template-card__step-description">{step.description}</p>
+                            ) : null}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                ) : (
+                  <p className="journey-template-card__steps-empty">
+                    Nenhuma etapa cadastrada. Estruture a cadência para visualizar o fluxo completo.
+                  </p>
+                )}
+              </section>
               <footer className="journey-template-card__footer">
                 <span>
                   Criado em {formatDate(template.createdAt)}

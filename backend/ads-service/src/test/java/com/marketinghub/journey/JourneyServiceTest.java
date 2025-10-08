@@ -16,6 +16,14 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = AdsServiceApplication.class)
+@org.springframework.test.context.TestPropertySource(properties = {
+        "spring.datasource.url=jdbc:h2:mem:testdb",
+        "spring.datasource.driverClassName=org.h2.Driver",
+        "spring.datasource.username=sa",
+        "spring.datasource.password=",
+        "spring.jpa.hibernate.ddl-auto=create",
+        "spring.liquibase.enabled=false"
+})
 @Transactional
 class JourneyServiceTest {
 

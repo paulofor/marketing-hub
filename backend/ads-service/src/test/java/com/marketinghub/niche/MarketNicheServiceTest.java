@@ -1,6 +1,5 @@
 package com.marketinghub.niche;
 
-import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.niche.dto.CreateMarketNicheRequest;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.niche.service.MarketNicheService;
@@ -9,14 +8,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 @DataJpaTest
-@ContextConfiguration(classes = AdsServiceApplication.class)
 @TestPropertySource(properties = "spring.liquibase.enabled=false")
 class MarketNicheServiceTest {
 

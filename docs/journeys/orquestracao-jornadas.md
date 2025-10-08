@@ -35,9 +35,21 @@ Sobre esses modelos atua um motor de execução que avalia condições, respeita
 
 ## Experiência no Marketing Hub
 * A nova navegação lateral traz o item "Jornadas" com acesso direto à visão geral, criação rápida e templates, reforçando a descoberta das funcionalidades de orquestração.【F:frontend/src/components/MainNavigation.tsx†L34-L118】
-* A lista de jornadas exibe cards responsivos com filtros por template/status, busca textual e indicadores de saúde (totais por status) consumindo o endpoint `/api/journeys/metrics`, além de atalhos para detalhamento, edição e remoção.【F:frontend/src/pages/journey/JourneyListPage.tsx†L1-L260】【F:frontend/src/pages/journey/JourneyListPage.css†L1-L167】
-* A tela de detalhes organiza timeline, metadados e contexto de segmentação em painéis visuais, com atalhos para edição e exclusão segura via modal de confirmação.【F:frontend/src/pages/journey/JourneyDetailPage.tsx†L1-L248】【F:frontend/src/pages/journey/JourneyDetailPage.css†L1-L168】
-* O formulário reutilizável de criação/edição possui validação, edição dinâmica de metadados e seleção assistida de nichos, experimentos e templates, entregando feedback imediato de carregamento/sucesso.【F:frontend/src/pages/journey/JourneyForm.tsx†L1-L330】【F:frontend/src/api/journey/useCreateJourney.ts†L1-L55】【F:frontend/src/api/journey/useUpdateJourney.ts†L1-L55】
+
+### Lista de jornadas
+A listagem apresenta cards responsivos com filtros por template, status e período, busca textual e indicadores de saúde consolidados pelo endpoint `/api/journeys/metrics`. Atalhos permitem abrir o detalhamento em uma nova aba, duplicar ou excluir a jornada com confirmação, enquanto o botão "Criar jornada" permanece visível para incentivar novos fluxos.【F:frontend/src/pages/journey/JourneyListPage.tsx†L1-L260】【F:frontend/src/pages/journey/JourneyListPage.css†L1-L167】
+
+![Wireframe da lista de jornadas destacando filtros, cards e ações rápidas.](images/journey-list.svg)
+
+### Detalhe da jornada
+O detalhamento organiza timeline, métricas em tempo real e contexto de segmentação em painéis independentes, facilitando a identificação de gargalos no fluxo. Ações rápidas permitem editar a jornada, pausar a execução ou removê-la com modal de confirmação, enquanto o histórico de estímulos evidencia o status de cada passo e os identificadores registrados na telemetria.【F:frontend/src/pages/journey/JourneyDetailPage.tsx†L1-L248】【F:frontend/src/pages/journey/JourneyDetailPage.css†L1-L168】
+
+![Wireframe da tela de detalhes mostrando timeline, segmentação e métricas.](images/journey-detail.svg)
+
+### Formulário de criação e edição
+O formulário reutilizável é dividido em seções para nome/template, janela e metas, segmentação e metadados avançados. Cada campo exibe validações inline e loaders contextuais, garantindo feedback imediato durante operações de salvar como rascunho ou publicar. A seleção assistida de nichos/experimentos oferece busca incremental e garante coerência com o template escolhido via hooks de criação e atualização.【F:frontend/src/pages/journey/JourneyForm.tsx†L1-L330】【F:frontend/src/api/journey/useCreateJourney.ts†L1-L55】【F:frontend/src/api/journey/useUpdateJourney.ts†L1-L55】
+
+![Wireframe do formulário de jornada com seções de template, metas e segmentação.](images/journey-form.svg)
 
 ## Tratamento de vínculos (assignments)
 * Atribuições podem ser criadas para leads individuais (verificação de existência) ou identificadores de segmento externos.【F:backend/ads-service/src/main/java/com/marketinghub/journey/service/JourneyAssignmentService.java†L49-L121】

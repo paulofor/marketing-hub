@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useCreateAiService } from "../../api/aiService/useCreateAiService";
 import PageTitle from "../../components/PageTitle";
 
 export default function NewAiServicePage() {
   const create = useCreateAiService();
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "",
     objective: "",
@@ -15,12 +17,17 @@ export default function NewAiServicePage() {
   });
 
   const submit = () => {
-    create.mutate({
-      ...form,
-      price: Number(form.price),
-      cost: Number(form.cost),
-      observation: form.observation,
-    });
+    create.mutate(
+      {
+        ...form,
+        price: Number(form.price),
+        cost: Number(form.cost),
+        observation: form.observation,
+      },
+      {
+        onSuccess: () => navigate("/ai-services"),
+      },
+    );
   };
 
   return (

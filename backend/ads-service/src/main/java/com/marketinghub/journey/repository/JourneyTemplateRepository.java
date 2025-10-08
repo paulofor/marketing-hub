@@ -13,7 +13,7 @@ import java.util.Optional;
  */
 public interface JourneyTemplateRepository extends JpaRepository<JourneyTemplate, Long> {
     @EntityGraph(attributePaths = {"steps", "steps.metadata"})
-    Page<JourneyTemplate> findAllWithSteps(Pageable pageable);
+    Page<JourneyTemplate> findAll(Pageable pageable);
 
     @EntityGraph(attributePaths = {"steps", "steps.metadata"})
     Optional<JourneyTemplate> findWithStepsById(Long id);

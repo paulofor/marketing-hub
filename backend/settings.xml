@@ -29,6 +29,11 @@
   <profiles>
     <profile>
       <id>github</id>
+      <activation>
+        <property>
+          <name>env.GITHUB_ACTOR</name>
+        </property>
+      </activation>
       <repositories>
         <repository>
           <id>github</id>
@@ -39,8 +44,4 @@
       </repositories>
     </profile>
   </profiles>
-
-  <activeProfiles>
-    <activeProfile>github</activeProfile>
-  </activeProfiles>
 </settings>

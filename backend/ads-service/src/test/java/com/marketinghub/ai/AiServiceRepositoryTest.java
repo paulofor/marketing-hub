@@ -1,11 +1,9 @@
 package com.marketinghub.ai;
 
-import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.ai.repository.AiServiceRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
 import java.math.BigDecimal;
@@ -13,7 +11,6 @@ import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-@ContextConfiguration(classes = AdsServiceApplication.class)
 @TestPropertySource(properties = "spring.liquibase.enabled=false")
 class AiServiceRepositoryTest {
 

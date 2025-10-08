@@ -14,6 +14,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.ads.CampaignRepository;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.niche.MarketNiche;
@@ -52,6 +53,9 @@ class FacebookPageControllerTest {
     ExperimentRepository experimentRepository;
 
     @Autowired
+    CampaignRepository campaignRepository;
+
+    @Autowired
     MarketNicheRepository nicheRepository;
 
     @Autowired
@@ -68,6 +72,7 @@ class FacebookPageControllerTest {
     @BeforeEach
     void setup() {
         experimentRepository.deleteAll();
+        campaignRepository.deleteAll();
         hypothesisRepository.deleteAll();
         nicheRepository.deleteAll();
         pageRepository.deleteAll();

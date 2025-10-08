@@ -30,16 +30,13 @@ public class JourneyMapper {
                 template.getPreferredChannel(),
                 copyTags(template.getTags()),
                 copyMetadata(template.getMetadata()),
+                copySteps(template.getSteps()),
                 template.getCreatedAt(),
                 template.getUpdatedAt()
         );
     }
 
     public JourneyTemplateResponse toResponse(JourneyTemplate template) {
-        List<JourneyStepResponse> steps = template.getSteps().stream()
-                .sorted(Comparator.comparing(JourneyStep::getPosition, Comparator.nullsLast(Integer::compareTo)))
-                .map(this::toStepResponse)
-                .toList();
         return new JourneyTemplateResponse(
                 template.getId(),
                 template.getName(),
@@ -49,7 +46,7 @@ public class JourneyMapper {
                 template.getPreferredChannel(),
                 copyTags(template.getTags()),
                 copyMetadata(template.getMetadata()),
-                steps,
+                copySteps(template.getSteps()),
                 template.getCreatedAt(),
                 template.getUpdatedAt()
         );
@@ -104,6 +101,17 @@ public class JourneyMapper {
             }
         });
         return new LinkedHashMap<>(sanitized);
+    }
+
+    private List<JourneyStepResponse> copySteps(List<JourneyStep> steps) {
+        if (steps == null || steps.isEmpty()) {
+            return List.of();
+        }
+        return steps.stream()
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(JourneyStep::getPosition, Comparator.nullsLast(Integer::compareTo)))
+                .map(this::toStepResponse)
+                .toList();
     }
 
     public JourneyResponse toJourneyResponse(Journey journey) {

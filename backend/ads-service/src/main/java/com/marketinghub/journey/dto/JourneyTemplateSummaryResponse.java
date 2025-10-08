@@ -18,6 +18,7 @@ public record JourneyTemplateSummaryResponse(
         String preferredChannel,
         Set<String> tags,
         Map<String, String> metadata,
+        List<JourneyStepResponse> steps,
         Instant createdAt,
         Instant updatedAt
 ) {

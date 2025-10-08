@@ -73,6 +73,7 @@ export interface JourneyTemplateSummary {
   preferredChannel?: string | null;
   tags: string[];
   metadata: Record<string, string>;
+  steps: JourneyStep[];
   createdAt: string;
   updatedAt: string;
 }

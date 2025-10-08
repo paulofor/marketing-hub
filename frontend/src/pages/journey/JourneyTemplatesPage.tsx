@@ -10,6 +10,27 @@ function formatChannel(template: JourneyTemplateSummary) {
   return "Multicanal";
 }
 
+function formatDate(value?: string | null) {
+  if (!value) {
+    return "—";
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "—";
+  }
+
+  return parsed.toLocaleDateString("pt-BR");
+}
+
+function formatPhases(phases?: string[]) {
+  if (!phases || phases.length === 0) {
+    return "Fases não cadastradas";
+  }
+
+  return phases.join(" • ");
+}
+
 export default function JourneyTemplatesPage() {
   const { data, isLoading } = useJourneyTemplates();
   const templates = data?.content ?? [];
@@ -37,7 +58,7 @@ export default function JourneyTemplatesPage() {
                 <div className="journey-template-card__meta">
                   <span className="journey-template-card__channel">{formatChannel(template)}</span>
                   <span className="journey-template-card__phases">
-                    {template.phases.join(" • ")}
+                    {formatPhases(template.phases)}
                   </span>
                 </div>
                 <h2>{template.name}</h2>
@@ -45,7 +66,7 @@ export default function JourneyTemplatesPage() {
                   <p className="journey-template-card__objective">{template.objective}</p>
                 ) : null}
               </header>
-              {template.tags.length ? (
+              {Array.isArray(template.tags) && template.tags.length ? (
                 <div className="journey-template-card__tags">
                   {template.tags.map((tag) => (
                     <span key={tag} className="journey-template-card__tag">
@@ -56,10 +77,10 @@ export default function JourneyTemplatesPage() {
               ) : null}
               <footer className="journey-template-card__footer">
                 <span>
-                  Criado em {new Date(template.createdAt).toLocaleDateString("pt-BR")}
+                  Criado em {formatDate(template.createdAt)}
                 </span>
                 <span>
-                  Atualizado em {new Date(template.updatedAt).toLocaleDateString("pt-BR")}
+                  Atualizado em {formatDate(template.updatedAt)}
                 </span>
               </footer>
             </article>

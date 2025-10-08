@@ -4,7 +4,14 @@ import PageTitle from "../../components/PageTitle";
 import { useJourney } from "../../api/journey/useJourney";
 import JourneyStatusBadge from "./JourneyStatusBadge";
 import { useDeleteJourney } from "../../api/journey/useDeleteJourney";
-import type { Journey, JourneyStatus } from "../../api/journey/types";
+import { useJourneyTemplate } from "../../api/journey/useJourneyTemplate";
+import type {
+  Journey,
+  JourneyPhase,
+  JourneyStatus,
+  JourneyStep,
+  JourneyStimulusType,
+} from "../../api/journey/types";
 import "./JourneyDetailPage.css";
 
 type TimelineStageAccent = "start" | "milestone" | "segment" | "end";
@@ -33,6 +40,20 @@ const stageAccentIcons: Record<TimelineStageAccent, string> = {
   end: "🏁",
 };
 
+const phaseLabels: Record<JourneyPhase, string> = {
+  ATTENTION: "Atenção",
+  INTEREST: "Interesse",
+  DESIRE: "Desejo",
+  ACTION: "Ação",
+};
+
+const stimulusDescriptors: Record<JourneyStimulusType, { label: string; accent: string; icon: string }> = {
+  AD: { label: "Anúncio pago", accent: "ads", icon: "📢" },
+  EMAIL: { label: "Email marketing", accent: "email", icon: "✉️" },
+  WHATSAPP: { label: "WhatsApp", accent: "whatsapp", icon: "💬" },
+  LANDING_PAGE: { label: "Landing page", accent: "landing", icon: "🧭" },
+};
+
 const statusLabels: Record<JourneyStatus, string> = {
   DRAFT: "Rascunho",
   ACTIVE: "Ativa",
@@ -59,6 +80,7 @@ function beautifyMetadataKey(key: string, index: number) {
 function buildTimelineStages(
   journey: Journey,
   metadataEntries: Array<[string, string]>,
+  steps?: JourneyStep[],
 ): TimelineStage[] {
   const stages: TimelineStage[] = [];
 
@@ -73,28 +95,46 @@ function buildTimelineStages(
     detailType: "date",
   });
 
-  const stageKeywords = ["fase", "phase", "etapa", "stage", "momento", "step"];
-  const milestoneEntries = metadataEntries.filter(([key]) =>
-    stageKeywords.some((keyword) => key.toLowerCase().includes(keyword)),
-  );
+  if (steps?.length) {
+    steps.forEach((step, index) => {
+      const descriptor = stimulusDescriptors[step.stimulusType];
+      const summary = [phaseLabels[step.phase], descriptor?.label]
+        .filter(Boolean)
+        .join(" • ");
 
-  if (milestoneEntries.length) {
-    milestoneEntries.forEach(([key, value], index) => {
       stages.push({
-        id: `milestone-${key}-${index}`,
+        id: `step-${step.id ?? index}`,
         accent: "milestone",
-        title: beautifyMetadataKey(key, index + 1),
-        description: value?.trim() || "Adicione detalhes para esta etapa e deixe o mapa ainda mais completo.",
+        title: step.name?.trim() || `Passo ${index + 1}`,
+        description: step.description?.trim() || summary || "Aprofunde os detalhes deste ponto de contato.",
+        detail: step.description ? summary : undefined,
+        detailType: step.description ? "text" : undefined,
       });
     });
   } else {
-    stages.push({
-      id: "blueprint",
-      accent: "milestone",
-      title: `Blueprint "${journey.templateName}"`,
-      description:
-        "Este template orienta os pontos de contato e garante consistência na jornada. Personalize os marcos usando os metadados.",
-    });
+    const stageKeywords = ["fase", "phase", "etapa", "stage", "momento", "step"];
+    const milestoneEntries = metadataEntries.filter(([key]) =>
+      stageKeywords.some((keyword) => key.toLowerCase().includes(keyword)),
+    );
+
+    if (milestoneEntries.length) {
+      milestoneEntries.forEach(([key, value], index) => {
+        stages.push({
+          id: `milestone-${key}-${index}`,
+          accent: "milestone",
+          title: beautifyMetadataKey(key, index + 1),
+          description: value?.trim() || "Adicione detalhes para esta etapa e deixe o mapa ainda mais completo.",
+        });
+      });
+    } else {
+      stages.push({
+        id: "blueprint",
+        accent: "milestone",
+        title: `Blueprint "${journey.templateName}"`,
+        description:
+          "Este template orienta os pontos de contato e garante consistência na jornada. Personalize os marcos usando os metadados.",
+      });
+    }
   }
 
   if (journey.segmentReference || journey.segmentFilter || journey.marketNicheId) {
@@ -191,6 +231,33 @@ function formatDateTime(value?: string | null) {
   }
 }
 
+function formatDelay(minutes?: number | null) {
+  if (minutes == null || Number.isNaN(minutes)) {
+    return null;
+  }
+
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+
+  if (hours < 24) {
+    return remainingMinutes ? `${hours}h ${remainingMinutes}min` : `${hours}h`;
+  }
+
+  const days = Math.floor(hours / 24);
+  const remainingHours = hours % 24;
+
+  if (remainingHours) {
+    const readableMinutes = remainingMinutes ? ` ${remainingMinutes}min` : "";
+    return `${days}d ${remainingHours}h${readableMinutes}`;
+  }
+
+  return `${days}d`;
+}
+
 export default function JourneyDetailPage() {
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -198,6 +265,7 @@ export default function JourneyDetailPage() {
   const { data: journey, isLoading } = useJourney(Number.isNaN(journeyId) ? undefined : journeyId);
   const deleteJourney = useDeleteJourney(journeyId);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const { data: template, isLoading: isTemplateLoading } = useJourneyTemplate(journey?.templateId);
 
   const metadataEntries = useMemo(
     () => Object.entries(journey?.metadata ?? {}),
@@ -205,14 +273,16 @@ export default function JourneyDetailPage() {
   );
 
   const timelineStages = useMemo(
-    () => (journey ? buildTimelineStages(journey, metadataEntries) : []),
-    [journey, metadataEntries],
+    () => (journey ? buildTimelineStages(journey, metadataEntries, template?.steps) : []),
+    [journey, metadataEntries, template?.steps],
   );
 
   const constellationNodes = useMemo(
     () => (journey ? buildConstellationNodes(journey) : []),
     [journey],
   );
+
+  const templateSteps = template?.steps ?? [];
 
   if (isLoading) {
     return <div className="journey-detail__loading">Carregando jornada...</div>;
@@ -345,6 +415,92 @@ export default function JourneyDetailPage() {
               </li>
             ))}
           </ol>
+        </article>
+
+        <article className="journey-detail__card journey-detail__card--full">
+          <div className="journey-detail__card-heading">
+            <h2>Roteiro de execução</h2>
+            {templateSteps.length ? (
+              <span className="journey-detail__step-count" aria-label={`${templateSteps.length} passos`}>
+                {templateSteps.length} passo{templateSteps.length > 1 ? "s" : ""}
+              </span>
+            ) : null}
+          </div>
+          <p className="journey-detail__card-intro">
+            Confira os pontos de contato planejados no template e alinhe sua operação com o que acontece na prática.
+          </p>
+          {isTemplateLoading ? (
+            <div className="journey-detail__loading journey-detail__loading--inline" role="status">
+              Carregando passos do template...
+            </div>
+          ) : templateSteps.length ? (
+            <ol className="journey-detail__steps">
+              {templateSteps.map((step, index) => {
+                const descriptor = stimulusDescriptors[step.stimulusType];
+                const delayLabel = formatDelay(step.delayMinutes);
+                const metadata = Object.entries(step.metadata ?? {});
+
+                return (
+                  <li key={step.id ?? `step-${index}`} className="journey-detail__step">
+                    <div className="journey-detail__step-index" aria-hidden="true">
+                      <span className="journey-detail__step-number">{index + 1}</span>
+                      <span className="journey-detail__step-phase">{phaseLabels[step.phase]}</span>
+                    </div>
+                    <div className="journey-detail__step-content">
+                      <div className="journey-detail__step-header">
+                        <h3>{step.name?.trim() || `Passo ${index + 1}`}</h3>
+                        {descriptor ? (
+                          <span
+                            className={`journey-detail__step-pill journey-detail__step-pill--${descriptor.accent}`}
+                          >
+                            <span aria-hidden="true">{descriptor.icon}</span> {descriptor.label}
+                          </span>
+                        ) : null}
+                      </div>
+                      {step.description ? (
+                        <p className="journey-detail__step-description">{step.description}</p>
+                      ) : (
+                        <p className="journey-detail__step-description journey-detail__step-description--muted">
+                          Acrescente uma descrição para orientar a execução deste momento.
+                        </p>
+                      )}
+                      <div className="journey-detail__step-meta" aria-label="Detalhes do passo">
+                        {delayLabel ? (
+                          <span>
+                            <strong>Espera:</strong> {delayLabel}
+                          </span>
+                        ) : null}
+                        {step.entryCondition ? (
+                          <span>
+                            <strong>Entrada:</strong> {step.entryCondition}
+                          </span>
+                        ) : null}
+                        {step.exitCondition ? (
+                          <span>
+                            <strong>Saída:</strong> {step.exitCondition}
+                          </span>
+                        ) : null}
+                      </div>
+                      {metadata.length ? (
+                        <div className="journey-detail__step-annotations" aria-label="Metadados do passo">
+                          {metadata.map(([key, value]) => (
+                            <span key={key} className="journey-detail__step-chip">
+                              <strong>{key}:</strong> {value || "—"}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <p className="journey-detail__empty">
+              Este template ainda não possui passos cadastrados. Acesse o blueprint para criar os pontos de contato e
+              automatizar a jornada.
+            </p>
+          )}
         </article>
 
         <article className="journey-detail__card journey-detail__card--full">

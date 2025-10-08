@@ -5,6 +5,32 @@ export type JourneyStatus =
   | "COMPLETED"
   | "ARCHIVED";
 
+export type JourneyPhase =
+  | "ATTENTION"
+  | "INTEREST"
+  | "DESIRE"
+  | "ACTION";
+
+export type JourneyStimulusType = "AD" | "EMAIL" | "WHATSAPP" | "LANDING_PAGE";
+
+export interface JourneyStep {
+  id: number;
+  templateId: number;
+  position: number;
+  name?: string | null;
+  description?: string | null;
+  phase: JourneyPhase;
+  stimulusType: JourneyStimulusType;
+  creativeId?: number | null;
+  angleId?: number | null;
+  visualProofId?: number | null;
+  emotionalTriggerId?: number | null;
+  entryCondition?: string | null;
+  exitCondition?: string | null;
+  delayMinutes?: number | null;
+  metadata: Record<string, string>;
+}
+
 export interface Journey {
   id: number;
   templateId: number;
@@ -47,6 +73,20 @@ export interface JourneyTemplateSummary {
   preferredChannel?: string | null;
   tags: string[];
   metadata: Record<string, string>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface JourneyTemplate {
+  id: number;
+  name: string;
+  description?: string | null;
+  objective?: string | null;
+  phases: JourneyPhase[];
+  preferredChannel?: string | null;
+  tags: string[];
+  metadata: Record<string, string>;
+  steps: JourneyStep[];
   createdAt: string;
   updatedAt: string;
 }

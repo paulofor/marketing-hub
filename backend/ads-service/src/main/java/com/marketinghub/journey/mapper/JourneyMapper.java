@@ -26,10 +26,10 @@ public class JourneyMapper {
                 template.getId(),
                 template.getName(),
                 template.getObjective(),
-                List.copyOf(template.getPhases()),
+                copyPhases(template.getPhases()),
                 template.getPreferredChannel(),
-                new LinkedHashSet<>(template.getTags()),
-                new LinkedHashMap<>(template.getMetadata()),
+                copyTags(template.getTags()),
+                copyMetadata(template.getMetadata()),
                 template.getCreatedAt(),
                 template.getUpdatedAt()
         );
@@ -45,10 +45,10 @@ public class JourneyMapper {
                 template.getName(),
                 template.getDescription(),
                 template.getObjective(),
-                List.copyOf(template.getPhases()),
+                copyPhases(template.getPhases()),
                 template.getPreferredChannel(),
-                new LinkedHashSet<>(template.getTags()),
-                new LinkedHashMap<>(template.getMetadata()),
+                copyTags(template.getTags()),
+                copyMetadata(template.getMetadata()),
                 steps,
                 template.getCreatedAt(),
                 template.getUpdatedAt()
@@ -71,8 +71,39 @@ public class JourneyMapper {
                 step.getEntryCondition(),
                 step.getExitCondition(),
                 step.getDelayMinutes(),
-                new LinkedHashMap<>(step.getMetadata())
+                copyMetadata(step.getMetadata())
         );
+    }
+
+    private List<JourneyPhase> copyPhases(List<JourneyPhase> phases) {
+        if (phases == null || phases.isEmpty()) {
+            return List.of();
+        }
+        return phases.stream()
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private Set<String> copyTags(Set<String> tags) {
+        if (tags == null || tags.isEmpty()) {
+            return Set.of();
+        }
+        return tags.stream()
+                .filter(Objects::nonNull)
+                .collect(LinkedHashSet::new, LinkedHashSet::add, LinkedHashSet::addAll);
+    }
+
+    private Map<String, String> copyMetadata(Map<String, String> metadata) {
+        if (metadata == null || metadata.isEmpty()) {
+            return new LinkedHashMap<>();
+        }
+        LinkedHashMap<String, String> sanitized = new LinkedHashMap<>();
+        metadata.forEach((key, value) -> {
+            if (key != null) {
+                sanitized.put(key, value);
+            }
+        });
+        return new LinkedHashMap<>(sanitized);
     }
 
     public JourneyResponse toJourneyResponse(Journey journey) {

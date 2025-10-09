@@ -107,8 +107,17 @@ public class JourneyMapper {
         if (steps == null || steps.isEmpty()) {
             return List.of();
         }
-        return steps.stream()
-                .filter(Objects::nonNull)
+
+        LinkedHashMap<Object, JourneyStep> uniqueSteps = new LinkedHashMap<>();
+        for (JourneyStep step : steps) {
+            if (step == null) {
+                continue;
+            }
+            Object key = step.getId() != null ? step.getId() : System.identityHashCode(step);
+            uniqueSteps.putIfAbsent(key, step);
+        }
+
+        return uniqueSteps.values().stream()
                 .sorted(Comparator.comparing(JourneyStep::getPosition, Comparator.nullsLast(Integer::compareTo)))
                 .map(this::toStepResponse)
                 .toList();

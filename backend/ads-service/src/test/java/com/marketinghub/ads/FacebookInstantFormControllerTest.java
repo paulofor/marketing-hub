@@ -6,6 +6,7 @@ import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.experiment.repository.ExperimentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +51,9 @@ class FacebookInstantFormControllerTest {
     FacebookAccountRepository accountRepository;
 
     @Autowired
+    ExperimentRepository experimentRepository;
+
+    @Autowired
     HypothesisRepository hypothesisRepository;
 
     @Autowired
@@ -61,6 +65,7 @@ class FacebookInstantFormControllerTest {
     @BeforeEach
     void setup() {
         instantFormRepository.deleteAll();
+        experimentRepository.deleteAll();
         pageRepository.deleteAll();
         accountRepository.deleteAll();
         hypothesisRepository.deleteAll();

@@ -1,5 +1,7 @@
 package com.marketinghub.experiment.service;
 
+import com.marketinghub.ads.FacebookInstantForm;
+import com.marketinghub.ads.FacebookInstantFormRepository;
 import com.marketinghub.ads.FacebookPage;
 import com.marketinghub.ads.FacebookPageRepository;
 import com.marketinghub.ads.InstagramAccount;
@@ -32,6 +34,7 @@ public class ExperimentService {
     private final SalesFunnelRepository salesFunnelRepository;
     private final FacebookPageRepository facebookPageRepository;
     private final InstagramAccountRepository instagramAccountRepository;
+    private final FacebookInstantFormRepository facebookInstantFormRepository;
 
     public ExperimentService(ExperimentRepository repository, MarketNicheRepository nicheRepository,
                              com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository,
@@ -39,7 +42,8 @@ public class ExperimentService {
                              EntityManager entityManager,
                              SalesFunnelRepository salesFunnelRepository,
                              FacebookPageRepository facebookPageRepository,
-                             InstagramAccountRepository instagramAccountRepository) {
+                             InstagramAccountRepository instagramAccountRepository,
+                             FacebookInstantFormRepository facebookInstantFormRepository) {
         this.repository = repository;
         this.nicheRepository = nicheRepository;
         this.hypothesisRepository = hypothesisRepository;
@@ -48,6 +52,7 @@ public class ExperimentService {
         this.salesFunnelRepository = salesFunnelRepository;
         this.facebookPageRepository = facebookPageRepository;
         this.instagramAccountRepository = instagramAccountRepository;
+        this.facebookInstantFormRepository = facebookInstantFormRepository;
     }
 
     /**
@@ -89,6 +94,18 @@ public class ExperimentService {
             throw new EntityNotFoundException("InstagramAccount not found: " + instagramAccountId);
         }
         return entityManager.getReference(InstagramAccount.class, instagramAccountId);
+    }
+
+    private FacebookInstantForm attachInstantForm(Long instantFormId, java.util.UUID hypothesisId) {
+        if (instantFormId == null) {
+            return null;
+        }
+        FacebookInstantForm form = facebookInstantFormRepository.findById(instantFormId)
+                .orElseThrow(() -> new EntityNotFoundException("FacebookInstantForm not found: " + instantFormId));
+        if (hypothesisId != null && form.getHypothesis() != null && !form.getHypothesis().getId().equals(hypothesisId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "instant form does not belong to hypothesis");
+        }
+        return entityManager.getReference(FacebookInstantForm.class, instantFormId);
     }
 
     private SalesFunnel resolveSalesFunnel(String name) {
@@ -155,6 +172,7 @@ public class ExperimentService {
                 .platform(ExperimentPlatform.FACEBOOK)
                 .creativesToGenerate(request.getCreativesToGenerate())
                 .facebookPage(attachFacebookPage(request.getFacebookPageId()))
+                .facebookInstantForm(attachInstantForm(request.getFacebookInstantFormId(), request.getHypothesisId()))
                 .instagramAccount(attachInstagramAccount(request.getInstagramAccountId()))
                 .salesFunnel(salesFunnel)
                 .build();
@@ -212,6 +230,7 @@ public class ExperimentService {
                 .creativesToGenerate(original.getCreativesToGenerate())
                 .facebookPage(original.getFacebookPage())
                 .instagramAccount(original.getInstagramAccount())
+                .facebookInstantForm(original.getFacebookInstantForm())
                 .salesFunnel(original.getSalesFunnel())
                 .build();
         return repository.save(copy);
@@ -294,6 +313,9 @@ public class ExperimentService {
         }
         if (request.isFacebookPageIdPresent()) {
             exp.setFacebookPage(attachFacebookPage(request.getFacebookPageId()));
+        }
+        if (request.isFacebookInstantFormIdPresent()) {
+            exp.setFacebookInstantForm(attachInstantForm(request.getFacebookInstantFormId(), exp.getHypothesisRef().getId()));
         }
         if (request.isInstagramAccountIdPresent()) {
             exp.setInstagramAccount(attachInstagramAccount(request.getInstagramAccountId()));

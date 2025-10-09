@@ -162,6 +162,7 @@ triggering ad set generation.
 - `name` VARCHAR(255) NOT NULL
 - `hypothesis` VARCHAR(255)
 - `facebook_page_id` BIGINT
+- `facebook_instant_form_id` BIGINT
 - `instagram_account_id` BIGINT
 - `kpi_target_cpl` DECIMAL(10,2) DEFAULT 45.00
 - `stop_loss_cpl` DECIMAL(10,2) DEFAULT 90.00
@@ -189,6 +190,10 @@ will be executed and measured during the test cycle.
   Facebook Page to be used when publishing campaigns for the experiment. When
   defined, the worker can override the account default and push ads using the
   selected page metadata.
+- `facebook_instant_form_id` → FK `fb_instant_form.id`: when present, the
+  experiment reuses a Meta Instant Form that was planned for the same
+  hypothesis, ensuring multiple campaigns can capture leads with the same
+  optimized flow.
 
 ### fb_page
 
@@ -201,6 +206,32 @@ Stores the Facebook Pages that were authorized for each Ads account. The
 combination `(account_id, page_id)` is unique, ensuring the same page is not
 registered twice for the same account. Experiments reference this table through
 `experiment.facebook_page_id` when a campaign must run on a specific page.
+
+### fb_instant_form
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `hypothesis_id` BINARY(16) NOT NULL → FK `hypothesis.id`
+- `page_id` BIGINT NOT NULL → FK `fb_page.id`
+- `form_id` VARCHAR(128) NOT NULL UNIQUE
+- `name` VARCHAR(255) NOT NULL
+- `status` VARCHAR(50)
+- `locale` VARCHAR(12)
+- `leads_count` BIGINT
+- `created_time` DATETIME
+- `updated_time` DATETIME
+- `follow_up_action_url` VARCHAR(512)
+- `privacy_policy_url` VARCHAR(512)
+- `model` VARCHAR(128)
+- `prompt` LONGTEXT
+- `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+- `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+Captures the configuration of Meta Instant Forms (Lead Ads forms) planned for a
+hypothesis. Each record stores the metadata returned by the Facebook Marketing
+API, including locale, status and lead counts, and tracks the AI worker
+prompt/model responsible for the form generation. Experiments can reuse these
+forms through `experiment.facebook_instant_form_id` to keep capture journeys
+consistent across tests.
 
 ### creative
 

@@ -15,6 +15,25 @@ export interface InstagramAccountSummary {
   name: string;
 }
 
+export interface FacebookInstantFormSummary {
+  id: number;
+  hypothesisId: string;
+  facebookPageId: number;
+  facebookPageExternalId: string;
+  facebookPageName: string;
+  facebookFormId: string;
+  name: string;
+  status?: string | null;
+  locale?: string | null;
+  leadsCount?: number | null;
+  createdTime?: string | null;
+  updatedTime?: string | null;
+  followUpActionUrl?: string | null;
+  privacyPolicyUrl?: string | null;
+  model?: string | null;
+  prompt?: string | null;
+}
+
 export interface Experiment {
   id: string;
   nicheId: number;
@@ -23,6 +42,7 @@ export interface Experiment {
   hypothesis: string;
   pageId?: string | null;
   facebookPage?: FacebookPageSummary | null;
+  facebookInstantForm?: FacebookInstantFormSummary | null;
   instagramAccount?: InstagramAccountSummary | null;
   /**
    * KPI alvo em CPL. Mantém `kpiTarget` para compatibilidade com APIs

@@ -1,0 +1,102 @@
+package com.marketinghub.ads;
+
+import com.marketinghub.ads.dto.CreateFacebookInstantFormRequest;
+import com.marketinghub.ads.dto.FacebookInstantFormDto;
+import com.marketinghub.ads.mapper.FacebookInstantFormMapper;
+import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api")
+public class FacebookInstantFormController {
+    private final FacebookInstantFormRepository repository;
+    private final HypothesisRepository hypothesisRepository;
+    private final FacebookPageRepository pageRepository;
+    private final FacebookInstantFormMapper mapper;
+
+    public FacebookInstantFormController(FacebookInstantFormRepository repository,
+                                         HypothesisRepository hypothesisRepository,
+                                         FacebookPageRepository pageRepository,
+                                         FacebookInstantFormMapper mapper) {
+        this.repository = repository;
+        this.hypothesisRepository = hypothesisRepository;
+        this.pageRepository = pageRepository;
+        this.mapper = mapper;
+    }
+
+    @GetMapping("/hypotheses/{hypothesisId}/instant-forms")
+    public List<FacebookInstantFormDto> list(@PathVariable UUID hypothesisId) {
+        if (!hypothesisRepository.existsById(hypothesisId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "hypothesis not found");
+        }
+        return repository.findByHypothesisId(hypothesisId).stream()
+                .map(mapper::toDto)
+                .sorted((a, b) -> {
+                    Instant aInstant = a.updatedTime() != null ? a.updatedTime() : a.createdTime();
+                    Instant bInstant = b.updatedTime() != null ? b.updatedTime() : b.createdTime();
+                    if (aInstant != null && bInstant != null) {
+                        int cmp = bInstant.compareTo(aInstant);
+                        if (cmp != 0) {
+                            return cmp;
+                        }
+                    }
+                    if (a.createdAt() != null && b.createdAt() != null) {
+                        int cmp = b.createdAt().compareTo(a.createdAt());
+                        if (cmp != 0) {
+                            return cmp;
+                        }
+                    }
+                    return Long.compare(b.id(), a.id());
+                })
+                .toList();
+    }
+
+    @PostMapping("/hypotheses/{hypothesisId}/instant-forms")
+    @Transactional
+    public FacebookInstantFormDto create(@PathVariable UUID hypothesisId,
+                                         @RequestBody CreateFacebookInstantFormRequest request) {
+        var hypothesis = hypothesisRepository.findById(hypothesisId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "hypothesis not found"));
+        if (request.facebookPageId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "facebookPageId is required");
+        }
+        if (request.facebookFormId() == null || request.facebookFormId().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "facebookFormId is required");
+        }
+        if (request.name() == null || request.name().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name is required");
+        }
+        if (request.model() == null || request.model().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "model is required");
+        }
+        if (request.prompt() == null || request.prompt().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "prompt is required");
+        }
+        var page = pageRepository.findById(request.facebookPageId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "facebookPageId not found"));
+
+        var entity = FacebookInstantForm.builder()
+                .hypothesis(hypothesis)
+                .page(page)
+                .formId(request.facebookFormId())
+                .name(request.name())
+                .status(request.status())
+                .locale(request.locale())
+                .leadsCount(request.leadsCount())
+                .createdTime(request.createdTime())
+                .updatedTime(request.updatedTime())
+                .followUpActionUrl(request.followUpActionUrl())
+                .privacyPolicyUrl(request.privacyPolicyUrl())
+                .model(request.model())
+                .prompt(request.prompt())
+                .build();
+        return mapper.toDto(repository.save(entity));
+    }
+}

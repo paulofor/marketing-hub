@@ -4,6 +4,7 @@ import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import { useExperimentsByHypothesis } from "../../api/experiment/useExperimentsByHypothesis";
 import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
+import { useInstantFormsByHypothesis } from "../../api/hypothesis/useInstantFormsByHypothesis";
 import PageTitle from "../../components/PageTitle";
 import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
 import nicheIcon from "../../assets/icons/niche-icon.svg";
@@ -22,6 +23,8 @@ export default function HypothesisDetailPage() {
     hypothesisId,
   );
   const { data: audiences } = useAudiencesByNiche(nicheId);
+  const { data: instantForms, isLoading: isLoadingInstantForms } =
+    useInstantFormsByHypothesis(hypothesisId);
   const requestAudiences = useRequestAudiences(nicheNumericId);
   const { register, handleSubmit, reset } = useForm<{ quantity: number }>({
     defaultValues: { quantity: 1 },
@@ -39,6 +42,7 @@ export default function HypothesisDetailPage() {
   if (!data) return <p>Não encontrado</p>;
   const list = Array.isArray(experiments) ? experiments : [];
   const audienceList = Array.isArray(audiences) ? audiences : [];
+  const instantFormList = Array.isArray(instantForms) ? instantForms : [];
   const rows = [
     { label: "Promessa", value: data.promise },
     { label: "Problema", value: data.problem },
@@ -190,6 +194,114 @@ export default function HypothesisDetailPage() {
             <div className="mt-4">
               <h6>Data de criação</h6>
               <p>{new Date(data.createdAt).toLocaleString("pt-BR")}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="card mb-4">
+        <div className="card-header d-flex justify-content-between align-items-center">
+          <h5 className="mb-0">Instant Forms</h5>
+          {instantFormList.length > 0 && (
+            <span className="text-muted small">
+              {instantFormList.length} registro{instantFormList.length > 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+        <div className="card-body">
+          {isLoadingInstantForms ? (
+            <p>Carregando instant forms...</p>
+          ) : instantFormList.length === 0 ? (
+            <p className="text-muted">
+              Nenhum Instant Form vinculado a esta hipótese. Quando o worker IA gerar um formulário,
+              ele ficará disponível aqui para ser reutilizado em diferentes experimentos.
+            </p>
+          ) : (
+            <div className="table-responsive">
+              <table className="table align-middle">
+                <thead>
+                  <tr>
+                    <th>Formulário</th>
+                    <th>Página</th>
+                    <th>Status</th>
+                    <th>Leads</th>
+                    <th>Datas</th>
+                    <th>Links</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {instantFormList.map((form) => (
+                    <tr key={form.id}>
+                      <td style={{ minWidth: 220 }}>
+                        <div className="fw-semibold">{form.name}</div>
+                        <div className="text-muted small">ID Meta: {form.facebookFormId}</div>
+                        <div className="text-muted small">
+                          Modelo: {form.model ? form.model : "—"}
+                        </div>
+                        {form.prompt && (
+                          <details className="small mt-1">
+                            <summary>Ver prompt</summary>
+                            <pre className="mb-0 text-break" style={{ whiteSpace: "pre-wrap" }}>
+                              {form.prompt}
+                            </pre>
+                          </details>
+                        )}
+                      </td>
+                      <td style={{ minWidth: 180 }}>
+                        <div>{form.facebookPageName}</div>
+                        <div className="text-muted small">{form.facebookPageExternalId}</div>
+                      </td>
+                      <td style={{ minWidth: 140 }}>
+                        <div>{form.status ?? "—"}</div>
+                        <div className="text-muted small">
+                          {form.locale ? `Idioma: ${form.locale}` : "Idioma não informado"}
+                        </div>
+                      </td>
+                      <td>{form.leadsCount ?? "—"}</td>
+                      <td style={{ minWidth: 200 }}>
+                        <div className="text-muted small">Criado</div>
+                        <div>
+                          {form.createdTime
+                            ? new Date(form.createdTime).toLocaleString("pt-BR")
+                            : "—"}
+                        </div>
+                        <div className="text-muted small mt-2">Atualizado</div>
+                        <div>
+                          {form.updatedTime
+                            ? new Date(form.updatedTime).toLocaleString("pt-BR")
+                            : "—"}
+                        </div>
+                      </td>
+                      <td style={{ minWidth: 200 }}>
+                        <div className="d-flex flex-column gap-1">
+                          {form.followUpActionUrl ? (
+                            <a
+                              href={form.followUpActionUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Página de agradecimento
+                            </a>
+                          ) : (
+                            <span className="text-muted small">Sem link de agradecimento</span>
+                          )}
+                          {form.privacyPolicyUrl ? (
+                            <a
+                              href={form.privacyPolicyUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Política de privacidade
+                            </a>
+                          ) : (
+                            <span className="text-muted small">Sem política informada</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

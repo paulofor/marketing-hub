@@ -2,6 +2,7 @@ package com.marketinghub.experiment;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.marketinghub.ads.FacebookInstantForm;
 import com.marketinghub.ads.FacebookPage;
 import com.marketinghub.niche.MarketNiche;
 import org.hibernate.annotations.CreationTimestamp;
@@ -39,6 +40,10 @@ public class Experiment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "facebook_page_id")
     private FacebookPage facebookPage;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "facebook_instant_form_id")
+    private FacebookInstantForm facebookInstantForm;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "instagram_account_id")

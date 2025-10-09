@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.marketinghub.ads.dto.FacebookInstantFormDto;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
 import java.math.BigDecimal;
@@ -19,6 +20,7 @@ public class ExperimentDto {
     private String name;
     private String hypothesis;
     private FacebookPageDto facebookPage;
+    private FacebookInstantFormDto facebookInstantForm;
     private InstagramAccountDto instagramAccount;
     @JsonProperty("kpiTarget")
     private BigDecimal kpiTargetCpl;

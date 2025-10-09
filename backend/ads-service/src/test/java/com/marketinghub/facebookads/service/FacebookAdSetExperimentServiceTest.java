@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.marketinghub.audience.Audience;
 import com.marketinghub.audience.repository.AudienceRepository;
+import com.marketinghub.ads.mapper.FacebookInstantFormMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
@@ -38,6 +39,7 @@ class FacebookAdSetExperimentServiceTest {
     @BeforeEach
     void setUp() {
         ExperimentMapper experimentMapper = Mappers.getMapper(ExperimentMapper.class);
+        injectFacebookInstantFormMapper(experimentMapper);
         MarketNicheMapper marketNicheMapper = Mappers.getMapper(MarketNicheMapper.class);
         HypothesisMapper hypothesisMapper = Mappers.getMapper(HypothesisMapper.class);
         com.marketinghub.audience.mapper.AudienceMapper audienceMapper =
@@ -49,6 +51,28 @@ class FacebookAdSetExperimentServiceTest {
                 marketNicheMapper,
                 hypothesisMapper,
                 audienceMapper);
+    }
+
+    private void injectFacebookInstantFormMapper(ExperimentMapper experimentMapper) {
+        FacebookInstantFormMapper formMapper = Mappers.getMapper(FacebookInstantFormMapper.class);
+        try {
+            experimentMapper
+                    .getClass()
+                    .getMethod("setFacebookInstantFormMapper", FacebookInstantFormMapper.class)
+                    .invoke(experimentMapper, formMapper);
+            return;
+        } catch (NoSuchMethodException ignored) {
+            // fall back to field injection below
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Não foi possível configurar o FacebookInstantFormMapper no ExperimentMapper", e);
+        }
+        try {
+            var field = experimentMapper.getClass().getDeclaredField("facebookInstantFormMapper");
+            field.setAccessible(true);
+            field.set(experimentMapper, formMapper);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Não foi possível configurar o FacebookInstantFormMapper no ExperimentMapper", e);
+        }
     }
 
     @Test

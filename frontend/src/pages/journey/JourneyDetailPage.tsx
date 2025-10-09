@@ -418,6 +418,85 @@ export default function JourneyDetailPage() {
         </article>
 
         <article className="journey-detail__card journey-detail__card--full">
+          <h2>Fluxograma da jornada</h2>
+          <p className="journey-detail__card-intro">
+            Explore o encadeamento dos passos e entenda como cada estímulo conduz o público até o próximo momento da narrativa.
+          </p>
+          {isTemplateLoading ? (
+            <div className="journey-detail__loading journey-detail__loading--inline" role="status">
+              Carregando fluxograma...
+            </div>
+          ) : templateSteps.length ? (
+            <div className="journey-detail__flowchart" role="list">
+              {templateSteps.map((step, index) => {
+                const descriptor = stimulusDescriptors[step.stimulusType];
+                const delayLabel = formatDelay(step.delayMinutes);
+                const hasMeta = Boolean(delayLabel || step.entryCondition || step.exitCondition);
+
+                return (
+                  <div key={step.id} className="journey-detail__flowchart-segment" role="listitem">
+                    <div
+                      className={`journey-detail__flowchart-node journey-detail__flowchart-node--${step.phase.toLowerCase()}`}
+                    >
+                      <div className="journey-detail__flowchart-header">
+                        <span
+                          className={`journey-detail__flowchart-phase journey-detail__flowchart-phase--${step.phase.toLowerCase()}`}
+                        >
+                          {phaseLabels[step.phase]}
+                        </span>
+                        <span className="journey-detail__flowchart-step-index" aria-label={`Passo ${index + 1}`}>
+                          #{index + 1}
+                        </span>
+                      </div>
+                      <h3 className="journey-detail__flowchart-title">{step.name?.trim() || `Passo ${index + 1}`}</h3>
+                      <p className="journey-detail__flowchart-channel">
+                        <span aria-hidden="true">{descriptor?.icon}</span>
+                        {descriptor?.label || "Ponto de contato"}
+                      </p>
+                      {step.description ? (
+                        <p className="journey-detail__flowchart-description">{step.description}</p>
+                      ) : null}
+                      {hasMeta ? (
+                        <dl className="journey-detail__flowchart-meta">
+                          {delayLabel ? (
+                            <div>
+                              <dt>Espera</dt>
+                              <dd>{delayLabel}</dd>
+                            </div>
+                          ) : null}
+                          {step.entryCondition ? (
+                            <div>
+                              <dt>Entrada</dt>
+                              <dd>{step.entryCondition}</dd>
+                            </div>
+                          ) : null}
+                          {step.exitCondition ? (
+                            <div>
+                              <dt>Saída</dt>
+                              <dd>{step.exitCondition}</dd>
+                            </div>
+                          ) : null}
+                        </dl>
+                      ) : null}
+                    </div>
+                    {index < templateSteps.length - 1 ? (
+                      <div className="journey-detail__flowchart-connector" aria-hidden="true">
+                        <span className="journey-detail__flowchart-line" />
+                        <span className="journey-detail__flowchart-arrow">⬇️</span>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="journey-detail__empty">
+              Estruture o template com passos para visualizar o encadeamento completo desta jornada.
+            </p>
+          )}
+        </article>
+
+        <article className="journey-detail__card journey-detail__card--full">
           <div className="journey-detail__card-heading">
             <h2>Roteiro de execução</h2>
             {templateSteps.length ? (

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { useExperiments } from "../../api/experiment/useExperiments";
@@ -82,6 +82,7 @@ export default function JourneyForm({
     formState: { errors },
     control,
     watch,
+    setValue,
   } = useForm<JourneyFormValues>({
     defaultValues: {
       templateId: initialJourney?.templateId
@@ -116,6 +117,36 @@ export default function JourneyForm({
   }, [append, fields.length]);
 
   const currentStatus = watch("status");
+  const selectedNicheId = watch("marketNicheId");
+  const selectedExperimentId = watch("experimentId");
+
+  const filteredExperiments = useMemo(() => {
+    if (!experiments) {
+      return [];
+    }
+
+    if (!selectedNicheId) {
+      return experiments;
+    }
+
+    return experiments.filter(
+      (experiment) => String(experiment.nicheId) === selectedNicheId,
+    );
+  }, [experiments, selectedNicheId]);
+
+  useEffect(() => {
+    if (!selectedExperimentId) {
+      return;
+    }
+
+    const experimentExistsInNiche = filteredExperiments.some(
+      (experiment) => String(experiment.id) === selectedExperimentId,
+    );
+
+    if (!experimentExistsInNiche) {
+      setValue("experimentId", "");
+    }
+  }, [filteredExperiments, selectedExperimentId, setValue]);
 
   const submitHandler = handleSubmit((values) => {
     const payload: JourneyRequestPayload = {
@@ -251,7 +282,7 @@ export default function JourneyForm({
             <label className="journey-form__label">Experimento associado</label>
             <select className="form-select" {...register("experimentId")}>
               <option value="">Nenhum</option>
-              {experiments?.map((experiment) => (
+              {filteredExperiments.map((experiment) => (
                 <option key={experiment.id} value={experiment.id}>
                   {experiment.name}
                 </option>

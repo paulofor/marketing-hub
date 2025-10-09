@@ -33,20 +33,21 @@ A instância "Lifecycle Pós-Clique Lead Ads 14d - Exemplo" conecta-se ao segmen
 
 ```mermaid
 gantt
-    dateFormat  HH:mm
+    dateFormat  YYYY-MM-DD HH:mm
+    axisFormat  %d/%m %H:%M
     title Timeline simplificada (referência relativa ao clique inicial)
     section Atenção
-    Clique Lead Ads            :done,    a1, 00:00, 00:05
+    Clique Lead Ads            :done,    a1, 2024-01-01 00:00, 2024-01-01 00:05
     section Interesse
-    Captura & Consentimento    :done,    a2, 00:05, 00:30
-    Boas-vindas D0             :active,  a3, 00:30, 04:00
-    Conteúdo Educativo D1      :        a4, 24:00, 08:00
+    Captura & Consentimento    :done,    a2, 2024-01-01 00:05, 2024-01-01 00:30
+    Boas-vindas D0             :active,  a3, 2024-01-01 00:30, 2024-01-01 04:00
+    Conteúdo Educativo D1      :        a4, 2024-01-02 00:30, 2024-01-02 08:30
     section Desejo
-    Nudge comportamental D3    :        a5, 72:00, 01:00
-    Oferta leve D5             :        a6, 120:00, 02:00
-    WhatsApp utilitário D5     :        a7, 120:30, 01:00
+    Nudge comportamental D3    :        a5, 2024-01-04 00:30, 2024-01-04 01:30
+    Oferta leve D5             :        a6, 2024-01-06 00:30, 2024-01-06 02:30
+    WhatsApp utilitário D5     :        a7, 2024-01-06 00:45, 2024-01-06 01:45
     section Ação
-    Retargeting Meta Ads D7-D14:        a8, 168:00, 168:00
+    Retargeting Meta Ads D7-D14:        a8, 2024-01-08 00:30, 2024-01-15 00:30
 ```
 
 > **Como ler:** o gráfico considera o clique como tempo zero e mostra a sobreposição aproximada dos estímulos. A fase de retargeting estende-se até o limite de 14 dias, com pausa automática após a conversão ou término da janela.

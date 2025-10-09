@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import { useJourneyTemplates } from "../../api/journey/useJourneyTemplates";
 import type {
@@ -71,12 +72,15 @@ export default function JourneyTemplatesPage() {
   return (
     <div className="journey-templates">
       <header className="journey-templates__hero">
-        <div>
+        <div className="journey-templates__hero-content">
           <PageTitle>Templates de jornada</PageTitle>
           <p>
             Explore modelos prontos de cadência e estímulos para acelerar a criação de novas jornadas, mantendo consistência na experiência.
           </p>
         </div>
+        <Link className="btn btn-light" to="/journey-templates/new">
+          Criar template
+        </Link>
       </header>
 
       {isLoading ? (

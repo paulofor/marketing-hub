@@ -51,6 +51,7 @@ import JourneyDetailPage from "./pages/journey/JourneyDetailPage";
 import NewJourneyPage from "./pages/journey/NewJourneyPage";
 import EditJourneyPage from "./pages/journey/EditJourneyPage";
 import JourneyTemplatesPage from "./pages/journey/JourneyTemplatesPage";
+import NewJourneyTemplatePage from "./pages/journey/NewJourneyTemplatePage";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import MainNavigation from "./components/MainNavigation";
@@ -183,6 +184,10 @@ export default function App() {
               <Route
                 path="/journey-templates"
                 element={<JourneyTemplatesPage />}
+              />
+              <Route
+                path="/journey-templates/new"
+                element={<NewJourneyTemplatePage />}
               />
               <Route path="*" element={<div>Início</div>} />
             </Routes>

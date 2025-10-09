@@ -65,6 +65,32 @@ export interface JourneyRequestPayload {
 
 export type JourneyUpdatePayload = Partial<JourneyRequestPayload>;
 
+export interface JourneyTemplateRequestPayload {
+  name: string;
+  description?: string;
+  objective?: string;
+  phases?: JourneyPhase[];
+  preferredChannel?: string;
+  tags?: string[];
+  metadata?: Record<string, string>;
+}
+
+export interface JourneyStepRequestPayload {
+  name?: string;
+  description?: string;
+  phase: JourneyPhase;
+  stimulusType: JourneyStimulusType;
+  position?: number;
+  creativeId?: number;
+  angleId?: number;
+  visualProofId?: number;
+  emotionalTriggerId?: number;
+  entryCondition?: string;
+  exitCondition?: string;
+  delayMinutes?: number;
+  metadata?: Record<string, string>;
+}
+
 export interface JourneyTemplateSummary {
   id: number;
   name: string;

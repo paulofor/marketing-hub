@@ -77,19 +77,19 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Testes",
     items: [
       { to: "/niches", label: "Nichos", icon: nicheIcon },
-      {
-        to: "/experiments",
-        label: "Experimentos",
-        icon: experimentIcon,
-        children: [
           {
-            to: "/facebook-campaigns",
-            label: "Para Campanha",
-            icon: Flag,
-            end: true,
+            to: "/experiments",
+            label: "Experimentos",
+            icon: experimentIcon,
+            children: [
+              {
+                to: "/facebook-campaigns",
+                label: "Experimentos para campanha",
+                icon: Flag,
+                end: true,
+              },
+            ],
           },
-        ],
-      },
       { to: "/hypotheses", label: "Hipóteses", icon: hypothesisIcon },
     ],
   },
@@ -143,6 +143,11 @@ const NAV_SECTIONS: NavSection[] = [
             to: "/journey-templates",
             label: "Templates",
             icon: Layers,
+          },
+          {
+            to: "/journey-templates/new",
+            label: "Novo template",
+            icon: PlusCircle,
           },
         ],
       },

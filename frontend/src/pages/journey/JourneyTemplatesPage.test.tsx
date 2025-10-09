@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import JourneyTemplatesPage from "./JourneyTemplatesPage";
+import { MemoryRouter } from "react-router-dom";
 
 vi.mock("../../api/journey/useJourneyTemplates", () => ({
   useJourneyTemplates: () => ({
@@ -48,7 +49,11 @@ vi.mock("../../api/journey/useJourneyTemplates", () => ({
 
 describe("JourneyTemplatesPage", () => {
   it("exibe templates mesmo quando timestamps não estão disponíveis", () => {
-    render(<JourneyTemplatesPage />);
+    render(
+      <MemoryRouter>
+        <JourneyTemplatesPage />
+      </MemoryRouter>,
+    );
 
     expect(
       screen.getByRole("heading", {
@@ -62,5 +67,8 @@ describe("JourneyTemplatesPage", () => {
     expect(screen.getByText(/Atualizado em\s+—/)).toBeInTheDocument();
     expect(screen.getByText("Primeiro contato")).toBeInTheDocument();
     expect(screen.getByText("Atenção • Email")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Criar template" }),
+    ).toHaveAttribute("href", "/journey-templates/new");
   });
 });

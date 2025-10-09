@@ -1,0 +1,124 @@
+.journey-template-form__phases {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.journey-template-form__phase {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.journey-template-form__phase input {
+  margin-top: 0.35rem;
+}
+
+.journey-template-form__phase strong {
+  display: block;
+  color: #0f172a;
+}
+
+.journey-template-form__phase span {
+  display: block;
+  color: #475569;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.journey-template-form__phase--checked {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.journey-template-form__tags {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.journey-template-form__tag-input {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.journey-template-form__tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.journey-template-form__tag-list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #e0f2fe;
+  color: #0369a1;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+}
+
+.journey-template-form__tag-list button {
+  padding: 0;
+  color: #0369a1;
+  text-decoration: underline;
+}
+
+.journey-template-form__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.journey-template-form__step {
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 1.5rem;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.journey-template-form__step-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.journey-template-form__step-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.journey-template-form__step-grid {
+  display: grid;
+  gap: 1rem 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.journey-template-form__step-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .journey-template-form__phase {
+    flex-direction: column;
+  }
+
+  .journey-template-form__step {
+    padding: 1.25rem;
+  }
+}

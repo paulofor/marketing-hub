@@ -167,3 +167,6 @@ databaseChangeLog:
   - include:
       file: V2026_09_05__deduplicate_journey_seed.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2026_09_15__create_fb_instant_form.sql
+      relativeToChangelogFile: true

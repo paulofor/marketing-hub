@@ -14,6 +14,7 @@ export interface UpdateExperiment {
   creativesToGenerate?: number;
   salesFunnelName?: string | null;
   facebookPageId?: number | null;
+  facebookInstantFormId?: number | null;
   instagramAccountId?: number | null;
 }
 

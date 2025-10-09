@@ -1,9 +1,10 @@
 package com.marketinghub.experiment.mapper;
 
-import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.dto.ExperimentDto;
 import com.marketinghub.ads.FacebookPage;
 import com.marketinghub.ads.InstagramAccount;
+import com.marketinghub.ads.mapper.FacebookInstantFormMapper;
+import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.dto.ExperimentDto;
 import com.marketinghub.experiment.dto.FacebookPageDto;
 import com.marketinghub.experiment.dto.InstagramAccountDto;
 import org.mapstruct.Mapper;
@@ -11,7 +12,7 @@ import org.mapstruct.Mapper;
 /**
  * MapStruct mapper for Experiment.
  */
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = FacebookInstantFormMapper.class)
 public interface ExperimentMapper {
     @org.mapstruct.Mapping(target = "nicheId", source = "niche.id")
     @org.mapstruct.Mapping(target = "hypothesisId", source = "hypothesisRef.id")

@@ -79,6 +79,7 @@ export default function ExperimentDetailPage() {
   const hasConfiguredFacebookPage = facebookConfig?.hasConfiguredPages ?? false;
   const experimentPage = data.facebookPage;
   const hasExperimentPage = Boolean(experimentPage?.pageId);
+  const experimentInstantForm = data.facebookInstantForm;
   const instagramAccount = data.instagramAccount;
   const hasInstagramAccount = Boolean(instagramAccount);
   const readinessChecks = [
@@ -188,6 +189,51 @@ export default function ExperimentDetailPage() {
       value: experimentPage
         ? `${experimentPage.name} (${experimentPage.pageId})`
         : "—",
+    },
+    {
+      label: "Instant Form",
+      value: experimentInstantForm ? (
+        <div>
+          <div>{experimentInstantForm.name}</div>
+          <div className="text-muted small">
+            ID Meta: {experimentInstantForm.facebookFormId}
+          </div>
+          {experimentInstantForm.status && (
+            <div className="text-muted small">
+              Status: {experimentInstantForm.status}
+            </div>
+          )}
+          {experimentInstantForm.locale && (
+            <div className="text-muted small">
+              Idioma: {experimentInstantForm.locale}
+            </div>
+          )}
+          <div className="d-flex flex-column gap-1 mt-1">
+            {experimentInstantForm.followUpActionUrl ? (
+              <a
+                href={experimentInstantForm.followUpActionUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="small"
+              >
+                Página de agradecimento
+              </a>
+            ) : null}
+            {experimentInstantForm.privacyPolicyUrl ? (
+              <a
+                href={experimentInstantForm.privacyPolicyUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="small"
+              >
+                Política de privacidade
+              </a>
+            ) : null}
+          </div>
+        </div>
+      ) : (
+        "—"
+      ),
     },
     {
       label: "Conta do Instagram",

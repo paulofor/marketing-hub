@@ -1068,7 +1068,7 @@ components:
       description: Fases do modelo AIDA utilizadas no template.
     JourneyStimulusType:
       type: string
-      enum: [AD, EMAIL, WHATSAPP, LANDING_PAGE]
+      enum: [AD, EMAIL, WHATSAPP, LANDING_PAGE, INSTANT_FORM]
     JourneyStatus:
       type: string
       enum: [DRAFT, ACTIVE, PAUSED, COMPLETED, ARCHIVED]

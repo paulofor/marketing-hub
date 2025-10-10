@@ -52,6 +52,7 @@ const stimulusDescriptors: Record<JourneyStimulusType, { label: string; accent: 
   EMAIL: { label: "Email marketing", accent: "email", icon: "✉️" },
   WHATSAPP: { label: "WhatsApp", accent: "whatsapp", icon: "💬" },
   LANDING_PAGE: { label: "Landing page", accent: "landing", icon: "🧭" },
+  INSTANT_FORM: { label: "Instant form", accent: "instant-form", icon: "📝" },
 };
 
 const statusLabels: Record<JourneyStatus, string> = {

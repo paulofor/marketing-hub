@@ -11,7 +11,12 @@ export type JourneyPhase =
   | "DESIRE"
   | "ACTION";
 
-export type JourneyStimulusType = "AD" | "EMAIL" | "WHATSAPP" | "LANDING_PAGE";
+export type JourneyStimulusType =
+  | "AD"
+  | "EMAIL"
+  | "WHATSAPP"
+  | "LANDING_PAGE"
+  | "INSTANT_FORM";
 
 export interface JourneyStep {
   id: number;

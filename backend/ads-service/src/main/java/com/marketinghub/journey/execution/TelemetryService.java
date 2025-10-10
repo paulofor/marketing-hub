@@ -181,6 +181,7 @@ public class TelemetryService {
             case EMAIL -> "email_sent";
             case WHATSAPP -> "whatsapp_message_sent";
             case LANDING_PAGE -> "landing_view";
+            case INSTANT_FORM -> "instant_form_view";
         };
     }
 

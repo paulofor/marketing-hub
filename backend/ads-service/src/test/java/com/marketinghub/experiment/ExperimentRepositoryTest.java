@@ -5,6 +5,8 @@ import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.journey.model.JourneyTemplate;
+import com.marketinghub.journey.repository.JourneyTemplateRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +33,9 @@ class ExperimentRepositoryTest {
     @Autowired
     EntityManager entityManager;
 
+    @Autowired
+    JourneyTemplateRepository journeyTemplateRepository;
+
     @Test
     void findAllToGenerateCreativesFetchesHypothesis() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("N1").build());
@@ -38,11 +43,13 @@ class ExperimentRepositoryTest {
                 .marketNiche(niche)
                 .title("T")
                 .build());
+        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
         Experiment exp = repository.save(Experiment.builder()
                 .niche(niche)
                 .hypothesisRef(hyp)
                 .name("E1")
                 .creativesToGenerate(1)
+                .journeyTemplate(template)
                 .build());
 
         entityManager.flush();

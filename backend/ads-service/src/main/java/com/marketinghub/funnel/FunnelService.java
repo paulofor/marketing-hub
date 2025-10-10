@@ -5,7 +5,6 @@ import com.marketinghub.model.NurtureStage;
 import com.marketinghub.repository.LeadRepository;
 import com.marketinghub.funnel.dto.SalesFunnelDto;
 import com.marketinghub.funnel.dto.FunnelStepDto;
-import com.marketinghub.experiment.repository.ExperimentRepository;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
@@ -28,7 +27,6 @@ public class FunnelService {
     private final LeadRepository leadRepository;
     private final LeadResponseRepository responseRepository;
     private final StepMetricSnapshotRepository snapshotRepository;
-    private final ExperimentRepository experimentRepository;
 
     public List<StepMetricSnapshot> getSnapshots(UUID funnelId) {
         return stepRepository.findByFunnelId(funnelId).stream()
@@ -56,7 +54,7 @@ public class FunnelService {
                     dto.setId(f.getId());
                     dto.setName(f.getName());
                     dto.setObjective(f.getObjective());
-                    dto.setExperimentCount(experimentRepository.countBySalesFunnelId(f.getId()));
+                    dto.setExperimentCount(0);
                     return dto;
                 })
                 .collect(Collectors.toList());

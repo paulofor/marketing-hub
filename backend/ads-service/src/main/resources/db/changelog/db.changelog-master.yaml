@@ -44,6 +44,14 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
   - include:
+      file: V2026_10_01__experiment_journey_template.sql
+      relativeToChangelogFile: true
+
+  - include:
+      file: V2026_10_02__experiment_journey_template_not_null.sql
+      relativeToChangelogFile: true
+
+  - include:
       file: V2025_08_06__create_chat_tables.sql
       relativeToChangelogFile: true
   - include:

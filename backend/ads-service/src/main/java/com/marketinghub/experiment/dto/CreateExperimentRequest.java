@@ -28,7 +28,7 @@ public class CreateExperimentRequest {
     private LocalDate startDate;
     private LocalDate endDate;
     private Integer creativesToGenerate;
-    private String salesFunnelName;
+    private Long journeyTemplateId;
     private Long facebookPageId;
     private Long facebookInstantFormId;
     private Long instagramAccountId;

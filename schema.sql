@@ -134,12 +134,13 @@ CREATE TABLE experiment (
     status VARCHAR(20),
     platform VARCHAR(50),
     creative_approved BOOLEAN DEFAULT FALSE,
-    sales_funnel_id BINARY(16),
+    journey_template_id BIGINT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_experiment_facebook_page FOREIGN KEY (facebook_page_id) REFERENCES fb_page(id),
     CONSTRAINT fk_experiment_fb_instant_form FOREIGN KEY (facebook_instant_form_id) REFERENCES fb_instant_form(id),
-    CONSTRAINT fk_experiment_instagram_account FOREIGN KEY (instagram_account_id) REFERENCES ig_account(id)
+    CONSTRAINT fk_experiment_instagram_account FOREIGN KEY (instagram_account_id) REFERENCES ig_account(id),
+    CONSTRAINT fk_experiment_journey_template FOREIGN KEY (journey_template_id) REFERENCES journey_template(id)
 );
 
 CREATE TABLE audience (

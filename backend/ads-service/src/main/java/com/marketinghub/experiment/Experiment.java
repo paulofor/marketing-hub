@@ -7,7 +7,7 @@ import com.marketinghub.ads.FacebookPage;
 import com.marketinghub.niche.MarketNiche;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import com.marketinghub.funnel.SalesFunnel;
+import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.ads.InstagramAccount;
 
 import java.time.Instant;
@@ -57,9 +57,9 @@ public class Experiment {
     @JoinColumn(name = "metric_preset_id")
     private MetricPreset metricPreset;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sales_funnel_id")
-    private SalesFunnel salesFunnel;
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "journey_template_id", nullable = false)
+    private JourneyTemplate journeyTemplate;
 
     @Column(precision = 10, scale = 2)
     private java.math.BigDecimal kpiTargetCpl;

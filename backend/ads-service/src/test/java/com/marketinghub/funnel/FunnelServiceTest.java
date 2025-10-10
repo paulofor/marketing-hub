@@ -3,7 +3,6 @@ package com.marketinghub.funnel;
 import com.marketinghub.model.Lead;
 import com.marketinghub.model.NurtureStage;
 import com.marketinghub.repository.LeadRepository;
-import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.funnel.dto.FunnelStepDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,7 +26,6 @@ class FunnelServiceTest {
     @Mock private LeadRepository leadRepository;
     @Mock private LeadResponseRepository responseRepository;
     @Mock private StepMetricSnapshotRepository snapshotRepository;
-    @Mock private ExperimentRepository experimentRepository;
 
     @Test
     void registerResponseUpdatesScoreAndStage() {

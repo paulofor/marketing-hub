@@ -910,6 +910,8 @@ components:
           type: string
     CreateExperimentRequest:
       type: object
+      required:
+        - journeyTemplateId
       properties:
         marketNicheId:
           type: integer
@@ -933,8 +935,9 @@ components:
         endDate:
           type: string
           format: date
-        salesFunnelName:
-          type: string
+        journeyTemplateId:
+          type: integer
+          format: int64
     Experiment:
       type: object
       properties:
@@ -945,6 +948,10 @@ components:
         hypothesis:
           type: string
         status:
+          type: string
+        journeyTemplateId:
+          type: integer
+        journeyTemplateName:
           type: string
     CreateCreativeRequest:
       type: object

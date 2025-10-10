@@ -176,7 +176,7 @@ triggering ad set generation.
 - `status` VARCHAR(20)
 - `platform` VARCHAR(50)
 - `creative_approved` BOOLEAN DEFAULT FALSE
-- `sales_funnel_id` BINARY(16)
+- `journey_template_id` BIGINT NOT NULL
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
@@ -194,6 +194,9 @@ will be executed and measured during the test cycle.
   experiment reuses a Meta Instant Form that was planned for the same
   hypothesis, ensuring multiple campaigns can capture leads with the same
   optimized flow.
+- `journey_template_id` → FK `journey_template.id`: vínculo obrigatório
+  que reaproveita o blueprint de jornada aprovado para nortear campanhas
+  e ativações omnichannel geradas a partir do experimento.
 
 ### fb_page
 

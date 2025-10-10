@@ -39,6 +39,6 @@ public class ExperimentDto {
     private Instant updatedAt;
     private String metricPresetId;
     private Integer creativesToGenerate;
-    private java.util.UUID salesFunnelId;
-    private String salesFunnelName;
+    private Long journeyTemplateId;
+    private String journeyTemplateName;
 }

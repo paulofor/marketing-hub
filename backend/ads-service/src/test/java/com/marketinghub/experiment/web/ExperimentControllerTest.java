@@ -11,8 +11,8 @@ import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.creative.label.repository.AngleRepository;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.FixtureUtils;
-import com.marketinghub.funnel.SalesFunnel;
-import com.marketinghub.funnel.SalesFunnelRepository;
+import com.marketinghub.journey.model.JourneyTemplate;
+import com.marketinghub.journey.repository.JourneyTemplateRepository;
 import com.marketinghub.ads.InstagramAccountRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,7 +65,7 @@ class ExperimentControllerTest {
     @Autowired
     private FixtureUtils fixtures;
     @Autowired
-    private SalesFunnelRepository salesFunnelRepository;
+    private JourneyTemplateRepository journeyTemplateRepository;
     @Autowired
     private AudienceRepository audienceRepository;
     @Autowired
@@ -77,7 +77,7 @@ class ExperimentControllerTest {
     void cleanDb() {
         creativeRepo.deleteAll();
         repository.deleteAll();
-        salesFunnelRepository.deleteAll();
+        journeyTemplateRepository.deleteAll();
         audienceRepository.deleteAll();
         instagramAccountRepository.deleteAll();
         hypothesisRepository.deleteAll();
@@ -107,7 +107,7 @@ class ExperimentControllerTest {
                 .stopLossFactor(new BigDecimal("2"))
                 .defaultMdePp(new BigDecimal("12"))
                 .build());
-        SalesFunnel funnel = salesFunnelRepository.save(SalesFunnel.builder().name("Topo").build());
+        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
         var instagramAccount = fixtures.createAndSaveInstagramAccount();
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setName("Exp1");
@@ -121,7 +121,7 @@ class ExperimentControllerTest {
         req.setMdePercent(new BigDecimal("40"));
         req.setStartDate(LocalDate.now());
         req.setEndDate(LocalDate.now().plusDays(5));
-        req.setSalesFunnelName(funnel.getName());
+        req.setJourneyTemplateId(template.getId());
         req.setInstagramAccountId(instagramAccount.getId());
 
         mockMvc.perform(post("/api/niches/" + nicheId + "/experiments")
@@ -131,17 +131,52 @@ class ExperimentControllerTest {
 
         var saved = repository.findAll();
         assertThat(saved).hasSize(1);
-        assertThat(saved.get(0).getSalesFunnel()).isNotNull();
-        assertThat(saved.get(0).getSalesFunnel().getId()).isEqualTo(funnel.getId());
+        assertThat(saved.get(0).getJourneyTemplate()).isNotNull();
+        assertThat(saved.get(0).getJourneyTemplate().getId()).isEqualTo(template.getId());
+    }
+
+    @Test
+    void createEndpointRejectsMissingJourneyTemplate() throws Exception {
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(nicheRepo.findById(nicheId).orElseThrow())
+                .title("H")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(BigDecimal.ONE)
+                .build());
+        metricPresetRepository.save(com.marketinghub.experiment.MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        var instagramAccount = fixtures.createAndSaveInstagramAccount();
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        req.setName("Exp1");
+        req.setHypothesisId(hyp.getId());
+        req.setHypothesis("H1");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_150");
+        req.setInstagramAccountId(instagramAccount.getId());
+
+        mockMvc.perform(post("/api/niches/" + nicheId + "/experiments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
     void updateEndpointUpdatesFields() throws Exception {
         var niche = nicheRepo.findById(nicheId).orElseThrow();
         var exp = fixtures.createAndSaveExperiment(niche);
-        SalesFunnel startFunnel = salesFunnelRepository.save(SalesFunnel.builder().name("Topo").build());
-        SalesFunnel newFunnel = salesFunnelRepository.save(SalesFunnel.builder().name("Meio").build());
-        exp.setSalesFunnel(startFunnel);
+        JourneyTemplate startTemplate = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
+        JourneyTemplate newTemplate = journeyTemplateRepository.save(JourneyTemplate.builder().name("Retarget").build());
+        exp.setJourneyTemplate(startTemplate);
         repository.save(exp);
         UpdateExperimentRequest req = new UpdateExperimentRequest();
         req.setName("Updated");
@@ -152,7 +187,7 @@ class ExperimentControllerTest {
         req.setMdePercent(new BigDecimal("30"));
         req.setStartDate(LocalDate.now());
         req.setEndDate(LocalDate.now().plusDays(2));
-        req.setSalesFunnelName(newFunnel.getName());
+        req.setJourneyTemplateId(newTemplate.getId());
 
         mockMvc.perform(patch("/api/experiments/" + exp.getId())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -163,8 +198,8 @@ class ExperimentControllerTest {
         assertThat(updated.getName()).isEqualTo("Updated");
         assertThat(updated.getSampleSize()).isEqualTo(200);
         assertThat(updated.getMdePercent()).isEqualByComparingTo("30");
-        assertThat(updated.getSalesFunnel()).isNotNull();
-        assertThat(updated.getSalesFunnel().getId()).isEqualTo(newFunnel.getId());
+        assertThat(updated.getJourneyTemplate()).isNotNull();
+        assertThat(updated.getJourneyTemplate().getId()).isEqualTo(newTemplate.getId());
     }
 
     @Test

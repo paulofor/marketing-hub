@@ -21,6 +21,8 @@ import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.ads.InstagramAccountRepository;
+import com.marketinghub.journey.model.JourneyTemplate;
+import com.marketinghub.journey.repository.JourneyTemplateRepository;
 
 import java.math.BigDecimal;
 
@@ -66,6 +68,9 @@ class FacebookPageControllerTest {
 
     @Autowired
     InstagramAccountRepository instagramAccountRepository;
+
+    @Autowired
+    JourneyTemplateRepository journeyTemplateRepository;
 
     FacebookAccount account;
 
@@ -148,6 +153,9 @@ class FacebookPageControllerTest {
                 .handle("@" + page.getPageId())
                 .code("IG-" + page.getPageId())
                 .build());
+        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder()
+                .name("Template " + page.getPageId())
+                .build());
         Experiment experiment = Experiment.builder()
                 .niche(niche)
                 .name("Experiment " + page.getPageId())
@@ -158,6 +166,7 @@ class FacebookPageControllerTest {
                 .creativeApproved(true)
                 .facebookPage(page)
                 .instagramAccount(instagramAccount)
+                .journeyTemplate(template)
                 .build();
         experiment.setCreativesToGenerate(0);
         experiment.setKpiTargetCpl(BigDecimal.ONE);

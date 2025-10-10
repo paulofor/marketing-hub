@@ -14,7 +14,7 @@ export interface CreateExperiment {
   startDate?: string;
   endDate?: string;
   creativesToGenerate?: number;
-  salesFunnelName?: string;
+  journeyTemplateId: number;
   facebookPageId?: number;
   facebookInstantFormId?: number;
   instagramAccountId: number;

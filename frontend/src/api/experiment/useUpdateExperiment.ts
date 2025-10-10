@@ -12,7 +12,7 @@ export interface UpdateExperiment {
   startDate?: string;
   endDate?: string;
   creativesToGenerate?: number;
-  salesFunnelName?: string | null;
+  journeyTemplateId?: number;
   facebookPageId?: number | null;
   facebookInstantFormId?: number | null;
   instagramAccountId?: number | null;

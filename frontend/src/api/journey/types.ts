@@ -18,6 +18,29 @@ export type JourneyStimulusType =
   | "LANDING_PAGE"
   | "INSTANT_FORM";
 
+export type JourneyAssignmentStatus =
+  | "PENDING"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "STOPPED";
+
+export type JourneyAssignmentType = "LEAD" | "SEGMENT";
+
+export interface JourneyAssignment {
+  id: number;
+  journeyId: number;
+  type: JourneyAssignmentType;
+  status: JourneyAssignmentStatus;
+  leadId?: string | null;
+  segmentIdentifier?: string | null;
+  currentStepId?: number | null;
+  nextStepId?: number | null;
+  lastEventAt?: string | null;
+  contextPayload?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface JourneyStep {
   id: number;
   templateId: number;

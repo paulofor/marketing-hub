@@ -80,6 +80,8 @@ export interface JourneyTemplateRequestPayload {
   metadata?: Record<string, string>;
 }
 
+export type JourneyTemplateUpdatePayload = Partial<JourneyTemplateRequestPayload>;
+
 export interface JourneyStepRequestPayload {
   name?: string;
   description?: string;
@@ -95,6 +97,8 @@ export interface JourneyStepRequestPayload {
   delayMinutes?: number;
   metadata?: Record<string, string>;
 }
+
+export type JourneyStepUpdatePayload = Partial<JourneyStepRequestPayload>;
 
 export interface JourneyTemplateSummary {
   id: number;

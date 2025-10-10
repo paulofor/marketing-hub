@@ -4,6 +4,7 @@ import type {
   JourneyPhase,
   JourneyStepRequestPayload,
   JourneyStimulusType,
+  JourneyTemplate,
   JourneyTemplateRequestPayload,
 } from "../../api/journey/types";
 import "./JourneyForm.css";
@@ -57,6 +58,7 @@ interface MetadataField {
 }
 
 interface StepFormValue {
+  stepId?: number;
   name: string;
   description: string;
   phase: JourneyPhase;
@@ -77,9 +79,13 @@ interface JourneyTemplateFormValues {
   steps: StepFormValue[];
 }
 
+export type JourneyTemplateFormStepPayload =
+  JourneyStepRequestPayload & { id?: number };
+
 export interface JourneyTemplateFormSubmitPayload {
   template: JourneyTemplateRequestPayload;
-  steps: JourneyStepRequestPayload[];
+  steps: JourneyTemplateFormStepPayload[];
+  removedStepIds: number[];
 }
 
 interface JourneyTemplateFormProps {
@@ -87,6 +93,7 @@ interface JourneyTemplateFormProps {
   isSubmitting?: boolean;
   submitLabel?: string;
   onCancel?: () => void;
+  initialTemplate?: JourneyTemplate;
 }
 
 export default function JourneyTemplateForm({
@@ -94,6 +101,7 @@ export default function JourneyTemplateForm({
   isSubmitting,
   submitLabel = "Salvar template",
   onCancel,
+  initialTemplate,
 }: JourneyTemplateFormProps) {
   const {
     register,
@@ -102,6 +110,7 @@ export default function JourneyTemplateForm({
     formState: { errors },
     watch,
     setValue,
+    reset,
   } = useForm<JourneyTemplateFormValues>({
     defaultValues: {
       name: "",
@@ -113,6 +122,7 @@ export default function JourneyTemplateForm({
       metadata: [{ key: "", value: "" }],
       steps: [
         {
+          stepId: undefined,
           name: "",
           description: "",
           phase: "ATTENTION",
@@ -147,6 +157,66 @@ export default function JourneyTemplateForm({
   const tags = watch("tags");
 
   const [tagInput, setTagInput] = useState("");
+  const [removedStepIds, setRemovedStepIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (!initialTemplate) {
+      return;
+    }
+
+    const metadataEntries = Object.entries(initialTemplate.metadata ?? {}).map(
+      ([key, value]) => ({
+        key,
+        value,
+      }),
+    );
+
+    const initialSteps: StepFormValue[] = (initialTemplate.steps ?? []).map(
+      (step) => ({
+        stepId: step.id,
+        name: step.name?.trim() ?? "",
+        description: step.description?.trim() ?? "",
+        phase: step.phase,
+        stimulusType: step.stimulusType,
+        delayMinutes:
+          typeof step.delayMinutes === "number" && !Number.isNaN(step.delayMinutes)
+            ? String(step.delayMinutes)
+            : "",
+        entryCondition: step.entryCondition?.trim() ?? "",
+        exitCondition: step.exitCondition?.trim() ?? "",
+      }),
+    );
+
+    reset({
+      name: initialTemplate.name ?? "",
+      description: initialTemplate.description ?? "",
+      objective: initialTemplate.objective ?? "",
+      preferredChannel: initialTemplate.preferredChannel ?? "",
+      phases: initialTemplate.phases?.length
+        ? initialTemplate.phases
+        : DEFAULT_PHASES,
+      tags: initialTemplate.tags ?? [],
+      metadata: metadataEntries.length
+        ? metadataEntries
+        : [{ key: "", value: "" }],
+      steps: initialSteps.length
+        ? initialSteps
+        : [
+            {
+              stepId: undefined,
+              name: "",
+              description: "",
+              phase: initialTemplate.phases?.[0] ?? "ATTENTION",
+              stimulusType: "EMAIL",
+              delayMinutes: "",
+              entryCondition: "",
+              exitCondition: "",
+            },
+          ],
+    });
+    setRemovedStepIds([]);
+    setTagInput("");
+  }, [initialTemplate, reset]);
 
   useEffect(() => {
     if (!metadataFields.length) {
@@ -210,10 +280,11 @@ export default function JourneyTemplateForm({
       metadata: Object.keys(metadata).length ? metadata : undefined,
     };
 
-    const stepsPayload: JourneyStepRequestPayload[] = values.steps.map(
+    const stepsPayload: JourneyTemplateFormStepPayload[] = values.steps.map(
       (step, index) => {
         const delayMinutes = step.delayMinutes.trim();
         return {
+          id: step.stepId,
           name: step.name.trim() || undefined,
           description: step.description.trim() || undefined,
           phase: step.phase,
@@ -230,6 +301,7 @@ export default function JourneyTemplateForm({
     await onSubmit({
       template: templatePayload,
       steps: stepsPayload,
+      removedStepIds,
     });
   });
 
@@ -487,7 +559,18 @@ export default function JourneyTemplateForm({
                   <button
                     type="button"
                     className="btn btn-outline-danger btn-sm"
-                    onClick={() => removeStep(index)}
+                    onClick={() => {
+                      const stepToRemove = stepFields[index];
+                      if (stepToRemove?.stepId) {
+                        setRemovedStepIds((current) => {
+                          if (current.includes(stepToRemove.stepId!)) {
+                            return current;
+                          }
+                          return [...current, stepToRemove.stepId!];
+                        });
+                      }
+                      removeStep(index);
+                    }}
                     disabled={isSaving || stepFields.length === 1}
                   >
                     Remover etapa
@@ -651,6 +734,7 @@ export default function JourneyTemplateForm({
           className="btn btn-outline-primary"
           onClick={() =>
             appendStep({
+              stepId: undefined,
               name: "",
               description: "",
               phase: phases[0] ?? "ATTENTION",

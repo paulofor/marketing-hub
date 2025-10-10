@@ -78,6 +78,11 @@ describe("JourneyTemplateDetailPage", () => {
     expect(screen.getByText("Condição de entrada")).toBeInTheDocument();
     expect(screen.getByText("Lead captado pelo formulário instantâneo")).toBeInTheDocument();
     expect(screen.getByText("Lead Ads")).toBeInTheDocument();
+    const editLinks = screen.getAllByRole("link", { name: "Editar template" });
+    expect(editLinks[editLinks.length - 1]).toHaveAttribute(
+      "href",
+      "/journey-templates/7/edit",
+    );
   });
 
   it("mostra mensagem orientativa quando o template não possui etapas", () => {
@@ -103,5 +108,10 @@ describe("JourneyTemplateDetailPage", () => {
         "Nenhuma etapa cadastrada até o momento. Cadastre etapas para visualizar o fluxo completo.",
       ),
     ).toBeInTheDocument();
+    const editLinks = screen.getAllByRole("link", { name: "Editar template" });
+    expect(editLinks[editLinks.length - 1]).toHaveAttribute(
+      "href",
+      "/journey-templates/8/edit",
+    );
   });
 });

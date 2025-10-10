@@ -156,6 +156,12 @@ export default function JourneyTemplateDetailPage() {
           ) : null}
         </div>
         <div className="journey-template-detail__hero-actions">
+          <Link
+            className="btn btn-light"
+            to={`/journey-templates/${template.id}/edit`}
+          >
+            Editar template
+          </Link>
           <Link className="btn btn-outline-light" to="/journey-templates">
             Voltar
           </Link>

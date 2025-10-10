@@ -26,9 +26,10 @@ export default function NewJourneyTemplatePage() {
       const createdTemplate = await createTemplate.mutateAsync(template);
 
       for (const step of steps) {
+        const { id: _ignoredStepId, ...stepPayload } = step;
         await createStep.mutateAsync({
           templateId: createdTemplate.id,
-          payload: step,
+          payload: stepPayload,
         });
       }
 

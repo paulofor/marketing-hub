@@ -43,5 +43,7 @@ describe("JourneyTemplateForm", () => {
       stimulusType: "EMAIL",
       position: 1,
     });
+    expect(payload.steps[0].id).toBeUndefined();
+    expect(payload.removedStepIds).toEqual([]);
   });
 });

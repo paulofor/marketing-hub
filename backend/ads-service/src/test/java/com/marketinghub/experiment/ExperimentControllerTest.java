@@ -3,10 +3,12 @@ package com.marketinghub.experiment;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.MetricPreset;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
-import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.creative.label.repository.AngleRepository;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.journey.model.JourneyTemplate;
+import com.marketinghub.journey.repository.JourneyTemplateRepository;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.repository.MarketNicheRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -43,6 +45,8 @@ class ExperimentControllerTest {
     HypothesisRepository hypothesisRepository;
     @Autowired
     com.marketinghub.experiment.repository.MetricPresetRepository metricPresetRepository;
+    @Autowired
+    JourneyTemplateRepository journeyTemplateRepository;
 
     @Test
     void postExperiment() throws Exception {
@@ -65,6 +69,9 @@ class ExperimentControllerTest {
                 .stopLossFactor(new BigDecimal("2"))
                 .defaultMdePp(new BigDecimal("12"))
                 .build());
+        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder()
+                .name("Lifecycle")
+                .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setName("Exp1");
         req.setHypothesisId(hyp.getId());
@@ -75,6 +82,7 @@ class ExperimentControllerTest {
         req.setBaselineCvr(new BigDecimal("3"));
         req.setTargetCvr(new BigDecimal("5"));
         req.setMdePercent(new BigDecimal("40"));
+        req.setJourneyTemplateId(template.getId());
         mockMvc.perform(post("/api/niches/" + niche.getId() + "/experiments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(req)))
@@ -102,6 +110,9 @@ class ExperimentControllerTest {
                 .stopLossFactor(new BigDecimal("2"))
                 .defaultMdePp(new BigDecimal("12"))
                 .build());
+        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder()
+                .name("Lifecycle")
+                .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
@@ -112,6 +123,7 @@ class ExperimentControllerTest {
         req.setMdePercent(new BigDecimal("40"));
         req.setStartDate(java.time.LocalDate.of(2024,2,1));
         req.setEndDate(java.time.LocalDate.of(2024,1,1));
+        req.setJourneyTemplateId(template.getId());
         mockMvc.perform(post("/api/niches/" + niche.getId() + "/experiments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(req)))

@@ -53,6 +53,31 @@ export default function NewExperimentPage() {
   const showNicheSelect = nicheIdParam === "";
   const showHypSelect = hypothesisIdParam === "";
 
+  const selectedJourneyTemplateId = form.journeyTemplateId
+    ? Number(form.journeyTemplateId)
+    : undefined;
+  const selectedJourneyTemplate =
+    selectedJourneyTemplateId !== undefined &&
+    !Number.isNaN(selectedJourneyTemplateId)
+      ? journeyTemplatePage?.content?.find(
+          (template) => template.id === selectedJourneyTemplateId,
+        )
+      : undefined;
+  const workerRequests = (selectedJourneyTemplate?.steps ?? []).reduce(
+    (acc, step) => {
+      if (step.stimulusType === "INSTANT_FORM") {
+        acc.instantForms += 1;
+      }
+      if (step.stimulusType === "EMAIL") {
+        acc.emails += 1;
+      }
+      return acc;
+    },
+    { instantForms: 0, emails: 0 },
+  );
+  const hasWorkerRequests =
+    workerRequests.instantForms > 0 || workerRequests.emails > 0;
+
   useEffect(() => {
     if (selectedHypothesis?.title) {
       setForm((f) => ({ ...f, hypothesis: selectedHypothesis.title }));
@@ -221,6 +246,25 @@ export default function NewExperimentPage() {
           </option>
         ))}
       </select>
+      {hasWorkerRequests && (
+        <div className="mb-3" aria-live="polite">
+          <p className="text-muted small mb-2">
+            Este template solicitará conteúdos ao Worker AI:
+          </p>
+          <div className="d-flex flex-wrap gap-2">
+            {workerRequests.instantForms > 0 && (
+              <span className="badge rounded-pill text-bg-info">
+                Instant forms: {workerRequests.instantForms}
+              </span>
+            )}
+            {workerRequests.emails > 0 && (
+              <span className="badge rounded-pill text-bg-info">
+                E-mails: {workerRequests.emails}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
       <label className="form-label" htmlFor="instagramAccount">
         Conta do Instagram <span className="text-danger">*</span>
       </label>

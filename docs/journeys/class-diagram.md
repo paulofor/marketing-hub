@@ -85,6 +85,7 @@ classDiagram
         <<enum>> EMAIL
         <<enum>> WHATSAPP
         <<enum>> LANDING_PAGE
+        <<enum>> INSTANT_FORM
     }
 
     class JourneyStatus {
@@ -124,7 +125,7 @@ classDiagram
 * `Journey` materializa um template para um segmento concreto, vinculando nicho, experimento e metadados de segmentação, além de manter os assignments associados.【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/Journey.java†L16-L78】
 * `JourneyAssignment` liga leads ou segmentos a uma execução, controla o progresso (passos atual/próximo) e guarda o contexto operacional para reprocessamentos.【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyAssignment.java†L14-L72】
 * `EventLog` registra eventos multicanal relacionados a jornadas e passos, armazenando payload serializado e valores financeiros quando aplicável.【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/EventLog.java†L16-L58】
-* Os enums `JourneyPhase`, `JourneyStimulusType`, `JourneyStatus`, `JourneyAssignmentType` e `JourneyAssignmentStatus` padronizam estágios de funil, canais, situação da jornada e o tipo/estado das atribuições.【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyPhase.java†L7-L50】【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyStimulusType.java†L3-L11】【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyStatus.java†L4-L12】【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyAssignmentType.java†L4-L9】【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyAssignmentStatus.java†L4-L11】
+* Os enums `JourneyPhase`, `JourneyStimulusType`, `JourneyStatus`, `JourneyAssignmentType` e `JourneyAssignmentStatus` padronizam estágios de funil, canais, situação da jornada e o tipo/estado das atribuições.【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyPhase.java†L7-L50】【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyStimulusType.java†L3-L12】【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyStatus.java†L4-L12】【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyAssignmentType.java†L4-L9】【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyAssignmentStatus.java†L4-L11】
 
 ## Serviços de aplicação
 

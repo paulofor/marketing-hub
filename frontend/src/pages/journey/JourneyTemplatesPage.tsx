@@ -49,6 +49,7 @@ const stimulusLabels: Record<JourneyStimulusType, string> = {
   EMAIL: "Email",
   WHATSAPP: "WhatsApp",
   LANDING_PAGE: "Landing page",
+  INSTANT_FORM: "Instant form",
 };
 
 function formatStepTitle(step: JourneyStep, index: number) {

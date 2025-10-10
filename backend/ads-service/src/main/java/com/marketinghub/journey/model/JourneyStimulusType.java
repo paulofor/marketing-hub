@@ -7,5 +7,6 @@ public enum JourneyStimulusType {
     AD,
     EMAIL,
     WHATSAPP,
-    LANDING_PAGE
+    LANDING_PAGE,
+    INSTANT_FORM
 }

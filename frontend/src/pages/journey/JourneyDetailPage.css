@@ -568,6 +568,11 @@
   color: #6b21a8;
 }
 
+.journey-detail__step-pill--instant-form {
+  background: rgba(234, 179, 8, 0.16);
+  color: #b45309;
+}
+
 .journey-detail__step-description {
   margin: 0;
   color: #1f2937;

@@ -48,6 +48,7 @@ const STIMULUS_OPTIONS: Array<{ value: JourneyStimulusType; label: string }> = [
   { value: "EMAIL", label: "Email" },
   { value: "WHATSAPP", label: "WhatsApp" },
   { value: "LANDING_PAGE", label: "Landing page" },
+  { value: "INSTANT_FORM", label: "Instant form" },
 ];
 
 interface MetadataField {

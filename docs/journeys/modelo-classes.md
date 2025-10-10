@@ -105,7 +105,7 @@ classDiagram
 
 ### JourneyStep
 - Detalha cada ponto de contato do template com posição, nome, descrição e fase correspondente no funil.【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyStep.java†L22-L44】
-- Define o tipo de estímulo (anúncio, e-mail, WhatsApp ou landing page) e referências opcionais a ativos criativos e etiquetas de copywriting.【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyStep.java†L45-L63】【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyStimulusType.java†L1-L11】
+- Define o tipo de estímulo (anúncio, e-mail, WhatsApp, landing page ou instant form) e referências opcionais a ativos criativos e etiquetas de copywriting.【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyStep.java†L45-L63】【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyStimulusType.java†L1-L12】
 - Permite configurar condições de entrada/saída, atraso entre disparos e metadados específicos do passo.【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyStep.java†L65-L79】
 
 ### Journey
@@ -127,7 +127,7 @@ classDiagram
 - `JourneyStatus` define o ciclo de vida de uma jornada operacional.【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyStatus.java†L3-L11】
 - `JourneyAssignmentType` diferencia vínculos individuais de segmentos agregados.【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyAssignmentType.java†L3-L8】
 - `JourneyAssignmentStatus` acompanha a evolução de cada vínculo dentro do motor de execução.【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyAssignmentStatus.java†L3-L10】
-- `JourneyStimulusType` enumera os canais operados pelos handlers de estímulo.【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyStimulusType.java†L3-L11】
+- `JourneyStimulusType` enumera os canais operados pelos handlers de estímulo.【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyStimulusType.java†L3-L12】
 - `JourneyEventType` agrega os eventos canônicos emitidos durante a orquestração da jornada.【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyEventType.java†L3-L22】
 
 ## Dependências cruzadas

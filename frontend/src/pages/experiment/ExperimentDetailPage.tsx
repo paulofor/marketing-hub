@@ -53,6 +53,28 @@ export default function ExperimentDetailPage() {
     },
     { label: data?.name || "...", icon: experimentIcon },
   ]);
+  const templateSteps = template?.steps ?? [];
+  const assignmentsWithSteps = useMemo(() => {
+    const assignments = journeyAssignments?.assignments ?? [];
+    if (assignments.length === 0) {
+      return [] as { assignment: JourneyAssignment; step?: JourneyStep }[];
+    }
+    const stepIndex = new Map<number, JourneyStep>(
+      templateSteps.map((step) => [step.id, step]),
+    );
+    const pairs = assignments.map((assignment) => ({
+      assignment,
+      step: assignment.nextStepId ? stepIndex.get(assignment.nextStepId) : undefined,
+    }));
+    pairs.sort((a, b) => {
+      const posA = a.step?.position ?? Number.MAX_SAFE_INTEGER;
+      const posB = b.step?.position ?? Number.MAX_SAFE_INTEGER;
+      if (posA !== posB) return posA - posB;
+      return a.assignment.id - b.assignment.id;
+    });
+    return pairs;
+  }, [journeyAssignments?.assignments, templateSteps]);
+
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
   const preset = presets?.find((p) => p.id === data.metricPresetId);
@@ -294,28 +316,6 @@ export default function ExperimentDetailPage() {
     { label: "Início", value: data.startDate },
     { label: "Término", value: data.endDate },
   ];
-  const templateSteps = template?.steps ?? [];
-  const assignmentsWithSteps = useMemo(() => {
-    const assignments = journeyAssignments?.assignments ?? [];
-    if (assignments.length === 0) {
-      return [] as { assignment: JourneyAssignment; step?: JourneyStep }[];
-    }
-    const stepIndex = new Map<number, JourneyStep>(
-      templateSteps.map((step) => [step.id, step]),
-    );
-    const pairs = assignments.map((assignment) => ({
-      assignment,
-      step: assignment.nextStepId ? stepIndex.get(assignment.nextStepId) : undefined,
-    }));
-    pairs.sort((a, b) => {
-      const posA = a.step?.position ?? Number.MAX_SAFE_INTEGER;
-      const posB = b.step?.position ?? Number.MAX_SAFE_INTEGER;
-      if (posA !== posB) return posA - posB;
-      return a.assignment.id - b.assignment.id;
-    });
-    return pairs;
-  }, [journeyAssignments?.assignments, templateSteps]);
-
   const handleCreateJourney = async () => {
     setJourneyError(null);
     try {

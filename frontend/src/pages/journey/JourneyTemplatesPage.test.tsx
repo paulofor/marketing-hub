@@ -61,14 +61,16 @@ describe("JourneyTemplatesPage", () => {
         name: "Lifecycle Pós-Clique Lead Ads 14d",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Multicanal")).toBeInTheDocument();
-    expect(screen.getByText("ATTENTION • INTEREST • DESIRE • ACTION")).toBeInTheDocument();
+    expect(screen.getAllByText("ATTENTION • INTEREST • DESIRE • ACTION")[0]).toBeInTheDocument();
     expect(screen.getByText(/Criado em\s+—/)).toBeInTheDocument();
     expect(screen.getByText(/Atualizado em\s+—/)).toBeInTheDocument();
-    expect(screen.getByText("Primeiro contato")).toBeInTheDocument();
-    expect(screen.getByText("Atenção • Email")).toBeInTheDocument();
+    expect(screen.queryByText("Primeiro contato")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Multicanal")[0]).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Criar template" }),
     ).toHaveAttribute("href", "/journey-templates/new");
+    expect(
+      screen.getByRole("link", { name: "Ver detalhes" }),
+    ).toHaveAttribute("href", "/journey-templates/1");
   });
 });

@@ -8,7 +8,6 @@ import { useAngles } from "../../api/angle/useAngles";
 import { useVisualProofs } from "../../api/visualProof/useVisualProofs";
 import { useEmotionalTriggers } from "../../api/emotionalTrigger/useEmotionalTriggers";
 import { useUpdateCreativeLabels } from "../../api/creative/useUpdateCreativeLabels";
-import { useRequestCreatives } from "../../api/experiment/useRequestCreatives";
 import { useExperiment } from "../../api/experiment/useExperiment";
 import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
 import { useAllFacebookPages } from "../../api/useAllFacebookPages";
@@ -21,12 +20,12 @@ import {
   CheckCircle2,
   Edit3,
   Eye,
-  Sparkles,
   Trash2,
   X,
   XCircle,
 } from "lucide-react";
 import "./CriativosTab.css";
+import CreativeLibraryBanner from "./CreativeLibraryBanner";
 
 interface Props {
   experimentId: string;
@@ -107,9 +106,6 @@ export default function CriativosTab({ experimentId }: Props) {
   const [selectedAngle, setSelectedAngle] = useState<string>("");
   const [selectedProof, setSelectedProof] = useState<string>("");
   const [selectedTrigger, setSelectedTrigger] = useState<string>("");
-  const [isRequestDialogOpen, setRequestDialogOpen] = useState(false);
-  const [requestQuantity, setRequestQuantity] = useState("1");
-  const [requestError, setRequestError] = useState<string | null>(null);
   const patchLabels = useUpdateCreativeLabels(experimentId);
   const create = useCreateCreative(experimentId);
   const update = useUpdateCreative(experimentId);
@@ -118,7 +114,6 @@ export default function CriativosTab({ experimentId }: Props) {
   const [processingCreativeId, setProcessingCreativeId] = useState<number | null>(
     null,
   );
-  const requestCreatives = useRequestCreatives(experimentId);
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
     useAllFacebookPages();
   const { data: instagramAccounts, isLoading: isLoadingInstagramAccounts } =
@@ -266,18 +261,6 @@ export default function CriativosTab({ experimentId }: Props) {
     setShowForm(true);
   };
 
-  const openRequestDialog = () => {
-    const defaultQty = Math.max(1, experiment?.creativesToGenerate ?? 1);
-    setRequestQuantity(String(defaultQty));
-    setRequestError(null);
-    setRequestDialogOpen(true);
-  };
-
-  const closeRequestDialog = () => {
-    setRequestDialogOpen(false);
-    setRequestError(null);
-  };
-
   const submit = async () => {
     const trimmedDestinationUrl = form.destinationUrl.trim();
     const trimmedLeadGenFormId = form.leadGenFormId.trim();
@@ -410,33 +393,24 @@ export default function CriativosTab({ experimentId }: Props) {
     img.src = objectUrl;
   };
 
-  const submitRequestCreatives = async () => {
-    const qty = Number.parseInt(requestQuantity, 10);
-    if (!Number.isInteger(qty) || qty <= 0) {
-      setRequestError("Informe um número válido maior que zero.");
-      return;
-    }
-    setRequestError(null);
-    try {
-      await requestCreatives.mutateAsync(qty);
-      setFeedback({
-        variant: "success",
-        title: "Solicitação enviada",
-        description: `Geraremos ${qty} ${qty === 1 ? "criativo" : "criativos"} em breve.`,
-      });
-      closeRequestDialog();
-    } catch {
-      setRequestError("Não foi possível enviar o pedido agora. Tente novamente.");
-      setFeedback({
-        variant: "error",
-        title: "Erro ao solicitar criativos",
-        description: "Tente novamente em instantes.",
-      });
-    }
-  };
-
   const totalCreatives = creatives.length;
   const solicitedCreatives = experiment?.creativesToGenerate ?? 0;
+
+  const handleCreativeRequestSuccess = (qty: number) => {
+    setFeedback({
+      variant: "success",
+      title: "Solicitação enviada",
+      description: `Geraremos ${qty} ${qty === 1 ? "criativo" : "criativos"} em breve.`,
+    });
+  };
+
+  const handleCreativeRequestError = () => {
+    setFeedback({
+      variant: "error",
+      title: "Erro ao solicitar criativos",
+      description: "Tente novamente em instantes.",
+    });
+  };
   const readyCreatives = creatives.filter((c) => c.status === "READY");
   const pendingCreatives = creatives.filter((c) => c.status !== "READY");
   const creativeSections = [
@@ -689,34 +663,12 @@ export default function CriativosTab({ experimentId }: Props) {
           em branco para usar a página padrão configurada no worker.
         </div>
       </div>
-      <div className="creative-toolbar">
-        <div>
-          <h2 className="h5 mb-1">Biblioteca de criativos</h2>
-          <div className="d-flex flex-wrap align-items-center gap-2 text-muted small">
-            <span className="badge rounded-pill text-bg-primary">
-              {totalCreatives} {totalCreatives === 1 ? "item" : "itens"}
-            </span>
-            <span className="badge rounded-pill text-bg-info">
-              Solicitados: {solicitedCreatives}
-            </span>
-          </div>
-        </div>
-        <div className="d-flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="btn btn-outline-secondary d-flex align-items-center gap-2"
-            onClick={openRequestDialog}
-            disabled={requestCreatives.isPending}
-          >
-            {requestCreatives.isPending ? (
-              <span className="spinner-border spinner-border-sm" role="status" />
-            ) : (
-              <Sparkles size={ICON_SIZE} />
-            )}
-            <span>{requestCreatives.isPending ? "Solicitando..." : "Gerar criativos"}</span>
-          </button>
-        </div>
-      </div>
+      <CreativeLibraryBanner
+        experimentId={experimentId}
+        requestedCreatives={solicitedCreatives}
+        onRequestSuccess={handleCreativeRequestSuccess}
+        onRequestError={handleCreativeRequestError}
+      />
 
       {isLoading ? (
         <div className="d-flex justify-content-center py-5">
@@ -764,79 +716,6 @@ export default function CriativosTab({ experimentId }: Props) {
           ))}
         </div>
       )}
-
-      {isRequestDialogOpen && (
-        <div
-          className="modal d-block creative-request-modal"
-          tabIndex={-1}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Gerar novos criativos</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={closeRequestDialog}
-                  aria-label="Fechar"
-                />
-              </div>
-              <div className="modal-body">
-                <div className="creative-request-body">
-                  <p className="mb-0 text-muted">
-                    Informe quantos novos criativos deseja solicitar para este experimento.
-                  </p>
-                  <div>
-                    <label className="form-label" htmlFor="requestedQuantity">
-                      Quantidade de criativos
-                    </label>
-                    <input
-                      id="requestedQuantity"
-                      type="number"
-                      min={1}
-                      className="form-control"
-                      value={requestQuantity}
-                      onChange={(e) => setRequestQuantity(e.target.value)}
-                      disabled={requestCreatives.isPending}
-                    />
-                  </div>
-                  {requestError && (
-                    <div className="creative-request-error" role="alert">
-                      <XCircle size={18} />
-                      <span>{requestError}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  onClick={closeRequestDialog}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary d-flex align-items-center gap-2"
-                  onClick={submitRequestCreatives}
-                  disabled={requestCreatives.isPending}
-                >
-                  {requestCreatives.isPending ? (
-                    <span className="spinner-border spinner-border-sm" role="status" />
-                  ) : (
-                    <Sparkles size={ICON_SIZE} />
-                  )}
-                  <span>{requestCreatives.isPending ? "Enviando..." : "Solicitar"}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showForm && (
         <div className="modal d-block" tabIndex={-1}>
           <div className="modal-dialog">

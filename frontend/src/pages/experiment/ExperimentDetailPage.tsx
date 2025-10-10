@@ -551,6 +551,8 @@ export default function ExperimentDetailPage() {
         {hasEmailSteps ? (
           <Tabs.Content value="emails" asChild>
             <EmailsTab
+              experimentId={expId}
+              requestedCreatives={data.creativesToGenerate}
               journeyId={journeyAssignments?.journeyId ?? undefined}
               steps={templateSteps}
               experimentName={data.name}

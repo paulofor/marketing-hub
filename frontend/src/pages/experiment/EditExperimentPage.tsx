@@ -7,7 +7,7 @@ import {
   type UpdateExperiment,
 } from "../../api/experiment/useUpdateExperiment";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
-import { useFunnels } from "../../api/funnel/useFunnels";
+import { useJourneyTemplates } from "../../api/journey/useJourneyTemplates";
 import { useAllFacebookPages } from "../../api/useAllFacebookPages";
 import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 import PageTitle from "../../components/PageTitle";
@@ -17,7 +17,7 @@ interface FormData {
   name: string;
   kpiTarget: string;
   metricPresetId: string;
-  salesFunnelName: string;
+  journeyTemplateId: string;
   facebookPageId: string;
   instagramAccountId: string;
 }
@@ -28,13 +28,14 @@ export default function EditExperimentPage() {
   const navigate = useNavigate();
   const { data, isLoading } = useExperiment(expId);
   const { data: presets } = useMetricPresets();
-  const { data: funnels } = useFunnels();
+  const { data: journeyTemplates } = useJourneyTemplates({ size: 200 });
   const update = useUpdateExperiment(expId);
   const {
     register,
     handleSubmit,
     reset,
     formState: { dirtyFields },
+    watch,
   } = useForm<FormData>();
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
     useAllFacebookPages();
@@ -52,7 +53,9 @@ export default function EditExperimentPage() {
         name: data.name || "",
         kpiTarget: currentKpi != null ? String(currentKpi) : "",
         metricPresetId: data.metricPresetId || "",
-        salesFunnelName: data.salesFunnelName || "",
+        journeyTemplateId: data.journeyTemplateId
+          ? String(data.journeyTemplateId)
+          : "",
         facebookPageId: data.facebookPage?.id
           ? String(data.facebookPage.id)
           : "",
@@ -62,6 +65,8 @@ export default function EditExperimentPage() {
       });
     }
   }, [data, reset]);
+
+  const selectedJourneyTemplateId = watch("journeyTemplateId");
 
   const onSubmit = async (values: FormData) => {
     try {
@@ -76,6 +81,10 @@ export default function EditExperimentPage() {
         alert("Selecione uma conta do Instagram");
         return;
       }
+      if (!values.journeyTemplateId.trim()) {
+        alert("Selecione um template de jornada");
+        return;
+      }
       const payload: UpdateExperiment = {
         name: values.name,
         hypothesis: data.hypothesis,
@@ -88,9 +97,9 @@ export default function EditExperimentPage() {
         instagramAccountId: Number(values.instagramAccountId),
       };
 
-      if (dirtyFields.salesFunnelName) {
-        const funnelName = values.salesFunnelName.trim();
-        payload.salesFunnelName = funnelName ? funnelName : null;
+      if (dirtyFields.journeyTemplateId) {
+        const templateValue = values.journeyTemplateId.trim();
+        payload.journeyTemplateId = Number(templateValue);
       }
 
       if (dirtyFields.facebookPageId) {
@@ -144,21 +153,22 @@ export default function EditExperimentPage() {
               </option>
             ))}
         </select>
-        <label className="form-label" htmlFor="salesFunnel">
-          Funil de Vendas
+        <label className="form-label" htmlFor="journeyTemplate">
+          Template de Jornada <span className="text-danger">*</span>
         </label>
         <select
-          id="salesFunnel"
+          id="journeyTemplate"
           className="form-select mb-2"
-          {...register("salesFunnelName")}
+          {...register("journeyTemplateId")}
         >
-          <option value="">Nenhum</option>
-          {Array.isArray(funnels) &&
-            funnels.map((f) => (
-              <option key={f.id} value={f.name}>
-                {f.name}
-              </option>
-            ))}
+          <option value="" disabled hidden>
+            Selecione um template de jornada
+          </option>
+          {journeyTemplates?.content?.map((template) => (
+            <option key={template.id} value={template.id}>
+              {template.name}
+            </option>
+          ))}
         </select>
         <label className="form-label" htmlFor="instagramAccountId">
           Conta do Instagram <span className="text-danger">*</span>
@@ -234,7 +244,11 @@ export default function EditExperimentPage() {
           <button
             type="button"
             className="btn btn-primary"
-            disabled={update.isPending || noInstagramAccounts}
+            disabled={
+              update.isPending ||
+              noInstagramAccounts ||
+              !selectedJourneyTemplateId
+            }
             onClick={handleSubmit(onSubmit, (errors) => {
               console.log("Validation errors", errors);
             })}

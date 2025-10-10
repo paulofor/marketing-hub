@@ -64,8 +64,8 @@ export interface Experiment {
   platform: string;
   createdAt: string;
   updatedAt: string;
-  salesFunnelId?: string | null;
-  salesFunnelName?: string | null;
+  journeyTemplateId?: number | null;
+  journeyTemplateName?: string | null;
 }
 
 export function useExperiments() {

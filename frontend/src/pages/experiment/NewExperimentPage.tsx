@@ -5,7 +5,7 @@ import { useNiches } from "../../api/niche/useNiches";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
-import { useFunnels } from "../../api/funnel/useFunnels";
+import { useJourneyTemplates } from "../../api/journey/useJourneyTemplates";
 import { useAllFacebookPages } from "../../api/useAllFacebookPages";
 import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 import PageTitle from "../../components/PageTitle";
@@ -28,7 +28,7 @@ export default function NewExperimentPage() {
     mde: "",
     startDate: "",
     endDate: "",
-    salesFunnelName: "",
+    journeyTemplateId: "",
     facebookPageId: "",
     instagramAccountId: "",
   });
@@ -41,7 +41,7 @@ export default function NewExperimentPage() {
     (n) => n.id === Number(form.nicheId),
   );
   const { data: presets } = useMetricPresets();
-  const { data: funnels } = useFunnels();
+  const { data: journeyTemplatePage } = useJourneyTemplates({ size: 200 });
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
     useAllFacebookPages();
   const { data: instagramAccounts, isLoading: isLoadingInstagramAccounts } =
@@ -71,6 +71,10 @@ export default function NewExperimentPage() {
         alert("Selecione uma conta do Instagram");
         return;
       }
+      if (!form.journeyTemplateId) {
+        alert("Selecione um template de jornada");
+        return;
+      }
       await create.mutateAsync({
         nicheId: Number(form.nicheId),
         hypothesisId: form.hypothesisId || undefined,
@@ -82,7 +86,7 @@ export default function NewExperimentPage() {
         mde: form.mde ? Number(form.mde) : undefined,
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
-        salesFunnelName: form.salesFunnelName || undefined,
+        journeyTemplateId: Number(form.journeyTemplateId),
         facebookPageId: form.facebookPageId
           ? Number(form.facebookPageId)
           : undefined,
@@ -99,7 +103,7 @@ export default function NewExperimentPage() {
         mde: "",
         startDate: "",
         endDate: "",
-        salesFunnelName: "",
+        journeyTemplateId: "",
         facebookPageId: "",
         instagramAccountId: "",
       });
@@ -201,22 +205,21 @@ export default function NewExperimentPage() {
             </option>
           ))}
       </select>
-      <label className="form-label" htmlFor="salesFunnel">
-        Funil de Vendas
+      <label className="form-label" htmlFor="journeyTemplate">
+        Template de Jornada <span className="text-danger">*</span>
       </label>
       <select
-        id="salesFunnel"
+        id="journeyTemplate"
         className="form-select mb-2"
-        value={form.salesFunnelName}
-        onChange={(e) => setForm({ ...form, salesFunnelName: e.target.value })}
+        value={form.journeyTemplateId}
+        onChange={(e) => setForm({ ...form, journeyTemplateId: e.target.value })}
       >
-        <option value="">Selecione Funil de Vendas (opcional)</option>
-        {Array.isArray(funnels) &&
-          funnels.map((f) => (
-            <option key={f.id} value={f.name}>
-              {f.name}
-            </option>
-          ))}
+        <option value="">Selecione um template de jornada</option>
+        {journeyTemplatePage?.content?.map((template) => (
+          <option key={template.id} value={template.id}>
+            {template.name}
+          </option>
+        ))}
       </select>
       <label className="form-label" htmlFor="instagramAccount">
         Conta do Instagram <span className="text-danger">*</span>
@@ -315,7 +318,9 @@ export default function NewExperimentPage() {
       <button
         className="btn btn-primary d-flex align-items-center gap-2"
         onClick={submit}
-        disabled={create.isPending || noInstagramAccounts}
+        disabled={
+          create.isPending || noInstagramAccounts || !form.journeyTemplateId
+        }
       >
         {create.isPending ? (
           <>

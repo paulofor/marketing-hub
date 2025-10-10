@@ -9,6 +9,8 @@ import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.creative.label.repository.AngleRepository;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.journey.model.JourneyTemplate;
+import com.marketinghub.journey.repository.JourneyTemplateRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -31,6 +33,8 @@ class CreativeAngleIntegrationTest {
     AngleRepository angleRepository;
     @Autowired
     HypothesisRepository hypothesisRepository;
+    @Autowired
+    JourneyTemplateRepository journeyTemplateRepository;
 
     @Test
     void persistRelationships() {
@@ -48,6 +52,7 @@ class CreativeAngleIntegrationTest {
                 .kpiTargetCpl(java.math.BigDecimal.ONE)
                 .build();
         hyp = hypothesisRepository.save(hyp);
+        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
         Experiment exp = Experiment.builder()
                 .niche(niche)
                 .name("E")
@@ -55,6 +60,7 @@ class CreativeAngleIntegrationTest {
                 .hypothesisRef(hyp)
                 .status(com.marketinghub.experiment.ExperimentStatus.PLANNED)
                 .platform(com.marketinghub.experiment.ExperimentPlatform.FACEBOOK)
+                .journeyTemplate(template)
                 .build();
         experimentRepository.save(exp);
         Angle angle = Angle.builder().name("Ganho").build();

@@ -5,7 +5,7 @@ export const missingConfigurationLabels: Record<string, string> = {
   sampleSize: "Informar o tamanho da amostra",
   startDate: "Definir a data de início",
   endDate: "Definir a data de término",
-  salesFunnel: "Associar um funil de vendas",
+  journeyTemplate: "Vincular um template de jornada",
   instagramAccount: "Vincular uma conta do Instagram",
 };
 

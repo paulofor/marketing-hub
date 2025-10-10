@@ -10,8 +10,8 @@ import com.marketinghub.experiment.*;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.repository.ExperimentRepository;
-import com.marketinghub.funnel.SalesFunnel;
-import com.marketinghub.funnel.SalesFunnelRepository;
+import com.marketinghub.journey.model.JourneyTemplate;
+import com.marketinghub.journey.repository.JourneyTemplateRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import jakarta.persistence.EntityManager;
@@ -31,7 +31,7 @@ public class ExperimentService {
     private final com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository;
     private final MetricPresetService metricPresetService;
     private final EntityManager entityManager;
-    private final SalesFunnelRepository salesFunnelRepository;
+    private final JourneyTemplateRepository journeyTemplateRepository;
     private final FacebookPageRepository facebookPageRepository;
     private final InstagramAccountRepository instagramAccountRepository;
     private final FacebookInstantFormRepository facebookInstantFormRepository;
@@ -40,7 +40,7 @@ public class ExperimentService {
                              com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository,
                              MetricPresetService metricPresetService,
                              EntityManager entityManager,
-                             SalesFunnelRepository salesFunnelRepository,
+                             JourneyTemplateRepository journeyTemplateRepository,
                              FacebookPageRepository facebookPageRepository,
                              InstagramAccountRepository instagramAccountRepository,
                              FacebookInstantFormRepository facebookInstantFormRepository) {
@@ -49,7 +49,7 @@ public class ExperimentService {
         this.hypothesisRepository = hypothesisRepository;
         this.metricPresetService = metricPresetService;
         this.entityManager = entityManager;
-        this.salesFunnelRepository = salesFunnelRepository;
+        this.journeyTemplateRepository = journeyTemplateRepository;
         this.facebookPageRepository = facebookPageRepository;
         this.instagramAccountRepository = instagramAccountRepository;
         this.facebookInstantFormRepository = facebookInstantFormRepository;
@@ -108,11 +108,15 @@ public class ExperimentService {
         return entityManager.getReference(FacebookInstantForm.class, instantFormId);
     }
 
-    private SalesFunnel resolveSalesFunnel(String name) {
-        return salesFunnelRepository.findFirstByNameIgnoreCaseOrderByCreatedAtDesc(name)
-                .or(() -> salesFunnelRepository.findByNameIgnoreCase(name))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "salesFunnelName not found: " + name));
+    private JourneyTemplate attachJourneyTemplate(Long journeyTemplateId) {
+        if (journeyTemplateId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "journeyTemplateId required");
+        }
+        if (!journeyTemplateRepository.existsById(journeyTemplateId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "journeyTemplateId not found: " + journeyTemplateId);
+        }
+        return entityManager.getReference(JourneyTemplate.class, journeyTemplateId);
     }
 
     /**
@@ -141,6 +145,9 @@ public class ExperimentService {
         if (request.getMetricPresetId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "metricPresetId required");
         }
+        if (request.getJourneyTemplateId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "journeyTemplateId required");
+        }
         MetricPreset preset = metricPresetService.get(request.getMetricPresetId());
         java.math.BigDecimal computedStopLoss = request.getKpiTargetCpl().multiply(preset.getStopLossFactor());
         if (request.getSampleSize() != null && request.getSampleSize() < 100) {
@@ -150,10 +157,7 @@ public class ExperimentService {
                 request.getBaselineCvr().compareTo(request.getTargetCvr()) >= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "baselineCvr must be < targetCvr");
         }
-        SalesFunnel salesFunnel = null;
-        if (request.getSalesFunnelName() != null && !request.getSalesFunnelName().isBlank()) {
-            salesFunnel = resolveSalesFunnel(request.getSalesFunnelName());
-        }
+        JourneyTemplate journeyTemplate = attachJourneyTemplate(request.getJourneyTemplateId());
         Experiment exp = Experiment.builder()
                 .niche(niche)
                 .name(request.getName())
@@ -174,7 +178,7 @@ public class ExperimentService {
                 .facebookPage(attachFacebookPage(request.getFacebookPageId()))
                 .facebookInstantForm(attachInstantForm(request.getFacebookInstantFormId(), request.getHypothesisId()))
                 .instagramAccount(attachInstagramAccount(request.getInstagramAccountId()))
-                .salesFunnel(salesFunnel)
+                .journeyTemplate(journeyTemplate)
                 .build();
         return repository.save(exp);
     }
@@ -231,7 +235,7 @@ public class ExperimentService {
                 .facebookPage(original.getFacebookPage())
                 .instagramAccount(original.getInstagramAccount())
                 .facebookInstantForm(original.getFacebookInstantForm())
-                .salesFunnel(original.getSalesFunnel())
+                .journeyTemplate(original.getJourneyTemplate())
                 .build();
         return repository.save(copy);
     }
@@ -304,12 +308,11 @@ public class ExperimentService {
         if (request.getCreativeApproved() != null) {
             exp.setCreativeApproved(request.getCreativeApproved());
         }
-        if (request.getSalesFunnelName() != null) {
-            if (request.getSalesFunnelName().isBlank()) {
-                exp.setSalesFunnel(null);
-            } else {
-                exp.setSalesFunnel(resolveSalesFunnel(request.getSalesFunnelName()));
+        if (request.isJourneyTemplateIdPresent()) {
+            if (request.getJourneyTemplateId() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "journeyTemplateId required");
             }
+            exp.setJourneyTemplate(attachJourneyTemplate(request.getJourneyTemplateId()));
         }
         if (request.isFacebookPageIdPresent()) {
             exp.setFacebookPage(attachFacebookPage(request.getFacebookPageId()));

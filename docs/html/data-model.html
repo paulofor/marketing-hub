@@ -168,13 +168,16 @@
 <li><code>end_date</code> DATE</li>
 <li><code>status</code> VARCHAR(20)</li>
 <li><code>platform</code> VARCHAR(50)</li>
-<li><code>sales_funnel_id</code> BINARY(16)</li>
+<li><code>journey_template_id</code> BIGINT NOT NULL</li>
 <li><code>created_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP</li>
 <li><code>updated_at</code> TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</li>
 </ul>
 <p>Defines a marketing experiment for a specific niche and hypothesis. Each
 experiment aggregates the creative variants, ad sets and landing pages that
 will be executed and measured during the test cycle.</p>
+<p><code>journey_template_id</code> is a required foreign key to
+<code>journey_template.id</code> that allows the experiment to reuse the approved
+customer journey blueprint when orchestrating campaigns and automations.</p>
 <h3>creative</h3>
 <ul>
 <li><code>id</code> BIGINT AUTO_INCREMENT PRIMARY KEY</li>

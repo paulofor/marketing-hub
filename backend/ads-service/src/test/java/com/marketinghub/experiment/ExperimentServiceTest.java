@@ -7,8 +7,8 @@ import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.experiment.service.ExperimentService;
-import com.marketinghub.funnel.SalesFunnel;
-import com.marketinghub.funnel.SalesFunnelRepository;
+import com.marketinghub.journey.model.JourneyTemplate;
+import com.marketinghub.journey.repository.JourneyTemplateRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.ads.InstagramAccount;
@@ -46,7 +46,7 @@ class ExperimentServiceTest {
     @Autowired
     ExperimentRepository experimentRepository;
     @Autowired
-    SalesFunnelRepository salesFunnelRepository;
+    JourneyTemplateRepository journeyTemplateRepository;
     @Autowired
     AudienceRepository audienceRepository;
     @Autowired
@@ -58,6 +58,13 @@ class ExperimentServiceTest {
                         .name("Conta Teste")
                         .handle("@contateste")
                         .code("IG-1")
+                        .build());
+    }
+
+    private JourneyTemplate createJourneyTemplate() {
+        return journeyTemplateRepository.save(
+                JourneyTemplate.builder()
+                        .name("Lifecycle")
                         .build());
     }
 
@@ -89,6 +96,7 @@ class ExperimentServiceTest {
         req.setHypothesis("Teste");
         req.setKpiTargetCpl(new BigDecimal("45"));
         req.setMetricPresetId("LEAN_150");
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
         req.setSampleSize(1500);
         req.setBaselineCvr(new BigDecimal("3"));
         req.setTargetCvr(new BigDecimal("5"));
@@ -125,6 +133,7 @@ class ExperimentServiceTest {
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
         req.setMetricPresetId("LEAN_150");
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
         req.setSampleSize(1500);
         req.setBaselineCvr(new BigDecimal("3"));
         req.setTargetCvr(new BigDecimal("5"));
@@ -163,6 +172,7 @@ class ExperimentServiceTest {
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
         req.setMetricPresetId("LEAN_150");
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
         req.setSampleSize(1500);
         req.setBaselineCvr(new BigDecimal("3"));
         req.setTargetCvr(new BigDecimal("5"));
@@ -201,6 +211,7 @@ class ExperimentServiceTest {
         req1.setHypothesis("H");
         req1.setKpiTargetCpl(new BigDecimal("45"));
         req1.setMetricPresetId("LEAN_150");
+        req1.setJourneyTemplateId(createJourneyTemplate().getId());
         req1.setInstagramAccountId(createInstagramAccount().getId());
         var expApproved = service.create(req1);
         expApproved.setCreativeApproved(true);
@@ -226,6 +237,7 @@ class ExperimentServiceTest {
         req2.setHypothesis("H");
         req2.setKpiTargetCpl(new BigDecimal("45"));
         req2.setMetricPresetId("LEAN_150");
+        req2.setJourneyTemplateId(createJourneyTemplate().getId());
         req2.setInstagramAccountId(createInstagramAccount().getId());
         var expNotApproved = service.create(req2);
         experimentRepository.save(expNotApproved);
@@ -262,6 +274,7 @@ class ExperimentServiceTest {
         req.setHypothesis("H");
         req.setKpiTargetCpl(new BigDecimal("45"));
         req.setMetricPresetId("LEAN_150");
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
         req.setSampleSize(1500);
         req.setBaselineCvr(new BigDecimal("3"));
         req.setTargetCvr(new BigDecimal("5"));
@@ -276,7 +289,7 @@ class ExperimentServiceTest {
     }
 
     @Test
-    void createAssociatesSalesFunnelByName() {
+    void createAssociatesJourneyTemplateById() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
         var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
         var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
@@ -296,7 +309,7 @@ class ExperimentServiceTest {
                 .stopLossFactor(new BigDecimal("2"))
                 .defaultMdePp(new BigDecimal("12"))
                 .build());
-        SalesFunnel funnel = salesFunnelRepository.save(SalesFunnel.builder().name("Topo").build());
+        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setMarketNicheId(niche.getId());
         req.setHypothesisId(hyp.getId());
@@ -304,17 +317,17 @@ class ExperimentServiceTest {
         req.setHypothesis("Teste");
         req.setKpiTargetCpl(new BigDecimal("45"));
         req.setMetricPresetId("LEAN_150");
-        req.setSalesFunnelName("Topo");
+        req.setJourneyTemplateId(template.getId());
         req.setInstagramAccountId(createInstagramAccount().getId());
 
         Experiment exp = service.create(req);
 
-        assertThat(exp.getSalesFunnel()).isNotNull();
-        assertThat(exp.getSalesFunnel().getId()).isEqualTo(funnel.getId());
+        assertThat(exp.getJourneyTemplate()).isNotNull();
+        assertThat(exp.getJourneyTemplate().getId()).isEqualTo(template.getId());
     }
 
     @Test
-    void updateChangesSalesFunnelWhenProvided() {
+    void createRequiresJourneyTemplateId() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
         var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
         var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
@@ -334,8 +347,6 @@ class ExperimentServiceTest {
                 .stopLossFactor(new BigDecimal("2"))
                 .defaultMdePp(new BigDecimal("12"))
                 .build());
-        SalesFunnel first = salesFunnelRepository.save(SalesFunnel.builder().name("Topo").build());
-        SalesFunnel second = salesFunnelRepository.save(SalesFunnel.builder().name("Meio").build());
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setMarketNicheId(niche.getId());
         req.setHypothesisId(hyp.getId());
@@ -343,7 +354,44 @@ class ExperimentServiceTest {
         req.setHypothesis("Teste");
         req.setKpiTargetCpl(new BigDecimal("45"));
         req.setMetricPresetId("LEAN_150");
-        req.setSalesFunnelName(first.getName());
+        req.setInstagramAccountId(createInstagramAccount().getId());
+
+        assertThatThrownBy(() -> service.create(req))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("journeyTemplateId required");
+    }
+
+    @Test
+    void updateChangesJourneyTemplateWhenProvided() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("T")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        JourneyTemplate first = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
+        JourneyTemplate second = journeyTemplateRepository.save(JourneyTemplate.builder().name("Retarget").build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("Exp1");
+        req.setHypothesis("Teste");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_150");
+        req.setJourneyTemplateId(first.getId());
         req.setInstagramAccountId(createInstagramAccount().getId());
         Experiment exp = service.create(req);
 
@@ -352,16 +400,16 @@ class ExperimentServiceTest {
         updateReq.setHypothesis("Teste");
         updateReq.setKpiTargetCpl(new BigDecimal("45"));
         updateReq.setMetricPresetId("LEAN_150");
-        updateReq.setSalesFunnelName(second.getName());
+        updateReq.setJourneyTemplateId(second.getId());
 
         Experiment updated = service.update(exp.getId(), updateReq);
 
-        assertThat(updated.getSalesFunnel()).isNotNull();
-        assertThat(updated.getSalesFunnel().getId()).isEqualTo(second.getId());
+        assertThat(updated.getJourneyTemplate()).isNotNull();
+        assertThat(updated.getJourneyTemplate().getId()).isEqualTo(second.getId());
     }
 
     @Test
-    void updateClearsSalesFunnelWhenBlank() {
+    void updateRejectsNullJourneyTemplate() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
         var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
         var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
@@ -381,7 +429,7 @@ class ExperimentServiceTest {
                 .stopLossFactor(new BigDecimal("2"))
                 .defaultMdePp(new BigDecimal("12"))
                 .build());
-        SalesFunnel funnel = salesFunnelRepository.save(SalesFunnel.builder().name("Topo").build());
+        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
         CreateExperimentRequest req = new CreateExperimentRequest();
         req.setMarketNicheId(niche.getId());
         req.setHypothesisId(hyp.getId());
@@ -389,7 +437,7 @@ class ExperimentServiceTest {
         req.setHypothesis("Teste");
         req.setKpiTargetCpl(new BigDecimal("45"));
         req.setMetricPresetId("LEAN_150");
-        req.setSalesFunnelName(funnel.getName());
+        req.setJourneyTemplateId(template.getId());
         req.setInstagramAccountId(createInstagramAccount().getId());
         Experiment exp = service.create(req);
 
@@ -398,10 +446,10 @@ class ExperimentServiceTest {
         updateReq.setHypothesis("Teste");
         updateReq.setKpiTargetCpl(new BigDecimal("45"));
         updateReq.setMetricPresetId("LEAN_150");
-        updateReq.setSalesFunnelName("");
+        updateReq.setJourneyTemplateId(null);
 
-        Experiment updated = service.update(exp.getId(), updateReq);
-
-        assertThat(updated.getSalesFunnel()).isNull();
+        assertThatThrownBy(() -> service.update(exp.getId(), updateReq))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("journeyTemplateId required");
     }
 }

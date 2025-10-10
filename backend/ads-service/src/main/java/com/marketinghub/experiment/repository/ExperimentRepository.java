@@ -11,7 +11,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Repository for experiments.
@@ -43,8 +42,6 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
             """)
     List<Experiment> findReadyForCampaign(@Param("status") ExperimentStatus status,
                                           @Param("platform") ExperimentPlatform platform);
-    long countBySalesFunnelId(UUID salesFunnelId);
-
     /**
      * Retrieves experiments configured to generate creatives.
      *

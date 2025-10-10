@@ -11,6 +11,8 @@ import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.ads.InstagramAccountRepository;
+import com.marketinghub.journey.model.JourneyTemplate;
+import com.marketinghub.journey.repository.JourneyTemplateRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -29,6 +31,7 @@ public class FixtureUtils {
     private final com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository;
     private final com.marketinghub.experiment.repository.MetricPresetRepository metricPresetRepository;
     private final InstagramAccountRepository instagramAccountRepository;
+    private final JourneyTemplateRepository journeyTemplateRepository;
 
     public MarketNiche createAndSaveNiche() {
         MarketNiche niche = MarketNiche.builder()
@@ -65,6 +68,10 @@ public class FixtureUtils {
                         .defaultMdePp(java.math.BigDecimal.valueOf(12))
                         .build());
         String name = "Experiment-" + java.util.UUID.randomUUID();
+        JourneyTemplate template = journeyTemplateRepository.save(
+                JourneyTemplate.builder()
+                        .name("Template Jornada")
+                        .build());
         Experiment exp = Experiment.builder()
                 .niche(niche)
                 .name(name)
@@ -78,6 +85,7 @@ public class FixtureUtils {
                 .platform(ExperimentPlatform.FACEBOOK)
                 .creativesToGenerate(0)
                 .instagramAccount(createAndSaveInstagramAccount())
+                .journeyTemplate(template)
                 .build();
         return experimentRepository.save(exp);
     }

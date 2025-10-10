@@ -8,7 +8,7 @@ import com.marketinghub.ads.FacebookAccountRepository;
 import com.marketinghub.ads.FacebookPage;
 import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.experiment.Experiment;
-import com.marketinghub.funnel.SalesFunnel;
+import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.experiment.service.ExperimentService;
@@ -80,9 +80,9 @@ class FacebookAdsCampaignControllerTest {
                 .id(java.util.UUID.randomUUID())
                 .title("Hipótese do Nicho")
                 .build();
-        var funnel = SalesFunnel.builder()
-                .id(java.util.UUID.randomUUID())
-                .name("Funil de Conversão")
+        var journeyTemplate = JourneyTemplate.builder()
+                .id(20L)
+                .name("Lifecycle Pós-Clique")
                 .build();
         var account = FacebookAccount.builder()
                 .id(55L)
@@ -112,7 +112,7 @@ class FacebookAdsCampaignControllerTest {
                 .startDate(LocalDate.of(2024, 1, 1))
                 .endDate(LocalDate.of(2024, 1, 31))
                 .creativeApproved(true)
-                .salesFunnel(funnel)
+                .journeyTemplate(journeyTemplate)
                 .facebookPage(page)
                 .instagramAccount(instagramAccount)
                 .build();
@@ -145,6 +145,7 @@ class FacebookAdsCampaignControllerTest {
                 .id(42L)
                 .name("Exp")
                 .creativeApproved(true)
+                .journeyTemplate(JourneyTemplate.builder().id(99L).name("Lifecycle").build())
                 .instagramAccount(InstagramAccount.builder()
                         .id(5L)
                         .handle("@acc")

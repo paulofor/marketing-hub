@@ -12,7 +12,6 @@ import CriativosTab from "./CriativosTab";
 import PublicosTab from "./PublicosTab";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import * as Tabs from "@radix-ui/react-tabs";
-import FunnelPreviewModal from "./FunnelPreviewModal";
 import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
 import { useFacebookConfigurationStatus } from "../../api/useFacebookConfigurationStatus";
 
@@ -30,7 +29,6 @@ export default function ExperimentDetailPage() {
   const { data: audiences } = useAudiencesByNiche(nicheIdParam);
   const { data: presets } = useMetricPresets();
   const [tab, setTab] = useState("overview");
-  const [isFunnelPreviewOpen, setFunnelPreviewOpen] = useState(false);
   const { data: facebookConfig, isLoading: isLoadingFacebookConfig } =
     useFacebookConfigurationStatus();
   useBreadcrumbs([
@@ -241,20 +239,19 @@ export default function ExperimentDetailPage() {
         ? `${instagramAccount.name} (${instagramAccount.handle})`
         : "—",
     },
-    ...(data.salesFunnelName
+    ...(data.journeyTemplateName
       ? [
           {
-            label: "Funil de Vendas",
-            value: data.salesFunnelId ? (
-              <button
-                type="button"
+            label: "Template de Jornada",
+            value: data.journeyTemplateId ? (
+              <Link
+                to={`/journey-templates/${data.journeyTemplateId}`}
                 className="btn btn-link p-0 align-baseline"
-                onClick={() => setFunnelPreviewOpen(true)}
               >
-                {data.salesFunnelName}
-              </button>
+                {data.journeyTemplateName}
+              </Link>
             ) : (
-              data.salesFunnelName
+              data.journeyTemplateName
             ),
           },
         ]
@@ -398,13 +395,6 @@ export default function ExperimentDetailPage() {
           <CriativosTab experimentId={expId} />
         </Tabs.Content>
       </Tabs.Root>
-      {isFunnelPreviewOpen && data.salesFunnelId && (
-        <FunnelPreviewModal
-          funnelId={data.salesFunnelId}
-          fallbackName={data.salesFunnelName}
-          onClose={() => setFunnelPreviewOpen(false)}
-        />
-      )}
     </div>
   );
 }

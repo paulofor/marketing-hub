@@ -259,8 +259,8 @@ public class FacebookAdsCampaignController {
         if (experiment.getEndDate() == null) {
             missing.add("endDate");
         }
-        if (experiment.getSalesFunnel() == null) {
-            missing.add("salesFunnel");
+        if (experiment.getJourneyTemplate() == null) {
+            missing.add("journeyTemplate");
         }
         if (!StringUtils.hasText(resolveExperimentPageId(experiment))) {
             missing.add("pageId");

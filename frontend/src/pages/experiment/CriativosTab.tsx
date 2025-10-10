@@ -205,7 +205,6 @@ export default function CriativosTab({ experimentId }: Props) {
         startDate: experiment.startDate ?? undefined,
         endDate: experiment.endDate ?? undefined,
         creativesToGenerate: experiment.creativesToGenerate ?? undefined,
-        salesFunnelName: experiment.salesFunnelName ?? null,
         facebookPageId: parsedPageId,
         instagramAccountId: Number(experimentInstagramAccountId),
       });

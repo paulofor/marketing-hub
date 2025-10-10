@@ -25,7 +25,9 @@ public class UpdateExperimentRequest {
     private LocalDate endDate;
     private Integer creativesToGenerate;
     private Boolean creativeApproved;
-    private String salesFunnelName;
+    private Long journeyTemplateId;
+    @JsonIgnore
+    private boolean journeyTemplateIdPresent;
     private Long facebookPageId;
     @JsonIgnore
     private boolean facebookPageIdPresent;
@@ -40,6 +42,12 @@ public class UpdateExperimentRequest {
     public void setFacebookPageId(Long facebookPageId) {
         this.facebookPageId = facebookPageId;
         this.facebookPageIdPresent = true;
+    }
+
+    @JsonSetter(value = "journeyTemplateId", nulls = Nulls.SET)
+    public void setJourneyTemplateId(Long journeyTemplateId) {
+        this.journeyTemplateId = journeyTemplateId;
+        this.journeyTemplateIdPresent = true;
     }
 
     @JsonSetter(value = "facebookInstantFormId", nulls = Nulls.SET)

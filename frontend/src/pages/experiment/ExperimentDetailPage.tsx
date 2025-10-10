@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useExperiment } from "../../api/experiment/useExperiment";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
@@ -10,6 +10,8 @@ import nicheIcon from "../../assets/icons/niche-icon.svg";
 import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
 import CriativosTab from "./CriativosTab";
 import PublicosTab from "./PublicosTab";
+import InstantFormsTab from "./InstantFormsTab";
+import EmailsTab from "./EmailsTab";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import * as Tabs from "@radix-ui/react-tabs";
 import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
@@ -54,6 +56,19 @@ export default function ExperimentDetailPage() {
     { label: data?.name || "...", icon: experimentIcon },
   ]);
   const templateSteps = template?.steps ?? [];
+  const hasInstantFormSteps = templateSteps.some(
+    (step) => step.stimulusType === "INSTANT_FORM",
+  );
+  const hasEmailSteps = templateSteps.some((step) => step.stimulusType === "EMAIL");
+
+  useEffect(() => {
+    if (tab === "instant-form" && !hasInstantFormSteps) {
+      setTab("overview");
+    }
+    if (tab === "emails" && !hasEmailSteps) {
+      setTab("overview");
+    }
+  }, [tab, hasInstantFormSteps, hasEmailSteps]);
   const assignmentsWithSteps = useMemo(() => {
     const assignments = journeyAssignments?.assignments ?? [];
     if (assignments.length === 0) {
@@ -130,6 +145,20 @@ export default function ExperimentDetailPage() {
           ? "Abrir Contas do Facebook"
           : undefined,
     },
+    ...(hasInstantFormSteps
+      ? [
+          {
+            id: "instant-form",
+            title: "Instant form vinculado",
+            isMet: Boolean(experimentInstantForm),
+            hint: experimentInstantForm
+              ? `O formulário ${experimentInstantForm.name} (${experimentInstantForm.facebookFormId}) será usado na captura.`
+              : "Associe um instant form compatível na aba Instant Forms para destravar a etapa de captura.",
+            action: experimentInstantForm ? undefined : () => setTab("instant-form"),
+            actionLabel: experimentInstantForm ? undefined : "Ir para Instant Forms",
+          },
+        ]
+      : []),
     {
       id: "instagram-account",
       title: "Conta de Instagram vinculada",
@@ -470,6 +499,16 @@ export default function ExperimentDetailPage() {
           <Tabs.Trigger value="creatives" className="nav-link">
             Criativos
           </Tabs.Trigger>
+          {hasInstantFormSteps ? (
+            <Tabs.Trigger value="instant-form" className="nav-link">
+              Instant Forms
+            </Tabs.Trigger>
+          ) : null}
+          {hasEmailSteps ? (
+            <Tabs.Trigger value="emails" className="nav-link">
+              E-mails
+            </Tabs.Trigger>
+          ) : null}
         </Tabs.List>
         <Tabs.Content value="overview" asChild>
           <div className="card">
@@ -504,6 +543,20 @@ export default function ExperimentDetailPage() {
         <Tabs.Content value="creatives" asChild>
           <CriativosTab experimentId={expId} />
         </Tabs.Content>
+        {hasInstantFormSteps ? (
+          <Tabs.Content value="instant-form" asChild>
+            <InstantFormsTab experiment={data} steps={templateSteps} />
+          </Tabs.Content>
+        ) : null}
+        {hasEmailSteps ? (
+          <Tabs.Content value="emails" asChild>
+            <EmailsTab
+              journeyId={journeyAssignments?.journeyId ?? undefined}
+              steps={templateSteps}
+              experimentName={data.name}
+            />
+          </Tabs.Content>
+        ) : null}
       </Tabs.Root>
     </div>
   );

@@ -67,6 +67,30 @@ export default function EditExperimentPage() {
   }, [data, reset]);
 
   const selectedJourneyTemplateId = watch("journeyTemplateId");
+  const parsedJourneyTemplateId = selectedJourneyTemplateId
+    ? Number(selectedJourneyTemplateId)
+    : undefined;
+  const selectedJourneyTemplate =
+    parsedJourneyTemplateId !== undefined &&
+    !Number.isNaN(parsedJourneyTemplateId)
+      ? journeyTemplates?.content?.find(
+          (template) => template.id === parsedJourneyTemplateId,
+        )
+      : undefined;
+  const workerRequests = (selectedJourneyTemplate?.steps ?? []).reduce(
+    (acc, step) => {
+      if (step.stimulusType === "INSTANT_FORM") {
+        acc.instantForms += 1;
+      }
+      if (step.stimulusType === "EMAIL") {
+        acc.emails += 1;
+      }
+      return acc;
+    },
+    { instantForms: 0, emails: 0 },
+  );
+  const hasWorkerRequests =
+    workerRequests.instantForms > 0 || workerRequests.emails > 0;
 
   const onSubmit = async (values: FormData) => {
     try {
@@ -170,6 +194,25 @@ export default function EditExperimentPage() {
             </option>
           ))}
         </select>
+        {hasWorkerRequests && (
+          <div className="mb-3" aria-live="polite">
+            <p className="text-muted small mb-2">
+              Este template solicitará conteúdos ao Worker AI:
+            </p>
+            <div className="d-flex flex-wrap gap-2">
+              {workerRequests.instantForms > 0 && (
+                <span className="badge rounded-pill text-bg-info">
+                  Instant forms: {workerRequests.instantForms}
+                </span>
+              )}
+              {workerRequests.emails > 0 && (
+                <span className="badge rounded-pill text-bg-info">
+                  E-mails: {workerRequests.emails}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
         <label className="form-label" htmlFor="instagramAccountId">
           Conta do Instagram <span className="text-danger">*</span>
         </label>

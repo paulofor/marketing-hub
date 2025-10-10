@@ -7,6 +7,7 @@ import type {
 import { useInstantFormsByHypothesis } from "../../api/hypothesis/useInstantFormsByHypothesis";
 import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
 import type { JourneyStep } from "../../api/journey/types";
+import CreativeLibraryBanner from "./CreativeLibraryBanner";
 
 interface InstantFormsTabProps {
   experiment: Experiment;
@@ -337,6 +338,10 @@ export default function InstantFormsTab({ experiment, steps }: InstantFormsTabPr
 
   return (
     <div className="mt-3">
+      <CreativeLibraryBanner
+        experimentId={String(experiment.id)}
+        requestedCreatives={experiment.creativesToGenerate}
+      />
       <section className="card mb-4">
         <div className="card-header">
           <h5 className="mb-0">Passos que exigem instant form</h5>

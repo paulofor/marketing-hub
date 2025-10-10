@@ -2,10 +2,13 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import type { JourneyStep } from "../../api/journey/types";
 import { useJourney } from "../../api/journey/useJourney";
 import { useUpdateJourney } from "../../api/journey/useUpdateJourney";
+import CreativeLibraryBanner from "./CreativeLibraryBanner";
 
 type EmailStatus = "draft" | "review" | "approved" | "";
 
 interface EmailsTabProps {
+  experimentId: string;
+  requestedCreatives?: number | null;
   journeyId?: number | null;
   steps: JourneyStep[];
   experimentName: string;
@@ -99,7 +102,13 @@ function renderStepMetadata(metadata: Record<string, string>) {
   );
 }
 
-export default function EmailsTab({ journeyId, steps, experimentName }: EmailsTabProps) {
+export default function EmailsTab({
+  experimentId,
+  requestedCreatives,
+  journeyId,
+  steps,
+  experimentName,
+}: EmailsTabProps) {
   const emailSteps = useMemo(
     () => steps.filter((step) => step.stimulusType === "EMAIL"),
     [steps],
@@ -200,6 +209,10 @@ export default function EmailsTab({ journeyId, steps, experimentName }: EmailsTa
 
   return (
     <div className="mt-3">
+      <CreativeLibraryBanner
+        experimentId={experimentId}
+        requestedCreatives={requestedCreatives}
+      />
       <section className="card mb-4">
         <div className="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
           <div>

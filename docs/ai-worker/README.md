@@ -52,6 +52,24 @@ de IA quando necessário e persistem os resultados de volta no serviço principa
   prefixo configurado quando recebe `404`, evitando falhas em ambientes com roteamento diferente.
 - **Referências:** detalhes e fluxo em [experimento-criativo-service.md](experimento-criativo-service.md).
 
+### Experimento → Instant Forms
+- **Disparo:** `ExperimentInstantFormScheduler` (cron `0 */5 * * * *`).
+- **Fonte dos dados:** experimentos com `instantFormsToGenerate > 0` e página do Facebook vinculada.
+- **O que faz:** `ExperimentInstantFormService` consulta o `InstantFormChatGptClient` para estruturar até a
+  quantidade solicitada de formulários Instant/Lead Ads, respeitando o contexto da hipótese e das etapas da jornada.
+  Cada registro é salvo em `fb_instant_form` com `model` e `prompt` preenchidos, garantindo rastreabilidade do
+  conteúdo gerado pela IA.
+- **Referências:** fluxograma completo em [experimento-instant-form-service.md](experimento-instant-form-service.md).
+
+### Experimento → E-mails da jornada
+- **Disparo:** `ExperimentEmailScheduler` (cron `0 */5 * * * *`).
+- **Fonte dos dados:** experimentos com `emailsToGenerate > 0` que já possuem jornada ativa construída a partir do template.
+- **O que faz:** `ExperimentEmailService` reúne as etapas da jornada com estímulo `EMAIL`, envia o contexto para o
+  `ExperimentEmailChatGptClient` e grava nos metadados da jornada os campos `subject`, `templateId`, `status`, `notes`,
+  além de `model` e `prompt` para cada passo. O objetivo é liberar o time de CRM com linhas editoriais aprovadas e CTA
+  recomendada.
+- **Referências:** documentação em [experimento-email-service.md](experimento-email-service.md).
+
 - **Disparo:** `AudienceAdSetScheduler` (cron `0 */5 * * * *`).
 - **Fonte dos dados:** experimentos na plataforma Facebook com criativos aprovados e pelo menos um público aprovado,
   obtidos pelo `BackendExperimentClient` em `GET /api/facebook-adsets/experiments-ready`.

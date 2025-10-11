@@ -2,13 +2,14 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import type { JourneyStep } from "../../api/journey/types";
 import { useJourney } from "../../api/journey/useJourney";
 import { useUpdateJourney } from "../../api/journey/useUpdateJourney";
-import CreativeLibraryBanner from "./CreativeLibraryBanner";
+import { useRequestEmails } from "../../api/experiment/useRequestEmails";
+import WorkerRequestBanner from "./WorkerRequestBanner";
 
 type EmailStatus = "draft" | "review" | "approved" | "";
 
 interface EmailsTabProps {
   experimentId: string;
-  requestedCreatives?: number | null;
+  requestedEmails?: number | null;
   journeyId?: number | null;
   steps: JourneyStep[];
   experimentName: string;
@@ -104,7 +105,7 @@ function renderStepMetadata(metadata: Record<string, string>) {
 
 export default function EmailsTab({
   experimentId,
-  requestedCreatives,
+  requestedEmails,
   journeyId,
   steps,
   experimentName,
@@ -115,6 +116,7 @@ export default function EmailsTab({
   );
   const { data: journey, isLoading, isError } = useJourney(journeyId ?? undefined);
   const updateJourney = useUpdateJourney(journeyId ?? 0);
+  const requestEmails = useRequestEmails(experimentId);
   const [configs, setConfigs] = useState<Record<number, EmailConfig>>({});
   const [savingStepId, setSavingStepId] = useState<number | null>(null);
 
@@ -209,9 +211,22 @@ export default function EmailsTab({
 
   return (
     <div className="mt-3">
-      <CreativeLibraryBanner
-        experimentId={experimentId}
-        requestedCreatives={requestedCreatives}
+      <WorkerRequestBanner
+        title="E-mails planejados"
+        subtitle="Peça ao Worker IA para redigir os e-mails das etapas desta jornada."
+        resourceName="e-mail"
+        resourceNamePlural="e-mails"
+        existingLabel="E-mails aprovados"
+        existingCount={approvedCount}
+        requestedCount={requestedEmails}
+        defaultQuantity={Math.max(1, emailSteps.length)}
+        helperText="Informe quantos e-mails deseja que o Worker IA crie para avançar com a jornada."
+        buttonLabel="Gerar e-mails"
+        successMessage={(quantity) => (
+          `Solicitamos ${quantity} ${quantity === 1 ? "e-mail" : "e-mails"} ao Worker IA. Ajuste os status conforme eles ficarem prontos.`
+        )}
+        onRequest={(quantity) => requestEmails.mutateAsync(quantity)}
+        isRequesting={requestEmails.isPending}
       />
       <section className="card mb-4">
         <div className="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">

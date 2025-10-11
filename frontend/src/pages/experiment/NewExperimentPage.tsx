@@ -111,6 +111,10 @@ export default function NewExperimentPage() {
         mde: form.mde ? Number(form.mde) : undefined,
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
+        instantFormsToGenerate:
+          workerRequests.instantForms > 0 ? workerRequests.instantForms : undefined,
+        emailsToGenerate:
+          workerRequests.emails > 0 ? workerRequests.emails : undefined,
         journeyTemplateId: Number(form.journeyTemplateId),
         facebookPageId: form.facebookPageId
           ? Number(form.facebookPageId)

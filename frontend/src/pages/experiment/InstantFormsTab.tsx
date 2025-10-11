@@ -7,7 +7,8 @@ import type {
 import { useInstantFormsByHypothesis } from "../../api/hypothesis/useInstantFormsByHypothesis";
 import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
 import type { JourneyStep } from "../../api/journey/types";
-import CreativeLibraryBanner from "./CreativeLibraryBanner";
+import { useRequestInstantForms } from "../../api/experiment/useRequestInstantForms";
+import WorkerRequestBanner from "./WorkerRequestBanner";
 
 interface InstantFormsTabProps {
   experiment: Experiment;
@@ -50,6 +51,7 @@ export default function InstantFormsTab({ experiment, steps }: InstantFormsTabPr
   );
   const availableForms = Array.isArray(forms) ? forms : [];
   const updateExperiment = useUpdateExperiment(experiment.id);
+  const requestInstantForms = useRequestInstantForms(experiment.id);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [selectedFormId, setSelectedFormId] = useState<string>(
     experiment.facebookInstantForm?.id
@@ -124,6 +126,8 @@ export default function InstantFormsTab({ experiment, steps }: InstantFormsTabPr
         startDate: experiment.startDate ?? undefined,
         endDate: experiment.endDate ?? undefined,
         creativesToGenerate: experiment.creativesToGenerate ?? undefined,
+        instantFormsToGenerate: experiment.instantFormsToGenerate ?? undefined,
+        emailsToGenerate: experiment.emailsToGenerate ?? undefined,
         facebookPageId: experiment.facebookPage?.id ?? null,
         facebookInstantFormId: parsedId,
         instagramAccountId: experiment.instagramAccount?.id ?? null,
@@ -338,9 +342,19 @@ export default function InstantFormsTab({ experiment, steps }: InstantFormsTabPr
 
   return (
     <div className="mt-3">
-      <CreativeLibraryBanner
-        experimentId={String(experiment.id)}
-        requestedCreatives={experiment.creativesToGenerate}
+      <WorkerRequestBanner
+        title="Instant forms planejados"
+        subtitle="Solicite ao Worker IA a criação dos formulários aprovados para esta hipótese."
+        resourceName="instant form"
+        resourceNamePlural="instant forms"
+        existingLabel="Instant forms catalogados"
+        existingCount={availableForms.length}
+        requestedCount={experiment.instantFormsToGenerate}
+        defaultQuantity={Math.max(1, requiredCount)}
+        helperText="Informe quantos formulários deseja gerar. Vamos priorizar as etapas da jornada que dependem de instant form."
+        buttonLabel="Gerar instant forms"
+        onRequest={(quantity) => requestInstantForms.mutateAsync(quantity)}
+        isRequesting={requestInstantForms.isPending}
       />
       <section className="card mb-4">
         <div className="card-header">

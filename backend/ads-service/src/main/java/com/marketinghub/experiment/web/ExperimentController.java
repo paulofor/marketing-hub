@@ -66,4 +66,14 @@ public class ExperimentController {
         return mapper.toDto(service.requestCreatives(id, quantity));
     }
 
+    @PatchMapping("/{id}/instant-forms-to-generate")
+    public ExperimentDto requestInstantForms(@PathVariable Long id, @RequestParam("quantity") int quantity) {
+        return mapper.toDto(service.requestInstantForms(id, quantity));
+    }
+
+    @PatchMapping("/{id}/emails-to-generate")
+    public ExperimentDto requestEmails(@PathVariable Long id, @RequestParam("quantity") int quantity) {
+        return mapper.toDto(service.requestEmails(id, quantity));
+    }
+
 }

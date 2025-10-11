@@ -28,6 +28,8 @@ public class CreateExperimentRequest {
     private LocalDate startDate;
     private LocalDate endDate;
     private Integer creativesToGenerate;
+    private Integer instantFormsToGenerate;
+    private Integer emailsToGenerate;
     private Long journeyTemplateId;
     private Long facebookPageId;
     private Long facebookInstantFormId;

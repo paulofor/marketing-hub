@@ -322,6 +322,8 @@ export default function ExperimentDetailPage() {
       value: data.sampleSize ?? preset?.sampleSize ?? "—",
     },
     { label: "Criativos a gerar", value: data.creativesToGenerate ?? "—" },
+    { label: "Instant forms a gerar", value: data.instantFormsToGenerate ?? "—" },
+    { label: "E-mails a gerar", value: data.emailsToGenerate ?? "—" },
     {
       label: "Públicos aprovados",
       value: approvedAudienceSummary,
@@ -552,7 +554,7 @@ export default function ExperimentDetailPage() {
           <Tabs.Content value="emails" asChild>
             <EmailsTab
               experimentId={expId}
-              requestedCreatives={data.creativesToGenerate}
+              requestedEmails={data.emailsToGenerate}
               journeyId={journeyAssignments?.journeyId ?? undefined}
               steps={templateSteps}
               experimentName={data.name}

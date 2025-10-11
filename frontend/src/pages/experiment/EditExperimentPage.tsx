@@ -119,6 +119,8 @@ export default function EditExperimentPage() {
         startDate: data.startDate ?? undefined,
         endDate: data.endDate ?? undefined,
         instagramAccountId: Number(values.instagramAccountId),
+        instantFormsToGenerate: data.instantFormsToGenerate ?? undefined,
+        emailsToGenerate: data.emailsToGenerate ?? undefined,
       };
 
       if (dirtyFields.journeyTemplateId) {

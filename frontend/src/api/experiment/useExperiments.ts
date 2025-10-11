@@ -32,6 +32,8 @@ export interface FacebookInstantFormSummary {
   privacyPolicyUrl?: string | null;
   model?: string | null;
   prompt?: string | null;
+  approved?: boolean;
+  approvedAt?: string | null;
 }
 
 export interface Experiment {

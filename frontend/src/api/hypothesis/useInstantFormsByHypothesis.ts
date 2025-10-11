@@ -18,6 +18,8 @@ export interface InstantForm {
   privacyPolicyUrl?: string | null;
   model?: string | null;
   prompt?: string | null;
+  approved: boolean;
+  approvedAt?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
 }

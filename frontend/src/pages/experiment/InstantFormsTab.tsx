@@ -237,8 +237,10 @@ export default function InstantFormsTab({ experiment, steps }: InstantFormsTabPr
               <th>Formulário</th>
               <th>Página</th>
               <th>Status</th>
+              <th>Aprovação</th>
               <th>Engajamento</th>
               <th>Links</th>
+              <th>Detalhes</th>
             </tr>
           </thead>
           <tbody>
@@ -260,6 +262,14 @@ export default function InstantFormsTab({ experiment, steps }: InstantFormsTabPr
                   <div className="text-muted small">
                     Idioma: {form.locale ?? "não informado"}
                   </div>
+                </td>
+                <td style={{ minWidth: 140 }}>
+                  <span className={`badge ${form.approved ? "text-bg-success" : "text-bg-secondary"}`}>
+                    {form.approved ? "Aprovado" : "Pendente"}
+                  </span>
+                  {form.approvedAt ? (
+                    <div className="text-muted small mt-1">{formatDatetime(form.approvedAt)}</div>
+                  ) : null}
                 </td>
                 <td style={{ minWidth: 160 }}>
                   <div className="text-muted small">Leads</div>
@@ -290,6 +300,14 @@ export default function InstantFormsTab({ experiment, steps }: InstantFormsTabPr
                       </a>
                     ) : null}
                   </div>
+                </td>
+                <td style={{ minWidth: 140 }}>
+                  <Link
+                    to={`/experiments/${experiment.id}/instant-forms/${form.id}`}
+                    className="btn btn-link btn-sm px-0"
+                  >
+                    Ver detalhes
+                  </Link>
                 </td>
               </tr>
             ))}
@@ -334,6 +352,20 @@ export default function InstantFormsTab({ experiment, steps }: InstantFormsTabPr
                 Política de privacidade
               </a>
             ) : null}
+          </div>
+        </dd>
+        <dt className="col-sm-4">Aprovação</dt>
+        <dd className="col-sm-8">
+          <span className={`badge ${form.approved ? "text-bg-success" : "text-bg-secondary"}`}>
+            {form.approved ? "Aprovado" : "Pendente"}
+          </span>
+          {form.approvedAt ? (
+            <span className="text-muted small ms-2">{formatDatetime(form.approvedAt)}</span>
+          ) : null}
+          <div>
+            <Link to={`/experiments/${experiment.id}/instant-forms/${form.id}`} className="btn btn-link btn-sm px-0">
+              Abrir detalhamento
+            </Link>
           </div>
         </dd>
       </dl>

@@ -2,7 +2,9 @@ package com.marketinghub.ads;
 
 import com.marketinghub.ads.dto.CreateFacebookInstantFormRequest;
 import com.marketinghub.ads.dto.FacebookInstantFormDto;
+import com.marketinghub.ads.dto.UpdateFacebookInstantFormApprovalRequest;
 import com.marketinghub.ads.mapper.FacebookInstantFormMapper;
+import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,15 +22,18 @@ public class FacebookInstantFormController {
     private final HypothesisRepository hypothesisRepository;
     private final FacebookPageRepository pageRepository;
     private final FacebookInstantFormMapper mapper;
+    private final ExperimentRepository experimentRepository;
 
     public FacebookInstantFormController(FacebookInstantFormRepository repository,
                                          HypothesisRepository hypothesisRepository,
                                          FacebookPageRepository pageRepository,
-                                         FacebookInstantFormMapper mapper) {
+                                         FacebookInstantFormMapper mapper,
+                                         ExperimentRepository experimentRepository) {
         this.repository = repository;
         this.hypothesisRepository = hypothesisRepository;
         this.pageRepository = pageRepository;
         this.mapper = mapper;
+        this.experimentRepository = experimentRepository;
     }
 
     @GetMapping("/hypotheses/{hypothesisId}/instant-forms")
@@ -96,7 +101,41 @@ public class FacebookInstantFormController {
                 .privacyPolicyUrl(request.privacyPolicyUrl())
                 .model(request.model())
                 .prompt(request.prompt())
+                .approved(false)
                 .build();
         return mapper.toDto(repository.save(entity));
+    }
+
+    @GetMapping("/instant-forms/{id}")
+    public FacebookInstantFormDto get(@PathVariable Long id) {
+        return repository.findById(id)
+                .map(mapper::toDto)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "instant form not found"));
+    }
+
+    @PatchMapping("/instant-forms/{id}/approval")
+    @Transactional
+    public FacebookInstantFormDto updateApproval(@PathVariable Long id,
+                                                 @RequestBody UpdateFacebookInstantFormApprovalRequest request) {
+        FacebookInstantForm form = repository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "instant form not found"));
+        if (request.approved()) {
+            form.setApproved(true);
+            form.setApprovedAt(Instant.now());
+        } else {
+            form.setApproved(false);
+            form.setApprovedAt(null);
+        }
+        return mapper.toDto(repository.save(form));
+    }
+
+    @DeleteMapping("/instant-forms/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional
+    public void delete(@PathVariable Long id) {
+        FacebookInstantForm form = repository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "instant form not found"));
+        experimentRepository.clearFacebookInstantFormById(id);
+        repository.delete(form);
     }
 }

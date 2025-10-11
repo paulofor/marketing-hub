@@ -18,7 +18,9 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -52,7 +54,6 @@ class FacebookInstantFormControllerTest {
 
     @Autowired
     ExperimentRepository experimentRepository;
-
     @Autowired
     HypothesisRepository hypothesisRepository;
 
@@ -112,7 +113,8 @@ class FacebookInstantFormControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Formulário Principal"))
                 .andExpect(jsonPath("$.facebookFormId").value("FORM-123"))
-                .andExpect(jsonPath("$.model").value("gpt-4o"));
+                .andExpect(jsonPath("$.model").value("gpt-4o"))
+                .andExpect(jsonPath("$.approved").value(false));
 
         assertThat(instantFormRepository.findAll()).hasSize(1)
                 .first()
@@ -126,6 +128,35 @@ class FacebookInstantFormControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].facebookPageName").value("Página Teste"))
-                .andExpect(jsonPath("$[0].leadsCount").value(42));
+                .andExpect(jsonPath("$[0].leadsCount").value(42))
+                .andExpect(jsonPath("$[0].approved").value(false));
+
+        FacebookInstantForm form = instantFormRepository.findAll().get(0);
+
+        mockMvc.perform(get("/api/instant-forms/" + form.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(form.getId()))
+                .andExpect(jsonPath("$.prompt").value("Prompt de teste"));
+
+        mockMvc.perform(patch("/api/instant-forms/" + form.getId() + "/approval")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"approved\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.approved").value(true))
+                .andExpect(jsonPath("$.approvedAt").exists());
+
+        instantFormRepository.flush();
+
+        mockMvc.perform(patch("/api/instant-forms/" + form.getId() + "/approval")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"approved\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.approved").value(false))
+                .andExpect(jsonPath("$.approvedAt").doesNotExist());
+
+        mockMvc.perform(delete("/api/instant-forms/" + form.getId()))
+                .andExpect(status().isNoContent());
+
+        assertThat(instantFormRepository.findAll()).isEmpty();
     }
 }

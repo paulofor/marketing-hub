@@ -94,4 +94,8 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update Experiment e set e.facebookPage = null where e.facebookPage.id = :facebookPageId")
     int clearFacebookPageById(@Param("facebookPageId") Long facebookPageId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("update Experiment e set e.facebookInstantForm = null where e.facebookInstantForm.id = :instantFormId")
+    int clearFacebookInstantFormById(@Param("instantFormId") Long instantFormId);
 }

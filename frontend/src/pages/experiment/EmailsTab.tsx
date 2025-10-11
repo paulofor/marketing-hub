@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import type { JourneyStep } from "../../api/journey/types";
 import { useJourney } from "../../api/journey/useJourney";
 import { useUpdateJourney } from "../../api/journey/useUpdateJourney";
@@ -277,9 +278,17 @@ export default function EmailsTab({
                 <h5 className="mb-1">{step.name ?? `Passo ${step.position}`}</h5>
                 <p className="text-muted mb-0">{step.description ?? "Detalhe o posicionamento deste e-mail."}</p>
               </div>
-              <div className="d-flex align-items-center gap-2">
-                <span className="badge text-bg-light text-dark">{step.phase}</span>
-                <span className={`badge ${statusDescriptor.className}`}>{statusDescriptor.label}</span>
+              <div className="d-flex flex-column align-items-lg-end align-items-start gap-2">
+                <div className="d-flex align-items-center gap-2">
+                  <span className="badge text-bg-light text-dark">{step.phase}</span>
+                  <span className={`badge ${statusDescriptor.className}`}>{statusDescriptor.label}</span>
+                </div>
+                <Link
+                  to={`/experiments/${experimentId}/emails/${step.id}`}
+                  className="btn btn-link btn-sm px-0"
+                >
+                  Ver detalhamento
+                </Link>
               </div>
             </div>
             <div className="card-body">

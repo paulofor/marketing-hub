@@ -65,6 +65,12 @@ public class FacebookInstantForm {
     @Column(columnDefinition = "LONGTEXT")
     private String prompt;
 
+    @Column(nullable = false)
+    private boolean approved;
+
+    @Column(name = "approved_at")
+    private Instant approvedAt;
+
     @CreationTimestamp
     private Instant createdAt;
 

@@ -14,6 +14,8 @@ export interface CreateExperiment {
   startDate?: string;
   endDate?: string;
   creativesToGenerate?: number;
+  instantFormsToGenerate?: number;
+  emailsToGenerate?: number;
   journeyTemplateId: number;
   facebookPageId?: number;
   facebookInstantFormId?: number;

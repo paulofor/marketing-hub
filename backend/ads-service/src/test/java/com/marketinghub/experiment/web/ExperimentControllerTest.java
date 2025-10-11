@@ -213,4 +213,28 @@ class ExperimentControllerTest {
         var updated = repository.findById(exp.getId()).orElseThrow();
         assertThat(updated.getCreativesToGenerate()).isEqualTo(3);
     }
+
+    @Test
+    void requestInstantFormsEndpointUpdatesQuantity() throws Exception {
+        var niche = nicheRepo.findById(nicheId).orElseThrow();
+        var exp = fixtures.createAndSaveExperiment(niche);
+        mockMvc.perform(
+                        patch("/api/experiments/" + exp.getId() + "/instant-forms-to-generate")
+                                .param("quantity", "2"))
+                .andExpect(status().isOk());
+        var updated = repository.findById(exp.getId()).orElseThrow();
+        assertThat(updated.getInstantFormsToGenerate()).isEqualTo(2);
+    }
+
+    @Test
+    void requestEmailsEndpointUpdatesQuantity() throws Exception {
+        var niche = nicheRepo.findById(nicheId).orElseThrow();
+        var exp = fixtures.createAndSaveExperiment(niche);
+        mockMvc.perform(
+                        patch("/api/experiments/" + exp.getId() + "/emails-to-generate")
+                                .param("quantity", "4"))
+                .andExpect(status().isOk());
+        var updated = repository.findById(exp.getId()).orElseThrow();
+        assertThat(updated.getEmailsToGenerate()).isEqualTo(4);
+    }
 }

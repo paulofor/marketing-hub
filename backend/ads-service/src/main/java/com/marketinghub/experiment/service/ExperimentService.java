@@ -175,6 +175,8 @@ public class ExperimentService {
                 .status(ExperimentStatus.PLANNED)
                 .platform(ExperimentPlatform.FACEBOOK)
                 .creativesToGenerate(request.getCreativesToGenerate())
+                .instantFormsToGenerate(request.getInstantFormsToGenerate())
+                .emailsToGenerate(request.getEmailsToGenerate())
                 .facebookPage(attachFacebookPage(request.getFacebookPageId()))
                 .facebookInstantForm(attachInstantForm(request.getFacebookInstantFormId(), request.getHypothesisId()))
                 .instagramAccount(attachInstagramAccount(request.getInstagramAccountId()))
@@ -232,6 +234,8 @@ public class ExperimentService {
                 .status(ExperimentStatus.PLANNED)
                 .platform(original.getPlatform())
                 .creativesToGenerate(original.getCreativesToGenerate())
+                .instantFormsToGenerate(original.getInstantFormsToGenerate())
+                .emailsToGenerate(original.getEmailsToGenerate())
                 .facebookPage(original.getFacebookPage())
                 .instagramAccount(original.getInstagramAccount())
                 .facebookInstantForm(original.getFacebookInstantForm())
@@ -305,6 +309,12 @@ public class ExperimentService {
         if (request.getCreativesToGenerate() != null) {
             exp.setCreativesToGenerate(request.getCreativesToGenerate());
         }
+        if (request.getInstantFormsToGenerate() != null) {
+            exp.setInstantFormsToGenerate(request.getInstantFormsToGenerate());
+        }
+        if (request.getEmailsToGenerate() != null) {
+            exp.setEmailsToGenerate(request.getEmailsToGenerate());
+        }
         if (request.getCreativeApproved() != null) {
             exp.setCreativeApproved(request.getCreativeApproved());
         }
@@ -333,6 +343,26 @@ public class ExperimentService {
     public Experiment requestCreatives(Long id, int quantity) {
         Experiment exp = repository.findById(id).orElseThrow();
         exp.setCreativesToGenerate(quantity);
+        return exp;
+    }
+
+    /**
+     * Requests generation of new instant forms by setting the pending quantity.
+     */
+    @Transactional
+    public Experiment requestInstantForms(Long id, int quantity) {
+        Experiment exp = repository.findById(id).orElseThrow();
+        exp.setInstantFormsToGenerate(quantity);
+        return exp;
+    }
+
+    /**
+     * Requests generation of new emails by setting the pending quantity.
+     */
+    @Transactional
+    public Experiment requestEmails(Long id, int quantity) {
+        Experiment exp = repository.findById(id).orElseThrow();
+        exp.setEmailsToGenerate(quantity);
         return exp;
     }
 

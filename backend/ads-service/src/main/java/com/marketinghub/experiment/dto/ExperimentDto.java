@@ -39,6 +39,8 @@ public class ExperimentDto {
     private Instant updatedAt;
     private String metricPresetId;
     private Integer creativesToGenerate;
+    private Integer instantFormsToGenerate;
+    private Integer emailsToGenerate;
     private Long journeyTemplateId;
     private String journeyTemplateName;
 }

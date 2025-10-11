@@ -98,6 +98,14 @@ public class Experiment {
     @Column(name = "creatives_to_generate")
     private Integer creativesToGenerate;
 
+    /** Quantidade de instant forms a serem gerados pelo worker. */
+    @Column(name = "instant_forms_to_generate")
+    private Integer instantFormsToGenerate;
+
+    /** Quantidade de e-mails a serem gerados pelo worker. */
+    @Column(name = "emails_to_generate")
+    private Integer emailsToGenerate;
+
     @CreationTimestamp
     private Instant createdAt;
 

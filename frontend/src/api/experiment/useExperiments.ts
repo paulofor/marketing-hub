@@ -59,6 +59,8 @@ export interface Experiment {
   endDate: string | null;
   metricPresetId?: string | null;
   creativesToGenerate?: number | null;
+  instantFormsToGenerate?: number | null;
+  emailsToGenerate?: number | null;
   creativeApproved: boolean;
   status: string;
   platform: string;

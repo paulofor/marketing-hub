@@ -4,6 +4,7 @@ import com.marketinghub.journey.model.Journey;
 import com.marketinghub.journey.model.JourneyStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -13,6 +14,10 @@ import java.util.Optional;
  * Repository for {@link Journey} instances.
  */
 public interface JourneyRepository extends JpaRepository<Journey, Long> {
+    @Override
+    @EntityGraph(attributePaths = "metadata")
+    Optional<Journey> findById(Long id);
+
     Page<Journey> findByTemplateId(Long templateId, Pageable pageable);
 
     Page<Journey> findByStatus(JourneyStatus status, Pageable pageable);

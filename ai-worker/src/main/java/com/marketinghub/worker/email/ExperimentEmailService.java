@@ -2,6 +2,7 @@ package com.marketinghub.worker.email;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.worker.experiment.ExperimentGenerationRepository;
 import com.marketinghub.journey.model.Journey;
 import com.marketinghub.journey.model.JourneyStep;
 import com.marketinghub.journey.model.JourneyStimulusType;
@@ -31,21 +32,24 @@ public class ExperimentEmailService {
     private final JourneyRepository journeyRepository;
     private final JourneyStepRepository journeyStepRepository;
     private final ExperimentEmailChatGptClient chatGptClient;
+    private final ExperimentGenerationRepository experimentGenerationRepository;
 
     public ExperimentEmailService(ExperimentRepository experimentRepository,
                                   JourneyRepository journeyRepository,
                                   JourneyStepRepository journeyStepRepository,
-                                  ExperimentEmailChatGptClient chatGptClient) {
+                                  ExperimentEmailChatGptClient chatGptClient,
+                                  ExperimentGenerationRepository experimentGenerationRepository) {
         this.experimentRepository = experimentRepository;
         this.journeyRepository = journeyRepository;
         this.journeyStepRepository = journeyStepRepository;
         this.chatGptClient = chatGptClient;
+        this.experimentGenerationRepository = experimentGenerationRepository;
     }
 
     @Transactional
     public Map<Long, List<ExperimentEmailChatGptClient.EmailPlan>> generate() {
         Map<Long, List<ExperimentEmailChatGptClient.EmailPlan>> result = new LinkedHashMap<>();
-        List<Experiment> experiments = experimentRepository.findAllToGenerateEmails();
+        List<Experiment> experiments = experimentGenerationRepository.findAllToGenerateEmails();
         for (Experiment experiment : experiments) {
             Integer quantity = experiment.getEmailsToGenerate();
             if (quantity == null || quantity <= 0) {

@@ -4,6 +4,7 @@ import com.marketinghub.ads.FacebookInstantForm;
 import com.marketinghub.ads.FacebookInstantFormRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.worker.experiment.ExperimentGenerationRepository;
 import com.marketinghub.journey.model.JourneyStep;
 import com.marketinghub.journey.model.JourneyStimulusType;
 import com.marketinghub.journey.repository.JourneyStepRepository;
@@ -31,21 +32,24 @@ public class ExperimentInstantFormService {
     private final JourneyStepRepository journeyStepRepository;
     private final FacebookInstantFormRepository instantFormRepository;
     private final InstantFormChatGptClient chatGptClient;
+    private final ExperimentGenerationRepository experimentGenerationRepository;
 
     public ExperimentInstantFormService(ExperimentRepository experimentRepository,
                                         JourneyStepRepository journeyStepRepository,
                                         FacebookInstantFormRepository instantFormRepository,
-                                        InstantFormChatGptClient chatGptClient) {
+                                        InstantFormChatGptClient chatGptClient,
+                                        ExperimentGenerationRepository experimentGenerationRepository) {
         this.experimentRepository = experimentRepository;
         this.journeyStepRepository = journeyStepRepository;
         this.instantFormRepository = instantFormRepository;
         this.chatGptClient = chatGptClient;
+        this.experimentGenerationRepository = experimentGenerationRepository;
     }
 
     @Transactional
     public Map<Long, List<FacebookInstantForm>> generate() {
         Map<Long, List<FacebookInstantForm>> result = new LinkedHashMap<>();
-        List<Experiment> experiments = experimentRepository.findAllToGenerateInstantForms();
+        List<Experiment> experiments = experimentGenerationRepository.findAllToGenerateInstantForms();
         for (Experiment experiment : experiments) {
             Integer quantity = experiment.getInstantFormsToGenerate();
             if (quantity == null || quantity <= 0) {

@@ -36,6 +36,7 @@ public class Journey {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private JourneyStatus status = JourneyStatus.DRAFT;
 
     @ManyToOne(fetch = FetchType.LAZY)

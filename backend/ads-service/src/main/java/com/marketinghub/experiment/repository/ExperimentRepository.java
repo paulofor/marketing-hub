@@ -57,6 +57,24 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
     List<Experiment> findAllToGenerateCreatives();
 
     @Query("""
+            select e from Experiment e
+            join fetch e.hypothesisRef
+            left join fetch e.facebookPage
+            where e.instantFormsToGenerate is not null
+              and e.instantFormsToGenerate > 0
+            """)
+    List<Experiment> findAllToGenerateInstantForms();
+
+    @Query("""
+            select e from Experiment e
+            join fetch e.hypothesisRef
+            left join fetch e.journeyTemplate
+            where e.emailsToGenerate is not null
+              and e.emailsToGenerate > 0
+            """)
+    List<Experiment> findAllToGenerateEmails();
+
+    @Query("""
             select distinct e from Experiment e
             join fetch e.niche n
             join fetch e.hypothesisRef h

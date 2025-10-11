@@ -156,6 +156,7 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: V2026_05_01__track_fb_worker_config_errors.sql
+      relativeToChangelogFile: true
   - include:
       file: V2026_09_12__add_worker_requests_to_experiment.sql
       relativeToChangelogFile: true

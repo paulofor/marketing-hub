@@ -25,10 +25,15 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
     List<Experiment> findByStatus(ExperimentStatus status);
     List<Experiment> findByStatusAndPlatform(ExperimentStatus status, ExperimentPlatform platform);
     @Query("""
-            select e from Experiment e
+            select distinct e from Experiment e
             join fetch e.niche n
             join fetch e.hypothesisRef h
             join fetch e.instagramAccount ig
+            left join fetch e.facebookPage fp
+            left join fetch e.facebookInstantForm fif
+            left join fetch fif.page fifp
+            left join fetch e.journeyTemplate jt
+            left join fetch jt.steps steps
             where e.status = :status
               and e.platform = :platform
               and e.creativeApproved = true

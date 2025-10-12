@@ -7,6 +7,8 @@ import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.ads.FacebookAccountRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.service.ExperimentService;
+import com.marketinghub.journey.model.JourneyStep;
+import com.marketinghub.journey.model.JourneyStimulusType;
 import com.marketinghub.facebookads.AdCreativeKind;
 import com.marketinghub.facebookads.BudgetMode;
 import com.marketinghub.facebookads.FacebookAdsAd;
@@ -26,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -236,7 +239,9 @@ public class FacebookAdsCampaignController {
                 experiment.getHypothesisRef() != null ? experiment.getHypothesisRef().getTitle() : null,
                 computeMissingConfiguration(experiment),
                 toFacebookPageSummary(experiment),
-                toInstagramAccountSummary(experiment));
+                toInstagramAccountSummary(experiment),
+                toInstantFormSummary(experiment),
+                isNextStepInstantForm(experiment));
     }
 
     private List<String> computeMissingConfiguration(Experiment experiment) {
@@ -268,6 +273,18 @@ public class FacebookAdsCampaignController {
         if (experiment.getInstagramAccount() == null) {
             missing.add("instagramAccount");
         }
+        if (isNextStepInstantForm(experiment)) {
+            if (experiment.getFacebookInstantForm() == null) {
+                missing.add("facebookInstantForm");
+            } else {
+                if (!experiment.getFacebookInstantForm().isApproved()) {
+                    missing.add("facebookInstantFormApproval");
+                }
+                if (!experiment.getFacebookInstantForm().isPublished()) {
+                    missing.add("facebookInstantFormPublication");
+                }
+            }
+        }
         return missing;
     }
 
@@ -295,6 +312,43 @@ public class FacebookAdsCampaignController {
         return new InstagramAccountSummary(account.getId(), account.getHandle(), account.getCode(), account.getName());
     }
 
+    private InstantFormSummary toInstantFormSummary(Experiment experiment) {
+        if (experiment.getFacebookInstantForm() == null) {
+            return null;
+        }
+        var form = experiment.getFacebookInstantForm();
+        return new InstantFormSummary(
+                form.getId(),
+                form.getFormId(),
+                form.getName(),
+                form.getStatus(),
+                form.isApproved(),
+                form.isPublished(),
+                form.getShareLink()
+        );
+    }
+
+    private boolean isNextStepInstantForm(Experiment experiment) {
+        if (experiment.getJourneyTemplate() == null) {
+            return false;
+        }
+        List<JourneyStep> steps = experiment.getJourneyTemplate().getSteps();
+        if (steps == null || steps.isEmpty()) {
+            return false;
+        }
+        List<JourneyStep> ordered = steps.stream()
+                .sorted(Comparator.comparingInt(step -> step.getPosition() != null ? step.getPosition() : Integer.MAX_VALUE))
+                .toList();
+        JourneyStep previous = null;
+        for (JourneyStep step : ordered) {
+            if (previous != null && previous.getStimulusType() == JourneyStimulusType.AD) {
+                return step.getStimulusType() == JourneyStimulusType.INSTANT_FORM;
+            }
+            previous = step;
+        }
+        return false;
+    }
+
     public record ExperimentSummary(
             Long id,
             String name,
@@ -307,11 +361,22 @@ public class FacebookAdsCampaignController {
             String hypothesisTitle,
             List<String> missingConfiguration,
             FacebookPageSummary facebookPage,
-            InstagramAccountSummary instagramAccount) {}
+            InstagramAccountSummary instagramAccount,
+            InstantFormSummary facebookInstantForm,
+            boolean nextStepInstantForm) {}
 
     public record FacebookPageSummary(Long id, Long accountId, String pageId, String name) {}
 
     public record InstagramAccountSummary(Long id, String handle, String code, String name) {}
+
+    public record InstantFormSummary(
+            Long id,
+            String facebookFormId,
+            String name,
+            String status,
+            boolean approved,
+            boolean published,
+            String shareLink) {}
 
     public record CreateCampaignRequest(
             String id,

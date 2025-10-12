@@ -218,50 +218,23 @@ public class FacebookAdsService {
 
     public JsonNode getCampaignMetrics(String campaignId) {
         String path = buildVersionedPath("/" + campaignId + "/insights?access_token=" + requireAccessToken());
-        String maskedPath = maskAccessTokenInPath(path);
-        LOGGER.info("Sending GET request to Facebook API: path==>{}", maskedPath);
-        try {
-            FacebookApiResponse apiResponse = webClient
-                .get()
-                .uri(path)
-                .exchangeToMono(response -> {
-                    if (response.statusCode().isError()) {
-                        return response.createException().flatMap(Mono::error);
-                    }
-                    return response
-                        .bodyToMono(JsonNode.class)
-                        .defaultIfEmpty(objectMapper.nullNode())
-                        .map(body -> new FacebookApiResponse(response.statusCode(), response.headers().asHttpHeaders(), body));
-                })
-                .block();
-            FacebookApiResponse nonNullResponse =
-                apiResponse != null ? apiResponse : new FacebookApiResponse(null, HttpHeaders.EMPTY, objectMapper.nullNode());
-            logSuccessfulResponse("GET", maskedPath, nonNullResponse);
-            return nonNullResponse.body();
-        } catch (WebClientResponseException ex) {
-            String responseBody = ex.getResponseBodyAsString();
-            ObjectNode errorDetails = extractErrorDetails(responseBody);
-            LOGGER.error(
-                "Facebook API GET request failed: path<=={}, status={}, responseBody={}, errorDetails={}",
-                maskedPath,
-                ex.getRawStatusCode(),
-                maskAccessToken(responseBody),
-                errorDetails,
-                ex
-            );
-            if (isAccessTokenExpired(errorDetails)) {
-                throw new FacebookAccessTokenExpiredException(resolveAccessTokenExpiredMessage(errorDetails), errorDetails, ex);
-            }
-            throw ex;
-        } catch (WebClientRequestException ex) {
-            LOGGER.error(
-                "Facebook API GET request could not be completed: path==>{}, message={}",
-                maskedPath,
-                ex.getMessage(),
-                ex
-            );
-            throw ex;
-        }
+        FacebookApiResponse response = executeGet(path);
+        return response.body();
+    }
+
+    public void publishInstantForm(String formId) {
+        Objects.requireNonNull(formId, "formId");
+        Map<String, Object> body = new HashMap<>();
+        body.put("status", "ACTIVE");
+        body.put("access_token", requireAccessToken());
+        String path = buildVersionedPath("/" + formId);
+        executePost(path, body);
+    }
+
+    public JsonNode fetchInstantForm(String formId) {
+        Objects.requireNonNull(formId, "formId");
+        String path = buildVersionedPath("/" + formId + "?access_token=" + requireAccessToken());
+        return executeGet(path).body();
     }
 
     private JsonNode executePost(String path, Map<String, Object> body) {
@@ -309,6 +282,53 @@ public class FacebookAdsService {
         } catch (WebClientRequestException ex) {
             LOGGER.error(
                 "Facebook API POST request could not be completed: path==>{}, message={}",
+                maskedPath,
+                ex.getMessage(),
+                ex
+            );
+            throw ex;
+        }
+    }
+
+    private FacebookApiResponse executeGet(String path) {
+        String maskedPath = maskAccessTokenInPath(path);
+        LOGGER.info("Sending GET request to Facebook API: path==>{}", maskedPath);
+        try {
+            FacebookApiResponse apiResponse = webClient
+                .get()
+                .uri(path)
+                .exchangeToMono(response -> {
+                    if (response.statusCode().isError()) {
+                        return response.createException().flatMap(Mono::error);
+                    }
+                    return response
+                        .bodyToMono(JsonNode.class)
+                        .defaultIfEmpty(objectMapper.nullNode())
+                        .map(body -> new FacebookApiResponse(response.statusCode(), response.headers().asHttpHeaders(), body));
+                })
+                .block();
+            FacebookApiResponse nonNullResponse =
+                apiResponse != null ? apiResponse : new FacebookApiResponse(null, HttpHeaders.EMPTY, objectMapper.nullNode());
+            logSuccessfulResponse("GET", maskedPath, nonNullResponse);
+            return nonNullResponse;
+        } catch (WebClientResponseException ex) {
+            String responseBody = ex.getResponseBodyAsString();
+            ObjectNode errorDetails = extractErrorDetails(responseBody);
+            LOGGER.error(
+                "Facebook API GET request failed: path<=={}, status={}, responseBody={}, errorDetails={}",
+                maskedPath,
+                ex.getRawStatusCode(),
+                maskAccessToken(responseBody),
+                errorDetails,
+                ex
+            );
+            if (isAccessTokenExpired(errorDetails)) {
+                throw new FacebookAccessTokenExpiredException(resolveAccessTokenExpiredMessage(errorDetails), errorDetails, ex);
+            }
+            throw ex;
+        } catch (WebClientRequestException ex) {
+            LOGGER.error(
+                "Facebook API GET request could not be completed: path==>{}, message={}",
                 maskedPath,
                 ex.getMessage(),
                 ex

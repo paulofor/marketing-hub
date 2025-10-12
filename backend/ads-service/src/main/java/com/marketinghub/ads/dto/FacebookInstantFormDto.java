@@ -21,6 +21,9 @@ public record FacebookInstantFormDto(
         String prompt,
         boolean approved,
         Instant approvedAt,
+        boolean published,
+        Instant publishedAt,
+        String shareLink,
         Instant createdAt,
         Instant updatedAt
 ) {

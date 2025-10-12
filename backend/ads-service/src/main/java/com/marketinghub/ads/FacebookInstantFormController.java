@@ -2,7 +2,9 @@ package com.marketinghub.ads;
 
 import com.marketinghub.ads.dto.CreateFacebookInstantFormRequest;
 import com.marketinghub.ads.dto.FacebookInstantFormDto;
+import com.marketinghub.ads.dto.FacebookInstantFormPublicationDto;
 import com.marketinghub.ads.dto.UpdateFacebookInstantFormApprovalRequest;
+import com.marketinghub.ads.dto.UpdateFacebookInstantFormPublicationRequest;
 import com.marketinghub.ads.mapper.FacebookInstantFormMapper;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
@@ -11,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -63,6 +66,15 @@ public class FacebookInstantFormController {
                 .toList();
     }
 
+    @GetMapping("/instant-forms/ready-to-publish")
+    public List<FacebookInstantFormPublicationDto> readyToPublish() {
+        return repository.findByApprovedTrueAndPublishedFalse().stream()
+                .filter(form -> form.getPage() != null)
+                .filter(form -> form.getFormId() != null && !form.getFormId().isBlank())
+                .map(this::toPublicationDto)
+                .toList();
+    }
+
     @PostMapping("/hypotheses/{hypothesisId}/instant-forms")
     @Transactional
     public FacebookInstantFormDto create(@PathVariable UUID hypothesisId,
@@ -102,6 +114,7 @@ public class FacebookInstantFormController {
                 .model(request.model())
                 .prompt(request.prompt())
                 .approved(false)
+                .published(false)
                 .build();
         return mapper.toDto(repository.save(entity));
     }
@@ -129,6 +142,29 @@ public class FacebookInstantFormController {
         return mapper.toDto(repository.save(form));
     }
 
+    @PatchMapping("/instant-forms/{id}/publication")
+    @Transactional
+    public FacebookInstantFormDto updatePublication(@PathVariable Long id,
+                                                    @RequestBody UpdateFacebookInstantFormPublicationRequest request) {
+        FacebookInstantForm form = repository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "instant form not found"));
+        if (request.published()) {
+            form.setPublished(true);
+            form.setPublishedAt(request.publishedAt() != null ? request.publishedAt() : Instant.now());
+            form.setShareLink(request.shareLink() != null && !request.shareLink().isBlank()
+                    ? request.shareLink()
+                    : null);
+        } else {
+            form.setPublished(false);
+            form.setPublishedAt(null);
+            form.setShareLink(null);
+        }
+        if (request.status() != null && !request.status().isBlank()) {
+            form.setStatus(request.status());
+        }
+        return mapper.toDto(repository.save(form));
+    }
+
     @DeleteMapping("/instant-forms/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Transactional
@@ -137,5 +173,20 @@ public class FacebookInstantFormController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "instant form not found"));
         experimentRepository.clearFacebookInstantFormById(id);
         repository.delete(form);
+    }
+
+    private FacebookInstantFormPublicationDto toPublicationDto(FacebookInstantForm form) {
+        return new FacebookInstantFormPublicationDto(
+                form.getId(),
+                form.getFormId(),
+                form.getName(),
+                form.getStatus(),
+                form.getPage().getId(),
+                form.getPage().getPageId(),
+                form.getPage().getName(),
+                form.isApproved(),
+                form.isPublished(),
+                form.getShareLink()
+        );
     }
 }

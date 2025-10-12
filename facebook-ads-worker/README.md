@@ -52,6 +52,20 @@ seguem o padrão visual `==>` para requisições (por exemplo, `url==>https://..
 e `<==` para respostas, inclusive em cenários de erro, permitindo identificar
 rapidamente a direção do tráfego durante uma análise.
 
+Quando a jornada do experimento define um novo passo de captura com instant
+form aprovado, o worker publica o formulário antes de criar a campanha. O fluxo
+é executado uma única vez por formulário: caso `FacebookCampaignService` receba
+metadados indicando que o próximo passo é um instant form aprovado, ele consulta
+o backend para recuperar o formulário, envia a requisição de publicação via
+`FacebookAdsService.publishInstantForm` e armazena o `shareLink` retornado.
+Em seguida o worker atualiza o backend usando
+`PATCH /api/instant-forms/{id}/publication` para registrar `published = true`,
+`publishedAt` e a URL compartilhável fornecida pela Graph API. Caso a publicação
+já esteja registrada, nenhuma nova chamada é feita. Finalmente o link compartilhável
+(`https://www.facebook.com/ads/instantform/<id>`) substitui o destino padrão do
+CTA do anúncio, garantindo que os usuários sejam redirecionados diretamente para
+o instant form publicado quando interagirem com a campanha.
+
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar
 investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs
 registram caminho da requisição, payload enviado (com `access_token`

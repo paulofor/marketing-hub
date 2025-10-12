@@ -11,6 +11,25 @@ import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
 import nicheIcon from "../../assets/icons/niche-icon.svg";
+import { useFacebookAdSetExperimentsReady } from "../../api/useFacebookAdSetExperimentsReady";
+
+function formatCurrency(value?: number | string | null) {
+  if (value == null) return "—";
+  const numeric = typeof value === "string" ? Number(value) : value;
+  if (!Number.isFinite(numeric)) return "—";
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 2,
+  }).format(numeric);
+}
+
+function formatDateOnly(value?: string | null) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("pt-BR");
+}
 
 function formatDate(value?: string | null) {
   if (!value) return "—";
@@ -29,6 +48,7 @@ export default function InstantFormDetailPage() {
   const navigate = useNavigate();
   const { id, instantFormId } = useParams();
   const experimentId = id as string;
+  const experimentNumericId = Number(experimentId);
   const { data: experiment } = useExperiment(experimentId);
   const { data: instantForm, isLoading, isError } = useInstantForm(instantFormId ?? "");
   const { data: niche } = useNiche(experiment?.nicheId ?? 0);
@@ -36,6 +56,15 @@ export default function InstantFormDetailPage() {
     experiment ? String(experiment.nicheId) : undefined,
     experiment ? String(experiment.hypothesisId) : undefined,
   );
+  const {
+    data: experimentsReady,
+    isLoading: isLoadingFacebookPayload,
+    isError: isErrorFacebookPayload,
+  } = useFacebookAdSetExperimentsReady();
+  const facebookPayload =
+    Array.isArray(experimentsReady) && !Number.isNaN(experimentNumericId)
+      ? experimentsReady.find((item) => item.experiment?.id === experimentNumericId)
+      : undefined;
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pendingApprovalAction, setPendingApprovalAction] = useState<"approve" | "revoke" | null>(null);
   const updateApproval = useUpdateInstantFormApproval({
@@ -234,6 +263,156 @@ export default function InstantFormDetailPage() {
               "Excluir instant form"
             )}
           </button>
+        </div>
+      </section>
+
+      <section className="card">
+        <div className="card-header">
+          <h5 className="mb-1">Dados enviados para o Facebook Ads</h5>
+          <p className="text-muted small mb-0">
+            Confirmar quais informações alimentam a criação automática de campanhas e conjuntos de anúncios.
+          </p>
+        </div>
+        <div className="card-body">
+          {isLoadingFacebookPayload ? (
+            <div className="d-flex align-items-center gap-2 text-muted small">
+              <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+              Carregando dados de envio...
+            </div>
+          ) : isErrorFacebookPayload ? (
+            <p className="text-danger mb-0">
+              Não foi possível carregar os dados preparados para o Facebook Ads. Tente novamente mais tarde.
+            </p>
+          ) : !facebookPayload ? (
+            <p className="text-muted mb-0">
+              Nenhuma preparação encontrada para este experimento. Verifique se ele está elegível na fila de campanhas e se as
+              audiências foram aprovadas.
+            </p>
+          ) : (
+            <div className="row gy-4">
+              <div className="col-lg-6">
+                <h6 className="text-uppercase text-muted small">Experimento</h6>
+                <dl className="row small mb-0">
+                  <dt className="col-sm-5">Nome</dt>
+                  <dd className="col-sm-7">{facebookPayload.experiment?.name ?? "—"}</dd>
+                  <dt className="col-sm-5">Hipótese</dt>
+                  <dd className="col-sm-7">{facebookPayload.experiment?.hypothesis ?? "—"}</dd>
+                  <dt className="col-sm-5">Status</dt>
+                  <dd className="col-sm-7">{facebookPayload.experiment?.status ?? "—"}</dd>
+                  <dt className="col-sm-5">Plataforma</dt>
+                  <dd className="col-sm-7">{facebookPayload.experiment?.platform ?? "—"}</dd>
+                  <dt className="col-sm-5">KPI alvo</dt>
+                  <dd className="col-sm-7">{formatCurrency(facebookPayload.experiment?.kpiTargetCpl)}</dd>
+                  <dt className="col-sm-5">Início planejado</dt>
+                  <dd className="col-sm-7">{formatDateOnly(facebookPayload.experiment?.startDate)}</dd>
+                  <dt className="col-sm-5">Término planejado</dt>
+                  <dd className="col-sm-7">{formatDateOnly(facebookPayload.experiment?.endDate)}</dd>
+                  <dt className="col-sm-5">Página Meta</dt>
+                  <dd className="col-sm-7">
+                    {facebookPayload.experiment?.facebookPage ? (
+                      <>
+                        <div className="fw-semibold">{facebookPayload.experiment.facebookPage.name}</div>
+                        <div className="text-muted">{facebookPayload.experiment.facebookPage.pageId}</div>
+                      </>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </dd>
+                  <dt className="col-sm-5">Instant form vinculado</dt>
+                  <dd className="col-sm-7">
+                    {facebookPayload.experiment?.facebookInstantForm ? (
+                      <>
+                        <div className="fw-semibold">{facebookPayload.experiment.facebookInstantForm.name}</div>
+                        <div className="text-muted">{facebookPayload.experiment.facebookInstantForm.facebookFormId}</div>
+                      </>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </dd>
+                </dl>
+              </div>
+              <div className="col-lg-6">
+                <h6 className="text-uppercase text-muted small">Contexto estratégico</h6>
+                <dl className="row small mb-4">
+                  <dt className="col-sm-5">Nicho</dt>
+                  <dd className="col-sm-7">{facebookPayload.niche?.name ?? "—"}</dd>
+                  <dt className="col-sm-5">Segmentação base</dt>
+                  <dd className="col-sm-7">
+                    {facebookPayload.niche?.baseSegmentation ? (
+                      <span>{facebookPayload.niche.baseSegmentation}</span>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </dd>
+                  <dt className="col-sm-5">Interesses sugeridos</dt>
+                  <dd className="col-sm-7">
+                    {facebookPayload.niche?.interests ? (
+                      <span>{facebookPayload.niche.interests}</span>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </dd>
+                  <dt className="col-sm-5">Filtros demográficos</dt>
+                  <dd className="col-sm-7">
+                    {facebookPayload.niche?.demographicFilters ? (
+                      <span>{facebookPayload.niche.demographicFilters}</span>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </dd>
+                  <dt className="col-sm-5">Hipótese (persona)</dt>
+                  <dd className="col-sm-7">{facebookPayload.hypothesis?.persona ?? "—"}</dd>
+                  <dt className="col-sm-5">Promessa central</dt>
+                  <dd className="col-sm-7">{facebookPayload.hypothesis?.promise ?? "—"}</dd>
+                  <dt className="col-sm-5">Mecanismo</dt>
+                  <dd className="col-sm-7">{facebookPayload.hypothesis?.mechanism ?? "—"}</dd>
+                  <dt className="col-sm-5">Mecanismo único</dt>
+                  <dd className="col-sm-7">{facebookPayload.hypothesis?.uniqueMechanism ?? "—"}</dd>
+                </dl>
+              </div>
+              <div className="col-12">
+                <h6 className="text-uppercase text-muted small">Audiências aprovadas</h6>
+                {facebookPayload.audiences && facebookPayload.audiences.length > 0 ? (
+                  <ul className="list-group list-group-flush">
+                    {facebookPayload.audiences.map((audience) => (
+                      <li key={audience.id} className="list-group-item px-0">
+                        <div className="d-flex flex-column flex-md-row gap-3 justify-content-between align-items-md-start">
+                          <div>
+                            <div className="fw-semibold">{audience.name}</div>
+                            {audience.description ? (
+                              <p className="text-muted small mb-2">{audience.description}</p>
+                            ) : null}
+                            <dl className="row small mb-0">
+                              <dt className="col-sm-3">Modelo</dt>
+                              <dd className="col-sm-9">{audience.model ?? "—"}</dd>
+                              <dt className="col-sm-3">Prompt</dt>
+                              <dd className="col-sm-9">
+                                {audience.prompt ? (
+                                  <pre
+                                    className="bg-body-tertiary rounded-3 p-2 mb-0"
+                                    style={{ whiteSpace: "pre-wrap" }}
+                                  >
+                                    {audience.prompt}
+                                  </pre>
+                                ) : (
+                                  <span className="text-muted">—</span>
+                                )}
+                              </dd>
+                            </dl>
+                          </div>
+                          <span className="badge text-bg-success align-self-start">Aprovada</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-muted mb-0">
+                    Nenhuma audiência aprovada foi localizada para este experimento.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

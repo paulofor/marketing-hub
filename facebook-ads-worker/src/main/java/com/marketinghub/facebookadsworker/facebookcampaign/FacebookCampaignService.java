@@ -508,24 +508,17 @@ public class FacebookCampaignService {
         String imageUrl
     ) {
         String imageHash = null;
-        if (StringUtils.hasText(imageUrl)) {
-            try {
-                imageHash = facebookAdsService.uploadAdImage(adAccountId, imageUrl);
-            } catch (FacebookAccessTokenExpiredException | FacebookPermissionException ex) {
-                throw ex;
-            } catch (RuntimeException ex) {
-                LOGGER.warn(
-                    "Could not upload creative image to Facebook; continuing without hash: experimentId={}, imageUrl={}, message={}",
-                    experiment.id(),
-                    imageUrl,
-                    ex.getMessage()
-                );
-                LOGGER.debug(
-                    "Stacktrace while uploading creative image for experiment {}",
-                    experiment.id(),
-                    ex
-                );
-            }
+        if (!StringUtils.hasText(imageUrl)) {
+            LOGGER.warn(
+                "Skipping Facebook ad image upload because the creative URL is empty: experimentId={}",
+                experiment.id()
+            );
+        } else {
+            LOGGER.debug(
+                "Using external image URL for Facebook creative without uploading to the ad library: experimentId={}, url={}",
+                experiment.id(),
+                imageUrl
+            );
         }
 
         FacebookAdsService.AdCreativeRequest primaryRequest = new FacebookAdsService.AdCreativeRequest(

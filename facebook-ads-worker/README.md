@@ -13,11 +13,13 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    não se enquadram em categorias especiais.
 2. **Conjunto de anúncios** (`POST /adsets`) atrelado à campanha, também em
    `PAUSED`, com segmentação geográfica simples e destino `WEBSITE`.
-3. **Upload da imagem** (`POST /adimages`) utilizando o campo `imageUrl`
-   retornado pelo backend. Quando o caminho é relativo (por exemplo,
-   `/uploads/arquivo.jpg`), o worker o normaliza para o domínio configurado em
-   `backend.base-url` antes de enviá-lo ao Facebook. O endpoint devolve o
-   `hash` utilizado para referenciar a imagem no criativo.
+3. **Imagem do criativo**: em vez de enviar `POST /adimages`, o worker
+   referencia diretamente a URL pública retornada pelo backend no campo
+   `object_story_spec.link_data.picture`. Quando o caminho é relativo (por
+   exemplo, `/uploads/arquivo.jpg`), o worker o normaliza para o domínio
+   configurado em `backend.base-url` antes de encaminhá-lo ao Facebook. Essa
+   abordagem evita depender da biblioteca de imagens da conta e é suportada pela
+   Graph API desde que a URL seja acessível pelo crawler da Meta.
 4. **Criativo** (`POST /adcreatives`) baseado em um `object_story_spec`
    contendo o `page_id` definido na conta selecionada no backend. Quando a conta
    não possui `defaultPageId`, o worker utiliza a página vinculada ao
@@ -28,10 +30,9 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    com o código cadastrado na conta. Caso o experimento não esteja relacionado a
    uma conta do Instagram, o worker registra o aviso e pula a publicação.
    Opcionalmente o fluxo inclui mensagem e call-to-action vindos do próprio
-   criativo. A imagem sempre é enviada via `link_data.image_hash`; caso o upload
-   falhe por motivos transitórios o worker mantém o processo, preenchendo
-   `link_data.picture` com o URL absoluto como fallback para evitar um anúncio
-   sem mídia.
+   criativo. A imagem é sempre veiculada via `link_data.picture` — não há hash
+   salvo na biblioteca —, garantindo que o anúncio utilize exatamente o ativo
+   hospedado pelo backend.
 5. **Anúncio** (`POST /ads`) que referencia o conjunto e o criativo recém
    criados, mantido pausado até que o time operacional revise os detalhes no
    Gerenciador de Anúncios.

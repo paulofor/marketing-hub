@@ -71,6 +71,15 @@ public class FacebookInstantForm {
     @Column(name = "approved_at")
     private Instant approvedAt;
 
+    @Column(nullable = false)
+    private boolean published;
+
+    @Column(name = "published_at")
+    private Instant publishedAt;
+
+    @Column(name = "share_link", length = 512)
+    private String shareLink;
+
     @CreationTimestamp
     private Instant createdAt;
 

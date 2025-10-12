@@ -157,6 +157,67 @@ class FacebookCampaignServiceTest {
     }
 
     @Test
+    void usesInstantFormShareLinkWhenJourneyRequiresForm() throws Exception {
+        backend.enqueue(new MockResponse().setBody("[{"
+            + "\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\","
+            + "\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},"
+            + "\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},"
+            + "\"facebookInstantForm\":{\"id\":33,\"facebookFormId\":\"987654321\",\"name\":\"Lead\",\"status\":\"DRAFT\",\"approved\":true,\"published\":false},"
+            + "\"nextStepInstantForm\":true}]" )
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"success\":true}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"status\":\"ACTIVE\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"10\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        RecordedRequest experimentRequest = backend.takeRequest();
+        assertEquals("/api/facebook-campaigns/experiments-ready", experimentRequest.getPath());
+
+        RecordedRequest creativesRequest = backend.takeRequest();
+        assertEquals("/api/experiments/1/creatives", creativesRequest.getPath());
+
+        RecordedRequest publishRequest = facebook.takeRequest();
+        assertEquals("POST", publishRequest.getMethod());
+        assertTrue(publishRequest.getPath().endsWith("/987654321"));
+
+        RecordedRequest fetchRequest = facebook.takeRequest();
+        assertEquals("GET", fetchRequest.getMethod());
+        assertTrue(fetchRequest.getPath().contains("987654321"));
+
+        facebook.takeRequest(); // campaign
+        facebook.takeRequest(); // ad set
+        RecordedRequest creativeRequest = facebook.takeRequest();
+        JsonNode creativePayload = objectMapper.readTree(creativeRequest.getBody().inputStream());
+        JsonNode linkData = creativePayload.get("object_story_spec").get("link_data");
+        assertEquals("https://www.facebook.com/ads/leadgen/?id=987654321", linkData.get("link").asText());
+        facebook.takeRequest(); // ad
+
+        RecordedRequest backendReport = backend.takeRequest();
+        assertEquals("/api/facebook-campaigns", backendReport.getPath());
+
+        RecordedRequest publicationPatch = backend.takeRequest();
+        assertEquals("PATCH", publicationPatch.getMethod());
+        assertEquals("/api/instant-forms/33/publication", publicationPatch.getPath());
+        JsonNode patchPayload = objectMapper.readTree(publicationPatch.getBody().inputStream());
+        assertTrue(patchPayload.get("published").asBoolean());
+        assertEquals("https://www.facebook.com/ads/leadgen/?id=987654321", patchPayload.get("shareLink").asText());
+    }
+
+    @Test
     void createsLeadGenCampaignWhenCreativeProvidesFormId() throws Exception {
         configurationClient.setConfiguration(new FacebookWorkerConfiguration(
             1L,

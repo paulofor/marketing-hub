@@ -114,7 +114,8 @@ class FacebookInstantFormControllerTest {
                 .andExpect(jsonPath("$.name").value("Formulário Principal"))
                 .andExpect(jsonPath("$.facebookFormId").value("FORM-123"))
                 .andExpect(jsonPath("$.model").value("gpt-4o"))
-                .andExpect(jsonPath("$.approved").value(false));
+                .andExpect(jsonPath("$.approved").value(false))
+                .andExpect(jsonPath("$.published").value(false));
 
         assertThat(instantFormRepository.findAll()).hasSize(1)
                 .first()
@@ -129,7 +130,8 @@ class FacebookInstantFormControllerTest {
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].facebookPageName").value("Página Teste"))
                 .andExpect(jsonPath("$[0].leadsCount").value(42))
-                .andExpect(jsonPath("$[0].approved").value(false));
+                .andExpect(jsonPath("$[0].approved").value(false))
+                .andExpect(jsonPath("$[0].published").value(false));
 
         FacebookInstantForm form = instantFormRepository.findAll().get(0);
 
@@ -146,6 +148,29 @@ class FacebookInstantFormControllerTest {
                 .andExpect(jsonPath("$.approvedAt").exists());
 
         instantFormRepository.flush();
+
+        mockMvc.perform(get("/api/instant-forms/ready-to-publish"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].facebookFormId").value("FORM-123"))
+                .andExpect(jsonPath("$[0].shareLink").value((Object) null));
+
+        mockMvc.perform(patch("/api/instant-forms/" + form.getId() + "/publication")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"published\":true,\"shareLink\":\"https://facebook.com/ads/leadgen/?id=FORM-123\",\"status\":\"ACTIVE\",\"publishedAt\":\"2024-08-06T10:00:00Z\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.published").value(true))
+                .andExpect(jsonPath("$.shareLink").value("https://facebook.com/ads/leadgen/?id=FORM-123"))
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
+
+        instantFormRepository.flush();
+
+        mockMvc.perform(patch("/api/instant-forms/" + form.getId() + "/publication")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"published\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.published").value(false))
+                .andExpect(jsonPath("$.shareLink").value((Object) null));
 
         mockMvc.perform(patch("/api/instant-forms/" + form.getId() + "/approval")
                         .contentType(MediaType.APPLICATION_JSON)

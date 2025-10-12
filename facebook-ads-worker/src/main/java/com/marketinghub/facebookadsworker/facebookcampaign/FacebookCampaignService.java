@@ -1,6 +1,7 @@
 package com.marketinghub.facebookadsworker.facebookcampaign;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenExpiredException;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenManager;
@@ -20,7 +21,10 @@ import org.springframework.web.reactive.function.client.WebClientRequestExceptio
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -191,7 +195,7 @@ public class FacebookCampaignService {
                 return;
             }
 
-            String resolvedWebsiteUrl = coalesce(creative.destinationUrl(), config.defaultWebsiteUrl());
+            String resolvedWebsiteUrl = resolveDestinationUrl(exp, creative, config);
             String resolvedLeadGenFormId = coalesce(creative.leadGenFormId(), config.defaultLeadGenFormId());
             boolean hasWebsiteDestination = StringUtils.hasText(resolvedWebsiteUrl);
             boolean hasLeadFormDestination = StringUtils.hasText(resolvedLeadGenFormId);
@@ -392,7 +396,11 @@ public class FacebookCampaignService {
         String pageId,
         @JsonAlias({ "page", "associatedFacebookPage", "facebookPageAssociation" })
         FacebookPage facebookPage,
-        InstagramAccount instagramAccount
+        InstagramAccount instagramAccount,
+        @JsonAlias("facebookInstantForm")
+        InstantForm facebookInstantForm,
+        @JsonAlias("nextStepInstantForm")
+        boolean nextStepInstantForm
     ) {
         public FacebookPage associatedPage() {
             return facebookPage;
@@ -400,6 +408,15 @@ public class FacebookCampaignService {
 
         public record FacebookPage(Long id, String pageId, String name) {}
         public record InstagramAccount(Long id, String handle, String code, String name) {}
+        public record InstantForm(
+            Long id,
+            String facebookFormId,
+            String name,
+            String status,
+            boolean approved,
+            boolean published,
+            String shareLink
+        ) {}
     }
     public record CreateCampaignRequest(
         String id,
@@ -630,6 +647,118 @@ public class FacebookCampaignService {
         }
     }
 
+    private String ensureInstantFormDestination(Experiment experiment) {
+        Experiment.InstantForm form = experiment.facebookInstantForm();
+        if (form == null) {
+            return null;
+        }
+        String shareLink = form.shareLink();
+        if (form.published()) {
+            if (!StringUtils.hasText(shareLink) && StringUtils.hasText(form.facebookFormId())) {
+                shareLink = buildInstantFormShareLink(form.facebookFormId());
+            }
+            return shareLink;
+        }
+        if (!StringUtils.hasText(form.facebookFormId())) {
+            LOGGER.warn(
+                "Experiment {} references an instant form without a Facebook form ID; skipping publication",
+                experiment.id()
+            );
+            return shareLink;
+        }
+        try {
+            LOGGER.info(
+                "Publishing approved instant form before creating Facebook campaign: experimentId={}, formId={}",
+                experiment.id(),
+                form.facebookFormId()
+            );
+            facebookAdsService.publishInstantForm(form.facebookFormId());
+            JsonNode details = facebookAdsService.fetchInstantForm(form.facebookFormId());
+            String status = details != null ? details.path("status").asText(null) : null;
+            shareLink = buildInstantFormShareLink(form.facebookFormId());
+            reportInstantFormPublication(
+                form.id(),
+                new InstantFormPublicationUpdateRequest(true, Instant.now(), shareLink, status)
+            );
+        } catch (FacebookAccessTokenExpiredException ex) {
+            handleAccessTokenExpirationDuringPublication(ex);
+        } catch (FacebookPermissionException ex) {
+            LOGGER.error(
+                "Facebook permission error while publishing instant form: experimentId={}, formId={}, message={}, details={}",
+                experiment.id(),
+                form.facebookFormId(),
+                ex.getMessage(),
+                ex.getErrorDetails(),
+                ex
+            );
+        } catch (Exception ex) {
+            LOGGER.error(
+                "Unexpected error while publishing instant form: experimentId={}, formId={}, message={}",
+                experiment.id(),
+                form.facebookFormId(),
+                ex.getMessage(),
+                ex
+            );
+        }
+        return shareLink;
+    }
+
+    private void handleAccessTokenExpirationDuringPublication(FacebookAccessTokenExpiredException ex) {
+        lastExpiredAccessToken.compareAndSet(null, facebookAdsService.getCurrentAccessToken());
+        FacebookAccessTokenManager.RenewalAttemptResult renewalResult = accessTokenManager.tryRenewAccessTokenIfPossible();
+        if (renewalResult.outcome() == FacebookAccessTokenManager.RenewalOutcome.SUCCESS) {
+            LOGGER.info(
+                "Facebook access token renewed automatically after detecting expiration while publishing instant forms."
+            );
+            accessTokenExpired.set(false);
+            accessTokenExpiryWarningLogged.set(false);
+            lastExpiredAccessToken.set(null);
+            return;
+        }
+        boolean firstDetection = accessTokenExpired.compareAndSet(false, true);
+        accessTokenExpiryWarningLogged.set(false);
+        if (firstDetection) {
+            LOGGER.error(
+                "Facebook access token expired while publishing instant forms; the worker will pause publication until renewal. message={}, details={}",
+                ex.getMessage(),
+                ex.getErrorDetails()
+            );
+            logAutomaticRenewalOutcome(renewalResult);
+        }
+    }
+
+    private void reportInstantFormPublication(long formId, InstantFormPublicationUpdateRequest request) {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/instant-forms/" + formId + "/publication");
+        LOGGER.info(
+            "Reporting instant form publication to backend: url==>{}, payload={}",
+            url,
+            request
+        );
+        try {
+            backendClient.patch()
+                .uri(url)
+                .bodyValue(request)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+            LOGGER.info("Successfully reported instant form publication to backend: url<=={}", url);
+        } catch (Exception ex) {
+            LOGGER.warn(
+                "Failed to report instant form publication to backend: url==>{}, message={}",
+                url,
+                ex.getMessage(),
+                ex
+            );
+        }
+    }
+
+    private String buildInstantFormShareLink(String facebookFormId) {
+        if (!StringUtils.hasText(facebookFormId)) {
+            return null;
+        }
+        return "https://www.facebook.com/ads/leadgen/?id=" + facebookFormId;
+    }
+
     private record AdCreativeCreation(String id, FacebookAdsService.AdCreativeRequest request) {}
 
     private String resolveCreativeImageUrl(String imageUrl) {
@@ -643,6 +772,22 @@ public class FacebookCampaignService {
         String base = backendBaseUrl.endsWith("/") ? backendBaseUrl.substring(0, backendBaseUrl.length() - 1) : backendBaseUrl;
         String path = trimmed.startsWith("/") ? trimmed : "/" + trimmed;
         return base + path;
+    }
+
+    private String resolveDestinationUrl(Experiment experiment, Creative creative, FacebookWorkerConfiguration config) {
+        String instantFormLink = null;
+        if (experiment.nextStepInstantForm()) {
+            instantFormLink = ensureInstantFormDestination(experiment);
+        }
+        if (StringUtils.hasText(instantFormLink)) {
+            LOGGER.info(
+                "Using instant form share link as destination URL for experiment {}: link={}",
+                experiment.id(),
+                instantFormLink
+            );
+            return instantFormLink;
+        }
+        return coalesce(creative.destinationUrl(), config.defaultWebsiteUrl());
     }
 
     private void logAutomaticRenewalOutcome(FacebookAccessTokenManager.RenewalAttemptResult renewalResult) {
@@ -673,6 +818,13 @@ public class FacebookCampaignService {
         String destinationUrl,
         String leadGenFormId,
         String instagramUserId,
+        String status
+    ) {}
+
+    private record InstantFormPublicationUpdateRequest(
+        boolean published,
+        Instant publishedAt,
+        String shareLink,
         String status
     ) {}
 }

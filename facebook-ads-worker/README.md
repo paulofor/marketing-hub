@@ -57,16 +57,16 @@ form aprovado, o worker publica o formulário antes de criar a campanha. O fluxo
 é executado uma única vez por formulário: caso `FacebookCampaignService` receba
 metadados indicando que o próximo passo é um instant form aprovado, ele consulta
 o backend para recuperar o formulário, envia a requisição de publicação via
-`FacebookAdsService.publishInstantForm` e armazena o `shareLink` retornado.
-Em seguida o worker atualiza o backend usando
-`PATCH /api/instant-forms/{id}/publication` para registrar `published = true`,
-`publishedAt` e a URL compartilhável fornecida pela Graph API. Caso a publicação
-já esteja registrada, nenhuma nova chamada é feita. Finalmente o link compartilhável
-(`https://www.facebook.com/ads/instantform/<id>`) passa a ser usado como destino
-do CTA do anúncio e o worker envia o identificador do formulário (`lead_gen_form_id`)
-na criação do criativo e do ad set (`destination_type = LEAD_GENERATION`). Assim,
-os usuários são direcionados diretamente para o instant form selecionado quando
-interagirem com a campanha.
+`FacebookAdsService.publishInstantForm` e calcula o `shareLink` quando a Graph
+API não devolve esse campo (o worker constrói a URL pública via
+`https://www.facebook.com/ads/leadgen/?id=<id>`). Em seguida o worker atualiza o
+backend usando `PATCH /api/instant-forms/{id}/publication` para registrar
+`published = true`, `publishedAt` e a URL compartilhável persistida no backend.
+Caso a publicação já esteja registrada, nenhuma nova chamada é feita. O link
+compartilhável passa a ser usado como destino do CTA do anúncio e o worker envia
+o identificador do formulário (`lead_gen_form_id`) na criação do criativo e do
+ad set (`destination_type = LEAD_GENERATION`). Assim, os usuários são direcionados
+diretamente para o instant form selecionado quando interagirem com a campanha.
 
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar
 investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs
@@ -154,11 +154,10 @@ reiniciar o worker. As únicas propriedades externas mantidas em arquivo de
 configuração são `backend.base-url`, `backend.api-prefix` e
 `facebook.graph-api.version`.
 
-Os testes unitários também simulam esse fluxo completo de configuração,
-atualizando o token retornado pelo backend antes de cada ciclo quando o cenário
-requer renovação automática ou intervenção manual. Isso garante que a lógica de
-sincronização entre backend e worker permaneça alinhada com o comportamento em
-produção.
+Ainda não existem testes unitários neste módulo. Ao introduzir cobertura
+automatizada, priorize cenários que validem o fluxo completo de configuração —
+incluindo a atualização do token retornado pelo backend antes de cada ciclo —
+para manter a lógica de sincronização alinhada com o comportamento em produção.
 
 ## Data Model
 

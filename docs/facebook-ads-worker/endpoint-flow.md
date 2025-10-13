@@ -10,6 +10,31 @@ criação de campanhas e renovação automática de tokens. Sempre que possível
 fluxos são ilustrados com diagramas de sequência para facilitar o entendimento
 sobre quais componentes iniciam as chamadas e como as respostas são tratadas.
 
+> **Responsabilidade de integrações:** Somente o Facebook Ads Worker chama as
+> APIs do Facebook. O Worker IA integra exclusivamente com serviços de
+> Inteligência Artificial e apenas persiste rascunhos aguardando aprovação.
+
+## Criação de Instant Forms após aprovação do usuário
+
+Depois que o usuário aprova um Instant Form sugerido pela IA, o Facebook Ads
+Worker é acionado para publicá-lo na Meta. O fluxo básico é o seguinte:
+
+1. **Agendamento** – Um scheduler do worker consulta periodicamente o backend em
+   busca de formulários aprovados e ainda não publicados.
+2. **Carregar configuração da conta** – O worker reutiliza
+   `/api/accounts/facebook/worker-config` para obter token, conta de anúncios e
+   página necessários para a publicação.
+3. **Criar e ativar no Facebook** – Para cada formulário aprovado o worker envia
+   `POST /{version}/{pageId}/leadgen_forms` usando o token da conta, ativa o
+   recurso (`POST /{formId}` com `status=ACTIVE`) e lê os detalhes finais via
+   `GET /{formId}?fields=...`.
+4. **Persistir retorno** – Após publicar, o worker envia a resposta para o
+   backend, que atualiza o registro com `facebookFormId`, status, link de
+   compartilhamento e carimbo de data/hora da publicação.
+5. **Sincronizar com campanhas** – Quando um experimento aprovado requer
+   Instant Form, o fluxo de criação de campanhas reutiliza o identificador
+   oficial publicado pela Meta.
+
 ## Criação de campanhas
 
 A rotina `FacebookCampaignScheduler` aciona periodicamente o

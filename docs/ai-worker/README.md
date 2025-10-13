@@ -56,9 +56,11 @@ de IA quando necessário e persistem os resultados de volta no serviço principa
 - **Disparo:** `ExperimentInstantFormScheduler` (cron `0 */5 * * * *`).
 - **Fonte dos dados:** experimentos com `instantFormsToGenerate > 0` e página do Facebook vinculada.
 - **O que faz:** `ExperimentInstantFormService` consulta o `InstantFormChatGptClient` para estruturar até a
-  quantidade solicitada de formulários Instant/Lead Ads, respeitando o contexto da hipótese e das etapas da jornada.
-  Cada registro é salvo em `fb_instant_form` com `model` e `prompt` preenchidos, garantindo rastreabilidade do
-  conteúdo gerado pela IA.
+  quantidade solicitada de formulários Instant/Lead Ads, sanitiza o retorno e cria cada formulário diretamente na Graph API
+  (`POST /{page-id}/leadgen_forms` seguido de `POST /{form-id}` com `status=ACTIVE`). Em seguida salva o registro em
+  `fb_instant_form` com o ID numérico devolvido pelo Facebook, além de `model`, `prompt` e metadados (`status`, `createdTime`,
+  `updatedTime`, `leadsCount`). Quando nenhuma criação é bem-sucedida o contador `instantFormsToGenerate` é mantido para nova
+  tentativa.
 - **Referências:** fluxograma completo em [experimento-instant-form-service.md](experimento-instant-form-service.md).
 
 ### Experimento → E-mails da jornada

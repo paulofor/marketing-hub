@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -659,29 +660,42 @@ public class FacebookCampaignService {
         }
         String facebookFormId = form.facebookFormId();
         String shareLink = form.shareLink();
+        String normalizedFormId = normalizeInstantFormId(facebookFormId, shareLink);
         if (form.published()) {
-            if (!StringUtils.hasText(shareLink) && StringUtils.hasText(facebookFormId)) {
-                shareLink = buildInstantFormShareLink(facebookFormId);
+            if (!StringUtils.hasText(shareLink) && StringUtils.hasText(normalizedFormId)) {
+                shareLink = buildInstantFormShareLink(normalizedFormId);
             }
-            return new InstantFormDestination(shareLink, facebookFormId);
+            return new InstantFormDestination(shareLink, normalizedFormId);
         }
-        if (!StringUtils.hasText(facebookFormId)) {
+        if (!StringUtils.hasText(normalizedFormId)) {
             LOGGER.warn(
                 "Experiment {} references an instant form without a Facebook form ID; skipping publication",
                 experiment.id()
             );
-            return new InstantFormDestination(shareLink, facebookFormId);
+            return new InstantFormDestination(shareLink, normalizedFormId);
         }
         try {
             LOGGER.info(
                 "Publishing approved instant form before creating Facebook campaign: experimentId={}, formId={}",
                 experiment.id(),
-                facebookFormId
+                normalizedFormId
             );
-            facebookAdsService.publishInstantForm(facebookFormId);
-            JsonNode details = facebookAdsService.fetchInstantForm(facebookFormId);
+            facebookAdsService.publishInstantForm(normalizedFormId);
+            JsonNode details = facebookAdsService.fetchInstantForm(normalizedFormId);
             String status = details != null ? details.path("status").asText(null) : null;
-            shareLink = buildInstantFormShareLink(facebookFormId);
+            String resolvedFormId = normalizeInstantFormId(
+                details != null ? details.path("id").asText(null) : normalizedFormId,
+                shareLink
+            );
+            if (StringUtils.hasText(resolvedFormId) && !resolvedFormId.equals(normalizedFormId)) {
+                LOGGER.info(
+                    "Normalized instant form identifier returned by Facebook: original={}, resolved={}",
+                    normalizedFormId,
+                    resolvedFormId
+                );
+                normalizedFormId = resolvedFormId;
+            }
+            shareLink = buildInstantFormShareLink(normalizedFormId);
             reportInstantFormPublication(
                 form.id(),
                 new InstantFormPublicationUpdateRequest(true, Instant.now(), shareLink, status)
@@ -692,7 +706,7 @@ public class FacebookCampaignService {
             LOGGER.error(
                 "Facebook permission error while publishing instant form: experimentId={}, formId={}, message={}, details={}",
                 experiment.id(),
-                facebookFormId,
+                normalizedFormId,
                 ex.getMessage(),
                 ex.getErrorDetails(),
                 ex
@@ -701,12 +715,12 @@ public class FacebookCampaignService {
             LOGGER.error(
                 "Unexpected error while publishing instant form: experimentId={}, formId={}, message={}",
                 experiment.id(),
-                facebookFormId,
+                normalizedFormId,
                 ex.getMessage(),
                 ex
             );
         }
-        return new InstantFormDestination(shareLink, facebookFormId);
+        return new InstantFormDestination(shareLink, normalizedFormId);
     }
 
     private void handleAccessTokenExpirationDuringPublication(FacebookAccessTokenExpiredException ex) {
@@ -763,6 +777,44 @@ public class FacebookCampaignService {
             return null;
         }
         return "https://www.facebook.com/ads/leadgen/?id=" + facebookFormId;
+    }
+
+    private String normalizeInstantFormId(String facebookFormId, String shareLink) {
+        String fromShareLink = extractInstantFormIdFromShareLink(shareLink);
+        if (StringUtils.hasText(fromShareLink)) {
+            return fromShareLink;
+        }
+        if (!StringUtils.hasText(facebookFormId)) {
+            return null;
+        }
+        String trimmed = facebookFormId.trim();
+        if (trimmed.startsWith("ai_form_")) {
+            String normalized = "form_" + trimmed.substring("ai_".length());
+            LOGGER.info(
+                "Detected AI instant form identifier; normalizing from {} to {}",
+                trimmed,
+                normalized
+            );
+            return normalized;
+        }
+        return trimmed;
+    }
+
+    private String extractInstantFormIdFromShareLink(String shareLink) {
+        if (!StringUtils.hasText(shareLink)) {
+            return null;
+        }
+        try {
+            var uriComponents = UriComponentsBuilder.fromUriString(shareLink).build();
+            String id = uriComponents.getQueryParams().getFirst("form_id");
+            if (!StringUtils.hasText(id)) {
+                id = uriComponents.getQueryParams().getFirst("id");
+            }
+            return StringUtils.hasText(id) ? id.trim() : null;
+        } catch (IllegalArgumentException ex) {
+            LOGGER.warn("Could not extract instant form identifier from share link {}: {}", shareLink, ex.getMessage());
+            return null;
+        }
     }
 
     private record AdCreativeCreation(String id, FacebookAdsService.AdCreativeRequest request) {}

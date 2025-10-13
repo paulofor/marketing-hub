@@ -62,9 +62,11 @@ Em seguida o worker atualiza o backend usando
 `PATCH /api/instant-forms/{id}/publication` para registrar `published = true`,
 `publishedAt` e a URL compartilhável fornecida pela Graph API. Caso a publicação
 já esteja registrada, nenhuma nova chamada é feita. Finalmente o link compartilhável
-(`https://www.facebook.com/ads/instantform/<id>`) substitui o destino padrão do
-CTA do anúncio, garantindo que os usuários sejam redirecionados diretamente para
-o instant form publicado quando interagirem com a campanha.
+(`https://www.facebook.com/ads/instantform/<id>`) passa a ser usado como destino
+do CTA do anúncio e o worker envia o identificador do formulário (`lead_gen_form_id`)
+na criação do criativo e do ad set (`destination_type = LEAD_GENERATION`). Assim,
+os usuários são direcionados diretamente para o instant form selecionado quando
+interagirem com a campanha.
 
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar
 investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs

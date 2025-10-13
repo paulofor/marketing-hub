@@ -195,8 +195,13 @@ public class FacebookCampaignService {
                 return;
             }
 
-            String resolvedWebsiteUrl = resolveDestinationUrl(exp, creative, config);
-            String resolvedLeadGenFormId = coalesce(creative.leadGenFormId(), config.defaultLeadGenFormId());
+            InstantFormDestination instantFormDestination = null;
+            if (exp.nextStepInstantForm()) {
+                instantFormDestination = ensureInstantFormDestination(exp);
+            }
+
+            String resolvedWebsiteUrl = resolveDestinationUrl(exp, creative, config, instantFormDestination);
+            String resolvedLeadGenFormId = resolveLeadGenFormId(exp, creative, config, instantFormDestination);
             boolean hasWebsiteDestination = StringUtils.hasText(resolvedWebsiteUrl);
             boolean hasLeadFormDestination = StringUtils.hasText(resolvedLeadGenFormId);
             if (!hasWebsiteDestination && !hasLeadFormDestination) {
@@ -647,35 +652,36 @@ public class FacebookCampaignService {
         }
     }
 
-    private String ensureInstantFormDestination(Experiment experiment) {
+    private InstantFormDestination ensureInstantFormDestination(Experiment experiment) {
         Experiment.InstantForm form = experiment.facebookInstantForm();
         if (form == null) {
             return null;
         }
+        String facebookFormId = form.facebookFormId();
         String shareLink = form.shareLink();
         if (form.published()) {
-            if (!StringUtils.hasText(shareLink) && StringUtils.hasText(form.facebookFormId())) {
-                shareLink = buildInstantFormShareLink(form.facebookFormId());
+            if (!StringUtils.hasText(shareLink) && StringUtils.hasText(facebookFormId)) {
+                shareLink = buildInstantFormShareLink(facebookFormId);
             }
-            return shareLink;
+            return new InstantFormDestination(shareLink, facebookFormId);
         }
-        if (!StringUtils.hasText(form.facebookFormId())) {
+        if (!StringUtils.hasText(facebookFormId)) {
             LOGGER.warn(
                 "Experiment {} references an instant form without a Facebook form ID; skipping publication",
                 experiment.id()
             );
-            return shareLink;
+            return new InstantFormDestination(shareLink, facebookFormId);
         }
         try {
             LOGGER.info(
                 "Publishing approved instant form before creating Facebook campaign: experimentId={}, formId={}",
                 experiment.id(),
-                form.facebookFormId()
+                facebookFormId
             );
-            facebookAdsService.publishInstantForm(form.facebookFormId());
-            JsonNode details = facebookAdsService.fetchInstantForm(form.facebookFormId());
+            facebookAdsService.publishInstantForm(facebookFormId);
+            JsonNode details = facebookAdsService.fetchInstantForm(facebookFormId);
             String status = details != null ? details.path("status").asText(null) : null;
-            shareLink = buildInstantFormShareLink(form.facebookFormId());
+            shareLink = buildInstantFormShareLink(facebookFormId);
             reportInstantFormPublication(
                 form.id(),
                 new InstantFormPublicationUpdateRequest(true, Instant.now(), shareLink, status)
@@ -686,7 +692,7 @@ public class FacebookCampaignService {
             LOGGER.error(
                 "Facebook permission error while publishing instant form: experimentId={}, formId={}, message={}, details={}",
                 experiment.id(),
-                form.facebookFormId(),
+                facebookFormId,
                 ex.getMessage(),
                 ex.getErrorDetails(),
                 ex
@@ -695,12 +701,12 @@ public class FacebookCampaignService {
             LOGGER.error(
                 "Unexpected error while publishing instant form: experimentId={}, formId={}, message={}",
                 experiment.id(),
-                form.facebookFormId(),
+                facebookFormId,
                 ex.getMessage(),
                 ex
             );
         }
-        return shareLink;
+        return new InstantFormDestination(shareLink, facebookFormId);
     }
 
     private void handleAccessTokenExpirationDuringPublication(FacebookAccessTokenExpiredException ex) {
@@ -761,6 +767,8 @@ public class FacebookCampaignService {
 
     private record AdCreativeCreation(String id, FacebookAdsService.AdCreativeRequest request) {}
 
+    private record InstantFormDestination(String shareLink, String formId) {}
+
     private String resolveCreativeImageUrl(String imageUrl) {
         if (!StringUtils.hasText(imageUrl)) {
             return null;
@@ -774,20 +782,38 @@ public class FacebookCampaignService {
         return base + path;
     }
 
-    private String resolveDestinationUrl(Experiment experiment, Creative creative, FacebookWorkerConfiguration config) {
-        String instantFormLink = null;
-        if (experiment.nextStepInstantForm()) {
-            instantFormLink = ensureInstantFormDestination(experiment);
-        }
-        if (StringUtils.hasText(instantFormLink)) {
+    private String resolveDestinationUrl(
+        Experiment experiment,
+        Creative creative,
+        FacebookWorkerConfiguration config,
+        InstantFormDestination instantFormDestination
+    ) {
+        if (instantFormDestination != null && StringUtils.hasText(instantFormDestination.shareLink())) {
             LOGGER.info(
                 "Using instant form share link as destination URL for experiment {}: link={}",
                 experiment.id(),
-                instantFormLink
+                instantFormDestination.shareLink()
             );
-            return instantFormLink;
+            return instantFormDestination.shareLink();
         }
         return coalesce(creative.destinationUrl(), config.defaultWebsiteUrl());
+    }
+
+    private String resolveLeadGenFormId(
+        Experiment experiment,
+        Creative creative,
+        FacebookWorkerConfiguration config,
+        InstantFormDestination instantFormDestination
+    ) {
+        if (instantFormDestination != null && StringUtils.hasText(instantFormDestination.formId())) {
+            LOGGER.info(
+                "Using instant form ID as lead generation destination for experiment {}: formId={}",
+                experiment.id(),
+                instantFormDestination.formId()
+            );
+            return instantFormDestination.formId();
+        }
+        return coalesce(creative.leadGenFormId(), config.defaultLeadGenFormId());
     }
 
     private void logAutomaticRenewalOutcome(FacebookAccessTokenManager.RenewalAttemptResult renewalResult) {

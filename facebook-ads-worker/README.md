@@ -65,8 +65,15 @@ backend usando `PATCH /api/instant-forms/{id}/publication` para registrar
 Caso a publicação já esteja registrada, nenhuma nova chamada é feita. O link
 compartilhável passa a ser usado como destino do CTA do anúncio e o worker envia
 o identificador do formulário (`lead_gen_form_id`) na criação do criativo e do
-ad set (`destination_type = LEAD_GENERATION`). Assim, os usuários são direcionados
-diretamente para o instant form selecionado quando interagirem com a campanha.
+ad set. A Graph API deixou de aceitar `LEAD_GENERATION` como `destination_type`,
+portanto o worker força o valor `FACEBOOK` sempre que um instant form é usado,
+garantindo que o clique permaneça dentro da plataforma da Meta.
+
+Quando a configuração enviada pelo backend contém um `destination_type`
+desatualizado ou vazio e não há formulário associado, o worker sanitiza o valor
+antes de chamar a Graph API e aplica `WEBSITE` como fallback. Dessa forma o
+serviço evita erros `(#100) destination_type must be one of...` quando novas
+validações são introduzidas pela Meta.
 
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar
 investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs

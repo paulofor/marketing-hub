@@ -203,7 +203,7 @@ class FacebookCampaignServiceTest {
         facebook.takeRequest(); // campaign
         RecordedRequest adSetRequest = facebook.takeRequest();
         JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
-        assertEquals("LEAD_GENERATION", adSetPayload.get("destination_type").asText());
+        assertEquals("FACEBOOK", adSetPayload.get("destination_type").asText());
         RecordedRequest creativeRequest = facebook.takeRequest();
         JsonNode creativePayload = objectMapper.readTree(creativeRequest.getBody().inputStream());
         JsonNode linkData = creativePayload.get("object_story_spec").get("link_data");
@@ -268,7 +268,7 @@ class FacebookCampaignServiceTest {
         facebook.takeRequest(); // campaign
         RecordedRequest adSetRequest = facebook.takeRequest();
         JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
-        assertEquals("LEAD_GENERATION", adSetPayload.get("destination_type").asText());
+        assertEquals("FACEBOOK", adSetPayload.get("destination_type").asText());
 
         RecordedRequest creativeRequest = facebook.takeRequest();
         JsonNode creativePayload = objectMapper.readTree(creativeRequest.getBody().inputStream());
@@ -285,6 +285,75 @@ class FacebookCampaignServiceTest {
         JsonNode reportedCreative = objectMapper.readTree(backendReport.getBody().inputStream())
             .get("adCreative");
         assertEquals("321123321123321", reportedCreative.get("leadGenFormId").asText());
+    }
+
+    @Test
+    void fallsBackToWebsiteWhenConfiguredDestinationTypeIsUnsupported() throws Exception {
+        configurationClient.setConfiguration(new FacebookWorkerConfiguration(
+            1L,
+            "1",
+            "token",
+            "app",
+            "secret",
+            "42",
+            "11",
+            "https://example.com",
+            null,
+            "Conheça %s",
+            "LEARN_MORE",
+            "2000",
+            "IMPRESSIONS",
+            "LINK_CLICKS",
+            "LEAD_GENERATION",
+            "LOWEST_COST_WITHOUT_CAP",
+            "150",
+            "BR"
+        ));
+
+        String experimentsResponse = """
+            [{"id":1,"name":"Exp","facebookPage":{"id":9,"pageId":"84","name":"Estúdio"},"instagramAccount":{"id":55,"handle":"@estudio","code":"IG-EST","name":"Estúdio"}}]
+            """;
+        String creativesResponse = """
+            [{"id":101,"experimentId":1,"headline":"HL","primaryText":"Texto Criativo","imageUrl":"https://cdn.example/img.jpg","description":"Desc","cta":"SHOP_NOW","destinationUrl":"https://exp.example/landing","instagramUserId":"21","status":"READY"}]
+            """;
+
+        backend.enqueue(new MockResponse().setBody(experimentsResponse)
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"10\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody(creativesResponse)
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+
+        Logger logger = (Logger) LoggerFactory.getLogger(FacebookCampaignService.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            service.createCampaignsFromExperiments();
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
+        }
+
+        facebook.takeRequest(); // campaign
+        RecordedRequest adSetRequest = facebook.takeRequest();
+        JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
+        assertEquals("WEBSITE", adSetPayload.get("destination_type").asText());
+
+        assertTrue(
+            appender.list.stream()
+                .filter(event -> event.getLevel() == Level.WARN)
+                .anyMatch(event -> event.getFormattedMessage().contains("Configured ad set destination type")),
+            "Expected warning about unsupported destination type"
+        );
     }
 
     @Test

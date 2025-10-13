@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,6 +36,33 @@ import java.util.concurrent.atomic.AtomicReference;
 @Service
 public class FacebookCampaignService {
     private static final Logger LOGGER = LoggerFactory.getLogger(FacebookCampaignService.class);
+    private static final String DEFAULT_DESTINATION_TYPE = "WEBSITE";
+    private static final String INSTANT_FORM_DESTINATION_TYPE = "FACEBOOK";
+    private static final Set<String> SUPPORTED_AD_SET_DESTINATION_TYPES = Set.of(
+        "WEBSITE",
+        "APP",
+        "MESSENGER",
+        "APPLINKS_AUTOMATIC",
+        "WHATSAPP",
+        "INSTAGRAM_DIRECT",
+        "FACEBOOK",
+        "MESSAGING_MESSENGER_WHATSAPP",
+        "MESSAGING_INSTAGRAM_DIRECT_MESSENGER",
+        "MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP",
+        "MESSAGING_INSTAGRAM_DIRECT_WHATSAPP",
+        "SHOP_AUTOMATIC",
+        "ON_AD",
+        "ON_POST",
+        "ON_EVENT",
+        "ON_VIDEO",
+        "ON_PAGE",
+        "INSTAGRAM_PROFILE",
+        "FACEBOOK_PAGE",
+        "INSTAGRAM_PROFILE_AND_FACEBOOK_PAGE",
+        "INSTAGRAM_LIVE",
+        "FACEBOOK_LIVE",
+        "IMAGINE"
+    );
 
     private final FacebookAdsService facebookAdsService;
     private final WebClient backendClient;
@@ -221,7 +249,10 @@ public class FacebookCampaignService {
                 instagramAccount.code(),
                 config.defaultInstagramActorId()
             );
-            String resolvedDestinationType = hasLeadFormDestination ? "LEAD_GENERATION" : config.adSetDestinationType();
+            String resolvedDestinationType = determineAdSetDestinationType(
+                hasLeadFormDestination,
+                config.adSetDestinationType()
+            );
 
             String campaignId = facebookAdsService.createCampaign(config.adAccountId(), exp.name());
             FacebookAdsService.AdSetRequest adSetRequest = new FacebookAdsService.AdSetRequest(
@@ -814,6 +845,37 @@ public class FacebookCampaignService {
             return instantFormDestination.formId();
         }
         return coalesce(creative.leadGenFormId(), config.defaultLeadGenFormId());
+    }
+
+    private String determineAdSetDestinationType(boolean hasLeadFormDestination, String configuredDestinationType) {
+        if (hasLeadFormDestination) {
+            if (StringUtils.hasText(configuredDestinationType)
+                && !INSTANT_FORM_DESTINATION_TYPE.equalsIgnoreCase(configuredDestinationType)) {
+                LOGGER.info(
+                    "Overriding configured ad set destination type '{}' with '{}' because an instant form will be used",
+                    configuredDestinationType,
+                    INSTANT_FORM_DESTINATION_TYPE
+                );
+            }
+            return INSTANT_FORM_DESTINATION_TYPE;
+        }
+        return sanitizeDestinationType(configuredDestinationType);
+    }
+
+    private String sanitizeDestinationType(String configuredDestinationType) {
+        if (!StringUtils.hasText(configuredDestinationType)) {
+            return DEFAULT_DESTINATION_TYPE;
+        }
+        String normalized = configuredDestinationType.trim().toUpperCase(Locale.ROOT);
+        if (SUPPORTED_AD_SET_DESTINATION_TYPES.contains(normalized)) {
+            return normalized;
+        }
+        LOGGER.warn(
+            "Configured ad set destination type '{}' is not supported by the Facebook API; defaulting to {}",
+            configuredDestinationType,
+            DEFAULT_DESTINATION_TYPE
+        );
+        return DEFAULT_DESTINATION_TYPE;
     }
 
     private void logAutomaticRenewalOutcome(FacebookAccessTokenManager.RenewalAttemptResult renewalResult) {

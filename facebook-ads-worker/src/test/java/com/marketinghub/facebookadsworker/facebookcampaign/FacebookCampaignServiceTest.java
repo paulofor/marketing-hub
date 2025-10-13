@@ -30,6 +30,8 @@ import java.util.Queue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FacebookCampaignServiceTest {
     private MockWebServer backend;
@@ -199,11 +201,18 @@ class FacebookCampaignServiceTest {
         assertTrue(fetchRequest.getPath().contains("987654321"));
 
         facebook.takeRequest(); // campaign
-        facebook.takeRequest(); // ad set
+        RecordedRequest adSetRequest = facebook.takeRequest();
+        JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
+        assertEquals("LEAD_GENERATION", adSetPayload.get("destination_type").asText());
         RecordedRequest creativeRequest = facebook.takeRequest();
         JsonNode creativePayload = objectMapper.readTree(creativeRequest.getBody().inputStream());
         JsonNode linkData = creativePayload.get("object_story_spec").get("link_data");
         assertEquals("https://www.facebook.com/ads/leadgen/?id=987654321", linkData.get("link").asText());
+        JsonNode cta = linkData.get("call_to_action");
+        assertNotNull(cta);
+        JsonNode ctaValue = cta.get("value");
+        assertNotNull(ctaValue);
+        assertEquals("987654321", ctaValue.get("lead_gen_form_id").asText());
         facebook.takeRequest(); // ad
 
         RecordedRequest backendReport = backend.takeRequest();

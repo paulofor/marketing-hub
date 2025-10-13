@@ -57,8 +57,12 @@ form aprovado, o worker publica o formulário antes de criar a campanha. O fluxo
 é executado uma única vez por formulário: caso `FacebookCampaignService` receba
 metadados indicando que o próximo passo é um instant form aprovado, ele consulta
 o backend para recuperar o formulário, envia a requisição de publicação via
-`FacebookAdsService.publishInstantForm` e calcula o `shareLink` quando a Graph
-API não devolve esse campo (o worker constrói a URL pública via
+`FacebookAdsService.publishInstantForm` e calcula o identificador normalizado do
+ativo antes de continuar. A Meta começou a expor instant forms gerados por IA
+com o prefixo `ai_form_`; nesses casos o worker converte automaticamente para o
+ID consumido pela Graph API (`form_...`) e também tenta extrair o identificador a
+partir do `shareLink` quando disponível. Após obter o ID válido, o worker calcula
+o `shareLink` caso a Graph API não devolva esse campo (a URL é construída via
 `https://www.facebook.com/ads/leadgen/?id=<id>`). Em seguida o worker atualiza o
 backend usando `PATCH /api/instant-forms/{id}/publication` para registrar
 `published = true`, `publishedAt` e a URL compartilhável persistida no backend.

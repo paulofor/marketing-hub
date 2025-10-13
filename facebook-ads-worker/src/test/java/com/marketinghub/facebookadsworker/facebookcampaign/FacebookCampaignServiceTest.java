@@ -227,6 +227,59 @@ class FacebookCampaignServiceTest {
     }
 
     @Test
+    void normalizesAiInstantFormIdentifierBeforeCallingFacebook() throws Exception {
+        backend.enqueue(new MockResponse().setBody("[{"
+            + "\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\",""
+            + "\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},"
+            + "\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},"
+            + "\"facebookInstantForm\":{\"id\":33,\"facebookFormId\":\"ai_form_3_1_token\",\"name\":\"Lead\",\"status\":\"DRAFT\",\"approved\":true,\"published\":false},"
+            + "\"nextStepInstantForm\":true}]" )
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"success\":true}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"form_3_1_token\",\"status\":\"ACTIVE\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"10\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        RecordedRequest publishRequest = facebook.takeRequest();
+        assertTrue(publishRequest.getPath().endsWith("/form_3_1_token"));
+
+        RecordedRequest fetchRequest = facebook.takeRequest();
+        assertTrue(fetchRequest.getPath().contains("form_3_1_token"));
+
+        facebook.takeRequest(); // campaign
+        RecordedRequest adSetRequest = facebook.takeRequest();
+        JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
+        assertEquals("LEAD_GENERATION", adSetPayload.get("destination_type").asText());
+
+        RecordedRequest creativeRequest = facebook.takeRequest();
+        JsonNode creativePayload = objectMapper.readTree(creativeRequest.getBody().inputStream());
+        JsonNode linkData = creativePayload.get("object_story_spec").get("link_data");
+        assertEquals("https://www.facebook.com/ads/leadgen/?id=form_3_1_token", linkData.get("link").asText());
+        assertEquals("form_3_1_token", linkData.get("call_to_action").get("value").get("lead_gen_form_id").asText());
+
+        backend.takeRequest(); // experiments-ready
+        backend.takeRequest(); // creatives fetch
+        backend.takeRequest(); // campaign report
+        RecordedRequest publicationPatch = backend.takeRequest();
+        JsonNode patchPayload = objectMapper.readTree(publicationPatch.getBody().inputStream());
+        assertEquals("https://www.facebook.com/ads/leadgen/?id=form_3_1_token", patchPayload.get("shareLink").asText());
+    }
+
+    @Test
     void createsLeadGenCampaignWhenCreativeProvidesFormId() throws Exception {
         configurationClient.setConfiguration(new FacebookWorkerConfiguration(
             1L,

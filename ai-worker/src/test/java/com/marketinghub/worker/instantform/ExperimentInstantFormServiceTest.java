@@ -27,6 +27,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
@@ -151,7 +152,7 @@ class ExperimentInstantFormServiceTest {
         Map<Long, List<FacebookInstantForm>> generated = service.generate();
 
         assertThat(generated).isEmpty();
-        verify(chatGptClient, never()).generateInstantForms(any(), any(), any(), anyList());
+        verify(chatGptClient, never()).generateInstantForms(any(), any(), anyInt(), anyList());
         verify(instantFormRepository, never()).save(any());
     }
 }

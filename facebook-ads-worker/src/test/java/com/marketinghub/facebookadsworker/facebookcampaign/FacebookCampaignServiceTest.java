@@ -229,7 +229,7 @@ class FacebookCampaignServiceTest {
     @Test
     void normalizesAiInstantFormIdentifierBeforeCallingFacebook() throws Exception {
         backend.enqueue(new MockResponse().setBody("[{"
-            + "\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\",""
+            + "\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\","
             + "\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},"
             + "\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},"
             + "\"facebookInstantForm\":{\"id\":33,\"facebookFormId\":\"ai_form_3_1_token\",\"name\":\"Lead\",\"status\":\"DRAFT\",\"approved\":true,\"published\":false},"

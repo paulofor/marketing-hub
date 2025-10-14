@@ -69,7 +69,8 @@ backend usando `PATCH /api/instant-forms/{id}/publication` para registrar
 Caso a publicação já esteja registrada, nenhuma nova chamada é feita. O link
 compartilhável passa a ser usado como destino do CTA do anúncio e o worker envia
 o identificador do formulário (`lead_gen_form_id`) na criação do criativo e do
-ad set (`destination_type = LEAD_GENERATION`). Assim, os usuários são direcionados
+ad set (`destination_type = FACEBOOK`, valor aceito pela Graph API para destinos
+dentro da própria plataforma). Assim, os usuários são direcionados
 diretamente para o instant form selecionado quando interagirem com a campanha.
 
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar

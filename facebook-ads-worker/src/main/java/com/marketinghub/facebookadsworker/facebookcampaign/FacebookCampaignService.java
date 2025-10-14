@@ -222,7 +222,7 @@ public class FacebookCampaignService {
                 instagramAccount.code(),
                 config.defaultInstagramActorId()
             );
-            String resolvedDestinationType = hasLeadFormDestination ? "LEAD_GENERATION" : config.adSetDestinationType();
+            String resolvedDestinationType = hasLeadFormDestination ? "FACEBOOK" : config.adSetDestinationType();
 
             String campaignId = facebookAdsService.createCampaign(config.adAccountId(), exp.name());
             FacebookAdsService.AdSetRequest adSetRequest = new FacebookAdsService.AdSetRequest(
@@ -789,7 +789,7 @@ public class FacebookCampaignService {
         }
         String trimmed = facebookFormId.trim();
         if (trimmed.startsWith("ai_form_")) {
-            String normalized = "form_" + trimmed.substring("ai_".length());
+            String normalized = trimmed.substring("ai_".length());
             LOGGER.info(
                 "Detected AI instant form identifier; normalizing from {} to {}",
                 trimmed,

@@ -16,7 +16,7 @@ sobre quais componentes iniciam as chamadas e como as respostas são tratadas.
 
 ## Criação de Instant Forms após aprovação do usuário
 
-Depois que o usuário aprova um Instant Form sugerido pela IA, o Facebook Ads
+Depois que o usuário aprova um Instant Form cadastrado manualmente, o Facebook Ads
 Worker é acionado para publicá-lo na Meta. O fluxo básico é o seguinte:
 
 1. **Agendamento** – Um scheduler do worker consulta periodicamente o backend em

@@ -658,16 +658,22 @@ public class FacebookCampaignService {
         if (form == null) {
             return null;
         }
-        String facebookFormId = form.facebookFormId();
+        String facebookFormId = StringUtils.hasText(form.facebookFormId()) ? form.facebookFormId().trim() : null;
         String shareLink = form.shareLink();
         String normalizedFormId = normalizeInstantFormId(facebookFormId, shareLink);
         if (form.published()) {
             if (!StringUtils.hasText(shareLink) && StringUtils.hasText(normalizedFormId)) {
                 shareLink = buildInstantFormShareLink(normalizedFormId);
             }
+            if (!StringUtils.hasText(normalizedFormId)) {
+                LOGGER.info(
+                    "Instant form {} is published but Meta has not assigned the final lead form identifier yet; the CTA will use the share link only.",
+                    form.id()
+                );
+            }
             return new InstantFormDestination(shareLink, normalizedFormId);
         }
-        if (!StringUtils.hasText(normalizedFormId)) {
+        if (!StringUtils.hasText(facebookFormId)) {
             LOGGER.warn(
                 "Experiment {} references an instant form without a Facebook form ID; skipping publication",
                 experiment.id()
@@ -678,10 +684,10 @@ public class FacebookCampaignService {
             LOGGER.info(
                 "Publishing approved instant form before creating Facebook campaign: experimentId={}, formId={}",
                 experiment.id(),
-                normalizedFormId
+                facebookFormId
             );
-            facebookAdsService.publishInstantForm(normalizedFormId);
-            JsonNode details = facebookAdsService.fetchInstantForm(normalizedFormId);
+            facebookAdsService.publishInstantForm(facebookFormId);
+            JsonNode details = facebookAdsService.fetchInstantForm(facebookFormId);
             String status = details != null ? details.path("status").asText(null) : null;
             String resolvedFormId = normalizeInstantFormId(
                 details != null ? details.path("id").asText(null) : normalizedFormId,
@@ -689,13 +695,21 @@ public class FacebookCampaignService {
             );
             if (StringUtils.hasText(resolvedFormId) && !resolvedFormId.equals(normalizedFormId)) {
                 LOGGER.info(
-                    "Normalized instant form identifier returned by Facebook: original={}, resolved={}",
+                    "Instant form identifier returned by Facebook differs from backend metadata: previous={}, resolved={}",
                     normalizedFormId,
                     resolvedFormId
                 );
                 normalizedFormId = resolvedFormId;
             }
-            shareLink = buildInstantFormShareLink(normalizedFormId);
+            if (!StringUtils.hasText(normalizedFormId)) {
+                LOGGER.info(
+                    "Meta did not return the final lead form identifier for instant form {}; the CTA will continue to rely on the share link until it is available.",
+                    form.id()
+                );
+            }
+            if (StringUtils.hasText(normalizedFormId)) {
+                shareLink = buildInstantFormShareLink(normalizedFormId);
+            }
             reportInstantFormPublication(
                 form.id(),
                 new InstantFormPublicationUpdateRequest(true, Instant.now(), shareLink, status)
@@ -789,13 +803,11 @@ public class FacebookCampaignService {
         }
         String trimmed = facebookFormId.trim();
         if (trimmed.startsWith("ai_form_")) {
-            String normalized = trimmed.substring("ai_".length());
             LOGGER.info(
-                "Detected AI instant form identifier; normalizing from {} to {}",
-                trimmed,
-                normalized
+                "Detected placeholder instant form identifier {}; waiting for Meta to assign the final lead form ID",
+                trimmed
             );
-            return normalized;
+            return null;
         }
         return trimmed;
     }

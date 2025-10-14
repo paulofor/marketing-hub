@@ -19,7 +19,39 @@ tags:
     description: Vínculo de leads ou segmentos às jornadas em execução.
   - name: Journey Events
     description: Ingestão de eventos multicanal utilizados para medir e avançar a jornada.
+  - name: AI
+    description: Observabilidade das execuções do worker de inteligência artificial.
 paths:
+  /api/ai/generations:
+    get:
+      tags: [AI]
+      summary: Listar execuções do worker de IA
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - in: query
+          name: domain
+          schema:
+            type: string
+          description: Filtra por domínio da geração (por exemplo, NICHE_HYPOTHESIS).
+      responses:
+        '200':
+          description: Lista paginada com as gerações registradas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AiWorkerGeneration'
+                  totalElements:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  number:
+                    type: integer
   /api/niches/{nicheId}/experiments:
     post:
       tags: [Experiments]
@@ -908,6 +940,38 @@ components:
           type: string
         path:
           type: string
+    AiWorkerGeneration:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        domain:
+          type: string
+        referenceId:
+          type: string
+          nullable: true
+        model:
+          type: string
+          nullable: true
+        prompt:
+          type: string
+          nullable: true
+        rawResponse:
+          type: string
+          nullable: true
+        inputTokens:
+          type: integer
+          nullable: true
+        outputTokens:
+          type: integer
+          nullable: true
+        costUsd:
+          type: number
+          format: double
+        createdAt:
+          type: string
+          format: date-time
     CreateExperimentRequest:
       type: object
       required:

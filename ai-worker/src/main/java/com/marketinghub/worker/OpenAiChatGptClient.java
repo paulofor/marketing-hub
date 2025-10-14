@@ -3,6 +3,7 @@ package com.marketinghub.worker;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.successproduct.SuccessProduct;
+import com.marketinghub.worker.openai.AiGenerationRecorder;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
 import java.net.URI;
@@ -36,12 +37,15 @@ public class OpenAiChatGptClient implements ChatGptClient {
     private final String model;
     private final String googleKey;
     private final String searchId;
+    private final AiGenerationRecorder generationRecorder;
+    private static final String DOMAIN = "SUCCESS_PRODUCT_ENRICHMENT";
 
     public OpenAiChatGptClient(
             @Value("${openai.api-key:}") String apiKey,
             @Value("${openai.model:o3}") String model,
             @Value("${google.api-key:}") String googleKey,
-            @Value("${google.search-id:}") String searchId) {
+            @Value("${google.search-id:}") String searchId,
+            AiGenerationRecorder generationRecorder) {
         this.apiKey = apiKey;
         this.model = model;
         this.googleKey = googleKey;
@@ -49,6 +53,7 @@ public class OpenAiChatGptClient implements ChatGptClient {
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(30))
                 .build();
+        this.generationRecorder = generationRecorder;
     }
 
     @Override
@@ -138,6 +143,13 @@ public class OpenAiChatGptClient implements ChatGptClient {
                     log.error("OpenAI returned empty content for product {}", product.getId());
                     return product;
                 }
+
+                generationRecorder.record(DOMAIN,
+                        product != null ? String.valueOf(product.getId()) : null,
+                        prompt,
+                        content,
+                        model,
+                        response.usage());
 
                 content = stripCodeFence(content);
                 JsonNode data = MAPPER.readTree(content);

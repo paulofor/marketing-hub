@@ -9,6 +9,7 @@ import com.marketinghub.prompt.PromptAttribute;
 import com.marketinghub.prompt.PromptAttributeDescription;
 import com.marketinghub.prompt.repository.PromptAttributeDescriptionRepository;
 import com.marketinghub.prompt.repository.PromptAttributeRepository;
+import com.marketinghub.worker.openai.AiGenerationRecorder;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
 import org.slf4j.Logger;
@@ -35,7 +36,9 @@ public class ChatGptClient {
     private final String model;
     private final PromptAttributeRepository attributeRepository;
     private final PromptAttributeDescriptionRepository descriptionRepository;
+    private final AiGenerationRecorder generationRecorder;
     private static final Logger log = LoggerFactory.getLogger(ChatGptClient.class);
+    private static final String DOMAIN = "NICHE_HYPOTHESIS";
 
     public ChatGptClient(WebClient.Builder builder,
                          ObjectMapper objectMapper,
@@ -43,7 +46,8 @@ public class ChatGptClient {
                          @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
                          @Value("${openai.model:gpt-3.5-turbo}") String model,
                          PromptAttributeRepository attributeRepository,
-                         PromptAttributeDescriptionRepository descriptionRepository) {
+                         PromptAttributeDescriptionRepository descriptionRepository,
+                         AiGenerationRecorder generationRecorder) {
         WebClient.Builder clientBuilder = builder
                 .baseUrl(baseUrl)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
@@ -55,6 +59,7 @@ public class ChatGptClient {
         this.model = model;
         this.attributeRepository = attributeRepository;
         this.descriptionRepository = descriptionRepository;
+        this.generationRecorder = generationRecorder;
     }
 
     public List<CreateHypothesisRequest> generateHypotheses(MarketNiche niche, int quantity) {
@@ -89,6 +94,12 @@ public class ChatGptClient {
             throw new RuntimeException("OpenAI error: " + response.errorMessage());
         }
         String content = response.firstText();
+        generationRecorder.record(DOMAIN,
+                niche != null ? String.valueOf(niche.getId()) : null,
+                promptData.prompt(),
+                content,
+                model,
+                response.usage());
         if (content == null || content.isBlank()) {
             log.warn("ChatGPT returned empty content for niche {}", niche.getId());
             return List.of();

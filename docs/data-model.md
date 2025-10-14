@@ -46,6 +46,22 @@ For a mapping between frontend screens and these entities, see [Frontend Screens
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
+### ai_worker_generation
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `domain` VARCHAR(100)
+- `reference_id` VARCHAR(100)
+- `model` VARCHAR(191)
+- `prompt` LONGTEXT
+- `raw_response` LONGTEXT
+- `input_tokens` INT
+- `output_tokens` INT
+- `cost_usd` DECIMAL(10,4)
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+Stores every AI worker output alongside the original prompt, raw response and
+token usage to estimate the associated cost.
+
 ### product
 
 - `id` BIGINT AUTO_INCREMENT PRIMARY KEY

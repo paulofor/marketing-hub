@@ -38,6 +38,19 @@ CREATE TABLE ai_service (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+CREATE TABLE ai_worker_generation (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    domain VARCHAR(100) NOT NULL,
+    reference_id VARCHAR(100),
+    model VARCHAR(191),
+    prompt LONGTEXT,
+    raw_response LONGTEXT,
+    input_tokens INT,
+    output_tokens INT,
+    cost_usd DECIMAL(10,4) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE product (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     niche VARCHAR(255),

@@ -11,6 +11,7 @@ public record OpenAiResponse(
         String id,
         @JsonProperty("output_text") String outputText,
         List<OpenAiOutput> output,
+        OpenAiUsage usage,
         OpenAiError error,
         String status) {
 
@@ -116,5 +117,28 @@ public record OpenAiResponse(
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record OpenAiFunctionCall(String name, String arguments) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record OpenAiUsage(
+            @JsonProperty("input_tokens") Integer inputTokens,
+            @JsonProperty("output_tokens") Integer outputTokens,
+            @JsonProperty("prompt_tokens") Integer promptTokens,
+            @JsonProperty("completion_tokens") Integer completionTokens,
+            @JsonProperty("total_tokens") Integer totalTokens) {
+
+        public Integer effectiveInputTokens() {
+            if (inputTokens != null) {
+                return inputTokens;
+            }
+            return promptTokens;
+        }
+
+        public Integer effectiveOutputTokens() {
+            if (outputTokens != null) {
+                return outputTokens;
+            }
+            return completionTokens;
+        }
     }
 }

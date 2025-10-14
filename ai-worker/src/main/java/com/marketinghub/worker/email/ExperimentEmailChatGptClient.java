@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.journey.model.Journey;
+import com.marketinghub.worker.openai.AiGenerationRecorder;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
 import io.netty.channel.ChannelOption;
@@ -39,15 +40,18 @@ public class ExperimentEmailChatGptClient {
     private final ObjectMapper objectMapper;
     private final String model;
     private final boolean enabled;
+    private final AiGenerationRecorder generationRecorder;
 
     public ExperimentEmailChatGptClient(WebClient.Builder builder,
                                         ObjectMapper objectMapper,
                                         @Value("${openai.api-key:}") String apiKey,
                                         @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-                                        @Value("${openai.model:gpt-3.5-turbo}") String model) {
+                                        @Value("${openai.model:gpt-3.5-turbo}") String model,
+                                        AiGenerationRecorder generationRecorder) {
         this.objectMapper = objectMapper;
         this.model = model;
         this.enabled = StringUtils.hasText(apiKey);
+        this.generationRecorder = generationRecorder;
         HttpClient httpClient = HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) CONNECT_TIMEOUT.toMillis())
                 .responseTimeout(REQUEST_TIMEOUT)
@@ -106,6 +110,12 @@ public class ExperimentEmailChatGptClient {
             throw new RuntimeException("Erro OpenAI: " + response.errorMessage());
         }
         String content = response.firstText();
+        generationRecorder.record("EXPERIMENT_EMAIL",
+                experiment != null ? String.valueOf(experiment.getId()) : null,
+                prompt,
+                content,
+                model,
+                response.usage());
         log.info("Resposta OpenAI para e-mails: {}", content);
         List<EmailPlan> plans = parseContent(content);
         return new Generation(plans, prompt, content, model);

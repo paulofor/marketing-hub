@@ -52,17 +52,6 @@ de IA quando necessário e persistem os resultados de volta no serviço principa
   prefixo configurado quando recebe `404`, evitando falhas em ambientes com roteamento diferente.
 - **Referências:** detalhes e fluxo em [experimento-criativo-service.md](experimento-criativo-service.md).
 
-### Experimento → Instant Forms
-- **Disparo:** `ExperimentInstantFormScheduler` (cron `0 */5 * * * *`).
-- **Fonte dos dados:** experimentos com `instantFormsToGenerate > 0` e página do Facebook vinculada.
-- **O que faz:** `ExperimentInstantFormService` consulta o `InstantFormChatGptClient` para estruturar até a
-  quantidade solicitada de formulários Instant/Lead Ads, sanitiza o retorno e cria cada formulário diretamente na Graph API
-  (`POST /{page-id}/leadgen_forms` seguido de `POST /{form-id}` com `status=ACTIVE`). Em seguida salva o registro em
-  `fb_instant_form` com o ID numérico devolvido pelo Facebook, além de `model`, `prompt` e metadados (`status`, `createdTime`,
-  `updatedTime`, `leadsCount`). Quando nenhuma criação é bem-sucedida o contador `instantFormsToGenerate` é mantido para nova
-  tentativa.
-- **Referências:** fluxograma completo em [experimento-instant-form-service.md](experimento-instant-form-service.md).
-
 ### Experimento → E-mails da jornada
 - **Disparo:** `ExperimentEmailScheduler` (cron `0 */5 * * * *`).
 - **Fonte dos dados:** experimentos com `emailsToGenerate > 0` que já possuem jornada ativa construída a partir do template.
@@ -80,6 +69,12 @@ de IA quando necessário e persistem os resultados de volta no serviço principa
   interesses, lookalikes e `targetingJson`, e persiste os registros com `POST /api/adsets`, preenchendo também `prompt`
   e `model`.
 - **Referências:** documentação complementar em [experimento-adset-service.md](experimento-adset-service.md).
+
+## Integrações descontinuadas
+
+- **Instant Forms (Meta/Lead Ads):** o Worker IA não acessa mais a Graph API do Facebook. A criação, ativação e manutenção de
+  formulários Instant Form deve ser realizada exclusivamente pelo `facebook-ads-worker` após a aprovação manual do usuário.
+  Qualquer lógica anterior de geração automática foi removida para eliminar dependências diretas da plataforma Meta.
 
 ## Perguntas frequentes
 

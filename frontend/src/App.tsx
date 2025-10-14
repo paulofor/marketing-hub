@@ -63,6 +63,7 @@ import "./App.css";
 import FacebookCampaignExperimentsPage from "./pages/facebook/FacebookCampaignExperimentsPage";
 import FacebookExperimentsReadyPage from "./pages/facebook/FacebookExperimentsReadyPage";
 import GlobalAutomationAlerts from "./components/GlobalAutomationAlerts";
+import AiGenerationListPage from "./pages/ai/AiGenerationListPage";
 
 export default function App() {
   return (
@@ -142,6 +143,10 @@ export default function App() {
               <Route
                 path="/ai-services/:id/edit"
                 element={<EditAiServicePage />}
+              />
+              <Route
+                path="/ai/generations"
+                element={<AiGenerationListPage />}
               />
               <Route path="/angles" element={<AnglesPage />} />
               <Route path="/visual-proofs" element={<VisualProofsPage />} />

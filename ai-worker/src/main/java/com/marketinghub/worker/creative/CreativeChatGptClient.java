@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.marketinghub.worker.openai.AiGenerationRecorder;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
 
@@ -35,15 +36,18 @@ public class CreativeChatGptClient {
     private final ObjectMapper objectMapper;
     private final String model;
     private final boolean enabled;
+    private final AiGenerationRecorder generationRecorder;
     private static final Logger log = LoggerFactory.getLogger(CreativeChatGptClient.class);
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(90);
+    private static final String DOMAIN = "CREATIVE_COPY";
 
     public CreativeChatGptClient(WebClient.Builder builder,
                                  ObjectMapper objectMapper,
                                  @Value("${openai.api-key:}") String apiKey,
                                  @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-                                 @Value("${openai.model:gpt-3.5-turbo}") String model) {
+                                 @Value("${openai.model:gpt-3.5-turbo}") String model,
+                                 AiGenerationRecorder generationRecorder) {
         this.enabled = apiKey != null && !apiKey.isBlank();
         HttpClient httpClient = HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) CONNECT_TIMEOUT.toMillis())
@@ -63,6 +67,7 @@ public class CreativeChatGptClient {
         this.webClient = clientBuilder.build();
         this.objectMapper = objectMapper;
         this.model = model;
+        this.generationRecorder = generationRecorder;
         if (!enabled) {
             log.warn("OpenAI API key not configured; creative generation will be skipped");
         }
@@ -111,6 +116,12 @@ public class CreativeChatGptClient {
             throw new RuntimeException("OpenAI error: " + response.errorMessage());
         }
         String content = response.firstText();
+        generationRecorder.record(DOMAIN,
+                experiment != null ? String.valueOf(experiment.getId()) : null,
+                prompt,
+                content,
+                model,
+                response.usage());
         if (content == null || content.isBlank()) {
             log.warn("ChatGPT returned empty content for experiment {}", experiment.getId());
             return List.of();

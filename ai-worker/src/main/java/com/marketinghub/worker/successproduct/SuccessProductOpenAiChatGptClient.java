@@ -3,6 +3,7 @@ package com.marketinghub.worker.successproduct;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.successproduct.SuccessProduct;
+import com.marketinghub.worker.openai.AiGenerationRecorder;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
 import java.util.LinkedHashMap;
@@ -28,13 +29,16 @@ public class SuccessProductOpenAiChatGptClient implements ChatGptClient {
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
     private final String model;
+    private final AiGenerationRecorder generationRecorder;
+    private static final String DOMAIN = "SUCCESS_PRODUCT_EXTRACTION";
 
     public SuccessProductOpenAiChatGptClient(
             WebClient.Builder builder,
             ObjectMapper objectMapper,
             @Value("${openai.api-key:}") String apiKey,
             @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-            @Value("${openai.model:gpt-3.5-turbo}") String model) {
+            @Value("${openai.model:gpt-3.5-turbo}") String model,
+            AiGenerationRecorder generationRecorder) {
         WebClient.Builder clientBuilder = builder
                 .baseUrl(baseUrl)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
@@ -44,13 +48,15 @@ public class SuccessProductOpenAiChatGptClient implements ChatGptClient {
         this.webClient = clientBuilder.build();
         this.objectMapper = objectMapper;
         this.model = model;
+        this.generationRecorder = generationRecorder;
     }
 
     @Override
     public NicheHypothesis extract(SuccessProduct product) {
+        String prompt = buildPrompt(product);
         List<Map<String, Object>> input = List.of(
                 OpenAiRequestUtils.message("system", "Você é um especialista em marketing."),
-                OpenAiRequestUtils.message("user", buildPrompt(product))
+                OpenAiRequestUtils.message("user", prompt)
         );
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", model);
@@ -76,6 +82,12 @@ public class SuccessProductOpenAiChatGptClient implements ChatGptClient {
             return null;
         }
         String content = response.firstText();
+        generationRecorder.record(DOMAIN,
+                product != null ? String.valueOf(product.getId()) : null,
+                prompt,
+                content,
+                model,
+                response.usage());
         if (content == null || content.isBlank()) {
             log.warn("ChatGPT returned empty content for product {}", product.getId());
             return null;

@@ -9,6 +9,7 @@ import com.marketinghub.audience.Audience;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.worker.openai.AiGenerationRecorder;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
 import org.slf4j.Logger;
@@ -36,14 +37,17 @@ public class AudienceAdSetChatGptClient {
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
     private final String model;
+    private final AiGenerationRecorder generationRecorder;
     private static final Logger log = LoggerFactory.getLogger(AudienceAdSetChatGptClient.class);
     private static final Pattern NON_NUMERIC = Pattern.compile("[^0-9,.-]");
+    private static final String DOMAIN = "ADSET_PLAN";
 
     public AudienceAdSetChatGptClient(WebClient.Builder builder,
                                       ObjectMapper objectMapper,
                                       @Value("${openai.api-key:}") String apiKey,
                                       @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-                                      @Value("${openai.model:gpt-3.5-turbo}") String model) {
+                                      @Value("${openai.model:gpt-3.5-turbo}") String model,
+                                      AiGenerationRecorder generationRecorder) {
         WebClient.Builder clientBuilder = builder
                 .baseUrl(baseUrl)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
@@ -53,6 +57,7 @@ public class AudienceAdSetChatGptClient {
         this.webClient = clientBuilder.build();
         this.objectMapper = objectMapper;
         this.model = model;
+        this.generationRecorder = generationRecorder;
     }
 
     public AdSetPlan planAdSet(Experiment experiment, Audience audience) {
@@ -80,6 +85,12 @@ public class AudienceAdSetChatGptClient {
             throw new RuntimeException("OpenAI error: " + response.errorMessage());
         }
         String content = response.firstText();
+        generationRecorder.record(DOMAIN,
+                audience != null ? String.valueOf(audience.getId()) : null,
+                prompt,
+                content,
+                model,
+                response.usage());
         if (content == null || content.isBlank()) {
             throw new IllegalStateException("ChatGPT returned empty content for ad set planning");
         }

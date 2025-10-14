@@ -56,22 +56,24 @@ Quando a jornada do experimento define um novo passo de captura com instant
 form aprovado, o worker publica o formulário antes de criar a campanha. O fluxo
 é executado uma única vez por formulário: caso `FacebookCampaignService` receba
 metadados indicando que o próximo passo é um instant form aprovado, ele consulta
-o backend para recuperar o formulário, envia a requisição de publicação via
-`FacebookAdsService.publishInstantForm` e calcula o identificador normalizado do
-ativo antes de continuar. A Meta começou a expor instant forms gerados por IA
-com o prefixo `ai_form_`; nesses casos o worker converte automaticamente para o
-ID consumido pela Graph API (`form_...`) e também tenta extrair o identificador a
-partir do `shareLink` quando disponível. Após obter o ID válido, o worker calcula
-o `shareLink` caso a Graph API não devolva esse campo (a URL é construída via
-`https://www.facebook.com/ads/leadgen/?id=<id>`). Em seguida o worker atualiza o
+o backend para recuperar o formulário e envia a requisição de publicação via
+`FacebookAdsService.publishInstantForm`. A Meta começou a expor instant forms
+gerados por IA com o prefixo `ai_form_`, que representam apenas um identificador
+temporário enquanto o ativo ainda não foi sincronizado com a conta de anúncios.
+Nesses casos o worker utiliza o `ai_form_...` para interagir com a Graph API,
+aguardando o retorno da Meta para preencher o ID definitivo. Assim que a API
+informa o identificador final (normalmente composto apenas por dígitos), o
+worker calcula o `shareLink` caso a Graph API não devolva esse campo (a URL é
+construída via `https://www.facebook.com/ads/leadgen/?id=<id>`) e atualiza o
 backend usando `PATCH /api/instant-forms/{id}/publication` para registrar
 `published = true`, `publishedAt` e a URL compartilhável persistida no backend.
-Caso a publicação já esteja registrada, nenhuma nova chamada é feita. O link
-compartilhável passa a ser usado como destino do CTA do anúncio e o worker envia
-o identificador do formulário (`lead_gen_form_id`) na criação do criativo e do
-ad set (`destination_type = FACEBOOK`, valor aceito pela Graph API para destinos
-dentro da própria plataforma). Assim, os usuários são direcionados
-diretamente para o instant form selecionado quando interagirem com a campanha.
+Enquanto o ID definitivo não estiver disponível, o worker mantém o CTA apontando
+somente para o link de compartilhamento e evita enviar `lead_gen_form_id` na
+criação do criativo, impedindo que a Graph API rejeite a requisição com o erro
+`(#100) Param call_to_action[value][lead_gen_form_id] must be a valid Lead Gen Data id`.
+Depois que a Meta confirmar o identificador, o worker passa a anexá-lo ao CTA e
+define o `destination_type = FACEBOOK`, direcionando os usuários diretamente ao
+instant form selecionado quando interagirem com a campanha.
 
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar
 investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs

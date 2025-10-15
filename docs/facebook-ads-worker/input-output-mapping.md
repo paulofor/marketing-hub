@@ -13,6 +13,15 @@ definidos na conta marcada para o worker na tela **Contas do Facebook**. O
 backend expõe esses dados via `GET /api/accounts/facebook/worker-config`, que
 reúne token, App ID/Secret e parâmetros padrão de orçamento, destino e criativos.
 
+## Instant forms
+
+Quando um formulário aprovado ainda não possui `facebookFormId`, o worker lê os
+detalhes completos (`GET /api/instant-forms/{id}`) e envia `POST
+/{pageId}/leadgen_forms` com perguntas padrão (`FULL_NAME`, `EMAIL`), `locale`,
+URL de privacidade e link de agradecimento. O identificador retornado é
+persistido com `PATCH /api/instant-forms/{id}/publication` mantendo
+`published=false` até que a Meta confirme o status final.
+
 Os experimentos que alimentam esse fluxo são apresentados ao time na tela
 "Experimentos para Campanha" do frontend, garantindo o alinhamento entre a visão
 operacional e a automação do worker.

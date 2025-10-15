@@ -56,7 +56,18 @@ Quando a jornada do experimento define um novo passo de captura com instant
 form aprovado, o worker publica o formulário antes de criar a campanha. O fluxo
 é dividido em duas etapas complementares:
 
-1. **Publicação proativa** – O `FacebookInstantFormPublicationScheduler`
+1. **Criação do rascunho na Meta** – Sempre que um formulário aprovado não
+   possui `facebookFormId`, o `FacebookInstantFormPublicationService` busca os
+   detalhes completos no backend (`GET /api/instant-forms/{id}`) e cria o
+   rascunho diretamente na Graph API com `POST /{pageId}/leadgen_forms`. O
+   payload inclui `locale`, links de política de privacidade e agradecimento e
+   as perguntas padrão (`FULL_NAME` e `EMAIL`). O serviço resolve o token da
+   página via `/{pageId}?fields=access_token`, registra o identificador
+   devolvido pela Meta com `PATCH /api/instant-forms/{id}/publication` (mantendo
+   `published = false`) e evita duplicações sempre que o backend já possuir o
+   valor. Falhas por falta de URL de privacidade ou página configurada são
+   reportadas em log e o formulário permanece pendente até correção manual.
+2. **Publicação proativa** – O `FacebookInstantFormPublicationScheduler`
    consulta `/api/instant-forms/ready-to-publish` e delega para o
    `FacebookInstantFormPublicationService`, que publica cada formulário aprovado
    via `FacebookAdsService.publishInstantForm`. Na sequência o serviço lê os
@@ -65,20 +76,8 @@ form aprovado, o worker publica o formulário antes de criar a campanha. O fluxo
    `https://www.facebook.com/ads/leadgen/?id=<id>` quando necessário). Por fim o
    backend é atualizado com `PATCH /api/instant-forms/{id}/publication`,
    preenchendo `published = true`, `publishedAt`, link compartilhável e o
-   `facebookFormId` definitivo. Quando o backend ainda não tiver persistido o
-   identificador de rascunho (`facebookFormId` nulo ou vazio), o serviço consulta
-   a Graph API (`/{pageId}/leadgen_forms`) e busca pelo formulário com o mesmo
-   nome na página informada. Para evitar o erro `(#200) Requires pages_manage_ads`,
-   o serviço primeiro resolve o token específico da página via
-   `/{pageId}?fields=access_token` e reutiliza o valor obtido em cache enquanto
-   o token de longa duração da conta permanecer válido. Encontrando um rascunho
-   correspondente, o worker reutiliza o `draft_id` (ou `id`, quando o Facebook
-   não devolve o campo) para concluir a publicação e reporta o valor resolvido ao
-   backend.
-   > ⚠️ O backend deve persistir o identificador do rascunho retornado na criação
-   > do formulário. A Meta só atribui o ID definitivo após a publicação, portanto
-   > o worker não consegue prosseguir se esse valor estiver ausente.
-2. **Validação na criação da campanha** – O `FacebookCampaignService` reaproveita
+   `facebookFormId` definitivo.
+3. **Validação na criação da campanha** – O `FacebookCampaignService` reaproveita
    os dados persistidos. Se, por algum motivo, o formulário ainda não estiver
    publicado ou a Meta não tiver retornado o ID final, o serviço tenta novamente
    publicar antes de criar o criativo. Enquanto o ID definitivo não estiver

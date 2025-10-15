@@ -179,6 +179,72 @@ public class FacebookAdsService {
         return response.path("id").asText();
     }
 
+    public String createInstantForm(String pageId, InstantFormCreationRequest request) {
+        if (!hasText(pageId)) {
+            throw new IllegalArgumentException("pageId must not be blank");
+        }
+        Objects.requireNonNull(request, "request");
+
+        String normalizedPageId = pageId.trim();
+        if (!hasText(normalizedPageId)) {
+            throw new IllegalArgumentException("pageId must not be blank");
+        }
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("name", request.name());
+        if (hasText(request.locale())) {
+            body.put("locale", request.locale());
+        }
+        if (request.privacyPolicy() != null && hasText(request.privacyPolicy().url())) {
+            Map<String, Object> privacyPolicy = new HashMap<>();
+            privacyPolicy.put("url", request.privacyPolicy().url());
+            if (hasText(request.privacyPolicy().linkText())) {
+                privacyPolicy.put("link_text", request.privacyPolicy().linkText());
+            }
+            body.put("privacy_policy", privacyPolicy);
+        }
+        if (request.questions() != null && !request.questions().isEmpty()) {
+            List<Map<String, Object>> questions = new ArrayList<>(request.questions().size());
+            for (InstantFormCreationRequest.Question question : request.questions()) {
+                if (question == null || !hasText(question.type())) {
+                    continue;
+                }
+                Map<String, Object> questionMap = new HashMap<>();
+                questionMap.put("type", question.type());
+                if (question.key() != null && !question.key().isBlank()) {
+                    questionMap.put("key", question.key());
+                }
+                if (question.label() != null && !question.label().isBlank()) {
+                    questionMap.put("label", question.label());
+                }
+                if (question.options() != null && !question.options().isEmpty()) {
+                    questionMap.put("options", question.options());
+                }
+                questions.add(questionMap);
+            }
+            if (!questions.isEmpty()) {
+                body.put("questions", questions);
+            }
+        }
+        if (hasText(request.followUpActionUrl())) {
+            body.put("follow_up_action_url", request.followUpActionUrl());
+            if (hasText(request.followUpActionText())) {
+                body.put("follow_up_action_text", request.followUpActionText());
+            }
+        }
+
+        String pageAccessToken = resolvePageAccessToken(normalizedPageId);
+        if (!hasText(pageAccessToken)) {
+            LOGGER.warn("Falling back to account access token while creating instant form for page {}", normalizedPageId);
+            pageAccessToken = requireAccessToken();
+        }
+        body.put("access_token", pageAccessToken);
+
+        String path = buildVersionedPath("/" + normalizedPageId + "/leadgen_forms");
+        JsonNode response = executePost(path, body);
+        return response != null ? response.path("id").asText(null) : null;
+    }
+
     public String uploadAdImage(String adAccountId, String imageUrl) {
         Objects.requireNonNull(adAccountId, "adAccountId");
         if (!hasText(imageUrl)) {
@@ -519,6 +585,24 @@ public class FacebookAdsService {
             return path;
         }
         return path.replace(currentToken, maskAccessToken(currentToken));
+    }
+
+    public record InstantFormCreationRequest(
+        String name,
+        String locale,
+        PrivacyPolicy privacyPolicy,
+        List<Question> questions,
+        String followUpActionText,
+        String followUpActionUrl
+    ) {
+        public record PrivacyPolicy(String url, String linkText) {
+        }
+
+        public record Question(String type, String key, String label, List<Map<String, Object>> options) {
+            public Question(String type) {
+                this(type, null, null, null);
+            }
+        }
     }
 
     private ObjectNode extractErrorDetails(String responseBody) {

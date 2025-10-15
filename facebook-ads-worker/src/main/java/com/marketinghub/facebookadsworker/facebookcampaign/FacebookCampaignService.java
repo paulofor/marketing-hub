@@ -7,9 +7,11 @@ import com.marketinghub.facebookadsworker.FacebookAccessTokenExpiredException;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenManager;
 import com.marketinghub.facebookadsworker.FacebookAdsService;
 import com.marketinghub.facebookadsworker.FacebookPermissionException;
+import com.marketinghub.facebookadsworker.facebookinstantform.InstantFormPublicationUpdateRequest;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient.FacebookWorkerConfiguration;
 import com.marketinghub.facebookadsworker.util.UrlUtils;
+import com.marketinghub.facebookadsworker.util.InstantFormPublicationHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
-import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -660,10 +661,10 @@ public class FacebookCampaignService {
         }
         String facebookFormId = StringUtils.hasText(form.facebookFormId()) ? form.facebookFormId().trim() : null;
         String shareLink = form.shareLink();
-        String normalizedFormId = normalizeInstantFormId(facebookFormId, shareLink);
+        String normalizedFormId = InstantFormPublicationHelper.normalizeInstantFormId(LOGGER, facebookFormId, shareLink);
         if (form.published()) {
             if (!StringUtils.hasText(shareLink) && StringUtils.hasText(normalizedFormId)) {
-                shareLink = buildInstantFormShareLink(normalizedFormId);
+                shareLink = InstantFormPublicationHelper.buildInstantFormShareLink(normalizedFormId);
             }
             if (!StringUtils.hasText(normalizedFormId)) {
                 LOGGER.info(
@@ -689,7 +690,8 @@ public class FacebookCampaignService {
             facebookAdsService.publishInstantForm(facebookFormId);
             JsonNode details = facebookAdsService.fetchInstantForm(facebookFormId);
             String status = details != null ? details.path("status").asText(null) : null;
-            String resolvedFormId = normalizeInstantFormId(
+            String resolvedFormId = InstantFormPublicationHelper.normalizeInstantFormId(
+                LOGGER,
                 details != null ? details.path("id").asText(null) : normalizedFormId,
                 shareLink
             );
@@ -708,7 +710,7 @@ public class FacebookCampaignService {
                 );
             }
             if (StringUtils.hasText(normalizedFormId)) {
-                shareLink = buildInstantFormShareLink(normalizedFormId);
+                shareLink = InstantFormPublicationHelper.buildInstantFormShareLink(normalizedFormId);
             }
             reportInstantFormPublication(
                 form.id(),
@@ -783,49 +785,6 @@ public class FacebookCampaignService {
                 ex.getMessage(),
                 ex
             );
-        }
-    }
-
-    private String buildInstantFormShareLink(String facebookFormId) {
-        if (!StringUtils.hasText(facebookFormId)) {
-            return null;
-        }
-        return "https://www.facebook.com/ads/leadgen/?id=" + facebookFormId;
-    }
-
-    private String normalizeInstantFormId(String facebookFormId, String shareLink) {
-        String fromShareLink = extractInstantFormIdFromShareLink(shareLink);
-        if (StringUtils.hasText(fromShareLink)) {
-            return fromShareLink;
-        }
-        if (!StringUtils.hasText(facebookFormId)) {
-            return null;
-        }
-        String trimmed = facebookFormId.trim();
-        if (trimmed.startsWith("ai_form_")) {
-            LOGGER.info(
-                "Detected placeholder instant form identifier {}; waiting for Meta to assign the final lead form ID",
-                trimmed
-            );
-            return null;
-        }
-        return trimmed;
-    }
-
-    private String extractInstantFormIdFromShareLink(String shareLink) {
-        if (!StringUtils.hasText(shareLink)) {
-            return null;
-        }
-        try {
-            var uriComponents = UriComponentsBuilder.fromUriString(shareLink).build();
-            String id = uriComponents.getQueryParams().getFirst("form_id");
-            if (!StringUtils.hasText(id)) {
-                id = uriComponents.getQueryParams().getFirst("id");
-            }
-            return StringUtils.hasText(id) ? id.trim() : null;
-        } catch (IllegalArgumentException ex) {
-            LOGGER.warn("Could not extract instant form identifier from share link {}: {}", shareLink, ex.getMessage());
-            return null;
         }
     }
 
@@ -911,11 +870,4 @@ public class FacebookCampaignService {
         String status
     ) {}
 
-    private record InstantFormPublicationUpdateRequest(
-        boolean published,
-        Instant publishedAt,
-        String shareLink,
-        String status,
-        String facebookFormId
-    ) {}
 }

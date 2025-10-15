@@ -2,8 +2,9 @@
 
 O diagrama abaixo apresenta as principais classes que participam do fluxo de
 criação de campanhas no Facebook Ads a partir de experimentos aprovados pelo
-backend. Estão incluídos o agendador, o serviço responsável por orquestrar as
-chamadas e o cliente usado para conversar com a Graph API do Facebook.
+backend. Além do agendador e do serviço de campanhas, o worker possui um
+agendador dedicado à publicação de instant forms aprovados e o cliente usado
+para conversar com a Graph API do Facebook.
 
 > **Atualização:** Experimentos enviados pelo backend agora precisam informar o
 > campo `instagramAccount`. O `FacebookCampaignService` ignora qualquer
@@ -26,6 +27,20 @@ classDiagram
         +createCampaignsFromExperiments()
         -processExperiment(exp, config)
         -formatCreativeMessage(name, config) String
+    }
+
+    class FacebookInstantFormPublicationScheduler {
+        +schedule()
+    }
+
+    class FacebookInstantFormPublicationService {
+        -facebookAdsService : FacebookAdsService
+        -accessTokenManager : FacebookAccessTokenManager
+        -configurationClient : FacebookWorkerConfigurationClient
+        -backendClient : WebClient
+        -backendBaseUrl : String
+        -apiPrefix : String
+        +publishApprovedInstantForms()
     }
 
     class FacebookAdsService {

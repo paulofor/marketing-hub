@@ -40,6 +40,7 @@ classDiagram
         -backendClient : WebClient
         -backendBaseUrl : String
         -apiPrefix : String
+        -tryCreateInstantFormDraft(form) String
         +publishApprovedInstantForms()
     }
 
@@ -50,6 +51,7 @@ classDiagram
         +createAdSet(adAccountId, request) String
         +createAdCreative(adAccountId, request) String
         +createAd(adAccountId, request) String
+        +createInstantForm(pageId, request) String
         +getCampaignMetrics(campaignId) JsonNode
         +renewLongLivedToken(appId, appSecret, token) TokenRenewalResponse
         +updateAccessToken(token)

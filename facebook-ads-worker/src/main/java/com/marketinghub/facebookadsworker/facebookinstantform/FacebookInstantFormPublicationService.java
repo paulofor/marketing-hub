@@ -175,10 +175,35 @@ public class FacebookInstantFormPublicationService {
         if (form == null) {
             return;
         }
-        String facebookFormId = StringUtils.hasText(form.facebookFormId()) ? form.facebookFormId().trim() : null;
+        String facebookFormId = normalizeFacebookFormId(form.facebookFormId());
+        if (!StringUtils.hasText(facebookFormId)) {
+            try {
+                facebookFormId = resolveFacebookFormIdFromFacebook(form);
+            } catch (FacebookAccessTokenExpiredException ex) {
+                handleAccessTokenExpirationDuringPublication(ex);
+                return;
+            } catch (FacebookPermissionException ex) {
+                LOGGER.error(
+                    "Facebook permission error while resolving instant form {} identifier: message={}, details={}",
+                    form.id(),
+                    ex.getMessage(),
+                    ex.getErrorDetails(),
+                    ex
+                );
+                return;
+            } catch (Exception ex) {
+                LOGGER.warn(
+                    "Failed to resolve Facebook form ID for instant form {}: message={}",
+                    form.id(),
+                    ex.getMessage(),
+                    ex
+                );
+                return;
+            }
+        }
         if (!StringUtils.hasText(facebookFormId)) {
             LOGGER.warn(
-                "Skipping instant form {} because the Facebook form ID is missing; persist the draft identifier returned when the form was created (Meta provides the final ID only after publication)",
+                "Skipping instant form {} because the Facebook form ID is missing and could not be resolved; persist the draft identifier returned when the form was created (Meta provides the final ID only after publication)",
                 form.id()
             );
             return;
@@ -227,6 +252,57 @@ public class FacebookInstantFormPublicationService {
                 ex
             );
         }
+    }
+
+    private String resolveFacebookFormIdFromFacebook(InstantForm form) {
+        String pageExternalId = StringUtils.hasText(form.facebookPageExternalId()) ? form.facebookPageExternalId().trim() : null;
+        if (!StringUtils.hasText(pageExternalId)) {
+            LOGGER.warn(
+                "Instant form {} is missing the Facebook form ID and the backend did not provide the page external identifier; skipping resolution attempt",
+                form != null ? form.id() : null
+            );
+            return null;
+        }
+        String formName = StringUtils.hasText(form.name()) ? form.name().trim() : null;
+        if (!StringUtils.hasText(formName)) {
+            LOGGER.warn(
+                "Instant form {} is missing the Facebook form ID and does not have a name to match against drafts on page {}; skipping resolution attempt",
+                form.id(),
+                pageExternalId
+            );
+            return null;
+        }
+        LOGGER.info(
+            "Attempting to resolve missing Facebook form ID for instant form {} by querying page {} with name {}",
+            form.id(),
+            pageExternalId,
+            formName
+        );
+        String resolvedIdentifier = facebookAdsService.findInstantFormIdentifier(pageExternalId, formName);
+        if (StringUtils.hasText(resolvedIdentifier)) {
+            LOGGER.info(
+                "Resolved missing Facebook form ID for instant form {}: facebookFormId={}, pageId={}",
+                form.id(),
+                resolvedIdentifier,
+                pageExternalId
+            );
+            return resolvedIdentifier.trim();
+        }
+        LOGGER.warn(
+            "Could not resolve Facebook form ID for instant form {} using page {} and name {}; ensure the draft identifier returned by Meta is persisted",
+            form.id(),
+            pageExternalId,
+            formName
+        );
+        return null;
+    }
+
+    private String normalizeFacebookFormId(String facebookFormId) {
+        if (!StringUtils.hasText(facebookFormId)) {
+            return null;
+        }
+        String trimmed = facebookFormId.trim();
+        return StringUtils.hasText(trimmed) ? trimmed : null;
     }
 
     private String resolveShareLink(JsonNode details, String existingShareLink, String normalizedFormId) {

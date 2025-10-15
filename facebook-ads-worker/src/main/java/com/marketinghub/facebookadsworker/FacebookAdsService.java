@@ -237,6 +237,67 @@ public class FacebookAdsService {
         return executeGet(path).body();
     }
 
+    public String findInstantFormIdentifier(String pageId, String formName) {
+        if (!hasText(pageId) || !hasText(formName)) {
+            return null;
+        }
+        String normalizedPageId = pageId.trim();
+        String normalizedName = formName.trim();
+        if (!hasText(normalizedPageId) || !hasText(normalizedName)) {
+            return null;
+        }
+
+        String path = buildVersionedPath(
+            "/" +
+            normalizedPageId +
+            "/leadgen_forms?fields=id,name,status,draft_id&limit=200&access_token=" +
+            requireAccessToken()
+        );
+        FacebookApiResponse response = executeGet(path);
+        if (response == null || response.body() == null) {
+            return null;
+        }
+        JsonNode data = response.body().path("data");
+        if (data == null || !data.isArray()) {
+            return null;
+        }
+
+        String fallbackIdentifier = null;
+        for (JsonNode node : data) {
+            if (node == null || node.isNull()) {
+                continue;
+            }
+            String candidateName = node.path("name").asText(null);
+            if (!hasText(candidateName) || !candidateName.trim().equalsIgnoreCase(normalizedName)) {
+                continue;
+            }
+            String resolvedIdentifier = extractInstantFormIdentifier(node);
+            if (!hasText(resolvedIdentifier)) {
+                continue;
+            }
+            String status = node.path("status").asText(null);
+            if (hasText(status) && "DRAFT".equalsIgnoreCase(status.trim())) {
+                return resolvedIdentifier;
+            }
+            if (fallbackIdentifier == null) {
+                fallbackIdentifier = resolvedIdentifier;
+            }
+        }
+        return fallbackIdentifier;
+    }
+
+    private String extractInstantFormIdentifier(JsonNode node) {
+        if (node == null || node.isNull()) {
+            return null;
+        }
+        String draftId = node.path("draft_id").asText(null);
+        if (hasText(draftId)) {
+            return draftId.trim();
+        }
+        String id = node.path("id").asText(null);
+        return hasText(id) ? id.trim() : null;
+    }
+
     private JsonNode executePost(String path, Map<String, Object> body) {
         Map<String, Object> sanitizedBody = sanitizeBody(body);
         String maskedPath = maskAccessTokenInPath(path);

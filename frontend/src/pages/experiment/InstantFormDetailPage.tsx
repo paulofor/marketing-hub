@@ -172,7 +172,7 @@ export default function InstantFormDetailPage() {
                   <div className="text-muted small">{instantForm.facebookPageExternalId}</div>
                 </dd>
                 <dt className="col-sm-5">ID do formulário</dt>
-                <dd className="col-sm-7">{instantForm.facebookFormId}</dd>
+                <dd className="col-sm-7">{instantForm.facebookFormId ?? "—"}</dd>
                 <dt className="col-sm-5">Status Meta</dt>
                 <dd className="col-sm-7">{instantForm.status ?? "—"}</dd>
                 <dt className="col-sm-5">Idioma</dt>
@@ -323,7 +323,9 @@ export default function InstantFormDetailPage() {
                     {facebookPayload.experiment?.facebookInstantForm ? (
                       <>
                         <div className="fw-semibold">{facebookPayload.experiment.facebookInstantForm.name}</div>
-                        <div className="text-muted">{facebookPayload.experiment.facebookInstantForm.facebookFormId}</div>
+                        <div className="text-muted">
+                          {facebookPayload.experiment.facebookInstantForm.facebookFormId ?? "—"}
+                        </div>
                       </>
                     ) : (
                       <span className="text-muted">—</span>

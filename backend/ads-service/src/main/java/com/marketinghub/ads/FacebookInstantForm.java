@@ -31,7 +31,7 @@ public class FacebookInstantForm {
     @JoinColumn(name = "page_id", nullable = false)
     private FacebookPage page;
 
-    @Column(name = "form_id", nullable = false, length = 128)
+    @Column(name = "form_id", length = 128)
     private String formId;
 
     @Column(nullable = false, length = 255)

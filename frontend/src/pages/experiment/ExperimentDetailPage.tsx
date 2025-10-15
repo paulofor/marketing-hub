@@ -152,7 +152,7 @@ export default function ExperimentDetailPage() {
             title: "Instant form vinculado",
             isMet: Boolean(experimentInstantForm),
             hint: experimentInstantForm
-              ? `O formulário ${experimentInstantForm.name} (${experimentInstantForm.facebookFormId}) será usado na captura.`
+              ? `O formulário ${experimentInstantForm.name}${experimentInstantForm.facebookFormId ? ` (${experimentInstantForm.facebookFormId})` : ""} será usado na captura.`
               : "Associe um instant form compatível na aba Instant Forms para destravar a etapa de captura.",
             action: experimentInstantForm ? undefined : () => setTab("instant-form"),
             actionLabel: experimentInstantForm ? undefined : "Ir para Instant Forms",
@@ -254,7 +254,7 @@ export default function ExperimentDetailPage() {
         <div>
           <div>{experimentInstantForm.name}</div>
           <div className="text-muted small">
-            ID Meta: {experimentInstantForm.facebookFormId}
+            ID Meta: {experimentInstantForm.facebookFormId ?? "—"}
           </div>
           {experimentInstantForm.status && (
             <div className="text-muted small">

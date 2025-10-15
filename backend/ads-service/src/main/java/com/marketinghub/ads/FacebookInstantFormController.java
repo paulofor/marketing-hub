@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -70,7 +69,6 @@ public class FacebookInstantFormController {
     public List<FacebookInstantFormPublicationDto> readyToPublish() {
         return repository.findByApprovedTrueAndPublishedFalse().stream()
                 .filter(form -> form.getPage() != null)
-                .filter(form -> form.getFormId() != null && !form.getFormId().isBlank())
                 .map(this::toPublicationDto)
                 .toList();
     }
@@ -84,9 +82,6 @@ public class FacebookInstantFormController {
         if (request.facebookPageId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "facebookPageId is required");
         }
-        if (request.facebookFormId() == null || request.facebookFormId().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "facebookFormId is required");
-        }
         if (request.name() == null || request.name().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name is required");
         }
@@ -99,10 +94,18 @@ public class FacebookInstantFormController {
         var page = pageRepository.findById(request.facebookPageId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "facebookPageId not found"));
 
+        String facebookFormId = request.facebookFormId();
+        if (facebookFormId != null) {
+            facebookFormId = facebookFormId.trim();
+            if (facebookFormId.isEmpty()) {
+                facebookFormId = null;
+            }
+        }
+
         var entity = FacebookInstantForm.builder()
                 .hypothesis(hypothesis)
                 .page(page)
-                .formId(request.facebookFormId())
+                .formId(facebookFormId)
                 .name(request.name())
                 .status(request.status())
                 .locale(request.locale())
@@ -154,6 +157,9 @@ public class FacebookInstantFormController {
             form.setShareLink(request.shareLink() != null && !request.shareLink().isBlank()
                     ? request.shareLink()
                     : null);
+            if (request.facebookFormId() != null && !request.facebookFormId().isBlank()) {
+                form.setFormId(request.facebookFormId().trim());
+            }
         } else {
             form.setPublished(false);
             form.setPublishedAt(null);

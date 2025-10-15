@@ -224,6 +224,7 @@ class FacebookCampaignServiceTest {
         JsonNode patchPayload = objectMapper.readTree(publicationPatch.getBody().inputStream());
         assertTrue(patchPayload.get("published").asBoolean());
         assertEquals("https://www.facebook.com/ads/leadgen/?id=987654321", patchPayload.get("shareLink").asText());
+        assertEquals("987654321", patchPayload.get("facebookFormId").asText());
     }
 
     @Test
@@ -277,6 +278,7 @@ class FacebookCampaignServiceTest {
         RecordedRequest publicationPatch = backend.takeRequest();
         JsonNode patchPayload = objectMapper.readTree(publicationPatch.getBody().inputStream());
         assertEquals("https://www.facebook.com/ads/leadgen/?id=form_3_1_token", patchPayload.get("shareLink").asText());
+        assertEquals("form_3_1_token", patchPayload.get("facebookFormId").asText());
     }
 
     @Test

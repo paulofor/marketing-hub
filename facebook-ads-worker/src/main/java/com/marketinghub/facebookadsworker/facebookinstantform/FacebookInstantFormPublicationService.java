@@ -178,7 +178,7 @@ public class FacebookInstantFormPublicationService {
         String facebookFormId = StringUtils.hasText(form.facebookFormId()) ? form.facebookFormId().trim() : null;
         if (!StringUtils.hasText(facebookFormId)) {
             LOGGER.warn(
-                "Skipping instant form {} because the Facebook form ID is missing; the backend must provide the draft identifier",
+                "Skipping instant form {} because the Facebook form ID is missing; persist the draft identifier returned when the form was created (Meta provides the final ID only after publication)",
                 form.id()
             );
             return;

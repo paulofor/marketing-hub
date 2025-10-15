@@ -1,5 +1,7 @@
 package com.marketinghub.facebookadsworker;
 
+import com.marketinghub.facebookadsworker.FacebookPermissionException;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.mockwebserver.MockResponse;
@@ -11,8 +13,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FacebookAdsServiceTest {
     private MockWebServer server;
@@ -204,6 +209,90 @@ class FacebookAdsServiceTest {
         assertEquals("creative", body.get("creative").get("creative_id").asText());
         assertEquals("PAUSED", body.get("status").asText());
         assertEquals("444", id);
+    }
+
+    @Test
+    void findInstantFormIdentifierUsesPageAccessToken() throws Exception {
+        server.enqueue(new MockResponse()
+            .setBody("{\"access_token\":\"page-token\"}")
+            .addHeader("Content-Type", "application/json"));
+        server.enqueue(new MockResponse()
+            .setBody("{\"data\":[{\"id\":\"form-1\",\"name\":\"Form Teste\",\"status\":\"DRAFT\"}]}")
+            .addHeader("Content-Type", "application/json"));
+
+        String identifier = service.findInstantFormIdentifier("999", "Form Teste");
+
+        assertEquals("form-1", identifier);
+
+        RecordedRequest pageTokenRequest = server.takeRequest();
+        assertEquals("/v23.0/999?fields=access_token&access_token=token", pageTokenRequest.getPath());
+
+        RecordedRequest formsRequest = server.takeRequest();
+        assertEquals(
+            "/v23.0/999/leadgen_forms?fields=id,name,status,draft_id&limit=200&access_token=page-token",
+            formsRequest.getPath()
+        );
+    }
+
+    @Test
+    void findInstantFormIdentifierCachesPageAccessToken() throws Exception {
+        server.enqueue(new MockResponse()
+            .setBody("{\"access_token\":\"cached-page-token\"}")
+            .addHeader("Content-Type", "application/json"));
+        server.enqueue(new MockResponse()
+            .setBody("{\"data\":[]}")
+            .addHeader("Content-Type", "application/json"));
+        server.enqueue(new MockResponse()
+            .setBody("{\"data\":[]}")
+            .addHeader("Content-Type", "application/json"));
+
+        service.findInstantFormIdentifier("321", "Nome");
+        service.findInstantFormIdentifier("321", "Nome");
+
+        RecordedRequest first = server.takeRequest();
+        assertEquals("/v23.0/321?fields=access_token&access_token=token", first.getPath());
+
+        RecordedRequest second = server.takeRequest();
+        assertEquals(
+            "/v23.0/321/leadgen_forms?fields=id,name,status,draft_id&limit=200&access_token=cached-page-token",
+            second.getPath()
+        );
+
+        RecordedRequest third = server.takeRequest();
+        assertEquals(
+            "/v23.0/321/leadgen_forms?fields=id,name,status,draft_id&limit=200&access_token=cached-page-token",
+            third.getPath()
+        );
+
+        assertNull(server.takeRequest(100, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    void findInstantFormIdentifierReturnsNullWhenPageTokenMissing() throws Exception {
+        server.enqueue(new MockResponse()
+            .setBody("{\"data\":{}}")
+            .addHeader("Content-Type", "application/json"));
+
+        String identifier = service.findInstantFormIdentifier("432", "Teste");
+
+        assertNull(identifier);
+
+        RecordedRequest request = server.takeRequest();
+        assertEquals("/v23.0/432?fields=access_token&access_token=token", request.getPath());
+        assertNull(server.takeRequest(100, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    void findInstantFormIdentifierPropagatesPermissionErrors() {
+        server.enqueue(new MockResponse()
+            .setResponseCode(403)
+            .setBody("{\"error\":{\"type\":\"OAuthException\",\"code\":200,\"message\":\"(#200) Requires pages_manage_ads permission\"}}")
+            .addHeader("Content-Type", "application/json"));
+
+        assertThrows(
+            FacebookPermissionException.class,
+            () -> service.findInstantFormIdentifier("765", "Form")
+        );
     }
 
     @Test

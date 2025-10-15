@@ -19,6 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -32,6 +34,7 @@ public class FacebookAdsService {
     private final AtomicReference<String> accessToken;
     private final String apiVersion;
     private final ObjectMapper objectMapper;
+    private final ConcurrentMap<String, String> pageAccessTokens;
 
     public FacebookAdsService(WebClient.Builder builder,
                               @Value("${facebook.graph-api.base-url:https://graph.facebook.com}") String baseUrl,
@@ -41,6 +44,7 @@ public class FacebookAdsService {
         this.accessToken = new AtomicReference<>(null);
         this.apiVersion = normalizeVersion(apiVersion);
         this.objectMapper = objectMapper;
+        this.pageAccessTokens = new ConcurrentHashMap<>();
         LOGGER.info("Configured Facebook Graph API version: {}", this.apiVersion);
     }
 
@@ -63,6 +67,7 @@ public class FacebookAdsService {
         String maskedOldToken = maskAccessToken(accessToken.get());
         String maskedNewToken = maskAccessToken(newToken);
         accessToken.set(newToken.trim());
+        pageAccessTokens.clear();
         LOGGER.info(
             "Facebook access token updated: previousToken={}, newToken={}",
             maskedOldToken,
@@ -247,11 +252,20 @@ public class FacebookAdsService {
             return null;
         }
 
+        String pageAccessToken = resolvePageAccessToken(normalizedPageId);
+        if (!hasText(pageAccessToken)) {
+            LOGGER.warn(
+                "Could not resolve page access token while looking for leadgen forms on page {}; skipping lookup",
+                normalizedPageId
+            );
+            return null;
+        }
+
         String path = buildVersionedPath(
             "/" +
             normalizedPageId +
             "/leadgen_forms?fields=id,name,status,draft_id&limit=200&access_token=" +
-            requireAccessToken()
+            pageAccessToken
         );
         FacebookApiResponse response = executeGet(path);
         if (response == null || response.body() == null) {
@@ -386,6 +400,9 @@ public class FacebookAdsService {
             if (isAccessTokenExpired(errorDetails)) {
                 throw new FacebookAccessTokenExpiredException(resolveAccessTokenExpiredMessage(errorDetails), errorDetails, ex);
             }
+            if (isPermissionError(errorDetails)) {
+                throw new FacebookPermissionException(resolvePermissionMessage(errorDetails), errorDetails, ex);
+            }
             throw ex;
         } catch (WebClientRequestException ex) {
             LOGGER.error(
@@ -396,6 +413,33 @@ public class FacebookAdsService {
             );
             throw ex;
         }
+    }
+
+    private String resolvePageAccessToken(String pageId) {
+        return pageAccessTokens.computeIfAbsent(pageId, this::requestPageAccessToken);
+    }
+
+    private String requestPageAccessToken(String pageId) {
+        if (!hasText(pageId)) {
+            return null;
+        }
+        String path = buildVersionedPath(
+            "/" +
+            pageId +
+            "?fields=access_token&access_token=" +
+            requireAccessToken()
+        );
+        FacebookApiResponse response = executeGet(path);
+        if (response == null || response.body() == null) {
+            LOGGER.warn("Facebook response when resolving page access token for page {} was empty", pageId);
+            return null;
+        }
+        String token = response.body().path("access_token").asText(null);
+        if (!hasText(token)) {
+            LOGGER.warn("Facebook response did not include access token while resolving page {}", pageId);
+            return null;
+        }
+        return token.trim();
     }
 
     private void logSuccessfulResponse(String method, String maskedPath, FacebookApiResponse response) {

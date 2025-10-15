@@ -68,9 +68,13 @@ form aprovado, o worker publica o formulário antes de criar a campanha. O fluxo
    `facebookFormId` definitivo. Quando o backend ainda não tiver persistido o
    identificador de rascunho (`facebookFormId` nulo ou vazio), o serviço consulta
    a Graph API (`/{pageId}/leadgen_forms`) e busca pelo formulário com o mesmo
-   nome na página informada. Encontrando um rascunho correspondente, o worker
-   reutiliza o `draft_id` (ou `id`, quando o Facebook não devolve o campo) para
-   concluir a publicação e reporta o valor resolvido ao backend.
+   nome na página informada. Para evitar o erro `(#200) Requires pages_manage_ads`,
+   o serviço primeiro resolve o token específico da página via
+   `/{pageId}?fields=access_token` e reutiliza o valor obtido em cache enquanto
+   o token de longa duração da conta permanecer válido. Encontrando um rascunho
+   correspondente, o worker reutiliza o `draft_id` (ou `id`, quando o Facebook
+   não devolve o campo) para concluir a publicação e reporta o valor resolvido ao
+   backend.
    > ⚠️ O backend deve persistir o identificador do rascunho retornado na criação
    > do formulário. A Meta só atribui o ID definitivo após a publicação, portanto
    > o worker não consegue prosseguir se esse valor estiver ausente.

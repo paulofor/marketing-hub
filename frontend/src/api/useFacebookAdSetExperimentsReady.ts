@@ -41,7 +41,7 @@ export interface ReadyExperiment {
   creativeApproved?: boolean;
   facebookInstantForm?: {
     id: number;
-    facebookFormId: string;
+    facebookFormId: string | null;
     name: string;
   } | null;
   facebookPage?: {

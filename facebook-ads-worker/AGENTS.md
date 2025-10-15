@@ -15,6 +15,8 @@
 - Prefixe os valores de URL nos logs de integração com endpoints usando `==>` para requisições e `<==` para respostas (incluindo
   erros), garantindo um padrão visual consistente em todo o módulo.
 - Em caso de erro de permissão do Facebook, o worker bloqueia o experimento em memória até que o serviço seja reiniciado.
+- Ao publicar instant forms aprove os rascunhos com `facebookFormId` nulo e reporte o identificador definitivo recebido da Meta
+  através de `PATCH /api/instant-forms/{id}/publication`.
 
 ## Serviços existentes
 - **Campanhas de Facebook Ads** (`campaign`): cria campanhas para Facebook e Instagram utilizando o `facebook-ads-worker` com criativos gerados pelo **AI Worker** e aprovados pelo usuário no frontend.

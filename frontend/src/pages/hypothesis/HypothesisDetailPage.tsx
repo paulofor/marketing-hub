@@ -234,7 +234,7 @@ export default function HypothesisDetailPage() {
                     <tr key={form.id}>
                       <td style={{ minWidth: 220 }}>
                         <div className="fw-semibold">{form.name}</div>
-                        <div className="text-muted small">ID Meta: {form.facebookFormId}</div>
+                        <div className="text-muted small">ID Meta: {form.facebookFormId ?? "—"}</div>
                         <div className="text-muted small">
                           Modelo: {form.model ? form.model : "—"}
                         </div>

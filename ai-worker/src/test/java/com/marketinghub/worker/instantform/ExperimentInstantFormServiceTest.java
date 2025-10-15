@@ -128,7 +128,7 @@ class ExperimentInstantFormServiceTest {
         verify(instantFormRepository).save(formCaptor.capture());
         FacebookInstantForm saved = formCaptor.getValue();
         assertThat(saved.getName()).isEqualTo("Formulário de Conversão");
-        assertThat(saved.getFormId()).startsWith("ai-form-");
+        assertThat(saved.getFormId()).isNull();
         assertThat(saved.getModel()).isEqualTo("gpt-4o");
         assertThat(saved.getPrompt()).contains("PROMPT").contains("RESPOSTA");
         assertThat(saved.getFollowUpActionUrl()).isEqualTo("https://example.com/obrigado");

@@ -91,6 +91,45 @@ class FacebookInstantFormControllerTest {
     }
 
     @Test
+    void allowsCreatingInstantFormWithoutFacebookIdentifier() throws Exception {
+        CreateFacebookInstantFormRequest request = new CreateFacebookInstantFormRequest(
+                page.getId(),
+                null,
+                "Lead Magnet",
+                "DRAFT",
+                "pt_BR",
+                null,
+                null,
+                null,
+                "https://example.com/thanks",
+                "https://example.com/privacy",
+                "gpt-4o",
+                "Prompt IA"
+        );
+
+        mockMvc.perform(post("/api/hypotheses/" + hypothesis.getId() + "/instant-forms")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.facebookFormId").value((Object) null))
+                .andExpect(jsonPath("$.approved").value(false));
+
+        FacebookInstantForm form = instantFormRepository.findAll().getFirst();
+
+        mockMvc.perform(patch("/api/instant-forms/" + form.getId() + "/approval")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"approved\":true}"))
+                .andExpect(status().isOk());
+
+        instantFormRepository.flush();
+
+        mockMvc.perform(get("/api/instant-forms/ready-to-publish"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].facebookFormId").value((Object) null));
+    }
+
+    @Test
     void shouldCreateAndListInstantForms() throws Exception {
         CreateFacebookInstantFormRequest request = new CreateFacebookInstantFormRequest(
                 page.getId(),

@@ -21,7 +21,7 @@ export interface FacebookInstantFormSummary {
   facebookPageId: number;
   facebookPageExternalId: string;
   facebookPageName: string;
-  facebookFormId: string;
+  facebookFormId: string | null;
   name: string;
   status?: string | null;
   locale?: string | null;

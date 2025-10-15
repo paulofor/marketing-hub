@@ -187,3 +187,12 @@ databaseChangeLog:
   - include:
       file: V2026_10_15__create_ai_worker_generation.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2026_10_20__add_approval_to_fb_instant_form.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2026_11_05__add_publication_to_fb_instant_form.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2026_11_26__allow_null_form_id.sql
+      relativeToChangelogFile: true

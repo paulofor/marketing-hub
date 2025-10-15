@@ -6,6 +6,7 @@ public record UpdateFacebookInstantFormPublicationRequest(
         boolean published,
         Instant publishedAt,
         String shareLink,
-        String status
+        String status,
+        String facebookFormId
 ) {
 }

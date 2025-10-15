@@ -248,7 +248,7 @@ export default function InstantFormsTab({ experiment, steps }: InstantFormsTabPr
               <tr key={form.id}>
                 <td style={{ minWidth: 220 }}>
                   <div className="fw-semibold">{form.name}</div>
-                  <div className="text-muted small">ID Meta: {form.facebookFormId}</div>
+                  <div className="text-muted small">ID Meta: {form.facebookFormId ?? "—"}</div>
                   {form.model ? (
                     <div className="text-muted small">Modelo: {form.model}</div>
                   ) : null}
@@ -332,7 +332,7 @@ export default function InstantFormsTab({ experiment, steps }: InstantFormsTabPr
         <dt className="col-sm-4">Formulário</dt>
         <dd className="col-sm-8">{form.name}</dd>
         <dt className="col-sm-4">ID Meta</dt>
-        <dd className="col-sm-8">{form.facebookFormId}</dd>
+        <dd className="col-sm-8">{form.facebookFormId ?? "—"}</dd>
         <dt className="col-sm-4">Página</dt>
         <dd className="col-sm-8">{form.facebookPageName}</dd>
         <dt className="col-sm-4">Status</dt>

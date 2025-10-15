@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Serviço que gera instant forms planejados para hipóteses vinculadas a experimentos.
@@ -140,11 +139,9 @@ public class ExperimentInstantFormService {
             log.warn("Ignorando plano de instant form sem nome para o experimento {}", experiment.getId());
             return null;
         }
-        String formId = normalizeFormId(plan.formId(), experiment.getId());
         FacebookInstantForm.FacebookInstantFormBuilder builder = FacebookInstantForm.builder()
                 .hypothesis(experiment.getHypothesisRef())
                 .page(experiment.getFacebookPage())
-                .formId(formId)
                 .name(truncate(name, 255))
                 .status(truncate(normalizeStatus(plan.status()), 50))
                 .locale(truncate(normalizeLocale(plan.locale()), 12))
@@ -172,29 +169,6 @@ public class ExperimentInstantFormService {
             return value;
         }
         return value.substring(0, maxLength);
-    }
-
-    private String normalizeFormId(String value, Long experimentId) {
-        String sanitized = sanitize(value);
-        if (!StringUtils.hasText(sanitized)) {
-            return generateFormId(experimentId);
-        }
-        String normalized = sanitized.toLowerCase(Locale.ROOT)
-                .replaceAll("[^a-z0-9-_]", "-")
-                .replaceAll("[-_]+", "-")
-                .replaceAll("(^[-_]+)|([-_]+$)", "");
-        if (!StringUtils.hasText(normalized)) {
-            normalized = generateFormId(experimentId);
-        } else if (!normalized.startsWith("ai-form-")) {
-            normalized = "ai-form-" + normalized;
-        }
-        return truncate(normalized, 128);
-    }
-
-    private String generateFormId(Long experimentId) {
-        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
-        String prefix = experimentId != null ? "ai-form-" + experimentId + "-" : "ai-form-";
-        return truncate(prefix + suffix, 128);
     }
 
     private String normalizeStatus(String status) {

@@ -712,7 +712,7 @@ public class FacebookCampaignService {
             }
             reportInstantFormPublication(
                 form.id(),
-                new InstantFormPublicationUpdateRequest(true, Instant.now(), shareLink, status)
+                new InstantFormPublicationUpdateRequest(true, Instant.now(), shareLink, status, normalizedFormId)
             );
         } catch (FacebookAccessTokenExpiredException ex) {
             handleAccessTokenExpirationDuringPublication(ex);
@@ -915,6 +915,7 @@ public class FacebookCampaignService {
         boolean published,
         Instant publishedAt,
         String shareLink,
-        String status
+        String status,
+        String facebookFormId
     ) {}
 }

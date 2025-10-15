@@ -245,18 +245,21 @@ reiniciar o serviço.
 
 Quando o Facebook devolve `code = 190` com `error_subcode = 463/467` ou
 mensagem "Session has expired", o worker interpreta que o token fornecido pelo
-backend não é mais válido. O `FacebookCampaignService` interrompe
-temporariamente a transformação de novos experimentos, registra o aviso apenas
-uma vez e delega a renovação para o `FacebookAccessTokenManager`. O serviço tenta
-renovar o token automaticamente via Graph API quando `appId` e `appSecret` estão
-preenchidos na conta selecionada. Em caso de sucesso, o novo token é aplicado sem
-reiniciar o worker e os experimentos voltam a ser processados na próxima
-execução. Caso a primeira tentativa falhe, o worker continua tentando a
-renovação em cada ciclo agendado e retoma o processamento assim que obtiver um
-token válido novamente. Se a renovação automática estiver desabilitada ou falhar
-repetidamente, o log registra uma mensagem de erro com os detalhes retornados
-pela Graph API, orientando a atualizar o token manualmente na interface e
-reiniciar o serviço após a substituição.
+backend não é mais válido. Esse retorno pode acontecer quando o usuário altera a
+senha, revoga o acesso do aplicativo nas configurações da Meta ou quando a
+sessão é invalidada antes da data de expiração mostrada no backend. O
+`FacebookCampaignService` interrompe temporariamente a transformação de novos
+experimentos, registra o aviso apenas uma vez e delega a renovação para o
+`FacebookAccessTokenManager`. O serviço tenta renovar o token automaticamente
+via Graph API quando `appId` e `appSecret` estão preenchidos na conta
+selecionada. Em caso de sucesso, o novo token é aplicado sem reiniciar o worker
+e os experimentos voltam a ser processados na próxima execução. Caso a primeira
+tentativa falhe, o worker continua tentando a renovação em cada ciclo agendado e
+retoma o processamento assim que obtiver um token válido novamente. Se a
+renovação automática estiver desabilitada ou falhar repetidamente, o log
+registra uma mensagem de erro com os detalhes retornados pela Graph API,
+orientando a atualizar o token manualmente na interface e reiniciar o serviço
+após a substituição.
 
 ### Erro de compilação `cannot find symbol: variable Objects`
 

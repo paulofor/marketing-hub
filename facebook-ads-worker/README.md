@@ -54,26 +54,28 @@ rapidamente a direção do tráfego durante uma análise.
 
 Quando a jornada do experimento define um novo passo de captura com instant
 form aprovado, o worker publica o formulário antes de criar a campanha. O fluxo
-é executado uma única vez por formulário: o backend agora persiste os rascunhos
-gerados pelo Worker IA **sem** `facebookFormId`, deixando o atributo nulo até que
-a Meta devolva o identificador oficial. Assim que o
-`FacebookCampaignService` detecta um instant form aprovado, ele consulta o
-backend, envia `FacebookAdsService.publishInstantForm` e, na sequência, lê os
-detalhes via `FacebookAdsService.fetchInstantForm`. Quando a Graph API retorna o
-ID definitivo (normalmente composto apenas por dígitos), o worker calcula o
-`shareLink` caso o Facebook não devolva esse campo (a URL é construída via
-`https://www.facebook.com/ads/leadgen/?id=<id>`) e atualiza o backend usando
-`PATCH /api/instant-forms/{id}/publication`. A chamada agora registra
-`published = true`, `publishedAt`, a URL compartilhável e o próprio
-`facebookFormId`, garantindo que futuros ciclos da campanha reutilizem o mesmo
-identificador. Enquanto o ID definitivo não estiver disponível, o worker mantém
-o CTA apontando somente para o link de compartilhamento e evita enviar
-`lead_gen_form_id` na criação do criativo, impedindo que a Graph API rejeite a
-requisição com o erro `(#100) Param call_to_action[value][lead_gen_form_id] must
-be a valid Lead Gen Data id`. Depois que a Meta confirmar o identificador, o
-worker passa a anexá-lo ao CTA e define o `destination_type = FACEBOOK`,
-direcionando os usuários diretamente ao instant form selecionado quando
-interagirem com a campanha.
+é dividido em duas etapas complementares:
+
+1. **Publicação proativa** – O `FacebookInstantFormPublicationScheduler`
+   consulta `/api/instant-forms/ready-to-publish` e delega para o
+   `FacebookInstantFormPublicationService`, que publica cada formulário aprovado
+   via `FacebookAdsService.publishInstantForm`. Na sequência o serviço lê os
+   detalhes com `FacebookAdsService.fetchInstantForm`, normaliza o identificador
+   devolvido pela Meta e calcula o `shareLink` (usando o padrão
+   `https://www.facebook.com/ads/leadgen/?id=<id>` quando necessário). Por fim o
+   backend é atualizado com `PATCH /api/instant-forms/{id}/publication`,
+   preenchendo `published = true`, `publishedAt`, link compartilhável e o
+   `facebookFormId` definitivo.
+2. **Validação na criação da campanha** – O `FacebookCampaignService` reaproveita
+   os dados persistidos. Se, por algum motivo, o formulário ainda não estiver
+   publicado ou a Meta não tiver retornado o ID final, o serviço tenta novamente
+   publicar antes de criar o criativo. Enquanto o ID definitivo não estiver
+   disponível, o CTA permanece apontando para o link de compartilhamento e o
+   worker evita enviar `lead_gen_form_id`, impedindo erros do tipo `(#100) Param
+   call_to_action[value][lead_gen_form_id] must be a valid Lead Gen Data id`.
+   Assim que o identificador for confirmado, o worker passa a anexá-lo ao CTA e
+   define `destination_type = FACEBOOK`, direcionando os usuários diretamente ao
+   instant form selecionado.
 
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar
 investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs

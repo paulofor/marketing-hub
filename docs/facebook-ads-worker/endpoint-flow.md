@@ -5,35 +5,53 @@
 > garantindo que o criativo seja criado com um `instagram_user_id` válido.
 
 Este documento detalha como o **Facebook Ads Worker** conversa com o backend do
-Marketing Hub e com a **Facebook Graph API** em dois contextos principais:
-criação de campanhas e renovação automática de tokens. Sempre que possível os
-fluxos são ilustrados com diagramas de sequência para facilitar o entendimento
-sobre quais componentes iniciam as chamadas e como as respostas são tratadas.
+Marketing Hub e com a **Facebook Graph API** em três contextos principais:
+publicação de instant forms, criação de campanhas e renovação automática de
+tokens. Sempre que possível os fluxos são ilustrados com diagramas de sequência
+para facilitar o entendimento sobre quais componentes iniciam as chamadas e
+como as respostas são tratadas.
 
 > **Responsabilidade de integrações:** Somente o Facebook Ads Worker chama as
 > APIs do Facebook. O Worker IA integra exclusivamente com serviços de
 > Inteligência Artificial e apenas persiste rascunhos aguardando aprovação.
 
-## Criação de Instant Forms após aprovação do usuário
+## Publicação de Instant Forms aprovados
 
-Depois que o usuário aprova um Instant Form cadastrado manualmente, o Facebook Ads
-Worker é acionado para publicá-lo na Meta. O fluxo básico é o seguinte:
+Depois que o usuário aprova um instant form cadastrado no backend, o Facebook Ads
+Worker o publica na Meta antes da criação de campanhas. O fluxo básico é o seguinte:
 
-1. **Agendamento** – Um scheduler do worker consulta periodicamente o backend em
-   busca de formulários aprovados e ainda não publicados.
-2. **Carregar configuração da conta** – O worker reutiliza
+1. **Agendamento** – O `FacebookInstantFormPublicationScheduler` consulta
+   periodicamente `/api/instant-forms/ready-to-publish` em busca de formulários
+   aprovados e ainda não publicados.
+2. **Carregar configuração da conta** – O serviço reutiliza
    `/api/accounts/facebook/worker-config` para obter token, conta de anúncios e
-   página necessários para a publicação.
-3. **Criar e ativar no Facebook** – Para cada formulário aprovado o worker envia
-   `POST /{version}/{pageId}/leadgen_forms` usando o token da conta, ativa o
-   recurso (`POST /{formId}` com `status=ACTIVE`) e lê os detalhes finais via
-   `GET /{formId}?fields=...`.
-4. **Persistir retorno** – Após publicar, o worker envia a resposta para o
-   backend, que atualiza o registro com `facebookFormId`, status, link de
-   compartilhamento e carimbo de data/hora da publicação.
-5. **Sincronizar com campanhas** – Quando um experimento aprovado requer
-   Instant Form, o fluxo de criação de campanhas reutiliza o identificador
-   oficial publicado pela Meta.
+   página necessários para autenticar na Graph API.
+3. **Ativar na Meta** – Para cada formulário aprovado o worker envia
+   `POST /{formId}` com `status=ACTIVE` utilizando o token da conta e, na
+   sequência, lê os detalhes finais via `GET /{formId}?access_token=...` para
+   confirmar status e identificar o `leadgen_id` definitivo.
+4. **Persistir retorno** – Após publicar, o worker calcula o link de
+   compartilhamento (`https://www.facebook.com/ads/leadgen/?id=<id>`), normaliza
+   o identificador retornado pela Meta e envia `PATCH
+   /api/instant-forms/{id}/publication`, garantindo que o backend registre
+   `published = true`, `publishedAt`, `shareLink` e `facebookFormId`.
+5. **Sincronizar com campanhas** – Quando um experimento aprovado requer instant
+   form, o fluxo de criação de campanhas reutiliza o identificador oficial
+   persistido pelo backend.
+
+### Chamadas ao backend
+
+| Método | Caminho | Origem | Objetivo | Tratamento de erro |
+| --- | --- | --- | --- | --- |
+| GET | `/api/instant-forms/ready-to-publish` | `FacebookInstantFormPublicationService` | Listar formulários aprovados e ainda não publicados | `404` vira lista vazia; falhas de rede geram apenas `WARN` |
+| PATCH | `/api/instant-forms/{id}/publication` | `FacebookInstantFormPublicationService` | Registrar publicação, link e identificador definitivo | Exceções são logadas; o agendamento segue com os demais itens |
+
+### Chamadas à Graph API
+
+| Método | Caminho (versão inclusa) | Origem | Dados relevantes | Observações |
+| --- | --- | --- | --- | --- |
+| POST | `/v23.0/{formId}` | `FacebookAdsService.publishInstantForm` | `status=ACTIVE`, `access_token` | Ativa formulários criados previamente pelo backend |
+| GET | `/v23.0/{formId}` | `FacebookAdsService.fetchInstantForm` | Recupera status, `id` e `share_link` | Resposta é usada para normalizar `facebookFormId` e construir o link de compartilhamento |
 
 ## Criação de campanhas
 

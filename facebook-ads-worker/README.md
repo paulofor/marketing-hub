@@ -66,6 +66,9 @@ form aprovado, o worker publica o formulário antes de criar a campanha. O fluxo
    backend é atualizado com `PATCH /api/instant-forms/{id}/publication`,
    preenchendo `published = true`, `publishedAt`, link compartilhável e o
    `facebookFormId` definitivo.
+   > ⚠️ O backend deve persistir o identificador do rascunho retornado na criação
+   > do formulário. A Meta só atribui o ID definitivo após a publicação, portanto
+   > o worker não consegue prosseguir se esse valor estiver ausente.
 2. **Validação na criação da campanha** – O `FacebookCampaignService` reaproveita
    os dados persistidos. Se, por algum motivo, o formulário ainda não estiver
    publicado ou a Meta não tiver retornado o ID final, o serviço tenta novamente

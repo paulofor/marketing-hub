@@ -30,6 +30,10 @@ Worker o publica na Meta antes da criação de campanhas. O fluxo básico é o s
    `POST /{formId}` com `status=ACTIVE` utilizando o token da conta e, na
    sequência, lê os detalhes finais via `GET /{formId}?access_token=...` para
    confirmar status e identificar o `leadgen_id` definitivo.
+   > O backend precisa armazenar o identificador de rascunho retornado quando o
+   > formulário é criado. A Meta entrega o ID definitivo somente após a
+   > publicação, então o worker não consegue acionar o passo acima sem esse valor
+   > inicial.
 4. **Persistir retorno** – Após publicar, o worker calcula o link de
    compartilhamento (`https://www.facebook.com/ads/leadgen/?id=<id>`), normaliza
    o identificador retornado pela Meta e envia `PATCH

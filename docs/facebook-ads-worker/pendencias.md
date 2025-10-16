@@ -4,10 +4,11 @@
 > antes de liberar o worker. Sem essa informação o serviço ignora o experimento
 > ao montar o criativo.
 
-O worker já consulta o backend por experimentos aprovados, cria a campanha com
-objetivo `OUTCOME_TRAFFIC`, gera o ad set, criativo e anúncio correspondentes na
-Graph API e registra a campanha no backend. Para completar o fluxo de veiculação
-e governança, ainda faltam os itens abaixo, agrupados por tema.
+O worker já consulta o backend por experimentos aprovados, cria a campanha
+ajustando o objetivo para `OUTCOME_TRAFFIC` ou `OUTCOME_LEADS` conforme o
+destino resolvido, gera o ad set, criativo e anúncio correspondentes na Graph
+API e registra a campanha no backend. Para completar o fluxo de veiculação e
+governança, ainda faltam os itens abaixo, agrupados por tema.
 
 > Atualização 2025-05-20: a seleção da página agora depende da associação entre
 > experimento e `fb_page` quando a conta não define `defaultPageId`. Planeje os
@@ -15,8 +16,8 @@ e governança, ainda faltam os itens abaixo, agrupados por tema.
 
 ## Planejamento e configuração
 
-- Mapear o objetivo da campanha a partir dos dados do experimento, permitindo
-  valores distintos de `OUTCOME_TRAFFIC`.
+- Mapear objetivos adicionais da campanha a partir do planejamento do
+  experimento, indo além dos já suportados `OUTCOME_TRAFFIC` e `OUTCOME_LEADS`.
 - Persistir modo de orçamento, orçamento diário e limites de gasto reais em vez
   de constantes.
 - Suportar janelas de veiculação (datas de início/fim) e status da campanha

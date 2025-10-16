@@ -35,7 +35,7 @@ para navegar entre as entidades citadas.
 | Campo (documento) | Tratamento atual no worker | Entidades / Propriedades relacionadas |
 | --- | --- | --- |
 | Nome da campanha | Derivado de `Experiment.name` e replicado em campanha, conjunto, criativo e anúncio para rastreabilidade. | Persistido em `facebook_ads_campaign.name` (ver `FacebookAdsCampaign` no diagrama). |
-| Objetivo | Worker envia sempre `OUTCOME_TRAFFIC`; demais opções ainda não foram expostas. | `facebook_ads_campaign.objective`; origem em `CreateCampaignRequest.objective`. |
+| Objetivo | Worker envia `OUTCOME_TRAFFIC` para destinos de site e troca para `OUTCOME_LEADS` quando o fluxo usa formulário de leads. | `facebook_ads_campaign.objective`; origem em `CreateCampaignRequest.objective`. |
 | Vínculo com planejamento | Novo payload inclui `experimentId` e `facebookAccountId`, garantindo rastreabilidade de origem. | `facebook_ads_campaign.experiment_id` → `experiment.id`; `facebook_ads_campaign.facebook_account_id` → `fb_account.id`. |
 | Tipo de compra | Não enviado atualmente; ausência de coluna `buying_type`. | Não implementado em `FacebookAdsCampaign`. |
 | Categoria especial | Enviada como lista vazia; países especiais também não são coletados. | Tabelas/tipos `facebook_ads_campaign.specialAdCategories` e `specialAdCountries`. |

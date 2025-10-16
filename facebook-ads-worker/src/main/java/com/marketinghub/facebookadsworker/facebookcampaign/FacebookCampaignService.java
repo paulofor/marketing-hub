@@ -227,8 +227,13 @@ public class FacebookCampaignService {
             String resolvedOptimizationGoal = hasLeadFormDestination
                 ? "LEAD_GENERATION"
                 : config.adSetOptimizationGoal();
+            String resolvedCampaignObjective = hasLeadFormDestination ? "OUTCOME_LEADS" : "OUTCOME_TRAFFIC";
 
-            String campaignId = facebookAdsService.createCampaign(config.adAccountId(), exp.name());
+            String campaignId = facebookAdsService.createCampaign(
+                config.adAccountId(),
+                exp.name(),
+                resolvedCampaignObjective
+            );
             FacebookAdsService.AdSetRequest adSetRequest = new FacebookAdsService.AdSetRequest(
                 exp.name() + " - Ad Set",
                 campaignId,

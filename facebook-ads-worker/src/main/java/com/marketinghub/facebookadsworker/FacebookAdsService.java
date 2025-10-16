@@ -76,10 +76,15 @@ public class FacebookAdsService {
     }
 
     public String createInstagramCampaign(String adAccountId, String name) {
+        return createInstagramCampaign(adAccountId, name, "OUTCOME_TRAFFIC");
+    }
+
+    public String createInstagramCampaign(String adAccountId, String name, String objective) {
         String path = buildVersionedPath("/act_" + adAccountId + "/campaigns");
+        String resolvedObjective = hasText(objective) ? objective : "OUTCOME_TRAFFIC";
         Map<String, Object> body = Map.of(
             "name", name,
-            "objective", "OUTCOME_TRAFFIC",
+            "objective", resolvedObjective,
             "status", "PAUSED",
             "special_ad_categories", List.of(),
             "access_token", requireAccessToken()
@@ -90,7 +95,11 @@ public class FacebookAdsService {
     }
 
     public String createCampaign(String adAccountId, String name) {
-        return createInstagramCampaign(adAccountId, name);
+        return createCampaign(adAccountId, name, "OUTCOME_TRAFFIC");
+    }
+
+    public String createCampaign(String adAccountId, String name, String objective) {
+        return createInstagramCampaign(adAccountId, name, objective);
     }
 
     public String createAdSet(String adAccountId, AdSetRequest request) {

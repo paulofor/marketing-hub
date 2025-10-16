@@ -120,6 +120,8 @@ class FacebookCampaignServiceTest {
 
         RecordedRequest postCampaign = facebook.takeRequest();
         assertEquals("/v23.0/act_1/campaigns", postCampaign.getPath());
+        JsonNode campaignPayload = objectMapper.readTree(postCampaign.getBody().inputStream());
+        assertEquals("OUTCOME_TRAFFIC", campaignPayload.get("objective").asText());
 
         RecordedRequest postAdSet = facebook.takeRequest();
         assertEquals("/v23.0/act_1/adsets", postAdSet.getPath());
@@ -206,7 +208,9 @@ class FacebookCampaignServiceTest {
         assertEquals("GET", fetchRequest.getMethod());
         assertTrue(fetchRequest.getPath().contains("987654321"));
 
-        facebook.takeRequest(); // campaign
+        RecordedRequest campaignRequest = facebook.takeRequest();
+        JsonNode campaignPayload = objectMapper.readTree(campaignRequest.getBody().inputStream());
+        assertEquals("OUTCOME_LEADS", campaignPayload.get("objective").asText());
         RecordedRequest adSetRequest = facebook.takeRequest();
         JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
         assertEquals("ON_AD", adSetPayload.get("destination_type").asText());
@@ -274,7 +278,9 @@ class FacebookCampaignServiceTest {
         RecordedRequest fetchRequest = facebook.takeRequest();
         assertTrue(fetchRequest.getPath().contains("form_3_1_token"));
 
-        facebook.takeRequest(); // campaign
+        RecordedRequest campaignRequest = facebook.takeRequest();
+        JsonNode campaignPayload = objectMapper.readTree(campaignRequest.getBody().inputStream());
+        assertEquals("OUTCOME_LEADS", campaignPayload.get("objective").asText());
         RecordedRequest adSetRequest = facebook.takeRequest();
         JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
         assertEquals("ON_AD", adSetPayload.get("destination_type").asText());
@@ -334,7 +340,9 @@ class FacebookCampaignServiceTest {
 
         service.createCampaignsFromExperiments();
 
-        facebook.takeRequest(); // campaign
+        RecordedRequest campaignRequest = facebook.takeRequest();
+        JsonNode campaignPayload = objectMapper.readTree(campaignRequest.getBody().inputStream());
+        assertEquals("OUTCOME_LEADS", campaignPayload.get("objective").asText());
         RecordedRequest adSetRequest = facebook.takeRequest();
         JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
         assertEquals("ON_AD", adSetPayload.get("destination_type").asText());
@@ -657,7 +665,9 @@ class FacebookCampaignServiceTest {
 
         service.createCampaignsFromExperiments();
 
-        facebook.takeRequest(); // campaign
+        RecordedRequest campaignRequest = facebook.takeRequest();
+        JsonNode campaignPayload = objectMapper.readTree(campaignRequest.getBody().inputStream());
+        assertEquals("OUTCOME_TRAFFIC", campaignPayload.get("objective").asText());
         RecordedRequest adSetRequest = facebook.takeRequest();
         JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
         assertEquals("84", adSetPayload.get("promoted_object").get("page_id").asText());

@@ -7,8 +7,10 @@ projeto `backend`, evitando duplicação de entidades.
 
 O fluxo automatizado cria toda a hierarquia necessária para veiculação:
 
-1. **Campanha** (`POST /campaigns`) com objetivo `OUTCOME_TRAFFIC`, status
-   inicial `PAUSED` e `special_ad_categories = []`, conforme documentado na
+1. **Campanha** (`POST /campaigns`) com objetivo `OUTCOME_TRAFFIC` quando o
+   destino é um site e `OUTCOME_LEADS` quando o criativo direciona para um
+   formulário de leads, sempre com status inicial `PAUSED` e
+   `special_ad_categories = []`, conforme documentado na
    [Marketing API](https://developers.facebook.com/docs/marketing-api/reference/ad-campaign-group#Creating) para contas que
    não se enquadram em categorias especiais.
 2. **Conjunto de anúncios** (`POST /adsets`) atrelado à campanha, também em
@@ -98,9 +100,10 @@ form aprovado, o worker publica o formulário antes de criar a campanha. O fluxo
    worker evita enviar `lead_gen_form_id`, impedindo erros do tipo `(#100) Param
    call_to_action[value][lead_gen_form_id] must be a valid Lead Gen Data id`.
    Assim que o identificador for confirmado, o worker passa a anexá-lo ao CTA,
-   remove o link externo do criativo, define `destination_type = ON_AD` e
-   `optimization_goal = LEAD_GENERATION`, direcionando os usuários diretamente
-   ao instant form selecionado conforme as regras da Graph API.
+   remove o link externo do criativo, define `destination_type = ON_AD`,
+   `optimization_goal = LEAD_GENERATION` e ajusta o objetivo da campanha para
+   `OUTCOME_LEADS`, direcionando os usuários diretamente ao instant form
+   selecionado conforme as regras da Graph API.
 
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar
 investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs

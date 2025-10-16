@@ -55,6 +55,19 @@ class FacebookAdsServiceTest {
     }
 
     @Test
+    void createCampaignUsesProvidedObjectiveWhenPresent() throws Exception {
+        server.enqueue(new MockResponse().setBody("{\"id\":\"456\"}")
+            .addHeader("Content-Type", "application/json"));
+        String id = service.createCampaign("1", "Camp", "OUTCOME_LEADS");
+        RecordedRequest request = server.takeRequest();
+        assertEquals("/v23.0/act_1/campaigns", request.getPath());
+        JsonNode body = objectMapper.readTree(request.getBody().inputStream());
+        assertEquals("Camp", body.get("name").asText());
+        assertEquals("OUTCOME_LEADS", body.get("objective").asText());
+        assertEquals("456", id);
+    }
+
+    @Test
     void createAdSetPostsCorrectRequest() throws Exception {
         server.enqueue(new MockResponse().setBody("{\"id\":\"222\"}")
             .addHeader("Content-Type", "application/json"));

@@ -49,9 +49,10 @@ Para cada experimento, o worker utiliza o
 [FacebookAdsService](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/FacebookAdsService.java) para
 montar a hierarquia completa:
 
-1. **Campanha**: `POST /campaigns` com objetivo `OUTCOME_TRAFFIC`, status
-   `PAUSED` e `special_ad_categories = NONE`. O identificador retornado alimenta
-   as etapas seguintes ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L195-L205)).
+1. **Campanha**: `POST /campaigns` com objetivo `OUTCOME_TRAFFIC` quando o
+   destino é um site e `OUTCOME_LEADS` para formulários instantâneos, sempre em
+   status `PAUSED` e `special_ad_categories = NONE`. O identificador retornado
+   alimenta as etapas seguintes ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L195-L205)).
 2. **Conjunto de anúncios**: `POST /adsets` com orçamento diário, billing event,
    objetivo de otimização e tipo de destino vindos da conta configurada no
    backend (`worker-config`). Quando o criativo ou o fallback informam
@@ -101,7 +102,7 @@ utilizados (`targetCountry`, `pageId`) e os metadados do criativo (`websiteUrl`,
 | `worker-config.defaultWebsiteUrl` | `Graph API - link_data.link`/`call_to_action.value.link` e `CreateCampaignRequest.adCreative.websiteUrl` | URL padrão de destino persistida no backend; opcional quando há formulário configurado ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L209-L255)) |
 | `worker-config.defaultLeadGenFormId` | `Graph API - call_to_action.value.lead_gen_form_id` e `CreateCampaignRequest.adCreative.leadGenFormId` | Fallback para formulários Instant/Lead Ads quando o criativo não define `leadGenFormId` |
 | Resposta da Graph API (`id`) | `CreateCampaignRequest.id`/`adSet.id`/`adCreative.id`/`ad.id` | Identificadores de campanha, ad set, criativo e anúncio persistidos nas respectivas tabelas |
-| Constante `OUTCOME_TRAFFIC` | `Graph API - objective` e `CreateCampaignRequest.objective` | Objetivo padrão até existir planejamento específico |
+| Valor dinâmico (`OUTCOME_TRAFFIC`/`OUTCOME_LEADS`) | `Graph API - objective` e `CreateCampaignRequest.objective` | Escolha automática conforme o destino resolvido |
 | Constante `CAMPAIGN` | `CreateCampaignRequest.budgetMode` | Modo de orçamento usado atualmente pelo backend |
 | `Experiment.id` | `CreateCampaignRequest.experimentId` | Usado para preencher a FK `facebook_ads_campaign.experiment_id` |
 | `FacebookWorkerConfiguration.accountId` | `CreateCampaignRequest.facebookAccountId` | Alimenta a FK `facebook_ads_campaign.facebook_account_id` |

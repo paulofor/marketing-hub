@@ -62,7 +62,7 @@ flowchart TD
 | Campo | Origem | Observações |
 | --- | --- | --- |
 | `name` | `Experiment.name` | Nome exibido no Gerenciador de Anúncios |
-| `objective` | Constante | Valor fixo `OUTCOME_TRAFFIC` |
+| `objective` | Destino resolvido | `OUTCOME_TRAFFIC` para sites ou `OUTCOME_LEADS` quando o fluxo usa formulário de leads |
 | `status` | Constante | `PAUSED` para evitar publicação automática |
 | `special_ad_categories` | Constante | Lista com `NONE`, atendendo às políticas atuais |
 | `access_token` | Conta configurada (`worker-config.accessToken`) | Token com permissão para o Ad Account |
@@ -137,7 +137,7 @@ para o backend.
 | `id` | Resposta da Graph API (campanha) | Copiado diretamente do `id` retornado na criação |
 | `adAccountId` | Conta configurada (`worker-config.adAccountId`) | Mantido conforme configuração do worker |
 | `name` | `Experiment.name` | Replicado para manter rastreabilidade entre backend e Facebook |
-| `objective` | Constante | Valor fixo `OUTCOME_TRAFFIC` |
+| `objective` | Valor retornado na criação da campanha | `OUTCOME_TRAFFIC` ou `OUTCOME_LEADS`, refletindo o destino configurado |
 | `budgetMode` | Constante | Valor fixo `CAMPAIGN` até que o backend passe a enviar planejamento detalhado |
 | `experimentId` | `Experiment.id` | Garante vínculo direto com o experimento que originou a campanha |
 | `facebookAccountId` | `worker-config.accountId` | Mantém rastreabilidade com a conta utilizada pelo worker |

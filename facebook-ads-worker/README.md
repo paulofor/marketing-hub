@@ -12,7 +12,10 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    [Marketing API](https://developers.facebook.com/docs/marketing-api/reference/ad-campaign-group#Creating) para contas que
    não se enquadram em categorias especiais.
 2. **Conjunto de anúncios** (`POST /adsets`) atrelado à campanha, também em
-   `PAUSED`, com segmentação geográfica simples e destino `WEBSITE`.
+   `PAUSED`, com segmentação geográfica simples e destino herdado da conta
+   (por exemplo, `WEBSITE`). Quando o criativo aponta para um formulário de
+   leads, o worker substitui automaticamente por `LEAD_GENERATION` para
+   satisfazer as regras da Graph API.
 3. **Imagem do criativo**: em vez de enviar `POST /adimages`, o worker
    referencia diretamente a URL pública retornada pelo backend no campo
    `object_story_spec.link_data.picture`. Quando o caminho é relativo (por
@@ -93,9 +96,10 @@ form aprovado, o worker publica o formulário antes de criar a campanha. O fluxo
    disponível, o CTA permanece apontando para o link de compartilhamento e o
    worker evita enviar `lead_gen_form_id`, impedindo erros do tipo `(#100) Param
    call_to_action[value][lead_gen_form_id] must be a valid Lead Gen Data id`.
-   Assim que o identificador for confirmado, o worker passa a anexá-lo ao CTA e
-   define `destination_type = FACEBOOK`, direcionando os usuários diretamente ao
-   instant form selecionado.
+   Assim que o identificador for confirmado, o worker passa a anexá-lo ao CTA,
+   remove o link externo do criativo e define `destination_type =
+   LEAD_GENERATION`, direcionando os usuários diretamente ao instant form
+   selecionado conforme as regras da Graph API.
 
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar
 investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs

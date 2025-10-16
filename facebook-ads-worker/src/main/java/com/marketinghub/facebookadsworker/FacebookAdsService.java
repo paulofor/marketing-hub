@@ -129,8 +129,11 @@ public class FacebookAdsService {
     public String createAdCreative(String adAccountId, AdCreativeRequest request) {
         Objects.requireNonNull(request, "request");
 
+        boolean hasLeadGenForm = hasText(request.leadGenFormId());
+        boolean hasWebsiteUrl = hasText(request.websiteUrl()) && !hasLeadGenForm;
+
         Map<String, Object> linkData = new HashMap<>();
-        if (hasText(request.websiteUrl())) {
+        if (hasWebsiteUrl) {
             linkData.put("link", request.websiteUrl());
         }
         linkData.put("message", request.message());
@@ -149,10 +152,10 @@ public class FacebookAdsService {
             Map<String, Object> callToAction = new HashMap<>();
             callToAction.put("type", request.callToActionType());
             Map<String, Object> value = new HashMap<>();
-            if (hasText(request.websiteUrl())) {
+            if (hasWebsiteUrl) {
                 value.put("link", request.websiteUrl());
             }
-            if (hasText(request.leadGenFormId())) {
+            if (hasLeadGenForm) {
                 value.put("lead_gen_form_id", request.leadGenFormId());
             }
             if (!value.isEmpty()) {

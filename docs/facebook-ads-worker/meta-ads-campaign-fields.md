@@ -132,7 +132,7 @@ Quando o experimento ou a conta configurada também informam um **formulário de
 ### Formulário de leads (Lead Ads)
 Informe o identificador do formulário publicado no Gerenciador de Anúncios. O campo é aceito tanto nos criativos aprovados quanto como fallback em **Contas do Facebook** (`defaultLeadGenFormId`).
 
-- Se apenas o formulário estiver preenchido, o worker ajusta automaticamente `destination_type=LEAD_GENERATION` no conjunto de anúncios.
+- Se apenas o formulário estiver preenchido, o worker ajusta automaticamente `destination_type=ON_AD` e `optimization_goal=LEAD_GENERATION` no conjunto de anúncios.
 - Caso URL e formulário estejam presentes, o CTA prioriza o formulário e mantém o link como destino secundário.
 
 ### Display Link

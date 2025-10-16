@@ -209,7 +209,8 @@ class FacebookCampaignServiceTest {
         facebook.takeRequest(); // campaign
         RecordedRequest adSetRequest = facebook.takeRequest();
         JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
-        assertEquals("FACEBOOK", adSetPayload.get("destination_type").asText());
+        assertEquals("ON_AD", adSetPayload.get("destination_type").asText());
+        assertEquals("LEAD_GENERATION", adSetPayload.get("optimization_goal").asText());
         RecordedRequest creativeRequest = facebook.takeRequest();
         JsonNode creativePayload = objectMapper.readTree(creativeRequest.getBody().inputStream());
         JsonNode linkData = creativePayload.get("object_story_spec").get("link_data");
@@ -276,7 +277,8 @@ class FacebookCampaignServiceTest {
         facebook.takeRequest(); // campaign
         RecordedRequest adSetRequest = facebook.takeRequest();
         JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
-        assertEquals("FACEBOOK", adSetPayload.get("destination_type").asText());
+        assertEquals("ON_AD", adSetPayload.get("destination_type").asText());
+        assertEquals("LEAD_GENERATION", adSetPayload.get("optimization_goal").asText());
 
         RecordedRequest creativeRequest = facebook.takeRequest();
         JsonNode creativePayload = objectMapper.readTree(creativeRequest.getBody().inputStream());
@@ -335,7 +337,8 @@ class FacebookCampaignServiceTest {
         facebook.takeRequest(); // campaign
         RecordedRequest adSetRequest = facebook.takeRequest();
         JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
-        assertEquals("FACEBOOK", adSetPayload.get("destination_type").asText());
+        assertEquals("ON_AD", adSetPayload.get("destination_type").asText());
+        assertEquals("LEAD_GENERATION", adSetPayload.get("optimization_goal").asText());
 
         RecordedRequest creativeRequest = facebook.takeRequest();
         JsonNode creativePayload = objectMapper.readTree(creativeRequest.getBody().inputStream());

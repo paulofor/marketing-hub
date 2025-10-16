@@ -223,7 +223,10 @@ public class FacebookCampaignService {
                 instagramAccount.code(),
                 config.defaultInstagramActorId()
             );
-            String resolvedDestinationType = hasLeadFormDestination ? "LEAD_GENERATION" : config.adSetDestinationType();
+            String resolvedDestinationType = hasLeadFormDestination ? "ON_AD" : config.adSetDestinationType();
+            String resolvedOptimizationGoal = hasLeadFormDestination
+                ? "LEAD_GENERATION"
+                : config.adSetOptimizationGoal();
 
             String campaignId = facebookAdsService.createCampaign(config.adAccountId(), exp.name());
             FacebookAdsService.AdSetRequest adSetRequest = new FacebookAdsService.AdSetRequest(
@@ -231,7 +234,7 @@ public class FacebookCampaignService {
                 campaignId,
                 config.adSetDailyBudget(),
                 config.adSetBillingEvent(),
-                config.adSetOptimizationGoal(),
+                resolvedOptimizationGoal,
                 resolvedDestinationType,
                 config.adSetBidStrategy(),
                 config.adSetBidAmount(),

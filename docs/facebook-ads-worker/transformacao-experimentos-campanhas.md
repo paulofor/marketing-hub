@@ -55,7 +55,7 @@ montar a hierarquia completa:
 2. **Conjunto de anúncios**: `POST /adsets` com orçamento diário, billing event,
    objetivo de otimização e tipo de destino vindos da conta configurada no
    backend (`worker-config`). Quando o criativo ou o fallback informam
-   `leadGenFormId`, o worker troca `destination_type` para `LEAD_GENERATION`.
+   `leadGenFormId`, o worker troca `destination_type` para `ON_AD` e força o `optimization_goal` para `LEAD_GENERATION`.
    A segmentação inicial utiliza apenas o país padrão enquanto o backend não
    envia dados mais ricos. O `id` retornado é usado na criação do anúncio ([FacebookCampaignService.java](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java#L196-L208)).
 3. **Criativo**: `POST /adcreatives` baseado em um `object_story_spec` que inclui

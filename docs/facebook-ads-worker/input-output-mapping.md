@@ -80,8 +80,8 @@ flowchart TD
 | `campaign_id` | Resposta da campanha | Vincula o ad set à campanha recém-criada |
 | `daily_budget` | Conta configurada (`worker-config.adSetDailyBudget`) | Valor em centavos da moeda da conta |
 | `billing_event` | Conta configurada (`worker-config.adSetBillingEvent`) | Default `IMPRESSIONS` |
-| `optimization_goal` | Conta configurada (`worker-config.adSetOptimizationGoal`) | Default `LINK_CLICKS` |
-| `destination_type` | Conta configurada (`worker-config.adSetDestinationType`) ou `LEAD_GENERATION` quando o criativo referencia um formulário de leads | Ajustado dinamicamente conforme o destino resolvido |
+| `optimization_goal` | Conta configurada (`worker-config.adSetOptimizationGoal`); forçado para `LEAD_GENERATION` quando o criativo referencia um formulário de leads | Default `LINK_CLICKS` |
+| `destination_type` | Conta configurada (`worker-config.adSetDestinationType`) ou `ON_AD` quando o criativo referencia um formulário de leads | Ajustado dinamicamente conforme o destino resolvido |
 | `targeting.geo_locations.countries` | Conta configurada (`worker-config.adSetTargetCountry`) | Segmentação inicial simplificada |
 | `promoted_object.page_id` | Conta configurada (`worker-config.defaultPageId`) ou página associada ao experimento | Necessário para campanhas de tráfego |
 | `status` | Constante | `PAUSED` |

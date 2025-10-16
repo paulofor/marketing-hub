@@ -59,7 +59,7 @@ para navegar entre as entidades citadas.
 | Nome do conjunto | Usa `Experiment.name` com sufixo “- Ad Set”. | `facebook_ads_ad_set.name` (`FacebookAdsAdSet` no diagrama). |
 | Evento de conversão / Meta | `promoted_object_json` armazena o `page_id` promovido; pixel/evento ainda não configurados. | `facebook_ads_ad_set.promoted_object_json`. |
 | Estratégia de otimização | Valor padrão da conta (`fb_account.ad_set_optimization_goal`). | `facebook_ads_ad_set.optimization_goal`. |
-| Tipo de destino | Configurado como `WEBSITE`; automaticamente trocado para `LEAD_GENERATION` quando existe formulário de leads. | `facebook_ads_ad_set.destination_type` via payload reportado. |
+| Tipo de destino | Configurado como `WEBSITE`; automaticamente trocado para `ON_AD` e `optimization_goal` ajustado para `LEAD_GENERATION` quando existe formulário de leads. | `facebook_ads_ad_set.destination_type` e `optimization_goal` via payload reportado. |
 | Estratégia de lance | `bid_strategy` e `bid_amount` herdados da conta; quando ausentes, o backend assume `LOWEST_COST_WITHOUT_CAP`. | `facebook_ads_ad_set.bid_strategy`, `bid_amount_minor`. |
 | Orçamento (sem CBO) | Envia `daily_budget` a partir de `fb_account.ad_set_daily_budget`. | `facebook_ads_ad_set.daily_budget_minor` / `lifetime_budget_minor`. |
 | Período de veiculação | `start_time`/`end_time` não configurados. | Colunas homônimas no ad set. |

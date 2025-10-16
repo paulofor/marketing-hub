@@ -167,6 +167,8 @@ class FacebookCampaignServiceTest {
             + "\"facebookInstantForm\":{\"id\":33,\"facebookFormId\":\"987654321\",\"name\":\"Lead\",\"status\":\"DRAFT\",\"approved\":true,\"published\":false},"
             + "\"nextStepInstantForm\":true}]" )
             .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"status\":\"DRAFT\"}")
+            .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"success\":true}")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"status\":\"ACTIVE\"}")
@@ -191,6 +193,10 @@ class FacebookCampaignServiceTest {
 
         RecordedRequest creativesRequest = backend.takeRequest();
         assertEquals("/api/experiments/1/creatives", creativesRequest.getPath());
+
+        RecordedRequest statusCheckRequest = facebook.takeRequest();
+        assertEquals("GET", statusCheckRequest.getMethod());
+        assertTrue(statusCheckRequest.getPath().contains("987654321"));
 
         RecordedRequest publishRequest = facebook.takeRequest();
         assertEquals("POST", publishRequest.getMethod());
@@ -236,6 +242,8 @@ class FacebookCampaignServiceTest {
             + "\"facebookInstantForm\":{\"id\":33,\"facebookFormId\":\"ai_form_3_1_token\",\"name\":\"Lead\",\"status\":\"DRAFT\",\"approved\":true,\"published\":false},"
             + "\"nextStepInstantForm\":true}]" )
             .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"status\":\"DRAFT\"}")
+            .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"success\":true}")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"form_3_1_token\",\"status\":\"ACTIVE\"}")
@@ -254,6 +262,10 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
 
         service.createCampaignsFromExperiments();
+
+        RecordedRequest statusCheckRequest = facebook.takeRequest();
+        assertEquals("GET", statusCheckRequest.getMethod());
+        assertTrue(statusCheckRequest.getPath().contains("form_3_1_token"));
 
         RecordedRequest publishRequest = facebook.takeRequest();
         assertTrue(publishRequest.getPath().endsWith("/form_3_1_token"));

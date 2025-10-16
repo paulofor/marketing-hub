@@ -303,10 +303,44 @@ public class FacebookAdsService {
 
     public void publishInstantForm(String formId) {
         Objects.requireNonNull(formId, "formId");
+        String normalizedFormId = formId.trim();
+        if (!hasText(normalizedFormId)) {
+            throw new IllegalArgumentException("formId must not be blank");
+        }
+
+        JsonNode details = null;
+        try {
+            details = fetchInstantForm(normalizedFormId);
+        } catch (WebClientResponseException.NotFound ex) {
+            LOGGER.warn(
+                "Facebook instant form {} was not found while checking status before publication; proceeding with publish request",
+                normalizedFormId,
+                ex
+            );
+        } catch (WebClientResponseException ex) {
+            LOGGER.warn(
+                "Could not verify Facebook instant form {} status before publication: status={}, message={}",
+                normalizedFormId,
+                ex.getRawStatusCode(),
+                ex.getMessage(),
+                ex
+            );
+        }
+        if (details != null) {
+            String status = details.path("status").asText(null);
+            if (hasText(status) && "ACTIVE".equalsIgnoreCase(status.trim())) {
+                LOGGER.info(
+                    "Instant form {} is already ACTIVE on Facebook; skipping publication request.",
+                    normalizedFormId
+                );
+                return;
+            }
+        }
+
         Map<String, Object> body = new HashMap<>();
         body.put("status", "ACTIVE");
         body.put("access_token", requireAccessToken());
-        String path = buildVersionedPath("/" + formId);
+        String path = buildVersionedPath("/" + normalizedFormId);
         executePost(path, body);
     }
 

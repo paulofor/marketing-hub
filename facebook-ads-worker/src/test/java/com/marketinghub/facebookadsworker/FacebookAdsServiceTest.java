@@ -296,6 +296,40 @@ class FacebookAdsServiceTest {
     }
 
     @Test
+    void publishInstantFormSkipsPostWhenAlreadyActive() throws Exception {
+        server.enqueue(new MockResponse().setBody("{\"status\":\"ACTIVE\"}")
+            .addHeader("Content-Type", "application/json"));
+
+        service.publishInstantForm("123");
+
+        RecordedRequest statusCheck = server.takeRequest();
+        assertEquals("GET", statusCheck.getMethod());
+        assertEquals("/v23.0/123?access_token=token", statusCheck.getPath());
+        assertNull(server.takeRequest(100, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    void publishInstantFormPostsWhenStatusIsNotActive() throws Exception {
+        server.enqueue(new MockResponse().setBody("{\"status\":\"DRAFT\"}")
+            .addHeader("Content-Type", "application/json"));
+        server.enqueue(new MockResponse().setBody("{\"success\":true}")
+            .addHeader("Content-Type", "application/json"));
+
+        service.publishInstantForm(" 123 ");
+
+        RecordedRequest statusCheck = server.takeRequest();
+        assertEquals("GET", statusCheck.getMethod());
+        assertEquals("/v23.0/123?access_token=token", statusCheck.getPath());
+
+        RecordedRequest publishRequest = server.takeRequest();
+        assertEquals("POST", publishRequest.getMethod());
+        assertEquals("/v23.0/123", publishRequest.getPath());
+        JsonNode body = objectMapper.readTree(publishRequest.getBody().inputStream());
+        assertEquals("ACTIVE", body.get("status").asText());
+        assertEquals("token", body.get("access_token").asText());
+    }
+
+    @Test
     void metricsRequestsCampaignInsights() throws Exception {
         server.enqueue(new MockResponse().setBody("{\"data\":[{\"impressions\":\"10\"}]}")
             .addHeader("Content-Type", "application/json"));

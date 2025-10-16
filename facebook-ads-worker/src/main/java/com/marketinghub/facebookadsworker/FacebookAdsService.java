@@ -242,7 +242,15 @@ public class FacebookAdsService {
 
         String path = buildVersionedPath("/" + normalizedPageId + "/leadgen_forms");
         JsonNode response = executePost(path, body);
-        return response != null ? response.path("id").asText(null) : null;
+        String createdId = extractInstantFormCreationIdentifier(response);
+        if (!hasText(createdId)) {
+            LOGGER.warn(
+                "Facebook response when creating instant form on page {} did not include an identifier: response={}",
+                normalizedPageId,
+                response
+            );
+        }
+        return createdId;
     }
 
     public String uploadAdImage(String adAccountId, String imageUrl) {
@@ -429,6 +437,36 @@ public class FacebookAdsService {
             );
             throw ex;
         }
+    }
+
+    private String extractInstantFormCreationIdentifier(JsonNode node) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return null;
+        }
+        String[] candidateFields = {"id", "draft_id", "form_id"};
+        for (String field : candidateFields) {
+            String value = node.path(field).asText(null);
+            if (hasText(value)) {
+                return value.trim();
+            }
+        }
+        JsonNode nestedData = node.path("data");
+        if (nestedData != null && nestedData.isArray()) {
+            for (JsonNode element : nestedData) {
+                String nested = extractInstantFormCreationIdentifier(element);
+                if (hasText(nested)) {
+                    return nested;
+                }
+            }
+        }
+        JsonNode instantFormNode = node.path("instant_form");
+        if (instantFormNode != null && instantFormNode.isObject()) {
+            String nested = extractInstantFormCreationIdentifier(instantFormNode);
+            if (hasText(nested)) {
+                return nested;
+            }
+        }
+        return null;
     }
 
     private FacebookApiResponse executeGet(String path) {

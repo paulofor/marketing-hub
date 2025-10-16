@@ -65,8 +65,12 @@ form aprovado, o worker publica o formulário antes de criar a campanha. O fluxo
    página via `/{pageId}?fields=access_token`, registra o identificador
    devolvido pela Meta com `PATCH /api/instant-forms/{id}/publication` (mantendo
    `published = false`) e evita duplicações sempre que o backend já possuir o
-   valor. Falhas por falta de URL de privacidade ou página configurada são
-   reportadas em log e o formulário permanece pendente até correção manual.
+   valor. A resposta é normalizada automaticamente, aceitando tanto `id`
+   quanto `draft_id`/`form_id` — variações comuns nas versões recentes da Graph
+   API — garantindo que o rascunho seja persistido mesmo quando o Facebook muda
+   o campo retornado. Falhas por falta de URL de privacidade ou página
+   configurada são reportadas em log e o formulário permanece pendente até
+   correção manual.
 2. **Publicação proativa** – O `FacebookInstantFormPublicationScheduler`
    consulta `/api/instant-forms/ready-to-publish` e delega para o
    `FacebookInstantFormPublicationService`, que publica cada formulário aprovado

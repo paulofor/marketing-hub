@@ -127,7 +127,7 @@ Texto complementar opcional (aparece em alguns posicionamentos). Use para benef�
 ### URL de destino
 Link final que o usuário acessará. Deve incluir protocolo (`https://`). Garanta compatibilidade com a política de domínio verificado.
 
-Quando o experimento ou a conta configurada também informam um **formulário de leads** (Lead Ads/Instant Form), o worker passa a tratar o link como opcional: se existir `lead_gen_form_id`, o CTA abrirá o formulário dentro do Facebook/Instagram mesmo que não haja URL.
+Quando o experimento ou a conta configurada também informam um **formulário de leads** (Lead Ads/Instant Form), o worker passa a priorizar o formulário: o campo `link` deixa de apontar para um domínio externo e passa a utilizar o share link gerado pela Meta (`https://www.facebook.com/ads/leadgen/?id=<id>`). Esse ajuste atende à exigência recente da Graph API, que passou a validar a presença do campo `link` mesmo quando o destino é o próprio formulário instantâneo.
 
 ### Formulário de leads (Lead Ads)
 Informe o identificador do formulário publicado no Gerenciador de Anúncios. O campo é aceito tanto nos criativos aprovados quanto como fallback em **Contas do Facebook** (`defaultLeadGenFormId`).

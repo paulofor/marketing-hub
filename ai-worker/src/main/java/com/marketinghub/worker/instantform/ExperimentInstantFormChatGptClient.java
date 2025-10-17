@@ -166,7 +166,7 @@ public class ExperimentInstantFormChatGptClient {
                                List<StepContext> stepContexts) {
         StringBuilder sb = new StringBuilder();
         sb.append("Gere até ").append(quantity).append(" instant forms em português no formato JSON. ");
-        sb.append("Cada objeto deve conter apenas a chave \"questions\". ");
+        sb.append("Cada objeto deve conter as chaves \"name\" (título do formulário) e \"questions\". ");
         sb.append("Em \"questions\", siga o formato aceito pela Graph API (\"type\", \"key\" quando aplicável, \"label\", \"options\" para múltipla escolha e campos como \"helper_text\" ou \"allow_multi_select\"). ");
         sb.append("Garanta perguntas que coletem nome completo (type FULL_NAME), e-mail (type EMAIL) e WhatsApp (type PHONE com orientações claras). ");
         sb.append("Não crie nem atribua IDs — o Facebook cuidará dessa etapa. Retorne apenas um array JSON, sem texto adicional.\n\n");
@@ -247,7 +247,7 @@ public class ExperimentInstantFormChatGptClient {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record InstantFormPlan(
             String formId,
-            String name,
+            @JsonAlias({"title"}) String name,
             String status,
             String locale,
             @JsonAlias({"follow_up_action_url", "followUpActionUrl"}) String followUpActionUrl,

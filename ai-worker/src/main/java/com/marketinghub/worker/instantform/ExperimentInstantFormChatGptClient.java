@@ -1,8 +1,10 @@
 package com.marketinghub.worker.instantform;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.FacebookPage;
 import com.marketinghub.experiment.Experiment;
@@ -273,9 +275,43 @@ public class ExperimentInstantFormChatGptClient {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record OptionPlan(
-            String label,
-            @JsonAlias({"value", "key"}) String value) {
+    public record OptionPlan(String label, String value) {
+        @JsonCreator
+        public static OptionPlan fromJson(JsonNode node) {
+            if (node == null || node.isNull()) {
+                return null;
+            }
+            if (node.isTextual()) {
+                String value = node.asText();
+                return new OptionPlan(value, value);
+            }
+            String label = node.path("label").isMissingNode() ? null : node.path("label").asText(null);
+            String value = null;
+            if (node.hasNonNull("value")) {
+                value = node.path("value").asText();
+            } else if (node.hasNonNull("key")) {
+                value = node.path("key").asText();
+            }
+            if (!StringUtils.hasText(label)) {
+                label = value;
+            }
+            if (!StringUtils.hasText(value)) {
+                value = label;
+            }
+            if (!StringUtils.hasText(label) && !StringUtils.hasText(value)) {
+                return null;
+            }
+            return new OptionPlan(label, value);
+        }
+
+        public OptionPlan {
+            if (!StringUtils.hasText(label) && StringUtils.hasText(value)) {
+                label = value;
+            }
+            if (!StringUtils.hasText(value) && StringUtils.hasText(label)) {
+                value = label;
+            }
+        }
     }
 
     public record StepContext(Long id, Integer position, String name, String description, Map<String, String> metadata) {

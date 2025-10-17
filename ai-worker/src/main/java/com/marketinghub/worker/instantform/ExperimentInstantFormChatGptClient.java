@@ -164,8 +164,7 @@ public class ExperimentInstantFormChatGptClient {
                                List<StepContext> stepContexts) {
         StringBuilder sb = new StringBuilder();
         sb.append("Gere até ").append(quantity).append(" instant forms em português no formato JSON. ");
-        sb.append("Cada objeto deve conter as chaves \"name\", \"status\" (draft, review ou approved), \"locale\" (pt_BR), \"follow_up_action_url\", \"privacy_policy\" e \"questions\". ");
-        sb.append("A chave \"privacy_policy\" deve incluir \"url\" e, opcionalmente, \"link_text\". ");
+        sb.append("Cada objeto deve conter apenas a chave \"questions\". ");
         sb.append("Em \"questions\", siga o formato aceito pela Graph API (\"type\", \"key\" quando aplicável, \"label\", \"options\" para múltipla escolha e campos como \"helper_text\" ou \"allow_multi_select\"). ");
         sb.append("Garanta perguntas que coletem nome completo (type FULL_NAME), e-mail (type EMAIL) e WhatsApp (type PHONE com orientações claras). ");
         sb.append("Não crie nem atribua IDs — o Facebook cuidará dessa etapa. Retorne apenas um array JSON, sem texto adicional.\n\n");
@@ -210,48 +209,7 @@ public class ExperimentInstantFormChatGptClient {
             }
         }
 
-        if (journey != null) {
-            if (StringUtils.hasText(journey.getName())) {
-                sb.append("\nJornada: ").append(journey.getName()).append("\n");
-            }
-            if (StringUtils.hasText(journey.getDescription())) {
-                sb.append("Descrição da jornada: ").append(journey.getDescription()).append("\n");
-            }
-            if (journey.getMetadata() != null && !journey.getMetadata().isEmpty()) {
-                sb.append("Metadados da jornada:\n");
-                journey.getMetadata().forEach((key, value) -> {
-                    if (StringUtils.hasText(key) && StringUtils.hasText(value)) {
-                        sb.append("- ").append(key).append(": ").append(value).append("\n");
-                    }
-                });
-            }
-        }
-
-        if (stepContexts != null && !stepContexts.isEmpty()) {
-            sb.append("\nEtapas que exigem instant form:\n");
-            for (StepContext context : stepContexts) {
-                sb.append("- Etapa ").append(context.position() != null ? context.position() : context.id()).append(": ");
-                if (StringUtils.hasText(context.name())) {
-                    sb.append(context.name());
-                } else {
-                    sb.append("Sem nome");
-                }
-                sb.append("\n");
-                if (StringUtils.hasText(context.description())) {
-                    sb.append("  Descrição: ").append(context.description()).append("\n");
-                }
-                if (!context.metadata().isEmpty()) {
-                    sb.append("  Metadados:\n");
-                    context.metadata().forEach((key, value) -> {
-                        if (StringUtils.hasText(key) && StringUtils.hasText(value)) {
-                            sb.append("    - ").append(key).append(": ").append(value).append("\n");
-                        }
-                    });
-                }
-            }
-        }
-
-        sb.append("\nProjete formulários que coletem consentimento explícito, dados de contato e perguntas de qualificação alinhadas aos objetivos de cada etapa. Garanta coerência com a promessa e persona descritas.\n");
+        sb.append("Projete formulários que coletem consentimento explícito, dados de contato e perguntas de qualificação alinhadas aos objetivos do experimento. Garanta coerência com a promessa e persona descritas.\n");
         sb.append("Respeite o limite de caracteres da Meta e utilize URLs completas iniciando com https://.\n");
         return sb.toString();
     }

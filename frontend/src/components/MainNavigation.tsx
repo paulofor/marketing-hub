@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import {
   BadgeCheck,
+  AppWindow,
   BarChart3,
   Bot,
   ClipboardCheck,
@@ -67,6 +68,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/media", label: "Mídia", icon: Image },
       { to: "/courses", label: "Cursos", icon: GraduationCap },
       { to: "/products", label: "Produtos", icon: Package },
+      { to: "/app-ideas", label: "Ideias de Aplicativo", icon: AppWindow },
       {
         to: "/success-products",
         label: "Produtos de Sucesso",

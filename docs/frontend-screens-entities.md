@@ -15,6 +15,8 @@ Consulte também o [Diagrama de Navegação do Frontend](./frontend-navigation.m
 | `/courses` | Lista de Planos de Curso | CoursePlan | - |
 | `/courses/new` | Novo Plano de Curso | - | CoursePlan |
 | `/courses/:id` | Detalhe do Plano de Curso | CoursePlan | - |
+| `/app-ideas` | Ideias de Aplicativo | AppIdea | - |
+| `/app-ideas/new` | Nova Ideia de Aplicativo | - | AppIdea |
 | `/products` | Lista de Produtos | Product | - |
 | `/products/new` | Novo Produto | InstagramAccount | Product |
 | `/success-products` | Produtos de Sucesso | SuccessProduct | - |

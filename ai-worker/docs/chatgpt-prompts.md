@@ -13,7 +13,15 @@ Este documento descreve como o Worker IA monta os prompts enviados ao ChatGPT pa
 ### Estrutura da mensagem do usuário
 
 ```text
-Gere até {{quantity}} instant forms em português no formato JSON. Cada objeto deve conter as chaves "formId" (slug minúsculo com prefixo ai-form-), "name", "status" (draft, review ou approved), "locale" (pt_BR), "followUpActionUrl" e "privacyPolicyUrl". Retorne apenas um array JSON, sem texto adicional.
+Gere até {{quantity}} instant forms em português no formato JSON. Cada objeto do array deve conter as chaves "name", "status" (draft, review ou approved), "locale" (pt_BR), "followUpActionUrl", "privacyPolicyUrl" e "questions". Não crie nem atribua IDs — o Facebook cuidará dessa etapa. Retorne apenas um array JSON, sem texto adicional.
+
+Em "questions", produza uma lista com perguntas envolventes, cada uma contendo:
+- "question": enunciado criativo que estimule a resposta;
+- "responseType": (text ou multiple_choice);
+- "options": lista de alternativas quando `responseType` for multiple_choice;
+- "capture": campo obrigatório que indique o dado a ser coletado ("nome", "email" ou "whatsapp").
+
+Garanta que o conjunto de perguntas incentive o lead a informar nome completo, e-mail e número de WhatsApp, oferecendo orientações claras quando for necessário digitar manualmente o contato.
 
 {{#if experiment.name}}
 Experimento: {{experiment.name}}
@@ -23,9 +31,6 @@ Resumo do experimento: {{experiment.hypothesis}}
 {{/if}}
 {{#if experiment.facebookPage.name}}
 Página Meta: {{experiment.facebookPage.name}}
-{{/if}}
-{{#if experiment.facebookPage.pageId}}
-ID da página: {{experiment.facebookPage.pageId}}
 {{/if}}
 
 {{#if hypothesis}}
@@ -80,8 +85,7 @@ Etapas que exigem instant form:
 {{/each}}
 {{/if}}
 
-Projete formulários que coletem consentimento explícito, dados de contato e perguntas de qualificação alinhadas aos objetivos de cada etapa. Garanta coerência com a promessa e persona descritas.
-Respeite o limite de caracteres e utilize URLs completas iniciando com https://.
+Projete perguntas que coletem consentimento explícito, reforcem a proposta de valor e mantenham coerência com a persona descrita. Respeite o limite de caracteres e utilize URLs completas iniciando com https://.
 ```
 
 ### Observações
@@ -91,4 +95,4 @@ Respeite o limite de caracteres e utilize URLs completas iniciando com https://.
 - `{{positionOrId}}` utiliza a posição da etapa na jornada; caso não exista, o identificador da etapa é usado como fallback.
 - `{{nameOrSemNome}}` contém o nome da etapa e recorre ao texto "Sem nome" quando a etapa não possui título.
 - `stepContexts` agrega as etapas do template de jornada que possuem tipo `INSTANT_FORM`, incluindo descrições e metadados relevantes.
-- A resposta esperada do ChatGPT é exclusivamente um array JSON com os campos descritos no primeiro parágrafo do prompt.
+- A resposta esperada do ChatGPT é exclusivamente um array JSON com os campos definidos na seção "Estrutura da mensagem do usuário".

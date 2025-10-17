@@ -13,15 +13,19 @@ Este documento descreve como o Worker IA monta os prompts enviados ao ChatGPT pa
 ### Estrutura da mensagem do usuário
 
 ```text
-Gere até {{quantity}} instant forms em português no formato JSON. Cada objeto do array deve conter as chaves "name", "status" (draft, review ou approved), "locale" (pt_BR), "followUpActionUrl", "privacyPolicyUrl" e "questions". Não crie nem atribua IDs — o Facebook cuidará dessa etapa. Retorne apenas um array JSON, sem texto adicional.
+Gere até {{quantity}} instant forms em português no formato JSON. Cada objeto do array deve conter as chaves "name", "status" (draft, review ou approved), "locale" (pt_BR), "follow_up_action_url", "privacy_policy" e "questions". Não crie nem atribua IDs — o Facebook cuidará dessa etapa. Retorne apenas um array JSON, sem texto adicional.
 
-Em "questions", produza uma lista com perguntas envolventes, cada uma contendo:
-- "question": enunciado criativo que estimule a resposta;
-- "responseType": (text ou multiple_choice);
-- "options": lista de alternativas quando `responseType` for multiple_choice;
-- "capture": campo obrigatório que indique o dado a ser coletado ("nome", "email" ou "whatsapp").
+Em "privacy_policy", produza um objeto com "url" (obrigatório) e, quando fizer sentido, "link_text". Garanta que URLs estejam completas (https://...).
 
-Garanta que o conjunto de perguntas incentive o lead a informar nome completo, e-mail e número de WhatsApp, oferecendo orientações claras quando for necessário digitar manualmente o contato.
+Em "questions", siga o formato aceito pela Graph API:
+- "type": utilize valores suportados pela Meta (por exemplo, FULL_NAME, EMAIL, PHONE, CUSTOM);
+- "key": identificador obrigatório para perguntas CUSTOM ou para diferenciar campos de telefone (ex.: "whatsapp");
+- "label": enunciado criativo que estimule a resposta;
+- "helper_text": instruções adicionais quando precisar orientar o preenchimento manual;
+- "options": lista de objetos com "label" (e opcionalmente "value") para perguntas de múltipla escolha;
+- demais campos auxiliares da Graph API, como "allow_multi_select" ou "required", podem ser incluídos quando necessário.
+
+Garanta que a lista de perguntas inclua coleta explícita de nome completo (type FULL_NAME), e-mail (type EMAIL) e WhatsApp (type PHONE com instruções adequadas), além de questionamentos que reforcem consentimento e qualificação.
 
 {{#if experiment.name}}
 Experimento: {{experiment.name}}
@@ -85,7 +89,7 @@ Etapas que exigem instant form:
 {{/each}}
 {{/if}}
 
-Projete perguntas que coletem consentimento explícito, reforcem a proposta de valor e mantenham coerência com a persona descrita. Respeite o limite de caracteres e utilize URLs completas iniciando com https://.
+Projete perguntas que coletem consentimento explícito, reforcem a proposta de valor e mantenham coerência com a persona descrita. Respeite o limite de caracteres da Meta e utilize URLs completas iniciando com https://.
 ```
 
 ### Observações

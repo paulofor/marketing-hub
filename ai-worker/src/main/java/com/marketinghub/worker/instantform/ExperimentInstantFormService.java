@@ -139,14 +139,20 @@ public class ExperimentInstantFormService {
             log.warn("Ignorando plano de instant form sem nome para o experimento {}", experiment.getId());
             return null;
         }
+        String followUpActionUrl = sanitizeUrl(plan.followUpActionUrl());
+        String privacyPolicyUrl = sanitizeUrl(plan.privacyPolicyUrl());
+        if (!StringUtils.hasText(privacyPolicyUrl) && plan.privacyPolicy() != null) {
+            privacyPolicyUrl = sanitizeUrl(plan.privacyPolicy().url());
+        }
+
         FacebookInstantForm.FacebookInstantFormBuilder builder = FacebookInstantForm.builder()
                 .hypothesis(experiment.getHypothesisRef())
                 .page(experiment.getFacebookPage())
                 .name(truncate(name, 255))
                 .status(truncate(normalizeStatus(plan.status()), 50))
                 .locale(truncate(normalizeLocale(plan.locale()), 12))
-                .followUpActionUrl(sanitizeUrl(plan.followUpActionUrl()))
-                .privacyPolicyUrl(sanitizeUrl(plan.privacyPolicyUrl()))
+                .followUpActionUrl(followUpActionUrl)
+                .privacyPolicyUrl(privacyPolicyUrl)
                 .model(generation.model())
                 .prompt(generation.auditTrail())
                 .approved(false)

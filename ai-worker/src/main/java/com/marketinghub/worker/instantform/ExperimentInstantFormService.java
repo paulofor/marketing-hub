@@ -109,11 +109,12 @@ public class ExperimentInstantFormService {
                 }
                 List<FacebookInstantForm> persisted = new ArrayList<>();
                 int processed = 0;
-                for (ExperimentInstantFormChatGptClient.InstantFormPlan plan : plans) {
+                for (int index = 0; index < plans.size(); index++) {
+                    ExperimentInstantFormChatGptClient.InstantFormPlan plan = plans.get(index);
                     if (processed >= quantity) {
                         break;
                     }
-                    FacebookInstantForm entity = buildEntity(plan, experiment, generation);
+                    FacebookInstantForm entity = buildEntity(plan, experiment, generation, index + 1);
                     if (entity == null) {
                         continue;
                     }
@@ -133,8 +134,16 @@ public class ExperimentInstantFormService {
 
     private FacebookInstantForm buildEntity(ExperimentInstantFormChatGptClient.InstantFormPlan plan,
                                             Experiment experiment,
-                                            ExperimentInstantFormChatGptClient.Generation generation) {
+                                            ExperimentInstantFormChatGptClient.Generation generation,
+                                            int sequence) {
         String name = sanitize(plan.name());
+        if (!StringUtils.hasText(name)) {
+            name = defaultName(experiment, sequence);
+            if (StringUtils.hasText(name)) {
+                log.warn("Plano de instant form sem nome para o experimento {}. Aplicando fallback: {}",
+                        experiment.getId(), name);
+            }
+        }
         if (!StringUtils.hasText(name)) {
             log.warn("Ignorando plano de instant form sem nome para o experimento {}", experiment.getId());
             return null;
@@ -158,6 +167,25 @@ public class ExperimentInstantFormService {
                 .approved(false)
                 .published(false);
         return builder.build();
+    }
+
+    private String defaultName(Experiment experiment, int sequence) {
+        String base = null;
+        if (experiment != null) {
+            if (StringUtils.hasText(experiment.getName())) {
+                base = experiment.getName();
+            } else if (experiment.getHypothesisRef() != null &&
+                    StringUtils.hasText(experiment.getHypothesisRef().getTitle())) {
+                base = experiment.getHypothesisRef().getTitle();
+            } else if (experiment.getHypothesisRef() != null &&
+                    StringUtils.hasText(experiment.getHypothesisRef().getPersona())) {
+                base = experiment.getHypothesisRef().getPersona();
+            }
+        }
+        if (!StringUtils.hasText(base)) {
+            base = "Instant Form";
+        }
+        return sanitize(base + " #" + sequence);
     }
 
     private String sanitize(String value) {

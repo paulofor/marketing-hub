@@ -1,6 +1,8 @@
 package com.marketinghub.worker.instantform;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.FacebookPage;
 import com.marketinghub.experiment.Experiment;
@@ -132,7 +134,7 @@ public class ExperimentInstantFormChatGptClient {
             InstantFormPlan[] array = objectMapper.readValue(content, InstantFormPlan[].class);
             List<InstantFormPlan> result = new ArrayList<>();
             for (InstantFormPlan plan : array) {
-                if (plan != null && StringUtils.hasText(plan.formId()) && StringUtils.hasText(plan.name())) {
+                if (plan != null && StringUtils.hasText(plan.name())) {
                     result.add(plan);
                 }
             }
@@ -144,7 +146,7 @@ public class ExperimentInstantFormChatGptClient {
                 InstantFormPlan[] array = objectMapper.readValue(unescaped, InstantFormPlan[].class);
                 List<InstantFormPlan> result = new ArrayList<>();
                 for (InstantFormPlan plan : array) {
-                    if (plan != null && StringUtils.hasText(plan.formId()) && StringUtils.hasText(plan.name())) {
+                    if (plan != null && StringUtils.hasText(plan.name())) {
                         result.add(plan);
                     }
                 }
@@ -162,8 +164,11 @@ public class ExperimentInstantFormChatGptClient {
                                List<StepContext> stepContexts) {
         StringBuilder sb = new StringBuilder();
         sb.append("Gere até ").append(quantity).append(" instant forms em português no formato JSON. ");
-        sb.append("Cada objeto deve conter as chaves \"formId\" (slug minúsculo com prefixo ai-form-), \"name\", \"status\" (draft, review ou approved), \"locale\" (pt_BR), \"followUpActionUrl\" e \"privacyPolicyUrl\". ");
-        sb.append("Retorne apenas um array JSON, sem texto adicional.\n\n");
+        sb.append("Cada objeto deve conter as chaves \"name\", \"status\" (draft, review ou approved), \"locale\" (pt_BR), \"follow_up_action_url\", \"privacy_policy\" e \"questions\". ");
+        sb.append("A chave \"privacy_policy\" deve incluir \"url\" e, opcionalmente, \"link_text\". ");
+        sb.append("Em \"questions\", siga o formato aceito pela Graph API (\"type\", \"key\" quando aplicável, \"label\", \"options\" para múltipla escolha e campos como \"helper_text\" ou \"allow_multi_select\"). ");
+        sb.append("Garanta perguntas que coletem nome completo (type FULL_NAME), e-mail (type EMAIL) e WhatsApp (type PHONE com orientações claras). ");
+        sb.append("Não crie nem atribua IDs — o Facebook cuidará dessa etapa. Retorne apenas um array JSON, sem texto adicional.\n\n");
 
         if (experiment != null) {
             if (StringUtils.hasText(experiment.getName())) {
@@ -247,7 +252,7 @@ public class ExperimentInstantFormChatGptClient {
         }
 
         sb.append("\nProjete formulários que coletem consentimento explícito, dados de contato e perguntas de qualificação alinhadas aos objetivos de cada etapa. Garanta coerência com a promessa e persona descritas.\n");
-        sb.append("Respeite o limite de caracteres e utilize URLs completas iniciando com https://.\n");
+        sb.append("Respeite o limite de caracteres da Meta e utilize URLs completas iniciando com https://.\n");
         return sb.toString();
     }
 
@@ -285,8 +290,34 @@ public class ExperimentInstantFormChatGptClient {
             String name,
             String status,
             String locale,
-            String followUpActionUrl,
-            String privacyPolicyUrl) {
+            @JsonAlias({"follow_up_action_url", "followUpActionUrl"}) String followUpActionUrl,
+            @JsonAlias({"follow_up_action_text", "followUpActionText"}) String followUpActionText,
+            @JsonAlias({"privacy_policy_url", "privacyPolicyUrl"}) String privacyPolicyUrl,
+            @JsonProperty("privacy_policy") PrivacyPolicyPlan privacyPolicy,
+            List<QuestionPlan> questions) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record PrivacyPolicyPlan(
+            String url,
+            @JsonAlias({"link_text", "linkText"}) String linkText) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record QuestionPlan(
+            String type,
+            @JsonAlias({"key", "question_key"}) String key,
+            String label,
+            @JsonAlias({"helper_text", "helperText"}) String helperText,
+            Boolean required,
+            @JsonAlias({"allow_multi_select", "allowMultiSelect"}) Boolean allowMultiSelect,
+            List<OptionPlan> options) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record OptionPlan(
+            String label,
+            @JsonAlias({"value", "key"}) String value) {
     }
 
     public record StepContext(Long id, Integer position, String name, String description, Map<String, String> metadata) {

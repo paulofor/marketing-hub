@@ -13,7 +13,19 @@ Este documento descreve como o Worker IA monta os prompts enviados ao ChatGPT pa
 ### Estrutura da mensagem do usuário
 
 ```text
-Gere até {{quantity}} instant forms em português no formato JSON. Cada objeto deve conter as chaves "formId" (slug minúsculo com prefixo ai-form-), "name", "status" (draft, review ou approved), "locale" (pt_BR), "followUpActionUrl" e "privacyPolicyUrl". Retorne apenas um array JSON, sem texto adicional.
+Gere até {{quantity}} instant forms em português no formato JSON. Cada objeto do array deve conter as chaves "name", "status" (draft, review ou approved), "locale" (pt_BR), "follow_up_action_url", "privacy_policy" e "questions". Não crie nem atribua IDs — o Facebook cuidará dessa etapa. Retorne apenas um array JSON, sem texto adicional.
+
+Em "privacy_policy", produza um objeto com "url" (obrigatório) e, quando fizer sentido, "link_text". Garanta que URLs estejam completas (https://...).
+
+Em "questions", siga o formato aceito pela Graph API:
+- "type": utilize valores suportados pela Meta (por exemplo, FULL_NAME, EMAIL, PHONE, CUSTOM);
+- "key": identificador obrigatório para perguntas CUSTOM ou para diferenciar campos de telefone (ex.: "whatsapp");
+- "label": enunciado criativo que estimule a resposta;
+- "helper_text": instruções adicionais quando precisar orientar o preenchimento manual;
+- "options": lista de objetos com "label" (e opcionalmente "value") para perguntas de múltipla escolha;
+- demais campos auxiliares da Graph API, como "allow_multi_select" ou "required", podem ser incluídos quando necessário.
+
+Garanta que a lista de perguntas inclua coleta explícita de nome completo (type FULL_NAME), e-mail (type EMAIL) e WhatsApp (type PHONE com instruções adequadas), além de questionamentos que reforcem consentimento e qualificação.
 
 {{#if experiment.name}}
 Experimento: {{experiment.name}}
@@ -23,9 +35,6 @@ Resumo do experimento: {{experiment.hypothesis}}
 {{/if}}
 {{#if experiment.facebookPage.name}}
 Página Meta: {{experiment.facebookPage.name}}
-{{/if}}
-{{#if experiment.facebookPage.pageId}}
-ID da página: {{experiment.facebookPage.pageId}}
 {{/if}}
 
 {{#if hypothesis}}
@@ -80,8 +89,7 @@ Etapas que exigem instant form:
 {{/each}}
 {{/if}}
 
-Projete formulários que coletem consentimento explícito, dados de contato e perguntas de qualificação alinhadas aos objetivos de cada etapa. Garanta coerência com a promessa e persona descritas.
-Respeite o limite de caracteres e utilize URLs completas iniciando com https://.
+Projete perguntas que coletem consentimento explícito, reforcem a proposta de valor e mantenham coerência com a persona descrita. Respeite o limite de caracteres da Meta e utilize URLs completas iniciando com https://.
 ```
 
 ### Observações
@@ -91,4 +99,4 @@ Respeite o limite de caracteres e utilize URLs completas iniciando com https://.
 - `{{positionOrId}}` utiliza a posição da etapa na jornada; caso não exista, o identificador da etapa é usado como fallback.
 - `{{nameOrSemNome}}` contém o nome da etapa e recorre ao texto "Sem nome" quando a etapa não possui título.
 - `stepContexts` agrega as etapas do template de jornada que possuem tipo `INSTANT_FORM`, incluindo descrições e metadados relevantes.
-- A resposta esperada do ChatGPT é exclusivamente um array JSON com os campos descritos no primeiro parágrafo do prompt.
+- A resposta esperada do ChatGPT é exclusivamente um array JSON com os campos definidos na seção "Estrutura da mensagem do usuário".

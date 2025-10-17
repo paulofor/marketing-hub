@@ -99,12 +99,28 @@ class ExperimentInstantFormServiceTest {
 
         ExperimentInstantFormChatGptClient.InstantFormPlan plan =
                 new ExperimentInstantFormChatGptClient.InstantFormPlan(
-                        "AI Form Demo",
+                        "ai-form-demo",
                         "Formulário de Conversão",
                         "draft",
                         "pt_br",
                         "https://example.com/obrigado",
-                        "https://example.com/privacidade"
+                        "Visite nosso site",
+                        "https://example.com/privacidade",
+                        new ExperimentInstantFormChatGptClient.PrivacyPolicyPlan(
+                                "https://example.com/privacidade",
+                                "Política de Privacidade"
+                        ),
+                        List.of(
+                                new ExperimentInstantFormChatGptClient.QuestionPlan(
+                                        "SHORT_ANSWER",
+                                        "email",
+                                        "Qual é o seu e-mail?",
+                                        null,
+                                        true,
+                                        false,
+                                        List.of()
+                                )
+                        )
                 );
         ExperimentInstantFormChatGptClient.Generation generation =
                 new ExperimentInstantFormChatGptClient.Generation(

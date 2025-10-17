@@ -82,6 +82,24 @@ token usage to estimate the associated cost.
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
+### app_idea
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `name` VARCHAR(255)
+- `niche` VARCHAR(255)
+- `target_audience` VARCHAR(255)
+- `problem_to_solve` LONGTEXT
+- `value_proposition` LONGTEXT
+- `core_features` LONGTEXT
+- `differentiator` LONGTEXT
+- `monetization` LONGTEXT
+- `go_to_market` LONGTEXT
+- `technology_stack` LONGTEXT
+- `model` VARCHAR(255)
+- `prompt` LONGTEXT
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
 ### success_product
 
 - `id` BIGINT AUTO_INCREMENT PRIMARY KEY

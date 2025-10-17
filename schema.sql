@@ -71,6 +71,24 @@ CREATE TABLE product (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+CREATE TABLE app_idea (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    niche VARCHAR(255) NOT NULL,
+    target_audience VARCHAR(255),
+    problem_to_solve LONGTEXT,
+    value_proposition LONGTEXT,
+    core_features LONGTEXT,
+    differentiator LONGTEXT,
+    monetization LONGTEXT,
+    go_to_market LONGTEXT,
+    technology_stack LONGTEXT,
+    model VARCHAR(255),
+    prompt LONGTEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
 CREATE TABLE success_product (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     description LONGTEXT,

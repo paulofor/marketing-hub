@@ -16,6 +16,8 @@ flowchart TD
     root --> courses("/courses")
     courses --> courses_new("/courses/new")
     courses --> courses_detail("/courses/:id")
+    root --> app_ideas("/app-ideas")
+    app_ideas --> app_idea_new("/app-ideas/new")
     root --> products("/products")
     products --> product_new("/products/new")
     root --> success_products("/success-products")

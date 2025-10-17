@@ -10,6 +10,8 @@ import NewCoursePlanPage from "./pages/course/NewCoursePlanPage";
 import CoursePlanDetailPage from "./pages/course/CoursePlanDetailPage";
 import ProductListPage from "./pages/product/ProductListPage";
 import NewProductPage from "./pages/product/NewProductPage";
+import AppIdeaListPage from "./pages/appIdea/AppIdeaListPage";
+import NewAppIdeaPage from "./pages/appIdea/NewAppIdeaPage";
 import SuccessProductListPage from "./pages/successProduct/SuccessProductListPage";
 import NewSuccessProductPage from "./pages/successProduct/NewSuccessProductPage";
 import SuccessProductDetailPage from "./pages/successProduct/SuccessProductDetailPage";
@@ -92,6 +94,8 @@ export default function App() {
               <Route path="/courses" element={<CoursePlanListPage />} />
               <Route path="/courses/new" element={<NewCoursePlanPage />} />
               <Route path="/courses/:id" element={<CoursePlanDetailPage />} />
+              <Route path="/app-ideas" element={<AppIdeaListPage />} />
+              <Route path="/app-ideas/new" element={<NewAppIdeaPage />} />
               <Route path="/products" element={<ProductListPage />} />
               <Route path="/products/new" element={<NewProductPage />} />
               <Route

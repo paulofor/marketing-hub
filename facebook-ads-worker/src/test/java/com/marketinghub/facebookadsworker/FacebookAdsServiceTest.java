@@ -156,10 +156,43 @@ class FacebookAdsServiceTest {
         String id = service.createAdCreative("1", request);
         RecordedRequest recorded = server.takeRequest();
         JsonNode body = objectMapper.readTree(recorded.getBody().inputStream());
-        JsonNode callToAction = body.get("object_story_spec").get("link_data").get("call_to_action");
+        JsonNode linkData = body.get("object_story_spec").get("link_data");
+        assertEquals("https://www.facebook.com/ads/leadgen/?id=123456789012345", linkData.get("link").asText());
+        JsonNode callToAction = linkData.get("call_to_action");
         assertEquals("SIGN_UP", callToAction.get("type").asText());
+        assertEquals("https://www.facebook.com/ads/leadgen/?id=123456789012345", callToAction.get("value").get("link").asText());
         assertEquals("123456789012345", callToAction.get("value").get("lead_gen_form_id").asText());
         assertEquals("999", id);
+    }
+
+    @Test
+    void createAdCreativeKeepsWebsiteLinkWhenLeadFormIsPresent() throws Exception {
+        server.enqueue(new MockResponse().setBody("{\"id\":\"998\"}")
+            .addHeader("Content-Type", "application/json"));
+        FacebookAdsService.AdCreativeRequest request = new FacebookAdsService.AdCreativeRequest(
+            "Camp - Lead",
+            "42",
+            null,
+            "https://example.com/landing",
+            "123456789012345",
+            "Mensagem",
+            null,
+            null,
+            "SIGN_UP",
+            null,
+            null
+        );
+
+        service.createAdCreative("1", request);
+
+        RecordedRequest recorded = server.takeRequest();
+        JsonNode linkData = objectMapper
+            .readTree(recorded.getBody().inputStream())
+            .get("object_story_spec")
+            .get("link_data");
+        assertEquals("https://example.com/landing", linkData.get("link").asText());
+        assertEquals("https://example.com/landing", linkData.get("call_to_action").get("value").get("link").asText());
+        assertEquals("123456789012345", linkData.get("call_to_action").get("value").get("lead_gen_form_id").asText());
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.marketinghub.facebookadsworker;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.facebookadsworker.util.InstantFormPublicationHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -139,11 +140,17 @@ public class FacebookAdsService {
         Objects.requireNonNull(request, "request");
 
         boolean hasLeadGenForm = hasText(request.leadGenFormId());
-        boolean hasWebsiteUrl = hasText(request.websiteUrl()) && !hasLeadGenForm;
+        String resolvedLink = null;
+        if (hasText(request.websiteUrl())) {
+            resolvedLink = request.websiteUrl().trim();
+        } else if (hasLeadGenForm) {
+            resolvedLink = InstantFormPublicationHelper.buildInstantFormShareLink(request.leadGenFormId());
+        }
+        boolean hasWebsiteUrl = hasText(resolvedLink);
 
         Map<String, Object> linkData = new HashMap<>();
         if (hasWebsiteUrl) {
-            linkData.put("link", request.websiteUrl());
+            linkData.put("link", resolvedLink);
         }
         linkData.put("message", request.message());
         if (request.headline() != null && !request.headline().isBlank()) {
@@ -162,7 +169,7 @@ public class FacebookAdsService {
             callToAction.put("type", request.callToActionType());
             Map<String, Object> value = new HashMap<>();
             if (hasWebsiteUrl) {
-                value.put("link", request.websiteUrl());
+                value.put("link", resolvedLink);
             }
             if (hasLeadGenForm) {
                 value.put("lead_gen_form_id", request.leadGenFormId());

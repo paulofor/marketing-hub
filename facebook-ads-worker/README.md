@@ -100,10 +100,13 @@ form aprovado, o worker publica o formulário antes de criar a campanha. O fluxo
    worker evita enviar `lead_gen_form_id`, impedindo erros do tipo `(#100) Param
    call_to_action[value][lead_gen_form_id] must be a valid Lead Gen Data id`.
    Assim que o identificador for confirmado, o worker passa a anexá-lo ao CTA,
-   remove o link externo do criativo, define `destination_type = ON_AD`,
-   `optimization_goal = LEAD_GENERATION` e ajusta o objetivo da campanha para
-   `OUTCOME_LEADS`, direcionando os usuários diretamente ao instant form
-   selecionado conforme as regras da Graph API.
+   substitui o link externo do criativo pelo share link gerado pela Meta
+   (`https://www.facebook.com/ads/leadgen/?id=<id>`), define `destination_type =
+   ON_AD`, `optimization_goal = LEAD_GENERATION` e ajusta o objetivo da campanha
+   para `OUTCOME_LEADS`, direcionando os usuários diretamente ao instant form
+   selecionado conforme as regras mais recentes da Graph API, que exigem a
+   presença de um campo `link` mesmo quando o destino é o formulário dentro do
+   próprio ecossistema do Facebook/Instagram.
 
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar
 investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs

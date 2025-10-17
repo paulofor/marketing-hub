@@ -13,9 +13,7 @@ Este documento descreve como o Worker IA monta os prompts enviados ao ChatGPT pa
 ### Estrutura da mensagem do usuário
 
 ```text
-Gere até {{quantity}} instant forms em português no formato JSON. Cada objeto do array deve conter as chaves "name", "status" (draft, review ou approved), "locale" (pt_BR), "follow_up_action_url", "privacy_policy" e "questions". Não crie nem atribua IDs — o Facebook cuidará dessa etapa. Retorne apenas um array JSON, sem texto adicional.
-
-Em "privacy_policy", produza um objeto com "url" (obrigatório) e, quando fizer sentido, "link_text". Garanta que URLs estejam completas (https://...).
+Gere até {{quantity}} instant forms em português no formato JSON. Cada objeto do array deve conter apenas a chave "questions". Não crie nem atribua IDs — o Facebook cuidará dessa etapa. Retorne apenas um array JSON, sem texto adicional.
 
 Em "questions", siga o formato aceito pela Graph API:
 - "type": utilize valores suportados pela Meta (por exemplo, FULL_NAME, EMAIL, PHONE, CUSTOM);
@@ -58,37 +56,6 @@ Mecanismo único: {{hypothesis.uniqueMechanism}}
 {{/if}}
 {{/if}}
 
-{{#if journey}}
-{{#if journey.name}}
-Jornada: {{journey.name}}
-{{/if}}
-{{#if journey.description}}
-Descrição da jornada: {{journey.description}}
-{{/if}}
-{{#if journey.metadata}}
-Metadados da jornada:
-{{#each journey.metadata}}
-- {{key}}: {{value}}
-{{/each}}
-{{/if}}
-{{/if}}
-
-{{#if stepContexts}}
-Etapas que exigem instant form:
-{{#each stepContexts}}
-- Etapa {{positionOrId}}: {{nameOrSemNome}}
-{{#if description}}
-  Descrição: {{description}}
-{{/if}}
-{{#if metadata}}
-  Metadados:
-{{#each metadata}}
-    - {{key}}: {{value}}
-{{/each}}
-{{/if}}
-{{/each}}
-{{/if}}
-
 Projete perguntas que coletem consentimento explícito, reforcem a proposta de valor e mantenham coerência com a persona descrita. Respeite o limite de caracteres da Meta e utilize URLs completas iniciando com https://.
 ```
 
@@ -96,7 +63,4 @@ Projete perguntas que coletem consentimento explícito, reforcem a proposta de v
 
 - `{{quantity}}` recebe o valor de `instantFormsToGenerate` definido no experimento.
 - Os blocos condicionais (`{{#if ...}}`) só aparecem quando a informação correspondente está preenchida na entidade.
-- `{{positionOrId}}` utiliza a posição da etapa na jornada; caso não exista, o identificador da etapa é usado como fallback.
-- `{{nameOrSemNome}}` contém o nome da etapa e recorre ao texto "Sem nome" quando a etapa não possui título.
-- `stepContexts` agrega as etapas do template de jornada que possuem tipo `INSTANT_FORM`, incluindo descrições e metadados relevantes.
 - A resposta esperada do ChatGPT é exclusivamente um array JSON com os campos definidos na seção "Estrutura da mensagem do usuário".

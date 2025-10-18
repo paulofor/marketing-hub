@@ -2,6 +2,7 @@ package com.marketinghub.niche;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.marketinghub.appidea.AppIdea;
 import com.marketinghub.chat.ChatDialog;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.audience.Audience;
@@ -84,6 +85,11 @@ public class MarketNiche {
 
     @OneToMany(mappedBy = "niche")
     private java.util.List<Audience> audiences;
+
+    @OneToMany(mappedBy = "niche")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private java.util.List<AppIdea> appIdeas;
 
     @CreationTimestamp
     private Instant createdAt;

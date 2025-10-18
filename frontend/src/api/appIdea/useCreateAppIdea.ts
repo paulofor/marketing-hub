@@ -4,7 +4,7 @@ import type { AppIdea } from "./useAppIdeas";
 
 export interface CreateAppIdea {
   name: string;
-  niche: string;
+  marketNicheId: number;
   targetAudience?: string;
   problemToSolve?: string;
   valueProposition?: string;

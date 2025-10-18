@@ -199,3 +199,6 @@ databaseChangeLog:
   - include:
       file: V2026_12_15__create_app_idea.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2026_12_16__link_app_idea_to_market_niche.sql
+      relativeToChangelogFile: true

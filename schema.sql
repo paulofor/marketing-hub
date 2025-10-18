@@ -74,7 +74,7 @@ CREATE TABLE product (
 CREATE TABLE app_idea (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    niche VARCHAR(255) NOT NULL,
+    market_niche_id BIGINT NOT NULL,
     target_audience VARCHAR(255),
     problem_to_solve LONGTEXT,
     value_proposition LONGTEXT,
@@ -86,7 +86,8 @@ CREATE TABLE app_idea (
     model VARCHAR(255),
     prompt LONGTEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_app_idea_market_niche FOREIGN KEY (market_niche_id) REFERENCES market_niche(id)
 );
 
 CREATE TABLE success_product (

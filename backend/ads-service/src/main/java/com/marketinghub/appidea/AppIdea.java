@@ -1,16 +1,22 @@
 package com.marketinghub.appidea;
 
+import com.marketinghub.niche.MarketNiche;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -35,8 +41,11 @@ public class AppIdea {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
-    private String niche;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "market_niche_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private MarketNiche niche;
 
     @Column(name = "target_audience")
     private String targetAudience;

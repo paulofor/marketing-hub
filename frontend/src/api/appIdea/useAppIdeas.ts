@@ -4,7 +4,8 @@ import axios from "axios";
 export interface AppIdea {
   id: number;
   name: string;
-  niche: string;
+  nicheId: number;
+  nicheName: string;
   targetAudience?: string;
   problemToSolve?: string;
   valueProposition?: string;

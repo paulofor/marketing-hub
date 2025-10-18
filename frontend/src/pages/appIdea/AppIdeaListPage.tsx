@@ -50,7 +50,7 @@ export default function AppIdeaListPage() {
                 <div className="card-body d-flex flex-column gap-3">
                   <div>
                     <span className="badge text-bg-primary text-uppercase fw-semibold">
-                      {idea.niche}
+                      {idea.nicheName || "Nicho indisponível"}
                     </span>
                     <h3 className="h5 mt-3 mb-1">{idea.name}</h3>
                     <p className="text-secondary mb-0">

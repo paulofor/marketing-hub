@@ -1,5 +1,6 @@
 package com.marketinghub.appidea.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.Data;
 
 /**
@@ -8,7 +9,8 @@ import lombok.Data;
 @Data
 public class CreateAppIdeaRequest {
     private String name;
-    private String niche;
+    @JsonAlias({"nicheId"})
+    private Long marketNicheId;
     private String targetAudience;
     private String problemToSolve;
     private String valueProposition;

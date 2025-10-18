@@ -11,7 +11,8 @@ import java.time.Instant;
 public class AppIdeaDto {
     private Long id;
     private String name;
-    private String niche;
+    private Long nicheId;
+    private String nicheName;
     private String targetAudience;
     private String problemToSolve;
     private String valueProposition;

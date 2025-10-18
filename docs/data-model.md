@@ -86,7 +86,7 @@ token usage to estimate the associated cost.
 
 - `id` BIGINT AUTO_INCREMENT PRIMARY KEY
 - `name` VARCHAR(255)
-- `niche` VARCHAR(255)
+- `market_niche_id` BIGINT NOT NULL REFERENCES `market_niche(id)`
 - `target_audience` VARCHAR(255)
 - `problem_to_solve` LONGTEXT
 - `value_proposition` LONGTEXT
@@ -99,6 +99,9 @@ token usage to estimate the associated cost.
 - `prompt` LONGTEXT
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+Each record belongs to exactly one entry in `market_niche`, enabling a niche to
+aggregate many associated application ideas.
 
 ### success_product
 

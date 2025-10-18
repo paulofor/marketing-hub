@@ -3,10 +3,11 @@ import { useForm } from "react-hook-form";
 import { Sparkles } from "lucide-react";
 import PageTitle from "../../components/PageTitle";
 import { useCreateAppIdea } from "../../api/appIdea/useCreateAppIdea";
+import { useNiches } from "../../api/niche/useNiches";
 
 interface AppIdeaForm {
   name: string;
-  niche: string;
+  marketNicheId: string;
   targetAudience?: string;
   problemToSolve?: string;
   valueProposition?: string;
@@ -21,6 +22,8 @@ interface AppIdeaForm {
 
 export default function NewAppIdeaPage() {
   const create = useCreateAppIdea();
+  const { data: nichesData, isLoading: isLoadingNiches } = useNiches();
+  const niches = Array.isArray(nichesData) ? nichesData : [];
   const {
     register,
     handleSubmit,
@@ -29,7 +32,7 @@ export default function NewAppIdeaPage() {
   } = useForm<AppIdeaForm>({
     defaultValues: {
       name: "",
-      niche: "",
+      marketNicheId: "",
       targetAudience: "",
       problemToSolve: "",
       valueProposition: "",
@@ -51,7 +54,14 @@ export default function NewAppIdeaPage() {
 
   const onSubmit = handleSubmit(
     (values) => {
-      create.mutate(values);
+      const { marketNicheId, ...rest } = values;
+      if (!marketNicheId) {
+        return;
+      }
+      create.mutate({
+        ...rest,
+        marketNicheId: Number(marketNicheId),
+      });
     },
     (validationErrors) => {
       console.log("Validation errors", validationErrors);
@@ -87,11 +97,32 @@ export default function NewAppIdeaPage() {
         </div>
         <div className="col-12 col-lg-6">
           <label className="form-label fw-semibold">Nicho *</label>
-          <input
-            className={`form-control${errors.niche ? " is-invalid" : ""}`}
-            placeholder="Nicho prioritário"
-            {...register("niche", { required: true })}
-          />
+          <select
+            className={`form-select${errors.marketNicheId ? " is-invalid" : ""}`}
+            {...register("marketNicheId", {
+              required: true,
+              validate: (value) => value !== "",
+            })}
+            disabled={isLoadingNiches || niches.length === 0 || create.isPending}
+            defaultValue=""
+          >
+            <option value="" disabled>
+              {isLoadingNiches ? "Carregando nichos..." : "Selecione um nicho"}
+            </option>
+            {niches.map((niche) => (
+              <option key={niche.id} value={niche.id}>
+                {niche.name}
+              </option>
+            ))}
+          </select>
+          {errors.marketNicheId ? (
+            <div className="invalid-feedback d-block">Selecione um nicho válido.</div>
+          ) : null}
+          {!isLoadingNiches && niches.length === 0 ? (
+            <div className="form-text text-danger">
+              Cadastre um nicho antes de criar ideias de aplicativo.
+            </div>
+          ) : null}
         </div>
         <div className="col-12 col-lg-6">
           <label className="form-label fw-semibold">Público-alvo</label>
@@ -198,7 +229,7 @@ export default function NewAppIdeaPage() {
           <button
             type="submit"
             className="btn btn-primary d-inline-flex align-items-center gap-2"
-            disabled={create.isPending}
+            disabled={create.isPending || niches.length === 0}
           >
             {create.isPending ? (
               <span className="spinner-border spinner-border-sm" aria-hidden="true" />

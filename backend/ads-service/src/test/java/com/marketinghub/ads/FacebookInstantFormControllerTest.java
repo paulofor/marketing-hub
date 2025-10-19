@@ -7,6 +7,9 @@ import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.settings.GeneralSetting;
+import com.marketinghub.settings.GeneralSettingKeys;
+import com.marketinghub.settings.GeneralSettingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,6 +63,9 @@ class FacebookInstantFormControllerTest {
     @Autowired
     MarketNicheRepository nicheRepository;
 
+    @Autowired
+    GeneralSettingRepository generalSettingRepository;
+
     Hypothesis hypothesis;
     FacebookPage page;
 
@@ -71,6 +77,12 @@ class FacebookInstantFormControllerTest {
         accountRepository.deleteAll();
         hypothesisRepository.deleteAll();
         nicheRepository.deleteAll();
+        generalSettingRepository.deleteAll();
+
+        generalSettingRepository.save(GeneralSetting.builder()
+                .name(GeneralSettingKeys.PRIVACY_POLICY_URL)
+                .value("https://privacy.example.com/policy")
+                .build());
 
         FacebookAccount account = accountRepository.save(FacebookAccount.builder()
                 .name("Account")
@@ -222,5 +234,36 @@ class FacebookInstantFormControllerTest {
                 .andExpect(status().isNoContent());
 
         assertThat(instantFormRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void shouldApplyDefaultPrivacyPolicyWhenMissing() throws Exception {
+        CreateFacebookInstantFormRequest request = new CreateFacebookInstantFormRequest(
+                page.getId(),
+                null,
+                "Form sem política",
+                "DRAFT",
+                "pt_BR",
+                null,
+                null,
+                null,
+                "https://example.com/thanks",
+                null,
+                "gpt-4o",
+                "Prompt sem política"
+        );
+
+        mockMvc.perform(post("/api/hypotheses/" + hypothesis.getId() + "/instant-forms")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.privacyPolicyUrl").value("https://privacy.example.com/policy"));
+
+        FacebookInstantForm form = instantFormRepository.findAll().getFirst();
+        assertThat(form.getPrivacyPolicyUrl()).isEqualTo("https://privacy.example.com/policy");
+
+        mockMvc.perform(get("/api/instant-forms/" + form.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.privacyPolicyUrl").value("https://privacy.example.com/policy"));
     }
 }

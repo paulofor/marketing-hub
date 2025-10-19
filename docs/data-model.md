@@ -273,6 +273,19 @@ prompt/model responsible for the form generation. Experiments can reuse these
 forms through `experiment.facebook_instant_form_id` to keep capture journeys
 consistent across tests.
 
+### general_setting
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `name` VARCHAR(100) NOT NULL UNIQUE
+- `value` LONGTEXT
+- `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+- `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+Persists organization-wide configuration flags and URLs that need to be reused
+across services. Keys are stored in lowercase and enforced as unique, allowing
+the backend to serve defaults such as the privacy policy URL whenever an
+Instant Form or integration omits a specific value.
+
 ### creative
 
 - `id` BIGINT AUTO_INCREMENT PRIMARY KEY

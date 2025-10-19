@@ -53,7 +53,7 @@ campanhas. O fluxo básico é o seguinte:
 | Método | Caminho | Origem | Objetivo | Tratamento de erro |
 | --- | --- | --- | --- | --- |
 | GET | `/api/instant-forms/ready-to-publish` | `FacebookInstantFormPublicationService` | Listar formulários aprovados e ainda não publicados | `404` vira lista vazia; falhas de rede geram apenas `WARN` |
-| GET | `/api/instant-forms/{id}` | `FacebookInstantFormPublicationService` | Carregar detalhes completos antes de criar o rascunho | `404` encerra a tentativa e o formulário é ignorado até correção |
+| GET | `/api/instant-forms/{id}` | `FacebookInstantFormPublicationService` | Carregar detalhes completos antes de criar o rascunho; garante `privacy_policy_url` com fallback de `/api/settings/privacy_policy_url` | `404` encerra a tentativa e o formulário é ignorado até correção |
 | PATCH | `/api/instant-forms/{id}/publication` | `FacebookInstantFormPublicationService` | Registrar rascunhos e publicações (status, link e IDs) | Exceções são logadas; o agendamento segue com os demais itens |
 
 ### Chamadas à Graph API

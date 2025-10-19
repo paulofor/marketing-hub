@@ -31,7 +31,7 @@ public class GeneralSetting {
     private String name;
 
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @Column(name = "setting_value", columnDefinition = "LONGTEXT")
     private String value;
 
     @CreationTimestamp

@@ -8,14 +8,17 @@ import com.marketinghub.ads.dto.UpdateFacebookInstantFormPublicationRequest;
 import com.marketinghub.ads.mapper.FacebookInstantFormMapper;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.settings.GeneralSettingService;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api")
@@ -25,17 +28,20 @@ public class FacebookInstantFormController {
     private final FacebookPageRepository pageRepository;
     private final FacebookInstantFormMapper mapper;
     private final ExperimentRepository experimentRepository;
+    private final GeneralSettingService generalSettingService;
 
     public FacebookInstantFormController(FacebookInstantFormRepository repository,
                                          HypothesisRepository hypothesisRepository,
                                          FacebookPageRepository pageRepository,
                                          FacebookInstantFormMapper mapper,
-                                         ExperimentRepository experimentRepository) {
+                                         ExperimentRepository experimentRepository,
+                                         GeneralSettingService generalSettingService) {
         this.repository = repository;
         this.hypothesisRepository = hypothesisRepository;
         this.pageRepository = pageRepository;
         this.mapper = mapper;
         this.experimentRepository = experimentRepository;
+        this.generalSettingService = generalSettingService;
     }
 
     @GetMapping("/hypotheses/{hypothesisId}/instant-forms")
@@ -45,6 +51,7 @@ public class FacebookInstantFormController {
         }
         return repository.findByHypothesisId(hypothesisId).stream()
                 .map(mapper::toDto)
+                .map(this::applyDefaults)
                 .sorted((a, b) -> {
                     Instant aInstant = a.updatedTime() != null ? a.updatedTime() : a.createdTime();
                     Instant bInstant = b.updatedTime() != null ? b.updatedTime() : b.createdTime();
@@ -113,19 +120,21 @@ public class FacebookInstantFormController {
                 .createdTime(request.createdTime())
                 .updatedTime(request.updatedTime())
                 .followUpActionUrl(request.followUpActionUrl())
-                .privacyPolicyUrl(request.privacyPolicyUrl())
+                .privacyPolicyUrl(resolvePrivacyPolicyUrl(request.privacyPolicyUrl()))
                 .model(request.model())
                 .prompt(request.prompt())
                 .approved(false)
                 .published(false)
                 .build();
-        return mapper.toDto(repository.save(entity));
+        FacebookInstantForm saved = repository.save(entity);
+        return applyDefaults(mapper.toDto(saved));
     }
 
     @GetMapping("/instant-forms/{id}")
     public FacebookInstantFormDto get(@PathVariable Long id) {
         return repository.findById(id)
                 .map(mapper::toDto)
+                .map(this::applyDefaults)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "instant form not found"));
     }
 
@@ -142,7 +151,8 @@ public class FacebookInstantFormController {
             form.setApproved(false);
             form.setApprovedAt(null);
         }
-        return mapper.toDto(repository.save(form));
+        FacebookInstantFormDto dto = mapper.toDto(repository.save(form));
+        return applyDefaults(dto);
     }
 
     @PatchMapping("/instant-forms/{id}/publication")
@@ -168,7 +178,8 @@ public class FacebookInstantFormController {
         if (request.status() != null && !request.status().isBlank()) {
             form.setStatus(request.status());
         }
-        return mapper.toDto(repository.save(form));
+        FacebookInstantFormDto dto = mapper.toDto(repository.save(form));
+        return applyDefaults(dto);
     }
 
     @DeleteMapping("/instant-forms/{id}")
@@ -179,6 +190,51 @@ public class FacebookInstantFormController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "instant form not found"));
         experimentRepository.clearFacebookInstantFormById(id);
         repository.delete(form);
+    }
+
+    private FacebookInstantFormDto applyDefaults(FacebookInstantFormDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        String resolvedPrivacyPolicyUrl = resolvePrivacyPolicyUrl(dto.privacyPolicyUrl());
+        if (Objects.equals(resolvedPrivacyPolicyUrl, dto.privacyPolicyUrl())) {
+            return dto;
+        }
+        return new FacebookInstantFormDto(
+                dto.id(),
+                dto.hypothesisId(),
+                dto.facebookPageId(),
+                dto.facebookPageExternalId(),
+                dto.facebookPageName(),
+                dto.facebookFormId(),
+                dto.name(),
+                dto.status(),
+                dto.locale(),
+                dto.leadsCount(),
+                dto.createdTime(),
+                dto.updatedTime(),
+                dto.followUpActionUrl(),
+                resolvedPrivacyPolicyUrl,
+                dto.model(),
+                dto.prompt(),
+                dto.approved(),
+                dto.approvedAt(),
+                dto.published(),
+                dto.publishedAt(),
+                dto.shareLink(),
+                dto.createdAt(),
+                dto.updatedAt()
+        );
+    }
+
+    private String resolvePrivacyPolicyUrl(String candidate) {
+        if (StringUtils.hasText(candidate)) {
+            return candidate.trim();
+        }
+        return generalSettingService.getPrivacyPolicyUrl()
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .orElse(null);
     }
 
     private FacebookInstantFormPublicationDto toPublicationDto(FacebookInstantForm form) {

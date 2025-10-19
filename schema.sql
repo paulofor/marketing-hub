@@ -212,6 +212,15 @@ CREATE TABLE fb_instant_form (
     CONSTRAINT uq_fb_instant_form UNIQUE (form_id)
 );
 
+CREATE TABLE general_setting (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    value LONGTEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT uq_general_setting_name UNIQUE (name)
+);
+
 CREATE TABLE creative (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     experiment_id BIGINT NOT NULL,

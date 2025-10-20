@@ -160,9 +160,6 @@ public class ExperimentService {
         }
         JourneyTemplate journeyTemplate = attachJourneyTemplate(request.getJourneyTemplateId());
         String followUpActionUrl = normalizeFollowUpActionUrl(request.getFollowUpActionUrl());
-        if (!StringUtils.hasText(followUpActionUrl)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "followUpActionUrl required");
-        }
         Experiment exp = Experiment.builder()
                 .niche(niche)
                 .name(request.getName())
@@ -327,9 +324,6 @@ public class ExperimentService {
         }
         if (request.isFollowUpActionUrlPresent()) {
             String followUpActionUrl = normalizeFollowUpActionUrl(request.getFollowUpActionUrl());
-            if (!StringUtils.hasText(followUpActionUrl)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "followUpActionUrl required");
-            }
             exp.setFollowUpActionUrl(followUpActionUrl);
         }
         if (request.isJourneyTemplateIdPresent()) {

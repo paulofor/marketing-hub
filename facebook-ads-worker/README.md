@@ -51,7 +51,11 @@ que o agendamento continue saudável. Após criar campanha, conjunto, criativo e
 anúncio, o worker envia um `CreateCampaignRequest` para o backend via
 `POST /api/facebook-campaigns`, preenchendo os identificadores de cada nível da
 hierarquia para manter rastreabilidade completa (`facebook_ads_campaign`,
-`facebook_ads_ad_set`, `facebook_ads_ad_creative` e `facebook_ads_ad`). Todas as
+`facebook_ads_ad_set`, `facebook_ads_ad_creative` e `facebook_ads_ad`). Assim que o backend confirma o
+registro, o worker marca o experimento de origem como `RUNNING` com
+`PATCH /api/experiments/{id}/status?status=RUNNING`, evitando que o mesmo
+experimento reapareça em consultas futuras a `/facebook-campaigns/experiments-ready`
+e preservando o identificador gerado pela Meta para coleta de resultados. Todas as
 chamadas HTTP ao backend devem registrar a URL completa, parâmetros, payload e
 resposta recebida para acelerar o diagnóstico de incidentes em produção. Os logs
 seguem o padrão visual `==>` para requisições (por exemplo, `url==>https://...`)

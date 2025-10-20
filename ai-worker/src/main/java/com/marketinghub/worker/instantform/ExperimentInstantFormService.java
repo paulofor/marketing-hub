@@ -149,6 +149,9 @@ public class ExperimentInstantFormService {
             return null;
         }
         String followUpActionUrl = sanitizeUrl(plan.followUpActionUrl());
+        if (!StringUtils.hasText(followUpActionUrl) && experiment != null) {
+            followUpActionUrl = sanitizeUrl(experiment.getFollowUpActionUrl());
+        }
         String privacyPolicyUrl = sanitizeUrl(plan.privacyPolicyUrl());
         if (!StringUtils.hasText(privacyPolicyUrl) && plan.privacyPolicy() != null) {
             privacyPolicyUrl = sanitizeUrl(plan.privacyPolicy().url());

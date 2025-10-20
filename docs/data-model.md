@@ -211,6 +211,7 @@ triggering ad set generation.
 - `hypothesis` VARCHAR(255)
 - `facebook_page_id` BIGINT
 - `facebook_instant_form_id` BIGINT
+- `follow_up_action_url` VARCHAR(512)
 - `instagram_account_id` BIGINT
 - `kpi_target_cpl` DECIMAL(10,2) DEFAULT 45.00
 - `stop_loss_cpl` DECIMAL(10,2) DEFAULT 90.00
@@ -242,6 +243,9 @@ will be executed and measured during the test cycle.
   experiment reuses a Meta Instant Form that was planned for the same
   hypothesis, ensuring multiple campaigns can capture leads with the same
   optimized flow.
+- `follow_up_action_url` garante que todos os instant forms publicados a partir
+  do experimento direcionem o usuário para a mesma página de agradecimento
+  (follow-up) após o envio, atendendo à exigência da Meta por um link válido.
 - `journey_template_id` → FK `journey_template.id`: vínculo obrigatório
   que reaproveita o blueprint de jornada aprovado para nortear campanhas
   e ativações omnichannel geradas a partir do experimento.

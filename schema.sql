@@ -166,6 +166,7 @@ CREATE TABLE experiment (
     hypothesis VARCHAR(255),
     facebook_page_id BIGINT,
     facebook_instant_form_id BIGINT,
+    follow_up_action_url VARCHAR(512),
     instagram_account_id BIGINT,
     kpi_target_cpl DECIMAL(10,2) DEFAULT 45.00,
     stop_loss_cpl DECIMAL(10,2) DEFAULT 90.00,

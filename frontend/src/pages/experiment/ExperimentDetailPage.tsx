@@ -294,6 +294,20 @@ export default function ExperimentDetailPage() {
       ),
     },
     {
+      label: "Página de agradecimento padrão",
+      value: data.followUpActionUrl ? (
+        <a
+          href={data.followUpActionUrl}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Abrir página
+        </a>
+      ) : (
+        "—"
+      ),
+    },
+    {
       label: "Conta do Instagram",
       value: instagramAccount
         ? `${instagramAccount.name} (${instagramAccount.handle})`

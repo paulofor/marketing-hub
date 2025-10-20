@@ -19,6 +19,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
@@ -158,6 +159,10 @@ public class ExperimentService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "baselineCvr must be < targetCvr");
         }
         JourneyTemplate journeyTemplate = attachJourneyTemplate(request.getJourneyTemplateId());
+        String followUpActionUrl = normalizeFollowUpActionUrl(request.getFollowUpActionUrl());
+        if (!StringUtils.hasText(followUpActionUrl)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "followUpActionUrl required");
+        }
         Experiment exp = Experiment.builder()
                 .niche(niche)
                 .name(request.getName())
@@ -181,6 +186,7 @@ public class ExperimentService {
                 .facebookInstantForm(attachInstantForm(request.getFacebookInstantFormId(), request.getHypothesisId()))
                 .instagramAccount(attachInstagramAccount(request.getInstagramAccountId()))
                 .journeyTemplate(journeyTemplate)
+                .followUpActionUrl(followUpActionUrl)
                 .build();
         return repository.save(exp);
     }
@@ -240,6 +246,7 @@ public class ExperimentService {
                 .instagramAccount(original.getInstagramAccount())
                 .facebookInstantForm(original.getFacebookInstantForm())
                 .journeyTemplate(original.getJourneyTemplate())
+                .followUpActionUrl(original.getFollowUpActionUrl())
                 .build();
         return repository.save(copy);
     }
@@ -318,6 +325,13 @@ public class ExperimentService {
         if (request.getCreativeApproved() != null) {
             exp.setCreativeApproved(request.getCreativeApproved());
         }
+        if (request.isFollowUpActionUrlPresent()) {
+            String followUpActionUrl = normalizeFollowUpActionUrl(request.getFollowUpActionUrl());
+            if (!StringUtils.hasText(followUpActionUrl)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "followUpActionUrl required");
+            }
+            exp.setFollowUpActionUrl(followUpActionUrl);
+        }
         if (request.isJourneyTemplateIdPresent()) {
             if (request.getJourneyTemplateId() == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "journeyTemplateId required");
@@ -364,6 +378,20 @@ public class ExperimentService {
         Experiment exp = repository.findById(id).orElseThrow();
         exp.setEmailsToGenerate(quantity);
         return exp;
+    }
+
+    private String normalizeFollowUpActionUrl(String url) {
+        if (!StringUtils.hasText(url)) {
+            return null;
+        }
+        String trimmed = url.trim();
+        if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "followUpActionUrl must start with http:// or https://");
+        }
+        if (trimmed.length() > 512) {
+            return trimmed.substring(0, 512);
+        }
+        return trimmed;
     }
 
 }

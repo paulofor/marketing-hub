@@ -422,13 +422,23 @@ public class FacebookInstantFormPublicationService {
             return null;
         }
         String followUpActionUrl = StringUtils.hasText(details.followUpActionUrl()) ? details.followUpActionUrl().trim() : null;
+        if (!StringUtils.hasText(followUpActionUrl)) {
+            followUpActionUrl = StringUtils.hasText(form.shareLink()) ? form.shareLink().trim() : null;
+        }
+        if (!StringUtils.hasText(followUpActionUrl)) {
+            LOGGER.warn(
+                "Instant form {} does not define a follow-up action URL; skipping Facebook draft creation",
+                form != null ? form.id() : null
+            );
+            return null;
+        }
 
         return new InstantFormCreationRequest(
             name.trim(),
             locale,
             new InstantFormCreationRequest.PrivacyPolicy(privacyPolicyUrl, "Política de Privacidade"),
             defaultQuestions(),
-            StringUtils.hasText(followUpActionUrl) ? "Visitar site" : null,
+            "Visitar site",
             followUpActionUrl
         );
     }

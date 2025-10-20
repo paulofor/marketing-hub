@@ -45,6 +45,9 @@ public class Experiment {
     @JoinColumn(name = "facebook_instant_form_id")
     private FacebookInstantForm facebookInstantForm;
 
+    @Column(name = "follow_up_action_url", length = 512)
+    private String followUpActionUrl;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "instagram_account_id")
     private InstagramAccount instagramAccount;

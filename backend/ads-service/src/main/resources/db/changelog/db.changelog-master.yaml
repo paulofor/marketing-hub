@@ -211,3 +211,6 @@ databaseChangeLog:
   - include:
       file: V2027_11_01__create_member_area_and_link_product_to_niche.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2027_12_01__add_follow_up_action_url_to_experiment.sql
+      relativeToChangelogFile: true

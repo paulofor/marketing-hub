@@ -21,6 +21,7 @@ public class ExperimentDto {
     private String hypothesis;
     private FacebookPageDto facebookPage;
     private FacebookInstantFormDto facebookInstantForm;
+    private String followUpActionUrl;
     private InstagramAccountDto instagramAccount;
     @JsonProperty("kpiTarget")
     private BigDecimal kpiTargetCpl;

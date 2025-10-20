@@ -18,6 +18,7 @@ export interface UpdateExperiment {
   facebookPageId?: number | null;
   facebookInstantFormId?: number | null;
   instagramAccountId?: number | null;
+  followUpActionUrl?: string | null;
 }
 
 export function useUpdateExperiment(id: string) {

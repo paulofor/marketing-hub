@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 import { useExperiment } from "../../api/experiment/useExperiment";
@@ -72,6 +72,34 @@ export default function EditExperimentPage() {
   const parsedJourneyTemplateId = selectedJourneyTemplateId
     ? Number(selectedJourneyTemplateId)
     : undefined;
+  const facebookPageOptions = useMemo(() => {
+    const options = Array.isArray(facebookPages)
+      ? [...facebookPages]
+      : [];
+    const experimentPage = data?.facebookPage;
+    if (!experimentPage) {
+      return options;
+    }
+    const hasExperimentPage = options.some(
+      (page) => page.id === experimentPage.id,
+    );
+    if (hasExperimentPage) {
+      return options;
+    }
+    options.push({
+      id: experimentPage.id,
+      accountId: experimentPage.accountId,
+      pageId: experimentPage.pageId,
+      name: experimentPage.name,
+    });
+    return options;
+  }, [
+    facebookPages,
+    data?.facebookPage?.id,
+    data?.facebookPage?.accountId,
+    data?.facebookPage?.pageId,
+    data?.facebookPage?.name,
+  ]);
   const selectedJourneyTemplate =
     parsedJourneyTemplateId !== undefined &&
     !Number.isNaN(parsedJourneyTemplateId)
@@ -284,8 +312,7 @@ export default function EditExperimentPage() {
               ? "Carregando páginas cadastradas..."
               : "Nenhuma página selecionada"}
           </option>
-          {Array.isArray(facebookPages) &&
-            facebookPages.map((page) => (
+          {facebookPageOptions.map((page) => (
               <option key={page.id} value={String(page.id)}>
                 {page.name} ({page.pageId})
               </option>

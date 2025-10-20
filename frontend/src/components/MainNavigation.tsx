@@ -21,6 +21,7 @@ import {
   Map,
   PlusCircle,
   Shapes,
+  ShieldCheck,
   Sparkles,
   Trophy,
   Users,
@@ -158,6 +159,16 @@ const NAV_SECTIONS: NavSection[] = [
             icon: PlusCircle,
           },
         ],
+      },
+    ],
+  },
+  {
+    title: "Configurações",
+    items: [
+      {
+        to: "/settings/privacy-policy",
+        label: "Política de privacidade",
+        icon: ShieldCheck,
       },
     ],
   },

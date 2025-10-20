@@ -56,6 +56,7 @@ CREATE TABLE product (
     niche VARCHAR(255),
     avatar VARCHAR(255),
     instagram_account_id BIGINT,
+    market_niche_id BIGINT,
     explicit_pain LONGTEXT,
     promise LONGTEXT,
     unique_mechanism LONGTEXT,
@@ -68,7 +69,19 @@ CREATE TABLE product (
     storytelling LONGTEXT,
     ai_cost DECIMAL(10,2) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_product_market_niche FOREIGN KEY (market_niche_id) REFERENCES market_niche(id)
+);
+
+CREATE TABLE member_area (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    product_id BIGINT NOT NULL,
+    name VARCHAR(255),
+    access_url VARCHAR(500),
+    description LONGTEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_member_area_product FOREIGN KEY (product_id) REFERENCES product(id)
 );
 
 CREATE TABLE app_idea (

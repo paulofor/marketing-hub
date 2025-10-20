@@ -1,5 +1,7 @@
 package com.marketinghub.product.service;
 
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.dto.CreateProductRequest;
 import com.marketinghub.product.repository.ProductRepository;
@@ -15,10 +17,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProductService {
     private final ProductRepository repository;
     private final InstagramAccountRepository accountRepository;
+    private final MarketNicheRepository marketNicheRepository;
 
-    public ProductService(ProductRepository repository, InstagramAccountRepository accountRepository) {
+    public ProductService(
+            ProductRepository repository,
+            InstagramAccountRepository accountRepository,
+            MarketNicheRepository marketNicheRepository) {
         this.repository = repository;
         this.accountRepository = accountRepository;
+        this.marketNicheRepository = marketNicheRepository;
     }
 
     /**
@@ -30,6 +37,7 @@ public class ProductService {
                 .niche(request.getNiche())
                 .avatar(request.getAvatar())
                 .instagramAccount(resolveAccount(request.getInstagramAccountId()))
+                .marketNiche(resolveNiche(request.getMarketNicheId()))
                 .explicitPain(request.getExplicitPain())
                 .promise(request.getPromise())
                 .uniqueMechanism(request.getUniqueMechanism())
@@ -50,6 +58,13 @@ public class ProductService {
             return null;
         }
         return accountRepository.findById(id).orElseThrow();
+    }
+
+    private MarketNiche resolveNiche(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("marketNicheId is required");
+        }
+        return marketNicheRepository.findById(id).orElseThrow();
     }
 
     public Product getProduct(Long id) {

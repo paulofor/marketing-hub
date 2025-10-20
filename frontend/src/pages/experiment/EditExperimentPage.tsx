@@ -252,7 +252,7 @@ export default function EditExperimentPage() {
           </option>
           {Array.isArray(instagramAccounts) &&
             instagramAccounts.map((account) => (
-              <option key={account.id} value={account.id}>
+              <option key={account.id} value={String(account.id)}>
                 {account.name} ({account.handle})
               </option>
             ))}
@@ -286,7 +286,7 @@ export default function EditExperimentPage() {
           </option>
           {Array.isArray(facebookPages) &&
             facebookPages.map((page) => (
-              <option key={page.id} value={page.id}>
+              <option key={page.id} value={String(page.id)}>
                 {page.name} ({page.pageId})
               </option>
             ))}

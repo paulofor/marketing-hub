@@ -66,6 +66,7 @@ import FacebookCampaignExperimentsPage from "./pages/facebook/FacebookCampaignEx
 import FacebookExperimentsReadyPage from "./pages/facebook/FacebookExperimentsReadyPage";
 import GlobalAutomationAlerts from "./components/GlobalAutomationAlerts";
 import AiGenerationListPage from "./pages/ai/AiGenerationListPage";
+import PrivacyPolicySettingsPage from "./pages/settings/PrivacyPolicySettingsPage";
 
 export default function App() {
   return (
@@ -211,6 +212,10 @@ export default function App() {
               <Route
                 path="/journey-templates/new"
                 element={<NewJourneyTemplatePage />}
+              />
+              <Route
+                path="/settings/privacy-policy"
+                element={<PrivacyPolicySettingsPage />}
               />
               <Route path="*" element={<div>Início</div>} />
             </Routes>

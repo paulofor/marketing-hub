@@ -68,6 +68,7 @@ token usage to estimate the associated cost.
 - `niche` VARCHAR(255)
 - `avatar` VARCHAR(255)
 - `instagram_account_id` BIGINT
+- `market_niche_id` BIGINT
 - `explicit_pain` LONGTEXT
 - `promise` LONGTEXT
 - `unique_mechanism` LONGTEXT
@@ -79,6 +80,16 @@ token usage to estimate the associated cost.
 - `creative_volume` LONGTEXT
 - `storytelling` LONGTEXT
 - `ai_cost` DECIMAL(10,2) DEFAULT 0
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+### member_area
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `product_id` BIGINT NOT NULL REFERENCES `product(id)`
+- `name` VARCHAR(255)
+- `access_url` VARCHAR(500)
+- `description` LONGTEXT
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 

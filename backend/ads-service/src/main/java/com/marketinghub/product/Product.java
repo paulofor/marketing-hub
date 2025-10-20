@@ -7,8 +7,11 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import com.marketinghub.ads.InstagramAccount;
+import com.marketinghub.memberarea.MemberArea;
+import com.marketinghub.niche.MarketNiche;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Entity representing a digital product following marketing principles.
@@ -26,9 +29,15 @@ public class Product {
     private String niche;
     private String avatar;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "instagram_account_id")
     private InstagramAccount instagramAccount;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "market_niche_id")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private MarketNiche marketNiche;
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
@@ -62,6 +71,11 @@ public class Product {
     private String storytelling;
 
     private java.math.BigDecimal aiCost;
+
+    @OneToMany(mappedBy = "product")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<MemberArea> memberAreas;
 
     @CreationTimestamp
     private Instant createdAt;

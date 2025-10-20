@@ -11,5 +11,6 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface ProductMapper {
     @Mapping(target = "instagramAccountId", source = "instagramAccount.id")
+    @Mapping(target = "marketNicheId", source = "marketNiche.id")
     ProductDto toDto(Product product);
 }

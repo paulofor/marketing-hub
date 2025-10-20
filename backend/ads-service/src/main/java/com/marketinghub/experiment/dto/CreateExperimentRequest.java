@@ -34,4 +34,5 @@ public class CreateExperimentRequest {
     private Long facebookPageId;
     private Long facebookInstantFormId;
     private Long instagramAccountId;
+    private String followUpActionUrl;
 }

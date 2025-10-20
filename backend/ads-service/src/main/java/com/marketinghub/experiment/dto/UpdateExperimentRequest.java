@@ -39,6 +39,9 @@ public class UpdateExperimentRequest {
     private Long instagramAccountId;
     @JsonIgnore
     private boolean instagramAccountIdPresent;
+    private String followUpActionUrl;
+    @JsonIgnore
+    private boolean followUpActionUrlPresent;
 
     @JsonSetter(value = "facebookPageId", nulls = Nulls.SET)
     public void setFacebookPageId(Long facebookPageId) {
@@ -62,6 +65,12 @@ public class UpdateExperimentRequest {
     public void setInstagramAccountId(Long instagramAccountId) {
         this.instagramAccountId = instagramAccountId;
         this.instagramAccountIdPresent = true;
+    }
+
+    @JsonSetter(value = "followUpActionUrl", nulls = Nulls.SET)
+    public void setFollowUpActionUrl(String followUpActionUrl) {
+        this.followUpActionUrl = followUpActionUrl;
+        this.followUpActionUrlPresent = true;
     }
 }
 

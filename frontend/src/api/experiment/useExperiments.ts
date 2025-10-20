@@ -45,6 +45,7 @@ export interface Experiment {
   pageId?: string | null;
   facebookPage?: FacebookPageSummary | null;
   facebookInstantForm?: FacebookInstantFormSummary | null;
+  followUpActionUrl?: string | null;
   instagramAccount?: InstagramAccountSummary | null;
   /**
    * KPI alvo em CPL. Mantém `kpiTarget` para compatibilidade com APIs

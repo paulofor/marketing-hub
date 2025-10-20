@@ -31,6 +31,7 @@ export default function NewExperimentPage() {
     journeyTemplateId: "",
     facebookPageId: "",
     instagramAccountId: "",
+    followUpActionUrl: "",
   });
   const { data: hypotheses } = useHypothesesByNiche(form.nicheId);
   const { data: selectedHypothesis } = useHypothesis(
@@ -100,6 +101,19 @@ export default function NewExperimentPage() {
         alert("Selecione um template de jornada");
         return;
       }
+      if (!form.followUpActionUrl.trim()) {
+        alert("Informe a URL da página de agradecimento");
+        return;
+      }
+      try {
+        const followUrl = new URL(form.followUpActionUrl.trim());
+        if (followUrl.protocol !== "https:" && followUrl.protocol !== "http:") {
+          throw new Error("invalid protocol");
+        }
+      } catch {
+        alert("Informe uma URL válida (http ou https) para a página de agradecimento");
+        return;
+      }
       await create.mutateAsync({
         nicheId: Number(form.nicheId),
         hypothesisId: form.hypothesisId || undefined,
@@ -120,6 +134,7 @@ export default function NewExperimentPage() {
           ? Number(form.facebookPageId)
           : undefined,
         instagramAccountId: Number(form.instagramAccountId),
+        followUpActionUrl: form.followUpActionUrl.trim(),
       });
       setForm({
         nicheId: nicheIdParam,
@@ -135,6 +150,7 @@ export default function NewExperimentPage() {
         journeyTemplateId: "",
         facebookPageId: "",
         instagramAccountId: "",
+        followUpActionUrl: "",
       });
       alert("Teste salvo!");
     } catch (errors) {
@@ -335,6 +351,23 @@ export default function NewExperimentPage() {
             </option>
           ))}
       </select>
+      <label className="form-label" htmlFor="followUpActionUrl">
+        Página de agradecimento <span className="text-danger">*</span>
+      </label>
+      <input
+        id="followUpActionUrl"
+        className="form-control mb-2"
+        type="url"
+        placeholder="https://"
+        value={form.followUpActionUrl}
+        onChange={(e) =>
+          setForm({ ...form, followUpActionUrl: e.target.value })
+        }
+      />
+      <div className="form-text mb-2">
+        Esta URL será usada como página de agradecimento (follow-up) em todos os
+        instant forms deste experimento.
+      </div>
       <input
         className="form-control mb-2"
         placeholder="Tamanho da amostra"

@@ -71,7 +71,12 @@ form aprovado, o worker publica o formulário antes de criar a campanha. O fluxo
    detalhes completos no backend (`GET /api/instant-forms/{id}`) e cria o
    rascunho diretamente na Graph API com `POST /{pageId}/leadgen_forms`. O
    payload inclui `locale`, links de política de privacidade e agradecimento e
-   as perguntas padrão (`FULL_NAME` e `EMAIL`). O serviço resolve o token da
+   as perguntas padrão (`FULL_NAME` e `EMAIL`). A Graph API passou a exigir o
+   campo `follow_up_action_url` em todas as versões recentes; por isso o worker
+   reaproveita `followUpActionUrl` retornado pelo backend ou, na ausência dele,
+   utiliza o `shareLink` configurado no formulário. Caso nenhum dos dois esteja
+   disponível, o rascunho é ignorado e um aviso é registrado em log até que a
+   URL seja preenchida. O serviço resolve o token da
    página via `/{pageId}?fields=access_token`, registra o identificador
    devolvido pela Meta com `PATCH /api/instant-forms/{id}/publication` (mantendo
    `published = false`) e evita duplicações sempre que o backend já possuir o
@@ -111,6 +116,14 @@ form aprovado, o worker publica o formulário antes de criar a campanha. O fluxo
    selecionado conforme as regras mais recentes da Graph API, que exigem a
    presença de um campo `link` mesmo quando o destino é o formulário dentro do
    próprio ecossistema do Facebook/Instagram.
+
+Os experimentos agora expõem `followUpActionUrl` como campo obrigatório para
+formular a jornada de agradecimento. O backend normaliza a URL e a replica em
+todos os instant forms vinculados ao experimento, garantindo que a Graph API
+receba sempre um `follow_up_action_url` válido. A página padrão utilizada pela
+equipe está versionada em `docs/follow-up-calendario-campanhas-fitness-2024.html`
+e informa que o brinde será enviado por e-mail enquanto agradece a participação
+do lead.
 
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar
 investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs

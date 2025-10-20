@@ -6,6 +6,7 @@ import com.marketinghub.ads.dto.FacebookInstantFormPublicationDto;
 import com.marketinghub.ads.dto.UpdateFacebookInstantFormApprovalRequest;
 import com.marketinghub.ads.dto.UpdateFacebookInstantFormPublicationRequest;
 import com.marketinghub.ads.mapper.FacebookInstantFormMapper;
+import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.settings.GeneralSettingService;
@@ -196,8 +197,10 @@ public class FacebookInstantFormController {
         if (dto == null) {
             return null;
         }
+        String resolvedFollowUp = resolveFollowUpActionUrl(dto);
         String resolvedPrivacyPolicyUrl = resolvePrivacyPolicyUrl(dto.privacyPolicyUrl());
-        if (Objects.equals(resolvedPrivacyPolicyUrl, dto.privacyPolicyUrl())) {
+        if (Objects.equals(resolvedFollowUp, dto.followUpActionUrl())
+                && Objects.equals(resolvedPrivacyPolicyUrl, dto.privacyPolicyUrl())) {
             return dto;
         }
         return new FacebookInstantFormDto(
@@ -213,7 +216,7 @@ public class FacebookInstantFormController {
                 dto.leadsCount(),
                 dto.createdTime(),
                 dto.updatedTime(),
-                dto.followUpActionUrl(),
+                resolvedFollowUp,
                 resolvedPrivacyPolicyUrl,
                 dto.model(),
                 dto.prompt(),
@@ -225,6 +228,23 @@ public class FacebookInstantFormController {
                 dto.createdAt(),
                 dto.updatedAt()
         );
+    }
+
+    private String resolveFollowUpActionUrl(FacebookInstantFormDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        if (StringUtils.hasText(dto.followUpActionUrl())) {
+            return dto.followUpActionUrl().trim();
+        }
+        if (dto.id() == null) {
+            return null;
+        }
+        return experimentRepository.findFirstByFacebookInstantForm_Id(dto.id())
+                .map(Experiment::getFollowUpActionUrl)
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .orElse(null);
     }
 
     private String resolvePrivacyPolicyUrl(String candidate) {

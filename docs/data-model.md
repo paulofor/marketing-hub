@@ -170,6 +170,42 @@ aggregate many associated application ideas.
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
+### deliverable
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `market_niche_id` BIGINT NOT NULL REFERENCES `market_niche(id)`
+- `title` VARCHAR(255) NOT NULL
+- `description` LONGTEXT
+- `content` LONGTEXT
+- `model` VARCHAR(255)
+- `prompt` LONGTEXT NOT NULL
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+Stores each deliverable generated for a niche, including the AI model and
+prompt used to produce it.
+
+### deliverable_package
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `experiment_id` BIGINT NOT NULL REFERENCES `experiment(id)`
+- `name` VARCHAR(255) NOT NULL
+- `description` LONGTEXT
+- `model` VARCHAR(255)
+- `prompt` LONGTEXT NOT NULL
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+Represents curated bundles of deliverables attached to an experiment.
+
+### deliverable_package_item
+
+- `deliverable_package_id` BIGINT NOT NULL REFERENCES `deliverable_package(id)`
+- `deliverable_id` BIGINT NOT NULL REFERENCES `deliverable(id)`
+- PRIMARY KEY (`deliverable_package_id`, `deliverable_id`)
+
+Join table that links packages to the deliverables they include.
+
 ### hypothesis
 
 - `id` BINARY(16) PRIMARY KEY

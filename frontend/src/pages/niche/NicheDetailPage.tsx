@@ -10,11 +10,14 @@ import { useChatDialog } from "../../api/chatDialog/useChatDialog";
 import { useForm } from "react-hook-form";
 import { useRequestAudiences } from "../../api/niche/useRequestAudiences";
 import { useExperimentsByNiche } from "../../api/experiment/useExperimentsByNiche";
+import { useDeliverablesByNiche } from "../../api/deliverable/useDeliverablesByNiche";
+import { useCreateDeliverable } from "../../api/deliverable/useCreateDeliverable";
 import {
   ArrowUpRight,
   Clock3,
   FileDown,
   Lightbulb,
+  Package,
   Sparkles,
   Users,
 } from "lucide-react";
@@ -28,10 +31,31 @@ export default function NicheDetailPage() {
   const { data: hypotheses } = useHypothesesByNiche(nicheId, "ALL");
   const { data: audiences } = useAudiencesByNiche(nicheId);
   const { data: experiments } = useExperimentsByNiche(nicheId);
+  const { data: deliverables } = useDeliverablesByNiche(nicheId);
   const requestAudiences = useRequestAudiences(id);
   const { register, handleSubmit, reset } = useForm<{ quantity: number }>({
     defaultValues: { quantity: 1 },
   });
+  const {
+    register: registerDeliverable,
+    handleSubmit: handleSubmitDeliverable,
+    reset: resetDeliverable,
+  } = useForm<{
+    title: string;
+    description?: string;
+    content?: string;
+    model?: string;
+    prompt: string;
+  }>({
+    defaultValues: {
+      title: "",
+      description: "",
+      content: "",
+      model: "",
+      prompt: "",
+    },
+  });
+  const createDeliverable = useCreateDeliverable(id);
   useBreadcrumbs([{ label: data?.name || "...", icon: nicheIcon }]);
 
   if (isLoading) return <p>Carregando...</p>;
@@ -67,6 +91,13 @@ export default function NicheDetailPage() {
     : [];
   const audienceList = Array.isArray(audiences) ? audiences : [];
   const experimentsList = Array.isArray(experiments) ? experiments : [];
+  const deliverableList = Array.isArray(deliverables)
+    ? [...deliverables].sort((a, b) => {
+        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bDate - aDate;
+      })
+    : [];
   const experimentsCountByHypothesis = experimentsList.reduce<
     Record<string, number>
   >((acc, experiment) => {
@@ -119,6 +150,15 @@ export default function NicheDetailPage() {
       helper: `Meta: ${data.hypothesesToGenerate ?? 0}`,
     },
     {
+      icon: Package,
+      label: "Entregáveis",
+      value: `${deliverableList.length}`,
+      helper:
+        deliverableList.length === 0
+          ? "Nenhum gerado ainda"
+          : `${deliverableList.length} prontos para uso`,
+    },
+    {
       icon: Clock3,
       label: "Atualizado em",
       value: updatedAtLabel ?? "-",
@@ -142,6 +182,27 @@ export default function NicheDetailPage() {
     },
     (errors) => {
       console.log("Validation errors", errors);
+    },
+  );
+
+  const onCreateDeliverable = handleSubmitDeliverable(
+    async (values) => {
+      try {
+        await createDeliverable.mutateAsync({
+          title: values.title,
+          description: values.description,
+          content: values.content,
+          model: values.model,
+          prompt: values.prompt,
+        });
+        resetDeliverable({ title: "", description: "", content: "", model: "", prompt: "" });
+      } catch (error) {
+        console.error("Failed to create deliverable", error);
+        alert("Não foi possível salvar o entregável. Tente novamente.");
+      }
+    },
+    (errors) => {
+      console.log("Deliverable form errors", errors);
     },
   );
 
@@ -204,6 +265,149 @@ export default function NicheDetailPage() {
             </article>
           ))}
         </div>
+      </section>
+      <section className="niche-section" aria-labelledby="niche-deliverables">
+        <div className="niche-section__header">
+          <div>
+            <h2 className="niche-section__title" id="niche-deliverables">
+              Entregáveis
+            </h2>
+            <p className="niche-section__subtitle">
+              Centralize os materiais gerados para validar este nicho.
+            </p>
+          </div>
+          <span className="badge text-bg-light text-dark niche-deliverables__badge">
+            {deliverableList.length} item(s)
+          </span>
+        </div>
+        <form className="niche-deliverables__form" onSubmit={onCreateDeliverable}>
+          <div className="row g-3">
+            <div className="col-md-4">
+              <label htmlFor="deliverable-title" className="form-label">
+                Título *
+              </label>
+              <input
+                id="deliverable-title"
+                type="text"
+                className="form-control"
+                placeholder="Resumo do entregável"
+                disabled={createDeliverable.isPending}
+                {...registerDeliverable("title", { required: true })}
+              />
+            </div>
+            <div className="col-md-4">
+              <label htmlFor="deliverable-model" className="form-label">
+                Modelo de IA
+              </label>
+              <input
+                id="deliverable-model"
+                type="text"
+                className="form-control"
+                placeholder="ex: gpt-4.1"
+                disabled={createDeliverable.isPending}
+                {...registerDeliverable("model")}
+              />
+            </div>
+            <div className="col-12">
+              <label htmlFor="deliverable-prompt" className="form-label">
+                Prompt utilizado *
+              </label>
+              <textarea
+                id="deliverable-prompt"
+                className="form-control"
+                rows={2}
+                placeholder="Cole aqui o prompt enviado ao modelo"
+                disabled={createDeliverable.isPending}
+                {...registerDeliverable("prompt", { required: true })}
+              />
+            </div>
+            <div className="col-md-6">
+              <label htmlFor="deliverable-description" className="form-label">
+                Descrição
+              </label>
+              <textarea
+                id="deliverable-description"
+                className="form-control"
+                rows={2}
+                placeholder="Resumo rápido do entregável"
+                disabled={createDeliverable.isPending}
+                {...registerDeliverable("description")}
+              />
+            </div>
+            <div className="col-md-6">
+              <label htmlFor="deliverable-content" className="form-label">
+                Conteúdo detalhado
+              </label>
+              <textarea
+                id="deliverable-content"
+                className="form-control"
+                rows={2}
+                placeholder="Cole aqui o conteúdo completo"
+                disabled={createDeliverable.isPending}
+                {...registerDeliverable("content")}
+              />
+            </div>
+          </div>
+          <div className="d-flex justify-content-end mt-3">
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={createDeliverable.isPending}
+            >
+              {createDeliverable.isPending ? (
+                <span
+                  className="spinner-border spinner-border-sm"
+                  role="status"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Sparkles size={18} />
+              )}
+              <span>Salvar entregável</span>
+            </button>
+          </div>
+        </form>
+        {deliverableList.length === 0 ? (
+          <p className="niche-section__empty">Nenhum entregável cadastrado ainda.</p>
+        ) : (
+          <div className="niche-section__grid niche-deliverables__grid">
+            {deliverableList.map((deliverable) => (
+              <article key={deliverable.id} className="card niche-section__card">
+                <div className="card-body niche-deliverable-card__body">
+                  <div className="niche-deliverable-card__head">
+                    <h3 className="niche-deliverable-card__title">{deliverable.title}</h3>
+                    {deliverable.model ? (
+                      <span className="badge text-bg-light text-dark">
+                        {deliverable.model}
+                      </span>
+                    ) : null}
+                  </div>
+                  {deliverable.description ? (
+                    <p className="niche-deliverable-card__description">
+                      {deliverable.description}
+                    </p>
+                  ) : null}
+                  {deliverable.content ? (
+                    <pre className="niche-deliverable-card__content">
+                      {deliverable.content}
+                    </pre>
+                  ) : null}
+                  <details className="niche-deliverable-card__prompt">
+                    <summary>Ver prompt utilizado</summary>
+                    <pre>{deliverable.prompt}</pre>
+                  </details>
+                </div>
+                <div className="card-footer niche-deliverable-card__footer">
+                  {`Atualizado em ${
+                    deliverable.updatedAt
+                      ? new Date(deliverable.updatedAt).toLocaleString("pt-BR")
+                      : "-"
+                  }`}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
       <section className="niche-section" aria-labelledby="niche-audiences">
         <div className="niche-section__header">

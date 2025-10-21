@@ -280,24 +280,34 @@ export default function InstantFormsTab({ experiment, steps }: InstantFormsTabPr
                 <td style={{ minWidth: 200 }}>
                   <div className="d-flex flex-column gap-1">
                     {form.followUpActionUrl ? (
-                      <a
-                        href={form.followUpActionUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="small"
-                      >
-                        Página de agradecimento
-                      </a>
+                      <div className="d-flex flex-column gap-1">
+                        <a
+                          href={form.followUpActionUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="small"
+                        >
+                          Página de agradecimento
+                        </a>
+                        <span className="text-muted small text-break">
+                          {form.followUpActionUrl}
+                        </span>
+                      </div>
                     ) : null}
                     {form.privacyPolicyUrl ? (
-                      <a
-                        href={form.privacyPolicyUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="small"
-                      >
-                        Política de privacidade
-                      </a>
+                      <div className="d-flex flex-column gap-1">
+                        <a
+                          href={form.privacyPolicyUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="small"
+                        >
+                          Política de privacidade
+                        </a>
+                        <span className="text-muted small text-break">
+                          {form.privacyPolicyUrl}
+                        </span>
+                      </div>
                     ) : null}
                   </div>
                 </td>
@@ -343,14 +353,20 @@ export default function InstantFormsTab({ experiment, steps }: InstantFormsTabPr
         <dd className="col-sm-8">
           <div className="d-flex flex-column gap-1">
             {form.followUpActionUrl ? (
-              <a href={form.followUpActionUrl} target="_blank" rel="noreferrer" className="small">
-                Página de agradecimento
-              </a>
+              <div className="d-flex flex-column gap-1">
+                <a href={form.followUpActionUrl} target="_blank" rel="noreferrer" className="small">
+                  Página de agradecimento
+                </a>
+                <span className="text-muted small text-break">{form.followUpActionUrl}</span>
+              </div>
             ) : null}
             {form.privacyPolicyUrl ? (
-              <a href={form.privacyPolicyUrl} target="_blank" rel="noreferrer" className="small">
-                Política de privacidade
-              </a>
+              <div className="d-flex flex-column gap-1">
+                <a href={form.privacyPolicyUrl} target="_blank" rel="noreferrer" className="small">
+                  Política de privacidade
+                </a>
+                <span className="text-muted small text-break">{form.privacyPolicyUrl}</span>
+              </div>
             ) : null}
           </div>
         </dd>

@@ -275,24 +275,34 @@ export default function HypothesisDetailPage() {
                       <td style={{ minWidth: 200 }}>
                         <div className="d-flex flex-column gap-1">
                           {form.followUpActionUrl ? (
-                            <a
-                              href={form.followUpActionUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              Página de agradecimento
-                            </a>
+                            <div className="d-flex flex-column gap-1">
+                              <a
+                                href={form.followUpActionUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                Página de agradecimento
+                              </a>
+                              <span className="text-muted small text-break">
+                                {form.followUpActionUrl}
+                              </span>
+                            </div>
                           ) : (
                             <span className="text-muted small">Sem link de agradecimento</span>
                           )}
                           {form.privacyPolicyUrl ? (
-                            <a
-                              href={form.privacyPolicyUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              Política de privacidade
-                            </a>
+                            <div className="d-flex flex-column gap-1">
+                              <a
+                                href={form.privacyPolicyUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                Política de privacidade
+                              </a>
+                              <span className="text-muted small text-break">
+                                {form.privacyPolicyUrl}
+                              </span>
+                            </div>
                           ) : (
                             <span className="text-muted small">Sem política informada</span>
                           )}

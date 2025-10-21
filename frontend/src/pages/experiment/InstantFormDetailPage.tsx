@@ -196,9 +196,19 @@ export default function InstantFormDetailPage() {
                 <dt className="col-sm-5">Follow-up</dt>
                 <dd className="col-sm-7">
                   {instantForm.followUpActionUrl ? (
-                    <a href={instantForm.followUpActionUrl} target="_blank" rel="noreferrer" className="small">
-                      Página de agradecimento
-                    </a>
+                    <div className="d-flex flex-column gap-1">
+                      <a
+                        href={instantForm.followUpActionUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="small"
+                      >
+                        Página de agradecimento
+                      </a>
+                      <span className="text-muted small text-break">
+                        {instantForm.followUpActionUrl}
+                      </span>
+                    </div>
                   ) : (
                     <span className="text-muted">—</span>
                   )}
@@ -206,9 +216,19 @@ export default function InstantFormDetailPage() {
                 <dt className="col-sm-5">Privacidade</dt>
                 <dd className="col-sm-7">
                   {instantForm.privacyPolicyUrl ? (
-                    <a href={instantForm.privacyPolicyUrl} target="_blank" rel="noreferrer" className="small">
-                      Política de privacidade
-                    </a>
+                    <div className="d-flex flex-column gap-1">
+                      <a
+                        href={instantForm.privacyPolicyUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="small"
+                      >
+                        Política de privacidade
+                      </a>
+                      <span className="text-muted small text-break">
+                        {instantForm.privacyPolicyUrl}
+                      </span>
+                    </div>
                   ) : (
                     <span className="text-muted">—</span>
                   )}

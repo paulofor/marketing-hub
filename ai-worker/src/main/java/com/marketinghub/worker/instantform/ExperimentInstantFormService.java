@@ -9,8 +9,8 @@ import com.marketinghub.journey.model.JourneyStep;
 import com.marketinghub.journey.model.JourneyStimulusType;
 import com.marketinghub.journey.repository.JourneyRepository;
 import com.marketinghub.journey.repository.JourneyStepRepository;
-import com.marketinghub.settings.GeneralSettingService;
 import com.marketinghub.worker.experiment.ExperimentGenerationRepository;
+import com.marketinghub.worker.settings.PrivacyPolicyProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -36,7 +36,7 @@ public class ExperimentInstantFormService {
     private final JourneyStepRepository journeyStepRepository;
     private final FacebookInstantFormRepository instantFormRepository;
     private final ExperimentInstantFormChatGptClient chatGptClient;
-    private final GeneralSettingService generalSettingService;
+    private final PrivacyPolicyProvider privacyPolicyProvider;
     private final ExperimentGenerationRepository experimentGenerationRepository;
 
     public ExperimentInstantFormService(ExperimentRepository experimentRepository,
@@ -45,14 +45,14 @@ public class ExperimentInstantFormService {
                                         FacebookInstantFormRepository instantFormRepository,
                                         ExperimentInstantFormChatGptClient chatGptClient,
                                         ExperimentGenerationRepository experimentGenerationRepository,
-                                        GeneralSettingService generalSettingService) {
+                                        PrivacyPolicyProvider privacyPolicyProvider) {
         this.experimentRepository = experimentRepository;
         this.journeyRepository = journeyRepository;
         this.journeyStepRepository = journeyStepRepository;
         this.instantFormRepository = instantFormRepository;
         this.chatGptClient = chatGptClient;
         this.experimentGenerationRepository = experimentGenerationRepository;
-        this.generalSettingService = generalSettingService;
+        this.privacyPolicyProvider = privacyPolicyProvider;
     }
 
     @Transactional
@@ -115,7 +115,7 @@ public class ExperimentInstantFormService {
                 int processed = 0;
                 String followUpActionUrl = sanitizeUrl(experiment.getFollowUpActionUrl());
                 String privacyPolicyUrl = sanitizeUrl(
-                        generalSettingService.getPrivacyPolicyUrl().orElse(null)
+                        privacyPolicyProvider.getPrivacyPolicyUrl().orElse(null)
                 );
                 for (int index = 0; index < plans.size(); index++) {
                     ExperimentInstantFormChatGptClient.InstantFormPlan plan = plans.get(index);

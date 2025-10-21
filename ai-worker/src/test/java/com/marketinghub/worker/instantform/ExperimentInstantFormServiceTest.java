@@ -11,8 +11,8 @@ import com.marketinghub.journey.model.JourneyStep;
 import com.marketinghub.journey.model.JourneyStimulusType;
 import com.marketinghub.journey.repository.JourneyRepository;
 import com.marketinghub.journey.repository.JourneyStepRepository;
-import com.marketinghub.settings.GeneralSettingService;
 import com.marketinghub.worker.experiment.ExperimentGenerationRepository;
+import com.marketinghub.worker.settings.PrivacyPolicyProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,7 +57,7 @@ class ExperimentInstantFormServiceTest {
     private ExperimentGenerationRepository experimentGenerationRepository;
 
     @Mock
-    private GeneralSettingService generalSettingService;
+    private PrivacyPolicyProvider privacyPolicyProvider;
 
     private ExperimentInstantFormService service;
 
@@ -70,7 +70,7 @@ class ExperimentInstantFormServiceTest {
                 instantFormRepository,
                 chatGptClient,
                 experimentGenerationRepository,
-                generalSettingService
+                privacyPolicyProvider
         );
     }
 
@@ -102,7 +102,7 @@ class ExperimentInstantFormServiceTest {
         when(experimentGenerationRepository.findAllToGenerateInstantForms()).thenReturn(List.of(experiment));
         when(journeyStepRepository.findByTemplateOrderByPositionAsc(template)).thenReturn(List.of(step));
         when(journeyRepository.findFirstByExperimentIdOrderByCreatedAtDesc(42L)).thenReturn(Optional.empty());
-        when(generalSettingService.getPrivacyPolicyUrl()).thenReturn(Optional.of("https://example.com/privacidade"));
+        when(privacyPolicyProvider.getPrivacyPolicyUrl()).thenReturn(Optional.of("https://example.com/privacidade"));
 
         ExperimentInstantFormChatGptClient.InstantFormPlan plan =
                 new ExperimentInstantFormChatGptClient.InstantFormPlan(

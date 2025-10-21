@@ -306,13 +306,18 @@ export default function ExperimentDetailPage() {
     {
       label: "Página de agradecimento padrão",
       value: data.followUpActionUrl ? (
-        <a
-          href={data.followUpActionUrl}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Abrir página
-        </a>
+        <div className="d-flex flex-column gap-1">
+          <a
+            href={data.followUpActionUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Abrir página
+          </a>
+          <span className="text-muted small text-break">
+            {data.followUpActionUrl}
+          </span>
+        </div>
       ) : (
         "—"
       ),

@@ -268,24 +268,34 @@ export default function ExperimentDetailPage() {
           )}
           <div className="d-flex flex-column gap-1 mt-1">
             {experimentInstantForm.followUpActionUrl ? (
-              <a
-                href={experimentInstantForm.followUpActionUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="small"
-              >
-                Página de agradecimento
-              </a>
+              <div className="d-flex flex-column gap-1">
+                <a
+                  href={experimentInstantForm.followUpActionUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="small"
+                >
+                  Página de agradecimento
+                </a>
+                <span className="text-muted small text-break">
+                  {experimentInstantForm.followUpActionUrl}
+                </span>
+              </div>
             ) : null}
             {experimentInstantForm.privacyPolicyUrl ? (
-              <a
-                href={experimentInstantForm.privacyPolicyUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="small"
-              >
-                Política de privacidade
-              </a>
+              <div className="d-flex flex-column gap-1">
+                <a
+                  href={experimentInstantForm.privacyPolicyUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="small"
+                >
+                  Política de privacidade
+                </a>
+                <span className="text-muted small text-break">
+                  {experimentInstantForm.privacyPolicyUrl}
+                </span>
+              </div>
             ) : null}
           </div>
         </div>

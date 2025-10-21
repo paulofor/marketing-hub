@@ -9,6 +9,7 @@ import com.marketinghub.journey.model.JourneyStep;
 import com.marketinghub.journey.model.JourneyStimulusType;
 import com.marketinghub.journey.repository.JourneyRepository;
 import com.marketinghub.journey.repository.JourneyStepRepository;
+import com.marketinghub.settings.GeneralSettingService;
 import com.marketinghub.worker.experiment.ExperimentGenerationRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,7 @@ public class ExperimentInstantFormService {
     private final JourneyStepRepository journeyStepRepository;
     private final FacebookInstantFormRepository instantFormRepository;
     private final ExperimentInstantFormChatGptClient chatGptClient;
+    private final GeneralSettingService generalSettingService;
     private final ExperimentGenerationRepository experimentGenerationRepository;
 
     public ExperimentInstantFormService(ExperimentRepository experimentRepository,
@@ -42,13 +44,15 @@ public class ExperimentInstantFormService {
                                         JourneyStepRepository journeyStepRepository,
                                         FacebookInstantFormRepository instantFormRepository,
                                         ExperimentInstantFormChatGptClient chatGptClient,
-                                        ExperimentGenerationRepository experimentGenerationRepository) {
+                                        ExperimentGenerationRepository experimentGenerationRepository,
+                                        GeneralSettingService generalSettingService) {
         this.experimentRepository = experimentRepository;
         this.journeyRepository = journeyRepository;
         this.journeyStepRepository = journeyStepRepository;
         this.instantFormRepository = instantFormRepository;
         this.chatGptClient = chatGptClient;
         this.experimentGenerationRepository = experimentGenerationRepository;
+        this.generalSettingService = generalSettingService;
     }
 
     @Transactional
@@ -109,12 +113,23 @@ public class ExperimentInstantFormService {
                 }
                 List<FacebookInstantForm> persisted = new ArrayList<>();
                 int processed = 0;
+                String followUpActionUrl = sanitizeUrl(experiment.getFollowUpActionUrl());
+                String privacyPolicyUrl = sanitizeUrl(
+                        generalSettingService.getPrivacyPolicyUrl().orElse(null)
+                );
                 for (int index = 0; index < plans.size(); index++) {
                     ExperimentInstantFormChatGptClient.InstantFormPlan plan = plans.get(index);
                     if (processed >= quantity) {
                         break;
                     }
-                    FacebookInstantForm entity = buildEntity(plan, experiment, generation, index + 1);
+                    FacebookInstantForm entity = buildEntity(
+                            plan,
+                            experiment,
+                            generation,
+                            index + 1,
+                            followUpActionUrl,
+                            privacyPolicyUrl
+                    );
                     if (entity == null) {
                         continue;
                     }
@@ -135,7 +150,9 @@ public class ExperimentInstantFormService {
     private FacebookInstantForm buildEntity(ExperimentInstantFormChatGptClient.InstantFormPlan plan,
                                             Experiment experiment,
                                             ExperimentInstantFormChatGptClient.Generation generation,
-                                            int sequence) {
+                                            int sequence,
+                                            String followUpActionUrl,
+                                            String privacyPolicyUrl) {
         String name = sanitize(plan.name());
         if (!StringUtils.hasText(name)) {
             name = defaultName(experiment, sequence);
@@ -147,14 +164,6 @@ public class ExperimentInstantFormService {
         if (!StringUtils.hasText(name)) {
             log.warn("Ignorando plano de instant form sem nome para o experimento {}", experiment.getId());
             return null;
-        }
-        String followUpActionUrl = sanitizeUrl(plan.followUpActionUrl());
-        if (!StringUtils.hasText(followUpActionUrl) && experiment != null) {
-            followUpActionUrl = sanitizeUrl(experiment.getFollowUpActionUrl());
-        }
-        String privacyPolicyUrl = sanitizeUrl(plan.privacyPolicyUrl());
-        if (!StringUtils.hasText(privacyPolicyUrl) && plan.privacyPolicy() != null) {
-            privacyPolicyUrl = sanitizeUrl(plan.privacyPolicy().url());
         }
 
         FacebookInstantForm.FacebookInstantFormBuilder builder = FacebookInstantForm.builder()

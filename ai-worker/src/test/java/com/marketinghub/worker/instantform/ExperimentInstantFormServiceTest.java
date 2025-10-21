@@ -11,6 +11,7 @@ import com.marketinghub.journey.model.JourneyStep;
 import com.marketinghub.journey.model.JourneyStimulusType;
 import com.marketinghub.journey.repository.JourneyRepository;
 import com.marketinghub.journey.repository.JourneyStepRepository;
+import com.marketinghub.settings.GeneralSettingService;
 import com.marketinghub.worker.experiment.ExperimentGenerationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,9 @@ class ExperimentInstantFormServiceTest {
     @Mock
     private ExperimentGenerationRepository experimentGenerationRepository;
 
+    @Mock
+    private GeneralSettingService generalSettingService;
+
     private ExperimentInstantFormService service;
 
     @BeforeEach
@@ -65,7 +69,8 @@ class ExperimentInstantFormServiceTest {
                 journeyStepRepository,
                 instantFormRepository,
                 chatGptClient,
-                experimentGenerationRepository
+                experimentGenerationRepository,
+                generalSettingService
         );
     }
 
@@ -81,6 +86,7 @@ class ExperimentInstantFormServiceTest {
         page.setName("Academia Fit");
         page.setPageId("123456");
         experiment.setFacebookPage(page);
+        experiment.setFollowUpActionUrl("https://example.com/obrigado");
         JourneyTemplate template = new JourneyTemplate();
         experiment.setJourneyTemplate(template);
 
@@ -96,6 +102,7 @@ class ExperimentInstantFormServiceTest {
         when(experimentGenerationRepository.findAllToGenerateInstantForms()).thenReturn(List.of(experiment));
         when(journeyStepRepository.findByTemplateOrderByPositionAsc(template)).thenReturn(List.of(step));
         when(journeyRepository.findFirstByExperimentIdOrderByCreatedAtDesc(42L)).thenReturn(Optional.empty());
+        when(generalSettingService.getPrivacyPolicyUrl()).thenReturn(Optional.of("https://example.com/privacidade"));
 
         ExperimentInstantFormChatGptClient.InstantFormPlan plan =
                 new ExperimentInstantFormChatGptClient.InstantFormPlan(

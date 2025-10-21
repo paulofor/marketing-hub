@@ -113,7 +113,7 @@ public class ExperimentInstantFormService {
                 }
                 List<FacebookInstantForm> persisted = new ArrayList<>();
                 int processed = 0;
-                String followUpActionUrl = sanitizeUrl(experiment.getFollowUpActionUrl());
+                String followUpActionUrl = sanitizeUrl(readFollowUpActionUrl(experiment));
                 String privacyPolicyUrl = sanitizeUrl(
                         privacyPolicyProvider.getPrivacyPolicyUrl().orElse(null)
                 );
@@ -166,19 +166,47 @@ public class ExperimentInstantFormService {
             return null;
         }
 
+        String resolvedFollowUpUrl = coalesceUrl(
+                sanitizeUrl(plan.followUpActionUrl()),
+                followUpActionUrl
+        );
+        String resolvedPrivacyPolicyUrl = coalesceUrl(
+                sanitizeUrl(plan.privacyPolicyUrl()),
+                sanitizeUrl(planPrivacyPolicyUrl(plan)),
+                privacyPolicyUrl
+        );
+
         FacebookInstantForm.FacebookInstantFormBuilder builder = FacebookInstantForm.builder()
                 .hypothesis(experiment.getHypothesisRef())
                 .page(experiment.getFacebookPage())
                 .name(truncate(name, 255))
                 .status(truncate(normalizeStatus(plan.status()), 50))
                 .locale(truncate(normalizeLocale(plan.locale()), 12))
-                .followUpActionUrl(followUpActionUrl)
-                .privacyPolicyUrl(privacyPolicyUrl)
+                .followUpActionUrl(resolvedFollowUpUrl)
+                .privacyPolicyUrl(resolvedPrivacyPolicyUrl)
                 .model(generation.model())
                 .prompt(generation.auditTrail())
                 .approved(false)
                 .published(false);
         return builder.build();
+    }
+
+    private String readFollowUpActionUrl(Experiment experiment) {
+        if (experiment == null) {
+            return null;
+        }
+        try {
+            java.lang.reflect.Method getter = experiment.getClass().getMethod("getFollowUpActionUrl");
+            Object value = getter.invoke(experiment);
+            if (value instanceof String str) {
+                return str;
+            }
+        } catch (NoSuchMethodException ex) {
+            log.debug("Experiment class does not expose followUpActionUrl; skipping default URL");
+        } catch (Exception ex) {
+            log.warn("Falha ao ler followUpActionUrl do experimento {}", experiment.getId(), ex);
+        }
+        return null;
     }
 
     private String defaultName(Experiment experiment, int sequence) {
@@ -249,5 +277,28 @@ public class ExperimentInstantFormService {
         }
         log.warn("Ignorando URL inválida gerada para instant form: {}", sanitized);
         return null;
+    }
+
+    private String coalesceUrl(String... candidates) {
+        if (candidates == null) {
+            return null;
+        }
+        for (String candidate : candidates) {
+            if (StringUtils.hasText(candidate)) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private String planPrivacyPolicyUrl(ExperimentInstantFormChatGptClient.InstantFormPlan plan) {
+        if (plan == null) {
+            return null;
+        }
+        ExperimentInstantFormChatGptClient.PrivacyPolicyPlan privacyPolicy = plan.privacyPolicy();
+        if (privacyPolicy == null) {
+            return null;
+        }
+        return privacyPolicy.url();
     }
 }

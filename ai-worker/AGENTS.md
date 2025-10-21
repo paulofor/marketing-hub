@@ -3,6 +3,7 @@
 - Este projeto utiliza o modelo de dados definido no **backend**.
 - Não duplique ou mantenha modelo de dados aqui; importe-o do backend.
 - Em produção utilizamos **MySql 5**.
+- 🚨 **Proibido acesso direto ao banco de dados.** Toda leitura ou escrita deve ser feita **exclusivamente via endpoints do backend**, reutilizando os serviços existentes ou solicitando novos quando necessário.
 - Tipos de dados permitidos (MySql 5): `INT`, `BIGINT`, `DECIMAL`, `DOUBLE`, `FLOAT`, `CHAR`, `VARCHAR`, `TEXT`, `LONGTEXT`, `BINARY(16)` para `UUID`, `DATE`, `DATETIME`, `TIMESTAMP`, `BOOLEAN`.
 
 ## Serviços existentes

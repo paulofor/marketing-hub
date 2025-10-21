@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import com.marketinghub.ads.FacebookInstantForm;
 import com.marketinghub.ads.FacebookPage;
+import com.marketinghub.deliverable.DeliverablePackage;
 import com.marketinghub.niche.MarketNiche;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -114,6 +115,11 @@ public class Experiment {
 
     @UpdateTimestamp
     private Instant updatedAt;
+
+    @OneToMany(mappedBy = "experiment")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private java.util.List<DeliverablePackage> deliverablePackages;
 
     @PrePersist
     void applyMetricPreset() {

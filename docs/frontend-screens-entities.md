@@ -25,14 +25,14 @@ Consulte também o [Diagrama de Navegação do Frontend](./frontend-navigation.m
 | `/success-products/:id/edit` | Editar Produto de Sucesso | SuccessProduct | SuccessProduct |
 | `/niches` | Nichos de Mercado | MarketNiche, Hypothesis, Experiment | - |
 | `/niches/new` | Novo Nicho | - | MarketNiche |
-| `/niches/:nicheId` | Detalhe do Nicho | MarketNiche, Hypothesis | - |
+| `/niches/:nicheId` | Detalhe do Nicho | MarketNiche, Hypothesis, Deliverable | - |
 | `/niches/:nicheId/edit` | Editar Nicho | MarketNiche | MarketNiche |
 | `/niches/:nicheId/hypotheses/new` | Nova Hipótese | - | Hypothesis |
 | `/niches/:nicheId/hypotheses/:hypothesisId` | Detalhe da Hipótese | Hypothesis | - |
 | `/niches/:nicheId/hypotheses/:hypothesisId/edit` | Editar Hipótese | Hypothesis | Hypothesis |
 | `/experiments` | Lista de Experimentos | Experiment | - |
 | `/experiments/new` | Novo Experimento | MarketNiche, Hypothesis, MetricPreset, SalesFunnel | Experiment |
-| `/experiments/:id` | Detalhe do Experimento | Experiment, SalesFunnel, Creative, AdSet, MetricSnapshot, LandingPage | - |
+| `/experiments/:id` | Detalhe do Experimento | Experiment, SalesFunnel, Creative, AdSet, MetricSnapshot, LandingPage, DeliverablePackage | Deliverable |
 | `/experiments/:id/edit` | Editar Experimento | Experiment, SalesFunnel | Experiment |
 | `/hypotheses` | Lista de Hipóteses | Hypothesis | - |
 | `/hypotheses/board` | Quadro de Hipóteses | Hypothesis | Hypothesis |

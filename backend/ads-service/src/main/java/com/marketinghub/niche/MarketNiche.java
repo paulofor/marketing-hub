@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import com.marketinghub.appidea.AppIdea;
 import com.marketinghub.chat.ChatDialog;
+import com.marketinghub.deliverable.Deliverable;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.audience.Audience;
 import org.hibernate.annotations.CreationTimestamp;
@@ -90,6 +91,11 @@ public class MarketNiche {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private java.util.List<AppIdea> appIdeas;
+
+    @OneToMany(mappedBy = "niche")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private java.util.List<Deliverable> deliverables;
 
     @CreationTimestamp
     private Instant createdAt;

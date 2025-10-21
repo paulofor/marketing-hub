@@ -398,6 +398,91 @@
   flex-wrap: wrap;
 }
 
+.niche-deliverables__badge {
+  align-self: flex-start;
+  font-weight: 600;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--bs-primary-rgb, 13, 110, 253), 0.18);
+}
+
+.niche-deliverables__form {
+  padding: 1.25rem;
+  border-radius: 1rem;
+  border: 1px solid var(--bs-border-color, rgba(33, 37, 41, 0.12));
+  background: var(--bs-body-bg, #fff);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.niche-deliverables__form .form-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.niche-deliverables__grid {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.niche-deliverable-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.niche-deliverable-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.niche-deliverable-card__title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--bs-emphasis-color, #212529);
+}
+
+.niche-deliverable-card__description {
+  margin: 0;
+  color: var(--bs-emphasis-color, #212529);
+  white-space: pre-wrap;
+}
+
+.niche-deliverable-card__content,
+.niche-deliverable-card__prompt pre {
+  margin: 0;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: var(--bs-tertiary-bg, #f8f9fa);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.niche-deliverable-card__prompt {
+  font-size: 0.85rem;
+}
+
+.niche-deliverable-card__prompt summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--bs-primary, #0d6efd);
+  margin-bottom: 0.35rem;
+}
+
+.niche-deliverable-card__footer {
+  background: rgba(248, 249, 250, 0.9);
+  border-top: 1px solid rgba(33, 37, 41, 0.08);
+  font-size: 0.85rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
 @media (max-width: 576px) {
   .niche-detail__header {
     padding: 1.25rem;

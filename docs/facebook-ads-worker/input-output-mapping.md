@@ -15,12 +15,16 @@ reúne token, App ID/Secret e parâmetros padrão de orçamento, destino e criat
 
 ## Instant forms
 
-Quando um formulário aprovado ainda não possui `facebookFormId`, o worker lê os
-detalhes completos (`GET /api/instant-forms/{id}`) e envia `POST
-/{pageId}/leadgen_forms` com perguntas padrão (`FULL_NAME`, `EMAIL`), `locale`,
-URL de privacidade e link de agradecimento. O identificador retornado é
-persistido com `PATCH /api/instant-forms/{id}/publication` mantendo
-`published=false` até que a Meta confirme o status final.
+Quando um formulário aprovado ainda não possui identificador externo, o worker
+consulta `/api/instant-forms/approved-drafts` (com fallback para
+`/ready-to-publish`), carrega os detalhes em `GET /api/instant-forms/{id}` e
+envia `POST /{pageId}/leadgen_forms` com perguntas customizadas, `locale`,
+`follow_up_action_url` herdado do experimento e a política de privacidade
+resolvida a partir do formulário ou do endpoint
+`/api/settings/privacy_policy_url`. O `form_id`/`draft_id` retornado é
+persistido com `PATCH /api/instant-forms/{id}/publication`, registrando
+`status = CREATED` e `published=false`.
+
 
 Os experimentos que alimentam esse fluxo são apresentados ao time na tela
 "Experimentos para Campanha" do frontend, garantindo o alinhamento entre a visão

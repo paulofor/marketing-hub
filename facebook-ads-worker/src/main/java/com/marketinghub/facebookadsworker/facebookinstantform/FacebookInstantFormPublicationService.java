@@ -1,7 +1,6 @@
 package com.marketinghub.facebookadsworker.facebookinstantform;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenExpiredException;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenManager;
 import com.marketinghub.facebookadsworker.FacebookAdsService;
@@ -9,12 +8,11 @@ import com.marketinghub.facebookadsworker.FacebookAdsService.InstantFormCreation
 import com.marketinghub.facebookadsworker.FacebookPermissionException;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient.FacebookWorkerConfiguration;
-import com.marketinghub.facebookadsworker.util.InstantFormPublicationHelper;
 import com.marketinghub.facebookadsworker.util.UrlUtils;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -23,7 +21,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -31,6 +28,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -44,34 +42,44 @@ public class FacebookInstantFormPublicationService {
     private final WebClient backendClient;
     private final String backendBaseUrl;
     private final String apiPrefix;
+    private final MeterRegistry meterRegistry;
+    private final boolean dryRun;
     private final AtomicBoolean accessTokenExpired;
     private final AtomicBoolean accessTokenExpiryWarningLogged;
     private final AtomicReference<String> lastExpiredAccessToken;
     private final AtomicBoolean configurationUnavailableWarningLogged;
+    private final AtomicReference<String> cachedGlobalPrivacyPolicyUrl;
+    private final AtomicBoolean privacyPolicyNotFoundLogged;
 
     public FacebookInstantFormPublicationService(FacebookAdsService facebookAdsService,
                                                  FacebookAccessTokenManager accessTokenManager,
                                                  WebClient.Builder builder,
                                                  FacebookWorkerConfigurationClient configurationClient,
+                                                 MeterRegistry meterRegistry,
                                                  @Value("${backend.base-url:http://localhost:8000}") String backendBaseUrl,
-                                                 @Value("${backend.api-prefix:/api}") String apiPrefix) {
+                                                 @Value("${backend.api-prefix:/api}") String apiPrefix,
+                                                 @Value("${facebook.instant-forms.dry-run:false}") boolean dryRun) {
         this.facebookAdsService = facebookAdsService;
         this.accessTokenManager = accessTokenManager;
         this.configurationClient = configurationClient;
         this.backendClient = builder.build();
         this.backendBaseUrl = backendBaseUrl;
         this.apiPrefix = apiPrefix;
+        this.meterRegistry = meterRegistry;
+        this.dryRun = dryRun;
         this.accessTokenExpired = new AtomicBoolean(false);
         this.accessTokenExpiryWarningLogged = new AtomicBoolean(false);
         this.lastExpiredAccessToken = new AtomicReference<>(null);
         this.configurationUnavailableWarningLogged = new AtomicBoolean(false);
+        this.cachedGlobalPrivacyPolicyUrl = new AtomicReference<>(null);
+        this.privacyPolicyNotFoundLogged = new AtomicBoolean(false);
     }
 
-    public void publishApprovedInstantForms() {
+    public void processApprovedInstantFormDrafts() {
         if (accessTokenExpired.get()) {
             if (hasTokenChangedSinceExpiration()) {
                 LOGGER.info(
-                    "Detected refreshed Facebook access token after a previous expiration; resuming instant form publication."
+                    "Detected refreshed Facebook access token after a previous expiration; resuming instant form creation."
                 );
                 accessTokenExpired.set(false);
                 accessTokenExpiryWarningLogged.set(false);
@@ -81,7 +89,7 @@ public class FacebookInstantFormPublicationService {
                     accessTokenManager.tryRenewAccessTokenIfPossible();
                 if (renewalResult.outcome() == FacebookAccessTokenManager.RenewalOutcome.SUCCESS) {
                     LOGGER.info(
-                        "Facebook access token renewed automatically after a previous expiration; resuming instant form publication."
+                        "Facebook access token renewed automatically after a previous expiration; resuming instant form creation."
                     );
                     accessTokenExpired.set(false);
                     accessTokenExpiryWarningLogged.set(false);
@@ -89,7 +97,7 @@ public class FacebookInstantFormPublicationService {
                 } else {
                     if (accessTokenExpiryWarningLogged.compareAndSet(false, true)) {
                         LOGGER.warn(
-                            "Skipping instant form publication because the configured Facebook access token has expired; renew the token and restart the worker."
+                            "Skipping instant form creation because the configured Facebook access token has expired; renew the token and restart the worker."
                         );
                         logAutomaticRenewalOutcome(renewalResult);
                     }
@@ -103,7 +111,7 @@ public class FacebookInstantFormPublicationService {
         var configuration = configurationClient.fetchConfiguration();
         if (configuration.isEmpty()) {
             if (configurationUnavailableWarningLogged.compareAndSet(false, true)) {
-                LOGGER.warn("Facebook worker configuration is unavailable; skipping instant form publication");
+                LOGGER.warn("Facebook worker configuration is unavailable; skipping instant form creation");
             }
             return;
         }
@@ -112,7 +120,7 @@ public class FacebookInstantFormPublicationService {
         FacebookWorkerConfiguration config = configuration.get();
         String configuredToken = config.accessToken();
         if (!StringUtils.hasText(configuredToken)) {
-            LOGGER.error("Facebook worker configuration is missing an access token; skipping instant form publication");
+            LOGGER.error("Facebook worker configuration is missing an access token; skipping instant form creation");
             return;
         }
         String currentToken = facebookAdsService.getCurrentAccessToken();
@@ -125,18 +133,35 @@ public class FacebookInstantFormPublicationService {
             }
         }
 
-        List<InstantForm> forms = fetchInstantFormsReadyForPublication();
+        List<InstantForm> forms = fetchApprovedInstantFormDrafts();
         if (forms == null || forms.isEmpty()) {
+            meterRegistry.counter("facebook.instant_form.creation.fetched", "outcome", "empty").increment();
             return;
         }
 
-        forms.forEach(this::processInstantForm);
+        meterRegistry.counter("facebook.instant_form.creation.fetched", "outcome", "available")
+            .increment(forms.size());
+
+        String globalPrivacyPolicyUrl = resolveGlobalPrivacyPolicyUrl();
+
+        forms.forEach(form -> processInstantFormDraft(form, globalPrivacyPolicyUrl));
     }
 
-    private List<InstantForm> fetchInstantFormsReadyForPublication() {
-        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/instant-forms/ready-to-publish");
+    private List<InstantForm> fetchApprovedInstantFormDrafts() {
+        Optional<List<InstantForm>> approvedDrafts = fetchInstantFormsFromBackend(
+            "/instant-forms/approved-drafts",
+            false
+        );
+        if (approvedDrafts.isPresent()) {
+            return approvedDrafts.get();
+        }
+        return fetchInstantFormsFromBackend("/instant-forms/ready-to-publish", true).orElse(Collections.emptyList());
+    }
+
+    private Optional<List<InstantForm>> fetchInstantFormsFromBackend(String path, boolean treatNotFoundAsEmpty) {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, path);
         LOGGER.info(
-            "Requesting instant forms ready for publication from backend: url==>{}, params={}",
+            "Requesting instant forms from backend: url==>{}, params={}",
             url,
             Collections.emptyMap()
         );
@@ -144,9 +169,6 @@ public class FacebookInstantFormPublicationService {
             List<InstantForm> forms = backendClient.get()
                 .uri(url)
                 .exchangeToFlux(response -> {
-                    if (response.statusCode().value() == HttpStatus.NOT_FOUND.value()) {
-                        return Flux.empty();
-                    }
                     if (response.statusCode().isError()) {
                         return response.createException().flatMapMany(Mono::error);
                     }
@@ -155,175 +177,203 @@ public class FacebookInstantFormPublicationService {
                 .collectList()
                 .block();
             LOGGER.info(
-                "Received instant form publication response from backend: url<=={}, response={}",
+                "Received instant form response from backend: url<=={}, response={}",
                 url,
                 forms
             );
-            return forms;
+            if (forms == null) {
+                return Optional.of(Collections.emptyList());
+            }
+            return Optional.of(forms);
+        } catch (WebClientResponseException.NotFound ex) {
+            if (treatNotFoundAsEmpty) {
+                LOGGER.info("Backend responded with 404 for instant form request: url<=={}", url);
+                return Optional.of(Collections.emptyList());
+            }
+            LOGGER.info(
+                "Instant form endpoint not available; falling back to legacy path: url<=={}, status={}",
+                url,
+                ex.getStatusCode()
+            );
+            return Optional.empty();
         } catch (WebClientRequestException ex) {
             LOGGER.warn(
-                "Failed to fetch instant forms ready for publication from backend: url==>{}",
+                "Failed to fetch instant forms from backend: url==>{}",
                 url,
                 ex
             );
-            return Collections.emptyList();
+            return Optional.of(Collections.emptyList());
         } catch (Exception ex) {
             LOGGER.error(
-                "Unexpected error while fetching instant forms ready for publication: url==>{}, message={}",
+                "Unexpected error while fetching instant forms from backend: url==>{}, message={}",
                 url,
                 ex.getMessage(),
                 ex
             );
-            return Collections.emptyList();
+            return Optional.of(Collections.emptyList());
         }
     }
 
-    private void processInstantForm(InstantForm form) {
+    private String resolveGlobalPrivacyPolicyUrl() {
+        String fetched = fetchGlobalPrivacyPolicyUrlFromBackend();
+        if (StringUtils.hasText(fetched)) {
+            cachedGlobalPrivacyPolicyUrl.set(fetched);
+            return fetched;
+        }
+        String cached = cachedGlobalPrivacyPolicyUrl.get();
+        if (StringUtils.hasText(cached)) {
+            LOGGER.info("Using cached global privacy policy URL for instant form creation: url={}", cached);
+        }
+        return cached;
+    }
+
+    private String fetchGlobalPrivacyPolicyUrlFromBackend() {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/settings/privacy_policy_url");
+        LOGGER.info("Requesting global privacy policy URL from backend: url==>{}", url);
+        try {
+            GeneralSetting setting = backendClient.get()
+                .uri(url)
+                .retrieve()
+                .bodyToMono(GeneralSetting.class)
+                .block();
+            LOGGER.info("Received global privacy policy response from backend: url<=={}, response={}", url, setting);
+            if (setting != null && StringUtils.hasText(setting.value())) {
+                privacyPolicyNotFoundLogged.set(false);
+                return setting.value().trim();
+            }
+        } catch (WebClientResponseException.NotFound ex) {
+            if (privacyPolicyNotFoundLogged.compareAndSet(false, true)) {
+                LOGGER.warn("Global privacy policy URL not configured in backend; proceeding without a default value");
+            }
+            LOGGER.info("Backend responded with 404 when fetching global privacy policy URL: url<=={}", url);
+        } catch (Exception ex) {
+            LOGGER.warn(
+                "Failed to fetch global privacy policy URL from backend: url==>{}, message={}",
+                url,
+                ex.getMessage(),
+                ex
+            );
+        }
+        return null;
+    }
+
+    private void processInstantFormDraft(InstantForm form, String globalPrivacyPolicyUrl) {
         if (form == null) {
             return;
         }
-        String facebookFormId = normalizeFacebookFormId(form.facebookFormId());
-        if (!StringUtils.hasText(facebookFormId)) {
-            facebookFormId = tryCreateInstantFormDraft(form);
-            if (!StringUtils.hasText(facebookFormId)) {
-                try {
-                    facebookFormId = resolveFacebookFormIdFromFacebook(form);
-                } catch (FacebookAccessTokenExpiredException ex) {
-                    handleAccessTokenExpiration("publishing instant forms", ex);
-                    return;
-                } catch (FacebookPermissionException ex) {
-                    LOGGER.error(
-                        "Facebook permission error while resolving instant form {} identifier: message={}, details={}",
-                        form.id(),
-                        ex.getMessage(),
-                        ex.getErrorDetails(),
-                        ex
-                    );
-                    return;
-                } catch (Exception ex) {
-                    LOGGER.warn(
-                        "Failed to resolve Facebook form ID for instant form {}: message={}",
-                        form.id(),
-                        ex.getMessage(),
-                        ex
-                    );
-                    return;
-                }
-            }
-        }
-        if (!StringUtils.hasText(facebookFormId)) {
-            LOGGER.warn(
-                "Skipping instant form {} because the Facebook form ID is missing and could not be resolved; persist the draft identifier returned when the form was created (Meta provides the final ID only after publication)",
-                form.id()
+        meterRegistry.counter("facebook.instant_form.creation.processed", "stage", "attempt").increment();
+
+        String existingIdentifier = normalizeExternalIdentifier(form.facebookFormId(), form.externalId());
+        if (StringUtils.hasText(existingIdentifier)) {
+            LOGGER.info(
+                "Skipping instant form {} because the backend already stores an external identifier: facebookFormId={}",
+                form.id(),
+                existingIdentifier
             );
+            meterRegistry.counter("facebook.instant_form.creation.skipped", "reason", "already_created").increment();
             return;
         }
-        try {
-            LOGGER.info(
-                "Publishing approved instant form: id={}, facebookFormId={}",
-                form.id(),
-                facebookFormId
-            );
-            facebookAdsService.publishInstantForm(facebookFormId);
-            JsonNode details = facebookAdsService.fetchInstantForm(facebookFormId);
-            String status = details != null ? details.path("status").asText(null) : null;
-            if (!StringUtils.hasText(status)) {
-                status = form.status();
-            }
-            String resolvedFormId = InstantFormPublicationHelper.normalizeInstantFormId(
-                LOGGER,
-                details != null ? details.path("id").asText(facebookFormId) : facebookFormId,
-                form.shareLink()
-            );
-            String shareLink = resolveShareLink(details, form.shareLink(), resolvedFormId);
-            InstantFormPublicationUpdateRequest request = new InstantFormPublicationUpdateRequest(
-                true,
-                Instant.now(),
-                shareLink,
-                status,
-                resolvedFormId
-            );
-            reportInstantFormPublication(form.id(), request);
-        } catch (FacebookAccessTokenExpiredException ex) {
-            handleAccessTokenExpiration("publishing instant forms", ex);
-        } catch (FacebookPermissionException ex) {
-            LOGGER.error(
-                "Facebook permission error while publishing instant form {}: message={}, details={}",
-                form.id(),
-                ex.getMessage(),
-                ex.getErrorDetails(),
-                ex
-            );
-        } catch (Exception ex) {
-            LOGGER.error(
-                "Unexpected error while publishing instant form {}: message={}",
-                form.id(),
-                ex.getMessage(),
-                ex
-            );
+        if (form.id() == null) {
+            LOGGER.warn("Skipping instant form creation because the backend did not provide a valid identifier");
+            meterRegistry.counter("facebook.instant_form.creation.skipped", "reason", "missing_backend_id").increment();
+            return;
         }
-    }
 
-    private String tryCreateInstantFormDraft(InstantForm form) {
-        if (form == null || form.id() == null) {
-            return null;
-        }
         InstantFormDetails details = fetchInstantFormDetails(form.id());
         if (details == null) {
             LOGGER.warn(
-                "Skipping creation of Facebook instant form draft for {} because backend details could not be retrieved",
+                "Skipping instant form {} because backend details could not be retrieved",
                 form.id()
             );
-            return null;
+            meterRegistry.counter("facebook.instant_form.creation.skipped", "reason", "missing_details").increment();
+            return;
         }
-        if (StringUtils.hasText(details.facebookFormId())) {
-            return normalizeFacebookFormId(details.facebookFormId());
+
+        String persistedIdentifier = normalizeExternalIdentifier(details.facebookFormId(), details.externalId());
+        if (StringUtils.hasText(persistedIdentifier)) {
+            LOGGER.info(
+                "Skipping instant form {} because backend details already include an external identifier: {}",
+                form.id(),
+                persistedIdentifier
+            );
+            meterRegistry.counter("facebook.instant_form.creation.skipped", "reason", "already_persisted").increment();
+            return;
         }
+
         String pageExternalId = normalizeFacebookPageExternalId(form.facebookPageExternalId(), details.facebookPageExternalId());
         if (!StringUtils.hasText(pageExternalId)) {
             LOGGER.warn(
-                "Skipping creation of Facebook instant form draft for {} because the Facebook page external identifier is missing",
+                "Skipping instant form {} because the Facebook page external identifier is missing",
                 form.id()
             );
-            return null;
+            meterRegistry.counter("facebook.instant_form.creation.skipped", "reason", "missing_page").increment();
+            return;
         }
-        InstantFormCreationRequest creationRequest = buildInstantFormCreationRequest(form, details);
+
+        InstantFormCreationRequest creationRequest = buildInstantFormCreationRequest(form, details, globalPrivacyPolicyUrl);
         if (creationRequest == null) {
-            return null;
+            meterRegistry.counter("facebook.instant_form.creation.skipped", "reason", "invalid_payload").increment();
+            return;
         }
-        try {
+
+        if (dryRun || Boolean.TRUE.equals(details.dryRun())) {
             LOGGER.info(
-                "Creating Facebook instant form draft: id={}, pageExternalId={}, name={}",
+                "Dry-run enabled; skipping Meta creation for instant form {} on page {}",
+                form.id(),
+                pageExternalId
+            );
+            meterRegistry.counter("facebook.instant_form.creation.dry_run", "page_id", pageExternalId).increment();
+            return;
+        }
+
+        boolean attemptedCreation = false;
+        long startNanos = 0L;
+        String outcome = "success";
+        String errorTag = "none";
+
+        try {
+            attemptedCreation = true;
+            startNanos = System.nanoTime();
+            LOGGER.info(
+                "Creating Facebook instant form: id={}, pageExternalId={}, name={}",
                 form.id(),
                 pageExternalId,
                 creationRequest.name()
             );
             String createdId = facebookAdsService.createInstantForm(pageExternalId, creationRequest);
             if (!StringUtils.hasText(createdId)) {
+                outcome = "error";
+                errorTag = "missing_id";
                 LOGGER.warn(
-                    "Facebook did not return an identifier when creating instant form {} on page {}; skipping draft persistence",
+                    "Facebook did not return an identifier when creating instant form {} on page {}; skipping persistence",
                     form.id(),
                     pageExternalId
                 );
-                return null;
+                meterRegistry.counter("facebook.instant_form.creation.error", "status", "MISSING_ID").increment();
+                return;
             }
             String normalizedCreatedId = createdId.trim();
             LOGGER.info(
-                "Facebook instant form draft created: id={}, facebookFormId={}, pageExternalId={}",
+                "Facebook instant form created: id={}, facebookFormId={}, pageExternalId={}",
                 form.id(),
                 normalizedCreatedId,
                 pageExternalId
             );
-            reportInstantFormDraftIdentifier(
+            meterRegistry.counter("facebook.instant_form.creation.success", "page_id", pageExternalId).increment();
+            reportInstantFormCreation(
                 form.id(),
                 normalizedCreatedId,
-                StringUtils.hasText(details.status()) ? details.status() : "DRAFT"
+                StringUtils.hasText(details.status()) ? details.status() : "CREATED"
             );
-            return normalizedCreatedId;
         } catch (FacebookAccessTokenExpiredException ex) {
+            outcome = "error";
+            errorTag = "token_expired";
+            meterRegistry.counter("facebook.instant_form.creation.error", "status", "TOKEN_EXPIRED").increment();
             handleAccessTokenExpiration("creating instant forms", ex);
-            return null;
         } catch (FacebookPermissionException ex) {
+            outcome = "error";
+            errorTag = "permission";
+            meterRegistry.counter("facebook.instant_form.creation.error", "status", "PERMISSION").increment();
             LOGGER.error(
                 "Facebook permission error while creating instant form {}: message={}, details={}",
                 form.id(),
@@ -331,94 +381,81 @@ public class FacebookInstantFormPublicationService {
                 ex.getErrorDetails(),
                 ex
             );
-            return null;
+        } catch (WebClientResponseException ex) {
+            outcome = "error";
+            errorTag = String.valueOf(ex.getRawStatusCode());
+            meterRegistry.counter(
+                "facebook.instant_form.creation.error",
+                "status",
+                String.valueOf(ex.getRawStatusCode())
+            ).increment();
+            LOGGER.error(
+                "Facebook API error while creating instant form {}: status={}, responseBody={}",
+                form.id(),
+                ex.getRawStatusCode(),
+                ex.getResponseBodyAsString(),
+                ex
+            );
         } catch (Exception ex) {
+            outcome = "error";
+            errorTag = "unexpected";
+            meterRegistry.counter("facebook.instant_form.creation.error", "status", "UNEXPECTED").increment();
             LOGGER.error(
                 "Unexpected error while creating instant form {}: message={}",
                 form.id(),
                 ex.getMessage(),
                 ex
             );
-            return null;
+        } finally {
+            if (attemptedCreation) {
+                long duration = System.nanoTime() - startNanos;
+                meterRegistry.timer(
+                        "facebook.instant_form.creation.duration",
+                        "outcome",
+                        outcome,
+                        "error",
+                        errorTag,
+                        "page_id",
+                        pageExternalId
+                    )
+                    .record(duration, java.util.concurrent.TimeUnit.NANOSECONDS);
+            }
         }
     }
 
-    private String resolveFacebookFormIdFromFacebook(InstantForm form) {
-        String pageExternalId = StringUtils.hasText(form.facebookPageExternalId()) ? form.facebookPageExternalId().trim() : null;
-        if (!StringUtils.hasText(pageExternalId)) {
+    private String normalizeExternalIdentifier(String... identifiers) {
+        if (identifiers == null) {
+            return null;
+        }
+        for (String identifier : identifiers) {
+            if (StringUtils.hasText(identifier)) {
+                String trimmed = identifier.trim();
+                if (StringUtils.hasText(trimmed)) {
+                    return trimmed;
+                }
+            }
+        }
+        return null;
+    }
+
+    private InstantFormCreationRequest buildInstantFormCreationRequest(
+        InstantForm form,
+        InstantFormDetails details,
+        String globalPrivacyPolicyUrl
+    ) {
+        String name = StringUtils.hasText(details.name()) ? details.name().trim() : form.name();
+        if (!StringUtils.hasText(name)) {
             LOGGER.warn(
-                "Instant form {} is missing the Facebook form ID and the backend did not provide the page external identifier; skipping resolution attempt",
+                "Instant form {} is missing a name; skipping Meta creation",
                 form != null ? form.id() : null
             );
             return null;
         }
-        String formName = StringUtils.hasText(form.name()) ? form.name().trim() : null;
-        if (!StringUtils.hasText(formName)) {
-            LOGGER.warn(
-                "Instant form {} is missing the Facebook form ID and does not have a name to match against drafts on page {}; skipping resolution attempt",
-                form.id(),
-                pageExternalId
-            );
-            return null;
-        }
-        LOGGER.info(
-            "Attempting to resolve missing Facebook form ID for instant form {} by querying page {} with name {}",
-            form.id(),
-            pageExternalId,
-            formName
-        );
-        String resolvedIdentifier = facebookAdsService.findInstantFormIdentifier(pageExternalId, formName);
-        if (StringUtils.hasText(resolvedIdentifier)) {
-            LOGGER.info(
-                "Resolved missing Facebook form ID for instant form {}: facebookFormId={}, pageId={}",
-                form.id(),
-                resolvedIdentifier,
-                pageExternalId
-            );
-            return resolvedIdentifier.trim();
-        }
-        LOGGER.warn(
-            "Could not resolve Facebook form ID for instant form {} using page {} and name {}; ensure the draft identifier returned by Meta is persisted",
-            form.id(),
-            pageExternalId,
-            formName
-        );
-        return null;
-    }
-
-    private String normalizeFacebookFormId(String facebookFormId) {
-        if (!StringUtils.hasText(facebookFormId)) {
-            return null;
-        }
-        String trimmed = facebookFormId.trim();
-        return StringUtils.hasText(trimmed) ? trimmed : null;
-    }
-
-    private String resolveShareLink(JsonNode details, String existingShareLink, String normalizedFormId) {
-        String shareLink = StringUtils.hasText(existingShareLink) ? existingShareLink.trim() : null;
-        if (details != null && !StringUtils.hasText(shareLink)) {
-            String fromDetails = details.path("share_link").asText(null);
-            if (StringUtils.hasText(fromDetails)) {
-                shareLink = fromDetails.trim();
-            }
-        }
-        if (StringUtils.hasText(normalizedFormId)) {
-            shareLink = InstantFormPublicationHelper.buildInstantFormShareLink(normalizedFormId);
-        }
-        return StringUtils.hasText(shareLink) ? shareLink.trim() : null;
-    }
-
-    private InstantFormCreationRequest buildInstantFormCreationRequest(InstantForm form, InstantFormDetails details) {
-        String name = StringUtils.hasText(details.name()) ? details.name().trim() : form.name();
-        if (!StringUtils.hasText(name)) {
-            LOGGER.warn("Instant form {} is missing a name; skipping Facebook draft creation", form != null ? form.id() : null);
-            return null;
-        }
         String locale = normalizeLocale(details.locale());
-        InstantFormCreationRequest.PrivacyPolicy privacyPolicy = resolvePrivacyPolicy(details);
+        InstantFormCreationRequest.PrivacyPolicy privacyPolicy = resolvePrivacyPolicy(details, globalPrivacyPolicyUrl);
         if (privacyPolicy == null || !StringUtils.hasText(privacyPolicy.url())) {
             LOGGER.warn(
-                "Instant form {} does not define a privacy policy URL; skipping Facebook draft creation",
+                "Instant form {} does not define a privacy policy URL; skipping Meta creation",
                 form != null ? form.id() : null
             );
             return null;
@@ -426,7 +463,7 @@ public class FacebookInstantFormPublicationService {
         String followUpActionUrl = resolveFollowUpActionUrl(form, details);
         if (!StringUtils.hasText(followUpActionUrl)) {
             LOGGER.warn(
-                "Instant form {} does not define a follow-up action URL; skipping Facebook draft creation",
+                "Instant form {} does not define a follow-up action URL; skipping Meta creation",
                 form != null ? form.id() : null
             );
             return null;
@@ -501,18 +538,30 @@ public class FacebookInstantFormPublicationService {
         return new InstantFormCreationRequest.Question(type, key, label, options, helperText, required, allowMultiSelect);
     }
 
-    private InstantFormCreationRequest.PrivacyPolicy resolvePrivacyPolicy(InstantFormDetails details) {
+    private InstantFormCreationRequest.PrivacyPolicy resolvePrivacyPolicy(
+        InstantFormDetails details,
+        String globalPrivacyPolicyUrl
+    ) {
+        String linkText = "Política de Privacidade";
+        if (details.privacyPolicy() != null && StringUtils.hasText(details.privacyPolicy().linkText())) {
+            linkText = details.privacyPolicy().linkText().trim();
+        }
+
+        String url = null;
         if (details.privacyPolicy() != null && StringUtils.hasText(details.privacyPolicy().url())) {
-            String url = details.privacyPolicy().url().trim();
-            String linkText = StringUtils.hasText(details.privacyPolicy().linkText())
-                ? details.privacyPolicy().linkText().trim()
-                : "Política de Privacidade";
-            return new InstantFormCreationRequest.PrivacyPolicy(url, linkText);
+            url = details.privacyPolicy().url().trim();
+        } else if (StringUtils.hasText(details.privacyPolicyUrl())) {
+            url = details.privacyPolicyUrl().trim();
+        } else if (StringUtils.hasText(details.experimentPrivacyPolicyUrl())) {
+            url = details.experimentPrivacyPolicyUrl().trim();
+        } else if (StringUtils.hasText(globalPrivacyPolicyUrl)) {
+            url = globalPrivacyPolicyUrl.trim();
         }
-        if (StringUtils.hasText(details.privacyPolicyUrl())) {
-            return new InstantFormCreationRequest.PrivacyPolicy(details.privacyPolicyUrl().trim(), "Política de Privacidade");
+
+        if (!StringUtils.hasText(url)) {
+            return null;
         }
-        return null;
+        return new InstantFormCreationRequest.PrivacyPolicy(url, linkText);
     }
 
     private String resolveFollowUpActionUrl(InstantForm form, InstantFormDetails details) {
@@ -521,6 +570,9 @@ public class FacebookInstantFormPublicationService {
         }
         if (StringUtils.hasText(details.followUpActionUrl())) {
             return details.followUpActionUrl().trim();
+        }
+        if (StringUtils.hasText(details.experimentFollowUpUrl())) {
+            return details.experimentFollowUpUrl().trim();
         }
         if (form != null && StringUtils.hasText(form.shareLink())) {
             return form.shareLink().trim();
@@ -575,7 +627,7 @@ public class FacebookInstantFormPublicationService {
     private void reportInstantFormPublication(long formId, InstantFormPublicationUpdateRequest request) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/instant-forms/" + formId + "/publication");
         LOGGER.info(
-            "Reporting instant form publication to backend: url==>{}, payload={}",
+            "Reporting instant form status to backend: url==>{}, payload={}",
             url,
             request
         );
@@ -586,10 +638,10 @@ public class FacebookInstantFormPublicationService {
                 .retrieve()
                 .toBodilessEntity()
                 .block();
-            LOGGER.info("Successfully reported instant form publication to backend: url<=={}", url);
+            LOGGER.info("Successfully reported instant form status to backend: url<=={}", url);
         } catch (Exception ex) {
             LOGGER.warn(
-                "Failed to report instant form publication to backend: url==>{}, message={}",
+                "Failed to report instant form status to backend: url==>{}, message={}",
                 url,
                 ex.getMessage(),
                 ex
@@ -597,14 +649,20 @@ public class FacebookInstantFormPublicationService {
         }
     }
 
-    private void reportInstantFormDraftIdentifier(long formId, String facebookFormId, String status) {
+    private void reportInstantFormCreation(long formId, String facebookFormId, String status) {
         LOGGER.info(
-            "Reporting instant form draft identifier to backend: id={}, facebookFormId={}, status={}",
+            "Reporting instant form creation to backend: id={}, facebookFormId={}, status={}",
             formId,
             facebookFormId,
             status
         );
-        InstantFormPublicationUpdateRequest request = new InstantFormPublicationUpdateRequest(false, null, null, status, facebookFormId);
+        InstantFormPublicationUpdateRequest request = new InstantFormPublicationUpdateRequest(
+            false,
+            null,
+            null,
+            StringUtils.hasText(status) ? status : "CREATED",
+            facebookFormId
+        );
         reportInstantFormPublication(formId, request);
     }
 
@@ -622,7 +680,7 @@ public class FacebookInstantFormPublicationService {
         accessTokenExpiryWarningLogged.set(false);
         if (firstDetection) {
             LOGGER.error(
-                "Facebook access token expired while {}; the worker will pause publication until renewal. message={}, details={}",
+                "Facebook access token expired while {}; the worker will pause instant form creation until renewal. message={}, details={}",
                 context,
                 ex.getMessage(),
                 ex.getErrorDetails()
@@ -672,6 +730,7 @@ public class FacebookInstantFormPublicationService {
     private record InstantForm(
         Long id,
         String facebookFormId,
+        String externalId,
         String name,
         String status,
         Long facebookPageId,
@@ -688,6 +747,7 @@ public class FacebookInstantFormPublicationService {
         Long id,
         String facebookPageExternalId,
         String facebookFormId,
+        String externalId,
         String name,
         String status,
         String locale,
@@ -696,7 +756,10 @@ public class FacebookInstantFormPublicationService {
         FollowUpAction followUpAction,
         String privacyPolicyUrl,
         PrivacyPolicy privacyPolicy,
-        List<Question> questions
+        List<Question> questions,
+        String experimentFollowUpUrl,
+        String experimentPrivacyPolicyUrl,
+        Boolean dryRun
     ) {
     }
 
@@ -722,5 +785,9 @@ public class FacebookInstantFormPublicationService {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record QuestionOption(String label, String value) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record GeneralSetting(String name, String value) {
     }
 }

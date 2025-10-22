@@ -714,9 +714,13 @@ public class FacebookCampaignService {
             }
             return new InstantFormDestination(shareLink, normalizedFormId);
         }
-        if (!StringUtils.hasText(facebookFormId)) {
+        String publishIdentifier = StringUtils.hasText(facebookFormId) ? facebookFormId : normalizedFormId;
+        if (StringUtils.hasText(publishIdentifier)) {
+            publishIdentifier = publishIdentifier.trim();
+        }
+        if (!StringUtils.hasText(publishIdentifier)) {
             LOGGER.warn(
-                "Experiment {} references an instant form without a Facebook form ID; skipping publication",
+                "Experiment {} references an instant form without a resolvable Facebook identifier; skipping publication",
                 experiment.id()
             );
             return new InstantFormDestination(shareLink, normalizedFormId);
@@ -725,14 +729,17 @@ public class FacebookCampaignService {
             LOGGER.info(
                 "Publishing approved instant form before creating Facebook campaign: experimentId={}, formId={}",
                 experiment.id(),
-                facebookFormId
+                publishIdentifier
             );
-            facebookAdsService.publishInstantForm(facebookFormId);
-            JsonNode details = facebookAdsService.fetchInstantForm(facebookFormId);
+            facebookAdsService.publishInstantForm(publishIdentifier);
+            JsonNode details = facebookAdsService.fetchInstantForm(publishIdentifier);
             String status = details != null ? details.path("status").asText(null) : null;
+            if (!StringUtils.hasText(status)) {
+                status = form.status();
+            }
             String resolvedFormId = InstantFormPublicationHelper.normalizeInstantFormId(
                 LOGGER,
-                details != null ? details.path("id").asText(null) : normalizedFormId,
+                details != null ? details.path("id").asText(publishIdentifier) : publishIdentifier,
                 shareLink
             );
             if (StringUtils.hasText(resolvedFormId) && !resolvedFormId.equals(normalizedFormId)) {
@@ -744,10 +751,19 @@ public class FacebookCampaignService {
                 normalizedFormId = resolvedFormId;
             }
             if (!StringUtils.hasText(normalizedFormId)) {
+                normalizedFormId = resolvedFormId;
+            }
+            if (!StringUtils.hasText(normalizedFormId)) {
                 LOGGER.info(
                     "Meta did not return the final lead form identifier for instant form {}; the CTA will continue to rely on the share link until it is available.",
                     form.id()
                 );
+            }
+            if (!StringUtils.hasText(shareLink) && details != null) {
+                String shareLinkFromFacebook = details.path("share_link").asText(null);
+                if (StringUtils.hasText(shareLinkFromFacebook)) {
+                    shareLink = shareLinkFromFacebook.trim();
+                }
             }
             if (StringUtils.hasText(normalizedFormId)) {
                 shareLink = InstantFormPublicationHelper.buildInstantFormShareLink(normalizedFormId);

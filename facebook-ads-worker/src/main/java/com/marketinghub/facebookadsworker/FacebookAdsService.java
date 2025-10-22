@@ -239,6 +239,15 @@ public class FacebookAdsService {
                 if (question.options() != null && !question.options().isEmpty()) {
                     questionMap.put("options", question.options());
                 }
+                if (question.helperText() != null && !question.helperText().isBlank()) {
+                    questionMap.put("helper_text", question.helperText());
+                }
+                if (question.required() != null) {
+                    questionMap.put("required", question.required());
+                }
+                if (question.allowMultiSelect() != null) {
+                    questionMap.put("allow_multi_select", question.allowMultiSelect());
+                }
                 questions.add(questionMap);
             }
             if (!questions.isEmpty()) {
@@ -689,9 +698,17 @@ public class FacebookAdsService {
         public record PrivacyPolicy(String url, String linkText) {
         }
 
-        public record Question(String type, String key, String label, List<Map<String, Object>> options) {
+        public record Question(
+            String type,
+            String key,
+            String label,
+            List<Map<String, Object>> options,
+            String helperText,
+            Boolean required,
+            Boolean allowMultiSelect
+        ) {
             public Question(String type) {
-                this(type, null, null, null);
+                this(type, null, null, null, null, null, null);
             }
         }
     }

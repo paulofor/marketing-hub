@@ -447,7 +447,7 @@ public class FacebookInstantFormPublicationService {
     private List<InstantFormCreationRequest.Question> buildQuestions(InstantFormDetails details) {
         List<InstantFormCreationRequest.Question> resolved = new ArrayList<>();
         if (details.questions() != null) {
-            for (InstantFormDetails.Question question : details.questions()) {
+            for (Question question : details.questions()) {
                 InstantFormCreationRequest.Question mapped = mapQuestion(question);
                 if (mapped != null) {
                     resolved.add(mapped);
@@ -461,7 +461,7 @@ public class FacebookInstantFormPublicationService {
         return resolved;
     }
 
-    private InstantFormCreationRequest.Question mapQuestion(InstantFormDetails.Question question) {
+    private InstantFormCreationRequest.Question mapQuestion(Question question) {
         if (question == null || !StringUtils.hasText(question.type())) {
             return null;
         }
@@ -471,7 +471,7 @@ public class FacebookInstantFormPublicationService {
         List<Map<String, Object>> options = null;
         if (question.options() != null && !question.options().isEmpty()) {
             options = new ArrayList<>(question.options().size());
-            for (InstantFormDetails.QuestionOption option : question.options()) {
+            for (QuestionOption option : question.options()) {
                 if (option == null) {
                     continue;
                 }

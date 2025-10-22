@@ -75,7 +75,12 @@ form aprovado, o worker publica o formulário antes de criar a campanha. O fluxo
    agradecimento vindos do experimento, além da política de privacidade global
    configurada em **Configurações gerais** quando o formulário não define um
    link próprio. Se o backend não fornecer perguntas, o worker mantém as
-   perguntas padrão (`FULL_NAME` e `EMAIL`). Caso nenhuma URL de follow-up seja
+   perguntas padrão (`FULL_NAME` e `EMAIL`). Quando perguntas personalizadas são
+   informadas, cada item deve seguir a estrutura esperada (`type`, `key`,
+   `label`, `helperText`, `required`, `allowMultiSelect` e `options` com objetos
+   contendo `label`/`value`), permitindo que o serviço faça o mapeamento sem
+   erros de compilação e gere o payload compatível com a Graph API. Caso nenhuma
+   URL de follow-up seja
    devolvida (nem pelo experimento nem pelo próprio formulário), o serviço usa o
    `shareLink` configurado e, se ainda assim o valor continuar ausente, ignora a
    publicação registrando um aviso até que a aplicação seja corrigida. O serviço

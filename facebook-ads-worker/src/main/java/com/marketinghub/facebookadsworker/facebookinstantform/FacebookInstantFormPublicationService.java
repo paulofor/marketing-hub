@@ -26,8 +26,10 @@ import reactor.core.publisher.Mono;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -413,18 +415,15 @@ public class FacebookInstantFormPublicationService {
             return null;
         }
         String locale = normalizeLocale(details.locale());
-        String privacyPolicyUrl = StringUtils.hasText(details.privacyPolicyUrl()) ? details.privacyPolicyUrl().trim() : null;
-        if (!StringUtils.hasText(privacyPolicyUrl)) {
+        InstantFormCreationRequest.PrivacyPolicy privacyPolicy = resolvePrivacyPolicy(details);
+        if (privacyPolicy == null || !StringUtils.hasText(privacyPolicy.url())) {
             LOGGER.warn(
                 "Instant form {} does not define a privacy policy URL; skipping Facebook draft creation",
                 form != null ? form.id() : null
             );
             return null;
         }
-        String followUpActionUrl = StringUtils.hasText(details.followUpActionUrl()) ? details.followUpActionUrl().trim() : null;
-        if (!StringUtils.hasText(followUpActionUrl)) {
-            followUpActionUrl = StringUtils.hasText(form.shareLink()) ? form.shareLink().trim() : null;
-        }
+        String followUpActionUrl = resolveFollowUpActionUrl(form, details);
         if (!StringUtils.hasText(followUpActionUrl)) {
             LOGGER.warn(
                 "Instant form {} does not define a follow-up action URL; skipping Facebook draft creation",
@@ -432,22 +431,111 @@ public class FacebookInstantFormPublicationService {
             );
             return null;
         }
+        String followUpActionText = resolveFollowUpActionText(details);
+        List<InstantFormCreationRequest.Question> questions = buildQuestions(details);
 
         return new InstantFormCreationRequest(
             name.trim(),
             locale,
-            new InstantFormCreationRequest.PrivacyPolicy(privacyPolicyUrl, "Política de Privacidade"),
-            defaultQuestions(),
-            "Visitar site",
+            privacyPolicy,
+            questions,
+            followUpActionText,
             followUpActionUrl
         );
     }
 
-    private List<InstantFormCreationRequest.Question> defaultQuestions() {
-        List<InstantFormCreationRequest.Question> questions = new ArrayList<>();
-        questions.add(new InstantFormCreationRequest.Question("FULL_NAME"));
-        questions.add(new InstantFormCreationRequest.Question("EMAIL"));
-        return questions;
+    private List<InstantFormCreationRequest.Question> buildQuestions(InstantFormDetails details) {
+        List<InstantFormCreationRequest.Question> resolved = new ArrayList<>();
+        if (details.questions() != null) {
+            for (InstantFormDetails.Question question : details.questions()) {
+                InstantFormCreationRequest.Question mapped = mapQuestion(question);
+                if (mapped != null) {
+                    resolved.add(mapped);
+                }
+            }
+        }
+        if (resolved.isEmpty()) {
+            resolved.add(new InstantFormCreationRequest.Question("FULL_NAME"));
+            resolved.add(new InstantFormCreationRequest.Question("EMAIL"));
+        }
+        return resolved;
+    }
+
+    private InstantFormCreationRequest.Question mapQuestion(InstantFormDetails.Question question) {
+        if (question == null || !StringUtils.hasText(question.type())) {
+            return null;
+        }
+        String type = question.type().trim();
+        String key = StringUtils.hasText(question.key()) ? question.key().trim() : null;
+        String label = StringUtils.hasText(question.label()) ? question.label().trim() : null;
+        List<Map<String, Object>> options = null;
+        if (question.options() != null && !question.options().isEmpty()) {
+            options = new ArrayList<>(question.options().size());
+            for (InstantFormDetails.QuestionOption option : question.options()) {
+                if (option == null) {
+                    continue;
+                }
+                String optionLabel = StringUtils.hasText(option.label()) ? option.label().trim() : null;
+                String optionValue = StringUtils.hasText(option.value()) ? option.value().trim() : optionLabel;
+                if (!StringUtils.hasText(optionLabel) && !StringUtils.hasText(optionValue)) {
+                    continue;
+                }
+                Map<String, Object> mappedOption = new LinkedHashMap<>();
+                if (StringUtils.hasText(optionLabel)) {
+                    mappedOption.put("label", optionLabel);
+                }
+                if (StringUtils.hasText(optionValue)) {
+                    mappedOption.put("value", optionValue);
+                }
+                if (!mappedOption.isEmpty()) {
+                    options.add(mappedOption);
+                }
+            }
+            if (options.isEmpty()) {
+                options = null;
+            }
+        }
+        String helperText = StringUtils.hasText(question.helperText()) ? question.helperText().trim() : null;
+        Boolean required = question.required();
+        Boolean allowMultiSelect = question.allowMultiSelect();
+        return new InstantFormCreationRequest.Question(type, key, label, options, helperText, required, allowMultiSelect);
+    }
+
+    private InstantFormCreationRequest.PrivacyPolicy resolvePrivacyPolicy(InstantFormDetails details) {
+        if (details.privacyPolicy() != null && StringUtils.hasText(details.privacyPolicy().url())) {
+            String url = details.privacyPolicy().url().trim();
+            String linkText = StringUtils.hasText(details.privacyPolicy().linkText())
+                ? details.privacyPolicy().linkText().trim()
+                : "Política de Privacidade";
+            return new InstantFormCreationRequest.PrivacyPolicy(url, linkText);
+        }
+        if (StringUtils.hasText(details.privacyPolicyUrl())) {
+            return new InstantFormCreationRequest.PrivacyPolicy(details.privacyPolicyUrl().trim(), "Política de Privacidade");
+        }
+        return null;
+    }
+
+    private String resolveFollowUpActionUrl(InstantForm form, InstantFormDetails details) {
+        if (details.followUpAction() != null && StringUtils.hasText(details.followUpAction().url())) {
+            return details.followUpAction().url().trim();
+        }
+        if (StringUtils.hasText(details.followUpActionUrl())) {
+            return details.followUpActionUrl().trim();
+        }
+        if (form != null && StringUtils.hasText(form.shareLink())) {
+            return form.shareLink().trim();
+        }
+        return null;
+    }
+
+    private String resolveFollowUpActionText(InstantFormDetails details) {
+        if (details.followUpAction() != null && StringUtils.hasText(details.followUpAction().text())) {
+            return details.followUpAction().text().trim();
+        }
+        if (StringUtils.hasText(details.followUpActionText())) {
+            return details.followUpActionText().trim();
+        }
+        return "Visitar site";
     }
 
     private String normalizeFacebookPageExternalId(String fromForm, String fromDetails) {
@@ -604,7 +692,35 @@ public class FacebookInstantFormPublicationService {
         String status,
         String locale,
         String followUpActionUrl,
-        String privacyPolicyUrl
+        String followUpActionText,
+        FollowUpAction followUpAction,
+        String privacyPolicyUrl,
+        PrivacyPolicy privacyPolicy,
+        List<Question> questions
     ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record FollowUpAction(String url, String text) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record PrivacyPolicy(String url, String linkText) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record Question(
+        String type,
+        String key,
+        String label,
+        String helperText,
+        Boolean required,
+        Boolean allowMultiSelect,
+        List<QuestionOption> options
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record QuestionOption(String label, String value) {
     }
 }

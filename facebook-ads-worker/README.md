@@ -70,13 +70,16 @@ form aprovado, o worker publica o formulário antes de criar a campanha. O fluxo
    possui `facebookFormId`, o `FacebookInstantFormPublicationService` busca os
    detalhes completos no backend (`GET /api/instant-forms/{id}`) e cria o
    rascunho diretamente na Graph API com `POST /{pageId}/leadgen_forms`. O
-   payload inclui `locale`, links de política de privacidade e agradecimento e
-   as perguntas padrão (`FULL_NAME` e `EMAIL`). A Graph API passou a exigir o
-   campo `follow_up_action_url` em todas as versões recentes; por isso o worker
-   reaproveita `followUpActionUrl` retornado pelo backend ou, na ausência dele,
-   utiliza o `shareLink` configurado no formulário. Caso nenhum dos dois esteja
-   disponível, o rascunho é ignorado e um aviso é registrado em log até que a
-   URL seja preenchida. O serviço resolve o token da
+   payload agora replica integralmente o que foi planejado no backend: `locale`,
+   perguntas customizadas, `follow_up_action_url` e o texto do CTA de
+   agradecimento vindos do experimento, além da política de privacidade global
+   configurada em **Configurações gerais** quando o formulário não define um
+   link próprio. Se o backend não fornecer perguntas, o worker mantém as
+   perguntas padrão (`FULL_NAME` e `EMAIL`). Caso nenhuma URL de follow-up seja
+   devolvida (nem pelo experimento nem pelo próprio formulário), o serviço usa o
+   `shareLink` configurado e, se ainda assim o valor continuar ausente, ignora a
+   publicação registrando um aviso até que a aplicação seja corrigida. O serviço
+   resolve o token da
    página via `/{pageId}?fields=access_token`, registra o identificador
    devolvido pela Meta com `PATCH /api/instant-forms/{id}/publication` (mantendo
    `published = false`) e evita duplicações sempre que o backend já possuir o

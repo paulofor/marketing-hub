@@ -104,18 +104,20 @@ form aprovado, o worker publica o formulário antes de criar a campanha. O fluxo
    os dados persistidos. Se, por algum motivo, o formulário ainda não estiver
    publicado ou a Meta não tiver retornado o ID final, o serviço tenta novamente
    publicar antes de criar o criativo, aplicando a mesma validação para ignorar
-   formulários que já estejam `ACTIVE`. Enquanto o ID definitivo não estiver
-   disponível, o CTA permanece apontando para o link de compartilhamento e o
-   worker evita enviar `lead_gen_form_id`, impedindo erros do tipo `(#100) Param
-   call_to_action[value][lead_gen_form_id] must be a valid Lead Gen Data id`.
-   Assim que o identificador for confirmado, o worker passa a anexá-lo ao CTA,
-   substitui o link externo do criativo pelo share link gerado pela Meta
-   (`https://www.facebook.com/ads/leadgen/?id=<id>`), define `destination_type =
-   ON_AD`, `optimization_goal = LEAD_GENERATION` e ajusta o objetivo da campanha
-   para `OUTCOME_LEADS`, direcionando os usuários diretamente ao instant form
-   selecionado conforme as regras mais recentes da Graph API, que exigem a
-   presença de um campo `link` mesmo quando o destino é o formulário dentro do
-   próprio ecossistema do Facebook/Instagram.
+   formulários que já estejam `ACTIVE`. Quando o backend fornece apenas o
+   `shareLink`, o worker extrai o identificador presente no link para publicar o
+   formulário e persiste o ID definitivo devolvido pela Graph API. Enquanto o ID
+   definitivo não estiver disponível, o CTA permanece apontando para o link de
+   compartilhamento e o worker evita enviar `lead_gen_form_id`, impedindo erros
+   do tipo `(#100) Param call_to_action[value][lead_gen_form_id] must be a valid
+   Lead Gen Data id`. Assim que o identificador for confirmado, o worker passa a
+   anexá-lo ao CTA, substitui o link externo do criativo pelo share link gerado
+   pela Meta (`https://www.facebook.com/ads/leadgen/?id=<id>`), define
+   `destination_type = ON_AD`, `optimization_goal = LEAD_GENERATION` e ajusta o
+   objetivo da campanha para `OUTCOME_LEADS`, direcionando os usuários
+   diretamente ao instant form selecionado conforme as regras mais recentes da
+   Graph API, que exigem a presença de um campo `link` mesmo quando o destino é
+   o formulário dentro do próprio ecossistema do Facebook/Instagram.
 
 Os experimentos agora expõem `followUpActionUrl` como campo obrigatório para
 formular a jornada de agradecimento. O backend normaliza a URL e a replica em

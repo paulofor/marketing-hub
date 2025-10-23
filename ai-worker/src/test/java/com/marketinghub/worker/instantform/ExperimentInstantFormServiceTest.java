@@ -219,6 +219,61 @@ class ExperimentInstantFormServiceTest {
     }
 
     @Test
+    void generateShouldUseExperimentFollowUpWhenDefined() {
+        Experiment experiment = new Experiment();
+        experiment.setId(77L);
+        experiment.setInstantFormsToGenerate(1);
+        Hypothesis hypothesis = new Hypothesis();
+        experiment.setHypothesisRef(hypothesis);
+        FacebookPage page = new FacebookPage();
+        page.setId(654L);
+        experiment.setFacebookPage(page);
+        JourneyTemplate template = new JourneyTemplate();
+        experiment.setJourneyTemplate(template);
+        experiment.setFollowUpActionUrl("https://marketinghub.com/obrigado");
+
+        JourneyStep step = new JourneyStep();
+        step.setId(12L);
+        step.setStimulusType(JourneyStimulusType.INSTANT_FORM);
+        step.setPosition(1);
+        step.setName("Cadastro");
+
+        when(experimentGenerationRepository.findAllToGenerateInstantForms()).thenReturn(List.of(experiment));
+        when(journeyStepRepository.findByTemplateOrderByPositionAsc(template)).thenReturn(List.of(step));
+        when(journeyRepository.findFirstByExperimentIdOrderByCreatedAtDesc(77L)).thenReturn(Optional.empty());
+        when(privacyPolicyProvider.getPrivacyPolicyUrl()).thenReturn(Optional.empty());
+
+        ExperimentInstantFormChatGptClient.InstantFormPlan plan =
+                new ExperimentInstantFormChatGptClient.InstantFormPlan(
+                        "ai-form-generated",
+                        "Formulário com CTA",
+                        "draft",
+                        "pt_BR",
+                        "https://example.com/cta",
+                        null,
+                        null,
+                        null,
+                        List.of()
+                );
+        ExperimentInstantFormChatGptClient.Generation generation =
+                new ExperimentInstantFormChatGptClient.Generation(
+                        List.of(plan),
+                        "prompt",
+                        "[]",
+                        "gpt-4o"
+                );
+
+        when(chatGptClient.generateInstantForms(eq(experiment), isNull(), eq(1), anyList())).thenReturn(generation);
+        when(instantFormRepository.save(any(FacebookInstantForm.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Map<Long, List<FacebookInstantForm>> generated = service.generate();
+
+        assertThat(generated).containsKey(77L);
+        FacebookInstantForm saved = generated.get(77L).get(0);
+        assertThat(saved.getFollowUpActionUrl()).isEqualTo("https://marketinghub.com/obrigado");
+    }
+
+    @Test
     void generateShouldSkipWhenNoInstantFormSteps() {
         Experiment experiment = new Experiment();
         experiment.setId(11L);

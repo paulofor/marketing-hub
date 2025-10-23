@@ -111,7 +111,6 @@ class ExperimentInstantFormServiceTest {
         when(journeyStepRepository.findByTemplateOrderByPositionAsc(template)).thenReturn(List.of(step));
         when(journeyRepository.findFirstByExperimentIdOrderByCreatedAtDesc(42L)).thenReturn(Optional.empty());
         when(privacyPolicyProvider.getPrivacyPolicyUrl()).thenReturn(Optional.of("https://example.com/privacidade"));
-        when(experimentFollowUpResolver.resolveFollowUpActionUrl(42L)).thenReturn(Optional.empty());
 
         ExperimentInstantFormChatGptClient.InstantFormPlan plan =
                 new ExperimentInstantFormChatGptClient.InstantFormPlan(
@@ -192,7 +191,6 @@ class ExperimentInstantFormServiceTest {
         when(journeyStepRepository.findByTemplateOrderByPositionAsc(template)).thenReturn(List.of(step));
         when(journeyRepository.findFirstByExperimentIdOrderByCreatedAtDesc(55L)).thenReturn(Optional.empty());
         when(privacyPolicyProvider.getPrivacyPolicyUrl()).thenReturn(Optional.empty());
-        when(experimentFollowUpResolver.resolveFollowUpActionUrl(55L)).thenReturn(Optional.empty());
 
         ExperimentInstantFormChatGptClient.InstantFormPlan plan =
                 new ExperimentInstantFormChatGptClient.InstantFormPlan(
@@ -252,7 +250,6 @@ class ExperimentInstantFormServiceTest {
         when(journeyStepRepository.findByTemplateOrderByPositionAsc(template)).thenReturn(List.of(step));
         when(journeyRepository.findFirstByExperimentIdOrderByCreatedAtDesc(77L)).thenReturn(Optional.empty());
         when(privacyPolicyProvider.getPrivacyPolicyUrl()).thenReturn(Optional.empty());
-        when(experimentFollowUpResolver.resolveFollowUpActionUrl(77L)).thenReturn(Optional.empty());
 
         ExperimentInstantFormChatGptClient.InstantFormPlan plan =
                 new ExperimentInstantFormChatGptClient.InstantFormPlan(

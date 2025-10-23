@@ -89,7 +89,9 @@ operado pelo `FacebookInstantFormPublicationService` foi simplificado para uma
    resolvido e o payload enviado é registrado com logs estruturados (`==>`/`<==`)
    mascarando o `access_token`. Counters e timers em `facebook.instant_form.*`
    monitoram quantidade processada, tempo de criação e erros por código HTTP,
-   permitindo alertas operacionais.
+   permitindo alertas operacionais. Essas métricas são alimentadas pela
+   infraestrutura padrão do [Spring Boot Actuator](https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html),
+   garantindo que um `MeterRegistry` esteja sempre disponível para o worker.
 4. **Persistência e idempotência** – Ao receber o `form_id`/`draft_id` da Meta o
    worker envia `PATCH /api/instant-forms/{id}/publication` com `status =
    CREATED`, `published = false` e o identificador externo. Se o backend já

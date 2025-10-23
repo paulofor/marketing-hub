@@ -167,8 +167,8 @@ public class ExperimentInstantFormService {
         }
 
         String resolvedFollowUpUrl = coalesceUrl(
-                sanitizeUrl(plan.followUpActionUrl()),
-                followUpActionUrl
+                followUpActionUrl,
+                sanitizeUrl(plan.followUpActionUrl())
         );
         String resolvedPrivacyPolicyUrl = coalesceUrl(
                 sanitizeUrl(plan.privacyPolicyUrl()),

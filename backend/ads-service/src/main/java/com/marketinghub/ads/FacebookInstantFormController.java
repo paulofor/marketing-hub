@@ -81,6 +81,14 @@ public class FacebookInstantFormController {
                 .toList();
     }
 
+    @GetMapping("/instant-forms/approved-drafts")
+    public List<FacebookInstantFormPublicationDto> approvedDrafts() {
+        return repository.findApprovedDraftsWithoutExternalId().stream()
+                .filter(form -> form.getPage() != null)
+                .map(this::toPublicationDto)
+                .toList();
+    }
+
     @PostMapping("/hypotheses/{hypothesisId}/instant-forms")
     @Transactional
     public FacebookInstantFormDto create(@PathVariable UUID hypothesisId,

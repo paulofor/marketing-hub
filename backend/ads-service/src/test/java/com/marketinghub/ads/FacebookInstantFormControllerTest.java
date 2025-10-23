@@ -2,6 +2,7 @@ package com.marketinghub.ads;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.dto.CreateFacebookInstantFormRequest;
+import com.marketinghub.ads.dto.FacebookInstantFormDto;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.niche.MarketNiche;
@@ -138,6 +139,97 @@ class FacebookInstantFormControllerTest {
         mockMvc.perform(get("/api/instant-forms/ready-to-publish"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].facebookFormId").value((Object) null));
+    }
+
+    @Test
+    void approvedDraftsEndpointReturnsOnlyApprovedFormsWithoutExternalId() throws Exception {
+        CreateFacebookInstantFormRequest withoutIdentifier = new CreateFacebookInstantFormRequest(
+                page.getId(),
+                null,
+                "Formulário sem ID",
+                "DRAFT",
+                "pt_BR",
+                null,
+                null,
+                null,
+                "https://example.com/follow-up",
+                "https://example.com/privacy",
+                "gpt-4o",
+                "Prompt sem id"
+        );
+
+        String draftResponse = mockMvc.perform(post("/api/hypotheses/" + hypothesis.getId() + "/instant-forms")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(withoutIdentifier)))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        FacebookInstantFormDto draftDto = objectMapper.readValue(draftResponse, FacebookInstantFormDto.class);
+
+        mockMvc.perform(patch("/api/instant-forms/" + draftDto.id() + "/approval")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"approved\":true}"))
+                .andExpect(status().isOk());
+
+        CreateFacebookInstantFormRequest withIdentifier = new CreateFacebookInstantFormRequest(
+                page.getId(),
+                "FORM-999",
+                "Formulário com ID",
+                "APPROVED",
+                "pt_BR",
+                null,
+                null,
+                null,
+                "https://example.com/follow-up",
+                "https://example.com/privacy",
+                "gpt-4o",
+                "Prompt com id"
+        );
+
+        String secondResponse = mockMvc.perform(post("/api/hypotheses/" + hypothesis.getId() + "/instant-forms")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(withIdentifier)))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        FacebookInstantFormDto secondDto = objectMapper.readValue(secondResponse, FacebookInstantFormDto.class);
+
+        mockMvc.perform(patch("/api/instant-forms/" + secondDto.id() + "/approval")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"approved\":true}"))
+                .andExpect(status().isOk());
+
+        CreateFacebookInstantFormRequest notApproved = new CreateFacebookInstantFormRequest(
+                page.getId(),
+                null,
+                "Formulário pendente",
+                "DRAFT",
+                "pt_BR",
+                null,
+                null,
+                null,
+                "https://example.com/follow-up",
+                "https://example.com/privacy",
+                "gpt-4o",
+                "Prompt pendente"
+        );
+
+        mockMvc.perform(post("/api/hypotheses/" + hypothesis.getId() + "/instant-forms")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(notApproved)))
+                .andExpect(status().isOk());
+
+        instantFormRepository.flush();
+
+        mockMvc.perform(get("/api/instant-forms/approved-drafts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(draftDto.id()))
                 .andExpect(jsonPath("$[0].facebookFormId").value((Object) null));
     }
 

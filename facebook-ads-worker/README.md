@@ -62,78 +62,49 @@ seguem o padrão visual `==>` para requisições (por exemplo, `url==>https://..
 e `<==` para respostas, inclusive em cenários de erro, permitindo identificar
 rapidamente a direção do tráfego durante uma análise.
 
-Quando a jornada do experimento define um novo passo de captura com instant
-form aprovado, o worker publica o formulário antes de criar a campanha. O fluxo
-é dividido em duas etapas complementares:
+Quando a jornada do experimento exige um Instant Form aprovado, o worker garante
+que o formulário seja criado na Meta antes da ativação das campanhas. O fluxo
+operado pelo `FacebookInstantFormPublicationService` foi simplificado para uma
+única etapa transacional:
 
-1. **Criação do rascunho na Meta** – Sempre que um formulário aprovado não
-   possui `facebookFormId`, o `FacebookInstantFormPublicationService` busca os
-   detalhes completos no backend (`GET /api/instant-forms/{id}`) e cria o
-   rascunho diretamente na Graph API com `POST /{pageId}/leadgen_forms`. O
-   payload agora replica integralmente o que foi planejado no backend: `locale`,
-   perguntas customizadas, `follow_up_action_url` e o texto do CTA de
-   agradecimento vindos do experimento, além da política de privacidade global
-   configurada em **Configurações gerais** quando o formulário não define um
-   link próprio. Se o backend não fornecer perguntas, o worker mantém as
-   perguntas padrão (`FULL_NAME` e `EMAIL`). Quando perguntas personalizadas são
-   informadas, cada item deve seguir a estrutura esperada (`type`, `key`,
-   `label`, `helperText`, `required`, `allowMultiSelect` e `options` com objetos
-   contendo `label`/`value`), permitindo que o serviço faça o mapeamento sem
-   erros de compilação e gere o payload compatível com a Graph API. Caso nenhuma
-   URL de follow-up seja
-   devolvida (nem pelo experimento nem pelo próprio formulário), o serviço usa o
-   `shareLink` configurado e, se ainda assim o valor continuar ausente, ignora a
-   publicação registrando um aviso até que a aplicação seja corrigida. O serviço
-   resolve o token da
-   página via `/{pageId}?fields=access_token`, registra o identificador
-   devolvido pela Meta com `PATCH /api/instant-forms/{id}/publication` (mantendo
-   `published = false`) e evita duplicações sempre que o backend já possuir o
-   valor. A resposta é normalizada automaticamente, aceitando tanto `id`
-   quanto `draft_id`/`form_id` — variações comuns nas versões recentes da Graph
-   API — garantindo que o rascunho seja persistido mesmo quando o Facebook muda
-   o campo retornado. Falhas por falta de URL de privacidade ou página
-   configurada são reportadas em log e o formulário permanece pendente até
-   correção manual.
-2. **Publicação proativa** – O `FacebookInstantFormPublicationScheduler`
-   consulta `/api/instant-forms/ready-to-publish` e delega para o
-   `FacebookInstantFormPublicationService`, que publica cada formulário aprovado
-   via `FacebookAdsService.publishInstantForm`. Antes de enviar a alteração, o
-   serviço consulta a Graph API e, caso o formulário já esteja com `status =
-   ACTIVE`, apenas registra o resultado e evita reenviar a mesma requisição – o
-   que prevene respostas `(#100) Invalid parameter` quando a Meta bloqueia
-   updates redundantes. Na sequência o serviço lê os detalhes com
-   `FacebookAdsService.fetchInstantForm`, normaliza o identificador devolvido
-   pela Meta e calcula o `shareLink` (usando o padrão
-   `https://www.facebook.com/ads/leadgen/?id=<id>` quando necessário). Por fim o
-   backend é atualizado com `PATCH /api/instant-forms/{id}/publication`,
-   preenchendo `published = true`, `publishedAt`, link compartilhável e o
-   `facebookFormId` definitivo.
-3. **Validação na criação da campanha** – O `FacebookCampaignService` reaproveita
-   os dados persistidos. Se, por algum motivo, o formulário ainda não estiver
-   publicado ou a Meta não tiver retornado o ID final, o serviço tenta novamente
-   publicar antes de criar o criativo, aplicando a mesma validação para ignorar
-   formulários que já estejam `ACTIVE`. Quando o backend fornece apenas o
-   `shareLink`, o worker extrai o identificador presente no link para publicar o
-   formulário e persiste o ID definitivo devolvido pela Graph API. Enquanto o ID
-   definitivo não estiver disponível, o CTA permanece apontando para o link de
-   compartilhamento e o worker evita enviar `lead_gen_form_id`, impedindo erros
-   do tipo `(#100) Param call_to_action[value][lead_gen_form_id] must be a valid
-   Lead Gen Data id`. Assim que o identificador for confirmado, o worker passa a
-   anexá-lo ao CTA, substitui o link externo do criativo pelo share link gerado
-   pela Meta (`https://www.facebook.com/ads/leadgen/?id=<id>`), define
-   `destination_type = ON_AD`, `optimization_goal = LEAD_GENERATION` e ajusta o
-   objetivo da campanha para `OUTCOME_LEADS`, direcionando os usuários
-   diretamente ao instant form selecionado conforme as regras mais recentes da
-   Graph API, que exigem a presença de um campo `link` mesmo quando o destino é
-   o formulário dentro do próprio ecossistema do Facebook/Instagram.
+1. **Descoberta idempotente** – O agendador consulta, a cada execução, o
+   endpoint `/api/instant-forms/approved-drafts`. Se o backend ainda não expõe a
+   nova rota, o serviço faz fallback transparente para
+   `/api/instant-forms/ready-to-publish`, preservando compatibilidade. Apenas
+   itens com `status = APPROVED` e `externalId`/`facebookFormId` vazios entram na
+   fila.
+2. **Enriquecimento do payload** – Para cada formulário elegível o worker
+   solicita os detalhes completos (`GET /api/instant-forms/{id}`) e combina as
+   informações do rascunho com dados globais. O follow-up vem do experimento
+   associado e sempre alimenta o CTA da tela de agradecimento. A política de
+   privacidade prioriza o link configurado no formulário, depois o valor do
+   experimento e, na ausência desses, busca `privacy_policy_url` em
+   `/api/settings/privacy_policy_url`. Perguntas personalizadas são convertidas
+   automaticamente para a estrutura esperada pela Graph API; quando o backend
+   não fornece perguntas, o worker aplica o fallback `FULL_NAME` + `EMAIL` para
+   manter a captura básica funcional.
+3. **Criação na Graph API** – Com o payload pronto, o worker chama
+   `POST /{pageId}/leadgen_forms`, reutilizando o token da página quando
+   disponível. O CTA da tela de agradecimento aponta para o `follow_up_action_url`
+   resolvido e o payload enviado é registrado com logs estruturados (`==>`/`<==`)
+   mascarando o `access_token`. Counters e timers em `facebook.instant_form.*`
+   monitoram quantidade processada, tempo de criação e erros por código HTTP,
+   permitindo alertas operacionais.
+4. **Persistência e idempotência** – Ao receber o `form_id`/`draft_id` da Meta o
+   worker envia `PATCH /api/instant-forms/{id}/publication` com `status =
+   CREATED`, `published = false` e o identificador externo. Se o backend já
+   possuir um ID (ou se o mesmo rascunho reaparecer), a execução é ignorada para
+   evitar duplicações.
+5. **Testabilidade** – A propriedade `facebook.instant-forms.dry-run` permite
+   validar a jornada completa sem criar formulários reais; quando habilitada, o
+   serviço apenas loga o payload e incrementa as métricas de dry-run. Para
+   testes ponta-a-ponta com tráfego simulado, recomenda-se usar os [test
+   leads da Meta](https://developers.facebook.com/docs/marketing-api/guides/lead-ads/testing/).
 
-Os experimentos agora expõem `followUpActionUrl` como campo obrigatório para
-formular a jornada de agradecimento. O backend normaliza a URL e a replica em
-todos os instant forms vinculados ao experimento, garantindo que a Graph API
-receba sempre um `follow_up_action_url` válido. A página padrão utilizada pela
-equipe está versionada em `docs/follow-up-calendario-campanhas-fitness-2024.html`
-e informa que o brinde será enviado por e-mail enquanto agradece a participação
-do lead.
+Com o identificador oficial persistido, o `FacebookCampaignService` reaproveita
+o valor ao montar criativos com `call_to_action.value.lead_gen_form_id`, mantendo
+o destino `ON_AD` e o objetivo `OUTCOME_LEADS` conforme as regras mais recentes
+da Graph API.
 
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar
 investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs

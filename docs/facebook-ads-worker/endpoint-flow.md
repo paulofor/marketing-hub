@@ -15,54 +15,55 @@ como as respostas são tratadas.
 > APIs do Facebook. O Worker IA integra exclusivamente com serviços de
 > Inteligência Artificial e apenas persiste rascunhos aguardando aprovação.
 
-## Publicação de Instant Forms aprovados
+## Criação de Instant Forms aprovados
 
-Depois que o usuário aprova um instant form cadastrado no backend, o Facebook Ads
-Worker garante que o rascunho exista na Meta e o publica antes da criação de
-campanhas. O fluxo básico é o seguinte:
+Depois que o usuário aprova um instant form no backend, o Facebook Ads Worker
+cria o formulário diretamente na Meta e devolve o `form_id` para persistência. O
+processo automatizado cobre todo o ciclo de criação, enriquecendo o payload e
+registrando métricas operacionais:
 
-1. **Agendamento** – O `FacebookInstantFormPublicationScheduler` consulta
-   periodicamente `/api/instant-forms/ready-to-publish` em busca de formulários
-   aprovados e ainda não publicados.
-2. **Carregar configuração da conta** – O serviço reutiliza
-   `/api/accounts/facebook/worker-config` para obter token, conta de anúncios e
-   página necessários para autenticar na Graph API.
-3. **Criar rascunhos faltantes** – Quando o backend não possui `facebookFormId`,
-   o worker busca os detalhes completos (`GET /api/instant-forms/{id}`) e envia
-   `POST /{pageId}/leadgen_forms` com perguntas padrão (`FULL_NAME` e `EMAIL`),
-   `locale`, política de privacidade e link de agradecimento. O token específico
-   da página é recuperado via `/{pageId}?fields=access_token` e reutilizado em
-   cache. O identificador devolvido pela Meta é persistido através de `PATCH
-   /api/instant-forms/{id}/publication` com `published=false` para manter o
-   backend sincronizado.
-4. **Ativar na Meta** – Com o rascunho resolvido, o worker envia `POST /{formId}`
-   com `status=ACTIVE` utilizando o token da conta e, na sequência, lê os
-   detalhes finais via `GET /{formId}?access_token=...` para confirmar status e
-   identificar o `leadgen_id` definitivo.
-5. **Persistir retorno** – Após publicar, o worker calcula o link de
-   compartilhamento (`https://www.facebook.com/ads/leadgen/?id=<id>`), normaliza
-   o identificador retornado pela Meta e envia `PATCH
-   /api/instant-forms/{id}/publication`, garantindo que o backend registre
-   `published = true`, `publishedAt`, `shareLink` e `facebookFormId`.
-6. **Sincronizar com campanhas** – Quando um experimento aprovado requer instant
-   form, o fluxo de criação de campanhas reutiliza o identificador oficial
-   persistido pelo backend.
+1. **Agendamento e descoberta** – O `FacebookInstantFormPublicationScheduler`
+   consulta periodicamente `/api/instant-forms/approved-drafts`. Quando a rota
+   não está disponível o worker repete a chamada usando
+   `/api/instant-forms/ready-to-publish`, garantindo compatibilidade retroativa.
+   Apenas formulários com `status = APPROVED` e identificador externo em branco
+   são considerados.
+2. **Carregar detalhes e defaults** – O serviço utiliza
+   `/api/accounts/facebook/worker-config` para sincronizar token e página padrão,
+   depois recupera os detalhes completos via `GET /api/instant-forms/{id}`. A URL
+   de follow-up é herdada do experimento associado e a política de privacidade é
+   resolvida a partir do formulário, do experimento ou, em último caso, de
+   `/api/settings/privacy_policy_url`.
+3. **Criação na Graph API** – Com os dados consolidados, o worker chama
+   `POST /{pageId}/leadgen_forms`, enviando perguntas customizadas (ou o fallback
+   `FULL_NAME` + `EMAIL`), `locale`, `follow_up_action_url` e a política de
+   privacidade normalizada. O token da página é priorizado e os logs seguem o
+   padrão `==>`/`<==`. Métricas Micrometer (`facebook.instant_form.creation.*`)
+   monitoram quantidade processada, tempo de criação, erros por código HTTP e
+   execuções em modo dry-run.
+4. **Persistir e evitar duplicações** – O identificador retornado pela Meta é
+   enviado ao backend via `PATCH /api/instant-forms/{id}/publication` com
+   `status = CREATED`. Se o backend já possuir `externalId`/`facebookFormId`, a
+   execução é ignorada, garantindo idempotência.
+5. **Dry-run e testes** – Definir `facebook.instant-forms.dry-run=true` mantém o
+   fluxo sem criar formulários reais. Para validações ponta-a-ponta a equipe pode
+   usar os [test leads da Meta](https://developers.facebook.com/docs/marketing-api/guides/lead-ads/testing/).
 
 ### Chamadas ao backend
 
 | Método | Caminho | Origem | Objetivo | Tratamento de erro |
 | --- | --- | --- | --- | --- |
-| GET | `/api/instant-forms/ready-to-publish` | `FacebookInstantFormPublicationService` | Listar formulários aprovados e ainda não publicados | `404` vira lista vazia; falhas de rede geram apenas `WARN` |
-| GET | `/api/instant-forms/{id}` | `FacebookInstantFormPublicationService` | Carregar detalhes completos antes de criar o rascunho; garante `privacy_policy_url` com fallback de `/api/settings/privacy_policy_url` | `404` encerra a tentativa e o formulário é ignorado até correção |
-| PATCH | `/api/instant-forms/{id}/publication` | `FacebookInstantFormPublicationService` | Registrar rascunhos e publicações (status, link e IDs) | Exceções são logadas; o agendamento segue com os demais itens |
+| GET | `/api/instant-forms/approved-drafts` | `FacebookInstantFormPublicationService` | Listar formulários aprovados sem `externalId` | `404` aciona fallback para `/ready-to-publish`; falhas de rede retornam lista vazia |
+| GET | `/api/instant-forms/ready-to-publish` | `FacebookInstantFormPublicationService` | Fallback legacy para descoberta de formulários | `404` vira lista vazia; falhas de rede geram apenas `WARN` |
+| GET | `/api/instant-forms/{id}` | `FacebookInstantFormPublicationService` | Carregar detalhes antes da criação | `404` encerra a tentativa e o formulário é ignorado até correção |
+| GET | `/api/settings/privacy_policy_url` | `FacebookInstantFormPublicationService` | Fallback global de política de privacidade | `404` é logado uma vez; falhas de rede retornam `null` |
+| PATCH | `/api/instant-forms/{id}/publication` | `FacebookInstantFormPublicationService` | Persistir `status = CREATED` e `facebookFormId` | Exceções são logadas; o agendamento segue com os demais itens |
 
 ### Chamadas à Graph API
 
 | Método | Caminho (versão inclusa) | Origem | Dados relevantes | Observações |
 | --- | --- | --- | --- | --- |
-| POST | `/v23.0/{pageId}/leadgen_forms` | `FacebookAdsService.createInstantForm` | `name`, `locale`, `privacy_policy`, perguntas padrão, follow-up | Usa token da página; resposta retorna o identificador do rascunho |
-| POST | `/v23.0/{formId}` | `FacebookAdsService.publishInstantForm` | `status=ACTIVE`, `access_token` | Ativa formulários criados pelo próprio worker |
-| GET | `/v23.0/{formId}` | `FacebookAdsService.fetchInstantForm` | Recupera status, `id` e `share_link` | Resposta é usada para normalizar `facebookFormId` e construir o link de compartilhamento |
+| POST | `/v23.0/{pageId}/leadgen_forms` | `FacebookAdsService.createInstantForm` | `name`, `locale`, `privacy_policy`, perguntas, `follow_up_action_*` | Usa token da página quando disponível; resposta retorna `id`/`draft_id`/`form_id` |
 
 ## Criação de campanhas
 

@@ -13,6 +13,6 @@ public class FacebookInstantFormPublicationScheduler {
 
     @Scheduled(fixedDelayString = "${facebookinstantform.scheduler.delay:60000}")
     public void schedule() {
-        service.publishApprovedInstantForms();
+        service.processApprovedInstantFormDrafts();
     }
 }

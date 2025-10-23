@@ -38,6 +38,7 @@ public class ExperimentInstantFormService {
     private final ExperimentInstantFormChatGptClient chatGptClient;
     private final PrivacyPolicyProvider privacyPolicyProvider;
     private final ExperimentGenerationRepository experimentGenerationRepository;
+    private final ExperimentFollowUpResolver followUpResolver;
 
     public ExperimentInstantFormService(ExperimentRepository experimentRepository,
                                         JourneyRepository journeyRepository,
@@ -45,7 +46,8 @@ public class ExperimentInstantFormService {
                                         FacebookInstantFormRepository instantFormRepository,
                                         ExperimentInstantFormChatGptClient chatGptClient,
                                         ExperimentGenerationRepository experimentGenerationRepository,
-                                        PrivacyPolicyProvider privacyPolicyProvider) {
+                                        PrivacyPolicyProvider privacyPolicyProvider,
+                                        ExperimentFollowUpResolver followUpResolver) {
         this.experimentRepository = experimentRepository;
         this.journeyRepository = journeyRepository;
         this.journeyStepRepository = journeyStepRepository;
@@ -53,6 +55,7 @@ public class ExperimentInstantFormService {
         this.chatGptClient = chatGptClient;
         this.experimentGenerationRepository = experimentGenerationRepository;
         this.privacyPolicyProvider = privacyPolicyProvider;
+        this.followUpResolver = followUpResolver;
     }
 
     @Transactional
@@ -114,6 +117,14 @@ public class ExperimentInstantFormService {
                 List<FacebookInstantForm> persisted = new ArrayList<>();
                 int processed = 0;
                 String followUpActionUrl = sanitizeUrl(readFollowUpActionUrl(experiment));
+                if (!StringUtils.hasText(followUpActionUrl)) {
+                    followUpActionUrl = sanitizeUrl(
+                            followUpResolver.resolveFollowUpActionUrl(experiment.getId()).orElse(null)
+                    );
+                    if (StringUtils.hasText(followUpActionUrl)) {
+                        log.debug("Resolved follow-up action URL from backend for experiment {}", experiment.getId());
+                    }
+                }
                 String privacyPolicyUrl = sanitizeUrl(
                         privacyPolicyProvider.getPrivacyPolicyUrl().orElse(null)
                 );

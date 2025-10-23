@@ -29,9 +29,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -59,6 +61,9 @@ class ExperimentInstantFormServiceTest {
     @Mock
     private PrivacyPolicyProvider privacyPolicyProvider;
 
+    @Mock
+    private ExperimentFollowUpResolver experimentFollowUpResolver;
+
     private ExperimentInstantFormService service;
 
     @BeforeEach
@@ -70,8 +75,11 @@ class ExperimentInstantFormServiceTest {
                 instantFormRepository,
                 chatGptClient,
                 experimentGenerationRepository,
-                privacyPolicyProvider
+                privacyPolicyProvider,
+                experimentFollowUpResolver
         );
+        lenient().when(experimentFollowUpResolver.resolveFollowUpActionUrl(anyLong()))
+                .thenReturn(Optional.empty());
     }
 
     @Test
@@ -103,6 +111,7 @@ class ExperimentInstantFormServiceTest {
         when(journeyStepRepository.findByTemplateOrderByPositionAsc(template)).thenReturn(List.of(step));
         when(journeyRepository.findFirstByExperimentIdOrderByCreatedAtDesc(42L)).thenReturn(Optional.empty());
         when(privacyPolicyProvider.getPrivacyPolicyUrl()).thenReturn(Optional.of("https://example.com/privacidade"));
+        when(experimentFollowUpResolver.resolveFollowUpActionUrl(42L)).thenReturn(Optional.empty());
 
         ExperimentInstantFormChatGptClient.InstantFormPlan plan =
                 new ExperimentInstantFormChatGptClient.InstantFormPlan(
@@ -183,6 +192,7 @@ class ExperimentInstantFormServiceTest {
         when(journeyStepRepository.findByTemplateOrderByPositionAsc(template)).thenReturn(List.of(step));
         when(journeyRepository.findFirstByExperimentIdOrderByCreatedAtDesc(55L)).thenReturn(Optional.empty());
         when(privacyPolicyProvider.getPrivacyPolicyUrl()).thenReturn(Optional.empty());
+        when(experimentFollowUpResolver.resolveFollowUpActionUrl(55L)).thenReturn(Optional.empty());
 
         ExperimentInstantFormChatGptClient.InstantFormPlan plan =
                 new ExperimentInstantFormChatGptClient.InstantFormPlan(
@@ -242,6 +252,7 @@ class ExperimentInstantFormServiceTest {
         when(journeyStepRepository.findByTemplateOrderByPositionAsc(template)).thenReturn(List.of(step));
         when(journeyRepository.findFirstByExperimentIdOrderByCreatedAtDesc(77L)).thenReturn(Optional.empty());
         when(privacyPolicyProvider.getPrivacyPolicyUrl()).thenReturn(Optional.empty());
+        when(experimentFollowUpResolver.resolveFollowUpActionUrl(77L)).thenReturn(Optional.empty());
 
         ExperimentInstantFormChatGptClient.InstantFormPlan plan =
                 new ExperimentInstantFormChatGptClient.InstantFormPlan(
@@ -271,6 +282,63 @@ class ExperimentInstantFormServiceTest {
         assertThat(generated).containsKey(77L);
         FacebookInstantForm saved = generated.get(77L).get(0);
         assertThat(saved.getFollowUpActionUrl()).isEqualTo("https://marketinghub.com/obrigado");
+    }
+
+    @Test
+    void generateShouldResolveFollowUpFromBackendWhenExperimentValueMissing() {
+        Experiment experiment = new Experiment();
+        experiment.setId(88L);
+        experiment.setInstantFormsToGenerate(1);
+        Hypothesis hypothesis = new Hypothesis();
+        experiment.setHypothesisRef(hypothesis);
+        FacebookPage page = new FacebookPage();
+        page.setId(111L);
+        experiment.setFacebookPage(page);
+        JourneyTemplate template = new JourneyTemplate();
+        experiment.setJourneyTemplate(template);
+
+        JourneyStep step = new JourneyStep();
+        step.setId(21L);
+        step.setStimulusType(JourneyStimulusType.INSTANT_FORM);
+        step.setPosition(1);
+        step.setName("Cadastro");
+
+        when(experimentGenerationRepository.findAllToGenerateInstantForms()).thenReturn(List.of(experiment));
+        when(journeyStepRepository.findByTemplateOrderByPositionAsc(template)).thenReturn(List.of(step));
+        when(journeyRepository.findFirstByExperimentIdOrderByCreatedAtDesc(88L)).thenReturn(Optional.empty());
+        when(privacyPolicyProvider.getPrivacyPolicyUrl()).thenReturn(Optional.empty());
+        when(experimentFollowUpResolver.resolveFollowUpActionUrl(88L))
+                .thenReturn(Optional.of("https://example.com/follow-up"));
+
+        ExperimentInstantFormChatGptClient.InstantFormPlan plan =
+                new ExperimentInstantFormChatGptClient.InstantFormPlan(
+                        "ai-form-fallback",
+                        "Formulário", 
+                        "draft",
+                        "pt_BR",
+                        null,
+                        null,
+                        null,
+                        null,
+                        List.of()
+                );
+        ExperimentInstantFormChatGptClient.Generation generation =
+                new ExperimentInstantFormChatGptClient.Generation(
+                        List.of(plan),
+                        "prompt",
+                        "[]",
+                        "gpt-4o"
+                );
+
+        when(chatGptClient.generateInstantForms(eq(experiment), isNull(), eq(1), anyList())).thenReturn(generation);
+        when(instantFormRepository.save(any(FacebookInstantForm.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Map<Long, List<FacebookInstantForm>> generated = service.generate();
+
+        assertThat(generated).containsKey(88L);
+        FacebookInstantForm saved = generated.get(88L).get(0);
+        assertThat(saved.getFollowUpActionUrl()).isEqualTo("https://example.com/follow-up");
+        verify(experimentFollowUpResolver).resolveFollowUpActionUrl(88L);
     }
 
     @Test

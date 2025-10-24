@@ -1,5 +1,6 @@
 package com.marketinghub.worker.instantform;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.FacebookInstantForm;
 import com.marketinghub.ads.FacebookInstantFormRepository;
 import com.marketinghub.ads.FacebookPage;
@@ -76,7 +77,8 @@ class ExperimentInstantFormServiceTest {
                 chatGptClient,
                 experimentGenerationRepository,
                 privacyPolicyProvider,
-                experimentFollowUpResolver
+                experimentFollowUpResolver,
+                new ObjectMapper()
         );
         lenient().when(experimentFollowUpResolver.resolveFollowUpActionUrl(anyLong()))
                 .thenReturn(Optional.empty());
@@ -164,6 +166,7 @@ class ExperimentInstantFormServiceTest {
         assertThat(saved.getPrompt()).contains("PROMPT").contains("RESPOSTA");
         assertThat(saved.getFollowUpActionUrl()).isEqualTo("https://example.com/obrigado");
         assertThat(saved.getPrivacyPolicyUrl()).isEqualTo("https://example.com/privacidade");
+        assertThat(saved.getQuestions()).contains("Qual é o seu e-mail?");
 
         verify(experimentRepository).save(experiment);
     }
@@ -224,6 +227,7 @@ class ExperimentInstantFormServiceTest {
         FacebookInstantForm saved = generated.get(55L).get(0);
         assertThat(saved.getFollowUpActionUrl()).isEqualTo("https://example.com/contato");
         assertThat(saved.getPrivacyPolicyUrl()).isEqualTo("https://example.com/politica");
+        assertThat(saved.getQuestions()).isNull();
     }
 
     @Test
@@ -279,6 +283,7 @@ class ExperimentInstantFormServiceTest {
         assertThat(generated).containsKey(77L);
         FacebookInstantForm saved = generated.get(77L).get(0);
         assertThat(saved.getFollowUpActionUrl()).isEqualTo("https://marketinghub.com/obrigado");
+        assertThat(saved.getQuestions()).isNull();
     }
 
     @Test
@@ -335,6 +340,7 @@ class ExperimentInstantFormServiceTest {
         assertThat(generated).containsKey(88L);
         FacebookInstantForm saved = generated.get(88L).get(0);
         assertThat(saved.getFollowUpActionUrl()).isEqualTo("https://example.com/follow-up");
+        assertThat(saved.getQuestions()).isNull();
         verify(experimentFollowUpResolver).resolveFollowUpActionUrl(88L);
     }
 

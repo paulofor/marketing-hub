@@ -65,6 +65,10 @@ public class FacebookInstantForm {
     @Column(columnDefinition = "LONGTEXT")
     private String prompt;
 
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String questions;
+
     @Column(nullable = false)
     private boolean approved;
 

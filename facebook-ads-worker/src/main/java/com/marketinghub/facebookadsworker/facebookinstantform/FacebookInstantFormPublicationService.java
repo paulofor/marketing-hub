@@ -1,6 +1,8 @@
 package com.marketinghub.facebookadsworker.facebookinstantform;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenExpiredException;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenManager;
 import com.marketinghub.facebookadsworker.FacebookAdsService;
@@ -50,6 +52,7 @@ public class FacebookInstantFormPublicationService {
     private final AtomicBoolean configurationUnavailableWarningLogged;
     private final AtomicReference<String> cachedGlobalPrivacyPolicyUrl;
     private final AtomicBoolean privacyPolicyNotFoundLogged;
+    private final ObjectMapper objectMapper;
 
     public FacebookInstantFormPublicationService(FacebookAdsService facebookAdsService,
                                                  FacebookAccessTokenManager accessTokenManager,
@@ -58,7 +61,8 @@ public class FacebookInstantFormPublicationService {
                                                  MeterRegistry meterRegistry,
                                                  @Value("${backend.base-url:http://localhost:8000}") String backendBaseUrl,
                                                  @Value("${backend.api-prefix:/api}") String apiPrefix,
-                                                 @Value("${facebook.instant-forms.dry-run:false}") boolean dryRun) {
+                                                 @Value("${facebook.instant-forms.dry-run:false}") boolean dryRun,
+                                                 ObjectMapper objectMapper) {
         this.facebookAdsService = facebookAdsService;
         this.accessTokenManager = accessTokenManager;
         this.configurationClient = configurationClient;
@@ -73,6 +77,7 @@ public class FacebookInstantFormPublicationService {
         this.configurationUnavailableWarningLogged = new AtomicBoolean(false);
         this.cachedGlobalPrivacyPolicyUrl = new AtomicReference<>(null);
         this.privacyPolicyNotFoundLogged = new AtomicBoolean(false);
+        this.objectMapper = objectMapper;
     }
 
     public void processApprovedInstantFormDrafts() {
@@ -483,8 +488,9 @@ public class FacebookInstantFormPublicationService {
 
     private List<InstantFormCreationRequest.Question> buildQuestions(InstantFormDetails details) {
         List<InstantFormCreationRequest.Question> resolved = new ArrayList<>();
-        if (details.questions() != null) {
-            for (Question question : details.questions()) {
+        List<Question> questions = deserializeQuestions(details.questions());
+        if (questions != null) {
+            for (Question question : questions) {
                 InstantFormCreationRequest.Question mapped = mapQuestion(question);
                 if (mapped != null) {
                     resolved.add(mapped);
@@ -496,6 +502,22 @@ public class FacebookInstantFormPublicationService {
             resolved.add(new InstantFormCreationRequest.Question("EMAIL"));
         }
         return resolved;
+    }
+
+    private List<Question> deserializeQuestions(String rawQuestions) {
+        if (!StringUtils.hasText(rawQuestions)) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(rawQuestions, new TypeReference<List<Question>>() {});
+        } catch (Exception ex) {
+            LOGGER.warn(
+                "Failed to deserialize instant form questions from backend payload: message={}",
+                ex.getMessage(),
+                ex
+            );
+            return null;
+        }
     }
 
     private InstantFormCreationRequest.Question mapQuestion(Question question) {
@@ -756,7 +778,7 @@ public class FacebookInstantFormPublicationService {
         FollowUpAction followUpAction,
         String privacyPolicyUrl,
         PrivacyPolicy privacyPolicy,
-        List<Question> questions,
+        String questions,
         String experimentFollowUpUrl,
         String experimentPrivacyPolicyUrl,
         Boolean dryRun

@@ -117,7 +117,8 @@ class FacebookInstantFormControllerTest {
                 "https://example.com/thanks",
                 "https://example.com/privacy",
                 "gpt-4o",
-                "Prompt IA"
+                "Prompt IA",
+                null
         );
 
         mockMvc.perform(post("/api/hypotheses/" + hypothesis.getId() + "/instant-forms")
@@ -156,7 +157,8 @@ class FacebookInstantFormControllerTest {
                 "https://example.com/follow-up",
                 "https://example.com/privacy",
                 "gpt-4o",
-                "Prompt sem id"
+                "Prompt sem id",
+                null
         );
 
         String draftResponse = mockMvc.perform(post("/api/hypotheses/" + hypothesis.getId() + "/instant-forms")
@@ -186,7 +188,8 @@ class FacebookInstantFormControllerTest {
                 "https://example.com/follow-up",
                 "https://example.com/privacy",
                 "gpt-4o",
-                "Prompt com id"
+                "Prompt com id",
+                null
         );
 
         String secondResponse = mockMvc.perform(post("/api/hypotheses/" + hypothesis.getId() + "/instant-forms")
@@ -216,7 +219,8 @@ class FacebookInstantFormControllerTest {
                 "https://example.com/follow-up",
                 "https://example.com/privacy",
                 "gpt-4o",
-                "Prompt pendente"
+                "Prompt pendente",
+                null
         );
 
         mockMvc.perform(post("/api/hypotheses/" + hypothesis.getId() + "/instant-forms")
@@ -247,7 +251,8 @@ class FacebookInstantFormControllerTest {
                 "https://example.com/thanks",
                 "https://example.com/privacy",
                 "gpt-4o",
-                "Prompt de teste"
+                "Prompt de teste",
+                null
         );
 
         mockMvc.perform(post("/api/hypotheses/" + hypothesis.getId() + "/instant-forms")
@@ -342,7 +347,8 @@ class FacebookInstantFormControllerTest {
                 "https://example.com/thanks",
                 null,
                 "gpt-4o",
-                "Prompt sem política"
+                "Prompt sem política",
+                null
         );
 
         mockMvc.perform(post("/api/hypotheses/" + hypothesis.getId() + "/instant-forms")

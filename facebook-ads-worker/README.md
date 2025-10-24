@@ -79,8 +79,10 @@ operado pelo `FacebookInstantFormPublicationService` foi simplificado para uma
    associado e sempre alimenta o CTA da tela de agradecimento. A política de
    privacidade prioriza o link configurado no formulário, depois o valor do
    experimento e, na ausência desses, busca `privacy_policy_url` em
-   `/api/settings/privacy_policy_url`. Perguntas personalizadas são convertidas
-   automaticamente para a estrutura esperada pela Graph API; quando o backend
+   `/api/settings/privacy_policy_url`. As perguntas sugeridas pelo ChatGPT são
+   persistidas no backend em formato JSON e reenviadas integralmente para a Meta
+   durante a publicação, garantindo que campos personalizados como múltipla
+   escolha ou textos auxiliares cheguem ao Instant Form final. Quando o backend
    não fornece perguntas, o worker aplica o fallback `FULL_NAME` + `EMAIL` para
    manter a captura básica funcional.
 3. **Criação na Graph API** – Com o payload pronto, o worker chama

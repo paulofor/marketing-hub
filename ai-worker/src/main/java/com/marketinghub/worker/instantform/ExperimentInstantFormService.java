@@ -1,5 +1,7 @@
 package com.marketinghub.worker.instantform;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.FacebookInstantForm;
 import com.marketinghub.ads.FacebookInstantFormRepository;
 import com.marketinghub.experiment.Experiment;
@@ -39,6 +41,7 @@ public class ExperimentInstantFormService {
     private final PrivacyPolicyProvider privacyPolicyProvider;
     private final ExperimentGenerationRepository experimentGenerationRepository;
     private final ExperimentFollowUpResolver followUpResolver;
+    private final ObjectMapper objectMapper;
 
     public ExperimentInstantFormService(ExperimentRepository experimentRepository,
                                         JourneyRepository journeyRepository,
@@ -47,7 +50,8 @@ public class ExperimentInstantFormService {
                                         ExperimentInstantFormChatGptClient chatGptClient,
                                         ExperimentGenerationRepository experimentGenerationRepository,
                                         PrivacyPolicyProvider privacyPolicyProvider,
-                                        ExperimentFollowUpResolver followUpResolver) {
+                                        ExperimentFollowUpResolver followUpResolver,
+                                        ObjectMapper objectMapper) {
         this.experimentRepository = experimentRepository;
         this.journeyRepository = journeyRepository;
         this.journeyStepRepository = journeyStepRepository;
@@ -56,6 +60,7 @@ public class ExperimentInstantFormService {
         this.experimentGenerationRepository = experimentGenerationRepository;
         this.privacyPolicyProvider = privacyPolicyProvider;
         this.followUpResolver = followUpResolver;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -197,9 +202,22 @@ public class ExperimentInstantFormService {
                 .privacyPolicyUrl(resolvedPrivacyPolicyUrl)
                 .model(generation.model())
                 .prompt(generation.auditTrail())
+                .questions(serializeQuestions(plan.questions()))
                 .approved(false)
                 .published(false);
         return builder.build();
+    }
+
+    private String serializeQuestions(List<ExperimentInstantFormChatGptClient.QuestionPlan> questions) {
+        if (questions == null || questions.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(questions);
+        } catch (JsonProcessingException ex) {
+            log.warn("Falha ao serializar perguntas do instant form: message={}", ex.getMessage(), ex);
+            return null;
+        }
     }
 
     private String readFollowUpActionUrl(Experiment experiment) {

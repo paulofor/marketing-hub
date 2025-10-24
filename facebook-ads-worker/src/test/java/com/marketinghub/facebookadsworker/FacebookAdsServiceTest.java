@@ -11,8 +11,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -255,6 +257,96 @@ class FacebookAdsServiceTest {
         assertEquals("creative", body.get("creative").get("creative_id").asText());
         assertEquals("PAUSED", body.get("status").asText());
         assertEquals("444", id);
+    }
+
+    @Test
+    void createInstantFormReusesIdentifierWhenNameAlreadyExists() throws Exception {
+        server.enqueue(new MockResponse()
+            .setResponseCode(400)
+            .setBody(
+                "{\"error\":{\"code\":100,\"error_subcode\":1892019,\"message\":\"Invalid parameter\"," +
+                    "\"error_user_title\":\"O nome do formulário já existe\",\"error_user_msg\":\"O nome do formulário já existe\"}}"
+            )
+            .addHeader("Content-Type", "application/json"));
+        server.enqueue(new MockResponse()
+            .setBody("{\"access_token\":\"page-token\"}")
+            .addHeader("Content-Type", "application/json"));
+        server.enqueue(new MockResponse()
+            .setBody(
+                "{\"data\":[{\"id\":\"existing-form\",\"name\":\"Calendário de Campanhas\",\"status\":\"ACTIVE\"}]}"
+            )
+            .addHeader("Content-Type", "application/json"));
+
+        FacebookAdsService.InstantFormCreationRequest request = new FacebookAdsService.InstantFormCreationRequest(
+            "Calendário de Campanhas",
+            "pt_BR",
+            new FacebookAdsService.InstantFormCreationRequest.PrivacyPolicy(
+                "https://example.com/privacy",
+                "Política"
+            ),
+            List.of(new FacebookAdsService.InstantFormCreationRequest.Question("FULL_NAME")),
+            "Visitar site",
+            "https://example.com/follow"
+        );
+
+        String identifier = service.createInstantForm("485", request);
+
+        assertEquals("existing-form", identifier);
+
+        RecordedRequest createRequest = server.takeRequest(1, TimeUnit.SECONDS);
+        assertEquals("/v23.0/485/leadgen_forms", createRequest.getPath());
+
+        RecordedRequest pageTokenRequest = server.takeRequest(1, TimeUnit.SECONDS);
+        assertEquals("/v23.0/485?fields=access_token&access_token=token", pageTokenRequest.getPath());
+
+        RecordedRequest formsRequest = server.takeRequest(1, TimeUnit.SECONDS);
+        assertEquals(
+            "/v23.0/485/leadgen_forms?fields=id,name,status,draft_id&limit=200&access_token=page-token",
+            formsRequest.getPath()
+        );
+    }
+
+    @Test
+    void createInstantFormRethrowsWhenDuplicateIdentifierMissing() throws Exception {
+        server.enqueue(new MockResponse()
+            .setResponseCode(400)
+            .setBody(
+                "{\"error\":{\"code\":100,\"error_subcode\":1892019,\"message\":\"Invalid parameter\"," +
+                    "\"error_user_title\":\"O nome do formulário já existe\",\"error_user_msg\":\"O nome do formulário já existe\"}}"
+            )
+            .addHeader("Content-Type", "application/json"));
+        server.enqueue(new MockResponse()
+            .setBody("{\"access_token\":\"page-token\"}")
+            .addHeader("Content-Type", "application/json"));
+        server.enqueue(new MockResponse()
+            .setBody("{\"data\":[]}")
+            .addHeader("Content-Type", "application/json"));
+
+        FacebookAdsService.InstantFormCreationRequest request = new FacebookAdsService.InstantFormCreationRequest(
+            "Calendário de Campanhas",
+            "pt_BR",
+            new FacebookAdsService.InstantFormCreationRequest.PrivacyPolicy(
+                "https://example.com/privacy",
+                "Política"
+            ),
+            List.of(new FacebookAdsService.InstantFormCreationRequest.Question("FULL_NAME")),
+            "Visitar site",
+            "https://example.com/follow"
+        );
+
+        assertThrows(WebClientResponseException.BadRequest.class, () -> service.createInstantForm("485", request));
+
+        RecordedRequest createRequest = server.takeRequest(1, TimeUnit.SECONDS);
+        assertEquals("/v23.0/485/leadgen_forms", createRequest.getPath());
+
+        RecordedRequest pageTokenRequest = server.takeRequest(1, TimeUnit.SECONDS);
+        assertEquals("/v23.0/485?fields=access_token&access_token=token", pageTokenRequest.getPath());
+
+        RecordedRequest formsRequest = server.takeRequest(1, TimeUnit.SECONDS);
+        assertEquals(
+            "/v23.0/485/leadgen_forms?fields=id,name,status,draft_id&limit=200&access_token=page-token",
+            formsRequest.getPath()
+        );
     }
 
     @Test

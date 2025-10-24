@@ -18,6 +18,7 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -269,16 +270,24 @@ public class FacebookAdsService {
         body.put("access_token", pageAccessToken);
 
         String path = buildVersionedPath("/" + normalizedPageId + "/leadgen_forms");
-        JsonNode response = executePost(path, body);
-        String createdId = extractInstantFormCreationIdentifier(response);
-        if (!hasText(createdId)) {
-            LOGGER.warn(
-                "Facebook response when creating instant form on page {} did not include an identifier: response={}",
-                normalizedPageId,
-                response
-            );
+        try {
+            JsonNode response = executePost(path, body);
+            String createdId = extractInstantFormCreationIdentifier(response);
+            if (!hasText(createdId)) {
+                LOGGER.warn(
+                    "Facebook response when creating instant form on page {} did not include an identifier: response={}",
+                    normalizedPageId,
+                    response
+                );
+            }
+            return createdId;
+        } catch (WebClientResponseException ex) {
+            String existingIdentifier = handleInstantFormDuplicate(normalizedPageId, request, ex);
+            if (hasText(existingIdentifier)) {
+                return existingIdentifier;
+            }
+            throw ex;
         }
-        return createdId;
     }
 
     public String uploadAdImage(String adAccountId, String imageUrl) {
@@ -434,6 +443,86 @@ public class FacebookAdsService {
             }
         }
         return fallbackIdentifier;
+    }
+
+    private String handleInstantFormDuplicate(
+        String pageId,
+        InstantFormCreationRequest request,
+        WebClientResponseException ex
+    ) {
+        ObjectNode errorDetails = extractErrorDetails(ex.getResponseBodyAsString());
+        if (!isDuplicateInstantFormNameError(errorDetails)) {
+            return null;
+        }
+        if (request == null || !hasText(request.name())) {
+            LOGGER.warn(
+                "Facebook reported duplicate instant form name for page {}, but the request did not include a valid name",
+                pageId
+            );
+            return null;
+        }
+        String resolvedIdentifier = findInstantFormIdentifier(pageId, request.name());
+        if (hasText(resolvedIdentifier)) {
+            LOGGER.info(
+                "Facebook reported duplicate instant form name; reusing identifier {} for page {} (name={})",
+                resolvedIdentifier,
+                pageId,
+                request.name()
+            );
+            return resolvedIdentifier;
+        }
+        LOGGER.warn(
+            "Facebook reported duplicate instant form name for page {}, but no existing identifier could be resolved",
+            pageId
+        );
+        return null;
+    }
+
+    private boolean isDuplicateInstantFormNameError(ObjectNode errorDetails) {
+        if (errorDetails == null) {
+            return false;
+        }
+        int code = errorDetails.path("code").asInt();
+        int subcode = errorDetails.path("error_subcode").asInt();
+        if (code == 100 && subcode == 1892019) {
+            return true;
+        }
+        String normalizedMessage = buildCombinedErrorMessage(errorDetails);
+        if (!hasText(normalizedMessage)) {
+            return false;
+        }
+        return normalizedMessage.contains("form name already exists") ||
+            normalizedMessage.contains("nome do formulário já existe") ||
+            normalizedMessage.contains("nome do formulario ja existe");
+    }
+
+    private String buildCombinedErrorMessage(ObjectNode errorDetails) {
+        StringBuilder builder = new StringBuilder();
+        appendLowerCaseErrorField(builder, errorDetails, "message");
+        appendLowerCaseErrorField(builder, errorDetails, "error_user_title");
+        appendLowerCaseErrorField(builder, errorDetails, "error_user_msg");
+        if (errorDetails.hasNonNull("error_data")) {
+            String errorDataText = errorDetails.get("error_data").toString();
+            if (!errorDataText.isBlank()) {
+                if (builder.length() > 0) {
+                    builder.append(' ');
+                }
+                builder.append(errorDataText.toLowerCase(Locale.ROOT));
+            }
+        }
+        return builder.toString();
+    }
+
+    private void appendLowerCaseErrorField(StringBuilder builder, ObjectNode errorDetails, String fieldName) {
+        if (errorDetails.hasNonNull(fieldName)) {
+            String value = errorDetails.get(fieldName).asText("");
+            if (!value.isBlank()) {
+                if (builder.length() > 0) {
+                    builder.append(' ');
+                }
+                builder.append(value.toLowerCase(Locale.ROOT));
+            }
+        }
     }
 
     private String extractInstantFormIdentifier(JsonNode node) {

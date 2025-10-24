@@ -192,6 +192,8 @@ public class ExperimentInstantFormService {
                 privacyPolicyUrl
         );
 
+        String serializedQuestions = serializeQuestions(plan.questions());
+
         FacebookInstantForm.FacebookInstantFormBuilder builder = FacebookInstantForm.builder()
                 .hypothesis(experiment.getHypothesisRef())
                 .page(experiment.getFacebookPage())
@@ -202,10 +204,11 @@ public class ExperimentInstantFormService {
                 .privacyPolicyUrl(resolvedPrivacyPolicyUrl)
                 .model(generation.model())
                 .prompt(generation.auditTrail())
-                .questions(serializeQuestions(plan.questions()))
                 .approved(false)
                 .published(false);
-        return builder.build();
+        FacebookInstantForm instantForm = builder.build();
+        instantForm.setQuestions(serializedQuestions);
+        return instantForm;
     }
 
     private String serializeQuestions(List<ExperimentInstantFormChatGptClient.QuestionPlan> questions) {

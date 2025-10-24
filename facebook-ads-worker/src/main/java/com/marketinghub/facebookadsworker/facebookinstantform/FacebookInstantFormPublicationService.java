@@ -33,10 +33,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 
 @Service
 public class FacebookInstantFormPublicationService {
     private static final Logger LOGGER = LoggerFactory.getLogger(FacebookInstantFormPublicationService.class);
+    private static final Pattern INSTANT_FORM_OPTION_VALUE_PATTERN = Pattern.compile("[A-Za-z0-9_\\-]+");
 
     private final FacebookAdsService facebookAdsService;
     private final FacebookAccessTokenManager accessTokenManager;
@@ -555,8 +557,9 @@ public class FacebookInstantFormPublicationService {
                 if (StringUtils.hasText(optionLabel)) {
                     mappedOption.put("label", optionLabel);
                 }
-                if (StringUtils.hasText(optionValue)) {
-                    mappedOption.put("value", optionValue);
+                String sanitizedOptionValue = sanitizeInstantFormOptionValue(optionValue, optionLabel);
+                if (StringUtils.hasText(sanitizedOptionValue)) {
+                    mappedOption.put("value", sanitizedOptionValue);
                 }
                 if (!mappedOption.isEmpty()) {
                     options.add(mappedOption);
@@ -570,6 +573,32 @@ public class FacebookInstantFormPublicationService {
         Boolean required = question.required();
         Boolean allowMultiSelect = question.allowMultiSelect();
         return new InstantFormCreationRequest.Question(type, key, label, options, helperText, required, allowMultiSelect);
+    }
+
+    private String sanitizeInstantFormOptionValue(String rawValue, String optionLabel) {
+        if (!StringUtils.hasText(rawValue)) {
+            return null;
+        }
+        String trimmed = rawValue.trim();
+        if (!StringUtils.hasText(trimmed)) {
+            return null;
+        }
+        if (!INSTANT_FORM_OPTION_VALUE_PATTERN.matcher(trimmed).matches()) {
+            if (StringUtils.hasText(optionLabel)) {
+                LOGGER.warn(
+                    "Skipping instant form option value '{}' for label '{}' because it contains unsupported characters.",
+                    trimmed,
+                    optionLabel
+                );
+            } else {
+                LOGGER.warn(
+                    "Skipping instant form option value '{}' because it contains unsupported characters.",
+                    trimmed
+                );
+            }
+            return null;
+        }
+        return trimmed;
     }
 
     private InstantFormCreationRequest.PrivacyPolicy resolvePrivacyPolicy(

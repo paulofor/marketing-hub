@@ -90,12 +90,16 @@ operado pelo `FacebookInstantFormPublicationService` foi simplificado para uma
    auditoria. A Graph API também rejeita rótulos personalizados para perguntas
    padrão (ex.: `FULL_NAME`, `EMAIL`, `PHONE`); por isso o worker descarta o
    `label` quando o tipo não começa com `CUSTOM`, evitando o erro `(#100)
-   Invalid parameter` com `error_subcode = 1892063`. Quando o backend não
-   fornece perguntas, o worker aplica o fallback
-   `FULL_NAME` + `EMAIL` para manter a captura básica funcional. Perguntas com
-   tipo `LEGAL` também são descartadas — a Graph API rejeita esse valor e a
-   orientação oficial é tratar consentimentos legais via `custom_disclaimer`,
-   portanto o worker registra um aviso e mantém apenas os campos suportados.
+   Invalid parameter` com `error_subcode = 1892063`. Valores de opção com espaços,
+   acentos ou qualquer caractere fora de `[A-Za-z0-9_-]` são omitidos do payload,
+   fazendo com que a Meta reutilize o `label` correspondente e eliminando o erro
+   `500` intermitente "An unknown error has occurred" observado em formulários
+   com alternativas em português. Quando o backend não fornece perguntas, o
+   worker aplica o fallback `FULL_NAME` + `EMAIL` para manter a captura básica
+   funcional. Perguntas com tipo `LEGAL` também são descartadas — a Graph API
+   rejeita esse valor e a orientação oficial é tratar consentimentos legais via
+   `custom_disclaimer`, portanto o worker registra um aviso e mantém apenas os
+   campos suportados.
 3. **Criação na Graph API** – Com o payload pronto, o worker chama
    `POST /{pageId}/leadgen_forms`, reutilizando o token da página quando
    disponível. O CTA da tela de agradecimento aponta para o `follow_up_action_url`

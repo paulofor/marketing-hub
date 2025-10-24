@@ -525,6 +525,18 @@ public class FacebookInstantFormPublicationService {
             return null;
         }
         String type = question.type().trim();
+        if ("LEGAL".equalsIgnoreCase(type)) {
+            String questionLabel = StringUtils.hasText(question.label()) ? question.label().trim() : null;
+            if (StringUtils.hasText(questionLabel)) {
+                LOGGER.warn(
+                    "Skipping instant form question '{}' because the Graph API does not accept LEGAL question types.",
+                    questionLabel
+                );
+            } else {
+                LOGGER.warn("Skipping LEGAL instant form question because the Graph API does not accept this type.");
+            }
+            return null;
+        }
         String key = StringUtils.hasText(question.key()) ? question.key().trim() : null;
         String label = StringUtils.hasText(question.label()) ? question.label().trim() : null;
         List<Map<String, Object>> options = null;

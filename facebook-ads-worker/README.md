@@ -88,7 +88,10 @@ operado pelo `FacebookInstantFormPublicationService` foi simplificado para uma
    O atributo `helper_text` também não é aceito: quando esse campo é recebido do
    backend o worker o ignora e registra um log em nível `DEBUG` para facilitar a
    auditoria. Quando o backend não fornece perguntas, o worker aplica o fallback
-   `FULL_NAME` + `EMAIL` para manter a captura básica funcional.
+   `FULL_NAME` + `EMAIL` para manter a captura básica funcional. Perguntas com
+   tipo `LEGAL` também são descartadas — a Graph API rejeita esse valor e a
+   orientação oficial é tratar consentimentos legais via `custom_disclaimer`,
+   portanto o worker registra um aviso e mantém apenas os campos suportados.
 3. **Criação na Graph API** – Com o payload pronto, o worker chama
    `POST /{pageId}/leadgen_forms`, reutilizando o token da página quando
    disponível. O CTA da tela de agradecimento aponta para o `follow_up_action_url`

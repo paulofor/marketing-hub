@@ -13,6 +13,8 @@
 - Endpoints do backend devem ser acessados com o prefixo configurado em `backend.api-prefix` (default `/api`).
 - Sempre que chamar o backend registre logs com **URL completa**, parâmetros, payload enviado (quando existir) e a resposta recebida
   para facilitar troubleshooting.
+- Ao registrar payloads ou respostas estruturadas em logs utilize `JsonLogFormatter.wrap(...)` para serializar objetos como JSON
+  (incluindo aspas em strings) e manter tokens mascarados.
 - Prefixe os valores de URL nos logs de integração com endpoints usando `==>` para requisições e `<==` para respostas (incluindo
   erros), garantindo um padrão visual consistente em todo o módulo.
 - Em caso de erro de permissão do Facebook, o worker bloqueia o experimento em memória até que o serviço seja reiniciado.

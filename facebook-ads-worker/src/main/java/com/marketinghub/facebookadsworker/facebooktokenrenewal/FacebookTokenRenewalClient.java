@@ -1,5 +1,6 @@
 package com.marketinghub.facebookadsworker.facebooktokenrenewal;
 
+import com.marketinghub.facebookadsworker.util.JsonLogFormatter;
 import com.marketinghub.facebookadsworker.util.UrlUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,8 +67,8 @@ public class FacebookTokenRenewalClient {
         LOGGER.info(
             "Reporting Facebook token renewal result to backend: url==>{}, params={}, payload={}",
             url,
-            Collections.emptyMap(),
-            payload
+            JsonLogFormatter.wrap(Collections.emptyMap()),
+            JsonLogFormatter.wrap(payload)
         );
         try {
             String response = backendClient

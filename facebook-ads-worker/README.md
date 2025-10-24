@@ -141,6 +141,14 @@ presente, os campos estruturados de erro (`type`, `code`, `error_subcode`,
 `error_user_title`, `error_user_msg`, `fbtrace_id` e `error_data`). Isso
 permite cruzar rapidamente o incidente com a documentação oficial.
 
+Para preservar o formato JSON mesmo nos logs, utilize o utilitário
+`JsonLogFormatter.wrap(...)` ao registrar payloads, parâmetros e respostas.
+Ele serializa as estruturas para JSON antes da interpolação na mensagem,
+garantindo que campos de texto apareçam entre aspas (por exemplo,
+`{"nome":"Paulo"}`) em vez da forma padrão de `Map.toString()` (`{nome=Paulo}`).
+Esse padrão facilita buscas em ferramentas de observabilidade e reduz ambiguidades
+durante a análise de incidentes.
+
 ## Renovação automática de tokens
 
 Além da criação de campanhas, o worker monitora tokens configurados nas

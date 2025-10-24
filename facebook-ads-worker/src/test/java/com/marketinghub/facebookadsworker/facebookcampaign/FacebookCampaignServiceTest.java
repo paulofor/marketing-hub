@@ -83,7 +83,8 @@ class FacebookCampaignServiceTest {
             WebClient.builder(),
             configurationClient,
             backend.url("/").toString(),
-            "/api"
+            "/api",
+            objectMapper
         );
     }
 
@@ -332,12 +333,16 @@ class FacebookCampaignServiceTest {
 
     @Test
     void publishesInstantFormUsingShareLinkWhenFormIdMissing() throws Exception {
-        backend.enqueue(new MockResponse().setBody("[{"
-            + "\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\",""
-            + "\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},""
-            + "\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},""
-            + "\"facebookInstantForm\":{\"id\":33,\"facebookFormId\":null,\"name\":\"Lead\",\"status\":\"DRAFT\",\"approved\":true,\"published\":false,\"shareLink\":\"https://www.facebook.com/ads/leadgen/?id=2468\"},""
-            + "\"nextStepInstantForm\":true}]" )
+        backend.enqueue(new MockResponse()
+            .setBody(
+                """
+                [{"id":1,"name":"Exp","pageId":"84",
+                  "facebookPage":{"id":9,"pageId":"84","name":"Estúdio"},
+                  "instagramAccount":{"id":55,"handle":"@estudio","code":"IG-EST","name":"Estúdio"},
+                  "facebookInstantForm":{"id":33,"facebookFormId":null,"name":"Lead","status":"DRAFT","approved":true,"published":false,"shareLink":"https://www.facebook.com/ads/leadgen/?id=2468"},
+                  "nextStepInstantForm":true}]
+                """
+            )
             .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"status\":\"DRAFT\"}")
             .addHeader("Content-Type", "application/json"));
@@ -613,7 +618,8 @@ class FacebookCampaignServiceTest {
             WebClient.builder(),
             configurationClient,
             backend.url("/").toString(),
-            "/api"
+            "/api",
+            objectMapper
         );
 
         backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
@@ -698,7 +704,8 @@ class FacebookCampaignServiceTest {
             WebClient.builder(),
             configurationClient,
             backend.url("/").toString(),
-            "/api"
+            "/api",
+            objectMapper
         );
 
         backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")

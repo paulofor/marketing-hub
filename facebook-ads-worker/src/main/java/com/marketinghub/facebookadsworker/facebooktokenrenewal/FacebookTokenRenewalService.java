@@ -2,6 +2,7 @@ package com.marketinghub.facebookadsworker.facebooktokenrenewal;
 
 import com.marketinghub.facebookadsworker.FacebookAdsService;
 import com.marketinghub.facebookadsworker.facebooktokenrenewal.FacebookTokenRenewalClient.FacebookTokenRenewalStatus;
+import com.marketinghub.facebookadsworker.util.JsonLogFormatter;
 import com.marketinghub.facebookadsworker.util.UrlUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +57,7 @@ public class FacebookTokenRenewalService {
         LOGGER.info(
             "Requesting Facebook accounts eligible for token renewal from backend: url==>{}, params={}",
             url,
-            Collections.emptyMap()
+            JsonLogFormatter.wrap(Collections.emptyMap())
         );
         try {
             List<FacebookAccountRenewalCandidate> response = backendClient
@@ -70,7 +71,7 @@ public class FacebookTokenRenewalService {
             LOGGER.info(
                 "Received eligible Facebook accounts response from backend: url<=={}, response={}",
                 url,
-                response
+                JsonLogFormatter.wrap(response)
             );
             return response;
         } catch (WebClientResponseException | WebClientRequestException ex) {

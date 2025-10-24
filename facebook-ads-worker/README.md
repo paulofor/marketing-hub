@@ -80,9 +80,11 @@ operado pelo `FacebookInstantFormPublicationService` foi simplificado para uma
    privacidade prioriza o link configurado no formulário, depois o valor do
    experimento e, na ausência desses, busca `privacy_policy_url` em
    `/api/settings/privacy_policy_url`. As perguntas sugeridas pelo ChatGPT são
-   persistidas no backend em formato JSON e reenviadas integralmente para a Meta
-   durante a publicação, garantindo que campos personalizados como múltipla
-   escolha ou textos auxiliares cheguem ao Instant Form final. Quando o backend
+   persistidas no backend em formato JSON e reenviadas para a Meta durante a
+   publicação, garantindo que campos personalizados como múltipla escolha
+   cheguem ao Instant Form final. A Graph API `v23.0` não aceita o atributo
+   `helper_text`; quando esse campo é recebido do backend o worker o ignora e
+   registra um log em nível `DEBUG` para facilitar a auditoria. Quando o backend
    não fornece perguntas, o worker aplica o fallback `FULL_NAME` + `EMAIL` para
    manter a captura básica funcional.
 3. **Criação na Graph API** – Com o payload pronto, o worker chama

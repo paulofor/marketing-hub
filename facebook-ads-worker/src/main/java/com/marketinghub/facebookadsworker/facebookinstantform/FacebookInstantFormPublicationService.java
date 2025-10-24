@@ -23,6 +23,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -576,29 +577,60 @@ public class FacebookInstantFormPublicationService {
     }
 
     private String sanitizeInstantFormOptionValue(String rawValue, String optionLabel) {
-        if (!StringUtils.hasText(rawValue)) {
+        String primary = normalizeInstantFormOptionValue(rawValue);
+        if (StringUtils.hasText(primary)) {
+            return primary;
+        }
+        String fallback = normalizeInstantFormOptionValue(optionLabel);
+        if (StringUtils.hasText(fallback)) {
+            if (StringUtils.hasText(rawValue)) {
+                LOGGER.debug(
+                    "Instant form option value '{}' contained unsupported characters; generated fallback '{}' from label '{}'.",
+                    rawValue.trim(),
+                    fallback,
+                    optionLabel
+                );
+            }
+            return fallback;
+        }
+        if (StringUtils.hasText(rawValue)) {
+            LOGGER.warn(
+                "Skipping instant form option value '{}' because it cannot be normalized to the allowed pattern.",
+                rawValue.trim()
+            );
+        }
+        return null;
+    }
+
+    private String normalizeInstantFormOptionValue(String source) {
+        if (!StringUtils.hasText(source)) {
             return null;
         }
-        String trimmed = rawValue.trim();
+        String trimmed = source.trim();
         if (!StringUtils.hasText(trimmed)) {
             return null;
         }
-        if (!INSTANT_FORM_OPTION_VALUE_PATTERN.matcher(trimmed).matches()) {
-            if (StringUtils.hasText(optionLabel)) {
-                LOGGER.warn(
-                    "Skipping instant form option value '{}' for label '{}' because it contains unsupported characters.",
-                    trimmed,
-                    optionLabel
-                );
-            } else {
-                LOGGER.warn(
-                    "Skipping instant form option value '{}' because it contains unsupported characters.",
-                    trimmed
-                );
-            }
+        String normalized = Normalizer.normalize(trimmed, Normalizer.Form.NFD)
+            .replaceAll("\\p{M}", "");
+        normalized = normalized.replaceAll("[^A-Za-z0-9 _-]", "");
+        normalized = normalized.replaceAll("\\s+", "_");
+        normalized = normalized.replaceAll("_+", "_");
+        normalized = normalized.replaceAll("^[_-]+", "");
+        normalized = normalized.replaceAll("[_-]+$", "");
+        if (!StringUtils.hasText(normalized)) {
             return null;
         }
-        return trimmed;
+        normalized = normalized.toLowerCase(Locale.ROOT);
+        if (!INSTANT_FORM_OPTION_VALUE_PATTERN.matcher(normalized).matches()) {
+            normalized = normalized.replaceAll("[^A-Za-z0-9_-]", "");
+        }
+        if (!StringUtils.hasText(normalized)) {
+            return null;
+        }
+        if (normalized.length() > 100) {
+            normalized = normalized.substring(0, 100);
+        }
+        return normalized;
     }
 
     private InstantFormCreationRequest.PrivacyPolicy resolvePrivacyPolicy(

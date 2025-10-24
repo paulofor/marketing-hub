@@ -91,10 +91,13 @@ operado pelo `FacebookInstantFormPublicationService` foi simplificado para uma
    padrão (ex.: `FULL_NAME`, `EMAIL`, `PHONE`); por isso o worker descarta o
    `label` quando o tipo não começa com `CUSTOM`, evitando o erro `(#100)
    Invalid parameter` com `error_subcode = 1892063`. Valores de opção com espaços,
-   acentos ou qualquer caractere fora de `[A-Za-z0-9_-]` são omitidos do payload,
-   fazendo com que a Meta reutilize o `label` correspondente e eliminando o erro
-   `500` intermitente "An unknown error has occurred" observado em formulários
-   com alternativas em português. Quando o backend não fornece perguntas, o
+   acentos ou qualquer caractere fora de `[A-Za-z0-9_-]` são normalizados para um
+   slug compatível (remoção de acentos, substituição de espaços por `_` e
+   limitação do alfabeto permitido) antes de enviar o payload, atendendo à
+   exigência da Graph API de que todo `selector` tenha `value` explícito e
+   eliminando o erro `(#100) Invalid parameter` com `error_subcode = 1892091`
+   observado em formulários com alternativas em português. Quando o backend não
+   fornece perguntas, o
    worker aplica o fallback `FULL_NAME` + `EMAIL` para manter a captura básica
    funcional. Perguntas com tipo `LEGAL` também são descartadas — a Graph API
    rejeita esse valor e a orientação oficial é tratar consentimentos legais via

@@ -62,7 +62,7 @@ class FacebookInstantFormPublicationServiceTest {
     }
 
     @Test
-    void mapQuestionDropsInvalidOptionValues() throws Exception {
+    void mapQuestionNormalizesInvalidOptionValues() throws Exception {
         Object option = newQuestionOption("Encher horários", "Encher horários");
         Object question = newQuestion(
             "CUSTOM",
@@ -81,7 +81,7 @@ class FacebookInstantFormPublicationServiceTest {
         org.junit.jupiter.api.Assertions.assertEquals(1, options.size());
         java.util.Map<String, Object> mappedOption = options.get(0);
         org.junit.jupiter.api.Assertions.assertEquals("Encher horários", mappedOption.get("label"));
-        org.junit.jupiter.api.Assertions.assertFalse(mappedOption.containsKey("value"));
+        org.junit.jupiter.api.Assertions.assertEquals("encher_horarios", mappedOption.get("value"));
     }
 
     @Test

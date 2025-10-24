@@ -14,6 +14,7 @@ public record CreateFacebookInstantFormRequest(
         String followUpActionUrl,
         String privacyPolicyUrl,
         String model,
-        String prompt
+        String prompt,
+        String questions
 ) {
 }

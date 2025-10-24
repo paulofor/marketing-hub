@@ -19,6 +19,7 @@ public record FacebookInstantFormDto(
         String privacyPolicyUrl,
         String model,
         String prompt,
+        String questions,
         boolean approved,
         Instant approvedAt,
         boolean published,

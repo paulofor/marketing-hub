@@ -132,6 +132,7 @@ public class FacebookInstantFormController {
                 .privacyPolicyUrl(resolvePrivacyPolicyUrl(request.privacyPolicyUrl()))
                 .model(request.model())
                 .prompt(request.prompt())
+                .questions(request.questions())
                 .approved(false)
                 .published(false)
                 .build();
@@ -228,6 +229,7 @@ public class FacebookInstantFormController {
                 resolvedPrivacyPolicyUrl,
                 dto.model(),
                 dto.prompt(),
+                dto.questions(),
                 dto.approved(),
                 dto.approvedAt(),
                 dto.published(),

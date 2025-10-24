@@ -19,6 +19,10 @@
 - Ao publicar instant forms aprove os rascunhos com `facebookFormId` nulo e reporte o identificador definitivo recebido da Meta
   através de `PATCH /api/instant-forms/{id}/publication`.
 
+- Perguntas personalizadas geradas pelo ChatGPT agora são persistidas no backend
+  e devolvidas em JSON para o worker; mantenha compatível qualquer mudança que
+  altere a estrutura das perguntas serializadas.
+
 ## Serviços existentes
 - **Campanhas de Facebook Ads** (`campaign`): cria campanhas para Facebook e Instagram utilizando o `facebook-ads-worker` com criativos gerados pelo **AI Worker** e aprovados pelo usuário no frontend.
 

@@ -18,6 +18,8 @@
 - Em caso de erro de permissão do Facebook, o worker bloqueia o experimento em memória até que o serviço seja reiniciado.
 - Ao publicar instant forms aprove os rascunhos com `facebookFormId` nulo e reporte o identificador definitivo recebido da Meta
   através de `PATCH /api/instant-forms/{id}/publication`.
+- Perguntas padrão do Instant Form (ex.: `FULL_NAME`, `EMAIL`, `PHONE`) não aceitam rótulos personalizados; ignore ou remova o
+  `label` nessas situações para evitar o erro `(#100) Invalid parameter` com `error_subcode = 1892063`.
 
 - Perguntas personalizadas geradas pelo ChatGPT agora são persistidas no backend
   e devolvidas em JSON para o worker; mantenha compatível qualquer mudança que

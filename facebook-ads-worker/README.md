@@ -87,7 +87,11 @@ operado pelo `FacebookInstantFormPublicationService` foi simplificado para uma
    apenas quando o backend sinaliza múltipla escolha, evitando erros `(#100)`.
    O atributo `helper_text` também não é aceito: quando esse campo é recebido do
    backend o worker o ignora e registra um log em nível `DEBUG` para facilitar a
-   auditoria. Quando o backend não fornece perguntas, o worker aplica o fallback
+   auditoria. A Graph API também rejeita rótulos personalizados para perguntas
+   padrão (ex.: `FULL_NAME`, `EMAIL`, `PHONE`); por isso o worker descarta o
+   `label` quando o tipo não começa com `CUSTOM`, evitando o erro `(#100)
+   Invalid parameter` com `error_subcode = 1892063`. Quando o backend não
+   fornece perguntas, o worker aplica o fallback
    `FULL_NAME` + `EMAIL` para manter a captura básica funcional. Perguntas com
    tipo `LEGAL` também são descartadas — a Graph API rejeita esse valor e a
    orientação oficial é tratar consentimentos legais via `custom_disclaimer`,

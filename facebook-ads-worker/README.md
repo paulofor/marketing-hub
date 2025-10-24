@@ -98,7 +98,11 @@ operado pelo `FacebookInstantFormPublicationService` foi simplificado para uma
    worker envia `PATCH /api/instant-forms/{id}/publication` com `status =
    CREATED`, `published = false` e o identificador externo. Se o backend já
    possuir um ID (ou se o mesmo rascunho reaparecer), a execução é ignorada para
-   evitar duplicações.
+   evitar duplicações. Quando a Graph API devolve `(#100) Invalid parameter`
+   indicando que o nome do formulário já existe, o worker consulta
+   `/{pageId}/leadgen_forms` para recuperar o identificador previamente criado e
+   reaproveita o valor retornado pela Meta, mantendo o fluxo idempotente sem
+   criar novos Instant Forms duplicados.
 5. **Testabilidade** – A propriedade `facebook.instant-forms.dry-run` permite
    validar a jornada completa sem criar formulários reais; quando habilitada, o
    serviço apenas loga o payload e incrementa as métricas de dry-run. Para

@@ -241,7 +241,10 @@ public class FacebookAdsService {
                     questionMap.put("options", question.options());
                 }
                 if (question.helperText() != null && !question.helperText().isBlank()) {
-                    questionMap.put("helper_text", question.helperText());
+                    LOGGER.debug(
+                        "Ignoring helper text for instant form question of type {} as it is not supported by the Graph API",
+                        question.type()
+                    );
                 }
                 if (question.required() != null) {
                     questionMap.put("required", question.required());

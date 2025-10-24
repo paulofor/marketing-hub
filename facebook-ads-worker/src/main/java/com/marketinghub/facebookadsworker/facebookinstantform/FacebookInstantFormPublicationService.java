@@ -10,6 +10,7 @@ import com.marketinghub.facebookadsworker.FacebookAdsService.InstantFormCreation
 import com.marketinghub.facebookadsworker.FacebookPermissionException;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient.FacebookWorkerConfiguration;
+import com.marketinghub.facebookadsworker.util.JsonLogFormatter;
 import com.marketinghub.facebookadsworker.util.UrlUtils;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
@@ -171,7 +172,7 @@ public class FacebookInstantFormPublicationService {
         LOGGER.info(
             "Requesting instant forms from backend: url==>{}, params={}",
             url,
-            Collections.emptyMap()
+            JsonLogFormatter.wrap(objectMapper, Collections.emptyMap())
         );
         try {
             List<InstantForm> forms = backendClient.get()
@@ -187,7 +188,7 @@ public class FacebookInstantFormPublicationService {
             LOGGER.info(
                 "Received instant form response from backend: url<=={}, response={}",
                 url,
-                forms
+                JsonLogFormatter.wrap(objectMapper, forms)
             );
             if (forms == null) {
                 return Optional.of(Collections.emptyList());
@@ -244,7 +245,11 @@ public class FacebookInstantFormPublicationService {
                 .retrieve()
                 .bodyToMono(GeneralSetting.class)
                 .block();
-            LOGGER.info("Received global privacy policy response from backend: url<=={}, response={}", url, setting);
+        LOGGER.info(
+            "Received global privacy policy response from backend: url<=={}, response={}",
+            url,
+            JsonLogFormatter.wrap(objectMapper, setting)
+        );
             if (setting != null && StringUtils.hasText(setting.value())) {
                 privacyPolicyNotFoundLogged.set(false);
                 return setting.value().trim();
@@ -702,7 +707,11 @@ public class FacebookInstantFormPublicationService {
                 .retrieve()
                 .bodyToMono(InstantFormDetails.class)
                 .block();
-            LOGGER.info("Received instant form details from backend: url<=={}, details={}", url, details);
+        LOGGER.info(
+            "Received instant form details from backend: url<=={}, details={}",
+            url,
+            JsonLogFormatter.wrap(objectMapper, details)
+        );
             return details;
         } catch (WebClientResponseException.NotFound ex) {
             LOGGER.warn("Instant form {} was not found in backend while fetching details for creation", formId);
@@ -724,7 +733,7 @@ public class FacebookInstantFormPublicationService {
         LOGGER.info(
             "Reporting instant form status to backend: url==>{}, payload={}",
             url,
-            request
+            JsonLogFormatter.wrap(objectMapper, request)
         );
         try {
             backendClient.patch()

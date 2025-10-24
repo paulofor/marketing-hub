@@ -1,5 +1,6 @@
 package com.marketinghub.facebookadsworker.configuration;
 
+import com.marketinghub.facebookadsworker.util.JsonLogFormatter;
 import com.marketinghub.facebookadsworker.util.UrlUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +44,7 @@ public class FacebookWorkerConfigurationClient {
         LOGGER.info(
             "Requesting Facebook worker configuration from backend: url==>{}, params={}",
             url,
-            Collections.emptyMap()
+            JsonLogFormatter.wrap(Collections.emptyMap())
         );
         try {
             FacebookWorkerConfiguration configuration = backendClient
@@ -66,7 +67,7 @@ public class FacebookWorkerConfigurationClient {
             LOGGER.info(
                 "Received Facebook worker configuration response from backend: url<=={}, response={}",
                 url,
-                configuration
+                JsonLogFormatter.wrap(configuration)
             );
             if (configuration != null) {
                 configurationNotFoundLogged.set(false);

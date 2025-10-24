@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.facebookadsworker.util.InstantFormPublicationHelper;
+import com.marketinghub.facebookadsworker.util.JsonLogFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -551,7 +552,11 @@ public class FacebookAdsService {
     private JsonNode executePost(String path, Map<String, Object> body) {
         Map<String, Object> sanitizedBody = sanitizeBody(body);
         String maskedPath = maskAccessTokenInPath(path);
-        LOGGER.info("Sending POST request to Facebook API: path==>{}, body={}", maskedPath, sanitizedBody);
+        LOGGER.info(
+            "Sending POST request to Facebook API: path==>{}, body={}",
+            maskedPath,
+            JsonLogFormatter.wrap(objectMapper, sanitizedBody)
+        );
         try {
             FacebookApiResponse apiResponse = webClient
                 .post()
@@ -580,7 +585,7 @@ public class FacebookAdsService {
                 ex.getRawStatusCode(),
                 maskAccessToken(responseBody),
                 errorDetails,
-                ex.getHeaders(),
+                JsonLogFormatter.wrap(objectMapper, sanitizeHeaders(ex.getHeaders())),
                 ex
             );
             if (isAccessTokenExpired(errorDetails)) {
@@ -714,7 +719,7 @@ public class FacebookAdsService {
             method,
             maskedPath,
             formatStatus(response.statusCode()),
-            sanitizeHeaders(response.headers()),
+            JsonLogFormatter.wrap(objectMapper, sanitizeHeaders(response.headers())),
             response.body()
         );
     }

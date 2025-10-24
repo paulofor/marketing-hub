@@ -2,6 +2,7 @@ package com.marketinghub.facebookadsworker.facebookcampaign;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenExpiredException;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenManager;
@@ -10,8 +11,9 @@ import com.marketinghub.facebookadsworker.FacebookPermissionException;
 import com.marketinghub.facebookadsworker.facebookinstantform.InstantFormPublicationUpdateRequest;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient.FacebookWorkerConfiguration;
-import com.marketinghub.facebookadsworker.util.UrlUtils;
 import com.marketinghub.facebookadsworker.util.InstantFormPublicationHelper;
+import com.marketinghub.facebookadsworker.util.JsonLogFormatter;
+import com.marketinghub.facebookadsworker.util.UrlUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,13 +51,15 @@ public class FacebookCampaignService {
     private final AtomicReference<String> lastExpiredAccessToken;
     private final FacebookAccessTokenManager accessTokenManager;
     private final AtomicBoolean configurationUnavailableWarningLogged;
+    private final ObjectMapper objectMapper;
 
     public FacebookCampaignService(FacebookAdsService facebookAdsService,
                                    FacebookAccessTokenManager accessTokenManager,
                                    WebClient.Builder builder,
                                    FacebookWorkerConfigurationClient configurationClient,
                                    @Value("${backend.base-url:http://localhost:8000}") String backendBaseUrl,
-                                   @Value("${backend.api-prefix:/api}") String apiPrefix) {
+                                   @Value("${backend.api-prefix:/api}") String apiPrefix,
+                                   ObjectMapper objectMapper) {
         this.facebookAdsService = facebookAdsService;
         this.accessTokenManager = accessTokenManager;
         this.backendClient = builder.build();
@@ -67,6 +71,7 @@ public class FacebookCampaignService {
         this.accessTokenExpiryWarningLogged = new AtomicBoolean(false);
         this.lastExpiredAccessToken = new AtomicReference<>(null);
         this.configurationUnavailableWarningLogged = new AtomicBoolean(false);
+        this.objectMapper = objectMapper;
     }
 
     public void createCampaignsFromExperiments() {
@@ -131,7 +136,7 @@ public class FacebookCampaignService {
         LOGGER.info(
             "Requesting experiments ready for Facebook campaigns from backend: url==>{}, params={}",
             experimentsUrl,
-            Collections.emptyMap()
+            JsonLogFormatter.wrap(objectMapper, Collections.emptyMap())
         );
         try {
             experiments = backendClient.get()
@@ -152,7 +157,7 @@ public class FacebookCampaignService {
             LOGGER.info(
                 "Received experiments response from backend: url<=={}, response={}",
                 experimentsUrl,
-                experiments
+                JsonLogFormatter.wrap(objectMapper, experiments)
             );
         } catch (WebClientRequestException ex) {
             LOGGER.warn("Failed to fetch experiments from backend: url==>{}", experimentsUrl, ex);
@@ -314,8 +319,8 @@ public class FacebookCampaignService {
             LOGGER.info(
                 "Reporting Facebook campaign creation to backend: url==>{}, params={}, payload={}",
                 createCampaignUrl,
-                Collections.emptyMap(),
-                req
+                JsonLogFormatter.wrap(objectMapper, Collections.emptyMap()),
+                JsonLogFormatter.wrap(objectMapper, req)
             );
             backendClient.post()
                 .uri(createCampaignUrl)
@@ -487,7 +492,7 @@ public class FacebookCampaignService {
         LOGGER.info(
             "Requesting creatives for experiment from backend: url==>{}, params={}",
             url,
-            Collections.emptyMap()
+            JsonLogFormatter.wrap(objectMapper, Collections.emptyMap())
         );
         try {
             List<Creative> creatives = backendClient.get()
@@ -499,7 +504,7 @@ public class FacebookCampaignService {
             LOGGER.info(
                 "Received creatives response from backend: url<=={}, response={}",
                 url,
-                creatives
+                JsonLogFormatter.wrap(objectMapper, creatives)
             );
             if (creatives == null || creatives.isEmpty()) {
                 return null;
@@ -643,7 +648,7 @@ public class FacebookCampaignService {
         LOGGER.info(
             "Marking experiment as FAILED in backend: url==>{}, params={}",
             url,
-            Collections.emptyMap()
+            JsonLogFormatter.wrap(objectMapper, Collections.emptyMap())
         );
         try {
             backendClient.patch()
@@ -668,7 +673,7 @@ public class FacebookCampaignService {
         LOGGER.info(
             "Marking experiment as RUNNING in backend after Facebook campaign publication: url==>{}, params={}, campaignId={}",
             url,
-            Collections.emptyMap(),
+            JsonLogFormatter.wrap(objectMapper, Collections.emptyMap()),
             campaignId
         );
         try {
@@ -824,7 +829,7 @@ public class FacebookCampaignService {
         LOGGER.info(
             "Reporting instant form publication to backend: url==>{}, payload={}",
             url,
-            request
+            JsonLogFormatter.wrap(objectMapper, request)
         );
         try {
             backendClient.patch()

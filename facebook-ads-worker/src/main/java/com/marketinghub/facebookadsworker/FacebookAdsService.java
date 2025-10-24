@@ -249,8 +249,8 @@ public class FacebookAdsService {
                 if (question.required() != null) {
                     questionMap.put("required", question.required());
                 }
-                if (question.allowMultiSelect() != null) {
-                    questionMap.put("allow_multi_select", question.allowMultiSelect());
+                if (Boolean.TRUE.equals(question.allowMultiSelect())) {
+                    questionMap.put("allow_multiple_selections", Boolean.TRUE);
                 }
                 questions.add(questionMap);
             }

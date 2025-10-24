@@ -15,11 +15,13 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class FacebookAdsServiceTest {
     private MockWebServer server;
@@ -347,6 +349,66 @@ class FacebookAdsServiceTest {
             "/v23.0/485/leadgen_forms?fields=id,name,status,draft_id&limit=200&access_token=page-token",
             formsRequest.getPath()
         );
+    }
+
+    @Test
+    void createInstantFormSkipsLabelsForStandardQuestions() throws Exception {
+        server.enqueue(new MockResponse()
+            .setBody("{\"access_token\":\"page-token\"}")
+            .addHeader("Content-Type", "application/json"));
+        server.enqueue(new MockResponse()
+            .setBody("{\"id\":\"form-123\"}")
+            .addHeader("Content-Type", "application/json"));
+
+        FacebookAdsService.InstantFormCreationRequest request = new FacebookAdsService.InstantFormCreationRequest(
+            "Calendário de Campanhas",
+            "pt_BR",
+            new FacebookAdsService.InstantFormCreationRequest.PrivacyPolicy(
+                "https://example.com/privacy",
+                "Política"
+            ),
+            List.of(
+                new FacebookAdsService.InstantFormCreationRequest.Question(
+                    "FULL_NAME",
+                    null,
+                    "Nome completo",
+                    null,
+                    null,
+                    Boolean.TRUE,
+                    null
+                ),
+                new FacebookAdsService.InstantFormCreationRequest.Question(
+                    "CUSTOM",
+                    "objetivo_conteudo",
+                    "Objetivo",
+                    List.of(Map.of("label", "Encher horários", "value", "encher")),
+                    null,
+                    Boolean.TRUE,
+                    null
+                )
+            ),
+            "Visitar site",
+            "https://example.com/follow"
+        );
+
+        service.createInstantForm("485", request);
+
+        RecordedRequest tokenRequest = server.takeRequest(1, TimeUnit.SECONDS);
+        assertEquals("/v23.0/485?fields=access_token&access_token=token", tokenRequest.getPath());
+
+        RecordedRequest createRequest = server.takeRequest(1, TimeUnit.SECONDS);
+        assertEquals("/v23.0/485/leadgen_forms", createRequest.getPath());
+
+        JsonNode body = objectMapper.readTree(createRequest.getBody().inputStream());
+        JsonNode questions = body.get("questions");
+        assertEquals(2, questions.size());
+        JsonNode standardQuestion = questions.get(0);
+        assertEquals("FULL_NAME", standardQuestion.get("type").asText());
+        assertFalse(standardQuestion.has("label"));
+
+        JsonNode customQuestion = questions.get(1);
+        assertEquals("CUSTOM", customQuestion.get("type").asText());
+        assertEquals("Objetivo", customQuestion.get("label").asText());
     }
 
     @Test

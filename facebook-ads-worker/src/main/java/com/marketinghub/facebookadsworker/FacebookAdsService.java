@@ -230,12 +230,20 @@ public class FacebookAdsService {
                     continue;
                 }
                 Map<String, Object> questionMap = new HashMap<>();
-                questionMap.put("type", question.type());
+                String questionType = question.type().trim();
+                questionMap.put("type", questionType);
                 if (question.key() != null && !question.key().isBlank()) {
                     questionMap.put("key", question.key());
                 }
                 if (question.label() != null && !question.label().isBlank()) {
-                    questionMap.put("label", question.label());
+                    if (isCustomInstantFormQuestion(questionType)) {
+                        questionMap.put("label", question.label());
+                    } else {
+                        LOGGER.debug(
+                            "Ignoring label for instant form question of type {} because Graph API does not accept custom labels",
+                            questionType
+                        );
+                    }
                 }
                 if (question.options() != null && !question.options().isEmpty()) {
                     questionMap.put("options", question.options());
@@ -777,6 +785,14 @@ public class FacebookAdsService {
             return path;
         }
         return path.replace(currentToken, maskAccessToken(currentToken));
+    }
+
+    private boolean isCustomInstantFormQuestion(String questionType) {
+        if (!hasText(questionType)) {
+            return false;
+        }
+        String normalized = questionType.trim().toUpperCase(Locale.ROOT);
+        return normalized.equals("CUSTOM") || normalized.startsWith("CUSTOM_");
     }
 
     public record InstantFormCreationRequest(

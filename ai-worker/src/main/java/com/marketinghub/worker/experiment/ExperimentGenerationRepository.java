@@ -44,4 +44,17 @@ public class ExperimentGenerationRepository {
         );
         return query.getResultList();
     }
+
+    @Transactional(readOnly = true)
+    public List<Experiment> findAllToGenerateDeliverables() {
+        TypedQuery<Experiment> query = entityManager.createQuery(
+                "select e from Experiment e " +
+                        "join fetch e.niche " +
+                        "join fetch e.hypothesisRef " +
+                        "where e.deliverablesToGenerate is not null " +
+                        "and e.deliverablesToGenerate > 0",
+                Experiment.class
+        );
+        return query.getResultList();
+    }
 }

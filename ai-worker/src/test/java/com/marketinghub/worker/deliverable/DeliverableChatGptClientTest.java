@@ -77,7 +77,7 @@ class DeliverableChatGptClientTest {
         experiment.setName("Sequência de onboarding");
         experiment.setHypothesis("Alinhar expectativas de novos leads");
         experiment.setPlatform(com.marketinghub.experiment.ExperimentPlatform.FACEBOOK);
-        experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.DRAFT);
+        experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
         experiment.setNiche(niche);
         experiment.setHypothesisRef(hypothesis);
 

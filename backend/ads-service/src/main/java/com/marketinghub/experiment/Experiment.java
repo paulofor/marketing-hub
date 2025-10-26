@@ -110,6 +110,10 @@ public class Experiment {
     @Column(name = "emails_to_generate")
     private Integer emailsToGenerate;
 
+    /** Quantidade de definições de entregáveis a serem geradas pelo worker. */
+    @Column(name = "deliverables_to_generate")
+    private Integer deliverablesToGenerate;
+
     @CreationTimestamp
     private Instant createdAt;
 

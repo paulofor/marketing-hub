@@ -14,6 +14,7 @@ export interface UpdateExperiment {
   creativesToGenerate?: number;
   instantFormsToGenerate?: number;
   emailsToGenerate?: number;
+  deliverablesToGenerate?: number;
   journeyTemplateId?: number;
   facebookPageId?: number | null;
   facebookInstantFormId?: number | null;

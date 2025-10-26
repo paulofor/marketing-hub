@@ -42,6 +42,7 @@ public class ExperimentDto {
     private Integer creativesToGenerate;
     private Integer instantFormsToGenerate;
     private Integer emailsToGenerate;
+    private Integer deliverablesToGenerate;
     private Long journeyTemplateId;
     private String journeyTemplateName;
 }

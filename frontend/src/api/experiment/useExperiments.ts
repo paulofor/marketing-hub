@@ -64,6 +64,7 @@ export interface Experiment {
   creativesToGenerate?: number | null;
   instantFormsToGenerate?: number | null;
   emailsToGenerate?: number | null;
+  deliverablesToGenerate?: number | null;
   creativeApproved: boolean;
   status: string;
   platform: string;

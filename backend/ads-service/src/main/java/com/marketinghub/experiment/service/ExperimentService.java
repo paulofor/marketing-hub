@@ -179,6 +179,7 @@ public class ExperimentService {
                 .creativesToGenerate(request.getCreativesToGenerate())
                 .instantFormsToGenerate(request.getInstantFormsToGenerate())
                 .emailsToGenerate(request.getEmailsToGenerate())
+                .deliverablesToGenerate(request.getDeliverablesToGenerate())
                 .facebookPage(attachFacebookPage(request.getFacebookPageId()))
                 .facebookInstantForm(attachInstantForm(request.getFacebookInstantFormId(), request.getHypothesisId()))
                 .instagramAccount(attachInstagramAccount(request.getInstagramAccountId()))
@@ -239,6 +240,7 @@ public class ExperimentService {
                 .creativesToGenerate(original.getCreativesToGenerate())
                 .instantFormsToGenerate(original.getInstantFormsToGenerate())
                 .emailsToGenerate(original.getEmailsToGenerate())
+                .deliverablesToGenerate(original.getDeliverablesToGenerate())
                 .facebookPage(original.getFacebookPage())
                 .instagramAccount(original.getInstagramAccount())
                 .facebookInstantForm(original.getFacebookInstantForm())
@@ -319,6 +321,9 @@ public class ExperimentService {
         if (request.getEmailsToGenerate() != null) {
             exp.setEmailsToGenerate(request.getEmailsToGenerate());
         }
+        if (request.getDeliverablesToGenerate() != null) {
+            exp.setDeliverablesToGenerate(request.getDeliverablesToGenerate());
+        }
         if (request.getCreativeApproved() != null) {
             exp.setCreativeApproved(request.getCreativeApproved());
         }
@@ -371,6 +376,16 @@ public class ExperimentService {
     public Experiment requestEmails(Long id, int quantity) {
         Experiment exp = repository.findById(id).orElseThrow();
         exp.setEmailsToGenerate(quantity);
+        return exp;
+    }
+
+    /**
+     * Requests generation of new deliverable definitions by setting the pending quantity.
+     */
+    @Transactional
+    public Experiment requestDeliverables(Long id, int quantity) {
+        Experiment exp = repository.findById(id).orElseThrow();
+        exp.setDeliverablesToGenerate(quantity);
         return exp;
     }
 

@@ -8,6 +8,7 @@ import { useCreateDeliverablePackage } from "../../api/deliverable/useCreateDeli
 import { useRequestDeliverables } from "../../api/experiment/useRequestDeliverables";
 import type { Deliverable } from "../../api/deliverable/types";
 import type { Experiment } from "../../api/experiment/useExperiments";
+import "./DeliverablesTab.css";
 
 interface DeliverablesTabProps {
   experiment: Experiment;
@@ -27,6 +28,17 @@ function sortByUpdatedAtDesc<T extends { updatedAt?: string | null }>(list: T[])
     const aDate = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
     const bDate = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
     return bDate - aDate;
+  });
+}
+
+function formatUpdatedAt(updatedAt?: string | null) {
+  if (!updatedAt) {
+    return "-";
+  }
+
+  return new Date(updatedAt).toLocaleString("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
   });
 }
 
@@ -105,44 +117,41 @@ export default function DeliverablesTab({ experiment, nicheName }: DeliverablesT
     }
 
     return (
-      <div className="row row-cols-1 row-cols-lg-2 g-3">
+      <div className="deliverable-grid">
         {deliverableList.map((deliverable) => (
-          <div key={deliverable.id} className="col">
-            <article className="card h-100 shadow-sm">
-              <div className="card-body d-flex flex-column gap-2">
-                <div className="d-flex justify-content-between align-items-start gap-2">
-                  <h6 className="mb-0">{deliverable.title}</h6>
-                  {deliverable.model ? (
-                    <span className="badge text-bg-light text-dark">{deliverable.model}</span>
-                  ) : null}
-                </div>
+          <article key={deliverable.id} className="deliverable-card">
+            <header className="deliverable-card__header">
+              <div className="deliverable-card__title-group">
+                <h6 className="deliverable-card__title">{deliverable.title}</h6>
                 {deliverable.description ? (
-                  <p className="text-muted small mb-0">{deliverable.description}</p>
+                  <p className="deliverable-card__description">{deliverable.description}</p>
                 ) : null}
-                {deliverable.content ? (
-                  <pre className="bg-body-tertiary rounded-3 p-2 small mb-0 text-muted">
-                    {deliverable.content}
-                  </pre>
+              </div>
+              <div className="deliverable-card__tags">
+                {deliverable.model ? (
+                  <span className="chip chip-muted">{deliverable.model}</span>
                 ) : null}
-                <details>
-                  <summary className="small fw-semibold text-primary">Ver prompt utilizado</summary>
-                  <pre className="bg-body-tertiary rounded-3 p-2 small mt-2 text-muted">{deliverable.prompt}</pre>
-                </details>
+                <span className="chip">Atualizado {formatUpdatedAt(deliverable.updatedAt)}</span>
               </div>
-              <div className="card-footer text-muted small">
-                {`Atualizado em ${
-                  deliverable.updatedAt ? new Date(deliverable.updatedAt).toLocaleString("pt-BR") : "-"
-                }`}
+            </header>
+            {deliverable.content ? (
+              <div className="deliverable-card__content">
+                <span className="deliverable-card__eyebrow">Referência aprovada</span>
+                <pre className="deliverable-card__snippet">{deliverable.content}</pre>
               </div>
-            </article>
-          </div>
+            ) : null}
+            <details className="deliverable-card__details">
+              <summary>Ver prompt utilizado</summary>
+              <pre className="deliverable-card__prompt">{deliverable.prompt}</pre>
+            </details>
+          </article>
         ))}
       </div>
     );
   };
 
   return (
-    <div className="mt-3">
+    <div className="mt-3 deliverables-tab">
       <WorkerRequestBanner
         title="Entregáveis planejados"
         subtitle={
@@ -162,31 +171,37 @@ export default function DeliverablesTab({ experiment, nicheName }: DeliverablesT
         isRequesting={requestDeliverables.isPending}
       />
 
-      <section className="card mb-4 mt-4">
-        <div className="card-header d-flex flex-wrap justify-content-between align-items-start gap-2">
+      <section className="card deliverables-panel deliverables-panel--niche mb-4 mt-4">
+        <div className="card-header d-flex flex-wrap justify-content-between align-items-start gap-3">
           <div>
-            <h5 className="mb-0">Entregáveis do nicho</h5>
-            <p className="text-muted small mb-0">
-              Utilize as referências aprovadas para montar pacotes e guiar a produção criativa.
+            <h5 className="mb-1">Entregáveis do nicho</h5>
+            <p className="text-muted mb-0">
+              Visualize rapidamente as definições aprovadas e utilize-as como base para novas curadorias.
             </p>
           </div>
-          <span className="badge text-bg-secondary align-self-center">{deliverableList.length}</span>
+          <span className="chip chip-emphasis align-self-center">{deliverableList.length} disponível(is)</span>
         </div>
-        <div className="card-body">{renderDeliverableList()}</div>
+        <div className="card-body">
+          {isLoadingDeliverables || deliverableList.length === 0 ? (
+            <div className="deliverables-panel__empty">{renderDeliverableList()}</div>
+          ) : (
+            renderDeliverableList()
+          )}
+        </div>
       </section>
 
-      <section className="card border-0 shadow-sm rounded-3">
+      <section className="card deliverables-panel deliverables-panel--packages border-0">
         <div className="card-body">
-          <div className="d-flex justify-content-between align-items-start flex-wrap gap-3">
+          <div className="deliverables-panel__header">
             <div>
-              <h5 className="card-title mb-0">Pacotes de entregáveis</h5>
+              <h5 className="card-title mb-1">Pacotes de entregáveis</h5>
               <p className="text-muted mb-0">
-                Agrupe entregáveis do nicho para acompanhar os materiais aprovados pela IA.
+                Monte coleções estratégicas para compartilhar com a equipe e acelerar a produção criativa.
               </p>
             </div>
-            <span className="badge text-bg-light text-dark">{packageList.length} pacote(s)</span>
+            <span className="chip chip-muted">{packageList.length} pacote(s)</span>
           </div>
-          <form className="mt-3" onSubmit={onCreatePackage}>
+          <form className="mt-4 deliverable-package-form" onSubmit={onCreatePackage}>
             <div className="row g-3">
               <div className="col-md-4">
                 <label htmlFor="package-name" className="form-label">
@@ -218,28 +233,30 @@ export default function DeliverablesTab({ experiment, nicheName }: DeliverablesT
                 <label htmlFor="package-deliverables" className="form-label">
                   Entregáveis vinculados
                 </label>
-                <select
-                  id="package-deliverables"
-                  multiple
-                  className="form-select"
-                  disabled={
-                    createPackage.isPending || isLoadingDeliverables || deliverableList.length === 0
-                  }
-                  {...register("deliverableIds")}
-                >
-                  {deliverableList.length === 0 ? (
-                    <option disabled value="">
-                      Nenhum entregável disponível
-                    </option>
-                  ) : (
-                    deliverableList.map((deliverable) => (
-                      <option key={deliverable.id} value={deliverable.id}>
-                        {deliverable.title}
+                <div className="form-floating-select">
+                  <select
+                    id="package-deliverables"
+                    multiple
+                    className="form-select"
+                    disabled={
+                      createPackage.isPending || isLoadingDeliverables || deliverableList.length === 0
+                    }
+                    {...register("deliverableIds")}
+                  >
+                    {deliverableList.length === 0 ? (
+                      <option disabled value="">
+                        Nenhum entregável disponível
                       </option>
-                    ))
-                  )}
-                </select>
-                <small className="text-muted">Use Ctrl/Cmd + clique para selecionar múltiplos.</small>
+                    ) : (
+                      deliverableList.map((deliverable) => (
+                        <option key={deliverable.id} value={deliverable.id}>
+                          {deliverable.title}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  <small className="text-muted">Use Ctrl/Cmd + clique para selecionar múltiplos.</small>
+                </div>
               </div>
               <div className="col-12">
                 <label htmlFor="package-prompt" className="form-label">
@@ -268,8 +285,8 @@ export default function DeliverablesTab({ experiment, nicheName }: DeliverablesT
                 />
               </div>
             </div>
-            <div className="d-flex justify-content-end mt-3">
-              <button type="submit" className="btn btn-primary" disabled={createPackage.isPending}>
+            <div className="d-flex justify-content-end mt-4">
+              <button type="submit" className="btn btn-primary btn-lg" disabled={createPackage.isPending}>
                 {createPackage.isPending ? (
                   <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
                 ) : (
@@ -280,28 +297,28 @@ export default function DeliverablesTab({ experiment, nicheName }: DeliverablesT
             </div>
           </form>
           {isLoadingPackages ? (
-            <p className="text-muted small mt-3 mb-0">Carregando pacotes cadastrados...</p>
+            <p className="text-muted small mt-4 mb-0">Carregando pacotes cadastrados...</p>
           ) : packageList.length === 0 ? (
-            <p className="text-muted small mt-3 mb-0">
+            <p className="text-muted small mt-4 mb-0">
               Nenhum pacote cadastrado ainda. Selecione entregáveis para formar um conjunto coerente.
             </p>
           ) : (
-            <div className="mt-3 d-flex flex-column gap-3">
+            <div className="mt-4 d-flex flex-column gap-3">
               {packageList.map((pkg) => (
-                <div key={pkg.id} className="border rounded-3 p-3 bg-body-tertiary">
-                  <div className="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                <article key={pkg.id} className="deliverable-package">
+                  <header className="deliverable-package__header">
                     <div>
-                      <h6 className="mb-1">{pkg.name}</h6>
+                      <h6 className="deliverable-package__title">{pkg.name}</h6>
                       {pkg.description ? (
-                        <p className="text-muted small mb-2">{pkg.description}</p>
+                        <p className="deliverable-package__description">{pkg.description}</p>
                       ) : null}
                     </div>
-                    <span className="badge text-bg-light text-dark">
+                    <span className="chip chip-muted">
                       {pkg.deliverables.length} entregável(is)
                     </span>
-                  </div>
+                  </header>
                   {pkg.deliverables.length > 0 ? (
-                    <ul className="small ps-3 mb-2 mt-2">
+                    <ul className="deliverable-package__list">
                       {pkg.deliverables.map((deliverable) => (
                         <li key={deliverable.id}>
                           <strong>{deliverable.title}</strong>
@@ -312,16 +329,14 @@ export default function DeliverablesTab({ experiment, nicheName }: DeliverablesT
                   ) : (
                     <p className="text-muted small mb-2">Nenhum entregável associado ainda.</p>
                   )}
-                  <details className="mt-2">
-                    <summary className="small fw-semibold text-primary">Ver prompt utilizado</summary>
-                    <pre className="bg-body-secondary rounded-3 p-2 mt-2 small text-muted">{pkg.prompt}</pre>
+                  <details className="deliverable-package__details">
+                    <summary>Ver prompt utilizado</summary>
+                    <pre className="deliverable-package__prompt">{pkg.prompt}</pre>
                   </details>
-                  <div className="text-muted small mt-2">
-                    {`Atualizado em ${
-                      pkg.updatedAt ? new Date(pkg.updatedAt).toLocaleString("pt-BR") : "-"
-                    }`}
+                  <div className="deliverable-package__footer text-muted small">
+                    Atualizado {formatUpdatedAt(pkg.updatedAt)}
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           )}

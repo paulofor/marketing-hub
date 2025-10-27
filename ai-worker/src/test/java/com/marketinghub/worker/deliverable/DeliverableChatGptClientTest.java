@@ -91,7 +91,9 @@ class DeliverableChatGptClientTest {
                 .contains("Consultorias B2B")
                 .contains("Acelerar agendamentos")
                 .contains("Sequência de onboarding")
-                .contains("Gere 2 entregáveis");
+                .contains("Gere 2 entregáveis")
+                .contains("iscas digitais")
+                .contains("brinde digital");
 
         assertThat(deliverables).hasSize(1);
         CreateDeliverableRequest request = deliverables.get(0);

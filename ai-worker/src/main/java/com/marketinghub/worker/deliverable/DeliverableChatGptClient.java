@@ -155,8 +155,8 @@ public class DeliverableChatGptClient {
 
     private String buildPrompt(Experiment experiment, int quantity) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Gere ").append(quantity).append(" entregáveis acionáveis em formato JSON. ");
-        sb.append("Os entregáveis devem ajudar o time a executar o experimento descrito. ");
+        sb.append("Gere ").append(quantity).append(" entregáveis em formato JSON que funcionem como iscas digitais. ");
+        sb.append("Cada entregável deve ser um brinde digital oferecido ao lead por ter compartilhado dados, entregando valor rápido e ajudando o time a executar o experimento descrito. ");
         if (experiment != null) {
             sb.append("\nContexto do experimento:\n");
             if (StringUtils.hasText(experiment.getName())) {

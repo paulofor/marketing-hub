@@ -1,10 +1,12 @@
 package com.marketinghub.journey.execution;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.journey.execution.channel.ChannelDispatchResult;
 import com.marketinghub.journey.execution.channel.ChannelDispatchStatus;
 import com.marketinghub.journey.execution.channel.WhatsAppChannelHandler;
 import com.marketinghub.journey.execution.config.WhatsAppProperties;
 import com.marketinghub.journey.model.*;
+import com.marketinghub.model.Lead;
 import com.marketinghub.whatsapp.WhatsAppAccount;
 import com.marketinghub.whatsapp.WhatsAppMessage;
 import com.marketinghub.whatsapp.WhatsAppMessageDirection;
@@ -38,6 +40,7 @@ class WhatsAppChannelHandlerTest {
     private WhatsAppAccountService accountService;
 
     private WhatsAppChannelHandler handler;
+    private ObjectMapper objectMapper;
     private WhatsAppAccount account;
 
     @BeforeEach
@@ -51,7 +54,8 @@ class WhatsAppChannelHandlerTest {
                 .phoneNumberId("1234")
                 .accessToken("token")
                 .build();
-        handler = new WhatsAppChannelHandler(messagingService, accountService, properties);
+        objectMapper = new ObjectMapper();
+        handler = new WhatsAppChannelHandler(messagingService, accountService, properties, objectMapper);
         when(accountService.findActiveAccount()).thenReturn(Optional.of(account));
     }
 

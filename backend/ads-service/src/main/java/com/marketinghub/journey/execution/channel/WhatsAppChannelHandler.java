@@ -1,5 +1,7 @@
 package com.marketinghub.journey.execution.channel;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.journey.execution.config.WhatsAppProperties;
 import com.marketinghub.journey.model.JourneyAssignment;
 import com.marketinghub.journey.model.JourneyStep;
@@ -32,13 +34,16 @@ public class WhatsAppChannelHandler implements JourneyChannelHandler {
     private final WhatsAppMessagingService messagingService;
     private final WhatsAppAccountService accountService;
     private final WhatsAppProperties properties;
+    private final ObjectMapper objectMapper;
 
     public WhatsAppChannelHandler(WhatsAppMessagingService messagingService,
                                   WhatsAppAccountService accountService,
-                                  WhatsAppProperties properties) {
+                                  WhatsAppProperties properties,
+                                  ObjectMapper objectMapper) {
         this.messagingService = messagingService;
         this.accountService = accountService;
         this.properties = properties;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -130,19 +135,38 @@ public class WhatsAppChannelHandler implements JourneyChannelHandler {
         return messagingService.sendTextMessage(account, to, body, metadata);
     }
 
-    private Map<String, Object> extractTemplateData(Map<String, Object> metadata) {
+    private Map<String, Object> extractTemplateData(Map<String, String> metadata) {
         Map<String, Object> templateData = new HashMap<>();
-        Object components = metadata.get("templateComponents");
+        if (metadata == null || metadata.isEmpty()) {
+            return templateData;
+        }
+
+        Object components = parseJson(metadata.get("templateComponents"), "templateComponents");
         if (components instanceof List<?> list && !list.isEmpty()) {
             templateData.put("components", list);
         } else if (components instanceof Map<?, ?> map && !map.isEmpty()) {
             templateData.put("components", map);
+        } else if (components != null) {
+            throw new IllegalArgumentException("WhatsApp templateComponents must be a JSON array or object");
         }
-        Object templateOverrides = metadata.get("templateData");
+        Object templateOverrides = parseJson(metadata.get("templateData"), "templateData");
         if (templateOverrides instanceof Map<?, ?> map && !map.isEmpty()) {
             map.forEach((key, value) -> templateData.put(String.valueOf(key), value));
+        } else if (templateOverrides != null) {
+            throw new IllegalArgumentException("WhatsApp templateData must be a JSON object");
         }
         return templateData;
+    }
+
+    private Object parseJson(String rawValue, String fieldName) {
+        if (!StringUtils.hasText(rawValue)) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(rawValue, Object.class);
+        } catch (JsonProcessingException ex) {
+            throw new IllegalArgumentException("Invalid WhatsApp " + fieldName + " JSON", ex);
+        }
     }
 
     private String resolveBody(JourneyStep step, Map<String, Object> context) {

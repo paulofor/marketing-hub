@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Check, Clipboard, Sparkles } from "lucide-react";
 import { useForm } from "react-hook-form";
 import WorkerRequestBanner from "./WorkerRequestBanner";
 import { useDeliverablesByNiche } from "../../api/deliverable/useDeliverablesByNiche";
@@ -23,6 +23,21 @@ type DeliverablePackageForm = {
   deliverableIds: string[];
 };
 
+type ContentListItem = {
+  text: string;
+  prefix?: string;
+};
+
+type ContentBlock =
+  | {
+      type: "paragraph";
+      text: string;
+    }
+  | {
+      type: "list";
+      items: ContentListItem[];
+    };
+
 function sortByUpdatedAtDesc<T extends { updatedAt?: string | null }>(list: T[]) {
   return [...list].sort((a, b) => {
     const aDate = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
@@ -42,6 +57,106 @@ function formatUpdatedAt(updatedAt?: string | null) {
   });
 }
 
+function parseDeliverableContent(content: string): ContentBlock[] {
+  const lines = content.split(/\r?\n/);
+  const blocks: ContentBlock[] = [];
+  let currentList: ContentListItem[] | null = null;
+
+  const flushList = () => {
+    if (currentList && currentList.length > 0) {
+      blocks.push({ type: "list", items: currentList });
+    }
+    currentList = null;
+  };
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      flushList();
+      continue;
+    }
+
+    const listMatch = trimmed.match(/^((?:\d+|[a-zA-Z])[\.\)]|[-–—•●◦▪])\s+(.*)$/);
+
+    if (listMatch) {
+      if (!currentList) {
+        currentList = [];
+      }
+
+      const [, prefix, itemText] = listMatch;
+      currentList.push({
+        prefix: prefix,
+        text: itemText.trim(),
+      });
+      continue;
+    }
+
+    flushList();
+    blocks.push({ type: "paragraph", text: trimmed });
+  }
+
+  flushList();
+  return blocks;
+}
+
+interface DeliverableContentProps {
+  content: string;
+  deliverableId: number;
+  isCopied: boolean;
+  onCopy: (deliverableId: number, content: string) => Promise<void>;
+}
+
+function DeliverableContent({ content, deliverableId, isCopied, onCopy }: DeliverableContentProps) {
+  const blocks = useMemo(() => parseDeliverableContent(content), [content]);
+
+  return (
+    <div className="deliverable-card__content">
+      <div className="deliverable-card__content-header">
+        <span className="deliverable-card__eyebrow">Referência aprovada</span>
+        <button
+          type="button"
+          className="deliverable-card__copy-button"
+          onClick={() => onCopy(deliverableId, content)}
+        >
+          {isCopied ? <Check size={16} aria-hidden="true" /> : <Clipboard size={16} aria-hidden="true" />}
+          <span>{isCopied ? "Copiado" : "Copiar tudo"}</span>
+        </button>
+      </div>
+      <div className="deliverable-card__snippet" aria-live="polite">
+        {blocks.map((block, index) => {
+          if (block.type === "list") {
+            return (
+              <ul key={`list-${index}`} className="deliverable-card__list">
+                {block.items.map((item, itemIndex) => (
+                  <li key={`list-${index}-item-${itemIndex}`}>
+                    {item.prefix ? <span className="deliverable-card__list-bullet">{item.prefix}</span> : null}
+                    <span>{item.text}</span>
+                  </li>
+                ))}
+              </ul>
+            );
+          }
+
+          const highlighted = block.text.match(/^([^:]{1,80}):\s*(.*)$/);
+
+          return (
+            <p key={`paragraph-${index}`} className="deliverable-card__paragraph">
+              {highlighted ? (
+                <>
+                  <strong>{highlighted[1]}:</strong> {highlighted[2]}
+                </>
+              ) : (
+                block.text
+              )}
+            </p>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function DeliverablesTab({ experiment, nicheName }: DeliverablesTabProps) {
   const { register, handleSubmit, reset } = useForm<DeliverablePackageForm>({
     defaultValues: {
@@ -52,6 +167,17 @@ export default function DeliverablesTab({ experiment, nicheName }: DeliverablesT
       deliverableIds: [],
     },
   });
+
+  const [copiedDeliverableId, setCopiedDeliverableId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (copiedDeliverableId === null) {
+      return;
+    }
+
+    const timeout = setTimeout(() => setCopiedDeliverableId(null), 2200);
+    return () => clearTimeout(timeout);
+  }, [copiedDeliverableId]);
 
   const { data: deliverables, isLoading: isLoadingDeliverables } = useDeliverablesByNiche(
     experiment.nicheId,
@@ -102,6 +228,24 @@ export default function DeliverablesTab({ experiment, nicheName }: DeliverablesT
     },
   );
 
+  const handleCopyDeliverable = async (deliverableId: number, content: string) => {
+    if (!content) {
+      return;
+    }
+
+    try {
+      if (typeof navigator === "undefined" || !navigator.clipboard) {
+        console.warn("Clipboard API is not available in this environment");
+        return;
+      }
+
+      await navigator.clipboard.writeText(content);
+      setCopiedDeliverableId(deliverableId);
+    } catch (error) {
+      console.error("Failed to copy deliverable content", error);
+    }
+  };
+
   const renderDeliverableList = () => {
     if (isLoadingDeliverables) {
       return <p>Carregando entregáveis do nicho...</p>;
@@ -135,10 +279,12 @@ export default function DeliverablesTab({ experiment, nicheName }: DeliverablesT
               </div>
             </header>
             {deliverable.content ? (
-              <div className="deliverable-card__content">
-                <span className="deliverable-card__eyebrow">Referência aprovada</span>
-                <pre className="deliverable-card__snippet">{deliverable.content}</pre>
-              </div>
+              <DeliverableContent
+                deliverableId={deliverable.id}
+                content={deliverable.content}
+                isCopied={copiedDeliverableId === deliverable.id}
+                onCopy={handleCopyDeliverable}
+              />
             ) : null}
             <details className="deliverable-card__details">
               <summary>Ver prompt utilizado</summary>

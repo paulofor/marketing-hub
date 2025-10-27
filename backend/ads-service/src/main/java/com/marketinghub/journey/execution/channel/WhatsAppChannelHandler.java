@@ -87,9 +87,14 @@ public class WhatsAppChannelHandler implements JourneyChannelHandler {
         } catch (HttpStatusCodeException ex) {
             if (ex.getStatusCode().is5xxServerError() || ex.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
                 Instant retryAt = parseRetryAfter(ex.getResponseHeaders() != null ? ex.getResponseHeaders().getFirst("Retry-After") : null);
-                return ChannelDispatchResult.transientFailure("WhatsApp error: " + ex.getStatusCode(), retryAt, Map.of("body", ex.getResponseBodyAsString()));
+                return ChannelDispatchResult.transientFailure(
+                        "WhatsApp error: " + ex.getStatusCode(),
+                        retryAt,
+                        Map.<String, Object>of("body", ex.getResponseBodyAsString()));
             }
-            return ChannelDispatchResult.permanentFailure("WhatsApp error: " + ex.getStatusCode(), Map.of("body", ex.getResponseBodyAsString()));
+            return ChannelDispatchResult.permanentFailure(
+                    "WhatsApp error: " + ex.getStatusCode(),
+                    Map.<String, Object>of("body", ex.getResponseBodyAsString()));
         } catch (ResourceAccessException ex) {
             log.warn("WhatsApp network error", ex);
             return ChannelDispatchResult.transientFailure("WhatsApp network error", null, Map.of());

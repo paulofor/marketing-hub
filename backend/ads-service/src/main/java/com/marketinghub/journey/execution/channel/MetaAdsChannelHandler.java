@@ -79,9 +79,14 @@ public class MetaAdsChannelHandler implements JourneyChannelHandler {
         } catch (HttpStatusCodeException ex) {
             if (ex.getStatusCode().is5xxServerError() || ex.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
                 Instant retryAt = resolveRetryAt(ex.getResponseHeaders());
-                return ChannelDispatchResult.transientFailure("Meta API error: " + ex.getStatusCode(), retryAt, Map.of("body", ex.getResponseBodyAsString()));
+                return ChannelDispatchResult.transientFailure(
+                        "Meta API error: " + ex.getStatusCode(),
+                        retryAt,
+                        Map.<String, Object>of("body", ex.getResponseBodyAsString()));
             }
-            return ChannelDispatchResult.permanentFailure("Meta API error: " + ex.getStatusCode(), Map.of("body", ex.getResponseBodyAsString()));
+            return ChannelDispatchResult.permanentFailure(
+                    "Meta API error: " + ex.getStatusCode(),
+                    Map.<String, Object>of("body", ex.getResponseBodyAsString()));
         } catch (ResourceAccessException ex) {
             log.warn("Meta API network error", ex);
             return ChannelDispatchResult.transientFailure("Meta API network error", null, Map.of());

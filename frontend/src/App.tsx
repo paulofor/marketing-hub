@@ -67,6 +67,7 @@ import FacebookExperimentsReadyPage from "./pages/facebook/FacebookExperimentsRe
 import GlobalAutomationAlerts from "./components/GlobalAutomationAlerts";
 import AiGenerationListPage from "./pages/ai/AiGenerationListPage";
 import PrivacyPolicySettingsPage from "./pages/settings/PrivacyPolicySettingsPage";
+import WhatsAppConsolePage from "./pages/whatsapp/WhatsAppConsolePage";
 
 export default function App() {
   return (
@@ -213,6 +214,7 @@ export default function App() {
                 path="/journey-templates/new"
                 element={<NewJourneyTemplatePage />}
               />
+              <Route path="/whatsapp" element={<WhatsAppConsolePage />} />
               <Route
                 path="/settings/privacy-policy"
                 element={<PrivacyPolicySettingsPage />}

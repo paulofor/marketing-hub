@@ -200,6 +200,9 @@ databaseChangeLog:
       file: V2026_12_30__add_questions_to_fb_instant_form.sql
       relativeToChangelogFile: true
   - include:
+      file: V2028_02_01__create_whatsapp_tables.sql
+      relativeToChangelogFile: true
+  - include:
       file: V2026_12_15__create_app_idea.sql
       relativeToChangelogFile: true
   - include:

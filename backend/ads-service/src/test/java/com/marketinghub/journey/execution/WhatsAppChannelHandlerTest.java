@@ -4,45 +4,55 @@ import com.marketinghub.journey.execution.channel.ChannelDispatchResult;
 import com.marketinghub.journey.execution.channel.ChannelDispatchStatus;
 import com.marketinghub.journey.execution.channel.WhatsAppChannelHandler;
 import com.marketinghub.journey.execution.config.WhatsAppProperties;
-import com.marketinghub.journey.model.JourneyAssignment;
-import com.marketinghub.journey.model.JourneyAssignmentType;
-import com.marketinghub.journey.model.JourneyPhase;
-import com.marketinghub.journey.model.JourneyStep;
-import com.marketinghub.journey.model.JourneyStimulusType;
-import com.marketinghub.journey.model.JourneyTemplate;
-import com.marketinghub.model.Lead;
+import com.marketinghub.journey.model.*;
+import com.marketinghub.whatsapp.WhatsAppAccount;
+import com.marketinghub.whatsapp.WhatsAppMessage;
+import com.marketinghub.whatsapp.WhatsAppMessageDirection;
+import com.marketinghub.whatsapp.WhatsAppMessageType;
+import com.marketinghub.whatsapp.service.WhatsAppAccountService;
+import com.marketinghub.whatsapp.service.WhatsAppMessagingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.client.MockRestServiceServer;
-import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.client.RestTemplate;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.Map;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.client.ExpectedCount.once;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class WhatsAppChannelHandlerTest {
+    @Mock
+    private WhatsAppMessagingService messagingService;
+    @Mock
+    private WhatsAppAccountService accountService;
+
     private WhatsAppChannelHandler handler;
-    private MockRestServiceServer server;
+    private WhatsAppAccount account;
 
     @BeforeEach
     void setup() {
         WhatsAppProperties properties = new WhatsAppProperties();
         properties.setEnabled(true);
-        properties.setAccessToken("token");
-        properties.setPhoneNumberId("1234");
-        handler = new WhatsAppChannelHandler(new RestTemplateBuilder(), properties);
-        RestTemplate restTemplate = (RestTemplate) Objects.requireNonNull(
-                ReflectionTestUtils.getField(handler, "restTemplate"));
-        server = MockRestServiceServer.createServer(restTemplate);
+        account = WhatsAppAccount.builder()
+                .id(1L)
+                .displayName("Test Account")
+                .phoneNumber("+5511987654321")
+                .phoneNumberId("1234")
+                .accessToken("token")
+                .build();
+        handler = new WhatsAppChannelHandler(messagingService, accountService, properties);
+        when(accountService.findActiveAccount()).thenReturn(Optional.of(account));
     }
 
     @Test
@@ -61,19 +71,28 @@ class WhatsAppChannelHandlerTest {
                 .lead(Lead.builder().id(UUID.randomUUID()).build())
                 .build();
 
-        server.expect(once(), requestTo("https://graph.facebook.com/v18.0/1234/messages"))
-                .andExpect(method(HttpMethod.POST))
-                .andExpect(header("Authorization", "Bearer token"))
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andRespond(withStatus(org.springframework.http.HttpStatus.OK)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body("{\"messages\":[{\"id\":\"wamid.123\"}]}"));
+        WhatsAppMessage message = WhatsAppMessage.builder()
+                .id(55L)
+                .account(account)
+                .direction(WhatsAppMessageDirection.OUTBOUND)
+                .messageType(WhatsAppMessageType.TEXT)
+                .messageId("wamid.123")
+                .toNumber("+551100000000")
+                .build();
+        when(messagingService.sendTextMessage(eq(account), eq("+551100000000"), eq("Hello from MarketingHub"), anyMap()))
+                .thenReturn(message);
 
         ChannelDispatchResult result = handler.dispatch(assignment, step, Map.of("phone", "+551100000000"));
 
         assertThat(result.status()).isEqualTo(ChannelDispatchStatus.OK);
         assertThat(result.providerMessageId()).isEqualTo("wamid.123");
-        server.verify();
+
+        ArgumentCaptor<Map<String, Object>> metadataCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(messagingService).sendTextMessage(eq(account), eq("+551100000000"), eq("Hello from MarketingHub"), metadataCaptor.capture());
+        Map<String, Object> metadata = metadataCaptor.getValue();
+        assertThat(metadata.get("assignmentId")).isEqualTo(10L);
+        assertThat(metadata.get("stepId")).isEqualTo(1L);
+        assertThat(metadata.get("source")).isEqualTo("journey");
     }
 
     @Test
@@ -92,10 +111,11 @@ class WhatsAppChannelHandlerTest {
                 .lead(Lead.builder().id(UUID.randomUUID()).build())
                 .build();
 
-        server.expect(once(), requestTo("https://graph.facebook.com/v18.0/1234/messages"))
-                .andExpect(method(HttpMethod.POST))
-                .andRespond(withStatus(org.springframework.http.HttpStatus.TOO_MANY_REQUESTS)
-                        .header("Retry-After", "120"));
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Retry-After", "120");
+        HttpClientErrorException tooManyRequests = HttpClientErrorException.create(
+                HttpStatus.TOO_MANY_REQUESTS, "Too Many", headers, new byte[0], null);
+        when(messagingService.sendTextMessage(eq(account), anyString(), anyString(), anyMap())).thenThrow(tooManyRequests);
 
         ChannelDispatchResult result = handler.dispatch(assignment, step, Map.of("phone", "+551100000001"));
 

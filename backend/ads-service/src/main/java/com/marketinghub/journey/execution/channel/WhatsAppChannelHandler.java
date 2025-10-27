@@ -4,25 +4,24 @@ import com.marketinghub.journey.execution.config.WhatsAppProperties;
 import com.marketinghub.journey.model.JourneyAssignment;
 import com.marketinghub.journey.model.JourneyStep;
 import com.marketinghub.journey.model.JourneyStimulusType;
+import com.marketinghub.whatsapp.WhatsAppAccount;
+import com.marketinghub.whatsapp.WhatsAppMessage;
+import com.marketinghub.whatsapp.WhatsAppMessageType;
+import com.marketinghub.whatsapp.service.WhatsAppAccountService;
+import com.marketinghub.whatsapp.service.WhatsAppMessagingService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Handles WhatsApp messaging through Meta Cloud API.
@@ -30,17 +29,15 @@ import java.util.Map;
 @Component
 @Slf4j
 public class WhatsAppChannelHandler implements JourneyChannelHandler {
-    private final RestTemplate restTemplate;
+    private final WhatsAppMessagingService messagingService;
+    private final WhatsAppAccountService accountService;
     private final WhatsAppProperties properties;
 
-    @Autowired
-    public WhatsAppChannelHandler(RestTemplateBuilder restTemplateBuilder,
+    public WhatsAppChannelHandler(WhatsAppMessagingService messagingService,
+                                  WhatsAppAccountService accountService,
                                   WhatsAppProperties properties) {
-        this(restTemplateBuilder.build(), properties);
-    }
-
-    WhatsAppChannelHandler(RestTemplate restTemplate, WhatsAppProperties properties) {
-        this.restTemplate = restTemplate;
+        this.messagingService = messagingService;
+        this.accountService = accountService;
         this.properties = properties;
     }
 
@@ -54,41 +51,39 @@ public class WhatsAppChannelHandler implements JourneyChannelHandler {
         if (!properties.isEnabled()) {
             return ChannelDispatchResult.permanentFailure("WhatsApp integration disabled", Map.of());
         }
-        if (properties.getAccessToken() == null || properties.getPhoneNumberId() == null) {
+        Optional<WhatsAppAccount> accountOpt = accountService.findActiveAccount();
+        if (accountOpt.isEmpty()) {
+            return ChannelDispatchResult.permanentFailure("WhatsApp integration disabled", Map.of());
+        }
+        WhatsAppAccount account = accountOpt.get();
+        if (!StringUtils.hasText(account.getAccessToken()) || !StringUtils.hasText(account.getPhoneNumberId())) {
             return ChannelDispatchResult.permanentFailure("WhatsApp credentials missing", Map.of());
         }
         String to = resolvePhone(context);
-        if (to == null) {
+        if (!StringUtils.hasText(to)) {
             return ChannelDispatchResult.permanentFailure("Missing WhatsApp phone in context", Map.of());
         }
 
-        try {
-            String url = properties.getBaseUrl() + "/" + properties.getPhoneNumberId() + "/messages";
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-            headers.setBearerAuth(properties.getAccessToken());
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("source", "journey");
+        metadata.put("assignmentId", assignment.getId());
+        metadata.put("stepId", step.getId());
+        if (step.getStimulusType() != null) {
+            metadata.put("stimulus", step.getStimulusType().name());
+        }
 
-            Map<String, Object> payload = buildPayload(step, context, to);
-            HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
-            ResponseEntity<WhatsAppResponse> response = restTemplate.exchange(url, HttpMethod.POST, request, WhatsAppResponse.class);
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                WhatsAppResponse body = response.getBody();
-                Map<String, Object> metadata = new HashMap<>();
-                metadata.put("to", to);
-                metadata.put("type", payload.get("type"));
-                String messageId = null;
-                if (body.messages() != null && !body.messages().isEmpty()) {
-                    messageId = body.messages().get(0).id();
-                    metadata.put("messageId", messageId);
-                }
-                return ChannelDispatchResult.success(messageId, metadata);
+        try {
+            WhatsAppMessage message = dispatchMessage(account, step, context, to, metadata);
+            Map<String, Object> resultMetadata = new HashMap<>();
+            resultMetadata.put("to", message.getToNumber());
+            WhatsAppMessageType messageType = message.getMessageType();
+            if (messageType != null) {
+                resultMetadata.put("type", messageType.name());
             }
-            if (response.getStatusCode().is5xxServerError() || response.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
-                Instant retryAt = parseRetryAfter(response.getHeaders().getFirst("Retry-After"));
-                return ChannelDispatchResult.transientFailure("WhatsApp transient response: " + response.getStatusCode(), retryAt, Map.of());
+            if (StringUtils.hasText(message.getMessageId())) {
+                resultMetadata.put("messageId", message.getMessageId());
             }
-            return ChannelDispatchResult.permanentFailure("WhatsApp returned status " + response.getStatusCode(), Map.of());
+            return ChannelDispatchResult.success(message.getMessageId(), resultMetadata);
         } catch (HttpStatusCodeException ex) {
             if (ex.getStatusCode().is5xxServerError() || ex.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
                 Instant retryAt = parseRetryAfter(ex.getResponseHeaders() != null ? ex.getResponseHeaders().getFirst("Retry-After") : null);
@@ -98,39 +93,66 @@ public class WhatsAppChannelHandler implements JourneyChannelHandler {
         } catch (ResourceAccessException ex) {
             log.warn("WhatsApp network error", ex);
             return ChannelDispatchResult.transientFailure("WhatsApp network error", null, Map.of());
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            return ChannelDispatchResult.permanentFailure(ex.getMessage(), Map.of());
         }
     }
 
-    private Map<String, Object> buildPayload(JourneyStep step, Map<String, Object> context, String to) {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("messaging_product", "whatsapp");
-        payload.put("to", to);
+    private WhatsAppMessage dispatchMessage(WhatsAppAccount account,
+                                            JourneyStep step,
+                                            Map<String, Object> context,
+                                            String to,
+                                            Map<String, Object> metadata) {
         if (step.getMetadata().containsKey("templateName")) {
-            payload.put("type", "template");
-            Map<String, Object> template = new HashMap<>();
-            template.put("name", step.getMetadata().get("templateName"));
-            Map<String, Object> language = new HashMap<>();
-            language.put("code", step.getMetadata().getOrDefault("templateLanguage", "en_US"));
-            template.put("language", language);
-            payload.put("template", template);
-        } else {
-            payload.put("type", "text");
-            Map<String, Object> text = new HashMap<>();
-            String body = step.getMetadata().get("body");
-            if (body == null) {
-                Object message = context.get("message");
-                if (message != null) {
-                    body = message.toString();
-                }
-            }
-            if (body == null) {
-                throw new IllegalArgumentException("Missing WhatsApp message body");
-            }
-            text.put("preview_url", Boolean.FALSE);
-            text.put("body", body);
-            payload.put("text", text);
+            String templateName = String.valueOf(step.getMetadata().get("templateName"));
+            String templateLanguage = String.valueOf(step.getMetadata().getOrDefault("templateLanguage", "en_US"));
+            Map<String, Object> templateData = extractTemplateData(step.getMetadata());
+            return messagingService.sendTemplateMessage(account, to, templateName, templateLanguage, templateData, metadata);
         }
-        return payload;
+        if (step.getMetadata().containsKey("imageUrl")) {
+            Object imageUrlObj = step.getMetadata().get("imageUrl");
+            if (!(imageUrlObj instanceof String imageUrl) || !StringUtils.hasText(imageUrl)) {
+                throw new IllegalArgumentException("Missing WhatsApp image URL");
+            }
+            String caption = null;
+            Object captionObj = step.getMetadata().get("imageCaption");
+            if (captionObj instanceof String str && StringUtils.hasText(str)) {
+                caption = str;
+            }
+            return messagingService.sendImageMessage(account, to, imageUrl, caption, metadata);
+        }
+        String body = resolveBody(step, context);
+        return messagingService.sendTextMessage(account, to, body, metadata);
+    }
+
+    private Map<String, Object> extractTemplateData(Map<String, Object> metadata) {
+        Map<String, Object> templateData = new HashMap<>();
+        Object components = metadata.get("templateComponents");
+        if (components instanceof List<?> list && !list.isEmpty()) {
+            templateData.put("components", list);
+        } else if (components instanceof Map<?, ?> map && !map.isEmpty()) {
+            templateData.put("components", map);
+        }
+        Object templateOverrides = metadata.get("templateData");
+        if (templateOverrides instanceof Map<?, ?> map && !map.isEmpty()) {
+            map.forEach((key, value) -> templateData.put(String.valueOf(key), value));
+        }
+        return templateData;
+    }
+
+    private String resolveBody(JourneyStep step, Map<String, Object> context) {
+        Object body = step.getMetadata().get("body");
+        if (body instanceof String str && StringUtils.hasText(str)) {
+            return str;
+        }
+        Object message = context.get("message");
+        if (message != null) {
+            String resolved = message.toString();
+            if (StringUtils.hasText(resolved)) {
+                return resolved;
+            }
+        }
+        throw new IllegalArgumentException("Missing WhatsApp message body");
     }
 
     private String resolvePhone(Map<String, Object> context) {
@@ -165,11 +187,6 @@ public class WhatsAppChannelHandler implements JourneyChannelHandler {
             } catch (DateTimeParseException e) {
                 return null;
             }
-        }
-    }
-
-    private record WhatsAppResponse(List<Message> messages) {
-        private record Message(String id) {
         }
     }
 }

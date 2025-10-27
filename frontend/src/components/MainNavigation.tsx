@@ -166,6 +166,11 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Configurações",
     items: [
       {
+        to: "/whatsapp",
+        label: "WhatsApp",
+        icon: MessageSquare,
+      },
+      {
         to: "/settings/privacy-policy",
         label: "Política de privacidade",
         icon: ShieldCheck,

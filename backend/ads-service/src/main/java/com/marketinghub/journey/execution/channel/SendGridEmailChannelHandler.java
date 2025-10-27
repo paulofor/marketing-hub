@@ -87,9 +87,14 @@ public class SendGridEmailChannelHandler implements JourneyChannelHandler {
         } catch (HttpStatusCodeException ex) {
             if (ex.getStatusCode().is5xxServerError() || ex.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
                 Instant retryAt = parseRetryAfter(ex.getResponseHeaders() != null ? ex.getResponseHeaders().getFirst("Retry-After") : null);
-                return ChannelDispatchResult.transientFailure("SendGrid error: " + ex.getStatusCode(), retryAt, Map.of("body", ex.getResponseBodyAsString()));
+                return ChannelDispatchResult.transientFailure(
+                        "SendGrid error: " + ex.getStatusCode(),
+                        retryAt,
+                        Map.<String, Object>of("body", ex.getResponseBodyAsString()));
             }
-            return ChannelDispatchResult.permanentFailure("SendGrid error: " + ex.getStatusCode(), Map.of("body", ex.getResponseBodyAsString()));
+            return ChannelDispatchResult.permanentFailure(
+                    "SendGrid error: " + ex.getStatusCode(),
+                    Map.<String, Object>of("body", ex.getResponseBodyAsString()));
         } catch (ResourceAccessException ex) {
             log.warn("SendGrid network error", ex);
             return ChannelDispatchResult.transientFailure("SendGrid network error", null, Map.of());

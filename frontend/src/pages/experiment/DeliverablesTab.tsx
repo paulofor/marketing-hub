@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Check, Clipboard, Sparkles } from "lucide-react";
+import { useMemo } from "react";
+import { Sparkles } from "lucide-react";
 import { useForm } from "react-hook-form";
 import WorkerRequestBanner from "./WorkerRequestBanner";
 import { useDeliverablesByNiche } from "../../api/deliverable/useDeliverablesByNiche";
@@ -38,6 +38,17 @@ type ContentBlock =
       items: ContentListItem[];
     };
 
+function normalizeDeliverableContent(content: string) {
+  return content
+    .replace(/\r\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/\/n/g, "\n")
+    .replace(/\/r/g, "\n")
+    .replace(/[\t\f\v]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function sortByUpdatedAtDesc<T extends { updatedAt?: string | null }>(list: T[]) {
   return [...list].sort((a, b) => {
     const aDate = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
@@ -58,7 +69,8 @@ function formatUpdatedAt(updatedAt?: string | null) {
 }
 
 function parseDeliverableContent(content: string): ContentBlock[] {
-  const lines = content.split(/\r?\n/);
+  const normalized = normalizeDeliverableContent(content);
+  const lines = normalized.split(/\r?\n/);
   const blocks: ContentBlock[] = [];
   let currentList: ContentListItem[] | null = null;
 
@@ -77,7 +89,9 @@ function parseDeliverableContent(content: string): ContentBlock[] {
       continue;
     }
 
-    const listMatch = trimmed.match(/^((?:\d+|[a-zA-Z])[\.\)]|[-–—•●◦▪])\s+(.*)$/);
+    const listMatch = trimmed.match(
+      /^((?:\d+|[a-zA-Z])(?:[\.\)]|\s*[–—-])|[-–—•●◦▪*])\s+(.*)$/, 
+    );
 
     if (listMatch) {
       if (!currentList) {
@@ -85,8 +99,14 @@ function parseDeliverableContent(content: string): ContentBlock[] {
       }
 
       const [, prefix, itemText] = listMatch;
+      const cleanedPrefix = /[-–—*]/.test(prefix)
+        ? "•"
+        : prefix
+            .replace(/\s*[–—-]$/, "")
+            .replace(/\s+/g, "")
+            .trim();
       currentList.push({
-        prefix: prefix,
+        prefix: cleanedPrefix,
         text: itemText.trim(),
       });
       continue;
@@ -102,27 +122,14 @@ function parseDeliverableContent(content: string): ContentBlock[] {
 
 interface DeliverableContentProps {
   content: string;
-  deliverableId: number;
-  isCopied: boolean;
-  onCopy: (deliverableId: number, content: string) => Promise<void>;
 }
 
-function DeliverableContent({ content, deliverableId, isCopied, onCopy }: DeliverableContentProps) {
+function DeliverableContent({ content }: DeliverableContentProps) {
   const blocks = useMemo(() => parseDeliverableContent(content), [content]);
 
   return (
     <div className="deliverable-card__content">
-      <div className="deliverable-card__content-header">
-        <span className="deliverable-card__eyebrow">Referência aprovada</span>
-        <button
-          type="button"
-          className="deliverable-card__copy-button"
-          onClick={() => onCopy(deliverableId, content)}
-        >
-          {isCopied ? <Check size={16} aria-hidden="true" /> : <Clipboard size={16} aria-hidden="true" />}
-          <span>{isCopied ? "Copiado" : "Copiar tudo"}</span>
-        </button>
-      </div>
+      <span className="deliverable-card__eyebrow">Referência aprovada</span>
       <div className="deliverable-card__snippet" aria-live="polite">
         {blocks.map((block, index) => {
           if (block.type === "list") {
@@ -130,7 +137,11 @@ function DeliverableContent({ content, deliverableId, isCopied, onCopy }: Delive
               <ul key={`list-${index}`} className="deliverable-card__list">
                 {block.items.map((item, itemIndex) => (
                   <li key={`list-${index}-item-${itemIndex}`}>
-                    {item.prefix ? <span className="deliverable-card__list-bullet">{item.prefix}</span> : null}
+                    {item.prefix ? (
+                      <span className="deliverable-card__list-bullet" aria-hidden="true">
+                        {item.prefix.replace(/[\.]/g, "")}
+                      </span>
+                    ) : null}
                     <span>{item.text}</span>
                   </li>
                 ))}
@@ -167,17 +178,6 @@ export default function DeliverablesTab({ experiment, nicheName }: DeliverablesT
       deliverableIds: [],
     },
   });
-
-  const [copiedDeliverableId, setCopiedDeliverableId] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (copiedDeliverableId === null) {
-      return;
-    }
-
-    const timeout = setTimeout(() => setCopiedDeliverableId(null), 2200);
-    return () => clearTimeout(timeout);
-  }, [copiedDeliverableId]);
 
   const { data: deliverables, isLoading: isLoadingDeliverables } = useDeliverablesByNiche(
     experiment.nicheId,
@@ -228,24 +228,6 @@ export default function DeliverablesTab({ experiment, nicheName }: DeliverablesT
     },
   );
 
-  const handleCopyDeliverable = async (deliverableId: number, content: string) => {
-    if (!content) {
-      return;
-    }
-
-    try {
-      if (typeof navigator === "undefined" || !navigator.clipboard) {
-        console.warn("Clipboard API is not available in this environment");
-        return;
-      }
-
-      await navigator.clipboard.writeText(content);
-      setCopiedDeliverableId(deliverableId);
-    } catch (error) {
-      console.error("Failed to copy deliverable content", error);
-    }
-  };
-
   const renderDeliverableList = () => {
     if (isLoadingDeliverables) {
       return <p>Carregando entregáveis do nicho...</p>;
@@ -280,10 +262,7 @@ export default function DeliverablesTab({ experiment, nicheName }: DeliverablesT
             </header>
             {deliverable.content ? (
               <DeliverableContent
-                deliverableId={deliverable.id}
                 content={deliverable.content}
-                isCopied={copiedDeliverableId === deliverable.id}
-                onCopy={handleCopyDeliverable}
               />
             ) : null}
             <details className="deliverable-card__details">

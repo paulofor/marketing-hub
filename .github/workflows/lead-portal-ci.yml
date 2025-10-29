@@ -91,4 +91,4 @@ jobs:
             lead-portal/ "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}"
       - name: Publish stack
         run: |
-          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail && cd ${REMOTE_PATH} && docker compose pull && docker compose up -d --build"
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail && cd ${REMOTE_PATH} && docker compose up -d --build --pull never"

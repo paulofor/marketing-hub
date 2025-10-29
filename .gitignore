@@ -29,3 +29,4 @@ chaves/
 local/
 /ai-worker/target/
 
+*.tsbuildinfo

@@ -10,7 +10,10 @@
     "target": "ESNext",
     "lib": ["ESNext", "DOM"],
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "types": ["node"],
+    "noEmit": true
   },
-  "include": ["vite.config.ts", "src"]
+  "include": ["vite.config.ts"],
+  "exclude": ["src"]
 }

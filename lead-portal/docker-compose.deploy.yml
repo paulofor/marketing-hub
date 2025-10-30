@@ -1,0 +1,10 @@
+version: "3.9"
+
+services:
+  backend:
+    image: ${LEAD_PORTAL_BACKEND_IMAGE}
+    build: null
+
+  frontend:
+    image: ${LEAD_PORTAL_FRONTEND_IMAGE}
+    build: null

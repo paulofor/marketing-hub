@@ -117,6 +117,9 @@ jobs:
       - frontend
       - docker
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     env:
       DEPLOY_HOST: 191.252.120.96
       DEPLOY_USER: root
@@ -125,7 +128,7 @@ jobs:
       IMAGE_NAMESPACE: ghcr.io/${{ github.repository_owner }}
       IMAGE_TAG: ${{ needs.docker.outputs['image-tag'] }}
       GHCR_USERNAME: ${{ secrets.GHCR_USERNAME != '' && secrets.GHCR_USERNAME || github.repository_owner }}
-      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN != '' && secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Configure SSH

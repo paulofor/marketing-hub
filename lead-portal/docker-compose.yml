@@ -46,4 +46,5 @@ services:
 networks:
   default: {}
   public-net:
-    external: true
+    name: public-net
+    driver: bridge

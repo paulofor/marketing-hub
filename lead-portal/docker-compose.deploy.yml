@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   backend:
     image: ${LEAD_PORTAL_BACKEND_IMAGE}

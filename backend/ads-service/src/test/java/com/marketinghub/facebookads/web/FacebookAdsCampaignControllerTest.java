@@ -179,13 +179,16 @@ class FacebookAdsCampaignControllerTest {
                 "billingEvent": "IMPRESSIONS",
                 "optimizationGoal": "LINK_CLICKS",
                 "bidStrategy": "LOWEST_COST_WITHOUT_CAP",
-                "bidAmount": "1000",
-                "dailyBudget": "5000",
-                "lifetimeBudget": null,
-                "targetCountry": "BR",
-                "destinationType": "WEBSITE",
-                "pageId": "12345"
-              },
+              "bidAmount": "1000",
+              "dailyBudget": "5000",
+              "lifetimeBudget": null,
+              "targetCountry": "BR",
+              "destinationType": "WEBSITE",
+              "pageId": "12345",
+              "targetingJson": "{\\"geo_locations\\":{\\"countries\\":[\\"BR\\"]}}",
+              "savedAudienceId": "AUD-1",
+              "savedAudienceName": "Audience"
+            },
               "adCreative": {
                 "id": "creative123",
                 "pageId": "12345",
@@ -219,6 +222,7 @@ class FacebookAdsCampaignControllerTest {
         assertThat(savedAdSet.getId()).isEqualTo("adset123");
         assertThat(savedAdSet.getCampaign().getId()).isEqualTo("cmp123");
         JsonNode targetingJson = objectMapper.readTree(savedAdSet.getTargetingJson());
+        assertThat(targetingJson.path("saved_audience_id").asText()).isEqualTo("AUD-1");
         assertThat(targetingJson.path("geo_locations").path("countries").get(0).asText()).isEqualTo("BR");
         JsonNode promotedObject = savedAdSet.getPromotedObjectJson() != null
                 ? objectMapper.readTree(savedAdSet.getPromotedObjectJson())

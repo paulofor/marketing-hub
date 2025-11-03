@@ -1,5 +1,7 @@
 package com.marketinghub.facebookads.web;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -134,7 +136,7 @@ public class FacebookAdsCampaignController {
         adSet.setLifetimeBudgetMinor(parseLong(adSetReq.lifetimeBudget()));
         adSet.setBidAmountMinor(parseLong(adSetReq.bidAmount()));
         adSet.setPromotedObjectJson(buildPromotedObjectJson(adSetReq.pageId()));
-        adSet.setTargetingJson(buildTargetingJson(adSetReq.targetCountry()));
+        adSet.setTargetingJson(buildTargetingJson(adSetReq.targetCountry(), adSetReq.targetingJson(), adSetReq.savedAudienceId()));
         return adSet;
     }
 
@@ -186,13 +188,35 @@ public class FacebookAdsCampaignController {
         return node.toString();
     }
 
-    private String buildTargetingJson(String targetCountry) {
-        ObjectNode node = objectMapper.createObjectNode();
-        ObjectNode geoLocations = node.putObject("geo_locations");
-        ArrayNode countries = geoLocations.putArray("countries");
-        if (StringUtils.hasText(targetCountry)) {
-            countries.add(targetCountry);
+    private String buildTargetingJson(String targetCountry, String targetingJson, String savedAudienceId) {
+        ObjectNode node;
+        if (StringUtils.hasText(targetingJson)) {
+            try {
+                JsonNode parsed = objectMapper.readTree(targetingJson);
+                if (parsed != null && parsed.isObject()) {
+                    node = ((ObjectNode) parsed).deepCopy();
+                } else {
+                    node = objectMapper.createObjectNode();
+                }
+            } catch (JsonProcessingException ex) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid targeting JSON", ex);
+            }
+        } else {
+            node = objectMapper.createObjectNode();
         }
+
+        if (StringUtils.hasText(savedAudienceId)) {
+            node.put("saved_audience_id", savedAudienceId);
+        }
+
+        if (!node.has("geo_locations")) {
+            ObjectNode geoLocations = node.putObject("geo_locations");
+            ArrayNode countries = geoLocations.putArray("countries");
+            if (StringUtils.hasText(targetCountry)) {
+                countries.add(targetCountry);
+            }
+        }
+
         return node.toString();
     }
 
@@ -401,7 +425,10 @@ public class FacebookAdsCampaignController {
                 String lifetimeBudget,
                 String targetCountry,
                 String destinationType,
-                String pageId) {}
+                String pageId,
+                String targetingJson,
+                String savedAudienceId,
+                String savedAudienceName) {}
 
         public record AdCreative(
                 String id,

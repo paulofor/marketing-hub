@@ -202,6 +202,7 @@ class ExperimentControllerTest {
         req.setStartDate(LocalDate.now());
         req.setEndDate(LocalDate.now().plusDays(2));
         req.setJourneyTemplateId(newTemplate.getId());
+        req.setLeadPortalFlowId(exp.getLeadPortalFlow().getId());
 
         mockMvc.perform(patch("/api/experiments/" + exp.getId())
                         .contentType(MediaType.APPLICATION_JSON)

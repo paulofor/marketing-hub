@@ -127,7 +127,7 @@ public class ExperimentService {
 
     private LeadPortalFlow attachLeadPortalFlow(Long flowId) {
         if (flowId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "leadPortalFlowId required");
+            return null;
         }
         if (!leadPortalFlowRepository.existsById(flowId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,

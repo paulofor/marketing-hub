@@ -71,6 +71,8 @@ classDiagram
         +bidAmount : String
         +pageId : String
         +targetCountry : String
+        +targetingJson : String
+        +savedAudienceId : String
     }
 
     class AdCreativeRequest {
@@ -165,6 +167,9 @@ classDiagram
         +targetCountry : String
         +destinationType : String
         +pageId : String
+        +targetingJson : String
+        +savedAudienceId : String
+        +savedAudienceName : String
     }
 
     class AdCreativePayload {

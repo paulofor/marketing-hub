@@ -13,20 +13,26 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    `special_ad_categories = []`, conforme documentado na
    [Marketing API](https://developers.facebook.com/docs/marketing-api/reference/ad-campaign-group#Creating) para contas que
    não se enquadram em categorias especiais.
-2. **Conjunto de anúncios** (`POST /adsets`) atrelado à campanha, também em
-   `PAUSED`, com segmentação geográfica simples e destino herdado da conta
-   (por exemplo, `WEBSITE`). Quando o criativo aponta para um formulário de
-   leads, o worker ajusta automaticamente `destination_type = ON_AD` e força
-   `optimization_goal = LEAD_GENERATION` para satisfazer as regras da Graph API
-   para Lead Ads.
-3. **Imagem do criativo**: em vez de enviar `POST /adimages`, o worker
+2. **Públicos salvos** (`POST /saved_audiences`) opcionais, reaproveitando a
+   segmentação detalhada gerada pelo AI Worker (`GET /api/adsets?experimentId={id}`).
+   Quando o backend fornece `targetingJson`, o worker cria (ou reutiliza, caso o
+   JSON já contenha `saved_audience_id`) um público salvo na conta e injeta o
+   identificador retornado pela Meta no payload de segmentação.
+3. **Conjunto de anúncios** (`POST /adsets`) atrelado à campanha, também em
+   `PAUSED`, com destino herdado da conta (por exemplo, `WEBSITE`). Se existir um
+   público salvo criado na etapa anterior, o worker envia `targeting` com
+   `saved_audience_id` e preserva o JSON de segmentação retornado pelo backend.
+   Quando o criativo aponta para um formulário de leads, o worker ajusta
+   automaticamente `destination_type = ON_AD` e força `optimization_goal =
+   LEAD_GENERATION` para satisfazer as regras da Graph API para Lead Ads.
+4. **Imagem do criativo**: em vez de enviar `POST /adimages`, o worker
    referencia diretamente a URL pública retornada pelo backend no campo
    `object_story_spec.link_data.picture`. Quando o caminho é relativo (por
    exemplo, `/uploads/arquivo.jpg`), o worker o normaliza para o domínio
    configurado em `backend.base-url` antes de encaminhá-lo ao Facebook. Essa
    abordagem evita depender da biblioteca de imagens da conta e é suportada pela
    Graph API desde que a URL seja acessível pelo crawler da Meta.
-4. **Criativo** (`POST /adcreatives`) baseado em um `object_story_spec`
+5. **Criativo** (`POST /adcreatives`) baseado em um `object_story_spec`
    contendo o `page_id` definido na conta selecionada no backend. Quando a conta
    não possui `defaultPageId`, o worker utiliza a página vinculada ao
    experimento no backend (exposta como `facebookPage`, `associatedFacebookPage`
@@ -39,7 +45,7 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    criativo. A imagem é sempre veiculada via `link_data.picture` — não há hash
    salvo na biblioteca —, garantindo que o anúncio utilize exatamente o ativo
    hospedado pelo backend.
-5. **Anúncio** (`POST /ads`) que referencia o conjunto e o criativo recém
+6. **Anúncio** (`POST /ads`) que referencia o conjunto e o criativo recém
    criados, mantido pausado até que o time operacional revise os detalhes no
    Gerenciador de Anúncios.
 
@@ -51,8 +57,11 @@ que o agendamento continue saudável. Após criar campanha, conjunto, criativo e
 anúncio, o worker envia um `CreateCampaignRequest` para o backend via
 `POST /api/facebook-campaigns`, preenchendo os identificadores de cada nível da
 hierarquia para manter rastreabilidade completa (`facebook_ads_campaign`,
-`facebook_ads_ad_set`, `facebook_ads_ad_creative` e `facebook_ads_ad`). Assim que o backend confirma o
-registro, o worker marca o experimento de origem como `RUNNING` com
+`facebook_ads_ad_set`, `facebook_ads_ad_creative` e `facebook_ads_ad`). Quando um
+público salvo é utilizado, o worker também envia o `targetingJson` contendo o
+`saved_audience_id` para que o backend saiba qual público está associado à
+campanha. Assim que o backend confirma o registro, o worker marca o experimento
+de origem como `RUNNING` com
 `PATCH /api/experiments/{id}/status?status=RUNNING`, evitando que o mesmo
 experimento reapareça em consultas futuras a `/facebook-campaigns/experiments-ready`
 e preservando o identificador gerado pela Meta para coleta de resultados. Todas as

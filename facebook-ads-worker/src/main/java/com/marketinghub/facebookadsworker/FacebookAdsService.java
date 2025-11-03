@@ -1,5 +1,6 @@
 package com.marketinghub.facebookadsworker;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -108,9 +109,7 @@ public class FacebookAdsService {
     public String createAdSet(String adAccountId, AdSetRequest request) {
         Objects.requireNonNull(request, "request");
 
-        Map<String, Object> targeting = Map.of(
-            "geo_locations", Map.of("countries", List.of(request.targetCountry()))
-        );
+        Map<String, Object> targeting = buildTargeting(request);
 
         Map<String, Object> body = new HashMap<>();
         body.put("name", request.name());
@@ -134,6 +133,85 @@ public class FacebookAdsService {
 
         String path = buildVersionedPath("/act_" + adAccountId + "/adsets");
 
+        JsonNode response = executePost(path, body);
+        return response.path("id").asText();
+    }
+
+    private Map<String, Object> buildTargeting(AdSetRequest request) {
+        Map<String, Object> targeting = new HashMap<>();
+        if (hasText(request.targetingJson())) {
+            try {
+                JsonNode node = objectMapper.readTree(request.targetingJson());
+                if (node != null && node.isObject()) {
+                    Map<String, Object> parsed = objectMapper.convertValue(node, new TypeReference<Map<String, Object>>() {});
+                    if (parsed != null) {
+                        targeting.putAll(parsed);
+                    }
+                }
+            } catch (Exception ex) {
+                LOGGER.warn(
+                    "Failed to parse targeting JSON for ad set '{}': {}",
+                    request.name(),
+                    ex.getMessage(),
+                    ex
+                );
+            }
+        }
+
+        if (hasText(request.savedAudienceId())) {
+            targeting.put("saved_audience_id", request.savedAudienceId().trim());
+        }
+
+        if (!targeting.containsKey("geo_locations")) {
+            String country = request.targetCountry();
+            if (hasText(country)) {
+                targeting.put("geo_locations", Map.of("countries", List.of(country)));
+            }
+        }
+
+        if (targeting.isEmpty()) {
+            String country = request.targetCountry();
+            if (hasText(country)) {
+                targeting.put("geo_locations", Map.of("countries", List.of(country)));
+            } else {
+                targeting.put("geo_locations", Map.of());
+            }
+        }
+
+        return targeting;
+    }
+
+    public String createSavedAudience(String adAccountId, SavedAudienceRequest request) {
+        Objects.requireNonNull(request, "request");
+        if (!hasText(request.name())) {
+            throw new IllegalArgumentException("Saved audience name must not be blank");
+        }
+        if (!hasText(request.targetingJson())) {
+            throw new IllegalArgumentException("Saved audience targeting must not be blank");
+        }
+
+        Map<String, Object> targeting;
+        try {
+            JsonNode node = objectMapper.readTree(request.targetingJson());
+            if (node == null || !node.isObject()) {
+                throw new IllegalArgumentException("Saved audience targeting must be a JSON object");
+            }
+            targeting = objectMapper.convertValue(node, new TypeReference<Map<String, Object>>() {});
+        } catch (IllegalArgumentException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Failed to parse saved audience targeting JSON", ex);
+        }
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("name", request.name().trim());
+        if (hasText(request.description())) {
+            body.put("description", request.description().trim());
+        }
+        body.put("targeting_spec", targeting);
+        body.put("access_token", requireAccessToken());
+
+        String path = buildVersionedPath("/act_" + adAccountId + "/saved_audiences");
         JsonNode response = executePost(path, body);
         return response.path("id").asText();
     }
@@ -1027,8 +1105,12 @@ public class FacebookAdsService {
         String bidStrategy,
         String bidAmount,
         String pageId,
-        String targetCountry
+        String targetCountry,
+        String targetingJson,
+        String savedAudienceId
     ) {}
+
+    public record SavedAudienceRequest(String name, String description, String targetingJson) {}
 
     public record AdCreativeRequest(
         String name,

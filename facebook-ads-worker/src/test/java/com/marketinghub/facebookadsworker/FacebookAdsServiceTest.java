@@ -19,9 +19,10 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class FacebookAdsServiceTest {
     private MockWebServer server;
@@ -85,7 +86,9 @@ class FacebookAdsServiceTest {
             "LOWEST_COST_WITHOUT_CAP",
             "200",
             "42",
-            "BR"
+            "BR",
+            null,
+            null
         );
         String id = service.createAdSet("1", request);
         RecordedRequest recorded = server.takeRequest();
@@ -103,6 +106,31 @@ class FacebookAdsServiceTest {
         assertEquals("BR", body.get("targeting").get("geo_locations").get("countries").get(0).asText());
         assertEquals("42", body.get("promoted_object").get("page_id").asText());
         assertEquals("222", id);
+    }
+
+    @Test
+    void createAdSetIncludesSavedAudienceWhenProvided() throws Exception {
+        server.enqueue(new MockResponse().setBody("{\"id\":\"444\"}")
+            .addHeader("Content-Type", "application/json"));
+        FacebookAdsService.AdSetRequest request = new FacebookAdsService.AdSetRequest(
+            "Camp - Ad Set",
+            "123",
+            "1500",
+            "IMPRESSIONS",
+            "LINK_CLICKS",
+            "WEBSITE",
+            "LOWEST_COST_WITHOUT_CAP",
+            "200",
+            "42",
+            "BR",
+            "{\"geo_locations\":{\"countries\":[\"BR\"]}}",
+            "AUD-1"
+        );
+        service.createAdSet("1", request);
+        RecordedRequest recorded = server.takeRequest();
+        JsonNode targeting = objectMapper.readTree(recorded.getBody().inputStream()).get("targeting");
+        assertEquals("AUD-1", targeting.get("saved_audience_id").asText());
+        assertEquals("BR", targeting.get("geo_locations").get("countries").get(0).asText());
     }
 
     @Test
@@ -197,6 +225,25 @@ class FacebookAdsServiceTest {
         assertEquals("https://example.com/landing", linkData.get("link").asText());
         assertEquals("https://example.com/landing", linkData.get("call_to_action").get("value").get("link").asText());
         assertEquals("123456789012345", linkData.get("call_to_action").get("value").get("lead_gen_form_id").asText());
+    }
+
+    @Test
+    void createSavedAudiencePostsCorrectRequest() throws Exception {
+        server.enqueue(new MockResponse().setBody("{\"id\":\"SA-1\"}")
+            .addHeader("Content-Type", "application/json"));
+        String targetingJson = "{\"geo_locations\":{\"countries\":[\"BR\"]}}";
+        String id = service.createSavedAudience(
+            "1",
+            new FacebookAdsService.SavedAudienceRequest("Audience", "Descrição", targetingJson)
+        );
+        RecordedRequest request = server.takeRequest(1, TimeUnit.SECONDS);
+        assertNotNull(request);
+        assertEquals("/v23.0/act_1/saved_audiences", request.getPath());
+        JsonNode body = objectMapper.readTree(request.getBody().inputStream());
+        assertEquals("Audience", body.get("name").asText());
+        assertEquals("Descrição", body.get("description").asText());
+        assertEquals("BR", body.get("targeting_spec").get("geo_locations").get("countries").get(0).asText());
+        assertEquals("SA-1", id);
     }
 
     @Test

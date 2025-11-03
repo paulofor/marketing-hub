@@ -108,6 +108,8 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("[]")
+            .addHeader("Content-Type", "application/json"));
         backend.enqueue(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
         backend.enqueue(new MockResponse().setBody("{}")
@@ -126,6 +128,9 @@ class FacebookCampaignServiceTest {
 
         RecordedRequest creativesGet = backend.takeRequest();
         assertEquals("/api/experiments/1/creatives", creativesGet.getPath());
+
+        RecordedRequest adSetsGet = backend.takeRequest();
+        assertEquals("/api/adsets?experimentId=1", adSetsGet.getPath());
 
         RecordedRequest postCampaign = facebook.takeRequest();
         assertEquals("/v23.0/act_1/campaigns", postCampaign.getPath());
@@ -171,6 +176,63 @@ class FacebookCampaignServiceTest {
         RecordedRequest runningPatch = backend.takeRequest();
         assertEquals("PATCH", runningPatch.getMethod());
         assertEquals("/api/experiments/1/status?status=RUNNING", runningPatch.getPath());
+    }
+
+    @Test
+    void createsSavedAudienceWhenTargetingExists() throws Exception {
+        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"10\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"AUD123\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("[{\"id\":900,\"experimentId\":1,\"location\":\"São Paulo\",\"targetingJson\":\"{\\\"geo_locations\\\":{\\\"countries\\\":[\\\"BR\\\"]}}\",\"prompt\":\"Detalhes\",\"model\":\"gpt-4\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        backend.takeRequest(); // experiments ready
+        backend.takeRequest(); // creatives
+        RecordedRequest adSetsRequest = backend.takeRequest();
+        assertEquals("/api/adsets?experimentId=1", adSetsRequest.getPath());
+
+        RecordedRequest campaignRequest = facebook.takeRequest();
+        assertEquals("/v23.0/act_1/campaigns", campaignRequest.getPath());
+
+        RecordedRequest savedAudienceRequest = facebook.takeRequest();
+        assertEquals("/v23.0/act_1/saved_audiences", savedAudienceRequest.getPath());
+        JsonNode savedAudienceBody = objectMapper.readTree(savedAudienceRequest.getBody().inputStream());
+        assertEquals("Exp - Audience São Paulo", savedAudienceBody.get("name").asText());
+        assertEquals("Detalhes", savedAudienceBody.get("description").asText());
+        assertEquals("BR", savedAudienceBody.get("targeting_spec").get("geo_locations").get("countries").get(0).asText());
+
+        RecordedRequest adSetRequest = facebook.takeRequest();
+        JsonNode targeting = objectMapper.readTree(adSetRequest.getBody().inputStream()).get("targeting");
+        assertEquals("AUD123", targeting.get("saved_audience_id").asText());
+
+        facebook.takeRequest(); // ad creative
+        facebook.takeRequest(); // ad
+
+        backend.takeRequest(); // report campaign
+        backend.takeRequest(); // mark running
     }
 
     @Test

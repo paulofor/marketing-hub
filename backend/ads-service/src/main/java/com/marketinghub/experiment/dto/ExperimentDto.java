@@ -45,4 +45,7 @@ public class ExperimentDto {
     private Integer deliverablesToGenerate;
     private Long journeyTemplateId;
     private String journeyTemplateName;
+    private Long leadPortalFlowId;
+    private String leadPortalFlowName;
+    private String leadPortalFlowSlug;
 }

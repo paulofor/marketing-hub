@@ -1,0 +1,19 @@
+package com.marketinghub.leadportal.mapper;
+
+import com.marketinghub.leadportal.LeadPortalFlow;
+import com.marketinghub.leadportal.LeadPortalFlowQuestion;
+import com.marketinghub.leadportal.dto.LeadPortalFlowDto;
+import com.marketinghub.leadportal.dto.LeadPortalFlowQuestionDto;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+
+/**
+ * MapStruct mapper converting lead portal flow entities to DTOs.
+ */
+@Mapper(componentModel = "spring")
+public interface LeadPortalFlowMapper {
+    @Mapping(target = "questions", source = "questions")
+    LeadPortalFlowDto toDto(LeadPortalFlow flow);
+
+    LeadPortalFlowQuestionDto toDto(LeadPortalFlowQuestion question);
+}

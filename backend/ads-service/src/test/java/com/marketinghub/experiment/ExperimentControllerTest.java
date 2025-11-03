@@ -18,6 +18,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -47,6 +48,17 @@ class ExperimentControllerTest {
     com.marketinghub.experiment.repository.MetricPresetRepository metricPresetRepository;
     @Autowired
     JourneyTemplateRepository journeyTemplateRepository;
+    @Autowired
+    com.marketinghub.leadportal.repository.LeadPortalFlowRepository leadPortalFlowRepository;
+
+    private Long createLeadPortalFlow() {
+        String slug = "flow-" + UUID.randomUUID();
+        return leadPortalFlowRepository.save(
+                com.marketinghub.leadportal.LeadPortalFlow.builder()
+                        .name("Fluxo " + slug)
+                        .slug(slug)
+                        .build()).getId();
+    }
 
     @Test
     void postExperiment() throws Exception {
@@ -83,6 +95,7 @@ class ExperimentControllerTest {
         req.setTargetCvr(new BigDecimal("5"));
         req.setMdePercent(new BigDecimal("40"));
         req.setJourneyTemplateId(template.getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow());
         mockMvc.perform(post("/api/niches/" + niche.getId() + "/experiments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(req)))
@@ -124,6 +137,7 @@ class ExperimentControllerTest {
         req.setStartDate(java.time.LocalDate.of(2024,2,1));
         req.setEndDate(java.time.LocalDate.of(2024,1,1));
         req.setJourneyTemplateId(template.getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow());
         mockMvc.perform(post("/api/niches/" + niche.getId() + "/experiments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(req)))

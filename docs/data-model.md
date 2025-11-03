@@ -248,6 +248,7 @@ triggering ad set generation.
 - `facebook_page_id` BIGINT
 - `facebook_instant_form_id` BIGINT
 - `follow_up_action_url` VARCHAR(512)
+- `lead_portal_flow_id` BIGINT
 - `instagram_account_id` BIGINT
 - `kpi_target_cpl` DECIMAL(10,2) DEFAULT 45.00
 - `stop_loss_cpl` DECIMAL(10,2) DEFAULT 90.00
@@ -285,6 +286,50 @@ will be executed and measured during the test cycle.
 - `journey_template_id` → FK `journey_template.id`: vínculo obrigatório
   que reaproveita o blueprint de jornada aprovado para nortear campanhas
   e ativações omnichannel geradas a partir do experimento.
+- `lead_portal_flow_id` → FK `lead_portal_flow.id`: associa o experimento a um
+  fluxo do Portal Lead, garantindo que todos os contatos capturados através das
+  campanhas sejam direcionados para o conjunto correto de perguntas, coleta de
+  dados e upload de imagens.
+
+### lead_portal_flow
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `name` VARCHAR(150) NOT NULL
+- `slug` VARCHAR(120) NOT NULL UNIQUE
+- `description` VARCHAR(500)
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+Representa o fluxo configurado no Portal Lead. Cada fluxo é identificado por um
+`slug` único que pode ser consumido pela aplicação externa para carregar as
+perguntas corretas e instruções de coleta de dados.
+
+### lead_portal_flow_question
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `flow_id` BIGINT NOT NULL → FK `lead_portal_flow.id`
+- `title` VARCHAR(255) NOT NULL
+- `data_key` VARCHAR(120) NOT NULL
+- `type` VARCHAR(40) NOT NULL
+- `required` BOOLEAN NOT NULL
+- `description` VARCHAR(500)
+- `placeholder` VARCHAR(255)
+- `position_index` INT NOT NULL
+
+Agrupa as perguntas que compõem um fluxo do portal. O campo `data_key` é único
+por fluxo e identifica o atributo que será preenchido pelo lead. O tipo de
+pergunta define o formato esperado (texto, múltipla escolha, upload de imagem
+etc.).
+
+### lead_portal_flow_question_option
+
+- `question_id` BIGINT NOT NULL → FK `lead_portal_flow_question.id`
+- `option_order` INT NOT NULL
+- `value` VARCHAR(255) NOT NULL
+
+Armazena as opções ordenadas de perguntas do tipo seleção única ou múltipla.
+Quando a pergunta for removida, as opções correspondentes são excluídas em
+efeito cascata.
 
 ### fb_page
 

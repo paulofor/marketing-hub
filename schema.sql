@@ -159,6 +159,37 @@ CREATE TABLE market_niche (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+CREATE TABLE lead_portal_flow (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    slug VARCHAR(120) NOT NULL UNIQUE,
+    description VARCHAR(500),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE lead_portal_flow_question (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    flow_id BIGINT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    data_key VARCHAR(120) NOT NULL,
+    type VARCHAR(40) NOT NULL,
+    required BOOLEAN NOT NULL,
+    description VARCHAR(500),
+    placeholder VARCHAR(255),
+    position_index INT NOT NULL,
+    CONSTRAINT fk_lead_portal_question_flow FOREIGN KEY (flow_id) REFERENCES lead_portal_flow(id) ON DELETE CASCADE,
+    CONSTRAINT uq_lead_portal_question_key UNIQUE (flow_id, data_key)
+);
+
+CREATE TABLE lead_portal_flow_question_option (
+    question_id BIGINT NOT NULL,
+    option_order INT NOT NULL,
+    value VARCHAR(255) NOT NULL,
+    PRIMARY KEY (question_id, option_order),
+    CONSTRAINT fk_lead_portal_question_option FOREIGN KEY (question_id) REFERENCES lead_portal_flow_question(id) ON DELETE CASCADE
+);
+
 CREATE TABLE experiment (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     niche_id BIGINT NOT NULL,
@@ -167,6 +198,7 @@ CREATE TABLE experiment (
     facebook_page_id BIGINT,
     facebook_instant_form_id BIGINT,
     follow_up_action_url VARCHAR(512),
+    lead_portal_flow_id BIGINT,
     instagram_account_id BIGINT,
     kpi_target_cpl DECIMAL(10,2) DEFAULT 45.00,
     stop_loss_cpl DECIMAL(10,2) DEFAULT 90.00,
@@ -189,7 +221,8 @@ CREATE TABLE experiment (
     CONSTRAINT fk_experiment_facebook_page FOREIGN KEY (facebook_page_id) REFERENCES fb_page(id),
     CONSTRAINT fk_experiment_fb_instant_form FOREIGN KEY (facebook_instant_form_id) REFERENCES fb_instant_form(id),
     CONSTRAINT fk_experiment_instagram_account FOREIGN KEY (instagram_account_id) REFERENCES ig_account(id),
-    CONSTRAINT fk_experiment_journey_template FOREIGN KEY (journey_template_id) REFERENCES journey_template(id)
+    CONSTRAINT fk_experiment_journey_template FOREIGN KEY (journey_template_id) REFERENCES journey_template(id),
+    CONSTRAINT fk_experiment_lead_portal_flow FOREIGN KEY (lead_portal_flow_id) REFERENCES lead_portal_flow(id)
 );
 
 CREATE TABLE audience (

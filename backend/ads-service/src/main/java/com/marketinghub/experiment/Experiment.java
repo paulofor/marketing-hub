@@ -10,6 +10,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.ads.InstagramAccount;
+import com.marketinghub.leadportal.LeadPortalFlow;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -48,6 +49,10 @@ public class Experiment {
 
     @Column(name = "follow_up_action_url", length = 512)
     private String followUpActionUrl;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "lead_portal_flow_id")
+    private LeadPortalFlow leadPortalFlow;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "instagram_account_id")

@@ -226,3 +226,6 @@ databaseChangeLog:
   - include:
       file: V2028_01_05__add_deliverables_to_generate_to_experiment.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2028_03_10__lead_portal_flow.sql
+      relativeToChangelogFile: true

@@ -51,6 +51,8 @@ class ExperimentServiceTest {
     AudienceRepository audienceRepository;
     @Autowired
     InstagramAccountRepository instagramAccountRepository;
+    @Autowired
+    com.marketinghub.leadportal.repository.LeadPortalFlowRepository leadPortalFlowRepository;
 
     private InstagramAccount createInstagramAccount() {
         return instagramAccountRepository.save(
@@ -66,6 +68,15 @@ class ExperimentServiceTest {
                 JourneyTemplate.builder()
                         .name("Lifecycle")
                         .build());
+    }
+
+    private Long createLeadPortalFlow() {
+        String slug = "flow-" + java.util.UUID.randomUUID();
+        return leadPortalFlowRepository.save(
+                com.marketinghub.leadportal.LeadPortalFlow.builder()
+                        .name("Fluxo " + slug)
+                        .slug(slug)
+                        .build()).getId();
     }
 
     @Test
@@ -102,6 +113,7 @@ class ExperimentServiceTest {
         req.setTargetCvr(new BigDecimal("5"));
         req.setMdePercent(new BigDecimal("40"));
         req.setInstagramAccountId(createInstagramAccount().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow());
         var exp = service.create(req);
         assertThat(exp.getId()).isNotNull();
         assertThat(exp.getPlatform()).isEqualTo(ExperimentPlatform.FACEBOOK);
@@ -141,6 +153,7 @@ class ExperimentServiceTest {
         req.setStartDate(java.time.LocalDate.of(2024,2,1));
         req.setEndDate(java.time.LocalDate.of(2024,1,1));
         req.setInstagramAccountId(createInstagramAccount().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow());
         assertThatThrownBy(() -> service.create(req))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     }
@@ -178,6 +191,7 @@ class ExperimentServiceTest {
         req.setTargetCvr(new BigDecimal("5"));
         req.setMdePercent(new BigDecimal("40"));
         req.setInstagramAccountId(createInstagramAccount().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow());
         assertThatThrownBy(() -> service.create(req))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     }
@@ -212,6 +226,7 @@ class ExperimentServiceTest {
         req1.setKpiTargetCpl(new BigDecimal("45"));
         req1.setMetricPresetId("LEAN_150");
         req1.setJourneyTemplateId(createJourneyTemplate().getId());
+        req1.setLeadPortalFlowId(createLeadPortalFlow());
         req1.setInstagramAccountId(createInstagramAccount().getId());
         var expApproved = service.create(req1);
         expApproved.setCreativeApproved(true);
@@ -238,6 +253,7 @@ class ExperimentServiceTest {
         req2.setKpiTargetCpl(new BigDecimal("45"));
         req2.setMetricPresetId("LEAN_150");
         req2.setJourneyTemplateId(createJourneyTemplate().getId());
+        req2.setLeadPortalFlowId(createLeadPortalFlow());
         req2.setInstagramAccountId(createInstagramAccount().getId());
         var expNotApproved = service.create(req2);
         experimentRepository.save(expNotApproved);
@@ -319,6 +335,7 @@ class ExperimentServiceTest {
         req.setMetricPresetId("LEAN_150");
         req.setJourneyTemplateId(template.getId());
         req.setInstagramAccountId(createInstagramAccount().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow());
 
         Experiment exp = service.create(req);
 
@@ -355,6 +372,7 @@ class ExperimentServiceTest {
         req.setKpiTargetCpl(new BigDecimal("45"));
         req.setMetricPresetId("LEAN_150");
         req.setInstagramAccountId(createInstagramAccount().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow());
 
         assertThatThrownBy(() -> service.create(req))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
@@ -393,6 +411,7 @@ class ExperimentServiceTest {
         req.setMetricPresetId("LEAN_150");
         req.setJourneyTemplateId(first.getId());
         req.setInstagramAccountId(createInstagramAccount().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow());
         Experiment exp = service.create(req);
 
         UpdateExperimentRequest updateReq = new UpdateExperimentRequest();
@@ -451,5 +470,55 @@ class ExperimentServiceTest {
         assertThatThrownBy(() -> service.update(exp.getId(), updateReq))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
                 .hasMessageContaining("journeyTemplateId required");
+    }
+
+    @Test
+    void updateChangesLeadPortalFlowWhenProvided() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("T")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        Long firstFlow = createLeadPortalFlow();
+        Long secondFlow = createLeadPortalFlow();
+        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("Exp1");
+        req.setHypothesis("Teste");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_150");
+        req.setJourneyTemplateId(template.getId());
+        req.setInstagramAccountId(createInstagramAccount().getId());
+        req.setLeadPortalFlowId(firstFlow);
+        Experiment exp = service.create(req);
+
+        UpdateExperimentRequest updateReq = new UpdateExperimentRequest();
+        updateReq.setName("Exp1");
+        updateReq.setHypothesis("Teste");
+        updateReq.setKpiTargetCpl(new BigDecimal("45"));
+        updateReq.setMetricPresetId("LEAN_150");
+        updateReq.setJourneyTemplateId(template.getId());
+        updateReq.setLeadPortalFlowId(secondFlow);
+
+        Experiment updated = service.update(exp.getId(), updateReq);
+
+        assertThat(updated.getLeadPortalFlow()).isNotNull();
+        assertThat(updated.getLeadPortalFlow().getId()).isEqualTo(secondFlow);
     }
 }

@@ -12,6 +12,8 @@ import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.journey.repository.JourneyTemplateRepository;
+import com.marketinghub.leadportal.LeadPortalFlow;
+import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import jakarta.persistence.EntityManager;
@@ -36,6 +38,7 @@ public class ExperimentService {
     private final FacebookPageRepository facebookPageRepository;
     private final InstagramAccountRepository instagramAccountRepository;
     private final FacebookInstantFormRepository facebookInstantFormRepository;
+    private final LeadPortalFlowRepository leadPortalFlowRepository;
 
     public ExperimentService(ExperimentRepository repository, MarketNicheRepository nicheRepository,
                              com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository,
@@ -44,7 +47,8 @@ public class ExperimentService {
                              JourneyTemplateRepository journeyTemplateRepository,
                              FacebookPageRepository facebookPageRepository,
                              InstagramAccountRepository instagramAccountRepository,
-                             FacebookInstantFormRepository facebookInstantFormRepository) {
+                             FacebookInstantFormRepository facebookInstantFormRepository,
+                             LeadPortalFlowRepository leadPortalFlowRepository) {
         this.repository = repository;
         this.nicheRepository = nicheRepository;
         this.hypothesisRepository = hypothesisRepository;
@@ -54,6 +58,7 @@ public class ExperimentService {
         this.facebookPageRepository = facebookPageRepository;
         this.instagramAccountRepository = instagramAccountRepository;
         this.facebookInstantFormRepository = facebookInstantFormRepository;
+        this.leadPortalFlowRepository = leadPortalFlowRepository;
     }
 
     /**
@@ -120,6 +125,17 @@ public class ExperimentService {
         return entityManager.getReference(JourneyTemplate.class, journeyTemplateId);
     }
 
+    private LeadPortalFlow attachLeadPortalFlow(Long flowId) {
+        if (flowId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "leadPortalFlowId required");
+        }
+        if (!leadPortalFlowRepository.existsById(flowId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "leadPortalFlowId not found: " + flowId);
+        }
+        return entityManager.getReference(LeadPortalFlow.class, flowId);
+    }
+
     /**
      * Creates and stores a new experiment.
      */
@@ -159,6 +175,7 @@ public class ExperimentService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "baselineCvr must be < targetCvr");
         }
         JourneyTemplate journeyTemplate = attachJourneyTemplate(request.getJourneyTemplateId());
+        LeadPortalFlow leadPortalFlow = attachLeadPortalFlow(request.getLeadPortalFlowId());
         String followUpActionUrl = normalizeFollowUpActionUrl(request.getFollowUpActionUrl());
         Experiment exp = Experiment.builder()
                 .niche(niche)
@@ -184,6 +201,7 @@ public class ExperimentService {
                 .facebookInstantForm(attachInstantForm(request.getFacebookInstantFormId(), request.getHypothesisId()))
                 .instagramAccount(attachInstagramAccount(request.getInstagramAccountId()))
                 .journeyTemplate(journeyTemplate)
+                .leadPortalFlow(leadPortalFlow)
                 .followUpActionUrl(followUpActionUrl)
                 .build();
         return repository.save(exp);
@@ -245,6 +263,7 @@ public class ExperimentService {
                 .instagramAccount(original.getInstagramAccount())
                 .facebookInstantForm(original.getFacebookInstantForm())
                 .journeyTemplate(original.getJourneyTemplate())
+                .leadPortalFlow(original.getLeadPortalFlow())
                 .followUpActionUrl(original.getFollowUpActionUrl())
                 .build();
         return repository.save(copy);
@@ -345,6 +364,12 @@ public class ExperimentService {
         }
         if (request.isInstagramAccountIdPresent()) {
             exp.setInstagramAccount(attachInstagramAccount(request.getInstagramAccountId()));
+        }
+        if (request.isLeadPortalFlowIdPresent()) {
+            if (request.getLeadPortalFlowId() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "leadPortalFlowId required");
+            }
+            exp.setLeadPortalFlow(attachLeadPortalFlow(request.getLeadPortalFlowId()));
         }
         return exp;
     }

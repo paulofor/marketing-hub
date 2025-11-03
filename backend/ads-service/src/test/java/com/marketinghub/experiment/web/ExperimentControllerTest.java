@@ -25,6 +25,7 @@ import org.springframework.test.context.TestPropertySource;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -70,8 +71,19 @@ class ExperimentControllerTest {
     private AudienceRepository audienceRepository;
     @Autowired
     private InstagramAccountRepository instagramAccountRepository;
+    @Autowired
+    private com.marketinghub.leadportal.repository.LeadPortalFlowRepository leadPortalFlowRepository;
 
     Long nicheId;
+
+    private Long createLeadPortalFlow() {
+        String slug = "flow-" + UUID.randomUUID();
+        return leadPortalFlowRepository.save(
+                com.marketinghub.leadportal.LeadPortalFlow.builder()
+                        .name("Fluxo " + slug)
+                        .slug(slug)
+                        .build()).getId();
+    }
 
     @BeforeEach
     void cleanDb() {
@@ -123,6 +135,7 @@ class ExperimentControllerTest {
         req.setEndDate(LocalDate.now().plusDays(5));
         req.setJourneyTemplateId(template.getId());
         req.setInstagramAccountId(instagramAccount.getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow());
 
         mockMvc.perform(post("/api/niches/" + nicheId + "/experiments")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -163,6 +176,7 @@ class ExperimentControllerTest {
         req.setKpiTargetCpl(new BigDecimal("45"));
         req.setMetricPresetId("LEAN_150");
         req.setInstagramAccountId(instagramAccount.getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow());
 
         mockMvc.perform(post("/api/niches/" + nicheId + "/experiments")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -18,7 +18,7 @@ import java.util.Optional;
 
 public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
     @Override
-    @EntityGraph(attributePaths = {"facebookPage", "instagramAccount"})
+    @EntityGraph(attributePaths = {"facebookPage", "instagramAccount", "leadPortalFlow"})
     Optional<Experiment> findById(Long id);
     List<Experiment> findByNicheId(Long nicheId);
     boolean existsByNicheAndName(MarketNiche niche, String name);

@@ -7,6 +7,8 @@ import com.marketinghub.creative.label.repository.AngleRepository;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.experiment.*;
 import com.marketinghub.experiment.repository.*;
+import com.marketinghub.leadportal.LeadPortalFlow;
+import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.ads.InstagramAccount;
@@ -32,6 +34,7 @@ public class FixtureUtils {
     private final com.marketinghub.experiment.repository.MetricPresetRepository metricPresetRepository;
     private final InstagramAccountRepository instagramAccountRepository;
     private final JourneyTemplateRepository journeyTemplateRepository;
+    private final LeadPortalFlowRepository leadPortalFlowRepository;
 
     public MarketNiche createAndSaveNiche() {
         MarketNiche niche = MarketNiche.builder()
@@ -72,6 +75,11 @@ public class FixtureUtils {
                 JourneyTemplate.builder()
                         .name("Template Jornada")
                         .build());
+        LeadPortalFlow flow = leadPortalFlowRepository.save(
+                LeadPortalFlow.builder()
+                        .name("Fluxo " + java.util.UUID.randomUUID())
+                        .slug("flow-" + java.util.UUID.randomUUID())
+                        .build());
         Experiment exp = Experiment.builder()
                 .niche(niche)
                 .name(name)
@@ -86,6 +94,7 @@ public class FixtureUtils {
                 .creativesToGenerate(0)
                 .instagramAccount(createAndSaveInstagramAccount())
                 .journeyTemplate(template)
+                .leadPortalFlow(flow)
                 .build();
         return experimentRepository.save(exp);
     }

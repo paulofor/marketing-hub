@@ -43,6 +43,9 @@ public class UpdateExperimentRequest {
     private String followUpActionUrl;
     @JsonIgnore
     private boolean followUpActionUrlPresent;
+    private Long leadPortalFlowId;
+    @JsonIgnore
+    private boolean leadPortalFlowIdPresent;
 
     @JsonSetter(value = "facebookPageId", nulls = Nulls.SET)
     public void setFacebookPageId(Long facebookPageId) {
@@ -72,6 +75,12 @@ public class UpdateExperimentRequest {
     public void setFollowUpActionUrl(String followUpActionUrl) {
         this.followUpActionUrl = followUpActionUrl;
         this.followUpActionUrlPresent = true;
+    }
+
+    @JsonSetter(value = "leadPortalFlowId", nulls = Nulls.SET)
+    public void setLeadPortalFlowId(Long leadPortalFlowId) {
+        this.leadPortalFlowId = leadPortalFlowId;
+        this.leadPortalFlowIdPresent = true;
     }
 }
 

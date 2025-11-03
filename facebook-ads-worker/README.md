@@ -72,7 +72,11 @@ e `<==` para respostas, inclusive em cenários de erro, permitindo identificar
 rapidamente a direção do tráfego durante uma análise.
 
 Quando a jornada do experimento exige um Instant Form aprovado, o worker garante
-que o formulário seja criado na Meta antes da ativação das campanhas. O fluxo
+que o formulário seja criado na Meta antes da ativação das campanhas. **Por
+enquanto esse fluxo está desativado por padrão** – a propriedade
+`facebook.instant-forms.enabled` controla a execução do agendador e permanece em
+`false` na configuração padrão (`application.properties`). Para reativar a
+publicação automática, defina o valor como `true` no ambiente desejado. O fluxo
 operado pelo `FacebookInstantFormPublicationService` foi simplificado para uma
 única etapa transacional:
 

@@ -50,12 +50,14 @@ public class FacebookInstantFormPublicationService {
     private final String apiPrefix;
     private final MeterRegistry meterRegistry;
     private final boolean dryRun;
+    private final boolean instantFormCreationEnabled;
     private final AtomicBoolean accessTokenExpired;
     private final AtomicBoolean accessTokenExpiryWarningLogged;
     private final AtomicReference<String> lastExpiredAccessToken;
     private final AtomicBoolean configurationUnavailableWarningLogged;
     private final AtomicReference<String> cachedGlobalPrivacyPolicyUrl;
     private final AtomicBoolean privacyPolicyNotFoundLogged;
+    private final AtomicBoolean creationDisabledNoticeLogged;
     private final ObjectMapper objectMapper;
 
     public FacebookInstantFormPublicationService(FacebookAdsService facebookAdsService,
@@ -66,6 +68,7 @@ public class FacebookInstantFormPublicationService {
                                                  @Value("${backend.base-url:http://localhost:8000}") String backendBaseUrl,
                                                  @Value("${backend.api-prefix:/api}") String apiPrefix,
                                                  @Value("${facebook.instant-forms.dry-run:false}") boolean dryRun,
+                                                 @Value("${facebook.instant-forms.enabled:false}") boolean instantFormCreationEnabled,
                                                  ObjectMapper objectMapper) {
         this.facebookAdsService = facebookAdsService;
         this.accessTokenManager = accessTokenManager;
@@ -75,16 +78,26 @@ public class FacebookInstantFormPublicationService {
         this.apiPrefix = apiPrefix;
         this.meterRegistry = meterRegistry;
         this.dryRun = dryRun;
+        this.instantFormCreationEnabled = instantFormCreationEnabled;
         this.accessTokenExpired = new AtomicBoolean(false);
         this.accessTokenExpiryWarningLogged = new AtomicBoolean(false);
         this.lastExpiredAccessToken = new AtomicReference<>(null);
         this.configurationUnavailableWarningLogged = new AtomicBoolean(false);
         this.cachedGlobalPrivacyPolicyUrl = new AtomicReference<>(null);
         this.privacyPolicyNotFoundLogged = new AtomicBoolean(false);
+        this.creationDisabledNoticeLogged = new AtomicBoolean(false);
         this.objectMapper = objectMapper;
     }
 
     public void processApprovedInstantFormDrafts() {
+        if (!instantFormCreationEnabled) {
+            if (creationDisabledNoticeLogged.compareAndSet(false, true)) {
+                LOGGER.info("Instant form creation is disabled via configuration; skipping processing");
+            }
+            meterRegistry.counter("facebook.instant_form.creation.skipped", "reason", "disabled").increment();
+            return;
+        }
+
         if (accessTokenExpired.get()) {
             if (hasTokenChangedSinceExpiration()) {
                 LOGGER.info(

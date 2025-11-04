@@ -7,6 +7,7 @@ import com.marketinghub.leadportal.LeadPortalQuestionType;
 import com.marketinghub.leadportal.dto.CreateLeadPortalFlowRequest;
 import com.marketinghub.leadportal.dto.LeadPortalFlowQuestionRequest;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -41,6 +42,11 @@ class LeadPortalFlowControllerTest {
     ObjectMapper mapper;
     @Autowired
     LeadPortalFlowRepository repository;
+
+    @BeforeEach
+    void cleanDatabase() {
+        repository.deleteAll();
+    }
 
     @Test
     void createFlowPersistsQuestions() throws Exception {

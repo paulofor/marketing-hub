@@ -17,6 +17,7 @@ export interface LeadPortalFlow {
   id: number;
   name: string;
   slug: string;
+  publicUrl?: string | null;
   description?: string | null;
   model?: string | null;
   prompt?: string | null;

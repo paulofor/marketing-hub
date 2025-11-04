@@ -6,12 +6,14 @@ import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.LeadPortalQuestionType;
 import com.marketinghub.leadportal.dto.CreateLeadPortalFlowRequest;
 import com.marketinghub.leadportal.dto.LeadPortalFlowQuestionRequest;
+import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -32,7 +34,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.datasource.username=sa",
         "spring.datasource.password=",
         "spring.jpa.hibernate.ddl-auto=create",
-        "spring.liquibase.enabled=false"
+        "spring.liquibase.enabled=false",
+        "integrations.lead-portal.enabled=true",
+        "integrations.lead-portal.base-url=https://portal.example.com"
 })
 class LeadPortalFlowControllerTest {
 
@@ -42,6 +46,9 @@ class LeadPortalFlowControllerTest {
     ObjectMapper mapper;
     @Autowired
     LeadPortalFlowRepository repository;
+
+    @MockBean
+    LeadPortalFlowPublisher flowPublisher;
 
     @BeforeEach
     void cleanDatabase() {
@@ -64,7 +71,8 @@ class LeadPortalFlowControllerTest {
                         .content(mapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.questions[0].dataKey").value("nome"))
-                .andExpect(jsonPath("$.questions[1].type").value("IMAGE_UPLOAD"));
+                .andExpect(jsonPath("$.questions[1].type").value("IMAGE_UPLOAD"))
+                .andExpect(jsonPath("$.publicUrl").doesNotExist());
 
         assertThat(repository.count()).isEqualTo(1);
         LeadPortalFlow saved = repository.findAll().get(0);
@@ -103,7 +111,8 @@ class LeadPortalFlowControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"approved\":true}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.approved").value(true));
+                .andExpect(jsonPath("$.approved").value(true))
+                .andExpect(jsonPath("$.publicUrl").value("https://portal.example.com/flows/fluxo-aprovacao"));
 
         LeadPortalFlow updated = repository.findById(flow.getId()).orElseThrow();
         assertThat(updated.isApproved()).isTrue();

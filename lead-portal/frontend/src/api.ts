@@ -1,4 +1,9 @@
-import { CreateLeadPayload, LeadDetails, LeadStatus } from "./types";
+import {
+  CreateLeadPayload,
+  LeadDetails,
+  LeadPortalFlow,
+  LeadStatus
+} from "./types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
 
@@ -48,6 +53,16 @@ export async function fetchLeadResult(
     result?: string | null;
     completedAt?: string | null;
   };
+}
+
+export async function fetchLeadPortalFlow(slug: string): Promise<LeadPortalFlow> {
+  const response = await fetch(`${API_BASE_URL}/api/flows/${slug}`);
+  if (!response.ok) {
+    const message = await extractError(response);
+    throw new Error(message);
+  }
+
+  return (await response.json()) as LeadPortalFlow;
 }
 
 async function extractError(response: Response): Promise<string> {

@@ -199,3 +199,170 @@ footer {
     width: 100%;
   }
 }
+
+.flow-container {
+  width: min(100%, 680px);
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.flow-header h1 {
+  margin-bottom: 0.5rem;
+  font-size: 2.25rem;
+}
+
+.flow-header p {
+  margin: 0.25rem 0;
+  color: #4b5563;
+}
+
+.flow-meta {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.flow-message {
+  text-align: center;
+  color: #4b5563;
+  margin-top: 4rem;
+}
+
+.flow-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+form.flow-form {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.flow-question-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.flow-question-item {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 15px 40px rgba(15, 23, 42, 0.12);
+}
+
+.flow-question-label {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: #1f2937;
+}
+
+.flow-question-number {
+  color: #6366f1;
+  font-weight: 700;
+}
+
+.required-indicator {
+  color: #dc2626;
+  margin-left: 0.25rem;
+}
+
+.flow-question-description {
+  margin: 0.5rem 0 1rem;
+  color: #4b5563;
+  font-size: 0.95rem;
+}
+
+.flow-input {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.flow-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+}
+
+.flow-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.flow-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  color: #111827;
+}
+
+.flow-question-error-message {
+  color: #dc2626;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.flow-question-error .flow-input {
+  border-color: #dc2626;
+}
+
+.submit-button {
+  align-self: flex-start;
+  border: none;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  padding: 0.75rem 1.75rem;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.submit-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 15px 25px rgba(79, 70, 229, 0.35);
+}
+
+.success-banner {
+  background: #ecfdf5;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  color: #047857;
+  font-weight: 500;
+}
+
+.flow-footer details {
+  background: rgba(99, 102, 241, 0.08);
+  padding: 1rem;
+  border-radius: 12px;
+}
+
+.flow-footer summary {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.flow-footer pre {
+  margin-top: 0.75rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.9rem;
+  color: #1f2937;
+}

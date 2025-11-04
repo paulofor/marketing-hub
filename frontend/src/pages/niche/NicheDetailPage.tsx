@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
@@ -124,6 +125,14 @@ export default function NicheDetailPage() {
   const updatedAtLabel = data.updatedAt
     ? new Date(data.updatedAt).toLocaleString("pt-BR")
     : undefined;
+  const scrollToSection = useCallback((sectionId: string) => {
+    if (typeof document === "undefined") return;
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
+
   const infoCards = [
     { label: "Descrição", value: data.description },
     { label: "Volume de demanda", value: data.demandVolume },
@@ -155,12 +164,14 @@ export default function NicheDetailPage() {
       label: "Públicos",
       value: `${audienceList.length}`,
       helper: `Meta: ${data.audiencesToGenerate ?? 0}`,
+      targetId: "niche-audiences",
     },
     {
       icon: Lightbulb,
       label: "Hipóteses",
       value: `${list.length}`,
       helper: `Meta: ${data.hypothesesToGenerate ?? 0}`,
+      targetId: "niche-hypotheses",
     },
     {
       icon: Package,
@@ -170,6 +181,7 @@ export default function NicheDetailPage() {
         deliverableList.length === 0
           ? "Nenhum gerado ainda"
           : `${deliverableList.length} prontos para uso`,
+      targetId: "niche-deliverables",
     },
     {
       icon: Clock3,
@@ -261,20 +273,47 @@ export default function NicheDetailPage() {
         </div>
       </div>
       <ul className="niche-detail__stats">
-        {stats.map((stat) => (
-          <li key={stat.label} className="niche-detail__stat">
-            <span className="niche-detail__stat-icon">
-              <stat.icon size={20} strokeWidth={1.75} />
-            </span>
-            <div className="niche-detail__stat-content">
-              <span className="niche-detail__stat-value">{stat.value}</span>
-              <span className="niche-detail__stat-label">{stat.label}</span>
-              {stat.helper ? (
-                <span className="niche-detail__stat-helper">{stat.helper}</span>
-              ) : null}
-            </div>
-          </li>
-        ))}
+        {stats.map((stat) => {
+          const isInteractive = Boolean(stat.targetId);
+          const targetId = stat.targetId;
+          const className = `niche-detail__stat${
+            isInteractive ? " niche-detail__stat--interactive" : ""
+          }`;
+          return (
+            <li
+              key={stat.label}
+              className={className}
+              onClick={
+                isInteractive && targetId
+                  ? () => scrollToSection(targetId)
+                  : undefined
+              }
+              role={isInteractive ? "button" : undefined}
+              tabIndex={isInteractive ? 0 : undefined}
+              onKeyDown={
+                isInteractive && targetId
+                  ? (event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        scrollToSection(targetId);
+                      }
+                    }
+                  : undefined
+              }
+            >
+              <span className="niche-detail__stat-icon">
+                <stat.icon size={20} strokeWidth={1.75} />
+              </span>
+              <div className="niche-detail__stat-content">
+                <span className="niche-detail__stat-value">{stat.value}</span>
+                <span className="niche-detail__stat-label">{stat.label}</span>
+                {stat.helper ? (
+                  <span className="niche-detail__stat-helper">{stat.helper}</span>
+                ) : null}
+              </div>
+            </li>
+          );
+        })}
       </ul>
       <section aria-label="Informações do nicho">
         <div className="niche-detail__grid">

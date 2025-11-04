@@ -9,6 +9,7 @@ import { useBreadcrumbs } from "../../app/breadcrumbs";
 import { useChatDialog } from "../../api/chatDialog/useChatDialog";
 import { useForm } from "react-hook-form";
 import { useRequestAudiences } from "../../api/niche/useRequestAudiences";
+import { useRequestHypotheses } from "../../api/niche/useRequestHypotheses";
 import { useExperimentsByNiche } from "../../api/experiment/useExperimentsByNiche";
 import { useDeliverablesByNiche } from "../../api/deliverable/useDeliverablesByNiche";
 import { useCreateDeliverable } from "../../api/deliverable/useCreateDeliverable";
@@ -33,7 +34,19 @@ export default function NicheDetailPage() {
   const { data: experiments } = useExperimentsByNiche(nicheId);
   const { data: deliverables } = useDeliverablesByNiche(nicheId);
   const requestAudiences = useRequestAudiences(id);
-  const { register, handleSubmit, reset } = useForm<{ quantity: number }>({
+  const requestHypotheses = useRequestHypotheses(id);
+  const {
+    register: registerAudienceQuantity,
+    handleSubmit: handleSubmitAudienceQuantity,
+    reset: resetAudienceQuantity,
+  } = useForm<{ quantity: number }>({
+    defaultValues: { quantity: 1 },
+  });
+  const {
+    register: registerHypothesisQuantity,
+    handleSubmit: handleSubmitHypothesisQuantity,
+    reset: resetHypothesisQuantity,
+  } = useForm<{ quantity: number }>({
     defaultValues: { quantity: 1 },
   });
   const {
@@ -169,15 +182,34 @@ export default function NicheDetailPage() {
     requestAudiences.isPending || (isFetching && !isLoading)
       ? "Atualizando públicos..."
       : `Solicitados ao Worker: ${data.audiencesToGenerate ?? 0}`;
-  const onRequestAudiences = handleSubmit(
+  const hypothesisStatusLabel =
+    requestHypotheses.isPending || (isFetching && !isLoading)
+      ? "Atualizando hipóteses..."
+      : `Solicitadas ao Worker: ${data.hypothesesToGenerate ?? 0}`;
+  const onRequestAudiences = handleSubmitAudienceQuantity(
     async ({ quantity }) => {
       if (!quantity || quantity <= 0) return;
       try {
         await requestAudiences.mutateAsync(quantity);
         alert("Solicitação enviada!");
-        reset({ quantity: 1 });
+        resetAudienceQuantity({ quantity: 1 });
       } catch {
         alert("Erro ao solicitar públicos");
+      }
+    },
+    (errors) => {
+      console.log("Validation errors", errors);
+    },
+  );
+  const onRequestHypotheses = handleSubmitHypothesisQuantity(
+    async ({ quantity }) => {
+      if (!quantity || quantity <= 0) return;
+      try {
+        await requestHypotheses.mutateAsync(quantity);
+        alert("Solicitação enviada!");
+        resetHypothesisQuantity({ quantity: 1 });
+      } catch {
+        alert("Erro ao solicitar hipóteses");
       }
     },
     (errors) => {
@@ -420,7 +452,10 @@ export default function NicheDetailPage() {
             </p>
             <p className="niche-section__status">{audienceStatusLabel}</p>
           </div>
-          <form className="niche-section__actions" onSubmit={onRequestAudiences}>
+          <form
+            className="niche-section__actions"
+            onSubmit={onRequestAudiences}
+          >
             <label htmlFor="audience-quantity" className="visually-hidden">
               Quantidade de públicos que o Worker IA irá gerar
             </label>
@@ -431,7 +466,7 @@ export default function NicheDetailPage() {
               className="form-control"
               title="Quantidade de públicos que o Worker IA irá gerar"
               disabled={requestAudiences.isPending}
-              {...register("quantity", { valueAsNumber: true })}
+              {...registerAudienceQuantity("quantity", { valueAsNumber: true })}
             />
             <button
               type="submit"
@@ -477,7 +512,41 @@ export default function NicheDetailPage() {
                 ? "As hipóteses aparecerão aqui quando forem geradas pela IA."
                 : "Principais ângulos sugeridos pela IA para o nicho."}
             </p>
+            <p className="niche-section__status">{hypothesisStatusLabel}</p>
           </div>
+          <form
+            className="niche-section__actions"
+            onSubmit={onRequestHypotheses}
+          >
+            <label htmlFor="hypothesis-quantity" className="visually-hidden">
+              Quantidade de hipóteses que o Worker IA irá gerar
+            </label>
+            <input
+              id="hypothesis-quantity"
+              type="number"
+              min={1}
+              className="form-control"
+              title="Quantidade de hipóteses que o Worker IA irá gerar"
+              disabled={requestHypotheses.isPending}
+              {...registerHypothesisQuantity("quantity", { valueAsNumber: true })}
+            />
+            <button
+              type="submit"
+              className="btn btn-secondary"
+              disabled={requestHypotheses.isPending}
+            >
+              {requestHypotheses.isPending ? (
+                <span
+                  className="spinner-border spinner-border-sm"
+                  role="status"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Sparkles size={18} />
+              )}
+              <span>Gerar Hipóteses</span>
+            </button>
+          </form>
         </div>
         {list.length === 0 ? (
           <p className="niche-section__empty">Nenhuma hipótese ainda.</p>

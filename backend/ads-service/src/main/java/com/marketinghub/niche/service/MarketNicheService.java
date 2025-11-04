@@ -83,6 +83,16 @@ public class MarketNicheService {
         return niche;
     }
 
+    /**
+     * Requests generation of new hypotheses by setting the pending quantity.
+     */
+    @Transactional
+    public MarketNiche requestHypotheses(Long id, int quantity) {
+        MarketNiche niche = repository.findById(id).orElseThrow();
+        niche.setHypothesesToGenerate(quantity);
+        return niche;
+    }
+
     public Iterable<MarketNiche> list() {
         return repository.findAll();
     }

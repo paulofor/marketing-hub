@@ -42,4 +42,15 @@ class MarketNicheControllerTest {
         var updated = repository.findById(niche.getId()).orElseThrow();
         assertThat(updated.getAudiencesToGenerate()).isEqualTo(3);
     }
+
+    @Test
+    void requestHypothesesEndpointUpdatesQuantity() throws Exception {
+        var niche = fixtures.createAndSaveNiche();
+        mockMvc.perform(
+                        patch("/api/niches/" + niche.getId() + "/hypotheses-to-generate")
+                                .param("quantity", "2"))
+                .andExpect(status().isOk());
+        var updated = repository.findById(niche.getId()).orElseThrow();
+        assertThat(updated.getHypothesesToGenerate()).isEqualTo(2);
+    }
 }

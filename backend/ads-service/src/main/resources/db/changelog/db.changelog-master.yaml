@@ -235,3 +235,6 @@ databaseChangeLog:
   - include:
       file: changesets/2028-09-15-lead-portal-flow-enhancements.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2028_10_07__lead_portal_submission.sql
+      relativeToChangelogFile: true

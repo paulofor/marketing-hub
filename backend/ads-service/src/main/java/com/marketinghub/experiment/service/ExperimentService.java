@@ -197,6 +197,7 @@ public class ExperimentService {
                 .instantFormsToGenerate(request.getInstantFormsToGenerate())
                 .emailsToGenerate(request.getEmailsToGenerate())
                 .deliverablesToGenerate(request.getDeliverablesToGenerate())
+                .leadPortalFlowsToGenerate(request.getLeadPortalFlowsToGenerate())
                 .facebookPage(attachFacebookPage(request.getFacebookPageId()))
                 .facebookInstantForm(attachInstantForm(request.getFacebookInstantFormId(), request.getHypothesisId()))
                 .instagramAccount(attachInstagramAccount(request.getInstagramAccountId()))
@@ -259,6 +260,7 @@ public class ExperimentService {
                 .instantFormsToGenerate(original.getInstantFormsToGenerate())
                 .emailsToGenerate(original.getEmailsToGenerate())
                 .deliverablesToGenerate(original.getDeliverablesToGenerate())
+                .leadPortalFlowsToGenerate(original.getLeadPortalFlowsToGenerate())
                 .facebookPage(original.getFacebookPage())
                 .instagramAccount(original.getInstagramAccount())
                 .facebookInstantForm(original.getFacebookInstantForm())
@@ -343,6 +345,9 @@ public class ExperimentService {
         if (request.getDeliverablesToGenerate() != null) {
             exp.setDeliverablesToGenerate(request.getDeliverablesToGenerate());
         }
+        if (request.getLeadPortalFlowsToGenerate() != null) {
+            exp.setLeadPortalFlowsToGenerate(request.getLeadPortalFlowsToGenerate());
+        }
         if (request.getCreativeApproved() != null) {
             exp.setCreativeApproved(request.getCreativeApproved());
         }
@@ -411,6 +416,16 @@ public class ExperimentService {
     public Experiment requestDeliverables(Long id, int quantity) {
         Experiment exp = repository.findById(id).orElseThrow();
         exp.setDeliverablesToGenerate(quantity);
+        return exp;
+    }
+
+    /**
+     * Requests generation of new lead portal flows by setting the pending quantity.
+     */
+    @Transactional
+    public Experiment requestLeadPortalFlows(Long id, int quantity) {
+        Experiment exp = repository.findById(id).orElseThrow();
+        exp.setLeadPortalFlowsToGenerate(quantity);
         return exp;
     }
 

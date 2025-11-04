@@ -252,4 +252,16 @@ class ExperimentControllerTest {
         var updated = repository.findById(exp.getId()).orElseThrow();
         assertThat(updated.getEmailsToGenerate()).isEqualTo(4);
     }
+
+    @Test
+    void requestLeadPortalFlowsEndpointUpdatesQuantity() throws Exception {
+        var niche = nicheRepo.findById(nicheId).orElseThrow();
+        var exp = fixtures.createAndSaveExperiment(niche);
+        mockMvc.perform(
+                        patch("/api/experiments/" + exp.getId() + "/lead-portal-flows-to-generate")
+                                .param("quantity", "2"))
+                .andExpect(status().isOk());
+        var updated = repository.findById(exp.getId()).orElseThrow();
+        assertThat(updated.getLeadPortalFlowsToGenerate()).isEqualTo(2);
+    }
 }

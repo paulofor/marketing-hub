@@ -15,11 +15,13 @@ export interface UpdateExperiment {
   instantFormsToGenerate?: number;
   emailsToGenerate?: number;
   deliverablesToGenerate?: number;
+  leadPortalFlowsToGenerate?: number;
   journeyTemplateId?: number;
   facebookPageId?: number | null;
   facebookInstantFormId?: number | null;
   instagramAccountId?: number | null;
   followUpActionUrl?: string | null;
+  leadPortalFlowId?: number | null;
 }
 
 export function useUpdateExperiment(id: string) {

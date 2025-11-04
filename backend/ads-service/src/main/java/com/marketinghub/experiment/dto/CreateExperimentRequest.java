@@ -31,6 +31,7 @@ public class CreateExperimentRequest {
     private Integer instantFormsToGenerate;
     private Integer emailsToGenerate;
     private Integer deliverablesToGenerate;
+    private Integer leadPortalFlowsToGenerate;
     private Long journeyTemplateId;
     private Long facebookPageId;
     private Long facebookInstantFormId;

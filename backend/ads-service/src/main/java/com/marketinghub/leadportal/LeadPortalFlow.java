@@ -34,6 +34,20 @@ public class LeadPortalFlow {
     @Column(length = 500)
     private String description;
 
+    @Column(length = 128)
+    private String model;
+
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String prompt;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean approved = false;
+
+    @Column(name = "approved_at")
+    private Instant approvedAt;
+
     @Builder.Default
     @OneToMany(mappedBy = "flow", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")

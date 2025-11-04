@@ -81,4 +81,9 @@ public class ExperimentController {
         return mapper.toDto(service.requestDeliverables(id, quantity));
     }
 
+    @PatchMapping("/{id}/lead-portal-flows-to-generate")
+    public ExperimentDto requestLeadPortalFlows(@PathVariable Long id, @RequestParam("quantity") int quantity) {
+        return mapper.toDto(service.requestLeadPortalFlows(id, quantity));
+    }
+
 }

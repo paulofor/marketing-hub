@@ -27,6 +27,7 @@ public class UpdateExperimentRequest {
     private Integer instantFormsToGenerate;
     private Integer emailsToGenerate;
     private Integer deliverablesToGenerate;
+    private Integer leadPortalFlowsToGenerate;
     private Boolean creativeApproved;
     private Long journeyTemplateId;
     @JsonIgnore

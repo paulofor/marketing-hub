@@ -94,6 +94,23 @@
   background: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.05);
 }
 
+.niche-detail__stat--interactive {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.niche-detail__stat--interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px -24px rgba(var(--bs-primary-rgb, 13, 110, 253), 0.6);
+}
+
+.niche-detail__stat--interactive:focus-visible {
+  outline: 3px solid rgba(var(--bs-primary-rgb, 13, 110, 253), 0.35);
+  outline-offset: 2px;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px -24px rgba(var(--bs-primary-rgb, 13, 110, 253), 0.6);
+}
+
 .niche-detail__stat:nth-of-type(2) {
   border-color: rgba(var(--bs-purple-rgb, 111, 66, 193), 0.18);
   background: rgba(var(--bs-purple-rgb, 111, 66, 193), 0.06);

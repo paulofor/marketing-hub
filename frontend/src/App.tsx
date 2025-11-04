@@ -66,6 +66,7 @@ import FacebookCampaignExperimentsPage from "./pages/facebook/FacebookCampaignEx
 import FacebookExperimentsReadyPage from "./pages/facebook/FacebookExperimentsReadyPage";
 import GlobalAutomationAlerts from "./components/GlobalAutomationAlerts";
 import AiGenerationListPage from "./pages/ai/AiGenerationListPage";
+import AiWorkerPendingRequestsPage from "./pages/ai/AiWorkerPendingRequestsPage";
 import PrivacyPolicySettingsPage from "./pages/settings/PrivacyPolicySettingsPage";
 import WhatsAppConsolePage from "./pages/whatsapp/WhatsAppConsolePage";
 
@@ -153,6 +154,10 @@ export default function App() {
               <Route
                 path="/ai/generations"
                 element={<AiGenerationListPage />}
+              />
+              <Route
+                path="/ai/pending-requests"
+                element={<AiWorkerPendingRequestsPage />}
               />
               <Route path="/angles" element={<AnglesPage />} />
               <Route path="/visual-proofs" element={<VisualProofsPage />} />

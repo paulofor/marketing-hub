@@ -45,4 +45,18 @@ class MarketNicheServiceTest {
         MarketNiche updated = repository.findById(niche.getId()).orElseThrow();
         assertThat(updated.getHypothesesToGenerate()).isEqualTo(5);
     }
+
+    @Test
+    void requestHypothesesUpdatesQuantity() {
+        MarketNiche niche = MarketNiche.builder()
+                .name("Fitness")
+                .hypothesesToGenerate(1)
+                .build();
+        repository.save(niche);
+
+        service.requestHypotheses(niche.getId(), 4);
+
+        MarketNiche updated = repository.findById(niche.getId()).orElseThrow();
+        assertThat(updated.getHypothesesToGenerate()).isEqualTo(4);
+    }
 }

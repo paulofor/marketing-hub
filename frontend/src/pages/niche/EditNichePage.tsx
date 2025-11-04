@@ -74,26 +74,6 @@ export default function EditNichePage() {
           </option>
         ))}
       </select>
-      <label className="form-label">Qtd. de hipóteses para gerar</label>
-      <input
-        type="number"
-        className="form-control mb-2"
-        value={form.hypothesesToGenerate}
-        title="Quantidade de hipóteses que o Worker IA irá gerar"
-        onChange={(e) =>
-          setForm({ ...form, hypothesesToGenerate: Number(e.target.value) })
-        }
-      />
-      <label className="form-label">Qtd. de públicos para gerar</label>
-      <input
-        type="number"
-        className="form-control mb-2"
-        value={form.audiencesToGenerate}
-        title="Quantidade de públicos que o Worker IA irá gerar"
-        onChange={(e) =>
-          setForm({ ...form, audiencesToGenerate: Number(e.target.value) })
-        }
-      />
       <label className="form-label">Descrição</label>
       <textarea
         className="form-control mb-2"

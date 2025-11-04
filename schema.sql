@@ -190,6 +190,63 @@ CREATE TABLE lead_portal_flow_question_option (
     CONSTRAINT fk_lead_portal_question_option FOREIGN KEY (question_id) REFERENCES lead_portal_flow_question(id) ON DELETE CASCADE
 );
 
+CREATE TABLE lead_portal_submission (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    flow_id BIGINT NOT NULL,
+    experiment_id BIGINT,
+    lead_id BINARY(16),
+    status VARCHAR(20) NOT NULL DEFAULT 'COMPLETED',
+    source VARCHAR(64),
+    primary_contact_name VARCHAR(255),
+    primary_contact_email VARCHAR(320),
+    primary_contact_phone VARCHAR(40),
+    utm_source VARCHAR(100),
+    utm_medium VARCHAR(100),
+    utm_campaign VARCHAR(150),
+    utm_content VARCHAR(150),
+    utm_term VARCHAR(150),
+    submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_lead_portal_submission_flow FOREIGN KEY (flow_id) REFERENCES lead_portal_flow(id),
+    CONSTRAINT fk_lead_portal_submission_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id),
+    CONSTRAINT fk_lead_portal_submission_lead FOREIGN KEY (lead_id) REFERENCES `lead`(id)
+);
+
+CREATE TABLE lead_portal_submission_answer (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    submission_id BIGINT NOT NULL,
+    question_id BIGINT NOT NULL,
+    data_key_snapshot VARCHAR(120) NOT NULL,
+    text_value LONGTEXT,
+    number_value DECIMAL(18,4),
+    date_value DATE,
+    boolean_value TINYINT(1),
+    selected_option_id BIGINT,
+    asset_id BIGINT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_lead_portal_answer_submission FOREIGN KEY (submission_id) REFERENCES lead_portal_submission(id) ON DELETE CASCADE,
+    CONSTRAINT fk_lead_portal_answer_question FOREIGN KEY (question_id) REFERENCES lead_portal_flow_question(id),
+    CONSTRAINT fk_lead_portal_answer_option FOREIGN KEY (selected_option_id) REFERENCES lead_portal_flow_question_option(id),
+    CONSTRAINT fk_lead_portal_answer_asset FOREIGN KEY (asset_id) REFERENCES asset(id),
+    CONSTRAINT uq_lead_portal_submission_question UNIQUE (submission_id, question_id)
+);
+
+CREATE TABLE lead_portal_submission_answer_option (
+    answer_id BIGINT NOT NULL,
+    option_id BIGINT NOT NULL,
+    PRIMARY KEY (answer_id, option_id),
+    CONSTRAINT fk_lead_portal_answer_option_answer FOREIGN KEY (answer_id) REFERENCES lead_portal_submission_answer(id) ON DELETE CASCADE,
+    CONSTRAINT fk_lead_portal_answer_option_option FOREIGN KEY (option_id) REFERENCES lead_portal_flow_question_option(id)
+);
+
+CREATE INDEX idx_lead_portal_submission_flow ON lead_portal_submission(flow_id, submitted_at DESC);
+CREATE INDEX idx_lead_portal_submission_lead ON lead_portal_submission(lead_id);
+CREATE INDEX idx_lead_portal_submission_experiment ON lead_portal_submission(experiment_id);
+CREATE INDEX idx_lead_portal_answer_submission ON lead_portal_submission_answer(submission_id);
+CREATE INDEX idx_lead_portal_answer_question ON lead_portal_submission_answer(question_id);
+
 CREATE TABLE experiment (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     niche_id BIGINT NOT NULL,

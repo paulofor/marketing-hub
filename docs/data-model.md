@@ -297,12 +297,19 @@ will be executed and measured during the test cycle.
 - `name` VARCHAR(150) NOT NULL
 - `slug` VARCHAR(120) NOT NULL UNIQUE
 - `description` VARCHAR(500)
+- `model` VARCHAR(128)
+- `prompt` LONGTEXT
+- `approved` TINYINT(1) DEFAULT 0
+- `approved_at` TIMESTAMP
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
 Representa o fluxo configurado no Portal Lead. Cada fluxo é identificado por um
 `slug` único que pode ser consumido pela aplicação externa para carregar as
-perguntas corretas e instruções de coleta de dados.
+perguntas corretas e instruções de coleta de dados. Os campos `model` e `prompt`
+armazenam o histórico de geração realizado pelo Worker IA, enquanto
+`approved/approved_at` registram quando o fluxo foi validado para uso em
+campanhas.
 
 ### lead_portal_flow_question
 
@@ -330,6 +337,61 @@ etc.).
 Armazena as opções ordenadas de perguntas do tipo seleção única ou múltipla.
 Quando a pergunta for removida, as opções correspondentes são excluídas em
 efeito cascata.
+
+### lead_portal_submission
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `flow_id` BIGINT NOT NULL → FK `lead_portal_flow.id`
+- `experiment_id` BIGINT → FK `experiment.id`
+- `lead_id` BINARY(16) → FK `lead.id`
+- `status` VARCHAR(20) DEFAULT 'COMPLETED'
+- `source` VARCHAR(64)
+- `primary_contact_name` VARCHAR(255)
+- `primary_contact_email` VARCHAR(320)
+- `primary_contact_phone` VARCHAR(40)
+- `utm_source` VARCHAR(100)
+- `utm_medium` VARCHAR(100)
+- `utm_campaign` VARCHAR(150)
+- `utm_content` VARCHAR(150)
+- `utm_term` VARCHAR(150)
+- `submitted_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+Guarda cada submissão concluída no Portal Lead. O registro vincula o fluxo que
+originou o formulário, opcionalmente referencia o experimento que disparou a
+captação e preserva um resumo rápido dos dados de contato e parâmetros UTM
+usados na origem da lead.
+
+### lead_portal_submission_answer
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `submission_id` BIGINT NOT NULL → FK `lead_portal_submission.id`
+- `question_id` BIGINT NOT NULL → FK `lead_portal_flow_question.id`
+- `data_key_snapshot` VARCHAR(120) NOT NULL
+- `text_value` LONGTEXT
+- `number_value` DECIMAL(18,4)
+- `date_value` DATE
+- `boolean_value` TINYINT(1)
+- `selected_option_id` BIGINT → FK `lead_portal_flow_question_option.id`
+- `asset_id` BIGINT → FK `asset.id`
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+Normaliza as respostas de cada pergunta preenchida durante a submissão. O campo
+`data_key_snapshot` congela o identificador lógico usado na coleta, permitindo
+auditorias mesmo que o fluxo seja reordenado ou renomeado. Campos específicos
+armazenam o valor em diferentes formatos (texto, número, data, booleano), além
+de vínculos com opções pré-definidas e ativos de imagem enviados pelo usuário.
+
+### lead_portal_submission_answer_option
+
+- `answer_id` BIGINT NOT NULL → FK `lead_portal_submission_answer.id`
+- `option_id` BIGINT NOT NULL → FK `lead_portal_flow_question_option.id`
+
+Relaciona respostas do tipo múltipla escolha às opções marcadas pelo usuário.
+Cada par (`answer_id`, `option_id`) é único, permitindo capturar quantas
+alternativas forem selecionadas em perguntas de seleção múltipla.
 
 ### fb_page
 

@@ -54,7 +54,7 @@ public class LeadPortalFlowQuestion {
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "lead_portal_flow_question_option", joinColumns = @JoinColumn(name = "question_id"))
     @OrderColumn(name = "option_order")
-    @Column(name = "value", length = 255)
+    @Column(name = "option_value", length = 255)
     @JdbcTypeCode(SqlTypes.VARCHAR)
     private List<String> options = new ArrayList<>();
 }

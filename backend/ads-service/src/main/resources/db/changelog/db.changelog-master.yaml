@@ -230,5 +230,8 @@ databaseChangeLog:
       file: V2028_03_10__lead_portal_flow.sql
       relativeToChangelogFile: true
   - include:
+      file: V2028_05_10__rename_lead_portal_option_column.sql
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2028-09-15-lead-portal-flow-enhancements.sql
       relativeToChangelogFile: true

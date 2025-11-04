@@ -325,7 +325,7 @@ etc.).
 
 - `question_id` BIGINT NOT NULL → FK `lead_portal_flow_question.id`
 - `option_order` INT NOT NULL
-- `value` VARCHAR(255) NOT NULL
+- `option_value` VARCHAR(255) NOT NULL
 
 Armazena as opções ordenadas de perguntas do tipo seleção única ou múltipla.
 Quando a pergunta for removida, as opções correspondentes são excluídas em

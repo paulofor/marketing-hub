@@ -14,6 +14,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -73,6 +74,14 @@ public class LeadPortalFlowService {
             flow.getQuestions().clear();
             flow.getQuestions().addAll(buildQuestions(flow, request.getQuestions()));
         }
+        return repository.save(flow);
+    }
+
+    @Transactional
+    public LeadPortalFlow updateApproval(Long id, boolean approved) {
+        LeadPortalFlow flow = get(id);
+        flow.setApproved(approved);
+        flow.setApprovedAt(approved ? Instant.now() : null);
         return repository.save(flow);
     }
 

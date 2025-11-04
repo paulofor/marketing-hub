@@ -80,6 +80,14 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
     List<Experiment> findAllToGenerateEmails();
 
     @Query("""
+            select e from Experiment e
+            join fetch e.hypothesisRef
+            where e.leadPortalFlowsToGenerate is not null
+              and e.leadPortalFlowsToGenerate > 0
+            """)
+    List<Experiment> findAllToGenerateLeadPortalFlows();
+
+    @Query("""
             select distinct e from Experiment e
             join fetch e.niche n
             join fetch e.hypothesisRef h

@@ -14,6 +14,10 @@ public class LeadPortalFlowDto {
     private String name;
     private String slug;
     private String description;
+    private String model;
+    private String prompt;
+    private boolean approved;
+    private Instant approvedAt;
     private Instant createdAt;
     private Instant updatedAt;
     private List<LeadPortalFlowQuestionDto> questions;

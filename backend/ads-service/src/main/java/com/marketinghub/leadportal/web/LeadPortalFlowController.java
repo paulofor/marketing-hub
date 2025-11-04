@@ -2,6 +2,7 @@ package com.marketinghub.leadportal.web;
 
 import com.marketinghub.leadportal.dto.CreateLeadPortalFlowRequest;
 import com.marketinghub.leadportal.dto.LeadPortalFlowDto;
+import com.marketinghub.leadportal.dto.UpdateLeadPortalFlowApprovalRequest;
 import com.marketinghub.leadportal.dto.UpdateLeadPortalFlowRequest;
 import com.marketinghub.leadportal.mapper.LeadPortalFlowMapper;
 import com.marketinghub.leadportal.service.LeadPortalFlowService;
@@ -41,5 +42,11 @@ public class LeadPortalFlowController {
     @PutMapping("/{id}")
     public LeadPortalFlowDto update(@PathVariable Long id, @RequestBody UpdateLeadPortalFlowRequest request) {
         return mapper.toDto(service.update(id, request));
+    }
+
+    @PatchMapping("/{id}/approval")
+    public LeadPortalFlowDto updateApproval(@PathVariable Long id,
+                                            @RequestBody UpdateLeadPortalFlowApprovalRequest request) {
+        return mapper.toDto(service.updateApproval(id, request.isApproved()));
     }
 }

@@ -65,6 +65,7 @@ export interface Experiment {
   instantFormsToGenerate?: number | null;
   emailsToGenerate?: number | null;
   deliverablesToGenerate?: number | null;
+  leadPortalFlowsToGenerate?: number | null;
   creativeApproved: boolean;
   status: string;
   platform: string;
@@ -72,6 +73,9 @@ export interface Experiment {
   updatedAt: string;
   journeyTemplateId?: number | null;
   journeyTemplateName?: string | null;
+  leadPortalFlowId?: number | null;
+  leadPortalFlowName?: string | null;
+  leadPortalFlowSlug?: string | null;
 }
 
 export function useExperiments() {

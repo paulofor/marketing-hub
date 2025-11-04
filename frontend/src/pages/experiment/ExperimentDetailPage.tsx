@@ -21,6 +21,7 @@ import { useExperimentJourneyAssignments } from "../../api/experiment/useExperim
 import { useRebuildExperimentJourney } from "../../api/experiment/useRebuildExperimentJourney";
 import type { JourneyAssignment, JourneyStep } from "../../api/journey/types";
 import DeliverablesTab from "./DeliverablesTab";
+import LeadPortalFlowTab from "./LeadPortalFlowTab";
 
 export default function ExperimentDetailPage() {
   const { id } = useParams();
@@ -359,6 +360,19 @@ export default function ExperimentDetailPage() {
       value: approvedAudienceSummary,
     },
     {
+      label: "Fluxo de portal do lead",
+      value: data.leadPortalFlowName ? (
+        <div className="d-flex flex-column">
+          <span>{data.leadPortalFlowName}</span>
+          {data.leadPortalFlowSlug ? (
+            <span className="text-muted small">Slug: {data.leadPortalFlowSlug}</span>
+          ) : null}
+        </div>
+      ) : (
+        "—"
+      ),
+    },
+    {
       label: "MDE (p.p.)",
       value: data.mdePercent ?? preset?.defaultMdePp ?? "—",
     },
@@ -541,6 +555,9 @@ export default function ExperimentDetailPage() {
               E-mails
             </Tabs.Trigger>
           ) : null}
+          <Tabs.Trigger value="lead-portal" className="nav-link">
+            Portal do Lead
+          </Tabs.Trigger>
           <Tabs.Trigger value="deliverables" className="nav-link">
             Entregáveis
           </Tabs.Trigger>
@@ -594,6 +611,9 @@ export default function ExperimentDetailPage() {
             />
           </Tabs.Content>
         ) : null}
+        <Tabs.Content value="lead-portal" asChild>
+          <LeadPortalFlowTab experiment={data} />
+        </Tabs.Content>
         <Tabs.Content value="deliverables" asChild>
           <DeliverablesTab experiment={data} nicheName={niche?.name} />
         </Tabs.Content>

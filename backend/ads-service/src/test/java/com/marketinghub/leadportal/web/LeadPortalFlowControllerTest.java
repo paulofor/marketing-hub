@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -81,8 +82,26 @@ class LeadPortalFlowControllerTest {
 
         mockMvc.perform(post("/api/lead-portal-flows")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(request)))
+                .content(mapper.writeValueAsString(request)))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    void approvalEndpointUpdatesStatus() throws Exception {
+        LeadPortalFlow flow = repository.save(LeadPortalFlow.builder()
+                .name("Fluxo existente")
+                .slug("fluxo-aprovacao")
+                .build());
+
+        mockMvc.perform(patch("/api/lead-portal-flows/" + flow.getId() + "/approval")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"approved\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.approved").value(true));
+
+        LeadPortalFlow updated = repository.findById(flow.getId()).orElseThrow();
+        assertThat(updated.isApproved()).isTrue();
+        assertThat(updated.getApprovedAt()).isNotNull();
     }
 
     private LeadPortalFlowQuestionRequest buildQuestion(String title,

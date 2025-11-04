@@ -57,4 +57,16 @@ public class ExperimentGenerationRepository {
         );
         return query.getResultList();
     }
+
+    @Transactional(readOnly = true)
+    public List<Experiment> findAllToGenerateLeadPortalFlows() {
+        TypedQuery<Experiment> query = entityManager.createQuery(
+                "select e from Experiment e " +
+                        "join fetch e.hypothesisRef " +
+                        "where e.leadPortalFlowsToGenerate is not null " +
+                        "and e.leadPortalFlowsToGenerate > 0",
+                Experiment.class
+        );
+        return query.getResultList();
+    }
 }

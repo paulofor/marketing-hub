@@ -119,6 +119,10 @@ public class Experiment {
     @Column(name = "deliverables_to_generate")
     private Integer deliverablesToGenerate;
 
+    /** Quantidade de fluxos do portal do lead a serem gerados pelo worker. */
+    @Column(name = "lead_portal_flows_to_generate")
+    private Integer leadPortalFlowsToGenerate;
+
     @CreationTimestamp
     private Instant createdAt;
 

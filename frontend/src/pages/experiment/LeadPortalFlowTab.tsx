@@ -207,7 +207,7 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
                             <div>
                               <div className="fw-semibold">{question.title}</div>
                               <div className="text-muted small">
-                                Campo: {question.dataKey} · Tipo: {question.type.replaceAll("_", " ")}
+                                Campo: {question.dataKey} · Tipo: {question.type.replace(/_/g, " ")}
                               </div>
                               {question.description ? (
                                 <p className="text-muted small mb-0">{question.description}</p>

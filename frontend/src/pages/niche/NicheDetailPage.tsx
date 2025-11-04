@@ -72,6 +72,14 @@ export default function NicheDetailPage() {
   const createDeliverable = useCreateDeliverable(id);
   useBreadcrumbs([{ label: data?.name || "...", icon: nicheIcon }]);
 
+  const scrollToSection = useCallback((sectionId: string) => {
+    if (typeof document === "undefined") return;
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
+
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
 
@@ -125,14 +133,6 @@ export default function NicheDetailPage() {
   const updatedAtLabel = data.updatedAt
     ? new Date(data.updatedAt).toLocaleString("pt-BR")
     : undefined;
-  const scrollToSection = useCallback((sectionId: string) => {
-    if (typeof document === "undefined") return;
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, []);
-
   const infoCards = [
     { label: "Descrição", value: data.description },
     { label: "Volume de demanda", value: data.demandVolume },

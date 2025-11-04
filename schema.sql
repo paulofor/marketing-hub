@@ -185,7 +185,7 @@ CREATE TABLE lead_portal_flow_question (
 CREATE TABLE lead_portal_flow_question_option (
     question_id BIGINT NOT NULL,
     option_order INT NOT NULL,
-    value VARCHAR(255) NOT NULL,
+    option_value VARCHAR(255) NOT NULL,
     PRIMARY KEY (question_id, option_order),
     CONSTRAINT fk_lead_portal_question_option FOREIGN KEY (question_id) REFERENCES lead_portal_flow_question(id) ON DELETE CASCADE
 );

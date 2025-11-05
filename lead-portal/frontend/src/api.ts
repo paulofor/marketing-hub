@@ -5,7 +5,7 @@ import {
   LeadStatus
 } from "./types";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080/api";
 
 export async function createLead(payload: CreateLeadPayload): Promise<LeadDetails> {
   const formData = new FormData();
@@ -16,7 +16,7 @@ export async function createLead(payload: CreateLeadPayload): Promise<LeadDetail
   }
   formData.append("image", payload.image);
 
-  const response = await fetch(`${API_BASE_URL}/api/leads`, {
+  const response = await fetch(`${API_BASE_URL}/leads`, {
     method: "POST",
     body: formData
   });
@@ -30,7 +30,7 @@ export async function createLead(payload: CreateLeadPayload): Promise<LeadDetail
 }
 
 export async function fetchLead(id: string): Promise<LeadDetails> {
-  const response = await fetch(`${API_BASE_URL}/api/leads/${id}`);
+  const response = await fetch(`${API_BASE_URL}/leads/${id}`);
   if (!response.ok) {
     const message = await extractError(response);
     throw new Error(message);
@@ -42,7 +42,7 @@ export async function fetchLead(id: string): Promise<LeadDetails> {
 export async function fetchLeadResult(
   id: string
 ): Promise<{ status: LeadStatus; result?: string | null; completedAt?: string | null }> {
-  const response = await fetch(`${API_BASE_URL}/api/leads/${id}/result`);
+  const response = await fetch(`${API_BASE_URL}/leads/${id}/result`);
   if (!response.ok) {
     const message = await extractError(response);
     throw new Error(message);
@@ -56,7 +56,7 @@ export async function fetchLeadResult(
 }
 
 export async function fetchLeadPortalFlow(slug: string): Promise<LeadPortalFlow> {
-  const response = await fetch(`${API_BASE_URL}/api/flows/${slug}`);
+  const response = await fetch(`${API_BASE_URL}/flows/${slug}`);
   if (!response.ok) {
     const message = await extractError(response);
     throw new Error(message);

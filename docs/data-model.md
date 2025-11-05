@@ -330,13 +330,15 @@ etc.).
 
 ### lead_portal_flow_question_option
 
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
 - `question_id` BIGINT NOT NULL → FK `lead_portal_flow_question.id`
 - `option_order` INT NOT NULL
 - `option_value` VARCHAR(255) NOT NULL
 
 Armazena as opções ordenadas de perguntas do tipo seleção única ou múltipla.
 Quando a pergunta for removida, as opções correspondentes são excluídas em
-efeito cascata.
+efeito cascata. O par (`question_id`, `option_order`) permanece único para
+preservar a ordenação dentro de cada pergunta.
 
 ### lead_portal_submission
 

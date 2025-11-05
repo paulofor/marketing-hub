@@ -334,11 +334,13 @@ etc.).
 - `question_id` BIGINT NOT NULL → FK `lead_portal_flow_question.id`
 - `option_order` INT NOT NULL
 - `option_value` VARCHAR(255) NOT NULL
+- UNIQUE (`question_id`, `option_order`)
 
 Armazena as opções ordenadas de perguntas do tipo seleção única ou múltipla.
 Quando a pergunta for removida, as opções correspondentes são excluídas em
-efeito cascata. O par (`question_id`, `option_order`) permanece único para
-preservar a ordenação dentro de cada pergunta.
+efeito cascata. A restrição de unicidade em (`question_id`, `option_order`)
+preserva a ordenação dentro de cada pergunta e evita duplicidades durante a
+edição do fluxo.
 
 ### lead_portal_submission
 

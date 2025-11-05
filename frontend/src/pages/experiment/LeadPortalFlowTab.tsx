@@ -160,6 +160,14 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
                         )}
                       </h5>
                       <p className="text-muted small mb-0">Slug: {flow.slug}</p>
+                      {flow.publicUrl ? (
+                        <p className="text-muted small mt-2 mb-0">
+                          URL pública:{" "}
+                          <a href={flow.publicUrl} target="_blank" rel="noopener noreferrer">
+                            {flow.publicUrl}
+                          </a>
+                        </p>
+                      ) : null}
                       {flow.description ? (
                         <p className="text-muted small mt-2 mb-0">{flow.description}</p>
                       ) : null}

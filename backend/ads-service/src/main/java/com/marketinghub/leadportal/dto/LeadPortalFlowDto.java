@@ -13,6 +13,7 @@ public class LeadPortalFlowDto {
     private Long id;
     private String name;
     private String slug;
+    private String publicUrl;
     private String description;
     private String model;
     private String prompt;

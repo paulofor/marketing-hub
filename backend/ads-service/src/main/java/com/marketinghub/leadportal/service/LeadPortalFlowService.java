@@ -6,6 +6,8 @@ import com.marketinghub.leadportal.LeadPortalQuestionType;
 import com.marketinghub.leadportal.dto.CreateLeadPortalFlowRequest;
 import com.marketinghub.leadportal.dto.LeadPortalFlowQuestionRequest;
 import com.marketinghub.leadportal.dto.UpdateLeadPortalFlowRequest;
+import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
+import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -27,9 +29,12 @@ public class LeadPortalFlowService {
     private static final Pattern DATA_KEY_PATTERN = Pattern.compile("^[a-z][a-z0-9_-]*$");
 
     private final LeadPortalFlowRepository repository;
+    private final LeadPortalFlowPublisher flowPublisher;
 
-    public LeadPortalFlowService(LeadPortalFlowRepository repository) {
+    public LeadPortalFlowService(LeadPortalFlowRepository repository,
+                                 LeadPortalFlowPublisher flowPublisher) {
         this.repository = repository;
+        this.flowPublisher = flowPublisher;
     }
 
     public List<LeadPortalFlow> listAll() {
@@ -82,7 +87,18 @@ public class LeadPortalFlowService {
         LeadPortalFlow flow = get(id);
         flow.setApproved(approved);
         flow.setApprovedAt(approved ? Instant.now() : null);
-        return repository.save(flow);
+        LeadPortalFlow saved = repository.save(flow);
+        try {
+            if (approved) {
+                flowPublisher.publish(saved);
+            } else {
+                flowPublisher.remove(saved.getSlug());
+            }
+        } catch (LeadPortalPublicationException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "failed to synchronise lead portal flow", ex);
+        }
+        return saved;
     }
 
     private List<LeadPortalFlowQuestion> buildQuestions(LeadPortalFlow flow,

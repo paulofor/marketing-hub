@@ -1,5 +1,6 @@
 package com.marketinghub.leadportal.controller;
 
+import com.marketinghub.leadportal.exception.FlowNotFoundException;
 import com.marketinghub.leadportal.exception.LeadNotFoundException;
 import com.marketinghub.leadportal.storage.StorageException;
 import com.marketinghub.leadportal.storage.StorageFileNotFoundException;
@@ -31,6 +32,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(LeadNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleLeadNotFound(LeadNotFoundException ex) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(FlowNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleFlowNotFound(FlowNotFoundException ex) {
         return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 

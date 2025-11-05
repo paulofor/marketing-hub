@@ -20,6 +20,7 @@ lead-portal/frontend/node_modules
 lead-portal/frontend/dist
 lead-portal/backend/target
 lead-portal/backend/uploads
+lead-portal/backend/data
 
 # Pastas do projeto que não devem ir para o Git
 /backend/.idea/

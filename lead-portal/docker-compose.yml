@@ -7,6 +7,9 @@ services:
       - "8080"
     networks:
       default: {}
+      public-net:
+        aliases:
+          - lead-backend
 
   frontend:
     build:

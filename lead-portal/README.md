@@ -13,7 +13,7 @@ Aplicação full-stack que permite aos leads enviarem imagens de referência e a
 
 O ambiente dockerizado levanta três serviços:
 
-- `backend`: container com a API Spring Boot (porta interna 8080).
+- `backend`: container com a API Spring Boot (porta interna 8080). Os fluxos persistidos ficam em `./data/flows.json`, montado no container como `/app/data/flows.json`.
 - `frontend`: container Nginx que serve o build estático do Vite (porta interna 80).
 - `proxy`: proxy reverso Nginx que publica as portas 80/443 do host e roteia `/api` para o backend.
 - Quando o domínio `iahub.sbs` é acessado, o proxy encaminha o tráfego para o **Marketing Hub** em execução diretamente no host
@@ -37,6 +37,41 @@ O ambiente dockerizado levanta três serviços:
 
 - `VITE_API_URL`: pode ser ajustada no `docker-compose.yml` caso deseje que o frontend consuma a API em outro caminho.
 - `SPRING_PROFILES_ACTIVE`: defina no serviço `backend` se precisar ativar perfis específicos do Spring.
+
+### Resolução de 502 Bad Gateway
+
+Quando o proxy Nginx retorna `502 Bad Gateway` ao acessar um fluxo (por exemplo `/flows/diagnostico`), execute as verificações abaixo para isolar a causa:
+
+1. **Confirme se os containers estão de pé e ligados à rede pública**:
+
+   ```bash
+   docker compose -f lead-portal/docker-compose.yml ps
+   ```
+
+   Os serviços `frontend`, `backend` e `proxy` devem aparecer como `Up`. Se o `frontend` estiver parado ou reiniciando, o Nginx responderá 502 antes de chegar ao backend.
+
+2. **Inspecione os logs do frontend** para identificar falhas de build ou arquivos estáticos ausentes:
+
+   ```bash
+   docker compose -f lead-portal/docker-compose.yml logs frontend
+   ```
+
+3. **Teste o backend diretamente** para checar se o fluxo existe e se o serviço responde corretamente:
+
+   ```bash
+   curl -H "Host:oportunidadebrasil.shop" https://oportunidadebrasil.shop/api/flows/diagnostico
+   ```
+
+   Ajuste o host conforme o domínio publicado. O endpoint deve retornar JSON; uma resposta `404` indica que o fluxo não está cadastrado, enquanto exceções do backend aparecem como `500`.
+
+4. **Verifique o armazenamento dos fluxos dentro do container**. O backend cria automaticamente o diretório configurado em `lead-portal.flow-storage.location` (padrão `/app/data/flows.json`). Use os comandos abaixo para conferir se o arquivo existe e possui o conteúdo esperado:
+
+   ```bash
+   docker compose -f lead-portal/docker-compose.yml exec backend ls -l /app/data
+   docker compose -f lead-portal/docker-compose.yml exec backend cat /app/data/flows.json
+   ```
+
+   Se o diretório não for criado, revise permissões ou volumes montados para garantir que o processo do backend consiga gravar o arquivo.
 
 ## Executando localmente sem Docker
 

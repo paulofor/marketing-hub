@@ -3,6 +3,8 @@ services:
     build:
       context: ./backend
     image: lead-portal-backend
+    volumes:
+      - ./data:/app/data
     expose:
       - "8080"
     networks:

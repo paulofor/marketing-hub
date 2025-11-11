@@ -3,6 +3,7 @@ package com.marketinghub.leadportal.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.leadportal.dto.FlowQuestionRequest;
 import com.marketinghub.leadportal.dto.UpsertFlowRequest;
+import com.marketinghub.leadportal.model.Flow;
 import com.marketinghub.leadportal.model.FlowQuestionType;
 import com.marketinghub.leadportal.service.FlowService;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -71,6 +73,17 @@ class FlowControllerTest {
 
         mockMvc.perform(get("/api/flows/excluir"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getFlowWithoutQuestionsReturnsEmptyList() throws Exception {
+        Flow flow = new Flow("sem-perguntas", "Sem perguntas", "Descrição", null, null, null);
+        flowService.save(flow);
+
+        mockMvc.perform(get("/api/flows/sem-perguntas"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.questions").isArray())
+                .andExpect(jsonPath("$.questions", hasSize(0)));
     }
 
     private UpsertFlowRequest buildRequest() {

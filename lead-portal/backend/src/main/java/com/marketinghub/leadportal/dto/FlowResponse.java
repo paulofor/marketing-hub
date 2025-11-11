@@ -14,13 +14,17 @@ public record FlowResponse(
         List<QuestionResponse> questions) {
 
     public static FlowResponse from(Flow flow) {
+        List<QuestionResponse> questions = flow.questions() == null
+                ? List.of()
+                : flow.questions().stream().map(QuestionResponse::from).toList();
+
         return new FlowResponse(
                 flow.slug(),
                 flow.name(),
                 flow.description(),
                 flow.model(),
                 flow.prompt(),
-                flow.questions().stream().map(QuestionResponse::from).toList());
+                questions);
     }
 
     public record QuestionResponse(

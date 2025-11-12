@@ -167,8 +167,8 @@ public class ExperimentService {
         }
         MetricPreset preset = metricPresetService.get(request.getMetricPresetId());
         java.math.BigDecimal computedStopLoss = request.getKpiTargetCpl().multiply(preset.getStopLossFactor());
-        if (request.getSampleSize() != null && request.getSampleSize() < 100) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "sampleSize must be at least 100");
+        if (request.getSampleSize() != null && request.getSampleSize() < 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "sampleSize must be at least 1");
         }
         if (request.getBaselineCvr() != null && request.getTargetCvr() != null &&
                 request.getBaselineCvr().compareTo(request.getTargetCvr()) >= 0) {
@@ -308,8 +308,8 @@ public class ExperimentService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "startDate must be before endDate");
         }
 
-        if (request.getSampleSize() != null && request.getSampleSize() < 100) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "sampleSize must be at least 100");
+        if (request.getSampleSize() != null && request.getSampleSize() < 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "sampleSize must be at least 1");
         }
 
         MetricPreset preset = metricPresetService.get(request.getMetricPresetId());

@@ -120,6 +120,82 @@ class ExperimentServiceTest {
     }
 
     @Test
+    void createAllowsSampleSizeBelowOneHundred() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("T")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("Exp1");
+        req.setHypothesis("Teste");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_150");
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
+        req.setSampleSize(5);
+        req.setInstagramAccountId(createInstagramAccount().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow());
+
+        Experiment experiment = service.create(req);
+
+        assertThat(experiment.getSampleSize()).isEqualTo(5);
+    }
+
+    @Test
+    void createRejectsZeroSampleSize() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("T")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("Exp1");
+        req.setHypothesis("Teste");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_150");
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
+        req.setSampleSize(0);
+        req.setInstagramAccountId(createInstagramAccount().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow());
+
+        assertThatThrownBy(() -> service.create(req))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("sampleSize must be at least 1");
+    }
+
+    @Test
     void validateDates() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
         var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
@@ -425,6 +501,53 @@ class ExperimentServiceTest {
 
         assertThat(updated.getJourneyTemplate()).isNotNull();
         assertThat(updated.getJourneyTemplate().getId()).isEqualTo(second.getId());
+    }
+
+    @Test
+    void updateAllowsSampleSizeBelowOneHundred() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("T")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("Exp1");
+        req.setHypothesis("Teste");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_150");
+        req.setJourneyTemplateId(template.getId());
+        req.setInstagramAccountId(createInstagramAccount().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow());
+        Experiment exp = service.create(req);
+
+        UpdateExperimentRequest updateReq = new UpdateExperimentRequest();
+        updateReq.setName("Exp1");
+        updateReq.setHypothesis("Teste");
+        updateReq.setKpiTargetCpl(new BigDecimal("45"));
+        updateReq.setMetricPresetId("LEAN_150");
+        updateReq.setJourneyTemplateId(template.getId());
+        updateReq.setSampleSize(5);
+
+        Experiment updated = service.update(exp.getId(), updateReq);
+
+        assertThat(updated.getSampleSize()).isEqualTo(5);
     }
 
     @Test

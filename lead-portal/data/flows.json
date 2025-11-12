@@ -1,0 +1,80 @@
+[
+  {
+    "slug": "diagnostico-conteudo-estudios-fitness",
+    "name": "Diagnóstico de Conteúdo para Estúdios Fitness",
+    "description": "Fluxo que coleta informações estratégicas para sugerir pautas e formatos de conteúdo aos estúdios fitness.",
+    "model": "gpt-4o-mini",
+    "prompt": "Você é um estrategista de marketing especializado em academias e estúdios fitness. Utilize as respostas do lead para montar um plano de conteúdo com temas, formatos e chamadas que reforcem proposta de valor do negócio.",
+    "questions": [
+      {
+        "title": "Qual é o nome da sua academia ou estúdio?",
+        "dataKey": "nome_estudio",
+        "type": "TEXT",
+        "required": true,
+        "description": "Informe como o público conhece o seu negócio.",
+        "placeholder": "Ex.: Studio Movimento",
+        "options": []
+      },
+      {
+        "title": "Qual é o seu nome?",
+        "dataKey": "responsavel_nome",
+        "type": "TEXT",
+        "required": true,
+        "description": "Usaremos esta informação para personalizar as recomendações.",
+        "placeholder": "Ex.: Ana Souza",
+        "options": []
+      },
+      {
+        "title": "Qual é o seu e-mail de contato?",
+        "dataKey": "email",
+        "type": "EMAIL",
+        "required": true,
+        "description": "Enviaremos o plano de conteúdo para este endereço.",
+        "placeholder": "nome@exemplo.com",
+        "options": []
+      },
+      {
+        "title": "Qual é o principal objetivo do seu estúdio para os próximos 3 meses?",
+        "dataKey": "objetivo_principal",
+        "type": "TEXTAREA",
+        "required": true,
+        "description": "Descreva metas ou desafios que deseja superar.",
+        "placeholder": "Ex.: Aumentar matrículas do plano anual",
+        "options": []
+      },
+      {
+        "title": "Qual é o perfil do público que deseja atrair?",
+        "dataKey": "publico_alvo",
+        "type": "TEXTAREA",
+        "required": true,
+        "description": "Conte um pouco sobre faixa etária, nível de experiência ou interesses.",
+        "placeholder": "Ex.: Mulheres de 25 a 40 anos que buscam treinos funcionais",
+        "options": []
+      },
+      {
+        "title": "Quais formatos de conteúdo fazem mais sentido para a sua audiência?",
+        "dataKey": "formatos_interesse",
+        "type": "MULTIPLE_CHOICE",
+        "required": false,
+        "description": "Selecione todos os formatos que gostaria de priorizar.",
+        "placeholder": null,
+        "options": [
+          "Posts para Instagram",
+          "Sequência de Stories",
+          "Vídeos curtos (Reels/TikTok)",
+          "E-mail marketing",
+          "Artigos para blog"
+        ]
+      },
+      {
+        "title": "Envie uma foto do seu espaço ou material de divulgação atual",
+        "dataKey": "foto_referencia",
+        "type": "IMAGE_UPLOAD",
+        "required": false,
+        "description": "A imagem ajuda a gerar sugestões de criativos alinhadas com sua identidade visual.",
+        "placeholder": null,
+        "options": []
+      }
+    ]
+  }
+]

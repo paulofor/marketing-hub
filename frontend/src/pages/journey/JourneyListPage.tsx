@@ -96,9 +96,6 @@ export default function JourneyListPage() {
           <Link className="btn btn-outline-secondary" to="/journey-templates">
             Ver templates
           </Link>
-          <Link className="btn btn-primary" to="/journeys/new">
-            Criar nova jornada
-          </Link>
         </div>
       </header>
 

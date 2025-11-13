@@ -52,7 +52,6 @@ import NewPromptEntityPage from "./pages/prompt/NewPromptEntityPage";
 import PromptEntityDescriptionPage from "./pages/prompt/PromptEntityDescriptionPage";
 import JourneyListPage from "./pages/journey/JourneyListPage";
 import JourneyDetailPage from "./pages/journey/JourneyDetailPage";
-import NewJourneyPage from "./pages/journey/NewJourneyPage";
 import EditJourneyPage from "./pages/journey/EditJourneyPage";
 import JourneyTemplatesPage from "./pages/journey/JourneyTemplatesPage";
 import JourneyTemplateDetailPage from "./pages/journey/JourneyTemplateDetailPage";
@@ -197,7 +196,6 @@ export default function App() {
                 element={<FacebookExperimentsReadyPage />}
               />
               <Route path="/journeys" element={<JourneyListPage />} />
-              <Route path="/journeys/new" element={<NewJourneyPage />} />
               <Route path="/journeys/:id" element={<JourneyDetailPage />} />
               <Route
                 path="/journeys/:id/edit"

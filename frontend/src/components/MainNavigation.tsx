@@ -150,11 +150,6 @@ const NAV_SECTIONS: NavSection[] = [
             end: true,
           },
           {
-            to: "/journeys/new",
-            label: "Nova jornada",
-            icon: PlusCircle,
-          },
-          {
             to: "/journey-templates",
             label: "Templates",
             icon: Layers,

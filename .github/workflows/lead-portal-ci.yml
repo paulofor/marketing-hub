@@ -59,7 +59,8 @@ jobs:
     env:
       IMAGE_REGISTRY: ghcr.io
       IMAGE_NAMESPACE: ghcr.io/${{ github.repository_owner }}
-      IMAGE_TAG: ${{ github.sha }}
+      IMAGE_TAG: latest
+      IMAGE_SHA_TAG: ${{ github.sha }}
     outputs:
       image-tag: ${{ steps.image_tag.outputs.value }}
     steps:
@@ -79,7 +80,7 @@ jobs:
           images: ${{ env.IMAGE_NAMESPACE }}/lead-portal-backend
           tags: |
             type=raw,value=${{ env.IMAGE_TAG }}
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=${{ env.IMAGE_SHA_TAG }}
       - name: Build and push backend image
         uses: docker/build-push-action@v5
         with:
@@ -96,7 +97,7 @@ jobs:
           images: ${{ env.IMAGE_NAMESPACE }}/lead-portal-frontend
           tags: |
             type=raw,value=${{ env.IMAGE_TAG }}
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=${{ env.IMAGE_SHA_TAG }}
       - name: Build and push frontend image
         uses: docker/build-push-action@v5
         with:

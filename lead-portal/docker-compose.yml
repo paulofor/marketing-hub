@@ -69,6 +69,29 @@ services:
         aliases:
           - public-proxy
 
+  certbot-sandboxcodex:
+    image: certbot/certbot:latest
+    profiles:
+      - certbot
+    depends_on:
+      proxy:
+        condition: service_started
+    environment:
+      CERTBOT_EMAIL: "paulofore@gmail.com.br"
+    command: >-
+      sh -c "
+        certbot certonly --non-interactive --agree-tos --no-eff-email \
+          --email \"${CERTBOT_EMAIL}\" \
+          --webroot --webroot-path=/var/www/certbot \
+          -d sandboxcodex.shop -d www.sandboxcodex.shop
+      "
+    volumes:
+      - ./docker/proxy/html:/var/www/certbot
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/lib/letsencrypt:/var/lib/letsencrypt
+      - /var/log/letsencrypt:/var/log/letsencrypt
+    restart: "no"
+
 networks:
   default: {}
   public-net:

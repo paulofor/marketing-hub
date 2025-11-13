@@ -1,7 +1,6 @@
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { useExperiments } from "../../api/experiment/useExperiments";
 import { useNiches } from "../../api/niche/useNiches";
 import {
   type Journey,
@@ -39,7 +38,6 @@ interface JourneyFormValues {
   description: string;
   status: JourneyStatus;
   marketNicheId: string;
-  experimentId: string;
   segmentReference: string;
   segmentFilter: string;
   startAt: string;
@@ -74,7 +72,6 @@ export default function JourneyForm({
   const { data: templatePage, isLoading: isTemplatesLoading } = useJourneyTemplates();
   const templates = templatePage?.content ?? [];
   const { data: niches } = useNiches();
-  const { data: experiments } = useExperiments();
 
   const {
     register,
@@ -82,7 +79,6 @@ export default function JourneyForm({
     formState: { errors },
     control,
     watch,
-    setValue,
   } = useForm<JourneyFormValues>({
     defaultValues: {
       templateId: initialJourney?.templateId
@@ -93,9 +89,6 @@ export default function JourneyForm({
       status: initialJourney?.status ?? "DRAFT",
       marketNicheId: initialJourney?.marketNicheId
         ? String(initialJourney.marketNicheId)
-        : "",
-      experimentId: initialJourney?.experimentId
-        ? String(initialJourney.experimentId)
         : "",
       segmentReference: initialJourney?.segmentReference ?? "",
       segmentFilter: initialJourney?.segmentFilter ?? "",
@@ -117,37 +110,6 @@ export default function JourneyForm({
   }, [append, fields.length]);
 
   const currentStatus = watch("status");
-  const selectedNicheId = watch("marketNicheId");
-  const selectedExperimentId = watch("experimentId");
-
-  const filteredExperiments = useMemo(() => {
-    if (!experiments) {
-      return [];
-    }
-
-    if (!selectedNicheId) {
-      return experiments;
-    }
-
-    return experiments.filter(
-      (experiment) => String(experiment.nicheId) === selectedNicheId,
-    );
-  }, [experiments, selectedNicheId]);
-
-  useEffect(() => {
-    if (!selectedExperimentId) {
-      return;
-    }
-
-    const experimentExistsInNiche = filteredExperiments.some(
-      (experiment) => String(experiment.id) === selectedExperimentId,
-    );
-
-    if (!experimentExistsInNiche) {
-      setValue("experimentId", "");
-    }
-  }, [filteredExperiments, selectedExperimentId, setValue]);
-
   const submitHandler = handleSubmit((values) => {
     const payload: JourneyRequestPayload = {
       templateId: Number(values.templateId),
@@ -156,9 +118,6 @@ export default function JourneyForm({
       status: values.status,
       marketNicheId: values.marketNicheId
         ? Number(values.marketNicheId)
-        : undefined,
-      experimentId: values.experimentId
-        ? Number(values.experimentId)
         : undefined,
       segmentReference: values.segmentReference.trim() || undefined,
       segmentFilter: values.segmentFilter.trim() || undefined,
@@ -262,7 +221,7 @@ export default function JourneyForm({
         <header className="journey-form__section-header">
           <div>
             <h2>Segmentação e escopo</h2>
-            <p>Conecte a jornada a nichos, experimentos e filtros externos.</p>
+            <p>Conecte a jornada a nichos e filtros externos.</p>
           </div>
         </header>
         <div className="journey-form__grid">
@@ -273,18 +232,6 @@ export default function JourneyForm({
               {niches?.map((niche) => (
                 <option key={niche.id} value={niche.id}>
                   {niche.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="journey-form__field">
-            <label className="journey-form__label">Experimento associado</label>
-            <select className="form-select" {...register("experimentId")}>
-              <option value="">Nenhum</option>
-              {filteredExperiments.map((experiment) => (
-                <option key={experiment.id} value={experiment.id}>
-                  {experiment.name}
                 </option>
               ))}
             </select>

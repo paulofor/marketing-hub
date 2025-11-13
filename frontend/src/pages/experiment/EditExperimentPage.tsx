@@ -37,7 +37,17 @@ export default function EditExperimentPage() {
     reset,
     formState: { dirtyFields },
     watch,
-  } = useForm<FormData>();
+  } = useForm<FormData>({
+    defaultValues: {
+      name: "",
+      kpiTarget: "",
+      metricPresetId: "",
+      journeyTemplateId: "",
+      facebookPageId: "",
+      instagramAccountId: "",
+      followUpActionUrl: "",
+    },
+  });
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
     useAllFacebookPages();
   const { data: instagramAccounts, isLoading: isLoadingInstagramAccounts } =
@@ -69,6 +79,7 @@ export default function EditExperimentPage() {
   }, [data, reset]);
 
   const selectedJourneyTemplateId = watch("journeyTemplateId");
+  const selectedInstagramAccountId = watch("instagramAccountId");
   const parsedJourneyTemplateId = selectedJourneyTemplateId
     ? Number(selectedJourneyTemplateId)
     : undefined;
@@ -99,6 +110,34 @@ export default function EditExperimentPage() {
     data?.facebookPage?.accountId,
     data?.facebookPage?.pageId,
     data?.facebookPage?.name,
+  ]);
+  const instagramAccountOptions = useMemo(() => {
+    const options = Array.isArray(instagramAccounts)
+      ? [...instagramAccounts]
+      : [];
+    const experimentAccount = data?.instagramAccount;
+    if (!experimentAccount) {
+      return options;
+    }
+    const hasExperimentAccount = options.some(
+      (account) => account.id === experimentAccount.id,
+    );
+    if (hasExperimentAccount) {
+      return options;
+    }
+    options.push({
+      id: experimentAccount.id,
+      name: experimentAccount.name,
+      handle: experimentAccount.handle,
+      code: experimentAccount.code,
+    });
+    return options;
+  }, [
+    instagramAccounts,
+    data?.instagramAccount?.id,
+    data?.instagramAccount?.name,
+    data?.instagramAccount?.handle,
+    data?.instagramAccount?.code,
   ]);
   const selectedJourneyTemplate =
     parsedJourneyTemplateId !== undefined &&
@@ -269,6 +308,7 @@ export default function EditExperimentPage() {
           id="instagramAccountId"
           className="form-select mb-2"
           {...register("instagramAccountId")}
+          value={selectedInstagramAccountId ?? ""}
           disabled={isLoadingInstagramAccounts || noInstagramAccounts}
         >
           <option value="">
@@ -278,8 +318,7 @@ export default function EditExperimentPage() {
                 ? "Cadastre uma conta para continuar"
                 : "Selecione uma conta"}
           </option>
-          {Array.isArray(instagramAccounts) &&
-            instagramAccounts.map((account) => (
+          {instagramAccountOptions.map((account) => (
               <option key={account.id} value={String(account.id)}>
                 {account.name} ({account.handle})
               </option>

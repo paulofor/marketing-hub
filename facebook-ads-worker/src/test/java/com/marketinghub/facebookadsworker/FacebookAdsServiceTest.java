@@ -4,6 +4,7 @@ import com.marketinghub.facebookadsworker.FacebookPermissionException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import okhttp3.HttpUrl;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -134,6 +135,51 @@ class FacebookAdsServiceTest {
     }
 
     @Test
+    void createAdSetResolvesInterestNamesToIds() throws Exception {
+        server.enqueue(new MockResponse().setBody("{\"data\":[{\"id\":\"6003139266461\",\"name\":\"Pilates\"}]}" )
+            .addHeader("Content-Type", "application/json"));
+        server.enqueue(new MockResponse().setBody("{\"id\":\"555\"}")
+            .addHeader("Content-Type", "application/json"));
+
+        String targetingJson = "{\"interests\":[\"Pilates\"],\"geo_locations\":{\"countries\":[\"BR\"]}}";
+        FacebookAdsService.AdSetRequest request = new FacebookAdsService.AdSetRequest(
+            "Camp - Ad Set",
+            "123",
+            "1500",
+            "IMPRESSIONS",
+            "LINK_CLICKS",
+            "WEBSITE",
+            "LOWEST_COST_WITHOUT_CAP",
+            "200",
+            "42",
+            "BR",
+            targetingJson,
+            null
+        );
+
+        service.createAdSet("1", request);
+
+        RecordedRequest searchRequest = server.takeRequest();
+        HttpUrl searchUrl = searchRequest.getRequestUrl();
+        assertNotNull(searchUrl);
+        assertEquals("/v23.0/search", searchUrl.encodedPath());
+        assertEquals("adinterest", searchUrl.queryParameter("type"));
+        assertEquals("Pilates", searchUrl.queryParameter("q"));
+        assertEquals("1", searchUrl.queryParameter("limit"));
+        assertEquals("id,name", searchUrl.queryParameter("fields"));
+        assertEquals("pt_BR", searchUrl.queryParameter("locale"));
+        assertEquals("token", searchUrl.queryParameter("access_token"));
+
+        RecordedRequest adSetRequest = server.takeRequest();
+        JsonNode targeting = objectMapper.readTree(adSetRequest.getBody().inputStream()).get("targeting");
+        JsonNode interests = targeting.get("interests");
+        assertNotNull(interests);
+        assertEquals(1, interests.size());
+        assertEquals("6003139266461", interests.get(0).get("id").asText());
+        assertEquals("Pilates", interests.get(0).get("name").asText());
+    }
+
+    @Test
     void createAdCreativePostsCorrectRequest() throws Exception {
         server.enqueue(new MockResponse().setBody("{\"id\":\"333\"}")
             .addHeader("Content-Type", "application/json"));
@@ -244,6 +290,34 @@ class FacebookAdsServiceTest {
         assertEquals("Descrição", body.get("description").asText());
         assertEquals("BR", body.get("targeting").get("geo_locations").get("countries").get(0).asText());
         assertEquals("SA-1", id);
+    }
+
+    @Test
+    void createSavedAudienceNormalizesInterests() throws Exception {
+        server.enqueue(new MockResponse().setBody("{\"data\":[{\"id\":\"6001\",\"name\":\"Pilates\"}]}" )
+            .addHeader("Content-Type", "application/json"));
+        server.enqueue(new MockResponse().setBody("{\"id\":\"SA-2\"}")
+            .addHeader("Content-Type", "application/json"));
+
+        String targetingJson = "{\"interests\":[\"Pilates\"]}";
+        String id = service.createSavedAudience(
+            "1",
+            new FacebookAdsService.SavedAudienceRequest("Audience", "Desc", targetingJson)
+        );
+
+        RecordedRequest searchRequest = server.takeRequest();
+        HttpUrl searchUrl = searchRequest.getRequestUrl();
+        assertNotNull(searchUrl);
+        assertEquals("/v23.0/search", searchUrl.encodedPath());
+        assertEquals("Pilates", searchUrl.queryParameter("q"));
+
+        RecordedRequest savedAudienceRequest = server.takeRequest(1, TimeUnit.SECONDS);
+        assertNotNull(savedAudienceRequest);
+        JsonNode body = objectMapper.readTree(savedAudienceRequest.getBody().inputStream());
+        JsonNode interests = body.get("targeting").get("interests");
+        assertEquals("6001", interests.get(0).get("id").asText());
+        assertEquals("Pilates", interests.get(0).get("name").asText());
+        assertEquals("SA-2", id);
     }
 
     @Test

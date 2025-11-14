@@ -15,8 +15,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +28,8 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.springframework.util.StringUtils.hasText;
@@ -33,12 +37,15 @@ import static org.springframework.util.StringUtils.hasText;
 @Service
 public class FacebookAdsService {
     private static final Logger LOGGER = LoggerFactory.getLogger(FacebookAdsService.class);
+    private static final Pattern INTEREST_WITH_ID_PATTERN = Pattern.compile(".*\\((\\d{5,})\\)\\s*$");
+    private static final String INTEREST_SEARCH_LOCALE = "pt_BR";
 
     private final WebClient webClient;
     private final AtomicReference<String> accessToken;
     private final String apiVersion;
     private final ObjectMapper objectMapper;
     private final ConcurrentMap<String, String> pageAccessTokens;
+    private final ConcurrentMap<String, String> interestIdCache;
 
     public FacebookAdsService(WebClient.Builder builder,
                               @Value("${facebook.graph-api.base-url:https://graph.facebook.com}") String baseUrl,
@@ -49,6 +56,7 @@ public class FacebookAdsService {
         this.apiVersion = normalizeVersion(apiVersion);
         this.objectMapper = objectMapper;
         this.pageAccessTokens = new ConcurrentHashMap<>();
+        this.interestIdCache = new ConcurrentHashMap<>();
         LOGGER.info("Configured Facebook Graph API version: {}", this.apiVersion);
     }
 
@@ -158,6 +166,8 @@ public class FacebookAdsService {
             }
         }
 
+        normalizeInterests(targeting);
+
         if (hasText(request.savedAudienceId())) {
             targeting.put("saved_audience_id", request.savedAudienceId().trim());
         }
@@ -181,6 +191,200 @@ public class FacebookAdsService {
         return targeting;
     }
 
+    private void normalizeInterests(Map<String, Object> targeting) {
+        if (targeting == null || targeting.isEmpty()) {
+            return;
+        }
+        Object rawInterests = targeting.get("interests");
+        if (!(rawInterests instanceof List<?> interestsList) || interestsList.isEmpty()) {
+            return;
+        }
+
+        List<Map<String, Object>> normalized = new ArrayList<>();
+        boolean needsUpdate = false;
+
+        for (Object interest : interestsList) {
+            if (interest instanceof Map<?, ?> interestMap) {
+                String id = extractInterestId(interestMap.get("id"));
+                String name = extractInterestName(interestMap.get("name"));
+                if (!hasText(id) && hasText(name)) {
+                    id = resolveInterestId(name);
+                    needsUpdate = true;
+                }
+                if (!hasText(id)) {
+                    needsUpdate = true;
+                    continue;
+                }
+                Map<String, Object> normalizedInterest = new HashMap<>();
+                normalizedInterest.put("id", id);
+                if (hasText(name)) {
+                    normalizedInterest.put("name", name);
+                }
+                if (!interestMap.equals(normalizedInterest)) {
+                    needsUpdate = true;
+                }
+                normalized.add(normalizedInterest);
+            } else if (interest instanceof String interestName) {
+                String id = resolveInterestId(interestName);
+                if (!hasText(id)) {
+                    LOGGER.warn(
+                        "Skipping Facebook interest '{}' because no ID was resolved",
+                        interestName
+                    );
+                    needsUpdate = true;
+                    continue;
+                }
+                Map<String, Object> normalizedInterest = new HashMap<>();
+                normalizedInterest.put("id", id);
+                normalizedInterest.put("name", interestName.trim());
+                normalized.add(normalizedInterest);
+                needsUpdate = true;
+            } else if (interest instanceof Number numberInterest) {
+                String id = numberInterest.toString();
+                if (!hasText(id)) {
+                    needsUpdate = true;
+                    continue;
+                }
+                Map<String, Object> normalizedInterest = new HashMap<>();
+                normalizedInterest.put("id", id);
+                normalized.add(normalizedInterest);
+                needsUpdate = true;
+            } else {
+                needsUpdate = true;
+            }
+        }
+
+        if (!needsUpdate) {
+            return;
+        }
+
+        if (normalized.isEmpty()) {
+            targeting.remove("interests");
+            return;
+        }
+
+        targeting.put("interests", normalized);
+    }
+
+    private String extractInterestId(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number numberValue) {
+            String id = numberValue.toString();
+            return hasText(id) ? id : null;
+        }
+        if (value instanceof String stringValue) {
+            return extractInterestIdFromText(stringValue);
+        }
+        return null;
+    }
+
+    private String extractInterestName(Object value) {
+        if (!(value instanceof String stringValue)) {
+            return null;
+        }
+        String trimmed = stringValue.trim();
+        return hasText(trimmed) ? trimmed : null;
+    }
+
+    private String extractInterestIdFromText(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (!hasText(trimmed)) {
+            return null;
+        }
+        if (trimmed.chars().allMatch(Character::isDigit)) {
+            return trimmed;
+        }
+        Matcher matcher = INTEREST_WITH_ID_PATTERN.matcher(trimmed);
+        if (matcher.matches()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
+
+    private String resolveInterestId(String interestName) {
+        if (!hasText(interestName)) {
+            return null;
+        }
+        String normalizedName = interestName.trim();
+        if (!hasText(normalizedName)) {
+            return null;
+        }
+
+        String directId = extractInterestIdFromText(normalizedName);
+        if (hasText(directId)) {
+            return directId;
+        }
+
+        String cacheKey = normalizedName.toLowerCase(Locale.ROOT);
+        String cached = interestIdCache.get(cacheKey);
+        if (cached != null) {
+            return cached.isEmpty() ? null : cached;
+        }
+
+        String resolved = fetchInterestIdFromFacebook(normalizedName);
+        interestIdCache.put(cacheKey, resolved != null ? resolved : "");
+        return resolved;
+    }
+
+    private String fetchInterestIdFromFacebook(String interestName) {
+        String path = UriComponentsBuilder
+            .fromPath(buildVersionedPath("/search"))
+            .queryParam("type", "adinterest")
+            .queryParam("q", interestName)
+            .queryParam("limit", 1)
+            .queryParam("fields", "id,name")
+            .queryParam("locale", INTEREST_SEARCH_LOCALE)
+            .queryParam("access_token", requireAccessToken())
+            .encode(StandardCharsets.UTF_8)
+            .toUriString();
+
+        try {
+            FacebookApiResponse response = executeGet(path);
+            if (response == null || response.body() == null) {
+                return null;
+            }
+            JsonNode data = response.body().path("data");
+            if (data == null || !data.isArray()) {
+                return null;
+            }
+            for (JsonNode node : data) {
+                if (node == null || node.isNull()) {
+                    continue;
+                }
+                String id = node.path("id").asText(null);
+                if (hasText(id)) {
+                    return id.trim();
+                }
+            }
+        } catch (WebClientResponseException ex) {
+            LOGGER.warn(
+                "Facebook interest lookup failed for '{}': status={}, message={}",
+                interestName,
+                ex.getRawStatusCode(),
+                ex.getMessage()
+            );
+        } catch (WebClientRequestException ex) {
+            LOGGER.warn(
+                "Facebook interest lookup failed for '{}': message={}",
+                interestName,
+                ex.getMessage()
+            );
+        } catch (Exception ex) {
+            LOGGER.warn(
+                "Unexpected error while looking up Facebook interest '{}': message={}",
+                interestName,
+                ex.getMessage(),
+                ex
+            );
+        }
+        return null;
+    }
+
     public String createSavedAudience(String adAccountId, SavedAudienceRequest request) {
         Objects.requireNonNull(request, "request");
         if (!hasText(request.name())) {
@@ -202,6 +406,8 @@ public class FacebookAdsService {
         } catch (Exception ex) {
             throw new IllegalArgumentException("Failed to parse saved audience targeting JSON", ex);
         }
+
+        normalizeInterests(targeting);
 
         Map<String, Object> body = new HashMap<>();
         body.put("name", request.name().trim());

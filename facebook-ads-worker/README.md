@@ -239,6 +239,14 @@ Gerenciador de Anúncios. O backend persiste essas alterações e o worker passa
 utilizar os novos valores automaticamente no ciclo seguinte, sem necessidade de
 reiniciar o serviço.
 
+Quando o backend retornar interesses apenas pelo nome, o worker consulta a
+[Targeting Search](https://developers.facebook.com/docs/marketing-api/audiences/reference/targeting-search)
+da Graph API para resolver automaticamente os identificadores aceitos pelo
+Facebook antes de criar o público salvo ou o conjunto de anúncios. Caso o nome
+informado não possua correspondência, o interesse é descartado e o log aponta o
+termo ignorado. Para evitar quedas de desempenho em execuções subsequentes, os
+resultados são armazenados em cache em memória durante o ciclo atual do worker.
+
 ### Erro `(#190) OAuthException` indicando token expirado
 
 Quando o Facebook devolve `code = 190` com `error_subcode = 463/467` ou

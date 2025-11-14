@@ -278,108 +278,6 @@ public class FacebookAdsService {
         return response.path("id").asText();
     }
 
-    public String createInstantForm(String pageId, InstantFormCreationRequest request) {
-        if (!hasText(pageId)) {
-            throw new IllegalArgumentException("pageId must not be blank");
-        }
-        Objects.requireNonNull(request, "request");
-
-        String normalizedPageId = pageId.trim();
-        if (!hasText(normalizedPageId)) {
-            throw new IllegalArgumentException("pageId must not be blank");
-        }
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("name", request.name());
-        if (hasText(request.locale())) {
-            body.put("locale", request.locale());
-        }
-        if (request.privacyPolicy() != null && hasText(request.privacyPolicy().url())) {
-            Map<String, Object> privacyPolicy = new HashMap<>();
-            privacyPolicy.put("url", request.privacyPolicy().url());
-            if (hasText(request.privacyPolicy().linkText())) {
-                privacyPolicy.put("link_text", request.privacyPolicy().linkText());
-            }
-            body.put("privacy_policy", privacyPolicy);
-        }
-        if (request.questions() != null && !request.questions().isEmpty()) {
-            List<Map<String, Object>> questions = new ArrayList<>(request.questions().size());
-            for (InstantFormCreationRequest.Question question : request.questions()) {
-                if (question == null || !hasText(question.type())) {
-                    continue;
-                }
-                Map<String, Object> questionMap = new HashMap<>();
-                String questionType = question.type().trim();
-                questionMap.put("type", questionType);
-                if (question.key() != null && !question.key().isBlank()) {
-                    questionMap.put("key", question.key());
-                }
-                if (question.label() != null && !question.label().isBlank()) {
-                    if (isCustomInstantFormQuestion(questionType)) {
-                        questionMap.put("label", question.label());
-                    } else {
-                        LOGGER.debug(
-                            "Ignoring label for instant form question of type {} because Graph API does not accept custom labels",
-                            questionType
-                        );
-                    }
-                }
-                if (question.options() != null && !question.options().isEmpty()) {
-                    questionMap.put("options", question.options());
-                }
-                if (question.helperText() != null && !question.helperText().isBlank()) {
-                    LOGGER.debug(
-                        "Ignoring helper text for instant form question of type {} as it is not supported by the Graph API",
-                        question.type()
-                    );
-                }
-                if (question.required() != null) {
-                    questionMap.put("required", question.required());
-                }
-                if (Boolean.TRUE.equals(question.allowMultiSelect())) {
-                    questionMap.put("allow_multiple_selections", Boolean.TRUE);
-                }
-                questions.add(questionMap);
-            }
-            if (!questions.isEmpty()) {
-                body.put("questions", questions);
-            }
-        }
-        if (hasText(request.followUpActionUrl())) {
-            body.put("follow_up_action_url", request.followUpActionUrl());
-            if (hasText(request.followUpActionText())) {
-                body.put("follow_up_action_text", request.followUpActionText());
-            }
-        }
-
-        String pageAccessToken = resolvePageAccessToken(normalizedPageId);
-        if (!hasText(pageAccessToken)) {
-            LOGGER.warn("Falling back to account access token while creating instant form for page {}", normalizedPageId);
-            pageAccessToken = requireAccessToken();
-        }
-        body.put("access_token", pageAccessToken);
-
-        String path = buildVersionedPath("/" + normalizedPageId + "/leadgen_forms");
-        try {
-            JsonNode response = executePost(path, body);
-            String createdId = extractInstantFormCreationIdentifier(response);
-            if (!hasText(createdId)) {
-                LOGGER.warn(
-                    "Facebook response when creating instant form on page {} did not include an identifier: response={}",
-                    normalizedPageId,
-                    response
-                );
-            }
-            return createdId;
-        } catch (WebClientResponseException ex) {
-            String existingIdentifier = handleInstantFormDuplicate(normalizedPageId, request, ex);
-            if (hasText(existingIdentifier)) {
-                return existingIdentifier;
-            }
-            throw ex;
-        }
-    }
-
     public String uploadAdImage(String adAccountId, String imageUrl) {
         Objects.requireNonNull(adAccountId, "adAccountId");
         if (!hasText(imageUrl)) {
@@ -535,86 +433,6 @@ public class FacebookAdsService {
         return fallbackIdentifier;
     }
 
-    private String handleInstantFormDuplicate(
-        String pageId,
-        InstantFormCreationRequest request,
-        WebClientResponseException ex
-    ) {
-        ObjectNode errorDetails = extractErrorDetails(ex.getResponseBodyAsString());
-        if (!isDuplicateInstantFormNameError(errorDetails)) {
-            return null;
-        }
-        if (request == null || !hasText(request.name())) {
-            LOGGER.warn(
-                "Facebook reported duplicate instant form name for page {}, but the request did not include a valid name",
-                pageId
-            );
-            return null;
-        }
-        String resolvedIdentifier = findInstantFormIdentifier(pageId, request.name());
-        if (hasText(resolvedIdentifier)) {
-            LOGGER.info(
-                "Facebook reported duplicate instant form name; reusing identifier {} for page {} (name={})",
-                resolvedIdentifier,
-                pageId,
-                request.name()
-            );
-            return resolvedIdentifier;
-        }
-        LOGGER.warn(
-            "Facebook reported duplicate instant form name for page {}, but no existing identifier could be resolved",
-            pageId
-        );
-        return null;
-    }
-
-    private boolean isDuplicateInstantFormNameError(ObjectNode errorDetails) {
-        if (errorDetails == null) {
-            return false;
-        }
-        int code = errorDetails.path("code").asInt();
-        int subcode = errorDetails.path("error_subcode").asInt();
-        if (code == 100 && subcode == 1892019) {
-            return true;
-        }
-        String normalizedMessage = buildCombinedErrorMessage(errorDetails);
-        if (!hasText(normalizedMessage)) {
-            return false;
-        }
-        return normalizedMessage.contains("form name already exists") ||
-            normalizedMessage.contains("nome do formulário já existe") ||
-            normalizedMessage.contains("nome do formulario ja existe");
-    }
-
-    private String buildCombinedErrorMessage(ObjectNode errorDetails) {
-        StringBuilder builder = new StringBuilder();
-        appendLowerCaseErrorField(builder, errorDetails, "message");
-        appendLowerCaseErrorField(builder, errorDetails, "error_user_title");
-        appendLowerCaseErrorField(builder, errorDetails, "error_user_msg");
-        if (errorDetails.hasNonNull("error_data")) {
-            String errorDataText = errorDetails.get("error_data").toString();
-            if (!errorDataText.isBlank()) {
-                if (builder.length() > 0) {
-                    builder.append(' ');
-                }
-                builder.append(errorDataText.toLowerCase(Locale.ROOT));
-            }
-        }
-        return builder.toString();
-    }
-
-    private void appendLowerCaseErrorField(StringBuilder builder, ObjectNode errorDetails, String fieldName) {
-        if (errorDetails.hasNonNull(fieldName)) {
-            String value = errorDetails.get(fieldName).asText("");
-            if (!value.isBlank()) {
-                if (builder.length() > 0) {
-                    builder.append(' ');
-                }
-                builder.append(value.toLowerCase(Locale.ROOT));
-            }
-        }
-    }
-
     private String extractInstantFormIdentifier(JsonNode node) {
         if (node == null || node.isNull()) {
             return null;
@@ -682,36 +500,6 @@ public class FacebookAdsService {
             );
             throw ex;
         }
-    }
-
-    private String extractInstantFormCreationIdentifier(JsonNode node) {
-        if (node == null || node.isMissingNode() || node.isNull()) {
-            return null;
-        }
-        String[] candidateFields = {"id", "draft_id", "form_id"};
-        for (String field : candidateFields) {
-            String value = node.path(field).asText(null);
-            if (hasText(value)) {
-                return value.trim();
-            }
-        }
-        JsonNode nestedData = node.path("data");
-        if (nestedData != null && nestedData.isArray()) {
-            for (JsonNode element : nestedData) {
-                String nested = extractInstantFormCreationIdentifier(element);
-                if (hasText(nested)) {
-                    return nested;
-                }
-            }
-        }
-        JsonNode instantFormNode = node.path("instant_form");
-        if (instantFormNode != null && instantFormNode.isObject()) {
-            String nested = extractInstantFormCreationIdentifier(instantFormNode);
-            if (hasText(nested)) {
-                return nested;
-            }
-        }
-        return null;
     }
 
     private FacebookApiResponse executeGet(String path) {
@@ -868,40 +656,6 @@ public class FacebookAdsService {
             return path;
         }
         return path.replace(currentToken, maskAccessToken(currentToken));
-    }
-
-    private boolean isCustomInstantFormQuestion(String questionType) {
-        if (!hasText(questionType)) {
-            return false;
-        }
-        String normalized = questionType.trim().toUpperCase(Locale.ROOT);
-        return normalized.equals("CUSTOM") || normalized.startsWith("CUSTOM_");
-    }
-
-    public record InstantFormCreationRequest(
-        String name,
-        String locale,
-        PrivacyPolicy privacyPolicy,
-        List<Question> questions,
-        String followUpActionText,
-        String followUpActionUrl
-    ) {
-        public record PrivacyPolicy(String url, String linkText) {
-        }
-
-        public record Question(
-            String type,
-            String key,
-            String label,
-            List<Map<String, Object>> options,
-            String helperText,
-            Boolean required,
-            Boolean allowMultiSelect
-        ) {
-            public Question(String type) {
-                this(type, null, null, null, null, null, null);
-            }
-        }
     }
 
     private ObjectNode extractErrorDetails(String responseBody) {

@@ -71,79 +71,12 @@ seguem o padrão visual `==>` para requisições (por exemplo, `url==>https://..
 e `<==` para respostas, inclusive em cenários de erro, permitindo identificar
 rapidamente a direção do tráfego durante uma análise.
 
-Quando a jornada do experimento exige um Instant Form aprovado, o worker garante
-que o formulário seja criado na Meta antes da ativação das campanhas. **Por
-enquanto esse fluxo está desativado por padrão** – a propriedade
-`facebook.instant-forms.enabled` controla a execução do agendador e permanece em
-`false` na configuração padrão (`application.properties`). Para reativar a
-publicação automática, defina o valor como `true` no ambiente desejado. O fluxo
-operado pelo `FacebookInstantFormPublicationService` foi simplificado para uma
-única etapa transacional:
-
-1. **Descoberta idempotente** – O agendador consulta, a cada execução, o
-   endpoint `/api/instant-forms/approved-drafts`. Se o backend ainda não expõe a
-   nova rota, o serviço faz fallback transparente para
-   `/api/instant-forms/ready-to-publish`, preservando compatibilidade. Apenas
-   itens com `status = APPROVED` e `externalId`/`facebookFormId` vazios entram na
-   fila.
-2. **Enriquecimento do payload** – Para cada formulário elegível o worker
-   solicita os detalhes completos (`GET /api/instant-forms/{id}`) e combina as
-   informações do rascunho com dados globais. O follow-up vem do experimento
-   associado e sempre alimenta o CTA da tela de agradecimento. A política de
-   privacidade prioriza o link configurado no formulário, depois o valor do
-   experimento e, na ausência desses, busca `privacy_policy_url` em
-   `/api/settings/privacy_policy_url`. As perguntas sugeridas pelo ChatGPT são
-   persistidas no backend em formato JSON e reenviadas para a Meta durante a
-   publicação, garantindo que campos personalizados como múltipla escolha
-   cheguem ao Instant Form final. A Graph API `v23.0` rejeita o parâmetro
-   legado `allow_multi_select`; o worker envia `allow_multiple_selections = true`
-   apenas quando o backend sinaliza múltipla escolha, evitando erros `(#100)`.
-   O atributo `helper_text` também não é aceito: quando esse campo é recebido do
-   backend o worker o ignora e registra um log em nível `DEBUG` para facilitar a
-   auditoria. A Graph API também rejeita rótulos personalizados para perguntas
-   padrão (ex.: `FULL_NAME`, `EMAIL`, `PHONE`); por isso o worker descarta o
-   `label` quando o tipo não começa com `CUSTOM`, evitando o erro `(#100)
-   Invalid parameter` com `error_subcode = 1892063`. Valores de opção com espaços,
-   acentos ou qualquer caractere fora de `[A-Za-z0-9_-]` são normalizados para um
-   slug compatível (remoção de acentos, substituição de espaços por `_` e
-   limitação do alfabeto permitido) antes de enviar o payload, atendendo à
-   exigência da Graph API de que todo `selector` tenha `value` explícito e
-   eliminando o erro `(#100) Invalid parameter` com `error_subcode = 1892091`
-   observado em formulários com alternativas em português. Quando o backend não
-   fornece perguntas, o
-   worker aplica o fallback `FULL_NAME` + `EMAIL` para manter a captura básica
-   funcional. Perguntas com tipo `LEGAL` também são descartadas — a Graph API
-   rejeita esse valor e a orientação oficial é tratar consentimentos legais via
-   `custom_disclaimer`, portanto o worker registra um aviso e mantém apenas os
-   campos suportados.
-3. **Criação na Graph API** – Com o payload pronto, o worker chama
-   `POST /{pageId}/leadgen_forms`, reutilizando o token da página quando
-   disponível. O CTA da tela de agradecimento aponta para o `follow_up_action_url`
-   resolvido e o payload enviado é registrado com logs estruturados (`==>`/`<==`)
-   mascarando o `access_token`. Counters e timers em `facebook.instant_form.*`
-   monitoram quantidade processada, tempo de criação e erros por código HTTP,
-   permitindo alertas operacionais. Essas métricas são alimentadas pela
-   infraestrutura padrão do [Spring Boot Actuator](https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html),
-   garantindo que um `MeterRegistry` esteja sempre disponível para o worker.
-4. **Persistência e idempotência** – Ao receber o `form_id`/`draft_id` da Meta o
-   worker envia `PATCH /api/instant-forms/{id}/publication` com `status =
-   CREATED`, `published = false` e o identificador externo. Se o backend já
-   possuir um ID (ou se o mesmo rascunho reaparecer), a execução é ignorada para
-   evitar duplicações. Quando a Graph API devolve `(#100) Invalid parameter`
-   indicando que o nome do formulário já existe, o worker consulta
-   `/{pageId}/leadgen_forms` para recuperar o identificador previamente criado e
-   reaproveita o valor retornado pela Meta, mantendo o fluxo idempotente sem
-   criar novos Instant Forms duplicados.
-5. **Testabilidade** – A propriedade `facebook.instant-forms.dry-run` permite
-   validar a jornada completa sem criar formulários reais; quando habilitada, o
-   serviço apenas loga o payload e incrementa as métricas de dry-run. Para
-   testes ponta-a-ponta com tráfego simulado, recomenda-se usar os [test
-   leads da Meta](https://developers.facebook.com/docs/marketing-api/guides/lead-ads/testing/).
-
-Com o identificador oficial persistido, o `FacebookCampaignService` reaproveita
-o valor ao montar criativos com `call_to_action.value.lead_gen_form_id`, mantendo
-o destino `ON_AD` e o objetivo `OUTCOME_LEADS` conforme as regras mais recentes
-da Graph API.
+Quando a jornada do experimento exige um Instant Form aprovado, o worker assume
+que o formulário já foi criado manualmente diretamente na Meta. O
+`FacebookCampaignService` apenas publica rascunhos existentes (`publishInstantForm`)
+e reutiliza o identificador resolvido ao montar criativos com
+`call_to_action.value.lead_gen_form_id`, mantendo o destino `ON_AD` e o objetivo
+`OUTCOME_LEADS` conforme as regras mais recentes da Graph API.
 
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar
 investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs

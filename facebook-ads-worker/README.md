@@ -247,6 +247,14 @@ informado não possua correspondência, o interesse é descartado e o log aponta
 termo ignorado. Para evitar quedas de desempenho em execuções subsequentes, os
 resultados são armazenados em cache em memória durante o ciclo atual do worker.
 
+Da mesma forma, o worker valida `custom_audiences` e
+`excluded_custom_audiences` antes de enviá-los para a Graph API. Entradas que
+já chegam com um `id` numérico são preservadas; quando o backend envia apenas o
+nome e nenhum identificador pode ser deduzido, o worker registra um aviso e
+remove o item da segmentação para evitar erros `(#100) Param
+targeting[custom_audiences][X] must be a valid custom audience id` durante a
+criação do público salvo ou do conjunto de anúncios.
+
 ### Erro `(#190) OAuthException` indicando token expirado
 
 Quando o Facebook devolve `code = 190` com `error_subcode = 463/467` ou

@@ -167,6 +167,7 @@ public class FacebookAdsService {
         }
 
         normalizeInterests(targeting);
+        normalizeCustomAudiences(targeting);
 
         if (hasText(request.savedAudienceId())) {
             targeting.put("saved_audience_id", request.savedAudienceId().trim());
@@ -264,6 +265,115 @@ public class FacebookAdsService {
         }
 
         targeting.put("interests", normalized);
+    }
+
+    private void normalizeCustomAudiences(Map<String, Object> targeting) {
+        normalizeCustomAudienceList(targeting, "custom_audiences");
+        normalizeCustomAudienceList(targeting, "excluded_custom_audiences");
+    }
+
+    private void normalizeCustomAudienceList(Map<String, Object> targeting, String fieldName) {
+        if (targeting == null || targeting.isEmpty()) {
+            return;
+        }
+        Object rawValue = targeting.get(fieldName);
+        if (!(rawValue instanceof List<?> audienceList) || audienceList.isEmpty()) {
+            return;
+        }
+
+        List<Map<String, Object>> normalized = new ArrayList<>();
+        boolean needsUpdate = false;
+
+        for (Object audience : audienceList) {
+            if (audience instanceof Map<?, ?> audienceMap) {
+                String id = extractCustomAudienceId(audienceMap.get("id"));
+                if (!hasText(id)) {
+                    id = extractCustomAudienceId(audienceMap.get("custom_audience_id"));
+                }
+                if (!hasText(id)) {
+                    id = extractCustomAudienceId(audienceMap.get("audience_id"));
+                }
+                String name = extractCustomAudienceName(audienceMap.get("name"));
+                if (!hasText(id)) {
+                    needsUpdate = true;
+                    LOGGER.warn(
+                        "Skipping Facebook custom audience entry in '{}' because no ID was resolved",
+                        fieldName
+                    );
+                    continue;
+                }
+                Map<String, Object> normalizedAudience = new HashMap<>();
+                normalizedAudience.put("id", id);
+                if (hasText(name)) {
+                    normalizedAudience.put("name", name);
+                }
+                if (!audienceMap.equals(normalizedAudience)) {
+                    needsUpdate = true;
+                }
+                normalized.add(normalizedAudience);
+            } else if (audience instanceof String audienceString) {
+                String id = extractCustomAudienceId(audienceString);
+                if (!hasText(id)) {
+                    needsUpdate = true;
+                    LOGGER.warn(
+                        "Skipping Facebook custom audience '{}' in '{}' because no ID was resolved",
+                        audienceString,
+                        fieldName
+                    );
+                    continue;
+                }
+                Map<String, Object> normalizedAudience = new HashMap<>();
+                normalizedAudience.put("id", id);
+                normalizedAudience.put("name", audienceString.trim());
+                normalized.add(normalizedAudience);
+                needsUpdate = true;
+            } else if (audience instanceof Number audienceNumber) {
+                String id = extractCustomAudienceId(audienceNumber);
+                if (!hasText(id)) {
+                    needsUpdate = true;
+                    continue;
+                }
+                Map<String, Object> normalizedAudience = new HashMap<>();
+                normalizedAudience.put("id", id);
+                normalized.add(normalizedAudience);
+                needsUpdate = true;
+            } else {
+                needsUpdate = true;
+            }
+        }
+
+        if (!needsUpdate) {
+            return;
+        }
+
+        if (normalized.isEmpty()) {
+            targeting.remove(fieldName);
+            return;
+        }
+
+        targeting.put(fieldName, normalized);
+    }
+
+    private String extractCustomAudienceId(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number numberValue) {
+            String id = numberValue.toString();
+            return hasText(id) ? id : null;
+        }
+        if (value instanceof String stringValue) {
+            return extractInterestIdFromText(stringValue);
+        }
+        return null;
+    }
+
+    private String extractCustomAudienceName(Object value) {
+        if (!(value instanceof String stringValue)) {
+            return null;
+        }
+        String trimmed = stringValue.trim();
+        return hasText(trimmed) ? trimmed : null;
     }
 
     private String extractInterestId(Object value) {
@@ -408,6 +518,7 @@ public class FacebookAdsService {
         }
 
         normalizeInterests(targeting);
+        normalizeCustomAudiences(targeting);
 
         Map<String, Object> body = new HashMap<>();
         body.put("name", request.name().trim());

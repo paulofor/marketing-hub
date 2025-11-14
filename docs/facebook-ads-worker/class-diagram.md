@@ -2,9 +2,8 @@
 
 O diagrama abaixo apresenta as principais classes que participam do fluxo de
 criação de campanhas no Facebook Ads a partir de experimentos aprovados pelo
-backend. Além do agendador e do serviço de campanhas, o worker possui um
-agendador dedicado à criação de instant forms aprovados e o cliente usado
-para conversar com a Graph API do Facebook.
+backend. Além do agendador e do serviço de campanhas, o worker conta com o
+cliente responsável por conversar com a Graph API do Facebook.
 
 > **Atualização:** Experimentos enviados pelo backend agora precisam informar o
 > campo `instagramAccount`. O `FacebookCampaignService` ignora qualquer
@@ -29,23 +28,6 @@ classDiagram
         -formatCreativeMessage(name, config) String
     }
 
-    class FacebookInstantFormPublicationScheduler {
-        +schedule()
-    }
-
-    class FacebookInstantFormPublicationService {
-        -facebookAdsService : FacebookAdsService
-        -accessTokenManager : FacebookAccessTokenManager
-        -configurationClient : FacebookWorkerConfigurationClient
-        -backendClient : WebClient
-        -backendBaseUrl : String
-        -apiPrefix : String
-        -meterRegistry : MeterRegistry
-        -dryRun : boolean
-        -cachedGlobalPrivacyPolicyUrl : AtomicReference<String>
-        +processApprovedInstantFormDrafts()
-    }
-
     class FacebookAdsService {
         -webClient : WebClient
         -accessToken : AtomicReference<String>
@@ -53,7 +35,6 @@ classDiagram
         +createAdSet(adAccountId, request) String
         +createAdCreative(adAccountId, request) String
         +createAd(adAccountId, request) String
-        +createInstantForm(pageId, request) String
         +getCampaignMetrics(campaignId) JsonNode
         +renewLongLivedToken(appId, appSecret, token) TokenRenewalResponse
         +updateAccessToken(token)

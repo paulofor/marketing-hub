@@ -19,10 +19,8 @@
   erros), garantindo um padrão visual consistente em todo o módulo.
 - Em caso de erro de permissão do Facebook, o worker bloqueia o experimento em memória até que o serviço seja reiniciado.
 - Ao publicar instant forms aprove os rascunhos com `facebookFormId` nulo e reporte o identificador definitivo recebido da Meta
-  através de `PATCH /api/instant-forms/{id}/publication`.
-- A criação de instant forms via worker está desabilitada por padrão. Use a
-  propriedade `facebook.instant-forms.enabled=true` para reativar o fluxo quando
-  necessário.
+  através de `PATCH /api/instant-forms/{id}/publication`. A criação automática foi descontinuada; os formulários devem ser
+  cadastrados manualmente diretamente na Meta.
 - Perguntas padrão do Instant Form (ex.: `FULL_NAME`, `EMAIL`, `PHONE`) não aceitam rótulos personalizados; ignore ou remova o
   `label` nessas situações para evitar o erro `(#100) Invalid parameter` com `error_subcode = 1892063`.
 - Valores de opções em perguntas personalizadas devem ser normalizados (remoção de acentos,

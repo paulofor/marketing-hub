@@ -208,7 +208,7 @@ public class FacebookAdsService {
         if (hasText(request.description())) {
             body.put("description", request.description().trim());
         }
-        body.put("targeting_spec", targeting);
+        body.put("targeting", targeting);
         body.put("access_token", requireAccessToken());
 
         String path = buildVersionedPath("/act_" + adAccountId + "/saved_audiences");

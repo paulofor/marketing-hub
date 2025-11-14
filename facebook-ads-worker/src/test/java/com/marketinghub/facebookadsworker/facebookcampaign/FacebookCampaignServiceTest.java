@@ -222,7 +222,7 @@ class FacebookCampaignServiceTest {
         JsonNode savedAudienceBody = objectMapper.readTree(savedAudienceRequest.getBody().inputStream());
         assertEquals("Exp - Audience São Paulo", savedAudienceBody.get("name").asText());
         assertEquals("Detalhes", savedAudienceBody.get("description").asText());
-        assertEquals("BR", savedAudienceBody.get("targeting_spec").get("geo_locations").get("countries").get(0).asText());
+        assertEquals("BR", savedAudienceBody.get("targeting").get("geo_locations").get("countries").get(0).asText());
 
         RecordedRequest adSetRequest = facebook.takeRequest();
         JsonNode targeting = objectMapper.readTree(adSetRequest.getBody().inputStream()).get("targeting");

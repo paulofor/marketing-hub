@@ -242,7 +242,7 @@ class FacebookAdsServiceTest {
         JsonNode body = objectMapper.readTree(request.getBody().inputStream());
         assertEquals("Audience", body.get("name").asText());
         assertEquals("Descrição", body.get("description").asText());
-        assertEquals("BR", body.get("targeting_spec").get("geo_locations").get("countries").get(0).asText());
+        assertEquals("BR", body.get("targeting").get("geo_locations").get("countries").get(0).asText());
         assertEquals("SA-1", id);
     }
 

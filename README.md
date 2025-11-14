@@ -26,6 +26,12 @@ cd ../ai-worker && mvn spring-boot:run
 # upload with `mvn dependency:get`.
 # The worker only needs this JAR from GitHub Packages – Maven downloads it
 # automatically when compiling.
+#
+# O workflow `.github/workflows/ci-cd.yml` publica o pacote `ads-service` com o
+# Maven Deploy Plugin e, na sequência, remove automaticamente todas as versões
+# antigas do GitHub Packages, preservando apenas a build recém-gerada. Para
+# execuções locais, utilize o mesmo comando Maven acima e remova manualmente as
+# versões indesejadas, caso necessário.
 # create a .env file to point the React app to your backend
 echo "VITE_API_URL=http://localhost:8000" > frontend/.env
 # deploy to VPS (Java 21 already installed)

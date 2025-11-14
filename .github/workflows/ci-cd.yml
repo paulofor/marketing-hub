@@ -88,6 +88,37 @@ jobs:
             -Dversion=0.0.1-SNAPSHOT \
             -Dpackaging=jar
 
+      - name: Remover versões antigas do pacote ads-service
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          PACKAGE_PATH="/users/paulofor/packages/maven/ads-service/versions"
+          echo "Buscando o ID da versão mais recente..."
+          latest_version_id="$(gh api "${PACKAGE_PATH}" --paginate --jq '.[0].id' | head -n 1 || true)"
+
+          if [[ -z "${latest_version_id}" ]]; then
+            echo "Não foi possível identificar a versão mais recente. Nenhuma limpeza será feita." >&2
+            exit 0
+          fi
+
+          echo "Mantendo a versão mais recente com ID ${latest_version_id} e removendo as demais..."
+          old_versions="$(gh api "${PACKAGE_PATH}" --paginate --jq '.[].id' | grep -v "^${latest_version_id}$" || true)"
+
+          if [[ -z "${old_versions}" ]]; then
+            echo "Nenhuma versão antiga encontrada."
+            exit 0
+          fi
+
+          while IFS= read -r version_id; do
+            [[ -z "${version_id}" ]] && continue
+            gh api --method DELETE "${PACKAGE_PATH}/${version_id}"
+            echo "Removida a versão ${version_id}."
+          done <<< "${old_versions}"
+
+          echo "Limpeza concluída."
+
       - name: Verificar biblioteca publicada
         run: |
           mvn -U -B -s ../settings.xml \

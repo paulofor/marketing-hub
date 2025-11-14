@@ -162,3 +162,14 @@ jobs:
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --force-recreate proxy"
+      - name: Clean build artifacts from repository
+        if: always()
+        run: |
+          git clean -ffdx -- \
+            lead-portal/backend/target \
+            lead-portal/frontend/dist \
+            lead-portal/frontend/node_modules \
+            lead-portal/frontend/.vite \
+            lead-portal/frontend/.turbo \
+            lead-portal/frontend/.parcel-cache \
+            lead-portal/frontend/tsconfig.node.tsbuildinfo

@@ -21,7 +21,9 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    worker apenas normaliza interesses e custom audiences caso estejam presentes
    no JSON de segmentação e remove campos auxiliares não reconhecidos pela Graph
    API (por exemplo, `detailed_targeting_description`) para evitar erros
-   `(#100) Invalid parameter`. Quando o criativo aponta para um formulário de leads,
+   `(#100) Invalid parameter`. Valores enviados em `languages` são convertidos
+   para `locales` antes do POST e o campo original é descartado para manter
+   compatibilidade com a Graph API. Quando o criativo aponta para um formulário de leads,
    o worker ajusta automaticamente `destination_type = ON_AD` e força
    `optimization_goal = LEAD_GENERATION` para satisfazer as regras da Graph API
    para Lead Ads.

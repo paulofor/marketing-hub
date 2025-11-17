@@ -21,7 +21,10 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    worker apenas normaliza interesses e custom audiences caso estejam presentes
    no JSON de segmentação e remove campos auxiliares não reconhecidos pela Graph
    API (por exemplo, `detailed_targeting_description`) para evitar erros
-   `(#100) Invalid parameter`. Valores enviados em `languages` são convertidos
+   `(#100) Invalid parameter`. Advantage Audience é explicitamente desabilitado
+   via `targeting_automation.advantage_audience = 0` para satisfazer a exigência
+   da Graph API de sinalizar o recurso ao criar conjuntos de anúncios. Valores
+   enviados em `languages` são convertidos
    para `locales` numéricos aceitos pela Meta (por exemplo, `pt_BR` -> `16`) antes do POST e o campo
    original é descartado para manter compatibilidade com a Graph API. Entradas
    de `geo_locations.regions` são aceitas apenas quando o `key` é numérico;

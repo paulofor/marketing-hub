@@ -174,6 +174,7 @@ public class FacebookAdsService {
         normalizeInterests(targeting);
         normalizeCustomAudiences(targeting);
         normalizeGeoLocations(targeting);
+        disableAdvantageAudience(targeting);
 
         if (hasText(request.savedAudienceId())) {
             targeting.put("saved_audience_id", request.savedAudienceId().trim());
@@ -196,6 +197,25 @@ public class FacebookAdsService {
         }
 
         return targeting;
+    }
+
+    private void disableAdvantageAudience(Map<String, Object> targeting) {
+        if (targeting == null) {
+            return;
+        }
+
+        Map<String, Object> automation = new HashMap<>();
+        Object existingAutomation = targeting.get("targeting_automation");
+        if (existingAutomation instanceof Map<?, ?> existingMap) {
+            existingMap.forEach((key, value) -> {
+                if (key instanceof String stringKey) {
+                    automation.put(stringKey, value);
+                }
+            });
+        }
+
+        automation.put("advantage_audience", 0);
+        targeting.put("targeting_automation", automation);
     }
 
     private static final Map<String, Integer> LOCALE_CODE_TO_ID = Map.of(

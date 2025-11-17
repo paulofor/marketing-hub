@@ -491,7 +491,7 @@ public class FacebookAdsService {
             return;
         }
 
-        Map<String, Object> normalizedGeo = new HashMap<>(geoMap);
+        Map<String, Object> normalizedGeo = copyGeoMapWithStringKeys(geoMap);
         boolean updated = normalizeRegions(geoMap, normalizedGeo);
 
         if (updated) {
@@ -538,6 +538,23 @@ public class FacebookAdsService {
         }
 
         return updated;
+    }
+
+    private Map<String, Object> copyGeoMapWithStringKeys(Map<?, ?> geoMap) {
+        Map<String, Object> normalizedGeo = new HashMap<>();
+
+        geoMap.forEach((key, value) -> {
+            if (key instanceof String stringKey) {
+                normalizedGeo.put(stringKey, value);
+            } else {
+                LOGGER.warn(
+                    "Skipping geo_locations entry because key is not a string: {}",
+                    JsonLogFormatter.wrap(key)
+                );
+            }
+        });
+
+        return normalizedGeo;
     }
 
     private Integer extractRegionKey(Object region) {

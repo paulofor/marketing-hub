@@ -229,6 +229,36 @@ class FacebookAdsServiceTest {
     }
 
     @Test
+    void createAdSetRemovesNonNumericRegionsFromTargeting() throws Exception {
+        server.enqueue(new MockResponse().setBody("{\"id\":\"555\"}")
+            .addHeader("Content-Type", "application/json"));
+        String targetingJson = "{\"geo_locations\":{\"regions\":[{\"key\":\"SP\"},{\"key\":123},{\"key\":\"456\"}],\"countries\":[\"BR\"]}}";
+        FacebookAdsService.AdSetRequest request = new FacebookAdsService.AdSetRequest(
+            "Camp - Ad Set",
+            "123",
+            "1500",
+            "IMPRESSIONS",
+            "LINK_CLICKS",
+            "WEBSITE",
+            "LOWEST_COST_WITHOUT_CAP",
+            "200",
+            "42",
+            "BR",
+            targetingJson,
+            null
+        );
+
+        service.createAdSet("1", request);
+
+        RecordedRequest recorded = server.takeRequest();
+        JsonNode targeting = objectMapper.readTree(recorded.getBody().inputStream()).get("targeting");
+        JsonNode regions = targeting.get("geo_locations").get("regions");
+        assertEquals(2, regions.size());
+        assertEquals(123, regions.get(0).get("key").asInt());
+        assertEquals(456, regions.get(1).get("key").asInt());
+    }
+
+    @Test
     void createAdSetResolvesInterestNamesToIds() throws Exception {
         server.enqueue(new MockResponse().setBody("{\"data\":[{\"id\":\"6003139266461\",\"name\":\"Pilates\"}]}" )
             .addHeader("Content-Type", "application/json"));

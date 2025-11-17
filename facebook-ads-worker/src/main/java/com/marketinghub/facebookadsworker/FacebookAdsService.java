@@ -47,7 +47,9 @@ public class FacebookAdsService {
     private final ObjectMapper objectMapper;
     private final ConcurrentMap<String, String> pageAccessTokens;
     private final ConcurrentMap<String, String> interestIdCache;
-    private static final Set<String> UNSUPPORTED_TARGETING_FIELDS = Set.of("detailed_targeting_description");
+    private static final Set<String> UNSUPPORTED_TARGETING_FIELDS = Set.of(
+        "detailed_targeting_description"
+    );
 
     public FacebookAdsService(WebClient.Builder builder,
                               @Value("${facebook.graph-api.base-url:https://graph.facebook.com}") String baseUrl,
@@ -199,6 +201,21 @@ public class FacebookAdsService {
         if (targeting == null || targeting.isEmpty()) {
             return;
         }
+
+        Object languages = targeting.remove("languages");
+        if (languages != null) {
+            if (!targeting.containsKey("locales") && languages instanceof List<?> languagesList && !languagesList.isEmpty()) {
+                targeting.put("locales", languagesList);
+                LOGGER.warn(
+                    "Replacing unsupported targeting field 'languages' with 'locales' before sending request to Facebook"
+                );
+            } else {
+                LOGGER.warn(
+                    "Removing unsupported targeting field 'languages' before sending request to Facebook"
+                );
+            }
+        }
+
         for (String field : UNSUPPORTED_TARGETING_FIELDS) {
             if (targeting.remove(field) != null) {
                 LOGGER.warn(

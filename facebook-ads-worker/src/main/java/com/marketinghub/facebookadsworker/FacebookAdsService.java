@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -46,6 +47,7 @@ public class FacebookAdsService {
     private final ObjectMapper objectMapper;
     private final ConcurrentMap<String, String> pageAccessTokens;
     private final ConcurrentMap<String, String> interestIdCache;
+    private static final Set<String> UNSUPPORTED_TARGETING_FIELDS = Set.of("detailed_targeting_description");
 
     public FacebookAdsService(WebClient.Builder builder,
                               @Value("${facebook.graph-api.base-url:https://graph.facebook.com}") String baseUrl,
@@ -166,6 +168,7 @@ public class FacebookAdsService {
             }
         }
 
+        removeUnsupportedTargetingFields(targeting);
         normalizeInterests(targeting);
         normalizeCustomAudiences(targeting);
 
@@ -190,6 +193,20 @@ public class FacebookAdsService {
         }
 
         return targeting;
+    }
+
+    private void removeUnsupportedTargetingFields(Map<String, Object> targeting) {
+        if (targeting == null || targeting.isEmpty()) {
+            return;
+        }
+        for (String field : UNSUPPORTED_TARGETING_FIELDS) {
+            if (targeting.remove(field) != null) {
+                LOGGER.warn(
+                    "Removing unsupported targeting field '{}' before sending request to Facebook",
+                    field
+                );
+            }
+        }
     }
 
     private void normalizeInterests(Map<String, Object> targeting) {

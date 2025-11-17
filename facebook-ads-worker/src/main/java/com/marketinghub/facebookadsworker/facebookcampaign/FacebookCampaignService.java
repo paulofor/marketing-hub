@@ -242,9 +242,7 @@ public class FacebookCampaignService {
             );
             List<ExperimentAdSet> experimentAdSets = fetchExperimentAdSets(exp.id());
             ExperimentAdSet selectedAdSet = selectExperimentAdSet(experimentAdSets);
-            SavedAudienceCreation savedAudience = ensureSavedAudience(config, exp, selectedAdSet);
-            String savedAudienceId = savedAudience != null ? savedAudience.id() : null;
-            String resolvedTargetingJson = resolveTargetingJsonForAdSet(selectedAdSet, savedAudience);
+            String resolvedTargetingJson = resolveTargetingJsonFromBackend(selectedAdSet);
             FacebookAdsService.AdSetRequest adSetRequest = new FacebookAdsService.AdSetRequest(
                 exp.name() + " - Ad Set",
                 campaignId,
@@ -257,7 +255,7 @@ public class FacebookCampaignService {
                 resolvedPageId,
                 config.adSetTargetCountry(),
                 resolvedTargetingJson,
-                savedAudienceId
+                null
             );
             String adSetId = facebookAdsService.createAdSet(config.adAccountId(), adSetRequest);
             String resolvedImageUrl = resolveCreativeImageUrl(creative.imageUrl());
@@ -303,8 +301,8 @@ public class FacebookCampaignService {
                     adSetRequest.destinationType(),
                     adSetRequest.pageId(),
                     resolvedTargetingJson,
-                    savedAudienceId,
-                    savedAudience != null ? savedAudience.name() : null
+                    null,
+                    null
                 ),
                 new CreateCampaignRequest.AdCreative(
                     creativeId,
@@ -440,136 +438,11 @@ public class FacebookCampaignService {
             .orElse(adSets.get(0));
     }
 
-    private SavedAudienceCreation ensureSavedAudience(
-        FacebookWorkerConfiguration config,
-        Experiment experiment,
-        ExperimentAdSet adSet
-    ) {
-        if (adSet == null) {
+    private String resolveTargetingJsonFromBackend(ExperimentAdSet adSet) {
+        if (adSet == null || !StringUtils.hasText(adSet.targetingJson())) {
             return null;
         }
-        String existingSavedAudienceId = extractSavedAudienceId(adSet.targetingJson());
-        if (StringUtils.hasText(existingSavedAudienceId)) {
-            LOGGER.info(
-                "Reusing saved audience {} from targeting JSON for experiment {}",
-                existingSavedAudienceId,
-                experiment.id()
-            );
-            return new SavedAudienceCreation(existingSavedAudienceId, buildSavedAudienceName(experiment, adSet), adSet.targetingJson());
-        }
-        if (!StringUtils.hasText(adSet.targetingJson())) {
-            return null;
-        }
-        String audienceName = buildSavedAudienceName(experiment, adSet);
-        String audienceDescription = buildSavedAudienceDescription(adSet);
-        try {
-            String savedAudienceId = facebookAdsService.createSavedAudience(
-                config.adAccountId(),
-                new FacebookAdsService.SavedAudienceRequest(
-                    audienceName,
-                    audienceDescription,
-                    adSet.targetingJson()
-                )
-            );
-            LOGGER.info(
-                "Created Facebook saved audience for experiment {}: id={}, name={}",
-                experiment.id(),
-                savedAudienceId,
-                audienceName
-            );
-            String updatedTargeting = mergeSavedAudienceId(adSet.targetingJson(), savedAudienceId);
-            return new SavedAudienceCreation(savedAudienceId, audienceName, updatedTargeting);
-        } catch (Exception ex) {
-            LOGGER.error(
-                "Failed to create saved audience for experiment {}: message={}",
-                experiment.id(),
-                ex.getMessage(),
-                ex
-            );
-            return null;
-        }
-    }
-
-    private String buildSavedAudienceName(Experiment experiment, ExperimentAdSet adSet) {
-        StringBuilder name = new StringBuilder(experiment.name() != null ? experiment.name() : "Experiment");
-        name.append(" - Audience");
-        if (StringUtils.hasText(adSet.location())) {
-            name.append(" ").append(adSet.location().trim());
-        } else if (adSet.id() != null) {
-            name.append(" #").append(adSet.id());
-        }
-        return name.toString();
-    }
-
-    private String buildSavedAudienceDescription(ExperimentAdSet adSet) {
-        if (StringUtils.hasText(adSet.prompt())) {
-            return adSet.prompt();
-        }
-        if (StringUtils.hasText(adSet.interests())) {
-            return adSet.interests();
-        }
-        if (StringUtils.hasText(adSet.lookalikes())) {
-            return adSet.lookalikes();
-        }
-        return null;
-    }
-
-    private String mergeSavedAudienceId(String targetingJson, String savedAudienceId) {
-        if (!StringUtils.hasText(savedAudienceId)) {
-            return targetingJson;
-        }
-        ObjectNode node;
-        if (StringUtils.hasText(targetingJson)) {
-            try {
-                JsonNode parsed = objectMapper.readTree(targetingJson);
-                if (parsed != null && parsed.isObject()) {
-                    node = ((ObjectNode) parsed).deepCopy();
-                } else {
-                    node = objectMapper.createObjectNode();
-                }
-            } catch (Exception ex) {
-                LOGGER.debug(
-                    "Failed to merge saved audience id into targeting JSON: message={}",
-                    ex.getMessage(),
-                    ex
-                );
-                node = objectMapper.createObjectNode();
-            }
-        } else {
-            node = objectMapper.createObjectNode();
-        }
-        node.put("saved_audience_id", savedAudienceId);
-        return node.toString();
-    }
-
-    private String extractSavedAudienceId(String targetingJson) {
-        if (!StringUtils.hasText(targetingJson)) {
-            return null;
-        }
-        try {
-            JsonNode node = objectMapper.readTree(targetingJson);
-            if (node != null) {
-                String value = node.path("saved_audience_id").asText(null);
-                return StringUtils.hasText(value) ? value.trim() : null;
-            }
-        } catch (Exception ex) {
-            LOGGER.debug(
-                "Failed to extract saved audience id from targeting JSON: message={}",
-                ex.getMessage(),
-                ex
-            );
-        }
-        return null;
-    }
-
-    private String resolveTargetingJsonForAdSet(ExperimentAdSet adSet, SavedAudienceCreation savedAudience) {
-        if (savedAudience != null && StringUtils.hasText(savedAudience.targetingJson())) {
-            return savedAudience.targetingJson();
-        }
-        if (adSet != null && StringUtils.hasText(adSet.targetingJson())) {
-            return adSet.targetingJson();
-        }
-        return null;
+        return adSet.targetingJson();
     }
 
     private boolean hasTokenChangedSinceExpiration() {
@@ -598,8 +471,6 @@ public class FacebookCampaignService {
         String experimentPageId = associatedPage != null ? associatedPage.pageId() : null;
         return coalesce(configPageId, experimentPageId, experiment.pageId());
     }
-
-    private record SavedAudienceCreation(String id, String name, String targetingJson) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record ExperimentAdSet(

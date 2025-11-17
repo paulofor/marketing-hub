@@ -13,18 +13,16 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    `special_ad_categories = []`, conforme documentado na
    [Marketing API](https://developers.facebook.com/docs/marketing-api/reference/ad-campaign-group#Creating) para contas que
    não se enquadram em categorias especiais.
-2. **Públicos salvos** (`POST /saved_audiences`) opcionais, reaproveitando a
-   segmentação detalhada gerada pelo AI Worker (`GET /api/adsets?experimentId={id}`).
-   Quando o backend fornece `targetingJson`, o worker cria (ou reutiliza, caso o
-   JSON já contenha `saved_audience_id`) um público salvo na conta e injeta o
-   identificador retornado pela Meta no payload de segmentação.
-3. **Conjunto de anúncios** (`POST /adsets`) atrelado à campanha, também em
-   `PAUSED`, com destino herdado da conta (por exemplo, `WEBSITE`). Se existir um
-   público salvo criado na etapa anterior, o worker envia `targeting` com
-   `saved_audience_id` e preserva o JSON de segmentação retornado pelo backend.
-   Quando o criativo aponta para um formulário de leads, o worker ajusta
-   automaticamente `destination_type = ON_AD` e força `optimization_goal =
-   LEAD_GENERATION` para satisfazer as regras da Graph API para Lead Ads.
+2. **Conjunto de anúncios** (`POST /adsets`) atrelado à campanha, também em
+   `PAUSED`, com destino herdado da conta (por exemplo, `WEBSITE`). As
+   características de público retornadas pelo backend (`GET
+   /api/adsets?experimentId={id}`) são injetadas diretamente no campo
+   `targeting`, dispensando a criação de públicos salvos ou personalizados. O
+   worker apenas normaliza interesses e custom audiences caso estejam presentes
+   no JSON de segmentação. Quando o criativo aponta para um formulário de leads,
+   o worker ajusta automaticamente `destination_type = ON_AD` e força
+   `optimization_goal = LEAD_GENERATION` para satisfazer as regras da Graph API
+   para Lead Ads.
 4. **Imagem do criativo**: em vez de enviar `POST /adimages`, o worker
    referencia diretamente a URL pública retornada pelo backend no campo
    `object_story_spec.link_data.picture`. Quando o caminho é relativo (por
@@ -57,10 +55,9 @@ que o agendamento continue saudável. Após criar campanha, conjunto, criativo e
 anúncio, o worker envia um `CreateCampaignRequest` para o backend via
 `POST /api/facebook-campaigns`, preenchendo os identificadores de cada nível da
 hierarquia para manter rastreabilidade completa (`facebook_ads_campaign`,
-`facebook_ads_ad_set`, `facebook_ads_ad_creative` e `facebook_ads_ad`). Quando um
-público salvo é utilizado, o worker também envia o `targetingJson` contendo o
-`saved_audience_id` para que o backend saiba qual público está associado à
-campanha. Assim que o backend confirma o registro, o worker marca o experimento
+`facebook_ads_ad_set`, `facebook_ads_ad_creative` e `facebook_ads_ad`). O
+`targetingJson` fornecido pelo backend é preservado no request para manter a
+segmentação aplicada diretamente no conjunto. Assim que o backend confirma o registro, o worker marca o experimento
 de origem como `RUNNING` com
 `PATCH /api/experiments/{id}/status?status=RUNNING`, evitando que o mesmo
 experimento reapareça em consultas futuras a `/facebook-campaigns/experiments-ready`
@@ -242,7 +239,7 @@ reiniciar o serviço.
 Quando o backend retornar interesses apenas pelo nome, o worker consulta a
 [Targeting Search](https://developers.facebook.com/docs/marketing-api/audiences/reference/targeting-search)
 da Graph API para resolver automaticamente os identificadores aceitos pelo
-Facebook antes de criar o público salvo ou o conjunto de anúncios. Caso o nome
+Facebook antes de criar o conjunto de anúncios. Caso o nome
 informado não possua correspondência, o interesse é descartado e o log aponta o
 termo ignorado. Para evitar quedas de desempenho em execuções subsequentes, os
 resultados são armazenados em cache em memória durante o ciclo atual do worker.
@@ -253,7 +250,7 @@ já chegam com um `id` numérico são preservadas; quando o backend envia apenas
 nome e nenhum identificador pode ser deduzido, o worker registra um aviso e
 remove o item da segmentação para evitar erros `(#100) Param
 targeting[custom_audiences][X] must be a valid custom audience id` durante a
-criação do público salvo ou do conjunto de anúncios.
+criação do conjunto de anúncios.
 
 ### Erro `(#190) OAuthException` indicando token expirado
 

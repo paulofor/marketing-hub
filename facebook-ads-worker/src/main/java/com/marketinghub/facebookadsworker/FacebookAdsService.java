@@ -197,6 +197,21 @@ public class FacebookAdsService {
         return targeting;
     }
 
+    private static final Map<String, Integer> LOCALE_CODE_TO_ID = Map.of(
+        "pt_BR",
+        16,
+        "pt_PT",
+        86,
+        "es_LA",
+        24,
+        "es_ES",
+        23,
+        "en_US",
+        6,
+        "en_GB",
+        47
+    );
+
     private void removeUnsupportedTargetingFields(Map<String, Object> targeting) {
         if (targeting == null || targeting.isEmpty()) {
             return;
@@ -204,17 +219,10 @@ public class FacebookAdsService {
 
         Object languages = targeting.remove("languages");
         if (languages != null) {
-            if (!targeting.containsKey("locales") && languages instanceof List<?> languagesList && !languagesList.isEmpty()) {
-                targeting.put("locales", languagesList);
-                LOGGER.warn(
-                    "Replacing unsupported targeting field 'languages' with 'locales' before sending request to Facebook"
-                );
-            } else {
-                LOGGER.warn(
-                    "Removing unsupported targeting field 'languages' before sending request to Facebook"
-                );
-            }
+            normalizeLocales(targeting, languages);
         }
+
+        normalizeExistingLocales(targeting);
 
         for (String field : UNSUPPORTED_TARGETING_FIELDS) {
             if (targeting.remove(field) != null) {
@@ -224,6 +232,90 @@ public class FacebookAdsService {
                 );
             }
         }
+    }
+
+    private void normalizeLocales(Map<String, Object> targeting, Object languages) {
+        if (targeting.containsKey("locales")) {
+            LOGGER.warn("Ignoring targeting 'languages' because 'locales' is already defined");
+            return;
+        }
+        if (!(languages instanceof List<?> languagesList) || languagesList.isEmpty()) {
+            LOGGER.warn("Removing unsupported targeting field 'languages' before sending request to Facebook");
+            return;
+        }
+
+        List<Integer> locales = languagesList
+            .stream()
+            .map(this::resolveLocaleValue)
+            .filter(Objects::nonNull)
+            .toList();
+
+        if (locales.isEmpty()) {
+            LOGGER.warn(
+                "Removing unsupported targeting field 'languages' before sending request to Facebook after failing to map locales"
+            );
+            return;
+        }
+
+        targeting.put("locales", locales);
+        LOGGER.warn("Replacing unsupported targeting field 'languages' with 'locales' before sending request to Facebook");
+    }
+
+    private void normalizeExistingLocales(Map<String, Object> targeting) {
+        Object locales = targeting.get("locales");
+        if (!(locales instanceof List<?> localeList) || localeList.isEmpty()) {
+            return;
+        }
+
+        List<Integer> normalized = localeList
+            .stream()
+            .map(this::resolveLocaleValue)
+            .filter(Objects::nonNull)
+            .toList();
+
+        if (normalized.isEmpty()) {
+            targeting.remove("locales");
+            LOGGER.warn("Removing targeting 'locales' after failing to coerce values to numeric IDs");
+            return;
+        }
+
+        if (normalized.size() != localeList.size()) {
+            LOGGER.warn("Coercing targeting 'locales' to numeric IDs supported by Meta Ads");
+        }
+
+        targeting.put("locales", normalized);
+    }
+
+    private Integer resolveLocaleValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+
+        String text = value.toString();
+        if (!hasText(text)) {
+            return null;
+        }
+
+        try {
+            return Integer.parseInt(text.trim());
+        } catch (NumberFormatException ignored) {
+            // handled below when checking locale codes
+        }
+
+        String normalized = text.trim();
+        if (!normalized.equals(normalized.toUpperCase(Locale.ROOT))) {
+            normalized = normalized.toUpperCase(Locale.ROOT);
+        }
+        Integer resolved = LOCALE_CODE_TO_ID.get(normalized);
+        if (resolved != null) {
+            return resolved;
+        }
+
+        LOGGER.warn("Ignoring unsupported locale code '{}' in targeting.languages", text);
+        return null;
     }
 
     private void normalizeInterests(Map<String, Object> targeting) {

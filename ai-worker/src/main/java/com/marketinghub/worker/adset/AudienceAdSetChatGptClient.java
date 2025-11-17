@@ -131,7 +131,9 @@ public class AudienceAdSetChatGptClient {
                                     List<String> interests,
                                     List<String> lookalikes) throws JsonProcessingException {
         if (targetingNode != null && targetingNode.isObject()) {
-            return objectMapper.writeValueAsString(targetingNode);
+            ObjectNode targeting = targetingNode.deepCopy();
+            sanitizeTargeting(targeting);
+            return objectMapper.writeValueAsString(targeting);
         }
         ObjectNode targeting = objectMapper.createObjectNode();
         ObjectNode geo = targeting.putObject("geo_locations");
@@ -157,7 +159,36 @@ public class AudienceAdSetChatGptClient {
         if (description != null) {
             targeting.put("detailed_targeting_description", description);
         }
+        sanitizeTargeting(targeting);
         return objectMapper.writeValueAsString(targeting);
+    }
+
+    private void sanitizeTargeting(ObjectNode targeting) {
+        JsonNode languages = targeting.remove("languages");
+        if ((languages != null && !languages.isNull()) && !targeting.has("locales")) {
+            ArrayNode locales = targeting.putArray("locales");
+            if (languages.isArray()) {
+                for (JsonNode language : languages) {
+                    addLocaleValue(locales, language);
+                }
+            } else {
+                addLocaleValue(locales, languages);
+            }
+        }
+    }
+
+    private static void addLocaleValue(ArrayNode locales, JsonNode value) {
+        if (value == null || value.isNull()) {
+            return;
+        }
+        if (value.isNumber()) {
+            locales.add(value.intValue());
+            return;
+        }
+        String text = value.asText(null);
+        if (text != null && !text.isBlank()) {
+            locales.add(text.trim());
+        }
     }
 
     private static String buildDescription(String location, List<String> interests, List<String> lookalikes) {
@@ -302,8 +333,9 @@ public class AudienceAdSetChatGptClient {
         sb.append("- budget deve ser um número decimal em reais (BRL), sem texto adicional.\n");
         sb.append("- durationDays deve ser um número inteiro (quantidade de dias).\n");
         sb.append("- targeting deve ser um objeto seguindo a estrutura padrão do Meta Ads, com as chaves:\n");
-        sb.append("  geo_locations, age_min, age_max, genders, languages, interests, custom_audiences, ");
+        sb.append("  geo_locations, age_min, age_max, genders, locales, interests, custom_audiences, ");
         sb.append("excluded_custom_audiences e detailed_targeting_description. Use arrays vazios quando não houver dados.\n");
+        sb.append("- Não inclua a chave languages. Caso seja necessário indicar idioma, utilize locales com os códigos aceitos pelo Meta Ads.\n");
         sb.append("Contexto do experimento:\n");
         appendField(sb, "Experimento", experiment.getName());
         if (hypothesis != null) {

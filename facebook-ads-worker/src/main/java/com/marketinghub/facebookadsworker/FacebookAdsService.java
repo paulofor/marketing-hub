@@ -173,6 +173,7 @@ public class FacebookAdsService {
         removeUnsupportedTargetingFields(targeting);
         normalizeInterests(targeting);
         normalizeCustomAudiences(targeting);
+        normalizeGeoLocations(targeting);
 
         if (hasText(request.savedAudienceId())) {
             targeting.put("saved_audience_id", request.savedAudienceId().trim());
@@ -478,6 +479,91 @@ public class FacebookAdsService {
         }
 
         targeting.put(fieldName, normalized);
+    }
+
+    private void normalizeGeoLocations(Map<String, Object> targeting) {
+        if (targeting == null || targeting.isEmpty()) {
+            return;
+        }
+
+        Object geoLocations = targeting.get("geo_locations");
+        if (!(geoLocations instanceof Map<?, ?> geoMap) || geoMap.isEmpty()) {
+            return;
+        }
+
+        Map<String, Object> normalizedGeo = new HashMap<>(geoMap);
+        boolean updated = normalizeRegions(geoMap, normalizedGeo);
+
+        if (updated) {
+            targeting.put("geo_locations", normalizedGeo);
+        }
+    }
+
+    private boolean normalizeRegions(Map<?, ?> geoMap, Map<String, Object> normalizedGeo) {
+        Object regions = geoMap.get("regions");
+        if (!(regions instanceof List<?> regionList) || regionList.isEmpty()) {
+            return false;
+        }
+
+        List<Map<String, Object>> normalizedRegions = new ArrayList<>();
+        boolean updated = false;
+
+        for (Object region : regionList) {
+            Integer key = extractRegionKey(region);
+            if (key == null) {
+                updated = true;
+                LOGGER.warn(
+                    "Skipping Facebook region targeting entry because key is not numeric: {}",
+                    JsonLogFormatter.wrap(region)
+                );
+                continue;
+            }
+
+            Map<String, Object> normalizedRegion = new HashMap<>();
+            normalizedRegion.put("key", key);
+            normalizedRegions.add(normalizedRegion);
+
+            if (!(region instanceof Map<?, ?> regionMap) || !Objects.equals(regionMap.get("key"), key)) {
+                updated = true;
+            }
+        }
+
+        if (normalizedRegions.isEmpty()) {
+            normalizedGeo.remove("regions");
+            return true;
+        }
+
+        if (updated) {
+            normalizedGeo.put("regions", normalizedRegions);
+        }
+
+        return updated;
+    }
+
+    private Integer extractRegionKey(Object region) {
+        if (region == null) {
+            return null;
+        }
+        if (region instanceof Map<?, ?> regionMap) {
+            return extractRegionKey(regionMap.get("key"));
+        }
+        if (region instanceof Number number) {
+            return number.intValue();
+        }
+        if (!(region instanceof String stringRegion)) {
+            return null;
+        }
+
+        String trimmed = stringRegion.trim();
+        if (!hasText(trimmed)) {
+            return null;
+        }
+
+        try {
+            return Integer.parseInt(trimmed);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 
     private String extractCustomAudienceId(Object value) {

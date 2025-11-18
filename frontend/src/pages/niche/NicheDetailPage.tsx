@@ -1,6 +1,7 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useNiche } from "../../api/niche/useNiche";
+import { useUpdateNiche } from "../../api/niche/useUpdateNiche";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
 import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
 import PageTitle from "../../components/PageTitle";
@@ -16,11 +17,15 @@ import { useDeliverablesByNiche } from "../../api/deliverable/useDeliverablesByN
 import { useCreateDeliverable } from "../../api/deliverable/useCreateDeliverable";
 import {
   ArrowUpRight,
+  Check,
   Clock3,
   FileDown,
   Lightbulb,
+  Pencil,
   Package,
+  Plus,
   Sparkles,
+  Trash2,
   Users,
 } from "lucide-react";
 import "./NicheDetailPage.css";
@@ -81,6 +86,7 @@ export default function NicheDetailPage() {
     },
   });
   const createDeliverable = useCreateDeliverable(id);
+  const updateNiche = useUpdateNiche();
   useBreadcrumbs([{ label: data?.name || "...", icon: nicheIcon }]);
 
   const scrollToSection = useCallback((sectionId: string) => {
@@ -93,6 +99,20 @@ export default function NicheDetailPage() {
 
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
+
+  const [interestItems, setInterestItems] = useState<string[]>([]);
+  const [roleItems, setRoleItems] = useState<string[]>([]);
+  const [interestInput, setInterestInput] = useState("");
+  const [roleInput, setRoleInput] = useState("");
+  const [editingInterestIndex, setEditingInterestIndex] = useState<number | null>(
+    null,
+  );
+  const [editingRoleIndex, setEditingRoleIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    setInterestItems(parseList(data.interestList ?? data.interests));
+    setRoleItems(parseList(data.roleList ?? data.demographicFilters));
+  }, [data.demographicFilters, data.interestList, data.interests, data.roleList]);
 
   const handleSaveMarkdown = () => {
     const md =
@@ -213,8 +233,68 @@ export default function NicheDetailPage() {
     requestHypotheses.isPending || (isFetching && !isLoading)
       ? "Atualizando hipóteses..."
       : `Solicitadas ao Worker: ${data.hypothesesToGenerate ?? 0}`;
-  const interestItems = parseList(data.interestList ?? data.interests);
-  const roleItems = parseList(data.roleList ?? data.demographicFilters);
+  const handleInterestSubmit = (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+    const value = interestInput.trim();
+    if (!value) return;
+    setInterestItems((prev) => {
+      if (editingInterestIndex !== null) {
+        return prev.map((item, index) =>
+          index === editingInterestIndex ? value : item,
+        );
+      }
+      if (prev.includes(value)) return prev;
+      return [...prev, value];
+    });
+    setInterestInput("");
+    setEditingInterestIndex(null);
+  };
+  const handleRoleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const value = roleInput.trim();
+    if (!value) return;
+    setRoleItems((prev) => {
+      if (editingRoleIndex !== null) {
+        return prev.map((item, index) =>
+          index === editingRoleIndex ? value : item,
+        );
+      }
+      if (prev.includes(value)) return prev;
+      return [...prev, value];
+    });
+    setRoleInput("");
+    setEditingRoleIndex(null);
+  };
+  const onEditInterest = (index: number) => {
+    setInterestInput(interestItems[index]);
+    setEditingInterestIndex(index);
+  };
+  const onEditRole = (index: number) => {
+    setRoleInput(roleItems[index]);
+    setEditingRoleIndex(index);
+  };
+  const onRemoveInterest = (index: number) => {
+    setInterestItems((prev) => prev.filter((_, itemIndex) => itemIndex !== index));
+    if (editingInterestIndex === index) {
+      setEditingInterestIndex(null);
+      setInterestInput("");
+    }
+  };
+  const onRemoveRole = (index: number) => {
+    setRoleItems((prev) => prev.filter((_, itemIndex) => itemIndex !== index));
+    if (editingRoleIndex === index) {
+      setEditingRoleIndex(null);
+      setRoleInput("");
+    }
+  };
+  const onSaveInterests = () => {
+    updateNiche.mutate({ ...data, interestList: interestItems, roleList: roleItems });
+  };
+  const onSaveRoles = () => {
+    updateNiche.mutate({ ...data, interestList: interestItems, roleList: roleItems });
+  };
   const onRequestAudiences = handleSubmitAudienceQuantity(
     async ({ quantity }) => {
       if (!quantity || quantity <= 0) return;
@@ -377,19 +457,89 @@ export default function NicheDetailPage() {
                   {interestItems.length} itens
                 </span>
               </div>
+              <form className="niche-list-form" onSubmit={handleInterestSubmit}>
+                <div className="form-floating flex-grow-1">
+                  <input
+                    id="niche-interest-input"
+                    type="text"
+                    className="form-control"
+                    placeholder="Novo interesse"
+                    required
+                    value={interestInput}
+                    onChange={(event) => setInterestInput(event.target.value)}
+                    disabled={updateNiche.isPending}
+                  />
+                  <label htmlFor="niche-interest-input">Interesse *</label>
+                </div>
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-sm"
+                  disabled={!interestInput.trim() || updateNiche.isPending}
+                >
+                  {editingInterestIndex !== null ? (
+                    <Check size={16} />
+                  ) : (
+                    <Plus size={16} />
+                  )}
+                  <span>
+                    {editingInterestIndex !== null
+                      ? "Atualizar interesse"
+                      : "Adicionar interesse"}
+                  </span>
+                </button>
+              </form>
               {interestItems.length === 0 ? (
                 <p className="niche-section__empty niche-list-card__empty">
                   Nenhum interesse cadastrado.
                 </p>
               ) : (
                 <ul className="niche-list">
-                  {interestItems.map((item) => (
-                    <li key={item} className="niche-list__item">
+                  {interestItems.map((item, index) => (
+                    <li key={`${item}-${index}`} className="niche-list__item">
                       <span>{item}</span>
+                      <div className="niche-list__actions">
+                        <button
+                          type="button"
+                          className="btn btn-light btn-sm niche-list__action"
+                          onClick={() => onEditInterest(index)}
+                          disabled={updateNiche.isPending}
+                          title="Editar interesse"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-outline-danger btn-sm niche-list__action"
+                          onClick={() => onRemoveInterest(index)}
+                          disabled={updateNiche.isPending}
+                          title="Remover interesse"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </li>
                   ))}
                 </ul>
               )}
+              <div className="d-flex justify-content-end">
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={onSaveInterests}
+                  disabled={updateNiche.isPending}
+                >
+                  {updateNiche.isPending ? (
+                    <span
+                      className="spinner-border spinner-border-sm"
+                      role="status"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Check size={16} />
+                  )}
+                  <span>Salvar interesses</span>
+                </button>
+              </div>
             </div>
           </article>
           <article className="card niche-section__card niche-list-card">
@@ -400,19 +550,89 @@ export default function NicheDetailPage() {
                   {roleItems.length} itens
                 </span>
               </div>
+              <form className="niche-list-form" onSubmit={handleRoleSubmit}>
+                <div className="form-floating flex-grow-1">
+                  <input
+                    id="niche-role-input"
+                    type="text"
+                    className="form-control"
+                    placeholder="Novo cargo"
+                    required
+                    value={roleInput}
+                    onChange={(event) => setRoleInput(event.target.value)}
+                    disabled={updateNiche.isPending}
+                  />
+                  <label htmlFor="niche-role-input">Cargo *</label>
+                </div>
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-sm"
+                  disabled={!roleInput.trim() || updateNiche.isPending}
+                >
+                  {editingRoleIndex !== null ? (
+                    <Check size={16} />
+                  ) : (
+                    <Plus size={16} />
+                  )}
+                  <span>
+                    {editingRoleIndex !== null
+                      ? "Atualizar cargo"
+                      : "Adicionar cargo"}
+                  </span>
+                </button>
+              </form>
               {roleItems.length === 0 ? (
                 <p className="niche-section__empty niche-list-card__empty">
                   Nenhum cargo cadastrado.
                 </p>
               ) : (
                 <ul className="niche-list">
-                  {roleItems.map((item) => (
-                    <li key={item} className="niche-list__item">
+                  {roleItems.map((item, index) => (
+                    <li key={`${item}-${index}`} className="niche-list__item">
                       <span>{item}</span>
+                      <div className="niche-list__actions">
+                        <button
+                          type="button"
+                          className="btn btn-light btn-sm niche-list__action"
+                          onClick={() => onEditRole(index)}
+                          disabled={updateNiche.isPending}
+                          title="Editar cargo"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-outline-danger btn-sm niche-list__action"
+                          onClick={() => onRemoveRole(index)}
+                          disabled={updateNiche.isPending}
+                          title="Remover cargo"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </li>
                   ))}
                 </ul>
               )}
+              <div className="d-flex justify-content-end">
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={onSaveRoles}
+                  disabled={updateNiche.isPending}
+                >
+                  {updateNiche.isPending ? (
+                    <span
+                      className="spinner-border spinner-border-sm"
+                      role="status"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Check size={16} />
+                  )}
+                  <span>Salvar cargos</span>
+                </button>
+              </div>
             </div>
           </article>
         </div>

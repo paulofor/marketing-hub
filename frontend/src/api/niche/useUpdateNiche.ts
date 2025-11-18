@@ -12,7 +12,8 @@ export function useUpdateNiche() {
       );
       return niche;
     },
-    onSuccess: () => {
+    onSuccess: (niche) => {
+      queryClient.setQueryData(["niche", niche.id], niche);
       queryClient.invalidateQueries({ queryKey: ["niches"] });
     },
   });

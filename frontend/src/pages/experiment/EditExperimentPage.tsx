@@ -16,6 +16,7 @@ import experimentIcon from "../../assets/icons/experiment-icon.svg";
 interface FormData {
   name: string;
   kpiTarget: string;
+  dailyBudget: string;
   metricPresetId: string;
   journeyTemplateId: string;
   facebookPageId: string;
@@ -41,6 +42,7 @@ export default function EditExperimentPage() {
     defaultValues: {
       name: "",
       kpiTarget: "",
+      dailyBudget: "",
       metricPresetId: "",
       journeyTemplateId: "",
       facebookPageId: "",
@@ -63,6 +65,7 @@ export default function EditExperimentPage() {
       reset({
         name: data.name || "",
         kpiTarget: currentKpi != null ? String(currentKpi) : "",
+        dailyBudget: data.dailyBudget != null ? String(data.dailyBudget) : "",
         metricPresetId: data.metricPresetId || "",
         journeyTemplateId: data.journeyTemplateId
           ? String(data.journeyTemplateId)
@@ -194,10 +197,16 @@ export default function EditExperimentPage() {
         alert("Informe uma URL válida (http ou https) para a página de agradecimento");
         return;
       }
+      const parsedDailyBudget = Number(values.dailyBudget);
+      if (!values.dailyBudget || Number.isNaN(parsedDailyBudget) || parsedDailyBudget <= 0) {
+        alert("Informe um orçamento diário válido");
+        return;
+      }
       const payload: UpdateExperiment = {
         name: values.name,
         hypothesis: data.hypothesis,
         kpiTarget: Number(values.kpiTarget),
+        dailyBudget: parsedDailyBudget,
         metricPresetId: values.metricPresetId || undefined,
         sampleSize: data.sampleSize ?? undefined,
         mde: data.mdePercent ?? undefined,
@@ -248,6 +257,17 @@ export default function EditExperimentPage() {
           className="form-control mb-2"
           type="number"
           {...register("kpiTarget")}
+        />
+        <label className="form-label" htmlFor="dailyBudget">
+          Orçamento diário <span className="text-danger">*</span>
+        </label>
+        <input
+          id="dailyBudget"
+          className="form-control mb-2"
+          type="number"
+          min="0"
+          step="0.01"
+          {...register("dailyBudget")}
         />
         <label className="form-label" htmlFor="preset">
           Preset de Métricas

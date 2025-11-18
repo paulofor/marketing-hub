@@ -96,7 +96,7 @@ class FacebookCampaignServiceTest {
 
     @Test
     void createsCampaignHierarchyForEachExperiment() throws Exception {
-        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueue(new MockResponse().setBody("{\"id\":\"10\"}")
             .addHeader("Content-Type", "application/json"));
@@ -142,7 +142,7 @@ class FacebookCampaignServiceTest {
         JsonNode adSetPayload = objectMapper.readTree(postAdSet.getBody().inputStream());
         assertEquals("Exp - Ad Set", adSetPayload.get("name").asText());
         assertEquals("10", adSetPayload.get("campaign_id").asText());
-        assertEquals("2000", adSetPayload.get("daily_budget").asText());
+        assertEquals("2500", adSetPayload.get("daily_budget").asText());
         assertEquals("LOWEST_COST_WITHOUT_CAP", adSetPayload.get("bid_strategy").asText());
         assertEquals("150", adSetPayload.get("bid_amount").asText());
         assertEquals("WEBSITE", adSetPayload.get("destination_type").asText());
@@ -252,6 +252,7 @@ class FacebookCampaignServiceTest {
     void usesInstantFormShareLinkWhenJourneyRequiresForm() throws Exception {
         backend.enqueue(new MockResponse().setBody("[{"
             + "\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\","
+            + "\"dailyBudget\":35.5,"
             + "\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},"
             + "\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},"
             + "\"facebookInstantForm\":{\"id\":33,\"facebookFormId\":\"987654321\",\"name\":\"Lead\",\"status\":\"DRAFT\",\"approved\":true,\"published\":false},"

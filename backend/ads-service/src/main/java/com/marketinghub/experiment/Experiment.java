@@ -87,6 +87,10 @@ public class Experiment {
     @Column(precision = 5, scale = 2)
     private java.math.BigDecimal targetCvr;
 
+    /** Orçamento diário previsto para o experimento. */
+    @Column(name = "daily_budget", precision = 10, scale = 2)
+    private java.math.BigDecimal dailyBudget;
+
     /** MDE (Minimum Detectable Effect) percentual. */
     @Column(precision = 5, scale = 2)
     private java.math.BigDecimal mdePercent;

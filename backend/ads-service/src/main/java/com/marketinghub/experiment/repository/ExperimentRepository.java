@@ -38,6 +38,8 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
               and e.platform = :platform
               and e.creativeApproved = true
               and ig is not null
+              and e.dailyBudget is not null
+              and e.dailyBudget > 0
               and exists (
                     select 1 from Audience a
                     where a.niche = e.niche

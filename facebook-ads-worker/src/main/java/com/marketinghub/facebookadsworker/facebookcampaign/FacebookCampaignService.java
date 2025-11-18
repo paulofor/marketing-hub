@@ -27,6 +27,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -246,7 +248,7 @@ public class FacebookCampaignService {
             FacebookAdsService.AdSetRequest adSetRequest = new FacebookAdsService.AdSetRequest(
                 exp.name() + " - Ad Set",
                 campaignId,
-                config.adSetDailyBudget(),
+                resolveDailyBudget(exp, config),
                 config.adSetBillingEvent(),
                 resolvedOptimizationGoal,
                 resolvedDestinationType,
@@ -473,6 +475,14 @@ public class FacebookCampaignService {
         return coalesce(configPageId, experimentPageId, experiment.pageId());
     }
 
+    private String resolveDailyBudget(Experiment experiment, FacebookWorkerConfiguration config) {
+        BigDecimal dailyBudget = experiment.dailyBudget();
+        if (dailyBudget != null && dailyBudget.compareTo(BigDecimal.ZERO) > 0) {
+            return dailyBudget.movePointRight(2).setScale(0, RoundingMode.HALF_UP).toPlainString();
+        }
+        return config.adSetDailyBudget();
+    }
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record ExperimentAdSet(
         Long id,
@@ -489,6 +499,7 @@ public class FacebookCampaignService {
         long id,
         String name,
         String pageId,
+        BigDecimal dailyBudget,
         @JsonAlias({ "page", "associatedFacebookPage", "facebookPageAssociation" })
         FacebookPage facebookPage,
         InstagramAccount instagramAccount,

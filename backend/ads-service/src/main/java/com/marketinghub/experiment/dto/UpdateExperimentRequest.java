@@ -21,6 +21,7 @@ public class UpdateExperimentRequest {
     private Integer sampleSize;
     @JsonProperty("mde")
     private BigDecimal mdePercent;
+    private BigDecimal dailyBudget;
     private LocalDate startDate;
     private LocalDate endDate;
     private Integer creativesToGenerate;
@@ -44,6 +45,8 @@ public class UpdateExperimentRequest {
     private String followUpActionUrl;
     @JsonIgnore
     private boolean followUpActionUrlPresent;
+    @JsonIgnore
+    private boolean dailyBudgetPresent;
     private Long leadPortalFlowId;
     @JsonIgnore
     private boolean leadPortalFlowIdPresent;
@@ -82,6 +85,12 @@ public class UpdateExperimentRequest {
     public void setLeadPortalFlowId(Long leadPortalFlowId) {
         this.leadPortalFlowId = leadPortalFlowId;
         this.leadPortalFlowIdPresent = true;
+    }
+
+    @JsonSetter(value = "dailyBudget", nulls = Nulls.SET)
+    public void setDailyBudget(BigDecimal dailyBudget) {
+        this.dailyBudget = dailyBudget;
+        this.dailyBudgetPresent = true;
     }
 }
 

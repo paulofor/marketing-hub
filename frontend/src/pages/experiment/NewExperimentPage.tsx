@@ -26,6 +26,7 @@ export default function NewExperimentPage() {
     metricPresetId: "",
     sampleSize: "",
     mde: "",
+    dailyBudget: "",
     startDate: "",
     endDate: "",
     journeyTemplateId: "",
@@ -114,6 +115,11 @@ export default function NewExperimentPage() {
         alert("Informe uma URL válida (http ou https) para a página de agradecimento");
         return;
       }
+      const parsedDailyBudget = Number(form.dailyBudget);
+      if (!form.dailyBudget || Number.isNaN(parsedDailyBudget) || parsedDailyBudget <= 0) {
+        alert("Informe um orçamento diário válido");
+        return;
+      }
       await create.mutateAsync({
         nicheId: Number(form.nicheId),
         hypothesisId: form.hypothesisId || undefined,
@@ -123,6 +129,7 @@ export default function NewExperimentPage() {
         metricPresetId: form.metricPresetId,
         sampleSize: form.sampleSize ? Number(form.sampleSize) : undefined,
         mde: form.mde ? Number(form.mde) : undefined,
+        dailyBudget: parsedDailyBudget,
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
         instantFormsToGenerate:
@@ -145,6 +152,7 @@ export default function NewExperimentPage() {
         metricPresetId: "",
         sampleSize: "",
         mde: "",
+        dailyBudget: "",
         startDate: "",
         endDate: "",
         journeyTemplateId: "",
@@ -236,6 +244,19 @@ export default function NewExperimentPage() {
         type="number"
         value={form.kpiTarget}
         onChange={(e) => setForm({ ...form, kpiTarget: e.target.value })}
+      />
+      <label className="form-label" htmlFor="dailyBudget">
+        Orçamento diário <span className="text-danger">*</span>
+      </label>
+      <input
+        id="dailyBudget"
+        className="form-control mb-2"
+        placeholder="Valor em reais"
+        type="number"
+        min="0"
+        step="0.01"
+        value={form.dailyBudget}
+        onChange={(e) => setForm({ ...form, dailyBudget: e.target.value })}
       />
       <select
         className="form-select mb-2"

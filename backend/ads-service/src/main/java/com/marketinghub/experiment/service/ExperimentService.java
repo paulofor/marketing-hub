@@ -170,6 +170,9 @@ public class ExperimentService {
         if (request.getSampleSize() != null && request.getSampleSize() < 1) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "sampleSize must be at least 1");
         }
+        if (request.getDailyBudget() != null && request.getDailyBudget().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "dailyBudget must be greater than zero");
+        }
         if (request.getBaselineCvr() != null && request.getTargetCvr() != null &&
                 request.getBaselineCvr().compareTo(request.getTargetCvr()) >= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "baselineCvr must be < targetCvr");
@@ -189,6 +192,7 @@ public class ExperimentService {
                 .baselineCvr(request.getBaselineCvr())
                 .targetCvr(request.getTargetCvr())
                 .mdePercent(request.getMdePercent())
+                .dailyBudget(request.getDailyBudget())
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
                 .status(ExperimentStatus.PLANNED)
@@ -252,6 +256,7 @@ public class ExperimentService {
                 .baselineCvr(original.getBaselineCvr())
                 .targetCvr(original.getTargetCvr())
                 .mdePercent(original.getMdePercent())
+                .dailyBudget(original.getDailyBudget())
                 .startDate(original.getStartDate())
                 .endDate(original.getEndDate())
                 .status(ExperimentStatus.PLANNED)
@@ -280,6 +285,9 @@ public class ExperimentService {
         if (status == ExperimentStatus.RUNNING) {
             if (exp.getKpiTargetCpl() == null || exp.getStopLossCpl() == null || exp.getSampleSize() == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "financial fields not set");
+            }
+            if (exp.getDailyBudget() == null || exp.getDailyBudget().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "dailyBudget not set");
             }
         }
         exp.setStatus(status);
@@ -318,6 +326,12 @@ public class ExperimentService {
         exp.setHypothesis(request.getHypothesis());
         exp.setKpiTargetCpl(request.getKpiTargetCpl());
         exp.setMetricPreset(preset);
+        if (request.isDailyBudgetPresent()) {
+            if (request.getDailyBudget() != null && request.getDailyBudget().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "dailyBudget must be greater than zero");
+            }
+            exp.setDailyBudget(request.getDailyBudget());
+        }
         if (request.getSampleSize() != null) {
             exp.setSampleSize(request.getSampleSize());
         } else {

@@ -147,6 +147,9 @@ class FacebookCampaignServiceTest {
         assertEquals("150", adSetPayload.get("bid_amount").asText());
         assertEquals("WEBSITE", adSetPayload.get("destination_type").asText());
         assertEquals("42", adSetPayload.get("promoted_object").get("page_id").asText());
+        JsonNode targeting = adSetPayload.get("targeting");
+        assertEquals("BR", targeting.get("geo_locations").get("countries").get(0).asText());
+        assertEquals(1, targeting.get("targeting_automation").get("advantage_audience").asInt());
 
         RecordedRequest postCreative = facebook.takeRequest();
         assertEquals("/v23.0/act_1/adcreatives", postCreative.getPath());
@@ -223,10 +226,20 @@ class FacebookCampaignServiceTest {
         assertEquals("Exp - Audience São Paulo", savedAudienceBody.get("name").asText());
         assertEquals("Detalhes", savedAudienceBody.get("description").asText());
         assertEquals("BR", savedAudienceBody.get("targeting").get("geo_locations").get("countries").get(0).asText());
+        assertEquals(
+            1,
+            savedAudienceBody
+                .get("targeting")
+                .get("targeting_automation")
+                .get("advantage_audience")
+                .asInt()
+        );
 
         RecordedRequest adSetRequest = facebook.takeRequest();
         JsonNode targeting = objectMapper.readTree(adSetRequest.getBody().inputStream()).get("targeting");
         assertEquals("AUD123", targeting.get("saved_audience_id").asText());
+        assertEquals("BR", targeting.get("geo_locations").get("countries").get(0).asText());
+        assertEquals(1, targeting.get("targeting_automation").get("advantage_audience").asInt());
 
         facebook.takeRequest(); // ad creative
         facebook.takeRequest(); // ad

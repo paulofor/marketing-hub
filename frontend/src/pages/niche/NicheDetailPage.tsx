@@ -52,6 +52,14 @@ export default function NicheDetailPage() {
   const { data: deliverables } = useDeliverablesByNiche(nicheId);
   const requestAudiences = useRequestAudiences(id);
   const requestHypotheses = useRequestHypotheses(id);
+  const [interestItems, setInterestItems] = useState<string[]>([]);
+  const [roleItems, setRoleItems] = useState<string[]>([]);
+  const [interestInput, setInterestInput] = useState("");
+  const [roleInput, setRoleInput] = useState("");
+  const [editingInterestIndex, setEditingInterestIndex] = useState<number | null>(
+    null,
+  );
+  const [editingRoleIndex, setEditingRoleIndex] = useState<number | null>(null);
   const {
     register: registerAudienceQuantity,
     handleSubmit: handleSubmitAudienceQuantity,
@@ -99,15 +107,6 @@ export default function NicheDetailPage() {
 
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
-
-  const [interestItems, setInterestItems] = useState<string[]>([]);
-  const [roleItems, setRoleItems] = useState<string[]>([]);
-  const [interestInput, setInterestInput] = useState("");
-  const [roleInput, setRoleInput] = useState("");
-  const [editingInterestIndex, setEditingInterestIndex] = useState<number | null>(
-    null,
-  );
-  const [editingRoleIndex, setEditingRoleIndex] = useState<number | null>(null);
 
   useEffect(() => {
     setInterestItems(parseList(data.interestList ?? data.interests));

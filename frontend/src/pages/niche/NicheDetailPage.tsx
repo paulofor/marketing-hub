@@ -97,6 +97,11 @@ export default function NicheDetailPage() {
   const updateNiche = useUpdateNiche();
   useBreadcrumbs([{ label: data?.name || "...", icon: nicheIcon }]);
 
+  useEffect(() => {
+    setInterestItems(parseList(data?.interestList ?? data?.interests));
+    setRoleItems(parseList(data?.roleList ?? data?.demographicFilters));
+  }, [data?.demographicFilters, data?.interestList, data?.interests, data?.roleList]);
+
   const scrollToSection = useCallback((sectionId: string) => {
     if (typeof document === "undefined") return;
     const element = document.getElementById(sectionId);
@@ -107,11 +112,6 @@ export default function NicheDetailPage() {
 
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
-
-  useEffect(() => {
-    setInterestItems(parseList(data.interestList ?? data.interests));
-    setRoleItems(parseList(data.roleList ?? data.demographicFilters));
-  }, [data.demographicFilters, data.interestList, data.interests, data.roleList]);
 
   const handleSaveMarkdown = () => {
     const md =

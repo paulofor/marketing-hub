@@ -299,9 +299,6 @@ public class FacebookAdsCampaignController {
         if (experiment.getKpiTargetCpl() == null) {
             missing.add("kpiTargetCpl");
         }
-        if (experiment.getDailyBudget() == null || experiment.getDailyBudget().compareTo(BigDecimal.ZERO) <= 0) {
-            missing.add("dailyBudget");
-        }
         if (experiment.getStopLossCpl() == null) {
             missing.add("stopLossCpl");
         }

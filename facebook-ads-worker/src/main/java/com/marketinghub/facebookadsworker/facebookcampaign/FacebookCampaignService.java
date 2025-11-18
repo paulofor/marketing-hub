@@ -253,7 +253,7 @@ public class FacebookCampaignService {
                 config.adSetBidStrategy(),
                 config.adSetBidAmount(),
                 resolvedPageId,
-                config.adSetTargetCountry(),
+                FacebookAdsService.BRAZIL_COUNTRY_CODE,
                 resolvedTargetingJson,
                 null
             );

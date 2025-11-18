@@ -40,6 +40,7 @@ public class FacebookAdsService {
     private static final Logger LOGGER = LoggerFactory.getLogger(FacebookAdsService.class);
     private static final Pattern INTEREST_WITH_ID_PATTERN = Pattern.compile(".*\\((\\d{5,})\\)\\s*$");
     private static final String INTEREST_SEARCH_LOCALE = "pt_BR";
+    public static final String BRAZIL_COUNTRY_CODE = "BR";
 
     private final WebClient webClient;
     private final AtomicReference<String> accessToken;
@@ -174,32 +175,18 @@ public class FacebookAdsService {
         normalizeInterests(targeting);
         normalizeCustomAudiences(targeting);
         normalizeGeoLocations(targeting);
-        disableAdvantageAudience(targeting);
 
         if (hasText(request.savedAudienceId())) {
             targeting.put("saved_audience_id", request.savedAudienceId().trim());
         }
 
-        if (!targeting.containsKey("geo_locations")) {
-            String country = request.targetCountry();
-            if (hasText(country)) {
-                targeting.put("geo_locations", Map.of("countries", List.of(country)));
-            }
-        }
-
-        if (targeting.isEmpty()) {
-            String country = request.targetCountry();
-            if (hasText(country)) {
-                targeting.put("geo_locations", Map.of("countries", List.of(country)));
-            } else {
-                targeting.put("geo_locations", Map.of());
-            }
-        }
+        forceBrazilWideTargeting(targeting);
+        enableAdvantageAudience(targeting);
 
         return targeting;
     }
 
-    private void disableAdvantageAudience(Map<String, Object> targeting) {
+    private void enableAdvantageAudience(Map<String, Object> targeting) {
         if (targeting == null) {
             return;
         }
@@ -214,8 +201,18 @@ public class FacebookAdsService {
             });
         }
 
-        automation.put("advantage_audience", 0);
+        automation.put("advantage_audience", 1);
         targeting.put("targeting_automation", automation);
+    }
+
+    private void forceBrazilWideTargeting(Map<String, Object> targeting) {
+        if (targeting == null) {
+            return;
+        }
+
+        Map<String, Object> brazilGeoLocations = new HashMap<>();
+        brazilGeoLocations.put("countries", List.of(BRAZIL_COUNTRY_CODE));
+        targeting.put("geo_locations", brazilGeoLocations);
     }
 
     private static final Map<String, Integer> LOCALE_CODE_TO_ID = Map.of(
@@ -768,6 +765,8 @@ public class FacebookAdsService {
 
         normalizeInterests(targeting);
         normalizeCustomAudiences(targeting);
+        forceBrazilWideTargeting(targeting);
+        enableAdvantageAudience(targeting);
 
         Map<String, Object> body = new HashMap<>();
         body.put("name", request.name().trim());

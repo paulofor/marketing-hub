@@ -189,6 +189,26 @@ automatizada, priorize cenários que validem o fluxo completo de configuração 
 incluindo a atualização do token retornado pelo backend antes de cada ciclo —
 para manter a lógica de sincronização alinhada com o comportamento em produção.
 
+## Validação automática de interesses
+
+O backend mantém uma lista de interesses do Facebook que ainda não possuem o
+`id` oficial retornado pela Graph API. O **Facebook Ads Worker** executa um
+processo periódico (`FacebookInterestValidationScheduler`) que consulta o
+endpoint `/api/facebook-interests/pending` e valida apenas os interesses nunca
+pesquisados. Para cada entrada encontrada o worker pesquisa o interesse na
+Graph API (`/search?type=adinterest&q={nome}`):
+
+1. Quando a Meta devolve um resultado, o worker associa o `facebookInterestId`
+   e, se necessário, atualiza o nome para o rótulo retornado pela API
+   (por exemplo, substituir "Pilates" por "Pilates Training" quando esse for o
+   código disponível).
+2. Quando nenhum resultado é encontrado, o interesse é marcado como **INVALID**
+   no backend, permitindo correções manuais.
+
+O resultado é reportado ao backend via `PATCH /api/facebook-interests/{id}` com
+o `status` (VALID ou INVALID), o código resolvido e o nome final, garantindo que
+novas criações de segmentação utilizem apenas interesses aceitos pela Meta.
+
 ## Data Model
 
 As tabelas prefixadas com `facebook_ads_` descritas em

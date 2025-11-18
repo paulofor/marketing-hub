@@ -1,11 +1,13 @@
 package com.marketinghub.leadportal.controller;
 
 import com.marketinghub.leadportal.exception.FlowNotFoundException;
+import com.marketinghub.leadportal.exception.FlowNotFoundException;
 import com.marketinghub.leadportal.exception.LeadNotFoundException;
 import com.marketinghub.leadportal.storage.StorageException;
 import com.marketinghub.leadportal.storage.StorageFileNotFoundException;
 import java.time.Instant;
 import java.util.HashMap;
+import org.springframework.http.ProblemDetail;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(FlowNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleFlowNotFound(FlowNotFoundException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problemDetail.setTitle("Flow not found");
+        problemDetail.setDetail(ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
+    }
+
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationErrors(MethodArgumentNotValidException ex) {

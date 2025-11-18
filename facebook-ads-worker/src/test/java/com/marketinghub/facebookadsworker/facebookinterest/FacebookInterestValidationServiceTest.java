@@ -1,0 +1,112 @@
+package com.marketinghub.facebookadsworker.facebookinterest;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.facebookadsworker.FacebookAdsService;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
+class FacebookInterestValidationServiceTest {
+    private MockWebServer backend;
+    private MockWebServer facebook;
+    private FacebookInterestValidationService service;
+    private ObjectMapper objectMapper;
+
+    @BeforeEach
+    void setUp() throws IOException {
+        backend = new MockWebServer();
+        facebook = new MockWebServer();
+        backend.start();
+        facebook.start();
+
+        objectMapper = new ObjectMapper();
+
+        FacebookAdsService facebookAdsService = new FacebookAdsService(
+            WebClient.builder(),
+            facebook.url("/").toString(),
+            "v23.0",
+            objectMapper
+        );
+        facebookAdsService.updateAccessToken("token");
+
+        FacebookInterestValidationClient validationClient = new FacebookInterestValidationClient(
+            WebClient.builder(),
+            backend.url("/").toString(),
+            "/api"
+        );
+
+        service = new FacebookInterestValidationService(
+            WebClient.builder(),
+            facebookAdsService,
+            validationClient,
+            objectMapper,
+            backend.url("/").toString(),
+            "/api"
+        );
+    }
+
+    @AfterEach
+    void tearDown() throws IOException {
+        backend.shutdown();
+        facebook.shutdown();
+    }
+
+    @Test
+    void validatePendingInterestsResolvesMatch() throws Exception {
+        backend.enqueue(new MockResponse()
+            .setBody("[{\"id\":1,\"name\":\"Pilates\"}]")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse()
+            .setBody("{\"data\":[{\"id\":\"6003139266461\",\"name\":\"Pilates Training\"}]}" )
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setResponseCode(204));
+
+        service.validatePendingInterests();
+
+        RecordedRequest pendingRequest = backend.takeRequest(5, TimeUnit.SECONDS);
+        assertEquals("/api/facebook-interests/pending", pendingRequest.getPath());
+
+        RecordedRequest searchRequest = facebook.takeRequest(5, TimeUnit.SECONDS);
+        assertEquals("/v23.0/search", searchRequest.getRequestUrl().encodedPath());
+
+        RecordedRequest updateRequest = backend.takeRequest(5, TimeUnit.SECONDS);
+        assertEquals("/api/facebook-interests/1", updateRequest.getPath());
+        JsonNode body = objectMapper.readTree(updateRequest.getBody().inputStream());
+        assertEquals("VALID", body.get("status").asText());
+        assertEquals("6003139266461", body.get("facebookInterestId").asText());
+        assertEquals("Pilates Training", body.get("name").asText());
+    }
+
+    @Test
+    void validatePendingInterestsMarksInvalidWhenNotFound() throws Exception {
+        backend.enqueue(new MockResponse()
+            .setBody("[{\"id\":2,\"name\":\"Unknown Interest\"}]")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueue(new MockResponse()
+            .setBody("{\"data\":[]}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setResponseCode(204));
+
+        service.validatePendingInterests();
+
+        backend.takeRequest(5, TimeUnit.SECONDS);
+        facebook.takeRequest(5, TimeUnit.SECONDS);
+        RecordedRequest updateRequest = backend.takeRequest(5, TimeUnit.SECONDS);
+        assertEquals("/api/facebook-interests/2", updateRequest.getPath());
+        JsonNode body = objectMapper.readTree(updateRequest.getBody().inputStream());
+        assertEquals("INVALID", body.get("status").asText());
+        assertNull(body.get("facebookInterestId").textValue());
+        assertNull(body.get("name").textValue());
+    }
+}

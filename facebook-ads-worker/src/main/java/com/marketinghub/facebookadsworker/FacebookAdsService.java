@@ -336,6 +336,24 @@ public class FacebookAdsService {
         return null;
     }
 
+    public FacebookInterest lookupClosestInterest(String interestName) {
+        if (!hasText(interestName)) {
+            return null;
+        }
+
+        try {
+            return fetchInterestFromFacebook(interestName.trim());
+        } catch (Exception ex) {
+            LOGGER.warn(
+                "Unexpected error while looking up Facebook interest '{}': message={}",
+                interestName,
+                ex.getMessage(),
+                ex
+            );
+            return null;
+        }
+    }
+
     private void normalizeInterests(Map<String, Object> targeting) {
         if (targeting == null || targeting.isEmpty()) {
             return;
@@ -682,12 +700,13 @@ public class FacebookAdsService {
             return cached.isEmpty() ? null : cached;
         }
 
-        String resolved = fetchInterestIdFromFacebook(normalizedName);
-        interestIdCache.put(cacheKey, resolved != null ? resolved : "");
-        return resolved;
+        FacebookInterest resolved = fetchInterestFromFacebook(normalizedName);
+        String resolvedId = resolved != null ? resolved.id() : null;
+        interestIdCache.put(cacheKey, resolvedId != null ? resolvedId : "");
+        return resolvedId;
     }
 
-    private String fetchInterestIdFromFacebook(String interestName) {
+    private FacebookInterest fetchInterestFromFacebook(String interestName) {
         String path = UriComponentsBuilder
             .fromPath(buildVersionedPath("/search"))
             .queryParam("type", "adinterest")
@@ -714,7 +733,9 @@ public class FacebookAdsService {
                 }
                 String id = node.path("id").asText(null);
                 if (hasText(id)) {
-                    return id.trim();
+                    String name = node.path("name").asText(null);
+                    String trimmedName = hasText(name) ? name.trim() : null;
+                    return new FacebookInterest(id.trim(), trimmedName);
                 }
             }
         } catch (WebClientResponseException ex) {
@@ -740,6 +761,8 @@ public class FacebookAdsService {
         }
         return null;
     }
+
+    public record FacebookInterest(String id, String name) {}
 
     public String createSavedAudience(String adAccountId, SavedAudienceRequest request) {
         Objects.requireNonNull(request, "request");

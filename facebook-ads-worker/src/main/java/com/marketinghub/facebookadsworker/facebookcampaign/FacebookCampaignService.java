@@ -302,7 +302,8 @@ public class FacebookCampaignService {
                     adSetRequest.pageId(),
                     resolvedTargetingJson,
                     null,
-                    null
+                    null,
+                    selectedAdSet != null ? selectedAdSet.id() : null
                 ),
                 new CreateCampaignRequest.AdCreative(
                     creativeId,
@@ -538,7 +539,8 @@ public class FacebookCampaignService {
             String pageId,
             String targetingJson,
             String savedAudienceId,
-            String savedAudienceName
+            String savedAudienceName,
+            Long experimentAdSetId
         ) {}
 
         public record AdCreative(

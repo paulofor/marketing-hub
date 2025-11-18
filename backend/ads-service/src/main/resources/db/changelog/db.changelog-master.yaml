@@ -212,6 +212,9 @@ databaseChangeLog:
       file: V2027_01_10__create_general_setting.sql
       relativeToChangelogFile: true
   - include:
+      file: V2027_02_23__link_fb_adset_to_experiment_adset.sql
+      relativeToChangelogFile: true
+  - include:
       file: V2027_10_19__rename_general_setting_value_column.sql
       relativeToChangelogFile: true
   - include:

@@ -34,6 +34,12 @@ public class MarketNiche {
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String description;
 
+    /** Categoria principal de interesse associada ao nicho. */
+    private String interestCategory;
+
+    /** Categoria de cargo associada ao nicho. */
+    private String roleCategory;
+
     /** Results of demand volume tests. */
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)

@@ -145,6 +145,8 @@ CREATE TABLE market_niche (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255),
     description LONGTEXT,
+    interest_category VARCHAR(255),
+    role_category VARCHAR(255),
     demand_volume LONGTEXT,
     promises LONGTEXT,
     offers LONGTEXT,

@@ -88,6 +88,8 @@ export default function NicheDetailPage() {
       `# Nicho: ${data.name}\n\n` +
       `**ID:** ${data.id}\n\n` +
       `**Descrição:**\n${data.description}\n\n` +
+      `**Categoria de interesse:**\n${data.interestCategory}\n\n` +
+      `**Categoria de cargo:**\n${data.roleCategory}\n\n` +
       `**Volume de Demanda:**\n${data.demandVolume}\n\n` +
       `**Promessas:**\n${data.promises}\n\n` +
       `**Ofertas:**\n${data.offers}\n\n` +
@@ -135,6 +137,8 @@ export default function NicheDetailPage() {
     : undefined;
   const infoCards = [
     { label: "Descrição", value: data.description },
+    { label: "Categoria de interesse", value: data.interestCategory },
+    { label: "Categoria de cargo", value: data.roleCategory },
     { label: "Volume de demanda", value: data.demandVolume },
     { label: "Promessas", value: data.promises },
     { label: "Ofertas", value: data.offers },

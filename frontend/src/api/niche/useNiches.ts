@@ -5,6 +5,8 @@ export interface MarketNiche {
   id: number;
   name: string;
   description: string;
+  interestCategory: string;
+  roleCategory: string;
   demandVolume: string;
   promises: string;
   offers: string;

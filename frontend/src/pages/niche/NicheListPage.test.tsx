@@ -26,6 +26,8 @@ describe("NicheListPage", () => {
       id: 1,
       name: "Teste",
       description: "",
+      interestCategory: "",
+      roleCategory: "",
       demandVolume: "",
       promises: "",
       offers: "",

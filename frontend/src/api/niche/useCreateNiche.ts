@@ -5,6 +5,8 @@ import { MarketNiche } from "./useNiches";
 export interface CreateNiche {
   name: string;
   description: string;
+  interestCategory: string;
+  roleCategory: string;
   demandVolume: string;
   promises: string;
   offers: string;

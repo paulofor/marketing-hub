@@ -69,6 +69,9 @@ anúncio, o worker envia um `CreateCampaignRequest` para o backend via
 `POST /api/facebook-campaigns`, preenchendo os identificadores de cada nível da
 hierarquia para manter rastreabilidade completa (`facebook_ads_campaign`,
 `facebook_ads_ad_set`, `facebook_ads_ad_creative` e `facebook_ads_ad`). O
+`CreateCampaignRequest` também leva `experimentAdSetId` para relacionar o
+conjunto criado na Meta ao público configurado no experimento e registrar os
+códigos retornados pelo Facebook no banco de dados do backend. O
 `targetingJson` fornecido pelo backend é preservado no request para manter a
 segmentação aplicada diretamente no conjunto. Assim que o backend confirma o registro, o worker marca o experimento
 de origem como `RUNNING` com

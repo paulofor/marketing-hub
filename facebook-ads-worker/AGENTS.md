@@ -29,6 +29,9 @@
   substituição de espaços por `_` e descarte de caracteres fora de `[A-Za-z0-9_-]`) antes do envio
   para garantir que cada alternativa possua `value` explícito e evitar o erro `(#100) Invalid parameter`
   com `error_subcode = 1892091`.
+- Ao reportar a criação da campanha no backend inclua `experimentAdSetId` no payload para
+  relacionar o conjunto de anúncios criado na Meta ao público do experimento e registrar os códigos
+  retornados pelo Facebook.
 
 - Perguntas personalizadas geradas pelo ChatGPT agora são persistidas no backend
   e devolvidas em JSON para o worker; mantenha compatível qualquer mudança que

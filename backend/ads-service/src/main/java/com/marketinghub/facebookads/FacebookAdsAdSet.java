@@ -1,5 +1,6 @@
 package com.marketinghub.facebookads;
 
+import com.marketinghub.experiment.AdSet;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,6 +23,10 @@ public class FacebookAdsAdSet {
 
     @Column(name = "external_id")
     private String externalId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "experiment_ad_set_id")
+    private AdSet experimentAdSet;
 
     @ManyToOne
     @JoinColumn(name = "campaign_id", nullable = false, columnDefinition = "CHAR(36)")

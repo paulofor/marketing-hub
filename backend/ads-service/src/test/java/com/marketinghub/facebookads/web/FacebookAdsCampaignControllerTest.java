@@ -7,6 +7,7 @@ import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.ads.FacebookAccountRepository;
 import com.marketinghub.ads.FacebookPage;
 import com.marketinghub.ads.InstagramAccount;
+import com.marketinghub.experiment.AdSet;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.hypothesis.Hypothesis;
@@ -18,6 +19,7 @@ import com.marketinghub.facebookads.FacebookAdsAdCreativeRepository;
 import com.marketinghub.facebookads.FacebookAdsAdRepository;
 import com.marketinghub.facebookads.FacebookAdsAdSet;
 import com.marketinghub.facebookads.FacebookAdsAdSetRepository;
+import com.marketinghub.experiment.repository.AdSetRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -69,6 +71,8 @@ class FacebookAdsCampaignControllerTest {
     FacebookAdsAdCreativeRepository adCreativeRepository;
     @MockBean
     FacebookAdsAdRepository adRepository;
+    @MockBean
+    AdSetRepository experimentAdSetRepository;
 
     @Test
     void listExperimentsByStatus() throws Exception {
@@ -155,6 +159,13 @@ class FacebookAdsCampaignControllerTest {
                 .build();
         when(experimentService.get(42L)).thenReturn(experiment);
 
+        var experimentAdSet = AdSet.builder()
+                .id(101L)
+                .experiment(experiment)
+                .targetingJson("{}")
+                .build();
+        when(experimentAdSetRepository.findById(101L)).thenReturn(Optional.of(experimentAdSet));
+
         FacebookAccount account = new FacebookAccount();
         account.setId(77L);
         when(facebookAccountRepository.findById(77L)).thenReturn(Optional.of(account));
@@ -187,7 +198,8 @@ class FacebookAdsCampaignControllerTest {
               "pageId": "12345",
               "targetingJson": "{\\"geo_locations\\":{\\"countries\\":[\\"BR\\"]}}",
               "savedAudienceId": "AUD-1",
-              "savedAudienceName": "Audience"
+              "savedAudienceName": "Audience",
+              "experimentAdSetId": 101
             },
               "adCreative": {
                 "id": "creative123",
@@ -221,6 +233,8 @@ class FacebookAdsCampaignControllerTest {
         FacebookAdsAdSet savedAdSet = adSetCaptor.getValue();
         assertThat(savedAdSet.getId()).isEqualTo("adset123");
         assertThat(savedAdSet.getCampaign().getId()).isEqualTo("cmp123");
+        assertThat(savedAdSet.getExperimentAdSet()).isNotNull();
+        assertThat(savedAdSet.getExperimentAdSet().getId()).isEqualTo(101L);
         JsonNode targetingJson = objectMapper.readTree(savedAdSet.getTargetingJson());
         assertThat(targetingJson.path("saved_audience_id").asText()).isEqualTo("AUD-1");
         assertThat(targetingJson.path("geo_locations").path("countries").get(0).asText()).isEqualTo("BR");

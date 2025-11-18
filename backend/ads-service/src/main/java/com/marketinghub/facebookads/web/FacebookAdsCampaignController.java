@@ -21,6 +21,7 @@ import com.marketinghub.facebookads.FacebookAdsAdSet;
 import com.marketinghub.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookAdsCampaignRepository;
+import com.marketinghub.experiment.AdSet;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -43,6 +44,7 @@ public class FacebookAdsCampaignController {
     private final FacebookAdsAdSetRepository adSetRepository;
     private final FacebookAdsAdCreativeRepository adCreativeRepository;
     private final FacebookAdsAdRepository adRepository;
+    private final com.marketinghub.experiment.repository.AdSetRepository experimentAdSetRepository;
     private final ObjectMapper objectMapper;
 
     public FacebookAdsCampaignController(ExperimentService experimentService,
@@ -51,6 +53,7 @@ public class FacebookAdsCampaignController {
                                          FacebookAdsAdSetRepository adSetRepository,
                                          FacebookAdsAdCreativeRepository adCreativeRepository,
                                          FacebookAdsAdRepository adRepository,
+                                         com.marketinghub.experiment.repository.AdSetRepository experimentAdSetRepository,
                                          ObjectMapper objectMapper) {
         this.experimentService = experimentService;
         this.campaignRepository = campaignRepository;
@@ -58,6 +61,7 @@ public class FacebookAdsCampaignController {
         this.adSetRepository = adSetRepository;
         this.adCreativeRepository = adCreativeRepository;
         this.adRepository = adRepository;
+        this.experimentAdSetRepository = experimentAdSetRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -103,7 +107,8 @@ public class FacebookAdsCampaignController {
 
         FacebookAdsAdSet savedAdSet = null;
         if (req.adSet() != null) {
-            savedAdSet = adSetRepository.save(mapAdSet(req.adSet(), savedCampaign));
+            AdSet experimentAdSet = resolveExperimentAdSet(req.adSet(), experiment);
+            savedAdSet = adSetRepository.save(mapAdSet(req.adSet(), savedCampaign, experimentAdSet));
         }
 
         FacebookAdsAdCreative savedCreative = null;
@@ -124,11 +129,28 @@ public class FacebookAdsCampaignController {
         return savedCampaign;
     }
 
-    private FacebookAdsAdSet mapAdSet(CreateCampaignRequest.AdSet adSetReq, FacebookAdsCampaign campaign) {
+    private AdSet resolveExperimentAdSet(CreateCampaignRequest.AdSet adSetReq, Experiment experiment) {
+        if (adSetReq.experimentAdSetId() == null) {
+            return null;
+        }
+        AdSet experimentAdSet = experimentAdSetRepository.findById(adSetReq.experimentAdSetId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Experiment ad set not found: " + adSetReq.experimentAdSetId()));
+        if (!experimentAdSet.getExperiment().getId().equals(experiment.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Experiment ad set does not belong to experiment " + experiment.getId());
+        }
+        return experimentAdSet;
+    }
+
+    private FacebookAdsAdSet mapAdSet(CreateCampaignRequest.AdSet adSetReq,
+                                      FacebookAdsCampaign campaign,
+                                      AdSet experimentAdSet) {
         FacebookAdsAdSet adSet = new FacebookAdsAdSet();
         adSet.setId(adSetReq.id());
         adSet.setCampaign(campaign);
         adSet.setName(adSetReq.name());
+        adSet.setExperimentAdSet(experimentAdSet);
         adSet.setBillingEvent(adSetReq.billingEvent());
         adSet.setOptimizationGoal(adSetReq.optimizationGoal());
         adSet.setBidStrategy(resolveBidStrategy(adSetReq.bidStrategy()));
@@ -428,7 +450,8 @@ public class FacebookAdsCampaignController {
                 String pageId,
                 String targetingJson,
                 String savedAudienceId,
-                String savedAudienceName) {}
+                String savedAudienceName,
+                Long experimentAdSetId) {}
 
         public record AdCreative(
                 String id,

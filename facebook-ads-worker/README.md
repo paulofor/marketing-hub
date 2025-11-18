@@ -34,7 +34,10 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    Quando o criativo aponta para um formulário de leads,
    o worker ajusta automaticamente `destination_type = ON_AD` e força
    `optimization_goal = LEAD_GENERATION` para satisfazer as regras da Graph API
-   para Lead Ads.
+   para Lead Ads. O orçamento diário do conjunto é calculado a partir do campo
+   `dailyBudget` do experimento (em reais), convertido para centavos antes do
+   POST; somente na ausência desse valor o worker recorre ao
+   `adSetDailyBudget` configurado na conta da Meta.
 4. **Imagem do criativo**: em vez de enviar `POST /adimages`, o worker
    referencia diretamente a URL pública retornada pelo backend no campo
    `object_story_spec.link_data.picture`. Quando o caminho é relativo (por

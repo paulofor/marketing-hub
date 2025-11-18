@@ -25,6 +25,7 @@ public class CreateExperimentRequest {
     @JsonProperty("mde")
     @JsonAlias("mdePercent")
     private BigDecimal mdePercent;
+    private BigDecimal dailyBudget;
     private LocalDate startDate;
     private LocalDate endDate;
     private Integer creativesToGenerate;

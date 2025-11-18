@@ -279,6 +279,7 @@ public class FacebookAdsCampaignController {
                 experiment.getHypothesis(),
                 pageId,
                 experiment.getKpiTargetCpl(),
+                experiment.getDailyBudget(),
                 experiment.getStartDate(),
                 experiment.getEndDate(),
                 experiment.getNiche() != null ? experiment.getNiche().getName() : null,
@@ -297,6 +298,9 @@ public class FacebookAdsCampaignController {
         }
         if (experiment.getKpiTargetCpl() == null) {
             missing.add("kpiTargetCpl");
+        }
+        if (experiment.getDailyBudget() == null || experiment.getDailyBudget().compareTo(BigDecimal.ZERO) <= 0) {
+            missing.add("dailyBudget");
         }
         if (experiment.getStopLossCpl() == null) {
             missing.add("stopLossCpl");
@@ -401,6 +405,7 @@ public class FacebookAdsCampaignController {
             String hypothesis,
             String pageId,
             BigDecimal kpiTargetCpl,
+            BigDecimal dailyBudget,
             LocalDate startDate,
             LocalDate endDate,
             String nicheName,

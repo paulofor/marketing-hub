@@ -9,6 +9,7 @@ export interface UpdateExperiment {
   metricPresetId?: string;
   sampleSize?: number;
   mde?: number;
+  dailyBudget?: number | null;
   startDate?: string;
   endDate?: string;
   creativesToGenerate?: number;

@@ -256,6 +256,7 @@ triggering ad set generation.
 - `baseline_cvr` DECIMAL(5,2) DEFAULT 3.00
 - `target_cvr` DECIMAL(5,2) DEFAULT 5.00
 - `mde_percent` DECIMAL(5,2) DEFAULT 40.0
+- `daily_budget` DECIMAL(10,2)
 - `creatives_to_generate` INT
 - `start_date` DATE
 - `end_date` DATE
@@ -268,7 +269,9 @@ triggering ad set generation.
 
 Defines a marketing experiment for a specific niche and hypothesis. Each
 experiment aggregates the creative variants, ad sets and landing pages that
-will be executed and measured during the test cycle.
+will be executed and measured during the test cycle. The `daily_budget` field
+stores the expected spend per day (in BRL) and is used by the Facebook Ads
+worker to build ad sets with the correct amount in cents for the Graph API.
 
 **Relationships**
 

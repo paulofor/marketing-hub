@@ -11,6 +11,7 @@ export interface CreateExperiment {
   metricPresetId: string;
   sampleSize?: number;
   mde?: number;
+  dailyBudget?: number;
   startDate?: string;
   endDate?: string;
   creativesToGenerate?: number;

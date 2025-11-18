@@ -1,11 +1,15 @@
 package com.marketinghub.leadportal.service;
 
 import com.marketinghub.leadportal.exception.FlowNotFoundException;
+import com.marketinghub.leadportal.exception.FlowNotFoundException;
 import com.marketinghub.leadportal.model.Flow;
 import com.marketinghub.leadportal.storage.FlowDefinitionStorage;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
+        Flow flow = flowDefinitionStorage.getFlow(flowSlug);
+        if (flow == null) {
+            throw new FlowNotFoundException(flowSlug);
+        }
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Service;
 

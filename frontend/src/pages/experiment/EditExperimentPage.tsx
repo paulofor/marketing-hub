@@ -370,11 +370,6 @@ export default function EditExperimentPage() {
         <div className="form-text mb-2">
           Defina a URL que a Meta exibirá após o envio do formulário (follow-up).
         </div>
-        <div className="alert alert-info" role="status">
-          A aprovação dos públicos agora é feita individualmente na aba
-          {" "}
-          <strong>Públicos</strong> deste experimento.
-        </div>
         <div className="mt-3 d-flex justify-content-end">
           <button
             type="button"

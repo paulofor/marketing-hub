@@ -33,6 +33,8 @@ public class MarketNicheService {
         MarketNiche niche = MarketNiche.builder()
                 .name(request.getName())
                 .description(request.getDescription())
+                .interestCategory(request.getInterestCategory())
+                .roleCategory(request.getRoleCategory())
                 .demandVolume(request.getDemandVolume())
                 .promises(request.getPromises())
                 .offers(request.getOffers())
@@ -56,6 +58,8 @@ public class MarketNicheService {
         MarketNiche niche = repository.findById(id).orElseThrow();
         niche.setName(request.getName());
         niche.setDescription(request.getDescription());
+        niche.setInterestCategory(request.getInterestCategory());
+        niche.setRoleCategory(request.getRoleCategory());
         niche.setDemandVolume(request.getDemandVolume());
         niche.setPromises(request.getPromises());
         niche.setOffers(request.getOffers());

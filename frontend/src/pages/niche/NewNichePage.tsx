@@ -12,6 +12,8 @@ export default function NewNichePage() {
   const [form, setForm] = useState({
     name: "",
     description: "",
+    interestCategory: "",
+    roleCategory: "",
     demandVolume: "",
     promises: "",
     offers: "",
@@ -64,6 +66,20 @@ export default function NewNichePage() {
         value={form.offers}
         onChange={(e) => setForm({ ...form, offers: e.target.value })}
         rows={3}
+      />
+      <input
+        className="form-control mb-2"
+        placeholder="Categoria de interesse"
+        value={form.interestCategory}
+        onChange={(e) =>
+          setForm({ ...form, interestCategory: e.target.value })
+        }
+      />
+      <input
+        className="form-control mb-2"
+        placeholder="Categoria de cargo"
+        value={form.roleCategory}
+        onChange={(e) => setForm({ ...form, roleCategory: e.target.value })}
       />
       <label className="form-label">Chat GPT Dialog</label>
       <select

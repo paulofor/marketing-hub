@@ -11,6 +11,8 @@ public class MarketNicheDto {
     private Long id;
     private String name;
     private String description;
+    private String interestCategory;
+    private String roleCategory;
     private String demandVolume;
     private String promises;
     private String offers;

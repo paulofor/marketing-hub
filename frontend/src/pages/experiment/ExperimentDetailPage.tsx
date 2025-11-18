@@ -9,12 +9,10 @@ import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import nicheIcon from "../../assets/icons/niche-icon.svg";
 import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
 import CriativosTab from "./CriativosTab";
-import PublicosTab from "./PublicosTab";
 import InstantFormsTab from "./InstantFormsTab";
 import EmailsTab from "./EmailsTab";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import * as Tabs from "@radix-ui/react-tabs";
-import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
 import { useFacebookConfigurationStatus } from "../../api/useFacebookConfigurationStatus";
 import { useJourneyTemplate } from "../../api/journey/useJourneyTemplate";
 import { useExperimentJourneyAssignments } from "../../api/experiment/useExperimentJourneyAssignments";
@@ -34,7 +32,6 @@ export default function ExperimentDetailPage() {
     data ? String(data.hypothesisId) : undefined,
   );
   const nicheIdParam = data?.nicheId != null ? String(data.nicheId) : undefined;
-  const { data: audiences } = useAudiencesByNiche(nicheIdParam);
   const { data: presets } = useMetricPresets();
   const [tab, setTab] = useState("overview");
   const [journeyError, setJourneyError] = useState<string | null>(null);
@@ -95,18 +92,6 @@ export default function ExperimentDetailPage() {
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
   const preset = presets?.find((p) => p.id === data.metricPresetId);
-  const audienceList = Array.isArray(audiences) ? audiences : undefined;
-  const relevantAudiences = audienceList
-    ? audienceList.filter(
-        (a) => !a.hypothesisId || a.hypothesisId === data.hypothesisId,
-      )
-    : undefined;
-  const totalRelevantAudiences = relevantAudiences?.length ?? 0;
-  const approvedAudiencesCount =
-    relevantAudiences?.filter((a) => a.approved).length ?? 0;
-  const approvedAudienceSummary = relevantAudiences
-    ? `${approvedAudiencesCount} de ${relevantAudiences.length}`
-    : "—";
   const formatCurrency = (n?: number | null) =>
     n != null
       ? new Intl.NumberFormat("pt-BR", {
@@ -214,20 +199,6 @@ export default function ExperimentDetailPage() {
         ? undefined
         : () => setTab("creatives"),
       actionLabel: "Ir para Criativos",
-    },
-    {
-      id: "audiences",
-      title: "Pelo menos um público aprovado",
-      isMet: approvedAudiencesCount > 0,
-      hint:
-        approvedAudiencesCount > 0
-          ? `${approvedAudiencesCount} público(s) aprovado(s) para este experimento.`
-          : totalRelevantAudiences > 0
-            ? "Aprove pelo menos um público na aba Públicos."
-            : "Cadastre públicos para este nicho e aprove pelo menos um deles.",
-      action:
-        approvedAudiencesCount > 0 ? undefined : () => setTab("audiences"),
-      actionLabel: "Ir para Públicos",
     },
   ];
   const isReadyForFacebook = readinessChecks.every((c) => c.isMet);
@@ -355,10 +326,6 @@ export default function ExperimentDetailPage() {
     { label: "Criativos a gerar", value: data.creativesToGenerate ?? "—" },
     { label: "Instant forms a gerar", value: data.instantFormsToGenerate ?? "—" },
     { label: "E-mails a gerar", value: data.emailsToGenerate ?? "—" },
-    {
-      label: "Públicos aprovados",
-      value: approvedAudienceSummary,
-    },
     {
       label: "Fluxo de portal do lead",
       value: data.leadPortalFlowName ? (
@@ -539,9 +506,6 @@ export default function ExperimentDetailPage() {
           <Tabs.Trigger value="overview" className="nav-link">
             Overview
           </Tabs.Trigger>
-          <Tabs.Trigger value="audiences" className="nav-link">
-            Públicos
-          </Tabs.Trigger>
           <Tabs.Trigger value="creatives" className="nav-link">
             Criativos
           </Tabs.Trigger>
@@ -583,14 +547,6 @@ export default function ExperimentDetailPage() {
               </dl>
             </div>
           </div>
-        </Tabs.Content>
-        <Tabs.Content value="audiences" asChild>
-          <PublicosTab
-            nicheId={data.nicheId}
-            hypothesisId={data.hypothesisId}
-            nicheName={niche?.name}
-            hypothesisTitle={hyp?.title ?? data.hypothesis}
-          />
         </Tabs.Content>
         <Tabs.Content value="creatives" asChild>
           <CriativosTab experimentId={expId} />

@@ -215,6 +215,9 @@ databaseChangeLog:
       file: V2027_02_23__link_fb_adset_to_experiment_adset.sql
       relativeToChangelogFile: true
   - include:
+      file: V2027_03_04__add_niche_categories.sql
+      relativeToChangelogFile: true
+  - include:
       file: V2027_10_19__rename_general_setting_value_column.sql
       relativeToChangelogFile: true
   - include:

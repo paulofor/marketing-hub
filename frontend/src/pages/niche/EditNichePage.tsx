@@ -20,6 +20,8 @@ export default function EditNichePage() {
     id,
     name: "",
     description: "",
+    interestCategory: "",
+    roleCategory: "",
     demandVolume: "",
     promises: "",
     offers: "",
@@ -80,6 +82,20 @@ export default function EditNichePage() {
         value={form.description}
         onChange={(e) => setForm({ ...form, description: e.target.value })}
         rows={3}
+      />
+      <label className="form-label">Categoria de interesse</label>
+      <input
+        className="form-control mb-2"
+        value={form.interestCategory}
+        onChange={(e) =>
+          setForm({ ...form, interestCategory: e.target.value })
+        }
+      />
+      <label className="form-label">Categoria de cargo</label>
+      <input
+        className="form-control mb-2"
+        value={form.roleCategory}
+        onChange={(e) => setForm({ ...form, roleCategory: e.target.value })}
       />
       <label className="form-label">Volume de Demanda</label>
       <textarea

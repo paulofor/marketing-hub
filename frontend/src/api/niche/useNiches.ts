@@ -7,6 +7,8 @@ export interface MarketNiche {
   description: string;
   interestCategory: string;
   roleCategory: string;
+  interestList?: string[];
+  roleList?: string[];
   demandVolume: string;
   promises: string;
   offers: string;

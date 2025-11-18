@@ -25,6 +25,17 @@ import {
 } from "lucide-react";
 import "./NicheDetailPage.css";
 
+function parseList(value?: string | string[]) {
+  if (!value) return [] as string[];
+  if (Array.isArray(value)) {
+    return value.map((item) => item.trim()).filter(Boolean);
+  }
+  return value
+    .split(/[\n;,]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 export default function NicheDetailPage() {
   const { nicheId } = useParams();
   const id = Number(nicheId);
@@ -202,6 +213,8 @@ export default function NicheDetailPage() {
     requestHypotheses.isPending || (isFetching && !isLoading)
       ? "Atualizando hipóteses..."
       : `Solicitadas ao Worker: ${data.hypothesesToGenerate ?? 0}`;
+  const interestItems = parseList(data.interestList ?? data.interests);
+  const roleItems = parseList(data.roleList ?? data.demographicFilters);
   const onRequestAudiences = handleSubmitAudienceQuantity(
     async ({ quantity }) => {
       if (!quantity || quantity <= 0) return;
@@ -339,6 +352,69 @@ export default function NicheDetailPage() {
               </div>
             </article>
           ))}
+        </div>
+      </section>
+      <section
+        className="niche-section"
+        aria-labelledby="niche-segmentation-lists"
+      >
+        <div className="niche-section__header">
+          <div>
+            <h2 className="niche-section__title" id="niche-segmentation-lists">
+              Segmentações sugeridas
+            </h2>
+            <p className="niche-section__subtitle">
+              Listas de interesses e cargos indicados para anunciar neste nicho.
+            </p>
+          </div>
+        </div>
+        <div className="niche-section__grid niche-list-cards">
+          <article className="card niche-section__card niche-list-card">
+            <div className="card-body">
+              <div className="niche-list-card__head">
+                <h3 className="niche-list-card__title">Interesses</h3>
+                <span className="badge text-bg-light text-dark">
+                  {interestItems.length} itens
+                </span>
+              </div>
+              {interestItems.length === 0 ? (
+                <p className="niche-section__empty niche-list-card__empty">
+                  Nenhum interesse cadastrado.
+                </p>
+              ) : (
+                <ul className="niche-list">
+                  {interestItems.map((item) => (
+                    <li key={item} className="niche-list__item">
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </article>
+          <article className="card niche-section__card niche-list-card">
+            <div className="card-body">
+              <div className="niche-list-card__head">
+                <h3 className="niche-list-card__title">Cargos</h3>
+                <span className="badge text-bg-light text-dark">
+                  {roleItems.length} itens
+                </span>
+              </div>
+              {roleItems.length === 0 ? (
+                <p className="niche-section__empty niche-list-card__empty">
+                  Nenhum cargo cadastrado.
+                </p>
+              ) : (
+                <ul className="niche-list">
+                  {roleItems.map((item) => (
+                    <li key={item} className="niche-list__item">
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </article>
         </div>
       </section>
       <section className="niche-section" aria-labelledby="niche-deliverables">

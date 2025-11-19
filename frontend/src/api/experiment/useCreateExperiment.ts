@@ -21,7 +21,6 @@ export interface CreateExperiment {
   facebookPageId?: number;
   facebookInstantFormId?: number;
   instagramAccountId: number;
-  followUpActionUrl?: string;
 }
 
 export function useCreateExperiment() {

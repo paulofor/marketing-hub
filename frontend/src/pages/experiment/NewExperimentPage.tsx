@@ -10,6 +10,7 @@ import { useAllFacebookPages } from "../../api/useAllFacebookPages";
 import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
+import { getStatisticsDefaultsForBudget } from "./statisticsDefaults";
 
 export default function NewExperimentPage() {
   const [params] = useSearchParams();
@@ -32,8 +33,9 @@ export default function NewExperimentPage() {
     journeyTemplateId: "",
     facebookPageId: "",
     instagramAccountId: "",
-    followUpActionUrl: "",
   });
+  const [autoSampleSize, setAutoSampleSize] = useState(true);
+  const [autoMde, setAutoMde] = useState(true);
   const { data: hypotheses } = useHypothesesByNiche(form.nicheId);
   const { data: selectedHypothesis } = useHypothesis(
     form.nicheId,
@@ -86,6 +88,36 @@ export default function NewExperimentPage() {
     }
   }, [selectedHypothesis]);
 
+  useEffect(() => {
+    if ((!autoSampleSize && !autoMde) || !form.dailyBudget.trim()) {
+      return;
+    }
+    const parsedBudget = Number(form.dailyBudget);
+    const defaults = getStatisticsDefaultsForBudget(parsedBudget);
+    if (!defaults) {
+      return;
+    }
+    setForm((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      if (autoSampleSize) {
+        const suggestedSample = String(defaults.sampleSize);
+        if (prev.sampleSize !== suggestedSample) {
+          next.sampleSize = suggestedSample;
+          changed = true;
+        }
+      }
+      if (autoMde) {
+        const suggestedMde = String(defaults.mdePercent);
+        if (prev.mde !== suggestedMde) {
+          next.mde = suggestedMde;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [autoSampleSize, autoMde, form.dailyBudget]);
+
   const submit = async () => {
     try {
       if (noInstagramAccounts) {
@@ -100,19 +132,6 @@ export default function NewExperimentPage() {
       }
       if (!form.journeyTemplateId) {
         alert("Selecione um template de jornada");
-        return;
-      }
-      if (!form.followUpActionUrl.trim()) {
-        alert("Informe a URL da página de agradecimento");
-        return;
-      }
-      try {
-        const followUrl = new URL(form.followUpActionUrl.trim());
-        if (followUrl.protocol !== "https:" && followUrl.protocol !== "http:") {
-          throw new Error("invalid protocol");
-        }
-      } catch {
-        alert("Informe uma URL válida (http ou https) para a página de agradecimento");
         return;
       }
       const parsedDailyBudget = Number(form.dailyBudget);
@@ -141,7 +160,6 @@ export default function NewExperimentPage() {
           ? Number(form.facebookPageId)
           : undefined,
         instagramAccountId: Number(form.instagramAccountId),
-        followUpActionUrl: form.followUpActionUrl.trim(),
       });
       setForm({
         nicheId: nicheIdParam,
@@ -158,8 +176,9 @@ export default function NewExperimentPage() {
         journeyTemplateId: "",
         facebookPageId: "",
         instagramAccountId: "",
-        followUpActionUrl: "",
       });
+      setAutoSampleSize(true);
+      setAutoMde(true);
       alert("Teste salvo!");
     } catch (errors) {
       console.log("Validation errors", errors);
@@ -236,14 +255,14 @@ export default function NewExperimentPage() {
         className="form-control mb-2"
         placeholder="Nome"
         value={form.name}
-        onChange={(e) => setForm({ ...form, name: e.target.value })}
+        onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
       />
       <input
         className="form-control mb-2"
         placeholder="Meta do KPI"
         type="number"
         value={form.kpiTarget}
-        onChange={(e) => setForm({ ...form, kpiTarget: e.target.value })}
+        onChange={(e) => setForm((prev) => ({ ...prev, kpiTarget: e.target.value }))}
       />
       <label className="form-label" htmlFor="dailyBudget">
         Orçamento diário <span className="text-danger">*</span>
@@ -256,12 +275,28 @@ export default function NewExperimentPage() {
         min="0"
         step="0.01"
         value={form.dailyBudget}
-        onChange={(e) => setForm({ ...form, dailyBudget: e.target.value })}
+        onChange={(e) => {
+          const value = e.target.value;
+          setForm((prev) => {
+            const next = { ...prev, dailyBudget: value };
+            if (!value.trim()) {
+              if (autoSampleSize) {
+                next.sampleSize = "";
+              }
+              if (autoMde) {
+                next.mde = "";
+              }
+            }
+            return next;
+          });
+        }}
       />
       <select
         className="form-select mb-2"
         value={form.metricPresetId}
-        onChange={(e) => setForm({ ...form, metricPresetId: e.target.value })}
+        onChange={(e) =>
+          setForm((prev) => ({ ...prev, metricPresetId: e.target.value }))
+        }
       >
         <option value="">Selecione Preset de Métricas</option>
         {Array.isArray(presets) &&
@@ -278,7 +313,9 @@ export default function NewExperimentPage() {
         id="journeyTemplate"
         className="form-select mb-2"
         value={form.journeyTemplateId}
-        onChange={(e) => setForm({ ...form, journeyTemplateId: e.target.value })}
+        onChange={(e) =>
+          setForm((prev) => ({ ...prev, journeyTemplateId: e.target.value }))
+        }
       >
         <option value="">Selecione um template de jornada</option>
         {journeyTemplatePage?.content?.map((template) => (
@@ -314,7 +351,7 @@ export default function NewExperimentPage() {
         className="form-select mb-2"
         value={form.instagramAccountId}
         onChange={(e) =>
-          setForm({ ...form, instagramAccountId: e.target.value })
+          setForm((prev) => ({ ...prev, instagramAccountId: e.target.value }))
         }
         disabled={isLoadingInstagramAccounts || noInstagramAccounts}
       >
@@ -357,7 +394,7 @@ export default function NewExperimentPage() {
         className="form-select mb-2"
         value={form.facebookPageId}
         onChange={(e) =>
-          setForm({ ...form, facebookPageId: e.target.value })
+          setForm((prev) => ({ ...prev, facebookPageId: e.target.value }))
         }
       >
         <option value="">
@@ -372,50 +409,41 @@ export default function NewExperimentPage() {
             </option>
           ))}
       </select>
-      <label className="form-label" htmlFor="followUpActionUrl">
-        Página de agradecimento <span className="text-danger">*</span>
-      </label>
-      <input
-        id="followUpActionUrl"
-        className="form-control mb-2"
-        type="url"
-        placeholder="https://"
-        value={form.followUpActionUrl}
-        onChange={(e) =>
-          setForm({ ...form, followUpActionUrl: e.target.value })
-        }
-      />
-      <div className="form-text mb-2">
-        Esta URL será usada como página de agradecimento (follow-up) em todos os
-        instant forms deste experimento.
-      </div>
       <input
         className="form-control mb-2"
         placeholder="Tamanho da amostra"
         type="number"
         value={form.sampleSize}
-        onChange={(e) => setForm({ ...form, sampleSize: e.target.value })}
+        onChange={(e) => {
+          const value = e.target.value;
+          setAutoSampleSize(value.trim() === "");
+          setForm((prev) => ({ ...prev, sampleSize: value }));
+        }}
       />
       <input
         className="form-control mb-2"
         placeholder="MDE %"
         type="number"
         value={form.mde}
-        onChange={(e) => setForm({ ...form, mde: e.target.value })}
+        onChange={(e) => {
+          const value = e.target.value;
+          setAutoMde(value.trim() === "");
+          setForm((prev) => ({ ...prev, mde: value }));
+        }}
       />
       <input
         className="form-control mb-2"
         placeholder="Data de Início"
         type="date"
         value={form.startDate}
-        onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+        onChange={(e) => setForm((prev) => ({ ...prev, startDate: e.target.value }))}
       />
       <input
         className="form-control mb-2"
         placeholder="Data de Término"
         type="date"
         value={form.endDate}
-        onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+        onChange={(e) => setForm((prev) => ({ ...prev, endDate: e.target.value }))}
       />
       <button
         className="btn btn-primary d-flex align-items-center gap-2"

@@ -182,6 +182,9 @@ public class TelemetryService {
             case WHATSAPP -> "whatsapp_message_sent";
             case LANDING_PAGE -> "landing_view";
             case INSTANT_FORM -> "instant_form_view";
+            case LEAD_PORTAL_IMAGE_FLOW -> "lead_portal_image_flow";
+            case SHOWCASE_IMAGE -> "showcase_image_view";
+            case PAYMENT_PAGE -> "payment_page_view";
         };
     }
 

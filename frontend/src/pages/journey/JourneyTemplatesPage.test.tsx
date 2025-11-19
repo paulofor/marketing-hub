@@ -35,8 +35,20 @@ vi.mock("../../api/journey/useJourneyTemplates", () => ({
               metadata: {},
             },
           ],
-          createdAt: null,
-          updatedAt: undefined,
+          createdAt: "2023-11-01T10:00:00Z",
+          updatedAt: "2023-12-15T10:00:00Z",
+        },
+        {
+          id: 2,
+          name: "Funil de onboarding no WhatsApp",
+          objective: "Transformar leads em clientes em até 7 dias",
+          phases: ["ATTENTION", "ACTION"],
+          preferredChannel: "WhatsApp",
+          tags: ["whatsapp", "onboarding"],
+          metadata: {},
+          steps: [],
+          createdAt: "2024-02-01T10:00:00Z",
+          updatedAt: "2024-02-20T10:00:00Z",
         },
       ],
       totalElements: 1,
@@ -48,7 +60,7 @@ vi.mock("../../api/journey/useJourneyTemplates", () => ({
 }));
 
 describe("JourneyTemplatesPage", () => {
-  it("exibe templates mesmo quando timestamps não estão disponíveis", () => {
+  it("exibe templates com os metadados principais", () => {
     render(
       <MemoryRouter>
         <JourneyTemplatesPage />
@@ -62,15 +74,27 @@ describe("JourneyTemplatesPage", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.getAllByText("ATTENTION • INTEREST • DESIRE • ACTION")[0]).toBeInTheDocument();
-    expect(screen.getByText(/Criado em\s+—/)).toBeInTheDocument();
-    expect(screen.getByText(/Atualizado em\s+—/)).toBeInTheDocument();
+    expect(screen.getByText(/Criado em\s+01\/11\/2023/)).toBeInTheDocument();
+    expect(screen.getByText(/Atualizado em\s+15\/12\/2023/)).toBeInTheDocument();
     expect(screen.queryByText("Primeiro contato")).not.toBeInTheDocument();
     expect(screen.getAllByText("Multicanal")[0]).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Criar template" }),
     ).toHaveAttribute("href", "/journey-templates/new");
-    expect(
-      screen.getByRole("link", { name: "Ver detalhes" }),
-    ).toHaveAttribute("href", "/journey-templates/1");
+    const detailLinks = screen.getAllByRole("link", { name: "Ver detalhes" });
+    expect(detailLinks).toHaveLength(2);
+    expect(detailLinks[1]).toHaveAttribute("href", "/journey-templates/1");
+  });
+
+  it("ordena os templates do mais recente para o mais antigo", () => {
+    render(
+      <MemoryRouter>
+        <JourneyTemplatesPage />
+      </MemoryRouter>,
+    );
+
+    const templateTitles = screen.getAllByRole("heading", { level: 2 });
+    expect(templateTitles[0]).toHaveTextContent("Funil de onboarding no WhatsApp");
+    expect(templateTitles[1]).toHaveTextContent("Lifecycle Pós-Clique Lead Ads 14d");
   });
 });

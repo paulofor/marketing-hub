@@ -1,4 +1,4 @@
-# MarketingHub Data Model
+| stimulus_type | VARCHAR(255) | Tipo do estímulo aplicado no passo da jornada |
 
 This document summarizes the current database schema defined in `schema.sql`.
 It also highlights the tables used by the [Facebook Ads Worker](../facebook-ads-worker/README.md)

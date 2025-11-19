@@ -1,4 +1,4 @@
-package com.marketinghub.journey.model;
+    @Column(name = "stimulus_type", length = 255)
 
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.label.Angle;

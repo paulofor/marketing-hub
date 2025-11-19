@@ -1,7 +1,8 @@
 databaseChangeLog:
   - include:
-  - include:
       file: db/changelog/2025-02-12-fix-journey-step-stimulus-type.sql
+      relativeToChangelogFile: true
+  - include:
       file: V2025_07_23__create_hypothesis.sql
       relativeToChangelogFile: true
   - include:

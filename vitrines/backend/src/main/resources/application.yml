@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: vitrines
+server:
+  port: 8085
+  servlet:
+    context-path: /vitrines
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

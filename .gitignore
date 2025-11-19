@@ -31,3 +31,8 @@ local/
 /ai-worker/target/
 
 *.tsbuildinfo
+
+# Vitrines projects
+/vitrines/frontend/node_modules
+/vitrines/frontend/dist
+/vitrines/backend/target

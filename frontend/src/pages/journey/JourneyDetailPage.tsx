@@ -53,6 +53,17 @@ const stimulusDescriptors: Record<JourneyStimulusType, { label: string; accent: 
   WHATSAPP: { label: "WhatsApp", accent: "whatsapp", icon: "💬" },
   LANDING_PAGE: { label: "Landing page", accent: "landing", icon: "🧭" },
   INSTANT_FORM: { label: "Instant form", accent: "instant-form", icon: "📝" },
+  LEAD_PORTAL_IMAGE_FLOW: {
+    label: "Fluxo de lead portal com envio de imagem",
+    accent: "lead-portal",
+    icon: "🖼️",
+  },
+  SHOWCASE_IMAGE: {
+    label: "Vitrine de imagem",
+    accent: "showcase",
+    icon: "🪟",
+  },
+  PAYMENT_PAGE: { label: "Página de pagamento", accent: "payment", icon: "💳" },
 };
 
 const statusLabels: Record<JourneyStatus, string> = {

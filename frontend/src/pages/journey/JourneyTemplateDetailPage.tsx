@@ -21,6 +21,9 @@ const stimulusLabels: Record<JourneyStimulusType, string> = {
   WHATSAPP: "WhatsApp",
   LANDING_PAGE: "Landing page",
   INSTANT_FORM: "Instant form",
+  LEAD_PORTAL_IMAGE_FLOW: "Fluxo de lead portal com envio de imagem",
+  SHOWCASE_IMAGE: "Vitrine de imagem",
+  PAYMENT_PAGE: "Página de pagamento",
 };
 
 function formatDate(value?: string | null) {

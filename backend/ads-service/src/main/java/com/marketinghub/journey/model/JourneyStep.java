@@ -43,7 +43,7 @@ public class JourneyStep {
     private JourneyPhase phase;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "stimulus_type", nullable = false, length = 128)
+    @Column(name = "stimulus_type", nullable = false, length = 255)
     private JourneyStimulusType stimulusType;
 
     @ManyToOne(fetch = FetchType.LAZY)

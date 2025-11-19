@@ -32,9 +32,26 @@ function formatPhases(phases?: string[]) {
   return phases.join(" • ");
 }
 
+function getTemplateTimestamp(template: JourneyTemplateSummary) {
+  const reference: string | null = template.updatedAt ?? template.createdAt ?? null;
+  if (!reference) {
+    return 0;
+  }
+
+  const parsed = new Date(reference);
+  if (Number.isNaN(parsed.getTime())) {
+    return 0;
+  }
+
+  return parsed.getTime();
+}
+
 export default function JourneyTemplatesPage() {
   const { data, isLoading } = useJourneyTemplates();
   const templates = data?.content ?? [];
+  const sortedTemplates = [...templates].sort(
+    (a, b) => getTemplateTimestamp(b) - getTemplateTimestamp(a),
+  );
 
   return (
     <div className="journey-templates">
@@ -56,7 +73,7 @@ export default function JourneyTemplatesPage() {
         <div className="journey-templates__empty">Nenhum template cadastrado até o momento.</div>
       ) : (
         <div className="journey-templates__grid">
-          {templates.map((template) => (
+          {sortedTemplates.map((template) => (
             <article key={template.id} className="journey-template-card">
               <header>
                 <div className="journey-template-card__meta">

@@ -409,7 +409,11 @@ export default function NewExperimentPage() {
             </option>
           ))}
       </select>
+      <label className="form-label" htmlFor="sampleSize">
+        Tamanho da amostra
+      </label>
       <input
+        id="sampleSize"
         className="form-control mb-2"
         placeholder="Tamanho da amostra"
         type="number"
@@ -420,7 +424,11 @@ export default function NewExperimentPage() {
           setForm((prev) => ({ ...prev, sampleSize: value }));
         }}
       />
+      <label className="form-label" htmlFor="marginOfError">
+        Margem de erro (MDE %)
+      </label>
       <input
+        id="marginOfError"
         className="form-control mb-2"
         placeholder="MDE %"
         type="number"

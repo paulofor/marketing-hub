@@ -21,7 +21,6 @@ interface FormData {
   journeyTemplateId: string;
   facebookPageId: string;
   instagramAccountId: string;
-  followUpActionUrl: string;
 }
 
 export default function EditExperimentPage() {
@@ -47,7 +46,6 @@ export default function EditExperimentPage() {
       journeyTemplateId: "",
       facebookPageId: "",
       instagramAccountId: "",
-      followUpActionUrl: "",
     },
   });
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
@@ -76,7 +74,6 @@ export default function EditExperimentPage() {
         instagramAccountId: data.instagramAccount?.id
           ? String(data.instagramAccount.id)
           : "",
-        followUpActionUrl: data.followUpActionUrl || "",
       });
     }
   }, [data, reset]);
@@ -181,22 +178,6 @@ export default function EditExperimentPage() {
         alert("Selecione um template de jornada");
         return;
       }
-      const followUpUrlRaw = values.followUpActionUrl.trim();
-      if (!followUpUrlRaw) {
-        alert("Informe a URL da página de agradecimento");
-        return;
-      }
-      let normalizedFollowUp: string;
-      try {
-        const parsed = new URL(followUpUrlRaw);
-        if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
-          throw new Error("invalid protocol");
-        }
-        normalizedFollowUp = parsed.toString();
-      } catch {
-        alert("Informe uma URL válida (http ou https) para a página de agradecimento");
-        return;
-      }
       const parsedDailyBudget = Number(values.dailyBudget);
       if (!values.dailyBudget || Number.isNaN(parsedDailyBudget) || parsedDailyBudget <= 0) {
         alert("Informe um orçamento diário válido");
@@ -215,7 +196,6 @@ export default function EditExperimentPage() {
         instagramAccountId: Number(values.instagramAccountId),
         instantFormsToGenerate: data.instantFormsToGenerate ?? undefined,
         emailsToGenerate: data.emailsToGenerate ?? undefined,
-        followUpActionUrl: normalizedFollowUp,
       };
 
       if (dirtyFields.journeyTemplateId) {
@@ -377,19 +357,6 @@ export default function EditExperimentPage() {
               </option>
             ))}
         </select>
-        <label className="form-label" htmlFor="followUpActionUrl">
-          Página de agradecimento <span className="text-danger">*</span>
-        </label>
-        <input
-          id="followUpActionUrl"
-          className="form-control mb-2"
-          type="url"
-          placeholder="https://"
-          {...register("followUpActionUrl")}
-        />
-        <div className="form-text mb-2">
-          Defina a URL que a Meta exibirá após o envio do formulário (follow-up).
-        </div>
         <div className="mt-3 d-flex justify-content-end">
           <button
             type="button"

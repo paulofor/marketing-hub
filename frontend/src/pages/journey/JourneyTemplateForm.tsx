@@ -50,6 +50,12 @@ const STIMULUS_OPTIONS: Array<{ value: JourneyStimulusType; label: string }> = [
   { value: "WHATSAPP", label: "WhatsApp" },
   { value: "LANDING_PAGE", label: "Landing page" },
   { value: "INSTANT_FORM", label: "Instant form" },
+  {
+    value: "LEAD_PORTAL_IMAGE_FLOW",
+    label: "Fluxo de lead portal com envio de imagem",
+  },
+  { value: "SHOWCASE_IMAGE", label: "Vitrine de imagem" },
+  { value: "PAYMENT_PAGE", label: "Página de pagamento" },
 ];
 
 interface MetadataField {

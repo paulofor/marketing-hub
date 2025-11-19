@@ -8,5 +8,8 @@ public enum JourneyStimulusType {
     EMAIL,
     WHATSAPP,
     LANDING_PAGE,
-    INSTANT_FORM
+    INSTANT_FORM,
+    LEAD_PORTAL_IMAGE_FLOW,
+    SHOWCASE_IMAGE,
+    PAYMENT_PAGE
 }

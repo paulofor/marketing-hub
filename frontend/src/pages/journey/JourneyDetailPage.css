@@ -573,6 +573,21 @@
   color: #b45309;
 }
 
+.journey-detail__step-pill--lead-portal {
+  background: rgba(45, 212, 191, 0.18);
+  color: #0f766e;
+}
+
+.journey-detail__step-pill--showcase {
+  background: rgba(244, 114, 182, 0.18);
+  color: #be185d;
+}
+
+.journey-detail__step-pill--payment {
+  background: rgba(251, 191, 36, 0.2);
+  color: #92400e;
+}
+
 .journey-detail__step-description {
   margin: 0;
   color: #1f2937;

@@ -1,0 +1,8 @@
+services:
+  backend:
+    image: ${VITRINES_BACKEND_IMAGE}
+    build: null
+
+  frontend:
+    image: ${VITRINES_FRONTEND_IMAGE}
+    build: null

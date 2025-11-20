@@ -1,0 +1,176 @@
+name: CI – Vitrines
+
+on:
+  push:
+    branches: ["main", "master"]
+    paths:
+      - 'vitrines/**'
+      - '.github/workflows/vitrines-ci.yml'
+  pull_request:
+    paths:
+      - 'vitrines/**'
+      - '.github/workflows/vitrines-ci.yml'
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: vitrines/backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Build backend
+        run: mvn -B test
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: vitrines/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: vitrines/frontend/package-lock.json
+      - name: Install deps
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Build
+        run: npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    needs:
+      - backend
+      - frontend
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE_REGISTRY: ghcr.io
+      IMAGE_NAMESPACE: ghcr.io/${{ github.repository_owner }}
+      IMAGE_TAG: latest
+      IMAGE_SHA_TAG: ${{ github.sha }}
+    outputs:
+      image-tag: ${{ steps.image_tag.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Backend image metadata
+        id: meta_backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAMESPACE }}/vitrines-backend
+          tags: |
+            type=raw,value=${{ env.IMAGE_TAG }}
+            type=raw,value=${{ env.IMAGE_SHA_TAG }}
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: vitrines/backend
+          push: true
+          tags: ${{ steps.meta_backend.outputs.tags }}
+          labels: ${{ steps.meta_backend.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/vitrines-backend:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/vitrines-backend:buildcache,mode=max
+      - name: Frontend image metadata
+        id: meta_frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAMESPACE }}/vitrines-frontend
+          tags: |
+            type=raw,value=${{ env.IMAGE_TAG }}
+            type=raw,value=${{ env.IMAGE_SHA_TAG }}
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: vitrines/frontend
+          push: true
+          tags: ${{ steps.meta_frontend.outputs.tags }}
+          labels: ${{ steps.meta_frontend.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/vitrines-frontend:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/vitrines-frontend:buildcache,mode=max
+          build-args: |
+            VITE_API_BASE_URL=/vitrines/api
+      - name: Expose image tag
+        id: image_tag
+        run: echo "value=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs:
+      - backend
+      - frontend
+      - docker
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    env:
+      DEPLOY_HOST: 191.252.120.96
+      DEPLOY_USER: root
+      REMOTE_PATH: ${{ secrets.VITRINES_REMOTE_PATH || '/root/vitrines' }}
+      IMAGE_REGISTRY: ghcr.io
+      IMAGE_NAMESPACE: ghcr.io/${{ github.repository_owner }}
+      IMAGE_TAG: ${{ needs.docker.outputs['image-tag'] }}
+      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME != '' && secrets.GHCR_USERNAME || github.repository_owner }}
+      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN != '' && secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${VPS_SSH_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "SSH_COMMON_ARGS=-i $HOME/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o TCPKeepAlive=yes -o ConnectTimeout=60" >> "$GITHUB_ENV"
+      - name: Prepare remote directory
+        run: |
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "mkdir -p ${REMOTE_PATH}"
+      - name: Sync Vitrines stack to VPS
+        run: |
+          rsync -az --delete \
+            -e "ssh ${SSH_COMMON_ARGS}" \
+            --exclude 'backend/target/' \
+            --exclude 'frontend/node_modules/' \
+            --exclude 'frontend/dist/' \
+            vitrines/ "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}"
+      - name: Publish stack
+        run: |
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
+            && cd ${REMOTE_PATH} \
+            && if [ -n '${GHCR_TOKEN}' ]; then echo '${GHCR_TOKEN}' | docker login ${IMAGE_REGISTRY} -u '${GHCR_USERNAME}' --password-stdin; fi \
+            && export VITRINES_BACKEND_IMAGE='${IMAGE_NAMESPACE}/vitrines-backend:${IMAGE_TAG}' \
+            && export VITRINES_FRONTEND_IMAGE='${IMAGE_NAMESPACE}/vitrines-frontend:${IMAGE_TAG}' \
+            && (docker network inspect public-net >/dev/null 2>&1 || docker network create public-net) \
+            && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
+            && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --remove-orphans"
+      - name: Clean build artifacts from repository
+        if: always()
+        run: |
+          git clean -ffdx -- \
+            vitrines/backend/target \
+            vitrines/frontend/node_modules \
+            vitrines/frontend/dist \
+            vitrines/frontend/.vite \
+            vitrines/frontend/.turbo \
+            vitrines/frontend/.parcel-cache \
+            vitrines/frontend/tsconfig.node.tsbuildinfo

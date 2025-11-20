@@ -72,7 +72,29 @@ npm run dev
 A UI fica disponível em `http://localhost:4173`. Configure a variável `VITE_API_BASE_URL` para apontar para o host do backend,
 por exemplo `http://localhost:8085/vitrines/api`.
 
-## Builds de imagem (mesmo host do Portal Lead)
+## Builds e deploy no mesmo host do Portal Lead
+
+### Docker Compose local
+
+Para subir a stack com frontend + backend no mesmo host da proxy pública, use o `docker-compose.yml` na raiz de `vitrines`:
+
+```bash
+cd vitrines
+docker compose up -d
+```
+
+- Backend fica exposto em `http://localhost:8085/vitrines/api/health`.
+- Frontend fica exposto em `http://localhost:4173/` e já faz proxy de `/vitrines/api` para o backend via Nginx interno.
+
+Para forçar o uso das imagens publicadas em um registro (ex.: GHCR), combine com `docker-compose.deploy.yml`:
+
+```bash
+export VITRINES_BACKEND_IMAGE="<registry>/vitrines-backend:latest"
+export VITRINES_FRONTEND_IMAGE="<registry>/vitrines-frontend:latest"
+docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d
+```
+
+### Imagens Docker (build manual)
 
 Os Dockerfiles foram preparados para gerar imagens independentes. Substitua `<registry>` pelo registro que publica no mesmo host
 do Portal Lead.
@@ -82,9 +104,11 @@ do Portal Lead.
 cd vitrines/backend
 docker build -t <registry>/vitrines-backend:latest .
 
-# Frontend
+# Frontend (proxy interno para /vitrines/api)
 cd ../frontend
-docker build -t <registry>/vitrines-frontend:latest .
+docker build --build-arg VITE_API_BASE_URL=/vitrines/api -t <registry>/vitrines-frontend:latest .
 ```
 
-Após publicar as imagens no registro do host, suba os containers apontando o frontend para a API com a variável `VITE_API_BASE_URL`.
+### CI/CD
+
+O workflow `.github/workflows/vitrines-ci.yml` executa testes, gera e publica as imagens no GHCR (`vitrines-backend` e `vitrines-frontend`) e, quando o branch é `main`, sincroniza a pasta `vitrines/` para o VPS do Lead Portal, aplicando o stack com Docker Compose.

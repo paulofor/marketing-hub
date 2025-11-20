@@ -5,6 +5,11 @@ server:
   port: 8085
   servlet:
     context-path: /vitrines
+magic-link:
+  domain: http://vitrineproduto.shop
+  issuer: vitrines-backend
+  ttl: PT30M
+  secret: dml0cmluZXByb2R1dG8uc2hvcC1tYWdpYy1zZWNyZXQtcGxlYXNlLWNoYW5nZQ==
 management:
   endpoints:
     web:

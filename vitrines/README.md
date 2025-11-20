@@ -28,6 +28,23 @@ Boot 3. Ambos possuem Dockerfiles próprios para gerar imagens que podem ser pub
 4. O backend valida assinatura, expiração e se o token já foi utilizado.
 5. Se ok, cria ou atualiza o usuário, marca o token como usado e retorna a sessão (cookie ou JWT de sessão). A partir daí o lead está logado sem senha.
 
+#### Sandbox `http://vitrineproduto.shop`
+
+- O backend expõe `POST /vitrines/api/auth/magic-link` para gerar um token JWT assinado já apontando para `http://vitrineproduto.shop/auth/magic?token=...`.
+- Dados de teste são semeados automaticamente:
+  - `cliente@vitrineproduto.shop` (role `CLIENTE`, plano `plan_premium_ads` para abrir conteúdos premium).
+  - `lead@vitrineproduto.shop` (role `LEAD`, sem plano vinculado para testar bloqueios).
+- Exemplo de chamada local:
+
+```bash
+curl -X POST \
+  http://localhost:8085/vitrines/api/auth/magic-link \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"cliente@teste.com","role":"cliente","planId":"plan_consulting"}'
+```
+
+O JSON de resposta inclui `token`, `link`, `planId` e `expiresAt`, pronto para ser enviado por e-mail.
+
 ### Modelo de permissões
 
 - Roles básicas (RBAC):

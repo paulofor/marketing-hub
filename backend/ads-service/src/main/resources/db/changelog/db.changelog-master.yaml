@@ -259,3 +259,6 @@ databaseChangeLog:
   - include:
       file: V2029_01_15__create_facebook_interest.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2029_02_20__image_deliverable_package.sql
+      relativeToChangelogFile: true

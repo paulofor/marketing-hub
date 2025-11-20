@@ -163,8 +163,8 @@ public class ExperimentLeadPortalFlowChatGptClient {
         sb.append("Gere até ").append(quantity).append(" fluxos para portal de leads em português no formato JSON.");
         sb.append(" Cada item deve conter: \"name\" (título amigável), \"slug\" (kebab-case único), \"description\" (objetivo do fluxo) e \"questions\".");
         sb.append(" Em questions informe objetos com as chaves: \"title\", \"dataKey\" (snake case curto), \"type\" (TEXT, TEXTAREA, NUMBER, EMAIL, PHONE, DATE, SINGLE_CHOICE, MULTIPLE_CHOICE ou IMAGE_UPLOAD), \"required\", \"description\", \"placeholder\" e \"options\" (array, usar quando tipo for SINGLE_CHOICE ou MULTIPLE_CHOICE).");
-        sb.append(" Solicite perguntas simples que envolvam o lead no diagnóstico da situação e proponha opções de resposta realistas sempre que houver múltipla escolha.");
-        sb.append(" Finalize SEMPRE cada fluxo com uma pergunta do tipo IMAGE_UPLOAD solicitando uma foto clara relacionada ao problema do lead.");
+        sb.append(" Solicite perguntas simples que façam o lead refletir sobre o problema e o diagnóstico, oferecendo opções de resposta realistas sempre que houver múltipla escolha.");
+        sb.append(" Finalize SEMPRE cada fluxo com uma pergunta do tipo IMAGE_UPLOAD pedindo de forma objetiva uma foto nítida do empreendimento para criar materiais de divulgação e melhorias.");
         sb.append(" Responda somente com um array JSON válido, sem comentários ou texto extra.\n\n");
 
         if (experiment != null) {

@@ -86,7 +86,7 @@ Em "questions" retorne objetos com as chaves:
 - "description" e "placeholder": textos auxiliares opcionais;
 - "options": lista de respostas sugeridas (obrigatória para SINGLE_CHOICE e MULTIPLE_CHOICE).
 
-Solicite perguntas simples que envolvam o lead no diagnóstico do contexto e utilize opções de resposta realistas sempre que houver múltipla escolha. Finalize SEMPRE cada fluxo com uma pergunta do tipo IMAGE_UPLOAD solicitando uma foto clara relacionada ao problema do lead.
+Solicite perguntas simples que façam o lead refletir sobre o problema e o diagnóstico, usando opções de resposta realistas sempre que houver múltipla escolha. Finalize SEMPRE cada fluxo com uma pergunta do tipo IMAGE_UPLOAD pedindo de forma objetiva uma foto nítida do empreendimento para criar materiais de divulgação e melhorias.
 
 {{#if experiment.name}}
 Experimento: {{experiment.name}}

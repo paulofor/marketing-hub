@@ -206,6 +206,34 @@ Represents curated bundles of deliverables attached to an experiment.
 
 Join table that links packages to the deliverables they include.
 
+### image_deliverable_package
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `lead_id` BINARY(16) NOT NULL REFERENCES `lead(id)`
+- `input_asset_id` BIGINT NOT NULL REFERENCES `asset(id)`
+- `status` VARCHAR(30) NOT NULL
+- `planned_outputs` INT
+- `free_images` INT NOT NULL DEFAULT 0
+- `model` VARCHAR(255)
+- `prompt` LONGTEXT NOT NULL
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+Registers the batch of images generated from a lead submission, keeping the
+input asset, processing status and publishing details for the vitrine.
+
+### image_deliverable_item
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `package_id` BIGINT NOT NULL REFERENCES `image_deliverable_package(id)`
+- `asset_id` BIGINT NOT NULL REFERENCES `asset(id)`
+- `access_type` VARCHAR(20) NOT NULL
+- `position_index` INT NOT NULL
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+Stores each generated image associated with a package, including its
+access type (free or premium) and display order.
+
 ### hypothesis
 
 - `id` BINARY(16) PRIMARY KEY

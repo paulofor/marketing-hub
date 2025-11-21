@@ -1,5 +1,11 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
-import { FlowQuestion, FlowQuestionType, LeadPortalFlow } from "../types";
+import { submitFlowSubmission } from "../api";
+import {
+  FlowQuestion,
+  FlowQuestionType,
+  FlowSubmissionResponse,
+  LeadPortalFlow
+} from "../types";
 
 type AnswerValue = string | string[] | File | null;
 
@@ -8,33 +14,44 @@ interface FlowFormProps {
 }
 
 export default function FlowForm({ flow }: FlowFormProps) {
+  const { questions: displayQuestions, contactEmailKey, contactNameKey } = useMemo(
+    () => enhanceQuestions(flow.questions),
+    [flow.questions]
+  );
+
   const initialAnswers = useMemo(() => {
-    const entries = flow.questions.map<[string, AnswerValue]>((question) => {
+    const entries = displayQuestions.map<[string, AnswerValue]>((question) => {
       if (question.type === "MULTIPLE_CHOICE") {
         return [question.dataKey, []];
       }
       return [question.dataKey, ""];
     });
     return Object.fromEntries(entries) as Record<string, AnswerValue>;
-  }, [flow.questions]);
+  }, [displayQuestions]);
 
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>(initialAnswers);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submissionResult, setSubmissionResult] = useState<FlowSubmissionResponse | null>(null);
 
   useEffect(() => {
     setAnswers(initialAnswers);
     setErrors({});
-    setSubmitted(false);
+    setSubmitError(null);
+    setSubmissionResult(null);
   }, [initialAnswers]);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (isSubmitting) {
+      return;
+    }
     const validation: Record<string, string> = {};
 
-    flow.questions.forEach((question) => {
+    displayQuestions.forEach((question) => {
       const value = answers[question.dataKey];
-      if (!question.required) {
+      if (!question.required && question.type !== "EMAIL") {
         return;
       }
 
@@ -58,11 +75,53 @@ export default function FlowForm({ flow }: FlowFormProps) {
     });
 
     setErrors(validation);
+    if (Object.keys(validation).length > 0) {
+      return;
+    }
 
-    if (Object.keys(validation).length === 0) {
-      setSubmitted(true);
-    } else {
-      setSubmitted(false);
+    const nameAnswer = answers[contactNameKey];
+    const emailAnswer = answers[contactEmailKey];
+    const preparedAnswers: Record<string, string | string[]> = {};
+
+    displayQuestions.forEach((question) => {
+      const value = answers[question.dataKey];
+      if (question.type === "IMAGE_UPLOAD") {
+        return;
+      }
+      if (typeof value === "string") {
+        preparedAnswers[question.dataKey] = value.trim();
+        return;
+      }
+      if (Array.isArray(value)) {
+        preparedAnswers[question.dataKey] = value;
+      }
+    });
+
+    const imageQuestion = displayQuestions.find(
+      (question) => question.type === "IMAGE_UPLOAD" && answers[question.dataKey] instanceof File
+    );
+    const imageFile = imageQuestion ? (answers[imageQuestion.dataKey] as File) : null;
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const response = await submitFlowSubmission(
+        flow.slug,
+        {
+          name: typeof nameAnswer === "string" ? nameAnswer.trim() : "",
+          email: typeof emailAnswer === "string" ? emailAnswer.trim() : "",
+          answers: preparedAnswers,
+          imageKey: imageQuestion?.dataKey
+        },
+        imageFile
+      );
+      setSubmissionResult(response);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Não foi possível enviar suas respostas.";
+      setSubmitError(message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -85,14 +144,16 @@ export default function FlowForm({ flow }: FlowFormProps) {
     updateAnswer(question, selected);
   };
 
+  if (submissionResult) {
+    return <ThankYouPanel name={submissionResult.name} email={submissionResult.email} />;
+  }
+
   return (
     <form className="flow-form" onSubmit={handleSubmit} noValidate>
-      {submitted ? (
-        <div className="success-banner">Suas respostas foram registradas localmente.</div>
-      ) : null}
+      {submitError ? <div className="error-banner">{submitError}</div> : null}
 
       <ol className="flow-question-list">
-        {flow.questions.map((question, index) => (
+        {displayQuestions.map((question, index) => (
           <li key={question.dataKey} className="flow-question-item">
             <QuestionField
               index={index + 1}
@@ -106,10 +167,82 @@ export default function FlowForm({ flow }: FlowFormProps) {
         ))}
       </ol>
 
-      <button type="submit" className="submit-button">
-        Enviar respostas
+      <button type="submit" className="submit-button" disabled={isSubmitting}>
+        {isSubmitting ? "Enviando respostas..." : "Enviar respostas"}
       </button>
     </form>
+  );
+}
+
+function enhanceQuestions(questions: FlowQuestion[]) {
+  const normalized = [...questions];
+
+  const emailIndex = normalized.findIndex((question) => question.type === "EMAIL");
+  let contactEmailKey: string;
+  if (emailIndex === -1) {
+    const emailQuestion: FlowQuestion = {
+      title: "Qual é o seu e-mail?",
+      dataKey: "email",
+      type: "EMAIL",
+      required: true,
+      description: "Precisamos do seu e-mail para retornar o resultado.",
+      placeholder: "voce@email.com",
+      options: []
+    };
+    normalized.unshift(emailQuestion);
+    contactEmailKey = emailQuestion.dataKey;
+  } else {
+    const question = normalized[emailIndex];
+    contactEmailKey = question.dataKey;
+    if (!question.required) {
+      normalized[emailIndex] = { ...question, required: true };
+    }
+  }
+
+  const nameIndex = normalized.findIndex(isNameQuestion);
+  let contactNameKey: string;
+  if (nameIndex === -1) {
+    const nameQuestion: FlowQuestion = {
+      title: "Qual é o seu nome?",
+      dataKey: "nome",
+      type: "TEXT",
+      required: true,
+      description: "Assim conseguimos personalizar nossa resposta.",
+      placeholder: "Seu nome",
+      options: []
+    };
+    normalized.unshift(nameQuestion);
+    contactNameKey = nameQuestion.dataKey;
+  } else {
+    const question = normalized[nameIndex];
+    contactNameKey = question.dataKey;
+    if (!question.required) {
+      normalized[nameIndex] = { ...question, required: true };
+    }
+  }
+
+  return { questions: normalized, contactEmailKey, contactNameKey };
+}
+
+function isNameQuestion(question: FlowQuestion) {
+  if (question.type !== "TEXT" && question.type !== "TEXTAREA") {
+    return false;
+  }
+  const key = question.dataKey.toLowerCase();
+  const title = question.title.toLowerCase();
+  return key.includes("nome") || key.includes("name") || title.includes("nome") || title.includes("name");
+}
+
+function ThankYouPanel({ name, email }: { name: string; email: string }) {
+  return (
+    <div className="thank-you-card">
+      <h2>Respostas enviadas!</h2>
+      <p>
+        Obrigado, {name || "cliente"}. Recebemos suas respostas e em breve entraremos em contato pelo e-mail
+        <strong> {email}</strong>.
+      </p>
+      <p>Você pode fechar esta página com segurança.</p>
+    </div>
   );
 }
 

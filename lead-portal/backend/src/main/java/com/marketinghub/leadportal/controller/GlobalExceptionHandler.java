@@ -1,6 +1,7 @@
 package com.marketinghub.leadportal.controller;
 
 import com.marketinghub.leadportal.exception.FlowNotFoundException;
+import com.marketinghub.leadportal.exception.FlowSubmissionNotFoundException;
 import com.marketinghub.leadportal.exception.LeadNotFoundException;
 import com.marketinghub.leadportal.storage.StorageException;
 import com.marketinghub.leadportal.storage.StorageFileNotFoundException;
@@ -40,6 +41,11 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
+    @ExceptionHandler(FlowSubmissionNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleSubmissionNotFound(FlowSubmissionNotFoundException ex) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
     @ExceptionHandler(StorageFileNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleFileNotFound(StorageFileNotFoundException ex) {
         return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage());
@@ -48,6 +54,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(StorageException.class)
     public ResponseEntity<Map<String, Object>> handleStorageError(StorageException ex) {
         return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)

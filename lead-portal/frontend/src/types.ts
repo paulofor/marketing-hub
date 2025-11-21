@@ -44,7 +44,21 @@ export interface LeadPortalFlow {
   slug: string;
   name: string;
   description?: string | null;
-  model?: string | null;
-  prompt?: string | null;
   questions: FlowQuestion[];
+}
+
+export interface FlowSubmissionPayload {
+  name: string;
+  email: string;
+  answers: Record<string, string | string[]>;
+  imageKey?: string;
+}
+
+export interface FlowSubmissionResponse {
+  id: string;
+  flowSlug: string;
+  name: string;
+  email: string;
+  imageUrl?: string | null;
+  createdAt: string;
 }

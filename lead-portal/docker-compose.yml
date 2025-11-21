@@ -4,8 +4,15 @@ services:
       context: ./backend
     image: lead-portal-backend
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     volumes:
       - ./data:/app/data
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/lead_portal?useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: leadportal
+      SPRING_DATASOURCE_PASSWORD: leadportal
     expose:
       - "8080"
     healthcheck:
@@ -20,6 +27,25 @@ services:
       public-net:
         aliases:
           - lead-backend
+
+  db:
+    image: mysql:5.7
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: leadportal
+      MYSQL_DATABASE: lead_portal
+      MYSQL_USER: leadportal
+      MYSQL_PASSWORD: leadportal
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pleadportal"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      default:
+        ipv4_address: 172.30.0.5
 
   frontend:
     build:
@@ -96,7 +122,7 @@ services:
     restart: "no"
     networks:
       default:
-        ipv4_address: 172.30.0.5
+        ipv4_address: 172.30.0.6
 
 networks:
   default:

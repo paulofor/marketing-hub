@@ -4,7 +4,7 @@ Aplicação full-stack que permite aos leads enviarem imagens de referência e a
 
 ## Estrutura
 
-- `backend`: API Spring Boot responsável por receber uploads, persistir metadados em memória e simular o processamento assíncrono.
+- `backend`: API Spring Boot responsável por receber uploads, persistir metadados no banco de dados MySQL e simular o processamento assíncrono.
 - `frontend`: Interface React + Vite para envio de formulários e acompanhamento dos resultados.
 - `docker-compose.yml`: orquestra o backend, o frontend e um proxy reverso Nginx.
 - `docker/proxy`: arquivos de configuração e certificados usados pelo proxy reverso.
@@ -13,9 +13,10 @@ Aplicação full-stack que permite aos leads enviarem imagens de referência e a
 
 O ambiente dockerizado levanta três serviços:
 
-- `backend`: container com a API Spring Boot (porta interna 8080). Os fluxos persistidos ficam em `./data/flows.json`, montado no container como `/app/data/flows.json`.
+- `backend`: container com a API Spring Boot (porta interna 8080) conectado a um banco de dados MySQL dedicado.
 - `frontend`: container Nginx que serve o build estático do Vite (porta interna 80).
 - `proxy`: proxy reverso Nginx que publica as portas 80/443 do host e roteia `/api` para o backend.
+- `db`: instância MySQL 5.7 com armazenamento persistente em `./data/mysql`.
 - Quando o domínio `iahub.sbs` é acessado, o proxy encaminha o tráfego para o **Marketing Hub** em execução diretamente no host
   (frontend na porta `5173` e backend na porta `8080`). Certifique-se de que esses serviços estejam publicados antes de expor o
   proxy; em ambientes Linux o arquivo `docker-compose.yml` já adiciona o mapeamento `host.docker.internal` → `host-gateway`
@@ -64,14 +65,11 @@ Quando o proxy Nginx retorna `502 Bad Gateway` ao acessar um fluxo (por exemplo 
 
    Ajuste o host conforme o domínio publicado. O endpoint deve retornar JSON; uma resposta `404` indica que o fluxo não está cadastrado, enquanto exceções do backend aparecem como `500`.
 
-4. **Verifique o armazenamento dos fluxos dentro do container**. O backend cria automaticamente o diretório configurado em `lead-portal.flow-storage.location` (padrão `/app/data/flows.json`). Use os comandos abaixo para conferir se o arquivo existe e possui o conteúdo esperado:
+4. **Cheque o banco de dados**. Os fluxos e submissões são gravados no banco MySQL `lead_portal`. É possível inspecionar diretamente com:
 
    ```bash
-   docker compose -f lead-portal/docker-compose.yml exec backend ls -l /app/data
-   docker compose -f lead-portal/docker-compose.yml exec backend cat /app/data/flows.json
+   docker compose -f lead-portal/docker-compose.yml exec db mysql -uleadportal -pleadportal -D lead_portal -e "SELECT slug FROM flows;"
    ```
-
-   Se o diretório não for criado, revise permissões ou volumes montados para garantir que o processo do backend consiga gravar o arquivo.
 
 ## Executando localmente sem Docker
 

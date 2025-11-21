@@ -6,15 +6,13 @@ import com.marketinghub.leadportal.model.Flow;
 import com.marketinghub.leadportal.model.FlowQuestion;
 import com.marketinghub.leadportal.model.FlowQuestionType;
 import com.marketinghub.leadportal.model.FlowSubmission;
+import com.marketinghub.leadportal.repository.FlowSubmissionRepository;
 import com.marketinghub.leadportal.storage.FileStorageService;
-import com.marketinghub.leadportal.storage.FlowSubmissionStorage;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,17 +21,14 @@ import org.springframework.web.multipart.MultipartFile;
 public class FlowSubmissionService {
 
     private final FlowService flowService;
-    private final FlowSubmissionStorage storage;
+    private final FlowSubmissionRepository repository;
     private final FileStorageService fileStorageService;
-    private final Map<UUID, FlowSubmission> submissions;
-    private final Object writeLock = new Object();
 
     public FlowSubmissionService(
-            FlowService flowService, FlowSubmissionStorage storage, FileStorageService fileStorageService) {
+            FlowService flowService, FlowSubmissionRepository repository, FileStorageService fileStorageService) {
         this.flowService = flowService;
-        this.storage = storage;
+        this.repository = repository;
         this.fileStorageService = fileStorageService;
-        this.submissions = new ConcurrentHashMap<>(storage.loadAll());
     }
 
     public FlowSubmission create(String slug, FlowSubmissionRequest request, MultipartFile imageFile) {
@@ -65,28 +60,19 @@ public class FlowSubmissionService {
                 contentType,
                 Instant.now());
 
-        synchronized (writeLock) {
-            submissions.put(id, submission);
-            persist();
-        }
-
+        repository.save(com.marketinghub.leadportal.entity.FlowSubmissionEntity.fromModel(submission));
         return submission;
     }
 
     public FlowSubmission get(UUID id) {
-        FlowSubmission submission = submissions.get(id);
-        if (submission == null) {
-            throw new FlowSubmissionNotFoundException(id);
-        }
-        return submission;
+        return repository
+                .findById(id)
+                .map(com.marketinghub.leadportal.entity.FlowSubmissionEntity::toModel)
+                .orElseThrow(() -> new FlowSubmissionNotFoundException(id));
     }
 
     public Resource loadImage(String storedFileName) {
         return fileStorageService.loadAsResource(storedFileName);
-    }
-
-    private void persist() {
-        storage.saveAll(new ArrayList<>(submissions.values()));
     }
 
     private void validateRequiredQuestions(Flow flow, FlowSubmissionRequest request, MultipartFile imageFile) {

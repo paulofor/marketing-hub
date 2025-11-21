@@ -10,9 +10,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.leadportal.model.Flow;
 import com.marketinghub.leadportal.model.FlowQuestion;
 import com.marketinghub.leadportal.model.FlowQuestionType;
+import com.marketinghub.leadportal.repository.FlowSubmissionRepository;
 import com.marketinghub.leadportal.service.FlowService;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -24,16 +23,13 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@TestPropertySource(properties = {
-    "lead-portal.flow-storage.location=target/test-flows.json",
-    "lead-portal.submission-storage.location=target/test-submissions.json"
-})
+@ActiveProfiles("test")
 class FlowSubmissionControllerTest {
 
     @Autowired
@@ -45,12 +41,12 @@ class FlowSubmissionControllerTest {
     @Autowired
     private FlowService flowService;
 
-    private final Path submissionStorage = Path.of("target/test-submissions.json");
+    @Autowired
+    private FlowSubmissionRepository submissionRepository;
 
     @BeforeEach
-    void setup() throws Exception {
-        Files.deleteIfExists(Path.of("target/test-flows.json"));
-        Files.deleteIfExists(submissionStorage);
+    void setup() {
+        submissionRepository.deleteAll();
         flowService.list().stream()
                 .map(Flow::slug)
                 .forEach(flowService::delete);
@@ -95,9 +91,11 @@ class FlowSubmissionControllerTest {
     }
 
     @AfterEach
-    void cleanup() throws Exception {
-        Files.deleteIfExists(Path.of("target/test-flows.json"));
-        Files.deleteIfExists(submissionStorage);
+    void cleanup() {
+        submissionRepository.deleteAll();
+        flowService.list().stream()
+                .map(Flow::slug)
+                .forEach(flowService::delete);
     }
 
     @Test

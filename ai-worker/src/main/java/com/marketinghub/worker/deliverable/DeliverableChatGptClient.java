@@ -8,6 +8,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.worker.openai.AiGenerationRecorder;
+import com.marketinghub.worker.openai.OpenAiApiKeyProvider;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
 import io.netty.channel.ChannelOption;
@@ -49,11 +50,11 @@ public class DeliverableChatGptClient {
 
     public DeliverableChatGptClient(WebClient.Builder builder,
                                     ObjectMapper objectMapper,
-                                    @Value("${openai.api-key:}") String apiKey,
+                                    OpenAiApiKeyProvider apiKeyProvider,
                                     @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
                                     @Value("${openai.model:gpt-3.5-turbo}") String model,
                                     AiGenerationRecorder generationRecorder) {
-        this.enabled = StringUtils.hasText(apiKey);
+        this.enabled = apiKeyProvider.isConfigured();
         HttpClient httpClient = HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) CONNECT_TIMEOUT.toMillis())
                 .responseTimeout(REQUEST_TIMEOUT)
@@ -64,7 +65,7 @@ public class DeliverableChatGptClient {
                 .baseUrl(baseUrl)
                 .clientConnector(new ReactorClientHttpConnector(httpClient));
         if (enabled) {
-            clientBuilder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
+            clientBuilder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKeyProvider.getApiKey());
             if (OpenAiRequestUtils.requiresReasoning(model)) {
                 clientBuilder.defaultHeader("OpenAI-Beta", "reasoning=1");
             }

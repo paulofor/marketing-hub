@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.successproduct.SuccessProduct;
 import com.marketinghub.worker.openai.AiGenerationRecorder;
+import com.marketinghub.worker.openai.OpenAiApiKeyProvider;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
 import java.util.LinkedHashMap;
@@ -30,29 +31,40 @@ public class SuccessProductOpenAiChatGptClient implements ChatGptClient {
     private final ObjectMapper objectMapper;
     private final String model;
     private final AiGenerationRecorder generationRecorder;
+    private final boolean enabled;
     private static final String DOMAIN = "SUCCESS_PRODUCT_EXTRACTION";
 
     public SuccessProductOpenAiChatGptClient(
             WebClient.Builder builder,
             ObjectMapper objectMapper,
-            @Value("${openai.api-key:}") String apiKey,
+            OpenAiApiKeyProvider apiKeyProvider,
             @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
             @Value("${openai.model:gpt-3.5-turbo}") String model,
             AiGenerationRecorder generationRecorder) {
+        this.enabled = apiKeyProvider.isConfigured();
         WebClient.Builder clientBuilder = builder
-                .baseUrl(baseUrl)
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
-        if (OpenAiRequestUtils.requiresReasoning(model)) {
+                .baseUrl(baseUrl);
+        if (enabled) {
+            clientBuilder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKeyProvider.getApiKey());
+        }
+        if (OpenAiRequestUtils.requiresReasoning(model) && enabled) {
             clientBuilder.defaultHeader("OpenAI-Beta", "reasoning=1");
         }
         this.webClient = clientBuilder.build();
         this.objectMapper = objectMapper;
         this.model = model;
         this.generationRecorder = generationRecorder;
+        if (!enabled) {
+            log.warn("OpenAI API key not configured; success product extraction will be skipped");
+        }
     }
 
     @Override
     public NicheHypothesis extract(SuccessProduct product) {
+        if (!enabled) {
+            log.warn("Skipping success product extraction for product {} because OpenAI API key is missing", product.getId());
+            return null;
+        }
         String prompt = buildPrompt(product);
         List<Map<String, Object>> input = List.of(
                 OpenAiRequestUtils.message("system", "Você é um especialista em marketing."),

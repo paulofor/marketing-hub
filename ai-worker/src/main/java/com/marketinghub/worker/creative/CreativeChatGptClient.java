@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.marketinghub.worker.openai.AiGenerationRecorder;
+import com.marketinghub.worker.openai.OpenAiApiKeyProvider;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
 
@@ -44,11 +45,11 @@ public class CreativeChatGptClient {
 
     public CreativeChatGptClient(WebClient.Builder builder,
                                  ObjectMapper objectMapper,
-                                 @Value("${openai.api-key:}") String apiKey,
+                                 OpenAiApiKeyProvider apiKeyProvider,
                                  @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
                                  @Value("${openai.model:gpt-3.5-turbo}") String model,
                                  AiGenerationRecorder generationRecorder) {
-        this.enabled = apiKey != null && !apiKey.isBlank();
+        this.enabled = apiKeyProvider.isConfigured();
         HttpClient httpClient = HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) CONNECT_TIMEOUT.toMillis())
                 .responseTimeout(REQUEST_TIMEOUT)
@@ -59,7 +60,7 @@ public class CreativeChatGptClient {
                 .baseUrl(baseUrl)
                 .clientConnector(new ReactorClientHttpConnector(httpClient));
         if (enabled) {
-            clientBuilder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
+            clientBuilder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKeyProvider.getApiKey());
             if (OpenAiRequestUtils.requiresReasoning(model)) {
                 clientBuilder.defaultHeader("OpenAI-Beta", "reasoning=1");
             }

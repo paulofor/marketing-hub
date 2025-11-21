@@ -7,6 +7,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.worker.openai.AiGenerationRecorder;
+import com.marketinghub.worker.openai.OpenAiApiKeyProvider;
 import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -36,10 +37,11 @@ class DeliverableChatGptClientTest {
         server.start();
         generationService = mock(AiWorkerGenerationService.class);
         AiGenerationRecorder recorder = new AiGenerationRecorder(generationService);
+        OpenAiApiKeyProvider apiKeyProvider = new OpenAiApiKeyProvider("test-key", null);
         client = new DeliverableChatGptClient(
                 WebClientFactory.testBuilder(),
                 objectMapper,
-                "test-key",
+                apiKeyProvider,
                 server.url("/").toString(),
                 "gpt-4o-mini",
                 recorder);

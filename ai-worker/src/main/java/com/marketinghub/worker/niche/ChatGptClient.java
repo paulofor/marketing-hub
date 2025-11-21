@@ -10,6 +10,7 @@ import com.marketinghub.prompt.PromptAttributeDescription;
 import com.marketinghub.prompt.repository.PromptAttributeDescriptionRepository;
 import com.marketinghub.prompt.repository.PromptAttributeRepository;
 import com.marketinghub.worker.openai.AiGenerationRecorder;
+import com.marketinghub.worker.openai.OpenAiApiKeyProvider;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
 import org.slf4j.Logger;
@@ -37,21 +38,25 @@ public class ChatGptClient {
     private final PromptAttributeRepository attributeRepository;
     private final PromptAttributeDescriptionRepository descriptionRepository;
     private final AiGenerationRecorder generationRecorder;
+    private final boolean enabled;
     private static final Logger log = LoggerFactory.getLogger(ChatGptClient.class);
     private static final String DOMAIN = "NICHE_HYPOTHESIS";
 
     public ChatGptClient(WebClient.Builder builder,
                          ObjectMapper objectMapper,
-                         @Value("${openai.api-key:}") String apiKey,
+                         OpenAiApiKeyProvider apiKeyProvider,
                          @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
                          @Value("${openai.model:gpt-3.5-turbo}") String model,
                          PromptAttributeRepository attributeRepository,
                          PromptAttributeDescriptionRepository descriptionRepository,
                          AiGenerationRecorder generationRecorder) {
+        this.enabled = apiKeyProvider.isConfigured();
         WebClient.Builder clientBuilder = builder
-                .baseUrl(baseUrl)
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
-        if (OpenAiRequestUtils.requiresReasoning(model)) {
+                .baseUrl(baseUrl);
+        if (enabled) {
+            clientBuilder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKeyProvider.getApiKey());
+        }
+        if (OpenAiRequestUtils.requiresReasoning(model) && enabled) {
             clientBuilder.defaultHeader("OpenAI-Beta", "reasoning=1");
         }
         this.webClient = clientBuilder.build();
@@ -60,9 +65,16 @@ public class ChatGptClient {
         this.attributeRepository = attributeRepository;
         this.descriptionRepository = descriptionRepository;
         this.generationRecorder = generationRecorder;
+        if (!enabled) {
+            log.warn("OpenAI API key not configured; niche hypothesis generation will be skipped");
+        }
     }
 
     public List<CreateHypothesisRequest> generateHypotheses(MarketNiche niche, int quantity) {
+        if (!enabled) {
+            log.warn("Skipping niche hypothesis generation for niche {} because OpenAI API key is missing", niche.getId());
+            return List.of();
+        }
         PromptData promptData = buildPrompt(niche, quantity);
         List<Map<String, Object>> input = List.of(
                 OpenAiRequestUtils.message("system", "Você é um especialista em marketing."),

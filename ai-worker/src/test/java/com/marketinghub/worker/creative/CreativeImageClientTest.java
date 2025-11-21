@@ -39,6 +39,7 @@ import org.springframework.web.reactive.function.client.ExchangeFunction;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import com.marketinghub.worker.openai.OpenAiApiKeyProvider;
 
 class CreativeImageClientTest {
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -49,17 +50,19 @@ class CreativeImageClientTest {
     CreativeImageClient client;
     CreativeImageOptimizer optimizer;
     AtomicReference<Map<String, Object>> lastRequestPayload;
+    OpenAiApiKeyProvider apiKeyProvider;
 
     @BeforeEach
     void setup() throws Exception {
         MockitoAnnotations.openMocks(this);
         optimizer = new CreativeImageOptimizer(900_000, 1024);
         lastRequestPayload = new AtomicReference<>();
+        apiKeyProvider = new OpenAiApiKeyProvider("key", null);
         String imagePayload = Base64.getEncoder().encodeToString(createSolidPng(128, 128));
         String body = "{\"data\":[{\"b64_json\":\"" + imagePayload + "\"}]}";
         ExchangeFunction exchange = stubImageApi(lastRequestPayload, body, HttpStatus.OK);
         WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);
-        client = new CreativeImageClient(builder, backendAssetClient, optimizer, "key", "http://openai", "gpt-image-1");
+        client = new CreativeImageClient(builder, backendAssetClient, optimizer, apiKeyProvider, "http://openai", "gpt-image-1");
     }
 
     @Test
@@ -87,7 +90,7 @@ class CreativeImageClientTest {
         AtomicReference<Map<String, Object>> requestPayload = new AtomicReference<>();
         ExchangeFunction exchange = stubImageApi(requestPayload, body, HttpStatus.OK);
         WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);
-        CreativeImageClient largeClient = new CreativeImageClient(builder, backendAssetClient, optimizer, "key", "http://openai", "gpt-image-1");
+        CreativeImageClient largeClient = new CreativeImageClient(builder, backendAssetClient, optimizer, apiKeyProvider, "http://openai", "gpt-image-1");
         when(backendAssetClient.uploadImage(any(), any(), any(), any())).thenReturn("/uploads/large.jpg");
 
         String result = largeClient.generateImage("prompt");
@@ -103,7 +106,7 @@ class CreativeImageClientTest {
         AtomicReference<Map<String, Object>> requestPayload = new AtomicReference<>();
         ExchangeFunction exchange = stubImageApi(requestPayload, body, HttpStatus.BAD_REQUEST);
         WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);
-        CreativeImageClient errorClient = new CreativeImageClient(builder, backendAssetClient, optimizer, "key", "http://openai", "gpt-image-1");
+        CreativeImageClient errorClient = new CreativeImageClient(builder, backendAssetClient, optimizer, apiKeyProvider, "http://openai", "gpt-image-1");
 
         assertThatThrownBy(() -> errorClient.generateImage("prompt"))
                 .isInstanceOf(RuntimeException.class)
@@ -122,7 +125,7 @@ class CreativeImageClientTest {
         AtomicReference<Map<String, Object>> requestPayload = new AtomicReference<>();
         ExchangeFunction exchange = stubImageApi(requestPayload, body, HttpStatus.OK);
         WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);
-        CreativeImageClient dalleClient = new CreativeImageClient(builder, backendAssetClient, optimizer, "key", "http://openai", "dall-e-3");
+        CreativeImageClient dalleClient = new CreativeImageClient(builder, backendAssetClient, optimizer, apiKeyProvider, "http://openai", "dall-e-3");
         when(backendAssetClient.uploadImage(any(), any(), any(), any())).thenReturn("/uploads/dalle.jpg");
 
         String result = dalleClient.generateImage("prompt");

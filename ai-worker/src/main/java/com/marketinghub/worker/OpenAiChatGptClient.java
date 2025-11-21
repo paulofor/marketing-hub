@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.successproduct.SuccessProduct;
 import com.marketinghub.worker.openai.AiGenerationRecorder;
+import com.marketinghub.worker.openai.OpenAiApiKeyProvider;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
 import java.net.URI;
@@ -38,18 +39,20 @@ public class OpenAiChatGptClient implements ChatGptClient {
     private final String googleKey;
     private final String searchId;
     private final AiGenerationRecorder generationRecorder;
+    private final boolean enabled;
     private static final String DOMAIN = "SUCCESS_PRODUCT_ENRICHMENT";
 
     public OpenAiChatGptClient(
-            @Value("${openai.api-key:}") String apiKey,
+            OpenAiApiKeyProvider apiKeyProvider,
             @Value("${openai.model:o3}") String model,
             @Value("${google.api-key:}") String googleKey,
             @Value("${google.search-id:}") String searchId,
             AiGenerationRecorder generationRecorder) {
-        this.apiKey = apiKey;
+        this.apiKey = apiKeyProvider.getApiKey();
         this.model = model;
         this.googleKey = googleKey;
         this.searchId = searchId;
+        this.enabled = apiKeyProvider.isConfigured();
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(30))
                 .build();
@@ -58,7 +61,7 @@ public class OpenAiChatGptClient implements ChatGptClient {
 
     @Override
     public SuccessProduct enrich(SuccessProduct product) {
-        if (apiKey == null || apiKey.isBlank()) {
+        if (!enabled) {
             log.warn("OpenAI API key not configured, returning product unchanged");
             return product;
         }

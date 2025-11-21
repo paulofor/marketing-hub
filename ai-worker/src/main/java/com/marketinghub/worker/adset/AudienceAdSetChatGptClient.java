@@ -10,6 +10,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.worker.openai.AiGenerationRecorder;
+import com.marketinghub.worker.openai.OpenAiApiKeyProvider;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
 import org.slf4j.Logger;
@@ -38,29 +39,40 @@ public class AudienceAdSetChatGptClient {
     private final ObjectMapper objectMapper;
     private final String model;
     private final AiGenerationRecorder generationRecorder;
+    private final boolean enabled;
     private static final Logger log = LoggerFactory.getLogger(AudienceAdSetChatGptClient.class);
     private static final Pattern NON_NUMERIC = Pattern.compile("[^0-9,.-]");
     private static final String DOMAIN = "ADSET_PLAN";
 
     public AudienceAdSetChatGptClient(WebClient.Builder builder,
                                       ObjectMapper objectMapper,
-                                      @Value("${openai.api-key:}") String apiKey,
+                                      OpenAiApiKeyProvider apiKeyProvider,
                                       @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
                                       @Value("${openai.model:gpt-3.5-turbo}") String model,
                                       AiGenerationRecorder generationRecorder) {
+        this.enabled = apiKeyProvider.isConfigured();
         WebClient.Builder clientBuilder = builder
-                .baseUrl(baseUrl)
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
-        if (OpenAiRequestUtils.requiresReasoning(model)) {
+                .baseUrl(baseUrl);
+        if (enabled) {
+            clientBuilder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKeyProvider.getApiKey());
+        }
+        if (OpenAiRequestUtils.requiresReasoning(model) && enabled) {
             clientBuilder.defaultHeader("OpenAI-Beta", "reasoning=1");
         }
         this.webClient = clientBuilder.build();
         this.objectMapper = objectMapper;
         this.model = model;
         this.generationRecorder = generationRecorder;
+        if (!enabled) {
+            log.warn("OpenAI API key not configured; ad set planning will be skipped");
+        }
     }
 
     public AdSetPlan planAdSet(Experiment experiment, Audience audience) {
+        if (!enabled) {
+            log.warn("Skipping ad set planning because OpenAI API key is missing");
+            return null;
+        }
         String prompt = buildPrompt(experiment, audience);
         List<Map<String, Object>> input = List.of(
                 OpenAiRequestUtils.message("system", "Você é um especialista em mídia paga para Meta Ads."),

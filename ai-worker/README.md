@@ -27,7 +27,7 @@ mvn spring-boot:run
 
 A aplicação agenda a tarefa `SuccessProductScheduler` para rodar a cada cinco minutos (`0 */5 * * * *`). O método `analyzeNewProducts` busca registros com `novo=true`, chama `ChatGptClient` para preencher os campos (incluindo `name`) e persiste o resultado. Agora a implementação padrão utiliza a API da OpenAI (`OpenAiChatGptClient`). Caso queira utilizar a versão de testes sem chamadas externas, ative o perfil `dummy`.
 
-Para que a integração funcione é necessário definir a variável de ambiente `OPENAI_API_KEY` ou a propriedade `openai.api-key` com o token de acesso. O modelo utilizado pode ser configurado pela propriedade `openai.model` (padrão `o3`).
+Para que a integração funcione é necessário definir a variável de ambiente `OPENAI_API_KEY` ou a propriedade `openai.api-key` com o token de acesso. Também é possível apontar para um arquivo contendo apenas a chave via `OPENAI_API_KEY_FILE` (ou `openai.api-key-file`), útil para cenários com Docker secrets. O modelo utilizado pode ser configurado pela propriedade `openai.model` (padrão `o3`).
 Caso queira permitir buscas na Internet pelo modelo, defina também `GOOGLE_API_KEY` e `GOOGLE_SEARCH_ID` ou as propriedades `google.api-key` e `google.search-id` com as credenciais do Google Search.
 
 Durante a execução, o worker registra logs informando o início e o término da tarefa, além de detalhes sobre cada produto processado. Verifique o console para acompanhar o andamento.

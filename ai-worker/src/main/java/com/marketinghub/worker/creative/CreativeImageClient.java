@@ -17,6 +17,7 @@ import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.marketinghub.worker.openai.OpenAiApiKeyProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
@@ -48,10 +49,10 @@ public class CreativeImageClient {
     public CreativeImageClient(WebClient.Builder builder,
                                BackendAssetClient assetClient,
                                CreativeImageOptimizer imageOptimizer,
-                               @Value("${openai.api-key:}") String apiKey,
+                               OpenAiApiKeyProvider apiKeyProvider,
                                @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
                                @Value("${openai.image-model:gpt-image-1}") String model) {
-        this.enabled = apiKey != null && !apiKey.isBlank();
+        this.enabled = apiKeyProvider.isConfigured();
         HttpClient httpClient = HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) CONNECT_TIMEOUT.toMillis())
                 .responseTimeout(REQUEST_TIMEOUT)
@@ -63,7 +64,7 @@ public class CreativeImageClient {
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(DEFAULT_MAX_IN_MEMORY_SIZE));
         if (enabled) {
-            clientBuilder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
+            clientBuilder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKeyProvider.getApiKey());
         }
         this.webClient = clientBuilder.build();
         this.assetClient = assetClient;

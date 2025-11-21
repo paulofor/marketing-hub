@@ -68,6 +68,7 @@ import AiGenerationListPage from "./pages/ai/AiGenerationListPage";
 import AiWorkerPendingRequestsPage from "./pages/ai/AiWorkerPendingRequestsPage";
 import PrivacyPolicySettingsPage from "./pages/settings/PrivacyPolicySettingsPage";
 import WhatsAppConsolePage from "./pages/whatsapp/WhatsAppConsolePage";
+import LeadPortalExperimentMetricsPage from "./pages/leadPortal/LeadPortalExperimentMetricsPage";
 
 export default function App() {
   return (
@@ -171,6 +172,10 @@ export default function App() {
               <Route
                 path="/funnels/:id/edit"
                 element={<EditFunnelPage />}
+              />
+              <Route
+                path="/lead-portal/metrics"
+                element={<LeadPortalExperimentMetricsPage />}
               />
               <Route path="/chat-dialogs" element={<ChatDialogListPage />} />
               <Route path="/chat-dialogs/new" element={<NewChatDialogPage />} />

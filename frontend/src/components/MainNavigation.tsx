@@ -128,6 +128,11 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: "/funnels", label: "Funil de Vendas", icon: Workflow },
       {
+        to: "/lead-portal/metrics",
+        label: "Envio de imagem no portal",
+        icon: Image,
+      },
+      {
         to: "/facebook-campaigns/ready",
         label: "Experimentos prontos",
         icon: ClipboardCheck,

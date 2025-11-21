@@ -1,5 +1,9 @@
 import PageTitle from "../../components/PageTitle";
-import { useLeadPortalExperimentMetrics } from "../../api/leadPortal/useLeadPortalExperimentMetrics";
+import { Fragment } from "react";
+import {
+  LeadPortalExperimentLead,
+  useLeadPortalExperimentMetrics,
+} from "../../api/leadPortal/useLeadPortalExperimentMetrics";
 
 export default function LeadPortalExperimentMetricsPage() {
   const { data, isLoading, isError } = useLeadPortalExperimentMetrics();
@@ -45,23 +49,70 @@ export default function LeadPortalExperimentMetricsPage() {
                 </thead>
                 <tbody>
                   {metrics.map((row) => {
+                    const uniqueLeads = row.uniqueLeads ?? [];
                     const conversion =
                       row.leadsAccessed > 0
                         ? (row.leadsWithImage / row.leadsAccessed) * 100
                         : 0;
+                    const leadsWithImage = uniqueLeads.filter(
+                      (lead) => lead.sentImage,
+                    );
+
                     return (
-                      <tr key={row.experimentId}>
-                        <td className="fw-semibold">{row.experimentName}</td>
-                        <td>{row.leadsAccessed}</td>
-                        <td>{row.leadsWithImage}</td>
-                        <td>
-                          {conversion.toLocaleString("pt-BR", {
-                            maximumFractionDigits: 1,
-                            minimumFractionDigits: 0,
-                          })}
-                          %
-                        </td>
-                      </tr>
+                      <Fragment key={row.experimentId}>
+                        <tr>
+                          <td className="fw-semibold">{row.experimentName}</td>
+                          <td>{row.leadsAccessed}</td>
+                          <td>{row.leadsWithImage}</td>
+                          <td>
+                            {conversion.toLocaleString("pt-BR", {
+                              maximumFractionDigits: 1,
+                              minimumFractionDigits: 0,
+                            })}
+                            %
+                          </td>
+                        </tr>
+                        <tr className="table-light">
+                          <td colSpan={4}>
+                            <div className="d-flex flex-column gap-3">
+                              <div>
+                                <p className="text-muted fw-semibold small mb-2">
+                                  Leads únicos que acessaram o fluxo
+                                </p>
+                                <div className="d-flex flex-wrap gap-2">
+                                  {uniqueLeads.length === 0 ? (
+                                    <span className="text-muted small">
+                                      Nenhum acesso registrado para este
+                                      experimento.
+                                    </span>
+                                  ) : (
+                                    uniqueLeads.map((lead) => (
+                                      <LeadBadge key={buildLeadKey(lead)} lead={lead} />
+                                    ))
+                                  )}
+                                </div>
+                              </div>
+
+                              <div>
+                                <p className="text-muted fw-semibold small mb-2">
+                                  Enviaram imagem
+                                </p>
+                                <div className="d-flex flex-wrap gap-2">
+                                  {leadsWithImage.length === 0 ? (
+                                    <span className="text-muted small">
+                                      Ainda não há envios de imagem.
+                                    </span>
+                                  ) : (
+                                    leadsWithImage.map((lead) => (
+                                      <LeadBadge key={buildLeadKey(lead)} lead={lead} highlight />
+                                    ))
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      </Fragment>
                     );
                   })}
                 </tbody>
@@ -72,4 +123,32 @@ export default function LeadPortalExperimentMetricsPage() {
       )}
     </div>
   );
+}
+
+function LeadBadge({
+  lead,
+  highlight = false,
+}: {
+  lead: LeadPortalExperimentLead;
+  highlight?: boolean;
+}) {
+  return (
+    <span
+      className={`badge rounded-pill d-flex align-items-center gap-2 py-2 px-3 ${
+        highlight || lead.sentImage ? "text-bg-success" : "text-bg-secondary"
+      }`}
+      title={lead.sentImage ? "Enviou imagem" : "Sem envio de imagem"}
+    >
+      <span className="fw-semibold">{lead.displayName}</span>
+      {(lead.email || lead.phone) && (
+        <span className="small text-light">
+          {[lead.email, lead.phone].filter(Boolean).join(" · ")}
+        </span>
+      )}
+    </span>
+  );
+}
+
+function buildLeadKey(lead: LeadPortalExperimentLead) {
+  return [lead.displayName, lead.email, lead.phone].filter(Boolean).join("-");
 }

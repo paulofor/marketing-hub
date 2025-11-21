@@ -222,80 +222,6 @@ export default function ExperimentDetailPage() {
         : "—",
     },
     {
-      label: "Instant Form",
-      value: experimentInstantForm ? (
-        <div>
-          <div>{experimentInstantForm.name}</div>
-          <div className="text-muted small">
-            ID Meta: {experimentInstantForm.facebookFormId ?? "—"}
-          </div>
-          {experimentInstantForm.status && (
-            <div className="text-muted small">
-              Status: {experimentInstantForm.status}
-            </div>
-          )}
-          {experimentInstantForm.locale && (
-            <div className="text-muted small">
-              Idioma: {experimentInstantForm.locale}
-            </div>
-          )}
-          <div className="d-flex flex-column gap-1 mt-1">
-            {experimentInstantForm.followUpActionUrl ? (
-              <div className="d-flex flex-column gap-1">
-                <a
-                  href={experimentInstantForm.followUpActionUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="small"
-                >
-                  Página de agradecimento
-                </a>
-                <span className="text-muted small text-break">
-                  {experimentInstantForm.followUpActionUrl}
-                </span>
-              </div>
-            ) : null}
-            {experimentInstantForm.privacyPolicyUrl ? (
-              <div className="d-flex flex-column gap-1">
-                <a
-                  href={experimentInstantForm.privacyPolicyUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="small"
-                >
-                  Política de privacidade
-                </a>
-                <span className="text-muted small text-break">
-                  {experimentInstantForm.privacyPolicyUrl}
-                </span>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      ) : (
-        "—"
-      ),
-    },
-    {
-      label: "Página de agradecimento padrão",
-      value: data.followUpActionUrl ? (
-        <div className="d-flex flex-column gap-1">
-          <a
-            href={data.followUpActionUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Abrir página
-          </a>
-          <span className="text-muted small text-break">
-            {data.followUpActionUrl}
-          </span>
-        </div>
-      ) : (
-        "—"
-      ),
-    },
-    {
       label: "Conta do Instagram",
       value: instagramAccount
         ? `${instagramAccount.name} (${instagramAccount.handle})`
@@ -324,7 +250,6 @@ export default function ExperimentDetailPage() {
       value: data.sampleSize ?? preset?.sampleSize ?? "—",
     },
     { label: "Criativos a gerar", value: data.creativesToGenerate ?? "—" },
-    { label: "Instant forms a gerar", value: data.instantFormsToGenerate ?? "—" },
     { label: "E-mails a gerar", value: data.emailsToGenerate ?? "—" },
     {
       label: "Fluxo de portal do lead",

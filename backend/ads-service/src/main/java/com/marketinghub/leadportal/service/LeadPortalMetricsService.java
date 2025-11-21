@@ -55,9 +55,10 @@ public class LeadPortalMetricsService {
 
         jdbcTemplate.query(sql, rs -> {
             Long experimentId = rs.getLong("experiment_id");
+            String experimentName = getString(rs, "experiment_name");
             ExperimentMetricsAccumulator accumulator =
-                    experiments.computeIfAbsent(experimentId, id -> new ExperimentMetricsAccumulator(
-                            id, rs.getString("experiment_name")));
+                    experiments.computeIfAbsent(
+                            experimentId, id -> new ExperimentMetricsAccumulator(id, experimentName));
 
             Long submissionId = rs.getObject("submission_id", Long.class);
             if (submissionId == null) {
@@ -129,6 +130,14 @@ public class LeadPortalMetricsService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String getString(ResultSet rs, String columnLabel) {
+        try {
+            return rs.getString(columnLabel);
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Erro ao ler métricas do portal do lead", ex);
+        }
     }
 
     private static String coalesce(String primary, String fallback) {

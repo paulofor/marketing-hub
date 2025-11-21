@@ -44,19 +44,9 @@ export default function FlowPage() {
       <header className="flow-header">
         <h1>{flow.name}</h1>
         {flow.description ? <p>{flow.description}</p> : null}
-        {flow.model ? <p className="flow-meta">Modelo: {flow.model}</p> : null}
       </header>
 
       <FlowForm flow={flow} />
-
-      {flow.prompt ? (
-        <footer className="flow-footer">
-          <details>
-            <summary>Prompt utilizado para gerar este fluxo</summary>
-            <pre>{flow.prompt}</pre>
-          </details>
-        </footer>
-      ) : null}
     </div>
   );
 }

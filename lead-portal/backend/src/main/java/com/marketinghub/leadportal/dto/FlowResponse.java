@@ -9,8 +9,6 @@ public record FlowResponse(
         String slug,
         String name,
         String description,
-        String model,
-        String prompt,
         List<QuestionResponse> questions) {
 
     public static FlowResponse from(Flow flow) {
@@ -22,8 +20,6 @@ public record FlowResponse(
                 flow.slug(),
                 flow.name(),
                 flow.description(),
-                flow.model(),
-                flow.prompt(),
                 questions);
     }
 

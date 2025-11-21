@@ -58,7 +58,9 @@ class FlowControllerTest {
 
         mockMvc.perform(get("/api/flows/diagnostico"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Diagnóstico"));
+                .andExpect(jsonPath("$.name").value("Diagnóstico"))
+                .andExpect(jsonPath("$.model").doesNotExist())
+                .andExpect(jsonPath("$.prompt").doesNotExist());
     }
 
     @Test

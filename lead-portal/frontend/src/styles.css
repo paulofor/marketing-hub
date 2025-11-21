@@ -348,6 +348,34 @@ form.flow-form {
   font-weight: 500;
 }
 
+.error-banner {
+  background: #fef2f2;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  color: #b91c1c;
+  font-weight: 500;
+  border: 1px solid #fecdd3;
+}
+
+.thank-you-card {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e0e7ff 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 12px 30px rgba(79, 70, 229, 0.15);
+  color: #0f172a;
+}
+
+.thank-you-card h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  color: #4338ca;
+}
+
+.thank-you-card p {
+  margin: 0.35rem 0;
+  line-height: 1.6;
+}
+
 .flow-footer details {
   background: rgba(99, 102, 241, 0.08);
   padding: 1rem;

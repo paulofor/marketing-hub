@@ -1,5 +1,7 @@
 import {
   CreateLeadPayload,
+  FlowSubmissionPayload,
+  FlowSubmissionResponse,
   LeadDetails,
   LeadPortalFlow,
   LeadStatus
@@ -87,6 +89,30 @@ export async function fetchLeadPortalFlow(slug: string): Promise<LeadPortalFlow>
   }
 
   return (await response.json()) as LeadPortalFlow;
+}
+
+export async function submitFlowSubmission(
+  slug: string,
+  payload: FlowSubmissionPayload,
+  image?: File | null
+): Promise<FlowSubmissionResponse> {
+  const formData = new FormData();
+  formData.append("payload", new Blob([JSON.stringify(payload)], { type: "application/json" }));
+  if (image) {
+    formData.append("image", image);
+  }
+
+  const response = await fetch(buildUrl(`/flows/${encodeURIComponent(slug)}/submissions`), {
+    method: "POST",
+    body: formData
+  });
+
+  if (!response.ok) {
+    const message = await extractError(response);
+    throw new Error(message);
+  }
+
+  return (await response.json()) as FlowSubmissionResponse;
 }
 
 async function extractError(response: Response): Promise<string> {

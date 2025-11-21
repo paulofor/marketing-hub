@@ -77,42 +77,50 @@ public class LeadPortalMetricsService {
         return experiments.values().stream().map(ExperimentMetricsAccumulator::toDto).toList();
     }
 
-    private String buildUserKey(ResultSet rs, long submissionId) throws SQLException {
-        byte[] leadIdBytes = rs.getBytes("lead_id");
-        String email = normalize(rs.getString("primary_contact_email"));
-        String phone = normalize(rs.getString("primary_contact_phone"));
+    private String buildUserKey(ResultSet rs, long submissionId) {
+        try {
+            byte[] leadIdBytes = rs.getBytes("lead_id");
+            String email = normalize(rs.getString("primary_contact_email"));
+            String phone = normalize(rs.getString("primary_contact_phone"));
 
-        if (leadIdBytes != null && leadIdBytes.length > 0) {
-            return "lead:" + Base64.getEncoder().encodeToString(leadIdBytes);
+            if (leadIdBytes != null && leadIdBytes.length > 0) {
+                return "lead:" + Base64.getEncoder().encodeToString(leadIdBytes);
+            }
+            if (email != null) {
+                return "email:" + email.toLowerCase(Locale.ROOT);
+            }
+            if (phone != null) {
+                return "phone:" + phone;
+            }
+            return "submission:" + submissionId;
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Erro ao ler métricas do portal do lead", ex);
         }
-        if (email != null) {
-            return "email:" + email.toLowerCase(Locale.ROOT);
-        }
-        if (phone != null) {
-            return "phone:" + phone;
-        }
-        return "submission:" + submissionId;
     }
 
-    private String buildDisplayName(ResultSet rs, long submissionId) throws SQLException {
-        String name = normalize(rs.getString("primary_contact_name"));
-        String email = normalize(rs.getString("primary_contact_email"));
-        String phone = normalize(rs.getString("primary_contact_phone"));
-        byte[] leadIdBytes = rs.getBytes("lead_id");
+    private String buildDisplayName(ResultSet rs, long submissionId) {
+        try {
+            String name = normalize(rs.getString("primary_contact_name"));
+            String email = normalize(rs.getString("primary_contact_email"));
+            String phone = normalize(rs.getString("primary_contact_phone"));
+            byte[] leadIdBytes = rs.getBytes("lead_id");
 
-        if (name != null) {
-            return name;
+            if (name != null) {
+                return name;
+            }
+            if (email != null) {
+                return email;
+            }
+            if (phone != null) {
+                return phone;
+            }
+            if (leadIdBytes != null && leadIdBytes.length > 0) {
+                return "Lead " + Base64.getEncoder().encodeToString(leadIdBytes).substring(0, 8);
+            }
+            return "Submissão #" + submissionId;
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Erro ao ler métricas do portal do lead", ex);
         }
-        if (email != null) {
-            return email;
-        }
-        if (phone != null) {
-            return phone;
-        }
-        if (leadIdBytes != null && leadIdBytes.length > 0) {
-            return "Lead " + Base64.getEncoder().encodeToString(leadIdBytes).substring(0, 8);
-        }
-        return "Submissão #" + submissionId;
     }
 
     private String normalize(String value) {

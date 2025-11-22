@@ -4,10 +4,12 @@ import com.marketinghub.leadportal.dto.FlowResponse;
 import com.marketinghub.leadportal.dto.UpsertFlowRequest;
 import com.marketinghub.leadportal.model.Flow;
 import com.marketinghub.leadportal.model.FlowQuestion;
+import com.marketinghub.leadportal.model.FlowAccessMetadata;
 import com.marketinghub.leadportal.service.FlowService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.stream.Collectors;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -45,8 +47,9 @@ public class FlowController {
     }
 
     @GetMapping("/{slug}")
-    public FlowResponse getFlow(@PathVariable("slug") String slug) {
-        return FlowResponse.from(flowService.getAndTrackAccess(slug));
+    public FlowResponse getFlow(@PathVariable("slug") String slug, HttpServletRequest request) {
+        FlowAccessMetadata accessMetadata = FlowAccessMetadata.from(request);
+        return FlowResponse.from(flowService.getAndTrackAccess(slug, accessMetadata));
     }
 
     @DeleteMapping("/{slug}")

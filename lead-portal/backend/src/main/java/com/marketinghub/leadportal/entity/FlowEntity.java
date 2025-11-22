@@ -32,6 +32,9 @@ public class FlowEntity {
     @Convert(converter = FlowQuestionListConverter.class)
     private List<FlowQuestion> questions;
 
+    @Column(name = "access_count", nullable = false, columnDefinition = "bigint default 0")
+    private long accessCount = 0L;
+
     public String getSlug() {
         return slug;
     }
@@ -78,6 +81,14 @@ public class FlowEntity {
 
     public void setQuestions(List<FlowQuestion> questions) {
         this.questions = questions;
+    }
+
+    public long getAccessCount() {
+        return accessCount;
+    }
+
+    public void setAccessCount(long accessCount) {
+        this.accessCount = accessCount;
     }
 
     public static FlowEntity fromModel(Flow flow) {

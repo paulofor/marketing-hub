@@ -31,24 +31,43 @@ public class LeadPortalMetricsService {
                 SELECT e.id AS experiment_id,
                        e.name AS experiment_name,
                        e.created_at AS experiment_created_at,
-                       lps.id AS submission_id,
-                       lps.lead_id,
-                       lps.primary_contact_name,
-                       lps.primary_contact_email,
-                       lps.primary_contact_phone,
-                       MAX(CASE WHEN lpsa.asset_id IS NOT NULL THEN 1 ELSE 0 END) AS sent_image
+                       submissions.submission_id,
+                       submissions.lead_id,
+                       submissions.primary_contact_name,
+                       submissions.primary_contact_email,
+                       submissions.primary_contact_phone,
+                       submissions.sent_image
                 FROM experiment e
-                LEFT JOIN lead_portal_submission lps ON lps.experiment_id = e.id
-                LEFT JOIN lead_portal_submission_answer lpsa ON lpsa.submission_id = lps.id AND lpsa.asset_id IS NOT NULL
-                GROUP BY e.id,
-                         e.name,
-                         e.created_at,
-                         lps.id,
-                         lps.lead_id,
-                         lps.primary_contact_name,
-                         lps.primary_contact_email,
-                         lps.primary_contact_phone
-                ORDER BY e.created_at DESC, lps.id
+                LEFT JOIN (
+                    SELECT lps.experiment_id,
+                           lps.id AS submission_id,
+                           lps.lead_id,
+                           lps.primary_contact_name,
+                           lps.primary_contact_email,
+                           lps.primary_contact_phone,
+                           MAX(CASE WHEN lpsa.asset_id IS NOT NULL THEN 1 ELSE 0 END) AS sent_image
+                    FROM lead_portal_submission lps
+                    LEFT JOIN lead_portal_submission_answer lpsa
+                        ON lpsa.submission_id = lps.id AND lpsa.asset_id IS NOT NULL
+                    GROUP BY lps.experiment_id,
+                             lps.id,
+                             lps.lead_id,
+                             lps.primary_contact_name,
+                             lps.primary_contact_email,
+                             lps.primary_contact_phone
+                    UNION ALL
+                    SELECT exp.id AS experiment_id,
+                           fs.id AS submission_id,
+                           NULL AS lead_id,
+                           fs.name AS primary_contact_name,
+                           fs.email AS primary_contact_email,
+                           NULL AS primary_contact_phone,
+                           CASE WHEN fs.stored_file_name IS NOT NULL THEN 1 ELSE 0 END AS sent_image
+                    FROM flow_submissions fs
+                    JOIN lead_portal_flow lpf ON lpf.slug = fs.flow_slug
+                    JOIN experiment exp ON exp.lead_portal_flow_id = lpf.id
+                ) submissions ON submissions.experiment_id = e.id
+                ORDER BY e.created_at DESC, submissions.submission_id
                 """;
 
         Map<Long, ExperimentMetricsAccumulator> experiments = new LinkedHashMap<>();
@@ -60,7 +79,7 @@ public class LeadPortalMetricsService {
                     experiments.computeIfAbsent(
                             experimentId, id -> new ExperimentMetricsAccumulator(id, experimentName));
 
-            Long submissionId = rs.getObject("submission_id", Long.class);
+            String submissionId = getString(rs, "submission_id");
             if (submissionId == null) {
                 return;
             }
@@ -78,7 +97,7 @@ public class LeadPortalMetricsService {
         return experiments.values().stream().map(ExperimentMetricsAccumulator::toDto).toList();
     }
 
-    private String buildUserKey(ResultSet rs, long submissionId) {
+    private String buildUserKey(ResultSet rs, String submissionId) {
         try {
             byte[] leadIdBytes = rs.getBytes("lead_id");
             String email = normalize(rs.getString("primary_contact_email"));
@@ -99,7 +118,7 @@ public class LeadPortalMetricsService {
         }
     }
 
-    private String buildDisplayName(ResultSet rs, long submissionId) {
+    private String buildDisplayName(ResultSet rs, String submissionId) {
         try {
             String name = normalize(rs.getString("primary_contact_name"));
             String email = normalize(rs.getString("primary_contact_email"));

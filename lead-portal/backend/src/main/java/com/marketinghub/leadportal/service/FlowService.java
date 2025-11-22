@@ -75,6 +75,7 @@ public class FlowService {
         access.setClientIp(metadata.clientIp());
         access.setUserAgent(metadata.userAgent());
         access.setReferer(metadata.referer());
+        access.setVisitorId(metadata.visitorId());
 
         accessRepository.save(access);
     }

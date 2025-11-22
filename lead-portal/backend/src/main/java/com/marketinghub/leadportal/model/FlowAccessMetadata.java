@@ -1,14 +1,19 @@
 package com.marketinghub.leadportal.model;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Arrays;
 import org.springframework.util.StringUtils;
 
-public record FlowAccessMetadata(String clientIp, String userAgent, String referer) {
+public record FlowAccessMetadata(String clientIp, String userAgent, String referer, String visitorId) {
+
+    private static final String VISITOR_COOKIE_NAME = "marketinghub_visitor_id";
 
     public static FlowAccessMetadata from(HttpServletRequest request) {
         return new FlowAccessMetadata(resolveClientIp(request),
                 trimToNull(request.getHeader("User-Agent")),
-                trimToNull(request.getHeader("Referer")));
+                trimToNull(request.getHeader("Referer")),
+                resolveVisitorId(request));
     }
 
     private static String resolveClientIp(HttpServletRequest request) {
@@ -17,6 +22,20 @@ public record FlowAccessMetadata(String clientIp, String userAgent, String refer
             return forwardedFor.split(",", 2)[0].trim();
         }
         return request.getRemoteAddr();
+    }
+
+    private static String resolveVisitorId(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
+            return null;
+        }
+
+        return Arrays.stream(cookies)
+                .filter(cookie -> VISITOR_COOKIE_NAME.equals(cookie.getName()))
+                .map(Cookie::getValue)
+                .map(FlowAccessMetadata::trimToNull)
+                .findFirst()
+                .orElse(null);
     }
 
     private static String trimToNull(String value) {

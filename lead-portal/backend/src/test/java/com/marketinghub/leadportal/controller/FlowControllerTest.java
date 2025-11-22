@@ -6,7 +6,10 @@ import com.marketinghub.leadportal.dto.UpsertFlowRequest;
 import com.marketinghub.leadportal.model.Flow;
 import com.marketinghub.leadportal.model.FlowQuestionType;
 import com.marketinghub.leadportal.service.FlowService;
+import com.marketinghub.leadportal.entity.FlowAccessEntity;
+import com.marketinghub.leadportal.repository.FlowAccessRepository;
 import java.util.List;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -37,11 +41,16 @@ class FlowControllerTest {
     @Autowired
     private FlowService flowService;
 
+    @Autowired
+    private FlowAccessRepository flowAccessRepository;
+
     @BeforeEach
     void clearFlows() {
         flowService.list().stream()
                 .map(com.marketinghub.leadportal.model.Flow::slug)
                 .forEach(flowService::delete);
+
+        flowAccessRepository.deleteAll();
     }
 
     @Test
@@ -60,6 +69,24 @@ class FlowControllerTest {
                 .andExpect(jsonPath("$.name").value("Diagnóstico"))
                 .andExpect(jsonPath("$.model").doesNotExist())
                 .andExpect(jsonPath("$.prompt").doesNotExist());
+    }
+
+    @Test
+    void getFlowRegistersVisitorCookieOnAccess() throws Exception {
+        mockMvc.perform(put("/api/flows/diagnostico")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(buildRequest())))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/flows/diagnostico")
+                        .cookie(new Cookie("marketinghub_visitor_id", "visitor-123")))
+                .andExpect(status().isOk());
+
+        List<FlowAccessEntity> accesses = flowAccessRepository.findAll();
+        assertThat(accesses)
+                .singleElement()
+                .extracting(FlowAccessEntity::getVisitorId)
+                .isEqualTo("visitor-123");
     }
 
     @Test

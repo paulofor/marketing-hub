@@ -8,8 +8,10 @@ import App from "./App";
 import axios from "axios";
 import { apiBaseUrl } from "./config/api";
 import "./api/http";
+import { ensureVisitorIdCookie } from "./utils/visitorCookie";
 
 axios.defaults.baseURL = apiBaseUrl;
+ensureVisitorIdCookie();
 
 const queryClient = new QueryClient();
 const socket = io({ path: "/ws" });

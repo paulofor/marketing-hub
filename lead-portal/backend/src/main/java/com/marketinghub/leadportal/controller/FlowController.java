@@ -4,10 +4,17 @@ import com.marketinghub.leadportal.dto.FlowResponse;
 import com.marketinghub.leadportal.dto.UpsertFlowRequest;
 import com.marketinghub.leadportal.model.Flow;
 import com.marketinghub.leadportal.model.FlowQuestion;
+import com.marketinghub.leadportal.model.FlowAccessMetadata;
 import com.marketinghub.leadportal.service.FlowService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.stream.Collectors;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.time.Duration;
+import java.util.UUID;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -45,8 +52,12 @@ public class FlowController {
     }
 
     @GetMapping("/{slug}")
-    public FlowResponse getFlow(@PathVariable("slug") String slug) {
-        return FlowResponse.from(flowService.getAndTrackAccess(slug));
+    public FlowResponse getFlow(@PathVariable("slug") String slug,
+                                HttpServletRequest request,
+                                HttpServletResponse response) {
+        FlowAccessMetadata accessMetadata = FlowAccessMetadata.from(request);
+        FlowAccessMetadata withVisitor = ensureVisitorCookie(accessMetadata, response);
+        return FlowResponse.from(flowService.getAndTrackAccess(slug, withVisitor));
     }
 
     @DeleteMapping("/{slug}")
@@ -67,5 +78,25 @@ public class FlowController {
                 request.getDescription(),
                 request.getPlaceholder(),
                 options);
+    }
+
+    private FlowAccessMetadata ensureVisitorCookie(FlowAccessMetadata accessMetadata, HttpServletResponse response) {
+        if (accessMetadata.visitorId() != null && !accessMetadata.visitorId().isBlank()) {
+            return accessMetadata;
+        }
+
+        String visitorId = UUID.randomUUID().toString();
+        ResponseCookie cookie = ResponseCookie.from(FlowAccessMetadata.VISITOR_COOKIE_NAME, visitorId)
+                .httpOnly(false)
+                .path("/")
+                .maxAge(Duration.ofDays(365))
+                .sameSite("Lax")
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        return new FlowAccessMetadata(accessMetadata.clientIp(),
+                accessMetadata.userAgent(),
+                accessMetadata.referer(),
+                visitorId);
     }
 }

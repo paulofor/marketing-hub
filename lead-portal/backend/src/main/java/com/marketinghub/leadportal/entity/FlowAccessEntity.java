@@ -29,6 +29,9 @@ public class FlowAccessEntity {
     @Column(length = 1024)
     private String referer;
 
+    @Column(name = "visitor_id", length = 128)
+    private String visitorId;
+
     @CreationTimestamp
     @Column(name = "accessed_at", updatable = false)
     private Instant accessedAt;
@@ -67,6 +70,14 @@ public class FlowAccessEntity {
 
     public void setReferer(String referer) {
         this.referer = referer;
+    }
+
+    public String getVisitorId() {
+        return visitorId;
+    }
+
+    public void setVisitorId(String visitorId) {
+        this.visitorId = visitorId;
     }
 
     public Instant getAccessedAt() {

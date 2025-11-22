@@ -46,7 +46,7 @@ public class FlowController {
 
     @GetMapping("/{slug}")
     public FlowResponse getFlow(@PathVariable("slug") String slug) {
-        return FlowResponse.from(flowService.get(slug));
+        return FlowResponse.from(flowService.getAndTrackAccess(slug));
     }
 
     @DeleteMapping("/{slug}")

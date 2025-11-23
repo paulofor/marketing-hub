@@ -10,6 +10,7 @@ import com.marketinghub.leadportal.entity.FlowAccessEntity;
 import com.marketinghub.leadportal.repository.FlowAccessRepository;
 import java.util.List;
 import jakarta.servlet.http.Cookie;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,10 +22,12 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -44,6 +47,9 @@ class FlowControllerTest {
     @Autowired
     private FlowAccessRepository flowAccessRepository;
 
+    @Autowired
+    private MeterRegistry meterRegistry;
+
     @BeforeEach
     void clearFlows() {
         flowService.list().stream()
@@ -51,6 +57,7 @@ class FlowControllerTest {
                 .forEach(flowService::delete);
 
         flowAccessRepository.deleteAll();
+        meterRegistry.clear();
     }
 
     @Test
@@ -87,6 +94,24 @@ class FlowControllerTest {
                 .singleElement()
                 .extracting(FlowAccessEntity::getVisitorId)
                 .isEqualTo("visitor-123");
+    }
+
+    @Test
+    void flowAccessesAreExposedAsPrometheusMetrics() throws Exception {
+        mockMvc.perform(put("/api/flows/diagnostico")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(buildRequest())))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/flows/diagnostico"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/lead-portal/metrics"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("lead_portal_flow_access_total{slug=\"diagnostico\"")));
+
+        double count = meterRegistry.counter("lead_portal_flow_access_total", "slug", "diagnostico").count();
+        assertThat(count).isEqualTo(1d);
     }
 
     @Test

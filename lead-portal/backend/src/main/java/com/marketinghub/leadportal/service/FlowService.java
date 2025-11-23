@@ -7,6 +7,7 @@ import com.marketinghub.leadportal.model.Flow;
 import com.marketinghub.leadportal.model.FlowAccessMetadata;
 import com.marketinghub.leadportal.repository.FlowAccessRepository;
 import com.marketinghub.leadportal.repository.FlowRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,10 +17,12 @@ public class FlowService {
 
     private final FlowRepository repository;
     private final FlowAccessRepository accessRepository;
+    private final MeterRegistry meterRegistry;
 
-    public FlowService(FlowRepository repository, FlowAccessRepository accessRepository) {
+    public FlowService(FlowRepository repository, FlowAccessRepository accessRepository, MeterRegistry meterRegistry) {
         this.repository = repository;
         this.accessRepository = accessRepository;
+        this.meterRegistry = meterRegistry;
     }
 
     @Transactional
@@ -48,6 +51,7 @@ public class FlowService {
                 .orElseThrow(() -> new FlowNotFoundException(slug));
 
         repository.incrementAccessCount(slug);
+        recordAccessMetric(slug);
         registerAccess(slug, accessMetadata);
 
         return entity.toModel();
@@ -78,5 +82,9 @@ public class FlowService {
         access.setVisitorId(metadata.visitorId());
 
         accessRepository.save(access);
+    }
+
+    private void recordAccessMetric(String slug) {
+        meterRegistry.counter("lead_portal_flow_access_total", "slug", slug).increment();
     }
 }

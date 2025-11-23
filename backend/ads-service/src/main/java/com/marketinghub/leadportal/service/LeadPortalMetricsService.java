@@ -27,10 +27,43 @@ public class LeadPortalMetricsService {
      * Retorna contagens básicas de submissões e envios de imagem por experimento.
      */
     public List<LeadPortalExperimentMetricsDto> listExperimentMetrics() {
-        String sql = """
+        Map<Long, ExperimentMetricsAccumulator> experiments = new LinkedHashMap<>();
+
+        populateAccessCounts(experiments);
+        populateSubmissionMetrics(experiments);
+
+        return experiments.values().stream().map(ExperimentMetricsAccumulator::toDto).toList();
+    }
+
+    private void populateAccessCounts(Map<Long, ExperimentMetricsAccumulator> experiments) {
+        String accessSql = """
                 SELECT e.id AS experiment_id,
                        e.name AS experiment_name,
-                       e.created_at AS experiment_created_at,
+                       COUNT(DISTINCT COALESCE(fa.visitor_id,
+                                                CONCAT('ip:', fa.client_ip),
+                                                CONCAT('access:', fa.id))) AS unique_accesses
+                FROM experiment e
+                JOIN lead_portal_flow lpf ON lpf.id = e.lead_portal_flow_id
+                LEFT JOIN flow_access fa ON fa.flow_slug = lpf.slug
+                GROUP BY e.id, e.name
+                ORDER BY e.created_at DESC
+                """;
+
+        jdbcTemplate.query(accessSql, rs -> {
+            Long experimentId = rs.getLong("experiment_id");
+            String experimentName = getString(rs, "experiment_name");
+            ExperimentMetricsAccumulator accumulator =
+                    experiments.computeIfAbsent(
+                            experimentId, id -> new ExperimentMetricsAccumulator(id, experimentName));
+
+            accumulator.setLeadsAccessed(rs.getLong("unique_accesses"));
+        });
+    }
+
+    private void populateSubmissionMetrics(Map<Long, ExperimentMetricsAccumulator> experiments) {
+        String submissionSql = """
+                SELECT e.id AS experiment_id,
+                       e.name AS experiment_name,
                        submissions.submission_id,
                        submissions.lead_id,
                        submissions.primary_contact_name,
@@ -70,9 +103,7 @@ public class LeadPortalMetricsService {
                 ORDER BY e.created_at DESC, submissions.submission_id
                 """;
 
-        Map<Long, ExperimentMetricsAccumulator> experiments = new LinkedHashMap<>();
-
-        jdbcTemplate.query(sql, rs -> {
+        jdbcTemplate.query(submissionSql, rs -> {
             Long experimentId = rs.getLong("experiment_id");
             String experimentName = getString(rs, "experiment_name");
             ExperimentMetricsAccumulator accumulator =
@@ -93,8 +124,6 @@ public class LeadPortalMetricsService {
 
             accumulator.addUser(userKey, user);
         });
-
-        return experiments.values().stream().map(ExperimentMetricsAccumulator::toDto).toList();
     }
 
     private String buildUserKey(ResultSet rs, String submissionId) {
@@ -167,11 +196,16 @@ public class LeadPortalMetricsService {
     private static class ExperimentMetricsAccumulator {
         private final long experimentId;
         private final String experimentName;
+        private long leadsAccessed;
         private final Map<String, LeadPortalExperimentUserDto> uniqueUsers = new LinkedHashMap<>();
 
         ExperimentMetricsAccumulator(long experimentId, String experimentName) {
             this.experimentId = experimentId;
             this.experimentName = experimentName;
+        }
+
+        void setLeadsAccessed(long leadsAccessed) {
+            this.leadsAccessed = leadsAccessed;
         }
 
         void addUser(String userKey, LeadPortalExperimentUserDto user) {
@@ -189,7 +223,7 @@ public class LeadPortalMetricsService {
             return new LeadPortalExperimentMetricsDto(
                     experimentId,
                     experimentName,
-                    leads.size(),
+                    leadsAccessed,
                     leadsWithImage,
                     leads);
         }

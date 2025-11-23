@@ -1,9 +1,4 @@
 version: '3.9'
-services:
-  mysql:
-    image: mysql:5.7
-    environment:
-      - MYSQL_ROOT_PASSWORD=ads
-      - MYSQL_DATABASE=ads
-    ports:
-      - "3306:3306"
+services: {}
+
+# Local MySQL container removed. Application relies on external MySQL server.

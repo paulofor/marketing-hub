@@ -6,10 +6,18 @@ import { useUpdateChatDialog } from "../../api/chatDialog/useUpdateChatDialog";
 export default function ChatDialogListPage() {
   const { data, isLoading } = useChatDialogs();
   const update = useUpdateChatDialog();
+  const parseDate = (value?: string) => {
+    if (!value) return 0;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+  };
+  const formatDate = (value?: string) => {
+    const timestamp = parseDate(value);
+    return timestamp ? new Date(timestamp).toLocaleDateString("pt-BR") : "";
+  };
   const dialogs = Array.isArray(data)
     ? [...data].sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        (a, b) => parseDate(b.createdAt) - parseDate(a.createdAt),
       )
     : [];
   if (isLoading) return <p>Carregando...</p>;
@@ -26,6 +34,7 @@ export default function ChatDialogListPage() {
               <th>ID</th>
               <th>Descrição</th>
               <th>Tema</th>
+              <th>Criado em</th>
               <th>URL</th>
               <th>Ações</th>
             </tr>
@@ -36,6 +45,7 @@ export default function ChatDialogListPage() {
                 <td>{d.id}</td>
                 <td>{d.description}</td>
                 <td>{d.theme}</td>
+                <td>{formatDate(d.createdAt)}</td>
                 <td>
                   <a href={d.url} target="_blank" rel="noopener noreferrer">
                     Abrir

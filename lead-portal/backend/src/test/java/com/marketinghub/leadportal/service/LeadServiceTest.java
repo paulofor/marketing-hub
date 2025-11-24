@@ -6,40 +6,47 @@ import com.marketinghub.leadportal.config.StorageProperties;
 import com.marketinghub.leadportal.model.Lead;
 import com.marketinghub.leadportal.model.LeadStatus;
 import com.marketinghub.leadportal.storage.FileStorageService;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.UUID;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.springframework.mock.web.MockMultipartFile;
+import software.amazon.awssdk.core.ResponseBytes;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 class LeadServiceTest {
 
-    private Path tempDir;
     private LeadService leadService;
+    private S3Client s3Client;
+    private StorageProperties properties;
 
     @BeforeEach
-    void setUp() throws IOException {
-        tempDir = Files.createTempDirectory("lead-service-test");
-        StorageProperties properties = new StorageProperties();
-        properties.setUploadDir(tempDir.toString());
-        FileStorageService fileStorageService = new FileStorageService(properties);
-        fileStorageService.init();
-        leadService = new LeadService(fileStorageService);
-    }
+    void setUp() {
+        properties = new StorageProperties();
+        properties.setBucket("test-bucket");
+        properties.setEndpoint("http://localhost:9000");
+        properties.setAccessKeyId("test-key");
+        properties.setSecretAccessKey("test-secret");
 
-    @AfterEach
-    void tearDown() throws IOException {
-        Files.walk(tempDir)
-                .sorted((a, b) -> b.compareTo(a))
-                .forEach(path -> {
-                    try {
-                        Files.deleteIfExists(path);
-                    } catch (IOException ignored) {
-                    }
-                });
+        s3Client = Mockito.mock(S3Client.class);
+        FileStorageService fileStorageService = new FileStorageService(properties, s3Client);
+        fileStorageService.init();
+
+        Mockito.lenient()
+                .when(s3Client.putObject(Mockito.any(PutObjectRequest.class), Mockito.any(RequestBody.class)))
+                .thenReturn(PutObjectResponse.builder().build());
+
+        Mockito.lenient()
+                .when(s3Client.getObjectAsBytes(Mockito.any(GetObjectRequest.class)))
+                .thenReturn(ResponseBytes.fromByteArray(GetObjectResponse.builder().build(), new byte[] {1, 2, 3}));
+
+        leadService = new LeadService(fileStorageService);
     }
 
     @Test
@@ -51,8 +58,13 @@ class LeadServiceTest {
 
         assertThat(lead.getId()).isNotNull();
         assertThat(lead.getStatus()).isEqualTo(LeadStatus.PROCESSING);
-        assertThat(Files.exists(tempDir.resolve(lead.getStoredFileName()))).isTrue();
         assertThat(leadService.getLead(lead.getId()).getEmail()).isEqualTo("ana@example.com");
+
+        ArgumentCaptor<PutObjectRequest> putCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+        Mockito.verify(s3Client).putObject(putCaptor.capture(), Mockito.any(RequestBody.class));
+        assertThat(putCaptor.getValue().bucket()).isEqualTo(properties.getBucket());
+        assertThat(putCaptor.getValue().key()).isEqualTo(lead.getStoredFileName());
+        assertThat(lead.getStoredFileName()).endsWith("example.png");
     }
 
     @Test

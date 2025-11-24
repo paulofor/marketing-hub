@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -73,6 +74,10 @@ public class FlowSubmissionService {
 
     public Resource loadImage(String storedFileName) {
         return fileStorageService.loadAsResource(storedFileName);
+    }
+
+    public Optional<String> resolvePublicUrl(String storedFileName) {
+        return fileStorageService.resolvePublicUrl(storedFileName);
     }
 
     private void validateRequiredQuestions(Flow flow, FlowSubmissionRequest request, MultipartFile imageFile) {

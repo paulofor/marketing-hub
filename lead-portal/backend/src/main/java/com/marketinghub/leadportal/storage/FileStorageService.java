@@ -18,6 +18,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 @Service
 public class FileStorageService {
@@ -62,10 +63,17 @@ public class FileStorageService {
                     file.getSize(),
                     properties.getBucket());
 
-            s3Client.putObject(
+            PutObjectResponse response = s3Client.putObject(
                     putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+
+            log.info(
+                    "File '{}' stored successfully in bucket '{}' (etag={})",
+                    storedFileName,
+                    properties.getBucket(),
+                    response.eTag());
             return storedFileName;
         } catch (SdkException | IOException ex) {
+            log.error("Failed to store file '{}' in bucket '{}'", storedFileName, properties.getBucket(), ex);
             throw new StorageException("Failed to store file", ex);
         }
     }

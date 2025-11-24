@@ -170,4 +170,41 @@ class FlowSubmissionControllerTest {
         mockMvc.perform(multipart("/api/flows/planejamento-acao-21-dias/submissions").file(payloadPart))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void submissionIgnoresQuestionsWithoutType() throws Exception {
+        Flow flowWithNullType = new Flow(
+                "fluxo-sem-tipo",
+                "Fluxo com pergunta sem tipo",
+                "",
+                null,
+                null,
+                List.of(
+                        new FlowQuestion("Pergunta sem tipo", "semTipo", null, true, "", null, List.of()),
+                        new FlowQuestion(
+                                "Qual é o seu e-mail?",
+                                "email",
+                                FlowQuestionType.EMAIL,
+                                true,
+                                "",
+                                null,
+                                List.of())));
+
+        flowService.save(flowWithNullType);
+
+        Map<String, Object> payload = Map.of(
+                "name", "Cliente",
+                "email", "cliente@example.com",
+                "answers",
+                Map.of(
+                        "semTipo", "qualquer coisa",
+                        "email", "cliente@example.com"));
+
+        MockMultipartFile payloadPart = new MockMultipartFile(
+                "payload", "payload", MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsBytes(payload));
+
+        mockMvc.perform(multipart("/api/flows/fluxo-sem-tipo/submissions").file(payloadPart))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.flowSlug").value("fluxo-sem-tipo"));
+    }
 }

@@ -14,12 +14,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class FlowSubmissionService {
+
+    private static final Logger log = LoggerFactory.getLogger(FlowSubmissionService.class);
 
     private final FlowService flowService;
     private final FlowSubmissionRepository repository;
@@ -84,7 +88,16 @@ public class FlowSubmissionService {
         List<FlowQuestion> questions = flow.questions() == null ? List.of() : flow.questions();
         boolean hasImage = imageFile != null && !imageFile.isEmpty();
         for (FlowQuestion question : questions) {
-            if (question.type() == FlowQuestionType.IMAGE_UPLOAD) {
+            FlowQuestionType questionType = question.type();
+            if (questionType == null) {
+                log.warn(
+                        "Flow '{}' has question '{}' without type; skipping validation",
+                        flow.slug(),
+                        question.dataKey());
+                continue;
+            }
+
+            if (questionType == FlowQuestionType.IMAGE_UPLOAD) {
                 if (question.required()
                         && (request.getImageKey() == null
                                 || !question.dataKey().equals(request.getImageKey())
@@ -95,7 +108,7 @@ public class FlowSubmissionService {
             }
 
             Object value = request.getAnswers().get(question.dataKey());
-            if (question.type() == FlowQuestionType.MULTIPLE_CHOICE) {
+            if (questionType == FlowQuestionType.MULTIPLE_CHOICE) {
                 List<?> options = value instanceof List<?> list ? list : List.of();
                 if (question.required() && options.isEmpty()) {
                     throw new IllegalArgumentException("Selecione ao menos uma opção em " + question.title());
@@ -104,7 +117,7 @@ public class FlowSubmissionService {
             }
 
             String stringValue = value == null ? "" : value.toString().trim();
-            boolean shouldRequire = question.required() || question.type() == FlowQuestionType.EMAIL;
+            boolean shouldRequire = question.required() || questionType == FlowQuestionType.EMAIL;
             if (shouldRequire && stringValue.isEmpty()) {
                 throw new IllegalArgumentException("Preencha o campo " + question.title());
             }
@@ -124,7 +137,16 @@ public class FlowSubmissionService {
 
         List<FlowQuestion> questions = flow.questions() == null ? List.of() : flow.questions();
         for (FlowQuestion question : questions) {
-            if (question.type() == FlowQuestionType.IMAGE_UPLOAD) {
+            FlowQuestionType questionType = question.type();
+            if (questionType == null) {
+                log.warn(
+                        "Flow '{}' has question '{}' without type; ignoring answer",
+                        flow.slug(),
+                        question.dataKey());
+                continue;
+            }
+
+            if (questionType == FlowQuestionType.IMAGE_UPLOAD) {
                 continue;
             }
             Object raw = request.getAnswers().get(question.dataKey());
@@ -132,7 +154,7 @@ public class FlowSubmissionService {
                 continue;
             }
 
-            if (question.type() == FlowQuestionType.MULTIPLE_CHOICE) {
+            if (questionType == FlowQuestionType.MULTIPLE_CHOICE) {
                 List<?> rawList = raw instanceof List<?> list ? list : List.of(raw);
                 List<String> filtered = rawList.stream()
                         .map(Object::toString)

@@ -4,6 +4,8 @@ import com.marketinghub.leadportal.config.StorageProperties;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,8 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 @Service
 public class FileStorageService {
+
+    private static final Logger log = LoggerFactory.getLogger(FileStorageService.class);
 
     private final StorageProperties properties;
     private final S3Client s3Client;
@@ -50,6 +54,13 @@ public class FileStorageService {
                     .key(storedFileName)
                     .contentType(file.getContentType())
                     .build();
+
+            log.info(
+                    "Sending file '{}' (contentType={}, size={} bytes) to Cloudflare bucket '{}'",
+                    storedFileName,
+                    file.getContentType(),
+                    file.getSize(),
+                    properties.getBucket());
 
             s3Client.putObject(
                     putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));

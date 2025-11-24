@@ -18,14 +18,23 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import software.amazon.awssdk.core.ResponseBytes;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -44,8 +53,20 @@ class FlowSubmissionControllerTest {
     @Autowired
     private FlowSubmissionRepository submissionRepository;
 
+    @MockBean
+    private S3Client s3Client;
+
     @BeforeEach
     void setup() {
+        Mockito.lenient()
+                .when(s3Client.putObject(Mockito.any(PutObjectRequest.class), Mockito.any(RequestBody.class)))
+                .thenReturn(PutObjectResponse.builder().build());
+
+        Mockito.lenient()
+                .when(s3Client.getObjectAsBytes(Mockito.any(GetObjectRequest.class)))
+                .thenAnswer(invocation ->
+                        ResponseBytes.fromByteArray(GetObjectResponse.builder().build(), "conteudo".getBytes()));
+
         submissionRepository.deleteAll();
         flowService.list().stream()
                 .map(Flow::slug)

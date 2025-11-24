@@ -73,10 +73,12 @@ public class FlowSubmissionController {
         if (submission.storedFileName() == null) {
             return null;
         }
-        return ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/api/flows/submissions/")
-                .path(submission.id().toString())
-                .path("/image")
-                .toUriString();
+        return submissionService
+                .resolvePublicUrl(submission.storedFileName())
+                .orElseGet(() -> ServletUriComponentsBuilder.fromCurrentContextPath()
+                        .path("/api/flows/submissions/")
+                        .path(submission.id().toString())
+                        .path("/image")
+                        .toUriString());
     }
 }

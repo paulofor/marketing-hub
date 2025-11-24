@@ -83,10 +83,12 @@ public class LeadController {
     }
 
     private String buildImageUrl(Lead lead) {
-        return ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/api/leads/")
-                .path(lead.getId().toString())
-                .path("/image")
-                .toUriString();
+        return fileStorageService
+                .resolvePublicUrl(lead.getStoredFileName())
+                .orElseGet(() -> ServletUriComponentsBuilder.fromCurrentContextPath()
+                        .path("/api/leads/")
+                        .path(lead.getId().toString())
+                        .path("/image")
+                        .toUriString());
     }
 }

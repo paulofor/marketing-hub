@@ -428,6 +428,56 @@ Relaciona respostas do tipo múltipla escolha às opções marcadas pelo usuári
 Cada par (`answer_id`, `option_id`) é único, permitindo capturar quantas
 alternativas forem selecionadas em perguntas de seleção múltipla.
 
+### flow_submissions
+
+- `id` CHAR(36) PRIMARY KEY
+- `flow_slug` VARCHAR(190) NOT NULL
+- `name` VARCHAR(255) NOT NULL
+- `email` VARCHAR(255) NOT NULL
+- `answers` LONGTEXT
+- `image_question_key` VARCHAR(255)
+- `stored_file_name` VARCHAR(255)
+- `original_file_name` VARCHAR(255)
+- `content_type` VARCHAR(255)
+- `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+
+Armazena cada submissão realizada diretamente no portal, incluindo o arquivo de
+imagem enviado. O JSON em `answers` preserva as respostas do formulário enquanto
+os campos de arquivo mantêm o nome gerado pelo storage, o nome original e o tipo
+de conteúdo para uso posterior pelo pipeline de geração de criativos.
+
+### flow_submission_image_package
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `submission_id` VARCHAR(36) NOT NULL → FK `flow_submissions.id`
+- `status` VARCHAR(30) NOT NULL DEFAULT 'RECEIVED'
+- `planned_outputs` INT
+- `free_images` INT NOT NULL DEFAULT 0
+- `model` VARCHAR(255)
+- `prompt` LONGTEXT NOT NULL
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+Agrupa os derivados gerados a partir da imagem enviada na submissão. O status
+segue o fluxo de processamento (recebido, processado, gerações com ou sem marca
+d'água, falha), enquanto `planned_outputs` e `free_images` ajudam a controlar
+quantas variações devem ser geradas e quais serão disponibilizadas
+gratuitamente.
+
+### flow_submission_image_item
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `package_id` BIGINT NOT NULL → FK `flow_submission_image_package.id`
+- `asset_id` BIGINT NOT NULL → FK `asset.id`
+- `access_type` VARCHAR(20) NOT NULL
+- `position_index` INT NOT NULL
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+Lista cada imagem derivada associada ao pacote, relacionando o ativo gravado no
+storage com o tipo de acesso (gratuito com marca d'água ou premium sem marca
+d'água). O índice de posição mantém a ordenação das variações apresentadas ao
+cliente.
+
 ### fb_page
 
 - `id` BIGINT AUTO_INCREMENT PRIMARY KEY

@@ -40,7 +40,7 @@ public class ImageDeliverablePackage {
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private ImageDeliverableStatus status = ImageDeliverableStatus.PENDING_PROCESSING;
+    private ImageDeliverableStatus status = ImageDeliverableStatus.RECEIVED;
 
     @Column(name = "planned_outputs")
     private Integer plannedOutputs;

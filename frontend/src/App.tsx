@@ -69,6 +69,7 @@ import AiWorkerPendingRequestsPage from "./pages/ai/AiWorkerPendingRequestsPage"
 import PrivacyPolicySettingsPage from "./pages/settings/PrivacyPolicySettingsPage";
 import WhatsAppConsolePage from "./pages/whatsapp/WhatsAppConsolePage";
 import LeadPortalExperimentMetricsPage from "./pages/leadPortal/LeadPortalExperimentMetricsPage";
+import LeadPortalImagesPage from "./pages/leadPortal/LeadPortalImagesPage";
 
 export default function App() {
   return (
@@ -176,6 +177,10 @@ export default function App() {
               <Route
                 path="/lead-portal/metrics"
                 element={<LeadPortalExperimentMetricsPage />}
+              />
+              <Route
+                path="/lead-portal/images"
+                element={<LeadPortalImagesPage />}
               />
               <Route path="/chat-dialogs" element={<ChatDialogListPage />} />
               <Route path="/chat-dialogs/new" element={<NewChatDialogPage />} />

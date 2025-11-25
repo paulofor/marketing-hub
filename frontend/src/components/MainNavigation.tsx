@@ -133,6 +133,11 @@ const NAV_SECTIONS: NavSection[] = [
         icon: Image,
       },
       {
+        to: "/lead-portal/images",
+        label: "Imagens recebidas",
+        icon: Package,
+      },
+      {
         to: "/facebook-campaigns/ready",
         label: "Experimentos prontos",
         icon: ClipboardCheck,

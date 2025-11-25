@@ -59,7 +59,7 @@ public class ImageDeliverablePackageService {
         Asset inputAsset = resolveAsset(request.getInputAssetId());
         String prompt = normalizePrompt(request.getPrompt());
         ImageDeliverableStatus status = Optional.ofNullable(request.getStatus())
-                .orElse(ImageDeliverableStatus.PENDING_PROCESSING);
+                .orElse(ImageDeliverableStatus.RECEIVED);
         Integer plannedOutputs = normalizePlannedOutputs(request.getPlannedOutputs());
         int freeImages = normalizeFreeImages(request.getFreeImages());
 

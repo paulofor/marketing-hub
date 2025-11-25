@@ -4,8 +4,10 @@ package com.marketinghub.imagedeliverable;
  * Processing status for an image deliverable package lifecycle.
  */
 public enum ImageDeliverableStatus {
-    PENDING_PROCESSING,
-    PROCESSING,
-    COMPLETED,
+    RECEIVED,
+    PROCESSED,
+    GENERATION_WITH_WATERMARK,
+    PURCHASED,
+    GENERATION_NO_WATERMARK,
     FAILED
 }

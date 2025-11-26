@@ -1,15 +1,17 @@
 import { useMemo } from "react";
 import { Image as ImageIcon, ShieldAlert, Sparkles } from "lucide-react";
 import { useLeadPortalImagePackages } from "../../api/leadPortal/useLeadPortalSubmissions";
-import type { LeadPortalImagePackage } from "../../api/leadPortal/useLeadPortalSubmissions";
+import type {
+  FlowSubmissionImagePackageStatus,
+  LeadPortalImagePackage,
+} from "../../api/leadPortal/useLeadPortalSubmissions";
 import "./LeadPortalImagesPage.css";
 
-const statusLabels: Record<string, string> = {
-  RECEIVED: "Pronto para pipeline",
-  PROCESSED: "Processado",
-  GENERATION_WITH_WATERMARK: "Gerando com marca d'água",
-  GENERATION_NO_WATERMARK: "Gerando sem marca d'água",
-  PURCHASED: "Comprado",
+const statusLabels: Record<FlowSubmissionImagePackageStatus, string> = {
+  RECEIVED: "Recebido",
+  RECENT: "Capturado",
+  PROCESSING: "Processando",
+  COMPLETED: "Concluído",
   FAILED: "Falha ao processar",
 };
 
@@ -20,7 +22,7 @@ function formatDate(value: string) {
 function buildLeadLabel(submission: LeadPortalImagePackage) {
   if (submission.name) return submission.name;
   if (submission.email) return submission.email;
-  return submission.leadId;
+  return submission.submissionId;
 }
 
 export default function LeadPortalImagesPage() {

@@ -1,16 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import type { ImageDeliverableStatus } from "../imageDeliverable/types";
+
+export type FlowSubmissionImagePackageStatus =
+  | "RECEIVED"
+  | "RECENT"
+  | "PROCESSING"
+  | "COMPLETED"
+  | "FAILED";
 
 export interface LeadPortalImagePackage {
   id: number;
-  leadId: string;
+  submissionId: string;
   flowSlug?: string | null;
   name?: string | null;
   email?: string | null;
   phone?: string | null;
   prompt: string;
-  status: ImageDeliverableStatus;
+  status: FlowSubmissionImagePackageStatus;
   createdAt: string;
 }
 

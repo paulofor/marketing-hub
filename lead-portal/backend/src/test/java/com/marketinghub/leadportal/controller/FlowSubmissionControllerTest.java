@@ -6,10 +6,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.leadportal.model.Flow;
 import com.marketinghub.leadportal.model.FlowQuestion;
 import com.marketinghub.leadportal.model.FlowQuestionType;
+import com.marketinghub.leadportal.repository.FlowSubmissionImagePackageRepository;
 import com.marketinghub.leadportal.repository.FlowSubmissionRepository;
 import com.marketinghub.leadportal.service.FlowService;
 import java.util.List;
@@ -21,8 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
@@ -53,6 +56,9 @@ class FlowSubmissionControllerTest {
     @Autowired
     private FlowSubmissionRepository submissionRepository;
 
+    @Autowired
+    private FlowSubmissionImagePackageRepository imagePackageRepository;
+
     @MockBean
     private S3Client s3Client;
 
@@ -67,6 +73,7 @@ class FlowSubmissionControllerTest {
                 .thenAnswer(invocation ->
                         ResponseBytes.fromByteArray(GetObjectResponse.builder().build(), "conteudo".getBytes()));
 
+        imagePackageRepository.deleteAll();
         submissionRepository.deleteAll();
         flowService.list().stream()
                 .map(Flow::slug)
@@ -113,6 +120,7 @@ class FlowSubmissionControllerTest {
 
     @AfterEach
     void cleanup() {
+        imagePackageRepository.deleteAll();
         submissionRepository.deleteAll();
         flowService.list().stream()
                 .map(Flow::slug)
@@ -151,6 +159,14 @@ class FlowSubmissionControllerTest {
         mockMvc.perform(get("/api/flows/submissions/" + id + "/image"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.IMAGE_PNG));
+
+        assertThat(imagePackageRepository.count()).isEqualTo(1);
+        assertThat(imagePackageRepository.findAll())
+                .first()
+                .satisfies(pkg -> {
+                    assertThat(pkg.getSubmissionId()).isEqualTo(id);
+                    assertThat(pkg.getStatus()).isEqualTo("RECENT");
+                });
     }
 
     @Test

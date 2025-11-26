@@ -7,7 +7,9 @@ import com.marketinghub.leadportal.model.FlowQuestion;
 import com.marketinghub.leadportal.model.FlowQuestionType;
 import com.marketinghub.leadportal.model.FlowSubmission;
 import com.marketinghub.leadportal.repository.FlowSubmissionRepository;
+import com.marketinghub.leadportal.repository.FlowSubmissionImagePackageRepository;
 import com.marketinghub.leadportal.storage.FileStorageService;
+import com.marketinghub.leadportal.entity.FlowSubmissionImagePackageEntity;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,12 +29,17 @@ public class FlowSubmissionService {
 
     private final FlowService flowService;
     private final FlowSubmissionRepository repository;
+    private final FlowSubmissionImagePackageRepository imagePackageRepository;
     private final FileStorageService fileStorageService;
 
     public FlowSubmissionService(
-            FlowService flowService, FlowSubmissionRepository repository, FileStorageService fileStorageService) {
+            FlowService flowService,
+            FlowSubmissionRepository repository,
+            FlowSubmissionImagePackageRepository imagePackageRepository,
+            FileStorageService fileStorageService) {
         this.flowService = flowService;
         this.repository = repository;
+        this.imagePackageRepository = imagePackageRepository;
         this.fileStorageService = fileStorageService;
     }
 
@@ -44,8 +51,9 @@ public class FlowSubmissionService {
         String storedFileName = null;
         String originalFileName = null;
         String contentType = null;
+        boolean hasImage = imageFile != null && !imageFile.isEmpty();
 
-        if (imageFile != null && !imageFile.isEmpty()) {
+        if (hasImage) {
             storedFileName = fileStorageService.store(imageFile, id.toString());
             originalFileName = imageFile.getOriginalFilename();
             contentType = imageFile.getContentType();
@@ -66,6 +74,7 @@ public class FlowSubmissionService {
                 Instant.now());
 
         repository.save(com.marketinghub.leadportal.entity.FlowSubmissionEntity.fromModel(submission));
+        registerImagePackage(flow, submission, hasImage);
         return submission;
     }
 
@@ -130,6 +139,20 @@ public class FlowSubmissionService {
                 throw new IllegalArgumentException("O campo de imagem enviado não pertence a este fluxo.");
             }
         }
+    }
+
+    private void registerImagePackage(Flow flow, FlowSubmission submission, boolean hasImage) {
+        if (!hasImage) {
+            return;
+        }
+
+        FlowSubmissionImagePackageEntity imagePackage = new FlowSubmissionImagePackageEntity();
+        imagePackage.setSubmissionId(submission.id());
+        imagePackage.setStatus(FlowSubmissionImagePackageEntity.Status.RECENT.name());
+        imagePackage.setModel(flow.model());
+        imagePackage.setPrompt(Optional.ofNullable(flow.prompt()).orElse(""));
+
+        imagePackageRepository.save(imagePackage);
     }
 
     private Map<String, Object> sanitizeAnswers(Flow flow, FlowSubmissionRequest request) {

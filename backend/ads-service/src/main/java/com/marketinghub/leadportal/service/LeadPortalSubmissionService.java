@@ -1,69 +1,72 @@
 package com.marketinghub.leadportal.service;
 
+import com.marketinghub.imagedeliverable.ImageDeliverableStatus;
 import com.marketinghub.leadportal.dto.LeadPortalSubmissionDto;
-import com.marketinghub.leadportal.integration.LeadPortalIntegrationProperties;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 /**
- * Consulta envios de imagem feitos no Lead Portal.
+ * Consulta pacotes de imagem do Lead Portal que aguardam processamento.
  */
 @Service
 public class LeadPortalSubmissionService {
 
     private final JdbcTemplate jdbcTemplate;
-    private final LeadPortalIntegrationProperties integrationProperties;
 
-    public LeadPortalSubmissionService(
-            JdbcTemplate jdbcTemplate, LeadPortalIntegrationProperties integrationProperties) {
+    public LeadPortalSubmissionService(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
-        this.integrationProperties = integrationProperties;
     }
 
-    public List<LeadPortalSubmissionDto> listWithImages() {
+    public List<LeadPortalSubmissionDto> listPendingPackages() {
         String sql = """
-                SELECT id, flow_slug, name, email, stored_file_name, created_at
-                FROM flow_submissions
-                WHERE stored_file_name IS NOT NULL
-                ORDER BY created_at DESC
+                SELECT
+                    pack.id AS package_id,
+                    pack.lead_id,
+                    flow.slug AS flow_slug,
+                    lps.primary_contact_name,
+                    lps.primary_contact_email,
+                    lps.primary_contact_phone,
+                    pack.prompt,
+                    pack.status,
+                    pack.created_at
+                FROM image_deliverable_package pack
+                LEFT JOIN (
+                    SELECT latest.lead_id,
+                           lps.flow_id,
+                           lps.primary_contact_name,
+                           lps.primary_contact_email,
+                           lps.primary_contact_phone
+                    FROM lead_portal_submission lps
+                    JOIN (
+                        SELECT lead_id, MAX(submitted_at) AS submitted_at
+                        FROM lead_portal_submission
+                        GROUP BY lead_id
+                    ) latest ON latest.lead_id = lps.lead_id AND latest.submitted_at = lps.submitted_at
+                ) lps ON lps.lead_id = pack.lead_id
+                LEFT JOIN lead_portal_flow flow ON flow.id = lps.flow_id
+                WHERE pack.status = 'RECEIVED'
+                ORDER BY pack.created_at DESC
                 """;
 
-        return jdbcTemplate.query(sql, (rs, rowNum) -> mapSubmission(rs));
+        return jdbcTemplate.query(sql, (rs, rowNum) -> mapPackage(rs));
     }
 
-    private LeadPortalSubmissionDto mapSubmission(ResultSet rs) throws SQLException {
-        UUID id = rs.getObject("id", UUID.class);
-        String storedFileName = rs.getString("stored_file_name");
+    private LeadPortalSubmissionDto mapPackage(ResultSet rs) throws SQLException {
+        String status = rs.getString("status");
 
         return new LeadPortalSubmissionDto(
-                id,
+                rs.getLong("package_id"),
+                rs.getObject("lead_id", UUID.class),
                 rs.getString("flow_slug"),
-                rs.getString("name"),
-                rs.getString("email"),
-                buildImageUrl(id, storedFileName),
+                rs.getString("primary_contact_name"),
+                rs.getString("primary_contact_email"),
+                rs.getString("primary_contact_phone"),
+                rs.getString("prompt"),
+                ImageDeliverableStatus.valueOf(status),
                 rs.getTimestamp("created_at").toInstant());
-    }
-
-    private String buildImageUrl(UUID id, String storedFileName) {
-        if (!StringUtils.hasText(storedFileName)) {
-            return null;
-        }
-
-        String baseUrl = integrationProperties.getBaseUrl();
-        if (!StringUtils.hasText(baseUrl)) {
-            return null;
-        }
-
-        String normalizedBase = baseUrl.endsWith("/")
-                ? baseUrl.substring(0, baseUrl.length() - 1)
-                : baseUrl;
-
-        return normalizedBase + "/api/flows/submissions/" + id + "/image";
     }
 }

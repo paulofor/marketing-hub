@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Exibe os envios de imagem realizados no Lead Portal.
+ * Exibe os pacotes de imagem recebidos pelo Lead Portal que aguardam entrar no pipeline.
  */
 @RestController
 @RequestMapping("/api/lead-portal/submissions")
@@ -21,6 +21,6 @@ public class LeadPortalSubmissionController {
 
     @GetMapping
     public List<LeadPortalSubmissionDto> list() {
-        return submissionService.listWithImages();
+        return submissionService.listPendingPackages();
     }
 }

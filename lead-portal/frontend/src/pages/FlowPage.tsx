@@ -27,7 +27,7 @@ export default function FlowPage() {
   }
 
   if (isLoading) {
-    return <p className="flow-message">Carregando fluxo...</p>;
+    return <p className="flow-message">Carregando quiz...</p>;
   }
 
   if (isError || !flow) {

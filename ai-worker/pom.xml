@@ -28,6 +28,7 @@
         <classmate.version>1.5.1</classmate.version>
         <byte-buddy.version>1.14.11</byte-buddy.version>
         <glassfish-jaxb.version>4.0.2</glassfish-jaxb.version>
+        <aws.sdk.version>2.25.44</aws.sdk.version>
     </properties>
 
     <parent>
@@ -49,6 +50,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>${aws.sdk.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

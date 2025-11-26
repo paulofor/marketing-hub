@@ -3,7 +3,13 @@ import { useExperiments } from "../../api/experiment/useExperiments";
 import { useNiches } from "../../api/niche/useNiches";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+
+function parseDate(date?: string | null) {
+  if (!date) return 0;
+  const timestamp = new Date(date).getTime();
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
 
 export default function ExperimentListPage() {
   const { data, isLoading } = useExperiments();
@@ -12,13 +18,26 @@ export default function ExperimentListPage() {
   const [status, setStatus] = useState("");
   const [niche, setNiche] = useState("");
   const experiments = Array.isArray(data) ? data : [];
-  const filtered = experiments.filter(
-    (e) =>
-      (!search || e.name.toLowerCase().includes(search.toLowerCase())) &&
-      (!status || e.status === status) &&
-      (!niche || e.nicheId === Number(niche)),
-  );
+
+  const filtered = useMemo(() => {
+    return experiments.filter(
+      (e) =>
+        (!search || e.name.toLowerCase().includes(search.toLowerCase())) &&
+        (!status || e.status === status) &&
+        (!niche || e.nicheId === Number(niche)),
+    );
+  }, [experiments, search, status, niche]);
+
+  const sorted = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      const bDate = parseDate(b.startDate ?? b.createdAt);
+      const aDate = parseDate(a.startDate ?? a.createdAt);
+      return bDate - aDate;
+    });
+  }, [filtered]);
+
   if (isLoading) return <p>Carregando...</p>;
+
   return (
     <div>
       <PageTitle icon={experimentIcon}>Testes de Nicho</PageTitle>
@@ -69,7 +88,7 @@ export default function ExperimentListPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((e) => (
+            {sorted.map((e) => (
               <tr key={e.id}>
                 <td>{e.name}</td>
                 <td>{niches?.find((n) => n.id === e.nicheId)?.name}</td>

@@ -2,7 +2,6 @@ import {
   CreateLeadPayload,
   FlowSubmissionPayload,
   FlowSubmissionResponse,
-  FlowSubmissionImagePackage,
   LeadDetails,
   LeadPortalFlow,
   LeadStatus
@@ -114,17 +113,6 @@ export async function submitFlowSubmission(
   }
 
   return (await response.json()) as FlowSubmissionResponse;
-}
-
-export async function fetchPendingImagePackages(): Promise<FlowSubmissionImagePackage[]> {
-  const response = await fetch(buildUrl("/image-packages/pending"));
-
-  if (!response.ok) {
-    const message = await extractError(response);
-    throw new Error(message);
-  }
-
-  return (await response.json()) as FlowSubmissionImagePackage[];
 }
 
 async function extractError(response: Response): Promise<string> {

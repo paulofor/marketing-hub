@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.leadportal.FlowSubmissionImagePackageStatus;
 import com.marketinghub.leadportal.dto.LeadPortalSubmissionDto;
+import java.nio.ByteBuffer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -55,7 +56,7 @@ public class LeadPortalSubmissionService {
         String status = rs.getString("status");
         return new LeadPortalSubmissionDto(
                 rs.getLong("package_id"),
-                rs.getObject("submission_id", UUID.class),
+                mapSubmissionId(rs),
                 rs.getString("flow_slug"),
                 rs.getString("submission_name"),
                 rs.getString("submission_email"),
@@ -72,6 +73,17 @@ public class LeadPortalSubmissionService {
             log.warn("Lead Portal image package with unknown status '{}'", status);
             return FlowSubmissionImagePackageStatus.RECEIVED;
         }
+    }
+
+    private UUID mapSubmissionId(ResultSet rs) throws SQLException {
+        Object rawValue = rs.getObject("submission_id");
+
+        if (rawValue instanceof byte[] bytes) {
+            ByteBuffer buffer = ByteBuffer.wrap(bytes);
+            return new UUID(buffer.getLong(), buffer.getLong());
+        }
+
+        return UUID.fromString(rs.getString("submission_id"));
     }
 
     private String extractPhone(String answersJson) {

@@ -1,6 +1,6 @@
 package com.marketinghub.leadportal.dto;
 
-import com.marketinghub.imagedeliverable.ImageDeliverableStatus;
+import com.marketinghub.leadportal.FlowSubmissionImagePackageStatus;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -10,11 +10,11 @@ import java.util.UUID;
  */
 public record LeadPortalSubmissionDto(
         Long id,
-        UUID leadId,
+        UUID submissionId,
         String flowSlug,
         String name,
         String email,
         String phone,
         String prompt,
-        ImageDeliverableStatus status,
+        FlowSubmissionImagePackageStatus status,
         Instant createdAt) {}

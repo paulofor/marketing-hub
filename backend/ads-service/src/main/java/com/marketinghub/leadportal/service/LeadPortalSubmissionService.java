@@ -1,11 +1,16 @@
 package com.marketinghub.leadportal.service;
 
-import com.marketinghub.imagedeliverable.ImageDeliverableStatus;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.leadportal.FlowSubmissionImagePackageStatus;
 import com.marketinghub.leadportal.dto.LeadPortalSubmissionDto;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -15,40 +20,31 @@ import org.springframework.stereotype.Service;
 @Service
 public class LeadPortalSubmissionService {
 
-    private final JdbcTemplate jdbcTemplate;
+    private static final Logger log = LoggerFactory.getLogger(LeadPortalSubmissionService.class);
 
-    public LeadPortalSubmissionService(JdbcTemplate jdbcTemplate) {
+    private final JdbcTemplate jdbcTemplate;
+    private final ObjectMapper objectMapper;
+
+    public LeadPortalSubmissionService(JdbcTemplate jdbcTemplate, ObjectMapper objectMapper) {
         this.jdbcTemplate = jdbcTemplate;
+        this.objectMapper = objectMapper;
     }
 
     public List<LeadPortalSubmissionDto> listPendingPackages() {
         String sql = """
                 SELECT
                     pack.id AS package_id,
-                    pack.lead_id,
-                    flow.slug AS flow_slug,
-                    lps.primary_contact_name,
-                    lps.primary_contact_email,
-                    lps.primary_contact_phone,
+                    pack.submission_id,
+                    sub.flow_slug,
+                    sub.name AS submission_name,
+                    sub.email AS submission_email,
+                    sub.answers,
                     pack.prompt,
                     pack.status,
                     pack.created_at
-                FROM image_deliverable_package pack
-                LEFT JOIN (
-                    SELECT latest.lead_id,
-                           lps.flow_id,
-                           lps.primary_contact_name,
-                           lps.primary_contact_email,
-                           lps.primary_contact_phone
-                    FROM lead_portal_submission lps
-                    JOIN (
-                        SELECT lead_id, MAX(submitted_at) AS submitted_at
-                        FROM lead_portal_submission
-                        GROUP BY lead_id
-                    ) latest ON latest.lead_id = lps.lead_id AND latest.submitted_at = lps.submitted_at
-                ) lps ON lps.lead_id = pack.lead_id
-                LEFT JOIN lead_portal_flow flow ON flow.id = lps.flow_id
-                WHERE pack.status = 'RECEIVED'
+                FROM flow_submission_image_package pack
+                JOIN flow_submissions sub ON sub.id = pack.submission_id
+                WHERE pack.status IN ('RECENT', 'RECEIVED')
                 ORDER BY pack.created_at DESC
                 """;
 
@@ -57,16 +53,47 @@ public class LeadPortalSubmissionService {
 
     private LeadPortalSubmissionDto mapPackage(ResultSet rs) throws SQLException {
         String status = rs.getString("status");
-
         return new LeadPortalSubmissionDto(
                 rs.getLong("package_id"),
-                rs.getObject("lead_id", UUID.class),
+                rs.getObject("submission_id", UUID.class),
                 rs.getString("flow_slug"),
-                rs.getString("primary_contact_name"),
-                rs.getString("primary_contact_email"),
-                rs.getString("primary_contact_phone"),
+                rs.getString("submission_name"),
+                rs.getString("submission_email"),
+                extractPhone(rs.getString("answers")),
                 rs.getString("prompt"),
-                ImageDeliverableStatus.valueOf(status),
+                mapStatus(status),
                 rs.getTimestamp("created_at").toInstant());
+    }
+
+    private FlowSubmissionImagePackageStatus mapStatus(String status) {
+        try {
+            return FlowSubmissionImagePackageStatus.valueOf(status);
+        } catch (IllegalArgumentException ignored) {
+            log.warn("Lead Portal image package with unknown status '{}'", status);
+            return FlowSubmissionImagePackageStatus.RECEIVED;
+        }
+    }
+
+    private String extractPhone(String answersJson) {
+        if (answersJson == null || answersJson.isBlank()) {
+            return null;
+        }
+
+        try {
+            JsonNode root = objectMapper.readTree(answersJson);
+            for (String key : List.of("phone", "telefone", "whatsapp")) {
+                JsonNode node = root.get(key);
+                if (node != null && node.isValueNode()) {
+                    String value = node.asText().trim();
+                    if (!value.isEmpty()) {
+                        return value;
+                    }
+                }
+            }
+        } catch (JsonProcessingException e) {
+            log.warn("Could not parse flow submission answers for phone extraction", e);
+        }
+
+        return null;
     }
 }

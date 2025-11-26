@@ -462,7 +462,9 @@ Agrupa os derivados gerados a partir da imagem enviada na submissão. O status
 segue o fluxo de processamento (recebido, processado, gerações com ou sem marca
 d'água, falha), enquanto `planned_outputs` e `free_images` ajudam a controlar
 quantas variações devem ser geradas e quais serão disponibilizadas
-gratuitamente.
+gratuitamente. O Marketing Hub exibe a fila de pacotes pendentes diretamente
+desta tabela, substituindo o uso anterior de `image_deliverable_package` para
+itens vindos do Lead Portal.
 
 ### flow_submission_image_item
 

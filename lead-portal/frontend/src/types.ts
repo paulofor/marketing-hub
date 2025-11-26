@@ -62,3 +62,17 @@ export interface FlowSubmissionResponse {
   imageUrl?: string | null;
   createdAt: string;
 }
+
+export interface FlowSubmissionImagePackage {
+  id: number;
+  submissionId: string;
+  flowSlug?: string | null;
+  name?: string | null;
+  email?: string | null;
+  status: string;
+  plannedOutputs?: number | null;
+  freeImages: number;
+  model?: string | null;
+  prompt: string;
+  createdAt?: string | null;
+}

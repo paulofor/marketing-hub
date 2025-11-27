@@ -100,12 +100,8 @@ public class LeadPortalOpenAiImageClient {
         return response.body(BodyExtractors.toDataBuffers())
                 .map(this::toByteArray)
                 .reduceWith(ByteArrayOutputStream::new, (acc, bytes) -> {
-                    try {
-                        acc.write(bytes, 0, bytes.length);
-                        return acc;
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+                    acc.write(bytes, 0, bytes.length);
+                    return acc;
                 })
                 .map(ByteArrayOutputStream::toByteArray)
                 .map(this::parseResponse)

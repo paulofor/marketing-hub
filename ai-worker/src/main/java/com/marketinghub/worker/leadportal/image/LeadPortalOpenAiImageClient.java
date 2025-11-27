@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.creative.CreativeImageOptimizer;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -100,12 +99,8 @@ public class LeadPortalOpenAiImageClient {
         return response.body(BodyExtractors.toDataBuffers())
                 .map(this::toByteArray)
                 .reduceWith(ByteArrayOutputStream::new, (acc, bytes) -> {
-                    try {
-                        acc.write(bytes, 0, bytes.length);
-                        return acc;
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+                    acc.write(bytes, 0, bytes.length);
+                    return acc;
                 })
                 .map(ByteArrayOutputStream::toByteArray)
                 .map(this::parseResponse)
@@ -118,8 +113,6 @@ public class LeadPortalOpenAiImageClient {
             dataBuffer.read(chunk);
             output.write(chunk);
             return output.toByteArray();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read OpenAI image payload", e);
         } finally {
             DataBufferUtils.release(dataBuffer);
         }
@@ -128,7 +121,7 @@ public class LeadPortalOpenAiImageClient {
     private ImageResponse parseResponse(byte[] bytes) {
         try {
             return mapper.readValue(bytes, ImageResponse.class);
-        } catch (IOException e) {
+        } catch (java.io.IOException e) {
             throw new RuntimeException("Failed to decode OpenAI image response", e);
         }
     }

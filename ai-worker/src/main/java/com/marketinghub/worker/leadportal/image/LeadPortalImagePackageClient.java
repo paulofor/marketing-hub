@@ -27,7 +27,7 @@ public class LeadPortalImagePackageClient {
 
     public LeadPortalImagePackageClient(
             WebClient.Builder builder,
-            @Value("${lead-portal.backend.base-url:http://localhost:8080}") String baseUrl,
+            @Value("${lead-portal.backend.base-url:${backend.base-url}}") String baseUrl,
             @Value("${lead-portal.backend.api-prefix:/api}") String apiPrefix) {
         this.webClient = builder.build();
         this.baseUrl = baseUrl;
@@ -102,7 +102,7 @@ public class LeadPortalImagePackageClient {
 
     private void logRequest(String method, String url) {
         if (log.isInfoEnabled()) {
-            log.info("Calling lead-portal backend {} {}", method, url);
+            log.info("Calling marketing hub backend {} {}", method, url);
         }
     }
 

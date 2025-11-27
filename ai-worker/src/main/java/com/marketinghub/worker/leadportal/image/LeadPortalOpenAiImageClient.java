@@ -113,13 +113,10 @@ public class LeadPortalOpenAiImageClient {
     }
 
     private byte[] toByteArray(DataBuffer dataBuffer) {
-        try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+        try {
             byte[] chunk = new byte[dataBuffer.readableByteCount()];
             dataBuffer.read(chunk);
-            output.write(chunk);
-            return output.toByteArray();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read OpenAI image payload", e);
+            return chunk;
         } finally {
             DataBufferUtils.release(dataBuffer);
         }

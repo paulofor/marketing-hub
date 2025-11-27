@@ -18,5 +18,23 @@ public final class UrlUtils {
         String normalizedPath = path.startsWith("/") ? path : "/" + path;
         return normalizedBase + normalizedPrefix + normalizedPath;
     }
-}
 
+    /**
+     * Joins base URL, API prefix and multiple path segments ensuring the resulting value does not
+     * contain duplicated slashes.
+     */
+    public static String joinPath(String base, String prefix, String path, String... additionalPaths) {
+        String result = joinPath(base, prefix, path);
+        if (additionalPaths == null || additionalPaths.length == 0) {
+            return result;
+        }
+        String joined = result;
+        for (String segment : additionalPaths) {
+            if (segment == null || segment.isEmpty()) {
+                continue;
+            }
+            joined = joinPath(joined, "", segment);
+        }
+        return joined;
+    }
+}

@@ -8,16 +8,22 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Base64;
-import java.util.LinkedHashMap;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyExtractors;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -71,15 +77,13 @@ public class LeadPortalOpenAiImageClient {
         }
 
         log.info("Requesting lead-portal image variation with prompt: {}", prompt);
-        LinkedHashMap<String, Object> payload = new LinkedHashMap<>();
-        payload.put("model", model);
-        payload.put("prompt", prompt);
-        payload.put("image", Base64.getEncoder().encodeToString(baseImage));
-        payload.put("response_format", "b64_json");
+
+        MultiValueMap<String, Object> multipartBody = buildMultipartBody(baseImage, prompt);
 
         ImageResponse response = webClient.post()
                 .uri("/images/edits")
-                .bodyValue(payload)
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(multipartBody))
                 .exchangeToMono(this::readResponse)
                 .block(REQUEST_TIMEOUT);
 
@@ -94,6 +98,32 @@ public class LeadPortalOpenAiImageClient {
 
         byte[] decoded = Base64.getDecoder().decode(base64);
         return imageOptimizer.optimize(decoded);
+    }
+
+    private MultiValueMap<String, Object> buildMultipartBody(byte[] baseImage, String prompt) {
+        LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("model", model);
+        if (prompt != null && !prompt.isBlank()) {
+            body.add("prompt", prompt);
+        }
+
+        ByteArrayResource imageResource = new ByteArrayResource(baseImage) {
+            @Override
+            public String getFilename() {
+                return "source.png";
+            }
+        };
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.IMAGE_PNG);
+        headers.setContentDisposition(ContentDisposition.builder("form-data")
+                .name("image")
+                .filename(imageResource.getFilename())
+                .build());
+        HttpEntity<ByteArrayResource> imagePart = new HttpEntity<>(imageResource, headers);
+        body.add("image", imagePart);
+
+        return body;
     }
 
     private Mono<ImageResponse> readResponse(ClientResponse response) {

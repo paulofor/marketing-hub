@@ -70,15 +70,15 @@ public class LeadPortalOpenAiImageClient {
             throw new IllegalArgumentException("Base image must not be empty");
         }
 
+        log.info("Requesting lead-portal image variation with prompt: {}", prompt);
         LinkedHashMap<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", model);
         payload.put("prompt", prompt);
         payload.put("image", Base64.getEncoder().encodeToString(baseImage));
         payload.put("response_format", "b64_json");
 
-        log.info("Requesting lead-portal image variation with prompt: {}", prompt);
         ImageResponse response = webClient.post()
-                .uri("/images/generations")
+                .uri("/images/edits")
                 .bodyValue(payload)
                 .exchangeToMono(this::readResponse)
                 .block(REQUEST_TIMEOUT);

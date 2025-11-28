@@ -268,4 +268,105 @@ public class LeadPortalImagePackageWorkerService {
         }
     }
 
-    private String resolv...
+    private String resolvePrompt(String providedPrompt, String fallbackPrompt) {
+        if (StringUtils.hasText(providedPrompt)) {
+            return providedPrompt.trim();
+        }
+        if (StringUtils.hasText(fallbackPrompt)) {
+            return fallbackPrompt.trim();
+        }
+        return null;
+    }
+
+    private String resolveModelFromAssets(String requestModel, String snapshotModel, List<Asset> assets) {
+        if (StringUtils.hasText(requestModel)) {
+            return requestModel.trim();
+        }
+        if (assets != null && !assets.isEmpty()) {
+            List<String> models = new ArrayList<>();
+            for (Asset asset : assets) {
+                if (asset == null) {
+                    continue;
+                }
+                String model = asset.getModel();
+                if (!StringUtils.hasText(model)) {
+                    continue;
+                }
+                String normalized = model.trim();
+                if (!models.contains(normalized)) {
+                    models.add(normalized);
+                }
+            }
+            if (models.size() == 1) {
+                return models.get(0);
+            }
+            if (models.size() > 1) {
+                log.warn("Imagens geradas retornaram múltiplos modelos: {}", models);
+                return models.get(0);
+            }
+        }
+        if (StringUtils.hasText(snapshotModel)) {
+            return snapshotModel.trim();
+        }
+        return null;
+    }
+
+    private String resolveModelValue(String primary, String secondary, String tertiary) {
+        if (StringUtils.hasText(primary)) {
+            return primary.trim();
+        }
+        if (StringUtils.hasText(secondary)) {
+            return secondary.trim();
+        }
+        if (StringUtils.hasText(tertiary)) {
+            return tertiary.trim();
+        }
+        return null;
+    }
+
+    private String buildPayload(GeneratedImageRequest image) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("stored_file_name", image.storedFileName());
+        payload.put("public_url", image.publicUrl());
+        String model = resolveModelValue(image.model(), null, null);
+        if (StringUtils.hasText(model)) {
+            payload.put("model", model);
+        }
+        if (StringUtils.hasText(image.prompt())) {
+            payload.put("prompt", image.prompt().trim());
+        }
+        Map<String, Object> metadata = buildGenerationMetadata(image);
+        if (!metadata.isEmpty()) {
+            payload.put("metadata", metadata);
+        }
+        try {
+            return objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException ex) {
+            throw new IllegalStateException("Não foi possível serializar o payload da imagem gerada", ex);
+        }
+    }
+
+    private Map<String, Object> buildGenerationMetadata(GeneratedImageRequest image) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        if (StringUtils.hasText(image.source())) {
+            metadata.put("source", image.source().trim());
+        }
+        return metadata;
+    }
+
+    private ResponseStatusException notFound(long packageId) {
+        return new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "Pacote %d não encontrado".formatted(packageId));
+    }
+
+    private ResponseStatusException conflict(String message) {
+        return new ResponseStatusException(HttpStatus.CONFLICT, message);
+    }
+
+    private record PackageSnapshot(
+            long id,
+            FlowSubmissionImagePackageStatus status,
+            Integer freeImages,
+            String model,
+            String prompt) {}
+}

@@ -77,7 +77,7 @@ public class LeadPortalImagePackageWorkerService {
                     pack.free_images,
                     pack.model,
                     pack.prompt,
-                    sub.treatment
+                    NULL AS treatment
                 FROM flow_submission_image_package pack
                 LEFT JOIN flow_submissions sub ON sub.id = pack.submission_id
                 WHERE pack.status IN ('RECENT', 'RECEIVED')
@@ -268,76 +268,4 @@ public class LeadPortalImagePackageWorkerService {
         }
     }
 
-    private String resolveModelFromAssets(String primary, String secondary, List<Asset> persisted) {
-        String model = resolveModelValue(primary, secondary, null);
-        if (StringUtils.hasText(model)) {
-            return model;
-        }
-        if (persisted != null) {
-            return persisted.stream()
-                    .map(Asset::getModel)
-                    .filter(StringUtils::hasText)
-                    .findFirst()
-                    .orElse(null);
-        }
-        return null;
-    }
-
-    private String resolveModelValue(String primary, String secondary, String fallback) {
-        if (StringUtils.hasText(primary)) {
-            return primary.trim();
-        }
-        if (StringUtils.hasText(secondary)) {
-            return secondary.trim();
-        }
-        if (StringUtils.hasText(fallback)) {
-            return fallback.trim();
-        }
-        return null;
-    }
-
-    private String resolvePrompt(String primary, String fallback) {
-        if (StringUtils.hasText(primary)) {
-            return primary.trim();
-        }
-        if (StringUtils.hasText(fallback)) {
-            return fallback.trim();
-        }
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Prompt não pode ficar vazio");
-    }
-
-    private String buildPayload(GeneratedImageRequest image) {
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("storedFileName", image.storedFileName());
-        if (StringUtils.hasText(image.source())) {
-            payload.put("source", image.source());
-        }
-        if (StringUtils.hasText(image.publicUrl())) {
-            payload.put("publicUrl", image.publicUrl());
-        }
-        if (StringUtils.hasText(image.model())) {
-            payload.put("model", image.model());
-        }
-        try {
-            return objectMapper.writeValueAsString(payload);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Não foi possível serializar o payload da imagem gerada", e);
-        }
-    }
-
-    private ResponseStatusException notFound(long packageId) {
-        return new ResponseStatusException(HttpStatus.NOT_FOUND,
-                "Pacote de imagem do Lead Portal não encontrado: " + packageId);
-    }
-
-    private ResponseStatusException conflict(String message) {
-        return new ResponseStatusException(HttpStatus.CONFLICT, message);
-    }
-
-    private record PackageSnapshot(
-            long id,
-            FlowSubmissionImagePackageStatus status,
-            Integer freeImages,
-            String model,
-            String prompt) {}
-}
+    private String resolv...

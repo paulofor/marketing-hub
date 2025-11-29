@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -48,7 +49,7 @@ public class LeadPortalImagePackageClient {
                         return response.bodyToMono(String.class)
                                 .defaultIfEmpty("")
                                 .flatMapMany(body -> Mono.error(new LeadPortalWorkerException(
-                                        errorMessage("GET", url, status, body))));
+                                        "GET", url, status, body)));
                     }
                     return response.bodyToFlux(ImagePackagePayload.class);
                 })
@@ -80,7 +81,7 @@ public class LeadPortalImagePackageClient {
         logRequest("POST", url);
         webClient.post()
                 .uri(url)
-                .exchangeToMono(response -> handleResponse(response.statusCode(), url, "POST"))
+                .exchangeToMono(response -> handleResponse(response, url, "POST"))
                 .block(REQUEST_TIMEOUT);
     }
 
@@ -89,25 +90,24 @@ public class LeadPortalImagePackageClient {
         webClient.post()
                 .uri(url)
                 .bodyValue(body)
-                .exchangeToMono(response -> handleResponse(response.statusCode(), url, "POST"))
+                .exchangeToMono(response -> handleResponse(response, url, "POST"))
                 .block(REQUEST_TIMEOUT);
     }
 
-    private Mono<Void> handleResponse(HttpStatusCode status, String url, String method) {
+    private Mono<Void> handleResponse(ClientResponse response, String url, String method) {
+        HttpStatusCode status = response.statusCode();
         if (status.isError()) {
-            return Mono.error(new LeadPortalWorkerException(errorMessage(method, url, status, "")));
+            return response.bodyToMono(String.class)
+                    .defaultIfEmpty("")
+                    .flatMap(body -> Mono.error(new LeadPortalWorkerException(method, url, status, body)));
         }
-        return Mono.empty();
+        return response.bodyToMono(Void.class);
     }
 
     private void logRequest(String method, String url) {
         if (log.isInfoEnabled()) {
             log.info("Calling marketing hub backend {} {}", method, url);
         }
-    }
-
-    private String errorMessage(String method, String url, HttpStatusCode status, String body) {
-        return "%s %s responded with status %s and body '%s'".formatted(method, url, status, body);
     }
 
     public record ImagePackage(
@@ -147,8 +147,21 @@ public class LeadPortalImagePackageClient {
     private record ResultRequest(List<GeneratedImage> images, String model, String prompt) {}
 
     public static class LeadPortalWorkerException extends RuntimeException {
-        public LeadPortalWorkerException(String message) {
-            super(message);
+        private final HttpStatusCode status;
+        private final String body;
+
+        public LeadPortalWorkerException(String method, String url, HttpStatusCode status, String body) {
+            super("%s %s responded with status %s and body '%s'".formatted(method, url, status, body));
+            this.status = status;
+            this.body = body;
+        }
+
+        public HttpStatusCode getStatus() {
+            return status;
+        }
+
+        public String getBody() {
+            return body;
         }
     }
 }

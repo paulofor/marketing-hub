@@ -1,19 +1,21 @@
-import { useMemo } from "react";
-import { Image as ImageIcon, ShieldAlert, Sparkles } from "lucide-react";
-import { useLeadPortalImagePackages } from "../../api/leadPortal/useLeadPortalSubmissions";
-import type {
-  FlowSubmissionImagePackageStatus,
-  LeadPortalImagePackage,
+import { useMemo, useState } from "react";
+import {
+  CheckCircle,
+  Image as ImageIcon,
+  Loader2,
+  ShieldAlert,
+  Sparkles,
+} from "lucide-react";
+import {
+  useLeadPortalImagePackages,
+  type FlowSubmissionImagePackageStatus,
+  type LeadPortalImagePackage,
 } from "../../api/leadPortal/useLeadPortalSubmissions";
+import { getStatusDetail, statusDetails } from "./statusDetails";
+import LeadPortalImagePackageDetailModal from "./LeadPortalImagePackageDetailModal";
 import "./LeadPortalImagesPage.css";
 
-const statusLabels: Record<FlowSubmissionImagePackageStatus, string> = {
-  RECEIVED: "Recebido",
-  RECENT: "Capturado",
-  PROCESSING: "Processando",
-  COMPLETED: "Concluído",
-  FAILED: "Falha ao processar",
-};
+type StatusFilter = FlowSubmissionImagePackageStatus | "ALL";
 
 function formatDate(value: string) {
   return new Date(value).toLocaleString("pt-BR");
@@ -25,35 +27,103 @@ function buildLeadLabel(submission: LeadPortalImagePackage) {
   return submission.submissionId;
 }
 
+function buildStatusNarrative(status: FlowSubmissionImagePackageStatus) {
+  return getStatusDetail(status);
+}
+
+function buildStats(submission: LeadPortalImagePackage) {
+  const stats: { label: string; value: string }[] = [];
+  if (submission.model) {
+    stats.push({ label: "Modelo", value: submission.model });
+  }
+  if (typeof submission.plannedOutputs === "number") {
+    stats.push({ label: "Solicitadas", value: String(submission.plannedOutputs) });
+  }
+  if (typeof submission.freeImages === "number" && submission.freeImages > 0) {
+    stats.push({ label: "Grátis", value: String(submission.freeImages) });
+  }
+  stats.push({ label: "Geradas", value: String(submission.generatedImageCount) });
+  return stats;
+}
+
+function buildPipelineIcon(status: FlowSubmissionImagePackageStatus) {
+  const detail = getStatusDetail(status);
+  switch (detail.icon) {
+    case "loader":
+      return <Loader2 size={18} className="spin" />;
+    case "check":
+      return <CheckCircle size={18} />;
+    case "alert":
+      return <ShieldAlert size={18} />;
+    default:
+      return <Sparkles size={18} />;
+  }
+}
+
+function buildStatusBadgeClass(status: FlowSubmissionImagePackageStatus) {
+  return getStatusDetail(status).badgeClass;
+}
+
 export default function LeadPortalImagesPage() {
-  const { data, isLoading, isError } = useLeadPortalImagePackages();
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+  const [selectedPackageId, setSelectedPackageId] = useState<number | null>(null);
+
+  const statusesParam = statusFilter === "ALL" ? undefined : [statusFilter];
+  const { data, isLoading, isError } = useLeadPortalImagePackages(statusesParam);
 
   const submissions = useMemo(() => {
     if (!data) return [] as LeadPortalImagePackage[];
     return [...data].sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
   }, [data]);
+
+  const totalDisplayed = submissions.length;
 
   return (
     <div className="lead-portal-images">
       <header className="lead-portal-images__header">
-        <div>
+        <div className="lead-portal-images__intro">
           <p className="lead-portal-images__eyebrow">Lead Portal</p>
           <h1 className="lead-portal-images__title">Pacotes de imagem</h1>
           <p className="lead-portal-images__subtitle">
-            Acompanhe os pacotes que ainda precisam entrar no pipeline de
-            criação de novas imagens e confirme rapidamente os dados recebidos.
+            Acompanhe todos os pacotes submetidos pelo portal, filtre por status e
+            visualize rapidamente os detalhes antes de priorizar o envio ao
+            pipeline de geração.
           </p>
         </div>
-        <div className="lead-portal-images__highlight">
-          <div className="lead-portal-images__highlight-icon" aria-hidden="true">
-            <Sparkles size={18} />
+        <div className="lead-portal-images__actions">
+          <div className="lead-portal-images__highlight" aria-live="polite">
+            <div className="lead-portal-images__highlight-icon" aria-hidden="true">
+              <Sparkles size={18} />
+            </div>
+            <div>
+              <p className="lead-portal-images__highlight-label">Pacotes exibidos</p>
+              <p className="lead-portal-images__highlight-value">{totalDisplayed}</p>
+            </div>
           </div>
-          <div>
-            <p className="lead-portal-images__highlight-label">Aguardando pipeline</p>
-            <p className="lead-portal-images__highlight-value">{submissions.length}</p>
+          <div className="lead-portal-images__filter">
+            <label className="lead-portal-images__filter-label" htmlFor="lead-portal-status-filter">
+              Status
+            </label>
+            <select
+              id="lead-portal-status-filter"
+              className="form-select form-select-sm"
+              value={statusFilter}
+              onChange={(event) =>
+                setStatusFilter(event.target.value as StatusFilter)
+              }
+            >
+              <option value="ALL">Todos os status</option>
+              {Object.keys(statusDetails).map((statusKey) => {
+                const status = statusKey as FlowSubmissionImagePackageStatus;
+                return (
+                  <option key={status} value={status}>
+                    {getStatusDetail(status).label}
+                  </option>
+                );
+              })}
+            </select>
           </div>
         </div>
       </header>
@@ -61,7 +131,7 @@ export default function LeadPortalImagesPage() {
       {isLoading ? (
         <div className="lead-portal-images__loading" role="status" aria-live="polite">
           <div className="spinner-border text-primary" />
-          <p className="text-muted mt-2 mb-0">Carregando pacotes do portal…</p>
+          <p className="text-muted mt-2 mb-0">Carregando pacotes de imagens…</p>
         </div>
       ) : isError ? (
         <div className="alert alert-danger d-flex align-items-center" role="alert">
@@ -84,65 +154,99 @@ export default function LeadPortalImagesPage() {
         </div>
       ) : (
         <div className="lead-portal-images__list" role="list">
-          {submissions.map((submission) => (
-            <article
-              key={submission.id}
-              className="lead-portal-image-card"
-              role="listitem"
-              aria-label="Pacote aguardando pipeline"
-            >
-              <div className="lead-portal-image-card__body">
-                <div className="lead-portal-image-card__status">
-                  <span className="badge text-bg-primary d-inline-flex align-items-center gap-1" aria-label="Pronto para pipeline">
-                    <Sparkles size={16} aria-hidden="true" />
-                    {statusLabels[submission.status] ?? submission.status}
-                  </span>
-                  <span className="text-muted small">
-                    Recebido {formatDate(submission.createdAt)}
-                  </span>
-                </div>
+          {submissions.map((submission) => {
+            const detail = buildStatusNarrative(submission.status);
+            const stats = buildStats(submission);
 
-                <div className="lead-portal-image-card__meta">
-                  <div>
-                    <p className="lead-portal-image-card__lead">{buildLeadLabel(submission)}</p>
-                    <h2 className="lead-portal-image-card__title">
-                      {submission.flowSlug ? `Fluxo ${submission.flowSlug}` : "Fluxo não informado"}
-                    </h2>
+            return (
+              <article
+                key={submission.id}
+                className="lead-portal-image-card"
+                role="listitem"
+                tabIndex={0}
+                aria-label={`Pacote ${detail.label} do lead ${buildLeadLabel(submission)}`}
+                onClick={() => setSelectedPackageId(submission.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setSelectedPackageId(submission.id);
+                  }
+                }}
+              >
+                <div className="lead-portal-image-card__body">
+                  <div className="lead-portal-image-card__status">
+                    <span
+                      className={`badge d-inline-flex align-items-center gap-1 ${buildStatusBadgeClass(submission.status)}`}
+                    >
+                      {buildPipelineIcon(submission.status)}
+                      {detail.label}
+                    </span>
+                    <span className="text-muted small">
+                      Atualizado {formatDate(submission.updatedAt)}
+                    </span>
                   </div>
-                  <div className="lead-portal-image-card__contacts" aria-label="Contatos do lead">
-                    {submission.email ? (
-                      <span className="lead-portal-image-card__contact" aria-label="Email do lead">
-                        {submission.email}
-                      </span>
-                    ) : null}
-                    {submission.phone ? (
-                      <span className="lead-portal-image-card__contact" aria-label="Telefone do lead">
-                        {submission.phone}
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
 
-                <div className="lead-portal-image-card__pipeline">
-                  <div className="lead-portal-image-card__pipeline-icon" aria-hidden="true">
-                    <ImageIcon size={18} />
+                  <div className="lead-portal-image-card__meta">
+                    <div>
+                      <p className="lead-portal-image-card__lead">{buildLeadLabel(submission)}</p>
+                      <h2 className="lead-portal-image-card__title">
+                        {submission.flowSlug
+                          ? `Fluxo ${submission.flowSlug}`
+                          : "Fluxo não informado"}
+                      </h2>
+                    </div>
+                    <div className="lead-portal-image-card__contacts" aria-label="Contatos do lead">
+                      {submission.email ? (
+                        <span className="lead-portal-image-card__contact" aria-label="Email do lead">
+                          {submission.email}
+                        </span>
+                      ) : null}
+                      {submission.phone ? (
+                        <span className="lead-portal-image-card__contact" aria-label="Telefone do lead">
+                          {submission.phone}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
-                  <div>
-                    <p className="lead-portal-image-card__pipeline-title">Aguardando criação de variantes</p>
-                    <p className="lead-portal-image-card__pipeline-text">
-                      Pacote pronto para entrar no pipeline de geração de novas imagens.
-                      Confirme os dados acima antes de priorizar este lead na fila.
-                    </p>
-                    <p className="lead-portal-image-card__pipeline-text text-muted mb-0">
-                      Prompt base: {submission.prompt}
-                    </p>
+
+                  <div className="lead-portal-image-card__stats">
+                    {stats.map((stat) => (
+                      <span key={stat.label} className="lead-portal-image-card__stat">
+                        <strong>{stat.label}:</strong> {stat.value}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="lead-portal-image-card__pipeline">
+                    <div className="lead-portal-image-card__pipeline-icon" aria-hidden="true">
+                      {buildPipelineIcon(submission.status)}
+                    </div>
+                    <div>
+                      <p className="lead-portal-image-card__pipeline-title">{detail.title}</p>
+                      <p className="lead-portal-image-card__pipeline-text">
+                        {detail.description}
+                      </p>
+                      <p className="lead-portal-image-card__pipeline-text text-muted mb-0">
+                        Prompt base: {submission.prompt}
+                      </p>
+                      {submission.failureReason ? (
+                        <p className="lead-portal-image-card__failure">
+                          Falha: {submission.failureReason}
+                        </p>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
       )}
+
+      <LeadPortalImagePackageDetailModal
+        packageId={selectedPackageId}
+        onClose={() => setSelectedPackageId(null)}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 package com.marketinghub.worker.leadportal.image;
 
 import com.marketinghub.worker.creative.CreativeImageOptimizer;
+import com.marketinghub.worker.leadportal.image.LeadPortalImagePackageClient.LeadPortalWorkerException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -9,6 +10,7 @@ import java.util.Objects;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -40,12 +42,33 @@ public class LeadPortalImageProcessingService {
         }
         List<LeadPortalImagePackageClient.ImagePackage> packages = packageClient.listRecentPackages();
         for (LeadPortalImagePackageClient.ImagePackage imagePackage : packages) {
+            boolean startedProcessing = false;
             try {
                 packageClient.markProcessing(imagePackage.id());
+                startedProcessing = true;
                 handlePackage(imagePackage);
+            } catch (LeadPortalWorkerException ex) {
+                if (!startedProcessing) {
+                    HttpStatusCode status = ex.getStatus();
+                    if (status != null && status.value() == 409) {
+                        log.info(
+                                "Skipping lead-portal image package {} because it was already claimed by another worker",
+                                imagePackage.id());
+                    } else {
+                        log.warn(
+                                "Backend refused to start processing for lead-portal image package {}: {}",
+                                imagePackage.id(),
+                                ex.getMessage());
+                    }
+                    continue;
+                }
+                log.error("Failed to process lead-portal image package {}", imagePackage.id(), ex);
+                packageClient.markFailed(imagePackage.id(), resolveFailureReason(ex));
             } catch (Exception ex) {
                 log.error("Failed to process lead-portal image package {}", imagePackage.id(), ex);
-                packageClient.markFailed(imagePackage.id(), ex.getMessage());
+                if (startedProcessing) {
+                    packageClient.markFailed(imagePackage.id(), resolveFailureReason(ex));
+                }
             }
         }
         return packages;
@@ -114,5 +137,16 @@ public class LeadPortalImageProcessingService {
             return Integer.toHexString(Objects.hash(bytes));
         }
         return cleaned;
+    }
+
+    private String resolveFailureReason(Throwable throwable) {
+        if (throwable == null) {
+            return "Erro desconhecido no worker";
+        }
+        String message = throwable.getMessage();
+        if (!StringUtils.hasText(message)) {
+            return throwable.getClass().getSimpleName();
+        }
+        return message.trim();
     }
 }

@@ -103,6 +103,7 @@ public class LeadPortalImagePackageService {
                     sub.name,
                     sub.email,
                     sub.answers,
+                    (SELECT COUNT(*) FROM flow_submission_image_item items WHERE items.package_id = pack.id) AS generated_count,
                     sub.image_question_key,
                     sub.stored_file_name,
                     sub.created_at AS submission_created_at

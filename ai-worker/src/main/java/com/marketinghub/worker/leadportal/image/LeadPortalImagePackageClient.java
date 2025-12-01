@@ -121,8 +121,8 @@ public class LeadPortalImagePackageClient {
             String treatment) {}
 
     public record GeneratedImage(
-            String storedFileName,
-            String publicUrl,
+            @JsonProperty("stored_file_name") String storedFileName,
+            @JsonProperty("public_url") String publicUrl,
             String model,
             String prompt,
             String source) {}

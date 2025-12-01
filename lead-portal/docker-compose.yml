@@ -15,7 +15,7 @@ services:
       LEAD_PORTAL_STORAGE_ACCESS_KEY_ID: fafc943bd27d2a1c55c84f80778994a0
       LEAD_PORTAL_STORAGE_SECRET_ACCESS_KEY: 4ee618dd20bb752711ee0242469a70fadb9bdc0c921ded7e1177eeb681ddfc54
       LEAD_PORTAL_STORAGE_REGION: auto
-      LEAD_PORTAL_STORAGE_PUBLIC_BASE_URL: https://95b059f4f73518a658d07a19438f38c9.r2.cloudflarestorage.com
+      LEAD_PORTAL_STORAGE_PUBLIC_BASE_URL: https://95b059f4f73518a658d07a19438f38c9.r2.cloudflarestorage.com/leadportal
     expose:
       - "8080"
     healthcheck:

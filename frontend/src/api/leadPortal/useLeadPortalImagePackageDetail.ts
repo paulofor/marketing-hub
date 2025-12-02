@@ -40,8 +40,10 @@ function buildPublicImageUrl(storedFileName?: string | null) {
   return `${cloudflarePublicBaseUrl}/${normalizedFileName}`;
 }
 
-function withPublicImageUrl(image?: LeadPortalImageReference | null) {
-  if (!image) return image;
+function withPublicImageUrl(
+  image?: LeadPortalImageReference | null,
+): LeadPortalImageReference | null {
+  if (!image) return null;
 
   const publicUrl = buildPublicImageUrl(image.storedFileName);
   if (!publicUrl) return image;
@@ -67,9 +69,11 @@ export function useLeadPortalImagePackageDetail(id?: number | null) {
       return {
         ...data,
         originalImage: withPublicImageUrl(data.originalImage),
-        generatedImages: data.generatedImages.map((image) =>
-          withPublicImageUrl(image),
-        ),
+        generatedImages: data.generatedImages
+          .map((image) => withPublicImageUrl(image))
+          .filter(
+            (image): image is LeadPortalImageReference => image !== null,
+          ),
       };
     },
     staleTime: 30_000,

@@ -70,6 +70,7 @@ import PrivacyPolicySettingsPage from "./pages/settings/PrivacyPolicySettingsPag
 import WhatsAppConsolePage from "./pages/whatsapp/WhatsAppConsolePage";
 import LeadPortalExperimentMetricsPage from "./pages/leadPortal/LeadPortalExperimentMetricsPage";
 import LeadPortalImagesPage from "./pages/leadPortal/LeadPortalImagesPage";
+import LeadPortalImagePackageDetailPage from "./pages/leadPortal/LeadPortalImagePackageDetailPage";
 
 export default function App() {
   return (
@@ -181,6 +182,10 @@ export default function App() {
               <Route
                 path="/lead-portal/images"
                 element={<LeadPortalImagesPage />}
+              />
+              <Route
+                path="/lead-portal/images/:packageId"
+                element={<LeadPortalImagePackageDetailPage />}
               />
               <Route path="/chat-dialogs" element={<ChatDialogListPage />} />
               <Route path="/chat-dialogs/new" element={<NewChatDialogPage />} />

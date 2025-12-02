@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   CheckCircle,
   Image as ImageIcon,
@@ -12,7 +13,6 @@ import {
   type LeadPortalImagePackage,
 } from "../../api/leadPortal/useLeadPortalSubmissions";
 import { getStatusDetail, statusDetails } from "./statusDetails";
-import LeadPortalImagePackageDetailModal from "./LeadPortalImagePackageDetailModal";
 import "./LeadPortalImagesPage.css";
 
 type StatusFilter = FlowSubmissionImagePackageStatus | "ALL";
@@ -65,8 +65,8 @@ function buildStatusBadgeClass(status: FlowSubmissionImagePackageStatus) {
 }
 
 export default function LeadPortalImagesPage() {
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
-  const [selectedPackageId, setSelectedPackageId] = useState<number | null>(null);
 
   const statusesParam = statusFilter === "ALL" ? undefined : [statusFilter];
   const { data, isLoading, isError } = useLeadPortalImagePackages(statusesParam);
@@ -165,11 +165,11 @@ export default function LeadPortalImagesPage() {
                 role="listitem"
                 tabIndex={0}
                 aria-label={`Pacote ${detail.label} do lead ${buildLeadLabel(submission)}`}
-                onClick={() => setSelectedPackageId(submission.id)}
+                onClick={() => navigate(`/lead-portal/images/${submission.id}`)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
-                    setSelectedPackageId(submission.id);
+                    navigate(`/lead-portal/images/${submission.id}`);
                   }
                 }}
               >
@@ -243,10 +243,6 @@ export default function LeadPortalImagesPage() {
         </div>
       )}
 
-      <LeadPortalImagePackageDetailModal
-        packageId={selectedPackageId}
-        onClose={() => setSelectedPackageId(null)}
-      />
     </div>
   );
 }

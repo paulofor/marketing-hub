@@ -29,6 +29,30 @@ export interface LeadPortalImagePackageDetail extends LeadPortalImagePackage {
   generatedImages: LeadPortalImageReference[];
 }
 
+const cloudflarePublicBaseUrl =
+  "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev";
+
+function buildPublicImageUrl(storedFileName?: string | null) {
+  if (!storedFileName) return null;
+  const normalizedFileName = storedFileName.startsWith("/")
+    ? storedFileName.slice(1)
+    : storedFileName;
+  return `${cloudflarePublicBaseUrl}/${normalizedFileName}`;
+}
+
+function withPublicImageUrl(image?: LeadPortalImageReference | null) {
+  if (!image) return image;
+
+  const publicUrl = buildPublicImageUrl(image.storedFileName);
+  if (!publicUrl) return image;
+
+  return {
+    ...image,
+    url: image.url ?? publicUrl,
+    downloadUrl: image.downloadUrl ?? publicUrl,
+  };
+}
+
 export function useLeadPortalImagePackageDetail(id?: number | null) {
   return useQuery<LeadPortalImagePackageDetail, Error>({
     queryKey: ["lead-portal-image-package", id],
@@ -40,7 +64,13 @@ export function useLeadPortalImagePackageDetail(id?: number | null) {
       const { data } = await axios.get<LeadPortalImagePackageDetail>(
         `/api/lead-portal/image-packages/${id}`,
       );
-      return data;
+      return {
+        ...data,
+        originalImage: withPublicImageUrl(data.originalImage),
+        generatedImages: data.generatedImages.map((image) =>
+          withPublicImageUrl(image),
+        ),
+      };
     },
     staleTime: 30_000,
   });

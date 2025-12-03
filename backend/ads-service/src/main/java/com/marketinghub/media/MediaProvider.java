@@ -8,5 +8,6 @@ public enum MediaProvider {
     HEYGEN,
     ELEVENLABS,
     RUNWAY,
-    OPENAI
+    OPENAI,
+    WATERMARKER
 }

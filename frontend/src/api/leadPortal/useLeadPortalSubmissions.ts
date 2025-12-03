@@ -5,6 +5,8 @@ export type FlowSubmissionImagePackageStatus =
   | "RECEIVED"
   | "RECENT"
   | "PROCESSING"
+  | "WATERMARK_PENDING"
+  | "WATERMARKING"
   | "COMPLETED"
   | "FAILED";
 
@@ -20,6 +22,7 @@ export interface LeadPortalImagePackage {
   plannedOutputs?: number | null;
   freeImages?: number | null;
   generatedImageCount: number;
+  watermarkedImageCount: number;
   failureReason?: string | null;
   status: FlowSubmissionImagePackageStatus;
   createdAt: string;

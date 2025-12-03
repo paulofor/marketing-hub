@@ -16,6 +16,7 @@ public record LeadPortalImagePackageDetailDto(
         String model,
         Integer plannedOutputs,
         Integer freeImages,
+        Integer watermarkedImageCount,
         String failureReason,
         Instant createdAt,
         Instant updatedAt,
@@ -42,6 +43,15 @@ public record LeadPortalImagePackageDetailDto(
             String model,
             Instant createdAt,
             Long itemId,
+            String storedFileName,
+            WatermarkReference watermark
+    ) {}
+
+    public record WatermarkReference(
+            Long assetId,
+            String url,
+            String downloadUrl,
+            Instant createdAt,
             String storedFileName
     ) {}
 }

@@ -1,0 +1,4 @@
+services:
+  watermark:
+    image: ${IMAGE_WATERMARK_SERVICE_IMAGE}
+    build: null

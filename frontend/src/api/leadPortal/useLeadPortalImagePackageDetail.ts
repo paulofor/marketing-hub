@@ -94,34 +94,6 @@ function shouldUsePublicUrl(existingUrl?: string | null) {
   }
 }
 
-const knownAssetHosts = (() => {
-  const hosts = new Set<string>([new URL(cloudflarePublicBaseUrl).hostname]);
-
-  try {
-    hosts.add(new URL(apiBaseUrl).hostname);
-  } catch {
-    // ignore invalid API base URLs (for example, relative paths)
-  }
-
-  if (typeof window !== "undefined") {
-    hosts.add(window.location.hostname);
-  }
-
-  return hosts;
-})();
-
-function shouldUsePublicUrl(existingUrl?: string | null) {
-  if (!existingUrl) return true;
-
-  try {
-    const parsed = new URL(existingUrl);
-    return knownAssetHosts.has(parsed.hostname);
-  } catch {
-    // Relative or malformed URLs are treated as legacy and should be normalized.
-    return true;
-  }
-}
-
 function withPublicImageUrl(
   image?: LeadPortalImageReference | null,
 ): LeadPortalImageReference | null {

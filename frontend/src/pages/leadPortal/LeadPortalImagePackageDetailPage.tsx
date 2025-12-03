@@ -26,6 +26,7 @@ interface GalleryItem {
   prompt?: string | null;
   model?: string | null;
   createdAt?: string | null;
+  variant?: "ORIGINAL" | "WATERMARK";
 }
 
 function formatDateTime(value?: string | null) {
@@ -64,21 +65,40 @@ function buildGalleryItems(
   }
 
   generated
-    .filter((image) => Boolean(image.url))
+    .filter((image) => Boolean(image.url) || Boolean(image.watermark?.url))
     .forEach((image, index) => {
       const position =
         typeof image.position === "number" ? image.position + 1 : index + 1;
-      items.push({
-        key: `generated-${image.itemId ?? position}`,
-        label: buildGalleryLabel(image, position),
-        type: image.type ?? "GENERATED",
-        accessType: image.accessType,
-        url: image.url,
-        downloadUrl: image.downloadUrl ?? image.url,
-        prompt: image.prompt,
-        model: image.model,
-        createdAt: image.createdAt,
-      });
+      const baseLabel = buildGalleryLabel(image, position);
+      if (image.url) {
+        items.push({
+          key: `generated-${image.itemId ?? position}-original`,
+          label: baseLabel,
+          type: image.type ?? "GENERATED",
+          accessType: image.accessType,
+          url: image.url,
+          downloadUrl: image.downloadUrl ?? image.url,
+          prompt: image.prompt,
+          model: image.model,
+          createdAt: image.createdAt,
+          variant: "ORIGINAL",
+        });
+      }
+      const watermark = image.watermark;
+      if (watermark?.url) {
+        items.push({
+          key: `generated-${image.itemId ?? position}-watermark`,
+          label: `${baseLabel} (Marca d'água)`,
+          type: "GENERATED_WATERMARK",
+          accessType: image.accessType,
+          url: watermark.url,
+          downloadUrl: watermark.downloadUrl ?? watermark.url,
+          prompt: image.prompt,
+          model: image.model,
+          createdAt: watermark.createdAt ?? image.createdAt,
+          variant: "WATERMARK",
+        });
+      }
     });
 
   if (items.length === 0) {
@@ -197,6 +217,21 @@ export default function LeadPortalImagePackageDetailPage() {
           </div>
         ) : (
           <div className="lead-portal-image-detail__layout">
+            {data.status === "WATERMARK_PENDING" ? (
+              <div className="alert alert-info" role="status">
+                As variações estão prontas e aguardando a geração das prévias com marca d'água.
+              </div>
+            ) : null}
+            {data.status === "WATERMARKING" ? (
+              <div className="alert alert-warning" role="status">
+                O serviço de marca d'água está processando as imagens. Esta tela atualiza automaticamente ao concluir.
+              </div>
+            ) : null}
+            {data.status === "COMPLETED" && data.watermarkedImageCount < data.generatedImages.length ? (
+              <div className="alert alert-secondary" role="status">
+                Algumas imagens originais não possuem prévias com marca d'água. Reprocessar o pacote pode ser necessário.
+              </div>
+            ) : null}
             <section className="lead-portal-image-detail__info">
               <div className="lead-portal-image-detail__section">
                 <h3>Resumo</h3>
@@ -230,6 +265,10 @@ export default function LeadPortalImagePackageDetailPage() {
                   <div>
                     <dt>Imagens geradas</dt>
                     <dd>{data.generatedImages.length}</dd>
+                  </div>
+                  <div>
+                    <dt>Prévias com marca d'água</dt>
+                    <dd>{data.watermarkedImageCount}</dd>
                   </div>
                 </dl>
               </div>
@@ -310,8 +349,15 @@ export default function LeadPortalImagePackageDetailPage() {
                 <div className="lead-portal-image-detail__viewer-meta">
                   <div className="lead-portal-image-detail__viewer-meta-header">
                     <span className="badge text-bg-light">
-                      {currentItem.accessType ?? currentItem.type}
+                      {currentItem.variant === "WATERMARK"
+                        ? "Marca d'água"
+                        : currentItem.accessType ?? currentItem.type}
                     </span>
+                    {currentItem.variant === "WATERMARK" ? (
+                      <span className="badge text-bg-info ms-2">
+                        {currentItem.accessType ?? "Protegida"}
+                      </span>
+                    ) : null}
                     {currentItem.createdAt ? (
                       <span className="text-muted small">
                         {formatDateTime(currentItem.createdAt)}
@@ -326,6 +372,11 @@ export default function LeadPortalImagePackageDetailPage() {
                   {currentItem.model ? (
                     <p className="lead-portal-image-detail__viewer-text">
                       <strong>Modelo:</strong> {currentItem.model}
+                    </p>
+                  ) : null}
+                  {currentItem.variant === "WATERMARK" ? (
+                    <p className="lead-portal-image-detail__viewer-text text-muted">
+                      Versão demonstrativa protegida com marca d'água automática.
                     </p>
                   ) : null}
                   {currentItem.downloadUrl ? (

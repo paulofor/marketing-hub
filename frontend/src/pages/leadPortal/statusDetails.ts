@@ -33,6 +33,22 @@ export const statusDetails: Record<FlowSubmissionImagePackageStatus, StatusDetai
       "O worker está criando as variações solicitadas. Acompanhe para garantir que o pacote finalize com sucesso.",
     icon: "loader",
   },
+  WATERMARK_PENDING: {
+    label: "Aguardando marca d'água",
+    badgeClass: "text-bg-primary",
+    title: "Fila de demonstração",
+    description:
+      "As imagens foram geradas e estão aguardando a criação das versões com marca d'água para envio ao lead.",
+    icon: "sparkles",
+  },
+  WATERMARKING: {
+    label: "Aplicando marca d'água",
+    badgeClass: "text-bg-warning",
+    title: "Preparando prévias",
+    description:
+      "O serviço de tratamento está aplicando a marca d'água nas imagens para gerar a prévia segura ao lead.",
+    icon: "loader",
+  },
   COMPLETED: {
     label: "Concluído",
     badgeClass: "text-bg-success",

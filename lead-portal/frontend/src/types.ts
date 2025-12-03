@@ -1,4 +1,8 @@
-export type LeadStatus = "PROCESSING" | "COMPLETED";
+export type LeadStatus =
+  | "PROCESSING"
+  | "WATERMARK_PENDING"
+  | "WATERMARKING"
+  | "COMPLETED";
 
 export interface LeadDetails {
   id: string;

@@ -160,7 +160,7 @@ public class LeadPortalImagePackageWorkerService {
         int updated = jdbcTemplate.update(
                 "UPDATE flow_submission_image_package SET status = ?, model = ?, prompt = ?, failure_reason = NULL, updated_at = ? "
                         + "WHERE id = ? AND status = ?",
-                FlowSubmissionImagePackageStatus.COMPLETED.name(),
+                FlowSubmissionImagePackageStatus.WATERMARK_PENDING.name(),
                 finalModel,
                 finalPrompt,
                 Timestamp.from(Instant.now()),

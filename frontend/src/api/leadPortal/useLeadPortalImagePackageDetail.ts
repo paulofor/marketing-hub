@@ -6,6 +6,14 @@ import type {
   LeadPortalImagePackage,
 } from "./useLeadPortalSubmissions";
 
+export interface LeadPortalWatermarkReference {
+  assetId?: number | null;
+  url?: string | null;
+  downloadUrl?: string | null;
+  createdAt?: string | null;
+  storedFileName?: string | null;
+}
+
 export interface LeadPortalImageReference {
   type: "ORIGINAL" | "GENERATED" | string;
   url?: string | null;
@@ -18,6 +26,7 @@ export interface LeadPortalImageReference {
   createdAt?: string | null;
   itemId?: number | null;
   storedFileName?: string | null;
+  watermark?: LeadPortalWatermarkReference | null;
 }
 
 export interface LeadPortalImagePackageDetail extends LeadPortalImagePackage {
@@ -94,16 +103,39 @@ function shouldUsePublicUrl(existingUrl?: string | null) {
   }
 }
 
+function withPublicWatermarkUrl(
+  watermark?: LeadPortalWatermarkReference | null,
+): LeadPortalWatermarkReference | null {
+  if (!watermark) return null;
+  const publicUrl = buildPublicImageUrl(watermark.storedFileName);
+  if (!publicUrl) return watermark;
+
+  return {
+    ...watermark,
+    url: shouldUsePublicUrl(watermark.url) ? publicUrl : watermark.url,
+    downloadUrl: shouldUsePublicUrl(watermark.downloadUrl)
+      ? publicUrl
+      : watermark.downloadUrl,
+  };
+}
+
 function withPublicImageUrl(
   image?: LeadPortalImageReference | null,
 ): LeadPortalImageReference | null {
   if (!image) return null;
 
   const publicUrl = buildPublicImageUrl(image.storedFileName);
-  if (!publicUrl) return image;
+  const normalizedImage: LeadPortalImageReference = {
+    ...image,
+    watermark: withPublicWatermarkUrl(image.watermark),
+  };
+
+  if (!publicUrl) {
+    return normalizedImage;
+  }
 
   return {
-    ...image,
+    ...normalizedImage,
     url: shouldUsePublicUrl(image.url) ? publicUrl : image.url,
     downloadUrl: shouldUsePublicUrl(image.downloadUrl)
       ? publicUrl

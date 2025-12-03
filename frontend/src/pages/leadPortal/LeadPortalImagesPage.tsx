@@ -43,6 +43,7 @@ function buildStats(submission: LeadPortalImagePackage) {
     stats.push({ label: "Grátis", value: String(submission.freeImages) });
   }
   stats.push({ label: "Geradas", value: String(submission.generatedImageCount) });
+  stats.push({ label: "Prévias", value: String(submission.watermarkedImageCount) });
   return stats;
 }
 

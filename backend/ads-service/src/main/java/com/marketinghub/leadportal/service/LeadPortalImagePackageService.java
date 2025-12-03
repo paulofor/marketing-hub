@@ -69,7 +69,8 @@ public class LeadPortalImagePackageService {
                     sub.name,
                     sub.email,
                     sub.answers,
-                    (SELECT COUNT(*) FROM flow_submission_image_item items WHERE items.package_id = pack.id) AS generated_count
+                    (SELECT COUNT(*) FROM flow_submission_image_item items WHERE items.package_id = pack.id) AS generated_count,
+                    (SELECT COUNT(*) FROM flow_submission_image_watermark wm JOIN flow_submission_image_item items2 ON items2.id = wm.item_id WHERE items2.package_id = pack.id) AS watermarked_count
                 FROM flow_submission_image_package pack
                 LEFT JOIN flow_submissions sub ON sub.id = pack.submission_id
                 """);
@@ -104,6 +105,7 @@ public class LeadPortalImagePackageService {
                     sub.email,
                     sub.answers,
                     (SELECT COUNT(*) FROM flow_submission_image_item items WHERE items.package_id = pack.id) AS generated_count,
+                    (SELECT COUNT(*) FROM flow_submission_image_watermark wm JOIN flow_submission_image_item items2 ON items2.id = wm.item_id WHERE items2.package_id = pack.id) AS watermarked_count,
                     sub.image_question_key,
                     sub.stored_file_name,
                     sub.created_at AS submission_created_at
@@ -138,6 +140,7 @@ public class LeadPortalImagePackageService {
                 summary.model(),
                 summary.plannedOutputs(),
                 summary.freeImages(),
+                summary.watermarkedImageCount(),
                 summary.failureReason(),
                 summary.createdAt(),
                 summary.updatedAt(),
@@ -158,6 +161,10 @@ public class LeadPortalImagePackageService {
         if (generatedImageCount == null) {
             generatedImageCount = 0;
         }
+        Integer watermarkedImageCount = getInteger(rs, "watermarked_count");
+        if (watermarkedImageCount == null) {
+            watermarkedImageCount = 0;
+        }
 
         String answers = rs.getString("answers");
         String phone = extractPhone(answers);
@@ -175,6 +182,7 @@ public class LeadPortalImagePackageService {
                 plannedOutputs,
                 freeImages,
                 generatedImageCount,
+                watermarkedImageCount,
                 createdAt,
                 updatedAt,
                 rs.getString("failure_reason"));
@@ -213,7 +221,8 @@ public class LeadPortalImagePackageService {
                 null,
                 projection.submissionCreatedAt(),
                 null,
-                projection.storedFileName());
+                projection.storedFileName(),
+                null);
     }
 
     private Optional<String> buildSubmissionImageUrl(UUID submissionId) {
@@ -239,26 +248,44 @@ public class LeadPortalImagePackageService {
                     asset.url,
                     asset.prompt,
                     asset.model,
-                    asset.external_id
+                    asset.external_id,
+                    wm.asset_id AS watermark_asset_id,
+                    wm_asset.url AS watermark_url,
+                    wm_asset.external_id AS watermark_external_id,
+                    wm_asset.created_at AS watermark_created_at
                 FROM flow_submission_image_item item
                 LEFT JOIN asset ON asset.id = item.asset_id
+                LEFT JOIN flow_submission_image_watermark wm ON wm.item_id = item.id
+                LEFT JOIN asset wm_asset ON wm_asset.id = wm.asset_id
                 WHERE item.package_id = ?
                 ORDER BY item.position_index ASC, item.id ASC
                 """;
 
-        return jdbcTemplate.query(sql, (rs, rowNum) -> new LeadPortalImagePackageDetailDto.ImageReference(
-                IMAGE_TYPE_GENERATED,
-                rs.getString("url"),
-                rs.getString("url"),
-                rs.getString("access_type"),
-                getLong(rs, "asset_id"),
-                getInteger(rs, "position_index"),
-                rs.getString("prompt"),
-                rs.getString("model"),
-                toInstant(rs.getTimestamp("created_at")),
-                getLong(rs, "id"),
-                rs.getString("external_id")),
-                packageId);
+        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+            LeadPortalImagePackageDetailDto.WatermarkReference watermark = null;
+            Long watermarkAssetId = getLong(rs, "watermark_asset_id");
+            if (watermarkAssetId != null) {
+                watermark = new LeadPortalImagePackageDetailDto.WatermarkReference(
+                        watermarkAssetId,
+                        rs.getString("watermark_url"),
+                        rs.getString("watermark_url"),
+                        toInstant(rs.getTimestamp("watermark_created_at")),
+                        rs.getString("watermark_external_id"));
+            }
+            return new LeadPortalImagePackageDetailDto.ImageReference(
+                    IMAGE_TYPE_GENERATED,
+                    rs.getString("url"),
+                    rs.getString("url"),
+                    rs.getString("access_type"),
+                    getLong(rs, "asset_id"),
+                    getInteger(rs, "position_index"),
+                    rs.getString("prompt"),
+                    rs.getString("model"),
+                    toInstant(rs.getTimestamp("created_at")),
+                    getLong(rs, "id"),
+                    rs.getString("external_id"),
+                    watermark);
+        }, packageId);
     }
 
     private FlowSubmissionImagePackageStatus parseStatus(String raw) {

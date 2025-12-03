@@ -20,6 +20,7 @@ public record LeadPortalImagePackageSummaryDto(
         Integer plannedOutputs,
         Integer freeImages,
         Integer generatedImageCount,
+        Integer watermarkedImageCount,
         Instant createdAt,
         Instant updatedAt,
         String failureReason

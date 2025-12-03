@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { Asset } from './useAssets';
+import { Asset, normalizeAsset } from './useAssets';
 
 export interface CreateVideo {
   provider: string;
@@ -24,7 +24,8 @@ export function useCreateMedia() {
     mutationFn: async (data: CreateVideo | CreateAudio) => {
       const isVideo = (data as CreateVideo).avatar !== undefined;
       const url = isVideo ? '/api/media/video' : '/api/media/audio';
-      return axios.post<Asset>(url, data);
+      const response = await axios.post<Asset>(url, data);
+      return normalizeAsset(response.data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assets'] });

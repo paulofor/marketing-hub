@@ -174,19 +174,21 @@ public class LeadPortalImagePackageWorkerService {
     private List<Asset> saveAssets(LeadPortalWorkerImageResultRequest request, PackageSnapshot snapshot) {
         List<Asset> assets = new ArrayList<>(request.images().size());
         for (GeneratedImageRequest image : request.images()) {
-            String url = image.publicUrl().trim();
-            String storedName = image.storedFileName().trim();
-            String prompt = resolvePrompt(StringUtils.hasText(image.prompt()) ? image.prompt() : request.prompt(), snapshot.prompt());
+            String storedName = normalizeStoredFileName(image.storedFileName());
+            String publicUrl = normalizePublicUrl(image.publicUrl());
+            String prompt = resolvePrompt(
+                    StringUtils.hasText(image.prompt()) ? image.prompt() : request.prompt(),
+                    snapshot.prompt());
             String model = resolveModelValue(image.model(), request.model(), null);
             Asset asset = Asset.builder()
                     .type(AssetType.IMAGE)
                     .provider(resolveProvider(image.source()))
                     .status(AssetStatus.READY)
-                    .url(url)
+                    .url(storedName)
                     .externalId(storedName)
                     .model(model)
                     .prompt(prompt)
-                    .payload(buildPayload(image))
+                    .payload(buildPayload(image, storedName, publicUrl))
                     .build();
             assets.add(asset);
         }
@@ -324,10 +326,12 @@ public class LeadPortalImagePackageWorkerService {
         return null;
     }
 
-    private String buildPayload(GeneratedImageRequest image) {
+    private String buildPayload(GeneratedImageRequest image, String storedFileName, String publicUrl) {
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("stored_file_name", image.storedFileName());
-        payload.put("public_url", image.publicUrl());
+        payload.put("stored_file_name", storedFileName);
+        if (StringUtils.hasText(publicUrl)) {
+            payload.put("public_url", publicUrl);
+        }
         String model = resolveModelValue(image.model(), null, null);
         if (StringUtils.hasText(model)) {
             payload.put("model", model);
@@ -352,6 +356,20 @@ public class LeadPortalImagePackageWorkerService {
             metadata.put("source", image.source().trim());
         }
         return metadata;
+    }
+
+    private String normalizeStoredFileName(String storedFileName) {
+        if (!StringUtils.hasText(storedFileName)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "stored_file_name não pode ser vazio");
+        }
+        return storedFileName.trim();
+    }
+
+    private String normalizePublicUrl(String publicUrl) {
+        if (!StringUtils.hasText(publicUrl)) {
+            return null;
+        }
+        return publicUrl.trim();
     }
 
     private ResponseStatusException notFound(long packageId) {

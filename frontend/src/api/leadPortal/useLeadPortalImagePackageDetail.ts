@@ -1,6 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import type { FlowSubmissionImagePackageStatus, LeadPortalImagePackage } from "./useLeadPortalSubmissions";
+import { apiBaseUrl } from "../../config/api";
+import type {
+  FlowSubmissionImagePackageStatus,
+  LeadPortalImagePackage,
+} from "./useLeadPortalSubmissions";
 
 export interface LeadPortalImageReference {
   type: "ORIGINAL" | "GENERATED" | string;
@@ -40,6 +44,34 @@ function buildPublicImageUrl(storedFileName?: string | null) {
   return `${cloudflarePublicBaseUrl}/${normalizedFileName}`;
 }
 
+const knownAssetHosts = (() => {
+  const hosts = new Set<string>([new URL(cloudflarePublicBaseUrl).hostname]);
+
+  try {
+    hosts.add(new URL(apiBaseUrl).hostname);
+  } catch {
+    // ignore invalid API base URLs (for example, relative paths)
+  }
+
+  if (typeof window !== "undefined") {
+    hosts.add(window.location.hostname);
+  }
+
+  return hosts;
+})();
+
+function shouldUsePublicUrl(existingUrl?: string | null) {
+  if (!existingUrl) return true;
+
+  try {
+    const parsed = new URL(existingUrl);
+    return knownAssetHosts.has(parsed.hostname);
+  } catch {
+    // Relative or malformed URLs are treated as legacy and should be normalized.
+    return true;
+  }
+}
+
 function withPublicImageUrl(
   image?: LeadPortalImageReference | null,
 ): LeadPortalImageReference | null {
@@ -50,8 +82,10 @@ function withPublicImageUrl(
 
   return {
     ...image,
-    url: image.url ?? publicUrl,
-    downloadUrl: image.downloadUrl ?? publicUrl,
+    url: shouldUsePublicUrl(image.url) ? publicUrl : image.url,
+    downloadUrl: shouldUsePublicUrl(image.downloadUrl)
+      ? publicUrl
+      : image.downloadUrl,
   };
 }
 

@@ -134,6 +134,29 @@ public class LeadPortalImagePackageWorkerService {
     }
 
     /**
+     * Reabre um pacote para reprocessamento quando o erro é potencialmente temporário.
+     */
+    @Transactional
+    public void retry(long packageId, String reason) {
+        String normalizedReason = StringUtils.hasText(reason) ? reason.trim() : null;
+        int updated = jdbcTemplate.update(
+                "UPDATE flow_submission_image_package SET status = ?, failure_reason = ?, updated_at = ? "
+                        + "WHERE id = ? AND status IN (?, ?)",
+                FlowSubmissionImagePackageStatus.RECEIVED.name(),
+                normalizedReason,
+                Timestamp.from(Instant.now()),
+                packageId,
+                FlowSubmissionImagePackageStatus.PROCESSING.name(),
+                FlowSubmissionImagePackageStatus.FAILED.name());
+        if (updated == 0) {
+            FlowSubmissionImagePackageStatus current = findStatus(packageId)
+                    .orElseThrow(() -> notFound(packageId));
+            throw conflict("Pacote %d não pode ser reprocessado a partir do status %s"
+                    .formatted(packageId, current));
+        }
+    }
+
+    /**
      * Conclui o processamento de um pacote, persistindo as imagens geradas e metadados.
      */
     @Transactional

@@ -24,6 +24,7 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -147,6 +148,23 @@ public class LeadPortalImagePackageService {
                 submissionInfo,
                 originalImage,
                 generatedImages);
+    }
+
+    @Transactional
+    public void retry(long packageId) {
+        int updated = jdbcTemplate.update(
+                "UPDATE flow_submission_image_package SET status = ?, updated_at = ? WHERE id = ? AND status = ?",
+                FlowSubmissionImagePackageStatus.RECEIVED.name(),
+                Timestamp.from(Instant.now()),
+                packageId,
+                FlowSubmissionImagePackageStatus.FAILED.name());
+        if (updated == 0) {
+            FlowSubmissionImagePackageStatus current = findStatus(packageId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pacote de imagem não encontrado"));
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Pacote %d não pode ser reprocessado a partir do status %s".formatted(packageId, current));
+        }
     }
 
     private LeadPortalImagePackageSummaryDto mapSummary(ResultSet rs) throws SQLException {
@@ -286,6 +304,15 @@ public class LeadPortalImagePackageService {
                     rs.getString("external_id"),
                     watermark);
         }, packageId);
+    }
+
+    private Optional<FlowSubmissionImagePackageStatus> findStatus(long packageId) {
+        return jdbcTemplate.query(
+                        "SELECT status FROM flow_submission_image_package WHERE id = ?",
+                        (rs, rowNum) -> parseStatus(rs.getString("status")),
+                        packageId)
+                .stream()
+                .findFirst();
     }
 
     private FlowSubmissionImagePackageStatus parseStatus(String raw) {

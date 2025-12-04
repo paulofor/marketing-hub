@@ -4,11 +4,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.creative.CreativeImageOptimizer;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
+import javax.imageio.ImageIO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,6 +36,8 @@ public class LeadPortalOpenAiImageClient {
 
     private static final Logger log = LoggerFactory.getLogger(LeadPortalOpenAiImageClient.class);
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(120);
+    private static final byte[] PNG_SIGNATURE =
+            new byte[] {(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
 
     private final WebClient webClient;
     private final CreativeImageOptimizer imageOptimizer;
@@ -78,7 +83,8 @@ public class LeadPortalOpenAiImageClient {
 
         log.info("Requesting lead-portal image variation with prompt: {}", prompt);
 
-        MultiValueMap<String, Object> multipartBody = buildMultipartBody(baseImage, prompt);
+        byte[] normalized = normalizeBaseImage(baseImage);
+        MultiValueMap<String, Object> multipartBody = buildMultipartBody(normalized, prompt);
 
         ImageResponse response = webClient.post()
                 .uri("/images/edits")
@@ -98,6 +104,45 @@ public class LeadPortalOpenAiImageClient {
 
         byte[] decoded = Base64.getDecoder().decode(base64);
         return imageOptimizer.optimize(decoded);
+    }
+
+    private byte[] normalizeBaseImage(byte[] baseImage) {
+        if (looksLikePng(baseImage)) {
+            return baseImage;
+        }
+        BufferedImage image = decodeImage(baseImage);
+        try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            if (!ImageIO.write(image, "png", output)) {
+                throw new IllegalStateException("Failed to encode image as PNG");
+            }
+            return output.toByteArray();
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to encode image as PNG", ex);
+        }
+    }
+
+    private boolean looksLikePng(byte[] bytes) {
+        if (bytes == null || bytes.length < PNG_SIGNATURE.length) {
+            return false;
+        }
+        for (int index = 0; index < PNG_SIGNATURE.length; index++) {
+            if (bytes[index] != PNG_SIGNATURE[index]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private BufferedImage decodeImage(byte[] bytes) {
+        try (ByteArrayInputStream input = new ByteArrayInputStream(bytes)) {
+            BufferedImage image = ImageIO.read(input);
+            if (image == null) {
+                throw new IllegalArgumentException("Unsupported image format");
+            }
+            return image;
+        } catch (IOException ex) {
+            throw new IllegalArgumentException("Failed to decode base image", ex);
+        }
     }
 
     private MultiValueMap<String, Object> buildMultipartBody(byte[] baseImage, String prompt) {

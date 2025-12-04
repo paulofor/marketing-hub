@@ -71,6 +71,12 @@ public class LeadPortalImagePackageClient {
         postWithBody(url, request);
     }
 
+    public void markRetry(long packageId, String reason) {
+        RetryRequest request = new RetryRequest(reason);
+        String url = UrlUtils.joinPath(baseUrl, apiPrefix, "/worker/image-packages/", String.valueOf(packageId), "/retry");
+        postWithBody(url, request);
+    }
+
     public void submitResults(long packageId, List<GeneratedImage> images, String model, String prompt) {
         ResultRequest request = new ResultRequest(images, model, prompt);
         String url = UrlUtils.joinPath(baseUrl, apiPrefix, "/worker/image-packages/", String.valueOf(packageId), "/results");
@@ -143,6 +149,8 @@ public class LeadPortalImagePackageClient {
     }
 
     private record FailureRequest(String reason) {}
+
+    private record RetryRequest(String reason) {}
 
     private record ResultRequest(List<GeneratedImage> images, String model, String prompt) {}
 

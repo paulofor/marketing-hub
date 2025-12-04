@@ -2,18 +2,24 @@ package com.marketinghub.worker.leadportal.image;
 
 import com.marketinghub.worker.creative.CreativeImageOptimizer;
 import com.marketinghub.worker.leadportal.image.LeadPortalImagePackageClient.LeadPortalWorkerException;
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
+import software.amazon.awssdk.core.exception.SdkException;
 
 @Service
 public class LeadPortalImageProcessingService {
@@ -63,11 +69,15 @@ public class LeadPortalImageProcessingService {
                     continue;
                 }
                 log.error("Failed to process lead-portal image package {}", imagePackage.id(), ex);
-                packageClient.markFailed(imagePackage.id(), resolveFailureReason(ex));
+                if (!handleTransientFailure(imagePackage.id(), ex)) {
+                    packageClient.markFailed(imagePackage.id(), resolveFailureReason(ex));
+                }
             } catch (Exception ex) {
                 log.error("Failed to process lead-portal image package {}", imagePackage.id(), ex);
                 if (startedProcessing) {
-                    packageClient.markFailed(imagePackage.id(), resolveFailureReason(ex));
+                    if (!handleTransientFailure(imagePackage.id(), ex)) {
+                        packageClient.markFailed(imagePackage.id(), resolveFailureReason(ex));
+                    }
                 }
             }
         }
@@ -92,6 +102,58 @@ public class LeadPortalImageProcessingService {
         }
 
         packageClient.submitResults(imagePackage.id(), generated, imageClient.getModel(), prompt);
+    }
+
+    private boolean handleTransientFailure(long packageId, Throwable throwable) {
+        if (!isTransientError(throwable)) {
+            return false;
+        }
+        String reason = resolveFailureReason(throwable);
+        try {
+            packageClient.markRetry(packageId, reason);
+            log.warn(
+                    "Scheduled retry for lead-portal image package {} due to transient error: {}",
+                    packageId,
+                    reason);
+            return true;
+        } catch (LeadPortalWorkerException retryEx) {
+            log.warn(
+                    "Backend rejected retry for lead-portal image package {}: {}. Falling back to failure.",
+                    packageId,
+                    retryEx.getMessage());
+        } catch (Exception retryEx) {
+            log.warn("Failed to request retry for lead-portal image package {}", packageId, retryEx);
+        }
+        return false;
+    }
+
+    private boolean isTransientError(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof LeadPortalWorkerException workerEx) {
+                HttpStatusCode status = workerEx.getStatus();
+                if (status != null) {
+                    int value = status.value();
+                    if (value == 429 || value == 408 || (value >= 500 && value < 600)) {
+                        return true;
+                    }
+                }
+            }
+            if (current instanceof SdkException) {
+                return true;
+            }
+            if (current instanceof WebClientRequestException) {
+                return true;
+            }
+            if (current instanceof SocketTimeoutException
+                    || current instanceof TimeoutException
+                    || current instanceof ConnectException
+                    || current instanceof UnknownHostException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private String buildPrompt(LeadPortalImagePackageClient.ImagePackage imagePackage) {

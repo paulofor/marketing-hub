@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.leadportal.dto.LeadPortalWorkerImageFailureRequest;
 import com.marketinghub.leadportal.dto.LeadPortalWorkerImagePackageDto;
+import com.marketinghub.leadportal.dto.LeadPortalWorkerImageRetryRequest;
 import com.marketinghub.leadportal.dto.LeadPortalWorkerImageResultRequest;
 import com.marketinghub.leadportal.service.LeadPortalImagePackageWorkerService;
 import java.util.List;
@@ -45,6 +46,7 @@ class LeadPortalImagePackageWorkerControllerTest {
     void setup() {
         doNothing().when(workerService).markProcessing(any(Long.class));
         doNothing().when(workerService).markFailed(any(Long.class), any(String.class));
+        doNothing().when(workerService).retry(any(Long.class), any(String.class));
         doNothing().when(workerService).submitResults(any(Long.class), any(LeadPortalWorkerImageResultRequest.class));
     }
 
@@ -88,6 +90,18 @@ class LeadPortalImagePackageWorkerControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(workerService).markFailed(100L, "Erro qualquer");
+    }
+
+    @Test
+    void retryDelegatesToService() throws Exception {
+        String body = objectMapper.writeValueAsString(new LeadPortalWorkerImageRetryRequest("Erro temporário"));
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/worker/image-packages/{id}/retry", 55L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNoContent());
+
+        verify(workerService).retry(55L, "Erro temporário");
     }
 
     @Test

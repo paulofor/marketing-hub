@@ -2,6 +2,7 @@ package com.marketinghub.leadportal.web;
 
 import com.marketinghub.leadportal.dto.LeadPortalWorkerImageFailureRequest;
 import com.marketinghub.leadportal.dto.LeadPortalWorkerImagePackageDto;
+import com.marketinghub.leadportal.dto.LeadPortalWorkerImageRetryRequest;
 import com.marketinghub.leadportal.dto.LeadPortalWorkerImageResultRequest;
 import com.marketinghub.leadportal.service.LeadPortalImagePackageWorkerService;
 import jakarta.validation.Valid;
@@ -47,6 +48,15 @@ public class LeadPortalImagePackageWorkerController {
             @PathVariable("id") long packageId,
             @Valid @RequestBody LeadPortalWorkerImageFailureRequest request) {
         workerService.markFailed(packageId, request.reason());
+    }
+
+    @PostMapping("/{id}/retry")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void retry(
+            @PathVariable("id") long packageId,
+            @RequestBody(required = false) LeadPortalWorkerImageRetryRequest request) {
+        String reason = request == null ? null : request.reason();
+        workerService.retry(packageId, reason);
     }
 
     @PostMapping("/{id}/results")

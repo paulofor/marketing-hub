@@ -122,6 +122,9 @@ databaseChangeLog:
       file: V2025_11_05__widen_asset_provider.sql
       relativeToChangelogFile: true
   - include:
+      file: V2025_12_04__convert_asset_provider_to_varchar.sql
+      relativeToChangelogFile: true
+  - include:
       file: V2025_11_10__widen_asset_type.sql
       relativeToChangelogFile: true
   - include:

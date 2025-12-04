@@ -27,6 +27,16 @@ export interface LeadPortalImagePackage {
   status: FlowSubmissionImagePackageStatus;
   createdAt: string;
   updatedAt: string;
+  imageModelId?: number | null;
+  imageModelName?: string | null;
+  imageModelQualityId?: number | null;
+  imageModelQualityName?: string | null;
+  imageOrientation?: string | null;
+  imageWidth?: number | null;
+  imageHeight?: number | null;
+  imageUnitPriceUsd?: number | null;
+  imageTotalPriceUsd?: number | null;
+  imageCurrency?: string | null;
 }
 
 function buildParams(statuses?: FlowSubmissionImagePackageStatus[]) {

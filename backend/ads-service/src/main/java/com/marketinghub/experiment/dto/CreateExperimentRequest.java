@@ -39,4 +39,6 @@ public class CreateExperimentRequest {
     private Long instagramAccountId;
     private String followUpActionUrl;
     private Long leadPortalFlowId;
+    private Long imageModelId;
+    private Long imageModelQualityId;
 }

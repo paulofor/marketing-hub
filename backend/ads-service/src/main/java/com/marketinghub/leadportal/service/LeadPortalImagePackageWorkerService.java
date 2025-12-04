@@ -7,6 +7,9 @@ import com.marketinghub.leadportal.dto.LeadPortalWorkerImagePackageDto;
 import com.marketinghub.leadportal.dto.LeadPortalWorkerImageResultRequest;
 import com.marketinghub.leadportal.dto.LeadPortalWorkerImageResultRequest.GeneratedImageRequest;
 import com.marketinghub.media.Asset;
+import com.marketinghub.imagegeneration.ImageGenerationPrice;
+import com.marketinghub.imagegeneration.ImageOrientation;
+import com.marketinghub.imagegeneration.service.ImageGenerationPricingService;
 import com.marketinghub.media.AssetStatus;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.media.MediaProvider;
@@ -15,6 +18,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -49,19 +54,30 @@ public class LeadPortalImagePackageWorkerService {
                     getInteger(rs, "free_images"),
                     rs.getString("model"),
                     rs.getString("prompt"),
-                    rs.getString("treatment"));
+                    rs.getString("treatment"),
+                    getLong(rs, "resolved_image_model_id"),
+                    getLong(rs, "resolved_image_model_quality_id"),
+                    rs.getString("image_orientation"),
+                    getInteger(rs, "image_width"),
+                    getInteger(rs, "image_height"),
+                    rs.getBigDecimal("image_unit_price_usd"),
+                    rs.getBigDecimal("image_total_price_usd"),
+                    rs.getString("image_currency"));
 
     private final JdbcTemplate jdbcTemplate;
     private final AssetRepository assetRepository;
     private final ObjectMapper objectMapper;
+    private final ImageGenerationPricingService pricingService;
 
     public LeadPortalImagePackageWorkerService(
             JdbcTemplate jdbcTemplate,
             AssetRepository assetRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            ImageGenerationPricingService pricingService) {
         this.jdbcTemplate = jdbcTemplate;
         this.assetRepository = assetRepository;
         this.objectMapper = objectMapper;
+        this.pricingService = pricingService;
     }
 
     /**
@@ -77,9 +93,19 @@ public class LeadPortalImagePackageWorkerService {
                     pack.free_images,
                     pack.model,
                     pack.prompt,
-                    NULL AS treatment
+                    NULL AS treatment,
+                    COALESCE(pack.image_model_id, exp.image_model_id) AS resolved_image_model_id,
+                    COALESCE(pack.image_model_quality_id, exp.image_model_quality_id) AS resolved_image_model_quality_id,
+                    pack.image_orientation,
+                    pack.image_width,
+                    pack.image_height,
+                    pack.image_unit_price_usd,
+                    pack.image_total_price_usd,
+                    pack.image_currency
                 FROM flow_submission_image_package pack
                 LEFT JOIN flow_submissions sub ON sub.id = pack.submission_id
+                LEFT JOIN lead_portal_flow flow ON flow.slug = sub.flow_slug
+                LEFT JOIN experiment exp ON exp.lead_portal_flow_id = flow.id
                 WHERE pack.status IN ('RECENT', 'RECEIVED')
                 ORDER BY pack.created_at DESC
                 """;
@@ -180,12 +206,48 @@ public class LeadPortalImagePackageWorkerService {
         String finalModel = resolveModelFromAssets(request.model(), snapshot.model(), assets);
         String finalPrompt = resolvePrompt(request.prompt(), snapshot.prompt());
 
+        GenerationMetadata generationMetadata = resolveGenerationMetadata(request);
+        ImageOrientation orientation = generationMetadata.orientation();
+        Integer imageWidth = generationMetadata.width();
+        Integer imageHeight = generationMetadata.height();
+        Long resolvedModelId = snapshot.imageModelId();
+        Long resolvedQualityId = snapshot.imageModelQualityId();
+
+        ImageGenerationPrice resolvedPrice = null;
+        if (resolvedQualityId != null) {
+            resolvedPrice = pricingService.resolvePrice(resolvedQualityId, orientation).orElse(null);
+        }
+        if (resolvedPrice != null) {
+            resolvedQualityId = resolvedPrice.getQuality() != null ? resolvedPrice.getQuality().getId() : resolvedQualityId;
+            if (resolvedModelId == null && resolvedPrice.getQuality() != null
+                    && resolvedPrice.getQuality().getModel() != null) {
+                resolvedModelId = resolvedPrice.getQuality().getModel().getId();
+            }
+        }
+
+        BigDecimal unitPrice = resolvedPrice != null ? resolvedPrice.getUnitPriceUsd() : snapshot.imageUnitPriceUsd();
+        BigDecimal totalPrice = unitPrice != null
+                ? unitPrice.multiply(BigDecimal.valueOf(request.images().size()))
+                        .setScale(5, RoundingMode.HALF_UP)
+                : snapshot.imageTotalPriceUsd();
+        String currency = snapshot.imageCurrency() != null ? snapshot.imageCurrency() : "USD";
+
         int updated = jdbcTemplate.update(
-                "UPDATE flow_submission_image_package SET status = ?, model = ?, prompt = ?, failure_reason = NULL, updated_at = ? "
+                "UPDATE flow_submission_image_package SET status = ?, model = ?, prompt = ?, failure_reason = NULL, "
+                        + "image_model_id = ?, image_model_quality_id = ?, image_orientation = ?, image_width = ?, image_height = ?, "
+                        + "image_unit_price_usd = ?, image_total_price_usd = ?, image_currency = COALESCE(image_currency, ?), updated_at = ? "
                         + "WHERE id = ? AND status = ?",
                 FlowSubmissionImagePackageStatus.WATERMARK_PENDING.name(),
                 finalModel,
                 finalPrompt,
+                resolvedModelId,
+                resolvedQualityId,
+                orientation != null ? orientation.name() : snapshot.imageOrientation(),
+                imageWidth != null ? imageWidth : snapshot.imageWidth(),
+                imageHeight != null ? imageHeight : snapshot.imageHeight(),
+                unitPrice,
+                totalPrice,
+                currency,
                 Timestamp.from(Instant.now()),
                 packageId,
                 FlowSubmissionImagePackageStatus.PROCESSING.name());
@@ -235,6 +297,11 @@ public class LeadPortalImagePackageWorkerService {
         return value == null ? null : ((Number) value).intValue();
     }
 
+    private static Long getLong(ResultSet rs, String column) throws SQLException {
+        Object value = rs.getObject(column);
+        return value == null ? null : ((Number) value).longValue();
+    }
+
     private static UUID parseUuid(String raw) {
         if (!StringUtils.hasText(raw)) {
             return null;
@@ -256,13 +323,41 @@ public class LeadPortalImagePackageWorkerService {
     }
 
     private Optional<PackageSnapshot> findPackage(long packageId) {
-        String sql = "SELECT id, status, free_images, model, prompt FROM flow_submission_image_package WHERE id = ?";
+        String sql = """
+                SELECT
+                    pack.id,
+                    pack.status,
+                    pack.free_images,
+                    pack.model,
+                    pack.prompt,
+                    COALESCE(pack.image_model_id, exp.image_model_id) AS resolved_image_model_id,
+                    COALESCE(pack.image_model_quality_id, exp.image_model_quality_id) AS resolved_image_model_quality_id,
+                    pack.image_orientation,
+                    pack.image_width,
+                    pack.image_height,
+                    pack.image_unit_price_usd,
+                    pack.image_total_price_usd,
+                    pack.image_currency
+                FROM flow_submission_image_package pack
+                LEFT JOIN flow_submissions sub ON sub.id = pack.submission_id
+                LEFT JOIN lead_portal_flow flow ON flow.slug = sub.flow_slug
+                LEFT JOIN experiment exp ON exp.lead_portal_flow_id = flow.id
+                WHERE pack.id = ?
+                """;
         List<PackageSnapshot> items = jdbcTemplate.query(sql, (rs, rowNum) -> new PackageSnapshot(
                 rs.getLong("id"),
                 parseStatus(rs.getString("status")),
                 getInteger(rs, "free_images"),
                 rs.getString("model"),
-                rs.getString("prompt")), packageId);
+                rs.getString("prompt"),
+                getLong(rs, "resolved_image_model_id"),
+                getLong(rs, "resolved_image_model_quality_id"),
+                rs.getString("image_orientation"),
+                getInteger(rs, "image_width"),
+                getInteger(rs, "image_height"),
+                rs.getBigDecimal("image_unit_price_usd"),
+                rs.getBigDecimal("image_total_price_usd"),
+                rs.getString("image_currency")), packageId);
         return items.stream().findFirst();
     }
 
@@ -378,6 +473,15 @@ public class LeadPortalImagePackageWorkerService {
         if (StringUtils.hasText(image.source())) {
             metadata.put("source", image.source().trim());
         }
+        if (image.width() != null) {
+            metadata.put("width", image.width());
+        }
+        if (image.height() != null) {
+            metadata.put("height", image.height());
+        }
+        if (StringUtils.hasText(image.orientation())) {
+            metadata.put("orientation", image.orientation().trim());
+        }
         return metadata;
     }
 
@@ -395,6 +499,40 @@ public class LeadPortalImagePackageWorkerService {
         return publicUrl.trim();
     }
 
+    private GenerationMetadata resolveGenerationMetadata(LeadPortalWorkerImageResultRequest request) {
+        if (request == null || request.images() == null || request.images().isEmpty()) {
+            return new GenerationMetadata(null, null, null);
+        }
+        for (GeneratedImageRequest image : request.images()) {
+            if (image == null) {
+                continue;
+            }
+            ImageOrientation orientation = parseOrientation(image.orientation());
+            Integer width = image.width();
+            Integer height = image.height();
+            if (orientation != null || width != null || height != null) {
+                return new GenerationMetadata(orientation, width, height);
+            }
+        }
+        return new GenerationMetadata(null, null, null);
+    }
+
+    private ImageOrientation parseOrientation(String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return null;
+        }
+        try {
+            return ImageOrientation.valueOf(raw.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            if (log.isDebugEnabled()) {
+                log.debug("Unknown image orientation '{}' received from worker", raw);
+            }
+            return null;
+        }
+    }
+
+    private record GenerationMetadata(ImageOrientation orientation, Integer width, Integer height) { }
+
     private ResponseStatusException notFound(long packageId) {
         return new ResponseStatusException(
                 HttpStatus.NOT_FOUND, "Pacote %d não encontrado".formatted(packageId));
@@ -409,5 +547,13 @@ public class LeadPortalImagePackageWorkerService {
             FlowSubmissionImagePackageStatus status,
             Integer freeImages,
             String model,
-            String prompt) {}
+            String prompt,
+            Long imageModelId,
+            Long imageModelQualityId,
+            String imageOrientation,
+            Integer imageWidth,
+            Integer imageHeight,
+            BigDecimal imageUnitPriceUsd,
+            BigDecimal imageTotalPriceUsd,
+            String imageCurrency) {}
 }

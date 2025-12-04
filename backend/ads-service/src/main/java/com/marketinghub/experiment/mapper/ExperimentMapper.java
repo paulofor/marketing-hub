@@ -22,6 +22,10 @@ public interface ExperimentMapper {
     @org.mapstruct.Mapping(target = "leadPortalFlowId", source = "leadPortalFlow.id")
     @org.mapstruct.Mapping(target = "leadPortalFlowName", source = "leadPortalFlow.name")
     @org.mapstruct.Mapping(target = "leadPortalFlowSlug", source = "leadPortalFlow.slug")
+    @org.mapstruct.Mapping(target = "imageModelId", source = "imageGenerationModel.id")
+    @org.mapstruct.Mapping(target = "imageModelName", source = "imageGenerationModel.displayName")
+    @org.mapstruct.Mapping(target = "imageModelQualityId", source = "imageGenerationQuality.id")
+    @org.mapstruct.Mapping(target = "imageModelQualityName", source = "imageGenerationQuality.displayName")
     ExperimentDto toDto(Experiment experiment);
 
     @org.mapstruct.Mapping(target = "accountId", source = "account.id")

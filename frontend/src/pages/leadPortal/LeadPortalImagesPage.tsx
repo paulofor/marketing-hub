@@ -31,6 +31,21 @@ function buildStatusNarrative(status: FlowSubmissionImagePackageStatus) {
   return getStatusDetail(status);
 }
 
+function formatUsd(value?: number | null, currency = "USD") {
+  if (typeof value !== "number") {
+    return null;
+  }
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 3,
+    }).format(value);
+  } catch {
+    return `$${value.toFixed(3)}`;
+  }
+}
+
 function buildStats(submission: LeadPortalImagePackage) {
   const stats: { label: string; value: string }[] = [];
   if (submission.model) {
@@ -44,6 +59,16 @@ function buildStats(submission: LeadPortalImagePackage) {
   }
   stats.push({ label: "Geradas", value: String(submission.generatedImageCount) });
   stats.push({ label: "Prévias", value: String(submission.watermarkedImageCount) });
+  if (submission.imageModelName) {
+    const label = submission.imageModelQualityName
+      ? `${submission.imageModelName} · ${submission.imageModelQualityName}`
+      : submission.imageModelName;
+    stats.push({ label: "Modelo", value: label });
+  }
+  const totalCost = formatUsd(submission.imageTotalPriceUsd, submission.imageCurrency ?? "USD");
+  if (totalCost) {
+    stats.push({ label: "Custo total", value: totalCost });
+  }
   return stats;
 }
 

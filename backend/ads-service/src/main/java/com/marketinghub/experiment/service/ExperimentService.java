@@ -16,6 +16,10 @@ import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.imagegeneration.ImageGenerationModel;
+import com.marketinghub.imagegeneration.ImageGenerationQuality;
+import com.marketinghub.imagegeneration.repository.ImageGenerationModelRepository;
+import com.marketinghub.imagegeneration.repository.ImageGenerationQualityRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -39,6 +43,8 @@ public class ExperimentService {
     private final InstagramAccountRepository instagramAccountRepository;
     private final FacebookInstantFormRepository facebookInstantFormRepository;
     private final LeadPortalFlowRepository leadPortalFlowRepository;
+    private final ImageGenerationModelRepository imageGenerationModelRepository;
+    private final ImageGenerationQualityRepository imageGenerationQualityRepository;
 
     public ExperimentService(ExperimentRepository repository, MarketNicheRepository nicheRepository,
                              com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository,
@@ -48,7 +54,9 @@ public class ExperimentService {
                              FacebookPageRepository facebookPageRepository,
                              InstagramAccountRepository instagramAccountRepository,
                              FacebookInstantFormRepository facebookInstantFormRepository,
-                             LeadPortalFlowRepository leadPortalFlowRepository) {
+                             LeadPortalFlowRepository leadPortalFlowRepository,
+                             ImageGenerationModelRepository imageGenerationModelRepository,
+                             ImageGenerationQualityRepository imageGenerationQualityRepository) {
         this.repository = repository;
         this.nicheRepository = nicheRepository;
         this.hypothesisRepository = hypothesisRepository;
@@ -59,6 +67,8 @@ public class ExperimentService {
         this.instagramAccountRepository = instagramAccountRepository;
         this.facebookInstantFormRepository = facebookInstantFormRepository;
         this.leadPortalFlowRepository = leadPortalFlowRepository;
+        this.imageGenerationModelRepository = imageGenerationModelRepository;
+        this.imageGenerationQualityRepository = imageGenerationQualityRepository;
     }
 
     /**
@@ -136,6 +146,49 @@ public class ExperimentService {
         return entityManager.getReference(LeadPortalFlow.class, flowId);
     }
 
+    private ImageGenerationModel attachImageGenerationModel(Long imageModelId) {
+        if (imageModelId == null) {
+            return null;
+        }
+        return imageGenerationModelRepository.findById(imageModelId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "imageModelId not found: " + imageModelId));
+    }
+
+    private ImageGenerationQuality attachImageGenerationQuality(Long imageModelQualityId) {
+        if (imageModelQualityId == null) {
+            return null;
+        }
+        return imageGenerationQualityRepository.findById(imageModelQualityId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "imageModelQualityId not found: " + imageModelQualityId));
+    }
+
+    private ImageGenerationSelection resolveImageGenerationSelection(Long imageModelId, Long imageModelQualityId) {
+        if (imageModelId == null && imageModelQualityId == null) {
+            return new ImageGenerationSelection(null, null);
+        }
+        ImageGenerationQuality quality = null;
+        ImageGenerationModel model = null;
+        if (imageModelQualityId != null) {
+            quality = attachImageGenerationQuality(imageModelQualityId);
+            model = quality.getModel();
+            if (imageModelId != null && !model.getId().equals(imageModelId)) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "imageModelQualityId does not belong to imageModelId");
+            }
+        } else if (imageModelId != null) {
+            model = attachImageGenerationModel(imageModelId);
+        }
+        if (model == null && quality != null) {
+            model = quality.getModel();
+        }
+        return new ImageGenerationSelection(model, quality);
+    }
+
+    private record ImageGenerationSelection(ImageGenerationModel model, ImageGenerationQuality quality) { }
+
     /**
      * Creates and stores a new experiment.
      */
@@ -180,6 +233,8 @@ public class ExperimentService {
         JourneyTemplate journeyTemplate = attachJourneyTemplate(request.getJourneyTemplateId());
         LeadPortalFlow leadPortalFlow = attachLeadPortalFlow(request.getLeadPortalFlowId());
         String followUpActionUrl = normalizeFollowUpActionUrl(request.getFollowUpActionUrl());
+        ImageGenerationSelection imageSelection =
+                resolveImageGenerationSelection(request.getImageModelId(), request.getImageModelQualityId());
         Experiment exp = Experiment.builder()
                 .niche(niche)
                 .name(request.getName())
@@ -207,6 +262,8 @@ public class ExperimentService {
                 .instagramAccount(attachInstagramAccount(request.getInstagramAccountId()))
                 .journeyTemplate(journeyTemplate)
                 .leadPortalFlow(leadPortalFlow)
+                .imageGenerationModel(imageSelection.model())
+                .imageGenerationQuality(imageSelection.quality())
                 .followUpActionUrl(followUpActionUrl)
                 .build();
         return repository.save(exp);
@@ -271,6 +328,8 @@ public class ExperimentService {
                 .facebookInstantForm(original.getFacebookInstantForm())
                 .journeyTemplate(original.getJourneyTemplate())
                 .leadPortalFlow(original.getLeadPortalFlow())
+                .imageGenerationModel(original.getImageGenerationModel())
+                .imageGenerationQuality(original.getImageGenerationQuality())
                 .followUpActionUrl(original.getFollowUpActionUrl())
                 .build();
         return repository.save(copy);
@@ -389,6 +448,17 @@ public class ExperimentService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "leadPortalFlowId required");
             }
             exp.setLeadPortalFlow(attachLeadPortalFlow(request.getLeadPortalFlowId()));
+        }
+        if (request.isImageModelIdPresent() || request.isImageModelQualityIdPresent()) {
+            Long currentModelId = request.isImageModelIdPresent()
+                    ? request.getImageModelId()
+                    : (exp.getImageGenerationModel() != null ? exp.getImageGenerationModel().getId() : null);
+            Long currentQualityId = request.isImageModelQualityIdPresent()
+                    ? request.getImageModelQualityId()
+                    : (exp.getImageGenerationQuality() != null ? exp.getImageGenerationQuality().getId() : null);
+            ImageGenerationSelection selection = resolveImageGenerationSelection(currentModelId, currentQualityId);
+            exp.setImageGenerationModel(selection.model());
+            exp.setImageGenerationQuality(selection.quality());
         }
         return exp;
     }

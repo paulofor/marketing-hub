@@ -50,6 +50,12 @@ public class UpdateExperimentRequest {
     private Long leadPortalFlowId;
     @JsonIgnore
     private boolean leadPortalFlowIdPresent;
+    private Long imageModelId;
+    @JsonIgnore
+    private boolean imageModelIdPresent;
+    private Long imageModelQualityId;
+    @JsonIgnore
+    private boolean imageModelQualityIdPresent;
 
     @JsonSetter(value = "facebookPageId", nulls = Nulls.SET)
     public void setFacebookPageId(Long facebookPageId) {
@@ -92,5 +98,17 @@ public class UpdateExperimentRequest {
         this.dailyBudget = dailyBudget;
         this.dailyBudgetPresent = true;
     }
+    @JsonSetter(value = "imageModelId", nulls = Nulls.SET)
+    public void setImageModelId(Long imageModelId) {
+        this.imageModelId = imageModelId;
+        this.imageModelIdPresent = true;
+    }
+
+    @JsonSetter(value = "imageModelQualityId", nulls = Nulls.SET)
+    public void setImageModelQualityId(Long imageModelQualityId) {
+        this.imageModelQualityId = imageModelQualityId;
+        this.imageModelQualityIdPresent = true;
+    }
+
 }
 

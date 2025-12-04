@@ -37,6 +37,21 @@ function formatDateTime(value?: string | null) {
   return new Date(value).toLocaleString("pt-BR");
 }
 
+function formatUsd(value?: number | null, currency = "USD") {
+  if (typeof value !== "number") {
+    return null;
+  }
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 3,
+    }).format(value);
+  } catch {
+    return `$${value.toFixed(3)}`;
+  }
+}
+
 function buildGalleryLabel(image: LeadPortalImageReference, index: number) {
   if (image.type === "ORIGINAL") {
     return "Imagem enviada";
@@ -207,12 +222,22 @@ export default function LeadPortalImagePackageDetailModal({
                         <dt>Prompt</dt>
                         <dd className="lead-portal-image-detail__prompt">{data.prompt}</dd>
                       </div>
-                      {data.model ? (
+                      {data.imageModelName ? (
                         <div>
-                          <dt>Modelo</dt>
-                          <dd>{data.model}</dd>
+                          <dt>Modelo selecionado</dt>
+                          <dd>
+                            {data.imageModelName}
+                            {data.imageModelQualityName ? ` · ${data.imageModelQualityName}` : ""}
+                          </dd>
                         </div>
-                      ) : null}
+                      ) : (
+                        data.model ? (
+                          <div>
+                            <dt>Modelo</dt>
+                            <dd>{data.model}</dd>
+                          </div>
+                        ) : null
+                      )}
                       {typeof data.plannedOutputs === "number" ? (
                         <div>
                           <dt>Variações solicitadas</dt>
@@ -233,6 +258,12 @@ export default function LeadPortalImagePackageDetailModal({
                         <dt>Prévias com marca d'água</dt>
                         <dd>{data.watermarkedImageCount}</dd>
                       </div>
+                      {typeof data.imageTotalPriceUsd === "number" ? (
+                        <div>
+                          <dt>Custo estimado</dt>
+                          <dd>{formatUsd(data.imageTotalPriceUsd, data.imageCurrency ?? undefined) ?? "--"}</dd>
+                        </div>
+                      ) : null}
                     </dl>
                   </div>
 

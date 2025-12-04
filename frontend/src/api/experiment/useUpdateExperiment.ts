@@ -23,6 +23,8 @@ export interface UpdateExperiment {
   instagramAccountId?: number | null;
   followUpActionUrl?: string | null;
   leadPortalFlowId?: number | null;
+  imageModelId?: number | null;
+  imageModelQualityId?: number | null;
 }
 
 export function useUpdateExperiment(id: string) {

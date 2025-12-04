@@ -265,6 +265,12 @@ export default function ExperimentDetailPage() {
       ),
     },
     {
+      label: "Modelo de imagem",
+      value: data.imageModelName
+        ? `${data.imageModelName}${data.imageModelQualityName ? " · " + data.imageModelQualityName : ""}`
+        : "—",
+    },
+    {
       label: "MDE (p.p.)",
       value: data.mdePercent ?? preset?.defaultMdePp ?? "—",
     },

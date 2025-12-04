@@ -124,14 +124,19 @@ public class LeadPortalImagePackageClient {
             Integer freeImages,
             String model,
             String prompt,
-            String treatment) {}
+            String treatment,
+            Long imageModelId,
+            Long imageModelQualityId) {}
 
     public record GeneratedImage(
             @JsonProperty("stored_file_name") String storedFileName,
             @JsonProperty("public_url") String publicUrl,
             String model,
             String prompt,
-            String source) {}
+            String source,
+            Integer width,
+            Integer height,
+            String orientation) {}
 
     private record ImagePackagePayload(
             long id,
@@ -141,10 +146,12 @@ public class LeadPortalImagePackageClient {
             @JsonProperty("free_images") Integer freeImages,
             String model,
             String prompt,
-            String treatment) {
+            String treatment,
+            @JsonProperty("image_model_id") Long imageModelId,
+            @JsonProperty("image_model_quality_id") Long imageModelQualityId) {
 
         ImagePackage toDomain() {
-            return new ImagePackage(id, submissionId, storedFileName, plannedOutputs, freeImages, model, prompt, treatment);
+            return new ImagePackage(id, submissionId, storedFileName, plannedOutputs, freeImages, model, prompt, treatment, imageModelId, imageModelQualityId);
         }
     }
 

@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useCreateExperiment } from "../../api/experiment/useCreateExperiment";
+import { useImageGenerationModels } from "../../api/ai/useImageGenerationModels";
 import { useNiches } from "../../api/niche/useNiches";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
@@ -33,6 +34,8 @@ export default function NewExperimentPage() {
     journeyTemplateId: "",
     facebookPageId: "",
     instagramAccountId: "",
+    imageModelId: "",
+    imageModelQualityId: "",
   });
   const [autoSampleSize, setAutoSampleSize] = useState(true);
   const [autoMde, setAutoMde] = useState(true);
@@ -46,6 +49,7 @@ export default function NewExperimentPage() {
   );
   const { data: presets } = useMetricPresets();
   const { data: journeyTemplatePage } = useJourneyTemplates({ size: 200 });
+  const { data: imageModels } = useImageGenerationModels();
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
     useAllFacebookPages();
   const { data: instagramAccounts, isLoading: isLoadingInstagramAccounts } =
@@ -79,8 +83,40 @@ export default function NewExperimentPage() {
     },
     { instantForms: 0, emails: 0 },
   );
+  const usdFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 3,
+      }),
+    [],
+  );
+
   const hasWorkerRequests =
     workerRequests.instantForms > 0 || workerRequests.emails > 0;
+
+  const selectedImageModelId = form.imageModelId
+    ? Number(form.imageModelId)
+    : undefined;
+  const selectedImageModel =
+    selectedImageModelId !== undefined && !Number.isNaN(selectedImageModelId)
+      ? imageModels?.find((model) => model.id === selectedImageModelId)
+      : undefined;
+  const availableImageQualities = selectedImageModel?.qualities ?? [];
+  const selectedImageQualityId = form.imageModelQualityId
+    ? Number(form.imageModelQualityId)
+    : undefined;
+  const selectedImageQuality =
+    selectedImageQualityId !== undefined && !Number.isNaN(selectedImageQualityId)
+      ? availableImageQualities.find((quality) => quality.id === selectedImageQualityId)
+      : undefined;
+  const preferredImagePrice = selectedImageQuality?.prices?.find((price) => price.preferred)
+    ?? selectedImageQuality?.prices?.[0];
+
+  const selectedQualityPriceLabel = preferredImagePrice?.unitPriceUsd != null
+    ? `${usdFormatter.format(preferredImagePrice.unitPriceUsd)} por imagem`
+    : undefined;
 
   useEffect(() => {
     if (selectedHypothesis?.title) {
@@ -160,6 +196,10 @@ export default function NewExperimentPage() {
           ? Number(form.facebookPageId)
           : undefined,
         instagramAccountId: Number(form.instagramAccountId),
+        imageModelId: form.imageModelId ? Number(form.imageModelId) : undefined,
+        imageModelQualityId: form.imageModelQualityId
+          ? Number(form.imageModelQualityId)
+          : undefined,
       });
       setForm({
         nicheId: nicheIdParam,
@@ -176,6 +216,8 @@ export default function NewExperimentPage() {
         journeyTemplateId: "",
         facebookPageId: "",
         instagramAccountId: "",
+        imageModelId: "",
+        imageModelQualityId: "",
       });
       setAutoSampleSize(true);
       setAutoMde(true);
@@ -324,6 +366,56 @@ export default function NewExperimentPage() {
           </option>
         ))}
       </select>
+      <label className="form-label" htmlFor="imageModel">
+        Modelo de geração de imagem
+      </label>
+      <select
+        id="imageModel"
+        className="form-select mb-2"
+        value={form.imageModelId}
+        onChange={(e) =>
+          setForm((prev) => ({
+            ...prev,
+            imageModelId: e.target.value,
+            imageModelQualityId: "",
+          }))
+        }
+      >
+        <option value="">Selecione um modelo</option>
+        {imageModels?.map((model) => (
+          <option key={model.id} value={model.id}>
+            {model.name}
+          </option>
+        ))}
+      </select>
+      <label className="form-label" htmlFor="imageModelQuality">
+        Qualidade das variações
+      </label>
+      <select
+        id="imageModelQuality"
+        className="form-select mb-2"
+        value={form.imageModelQualityId}
+        onChange={(e) =>
+          setForm((prev) => ({
+            ...prev,
+            imageModelQualityId: e.target.value,
+          }))
+        }
+        disabled={!availableImageQualities.length}
+      >
+        <option value="">Selecione a qualidade</option>
+        {availableImageQualities.map((quality) => (
+          <option key={quality.id} value={quality.id}>
+            {quality.name}
+          </option>
+        ))}
+      </select>
+      {selectedQualityPriceLabel ? (
+        <p className="form-text">
+          Custo estimado: {selectedQualityPriceLabel}
+          {preferredImagePrice?.sizeLabel ? ` (tamanho: ${preferredImagePrice.sizeLabel})` : ""}
+        </p>
+      ) : null}
       {hasWorkerRequests && (
         <div className="mb-3" aria-live="polite">
           <p className="text-muted small mb-2">

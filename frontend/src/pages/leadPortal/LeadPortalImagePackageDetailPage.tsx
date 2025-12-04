@@ -44,6 +44,21 @@ function buildGalleryLabel(image: LeadPortalImageReference, index: number) {
   return `Gerada #${index}`;
 }
 
+function formatUsd(value?: number | null, currency = "USD") {
+  if (typeof value !== "number") {
+    return null;
+  }
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 3,
+    }).format(value);
+  } catch {
+    return `$${value.toFixed(3)}`;
+  }
+}
+
 function buildGalleryItems(
   status: FlowSubmissionImagePackageStatus,
   original?: LeadPortalImageReference | null,
@@ -244,6 +259,15 @@ export default function LeadPortalImagePackageDetailPage() {
                     <dt>Prompt</dt>
                     <dd className="lead-portal-image-detail__prompt">{data.prompt}</dd>
                   </div>
+                  {data.imageModelName ? (
+                    <div>
+                      <dt>Modelo selecionado</dt>
+                      <dd>
+                        {data.imageModelName}
+                        {data.imageModelQualityName ? ` · ${data.imageModelQualityName}` : ""}
+                      </dd>
+                    </div>
+                  ) : null}
                   {data.model ? (
                     <div>
                       <dt>Modelo</dt>
@@ -270,6 +294,12 @@ export default function LeadPortalImagePackageDetailPage() {
                     <dt>Prévias com marca d'água</dt>
                     <dd>{data.watermarkedImageCount}</dd>
                   </div>
+                  {typeof data.imageTotalPriceUsd === "number" ? (
+                    <div>
+                      <dt>Custo estimado</dt>
+                      <dd>{formatUsd(data.imageTotalPriceUsd, data.imageCurrency ?? undefined) ?? "--"}</dd>
+                    </div>
+                  ) : null}
                 </dl>
               </div>
 

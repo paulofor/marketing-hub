@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.creative.CreativeImageOptimizer;
+import ImageGenerationPlan;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -42,7 +43,7 @@ public class LeadPortalOpenAiImageClient {
     private final WebClient webClient;
     private final CreativeImageOptimizer imageOptimizer;
     private final ObjectMapper mapper;
-    private final String model;
+    private final String defaultModel;
     private final boolean enabled;
 
     public LeadPortalOpenAiImageClient(
@@ -52,7 +53,7 @@ public class LeadPortalOpenAiImageClient {
             @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
             @Value("${openai.image-model:gpt-image-1}") String model) {
         this.imageOptimizer = imageOptimizer;
-        this.model = model;
+        this.defaultModel = model;
         this.enabled = apiKey != null && !apiKey.isBlank();
         WebClient.Builder clientBuilder = builder.clone().baseUrl(baseUrl);
         if (enabled) {
@@ -66,14 +67,14 @@ public class LeadPortalOpenAiImageClient {
     }
 
     public String getModel() {
-        return model;
+        return defaultModel;
     }
 
     public boolean isEnabled() {
         return enabled;
     }
 
-    public CreativeImageOptimizer.OptimizedImage generateFromBase(byte[] baseImage, String prompt) {
+    public CreativeImageOptimizer.OptimizedImage generateFromBase(byte[] baseImage, String prompt, ImageGenerationPlan plan) {
         if (!enabled) {
             throw new IllegalStateException("OpenAI API key is not configured");
         }
@@ -84,7 +85,7 @@ public class LeadPortalOpenAiImageClient {
         log.info("Requesting lead-portal image variation with prompt: {}", prompt);
 
         byte[] normalized = normalizeBaseImage(baseImage);
-        MultiValueMap<String, Object> multipartBody = buildMultipartBody(normalized, prompt);
+        MultiValueMap<String, Object> multipartBody = buildMultipartBody(normalized, prompt, plan);
 
         ImageResponse response = webClient.post()
                 .uri("/images/edits")
@@ -145,11 +146,20 @@ public class LeadPortalOpenAiImageClient {
         }
     }
 
-    private MultiValueMap<String, Object> buildMultipartBody(byte[] baseImage, String prompt) {
+    private MultiValueMap<String, Object> buildMultipartBody(byte[] baseImage, String prompt, ImageGenerationPlan plan) {
         LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("model", model);
+        String selectedModel = plan != null && plan.apiModel() != null ? plan.apiModel() : defaultModel;
+        body.add("model", selectedModel);
         if (prompt != null && !prompt.isBlank()) {
             body.add("prompt", prompt);
+        }
+        if (plan != null) {
+            if (plan.sizeLabel() != null) {
+                body.add("size", plan.sizeLabel());
+            }
+            if (plan.apiQuality() != null && !plan.apiQuality().isBlank()) {
+                body.add("quality", plan.apiQuality());
+            }
         }
 
         ByteArrayResource imageResource = new ByteArrayResource(baseImage) {

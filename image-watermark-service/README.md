@@ -36,3 +36,20 @@ mvn spring-boot:run
 ```bash
 docker build -t image-watermark-service .
 ```
+
+## Deploy na VPS (mesmo host do Vitrines e Lead Portal)
+
+O stack possui um `docker-compose.yml` próprio com todas as credenciais necessárias para consumir o banco MySQL e o bucket R2. P
+ara publicar a versão mais recente no servidor (191.252.120.96), sincronize a pasta para o host e aplique o compose combinando c
+om o arquivo de override de deploy:
+
+```bash
+rsync -az --delete image-watermark-service/ root@191.252.120.96:/root/image-watermark-service
+ssh root@191.252.120.96 "cd /root/image-watermark-service \
+  && export IMAGE_WATERMARK_SERVICE_IMAGE=ghcr.io/paulofor/image-watermark-service:latest \
+  && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
+  && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d"
+```
+
+O workflow GitHub Actions `.github/workflows/image-watermark-ci.yml` automatiza esse fluxo: ele executa os testes, publica a ima
+gem no GHCR e sincroniza o stack para o mesmo VPS sempre que o branch `main` for atualizado.

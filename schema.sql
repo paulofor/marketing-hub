@@ -250,6 +250,45 @@ CREATE INDEX idx_lead_portal_submission_experiment ON lead_portal_submission(exp
 CREATE INDEX idx_lead_portal_answer_submission ON lead_portal_submission_answer(submission_id);
 CREATE INDEX idx_lead_portal_answer_question ON lead_portal_submission_answer(question_id);
 
+CREATE TABLE image_generation_model (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(64) NOT NULL UNIQUE,
+    display_name VARCHAR(128) NOT NULL,
+    provider VARCHAR(32) NOT NULL,
+    api_model VARCHAR(128) NOT NULL,
+    description LONGTEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE image_generation_quality (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    model_id BIGINT NOT NULL,
+    code VARCHAR(32) NOT NULL,
+    display_name VARCHAR(64) NOT NULL,
+    api_quality VARCHAR(32),
+    is_default TINYINT(1) NOT NULL DEFAULT 0,
+    position INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_image_generation_quality_model FOREIGN KEY (model_id) REFERENCES image_generation_model(id),
+    CONSTRAINT uq_image_generation_quality UNIQUE (model_id, code)
+);
+
+CREATE TABLE image_generation_price (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    quality_id BIGINT NOT NULL,
+    orientation VARCHAR(16) NOT NULL,
+    width INT,
+    height INT,
+    size_label VARCHAR(32),
+    unit_price_usd DECIMAL(10,5),
+    preferred TINYINT(1) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_image_generation_price_quality FOREIGN KEY (quality_id) REFERENCES image_generation_quality(id)
+);
+
 CREATE TABLE experiment (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     niche_id BIGINT NOT NULL,
@@ -259,6 +298,8 @@ CREATE TABLE experiment (
     facebook_instant_form_id BIGINT,
     follow_up_action_url VARCHAR(512),
     lead_portal_flow_id BIGINT,
+    image_model_id BIGINT,
+    image_model_quality_id BIGINT,
     instagram_account_id BIGINT,
     kpi_target_cpl DECIMAL(10,2) DEFAULT 45.00,
     stop_loss_cpl DECIMAL(10,2) DEFAULT 90.00,
@@ -282,7 +323,9 @@ CREATE TABLE experiment (
     CONSTRAINT fk_experiment_fb_instant_form FOREIGN KEY (facebook_instant_form_id) REFERENCES fb_instant_form(id),
     CONSTRAINT fk_experiment_instagram_account FOREIGN KEY (instagram_account_id) REFERENCES ig_account(id),
     CONSTRAINT fk_experiment_journey_template FOREIGN KEY (journey_template_id) REFERENCES journey_template(id),
-    CONSTRAINT fk_experiment_lead_portal_flow FOREIGN KEY (lead_portal_flow_id) REFERENCES lead_portal_flow(id)
+    CONSTRAINT fk_experiment_lead_portal_flow FOREIGN KEY (lead_portal_flow_id) REFERENCES lead_portal_flow(id),
+    CONSTRAINT fk_experiment_image_model FOREIGN KEY (image_model_id) REFERENCES image_generation_model(id),
+    CONSTRAINT fk_experiment_image_model_quality FOREIGN KEY (image_model_quality_id) REFERENCES image_generation_quality(id)
 );
 
 CREATE TABLE audience (
@@ -580,3 +623,51 @@ CREATE TABLE facebook_ads_ad_tracking_utm (
   PRIMARY KEY (ad_id),
   CONSTRAINT fk_facebook_ads_utm_ad FOREIGN KEY (ad_id) REFERENCES facebook_ads_ad(id) ON DELETE CASCADE ON UPDATE RESTRICT
 );
+
+CREATE TABLE flow_submission_image_package (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    submission_id VARCHAR(36) NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'RECEIVED',
+    planned_outputs INT NULL,
+    free_images INT NOT NULL DEFAULT 0,
+    model VARCHAR(255),
+    prompt LONGTEXT NOT NULL,
+    failure_reason LONGTEXT NULL,
+    image_model_id BIGINT NULL,
+    image_model_quality_id BIGINT NULL,
+    image_orientation VARCHAR(16),
+    image_width INT,
+    image_height INT,
+    image_unit_price_usd DECIMAL(10,5),
+    image_total_price_usd DECIMAL(12,5),
+    image_currency VARCHAR(3) NOT NULL DEFAULT 'USD',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_flow_submission_image_package_submission FOREIGN KEY (submission_id) REFERENCES flow_submissions(id),
+    CONSTRAINT fk_flow_submission_image_package_model FOREIGN KEY (image_model_id) REFERENCES image_generation_model(id),
+    CONSTRAINT fk_flow_submission_image_package_quality FOREIGN KEY (image_model_quality_id) REFERENCES image_generation_quality(id)
+);
+
+CREATE TABLE flow_submission_image_item (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    package_id BIGINT NOT NULL,
+    asset_id BIGINT NOT NULL,
+    access_type VARCHAR(20) NOT NULL,
+    position_index INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_flow_submission_image_item_package FOREIGN KEY (package_id) REFERENCES flow_submission_image_package(id) ON DELETE CASCADE,
+    CONSTRAINT fk_flow_submission_image_item_asset FOREIGN KEY (asset_id) REFERENCES asset(id),
+    CONSTRAINT uq_flow_submission_image_item_order UNIQUE KEY (package_id, position_index)
+);
+
+CREATE TABLE flow_submission_image_watermark (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    item_id BIGINT NOT NULL,
+    asset_id BIGINT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_flow_submission_image_watermark_item FOREIGN KEY (item_id) REFERENCES flow_submission_image_item(id) ON DELETE CASCADE,
+    CONSTRAINT fk_flow_submission_image_watermark_asset FOREIGN KEY (asset_id) REFERENCES asset(id)
+);
+
+CREATE INDEX idx_flow_submission_image_package_submission ON flow_submission_image_package(submission_id, created_at DESC);
+CREATE INDEX idx_flow_submission_image_item_package ON flow_submission_image_item(package_id);

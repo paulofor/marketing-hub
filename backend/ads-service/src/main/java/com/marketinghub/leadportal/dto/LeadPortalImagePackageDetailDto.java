@@ -2,6 +2,7 @@ package com.marketinghub.leadportal.dto;
 
 import com.marketinghub.leadportal.FlowSubmissionImagePackageStatus;
 import java.time.Instant;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,7 +23,17 @@ public record LeadPortalImagePackageDetailDto(
         Instant updatedAt,
         SubmissionInfo submission,
         ImageReference originalImage,
-        List<ImageReference> generatedImages
+        List<ImageReference> generatedImages,
+        Long imageModelId,
+        String imageModelName,
+        Long imageModelQualityId,
+        String imageModelQualityName,
+        String imageOrientation,
+        Integer imageWidth,
+        Integer imageHeight,
+        BigDecimal imageUnitPriceUsd,
+        BigDecimal imageTotalPriceUsd,
+        String imageCurrency
 ) {
     public record SubmissionInfo(
             String flowSlug,

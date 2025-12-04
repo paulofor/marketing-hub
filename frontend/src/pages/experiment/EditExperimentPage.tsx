@@ -2,6 +2,7 @@ import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 import { useExperiment } from "../../api/experiment/useExperiment";
+import { useImageGenerationModels } from "../../api/ai/useImageGenerationModels";
 import {
   useUpdateExperiment,
   type UpdateExperiment,
@@ -21,6 +22,8 @@ interface FormData {
   journeyTemplateId: string;
   facebookPageId: string;
   instagramAccountId: string;
+  imageModelId: string;
+  imageModelQualityId: string;
 }
 
 export default function EditExperimentPage() {
@@ -30,6 +33,7 @@ export default function EditExperimentPage() {
   const { data, isLoading } = useExperiment(expId);
   const { data: presets } = useMetricPresets();
   const { data: journeyTemplates } = useJourneyTemplates({ size: 200 });
+  const { data: imageModels } = useImageGenerationModels();
   const update = useUpdateExperiment(expId);
   const {
     register,
@@ -37,6 +41,7 @@ export default function EditExperimentPage() {
     reset,
     formState: { dirtyFields },
     watch,
+    setValue,
   } = useForm<FormData>({
     defaultValues: {
       name: "",
@@ -46,6 +51,8 @@ export default function EditExperimentPage() {
       journeyTemplateId: "",
       facebookPageId: "",
       instagramAccountId: "",
+      imageModelId: "",
+      imageModelQualityId: "",
     },
   });
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
@@ -74,12 +81,20 @@ export default function EditExperimentPage() {
         instagramAccountId: data.instagramAccount?.id
           ? String(data.instagramAccount.id)
           : "",
+        imageModelId: data.imageModelId ? String(data.imageModelId) : "",
+        imageModelQualityId: data.imageModelQualityId
+          ? String(data.imageModelQualityId)
+          : "",
       });
     }
   }, [data, reset]);
 
   const selectedJourneyTemplateId = watch("journeyTemplateId");
   const selectedInstagramAccountId = watch("instagramAccountId");
+  const selectedImageModelId = watch("imageModelId");
+  const selectedImageQualityId = watch("imageModelQualityId");
+  const imageModelRegister = register("imageModelId");
+  const imageModelQualityRegister = register("imageModelQualityId");
   const parsedJourneyTemplateId = selectedJourneyTemplateId
     ? Number(selectedJourneyTemplateId)
     : undefined;
@@ -161,6 +176,43 @@ export default function EditExperimentPage() {
   const hasWorkerRequests =
     workerRequests.instantForms > 0 || workerRequests.emails > 0;
 
+  const parsedImageModelId = selectedImageModelId
+    ? Number(selectedImageModelId)
+    : undefined;
+  const selectedImageModel =
+    parsedImageModelId !== undefined && !Number.isNaN(parsedImageModelId)
+      ? imageModels?.find((model) => model.id === parsedImageModelId)
+      : undefined;
+  const availableImageQualities = selectedImageModel?.qualities ?? [];
+  const parsedImageQualityId = selectedImageQualityId
+    ? Number(selectedImageQualityId)
+    : undefined;
+  const selectedImageQuality =
+    parsedImageQualityId !== undefined && !Number.isNaN(parsedImageQualityId)
+      ? availableImageQualities.find((quality) => quality.id === parsedImageQualityId)
+      : undefined;
+  const usdFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 3,
+      }),
+    [],
+  );
+  const selectedQualityPriceLabel = selectedImageQuality?.prices?.length
+    ? (() => {
+        const preferred =
+          selectedImageQuality?.prices?.find((price) => price.preferred) ??
+          selectedImageQuality?.prices?.[0];
+        if (preferred?.unitPriceUsd == null) {
+          return undefined;
+        }
+        const label = usdFormatter.format(preferred.unitPriceUsd);
+        return preferred.sizeLabel ? `${label} · ${preferred.sizeLabel}` : label;
+      })()
+    : undefined;
+
   const onSubmit = async (values: FormData) => {
     try {
       if (!data) return;
@@ -197,6 +249,15 @@ export default function EditExperimentPage() {
         instantFormsToGenerate: data.instantFormsToGenerate ?? undefined,
         emailsToGenerate: data.emailsToGenerate ?? undefined,
       };
+
+      if (dirtyFields.imageModelId) {
+        const modelValue = values.imageModelId.trim();
+        payload.imageModelId = modelValue ? Number(modelValue) : null;
+      }
+      if (dirtyFields.imageModelQualityId) {
+        const qualityValue = values.imageModelQualityId.trim();
+        payload.imageModelQualityId = qualityValue ? Number(qualityValue) : null;
+      }
 
       if (dirtyFields.journeyTemplateId) {
         const templateValue = values.journeyTemplateId.trim();
@@ -282,6 +343,44 @@ export default function EditExperimentPage() {
             </option>
           ))}
         </select>
+        <label className="form-label" htmlFor="imageModelId">
+          Modelo de geração de imagem
+        </label>
+        <select
+          id="imageModelId"
+          className="form-select mb-2"
+          {...imageModelRegister}
+          onChange={(event) => {
+            imageModelRegister.onChange(event);
+            setValue("imageModelQualityId", "", { shouldDirty: true });
+          }}
+        >
+          <option value="">Selecione um modelo</option>
+          {imageModels?.map((model) => (
+            <option key={model.id} value={model.id}>
+              {model.name}
+            </option>
+          ))}
+        </select>
+        <label className="form-label" htmlFor="imageModelQualityId">
+          Qualidade das variações
+        </label>
+        <select
+          id="imageModelQualityId"
+          className="form-select mb-2"
+          {...imageModelQualityRegister}
+          disabled={!availableImageQualities.length}
+        >
+          <option value="">Selecione a qualidade</option>
+          {availableImageQualities.map((quality) => (
+            <option key={quality.id} value={quality.id}>
+              {quality.name}
+            </option>
+          ))}
+        </select>
+        {selectedQualityPriceLabel ? (
+          <p className="form-text">Custo estimado: {selectedQualityPriceLabel}</p>
+        ) : null}
         {hasWorkerRequests && (
           <div className="mb-3" aria-live="polite">
             <p className="text-muted small mb-2">

@@ -19,6 +19,9 @@ public record LeadPortalWorkerImageResultRequest(
             @JsonProperty("public_url") @NotBlank String publicUrl,
             String model,
             String prompt,
-            String source) {
+            String source,
+            Integer width,
+            Integer height,
+            String orientation) {
     }
 }

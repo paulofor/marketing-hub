@@ -11,6 +11,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.leadportal.LeadPortalFlow;
+import com.marketinghub.imagegeneration.ImageGenerationModel;
+import com.marketinghub.imagegeneration.ImageGenerationQuality;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -57,6 +59,14 @@ public class Experiment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "instagram_account_id")
     private InstagramAccount instagramAccount;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "image_model_id")
+    private ImageGenerationModel imageGenerationModel;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "image_model_quality_id")
+    private ImageGenerationQuality imageGenerationQuality;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "hypothesis_id", nullable = false)

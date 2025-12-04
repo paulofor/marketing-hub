@@ -45,6 +45,10 @@ public class ExperimentDto {
     private Integer emailsToGenerate;
     private Integer deliverablesToGenerate;
     private Integer leadPortalFlowsToGenerate;
+    private Long imageModelId;
+    private String imageModelName;
+    private Long imageModelQualityId;
+    private String imageModelQualityName;
     private Long journeyTemplateId;
     private String journeyTemplateName;
     private Long leadPortalFlowId;

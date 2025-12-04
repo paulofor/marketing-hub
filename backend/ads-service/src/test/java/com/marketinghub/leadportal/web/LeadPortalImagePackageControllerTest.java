@@ -47,7 +47,17 @@ class LeadPortalImagePackageControllerTest {
                 2,
                 Instant.parse("2024-01-01T10:00:00Z"),
                 Instant.parse("2024-01-01T10:05:00Z"),
-                "Erro temporário");
+                "Erro temporário",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
         when(imagePackageService.listImagePackages(any())).thenReturn(List.of(dto));
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/lead-portal/image-packages")

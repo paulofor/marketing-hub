@@ -21,6 +21,8 @@ export interface CreateExperiment {
   facebookPageId?: number;
   facebookInstantFormId?: number;
   instagramAccountId: number;
+  imageModelId?: number;
+  imageModelQualityId?: number;
 }
 
 export function useCreateExperiment() {

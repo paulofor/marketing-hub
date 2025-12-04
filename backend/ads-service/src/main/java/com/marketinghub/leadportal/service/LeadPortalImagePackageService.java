@@ -70,10 +70,22 @@ public class LeadPortalImagePackageService {
                     sub.name,
                     sub.email,
                     sub.answers,
+                    pack.image_model_id,
+                    pack.image_model_quality_id,
+                    pack.image_orientation,
+                    pack.image_width,
+                    pack.image_height,
+                    pack.image_unit_price_usd,
+                    pack.image_total_price_usd,
+                    pack.image_currency,
+                    igm.display_name AS image_model_name,
+                    igq.display_name AS image_model_quality_name,
                     (SELECT COUNT(*) FROM flow_submission_image_item items WHERE items.package_id = pack.id) AS generated_count,
                     (SELECT COUNT(*) FROM flow_submission_image_watermark wm JOIN flow_submission_image_item items2 ON items2.id = wm.item_id WHERE items2.package_id = pack.id) AS watermarked_count
                 FROM flow_submission_image_package pack
                 LEFT JOIN flow_submissions sub ON sub.id = pack.submission_id
+                LEFT JOIN image_generation_model igm ON igm.id = pack.image_model_id
+                LEFT JOIN image_generation_quality igq ON igq.id = pack.image_model_quality_id
                 """);
 
         List<Object> params = new ArrayList<>();
@@ -105,6 +117,16 @@ public class LeadPortalImagePackageService {
                     sub.name,
                     sub.email,
                     sub.answers,
+                    pack.image_model_id,
+                    pack.image_model_quality_id,
+                    pack.image_orientation,
+                    pack.image_width,
+                    pack.image_height,
+                    pack.image_unit_price_usd,
+                    pack.image_total_price_usd,
+                    pack.image_currency,
+                    igm.display_name AS image_model_name,
+                    igq.display_name AS image_model_quality_name,
                     (SELECT COUNT(*) FROM flow_submission_image_item items WHERE items.package_id = pack.id) AS generated_count,
                     (SELECT COUNT(*) FROM flow_submission_image_watermark wm JOIN flow_submission_image_item items2 ON items2.id = wm.item_id WHERE items2.package_id = pack.id) AS watermarked_count,
                     sub.image_question_key,
@@ -112,6 +134,8 @@ public class LeadPortalImagePackageService {
                     sub.created_at AS submission_created_at
                 FROM flow_submission_image_package pack
                 LEFT JOIN flow_submissions sub ON sub.id = pack.submission_id
+                LEFT JOIN image_generation_model igm ON igm.id = pack.image_model_id
+                LEFT JOIN image_generation_quality igq ON igq.id = pack.image_model_quality_id
                 WHERE pack.id = ?
                 """;
 
@@ -147,7 +171,17 @@ public class LeadPortalImagePackageService {
                 summary.updatedAt(),
                 submissionInfo,
                 originalImage,
-                generatedImages);
+                generatedImages,
+                summary.imageModelId(),
+                summary.imageModelName(),
+                summary.imageModelQualityId(),
+                summary.imageModelQualityName(),
+                summary.imageOrientation(),
+                summary.imageWidth(),
+                summary.imageHeight(),
+                summary.imageUnitPriceUsd(),
+                summary.imageTotalPriceUsd(),
+                summary.imageCurrency());
     }
 
     @Transactional
@@ -186,6 +220,16 @@ public class LeadPortalImagePackageService {
 
         String answers = rs.getString("answers");
         String phone = extractPhone(answers);
+        Long imageModelId = getLong(rs, "image_model_id");
+        Long imageModelQualityId = getLong(rs, "image_model_quality_id");
+        String imageModelName = rs.getString("image_model_name");
+        String imageModelQualityName = rs.getString("image_model_quality_name");
+        String imageOrientation = rs.getString("image_orientation");
+        Integer imageWidth = getInteger(rs, "image_width");
+        Integer imageHeight = getInteger(rs, "image_height");
+        java.math.BigDecimal imageUnitPriceUsd = rs.getBigDecimal("image_unit_price_usd");
+        java.math.BigDecimal imageTotalPriceUsd = rs.getBigDecimal("image_total_price_usd");
+        String imageCurrency = rs.getString("image_currency");
 
         return new LeadPortalImagePackageSummaryDto(
                 id,
@@ -203,7 +247,17 @@ public class LeadPortalImagePackageService {
                 watermarkedImageCount,
                 createdAt,
                 updatedAt,
-                rs.getString("failure_reason"));
+                rs.getString("failure_reason"),
+                imageModelId,
+                imageModelName,
+                imageModelQualityId,
+                imageModelQualityName,
+                imageOrientation,
+                imageWidth,
+                imageHeight,
+                imageUnitPriceUsd,
+                imageTotalPriceUsd,
+                imageCurrency);
     }
 
     private DetailProjection mapDetailProjection(ResultSet rs) throws SQLException {

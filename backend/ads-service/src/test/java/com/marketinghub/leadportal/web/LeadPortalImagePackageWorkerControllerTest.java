@@ -60,7 +60,15 @@ class LeadPortalImagePackageWorkerControllerTest {
                 2,
                 "gpt-image",
                 "Prompt base",
-                "Tratar variante A");
+                "Tratar variante A",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
         when(workerService.listRecentPackages()).thenReturn(List.of(dto));
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/worker/image-packages/recent"))

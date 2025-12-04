@@ -277,3 +277,10 @@ databaseChangeLog:
   - include:
       file: V2030_01_05__flow_submission_image_watermarks.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2030_02_10__image_generation_models.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2030_02_11__experiment_image_generation_columns.sql
+      relativeToChangelogFile: true
+

@@ -1,6 +1,9 @@
 package com.marketinghub.worker.leadportal.image;
 
 import com.marketinghub.worker.creative.CreativeImageOptimizer;
+import com.marketinghub.worker.imagegeneration.ImageGenerationPlan;
+import com.marketinghub.worker.imagegeneration.ImageGenerationPlanService;
+import com.marketinghub.worker.imagegeneration.ImageOrientation;
 import com.marketinghub.worker.leadportal.image.LeadPortalImagePackageClient.LeadPortalWorkerException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
@@ -31,14 +34,17 @@ public class LeadPortalImageProcessingService {
     private final LeadPortalImagePackageClient packageClient;
     private final LeadPortalStorageClient storageClient;
     private final LeadPortalOpenAiImageClient imageClient;
+    private final ImageGenerationPlanService planService;
 
     public LeadPortalImageProcessingService(
             LeadPortalImagePackageClient packageClient,
             LeadPortalStorageClient storageClient,
-            LeadPortalOpenAiImageClient imageClient) {
+            LeadPortalOpenAiImageClient imageClient,
+            ImageGenerationPlanService planService) {
         this.packageClient = packageClient;
         this.storageClient = storageClient;
         this.imageClient = imageClient;
+        this.planService = planService;
     }
 
     public List<LeadPortalImagePackageClient.ImagePackage> process() {
@@ -89,19 +95,31 @@ public class LeadPortalImageProcessingService {
         int imagesToGenerate = resolveImagesToGenerate(imagePackage);
         String prompt = buildPrompt(imagePackage);
 
+        ImageOrientation baseOrientation = planService.detectOrientation(originalBytes);
+        ImageGenerationPlan plan = planService.resolvePlan(imagePackage, baseOrientation);
+        ImageOrientation effectiveOrientation = plan != null && plan.orientation() != null ? plan.orientation() : baseOrientation;
+        String resolvedModel = plan != null && plan.apiModel() != null ? plan.apiModel() : imageClient.getModel();
+
         List<LeadPortalImagePackageClient.GeneratedImage> generated = new ArrayList<>();
         for (int index = 0; index < imagesToGenerate; index++) {
-            CreativeImageOptimizer.OptimizedImage optimized = imageClient.generateFromBase(originalBytes, prompt);
+            CreativeImageOptimizer.OptimizedImage optimized = imageClient.generateFromBase(originalBytes, prompt, plan);
             String filename = buildFilename(imagePackage.submissionId(), index, optimized.extension());
             LeadPortalStorageClient.StoredImage stored = storageClient.upload(
                     optimized.content(),
                     filename,
                     MediaType.parseMediaType("image/" + optimized.extension()));
             generated.add(new LeadPortalImagePackageClient.GeneratedImage(
-                    stored.objectKey(), stored.publicUrl(), imageClient.getModel(), prompt, "openai"));
+                    stored.objectKey(),
+                    stored.publicUrl(),
+                    resolvedModel,
+                    prompt,
+                    "openai",
+                    plan != null ? plan.width() : null,
+                    plan != null ? plan.height() : null,
+                    effectiveOrientation != null ? effectiveOrientation.name() : null));
         }
 
-        packageClient.submitResults(imagePackage.id(), generated, imageClient.getModel(), prompt);
+        packageClient.submitResults(imagePackage.id(), generated, resolvedModel, prompt);
     }
 
     private boolean handleTransientFailure(long packageId, Throwable throwable) {

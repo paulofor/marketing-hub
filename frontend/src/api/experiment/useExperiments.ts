@@ -67,6 +67,10 @@ export interface Experiment {
   emailsToGenerate?: number | null;
   deliverablesToGenerate?: number | null;
   leadPortalFlowsToGenerate?: number | null;
+  imageModelId?: number | null;
+  imageModelName?: string | null;
+  imageModelQualityId?: number | null;
+  imageModelQualityName?: string | null;
   creativeApproved: boolean;
   status: string;
   platform: string;

@@ -2,8 +2,8 @@ package com.marketinghub.imagegeneration;
 
 import jakarta.persistence.*;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -54,5 +54,5 @@ public class ImageGenerationQuality {
     @OneToMany(mappedBy = "quality", fetch = FetchType.LAZY)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    private List<ImageGenerationPrice> prices = new ArrayList<>();
+    private Set<ImageGenerationPrice> prices = new HashSet<>();
 }

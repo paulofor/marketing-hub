@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.creative.CreativeImageOptimizer;
 import com.marketinghub.worker.imagegeneration.ImageGenerationPlan;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -37,8 +38,6 @@ public class LeadPortalOpenAiImageClient {
 
     private static final Logger log = LoggerFactory.getLogger(LeadPortalOpenAiImageClient.class);
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(120);
-    private static final byte[] PNG_SIGNATURE =
-            new byte[] {(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
 
     private final WebClient webClient;
     private final CreativeImageOptimizer imageOptimizer;
@@ -108,30 +107,16 @@ public class LeadPortalOpenAiImageClient {
     }
 
     private byte[] normalizeBaseImage(byte[] baseImage) {
-        if (looksLikePng(baseImage)) {
-            return baseImage;
-        }
         BufferedImage image = decodeImage(baseImage);
+        BufferedImage imageWithAlpha = ensureAlphaChannel(image);
         try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-            if (!ImageIO.write(image, "png", output)) {
+            if (!ImageIO.write(imageWithAlpha, "png", output)) {
                 throw new IllegalStateException("Failed to encode image as PNG");
             }
             return output.toByteArray();
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to encode image as PNG", ex);
         }
-    }
-
-    private boolean looksLikePng(byte[] bytes) {
-        if (bytes == null || bytes.length < PNG_SIGNATURE.length) {
-            return false;
-        }
-        for (int index = 0; index < PNG_SIGNATURE.length; index++) {
-            if (bytes[index] != PNG_SIGNATURE[index]) {
-                return false;
-            }
-        }
-        return true;
     }
 
     private BufferedImage decodeImage(byte[] bytes) {
@@ -144,6 +129,21 @@ public class LeadPortalOpenAiImageClient {
         } catch (IOException ex) {
             throw new IllegalArgumentException("Failed to decode base image", ex);
         }
+    }
+
+    private BufferedImage ensureAlphaChannel(BufferedImage image) {
+        if (image.getColorModel().hasAlpha()) {
+            return image;
+        }
+        BufferedImage withAlpha =
+                new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = withAlpha.createGraphics();
+        try {
+            graphics.drawImage(image, 0, 0, null);
+        } finally {
+            graphics.dispose();
+        }
+        return withAlpha;
     }
 
     private MultiValueMap<String, Object> buildMultipartBody(byte[] baseImage, String prompt, ImageGenerationPlan plan) {

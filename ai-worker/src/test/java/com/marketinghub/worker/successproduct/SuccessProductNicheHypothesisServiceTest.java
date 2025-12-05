@@ -5,18 +5,22 @@ import com.marketinghub.worker.WorkerSuccessProductRepository;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
+import com.marketinghub.worker.config.TestServiceMocksConfig;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
+@Import(TestServiceMocksConfig.class)
 class SuccessProductNicheHypothesisServiceTest {
 
     @Autowired
@@ -33,6 +37,13 @@ class SuccessProductNicheHypothesisServiceTest {
 
     @Autowired
     HypothesisRepository hypothesisRepository;
+
+    @BeforeEach
+    void cleanDb() {
+        hypothesisRepository.deleteAll();
+        marketNicheRepository.deleteAll();
+        productRepository.deleteAll();
+    }
 
     @Test
     void generateCreatesNicheAndHypothesisFromProduct() {
@@ -63,4 +74,3 @@ class SuccessProductNicheHypothesisServiceTest {
         assertThat(hypothesis.getUniqueMechanism()).isEqualTo("Mecanismo A");
     }
 }
-

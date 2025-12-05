@@ -30,6 +30,7 @@ public class LeadPortalImageProcessingService {
     private static final Logger log = LoggerFactory.getLogger(LeadPortalImageProcessingService.class);
     private static final String DEFAULT_TREATMENT =
             "Produzir 20 imagens para post de Instagram usando a original como base";
+    private static final int PROMPT_MAX_LENGTH = 1000;
 
     private final LeadPortalImagePackageClient packageClient;
     private final LeadPortalStorageClient storageClient;
@@ -175,19 +176,104 @@ public class LeadPortalImageProcessingService {
     }
 
     private String buildPrompt(LeadPortalImagePackageClient.ImagePackage imagePackage) {
-        String basePrompt = StringUtils.hasText(imagePackage.prompt()) ? imagePackage.prompt() : "";
-        String treatment = StringUtils.hasText(imagePackage.treatment()) ? imagePackage.treatment() : DEFAULT_TREATMENT;
-        StringBuilder builder = new StringBuilder();
-        if (StringUtils.hasText(basePrompt)) {
-            builder.append(basePrompt.trim());
-            if (builder.charAt(builder.length() - 1) != '.') {
-                builder.append('.');
-            }
-            builder.append(' ');
+        String basePrompt = normalizeBasePrompt(imagePackage.prompt());
+        String treatmentPrompt = normalizeTreatment(imagePackage.treatment());
+        String suffix = treatmentPrompt + " Preserve logo, paleta de cores e proporção da imagem base.";
+        if (!StringUtils.hasText(basePrompt)) {
+            return ensureMaxLength(suffix, imagePackage.id());
         }
-        builder.append(treatment);
-        builder.append(". Preserve logo, paleta de cores e proporção da imagem base.");
-        return builder.toString();
+        return combinePrompts(basePrompt, suffix, imagePackage.id());
+    }
+
+    private String combinePrompts(String basePrompt, String suffix, long packageId) {
+        String combined = basePrompt + " " + suffix;
+        if (combined.length() <= PROMPT_MAX_LENGTH) {
+            return combined;
+        }
+        int suffixLength = suffix.length();
+        if (suffixLength >= PROMPT_MAX_LENGTH) {
+            return ensureMaxLength(suffix, packageId);
+        }
+        int availableForBase = PROMPT_MAX_LENGTH - suffixLength - 1;
+        if (availableForBase <= 0) {
+            log.warn(
+                    "Lead-portal prompt base for package {} removed because suffix already uses {} characters",
+                    packageId,
+                    suffixLength);
+            return ensureMaxLength(suffix, packageId);
+        }
+        String truncatedBase = truncateWithEllipsis(basePrompt, availableForBase);
+        if (!truncatedBase.equals(basePrompt)) {
+            log.warn(
+                    "Lead-portal prompt base for package {} truncated from {} to {} characters to satisfy {}-character limit",
+                    packageId,
+                    basePrompt.length(),
+                    truncatedBase.length(),
+                    PROMPT_MAX_LENGTH);
+        }
+        String adjusted = truncatedBase + " " + suffix;
+        if (adjusted.length() <= PROMPT_MAX_LENGTH) {
+            return adjusted;
+        }
+        return ensureMaxLength(adjusted, packageId);
+    }
+
+    private String ensureMaxLength(String text, long packageId) {
+        if (text.length() <= PROMPT_MAX_LENGTH) {
+            return text;
+        }
+        String truncated = truncateWithEllipsis(text, PROMPT_MAX_LENGTH);
+        log.warn(
+                "Lead-portal prompt segment for package {} trimmed from {} to {} characters to satisfy {}-character limit",
+                packageId,
+                text.length(),
+                truncated.length(),
+                PROMPT_MAX_LENGTH);
+        return truncated;
+    }
+
+    private String normalizeBasePrompt(String prompt) {
+        if (!StringUtils.hasText(prompt)) {
+            return "";
+        }
+        String trimmed = prompt.trim();
+        if (trimmed.isEmpty()) {
+            return "";
+        }
+        char lastChar = trimmed.charAt(trimmed.length() - 1);
+        if (lastChar == '.' || lastChar == '!' || lastChar == '?') {
+            return trimmed;
+        }
+        return trimmed + ".";
+    }
+
+    private String normalizeTreatment(String treatment) {
+        String resolved = StringUtils.hasText(treatment) ? treatment.trim() : DEFAULT_TREATMENT;
+        if (resolved.isEmpty()) {
+            resolved = DEFAULT_TREATMENT;
+        }
+        char lastChar = resolved.charAt(resolved.length() - 1);
+        if (lastChar == '.' || lastChar == '!' || lastChar == '?') {
+            return resolved;
+        }
+        return resolved + ".";
+    }
+
+    private String truncateWithEllipsis(String text, int maxLength) {
+        if (text.length() <= maxLength) {
+            return text;
+        }
+        if (maxLength <= 3) {
+            return text.substring(0, maxLength);
+        }
+        int cut = Math.min(text.length(), maxLength - 3);
+        String truncated = text.substring(0, cut);
+        int lastSpace = truncated.lastIndexOf(' ');
+        if (lastSpace > cut / 2) {
+            truncated = truncated.substring(0, lastSpace);
+        }
+        truncated = truncated.replaceAll("[\\p{Punct}\\s]+$", "");
+        return truncated + "...";
     }
 
     private int resolveImagesToGenerate(LeadPortalImagePackageClient.ImagePackage imagePackage) {

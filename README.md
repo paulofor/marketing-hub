@@ -39,6 +39,14 @@ scp target/app-exec.jar <vps>:/opt/marketinghub/app/app.jar
 ssh <vps> "java -jar /opt/marketinghub/app/app.jar"
 ```
 
+Para publicar e executar o AI Worker via Docker Compose:
+
+```bash
+cp .env.example .env  # ajuste as variáveis sensíveis
+docker compose build ai-worker
+docker compose --env-file .env up -d ai-worker
+```
+
 To run the Media Hub locally:
 
 ```bash

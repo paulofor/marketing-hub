@@ -153,13 +153,8 @@ public class LeadPortalOpenAiImageClient {
         if (prompt != null && !prompt.isBlank()) {
             body.add("prompt", prompt);
         }
-        if (plan != null) {
-            if (plan.sizeLabel() != null) {
-                body.add("size", plan.sizeLabel());
-            }
-            if (plan.apiQuality() != null && !plan.apiQuality().isBlank()) {
-                body.add("quality", plan.apiQuality());
-            }
+        if (plan != null && plan.sizeLabel() != null) {
+            body.add("size", plan.sizeLabel());
         }
 
         ByteArrayResource imageResource = new ByteArrayResource(baseImage) {

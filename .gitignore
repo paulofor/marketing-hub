@@ -29,6 +29,8 @@ log.exec
 chaves/
 local/
 /ai-worker/target/
+/ai-worker/lib/*
+!/ai-worker/lib/.gitkeep
 
 *.tsbuildinfo
 

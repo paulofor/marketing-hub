@@ -1,0 +1,13 @@
+# Build artifacts
+/target
+
+# IDE files
+.idea/
+*.iml
+
+# Version control
+.git
+.gitignore
+
+# OS files
+.DS_Store

@@ -27,6 +27,33 @@ mvn test
 mvn spring-boot:run
 ```
 
+## Executar com Docker
+
+> Antes de gerar a imagem, garanta que `lib/ads-service.jar` esteja atualizado executando `mvn package -DskipTests` em `backend/ads-service`.
+
+1. Gere a imagem localmente:
+   ```bash
+   docker build -t marketinghub/ai-worker:latest ./ai-worker
+   ```
+2. Rode o container informando as variáveis obrigatórias:
+   ```bash
+   docker run -d --name ai-worker \
+     -e SPRING_DATASOURCE_URL="jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb" \
+     -e SPRING_DATASOURCE_USERNAME="marketing_hub_user" \
+     -e MYSQL_PASS="<senha-do-banco>" \
+     -e OPENAI_API_KEY="<token-openai>" \
+     marketinghub/ai-worker:latest
+   ```
+
+### Publicar a imagem
+
+```bash
+docker tag marketinghub/ai-worker:latest registry.seudominio.com/marketinghub/ai-worker:latest
+docker push registry.seudominio.com/marketinghub/ai-worker:latest
+```
+
+Atualize o host, o namespace do registro e as credenciais conforme o ambiente.
+
 A aplicação agenda a tarefa `SuccessProductScheduler` para rodar a cada cinco minutos (`0 */5 * * * *`). O método `analyzeNewProducts` busca registros com `novo=true`, chama `ChatGptClient` para preencher os campos (incluindo `name`) e persiste o resultado. Agora a implementação padrão utiliza a API da OpenAI (`OpenAiChatGptClient`). Caso queira utilizar a versão de testes sem chamadas externas, ative o perfil `dummy`.
 
 Para que a integração funcione é necessário definir a variável de ambiente `OPENAI_API_KEY` ou a propriedade `openai.api-key` com o token de acesso. O modelo utilizado pode ser configurado pela propriedade `openai.model` (padrão `o3`).

@@ -8,6 +8,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.marketinghub.worker.imagegeneration.ImageGenerationPlan;
+import com.marketinghub.worker.imagegeneration.ImageGenerationPlanService;
+import com.marketinghub.worker.imagegeneration.ImageOrientation;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,31 +33,49 @@ class LeadPortalImageProcessingServiceTest {
     @Mock
     private LeadPortalOpenAiImageClient imageClient;
 
+    @Mock
+    private ImageGenerationPlanService planService;
+
     @InjectMocks
     private LeadPortalImageProcessingService service;
 
     private LeadPortalImagePackageClient.ImagePackage samplePackage;
+    private ImageGenerationPlan samplePlan;
 
     @BeforeEach
     void setUp() {
+        samplePlan = new ImageGenerationPlan(
+                1L,
+                2L,
+                "gpt-image-1",
+                "high",
+                ImageOrientation.SQUARE,
+                1024,
+                1024,
+                "1024x1024",
+                null);
         samplePackage = new LeadPortalImagePackageClient.ImagePackage(
                 1L,
                 UUID.fromString("123e4567-e89b-12d3-a456-426614174000"),
                 "original.png",
                 1,
-                null,
-                null,
+                0,
+                "gpt-image-1",
                 "prompt",
-                null);
+                "treatment",
+                1L,
+                2L);
         when(imageClient.isEnabled()).thenReturn(true);
         doNothing().when(packageClient).markProcessing(anyLong());
+        when(planService.detectOrientation(any())).thenReturn(ImageOrientation.SQUARE);
+        when(planService.resolvePlan(any(), any())).thenReturn(samplePlan);
     }
 
     @Test
     void schedulesRetryWhenTransientErrorOccurs() {
         when(packageClient.listRecentPackages()).thenReturn(List.of(samplePackage));
         when(storageClient.download("original.png")).thenReturn(new byte[] {1, 2, 3});
-        when(imageClient.generateFromBase(any(), anyString()))
+        when(imageClient.generateFromBase(any(), anyString(), any(ImageGenerationPlan.class)))
                 .thenThrow(SdkClientException.builder().message("S3 indisponível").build());
 
         service.process();
@@ -67,7 +88,7 @@ class LeadPortalImageProcessingServiceTest {
     void marksFailureWhenErrorIsNotTransient() {
         when(packageClient.listRecentPackages()).thenReturn(List.of(samplePackage));
         when(storageClient.download("original.png")).thenReturn(new byte[] {1, 2, 3});
-        when(imageClient.generateFromBase(any(), anyString()))
+        when(imageClient.generateFromBase(any(), anyString(), any(ImageGenerationPlan.class)))
                 .thenThrow(new IllegalArgumentException("Entrada inválida"));
 
         service.process();

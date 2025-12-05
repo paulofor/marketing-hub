@@ -24,6 +24,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.io.IOException;
 import java.util.List;
@@ -39,6 +41,9 @@ class NicheHypothesisServiceTest {
     static MockWebServer mockWebServer;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @MockBean
+    AiWorkerGenerationService aiWorkerGenerationService;
 
     @Autowired
     MarketNicheRepository nicheRepository;

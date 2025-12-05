@@ -4,11 +4,13 @@ import com.marketinghub.successproduct.SuccessProduct;
 import com.marketinghub.worker.WorkerSuccessProductRepository;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,6 +24,9 @@ class SuccessProductNicheHypothesisServiceTest {
 
     @Autowired
     WorkerSuccessProductRepository productRepository;
+
+    @MockBean
+    AiWorkerGenerationService aiWorkerGenerationService;
 
     @Autowired
     MarketNicheRepository marketNicheRepository;

@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 
-@Service
+@Service("workerImageGenerationCatalogService")
 public class ImageGenerationCatalogService {
 
     private static final Duration CACHE_TTL = Duration.ofMinutes(5);

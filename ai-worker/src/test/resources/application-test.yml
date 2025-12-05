@@ -12,6 +12,9 @@ spring:
         globally_quoted_identifiers: false
   liquibase:
     enabled: false
+  task:
+    scheduling:
+      enabled: false
 
 openai:
   model: o3-mini

@@ -1,12 +1,26 @@
 package com.marketinghub.worker;
 
+import com.marketinghub.WebConfig;
+import com.marketinghub.ads.AdsServiceApplication;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication(scanBasePackages = "com.marketinghub")
+@SpringBootApplication
+@ComponentScan(
+        basePackages = "com.marketinghub",
+        excludeFilters = {
+                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = WebConfig.class),
+                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = AdsServiceApplication.class),
+                @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.marketinghub\\.web\\..*")
+        }
+)
 @EntityScan("com.marketinghub")
+@EnableJpaRepositories("com.marketinghub")
 @EnableScheduling
 public class AiWorkerApplication {
     public static void main(String[] args) {

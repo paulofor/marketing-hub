@@ -1,22 +1,24 @@
 # AI Worker
 
-Este projeto executa em segundo plano para processar dados cadastrados no Marketing Hub com auxílio do ChatGPT. Ele reutiliza as entidades do **ads-service** publicadas no GitHub Packages e roda tarefas agendadas a cada cinco minutos. Durante o processamento, campos como `name` podem ser gerados pela IA.
+Este projeto executa em segundo plano para processar dados cadastrados no Marketing Hub com auxílio do ChatGPT. Ele reutiliza as entidades do **ads-service** geradas no backend e copiadas automaticamente para `lib/ads-service.jar`, eliminando a necessidade de baixar artefatos do GitHub Packages. Durante o processamento, campos como `name` podem ser gerados pela IA.
 
 ## Pré-requisitos
 - Java 21
-- Maven configurado com as variáveis `GITHUB_ACTOR` e `GITHUB_TOKEN` para acessar o repositório do GitHub Packages.
+- Maven
 - MySQL em execução conforme as configurações de `application.properties`.
+
+> Antes de compilar o worker, execute `mvn package -DskipTests` em `backend/ads-service` para garantir que o arquivo `lib/ads-service.jar` esteja atualizado.
 
 ## Como compilar
 
 ```bash
-mvn -s settings.xml package
+mvn package
 ```
 
 ## Como testar
 
 ```bash
-mvn -s settings.xml test
+mvn test
 ```
 
 ## Como executar

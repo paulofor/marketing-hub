@@ -8,20 +8,6 @@
     <name>ai-worker</name>
 
 
-    <repositories>
-        <repository>
-            <id>github</id>
-            <url>https://maven.pkg.github.com/paulofor/marketing-hub</url>
-            <releases><enabled>true</enabled></releases>
-            <snapshots><enabled>true</enabled></snapshots>
-        </repository>
-        <repository>
-            <id>central</id>
-            <name>Maven Central</name>
-            <url>https://repo.maven.apache.org/maven2</url>
-        </repository>
-    </repositories>
-
     <properties>
         <java.version>21</java.version>
         <jboss-logging.version>3.5.0.Final</jboss-logging.version>
@@ -77,11 +63,13 @@
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- reuse entities from the ads-service package hosted on GitHub Packages -->
+        <!-- reuse entities from the ads-service package copied into lib -->
         <dependency>
             <groupId>com.marketinghub</groupId>
             <artifactId>ads-service</artifactId>
-            <version>0.0.1-SNAPSHOT</version> <!-- a que está publicada -->
+            <version>0.0.1-SNAPSHOT</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/ads-service.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

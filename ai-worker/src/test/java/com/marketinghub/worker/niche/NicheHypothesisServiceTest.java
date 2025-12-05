@@ -1,5 +1,7 @@
 package com.marketinghub.worker.niche;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.niche.MarketNiche;
@@ -10,6 +12,9 @@ import com.marketinghub.prompt.PromptEntity;
 import com.marketinghub.prompt.repository.PromptAttributeDescriptionRepository;
 import com.marketinghub.prompt.repository.PromptAttributeRepository;
 import com.marketinghub.prompt.repository.PromptEntityRepository;
+import com.marketinghub.worker.config.TestServiceMocksConfig;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,14 +23,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
-import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.io.IOException;
 import java.util.List;
@@ -37,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Import(TestServiceMocksConfig.class)
 class NicheHypothesisServiceTest {
     static MockWebServer mockWebServer;
 

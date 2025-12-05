@@ -1,0 +1,4 @@
+services:
+  ai-worker:
+    image: ${AI_WORKER_IMAGE}
+    build: null

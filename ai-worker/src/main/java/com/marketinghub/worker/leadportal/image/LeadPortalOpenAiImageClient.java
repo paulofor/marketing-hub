@@ -150,6 +150,9 @@ public class LeadPortalOpenAiImageClient {
         LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         String selectedModel = plan != null && plan.apiModel() != null ? plan.apiModel() : defaultModel;
         body.add("model", selectedModel);
+        // We need the binary payload because the downstream optimizer expects it.
+        // By default OpenAI returns URLs, so we explicitly request the base64 variant.
+        body.add("response_format", "b64_json");
         if (prompt != null && !prompt.isBlank()) {
             body.add("prompt", prompt);
         }

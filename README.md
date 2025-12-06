@@ -47,6 +47,11 @@ docker compose build ai-worker
 docker compose --env-file .env up -d ai-worker
 ```
 
+No VPS, o container do AI Worker já lê o conteúdo de `/etc/openai/chave` na
+inicialização (montado como `/run/secrets/openai_api_key`), dispensando o
+`export` manual da variável. Caso queira sobrescrever o segredo, defina
+`OPENAI_API_KEY` antes do `docker compose up`.
+
 To run the Media Hub locally:
 
 ```bash

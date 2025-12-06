@@ -45,6 +45,18 @@ mvn spring-boot:run
      marketinghub/ai-worker:latest
    ```
 
+   Caso a chave da OpenAI esteja armazenada em um arquivo no servidor, defina o caminho via `OPENAI_API_KEY_FILE` e monte o arquivo como volume:
+
+   ```bash
+   docker run -d --name ai-worker \
+     -e SPRING_DATASOURCE_URL="jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb" \
+     -e SPRING_DATASOURCE_USERNAME="marketing_hub_user" \
+     -e MYSQL_PASS="<senha-do-banco>" \
+     -e OPENAI_API_KEY_FILE="/run/secrets/openai_api_key" \
+     -v /etc/openai/chave:/run/secrets/openai_api_key:ro \
+     marketinghub/ai-worker:latest
+   ```
+
 ### Publicar a imagem
 
 ```bash

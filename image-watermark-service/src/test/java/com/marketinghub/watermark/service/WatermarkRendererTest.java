@@ -1,43 +1,81 @@
 package com.marketinghub.watermark.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.marketinghub.watermark.config.WatermarkProperties;
 import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.GraphicsEnvironment;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import javax.imageio.ImageIO;
-import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class WatermarkRendererTest {
 
-    @Test
-    void shouldApplyWatermarkGeneratingPngImage() throws Exception {
-        Assumptions.assumeFalse(GraphicsEnvironment.isHeadless(),
-                "Ambiente sem suporte gráfico não permite testar renderização de marca d'água");
+    static {
+        System.setProperty("java.awt.headless", "true");
+    }
 
-        BufferedImage image = new BufferedImage(256, 256, BufferedImage.TYPE_INT_RGB);
-        Graphics2D graphics = image.createGraphics();
-        graphics.setColor(Color.BLUE);
-        graphics.fillRect(0, 0, image.getWidth(), image.getHeight());
-        graphics.dispose();
+    private WatermarkRenderer renderer;
+    private BufferedImage originalImage;
+    private byte[] originalBytes;
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageIO.write(image, "png", baos);
-
+    @BeforeEach
+    void setUp() throws Exception {
         WatermarkProperties properties = new WatermarkProperties();
-        properties.setText("TESTE");
-        WatermarkRenderer renderer = new WatermarkRenderer(properties);
+        renderer = new WatermarkRenderer(properties);
         renderer.init();
 
-        WatermarkRenderer.WatermarkedImage watermarked = renderer.applyWatermark(baos.toByteArray());
+        originalImage = new BufferedImage(400, 300, BufferedImage.TYPE_INT_RGB);
+        Graphics2D graphics = originalImage.createGraphics();
+        graphics.setPaint(Color.BLACK);
+        graphics.fillRect(0, 0, originalImage.getWidth(), originalImage.getHeight());
+        graphics.dispose();
 
-        assertThat(watermarked).isNotNull();
-        assertThat(watermarked.bytes()).isNotEmpty();
-        assertThat(watermarked.contentType()).isEqualTo("image/png");
-        assertThat(watermarked.extension()).isEqualTo("png");
+        originalBytes = toPng(originalImage);
+
+        assertThat(properties.getText()).isEqualTo("TESTE");
+    }
+
+    @Test
+    void shouldApplyTesteWatermarkAndModifyImage() throws Exception {
+        try {
+            byte[] watermarkedBytes = renderer.applyWatermark(originalBytes).bytes();
+
+            assertThat(watermarkedBytes).isNotEqualTo(originalBytes);
+
+            BufferedImage watermarkedImage = ImageIO.read(new ByteArrayInputStream(watermarkedBytes));
+            assertThat(watermarkedImage).isNotNull();
+
+            boolean anyDifference = false;
+            outer:
+            for (int x = 0; x < originalImage.getWidth(); x++) {
+                for (int y = 0; y < originalImage.getHeight(); y++) {
+                    if (originalImage.getRGB(x, y) != watermarkedImage.getRGB(x, y)) {
+                        anyDifference = true;
+                        break outer;
+                    }
+                }
+            }
+
+            assertThat(anyDifference)
+                .as("A imagem deve apresentar diferenças visíveis após a aplicação da marca d'água")
+                .isTrue();
+        } catch (RuntimeException ex) {
+            String message = ex.getMessage();
+            if (message != null && message.contains("Fontconfig head is null")) {
+                org.junit.jupiter.api.Assumptions.assumeTrue(false, "Ambiente sem suporte a fontes para renderização de imagens");
+            }
+            throw ex;
+        }
+    }
+
+    private static byte[] toPng(BufferedImage image) throws Exception {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            ImageIO.write(image, "png", outputStream);
+            return outputStream.toByteArray();
+        }
     }
 }

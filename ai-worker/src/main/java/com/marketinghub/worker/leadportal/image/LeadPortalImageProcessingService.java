@@ -9,6 +9,7 @@ import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +32,8 @@ public class LeadPortalImageProcessingService {
     private static final String DEFAULT_TREATMENT =
             "Produzir 20 imagens para post de Instagram usando a original como base";
     private static final int PROMPT_MAX_LENGTH = 1000;
+    private static final int MAX_IMAGE_ATTEMPTS = 3;
+    private static final Duration RETRY_DELAY_BASE = Duration.ofMillis(500);
 
     private final LeadPortalImagePackageClient packageClient;
     private final LeadPortalStorageClient storageClient;
@@ -103,7 +106,8 @@ public class LeadPortalImageProcessingService {
 
         List<LeadPortalImagePackageClient.GeneratedImage> generated = new ArrayList<>();
         for (int index = 0; index < imagesToGenerate; index++) {
-            CreativeImageOptimizer.OptimizedImage optimized = imageClient.generateFromBase(originalBytes, prompt, plan);
+            CreativeImageOptimizer.OptimizedImage optimized =
+                    generateWithRetry(originalBytes, prompt, plan, imagePackage.id(), index);
             String filename = buildFilename(imagePackage.submissionId(), index, optimized.extension());
             LeadPortalStorageClient.StoredImage stored = storageClient.upload(
                     optimized.content(),
@@ -121,6 +125,59 @@ public class LeadPortalImageProcessingService {
         }
 
         packageClient.submitResults(imagePackage.id(), generated, resolvedModel, prompt);
+    }
+
+    private CreativeImageOptimizer.OptimizedImage generateWithRetry(
+            byte[] originalBytes, String prompt, ImageGenerationPlan plan, long packageId, int imageIndex) {
+        for (int attempt = 1; attempt <= MAX_IMAGE_ATTEMPTS; attempt++) {
+            try {
+                return imageClient.generateFromBase(originalBytes, prompt, plan);
+            } catch (RuntimeException ex) {
+                if (!isTransientError(ex) || attempt == MAX_IMAGE_ATTEMPTS) {
+                    throw ex;
+                }
+                Duration delay = RETRY_DELAY_BASE.multipliedBy(attempt);
+                String statusDetail = statusSuffix(ex);
+                log.warn(
+                        "Lead-portal image generation attempt {} of {} failed for package {} (image {}): {}{}. Retrying in {} ms.",
+                        attempt,
+                        MAX_IMAGE_ATTEMPTS,
+                        packageId,
+                        imageIndex,
+                        ex.getMessage(),
+                        statusDetail,
+                        delay.toMillis());
+                sleepQuietly(delay);
+            }
+        }
+        throw new IllegalStateException("Failed to generate image after retries");
+    }
+
+    private String statusSuffix(Throwable throwable) {
+        LeadPortalOpenAiImageClient.ImageGenerationException imageEx = findImageGenerationException(throwable);
+        if (imageEx != null && imageEx.getStatus() != null) {
+            return " (status " + imageEx.getStatus().value() + ")";
+        }
+        return "";
+    }
+
+    private LeadPortalOpenAiImageClient.ImageGenerationException findImageGenerationException(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof LeadPortalOpenAiImageClient.ImageGenerationException imageEx) {
+                return imageEx;
+            }
+            current = current.getCause();
+        }
+        return null;
+    }
+
+    private void sleepQuietly(Duration delay) {
+        try {
+            Thread.sleep(delay.toMillis());
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private boolean handleTransientFailure(long packageId, Throwable throwable) {
@@ -149,6 +206,15 @@ public class LeadPortalImageProcessingService {
     private boolean isTransientError(Throwable throwable) {
         Throwable current = throwable;
         while (current != null) {
+            if (current instanceof LeadPortalOpenAiImageClient.ImageGenerationException imageEx) {
+                HttpStatusCode status = imageEx.getStatus();
+                if (status != null) {
+                    int value = status.value();
+                    if (value == 429 || value == 408 || (value >= 500 && value < 600)) {
+                        return true;
+                    }
+                }
+            }
             if (current instanceof LeadPortalWorkerException workerEx) {
                 HttpStatusCode status = workerEx.getStatus();
                 if (status != null) {

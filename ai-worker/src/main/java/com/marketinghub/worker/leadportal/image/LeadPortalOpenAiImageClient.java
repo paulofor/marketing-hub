@@ -10,6 +10,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
@@ -187,7 +188,7 @@ public class LeadPortalOpenAiImageClient {
                     return acc;
                 })
                 .map(ByteArrayOutputStream::toByteArray)
-                .map(this::parseResponse)
+                .map(bytes -> parseResponse(bytes, response))
                 .map(parsed -> ensureSuccess(parsed, response));
     }
 
@@ -201,22 +202,44 @@ public class LeadPortalOpenAiImageClient {
         }
     }
 
-    private ImageResponse parseResponse(byte[] bytes) {
+    private ImageResponse parseResponse(byte[] bytes, ClientResponse response) {
         try {
             return mapper.readValue(bytes, ImageResponse.class);
         } catch (IOException e) {
+            if (response.statusCode().isError()) {
+                int statusCode = response.statusCode().value();
+                throw new OpenAiImageException(
+                        statusCode,
+                        "OpenAI image API returned status "
+                                + statusCode
+                                + " with undecodable payload: "
+                                + summarizeBody(bytes),
+                        e);
+            }
             throw new RuntimeException("Failed to decode OpenAI image response", e);
         }
     }
 
     private ImageResponse ensureSuccess(ImageResponse parsed, ClientResponse response) {
         if (response.statusCode().isError()) {
+            int statusCode = response.statusCode().value();
             String errorMessage = parsed != null && parsed.error != null && parsed.error.message != null
                     ? parsed.error.message
-                    : "OpenAI image API returned status " + response.statusCode();
-            throw new RuntimeException(errorMessage);
+                    : "OpenAI image API returned status " + statusCode;
+            throw new OpenAiImageException(statusCode, errorMessage);
         }
         return parsed;
+    }
+
+    private String summarizeBody(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            return "<empty>";
+        }
+        String decoded = new String(bytes, StandardCharsets.UTF_8);
+        if (decoded.length() <= 200) {
+            return decoded;
+        }
+        return decoded.substring(0, 200) + "...";
     }
 
     private record ImageResponse(List<ImageData> data, ApiError error) {}
@@ -224,4 +247,22 @@ public class LeadPortalOpenAiImageClient {
     private record ImageData(@JsonProperty("b64_json") String base64) {}
 
     private record ApiError(String message, String type, String param, String code) {}
+
+    public static class OpenAiImageException extends RuntimeException {
+        private final int statusCode;
+
+        public OpenAiImageException(int statusCode, String message) {
+            super(message);
+            this.statusCode = statusCode;
+        }
+
+        public OpenAiImageException(int statusCode, String message, Throwable cause) {
+            super(message, cause);
+            this.statusCode = statusCode;
+        }
+
+        public int getStatusCode() {
+            return statusCode;
+        }
+    }
 }

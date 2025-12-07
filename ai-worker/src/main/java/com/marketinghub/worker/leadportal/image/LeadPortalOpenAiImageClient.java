@@ -23,6 +23,7 @@ import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -210,13 +211,27 @@ public class LeadPortalOpenAiImageClient {
     }
 
     private ImageResponse ensureSuccess(ImageResponse parsed, ClientResponse response) {
-        if (response.statusCode().isError()) {
+        HttpStatusCode status = response.statusCode();
+        if (status.isError()) {
             String errorMessage = parsed != null && parsed.error != null && parsed.error.message != null
                     ? parsed.error.message
-                    : "OpenAI image API returned status " + response.statusCode();
-            throw new RuntimeException(errorMessage);
+                    : "OpenAI image API returned status " + status;
+            throw new ImageGenerationException(status, errorMessage);
         }
         return parsed;
+    }
+
+    public static class ImageGenerationException extends RuntimeException {
+        private final HttpStatusCode status;
+
+        public ImageGenerationException(HttpStatusCode status, String message) {
+            super(message);
+            this.status = status;
+        }
+
+        public HttpStatusCode getStatus() {
+            return status;
+        }
     }
 
     private record ImageResponse(List<ImageData> data, ApiError error) {}

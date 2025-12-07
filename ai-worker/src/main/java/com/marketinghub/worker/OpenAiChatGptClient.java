@@ -112,6 +112,10 @@ public class OpenAiChatGptClient implements ChatGptClient {
                 if (!toolCalls.isEmpty()) {
                     OpenAiResponse.OpenAiToolCall toolCall = toolCalls.get(0);
                     String functionName = toolCall.function() != null ? toolCall.function().name() : null;
+                    if (log.isInfoEnabled()) {
+                        log.info("OpenAI requested tool '{}' for product {} with args {}", functionName, product.getId(),
+                                toolCall.function() != null ? toolCall.function().arguments() : null);
+                    }
                     if (!"search_web".equals(functionName)) {
                         log.warn("Ignoring unsupported tool {} for product {}", functionName, product.getId());
                         return product;
@@ -138,6 +142,10 @@ public class OpenAiChatGptClient implements ChatGptClient {
                     continue;
                 }
 
+                if (response.usage() != null) {
+                    log.info("OpenAI usage for product {}: {}", product.getId(), response.usage());
+                }
+
                 String content = response.firstText();
                 if (content == null || content.isBlank()) {
                     log.error("OpenAI returned empty content for product {}", product.getId());
@@ -152,7 +160,12 @@ public class OpenAiChatGptClient implements ChatGptClient {
                         response.usage());
 
                 content = stripCodeFence(content);
+                log.info("OpenAI textual content for product {}: {}", product.getId(), content);
                 JsonNode data = MAPPER.readTree(content);
+
+                if (log.isDebugEnabled()) {
+                    log.debug("Parsed OpenAI payload for product {}: {}", product.getId(), data);
+                }
 
                 product.setName(asText(data, "name"));
                 product.setExplicitPain(asText(data, "explicitPain"));
@@ -175,7 +188,7 @@ public class OpenAiChatGptClient implements ChatGptClient {
                 return product;
             }
         } catch (Exception e) {
-            log.error("Failed to call OpenAI API", e);
+            log.error("Failed to call OpenAI API for product {}", product != null ? product.getId() : "unknown", e);
             return product;
         }
     }

@@ -27,6 +27,7 @@ public class UpdateExperimentRequest {
     private Integer creativesToGenerate;
     private Integer instantFormsToGenerate;
     private Integer emailsToGenerate;
+    private Integer sampleEmailsToGenerate;
     private Integer deliverablesToGenerate;
     private Integer leadPortalFlowsToGenerate;
     private Boolean creativeApproved;

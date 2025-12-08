@@ -75,7 +75,13 @@ public class WatermarkRenderer {
         String text = properties.getText();
         int textWidth = metrics.stringWidth(text);
         int textHeight = metrics.getHeight();
-        int step = (int) (Math.max(textWidth, textHeight) * 1.5);
+
+        double spacingFactor = properties.getSpacingFactor();
+        spacingFactor = Math.max(0.2, Math.min(spacingFactor, 3.0));
+
+        int baseDimension = Math.max(textWidth, textHeight);
+        int minimumStep = Math.max((int) (fontSize * 0.6), 16);
+        int step = (int) Math.max(baseDimension * spacingFactor, minimumStep);
 
         for (int x = -width * 2; x < width * 2; x += step) {
             for (int y = -height * 2; y < height * 2; y += step) {

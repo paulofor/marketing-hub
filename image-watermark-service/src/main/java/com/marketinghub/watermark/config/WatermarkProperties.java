@@ -9,7 +9,7 @@ public class WatermarkProperties {
     private String text = "TESTE";
 
     /** Opacidade aplicada no texto da marca d'água (0.0 - 1.0). */
-    private double opacity = 0.18;
+    private double opacity = 0.28;
 
     /** Fonte utilizada para renderizar a marca d'água. */
     private String fontFamily = "SansSerif";

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CheckCircle,
+  DollarSign,
   Image as ImageIcon,
   Loader2,
   ShieldAlert,
@@ -13,6 +14,10 @@ import {
   type LeadPortalImagePackage,
 } from "../../api/leadPortal/useLeadPortalSubmissions";
 import { getStatusDetail, statusDetails } from "./statusDetails";
+import {
+  estimateImagePackageTotalPriceUsd,
+  estimateImagePackageUnitPriceUsd,
+} from "../../utils/imagePricing";
 import "./LeadPortalImagesPage.css";
 
 type StatusFilter = FlowSubmissionImagePackageStatus | "ALL";
@@ -31,18 +36,34 @@ function buildStatusNarrative(status: FlowSubmissionImagePackageStatus) {
   return getStatusDetail(status);
 }
 
-function formatUsd(value?: number | null, currency = "USD") {
+function formatUsd(
+  value?: number | null,
+  currency = "USD",
+  options?: { minimumFractionDigits?: number; maximumFractionDigits?: number },
+) {
   if (typeof value !== "number") {
     return null;
   }
+
+  const minimumFractionDigits = options?.minimumFractionDigits ?? 3;
+  const maximumFractionDigits =
+    options?.maximumFractionDigits && options.maximumFractionDigits >= minimumFractionDigits
+      ? options.maximumFractionDigits
+      : Math.max(minimumFractionDigits, options?.maximumFractionDigits ?? 4);
+
   try {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency,
-      minimumFractionDigits: 3,
+      minimumFractionDigits,
+      maximumFractionDigits,
     }).format(value);
   } catch {
-    return `$${value.toFixed(3)}`;
+    const digits = Math.max(
+      minimumFractionDigits,
+      Math.min(maximumFractionDigits, 6),
+    );
+    return `$${value.toFixed(digits)}`;
   }
 }
 
@@ -59,20 +80,29 @@ function buildStats(submission: LeadPortalImagePackage) {
   }
   stats.push({ label: "Geradas", value: String(submission.generatedImageCount) });
   stats.push({ label: "Prévias", value: String(submission.watermarkedImageCount) });
+
+  const estimatedUnitPriceUsd = estimateImagePackageUnitPriceUsd(submission);
   const unitCost = formatUsd(
-    submission.imageUnitPriceUsd,
+    estimatedUnitPriceUsd,
     submission.imageCurrency ?? "USD",
   );
   if (unitCost) {
     stats.push({ label: "Custo unitário", value: unitCost });
   }
+
   if (submission.imageModelName) {
     const label = submission.imageModelQualityName
       ? `${submission.imageModelName} · ${submission.imageModelQualityName}`
       : submission.imageModelName;
-    stats.push({ label: "Modelo", value: label });
+    stats.push({ label: "Modelo selecionado", value: label });
   }
-  const totalCost = formatUsd(submission.imageTotalPriceUsd, submission.imageCurrency ?? "USD");
+
+  const estimatedTotalCostUsd = estimateImagePackageTotalPriceUsd(submission);
+  const totalCost = formatUsd(
+    estimatedTotalCostUsd,
+    submission.imageCurrency ?? "USD",
+    { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+  );
   if (totalCost) {
     stats.push({ label: "Custo total", value: totalCost });
   }
@@ -113,6 +143,31 @@ export default function LeadPortalImagesPage() {
 
   const totalDisplayed = submissions.length;
 
+  const totalCostSnapshot = useMemo(() => {
+    return submissions.reduce<{
+      total: number;
+      count: number;
+    }>((acc, submission) => {
+      const total = estimateImagePackageTotalPriceUsd(submission);
+      if (typeof total === "number" && Number.isFinite(total)) {
+        acc.total += total;
+        acc.count += 1;
+      }
+      return acc;
+    }, {
+      total: 0,
+      count: 0,
+    });
+  }, [submissions]);
+
+  const formattedTotalCost =
+    totalCostSnapshot.count > 0
+      ? formatUsd(totalCostSnapshot.total, "USD", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }) ?? "--"
+      : "--";
+
   return (
     <div className="lead-portal-images">
       <header className="lead-portal-images__header">
@@ -126,13 +181,24 @@ export default function LeadPortalImagesPage() {
           </p>
         </div>
         <div className="lead-portal-images__actions">
-          <div className="lead-portal-images__highlight" aria-live="polite">
-            <div className="lead-portal-images__highlight-icon" aria-hidden="true">
-              <Sparkles size={18} />
+          <div className="lead-portal-images__metrics" aria-live="polite">
+            <div className="lead-portal-images__highlight">
+              <div className="lead-portal-images__highlight-icon" aria-hidden="true">
+                <Sparkles size={18} />
+              </div>
+              <div>
+                <p className="lead-portal-images__highlight-label">Pacotes exibidos</p>
+                <p className="lead-portal-images__highlight-value">{totalDisplayed}</p>
+              </div>
             </div>
-            <div>
-              <p className="lead-portal-images__highlight-label">Pacotes exibidos</p>
-              <p className="lead-portal-images__highlight-value">{totalDisplayed}</p>
+            <div className="lead-portal-images__highlight">
+              <div className="lead-portal-images__highlight-icon" aria-hidden="true">
+                <DollarSign size={18} />
+              </div>
+              <div>
+                <p className="lead-portal-images__highlight-label">Valor total gasto</p>
+                <p className="lead-portal-images__highlight-value">{formattedTotalCost}</p>
+              </div>
             </div>
           </div>
           <div className="lead-portal-images__filter">

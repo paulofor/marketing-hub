@@ -59,6 +59,13 @@ function buildStats(submission: LeadPortalImagePackage) {
   }
   stats.push({ label: "Geradas", value: String(submission.generatedImageCount) });
   stats.push({ label: "Prévias", value: String(submission.watermarkedImageCount) });
+  const unitCost = formatUsd(
+    submission.imageUnitPriceUsd,
+    submission.imageCurrency ?? "USD",
+  );
+  if (unitCost) {
+    stats.push({ label: "Custo unitário", value: unitCost });
+  }
   if (submission.imageModelName) {
     const label = submission.imageModelQualityName
       ? `${submission.imageModelName} · ${submission.imageModelQualityName}`

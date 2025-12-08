@@ -258,6 +258,17 @@ export default function LeadPortalImagePackageDetailModal({
                         <dt>Prévias com marca d'água</dt>
                         <dd>{data.watermarkedImageCount}</dd>
                       </div>
+                      {typeof data.imageUnitPriceUsd === "number" ? (
+                        <div>
+                          <dt>Custo unitário</dt>
+                          <dd>
+                            {formatUsd(
+                              data.imageUnitPriceUsd,
+                              data.imageCurrency ?? undefined,
+                            ) ?? "--"}
+                          </dd>
+                        </div>
+                      ) : null}
                       {typeof data.imageTotalPriceUsd === "number" ? (
                         <div>
                           <dt>Custo estimado</dt>

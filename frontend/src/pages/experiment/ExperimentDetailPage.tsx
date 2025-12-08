@@ -503,6 +503,12 @@ export default function ExperimentDetailPage() {
             />
           </Tabs.Content>
         ) : null}
+        <Tabs.Content value="sample-emails" asChild>
+          <SampleEmailsTab
+            experimentId={expId}
+            requestedSampleEmails={data.sampleEmailsToGenerate}
+          />
+        </Tabs.Content>
         <Tabs.Content value="lead-portal" asChild>
           <LeadPortalFlowTab experiment={data} />
         </Tabs.Content>

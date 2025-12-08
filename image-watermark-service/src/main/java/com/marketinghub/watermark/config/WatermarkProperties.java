@@ -20,6 +20,9 @@ public class WatermarkProperties {
     /** Quantidade máxima de pacotes processados por ciclo. */
     private int batchSize = 5;
 
+    /** Fator multiplicador para o espaçamento entre repetições do texto. */
+    private double spacingFactor = 0.85;
+
     public String getText() {
         return text;
     }
@@ -58,5 +61,13 @@ public class WatermarkProperties {
 
     public void setBatchSize(int batchSize) {
         this.batchSize = batchSize;
+    }
+
+    public double getSpacingFactor() {
+        return spacingFactor;
+    }
+
+    public void setSpacingFactor(double spacingFactor) {
+        this.spacingFactor = spacingFactor;
     }
 }

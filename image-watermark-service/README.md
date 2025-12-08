@@ -23,6 +23,7 @@ Parâmetros adicionais:
 - `WATERMARK_TEXT`: texto da marca d'água (default `MARKETING HUB DEMO`).
 - `WATERMARK_OPACITY`: opacidade do texto (default `0.18`).
 - `WATERMARK_OUTPUT_PREFIX`: diretório dentro do bucket (default `watermarks`).
+- `WATERMARK_SPACING_FACTOR`: fator multiplicador do espaçamento entre repetições do texto (default `0.85`). Valores menores deixam o texto mais denso.
 - `WATERMARK_SCHEDULER_DELAY`: intervalo entre verificações (ms, default `60000`).
 
 ## Execução local

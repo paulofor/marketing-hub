@@ -11,6 +11,7 @@ import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
 import CriativosTab from "./CriativosTab";
 import InstantFormsTab from "./InstantFormsTab";
 import EmailsTab from "./EmailsTab";
+import SampleEmailsTab from "./SampleEmailsTab";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import * as Tabs from "@radix-ui/react-tabs";
 import { useFacebookConfigurationStatus } from "../../api/useFacebookConfigurationStatus";
@@ -251,6 +252,7 @@ export default function ExperimentDetailPage() {
     },
     { label: "Criativos a gerar", value: data.creativesToGenerate ?? "—" },
     { label: "E-mails a gerar", value: data.emailsToGenerate ?? "—" },
+    { label: "E-mails de amostra a gerar", value: data.sampleEmailsToGenerate ?? "—" },
     {
       label: "Fluxo de portal do lead",
       value: data.leadPortalFlowName ? (
@@ -450,6 +452,9 @@ export default function ExperimentDetailPage() {
               E-mails
             </Tabs.Trigger>
           ) : null}
+          <Tabs.Trigger value="sample-emails" className="nav-link">
+            E-mails de amostra
+          </Tabs.Trigger>
           <Tabs.Trigger value="lead-portal" className="nav-link">
             Portal do Lead
           </Tabs.Trigger>

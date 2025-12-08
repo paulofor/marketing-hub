@@ -13,6 +13,7 @@ import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.imagegeneration.ImageGenerationModel;
 import com.marketinghub.imagegeneration.ImageGenerationQuality;
+import com.marketinghub.sampleemail.SampleEmail;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -129,6 +130,10 @@ public class Experiment {
     @Column(name = "emails_to_generate")
     private Integer emailsToGenerate;
 
+    /** Quantidade de e-mails de amostra a serem gerados pelo worker. */
+    @Column(name = "sample_emails_to_generate")
+    private Integer sampleEmailsToGenerate;
+
     /** Quantidade de definições de entregáveis a serem geradas pelo worker. */
     @Column(name = "deliverables_to_generate")
     private Integer deliverablesToGenerate;
@@ -147,6 +152,11 @@ public class Experiment {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private java.util.List<DeliverablePackage> deliverablePackages;
+
+    @OneToMany(mappedBy = "experiment")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private java.util.List<SampleEmail> sampleEmails;
 
     @PrePersist
     void applyMetricPreset() {

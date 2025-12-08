@@ -310,6 +310,7 @@ CREATE TABLE experiment (
     creatives_to_generate INT,
     instant_forms_to_generate INT,
     emails_to_generate INT,
+    sample_emails_to_generate INT,
     deliverables_to_generate INT,
     start_date DATE,
     end_date DATE,
@@ -326,6 +327,20 @@ CREATE TABLE experiment (
     CONSTRAINT fk_experiment_lead_portal_flow FOREIGN KEY (lead_portal_flow_id) REFERENCES lead_portal_flow(id),
     CONSTRAINT fk_experiment_image_model FOREIGN KEY (image_model_id) REFERENCES image_generation_model(id),
     CONSTRAINT fk_experiment_image_model_quality FOREIGN KEY (image_model_quality_id) REFERENCES image_generation_quality(id)
+);
+
+CREATE TABLE experiment_sample_email (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    experiment_id BIGINT NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    preview_text VARCHAR(255),
+    body LONGTEXT,
+    call_to_action VARCHAR(500),
+    model VARCHAR(128),
+    prompt LONGTEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_sample_email_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id)
 );
 
 CREATE TABLE audience (

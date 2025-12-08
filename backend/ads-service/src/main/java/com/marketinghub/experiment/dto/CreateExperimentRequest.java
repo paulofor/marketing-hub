@@ -31,6 +31,7 @@ public class CreateExperimentRequest {
     private Integer creativesToGenerate;
     private Integer instantFormsToGenerate;
     private Integer emailsToGenerate;
+    private Integer sampleEmailsToGenerate;
     private Integer deliverablesToGenerate;
     private Integer leadPortalFlowsToGenerate;
     private Long journeyTemplateId;

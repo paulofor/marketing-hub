@@ -65,6 +65,7 @@ export interface Experiment {
   creativesToGenerate?: number | null;
   instantFormsToGenerate?: number | null;
   emailsToGenerate?: number | null;
+  sampleEmailsToGenerate?: number | null;
   deliverablesToGenerate?: number | null;
   leadPortalFlowsToGenerate?: number | null;
   imageModelId?: number | null;

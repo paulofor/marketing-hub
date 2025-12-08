@@ -255,6 +255,7 @@ public class ExperimentService {
                 .creativesToGenerate(request.getCreativesToGenerate())
                 .instantFormsToGenerate(request.getInstantFormsToGenerate())
                 .emailsToGenerate(request.getEmailsToGenerate())
+                .sampleEmailsToGenerate(request.getSampleEmailsToGenerate())
                 .deliverablesToGenerate(request.getDeliverablesToGenerate())
                 .leadPortalFlowsToGenerate(request.getLeadPortalFlowsToGenerate())
                 .facebookPage(attachFacebookPage(request.getFacebookPageId()))
@@ -321,6 +322,7 @@ public class ExperimentService {
                 .creativesToGenerate(original.getCreativesToGenerate())
                 .instantFormsToGenerate(original.getInstantFormsToGenerate())
                 .emailsToGenerate(original.getEmailsToGenerate())
+                .sampleEmailsToGenerate(original.getSampleEmailsToGenerate())
                 .deliverablesToGenerate(original.getDeliverablesToGenerate())
                 .leadPortalFlowsToGenerate(original.getLeadPortalFlowsToGenerate())
                 .facebookPage(original.getFacebookPage())
@@ -415,6 +417,9 @@ public class ExperimentService {
         if (request.getEmailsToGenerate() != null) {
             exp.setEmailsToGenerate(request.getEmailsToGenerate());
         }
+        if (request.getSampleEmailsToGenerate() != null) {
+            exp.setSampleEmailsToGenerate(request.getSampleEmailsToGenerate());
+        }
         if (request.getDeliverablesToGenerate() != null) {
             exp.setDeliverablesToGenerate(request.getDeliverablesToGenerate());
         }
@@ -490,6 +495,16 @@ public class ExperimentService {
     public Experiment requestEmails(Long id, int quantity) {
         Experiment exp = repository.findById(id).orElseThrow();
         exp.setEmailsToGenerate(quantity);
+        return exp;
+    }
+
+    /**
+     * Requests generation of new sample emails by setting the pending quantity.
+     */
+    @Transactional
+    public Experiment requestSampleEmails(Long id, int quantity) {
+        Experiment exp = repository.findById(id).orElseThrow();
+        exp.setSampleEmailsToGenerate(quantity);
         return exp;
     }
 

@@ -254,6 +254,18 @@ class ExperimentControllerTest {
     }
 
     @Test
+    void requestSampleEmailsEndpointUpdatesQuantity() throws Exception {
+        var niche = nicheRepo.findById(nicheId).orElseThrow();
+        var exp = fixtures.createAndSaveExperiment(niche);
+        mockMvc.perform(
+                        patch("/api/experiments/" + exp.getId() + "/sample-emails-to-generate")
+                                .param("quantity", "2"))
+                .andExpect(status().isOk());
+        var updated = repository.findById(exp.getId()).orElseThrow();
+        assertThat(updated.getSampleEmailsToGenerate()).isEqualTo(2);
+    }
+
+    @Test
     void requestLeadPortalFlowsEndpointUpdatesQuantity() throws Exception {
         var niche = nicheRepo.findById(nicheId).orElseThrow();
         var exp = fixtures.createAndSaveExperiment(niche);

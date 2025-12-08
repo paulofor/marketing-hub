@@ -33,6 +33,18 @@ public class ExperimentGenerationRepository {
     }
 
     @Transactional(readOnly = true)
+    public List<Experiment> findAllToGenerateSampleEmails() {
+        TypedQuery<Experiment> query = entityManager.createQuery(
+                "select e from Experiment e " +
+                        "join fetch e.hypothesisRef " +
+                        "where e.sampleEmailsToGenerate is not null " +
+                        "and e.sampleEmailsToGenerate > 0",
+                Experiment.class
+        );
+        return query.getResultList();
+    }
+
+    @Transactional(readOnly = true)
     public List<Experiment> findAllToGenerateInstantForms() {
         TypedQuery<Experiment> query = entityManager.createQuery(
                 "select e from Experiment e " +

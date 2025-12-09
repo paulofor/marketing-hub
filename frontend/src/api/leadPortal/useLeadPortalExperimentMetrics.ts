@@ -14,6 +14,15 @@ export interface LeadPortalExperimentMetrics {
   leadsAccessed: number;
   leadsWithImage: number;
   uniqueLeads: LeadPortalExperimentLead[];
+  sampleEmailsGenerated: number;
+  selectedSampleEmailId?: number | null;
+  selectedSampleEmailSubject?: string | null;
+  selectedSampleEmailPreviewText?: string | null;
+  selectedSampleEmailCallToAction?: string | null;
+  selectedSampleEmailUpdatedAt?: string | null;
+  packagesWithWatermark: number;
+  packagesNotified: number;
+  lastPackageNotificationAt?: string | null;
 }
 
 export function useLeadPortalExperimentMetrics() {

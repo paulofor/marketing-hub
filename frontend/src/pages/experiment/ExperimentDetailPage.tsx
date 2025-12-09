@@ -101,6 +101,17 @@ export default function ExperimentDetailPage() {
         }).format(n)
       : "—";
   const formatPercent = (n?: number | null) => (n != null ? `${n}%` : "—");
+  const formatDateTimeValue = (value?: string | null) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+    return date.toLocaleString("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
+  };
   const baseKpi = data.kpiTarget ?? data.kpiTargetCpl;
   const stopLossFactor = preset?.stopLossFactor;
   const stopLossCpl =
@@ -203,6 +214,33 @@ export default function ExperimentDetailPage() {
     },
   ];
   const isReadyForFacebook = readinessChecks.every((c) => c.isMet);
+
+  const selectedEmailOverview = data.selectedSampleEmailSubject ? (
+    <div className="d-flex flex-column">
+      <span>{data.selectedSampleEmailSubject}</span>
+      {data.selectedSampleEmailUpdatedAt ? (
+        <span className="text-muted small">
+          Atualizado em {formatDateTimeValue(data.selectedSampleEmailUpdatedAt)}
+        </span>
+      ) : null}
+      <button
+        type="button"
+        className="btn btn-link btn-sm p-0 mt-1 align-self-start"
+        onClick={() => setTab("sample-emails")}
+      >
+        Ver e-mails
+      </button>
+    </div>
+  ) : (
+    <button
+      type="button"
+      className="btn btn-link btn-sm p-0"
+      onClick={() => setTab("sample-emails")}
+    >
+      Escolher e-mail
+    </button>
+  );
+
   const rows = [
     {
       label: "Nicho",
@@ -253,6 +291,10 @@ export default function ExperimentDetailPage() {
     { label: "Criativos a gerar", value: data.creativesToGenerate ?? "—" },
     { label: "E-mails a gerar", value: data.emailsToGenerate ?? "—" },
     { label: "E-mails de amostra a gerar", value: data.sampleEmailsToGenerate ?? "—" },
+    {
+      label: "E-mail de amostra selecionado",
+      value: selectedEmailOverview,
+    },
     {
       label: "Fluxo de portal do lead",
       value: data.leadPortalFlowName ? (
@@ -507,6 +549,9 @@ export default function ExperimentDetailPage() {
           <SampleEmailsTab
             experimentId={expId}
             requestedSampleEmails={data.sampleEmailsToGenerate}
+            selectedSampleEmailId={data.selectedSampleEmailId}
+            selectedSampleEmailSubject={data.selectedSampleEmailSubject}
+            selectedSampleEmailUpdatedAt={data.selectedSampleEmailUpdatedAt}
           />
         </Tabs.Content>
         <Tabs.Content value="lead-portal" asChild>

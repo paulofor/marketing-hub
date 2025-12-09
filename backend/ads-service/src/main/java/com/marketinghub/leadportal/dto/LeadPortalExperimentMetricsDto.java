@@ -1,5 +1,6 @@
 package com.marketinghub.leadportal.dto;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -10,5 +11,14 @@ public record LeadPortalExperimentMetricsDto(
         String experimentName,
         long leadsAccessed,
         long leadsWithImage,
-        List<LeadPortalExperimentUserDto> uniqueLeads) {
+        List<LeadPortalExperimentUserDto> uniqueLeads,
+        long sampleEmailsGenerated,
+        Long selectedSampleEmailId,
+        String selectedSampleEmailSubject,
+        String selectedSampleEmailPreviewText,
+        String selectedSampleEmailCallToAction,
+        Instant selectedSampleEmailUpdatedAt,
+        long packagesWithWatermark,
+        long packagesNotified,
+        Instant lastPackageNotificationAt) {
 }

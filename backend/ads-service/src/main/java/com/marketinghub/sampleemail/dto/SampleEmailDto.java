@@ -18,4 +18,5 @@ public class SampleEmailDto {
     private String prompt;
     private Instant createdAt;
     private Instant updatedAt;
+    private boolean selected;
 }

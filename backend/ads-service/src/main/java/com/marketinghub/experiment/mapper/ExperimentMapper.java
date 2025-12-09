@@ -26,6 +26,12 @@ public interface ExperimentMapper {
     @org.mapstruct.Mapping(target = "imageModelName", source = "imageGenerationModel.displayName")
     @org.mapstruct.Mapping(target = "imageModelQualityId", source = "imageGenerationQuality.id")
     @org.mapstruct.Mapping(target = "imageModelQualityName", source = "imageGenerationQuality.displayName")
+    @org.mapstruct.Mapping(target = "selectedSampleEmailId", source = "selectedSampleEmail.id")
+    @org.mapstruct.Mapping(target = "selectedSampleEmailSubject", source = "selectedSampleEmail.subject")
+    @org.mapstruct.Mapping(target = "selectedSampleEmailPreviewText", source = "selectedSampleEmail.previewText")
+    @org.mapstruct.Mapping(target = "selectedSampleEmailCallToAction", source = "selectedSampleEmail.callToAction")
+    @org.mapstruct.Mapping(target = "selectedSampleEmailModel", source = "selectedSampleEmail.model")
+    @org.mapstruct.Mapping(target = "selectedSampleEmailUpdatedAt", source = "selectedSampleEmail.updatedAt")
     ExperimentDto toDto(Experiment experiment);
 
     @org.mapstruct.Mapping(target = "accountId", source = "account.id")

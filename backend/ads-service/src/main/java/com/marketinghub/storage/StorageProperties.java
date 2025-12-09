@@ -11,22 +11,22 @@ import org.springframework.stereotype.Component;
 public class StorageProperties {
 
     /** Cloudflare R2 bucket name. */
-    private String bucket;
+    private String bucket = "";
 
     /** R2 endpoint (e.g. https://<account-id>.r2.cloudflarestorage.com). */
-    private String endpoint;
+    private String endpoint = "";
 
     /** Access key ID for the R2 bucket. */
-    private String accessKeyId;
+    private String accessKeyId = "";
 
     /** Secret access key for the R2 bucket. */
-    private String secretAccessKey;
+    private String secretAccessKey = "";
 
     /** Region understood by the S3 client. */
     private String region = "auto";
 
     /** Optional public base URL for serving files. */
-    private String publicBaseUrl;
+    private String publicBaseUrl = "";
 
     public String getBucket() {
         return bucket;

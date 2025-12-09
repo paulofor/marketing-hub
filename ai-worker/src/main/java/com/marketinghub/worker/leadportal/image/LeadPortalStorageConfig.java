@@ -1,6 +1,7 @@
 package com.marketinghub.worker.leadportal.image;
 
 import java.net.URI;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -14,6 +15,7 @@ import software.amazon.awssdk.services.s3.S3Configuration;
 public class LeadPortalStorageConfig {
 
     @Bean
+    @ConditionalOnMissingBean(name = "leadPortalS3Client")
     public S3Client leadPortalS3Client(LeadPortalStorageProperties properties) {
         AwsBasicCredentials credentials =
                 AwsBasicCredentials.create(properties.getAccessKeyId(), properties.getSecretAccessKey());

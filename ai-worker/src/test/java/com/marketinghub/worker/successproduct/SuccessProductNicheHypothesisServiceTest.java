@@ -17,7 +17,19 @@ import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+        "spring.datasource.url=jdbc:h2:mem:aiworker;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+        "spring.datasource.driver-class-name=org.h2.Driver",
+        "spring.jpa.hibernate.ddl-auto=create-drop",
+        "spring.liquibase.enabled=false",
+        "lead-portal.storage.bucket=test-bucket",
+        "lead-portal.storage.endpoint=http://localhost:9000",
+        "lead-portal.storage.public-base-url=http://localhost:9000/test-bucket",
+        "lead-portal.storage.access-key-id=test-access-key",
+        "lead-portal.storage.secret-access-key=test-secret-key",
+        "lead-portal.storage.region=us-east-1",
+        "openai.api-key=test-key"
+})
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @Import(TestServiceMocksConfig.class)

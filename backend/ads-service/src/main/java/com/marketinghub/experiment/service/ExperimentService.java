@@ -20,6 +20,7 @@ import com.marketinghub.imagegeneration.ImageGenerationModel;
 import com.marketinghub.imagegeneration.ImageGenerationQuality;
 import com.marketinghub.imagegeneration.repository.ImageGenerationModelRepository;
 import com.marketinghub.imagegeneration.repository.ImageGenerationQualityRepository;
+import com.marketinghub.sampleemail.SampleEmail;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -45,6 +46,7 @@ public class ExperimentService {
     private final LeadPortalFlowRepository leadPortalFlowRepository;
     private final ImageGenerationModelRepository imageGenerationModelRepository;
     private final ImageGenerationQualityRepository imageGenerationQualityRepository;
+    private final com.marketinghub.sampleemail.repository.SampleEmailRepository sampleEmailRepository;
 
     public ExperimentService(ExperimentRepository repository, MarketNicheRepository nicheRepository,
                              com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository,
@@ -56,7 +58,8 @@ public class ExperimentService {
                              FacebookInstantFormRepository facebookInstantFormRepository,
                              LeadPortalFlowRepository leadPortalFlowRepository,
                              ImageGenerationModelRepository imageGenerationModelRepository,
-                             ImageGenerationQualityRepository imageGenerationQualityRepository) {
+                             ImageGenerationQualityRepository imageGenerationQualityRepository,
+                             com.marketinghub.sampleemail.repository.SampleEmailRepository sampleEmailRepository) {
         this.repository = repository;
         this.nicheRepository = nicheRepository;
         this.hypothesisRepository = hypothesisRepository;
@@ -69,6 +72,7 @@ public class ExperimentService {
         this.leadPortalFlowRepository = leadPortalFlowRepository;
         this.imageGenerationModelRepository = imageGenerationModelRepository;
         this.imageGenerationQualityRepository = imageGenerationQualityRepository;
+        this.sampleEmailRepository = sampleEmailRepository;
     }
 
     /**
@@ -505,6 +509,29 @@ public class ExperimentService {
     public Experiment requestSampleEmails(Long id, int quantity) {
         Experiment exp = repository.findById(id).orElseThrow();
         exp.setSampleEmailsToGenerate(quantity);
+        return exp;
+    }
+    /**
+     * Defines which generated sample email should be linked to the experiment.
+     */
+    @Transactional
+    public Experiment updateSelectedSampleEmail(Long id, Long sampleEmailId) {
+        Experiment exp = repository.findById(id).orElseThrow();
+        if (sampleEmailId == null) {
+            exp.setSelectedSampleEmail(null);
+            return exp;
+        }
+
+        SampleEmail email = sampleEmailRepository
+                .findById(sampleEmailId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sample email not found"));
+
+        if (email.getExperiment() == null || !email.getExperiment().getId().equals(id)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Sample email does not belong to experiment");
+        }
+
+        exp.setSelectedSampleEmail(email);
         return exp;
     }
 

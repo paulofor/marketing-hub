@@ -82,6 +82,12 @@ export interface Experiment {
   leadPortalFlowId?: number | null;
   leadPortalFlowName?: string | null;
   leadPortalFlowSlug?: string | null;
+  selectedSampleEmailId?: number | null;
+  selectedSampleEmailSubject?: string | null;
+  selectedSampleEmailPreviewText?: string | null;
+  selectedSampleEmailCallToAction?: string | null;
+  selectedSampleEmailModel?: string | null;
+  selectedSampleEmailUpdatedAt?: string | null;
 }
 
 export function useExperiments() {

@@ -158,6 +158,12 @@ public class Experiment {
     @EqualsAndHashCode.Exclude
     private java.util.List<SampleEmail> sampleEmails;
 
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "selected_sample_email_id")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private SampleEmail selectedSampleEmail;
     @PrePersist
     void applyMetricPreset() {
         if (metricPreset != null) {

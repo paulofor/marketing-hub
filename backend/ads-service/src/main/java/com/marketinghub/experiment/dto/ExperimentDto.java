@@ -55,4 +55,10 @@ public class ExperimentDto {
     private Long leadPortalFlowId;
     private String leadPortalFlowName;
     private String leadPortalFlowSlug;
+    private Long selectedSampleEmailId;
+    private String selectedSampleEmailSubject;
+    private String selectedSampleEmailPreviewText;
+    private String selectedSampleEmailCallToAction;
+    private String selectedSampleEmailModel;
+    private Instant selectedSampleEmailUpdatedAt;
 }

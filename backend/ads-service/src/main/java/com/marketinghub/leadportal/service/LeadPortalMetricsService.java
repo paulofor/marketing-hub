@@ -3,6 +3,7 @@ package com.marketinghub.leadportal.service;
 import com.marketinghub.leadportal.dto.LeadPortalExperimentMetricsDto;
 import com.marketinghub.leadportal.dto.LeadPortalExperimentUserDto;
 import java.sql.ResultSet;
+import java.time.Instant;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -31,6 +32,8 @@ public class LeadPortalMetricsService {
 
         populateAccessCounts(experiments);
         populateSubmissionMetrics(experiments);
+        populateSampleEmailMetrics(experiments);
+        populatePackageMetrics(experiments);
 
         return experiments.values().stream().map(ExperimentMetricsAccumulator::toDto).toList();
     }
@@ -126,6 +129,77 @@ public class LeadPortalMetricsService {
         });
     }
 
+    private void populateSampleEmailMetrics(Map<Long, ExperimentMetricsAccumulator> experiments) {
+        String sql = """
+                SELECT exp.id AS experiment_id,
+                       exp.name AS experiment_name,
+                       COUNT(sample.id) AS sample_count,
+                       sel.id AS selected_id,
+                       sel.subject AS selected_subject,
+                       sel.preview_text AS selected_preview,
+                       sel.call_to_action AS selected_cta,
+                       sel.updated_at AS selected_updated_at
+                FROM experiment exp
+                LEFT JOIN experiment_sample_email sample ON sample.experiment_id = exp.id
+                LEFT JOIN experiment_sample_email sel ON sel.id = exp.selected_sample_email_id
+                GROUP BY exp.id, exp.name, sel.id, sel.subject, sel.preview_text, sel.call_to_action, sel.updated_at
+                """;
+
+        jdbcTemplate.query(sql, rs -> {
+            Long experimentId = rs.getLong("experiment_id");
+            String experimentName = getString(rs, "experiment_name");
+            ExperimentMetricsAccumulator accumulator = experiments.computeIfAbsent(
+                    experimentId, id -> new ExperimentMetricsAccumulator(id, experimentName));
+
+            accumulator.setSampleEmailCount(rs.getLong("sample_count"));
+            Long selectedId = getLong(rs, "selected_id");
+            accumulator.setSelectedSampleEmail(
+                    selectedId,
+                    getString(rs, "selected_subject"),
+                    getString(rs, "selected_preview"),
+                    getString(rs, "selected_cta"),
+                    getInstant(rs, "selected_updated_at"));
+        });
+    }
+
+    private void populatePackageMetrics(Map<Long, ExperimentMetricsAccumulator> experiments) {
+        String sql = """
+                SELECT exp.id AS experiment_id,
+                       exp.name AS experiment_name,
+                       SUM(CASE WHEN items.item_count IS NOT NULL AND items.item_count > 0
+                                AND watermarks.watermark_count >= items.item_count THEN 1 ELSE 0 END) AS packages_with_watermark,
+                       SUM(CASE WHEN pack.notified_at IS NOT NULL THEN 1 ELSE 0 END) AS packages_notified,
+                       MAX(pack.notified_at) AS last_notified_at
+                FROM experiment exp
+                LEFT JOIN lead_portal_flow flow ON flow.id = exp.lead_portal_flow_id
+                LEFT JOIN flow_submissions sub ON sub.flow_slug = flow.slug
+                LEFT JOIN flow_submission_image_package pack ON pack.submission_id = sub.id
+                LEFT JOIN (
+                    SELECT item.package_id, COUNT(*) AS item_count
+                    FROM flow_submission_image_item item
+                    GROUP BY item.package_id
+                ) items ON items.package_id = pack.id
+                LEFT JOIN (
+                    SELECT item.package_id, COUNT(wm.id) AS watermark_count
+                    FROM flow_submission_image_item item
+                    LEFT JOIN flow_submission_image_watermark wm ON wm.item_id = item.id
+                    GROUP BY item.package_id
+                ) watermarks ON watermarks.package_id = pack.id
+                GROUP BY exp.id, exp.name
+                """;
+
+        jdbcTemplate.query(sql, rs -> {
+            Long experimentId = rs.getLong("experiment_id");
+            String experimentName = getString(rs, "experiment_name");
+            ExperimentMetricsAccumulator accumulator = experiments.computeIfAbsent(
+                    experimentId, id -> new ExperimentMetricsAccumulator(id, experimentName));
+
+            accumulator.setPackagesWithWatermark(getLong(rs, "packages_with_watermark", 0L));
+            accumulator.setPackagesNotified(getLong(rs, "packages_notified", 0L));
+            accumulator.updateLastPackageNotificationAt(getInstant(rs, "last_notified_at"));
+        });
+    }
+
     private String buildUserKey(ResultSet rs, String submissionId) {
         try {
             byte[] leadIdBytes = rs.getBytes("lead_id");
@@ -188,6 +262,33 @@ public class LeadPortalMetricsService {
         }
     }
 
+    private Long getLong(ResultSet rs, String columnLabel) {
+        try {
+            long value = rs.getLong(columnLabel);
+            return rs.wasNull() ? null : value;
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Erro ao ler métricas do portal do lead", ex);
+        }
+    }
+
+    private long getLong(ResultSet rs, String columnLabel, long defaultValue) {
+        try {
+            long value = rs.getLong(columnLabel);
+            return rs.wasNull() ? defaultValue : value;
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Erro ao ler métricas do portal do lead", ex);
+        }
+    }
+
+    private java.time.Instant getInstant(ResultSet rs, String columnLabel) {
+        try {
+            java.sql.Timestamp ts = rs.getTimestamp(columnLabel);
+            return ts != null ? ts.toInstant() : null;
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Erro ao ler métricas do portal do lead", ex);
+        }
+    }
+
     private static String coalesce(String primary, String fallback) {
         return primary != null ? primary : fallback;
     }
@@ -198,6 +299,15 @@ public class LeadPortalMetricsService {
         private final String experimentName;
         private long leadsAccessed;
         private final Map<String, LeadPortalExperimentUserDto> uniqueUsers = new LinkedHashMap<>();
+        private long sampleEmailCount;
+        private Long selectedSampleEmailId;
+        private String selectedSampleEmailSubject;
+        private String selectedSampleEmailPreviewText;
+        private String selectedSampleEmailCallToAction;
+        private Instant selectedSampleEmailUpdatedAt;
+        private long packagesWithWatermark;
+        private long packagesNotified;
+        private Instant lastPackageNotificationAt;
 
         ExperimentMetricsAccumulator(long experimentId, String experimentName) {
             this.experimentId = experimentId;
@@ -206,6 +316,32 @@ public class LeadPortalMetricsService {
 
         void setLeadsAccessed(long leadsAccessed) {
             this.leadsAccessed = leadsAccessed;
+        }
+
+        void setSampleEmailCount(long sampleEmailCount) {
+            this.sampleEmailCount = sampleEmailCount;
+        }
+
+        void setSelectedSampleEmail(Long id, String subject, String preview, String cta, Instant updatedAt) {
+            this.selectedSampleEmailId = id;
+            this.selectedSampleEmailSubject = subject;
+            this.selectedSampleEmailPreviewText = preview;
+            this.selectedSampleEmailCallToAction = cta;
+            this.selectedSampleEmailUpdatedAt = updatedAt;
+        }
+
+        void setPackagesWithWatermark(long packagesWithWatermark) {
+            this.packagesWithWatermark = packagesWithWatermark;
+        }
+
+        void setPackagesNotified(long packagesNotified) {
+            this.packagesNotified = packagesNotified;
+        }
+
+        void updateLastPackageNotificationAt(Instant instant) {
+            if (instant != null && (this.lastPackageNotificationAt == null || this.lastPackageNotificationAt.isBefore(instant))) {
+                this.lastPackageNotificationAt = instant;
+            }
         }
 
         void addUser(String userKey, LeadPortalExperimentUserDto user) {
@@ -225,7 +361,16 @@ public class LeadPortalMetricsService {
                     experimentName,
                     leadsAccessed,
                     leadsWithImage,
-                    leads);
+                    leads,
+                    sampleEmailCount,
+                    selectedSampleEmailId,
+                    selectedSampleEmailSubject,
+                    selectedSampleEmailPreviewText,
+                    selectedSampleEmailCallToAction,
+                    selectedSampleEmailUpdatedAt,
+                    packagesWithWatermark,
+                    packagesNotified,
+                    lastPackageNotificationAt);
         }
     }
 }

@@ -54,6 +54,18 @@ public class FlowSubmissionImagePackageEntity {
     @Column(name = "updated_at", insertable = false, updatable = false)
     private Instant updatedAt;
 
+    @Column(name = "notified_at")
+    private Instant notifiedAt;
+
+    @Column(name = "notification_attempts", nullable = false)
+    private int notificationAttempts = 0;
+
+    @Column(name = "notification_last_attempt")
+    private Instant notificationLastAttempt;
+
+    @Column(name = "notification_last_error", columnDefinition = "TEXT")
+    private String notificationLastError;
+
     public Long getId() {
         return id;
     }
@@ -112,5 +124,38 @@ public class FlowSubmissionImagePackageEntity {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+
+    public Instant getNotifiedAt() {
+        return notifiedAt;
+    }
+
+    public void setNotifiedAt(Instant notifiedAt) {
+        this.notifiedAt = notifiedAt;
+    }
+
+    public int getNotificationAttempts() {
+        return notificationAttempts;
+    }
+
+    public void setNotificationAttempts(int notificationAttempts) {
+        this.notificationAttempts = notificationAttempts;
+    }
+
+    public Instant getNotificationLastAttempt() {
+        return notificationLastAttempt;
+    }
+
+    public void setNotificationLastAttempt(Instant notificationLastAttempt) {
+        this.notificationLastAttempt = notificationLastAttempt;
+    }
+
+    public String getNotificationLastError() {
+        return notificationLastError;
+    }
+
+    public void setNotificationLastError(String notificationLastError) {
+        this.notificationLastError = notificationLastError;
     }
 }

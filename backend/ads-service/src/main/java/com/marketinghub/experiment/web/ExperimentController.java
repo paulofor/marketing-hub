@@ -3,6 +3,7 @@ package com.marketinghub.experiment.web;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.ExperimentDto;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
+import com.marketinghub.experiment.dto.UpdateSelectedSampleEmailRequest;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
 import com.marketinghub.experiment.service.ExperimentService;
 import org.springframework.web.bind.annotation.*;
@@ -79,6 +80,12 @@ public class ExperimentController {
     @PatchMapping("/{id}/sample-emails-to-generate")
     public ExperimentDto requestSampleEmails(@PathVariable Long id, @RequestParam("quantity") int quantity) {
         return mapper.toDto(service.requestSampleEmails(id, quantity));
+    }
+    @PutMapping("/{id}/selected-sample-email")
+    public ExperimentDto updateSelectedSampleEmail(
+            @PathVariable Long id,
+            @RequestBody UpdateSelectedSampleEmailRequest request) {
+        return mapper.toDto(service.updateSelectedSampleEmail(id, request.sampleEmailId()));
     }
 
     @PatchMapping("/{id}/deliverables-to-generate")

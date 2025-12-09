@@ -2,11 +2,15 @@ import { useMemo, useState } from "react";
 import WorkerRequestBanner from "./WorkerRequestBanner";
 import { useSampleEmails } from "../../api/sampleEmail/useSampleEmails";
 import { useRequestSampleEmails } from "../../api/sampleEmail/useRequestSampleEmails";
+import { useSelectSampleEmail } from "../../api/sampleEmail/useSelectSampleEmail";
 import type { SampleEmail } from "../../api/sampleEmail/types";
 
 interface SampleEmailsTabProps {
   experimentId: string;
   requestedSampleEmails?: number | null;
+  selectedSampleEmailId?: number | null;
+  selectedSampleEmailSubject?: string | null;
+  selectedSampleEmailUpdatedAt?: string | null;
 }
 
 function formatDateTime(value?: string | null) {
@@ -63,9 +67,13 @@ function buildClipboardContent(email: SampleEmail) {
 export default function SampleEmailsTab({
   experimentId,
   requestedSampleEmails,
+  selectedSampleEmailId,
+  selectedSampleEmailSubject,
+  selectedSampleEmailUpdatedAt,
 }: SampleEmailsTabProps) {
   const { data: emails, isLoading, isError } = useSampleEmails(experimentId);
   const requestSampleEmails = useRequestSampleEmails(experimentId);
+  const selectSampleEmail = useSelectSampleEmail(experimentId);
   const [copiedEmailId, setCopiedEmailId] = useState<number | null>(null);
 
   const existingCount = emails?.length ?? 0;
@@ -75,6 +83,17 @@ export default function SampleEmailsTab({
     }
     return Math.max(1, existingCount || 1);
   }, [existingCount, requestedSampleEmails]);
+
+  const selectedEmailFromList = useMemo(
+    () => emails?.find((item) => item.selected) ?? null,
+    [emails],
+  );
+
+  const currentSelectedId = selectedEmailFromList?.id ?? selectedSampleEmailId ?? null;
+  const currentSelectedSubject =
+    selectedEmailFromList?.subject ?? selectedSampleEmailSubject ?? null;
+  const currentSelectedUpdatedAt =
+    selectedEmailFromList?.updatedAt ?? selectedSampleEmailUpdatedAt ?? null;
 
   const handleCopy = async (email: SampleEmail) => {
     if (typeof navigator === "undefined" || !navigator.clipboard) {
@@ -103,6 +122,24 @@ export default function SampleEmailsTab({
     }
   };
 
+  const handleSelectEmail = async (emailId: number) => {
+    try {
+      await selectSampleEmail.mutateAsync(emailId);
+    } catch (error) {
+      console.error("Não foi possível registrar o e-mail selecionado", error);
+    }
+  };
+
+  const handleClearSelection = async () => {
+    try {
+      await selectSampleEmail.mutateAsync(null);
+    } catch (error) {
+      console.error("Não foi possível remover a seleção do e-mail", error);
+    }
+  };
+
+  const isMutatingSelection = selectSampleEmail.isPending;
+
   return (
     <div className="mt-3">
       <WorkerRequestBanner
@@ -119,6 +156,41 @@ export default function SampleEmailsTab({
         onRequest={(quantity) => requestSampleEmails.mutateAsync(quantity)}
         isRequesting={requestSampleEmails.isPending}
       />
+
+      <section className="card mt-4">
+        <div className="card-body d-flex flex-column flex-lg-row justify-content-between gap-3">
+          <div>
+            <h5 className="mb-1">E-mail selecionado para o experimento</h5>
+            {currentSelectedId ? (
+              <>
+                <p className="mb-1 fw-semibold">{currentSelectedSubject}</p>
+                {currentSelectedUpdatedAt ? (
+                  <p className="text-muted small mb-0">
+                    Atualizado em {formatDateTime(currentSelectedUpdatedAt)}
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <p className="text-muted mb-0">
+                Ainda não há um e-mail escolhido. Selecione abaixo qual modelo será utilizado ao
+                enviar as imagens com marca d'água para o lead.
+              </p>
+            )}
+          </div>
+          <div className="d-flex gap-2 align-items-start">
+            {currentSelectedId ? (
+              <button
+                type="button"
+                className="btn btn-outline-danger"
+                onClick={handleClearSelection}
+                disabled={isMutatingSelection}
+              >
+                {isMutatingSelection ? "Atualizando..." : "Remover seleção"}
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </section>
 
       <section className="card mt-4">
         <div className="card-body">
@@ -145,54 +217,70 @@ export default function SampleEmailsTab({
 
           {!isLoading && !isError && existingCount > 0 ? (
             <div className="d-flex flex-column gap-4">
-              {emails?.map((email) => (
-                <article key={email.id} className="border rounded-3 p-3">
-                  <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
-                    <div>
-                      <h6 className="mb-1">{email.subject}</h6>
-                      {email.previewText ? (
-                        <p className="text-muted mb-0">Prévia: {email.previewText}</p>
-                      ) : null}
-                    </div>
-                    <div className="text-muted small text-md-end">
-                      <div>Gerado em {formatDateTime(email.createdAt)}</div>
-                      {email.model ? <div>Modelo: {email.model}</div> : null}
-                    </div>
-                  </div>
-
-                  <hr />
-                  <div className="d-flex flex-column gap-3">
-                    <div>
-                      <span className="fw-semibold d-block mb-1">Corpo do e-mail</span>
-                      {renderBody(email.body)}
-                    </div>
-                    {email.callToAction ? (
-                      <div>
-                        <span className="fw-semibold d-block mb-1">CTA sugerido</span>
-                        <p className="mb-0">{email.callToAction}</p>
+              {emails?.map((email) => {
+                const isSelected = email.selected || email.id === currentSelectedId;
+                const articleClass = `border rounded-3 p-3 ${isSelected ? "border-success" : "border-light"}`;
+                return (
+                  <article key={email.id} className={articleClass}>
+                    <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
+                      <div className="d-flex flex-column gap-1">
+                        <h6 className="mb-0">{email.subject}</h6>
+                        {email.previewText ? (
+                          <p className="text-muted mb-0">Prévia: {email.previewText}</p>
+                        ) : null}
                       </div>
-                    ) : null}
-                    <div className="d-flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        className="btn btn-outline-secondary btn-sm"
-                        onClick={() => handleCopy(email)}
-                      >
-                        {copiedEmailId === email.id ? "Copiado!" : "Copiar conteúdo"}
-                      </button>
-                      {email.prompt ? (
+                      <div className="text-muted small text-md-end">
+                        <div>Gerado em {formatDateTime(email.createdAt)}</div>
+                        {email.model ? <div>Modelo: {email.model}</div> : null}
+                      </div>
+                    </div>
+
+                    <hr />
+                    <div className="d-flex flex-column gap-3">
+                      <div>
+                        <span className="fw-semibold d-block mb-1">Corpo do e-mail</span>
+                        {renderBody(email.body)}
+                      </div>
+                      {email.callToAction ? (
+                        <div>
+                          <span className="fw-semibold d-block mb-1">CTA sugerido</span>
+                          <p className="mb-0">{email.callToAction}</p>
+                        </div>
+                      ) : null}
+                      <div className="d-flex flex-wrap gap-2 align-items-center">
+                        {isSelected ? (
+                          <span className="badge text-bg-success">Selecionado</span>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn btn-outline-primary btn-sm"
+                            onClick={() => handleSelectEmail(email.id)}
+                            disabled={isMutatingSelection}
+                          >
+                            {isMutatingSelection ? "Atualizando..." : "Selecionar este e-mail"}
+                          </button>
+                        )}
                         <button
                           type="button"
-                          className="btn btn-link btn-sm"
-                          onClick={() => handleCopyPrompt(email.prompt)}
+                          className="btn btn-outline-secondary btn-sm"
+                          onClick={() => handleCopy(email)}
                         >
-                          Copiar prompt
+                          {copiedEmailId === email.id ? "Copiado!" : "Copiar conteúdo"}
                         </button>
-                      ) : null}
+                        {email.prompt ? (
+                          <button
+                            type="button"
+                            className="btn btn-link btn-sm"
+                            onClick={() => handleCopyPrompt(email.prompt)}
+                          >
+                            Copiar prompt
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           ) : null}
         </div>

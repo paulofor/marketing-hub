@@ -12,5 +12,6 @@ import org.mapstruct.Mapping;
 public interface SampleEmailMapper {
 
     @Mapping(target = "experimentId", source = "experiment.id")
+    @Mapping(target = "selected", expression = "java(email.getExperiment() != null && email.getExperiment().getSelectedSampleEmail() != null && email.getExperiment().getSelectedSampleEmail().getId() != null && email.getExperiment().getSelectedSampleEmail().getId().equals(email.getId()))")
     SampleEmailDto toDto(SampleEmail email);
 }

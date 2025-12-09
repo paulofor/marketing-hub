@@ -9,4 +9,5 @@ export interface SampleEmail {
   prompt?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  selected: boolean;
 }

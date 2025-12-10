@@ -52,6 +52,21 @@ inicialização (montado como `/run/secrets/openai_api_key`), dispensando o
 `export` manual da variável. Caso queira sobrescrever o segredo, defina
 `OPENAI_API_KEY` antes do `docker compose up`.
 
+## Email Service
+
+O novo microserviço responsável por renderizar templates do Marketing Hub e
+disparar e-mails utilizando SMTP pode ser construído e executado via Docker
+Compose:
+
+```bash
+docker compose build email-service
+docker compose --env-file .env up -d email-service
+```
+
+O serviço será exposto em `http://localhost:8085` (configurável) e disponibiliza
+Swagger UI em `/swagger-ui.html`. Ajuste as variáveis de ambiente relacionadas a
+SMTP, Marketing Hub e Cloudflare no `.env` antes de subir o container.
+
 To run the Media Hub locally:
 
 ```bash

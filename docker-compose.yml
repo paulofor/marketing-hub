@@ -24,8 +24,8 @@ services:
 
   email-service:
     build:
-      context: .
-      dockerfile: backend/email-service/Dockerfile
+      context: ./email-service
+      dockerfile: Dockerfile
     image: marketinghub/email-service:latest
     restart: unless-stopped
     environment:

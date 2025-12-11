@@ -1,0 +1,4 @@
+services:
+  email-service:
+    image: ${EMAIL_SERVICE_IMAGE}
+    build: null

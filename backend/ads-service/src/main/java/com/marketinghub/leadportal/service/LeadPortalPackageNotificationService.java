@@ -15,13 +15,16 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.HtmlUtils;
@@ -41,7 +44,7 @@ public class LeadPortalPackageNotificationService {
     private final FileStorageService fileStorageService;
     private final LeadPortalEmailSender emailSender;
 
-    @Value("${lead-portal.notifications.enabled:true}")
+    @Value("${lead-portal.notifications.enabled:false}")
     private boolean notificationsEnabled;
 
     @Value("${lead-portal.notifications.max-attempts:5}")
@@ -49,6 +52,9 @@ public class LeadPortalPackageNotificationService {
 
     @Value("${lead-portal.notifications.batch-size:3}")
     private int batchSize;
+
+    @Value("${lead-portal.notifications.lock-seconds:300}")
+    private int lockSeconds;
 
     public LeadPortalPackageNotificationService(
             JdbcTemplate jdbcTemplate,
@@ -73,12 +79,84 @@ public class LeadPortalPackageNotificationService {
         }
         List<PendingPackage> packages = findPendingPackages(batchSize);
         for (PendingPackage pending : packages) {
+            if (!lockPackage(pending.packageId())) {
+                continue;
+            }
             try {
                 processPackage(pending);
             } catch (Exception ex) {
                 log.error("Failed to dispatch lead portal package {}", pending.packageId(), ex);
                 recordFailure(pending.packageId(), ex.getMessage());
             }
+        }
+    }
+
+    public java.util.List<LeadPortalImagePackageExportItem> exportReadyPackages(int limit) {
+        java.util.List<PendingPackage> packages = findPendingPackages(limit <= 0 ? batchSize : limit);
+        java.util.List<LeadPortalImagePackageExportItem> exports = new java.util.ArrayList<>();
+        for (PendingPackage pending : packages) {
+            if (!lockPackage(pending.packageId())) {
+                continue;
+            }
+            try {
+                exports.add(buildExportItem(pending));
+            } catch (Exception ex) {
+                log.error("Failed to prepare export for lead portal package {}", pending.packageId(), ex);
+                recordFailure(pending.packageId(), ex.getMessage());
+            }
+        }
+        return exports;
+    }
+
+    private LeadPortalImagePackageExportItem buildExportItem(PendingPackage pending) throws IOException {
+        List<WatermarkedAsset> assets = fetchWatermarkedAssets(pending.packageId());
+        if (assets.isEmpty()) {
+            throw new IllegalStateException("No watermarked assets found for package " + pending.packageId());
+        }
+        byte[] zipBytes = buildZipArchive(assets);
+        EmailContent content = buildEmailContent(pending, assets.size());
+        return new LeadPortalImagePackageExportItem(
+                pending.packageId(),
+                pending.submissionId(),
+                pending.submissionName(),
+                pending.submissionEmail(),
+                pending.status(),
+                pending.experimentId(),
+                pending.experimentName(),
+                pending.sampleSubject(),
+                pending.samplePreview(),
+                pending.sampleBody(),
+                pending.sampleCallToAction(),
+                pending.sampleModel(),
+                pending.samplePrompt(),
+                pending.sampleUpdatedAt(),
+                pending.notificationAttempts(),
+                pending.lastAttempt(),
+                zipBytes,
+                content.attachmentName(),
+                assets.size(),
+                content.subject(),
+                content.plain(),
+                content.html());
+    }
+
+    private boolean lockPackage(long packageId) {
+        int updated = jdbcTemplate.update(
+                "UPDATE flow_submission_image_package SET notification_last_attempt = ?, notification_last_error = NULL WHERE id = ? "
+                        + "AND (notification_last_attempt IS NULL OR notification_last_attempt < TIMESTAMPADD(SECOND, -?, UTC_TIMESTAMP()))",
+                Timestamp.from(Instant.now()),
+                packageId,
+                lockSeconds);
+        return updated > 0;
+    }
+
+    public void acknowledgePackage(long packageId, boolean success, String errorMessage) {
+        if (success) {
+            FlowSubmissionImagePackageStatus current = findStatus(packageId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pacote de imagem não encontrado"));
+            markAsNotified(packageId, current);
+        } else {
+            recordFailure(packageId, errorMessage != null ? errorMessage : "Falha desconhecida");
         }
     }
 
@@ -109,6 +187,8 @@ public class LeadPortalPackageNotificationService {
                 WHERE exp.selected_sample_email_id IS NOT NULL
                   AND sub.email IS NOT NULL AND sub.email <> ''
                   AND pack.notified_at IS NULL
+                  AND (pack.notification_last_attempt IS NULL
+                       OR pack.notification_last_attempt < TIMESTAMPADD(SECOND, -?, UTC_TIMESTAMP()))
                   AND pack.notification_attempts < ?
                   AND pack.status <> 'FAILED'
                   AND (
@@ -125,7 +205,7 @@ public class LeadPortalPackageNotificationService {
                 LIMIT ?
                 """;
 
-        return jdbcTemplate.query(sql, (rs, rowNum) -> mapPendingPackage(rs), maxAttempts, limit);
+        return jdbcTemplate.query(sql, (rs, rowNum) -> mapPendingPackage(rs), maxAttempts, lockSeconds, limit);
     }
 
     private PendingPackage mapPendingPackage(ResultSet rs) throws SQLException {
@@ -286,6 +366,27 @@ public class LeadPortalPackageNotificationService {
                 Timestamp.from(Instant.now()),
                 truncated,
                 packageId);
+    }
+
+
+    private Optional<FlowSubmissionImagePackageStatus> findStatus(long packageId) {
+        String sql = "SELECT status FROM flow_submission_image_package WHERE id = ?";
+        List<FlowSubmissionImagePackageStatus> statuses = jdbcTemplate.query(
+                sql,
+                (rs, rowNum) -> parseStatus(rs.getString("status")),
+                packageId);
+        return statuses.stream().findFirst();
+    }
+
+    private FlowSubmissionImagePackageStatus parseStatus(String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return FlowSubmissionImagePackageStatus.RECEIVED;
+        }
+        try {
+            return FlowSubmissionImagePackageStatus.valueOf(raw);
+        } catch (IllegalArgumentException ex) {
+            return FlowSubmissionImagePackageStatus.RECEIVED;
+        }
     }
 
     private Instant toInstant(Timestamp timestamp) {

@@ -73,19 +73,19 @@ Imagedelivery e realizar o envio automático de e-mails transacionais ou de camp
 ## Execução local
 
 ```bash
-cd backend/email-service
-./mvnw spring-boot:run
+cd email-service
+mvn -s settings.xml spring-boot:run
 ```
 
-> Para usar o wrapper, garanta que `backend/mvnw` esteja executável (`chmod +x backend/mvnw`).
+> Caso não precise consumir artefatos privados do GitHub Packages, o parâmetro `-s settings.xml` pode ser removido.
 
-A aplicação Sobe em `http://localhost:8080` e você pode acessar a documentação em `http://localhost:8080/swagger-ui.html`.
+A aplicação sobe em `http://localhost:8080` e você pode acessar a documentação em `http://localhost:8080/swagger-ui.html`.
 
 ### Testes
 
 ```bash
-cd backend/email-service
-./mvnw test
+cd email-service
+mvn -s settings.xml test
 ```
 
 ## Build e imagem Docker
@@ -93,7 +93,7 @@ cd backend/email-service
 Para gerar a imagem utilizando o Dockerfile multi-stage:
 
 ```bash
-docker build -t marketinghub/email-service:latest -f backend/email-service/Dockerfile .
+docker build -t marketinghub/email-service:latest -f email-service/Dockerfile email-service
 ```
 
 Ao executar, lembre de injetar as configurações necessárias:

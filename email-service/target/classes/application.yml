@@ -1,0 +1,69 @@
+spring:
+  application:
+    name: email-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:emailservice;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.h2.Driver}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+    show-sql: false
+  sql:
+    init:
+      mode: always
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:1025}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SPRING_MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${SPRING_MAIL_SMTP_STARTTLS_ENABLE:false}
+          connectiontimeout: ${SPRING_MAIL_SMTP_CONNECTION_TIMEOUT:5000}
+          timeout: ${SPRING_MAIL_SMTP_TIMEOUT:5000}
+          writetimeout: ${SPRING_MAIL_SMTP_WRITE_TIMEOUT:5000}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+clients:
+  marketing-hub:
+    base-url: ${MARKETING_HUB_BASE_URL:http://marketinghub-backend:8080}
+    templates-path: ${MARKETING_HUB_TEMPLATES_PATH:/api/v1/email-templates}
+    lead-portal-packages-base-path: ${MARKETING_HUB_LEAD_PORTAL_PACKAGES_BASE_PATH:/api/internal/lead-portal/image-packages}
+    auth-token: ${MARKETING_HUB_AUTH_TOKEN:}
+    connect-timeout: ${MARKETING_HUB_CONNECT_TIMEOUT:2000}
+    read-timeout: ${MARKETING_HUB_READ_TIMEOUT:5000}
+  cloudflare:
+    base-url: ${CLOUDFLARE_BASE_URL:https://api.cloudflare.com/client/v4}
+    delivery-base-url: ${CLOUDFLARE_DELIVERY_BASE_URL:https://imagedelivery.net}
+    delivery-hash: ${CLOUDFLARE_DELIVERY_HASH:}
+    default-variant: ${CLOUDFLARE_DEFAULT_VARIANT:public}
+    auth-token: ${CLOUDFLARE_AUTH_TOKEN:}
+    connect-timeout: ${CLOUDFLARE_CONNECT_TIMEOUT:2000}
+    read-timeout: ${CLOUDFLARE_READ_TIMEOUT:5000}
+lead-portal:
+  dispatch:
+    enabled: ${LEAD_PORTAL_DISPATCH_ENABLED:true}
+    batch-size: ${LEAD_PORTAL_DISPATCH_BATCH_SIZE:3}
+    initial-delay: ${LEAD_PORTAL_DISPATCH_INITIAL_DELAY:20000}
+    poll-interval: ${LEAD_PORTAL_DISPATCH_POLL_INTERVAL:60000}
+email-service:
+  default-from-address: ${EMAIL_SERVICE_FROM_ADDRESS:no-reply@marketinghub.com.br}
+  dry-run: ${EMAIL_SERVICE_DRY_RUN:false}
+
+logging:
+  level:
+    com.marketinghub.emailservice: INFO

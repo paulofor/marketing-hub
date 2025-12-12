@@ -45,7 +45,9 @@ clients:
     lead-portal-packages-base-path: ${MARKETING_HUB_LEAD_PORTAL_PACKAGES_BASE_PATH:/api/internal/lead-portal/image-packages}
     auth-token: ${MARKETING_HUB_AUTH_TOKEN:}
     connect-timeout: ${MARKETING_HUB_CONNECT_TIMEOUT:2000}
-    read-timeout: ${MARKETING_HUB_READ_TIMEOUT:5000}
+    # A exportação de pacotes pode levar vários segundos para gerar o ZIP + Base64;
+    # com 5s víamos timeouts e reprocessamentos que derrubavam o backend.
+    read-timeout: ${MARKETING_HUB_READ_TIMEOUT:60000}
   cloudflare:
     base-url: ${CLOUDFLARE_BASE_URL:https://api.cloudflare.com/client/v4}
     delivery-base-url: ${CLOUDFLARE_DELIVERY_BASE_URL:https://imagedelivery.net}

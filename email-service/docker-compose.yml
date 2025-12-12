@@ -4,6 +4,11 @@ services:
       context: .
     image: email-service
     restart: unless-stopped
+    # Permite que o container resolva serviços que estão rodando no host
+    # (ex.: marketinghub-backend rodando via systemd ou em outro compose).
+    extra_hosts:
+      - "marketinghub-backend:host-gateway"
+      - "host.docker.internal:host-gateway"
     environment:
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:h2:mem:emailservice;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-sa}

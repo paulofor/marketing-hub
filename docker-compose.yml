@@ -28,6 +28,11 @@ services:
       dockerfile: Dockerfile
     image: marketinghub/email-service:latest
     restart: unless-stopped
+    # Permite que o container resolva serviços que estão rodando no host
+    # (ex.: marketinghub-backend rodando via systemd ou em outro compose).
+    extra_hosts:
+      - "marketinghub-backend:host-gateway"
+      - "host.docker.internal:host-gateway"
     environment:
       SPRING_DATASOURCE_URL: ${EMAIL_SERVICE_DATASOURCE_URL:-jdbc:mysql://mysql:3306/marketing_email}
       SPRING_DATASOURCE_USERNAME: ${EMAIL_SERVICE_DATASOURCE_USERNAME:-marketing_email}

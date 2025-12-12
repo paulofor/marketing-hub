@@ -81,6 +81,8 @@ mvn -s settings.xml spring-boot:run
 
 A aplicação sobe em `http://localhost:8080` e você pode acessar a documentação em `http://localhost:8080/swagger-ui.html`.
 
+Quando executado via `docker-compose`, o serviço fica disponível na porta `8086` do host para evitar conflitos locais.
+
 ### Testes
 
 ```bash

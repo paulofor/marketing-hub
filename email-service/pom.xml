@@ -73,7 +73,14 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>test</scope>
+            <!--
+             * O serviço sobe com H2 como datasource padrão (ver application.yml).
+             * Quando a imagem é executada sem variáveis de banco, o driver precisa
+             * estar disponível em runtime. Como estava marcado apenas para "test",
+             * o artefato não era empacotado e a aplicação falhava com
+             * "Cannot load driver class: org.h2.Driver".
+             -->
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

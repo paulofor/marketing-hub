@@ -59,7 +59,7 @@ Imagedelivery e realizar o envio automático de e-mails transacionais ou de camp
 | `SPRING_MAIL_PASSWORD` | Senha SMTP | `""` |
 | `SPRING_MAIL_SMTP_AUTH` | Habilitar autenticação | `false` |
 | `SPRING_MAIL_SMTP_STARTTLS_ENABLE` | Habilitar STARTTLS | `false` |
-| `MARKETING_HUB_BASE_URL` | Base URL do backend Marketing Hub | `http://marketinghub-backend:8000` |
+| `MARKETING_HUB_BASE_URL` | Base URL do backend Marketing Hub | `http://191.252.92.222:8000` |
 | `MARKETING_HUB_TEMPLATES_PATH` | Caminho do endpoint de templates | `/api/v1/email-templates` |
 | `MARKETING_HUB_AUTH_TOKEN` | Token Bearer para autenticação (opcional) | `""` |
 | `CLOUDFLARE_BASE_URL` | Base da API de gerenciamento | `https://api.cloudflare.com/client/v4` |

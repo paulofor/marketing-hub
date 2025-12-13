@@ -38,6 +38,20 @@ CREATE TABLE ai_service (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+CREATE TABLE microservice (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description LONGTEXT,
+    base_url VARCHAR(512),
+    category VARCHAR(100),
+    status VARCHAR(50),
+    owner VARCHAR(255),
+    documentation_url VARCHAR(512),
+    health_check_path VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
 CREATE TABLE ai_worker_generation (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     domain VARCHAR(100) NOT NULL,

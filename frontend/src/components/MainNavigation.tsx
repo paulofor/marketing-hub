@@ -25,6 +25,7 @@ import {
   ShieldCheck,
   Sparkles,
   Trophy,
+  Server,
   Users,
   Workflow,
 } from "lucide-react";
@@ -102,6 +103,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: "IA e Conteúdo",
     items: [
       { to: "/ai-services", label: "IA", icon: Bot },
+      { to: "/microservices", label: "Microserviços", icon: Server },
       { to: "/chat-dialogs", label: "ChatGPT", icon: MessageSquare },
       { to: "/prompt-entities", label: "Objetos de Prompt", icon: Shapes },
       { to: "/angles", label: "Angles", icon: Compass },

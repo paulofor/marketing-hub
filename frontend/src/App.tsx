@@ -23,6 +23,9 @@ import EditNichePage from "./pages/niche/EditNichePage";
 import AiServiceListPage from "./pages/aiService/AiServiceListPage";
 import NewAiServicePage from "./pages/aiService/NewAiServicePage";
 import EditAiServicePage from "./pages/aiService/EditAiServicePage";
+import MicroserviceListPage from "./pages/microservice/MicroserviceListPage";
+import NewMicroservicePage from "./pages/microservice/NewMicroservicePage";
+import EditMicroservicePage from "./pages/microservice/EditMicroservicePage";
 import ExperimentListPage from "./pages/experiment/ExperimentListPage";
 import NewExperimentPage from "./pages/experiment/NewExperimentPage";
 import ExperimentDetailPage from "./pages/experiment/ExperimentDetailPage";
@@ -152,6 +155,18 @@ export default function App() {
               <Route
                 path="/ai-services/:id/edit"
                 element={<EditAiServicePage />}
+              />
+              <Route
+                path="/microservices"
+                element={<MicroserviceListPage />}
+              />
+              <Route
+                path="/microservices/new"
+                element={<NewMicroservicePage />}
+              />
+              <Route
+                path="/microservices/:id/edit"
+                element={<EditMicroservicePage />}
               />
               <Route
                 path="/ai/generations"

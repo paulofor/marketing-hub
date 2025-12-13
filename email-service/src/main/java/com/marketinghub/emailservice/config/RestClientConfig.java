@@ -12,14 +12,18 @@ public class RestClientConfig {
 
     @Bean
     public RestClient marketingHubRestClient(MarketingHubClientProperties properties) {
-        return RestClient.builder()
+        return marketingHubRestClientBuilder(properties)
                 .requestFactory(requestFactory(properties.connectTimeoutDuration(), properties.readTimeoutDuration()))
-                .baseUrl(properties.baseUrl())
-                .defaultHeaders(headers -> {
-                    if (properties.authToken() != null && !properties.authToken().isBlank()) {
-                        headers.setBearerAuth(properties.authToken());
-                    }
-                })
+                .build();
+    }
+
+    @Bean
+    public RestClient leadPortalRestClient(MarketingHubClientProperties marketingHubProperties,
+                                           LeadPortalDispatchProperties leadPortalDispatchProperties) {
+        return marketingHubRestClientBuilder(marketingHubProperties)
+                .requestFactory(requestFactory(
+                        marketingHubProperties.connectTimeoutDuration(),
+                        leadPortalDispatchProperties.readTimeoutDuration()))
                 .build();
     }
 
@@ -34,6 +38,16 @@ public class RestClientConfig {
                     }
                 })
                 .build();
+    }
+
+    private RestClient.Builder marketingHubRestClientBuilder(MarketingHubClientProperties properties) {
+        return RestClient.builder()
+                .baseUrl(properties.baseUrl())
+                .defaultHeaders(headers -> {
+                    if (properties.authToken() != null && !properties.authToken().isBlank()) {
+                        headers.setBearerAuth(properties.authToken());
+                    }
+                });
     }
 
     private ClientHttpRequestFactory requestFactory(Duration connectTimeout, Duration readTimeout) {

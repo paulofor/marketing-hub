@@ -108,7 +108,7 @@ public class MicroserviceDiscoveryService {
     private PortMapping parsePort(Object port) {
         if (port instanceof Number numberPort) {
             int value = numberPort.intValue();
-            return new PortMapping(value, value);
+            return new PortMapping(value, value, false);
         }
 
         if (!(port instanceof String portString)) {
@@ -122,13 +122,13 @@ public class MicroserviceDiscoveryService {
             Integer hostPort = parsePortNumber(parts[0]);
             Integer containerPort = parsePortNumber(parts[1]);
             if (hostPort != null || containerPort != null) {
-                return new PortMapping(hostPort, containerPort);
+                return new PortMapping(hostPort, containerPort, true);
             }
         }
 
         Integer singlePort = parsePortNumber(parts[0]);
         if (singlePort != null) {
-            return new PortMapping(singlePort, singlePort);
+            return new PortMapping(singlePort, singlePort, false);
         }
 
         return null;
@@ -143,7 +143,7 @@ public class MicroserviceDiscoveryService {
     }
 
     private String buildBaseUrl(String serviceName, PortMapping portMapping) {
-        if (portMapping.hostPort() != null) {
+        if (portMapping.hostBinding() && portMapping.hostPort() != null) {
             return "http://localhost:" + portMapping.hostPort();
         }
 
@@ -154,7 +154,7 @@ public class MicroserviceDiscoveryService {
         return "http://" + serviceName;
     }
 
-    private record PortMapping(Integer hostPort, Integer containerPort) {
-        private static final PortMapping EMPTY = new PortMapping(null, null);
+    private record PortMapping(Integer hostPort, Integer containerPort, boolean hostBinding) {
+        private static final PortMapping EMPTY = new PortMapping(null, null, false);
     }
 }

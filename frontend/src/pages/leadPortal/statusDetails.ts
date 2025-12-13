@@ -1,4 +1,4 @@
-import type { FlowSubmissionImagePackageStatus } from "../../api/leadPortal/useLeadPortalSubmissions";
+import type { LeadPortalImagePackageLifecycleStatus } from "../../api/leadPortal/useLeadPortalSubmissions";
 
 export interface StatusDetail {
   label: string;
@@ -8,7 +8,7 @@ export interface StatusDetail {
   icon: "sparkles" | "loader" | "check" | "alert";
 }
 
-export const statusDetails: Record<FlowSubmissionImagePackageStatus, StatusDetail> = {
+export const statusDetails: Record<LeadPortalImagePackageLifecycleStatus, StatusDetail> = {
   RECEIVED: {
     label: "Recebido",
     badgeClass: "text-bg-secondary",
@@ -49,6 +49,30 @@ export const statusDetails: Record<FlowSubmissionImagePackageStatus, StatusDetai
       "O serviço de tratamento está aplicando a marca d'água nas imagens para gerar a prévia segura ao lead.",
     icon: "loader",
   },
+  ZIP_GENERATING: {
+    label: "Gerando pacote ZIP",
+    badgeClass: "text-bg-info",
+    title: "Compactando prévias",
+    description:
+      "As imagens com marca d'água estão sendo reunidas em um arquivo .zip para envio ao lead.",
+    icon: "loader",
+  },
+  SAMPLE_EMAIL_SENDING: {
+    label: "Enviando e-mail de amostra",
+    badgeClass: "text-bg-primary",
+    title: "Preparando entrega",
+    description:
+      "O pacote já foi gerado e está na fila de disparo do e-mail com a amostra anexada ao lead.",
+    icon: "loader",
+  },
+  SAMPLE_EMAIL_SENT: {
+    label: "Amostra enviada",
+    badgeClass: "text-bg-success",
+    title: "E-mail encaminhado ao lead",
+    description:
+      "O lead já recebeu um e-mail com as prévias geradas. Acompanhe as interações e respostas.",
+    icon: "check",
+  },
   COMPLETED: {
     label: "Concluído",
     badgeClass: "text-bg-success",
@@ -67,6 +91,6 @@ export const statusDetails: Record<FlowSubmissionImagePackageStatus, StatusDetai
   },
 };
 
-export function getStatusDetail(status: FlowSubmissionImagePackageStatus): StatusDetail {
-  return statusDetails[status];
+export function getStatusDetail(status: LeadPortalImagePackageLifecycleStatus): StatusDetail {
+  return statusDetails[status] ?? statusDetails.RECEIVED;
 }

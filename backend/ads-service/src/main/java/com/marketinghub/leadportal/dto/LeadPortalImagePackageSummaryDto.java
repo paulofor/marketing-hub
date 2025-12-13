@@ -1,5 +1,6 @@
 package com.marketinghub.leadportal.dto;
 
+import com.marketinghub.leadportal.FlowSubmissionImagePackageLifecycleStatus;
 import com.marketinghub.leadportal.FlowSubmissionImagePackageStatus;
 import java.time.Instant;
 import java.math.BigDecimal;
@@ -16,6 +17,7 @@ public record LeadPortalImagePackageSummaryDto(
         String email,
         String phone,
         FlowSubmissionImagePackageStatus status,
+        FlowSubmissionImagePackageLifecycleStatus lifecycleStatus,
         String prompt,
         String model,
         Integer plannedOutputs,

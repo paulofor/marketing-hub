@@ -12,7 +12,7 @@ import {
   type LeadPortalImageReference,
 } from "../../api/leadPortal/useLeadPortalImagePackageDetail";
 import { getStatusDetail } from "./statusDetails";
-import type { FlowSubmissionImagePackageStatus } from "../../api/leadPortal/useLeadPortalSubmissions";
+import type { LeadPortalImagePackageLifecycleStatus } from "../../api/leadPortal/useLeadPortalSubmissions";
 
 interface LeadPortalImagePackageDetailModalProps {
   packageId: number | null;
@@ -63,7 +63,7 @@ function buildGalleryLabel(image: LeadPortalImageReference, index: number) {
 }
 
 function buildGalleryItems(
-  status: FlowSubmissionImagePackageStatus,
+  status: LeadPortalImagePackageLifecycleStatus,
   original?: LeadPortalImageReference | null,
   generated: LeadPortalImageReference[] = [],
 ) {
@@ -145,10 +145,14 @@ export default function LeadPortalImagePackageDetailModal({
     setCurrentIndex(0);
   }, [packageId]);
 
+  const displayStatus: LeadPortalImagePackageLifecycleStatus | null = data
+    ? (data.lifecycleStatus ?? data.status)
+    : null;
+
   const galleryItems = useMemo(() => {
     if (!data) return [];
-    return buildGalleryItems(data.status, data.originalImage, data.generatedImages);
-  }, [data]);
+    return buildGalleryItems(displayStatus ?? data.status, data.originalImage, data.generatedImages);
+  }, [data, displayStatus]);
 
   const currentItem = galleryItems[currentIndex];
   const hasPrev = currentIndex > 0;
@@ -158,7 +162,7 @@ export default function LeadPortalImagePackageDetailModal({
     return null;
   }
 
-  const statusDetail = data ? getStatusDetail(data.status) : null;
+  const statusDetail = displayStatus ? getStatusDetail(displayStatus) : null;
 
   return (
     <div className="modal d-block lead-portal-image-detail-modal" role="dialog" aria-modal="true">

@@ -13,7 +13,10 @@ import {
   type LeadPortalImageReference,
 } from "../../api/leadPortal/useLeadPortalImagePackageDetail";
 import { getStatusDetail } from "./statusDetails";
-import type { FlowSubmissionImagePackageStatus } from "../../api/leadPortal/useLeadPortalSubmissions";
+import type {
+  FlowSubmissionImagePackageStatus,
+  LeadPortalImagePackageLifecycleStatus,
+} from "../../api/leadPortal/useLeadPortalSubmissions";
 import "./LeadPortalImagesPage.css";
 
 interface GalleryItem {
@@ -60,7 +63,7 @@ function formatUsd(value?: number | null, currency = "USD") {
 }
 
 function buildGalleryItems(
-  status: FlowSubmissionImagePackageStatus,
+  status: LeadPortalImagePackageLifecycleStatus,
   original?: LeadPortalImageReference | null,
   generated: LeadPortalImageReference[] = [],
 ) {
@@ -147,15 +150,19 @@ export default function LeadPortalImagePackageDetailPage() {
     setCurrentIndex(0);
   }, [requestId]);
 
+  const displayStatus: LeadPortalImagePackageLifecycleStatus | null = data
+    ? (data.lifecycleStatus ?? data.status)
+    : null;
+
   const galleryItems = useMemo(() => {
     if (!data) return [];
-    return buildGalleryItems(data.status, data.originalImage, data.generatedImages);
-  }, [data]);
+    return buildGalleryItems(displayStatus ?? data.status, data.originalImage, data.generatedImages);
+  }, [data, displayStatus]);
 
   const currentItem = galleryItems[currentIndex];
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex < galleryItems.length - 1;
-  const statusDetail = data ? getStatusDetail(data.status) : null;
+  const statusDetail = displayStatus ? getStatusDetail(displayStatus) : null;
 
   const handleBackClick = () => {
     navigate("/lead-portal/images");

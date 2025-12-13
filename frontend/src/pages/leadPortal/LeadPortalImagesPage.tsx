@@ -12,8 +12,9 @@ import {
   useLeadPortalImagePackages,
   type FlowSubmissionImagePackageStatus,
   type LeadPortalImagePackage,
+  type LeadPortalImagePackageLifecycleStatus,
 } from "../../api/leadPortal/useLeadPortalSubmissions";
-import { getStatusDetail, statusDetails } from "./statusDetails";
+import { getStatusDetail } from "./statusDetails";
 import {
   estimateImagePackageTotalPriceUsd,
   estimateImagePackageUnitPriceUsd,
@@ -21,6 +22,16 @@ import {
 import "./LeadPortalImagesPage.css";
 
 type StatusFilter = FlowSubmissionImagePackageStatus | "ALL";
+
+const filterableStatuses: FlowSubmissionImagePackageStatus[] = [
+  "RECEIVED",
+  "RECENT",
+  "PROCESSING",
+  "WATERMARK_PENDING",
+  "WATERMARKING",
+  "COMPLETED",
+  "FAILED",
+];
 
 function formatDate(value: string) {
   return new Date(value).toLocaleString("pt-BR");
@@ -32,7 +43,7 @@ function buildLeadLabel(submission: LeadPortalImagePackage) {
   return submission.submissionId;
 }
 
-function buildStatusNarrative(status: FlowSubmissionImagePackageStatus) {
+function buildStatusNarrative(status: LeadPortalImagePackageLifecycleStatus) {
   return getStatusDetail(status);
 }
 
@@ -109,7 +120,7 @@ function buildStats(submission: LeadPortalImagePackage) {
   return stats;
 }
 
-function buildPipelineIcon(status: FlowSubmissionImagePackageStatus) {
+function buildPipelineIcon(status: LeadPortalImagePackageLifecycleStatus) {
   const detail = getStatusDetail(status);
   switch (detail.icon) {
     case "loader":
@@ -123,7 +134,7 @@ function buildPipelineIcon(status: FlowSubmissionImagePackageStatus) {
   }
 }
 
-function buildStatusBadgeClass(status: FlowSubmissionImagePackageStatus) {
+function buildStatusBadgeClass(status: LeadPortalImagePackageLifecycleStatus) {
   return getStatusDetail(status).badgeClass;
 }
 
@@ -214,8 +225,7 @@ export default function LeadPortalImagesPage() {
               }
             >
               <option value="ALL">Todos os status</option>
-              {Object.keys(statusDetails).map((statusKey) => {
-                const status = statusKey as FlowSubmissionImagePackageStatus;
+              {filterableStatuses.map((status) => {
                 return (
                   <option key={status} value={status}>
                     {getStatusDetail(status).label}
@@ -254,7 +264,9 @@ export default function LeadPortalImagesPage() {
       ) : (
         <div className="lead-portal-images__list" role="list">
           {submissions.map((submission) => {
-            const detail = buildStatusNarrative(submission.status);
+            const displayStatus: LeadPortalImagePackageLifecycleStatus =
+              (submission.lifecycleStatus ?? submission.status) as LeadPortalImagePackageLifecycleStatus;
+            const detail = buildStatusNarrative(displayStatus);
             const stats = buildStats(submission);
 
             return (
@@ -275,9 +287,9 @@ export default function LeadPortalImagesPage() {
                 <div className="lead-portal-image-card__body">
                   <div className="lead-portal-image-card__status">
                     <span
-                      className={`badge d-inline-flex align-items-center gap-1 ${buildStatusBadgeClass(submission.status)}`}
+                      className={`badge d-inline-flex align-items-center gap-1 ${buildStatusBadgeClass(displayStatus)}`}
                     >
-                      {buildPipelineIcon(submission.status)}
+                      {buildPipelineIcon(displayStatus)}
                       {detail.label}
                     </span>
                     <span className="text-muted small">
@@ -318,7 +330,7 @@ export default function LeadPortalImagesPage() {
 
                   <div className="lead-portal-image-card__pipeline">
                     <div className="lead-portal-image-card__pipeline-icon" aria-hidden="true">
-                      {buildPipelineIcon(submission.status)}
+                      {buildPipelineIcon(displayStatus)}
                     </div>
                     <div>
                       <p className="lead-portal-image-card__pipeline-title">{detail.title}</p>

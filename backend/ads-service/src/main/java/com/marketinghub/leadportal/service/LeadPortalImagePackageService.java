@@ -3,6 +3,7 @@ package com.marketinghub.leadportal.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.leadportal.FlowSubmissionImagePackageLifecycleStatus;
 import com.marketinghub.leadportal.FlowSubmissionImagePackageStatus;
 import com.marketinghub.leadportal.dto.LeadPortalImagePackageDetailDto;
 import com.marketinghub.leadportal.dto.LeadPortalImagePackageSummaryDto;
@@ -59,6 +60,9 @@ public class LeadPortalImagePackageService {
                     pack.id,
                     pack.submission_id,
                     pack.status,
+                    pack.zip_object_key,
+                    pack.zip_generated_at,
+                    pack.notified_at,
                     pack.prompt,
                     pack.model,
                     pack.planned_outputs,
@@ -106,6 +110,9 @@ public class LeadPortalImagePackageService {
                     pack.id,
                     pack.submission_id,
                     pack.status,
+                    pack.zip_object_key,
+                    pack.zip_generated_at,
+                    pack.notified_at,
                     pack.prompt,
                     pack.model,
                     pack.planned_outputs,
@@ -161,6 +168,7 @@ public class LeadPortalImagePackageService {
                 summary.id(),
                 summary.submissionId(),
                 summary.status(),
+                summary.lifecycleStatus(),
                 summary.prompt(),
                 summary.model(),
                 summary.plannedOutputs(),
@@ -230,6 +238,13 @@ public class LeadPortalImagePackageService {
         java.math.BigDecimal imageUnitPriceUsd = rs.getBigDecimal("image_unit_price_usd");
         java.math.BigDecimal imageTotalPriceUsd = rs.getBigDecimal("image_total_price_usd");
         String imageCurrency = rs.getString("image_currency");
+        String zipObjectKey = rs.getString("zip_object_key");
+        Instant zipGeneratedAt = toInstant(rs.getTimestamp("zip_generated_at"));
+        Instant notifiedAt = toInstant(rs.getTimestamp("notified_at"));
+
+        FlowSubmissionImagePackageLifecycleStatus lifecycleStatus = resolveLifecycleStatus(
+                status,
+                new LifecycleContext(zipObjectKey, zipGeneratedAt, notifiedAt, generatedImageCount, watermarkedImageCount));
 
         return new LeadPortalImagePackageSummaryDto(
                 id,
@@ -239,6 +254,7 @@ public class LeadPortalImagePackageService {
                 rs.getString("email"),
                 phone,
                 status,
+                lifecycleStatus,
                 rs.getString("prompt"),
                 rs.getString("model"),
                 plannedOutputs,
@@ -381,6 +397,32 @@ public class LeadPortalImagePackageService {
         }
     }
 
+    private FlowSubmissionImagePackageLifecycleStatus resolveLifecycleStatus(
+            FlowSubmissionImagePackageStatus baseStatus,
+            LifecycleContext context) {
+        FlowSubmissionImagePackageLifecycleStatus defaultStatus =
+                FlowSubmissionImagePackageLifecycleStatus.fromBaseStatus(baseStatus);
+        if (context == null || baseStatus != FlowSubmissionImagePackageStatus.COMPLETED) {
+            return defaultStatus;
+        }
+
+        boolean hasImages = context.generatedCount() != null && context.generatedCount() > 0;
+        boolean hasWatermarked = context.watermarkedCount() != null
+                && context.watermarkedCount() >= (context.generatedCount() == null ? 0 : context.generatedCount());
+        if (!hasImages || !hasWatermarked) {
+            return defaultStatus;
+        }
+
+        boolean zipReady = StringUtils.hasText(context.zipObjectKey()) || context.zipGeneratedAt() != null;
+        if (!zipReady) {
+            return FlowSubmissionImagePackageLifecycleStatus.ZIP_GENERATING;
+        }
+        if (context.notifiedAt() != null) {
+            return FlowSubmissionImagePackageLifecycleStatus.SAMPLE_EMAIL_SENT;
+        }
+        return FlowSubmissionImagePackageLifecycleStatus.SAMPLE_EMAIL_SENDING;
+    }
+
     private UUID mapSubmissionId(ResultSet rs) throws SQLException {
         Object rawValue = rs.getObject("submission_id");
         if (rawValue instanceof byte[] bytes) {
@@ -432,6 +474,14 @@ public class LeadPortalImagePackageService {
             log.warn("Failed to parse flow submission answers while extracting phone", e);
         }
         return null;
+    }
+
+    private record LifecycleContext(
+            String zipObjectKey,
+            Instant zipGeneratedAt,
+            Instant notifiedAt,
+            Integer generatedCount,
+            Integer watermarkedCount) {
     }
 
     private record DetailProjection(

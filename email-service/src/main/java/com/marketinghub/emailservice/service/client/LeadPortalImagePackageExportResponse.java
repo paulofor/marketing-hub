@@ -43,7 +43,9 @@ public record LeadPortalImagePackageExportResponse(
             String fileName,
             String base64Content,
             int imageCount,
-            long sizeBytes
+            long sizeBytes,
+            String storedFileName,
+            String downloadUrl
     ) {
     }
 }

@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&serverTimezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:marketing_hub_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:Ab9!rG4wX8_tMq2Bz7#HpK5V}
+  jdbc:
+    template:
+      fetch-size: 200
+  main:
+    banner-mode: "off"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+zipper:
+  enabled: ${ZIPPER_ENABLED:true}
+  batch-size: ${ZIPPER_BATCH_SIZE:5}
+  max-attempts: ${ZIPPER_MAX_ATTEMPTS:5}
+  lock-seconds: ${ZIPPER_LOCK_SECONDS:300}
+  object-prefix: ${ZIPPER_OBJECT_PREFIX:archives/lead-portal}
+  scheduler:
+    delay: ${ZIPPER_SCHEDULER_DELAY:60000}
+    initial-delay: ${ZIPPER_SCHEDULER_INITIAL_DELAY:20000}

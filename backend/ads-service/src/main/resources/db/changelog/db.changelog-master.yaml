@@ -286,3 +286,7 @@ databaseChangeLog:
   - include:
       file: V2030_02_20__lead_portal_sample_email_notifications.sql
       relativeToChangelogFile: true
+
+  - include:
+      file: V2030_03_05__lead_portal_zip_archives.sql
+      relativeToChangelogFile: true

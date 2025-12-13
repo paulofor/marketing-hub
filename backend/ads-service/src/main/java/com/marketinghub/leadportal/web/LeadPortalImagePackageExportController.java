@@ -4,6 +4,7 @@ import com.marketinghub.leadportal.dto.LeadPortalImagePackageAckRequest;
 import com.marketinghub.leadportal.dto.LeadPortalImagePackageExportDto;
 import com.marketinghub.leadportal.service.LeadPortalImagePackageExportItem;
 import com.marketinghub.leadportal.service.LeadPortalPackageNotificationService;
+import com.marketinghub.storage.FileStorageService;
 import jakarta.validation.Valid;
 import java.util.Base64;
 import java.util.List;
@@ -26,9 +27,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class LeadPortalImagePackageExportController {
 
     private final LeadPortalPackageNotificationService notificationService;
+    private final FileStorageService fileStorageService;
 
-    public LeadPortalImagePackageExportController(LeadPortalPackageNotificationService notificationService) {
+    public LeadPortalImagePackageExportController(LeadPortalPackageNotificationService notificationService,
+                                                  FileStorageService fileStorageService) {
         this.notificationService = notificationService;
+        this.fileStorageService = fileStorageService;
     }
 
     @GetMapping("/export")
@@ -67,11 +71,14 @@ public class LeadPortalImagePackageExportController {
                 ? Base64.getEncoder().encodeToString(zipBytes)
                 : "";
         long sizeBytes = zipBytes != null ? zipBytes.length : 0L;
+        String downloadUrl = fileStorageService.resolvePublicUrl(item.zipObjectKey()).orElse("");
         LeadPortalImagePackageExportDto.Attachment attachment = new LeadPortalImagePackageExportDto.Attachment(
                 item.attachmentName(),
                 base64Attachment,
                 item.imageCount(),
-                sizeBytes
+                sizeBytes,
+                item.zipObjectKey(),
+                downloadUrl
         );
 
         return new LeadPortalImagePackageExportDto(

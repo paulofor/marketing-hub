@@ -5,6 +5,7 @@ import com.marketinghub.emailservice.exception.RemoteServiceException;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -16,19 +17,19 @@ public class LeadPortalImagePackageClient {
 
     private static final Logger log = LoggerFactory.getLogger(LeadPortalImagePackageClient.class);
 
-    private final RestClient marketingHubRestClient;
+    private final RestClient leadPortalRestClient;
     private final MarketingHubClientProperties properties;
 
-    public LeadPortalImagePackageClient(RestClient marketingHubRestClient,
+    public LeadPortalImagePackageClient(@Qualifier("leadPortalRestClient") RestClient leadPortalRestClient,
                                         MarketingHubClientProperties properties) {
-        this.marketingHubRestClient = marketingHubRestClient;
+        this.leadPortalRestClient = leadPortalRestClient;
         this.properties = properties;
     }
 
     public List<LeadPortalImagePackageExportResponse> fetchPackages(int limit) {
         int normalizedLimit = Math.max(1, limit);
         try {
-            ResponseEntity<List<LeadPortalImagePackageExportResponse>> response = marketingHubRestClient
+            ResponseEntity<List<LeadPortalImagePackageExportResponse>> response = leadPortalRestClient
                     .get()
                     .uri(uriBuilder -> uriBuilder
                             .path(properties.leadPortalPackagesBasePath())
@@ -48,7 +49,7 @@ public class LeadPortalImagePackageClient {
 
     public void acknowledge(long packageId, boolean success, String errorMessage) {
         try {
-            marketingHubRestClient
+            leadPortalRestClient
                     .post()
                     .uri(uriBuilder -> uriBuilder
                             .path(properties.leadPortalPackagesBasePath())

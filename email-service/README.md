@@ -71,6 +71,11 @@ Imagedelivery e realizar o envio automático de e-mails transacionais ou de camp
 | `CLOUDFLARE_AUTH_TOKEN` | Token de acesso à API | `""` |
 | `EMAIL_SERVICE_FROM_ADDRESS` | Remetente padrão | `no-reply@marketinghub.com.br` |
 | `EMAIL_SERVICE_DRY_RUN` | Se `true`, não envia o e-mail e apenas registra log | `false` |
+| `LEAD_PORTAL_DISPATCH_ENABLED` | Habilita o polling de pacotes do Lead Portal | `true` |
+| `LEAD_PORTAL_DISPATCH_BATCH_SIZE` | Quantos pacotes buscar por ciclo | `3` |
+| `LEAD_PORTAL_DISPATCH_INITIAL_DELAY` | Delay inicial do poll (ms) | `20000` |
+| `LEAD_PORTAL_DISPATCH_POLL_INTERVAL` | Intervalo entre polls (ms) | `60000` |
+| `LEAD_PORTAL_DISPATCH_READ_TIMEOUT` | Timeout de leitura da exportação do Lead Portal (ms) | `180000` |
 
 ## Execução local
 

@@ -4,7 +4,6 @@ import com.marketinghub.leadportal.FlowSubmissionImagePackageStatus;
 import com.marketinghub.storage.FileStorageService;
 import com.marketinghub.storage.StorageException;
 import jakarta.annotation.PostConstruct;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.ResultSet;
@@ -16,8 +15,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -109,12 +106,12 @@ public class LeadPortalPackageNotificationService {
     }
 
     private LeadPortalImagePackageExportItem buildExportItem(PendingPackage pending) throws IOException {
-        List<WatermarkedAsset> assets = fetchWatermarkedAssets(pending.packageId());
-        if (assets.isEmpty()) {
-            throw new IllegalStateException("No watermarked assets found for package " + pending.packageId());
+        if (!StringUtils.hasText(pending.zipObjectKey())) {
+            throw new IllegalStateException("ZIP ainda não gerado para o pacote " + pending.packageId());
         }
-        byte[] zipBytes = buildZipArchive(assets);
-        EmailContent content = buildEmailContent(pending, assets.size());
+        int imageCount = pending.imageCount() > 0 ? pending.imageCount() : countWatermarkedAssets(pending.packageId());
+        byte[] zipBytes = loadObjectBytes(pending.zipObjectKey());
+        EmailContent content = buildEmailContent(pending, imageCount);
         return new LeadPortalImagePackageExportItem(
                 pending.packageId(),
                 pending.submissionId(),
@@ -133,8 +130,9 @@ public class LeadPortalPackageNotificationService {
                 pending.notificationAttempts(),
                 pending.lastAttempt(),
                 zipBytes,
+                pending.zipObjectKey(),
                 content.attachmentName(),
-                assets.size(),
+                imageCount,
                 content.subject(),
                 content.plain(),
                 content.html());
@@ -168,6 +166,14 @@ public class LeadPortalPackageNotificationService {
                     pack.status,
                     pack.notification_attempts,
                     pack.notification_last_attempt,
+                    pack.zip_object_key,
+                    pack.zip_size_bytes,
+                    pack.zip_generated_at,
+                    (
+                        SELECT COUNT(*) FROM flow_submission_image_watermark wm
+                          JOIN flow_submission_image_item items2 ON items2.id = wm.item_id
+                        WHERE items2.package_id = pack.id
+                    ) AS watermarked_count,
                     sub.name AS submission_name,
                     sub.email AS submission_email,
                     exp.id AS experiment_id,
@@ -187,6 +193,8 @@ public class LeadPortalPackageNotificationService {
                 WHERE exp.selected_sample_email_id IS NOT NULL
                   AND sub.email IS NOT NULL AND sub.email <> ''
                   AND pack.notified_at IS NULL
+                  AND pack.zip_object_key IS NOT NULL
+                  AND pack.zip_generated_at IS NOT NULL
                   AND (pack.notification_last_attempt IS NULL
                        OR pack.notification_last_attempt < TIMESTAMPADD(SECOND, -?, UTC_TIMESTAMP()))
                   AND pack.notification_attempts < ?
@@ -205,7 +213,7 @@ public class LeadPortalPackageNotificationService {
                 LIMIT ?
                 """;
 
-        return jdbcTemplate.query(sql, (rs, rowNum) -> mapPendingPackage(rs), maxAttempts, lockSeconds, limit);
+        return jdbcTemplate.query(sql, (rs, rowNum) -> mapPendingPackage(rs), lockSeconds, maxAttempts, limit);
     }
 
     private PendingPackage mapPendingPackage(ResultSet rs) throws SQLException {
@@ -225,37 +233,22 @@ public class LeadPortalPackageNotificationService {
                 rs.getString("sample_call_to_action"),
                 rs.getString("sample_model"),
                 rs.getString("sample_prompt"),
-                toInstant(rs.getTimestamp("sample_updated_at"))
+                toInstant(rs.getTimestamp("sample_updated_at")),
+                rs.getString("zip_object_key"),
+                rs.getLong("zip_size_bytes"),
+                toInstant(rs.getTimestamp("zip_generated_at")),
+                rs.getInt("watermarked_count")
         );
     }
 
-    private List<WatermarkedAsset> fetchWatermarkedAssets(long packageId) {
-        String sql = """
-                SELECT
-                    COALESCE(wm_asset.external_id, wm_asset.url) AS stored_file_name,
-                    wm_asset.id AS asset_id,
-                    item.position_index
-                FROM flow_submission_image_item item
-                JOIN flow_submission_image_watermark wm ON wm.item_id = item.id
-                JOIN asset wm_asset ON wm_asset.id = wm.asset_id
-                WHERE item.package_id = ?
-                ORDER BY item.position_index ASC, item.id ASC
-                """;
-        return jdbcTemplate.query(sql, (rs, rowNum) -> new WatermarkedAsset(
-                rs.getString("stored_file_name"),
-                rs.getLong("asset_id"),
-                rs.getInt("position_index")), packageId);
-    }
-
     private void processPackage(PendingPackage pending) throws IOException {
-        List<WatermarkedAsset> assets = fetchWatermarkedAssets(pending.packageId());
-        if (assets.isEmpty()) {
-            throw new IllegalStateException("No watermarked assets found for package " + pending.packageId());
+        if (!StringUtils.hasText(pending.zipObjectKey())) {
+            throw new IllegalStateException("ZIP ausente para o pacote " + pending.packageId());
         }
+        int imageCount = pending.imageCount() > 0 ? pending.imageCount() : countWatermarkedAssets(pending.packageId());
+        byte[] zipBytes = loadObjectBytes(pending.zipObjectKey());
 
-        byte[] zipBytes = buildZipArchive(assets);
-
-        EmailContent content = buildEmailContent(pending, assets.size());
+        EmailContent content = buildEmailContent(pending, imageCount);
         emailSender.sendEmail(
                 pending.submissionEmail(),
                 content.subject(),
@@ -265,34 +258,27 @@ public class LeadPortalPackageNotificationService {
                 content.attachmentName());
 
         markAsNotified(pending.packageId(), pending.status());
-        log.info("Dispatched lead portal package {} to {}", pending.packageId(), pending.submissionEmail());
+        log.info("Dispatched lead portal package {} to {} (zip: {}, {} bytes)", pending.packageId(), pending.submissionEmail(), pending.zipObjectKey(), pending.zipSizeBytes());
     }
 
-    private byte[] buildZipArchive(List<WatermarkedAsset> assets) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
-            int index = 1;
-            for (WatermarkedAsset asset : assets) {
-                byte[] bytes = loadAssetBytes(asset.storedFileName());
-                String extension = resolveExtension(asset.storedFileName());
-                String entryName = String.format(Locale.ROOT, "imagem-%02d%s", index, extension);
-                ZipEntry entry = new ZipEntry(entryName);
-                zos.putNextEntry(entry);
-                zos.write(bytes);
-                zos.closeEntry();
-                index++;
-            }
+    private int countWatermarkedAssets(long packageId) {
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM flow_submission_image_watermark wm JOIN flow_submission_image_item item ON item.id = wm.item_id WHERE item.package_id = ?",
+                Integer.class,
+                packageId);
+        return count != null ? count : 0;
+    }
+
+    private byte[] loadObjectBytes(String storedFileName) throws IOException {
+        if (!StringUtils.hasText(storedFileName)) {
+            throw new IOException("Nome do arquivo do bucket não informado");
         }
-        return baos.toByteArray();
-    }
-
-    private byte[] loadAssetBytes(String storedFileName) throws IOException {
         try {
             try (InputStream in = fileStorageService.loadAsResource(storedFileName).getInputStream()) {
                 return in.readAllBytes();
             }
         } catch (StorageException ex) {
-            throw new IOException("Failed to load asset '" + storedFileName + "'", ex);
+            throw new IOException("Failed to load object '" + storedFileName + "'", ex);
         }
     }
 
@@ -393,17 +379,6 @@ public class LeadPortalPackageNotificationService {
         return timestamp == null ? null : timestamp.toInstant();
     }
 
-    private String resolveExtension(String storedFileName) {
-        if (!StringUtils.hasText(storedFileName)) {
-            return ".jpg";
-        }
-        int dot = storedFileName.lastIndexOf('.');
-        if (dot >= 0 && dot < storedFileName.length() - 1) {
-            return storedFileName.substring(dot);
-        }
-        return ".jpg";
-    }
-
     private record PendingPackage(
             long packageId,
             String submissionId,
@@ -420,10 +395,11 @@ public class LeadPortalPackageNotificationService {
             String sampleCallToAction,
             String sampleModel,
             String samplePrompt,
-            Instant sampleUpdatedAt) {
-    }
-
-    private record WatermarkedAsset(String storedFileName, long assetId, int position) {
+            Instant sampleUpdatedAt,
+            String zipObjectKey,
+            Long zipSizeBytes,
+            Instant zipGeneratedAt,
+            int imageCount) {
     }
 
     private record EmailContent(String subject, String plain, String html, String attachmentName) {

@@ -1,0 +1,34 @@
+services:
+  image-zipper:
+    build:
+      context: .
+    image: image-zipper-service
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: marketing_hub_user
+      SPRING_DATASOURCE_PASSWORD: Ab9!rG4wX8_tMq2Bz7#HpK5V
+      LEAD_PORTAL_STORAGE_BUCKET: leadportal
+      LEAD_PORTAL_STORAGE_ENDPOINT: https://95b059f4f73518a658d07a19438f38c9.r2.cloudflarestorage.com
+      LEAD_PORTAL_STORAGE_ACCESS_KEY_ID: fafc943bd27d2a1c55c84f80778994a0
+      LEAD_PORTAL_STORAGE_SECRET_ACCESS_KEY: 4ee618dd20bb752711ee0242469a70fadb9bdc0c921ded7e1177eeb681ddfc54
+      LEAD_PORTAL_STORAGE_REGION: auto
+      LEAD_PORTAL_STORAGE_PUBLIC_BASE_URL: https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev
+      ZIPPER_BATCH_SIZE: 5
+      ZIPPER_MAX_ATTEMPTS: 5
+      ZIPPER_LOCK_SECONDS: 300
+      ZIPPER_OBJECT_PREFIX: archives/lead-portal
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+networks:
+  default:
+    driver: bridge

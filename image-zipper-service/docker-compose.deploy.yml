@@ -1,0 +1,5 @@
+services:
+  image-zipper:
+    image: ${IMAGE_ZIPPER_SERVICE_IMAGE:-ghcr.io/paulofor/image-zipper-service:latest}
+    pull_policy: always
+    restart: unless-stopped

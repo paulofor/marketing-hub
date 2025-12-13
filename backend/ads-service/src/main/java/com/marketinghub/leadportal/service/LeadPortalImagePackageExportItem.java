@@ -24,6 +24,7 @@ public record LeadPortalImagePackageExportItem(
         int notificationAttempts,
         Instant notificationLastAttempt,
         byte[] zipBytes,
+        String zipObjectKey,
         String attachmentName,
         int imageCount,
         String emailSubject,

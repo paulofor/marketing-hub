@@ -1,6 +1,7 @@
 version: '3.9'
 services:
   ai-worker:
+    container_name: ai-worker
     build:
       context: .
       dockerfile: Dockerfile

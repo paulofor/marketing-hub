@@ -1,5 +1,6 @@
 services:
   email-service:
+    container_name: email-service
     build:
       context: .
     image: email-service

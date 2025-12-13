@@ -1,5 +1,6 @@
 services:
   image-zipper:
+    container_name: image-zipper-service
     build:
       context: .
     image: image-zipper-service

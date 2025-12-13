@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useCreateMicroservice } from "../../api/microservice/useCreateMicroservice";
 import PageTitle from "../../components/PageTitle";
 import { MicroservicePayload } from "../../api/microservice/useCreateMicroservice";
+import { useDiscoveredMicroservices } from "../../api/microservice/useDiscoveredMicroservices";
 
 const defaultForm: MicroservicePayload = {
   name: "",
@@ -19,17 +20,96 @@ export default function NewMicroservicePage() {
   const [form, setForm] = useState<MicroservicePayload>(defaultForm);
   const navigate = useNavigate();
   const create = useCreateMicroservice();
+  const {
+    data: discoveredServices = [],
+    isLoading: isLoadingDiscovery,
+    isFetching: isFetchingDiscovery,
+    refetch: refreshDiscovery,
+  } = useDiscoveredMicroservices();
 
   const submit = () => {
     create.mutate(form, { onSuccess: () => navigate("/microservices") });
   };
 
+  const applyDiscovery = (serviceName: string) => {
+    const suggestion = discoveredServices.find(
+      (service) => service.serviceName === serviceName,
+    );
+
+    if (!suggestion) {
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+      name: suggestion.serviceName,
+      baseUrl: suggestion.baseUrl ?? current.baseUrl,
+      healthCheckPath:
+        suggestion.healthCheckPath || current.healthCheckPath || "",
+    }));
+  };
+
   return (
     <div>
       <PageTitle>Novo microserviço</PageTitle>
+      <div className="card mb-4">
+        <div className="card-body">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <div className="fw-semibold">Preencher usando docker-compose</div>
+              <div className="text-body-secondary small">
+                Selecione um serviço para sugerir o nome, Base URL e caminho de
+                healthcheck a partir das portas publicadas.
+              </div>
+            </div>
+            <button
+              className="btn btn-outline-secondary btn-sm"
+              type="button"
+              onClick={() => refreshDiscovery()}
+              disabled={isFetchingDiscovery}
+            >
+              {isFetchingDiscovery && (
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"
+                />
+              )}
+              Atualizar
+            </button>
+          </div>
+          <select
+            className="form-select"
+            onChange={(event) => applyDiscovery(event.target.value)}
+            disabled={
+              isLoadingDiscovery || isFetchingDiscovery || !discoveredServices.length
+            }
+            defaultValue=""
+          >
+            <option value="" disabled>
+              {isLoadingDiscovery
+                ? "Carregando serviços do docker-compose..."
+                : "Selecione um serviço"}
+            </option>
+            {discoveredServices.map((service) => (
+              <option key={service.serviceName} value={service.serviceName}>
+                {service.serviceName} — {service.baseUrl}
+              </option>
+            ))}
+          </select>
+          {!isLoadingDiscovery && !isFetchingDiscovery &&
+            discoveredServices.length === 0 && (
+              <div className="text-body-secondary small mt-2">
+                Nenhum serviço encontrado no docker-compose configurado.
+              </div>
+            )}
+        </div>
+      </div>
       <div className="row g-3">
         <div className="col-md-6">
-          <label className="form-label">Nome</label>
+          <label className="form-label">
+            Nome <span className="text-danger">*</span>
+          </label>
           <input
             className="form-control"
             value={form.name}
@@ -58,7 +138,9 @@ export default function NewMicroservicePage() {
           </select>
         </div>
         <div className="col-md-6">
-          <label className="form-label">Base URL</label>
+          <label className="form-label">
+            Base URL <span className="text-danger">*</span>
+          </label>
           <input
             className="form-control"
             value={form.baseUrl}
@@ -112,8 +194,15 @@ export default function NewMicroservicePage() {
         <button
           className="btn btn-primary"
           onClick={submit}
-          disabled={create.isPending || !form.name}
+          disabled={create.isPending || !form.name || !form.baseUrl}
         >
+          {create.isPending && (
+            <span
+              className="spinner-border spinner-border-sm me-2"
+              role="status"
+              aria-hidden="true"
+            />
+          )}
           {create.isPending ? "Salvando..." : "Salvar"}
         </button>
         <button

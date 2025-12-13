@@ -2,10 +2,12 @@ package com.marketinghub.microservice.web;
 
 import com.marketinghub.microservice.Microservice;
 import com.marketinghub.microservice.dto.CreateMicroserviceRequest;
+import com.marketinghub.microservice.dto.DiscoveredMicroserviceDto;
 import com.marketinghub.microservice.dto.MicroserviceDto;
 import com.marketinghub.microservice.exception.dto.MicroserviceExceptionSummary;
 import com.marketinghub.microservice.exception.service.MicroserviceExceptionService;
 import com.marketinghub.microservice.mapper.MicroserviceMapper;
+import com.marketinghub.microservice.service.MicroserviceDiscoveryService;
 import com.marketinghub.microservice.service.MicroserviceService;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,12 +23,15 @@ public class MicroserviceController {
     private final MicroserviceService service;
     private final MicroserviceMapper mapper;
     private final MicroserviceExceptionService exceptionService;
+    private final MicroserviceDiscoveryService discoveryService;
 
     public MicroserviceController(MicroserviceService service, MicroserviceMapper mapper,
-                                  MicroserviceExceptionService exceptionService) {
+                                  MicroserviceExceptionService exceptionService,
+                                  MicroserviceDiscoveryService discoveryService) {
         this.service = service;
         this.mapper = mapper;
         this.exceptionService = exceptionService;
+        this.discoveryService = discoveryService;
     }
 
     @PostMapping
@@ -50,6 +55,11 @@ public class MicroserviceController {
         Microservice microservice = service.get(id);
         MicroserviceExceptionSummary summary = exceptionService.summarizeByMicroservices(List.of(microservice)).get(microservice.getId());
         return mapper.toDto(microservice, summary);
+    }
+
+    @GetMapping("/discover")
+    public List<DiscoveredMicroserviceDto> discoverFromCompose() {
+        return discoveryService.discoverFromCompose();
     }
 
     @PutMapping("/{id}")

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.marketinghub.leadportal.FlowSubmissionImagePackageLifecycleStatus;
 import com.marketinghub.leadportal.FlowSubmissionImagePackageStatus;
 import com.marketinghub.leadportal.dto.LeadPortalImagePackageSummaryDto;
 import com.marketinghub.leadportal.service.LeadPortalImagePackageService;
@@ -39,6 +40,7 @@ class LeadPortalImagePackageControllerTest {
                 "email@example.com",
                 "+5511999999999",
                 FlowSubmissionImagePackageStatus.FAILED,
+                FlowSubmissionImagePackageLifecycleStatus.FAILED,
                 "Prompt",
                 "gpt-image",
                 10,
@@ -65,7 +67,8 @@ class LeadPortalImagePackageControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1L))
-                .andExpect(jsonPath("$[0].status").value(FlowSubmissionImagePackageStatus.FAILED.name()));
+                .andExpect(jsonPath("$[0].status").value(FlowSubmissionImagePackageStatus.FAILED.name()))
+                .andExpect(jsonPath("$[0].lifecycleStatus").value(FlowSubmissionImagePackageLifecycleStatus.FAILED.name()));
 
         verify(imagePackageService).listImagePackages(new java.util.LinkedHashSet<>(List.of(FlowSubmissionImagePackageStatus.FAILED)));
     }

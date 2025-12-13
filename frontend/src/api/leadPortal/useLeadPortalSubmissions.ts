@@ -10,6 +10,12 @@ export type FlowSubmissionImagePackageStatus =
   | "COMPLETED"
   | "FAILED";
 
+export type LeadPortalImagePackageLifecycleStatus =
+  | FlowSubmissionImagePackageStatus
+  | "ZIP_GENERATING"
+  | "SAMPLE_EMAIL_SENDING"
+  | "SAMPLE_EMAIL_SENT";
+
 export interface LeadPortalImagePackage {
   id: number;
   submissionId: string;
@@ -25,6 +31,7 @@ export interface LeadPortalImagePackage {
   watermarkedImageCount: number;
   failureReason?: string | null;
   status: FlowSubmissionImagePackageStatus;
+  lifecycleStatus?: LeadPortalImagePackageLifecycleStatus | null;
   createdAt: string;
   updatedAt: string;
   imageModelId?: number | null;

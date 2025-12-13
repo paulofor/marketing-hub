@@ -17,10 +17,6 @@ O ambiente dockerizado levanta três serviços:
 - `frontend`: container Nginx que serve o build estático do Vite (porta interna 80).
 - `proxy`: proxy reverso Nginx que publica as portas 80/443 do host e roteia `/api` para o backend.
 - `db`: instância MySQL 5.7 com armazenamento persistente em `./data/mysql`.
-- Quando o domínio `iahub.sbs` é acessado, o proxy encaminha o tráfego para o **Marketing Hub** em execução diretamente no host
-  (frontend na porta `5173` e backend na porta `8080`). Certifique-se de que esses serviços estejam publicados antes de expor o
-  proxy; em ambientes Linux o arquivo `docker-compose.yml` já adiciona o mapeamento `host.docker.internal` → `host-gateway`
-  para permitir que o container alcance o host.
 
 ### Passo a passo
 

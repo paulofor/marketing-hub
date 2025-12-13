@@ -1,5 +1,6 @@
 services:
   watermark:
+    container_name: image-watermark-service
     build:
       context: .
     image: image-watermark-service

@@ -28,6 +28,7 @@ import {
   Server,
   Users,
   Workflow,
+  AlertTriangle,
 } from "lucide-react";
 import experimentIcon from "../assets/icons/experiment-icon.svg";
 import hypothesisIcon from "../assets/icons/hypothesis-icon.svg";
@@ -104,6 +105,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: "/ai-services", label: "IA", icon: Bot },
       { to: "/microservices", label: "Microserviços", icon: Server },
+      { to: "/microservices/errors", label: "Erros de microserviço", icon: AlertTriangle },
       { to: "/chat-dialogs", label: "ChatGPT", icon: MessageSquare },
       { to: "/prompt-entities", label: "Objetos de Prompt", icon: Shapes },
       { to: "/angles", label: "Angles", icon: Compass },

@@ -26,6 +26,7 @@ import EditAiServicePage from "./pages/aiService/EditAiServicePage";
 import MicroserviceListPage from "./pages/microservice/MicroserviceListPage";
 import NewMicroservicePage from "./pages/microservice/NewMicroservicePage";
 import EditMicroservicePage from "./pages/microservice/EditMicroservicePage";
+import MicroserviceExceptionListPage from "./pages/microservice/MicroserviceExceptionListPage";
 import ExperimentListPage from "./pages/experiment/ExperimentListPage";
 import NewExperimentPage from "./pages/experiment/NewExperimentPage";
 import ExperimentDetailPage from "./pages/experiment/ExperimentDetailPage";
@@ -159,6 +160,10 @@ export default function App() {
               <Route
                 path="/microservices"
                 element={<MicroserviceListPage />}
+              />
+              <Route
+                path="/microservices/errors"
+                element={<MicroserviceExceptionListPage />}
               />
               <Route
                 path="/microservices/new"

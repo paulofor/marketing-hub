@@ -152,3 +152,50 @@ flowchart TD
     C --> S(Insights)
 ```
 \nNovo fluxo: Nicho -> Hipótese -> Experimento para garantir coesão nos testes.
+
+## Monitoramento de microserviços em background
+
+Microserviços (ex.: workers Spring Boot) podem enviar exceções diretamente para o
+backend do Marketing Hub. Use a rota autenticada do próprio backend:
+
+```
+POST /api/microservices/{id}/exceptions
+{
+  "exceptionType": "java.lang.IllegalStateException",
+  "message": "Falha ao processar fila",
+  "stackTrace": "...",
+  "severity": "ERROR",
+  "serviceVersion": "1.2.3",
+  "hostname": "worker-01",
+  "context": { "jobId": "123" },
+  "occurredAt": "2024-03-20T10:15:30Z"
+}
+```
+
+Exemplo de envio a partir de um worker Spring Boot usando o `RestClient`:
+
+```java
+@RestControllerAdvice
+@RequiredArgsConstructor
+class ExceptionReporter {
+    private final RestClient restClient;
+
+    @ExceptionHandler(Exception.class)
+    public void handle(Exception ex) {
+        restClient.post()
+            .uri("/api/microservices/{id}/exceptions", 1) // substitua o ID
+            .body(Map.of(
+                "exceptionType", ex.getClass().getName(),
+                "message", ex.getMessage(),
+                "stackTrace", org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(ex),
+                "severity", "ERROR",
+                "hostname", InetAddress.getLocalHost().getHostName()
+            ))
+            .retrieve();
+    }
+}
+```
+
+Os registros podem ser consultados no menu **Microserviços > Erros de
+microserviço**, onde cada item traz a mensagem, stack trace, host e versão do
+serviço.

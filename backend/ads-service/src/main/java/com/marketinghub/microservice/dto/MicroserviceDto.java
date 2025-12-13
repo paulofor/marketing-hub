@@ -20,4 +20,9 @@ public class MicroserviceDto {
     private String healthCheckPath;
     private Instant createdAt;
     private Instant updatedAt;
+
+    private Instant lastExceptionAt;
+    private String lastExceptionMessage;
+    private String lastExceptionSeverity;
+    private Long exceptionCount;
 }

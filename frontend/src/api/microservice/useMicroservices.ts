@@ -13,6 +13,10 @@ export interface Microservice {
   healthCheckPath?: string;
   createdAt?: string;
   updatedAt?: string;
+  lastExceptionAt?: string | null;
+  lastExceptionMessage?: string | null;
+  lastExceptionSeverity?: string | null;
+  exceptionCount?: number;
 }
 
 export function useMicroservices() {

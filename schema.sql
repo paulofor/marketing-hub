@@ -700,3 +700,20 @@ CREATE TABLE flow_submission_image_watermark (
 
 CREATE INDEX idx_flow_submission_image_package_submission ON flow_submission_image_package(submission_id, created_at DESC);
 CREATE INDEX idx_flow_submission_image_item_package ON flow_submission_image_item(package_id);
+
+CREATE TABLE microservice_exception_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    microservice_id BIGINT NOT NULL,
+    exception_type VARCHAR(255),
+    message LONGTEXT,
+    stack_trace LONGTEXT,
+    severity VARCHAR(20),
+    service_version VARCHAR(100),
+    hostname VARCHAR(255),
+    context LONGTEXT,
+    occurred_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_microservice_exception_microservice FOREIGN KEY (microservice_id) REFERENCES microservice(id)
+);
+CREATE INDEX idx_microservice_exception_microservice ON microservice_exception_log (microservice_id, occurred_at DESC);
+CREATE INDEX idx_microservice_exception_severity ON microservice_exception_log (severity);

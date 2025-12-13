@@ -6,6 +6,7 @@ import com.marketinghub.microservice.repository.MicroserviceRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -30,7 +31,7 @@ public class MicroserviceService {
         return repository.findById(id).orElseThrow();
     }
 
-    public Iterable<Microservice> list() {
+    public List<Microservice> list() {
         return repository.findAll();
     }
 

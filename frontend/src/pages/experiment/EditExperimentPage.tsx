@@ -87,6 +87,10 @@ export default function EditExperimentPage() {
         imageModelQualityId: data.imageModelQualityId
           ? String(data.imageModelQualityId)
           : "",
+        imagesPerPackage:
+          data.imagesPerPackage != null
+            ? String(data.imagesPerPackage)
+            : "20",
       });
     }
   }, [data, reset]);
@@ -389,6 +393,17 @@ export default function EditExperimentPage() {
         {selectedQualityPriceLabel ? (
           <p className="form-text">Custo estimado: {selectedQualityPriceLabel}</p>
         ) : null}
+        <label className="form-label" htmlFor="imagesPerPackage">
+          Quantidade de imagens por pacote <span className="text-danger">*</span>
+        </label>
+        <input
+          id="imagesPerPackage"
+          className="form-control mb-2"
+          type="number"
+          min="1"
+          step="1"
+          {...register("imagesPerPackage")}
+        />
         {hasWorkerRequests && (
           <div className="mb-3" aria-live="polite">
             <p className="text-muted small mb-2">

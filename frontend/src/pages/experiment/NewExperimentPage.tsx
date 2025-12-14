@@ -36,6 +36,7 @@ export default function NewExperimentPage() {
     instagramAccountId: "",
     imageModelId: "",
     imageModelQualityId: "",
+    imagesPerPackage: "20",
   });
   const [autoSampleSize, setAutoSampleSize] = useState(true);
   const [autoMde, setAutoMde] = useState(true);
@@ -175,6 +176,11 @@ export default function NewExperimentPage() {
         alert("Informe um orçamento diário válido");
         return;
       }
+      const parsedImagesPerPackage = Number(form.imagesPerPackage);
+      if (!form.imagesPerPackage || Number.isNaN(parsedImagesPerPackage) || parsedImagesPerPackage <= 0) {
+        alert("Informe uma quantidade válida de imagens por pacote");
+        return;
+      }
       await create.mutateAsync({
         nicheId: Number(form.nicheId),
         hypothesisId: form.hypothesisId || undefined,
@@ -200,6 +206,7 @@ export default function NewExperimentPage() {
         imageModelQualityId: form.imageModelQualityId
           ? Number(form.imageModelQualityId)
           : undefined,
+        imagesPerPackage: parsedImagesPerPackage,
       });
       setForm({
         nicheId: nicheIdParam,
@@ -218,6 +225,7 @@ export default function NewExperimentPage() {
         instagramAccountId: "",
         imageModelId: "",
         imageModelQualityId: "",
+        imagesPerPackage: "20",
       });
       setAutoSampleSize(true);
       setAutoMde(true);

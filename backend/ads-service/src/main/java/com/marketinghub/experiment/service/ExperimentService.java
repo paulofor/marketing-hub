@@ -239,6 +239,7 @@ public class ExperimentService {
         String followUpActionUrl = normalizeFollowUpActionUrl(request.getFollowUpActionUrl());
         ImageGenerationSelection imageSelection =
                 resolveImageGenerationSelection(request.getImageModelId(), request.getImageModelQualityId());
+        int imagesPerPackage = normalizeImagesPerPackage(request.getImagesPerPackage());
         Experiment exp = Experiment.builder()
                 .niche(niche)
                 .name(request.getName())
@@ -262,6 +263,7 @@ public class ExperimentService {
                 .sampleEmailsToGenerate(request.getSampleEmailsToGenerate())
                 .deliverablesToGenerate(request.getDeliverablesToGenerate())
                 .leadPortalFlowsToGenerate(request.getLeadPortalFlowsToGenerate())
+                .imagesPerPackage(imagesPerPackage)
                 .facebookPage(attachFacebookPage(request.getFacebookPageId()))
                 .facebookInstantForm(attachInstantForm(request.getFacebookInstantFormId(), request.getHypothesisId()))
                 .instagramAccount(attachInstagramAccount(request.getInstagramAccountId()))
@@ -329,6 +331,7 @@ public class ExperimentService {
                 .sampleEmailsToGenerate(original.getSampleEmailsToGenerate())
                 .deliverablesToGenerate(original.getDeliverablesToGenerate())
                 .leadPortalFlowsToGenerate(original.getLeadPortalFlowsToGenerate())
+                .imagesPerPackage(original.getImagesPerPackage())
                 .facebookPage(original.getFacebookPage())
                 .instagramAccount(original.getInstagramAccount())
                 .facebookInstantForm(original.getFacebookInstantForm())
@@ -429,6 +432,9 @@ public class ExperimentService {
         }
         if (request.getLeadPortalFlowsToGenerate() != null) {
             exp.setLeadPortalFlowsToGenerate(request.getLeadPortalFlowsToGenerate());
+        }
+        if (request.getImagesPerPackage() != null) {
+            exp.setImagesPerPackage(normalizeImagesPerPackage(request.getImagesPerPackage()));
         }
         if (request.getCreativeApproved() != null) {
             exp.setCreativeApproved(request.getCreativeApproved());
@@ -553,6 +559,16 @@ public class ExperimentService {
         Experiment exp = repository.findById(id).orElseThrow();
         exp.setLeadPortalFlowsToGenerate(quantity);
         return exp;
+    }
+
+    private int normalizeImagesPerPackage(Integer imagesPerPackage) {
+        if (imagesPerPackage == null) {
+            return 20;
+        }
+        if (imagesPerPackage <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "imagesPerPackage must be greater than zero");
+        }
+        return imagesPerPackage;
     }
 
     private String normalizeFollowUpActionUrl(String url) {

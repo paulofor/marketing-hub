@@ -24,6 +24,7 @@ interface FormData {
   instagramAccountId: string;
   imageModelId: string;
   imageModelQualityId: string;
+  imagesPerPackage: string;
 }
 
 export default function EditExperimentPage() {
@@ -53,6 +54,7 @@ export default function EditExperimentPage() {
       instagramAccountId: "",
       imageModelId: "",
       imageModelQualityId: "",
+      imagesPerPackage: "",
     },
   });
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
@@ -235,6 +237,11 @@ export default function EditExperimentPage() {
         alert("Informe um orçamento diário válido");
         return;
       }
+      const parsedImagesPerPackage = Number(values.imagesPerPackage);
+      if (!values.imagesPerPackage || Number.isNaN(parsedImagesPerPackage) || parsedImagesPerPackage <= 0) {
+        alert("Informe uma quantidade válida de imagens por pacote");
+        return;
+      }
       const payload: UpdateExperiment = {
         name: values.name,
         hypothesis: data.hypothesis,
@@ -248,6 +255,7 @@ export default function EditExperimentPage() {
         instagramAccountId: Number(values.instagramAccountId),
         instantFormsToGenerate: data.instantFormsToGenerate ?? undefined,
         emailsToGenerate: data.emailsToGenerate ?? undefined,
+        imagesPerPackage: parsedImagesPerPackage,
       };
 
       if (dirtyFields.imageModelId) {

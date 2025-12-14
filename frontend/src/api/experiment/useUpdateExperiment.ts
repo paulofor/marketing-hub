@@ -17,6 +17,7 @@ export interface UpdateExperiment {
   emailsToGenerate?: number;
   deliverablesToGenerate?: number;
   leadPortalFlowsToGenerate?: number;
+  imagesPerPackage?: number;
   journeyTemplateId?: number;
   facebookPageId?: number | null;
   facebookInstantFormId?: number | null;

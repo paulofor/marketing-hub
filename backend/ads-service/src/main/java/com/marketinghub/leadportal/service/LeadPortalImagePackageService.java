@@ -68,7 +68,7 @@ public class LeadPortalImagePackageService {
                     pack.notified_at,
                     pack.prompt,
                     pack.model,
-                    pack.planned_outputs,
+                    COALESCE(pack.planned_outputs, exp.images_per_package, 20) AS planned_outputs,
                     pack.free_images,
                     pack.failure_reason,
                     pack.created_at,
@@ -91,6 +91,8 @@ public class LeadPortalImagePackageService {
                     (SELECT COUNT(*) FROM flow_submission_image_watermark wm JOIN flow_submission_image_item items2 ON items2.id = wm.item_id WHERE items2.package_id = pack.id) AS watermarked_count
                 FROM flow_submission_image_package pack
                 LEFT JOIN flow_submissions sub ON sub.id = pack.submission_id
+                LEFT JOIN lead_portal_flow flow ON flow.slug = sub.flow_slug
+                LEFT JOIN experiment exp ON exp.lead_portal_flow_id = flow.id
                 LEFT JOIN image_generation_model igm ON igm.id = pack.image_model_id
                 LEFT JOIN image_generation_quality igq ON igq.id = pack.image_model_quality_id
                 """);
@@ -118,7 +120,7 @@ public class LeadPortalImagePackageService {
                     pack.notified_at,
                     pack.prompt,
                     pack.model,
-                    pack.planned_outputs,
+                    COALESCE(pack.planned_outputs, exp.images_per_package, 20) AS planned_outputs,
                     pack.free_images,
                     pack.failure_reason,
                     pack.created_at,
@@ -144,6 +146,8 @@ public class LeadPortalImagePackageService {
                     sub.created_at AS submission_created_at
                 FROM flow_submission_image_package pack
                 LEFT JOIN flow_submissions sub ON sub.id = pack.submission_id
+                LEFT JOIN lead_portal_flow flow ON flow.slug = sub.flow_slug
+                LEFT JOIN experiment exp ON exp.lead_portal_flow_id = flow.id
                 LEFT JOIN image_generation_model igm ON igm.id = pack.image_model_id
                 LEFT JOIN image_generation_quality igq ON igq.id = pack.image_model_quality_id
                 WHERE pack.id = ?

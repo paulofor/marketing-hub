@@ -23,6 +23,7 @@ public record LeadPortalImagePackageDetailDto(
         String failureReason,
         Instant createdAt,
         Instant updatedAt,
+        List<StatusHistoryEntry> history,
         SubmissionInfo submission,
         ImageReference originalImage,
         List<ImageReference> generatedImages,
@@ -43,6 +44,12 @@ public record LeadPortalImagePackageDetailDto(
             String email,
             String phone,
             String imageQuestionKey
+    ) {}
+
+    public record StatusHistoryEntry(
+            FlowSubmissionImagePackageStatus status,
+            String failureReason,
+            Instant occurredAt
     ) {}
 
     public record ImageReference(

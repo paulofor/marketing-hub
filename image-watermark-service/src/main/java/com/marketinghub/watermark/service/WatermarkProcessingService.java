@@ -31,6 +31,7 @@ public class WatermarkProcessingService {
     private static final Logger log = LoggerFactory.getLogger(WatermarkProcessingService.class);
 
     private final FlowSubmissionImagePackageRepository packageRepository;
+    private final FlowSubmissionImagePackageStatusService statusService;
     private final AssetRepository assetRepository;
     private final FlowSubmissionImageWatermarkRepository watermarkRepository;
     private final StorageService storageService;
@@ -42,6 +43,7 @@ public class WatermarkProcessingService {
 
     public WatermarkProcessingService(
             FlowSubmissionImagePackageRepository packageRepository,
+            FlowSubmissionImagePackageStatusService statusService,
             AssetRepository assetRepository,
             FlowSubmissionImageWatermarkRepository watermarkRepository,
             StorageService storageService,
@@ -51,6 +53,7 @@ public class WatermarkProcessingService {
             ObjectMapper objectMapper,
             TransactionTemplate transactionTemplate) {
         this.packageRepository = packageRepository;
+        this.statusService = statusService;
         this.assetRepository = assetRepository;
         this.watermarkRepository = watermarkRepository;
         this.storageService = storageService;
@@ -71,19 +74,19 @@ public class WatermarkProcessingService {
 
         for (Long packageId : packageIds) {
             Boolean locked = transactionTemplate.execute(status ->
-                    packageRepository.updateStatus(packageId, Status.WATERMARK_PENDING, Status.WATERMARKING, null) > 0);
+                    statusService.updateStatus(packageId, Status.WATERMARK_PENDING, Status.WATERMARKING, null));
             if (locked == null || !locked) {
                 continue;
             }
             try {
                 transactionTemplate.executeWithoutResult(status -> applyWatermarkInternal(packageId));
                 transactionTemplate.executeWithoutResult(status ->
-                        packageRepository.updateStatus(packageId, Status.WATERMARKING, Status.COMPLETED, null));
+                        statusService.updateStatus(packageId, Status.WATERMARKING, Status.COMPLETED, null));
                 log.info("Pacote {} marcado como COMPLETED após geração de marca d'água", packageId);
             } catch (Exception ex) {
                 String reason = "Marca d'água: " + ex.getMessage();
                 transactionTemplate.executeWithoutResult(status ->
-                        packageRepository.updateStatus(packageId, Status.WATERMARKING, Status.FAILED, reason));
+                        statusService.updateStatus(packageId, Status.WATERMARKING, Status.FAILED, reason));
                 log.error("Falha ao aplicar marca d'água no pacote {}", packageId, ex);
             }
         }

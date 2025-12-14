@@ -44,14 +44,17 @@ public class LeadPortalImagePackageService {
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
     private final LeadPortalIntegrationProperties integrationProperties;
+    private final LeadPortalImagePackageStatusHistoryService statusHistoryService;
 
     public LeadPortalImagePackageService(
             JdbcTemplate jdbcTemplate,
             ObjectMapper objectMapper,
-            LeadPortalIntegrationProperties integrationProperties) {
+            LeadPortalIntegrationProperties integrationProperties,
+            LeadPortalImagePackageStatusHistoryService statusHistoryService) {
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = objectMapper;
         this.integrationProperties = integrationProperties;
+        this.statusHistoryService = statusHistoryService;
     }
 
     public List<LeadPortalImagePackageSummaryDto> listImagePackages(Collection<FlowSubmissionImagePackageStatus> statuses) {
@@ -164,6 +167,13 @@ public class LeadPortalImagePackageService {
                 summary.phone(),
                 projection.imageQuestionKey());
 
+        List<LeadPortalImagePackageDetailDto.StatusHistoryEntry> history = statusHistoryService.listHistory(id).stream()
+                .map(entry -> new LeadPortalImagePackageDetailDto.StatusHistoryEntry(
+                        entry.status(),
+                        entry.failureReason(),
+                        entry.occurredAt()))
+                .toList();
+
         return new LeadPortalImagePackageDetailDto(
                 summary.id(),
                 summary.submissionId(),
@@ -177,6 +187,7 @@ public class LeadPortalImagePackageService {
                 summary.failureReason(),
                 summary.createdAt(),
                 summary.updatedAt(),
+                history,
                 submissionInfo,
                 originalImage,
                 generatedImages,
@@ -206,6 +217,8 @@ public class LeadPortalImagePackageService {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Pacote %d não pode ser reprocessado a partir do status %s".formatted(packageId, current));
+        } else {
+            statusHistoryService.recordStatusChange(packageId, FlowSubmissionImagePackageStatus.RECEIVED, null);
         }
     }
 

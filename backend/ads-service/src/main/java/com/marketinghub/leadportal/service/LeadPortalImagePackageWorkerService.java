@@ -92,7 +92,7 @@ public class LeadPortalImagePackageWorkerService {
                     pack.id,
                     pack.submission_id,
                     sub.stored_file_name,
-                    pack.planned_outputs,
+                    COALESCE(pack.planned_outputs, exp.images_per_package, 20) AS planned_outputs,
                     pack.free_images,
                     pack.model,
                     pack.prompt,

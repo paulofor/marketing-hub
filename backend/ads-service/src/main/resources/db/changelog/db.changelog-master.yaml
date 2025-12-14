@@ -300,3 +300,7 @@ databaseChangeLog:
   - include:
       file: V2030_04_01__lead_portal_image_package_status_history.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2030_04_20__experiment_images_per_package.sql
+      relativeToChangelogFile: true
+

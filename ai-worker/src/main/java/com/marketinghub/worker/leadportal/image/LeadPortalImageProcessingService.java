@@ -30,7 +30,7 @@ public class LeadPortalImageProcessingService {
 
     private static final Logger log = LoggerFactory.getLogger(LeadPortalImageProcessingService.class);
     private static final String DEFAULT_TREATMENT =
-            "Produzir 20 imagens para post de Instagram usando a original como base";
+            "Produzir imagens para post de Instagram usando a original como base";
     private static final int PROMPT_MAX_LENGTH = 1000;
     private static final int MAX_IMAGE_ATTEMPTS = 3;
     private static final Duration RETRY_DELAY_BASE = Duration.ofMillis(500);

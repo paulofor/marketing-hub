@@ -46,6 +46,7 @@ public class ExperimentDto {
     private Integer sampleEmailsToGenerate;
     private Integer deliverablesToGenerate;
     private Integer leadPortalFlowsToGenerate;
+    private Integer imagesPerPackage;
     private Long imageModelId;
     private String imageModelName;
     private Long imageModelQualityId;

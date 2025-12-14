@@ -68,6 +68,7 @@ export interface Experiment {
   sampleEmailsToGenerate?: number | null;
   deliverablesToGenerate?: number | null;
   leadPortalFlowsToGenerate?: number | null;
+  imagesPerPackage?: number | null;
   imageModelId?: number | null;
   imageModelName?: string | null;
   imageModelQualityId?: number | null;

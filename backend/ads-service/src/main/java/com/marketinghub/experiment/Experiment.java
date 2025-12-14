@@ -142,6 +142,11 @@ public class Experiment {
     @Column(name = "lead_portal_flows_to_generate")
     private Integer leadPortalFlowsToGenerate;
 
+    /** Quantidade de imagens que cada pacote deve conter. */
+    @Builder.Default
+    @Column(name = "images_per_package", nullable = false)
+    private Integer imagesPerPackage = 20;
+
     @CreationTimestamp
     private Instant createdAt;
 

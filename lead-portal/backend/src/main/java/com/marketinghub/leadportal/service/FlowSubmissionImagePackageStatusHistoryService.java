@@ -1,22 +1,19 @@
 package com.marketinghub.leadportal.service;
 
 import com.marketinghub.leadportal.entity.FlowSubmissionImagePackageEntity;
-import java.sql.Timestamp;
-import java.time.Instant;
-import org.springframework.jdbc.core.JdbcTemplate;
+import com.marketinghub.leadportal.entity.FlowSubmissionImagePackageStatusHistoryEntity;
+import com.marketinghub.leadportal.repository.FlowSubmissionImagePackageStatusHistoryRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 @Service
 public class FlowSubmissionImagePackageStatusHistoryService {
 
-    private static final String INSERT_SQL = "INSERT INTO flow_submission_image_package_status_history "
-            + "(package_id, status, failure_reason, created_at) VALUES (?, ?, ?, ?)";
+    private final FlowSubmissionImagePackageStatusHistoryRepository repository;
 
-    private final JdbcTemplate jdbcTemplate;
-
-    public FlowSubmissionImagePackageStatusHistoryService(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
+    public FlowSubmissionImagePackageStatusHistoryService(
+            FlowSubmissionImagePackageStatusHistoryRepository repository) {
+        this.repository = repository;
     }
 
     public void recordStatusChange(Long packageId, FlowSubmissionImagePackageEntity.Status status, String reason) {
@@ -24,6 +21,13 @@ public class FlowSubmissionImagePackageStatusHistoryService {
             return;
         }
         String normalizedReason = StringUtils.hasText(reason) ? reason.trim() : null;
-        jdbcTemplate.update(INSERT_SQL, packageId, status.name(), normalizedReason, Timestamp.from(Instant.now()));
+
+        FlowSubmissionImagePackageStatusHistoryEntity history =
+                new FlowSubmissionImagePackageStatusHistoryEntity();
+        history.setPackageId(packageId);
+        history.setStatus(status.name());
+        history.setFailureReason(normalizedReason);
+
+        repository.save(history);
     }
 }

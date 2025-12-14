@@ -40,6 +40,7 @@ public class LeadPortalPackageNotificationService {
     private final JdbcTemplate jdbcTemplate;
     private final FileStorageService fileStorageService;
     private final LeadPortalEmailSender emailSender;
+    private final LeadPortalImagePackageStatusHistoryService statusHistoryService;
 
     @Value("${lead-portal.notifications.enabled:false}")
     private boolean notificationsEnabled;
@@ -56,10 +57,12 @@ public class LeadPortalPackageNotificationService {
     public LeadPortalPackageNotificationService(
             JdbcTemplate jdbcTemplate,
             FileStorageService fileStorageService,
-            LeadPortalEmailSender emailSender) {
+            LeadPortalEmailSender emailSender,
+            LeadPortalImagePackageStatusHistoryService statusHistoryService) {
         this.jdbcTemplate = jdbcTemplate;
         this.fileStorageService = fileStorageService;
         this.emailSender = emailSender;
+        this.statusHistoryService = statusHistoryService;
     }
 
     @PostConstruct
@@ -332,13 +335,16 @@ public class LeadPortalPackageNotificationService {
         FlowSubmissionImagePackageStatus nextStatus = currentStatus == FlowSubmissionImagePackageStatus.COMPLETED
                 ? currentStatus
                 : FlowSubmissionImagePackageStatus.COMPLETED;
-        jdbcTemplate.update(
+        int updated = jdbcTemplate.update(
                 "UPDATE flow_submission_image_package SET notified_at = ?, notification_attempts = notification_attempts + 1, "
                         + "notification_last_attempt = ?, notification_last_error = NULL, status = ? WHERE id = ?",
                 Timestamp.from(Instant.now()),
                 Timestamp.from(Instant.now()),
                 nextStatus.name(),
                 packageId);
+        if (updated > 0) {
+            statusHistoryService.recordStatusChange(packageId, nextStatus, null);
+        }
     }
 
     private void recordFailure(long packageId, String error) {

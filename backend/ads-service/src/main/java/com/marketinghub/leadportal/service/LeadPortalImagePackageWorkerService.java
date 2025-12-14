@@ -68,16 +68,19 @@ public class LeadPortalImagePackageWorkerService {
     private final AssetRepository assetRepository;
     private final ObjectMapper objectMapper;
     private final ImageGenerationPricingService pricingService;
+    private final LeadPortalImagePackageStatusHistoryService statusHistoryService;
 
     public LeadPortalImagePackageWorkerService(
             JdbcTemplate jdbcTemplate,
             AssetRepository assetRepository,
             ObjectMapper objectMapper,
-            ImageGenerationPricingService pricingService) {
+            ImageGenerationPricingService pricingService,
+            LeadPortalImagePackageStatusHistoryService statusHistoryService) {
         this.jdbcTemplate = jdbcTemplate;
         this.assetRepository = assetRepository;
         this.objectMapper = objectMapper;
         this.pricingService = pricingService;
+        this.statusHistoryService = statusHistoryService;
     }
 
     /**
@@ -130,6 +133,8 @@ public class LeadPortalImagePackageWorkerService {
                     .orElseThrow(() -> notFound(packageId));
             throw conflict("Pacote %d não está apto a entrar em processamento (status atual: %s)"
                     .formatted(packageId, current));
+        } else {
+            statusHistoryService.recordStatusChange(packageId, FlowSubmissionImagePackageStatus.PROCESSING, null);
         }
     }
 
@@ -141,11 +146,12 @@ public class LeadPortalImagePackageWorkerService {
         if (!StringUtils.hasText(reason)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "reason não pode ser vazio");
         }
+        String trimmedReason = reason.trim();
         int updated = jdbcTemplate.update(
                 "UPDATE flow_submission_image_package SET status = ?, failure_reason = ?, updated_at = ? "
                         + "WHERE id = ? AND status IN (?, ?, ?)",
                 FlowSubmissionImagePackageStatus.FAILED.name(),
-                reason.trim(),
+                trimmedReason,
                 Timestamp.from(Instant.now()),
                 packageId,
                 FlowSubmissionImagePackageStatus.PROCESSING.name(),
@@ -156,6 +162,8 @@ public class LeadPortalImagePackageWorkerService {
                     .orElseThrow(() -> notFound(packageId));
             throw conflict("Pacote %d não pode ser marcado como FAILED a partir do status %s"
                     .formatted(packageId, current));
+        } else {
+            statusHistoryService.recordStatusChange(packageId, FlowSubmissionImagePackageStatus.FAILED, trimmedReason);
         }
     }
 
@@ -179,6 +187,8 @@ public class LeadPortalImagePackageWorkerService {
                     .orElseThrow(() -> notFound(packageId));
             throw conflict("Pacote %d não pode ser reprocessado a partir do status %s"
                     .formatted(packageId, current));
+        } else {
+            statusHistoryService.recordStatusChange(packageId, FlowSubmissionImagePackageStatus.RECEIVED, normalizedReason);
         }
     }
 
@@ -253,6 +263,8 @@ public class LeadPortalImagePackageWorkerService {
                 FlowSubmissionImagePackageStatus.PROCESSING.name());
         if (updated == 0) {
             throw conflict("Não foi possível concluir o pacote %d porque seu status mudou durante o processamento".formatted(packageId));
+        } else {
+            statusHistoryService.recordStatusChange(packageId, FlowSubmissionImagePackageStatus.WATERMARK_PENDING, null);
         }
     }
 

@@ -31,16 +31,19 @@ public class FlowSubmissionService {
     private final FlowSubmissionRepository repository;
     private final FlowSubmissionImagePackageRepository imagePackageRepository;
     private final FileStorageService fileStorageService;
+    private final FlowSubmissionImagePackageStatusHistoryService statusHistoryService;
 
     public FlowSubmissionService(
             FlowService flowService,
             FlowSubmissionRepository repository,
             FlowSubmissionImagePackageRepository imagePackageRepository,
-            FileStorageService fileStorageService) {
+            FileStorageService fileStorageService,
+            FlowSubmissionImagePackageStatusHistoryService statusHistoryService) {
         this.flowService = flowService;
         this.repository = repository;
         this.imagePackageRepository = imagePackageRepository;
         this.fileStorageService = fileStorageService;
+        this.statusHistoryService = statusHistoryService;
     }
 
     public FlowSubmission create(String slug, FlowSubmissionRequest request, MultipartFile imageFile) {
@@ -152,7 +155,8 @@ public class FlowSubmissionService {
         imagePackage.setModel(flow.model());
         imagePackage.setPrompt(Optional.ofNullable(flow.prompt()).orElse(""));
 
-        imagePackageRepository.save(imagePackage);
+        FlowSubmissionImagePackageEntity savedPackage = imagePackageRepository.save(imagePackage);
+        statusHistoryService.recordStatusChange(savedPackage.getId(), FlowSubmissionImagePackageEntity.Status.RECENT, null);
     }
 
     private Map<String, Object> sanitizeAnswers(Flow flow, FlowSubmissionRequest request) {

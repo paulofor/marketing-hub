@@ -65,7 +65,7 @@ lead-portal:
     # Timeout mais alto para baixar anexos grandes do storage
     read-timeout: ${LEAD_PORTAL_DISPATCH_READ_TIMEOUT:180000}
 email-service:
-  default-from-address: ${EMAIL_SERVICE_FROM_ADDRESS:no-reply@marketinghub.com.br}
+  default-from-address: ${EMAIL_SERVICE_FROM_ADDRESS:no-reply@digicomonline.com.br}
   dry-run: ${EMAIL_SERVICE_DRY_RUN:false}
 
 logging:

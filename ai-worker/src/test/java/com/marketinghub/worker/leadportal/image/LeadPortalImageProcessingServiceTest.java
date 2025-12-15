@@ -1,9 +1,11 @@
 package com.marketinghub.worker.leadportal.image;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -15,6 +17,7 @@ import com.marketinghub.worker.imagegeneration.ImageGenerationPlanService;
 import com.marketinghub.worker.imagegeneration.ImageOrientation;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.http.HttpStatusCode;
 import org.junit.jupiter.api.Test;
@@ -69,9 +72,20 @@ class LeadPortalImageProcessingServiceTest {
                 1L,
                 2L);
         when(imageClient.isEnabled()).thenReturn(true);
-        doNothing().when(packageClient).markProcessing(anyLong());
-        when(planService.detectOrientation(any())).thenReturn(ImageOrientation.SQUARE);
-        when(planService.resolvePlan(any(), any())).thenReturn(samplePlan);
+        lenient().when(planService.detectOrientation(any())).thenReturn(ImageOrientation.SQUARE);
+        lenient().when(planService.resolvePlan(any(), any())).thenReturn(samplePlan);
+    }
+
+    @Test
+    void returnsEmptyListWhenListingPackagesTimesOut() {
+        when(packageClient.listRecentPackages()).thenThrow(new RuntimeException(new TimeoutException(
+                "Timeout ao buscar pacotes")));
+
+        List<LeadPortalImagePackageClient.ImagePackage> result = service.process();
+
+        assertThat(result).isEmpty();
+        verify(packageClient, never()).markProcessing(anyLong());
+        verify(storageClient, never()).download(anyString());
     }
 
     @Test

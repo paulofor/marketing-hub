@@ -56,7 +56,10 @@ public class LeadPortalImageProcessingService {
             log.warn("OpenAI API key not configured; skipping lead-portal image processing");
             return List.of();
         }
-        List<LeadPortalImagePackageClient.ImagePackage> packages = packageClient.listRecentPackages();
+        List<LeadPortalImagePackageClient.ImagePackage> packages = fetchRecentPackages();
+        if (packages == null) {
+            return List.of();
+        }
         for (LeadPortalImagePackageClient.ImagePackage imagePackage : packages) {
             boolean startedProcessing = false;
             try {
@@ -92,6 +95,23 @@ public class LeadPortalImageProcessingService {
             }
         }
         return packages;
+    }
+
+    private List<LeadPortalImagePackageClient.ImagePackage> fetchRecentPackages() {
+        try {
+            return packageClient.listRecentPackages();
+        } catch (Exception ex) {
+            String reason = resolveFailureReason(ex);
+            if (isTransientError(ex)) {
+                log.warn(
+                        "Failed to list lead-portal image packages due to transient error: {}. Will retry later.",
+                        reason);
+                log.debug("Transient failure while listing lead-portal image packages", ex);
+            } else {
+                log.error("Failed to list lead-portal image packages: {}", reason, ex);
+            }
+            return null;
+        }
     }
 
     private void handlePackage(LeadPortalImagePackageClient.ImagePackage imagePackage) {

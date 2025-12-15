@@ -8,6 +8,7 @@ import com.marketinghub.leadportal.FlowSubmissionImagePackageStatus;
 import com.marketinghub.leadportal.dto.LeadPortalImagePackageDetailDto;
 import com.marketinghub.leadportal.dto.LeadPortalImagePackageSummaryDto;
 import com.marketinghub.leadportal.integration.LeadPortalIntegrationProperties;
+import com.marketinghub.storage.FileStorageService;
 import java.nio.ByteBuffer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -45,16 +46,19 @@ public class LeadPortalImagePackageService {
     private final ObjectMapper objectMapper;
     private final LeadPortalIntegrationProperties integrationProperties;
     private final LeadPortalImagePackageStatusHistoryService statusHistoryService;
+    private final FileStorageService fileStorageService;
 
     public LeadPortalImagePackageService(
             JdbcTemplate jdbcTemplate,
             ObjectMapper objectMapper,
             LeadPortalIntegrationProperties integrationProperties,
-            LeadPortalImagePackageStatusHistoryService statusHistoryService) {
+            LeadPortalImagePackageStatusHistoryService statusHistoryService,
+            FileStorageService fileStorageService) {
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = objectMapper;
         this.integrationProperties = integrationProperties;
         this.statusHistoryService = statusHistoryService;
+        this.fileStorageService = fileStorageService;
     }
 
     public List<LeadPortalImagePackageSummaryDto> listImagePackages(Collection<FlowSubmissionImagePackageStatus> statuses) {
@@ -177,6 +181,8 @@ public class LeadPortalImagePackageService {
                         entry.failureReason(),
                         entry.occurredAt()))
                 .toList();
+        LeadPortalImagePackageDetailDto.ZipExport sampleZip = buildSampleZip(
+                projection.zipObjectKey(), projection.zipGeneratedAt());
 
         return new LeadPortalImagePackageDetailDto(
                 summary.id(),
@@ -192,6 +198,7 @@ public class LeadPortalImagePackageService {
                 summary.createdAt(),
                 summary.updatedAt(),
                 history,
+                sampleZip,
                 submissionInfo,
                 originalImage,
                 generatedImages,
@@ -302,7 +309,18 @@ public class LeadPortalImagePackageService {
                 rs.getString("email"),
                 rs.getString("image_question_key"),
                 rs.getString("stored_file_name"),
-                toInstant(rs.getTimestamp("submission_created_at")));
+                toInstant(rs.getTimestamp("submission_created_at")),
+                rs.getString("zip_object_key"),
+                toInstant(rs.getTimestamp("zip_generated_at")));
+    }
+
+    private LeadPortalImagePackageDetailDto.ZipExport buildSampleZip(String zipObjectKey, Instant zipGeneratedAt) {
+        if (!StringUtils.hasText(zipObjectKey)) {
+            return null;
+        }
+
+        String downloadUrl = fileStorageService.resolvePublicUrl(zipObjectKey).orElse(null);
+        return new LeadPortalImagePackageDetailDto.ZipExport(zipObjectKey, downloadUrl, zipGeneratedAt);
     }
 
     private LeadPortalImagePackageDetailDto.ImageReference buildOriginalImage(DetailProjection projection) {
@@ -508,6 +526,8 @@ public class LeadPortalImagePackageService {
             String email,
             String imageQuestionKey,
             String storedFileName,
-            Instant submissionCreatedAt
+            Instant submissionCreatedAt,
+            String zipObjectKey,
+            Instant zipGeneratedAt
     ) {}
 }

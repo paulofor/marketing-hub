@@ -4,6 +4,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  FileArchive,
+  History,
   Image as ImageIcon,
   Loader2,
   ShieldAlert,
@@ -11,10 +13,11 @@ import {
 import {
   useLeadPortalImagePackageDetail,
   type LeadPortalImageReference,
+  type LeadPortalSampleZipInfo,
+  type LeadPortalStatusHistoryEntry,
 } from "../../api/leadPortal/useLeadPortalImagePackageDetail";
 import { getStatusDetail } from "./statusDetails";
 import type {
-  FlowSubmissionImagePackageStatus,
   LeadPortalImagePackageLifecycleStatus,
 } from "../../api/leadPortal/useLeadPortalSubmissions";
 import "./LeadPortalImagesPage.css";
@@ -159,10 +162,19 @@ export default function LeadPortalImagePackageDetailPage() {
     return buildGalleryItems(displayStatus ?? data.status, data.originalImage, data.generatedImages);
   }, [data, displayStatus]);
 
+  const sampleZip: LeadPortalSampleZipInfo | null | undefined = data?.sampleZip;
+  const historyEntries = useMemo(() => {
+    if (!data?.history) return [] as LeadPortalStatusHistoryEntry[];
+    return [...data.history].sort((a, b) =>
+      new Date(a.occurredAt ?? 0).getTime() - new Date(b.occurredAt ?? 0).getTime(),
+    );
+  }, [data?.history]);
+
   const currentItem = galleryItems[currentIndex];
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex < galleryItems.length - 1;
   const statusDetail = displayStatus ? getStatusDetail(displayStatus) : null;
+  const hasSampleZipLink = Boolean(sampleZip?.downloadUrl);
 
   const handleBackClick = () => {
     navigate("/lead-portal/images");
@@ -212,6 +224,33 @@ export default function LeadPortalImagePackageDetailPage() {
                 </span>
               </div>
             ) : null}
+          </div>
+          <div className="lead-portal-image-detail__header-actions">
+            {data ? (
+              hasSampleZipLink ? (
+                <>
+                  <a
+                    href={sampleZip?.downloadUrl ?? undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-outline-primary btn-sm"
+                  >
+                    <Download size={16} className="me-1" /> Baixar ZIP de amostras
+                  </a>
+                  {sampleZip?.generatedAt ? (
+                    <span className="text-muted small">
+                      Gerado {formatDateTime(sampleZip.generatedAt)}
+                    </span>
+                  ) : null}
+                </>
+              ) : (
+                <div className="lead-portal-image-detail__chip" role="status">
+                  Pacote ZIP ainda não disponível
+                </div>
+              )
+            ) : (
+              <span className="text-muted small">Carregando pacote…</span>
+            )}
           </div>
         </header>
 
@@ -322,6 +361,48 @@ export default function LeadPortalImagePackageDetailPage() {
               </div>
 
               <div className="lead-portal-image-detail__section">
+                <h3>Amostras com marca d'água</h3>
+                {sampleZip ? (
+                  <>
+                    <dl className="lead-portal-image-detail__description-list">
+                      <div>
+                        <dt>Gerado em</dt>
+                        <dd>{formatDateTime(sampleZip.generatedAt)}</dd>
+                      </div>
+                      {sampleZip.objectKey ? (
+                        <div>
+                          <dt>Arquivo</dt>
+                          <dd className="lead-portal-image-detail__object-key">
+                            {sampleZip.objectKey}
+                          </dd>
+                        </div>
+                      ) : null}
+                    </dl>
+                    <div className="lead-portal-image-detail__zip-actions">
+                      {sampleZip.downloadUrl ? (
+                        <a
+                          href={sampleZip.downloadUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-sm btn-outline-primary"
+                        >
+                          <FileArchive size={16} className="me-1" /> Baixar pacote de amostras
+                        </a>
+                      ) : (
+                        <span className="text-muted small">
+                          Link do ZIP ainda não disponível.
+                        </span>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="alert alert-secondary mb-0" role="status">
+                    O arquivo .zip com as prévias ainda não foi gerado para este pacote.
+                  </div>
+                )}
+              </div>
+
+              <div className="lead-portal-image-detail__section">
                 <h3>Lead</h3>
                 <dl className="lead-portal-image-detail__description-list">
                   <div>
@@ -349,6 +430,54 @@ export default function LeadPortalImagePackageDetailPage() {
                   <p className="mb-0">{data.failureReason}</p>
                 </div>
               ) : null}
+
+              <div className="lead-portal-image-detail__section">
+                <h3 className="lead-portal-image-detail__section-title"><History size={16} className="me-2" aria-hidden="true" />Histórico de status</h3>
+                {historyEntries.length > 0 ? (
+                  <ul
+                    className="lead-portal-image-detail__history"
+                    aria-label="Histórico de movimentação do pacote"
+                  >
+                    {historyEntries.map((entry, index) => {
+                      const detail = getStatusDetail(
+                        entry.status as LeadPortalImagePackageLifecycleStatus,
+                      );
+                      return (
+                        <li
+                          key={`${entry.status}-${entry.occurredAt}-${index}`}
+                          className="lead-portal-image-detail__history-item"
+                        >
+                          <div
+                            className="lead-portal-image-detail__history-marker"
+                            aria-hidden="true"
+                          />
+                          <div className="lead-portal-image-detail__history-content">
+                            <div className="lead-portal-image-detail__history-header">
+                              <span className={`badge ${detail.badgeClass}`}>{detail.label}</span>
+                              <span className="text-muted small">
+                                {formatDateTime(entry.occurredAt)}
+                              </span>
+                            </div>
+                            {entry.failureReason ? (
+                              <p className="lead-portal-image-detail__history-text text-danger mb-0">
+                                {entry.failureReason}
+                              </p>
+                            ) : (
+                              <p className="lead-portal-image-detail__history-text text-muted mb-0">
+                                Status atualizado
+                              </p>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <p className="text-muted mb-0">
+                    Nenhuma transição de status registrada para este pacote.
+                  </p>
+                )}
+              </div>
             </section>
 
             <section

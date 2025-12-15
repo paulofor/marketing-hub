@@ -29,6 +29,18 @@ export interface LeadPortalImageReference {
   watermark?: LeadPortalWatermarkReference | null;
 }
 
+export interface LeadPortalStatusHistoryEntry {
+  status: FlowSubmissionImagePackageStatus;
+  failureReason?: string | null;
+  occurredAt: string;
+}
+
+export interface LeadPortalSampleZipInfo {
+  objectKey?: string | null;
+  downloadUrl?: string | null;
+  generatedAt?: string | null;
+}
+
 export interface LeadPortalImagePackageDetail extends LeadPortalImagePackage {
   status: FlowSubmissionImagePackageStatus;
   submission: {
@@ -38,6 +50,8 @@ export interface LeadPortalImagePackageDetail extends LeadPortalImagePackage {
     phone?: string | null;
     imageQuestionKey?: string | null;
   };
+  history: LeadPortalStatusHistoryEntry[];
+  sampleZip?: LeadPortalSampleZipInfo | null;
   originalImage?: LeadPortalImageReference | null;
   generatedImages: LeadPortalImageReference[];
 }
@@ -143,6 +157,21 @@ function withPublicImageUrl(
   };
 }
 
+function withPublicSampleZip(
+  sample?: LeadPortalSampleZipInfo | null,
+): LeadPortalSampleZipInfo | null {
+  if (!sample) return null;
+
+  const publicUrl = buildPublicImageUrl(sample.objectKey);
+  const downloadUrl =
+    publicUrl && shouldUsePublicUrl(sample.downloadUrl) ? publicUrl : sample.downloadUrl;
+
+  return {
+    ...sample,
+    downloadUrl: downloadUrl ?? sample.downloadUrl ?? publicUrl ?? null,
+  };
+}
+
 export function useLeadPortalImagePackageDetail(id?: number | null) {
   return useQuery<LeadPortalImagePackageDetail, Error>({
     queryKey: ["lead-portal-image-package", id],
@@ -156,8 +185,10 @@ export function useLeadPortalImagePackageDetail(id?: number | null) {
       );
       return {
         ...data,
+        history: data.history ?? [],
+        sampleZip: withPublicSampleZip(data.sampleZip),
         originalImage: withPublicImageUrl(data.originalImage),
-        generatedImages: data.generatedImages
+        generatedImages: (data.generatedImages ?? [])
           .map((image) => withPublicImageUrl(image))
           .filter(
             (image): image is LeadPortalImageReference => image !== null,

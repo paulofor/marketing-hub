@@ -24,6 +24,7 @@ public record LeadPortalImagePackageDetailDto(
         Instant createdAt,
         Instant updatedAt,
         List<StatusHistoryEntry> history,
+        ZipExport sampleZip,
         SubmissionInfo submission,
         ImageReference originalImage,
         List<ImageReference> generatedImages,
@@ -65,6 +66,12 @@ public record LeadPortalImagePackageDetailDto(
             Long itemId,
             String storedFileName,
             WatermarkReference watermark
+    ) {}
+
+    public record ZipExport(
+            String objectKey,
+            String downloadUrl,
+            Instant generatedAt
     ) {}
 
     public record WatermarkReference(

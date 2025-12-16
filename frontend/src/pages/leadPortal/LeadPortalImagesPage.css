@@ -152,6 +152,21 @@
   gap: 1rem;
 }
 
+.lead-portal-images__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.25rem 0 0;
+  border-top: 1px solid var(--bs-border-color);
+}
+
+.lead-portal-images__pagination-text {
+  color: var(--bs-secondary-color);
+  font-weight: 600;
+}
+
 .lead-portal-image-card {
   display: flex;
   flex-direction: column;

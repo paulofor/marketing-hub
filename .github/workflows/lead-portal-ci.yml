@@ -161,7 +161,8 @@ jobs:
             && (docker network inspect public-net >/dev/null 2>&1 || docker network create public-net) \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d \
-            && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --force-recreate proxy"
+            && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --force-recreate proxy \
+            && docker image prune -af"
       - name: Clean build artifacts from repository
         if: always()
         run: |

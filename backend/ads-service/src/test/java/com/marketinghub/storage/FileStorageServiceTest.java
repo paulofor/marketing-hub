@@ -15,7 +15,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.Resource;
 import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.core.internal.http.AbortableInputStream;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -64,7 +63,6 @@ class FileStorageServiceTest {
         GetObjectResponse response = GetObjectResponse.builder()
                 .contentLength((long) data.length)
                 .build();
-        AbortableInputStream abortableStream = AbortableInputStream.create(new ByteArrayInputStream(data));
-        return new ResponseInputStream<>(response, abortableStream);
+        return new ResponseInputStream<>(response, new ByteArrayInputStream(data));
     }
 }

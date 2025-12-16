@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CheckCircle,
@@ -22,6 +22,8 @@ import {
 import "./LeadPortalImagesPage.css";
 
 type StatusFilter = FlowSubmissionImagePackageStatus | "ALL";
+
+const PAGE_SIZE = 15;
 
 const filterableStatuses: FlowSubmissionImagePackageStatus[] = [
   "RECEIVED",
@@ -141,9 +143,11 @@ function buildStatusBadgeClass(status: LeadPortalImagePackageLifecycleStatus) {
 export default function LeadPortalImagesPage() {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+  const [page, setPage] = useState(0);
 
   const statusesParam = statusFilter === "ALL" ? undefined : [statusFilter];
-  const { data, isLoading, isError } = useLeadPortalImagePackages(statusesParam);
+  const { data, isLoading, isError, isFetching } =
+    useLeadPortalImagePackages(statusesParam);
 
   const submissions = useMemo(() => {
     if (!data) return [] as LeadPortalImagePackage[];
@@ -152,7 +156,27 @@ export default function LeadPortalImagesPage() {
     );
   }, [data]);
 
-  const totalDisplayed = submissions.length;
+  const totalPages = Math.ceil(submissions.length / PAGE_SIZE);
+
+  useEffect(() => {
+    if (page > 0) {
+      if (totalPages === 0) {
+        setPage(0);
+      } else if (page >= totalPages) {
+        setPage(totalPages - 1);
+      }
+    }
+  }, [page, totalPages]);
+
+  const paginatedSubmissions = useMemo(() => {
+    const start = page * PAGE_SIZE;
+    return submissions.slice(start, start + PAGE_SIZE);
+  }, [page, submissions]);
+
+  const totalDisplayed = paginatedSubmissions.length;
+  const currentPage = totalPages === 0 ? 0 : page + 1;
+  const canGoPrevious = page > 0;
+  const canGoNext = page + 1 < totalPages;
 
   const totalCostSnapshot = useMemo(() => {
     return submissions.reduce<{
@@ -220,9 +244,10 @@ export default function LeadPortalImagesPage() {
               id="lead-portal-status-filter"
               className="form-select form-select-sm"
               value={statusFilter}
-              onChange={(event) =>
-                setStatusFilter(event.target.value as StatusFilter)
-              }
+              onChange={(event) => {
+                setStatusFilter(event.target.value as StatusFilter);
+                setPage(0);
+              }}
             >
               <option value="ALL">Todos os status</option>
               {filterableStatuses.map((status) => {
@@ -262,96 +287,139 @@ export default function LeadPortalImagesPage() {
           </p>
         </div>
       ) : (
-        <div className="lead-portal-images__list" role="list">
-          {submissions.map((submission) => {
-            const displayStatus: LeadPortalImagePackageLifecycleStatus =
-              (submission.lifecycleStatus ?? submission.status) as LeadPortalImagePackageLifecycleStatus;
-            const detail = buildStatusNarrative(displayStatus);
-            const stats = buildStats(submission);
+        <>
+          <div className="lead-portal-images__list" role="list">
+            {paginatedSubmissions.map((submission) => {
+              const displayStatus: LeadPortalImagePackageLifecycleStatus =
+                (submission.lifecycleStatus ?? submission.status) as LeadPortalImagePackageLifecycleStatus;
+              const detail = buildStatusNarrative(displayStatus);
+              const stats = buildStats(submission);
 
-            return (
-              <article
-                key={submission.id}
-                className="lead-portal-image-card"
-                role="listitem"
-                tabIndex={0}
-                aria-label={`Pacote ${detail.label} do lead ${buildLeadLabel(submission)}`}
-                onClick={() => navigate(`/lead-portal/images/${submission.id}`)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    navigate(`/lead-portal/images/${submission.id}`);
+              return (
+                <article
+                  key={submission.id}
+                  className="lead-portal-image-card"
+                  role="listitem"
+                  tabIndex={0}
+                  aria-label={`Pacote ${detail.label} do lead ${buildLeadLabel(submission)}`}
+                  onClick={() => navigate(`/lead-portal/images/${submission.id}`)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      navigate(`/lead-portal/images/${submission.id}`);
+                    }
+                  }}
+                >
+                  <div className="lead-portal-image-card__body">
+                    <div className="lead-portal-image-card__status">
+                      <span
+                        className={`badge d-inline-flex align-items-center gap-1 ${buildStatusBadgeClass(displayStatus)}`}
+                      >
+                        {buildPipelineIcon(displayStatus)}
+                        {detail.label}
+                      </span>
+                      <span className="text-muted small">
+                        Atualizado {formatDate(submission.updatedAt)}
+                      </span>
+                    </div>
+
+                    <div className="lead-portal-image-card__meta">
+                      <div>
+                        <p className="lead-portal-image-card__lead">{buildLeadLabel(submission)}</p>
+                        <h2 className="lead-portal-image-card__title">
+                          {submission.flowSlug
+                            ? `Fluxo ${submission.flowSlug}`
+                            : "Fluxo não informado"}
+                        </h2>
+                      </div>
+                      <div className="lead-portal-image-card__contacts" aria-label="Contatos do lead">
+                        {submission.email ? (
+                          <span className="lead-portal-image-card__contact" aria-label="Email do lead">
+                            {submission.email}
+                          </span>
+                        ) : null}
+                        {submission.phone ? (
+                          <span className="lead-portal-image-card__contact" aria-label="Telefone do lead">
+                            {submission.phone}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <div className="lead-portal-image-card__stats">
+                      {stats.map((stat) => (
+                        <span key={stat.label} className="lead-portal-image-card__stat">
+                          <strong>{stat.label}:</strong> {stat.value}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="lead-portal-image-card__pipeline">
+                      <div className="lead-portal-image-card__pipeline-icon" aria-hidden="true">
+                        {buildPipelineIcon(displayStatus)}
+                      </div>
+                      <div>
+                        <p className="lead-portal-image-card__pipeline-title">{detail.title}</p>
+                        <p className="lead-portal-image-card__pipeline-text">
+                          {detail.description}
+                        </p>
+                        <p className="lead-portal-image-card__pipeline-text text-muted mb-0">
+                          Prompt base: {submission.prompt}
+                        </p>
+                        {submission.failureReason ? (
+                          <p className="lead-portal-image-card__failure">
+                            Falha: {submission.failureReason}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          <div
+            className="lead-portal-images__pagination"
+            aria-label="Paginação dos pacotes de imagem"
+          >
+            <p className="lead-portal-images__pagination-text mb-0">
+              Exibindo {totalDisplayed} de {submissions.length} pacotes · Página {currentPage}
+              de {Math.max(totalPages, 1)}
+              {isFetching ? (
+                <span className="ms-2 align-middle" role="status" aria-live="polite">
+                  <Loader2 className="spin" size={16} aria-hidden="true" />
+                </span>
+              ) : null}
+            </p>
+            <div className="btn-group" role="group" aria-label="Navegação de páginas">
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                disabled={!canGoPrevious}
+                onClick={() => {
+                  if (canGoPrevious) {
+                    setPage((value) => Math.max(0, value - 1));
                   }
                 }}
               >
-                <div className="lead-portal-image-card__body">
-                  <div className="lead-portal-image-card__status">
-                    <span
-                      className={`badge d-inline-flex align-items-center gap-1 ${buildStatusBadgeClass(displayStatus)}`}
-                    >
-                      {buildPipelineIcon(displayStatus)}
-                      {detail.label}
-                    </span>
-                    <span className="text-muted small">
-                      Atualizado {formatDate(submission.updatedAt)}
-                    </span>
-                  </div>
-
-                  <div className="lead-portal-image-card__meta">
-                    <div>
-                      <p className="lead-portal-image-card__lead">{buildLeadLabel(submission)}</p>
-                      <h2 className="lead-portal-image-card__title">
-                        {submission.flowSlug
-                          ? `Fluxo ${submission.flowSlug}`
-                          : "Fluxo não informado"}
-                      </h2>
-                    </div>
-                    <div className="lead-portal-image-card__contacts" aria-label="Contatos do lead">
-                      {submission.email ? (
-                        <span className="lead-portal-image-card__contact" aria-label="Email do lead">
-                          {submission.email}
-                        </span>
-                      ) : null}
-                      {submission.phone ? (
-                        <span className="lead-portal-image-card__contact" aria-label="Telefone do lead">
-                          {submission.phone}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  <div className="lead-portal-image-card__stats">
-                    {stats.map((stat) => (
-                      <span key={stat.label} className="lead-portal-image-card__stat">
-                        <strong>{stat.label}:</strong> {stat.value}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="lead-portal-image-card__pipeline">
-                    <div className="lead-portal-image-card__pipeline-icon" aria-hidden="true">
-                      {buildPipelineIcon(displayStatus)}
-                    </div>
-                    <div>
-                      <p className="lead-portal-image-card__pipeline-title">{detail.title}</p>
-                      <p className="lead-portal-image-card__pipeline-text">
-                        {detail.description}
-                      </p>
-                      <p className="lead-portal-image-card__pipeline-text text-muted mb-0">
-                        Prompt base: {submission.prompt}
-                      </p>
-                      {submission.failureReason ? (
-                        <p className="lead-portal-image-card__failure">
-                          Falha: {submission.failureReason}
-                        </p>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
-        </div>
+                Anterior
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                disabled={!canGoNext}
+                onClick={() => {
+                  if (canGoNext) {
+                    setPage((value) => value + 1);
+                  }
+                }}
+              >
+                Próxima
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
     </div>

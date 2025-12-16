@@ -1,14 +1,18 @@
 package com.marketinghub.storage;
 
 import jakarta.annotation.PostConstruct;
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.core.ResponseBytes;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.exception.SdkException;
+import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
@@ -43,14 +47,18 @@ public class FileStorageService {
         if (isBlank(storedFileName)) {
             throw new StorageException("storedFileName must be provided");
         }
+        ResponseInputStream<GetObjectResponse> responseStream = null;
         try {
             GetObjectRequest request = GetObjectRequest.builder()
                     .bucket(properties.getBucket())
                     .key(storedFileName)
                     .build();
-            ResponseBytes<GetObjectResponse> response = s3Client.getObjectAsBytes(request);
-            return new ByteArrayResource(response.asByteArray());
-        } catch (SdkException ex) {
+            responseStream = s3Client.getObject(request, ResponseTransformer.toInputStream());
+            Resource resource = toResource(storedFileName, responseStream, properties.getMaxDownloadBytes());
+            responseStream = null; // the caller is responsible for closing the stream
+            return resource;
+        } catch (SdkException | IOException ex) {
+            abortQuietly(responseStream);
             throw new StorageException("Failed to load file from bucket", ex);
         }
     }
@@ -69,5 +77,91 @@ public class FileStorageService {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private Resource toResource(String storedFileName,
+                                ResponseInputStream<GetObjectResponse> responseStream,
+                                long maxBytes)
+            throws IOException {
+        Long contentLength = responseStream.response().contentLength();
+        if (maxBytes > 0 && contentLength != null && contentLength > maxBytes) {
+            abortQuietly(responseStream);
+            throw new IOException("Object '" + storedFileName + "' exceeds max download size of " + maxBytes + " bytes");
+        }
+
+        InputStream limitedStream = maxBytes > 0
+                ? new SizeBoundedInputStream(responseStream, maxBytes, responseStream::abort)
+                : responseStream;
+
+        return new InputStreamResource(limitedStream) {
+            @Override
+            public String getFilename() {
+                return storedFileName;
+            }
+
+            @Override
+            public long contentLength() {
+                return contentLength != null ? contentLength : -1L;
+            }
+        };
+    }
+
+    private void abortQuietly(InputStream stream) {
+        if (stream == null) {
+            return;
+        }
+        try {
+            stream.close();
+        } catch (IOException ex) {
+            log.debug("Failed to close S3 stream", ex);
+        }
+    }
+
+    private static class SizeBoundedInputStream extends FilterInputStream {
+
+        private final long maxBytes;
+        private final Runnable abortAction;
+        private long totalRead;
+
+        SizeBoundedInputStream(InputStream delegate, long maxBytes, Runnable abortAction) {
+            super(delegate);
+            this.maxBytes = maxBytes;
+            this.abortAction = abortAction != null ? abortAction : () -> {};
+        }
+
+        @Override
+        public int read() throws IOException {
+            int read = super.read();
+            if (read != -1) {
+                registerRead(1);
+            }
+            return read;
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            int read = super.read(b, off, len);
+            registerRead(read > 0 ? read : 0);
+            return read;
+        }
+
+        private void registerRead(int bytesRead) throws IOException {
+            if (bytesRead <= 0) {
+                return;
+            }
+            totalRead += bytesRead;
+            if (totalRead > maxBytes) {
+                abort();
+                throw new IOException("Downloaded object exceeded configured limit of " + maxBytes + " bytes");
+            }
+        }
+
+        private void abort() {
+            try {
+                abortAction.run();
+            } catch (Exception ignored) {
+                // ignore abort errors
+            }
+        }
     }
 }

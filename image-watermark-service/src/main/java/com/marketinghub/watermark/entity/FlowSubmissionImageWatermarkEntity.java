@@ -28,6 +28,10 @@ public class FlowSubmissionImageWatermarkEntity {
     @JoinColumn(name = "asset_id")
     private AssetEntity asset;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "optimized_asset_id")
+    private AssetEntity optimizedAsset;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private Instant createdAt;
 
@@ -56,6 +60,14 @@ public class FlowSubmissionImageWatermarkEntity {
 
     public void setAsset(AssetEntity asset) {
         this.asset = asset;
+    }
+
+    public AssetEntity getOptimizedAsset() {
+        return optimizedAsset;
+    }
+
+    public void setOptimizedAsset(AssetEntity optimizedAsset) {
+        this.optimizedAsset = optimizedAsset;
     }
 
     public Instant getCreatedAt() {

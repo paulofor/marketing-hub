@@ -303,4 +303,7 @@ databaseChangeLog:
   - include:
       file: V2030_04_20__experiment_images_per_package.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2030_04_25__lead_portal_watermark_optimized_assets.sql
+      relativeToChangelogFile: true
 

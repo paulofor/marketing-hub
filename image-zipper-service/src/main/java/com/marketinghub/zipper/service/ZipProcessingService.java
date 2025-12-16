@@ -127,11 +127,12 @@ public class ZipProcessingService {
     private List<WatermarkedAsset> fetchWatermarkedAssets(long packageId) {
         String sql = """
                 SELECT
-                    COALESCE(wm_asset.external_id, wm_asset.url) AS stored_file_name,
+                    COALESCE(opt_asset.external_id, opt_asset.url, wm_asset.external_id, wm_asset.url) AS stored_file_name,
                     item.position_index
                 FROM flow_submission_image_item item
                 JOIN flow_submission_image_watermark wm ON wm.item_id = item.id
                 JOIN asset wm_asset ON wm_asset.id = wm.asset_id
+                LEFT JOIN asset opt_asset ON opt_asset.id = wm.optimized_asset_id
                 WHERE item.package_id = ?
                 ORDER BY item.position_index ASC, item.id ASC
                 """;

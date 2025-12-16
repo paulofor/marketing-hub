@@ -307,3 +307,7 @@ databaseChangeLog:
       file: V2030_04_25__lead_portal_watermark_optimized_assets.sql
       relativeToChangelogFile: true
 
+
+  - include:
+      file: V2030_05_06__lead_portal_image_package_status_index.sql
+      relativeToChangelogFile: true

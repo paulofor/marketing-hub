@@ -118,7 +118,8 @@ jobs:
             && if [ -n '${GHCR_TOKEN}' ]; then echo '${GHCR_TOKEN}' | docker login ${IMAGE_REGISTRY} -u '${GHCR_USERNAME}' --password-stdin; fi \
             && export EMAIL_SERVICE_IMAGE='${IMAGE_NAMESPACE}/email-service:${IMAGE_TAG}' \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
-            && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --remove-orphans"
+            && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --remove-orphans \
+            && docker image prune -af"
       - name: Clean build artifacts from repository
         if: always()
         run: |

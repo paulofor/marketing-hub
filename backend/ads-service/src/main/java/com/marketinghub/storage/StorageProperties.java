@@ -28,6 +28,9 @@ public class StorageProperties {
     /** Optional public base URL for serving files. */
     private String publicBaseUrl = "";
 
+    /** Maximum allowed size (in bytes) when downloading objects. */
+    private long maxDownloadBytes = 25 * 1024 * 1024;
+
     public String getBucket() {
         return bucket;
     }
@@ -74,5 +77,13 @@ public class StorageProperties {
 
     public void setPublicBaseUrl(String publicBaseUrl) {
         this.publicBaseUrl = publicBaseUrl;
+    }
+
+    public long getMaxDownloadBytes() {
+        return maxDownloadBytes;
+    }
+
+    public void setMaxDownloadBytes(long maxDownloadBytes) {
+        this.maxDownloadBytes = maxDownloadBytes;
     }
 }

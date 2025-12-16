@@ -120,31 +120,70 @@ public class WatermarkProcessingService {
             String outputKey = keyResolver.buildKey(packageId, item.getId(), watermarkedImage.extension());
             storageService.upload(outputKey, watermarkedImage.bytes(), watermarkedImage.contentType());
 
-            AssetEntity watermarkAsset = new AssetEntity();
-            watermarkAsset.setType(AssetType.IMAGE);
-            watermarkAsset.setProvider(MediaProvider.WATERMARKER);
-            watermarkAsset.setStatus(AssetStatus.READY);
-            watermarkAsset.setUrl(outputKey);
-            watermarkAsset.setExternalId(outputKey);
-            watermarkAsset.setModel(sourceAsset.getModel());
-            watermarkAsset.setPrompt(sourceAsset.getPrompt());
-            watermarkAsset.setPayload(buildPayload(sourceAsset));
+            AssetEntity watermarkAsset = buildWatermarkAsset(sourceAsset, outputKey, watermarkedImage.contentType(), "WATERMARK");
             assetRepository.save(watermarkAsset);
+
+            AssetEntity optimizedAsset = maybeCreateOptimizedAsset(sourceAsset, watermarkedImage, packageId, item.getId());
 
             FlowSubmissionImageWatermarkEntity watermarkEntity = new FlowSubmissionImageWatermarkEntity();
             watermarkEntity.setItem(item);
             watermarkEntity.setAsset(watermarkAsset);
+            watermarkEntity.setOptimizedAsset(optimizedAsset);
             watermarkRepository.save(watermarkEntity);
 
             item.setWatermark(watermarkEntity);
         }
     }
 
-    private String buildPayload(AssetEntity sourceAsset) {
+    private AssetEntity buildWatermarkAsset(AssetEntity sourceAsset, String outputKey, String contentType, String variant) {
+        AssetEntity watermarkAsset = new AssetEntity();
+        watermarkAsset.setType(AssetType.IMAGE);
+        watermarkAsset.setProvider(MediaProvider.WATERMARKER);
+        watermarkAsset.setStatus(AssetStatus.READY);
+        watermarkAsset.setUrl(outputKey);
+        watermarkAsset.setExternalId(outputKey);
+        watermarkAsset.setModel(sourceAsset.getModel());
+        watermarkAsset.setPrompt(sourceAsset.getPrompt());
+        watermarkAsset.setPayload(buildPayload(sourceAsset, variant, contentType));
+        return watermarkAsset;
+    }
+
+    private AssetEntity maybeCreateOptimizedAsset(
+            AssetEntity sourceAsset,
+            WatermarkRenderer.WatermarkedImage watermarkedImage,
+            long packageId,
+            long itemId) {
+        if (watermarkedImage == null || !watermarkedImage.hasOptimizedVersion()) {
+            return null;
+        }
+        try {
+            String optimizedKey = keyResolver.buildKey(packageId, itemId, watermarkedImage.optimizedExtension());
+            storageService.upload(optimizedKey, watermarkedImage.optimizedBytes(), watermarkedImage.optimizedContentType());
+
+            AssetEntity optimizedAsset = buildWatermarkAsset(
+                    sourceAsset,
+                    optimizedKey,
+                    watermarkedImage.optimizedContentType(),
+                    "OPTIMIZED");
+            assetRepository.save(optimizedAsset);
+            return optimizedAsset;
+        } catch (Exception ex) {
+            log.warn("Falha ao gerar cópia otimizada da imagem com marca d'água", ex);
+            return null;
+        }
+    }
+
+    private String buildPayload(AssetEntity sourceAsset, String variant, String contentType) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("sourceAssetId", sourceAsset.getId());
         payload.put("sourceUrl", sourceAsset.getUrl());
         payload.put("watermarkText", watermarkProperties.getText());
+        if (variant != null && !variant.isBlank()) {
+            payload.put("variant", variant);
+        }
+        if (contentType != null && !contentType.isBlank()) {
+            payload.put("contentType", contentType);
+        }
         try {
             return objectMapper.writeValueAsString(payload);
         } catch (JsonProcessingException ex) {

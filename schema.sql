@@ -693,10 +693,13 @@ CREATE TABLE flow_submission_image_watermark (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     item_id BIGINT NOT NULL,
     asset_id BIGINT NOT NULL,
+    optimized_asset_id BIGINT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_flow_submission_image_watermark_item FOREIGN KEY (item_id) REFERENCES flow_submission_image_item(id) ON DELETE CASCADE,
-    CONSTRAINT fk_flow_submission_image_watermark_asset FOREIGN KEY (asset_id) REFERENCES asset(id)
+    CONSTRAINT fk_flow_submission_image_watermark_asset FOREIGN KEY (asset_id) REFERENCES asset(id),
+    CONSTRAINT fk_flow_submission_image_watermark_opt_asset FOREIGN KEY (optimized_asset_id) REFERENCES asset(id)
 );
+CREATE INDEX idx_flow_submission_image_watermark_opt_asset ON flow_submission_image_watermark(optimized_asset_id);
 
 CREATE INDEX idx_flow_submission_image_package_submission ON flow_submission_image_package(submission_id, created_at DESC);
 CREATE INDEX idx_flow_submission_image_item_package ON flow_submission_image_item(package_id);

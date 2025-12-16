@@ -23,6 +23,13 @@ public class WatermarkProperties {
     /** Fator multiplicador para o espaçamento entre repetições do texto. */
     private double spacingFactor = 0.85;
 
+
+    /** Gera uma versão otimizada em JPEG para visualização e entrega. */
+    private boolean generateOptimizedCopy = true;
+
+    /** Qualidade JPEG usada na otimização (0.0 - 1.0). */
+    private double optimizedJpegQuality = 0.82;
+
     public String getText() {
         return text;
     }
@@ -70,4 +77,22 @@ public class WatermarkProperties {
     public void setSpacingFactor(double spacingFactor) {
         this.spacingFactor = spacingFactor;
     }
+
+
+    public boolean isGenerateOptimizedCopy() {
+        return generateOptimizedCopy;
+    }
+
+    public void setGenerateOptimizedCopy(boolean generateOptimizedCopy) {
+        this.generateOptimizedCopy = generateOptimizedCopy;
+    }
+
+    public double getOptimizedJpegQuality() {
+        return optimizedJpegQuality;
+    }
+
+    public void setOptimizedJpegQuality(double optimizedJpegQuality) {
+        this.optimizedJpegQuality = optimizedJpegQuality;
+    }
+
 }

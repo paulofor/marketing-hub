@@ -12,7 +12,12 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Iterator;
+import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -93,11 +98,70 @@ public class WatermarkRenderer {
 
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             ImageIO.write(watermarked, "png", outputStream);
-            return new WatermarkedImage(outputStream.toByteArray(), "image/png", "png");
+            byte[] optimizedBytes = renderOptimizedCopy(watermarked);
+            return new WatermarkedImage(
+                    outputStream.toByteArray(),
+                    "image/png",
+                    "png",
+                    optimizedBytes,
+                    optimizedBytes != null ? "image/jpeg" : null,
+                    optimizedBytes != null ? "jpg" : null);
         } catch (IOException ex) {
             throw new IllegalStateException("Falha ao serializar imagem com marca d'água", ex);
         }
     }
 
-    public record WatermarkedImage(byte[] bytes, String contentType, String extension) {}
+    private byte[] renderOptimizedCopy(BufferedImage watermarked) {
+        if (!properties.isGenerateOptimizedCopy()) {
+            return null;
+        }
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            BufferedImage rgbImage = new BufferedImage(
+                    watermarked.getWidth(), watermarked.getHeight(), BufferedImage.TYPE_INT_RGB);
+            Graphics2D graphics = rgbImage.createGraphics();
+            graphics.setColor(Color.WHITE);
+            graphics.fillRect(0, 0, rgbImage.getWidth(), rgbImage.getHeight());
+            graphics.drawImage(watermarked, 0, 0, null);
+            graphics.dispose();
+
+            Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpg");
+            if (!writers.hasNext()) {
+                log.warn("Nenhum writer JPEG disponível para gerar cópia otimizada");
+                return null;
+            }
+            ImageWriter writer = writers.next();
+            ImageWriteParam params = writer.getDefaultWriteParam();
+            if (params.canWriteCompressed()) {
+                params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+                float quality = (float) Math.max(0.1, Math.min(properties.getOptimizedJpegQuality(), 1.0));
+                params.setCompressionQuality(quality);
+            }
+            try (ImageOutputStream imageOutputStream = ImageIO.createImageOutputStream(outputStream)) {
+                writer.setOutput(imageOutputStream);
+                writer.write(null, new IIOImage(rgbImage, null, null), params);
+            } finally {
+                writer.dispose();
+            }
+            return outputStream.toByteArray();
+        } catch (IOException ex) {
+            log.warn("Falha ao gerar versão otimizada da imagem com marca d'água", ex);
+            return null;
+        }
+    }
+
+    public record WatermarkedImage(
+            byte[] bytes,
+            String contentType,
+            String extension,
+            byte[] optimizedBytes,
+            String optimizedContentType,
+            String optimizedExtension) {
+
+        public boolean hasOptimizedVersion() {
+            return optimizedBytes != null
+                    && optimizedBytes.length > 0
+                    && optimizedContentType != null
+                    && optimizedExtension != null;
+        }
+    }
 }

@@ -373,13 +373,18 @@ public class LeadPortalImagePackageService {
                     asset.model,
                     asset.external_id,
                     wm.asset_id AS watermark_asset_id,
+                    wm.optimized_asset_id AS watermark_optimized_asset_id,
                     wm_asset.url AS watermark_url,
                     wm_asset.external_id AS watermark_external_id,
-                    wm_asset.created_at AS watermark_created_at
+                    wm_asset.created_at AS watermark_created_at,
+                    wm_opt_asset.url AS watermark_optimized_url,
+                    wm_opt_asset.external_id AS watermark_optimized_external_id,
+                    wm_opt_asset.created_at AS watermark_optimized_created_at
                 FROM flow_submission_image_item item
                 LEFT JOIN asset ON asset.id = item.asset_id
                 LEFT JOIN flow_submission_image_watermark wm ON wm.item_id = item.id
                 LEFT JOIN asset wm_asset ON wm_asset.id = wm.asset_id
+                LEFT JOIN asset wm_opt_asset ON wm_opt_asset.id = wm.optimized_asset_id
                 WHERE item.package_id = ?
                 ORDER BY item.position_index ASC, item.id ASC
                 """;
@@ -387,13 +392,27 @@ public class LeadPortalImagePackageService {
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
             LeadPortalImagePackageDetailDto.WatermarkReference watermark = null;
             Long watermarkAssetId = getLong(rs, "watermark_asset_id");
-            if (watermarkAssetId != null) {
+            Long optimizedAssetId = getLong(rs, "watermark_optimized_asset_id");
+            String watermarkStoredFileName = firstNonBlank(
+                    rs.getString("watermark_optimized_external_id"),
+                    rs.getString("watermark_optimized_url"),
+                    rs.getString("watermark_external_id"),
+                    rs.getString("watermark_url"));
+            Instant watermarkCreatedAt = firstNonNull(
+                    toInstant(rs.getTimestamp("watermark_optimized_created_at")),
+                    toInstant(rs.getTimestamp("watermark_created_at")));
+            String watermarkUrl = firstNonBlank(
+                    fileStorageService.resolvePublicUrl(watermarkStoredFileName).orElse(null),
+                    rs.getString("watermark_optimized_url"),
+                    rs.getString("watermark_url"));
+            Long resolvedAssetId = optimizedAssetId != null ? optimizedAssetId : watermarkAssetId;
+            if (resolvedAssetId != null || watermarkUrl != null || watermarkStoredFileName != null) {
                 watermark = new LeadPortalImagePackageDetailDto.WatermarkReference(
-                        watermarkAssetId,
-                        rs.getString("watermark_url"),
-                        rs.getString("watermark_url"),
-                        toInstant(rs.getTimestamp("watermark_created_at")),
-                        rs.getString("watermark_external_id"));
+                        resolvedAssetId,
+                        watermarkUrl,
+                        watermarkUrl,
+                        watermarkCreatedAt,
+                        watermarkStoredFileName);
             }
             return new LeadPortalImagePackageDetailDto.ImageReference(
                     IMAGE_TYPE_GENERATED,
@@ -488,6 +507,31 @@ public class LeadPortalImagePackageService {
 
     private Instant toInstant(Timestamp timestamp) {
         return timestamp == null ? null : timestamp.toInstant();
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    @SafeVarargs
+    private final <T> T firstNonNull(T... values) {
+        if (values == null) {
+            return null;
+        }
+        for (T value : values) {
+            if (value != null) {
+                return value;
+            }
+        }
+        return null;
     }
 
     private String extractPhone(String answersJson) {

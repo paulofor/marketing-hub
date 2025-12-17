@@ -55,7 +55,7 @@ Imagedelivery e realizar o envio automático de e-mails transacionais ou de camp
 | `SPRING_DATASOURCE_PASSWORD` | Senha do banco | `""` |
 | `SPRING_MAIL_HOST` | Host SMTP | `smtplw.com.br` |
 | `SPRING_MAIL_PORT` | Porta SMTP | `587` |
-| `SPRING_MAIL_USERNAME` | Usuário SMTP | `imagens` |
+| `SPRING_MAIL_USERNAME` | Usuário SMTP | `imagens@digicomonline.com.br` |
 | `SPRING_MAIL_PASSWORD` | Senha SMTP | `@CYsQY7W5@4hFQe` |
 | `SPRING_MAIL_SMTP_AUTH` | Habilitar autenticação | `true` |
 | `SPRING_MAIL_SMTP_STARTTLS_ENABLE` | Habilitar STARTTLS | `true` |
@@ -85,7 +85,7 @@ Para usar os servidores `smtplw.com.br`, habilite autenticação e STARTTLS (por
 ```bash
 SPRING_MAIL_HOST=smtplw.com.br
 SPRING_MAIL_PORT=587
-SPRING_MAIL_USERNAME=imagens
+SPRING_MAIL_USERNAME=imagens@digicomonline.com.br
 SPRING_MAIL_PASSWORD=@CYsQY7W5@4hFQe
 SPRING_MAIL_SMTP_AUTH=true
 SPRING_MAIL_SMTP_STARTTLS_ENABLE=true

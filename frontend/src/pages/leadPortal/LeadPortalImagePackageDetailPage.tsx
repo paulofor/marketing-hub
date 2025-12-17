@@ -16,6 +16,7 @@ import {
   type LeadPortalSampleZipInfo,
   type LeadPortalStatusHistoryEntry,
 } from "../../api/leadPortal/useLeadPortalImagePackageDetail";
+import { formatLeadPortalDateTime } from "./utils/dateTime";
 import { getStatusDetail } from "./statusDetails";
 import type {
   LeadPortalImagePackageLifecycleStatus,
@@ -33,11 +34,6 @@ interface GalleryItem {
   model?: string | null;
   createdAt?: string | null;
   variant?: "ORIGINAL" | "WATERMARK";
-}
-
-function formatDateTime(value?: string | null) {
-  if (!value) return "--";
-  return new Date(value).toLocaleString("pt-BR");
 }
 
 function buildGalleryLabel(image: LeadPortalImageReference, index: number) {
@@ -220,7 +216,7 @@ export default function LeadPortalImagePackageDetailPage() {
                   {statusDetail.label}
                 </span>
                 <span className="text-muted small">
-                  Atualizado {formatDateTime(data?.updatedAt)}
+                  Atualizado {formatLeadPortalDateTime(data?.updatedAt)}
                 </span>
               </div>
             ) : null}
@@ -235,15 +231,15 @@ export default function LeadPortalImagePackageDetailPage() {
                     rel="noopener noreferrer"
                     className="btn btn-outline-primary btn-sm"
                   >
-                    <Download size={16} className="me-1" /> Baixar ZIP de amostras
-                  </a>
-                  {sampleZip?.generatedAt ? (
-                    <span className="text-muted small">
-                      Gerado {formatDateTime(sampleZip.generatedAt)}
-                    </span>
-                  ) : null}
-                </>
-              ) : (
+                  <Download size={16} className="me-1" /> Baixar ZIP de amostras
+                </a>
+                {sampleZip?.generatedAt ? (
+                  <span className="text-muted small">
+                    Gerado {formatLeadPortalDateTime(sampleZip.generatedAt)}
+                  </span>
+                ) : null}
+              </>
+            ) : (
                 <div className="lead-portal-image-detail__chip" role="status">
                   Pacote ZIP ainda não disponível
                 </div>
@@ -299,7 +295,7 @@ export default function LeadPortalImagePackageDetailPage() {
                 <dl className="lead-portal-image-detail__description-list">
                   <div>
                     <dt>Criado em</dt>
-                    <dd>{formatDateTime(data.createdAt)}</dd>
+                    <dd>{formatLeadPortalDateTime(data.createdAt)}</dd>
                   </div>
                   <div>
                     <dt>Prompt</dt>
@@ -367,7 +363,7 @@ export default function LeadPortalImagePackageDetailPage() {
                     <dl className="lead-portal-image-detail__description-list">
                       <div>
                         <dt>Gerado em</dt>
-                        <dd>{formatDateTime(sampleZip.generatedAt)}</dd>
+                        <dd>{formatLeadPortalDateTime(sampleZip.generatedAt)}</dd>
                       </div>
                       {sampleZip.objectKey ? (
                         <div>
@@ -455,7 +451,7 @@ export default function LeadPortalImagePackageDetailPage() {
                             <div className="lead-portal-image-detail__history-header">
                               <span className={`badge ${detail.badgeClass}`}>{detail.label}</span>
                               <span className="text-muted small">
-                                {formatDateTime(entry.occurredAt)}
+                                {formatLeadPortalDateTime(entry.occurredAt)}
                               </span>
                             </div>
                             {entry.failureReason ? (
@@ -537,7 +533,7 @@ export default function LeadPortalImagePackageDetailPage() {
                     ) : null}
                     {currentItem.createdAt ? (
                       <span className="text-muted small">
-                        {formatDateTime(currentItem.createdAt)}
+                        {formatLeadPortalDateTime(currentItem.createdAt)}
                       </span>
                     ) : null}
                   </div>

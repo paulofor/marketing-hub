@@ -53,7 +53,7 @@ public class LeadPortalEmailDispatchService {
             } catch (Exception ex) {
                 log.error("Falha ao enviar pacote {} para {}", item.packageId(), item.submissionEmail(), ex);
                 try {
-                    leadPortalImagePackageClient.acknowledge(item.packageId(), false, ex.getMessage());
+                    leadPortalImagePackageClient.acknowledge(item.packageId(), false, resolveRootCauseMessage(ex));
                 } catch (Exception ackEx) {
                     log.error("Falha ao registrar a falha do pacote {}", item.packageId(), ackEx);
                 }
@@ -98,5 +98,13 @@ public class LeadPortalEmailDispatchService {
             return new byte[0];
         }
         return Base64.getDecoder().decode(attachment.base64Content());
+    }
+
+    private String resolveRootCauseMessage(Throwable throwable) {
+        Throwable cursor = throwable;
+        while (cursor.getCause() != null && cursor.getCause() != cursor) {
+            cursor = cursor.getCause();
+        }
+        return StringUtils.hasText(cursor.getMessage()) ? cursor.getMessage() : throwable.getMessage();
     }
 }

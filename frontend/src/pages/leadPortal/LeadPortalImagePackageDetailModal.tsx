@@ -12,6 +12,7 @@ import {
   type LeadPortalImageReference,
 } from "../../api/leadPortal/useLeadPortalImagePackageDetail";
 import { getStatusDetail } from "./statusDetails";
+import { formatLeadPortalDateTime } from "./utils/dateTime";
 import type { LeadPortalImagePackageLifecycleStatus } from "../../api/leadPortal/useLeadPortalSubmissions";
 
 interface LeadPortalImagePackageDetailModalProps {
@@ -30,11 +31,6 @@ interface GalleryItem {
   model?: string | null;
   createdAt?: string | null;
   variant?: "ORIGINAL" | "WATERMARK";
-}
-
-function formatDateTime(value?: string | null) {
-  if (!value) return "--";
-  return new Date(value).toLocaleString("pt-BR");
 }
 
 function formatUsd(value?: number | null, currency = "USD") {
@@ -177,7 +173,7 @@ export default function LeadPortalImagePackageDetailModal({
                     {statusDetail.label}
                   </span>
                   <span className="text-muted small">
-                    Atualizado {formatDateTime(data?.updatedAt)}
+                    Atualizado {formatLeadPortalDateTime(data?.updatedAt)}
                   </span>
                 </div>
               ) : null}
@@ -217,13 +213,13 @@ export default function LeadPortalImagePackageDetailModal({
                 <section className="lead-portal-image-detail__info">
                   <div className="lead-portal-image-detail__section">
                     <h3>Resumo</h3>
-                    <dl className="lead-portal-image-detail__description-list">
-                      <div>
-                        <dt>Criado em</dt>
-                        <dd>{formatDateTime(data.createdAt)}</dd>
-                      </div>
-                      <div>
-                        <dt>Prompt</dt>
+                  <dl className="lead-portal-image-detail__description-list">
+                    <div>
+                      <dt>Criado em</dt>
+                      <dd>{formatLeadPortalDateTime(data.createdAt)}</dd>
+                    </div>
+                    <div>
+                      <dt>Prompt</dt>
                         <dd className="lead-portal-image-detail__prompt">{data.prompt}</dd>
                       </div>
                       {data.imageModelName ? (
@@ -368,7 +364,7 @@ export default function LeadPortalImagePackageDetailModal({
                         ) : null}
                         {currentItem.createdAt ? (
                           <span className="text-muted small">
-                            {formatDateTime(currentItem.createdAt)}
+                            {formatLeadPortalDateTime(currentItem.createdAt)}
                           </span>
                         ) : null}
                       </div>

@@ -327,6 +327,7 @@ public class LeadPortalPackageNotificationService {
                 .append(HtmlUtils.htmlEscape(pending.experimentName()))
                 .append("</p>");
 
+
         String attachmentName = "imagens-watermark-" + pending.packageId() + ".zip";
         return new EmailContent(subject, plain.toString(), html.toString(), attachmentName);
     }
@@ -348,18 +349,50 @@ public class LeadPortalPackageNotificationService {
     }
 
     private void recordFailure(long packageId, String error) {
-        String truncated = error == null ? "" : error;
-        if (truncated.length() > 500) {
-            truncated = truncated.substring(0, 500);
-        }
-        jdbcTemplate.update(
+        String normalizedError = normalizeError(error);
+        Instant now = Instant.now();
+
+        int updatedAttempts = jdbcTemplate.update(
                 "UPDATE flow_submission_image_package SET notification_attempts = notification_attempts + 1, "
                         + "notification_last_attempt = ?, notification_last_error = ? WHERE id = ?",
-                Timestamp.from(Instant.now()),
-                truncated,
+                Timestamp.from(now),
+                normalizedError,
                 packageId);
-    }
+        if (updatedAttempts == 0) {
+            log.warn("Pacote {} não encontrado ao registrar falha de notificação", packageId);
+            return;
+        }
 
+        NotificationStatus notificationStatus = findNotificationStatus(packageId).orElse(null);
+        if (notificationStatus == null) {
+            log.warn("Pacote {} não encontrado ao carregar tentativas de notificação após falha", packageId);
+            return;
+        }
+
+        int attempts = notificationStatus.notificationAttempts() != null
+                ? notificationStatus.notificationAttempts()
+                : 0;
+        int allowedAttempts = Math.max(1, maxAttempts);
+        if (attempts >= allowedAttempts
+                && notificationStatus.status() != FlowSubmissionImagePackageStatus.FAILED) {
+            String failureReason = buildEmailFailureReason(normalizedError);
+            int updated = jdbcTemplate.update(
+                    "UPDATE flow_submission_image_package SET status = ?, failure_reason = ?, updated_at = ? WHERE id = ?",
+                    FlowSubmissionImagePackageStatus.FAILED.name(),
+                    failureReason,
+                    Timestamp.from(now),
+                    packageId);
+            if (updated > 0) {
+                statusHistoryService.recordStatusChange(
+                        packageId, FlowSubmissionImagePackageStatus.FAILED, failureReason);
+                log.warn(
+                        "Pacote {} marcado como FAILED após {} tentativas de envio de e-mail: {}",
+                        packageId,
+                        attempts,
+                        normalizedError);
+            }
+        }
+    }
 
     private Optional<FlowSubmissionImagePackageStatus> findStatus(long packageId) {
         String sql = "SELECT status FROM flow_submission_image_package WHERE id = ?";
@@ -383,6 +416,32 @@ public class LeadPortalPackageNotificationService {
 
     private Instant toInstant(Timestamp timestamp) {
         return timestamp == null ? null : timestamp.toInstant();
+    }
+
+    private Optional<NotificationStatus> findNotificationStatus(long packageId) {
+        String sql = "SELECT status, notification_attempts FROM flow_submission_image_package WHERE id = ?";
+        List<NotificationStatus> statuses = jdbcTemplate.query(sql, (rs, rowNum) -> new NotificationStatus(
+                parseStatus(rs.getString("status")),
+                (Integer) rs.getObject("notification_attempts")), packageId);
+        return statuses.stream().findFirst();
+    }
+
+    private String normalizeError(String rawError) {
+        String value = StringUtils.hasText(rawError)
+                ? rawError.trim()
+                : "Motivo não informado pelo serviço de e-mail";
+        if (value.length() > 500) {
+            value = value.substring(0, 500);
+        }
+        return value;
+    }
+
+    private String buildEmailFailureReason(String normalizedError) {
+        String reason = "Falha ao enviar e-mail: " + normalizedError;
+        if (reason.length() > 500) {
+            return reason.substring(0, 500);
+        }
+        return reason;
     }
 
     private record PendingPackage(
@@ -410,4 +469,10 @@ public class LeadPortalPackageNotificationService {
 
     private record EmailContent(String subject, String plain, String html, String attachmentName) {
     }
+
+    private record NotificationStatus(
+            FlowSubmissionImagePackageStatus status,
+            Integer notificationAttempts) {
+    }
+
 }

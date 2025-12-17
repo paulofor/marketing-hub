@@ -90,6 +90,13 @@ public class LeadPortalEmailDispatchService {
                 emailContent.plainBody(),
                 List.of(attachment)
         );
+
+        log.info("Enviando pacote {} para {} com assunto '{}' (arquivo='{}', tamanho={} bytes)",
+                item.packageId(),
+                item.submissionEmail(),
+                emailContent.subject(),
+                attachmentName,
+                attachmentBytes.length);
         emailSenderService.send(message);
     }
 

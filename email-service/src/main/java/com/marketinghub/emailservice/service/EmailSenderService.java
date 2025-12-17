@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -31,6 +32,17 @@ public class EmailSenderService {
             log.info("[DRY-RUN] Envio de e-mail simulado para {} com assunto '{}'", message.to(), message.subject());
             return;
         }
+
+        String mailConfigDescription = describeMailConfiguration();
+        log.info("Preparando envio de e-mail: de={}, para={}, cc={}, bcc={}, assunto='{}', anexos={}, tamanhoAnexos={} bytes, config={}",
+                message.from(),
+                formatList(message.to()),
+                formatList(message.cc()),
+                formatList(message.bcc()),
+                message.subject(),
+                CollectionUtils.isEmpty(message.attachments()) ? 0 : message.attachments().size(),
+                totalAttachmentBytes(message.attachments()),
+                mailConfigDescription);
 
         try {
             MimeMessage mimeMessage = javaMailSender.createMimeMessage();
@@ -57,9 +69,10 @@ public class EmailSenderService {
             addAttachments(helper, message.attachments());
 
             javaMailSender.send(mimeMessage);
-            log.info("E-mail enviado com sucesso para {}", String.join(",", message.to()));
+            log.info("E-mail enviado com sucesso para {} (configuração: {})", String.join(",", message.to()), mailConfigDescription);
         } catch (Exception ex) {
-            throw new EmailSendingException("Falha ao enviar e-mail", ex);
+            log.error("Erro ao enviar e-mail para {}. Configuração SMTP: {}", formatList(message.to()), mailConfigDescription, ex);
+            throw new EmailSendingException("Falha ao enviar e-mail (" + mailConfigDescription + ")", ex);
         }
     }
 
@@ -81,5 +94,41 @@ public class EmailSenderService {
                         attachment.asset().mediaType() != null ? attachment.asset().mediaType().toString() : null);
             }
         }
+    }
+
+    private long totalAttachmentBytes(List<EmailAttachmentResource> attachments) {
+        if (CollectionUtils.isEmpty(attachments)) {
+            return 0;
+        }
+        long total = 0;
+        for (EmailAttachmentResource attachment : attachments) {
+            if (attachment != null && attachment.asset() != null && attachment.asset().content() != null) {
+                total += attachment.asset().content().length;
+            }
+        }
+        return total;
+    }
+
+    private String describeMailConfiguration() {
+        if (javaMailSender instanceof JavaMailSenderImpl sender) {
+            String protocol = sender.getProtocol() != null ? sender.getProtocol() : "smtp";
+            var properties = sender.getJavaMailProperties();
+            return String.format("host=%s:%d, protocol=%s, username=%s, tls=%s, ssl=%s, auth=%s, timeouts=[connect=%sms, read=%sms, write=%sms]",
+                    sender.getHost(),
+                    sender.getPort(),
+                    protocol,
+                    sender.getUsername(),
+                    properties.getProperty("mail.smtp.starttls.enable", "n/a"),
+                    properties.getProperty("mail.smtp.ssl.enable", "n/a"),
+                    properties.getProperty("mail.smtp.auth", "n/a"),
+                    properties.getProperty("mail.smtp.connectiontimeout", "n/a"),
+                    properties.getProperty("mail.smtp.timeout", "n/a"),
+                    properties.getProperty("mail.smtp.writetimeout", "n/a"));
+        }
+        return "JavaMailSender=" + javaMailSender.getClass().getSimpleName();
+    }
+
+    private String formatList(List<String> values) {
+        return CollectionUtils.isEmpty(values) ? "[]" : String.join(",", values);
     }
 }

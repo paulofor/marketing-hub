@@ -53,12 +53,13 @@ Imagedelivery e realizar o envio automático de e-mails transacionais ou de camp
 | `SPRING_DATASOURCE_URL` | URL do banco de dados | `jdbc:h2:mem:emailservice...` |
 | `SPRING_DATASOURCE_USERNAME` | Usuário do banco | `sa` |
 | `SPRING_DATASOURCE_PASSWORD` | Senha do banco | `""` |
-| `SPRING_MAIL_HOST` | Host SMTP | `mail.digicomonline.com.br` |
+| `SPRING_MAIL_HOST` | Host SMTP | `smtplw.com.br` |
 | `SPRING_MAIL_PORT` | Porta SMTP | `587` |
 | `SPRING_MAIL_USERNAME` | Usuário SMTP | `imagens` |
 | `SPRING_MAIL_PASSWORD` | Senha SMTP | `@CYsQY7W5@4hFQe` |
 | `SPRING_MAIL_SMTP_AUTH` | Habilitar autenticação | `true` |
 | `SPRING_MAIL_SMTP_STARTTLS_ENABLE` | Habilitar STARTTLS | `true` |
+| `SPRING_MAIL_SMTP_SSL_ENABLE` | Habilitar SSL/TLS (porta 465) | `false` |
 | `MARKETING_HUB_BASE_URL` | Base URL do backend Marketing Hub | `http://191.252.92.222:8000` |
 | `MARKETING_HUB_CONNECT_TIMEOUT` | Timeout de conexão com o backend (ms) | `2000` |
 | `MARKETING_HUB_READ_TIMEOUT` | Timeout de leitura do backend (ms) | `60000` |
@@ -77,22 +78,26 @@ Imagedelivery e realizar o envio automático de e-mails transacionais ou de camp
 | `LEAD_PORTAL_DISPATCH_POLL_INTERVAL` | Intervalo entre polls (ms) | `60000` |
 | `LEAD_PORTAL_DISPATCH_READ_TIMEOUT` | Timeout de leitura da exportação do Lead Portal (ms) | `180000` |
 
-### Configuração SMTP digicomonline.com.br
+### Configuração SMTP smtplw.com.br
 
-Para usar os servidores de e-mail apontados pelos CNAMEs `mail.digicomonline.com.br`/`mail.loxaweb.com.br`, habilite autenticação e STARTTLS e defina as credenciais da conta do domínio. Exemplo de variáveis em um `.env`:
+Para usar os servidores `smtplw.com.br`, habilite autenticação e STARTTLS (porta 587) ou SSL/TLS (porta 465) e defina as credenciais da conta. Exemplo de variáveis em um `.env`:
 
 ```bash
-SPRING_MAIL_HOST=mail.digicomonline.com.br
+SPRING_MAIL_HOST=smtplw.com.br
 SPRING_MAIL_PORT=587
 SPRING_MAIL_USERNAME=imagens
 SPRING_MAIL_PASSWORD=@CYsQY7W5@4hFQe
 SPRING_MAIL_SMTP_AUTH=true
 SPRING_MAIL_SMTP_STARTTLS_ENABLE=true
+# Para usar a porta 465, ative SSL e desabilite STARTTLS.
+# SPRING_MAIL_PORT=465
+# SPRING_MAIL_SMTP_SSL_ENABLE=true
+# SPRING_MAIL_SMTP_STARTTLS_ENABLE=false
 EMAIL_SERVICE_FROM_ADDRESS=no-reply@digicomonline.com.br
 EMAIL_SERVICE_DRY_RUN=false
 ```
 
-O compose já vem com esses valores como padrão; basta preencher a senha da conta antes de subir o serviço para que os envios sejam realizados pelo servidor da Digicom.
+O compose já vem com esses valores como padrão; basta preencher a senha da conta antes de subir o serviço para que os envios sejam realizados pelo servidor da Locaweb.
 
 ## Execução local
 

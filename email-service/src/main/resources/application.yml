@@ -68,7 +68,7 @@ lead-portal:
     # Timeout mais alto para baixar anexos grandes do storage
     read-timeout: ${LEAD_PORTAL_DISPATCH_READ_TIMEOUT:180000}
 email-service:
-  default-from-address: ${EMAIL_SERVICE_FROM_ADDRESS:no-reply@oportunidadebrasil.shop}
+  default-from-address: ${EMAIL_SERVICE_FROM_ADDRESS:imagens@oportunidadebrasil.shop}
   dry-run: ${EMAIL_SERVICE_DRY_RUN:false}
 
 logging:

@@ -16,7 +16,7 @@ import {
   type LeadPortalSampleZipInfo,
   type LeadPortalStatusHistoryEntry,
 } from "../../api/leadPortal/useLeadPortalImagePackageDetail";
-import { formatLeadPortalDateTime } from "./utils/dateTime";
+import { formatLeadPortalDateTime, parseLeadPortalDateTime } from "./utils/dateTime";
 import { getStatusDetail } from "./statusDetails";
 import type {
   LeadPortalImagePackageLifecycleStatus,
@@ -161,9 +161,12 @@ export default function LeadPortalImagePackageDetailPage() {
   const sampleZip: LeadPortalSampleZipInfo | null | undefined = data?.sampleZip;
   const historyEntries = useMemo(() => {
     if (!data?.history) return [] as LeadPortalStatusHistoryEntry[];
-    return [...data.history].sort((a, b) =>
-      new Date(a.occurredAt ?? 0).getTime() - new Date(b.occurredAt ?? 0).getTime(),
-    );
+    return [...data.history].sort((a, b) => {
+      const timeA = parseLeadPortalDateTime(a.occurredAt) ?? Number.NEGATIVE_INFINITY;
+      const timeB = parseLeadPortalDateTime(b.occurredAt) ?? Number.NEGATIVE_INFINITY;
+      if (timeA === timeB) return 0;
+      return timeB - timeA;
+    });
   }, [data?.history]);
 
   const currentItem = galleryItems[currentIndex];

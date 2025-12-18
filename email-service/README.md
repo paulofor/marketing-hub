@@ -70,7 +70,7 @@ Imagedelivery e realizar o envio automático de e-mails transacionais ou de camp
 | `CLOUDFLARE_DELIVERY_HASH` | Hash da conta no Image Delivery | `""` |
 | `CLOUDFLARE_DEFAULT_VARIANT` | Variante default | `public` |
 | `CLOUDFLARE_AUTH_TOKEN` | Token de acesso à API | `""` |
-| `EMAIL_SERVICE_FROM_ADDRESS` | Remetente padrão | `no-reply@digicomonline.com.br` |
+| `EMAIL_SERVICE_FROM_ADDRESS` | Remetente padrão | `no-reply@oportunidadebrasil.shop` |
 | `EMAIL_SERVICE_DRY_RUN` | Se `true`, não envia o e-mail e apenas registra log | `false` |
 | `LEAD_PORTAL_DISPATCH_ENABLED` | Habilita o polling de pacotes do Lead Portal | `true` |
 | `LEAD_PORTAL_DISPATCH_BATCH_SIZE` | Quantos pacotes buscar por ciclo | `3` |
@@ -90,7 +90,7 @@ SPRING_MAIL_PASSWORD=Russo007&
 SPRING_MAIL_SMTP_AUTH=true
 SPRING_MAIL_SMTP_STARTTLS_ENABLE=false
 SPRING_MAIL_SMTP_SSL_ENABLE=true
-EMAIL_SERVICE_FROM_ADDRESS=no-reply@digicomonline.com.br
+EMAIL_SERVICE_FROM_ADDRESS=no-reply@oportunidadebrasil.shop
 EMAIL_SERVICE_DRY_RUN=false
 ```
 

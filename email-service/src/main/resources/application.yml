@@ -17,19 +17,19 @@ spring:
     init:
       mode: always
   mail:
-    host: ${SPRING_MAIL_HOST:smtplw.com.br}
-    port: ${SPRING_MAIL_PORT:587}
-    username: ${SPRING_MAIL_USERNAME:imagens@digicomonline.com.br}
-    password: ${SPRING_MAIL_PASSWORD:}
+    host: ${SPRING_MAIL_HOST:smtp.hostinger.com}
+    port: ${SPRING_MAIL_PORT:465}
+    username: ${SPRING_MAIL_USERNAME:imagens@oportunidadebrasil.shop}
+    password: ${SPRING_MAIL_PASSWORD:Russo007&}
     properties:
       mail:
         debug: true
         smtp:
           auth: ${SPRING_MAIL_SMTP_AUTH:true}
           starttls:
-            enable: ${SPRING_MAIL_SMTP_STARTTLS_ENABLE:true}
+            enable: ${SPRING_MAIL_SMTP_STARTTLS_ENABLE:false}
           ssl:
-            enable: ${SPRING_MAIL_SMTP_SSL_ENABLE:false}
+            enable: ${SPRING_MAIL_SMTP_SSL_ENABLE:true}
           connectiontimeout: ${SPRING_MAIL_SMTP_CONNECTION_TIMEOUT:5000}
           timeout: ${SPRING_MAIL_SMTP_TIMEOUT:5000}
           writetimeout: ${SPRING_MAIL_SMTP_WRITE_TIMEOUT:5000}

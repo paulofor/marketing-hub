@@ -47,7 +47,7 @@ public class LeadPortalImagePackageEngagementController {
         return engagementService.markImagesViewed(packageId, submissionId)
                 .map(url -> ResponseEntity.status(HttpStatus.FOUND)
                         .location(URI.create(url))
-                        .build())
+                        .<Void>build())
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }

@@ -670,12 +670,35 @@ CREATE TABLE flow_submission_image_package (
     image_unit_price_usd DECIMAL(10,5),
     image_total_price_usd DECIMAL(12,5),
     image_currency VARCHAR(3) NOT NULL DEFAULT 'USD',
+    zip_object_key VARCHAR(512) NULL,
+    zip_size_bytes BIGINT NULL,
+    zip_generated_at TIMESTAMP NULL,
+    zip_last_error TEXT NULL,
+    zip_attempts INT NOT NULL DEFAULT 0,
+    zip_last_attempt TIMESTAMP NULL,
+    notified_at TIMESTAMP NULL,
+    notification_attempts INT NOT NULL DEFAULT 0,
+    notification_last_attempt TIMESTAMP NULL,
+    notification_last_error TEXT NULL,
+    email_opened_at TIMESTAMP NULL,
+    images_viewed_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_flow_submission_image_package_submission FOREIGN KEY (submission_id) REFERENCES flow_submissions(id),
     CONSTRAINT fk_flow_submission_image_package_model FOREIGN KEY (image_model_id) REFERENCES image_generation_model(id),
     CONSTRAINT fk_flow_submission_image_package_quality FOREIGN KEY (image_model_quality_id) REFERENCES image_generation_quality(id)
 );
+
+CREATE TABLE flow_submission_image_package_status_history (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    package_id BIGINT NOT NULL,
+    status VARCHAR(30) NOT NULL,
+    failure_reason LONGTEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_flow_submission_image_package_status_history_package FOREIGN KEY (package_id) REFERENCES flow_submission_image_package(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_flow_submission_image_package_status_history_package
+    ON flow_submission_image_package_status_history(package_id, created_at, id);
 
 CREATE TABLE flow_submission_image_item (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -702,6 +725,8 @@ CREATE TABLE flow_submission_image_watermark (
 CREATE INDEX idx_flow_submission_image_watermark_opt_asset ON flow_submission_image_watermark(optimized_asset_id);
 
 CREATE INDEX idx_flow_submission_image_package_submission ON flow_submission_image_package(submission_id, created_at DESC);
+CREATE INDEX idx_flow_image_package_zip_status ON flow_submission_image_package(zip_object_key, status, updated_at);
+CREATE INDEX idx_flow_image_package_status_created_at ON flow_submission_image_package(status, created_at);
 CREATE INDEX idx_flow_submission_image_item_package ON flow_submission_image_item(package_id);
 
 CREATE TABLE microservice_exception_log (

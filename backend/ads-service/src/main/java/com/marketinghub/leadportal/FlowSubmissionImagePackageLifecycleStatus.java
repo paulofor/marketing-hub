@@ -13,7 +13,9 @@ public enum FlowSubmissionImagePackageLifecycleStatus {
     FAILED,
     ZIP_GENERATING,
     SAMPLE_EMAIL_SENDING,
-    SAMPLE_EMAIL_SENT;
+    SAMPLE_EMAIL_SENT,
+    SAMPLE_EMAIL_OPENED,
+    SAMPLE_IMAGES_VIEWED;
 
     public static FlowSubmissionImagePackageLifecycleStatus fromBaseStatus(FlowSubmissionImagePackageStatus status) {
         if (status == null) {

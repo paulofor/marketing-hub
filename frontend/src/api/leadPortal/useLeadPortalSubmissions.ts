@@ -14,7 +14,9 @@ export type LeadPortalImagePackageLifecycleStatus =
   | FlowSubmissionImagePackageStatus
   | "ZIP_GENERATING"
   | "SAMPLE_EMAIL_SENDING"
-  | "SAMPLE_EMAIL_SENT";
+  | "SAMPLE_EMAIL_SENT"
+  | "SAMPLE_EMAIL_OPENED"
+  | "SAMPLE_IMAGES_VIEWED";
 
 export interface LeadPortalImagePackage {
   id: number;

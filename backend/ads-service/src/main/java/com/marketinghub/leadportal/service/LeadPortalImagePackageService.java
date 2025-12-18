@@ -70,6 +70,8 @@ public class LeadPortalImagePackageService {
                     pack.zip_object_key,
                     pack.zip_generated_at,
                     pack.notified_at,
+                    pack.email_opened_at,
+                    pack.images_viewed_at,
                     pack.prompt,
                     pack.model,
                     COALESCE(pack.planned_outputs, exp.images_per_package, 20) AS planned_outputs,
@@ -122,6 +124,8 @@ public class LeadPortalImagePackageService {
                     pack.zip_object_key,
                     pack.zip_generated_at,
                     pack.notified_at,
+                    pack.email_opened_at,
+                    pack.images_viewed_at,
                     pack.prompt,
                     pack.model,
                     COALESCE(pack.planned_outputs, exp.images_per_package, 20) AS planned_outputs,
@@ -265,10 +269,12 @@ public class LeadPortalImagePackageService {
         String zipObjectKey = rs.getString("zip_object_key");
         Instant zipGeneratedAt = toInstant(rs.getTimestamp("zip_generated_at"));
         Instant notifiedAt = toInstant(rs.getTimestamp("notified_at"));
+        Instant emailOpenedAt = toInstant(rs.getTimestamp("email_opened_at"));
+        Instant imagesViewedAt = toInstant(rs.getTimestamp("images_viewed_at"));
 
         FlowSubmissionImagePackageLifecycleStatus lifecycleStatus = resolveLifecycleStatus(
                 status,
-                new LifecycleContext(zipObjectKey, zipGeneratedAt, notifiedAt, generatedImageCount, watermarkedImageCount));
+                new LifecycleContext(zipObjectKey, zipGeneratedAt, notifiedAt, emailOpenedAt, imagesViewedAt, generatedImageCount, watermarkedImageCount));
 
         return new LeadPortalImagePackageSummaryDto(
                 id,
@@ -471,6 +477,12 @@ public class LeadPortalImagePackageService {
         if (!zipReady) {
             return FlowSubmissionImagePackageLifecycleStatus.ZIP_GENERATING;
         }
+        if (context.imagesViewedAt() != null) {
+            return FlowSubmissionImagePackageLifecycleStatus.SAMPLE_IMAGES_VIEWED;
+        }
+        if (context.emailOpenedAt() != null) {
+            return FlowSubmissionImagePackageLifecycleStatus.SAMPLE_EMAIL_OPENED;
+        }
         if (context.notifiedAt() != null) {
             return FlowSubmissionImagePackageLifecycleStatus.SAMPLE_EMAIL_SENT;
         }
@@ -559,6 +571,8 @@ public class LeadPortalImagePackageService {
             String zipObjectKey,
             Instant zipGeneratedAt,
             Instant notifiedAt,
+            Instant emailOpenedAt,
+            Instant imagesViewedAt,
             Integer generatedCount,
             Integer watermarkedCount) {
     }

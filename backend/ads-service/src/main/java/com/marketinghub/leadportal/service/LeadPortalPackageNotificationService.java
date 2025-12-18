@@ -25,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.HtmlUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * Scans completed lead portal image packages and dispatches e-mails with watermarked previews.
@@ -53,6 +54,9 @@ public class LeadPortalPackageNotificationService {
 
     @Value("${lead-portal.notifications.lock-seconds:300}")
     private int lockSeconds;
+
+    @Value("${lead-portal.notifications.tracking-base-url:}")
+    private String trackingBaseUrl;
 
     public LeadPortalPackageNotificationService(
             JdbcTemplate jdbcTemplate,
@@ -287,6 +291,13 @@ public class LeadPortalPackageNotificationService {
 
     private EmailContent buildEmailContent(PendingPackage pending, int imageCount) {
         String subject = pending.sampleSubject();
+        String normalizedTrackingBase = normalizeTrackingBaseUrl(trackingBaseUrl);
+        String trackingViewUrl = null;
+        String trackingPixelUrl = null;
+        if (StringUtils.hasText(normalizedTrackingBase)) {
+            trackingViewUrl = buildTrackingUrl(normalizedTrackingBase, pending.packageId(), "previews", pending.submissionId());
+            trackingPixelUrl = buildTrackingUrl(normalizedTrackingBase, pending.packageId(), "open.gif", pending.submissionId());
+        }
         StringBuilder plain = new StringBuilder();
         if (StringUtils.hasText(pending.samplePreview())) {
             plain.append(pending.samplePreview()).append("\n\n");
@@ -297,6 +308,9 @@ public class LeadPortalPackageNotificationService {
         plain.append("Anexamos ").append(imageCount).append(" imagem(ns) com marca d'água geradas para este lead.\n");
         if (StringUtils.hasText(pending.sampleCallToAction())) {
             plain.append("CTA sugerido: ").append(pending.sampleCallToAction().trim()).append("\n");
+        }
+        if (trackingViewUrl != null) {
+            plain.append("Acesse as prévias online: ").append(trackingViewUrl).append("\n");
         }
         plain.append("\nID do pacote: ").append(pending.packageId());
         if (pending.sampleUpdatedAt() != null) {
@@ -321,15 +335,48 @@ public class LeadPortalPackageNotificationService {
                     .append(HtmlUtils.htmlEscape(pending.sampleCallToAction().trim()))
                     .append("</p>");
         }
+        if (StringUtils.hasText(trackingViewUrl)) {
+            html.append("<p><strong>Visualizar online:</strong> <a href=\"")
+                    .append(HtmlUtils.htmlEscape(trackingViewUrl))
+                    .append("\" target=\"_blank\" rel=\"noopener\">Abrir prévias</a></p>");
+        }
         html.append("<p class=\"meta\" style=\"font-size:12px;color:#555\">")
                 .append("Pacote ").append(pending.packageId())
                 .append(" · Experimento ")
                 .append(HtmlUtils.htmlEscape(pending.experimentName()))
                 .append("</p>");
-
+        if (StringUtils.hasText(trackingPixelUrl)) {
+            html.append("<img src=\"")
+                    .append(HtmlUtils.htmlEscape(trackingPixelUrl))
+                    .append("\" alt=\"\" width=\"1\" height=\"1\" style=\"display:none;\" />");
+        }
 
         String attachmentName = "imagens-watermark-" + pending.packageId() + ".zip";
         return new EmailContent(subject, plain.toString(), html.toString(), attachmentName);
+    }
+
+
+    private String normalizeTrackingBaseUrl(String rawBaseUrl) {
+        if (!StringUtils.hasText(rawBaseUrl)) {
+            return null;
+        }
+        String trimmed = rawBaseUrl.trim();
+        if (trimmed.endsWith("/")) {
+            return trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed;
+    }
+
+    private String buildTrackingUrl(String baseUrl, long packageId, String suffix, String submissionId) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(baseUrl)
+                .path("/api/public/lead-portal/image-packages/")
+                .path(String.valueOf(packageId))
+                .path("/")
+                .path(suffix);
+        if (StringUtils.hasText(submissionId)) {
+            builder.queryParam("sid", submissionId);
+        }
+        return builder.toUriString();
     }
 
     private void markAsNotified(long packageId, FlowSubmissionImagePackageStatus currentStatus) {

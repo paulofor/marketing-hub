@@ -73,6 +73,22 @@ export const statusDetails: Record<LeadPortalImagePackageLifecycleStatus, Status
       "O lead já recebeu um e-mail com as prévias geradas. Acompanhe as interações e respostas.",
     icon: "check",
   },
+  SAMPLE_EMAIL_OPENED: {
+    label: "E-mail aberto",
+    badgeClass: "text-bg-success",
+    title: "E-mail de amostra aberto",
+    description:
+      "Detectamos a abertura do e-mail com as prévias. É um bom momento para acompanhar o interesse do lead.",
+    icon: "check",
+  },
+  SAMPLE_IMAGES_VIEWED: {
+    label: "Imagens visualizadas",
+    badgeClass: "text-bg-success",
+    title: "Prévias acessadas",
+    description:
+      "O lead acessou as imagens enviadas. Monitore o retorno e prossiga com os próximos passos comerciais.",
+    icon: "check",
+  },
   COMPLETED: {
     label: "Concluído",
     badgeClass: "text-bg-success",

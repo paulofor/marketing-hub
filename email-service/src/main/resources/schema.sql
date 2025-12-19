@@ -7,5 +7,6 @@ CREATE TABLE IF NOT EXISTS email_log (
     status VARCHAR(20) NOT NULL,
     error_message TEXT,
     created_at TIMESTAMP NOT NULL,
-    sent_at TIMESTAMP NULL
+    sent_at TIMESTAMP NULL,
+    opened_at TIMESTAMP NULL
 );

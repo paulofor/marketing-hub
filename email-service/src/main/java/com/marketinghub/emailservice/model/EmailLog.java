@@ -43,6 +43,9 @@ public class EmailLog {
     @Column(name = "sent_at")
     private Instant sentAt;
 
+    @Column(name = "opened_at")
+    private Instant openedAt;
+
     public Long getId() {
         return id;
     }
@@ -109,5 +112,13 @@ public class EmailLog {
 
     public void setSentAt(Instant sentAt) {
         this.sentAt = sentAt;
+    }
+
+    public Instant getOpenedAt() {
+        return openedAt;
+    }
+
+    public void setOpenedAt(Instant openedAt) {
+        this.openedAt = openedAt;
     }
 }

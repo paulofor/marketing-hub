@@ -71,6 +71,10 @@ email-service:
   default-from-address: ${EMAIL_SERVICE_FROM_ADDRESS:imagens@oportunidadebrasil.shop}
   dry-run: ${EMAIL_SERVICE_DRY_RUN:false}
 
+email:
+  tracking:
+    base-url: ${EMAIL_TRACKING_BASE_URL:}
+
 logging:
   level:
     com.marketinghub.emailservice: INFO

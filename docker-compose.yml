@@ -54,5 +54,6 @@ services:
       CLOUDFLARE_AUTH_TOKEN: ${CLOUDFLARE_AUTH_TOKEN:-}
       EMAIL_SERVICE_FROM_ADDRESS: ${EMAIL_SERVICE_FROM_ADDRESS:-imagens@oportunidadebrasil.shop}
       EMAIL_SERVICE_DRY_RUN: ${EMAIL_SERVICE_DRY_RUN:-false}
+      EMAIL_TRACKING_BASE_URL: ${EMAIL_TRACKING_BASE_URL:-http://191.252.92.222:8000/api/v1/tracking/pixel}
     ports:
       - "8086:8080"

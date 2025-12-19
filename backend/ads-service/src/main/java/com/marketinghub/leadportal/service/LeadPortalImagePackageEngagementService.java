@@ -41,7 +41,13 @@ public class LeadPortalImagePackageEngagementService {
     @Transactional
     public boolean markEmailOpened(long packageId, String submissionToken) {
         Optional<EngagementTarget> target = loadTarget(packageId);
-        if (target.isEmpty() || !matchesSubmission(target.get(), submissionToken)) {
+        if (target.isEmpty()) {
+            return false;
+        }
+        if (!matchesSubmission(target.get(), submissionToken)) {
+            if (StringUtils.hasText(submissionToken) && StringUtils.hasText(target.get().submissionId())) {
+                log.debug("Token de submissão {} não confere com o pacote {} (esperado {})", submissionToken, packageId, target.get().submissionId());
+            }
             return false;
         }
         if (target.get().emailOpenedAt() != null) {
@@ -66,7 +72,13 @@ public class LeadPortalImagePackageEngagementService {
     @Transactional
     public Optional<String> markImagesViewed(long packageId, String submissionToken) {
         Optional<EngagementTarget> target = loadTarget(packageId);
-        if (target.isEmpty() || !matchesSubmission(target.get(), submissionToken)) {
+        if (target.isEmpty()) {
+            return Optional.empty();
+        }
+        if (!matchesSubmission(target.get(), submissionToken)) {
+            if (StringUtils.hasText(submissionToken) && StringUtils.hasText(target.get().submissionId())) {
+                log.debug("Token de submissão {} não confere com o pacote {} (esperado {})", submissionToken, packageId, target.get().submissionId());
+            }
             return Optional.empty();
         }
         EngagementTarget engagementTarget = target.get();

@@ -34,10 +34,15 @@ public class LeadPortalImagePackageEngagementController {
     public ResponseEntity<byte[]> trackEmailOpen(@PathVariable("id") long packageId,
                                                  @RequestParam(name = "sid", required = false) String submissionId) {
         engagementService.markEmailOpened(packageId, submissionId);
+        CacheControl cacheHeaders = CacheControl.noStore()
+                .cachePrivate()
+                .mustRevalidate()
+                .noCache();
         return ResponseEntity.ok()
-                .cacheControl(CacheControl.noStore())
+                .cacheControl(cacheHeaders)
                 .contentType(MediaType.IMAGE_GIF)
                 .header(HttpHeaders.PRAGMA, "no-cache")
+                .header(HttpHeaders.EXPIRES, "0")
                 .body(TRANSPARENT_PIXEL);
     }
 

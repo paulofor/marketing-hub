@@ -2,6 +2,7 @@ package com.marketinghub.leadportal.dto;
 
 import com.marketinghub.leadportal.FlowSubmissionImagePackageStatus;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -17,7 +18,10 @@ public record LeadPortalImagePackageExportDto(
         String experimentName,
         SampleEmail sampleEmail,
         EmailContent emailContent,
+        boolean sendImagesAsZip,
+        int imageCount,
         Attachment attachment,
+        List<Attachment> attachments,
         int notificationAttempts,
         Instant notificationLastAttempt
 ) {
@@ -41,8 +45,9 @@ public record LeadPortalImagePackageExportDto(
 
     public record Attachment(
             String fileName,
+            String contentType,
             String base64Content,
-            int imageCount,
+            Integer imageCount,
             long sizeBytes,
             String storedFileName,
             String downloadUrl

@@ -74,6 +74,7 @@ public class LeadPortalImagePackageService {
                     pack.images_viewed_at,
                     pack.prompt,
                     pack.model,
+                    COALESCE(exp.send_images_as_zip, TRUE) AS send_images_as_zip,
                     COALESCE(pack.planned_outputs, exp.images_per_package, 20) AS planned_outputs,
                     pack.free_images,
                     pack.failure_reason,
@@ -128,6 +129,7 @@ public class LeadPortalImagePackageService {
                     pack.images_viewed_at,
                     pack.prompt,
                     pack.model,
+                    COALESCE(exp.send_images_as_zip, TRUE) AS send_images_as_zip,
                     COALESCE(pack.planned_outputs, exp.images_per_package, 20) AS planned_outputs,
                     pack.free_images,
                     pack.failure_reason,
@@ -193,6 +195,7 @@ public class LeadPortalImagePackageService {
                 summary.submissionId(),
                 summary.status(),
                 summary.lifecycleStatus(),
+                summary.sendImagesAsZip(),
                 summary.prompt(),
                 summary.model(),
                 summary.plannedOutputs(),
@@ -244,6 +247,7 @@ public class LeadPortalImagePackageService {
         Instant createdAt = toInstant(rs.getTimestamp("created_at"));
         Instant updatedAt = toInstant(rs.getTimestamp("updated_at"));
         Integer plannedOutputs = getInteger(rs, "planned_outputs");
+        Boolean sendImagesAsZip = getBoolean(rs, "send_images_as_zip");
         Integer freeImages = getInteger(rs, "free_images");
         Integer generatedImageCount = getInteger(rs, "generated_count");
         if (generatedImageCount == null) {
@@ -274,7 +278,7 @@ public class LeadPortalImagePackageService {
 
         FlowSubmissionImagePackageLifecycleStatus lifecycleStatus = resolveLifecycleStatus(
                 status,
-                new LifecycleContext(zipObjectKey, zipGeneratedAt, notifiedAt, emailOpenedAt, imagesViewedAt, generatedImageCount, watermarkedImageCount));
+                new LifecycleContext(zipObjectKey, zipGeneratedAt, notifiedAt, emailOpenedAt, imagesViewedAt, generatedImageCount, watermarkedImageCount, sendImagesAsZip != null ? sendImagesAsZip : Boolean.TRUE));
 
         return new LeadPortalImagePackageSummaryDto(
                 id,
@@ -287,6 +291,7 @@ public class LeadPortalImagePackageService {
                 lifecycleStatus,
                 rs.getString("prompt"),
                 rs.getString("model"),
+                sendImagesAsZip != null ? sendImagesAsZip : Boolean.TRUE,
                 plannedOutputs,
                 freeImages,
                 generatedImageCount,
@@ -473,7 +478,8 @@ public class LeadPortalImagePackageService {
             return defaultStatus;
         }
 
-        boolean zipReady = StringUtils.hasText(context.zipObjectKey()) || context.zipGeneratedAt() != null;
+        boolean zipRequired = context.sendImagesAsZip();
+        boolean zipReady = !zipRequired || StringUtils.hasText(context.zipObjectKey()) || context.zipGeneratedAt() != null;
         if (!zipReady) {
             return FlowSubmissionImagePackageLifecycleStatus.ZIP_GENERATING;
         }
@@ -515,6 +521,20 @@ public class LeadPortalImagePackageService {
     private Long getLong(ResultSet rs, String column) throws SQLException {
         Object value = rs.getObject(column);
         return value == null ? null : ((Number) value).longValue();
+    }
+
+    private Boolean getBoolean(ResultSet rs, String column) throws SQLException {
+        Object value = rs.getObject(column);
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Boolean bool) {
+            return bool;
+        }
+        if (value instanceof Number number) {
+            return number.intValue() != 0;
+        }
+        return Boolean.parseBoolean(value.toString());
     }
 
     private Instant toInstant(Timestamp timestamp) {

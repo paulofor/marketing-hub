@@ -15,6 +15,7 @@ public record LeadPortalImagePackageDetailDto(
         UUID submissionId,
         FlowSubmissionImagePackageStatus status,
         FlowSubmissionImagePackageLifecycleStatus lifecycleStatus,
+        Boolean sendImagesAsZip,
         String prompt,
         String model,
         Integer plannedOutputs,

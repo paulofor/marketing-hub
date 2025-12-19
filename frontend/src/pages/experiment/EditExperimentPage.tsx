@@ -25,6 +25,7 @@ interface FormData {
   imageModelId: string;
   imageModelQualityId: string;
   imagesPerPackage: string;
+  sendImagesAsZip: string;
 }
 
 export default function EditExperimentPage() {
@@ -55,6 +56,7 @@ export default function EditExperimentPage() {
       imageModelId: "",
       imageModelQualityId: "",
       imagesPerPackage: "",
+      sendImagesAsZip: "zip",
     },
   });
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
@@ -91,6 +93,7 @@ export default function EditExperimentPage() {
           data.imagesPerPackage != null
             ? String(data.imagesPerPackage)
             : "20",
+        sendImagesAsZip: data.sendImagesAsZip !== false ? "zip" : "inline",
       });
     }
   }, [data, reset]);
@@ -260,6 +263,7 @@ export default function EditExperimentPage() {
         instantFormsToGenerate: data.instantFormsToGenerate ?? undefined,
         emailsToGenerate: data.emailsToGenerate ?? undefined,
         imagesPerPackage: parsedImagesPerPackage,
+        sendImagesAsZip: values.sendImagesAsZip !== "inline",
       };
 
       if (dirtyFields.imageModelId) {
@@ -404,6 +408,30 @@ export default function EditExperimentPage() {
           step="1"
           {...register("imagesPerPackage")}
         />
+        <div className="mb-3">
+          <label className="form-label">Formato do envio das imagens do portal</label>
+          <div className="form-check">
+            <input
+              className="form-check-input"
+              type="radio"
+              value="zip"
+              id="editSendImagesZip"
+              {...register("sendImagesAsZip")}
+            />
+            <label className="form-check-label" htmlFor="editSendImagesZip">Compactar em um arquivo .zip</label>
+          </div>
+          <div className="form-check">
+            <input
+              className="form-check-input"
+              type="radio"
+              value="inline"
+              id="editSendImagesInline"
+              {...register("sendImagesAsZip")}
+            />
+            <label className="form-check-label" htmlFor="editSendImagesInline">Enviar sem compactar (anexos individuais)</label>
+          </div>
+          <div className="form-text">Controle como as imagens geradas para o portal serão anexadas ao e-mail.</div>
+        </div>
         {hasWorkerRequests && (
           <div className="mb-3" aria-live="polite">
             <p className="text-muted small mb-2">

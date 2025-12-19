@@ -18,6 +18,7 @@ export interface UpdateExperiment {
   deliverablesToGenerate?: number;
   leadPortalFlowsToGenerate?: number;
   imagesPerPackage?: number;
+  sendImagesAsZip?: boolean;
   journeyTemplateId?: number;
   facebookPageId?: number | null;
   facebookInstantFormId?: number | null;

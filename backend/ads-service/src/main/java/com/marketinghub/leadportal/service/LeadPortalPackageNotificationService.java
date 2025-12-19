@@ -6,6 +6,7 @@ import com.marketinghub.storage.StorageException;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -15,6 +16,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -226,7 +228,7 @@ public class LeadPortalPackageNotificationService {
     private PendingPackage mapPendingPackage(ResultSet rs) throws SQLException {
         return new PendingPackage(
                 rs.getLong("package_id"),
-                rs.getString("submission_id"),
+                normalizeSubmissionId(rs.getObject("submission_id")),
                 FlowSubmissionImagePackageStatus.valueOf(rs.getString("status")),
                 rs.getInt("notification_attempts"),
                 toInstant(rs.getTimestamp("notification_last_attempt")),
@@ -473,6 +475,7 @@ public class LeadPortalPackageNotificationService {
         return statuses.stream().findFirst();
     }
 
+
     private String normalizeError(String rawError) {
         String value = StringUtils.hasText(rawError)
                 ? rawError.trim()
@@ -481,6 +484,30 @@ public class LeadPortalPackageNotificationService {
             value = value.substring(0, 500);
         }
         return value;
+    }
+
+    private String normalizeSubmissionId(Object rawValue) {
+        if (rawValue == null) {
+            return null;
+        }
+        if (rawValue instanceof byte[] bytes) {
+            try {
+                ByteBuffer buffer = ByteBuffer.wrap(bytes);
+                return new UUID(buffer.getLong(), buffer.getLong()).toString();
+            } catch (Exception ex) {
+                log.warn("Falha ao converter submission_id binário para UUID", ex);
+                return null;
+            }
+        }
+        String value = rawValue.toString();
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        try {
+            return UUID.fromString(value.trim()).toString();
+        } catch (IllegalArgumentException ex) {
+            return value.trim();
+        }
     }
 
     private String buildEmailFailureReason(String normalizedError) {

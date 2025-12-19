@@ -28,6 +28,8 @@ public enum FlowSubmissionImagePackageLifecycleStatus {
             case WATERMARK_PENDING -> WATERMARK_PENDING;
             case WATERMARKING -> WATERMARKING;
             case COMPLETED -> COMPLETED;
+            case SAMPLE_EMAIL_OPENED -> SAMPLE_EMAIL_OPENED;
+            case SAMPLE_IMAGES_VIEWED -> SAMPLE_IMAGES_VIEWED;
             case FAILED -> FAILED;
         };
     }

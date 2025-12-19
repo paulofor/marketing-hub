@@ -10,5 +10,7 @@ public enum FlowSubmissionImagePackageStatus {
     WATERMARK_PENDING,
     WATERMARKING,
     COMPLETED,
+    SAMPLE_EMAIL_OPENED,
+    SAMPLE_IMAGES_VIEWED,
     FAILED
 }

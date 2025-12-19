@@ -159,6 +159,7 @@ export default function LeadPortalImagePackageDetailPage() {
   }, [data, displayStatus]);
 
   const sampleZip: LeadPortalSampleZipInfo | null | undefined = data?.sampleZip;
+  const expectsZip = data?.sendImagesAsZip !== false;
   const historyEntries = useMemo(() => {
     if (!data?.history) return [] as LeadPortalStatusHistoryEntry[];
     return [...data.history].sort((a, b) => {

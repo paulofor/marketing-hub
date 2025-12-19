@@ -50,6 +50,19 @@ public class EmailLogService {
         return repository.save(emailLog);
     }
 
+    @Transactional
+    public EmailLog markOpened(String requestId) {
+        EmailLog emailLog = repository.findByRequestId(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("Requisição " + requestId + " não localizada"));
+
+        if (emailLog.getOpenedAt() == null) {
+            emailLog.setOpenedAt(Instant.now());
+            repository.save(emailLog);
+        }
+
+        return emailLog;
+    }
+
     @Transactional(readOnly = true)
     public Optional<EmailLog> findByRequestId(String requestId) {
         return repository.findByRequestId(requestId);

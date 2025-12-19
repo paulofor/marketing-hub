@@ -1,6 +1,7 @@
 package com.marketinghub.emailservice.service;
 
 import com.marketinghub.emailservice.config.EmailServiceProperties;
+import com.marketinghub.emailservice.config.EmailTrackingProperties;
 import com.marketinghub.emailservice.dto.EmailAttachmentRequest;
 import com.marketinghub.emailservice.dto.EmailRequestDto;
 import com.marketinghub.emailservice.dto.EmailResponseDto;
@@ -20,6 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 public class EmailOrchestratorService {
@@ -32,19 +35,22 @@ public class EmailOrchestratorService {
     private final EmailSenderService emailSenderService;
     private final EmailLogService emailLogService;
     private final EmailServiceProperties emailServiceProperties;
+    private final EmailTrackingProperties emailTrackingProperties;
 
     public EmailOrchestratorService(MarketingHubClient marketingHubClient,
                                     CloudflareImageClient cloudflareImageClient,
                                     TemplateRenderingService templateRenderingService,
                                     EmailSenderService emailSenderService,
                                     EmailLogService emailLogService,
-                                    EmailServiceProperties emailServiceProperties) {
+                                    EmailServiceProperties emailServiceProperties,
+                                    EmailTrackingProperties emailTrackingProperties) {
         this.marketingHubClient = marketingHubClient;
         this.cloudflareImageClient = cloudflareImageClient;
         this.templateRenderingService = templateRenderingService;
         this.emailSenderService = emailSenderService;
         this.emailLogService = emailLogService;
         this.emailServiceProperties = emailServiceProperties;
+        this.emailTrackingProperties = emailTrackingProperties;
     }
 
     public EmailResponseDto sendEmail(EmailRequestDto request) {
@@ -55,7 +61,13 @@ public class EmailOrchestratorService {
             MarketingHubTemplateResponse template = marketingHubClient.fetchTemplate(request.templateId());
             Map<String, Object> templateVariables = marketingHubClient.fetchDynamicVariables(request.templateId());
 
-            Map<String, Object> mergedVariables = new HashMap<>(templateVariables);
+            Map<String, Object> mergedVariables = new HashMap<>(templateVariables != null ? templateVariables : Map.of());
+            mergedVariables.putIfAbsent("requestId", emailLog.getRequestId());
+
+            String trackingPixelUrl = buildTrackingPixelUrl(emailLog.getRequestId());
+            if (StringUtils.hasText(trackingPixelUrl)) {
+                mergedVariables.putIfAbsent("trackingPixelUrl", trackingPixelUrl);
+            }
             if (request.variables() != null) {
                 mergedVariables.putAll(request.variables());
             }
@@ -65,6 +77,7 @@ public class EmailOrchestratorService {
                 htmlSource = template.textContent();
             }
             String htmlBody = templateRenderingService.render(htmlSource, mergedVariables);
+            htmlBody = appendTrackingPixel(htmlBody, trackingPixelUrl);
             String textBody = template.textContent() != null ? templateRenderingService.render(template.textContent(), mergedVariables) : null;
 
             List<EmailAttachmentResource> attachments = resolveAttachments(request.attachments());
@@ -127,5 +140,31 @@ public class EmailOrchestratorService {
 
     private List<String> defaultList(List<String> list) {
         return CollectionUtils.isEmpty(list) ? List.of() : list.stream().filter(Objects::nonNull).toList();
+    }
+
+    private String buildTrackingPixelUrl(String requestId) {
+        if (!StringUtils.hasText(emailTrackingProperties.baseUrl())) {
+            return null;
+        }
+
+        try {
+            return UriComponentsBuilder.fromUriString(emailTrackingProperties.baseUrl())
+                    .pathSegment(requestId + ".png")
+                    .build()
+                    .toUriString();
+        } catch (IllegalArgumentException ex) {
+            log.warn("Tracking base URL inválida: {}", emailTrackingProperties.baseUrl(), ex);
+            return null;
+        }
+    }
+
+    private String appendTrackingPixel(String htmlBody, String trackingPixelUrl) {
+        if (!StringUtils.hasText(htmlBody) || !StringUtils.hasText(trackingPixelUrl)) {
+            return htmlBody;
+        }
+
+        String trackingImageTag = "<img src=\"" + trackingPixelUrl
+                + "\" alt=\"\" style=\"display:none;width:1px;height:1px;\" width=\"1\" height=\"1\" />";
+        return htmlBody + trackingImageTag;
     }
 }

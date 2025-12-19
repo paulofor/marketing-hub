@@ -2,6 +2,7 @@ package com.marketinghub.emailservice.service;
 
 import com.marketinghub.emailservice.config.EmailServiceProperties;
 import com.marketinghub.emailservice.config.LeadPortalDispatchProperties;
+import com.marketinghub.emailservice.model.EmailLog;
 import com.marketinghub.emailservice.service.client.LeadPortalImagePackageClient;
 import com.marketinghub.emailservice.service.client.LeadPortalImagePackageExportResponse;
 import com.marketinghub.emailservice.service.client.RemoteAsset;
@@ -24,15 +25,21 @@ public class LeadPortalEmailDispatchService {
     private final EmailSenderService emailSenderService;
     private final EmailServiceProperties emailServiceProperties;
     private final LeadPortalDispatchProperties dispatchProperties;
+    private final EmailLogService emailLogService;
+    private final TrackingPixelService trackingPixelService;
 
     public LeadPortalEmailDispatchService(LeadPortalImagePackageClient leadPortalImagePackageClient,
                                           EmailSenderService emailSenderService,
                                           EmailServiceProperties emailServiceProperties,
-                                          LeadPortalDispatchProperties dispatchProperties) {
+                                          LeadPortalDispatchProperties dispatchProperties,
+                                          EmailLogService emailLogService,
+                                          TrackingPixelService trackingPixelService) {
         this.leadPortalImagePackageClient = leadPortalImagePackageClient;
         this.emailSenderService = emailSenderService;
         this.emailServiceProperties = emailServiceProperties;
         this.dispatchProperties = dispatchProperties;
+        this.emailLogService = emailLogService;
+        this.trackingPixelService = trackingPixelService;
     }
 
     @Scheduled(initialDelayString = "${lead-portal.dispatch.initial-delay:20000}",
@@ -77,6 +84,14 @@ public class LeadPortalEmailDispatchService {
                 ? item.attachment().fileName()
                 : "imagens-watermark-" + item.packageId() + ".zip";
 
+        EmailLog emailLog = emailLogService.createPendingLog(
+                item.submissionEmail(),
+                emailContent.subject(),
+                "lead-portal-package-" + item.packageId());
+
+        String trackingPixelUrl = trackingPixelService.buildTrackingPixelUrl(emailLog.getRequestId());
+        String htmlBody = trackingPixelService.appendTrackingPixel(emailContent.htmlBody(), trackingPixelUrl);
+
         RemoteAsset asset = new RemoteAsset(attachmentName, ZIP_MEDIA_TYPE, attachmentBytes);
         EmailAttachmentResource attachment = new EmailAttachmentResource(asset, false, null);
 
@@ -86,7 +101,7 @@ public class LeadPortalEmailDispatchService {
                 List.of(),
                 List.of(),
                 emailContent.subject(),
-                emailContent.htmlBody(),
+                htmlBody,
                 emailContent.plainBody(),
                 List.of(attachment)
         );
@@ -97,7 +112,14 @@ public class LeadPortalEmailDispatchService {
                 emailContent.subject(),
                 attachmentName,
                 attachmentBytes.length);
-        emailSenderService.send(message);
+
+        try {
+            emailSenderService.send(message);
+            emailLogService.markSent(emailLog.getRequestId());
+        } catch (Exception ex) {
+            emailLogService.markFailed(emailLog.getRequestId(), ex.getMessage());
+            throw ex;
+        }
     }
 
     private byte[] decodeAttachment(LeadPortalImagePackageExportResponse.Attachment attachment) {

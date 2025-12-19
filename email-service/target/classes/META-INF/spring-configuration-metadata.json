@@ -16,6 +16,11 @@
       "sourceType": "com.marketinghub.emailservice.config.EmailServiceProperties"
     },
     {
+      "name": "email.tracking",
+      "type": "com.marketinghub.emailservice.config.EmailTrackingProperties",
+      "sourceType": "com.marketinghub.emailservice.config.EmailTrackingProperties"
+    },
+    {
       "name": "lead-portal.dispatch",
       "type": "com.marketinghub.emailservice.config.LeadPortalDispatchProperties",
       "sourceType": "com.marketinghub.emailservice.config.LeadPortalDispatchProperties"
@@ -103,6 +108,11 @@
       "defaultValue": false
     },
     {
+      "name": "email.tracking.base-url",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.emailservice.config.EmailTrackingProperties"
+    },
+    {
       "name": "lead-portal.dispatch.batch-size",
       "type": "java.lang.Integer",
       "sourceType": "com.marketinghub.emailservice.config.LeadPortalDispatchProperties",
@@ -122,6 +132,12 @@
     },
     {
       "name": "lead-portal.dispatch.poll-interval",
+      "type": "java.lang.Long",
+      "sourceType": "com.marketinghub.emailservice.config.LeadPortalDispatchProperties",
+      "defaultValue": 0
+    },
+    {
+      "name": "lead-portal.dispatch.read-timeout",
       "type": "java.lang.Long",
       "sourceType": "com.marketinghub.emailservice.config.LeadPortalDispatchProperties",
       "defaultValue": 0

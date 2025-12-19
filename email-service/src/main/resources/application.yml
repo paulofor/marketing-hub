@@ -73,7 +73,7 @@ email-service:
 
 email:
   tracking:
-    base-url: ${EMAIL_TRACKING_BASE_URL:}
+    base-url: ${EMAIL_TRACKING_BASE_URL:http://191.252.92.222:8000/api/v1/tracking/pixel}
 
 logging:
   level:

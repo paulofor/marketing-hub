@@ -31,9 +31,6 @@ public class UpdateExperimentRequest {
     private Integer deliverablesToGenerate;
     private Integer leadPortalFlowsToGenerate;
     private Integer imagesPerPackage;
-    private Boolean sendImagesAsZip;
-    @JsonIgnore
-    private boolean sendImagesAsZipPresent;
     private Boolean creativeApproved;
     private Long journeyTemplateId;
     @JsonIgnore
@@ -103,12 +100,6 @@ public class UpdateExperimentRequest {
         this.dailyBudget = dailyBudget;
         this.dailyBudgetPresent = true;
     }
-    @JsonSetter(value = "sendImagesAsZip", nulls = Nulls.SET)
-    public void setSendImagesAsZip(Boolean sendImagesAsZip) {
-        this.sendImagesAsZip = sendImagesAsZip;
-        this.sendImagesAsZipPresent = true;
-    }
-
     @JsonSetter(value = "imageModelId", nulls = Nulls.SET)
     public void setImageModelId(Long imageModelId) {
         this.imageModelId = imageModelId;

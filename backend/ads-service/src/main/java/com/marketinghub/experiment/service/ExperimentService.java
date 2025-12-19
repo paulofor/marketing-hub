@@ -240,7 +240,6 @@ public class ExperimentService {
         ImageGenerationSelection imageSelection =
                 resolveImageGenerationSelection(request.getImageModelId(), request.getImageModelQualityId());
         int imagesPerPackage = normalizeImagesPerPackage(request.getImagesPerPackage());
-        boolean sendImagesAsZip = resolveSendImagesAsZip(request.getSendImagesAsZip());
         Experiment exp = Experiment.builder()
                 .niche(niche)
                 .name(request.getName())
@@ -265,7 +264,6 @@ public class ExperimentService {
                 .deliverablesToGenerate(request.getDeliverablesToGenerate())
                 .leadPortalFlowsToGenerate(request.getLeadPortalFlowsToGenerate())
                 .imagesPerPackage(imagesPerPackage)
-                .sendImagesAsZip(sendImagesAsZip)
                 .facebookPage(attachFacebookPage(request.getFacebookPageId()))
                 .facebookInstantForm(attachInstantForm(request.getFacebookInstantFormId(), request.getHypothesisId()))
                 .instagramAccount(attachInstagramAccount(request.getInstagramAccountId()))
@@ -334,7 +332,6 @@ public class ExperimentService {
                 .deliverablesToGenerate(original.getDeliverablesToGenerate())
                 .leadPortalFlowsToGenerate(original.getLeadPortalFlowsToGenerate())
                 .imagesPerPackage(original.getImagesPerPackage())
-                .sendImagesAsZip(original.isSendImagesAsZip())
                 .facebookPage(original.getFacebookPage())
                 .instagramAccount(original.getInstagramAccount())
                 .facebookInstantForm(original.getFacebookInstantForm())
@@ -562,10 +559,6 @@ public class ExperimentService {
         Experiment exp = repository.findById(id).orElseThrow();
         exp.setLeadPortalFlowsToGenerate(quantity);
         return exp;
-    }
-
-    private boolean resolveSendImagesAsZip(Boolean sendImagesAsZip) {
-        return sendImagesAsZip == null || sendImagesAsZip;
     }
 
     private int normalizeImagesPerPackage(Integer imagesPerPackage) {

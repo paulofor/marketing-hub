@@ -37,7 +37,6 @@ export default function NewExperimentPage() {
     imageModelId: "",
     imageModelQualityId: "",
     imagesPerPackage: "20",
-    sendImagesAsZip: "zip",
   });
   const [autoSampleSize, setAutoSampleSize] = useState(true);
   const [autoMde, setAutoMde] = useState(true);
@@ -227,7 +226,6 @@ export default function NewExperimentPage() {
         imageModelId: "",
         imageModelQualityId: "",
         imagesPerPackage: "20",
-        sendImagesAsZip: "zip",
       });
       setAutoSampleSize(true);
       setAutoMde(true);
@@ -426,40 +424,6 @@ export default function NewExperimentPage() {
           {preferredImagePrice?.sizeLabel ? ` (tamanho: ${preferredImagePrice.sizeLabel})` : ""}
         </p>
       ) : null}
-      <div className="mb-3">
-        <label className="form-label">Formato do envio das imagens do portal</label>
-        <div className="form-check">
-          <input
-            className="form-check-input"
-            type="radio"
-            name="sendImagesAsZip"
-            id="sendImagesAsZipZip"
-            value="zip"
-            checked={form.sendImagesAsZip === "zip"}
-            onChange={(e) => setForm((prev) => ({ ...prev, sendImagesAsZip: e.target.value }))}
-          />
-          <label className="form-check-label" htmlFor="sendImagesAsZipZip">
-            Compactar em um arquivo .zip (anexo único).
-          </label>
-        </div>
-        <div className="form-check">
-          <input
-            className="form-check-input"
-            type="radio"
-            name="sendImagesAsZip"
-            id="sendImagesAsZipInline"
-            value="inline"
-            checked={form.sendImagesAsZip === "inline"}
-            onChange={(e) => setForm((prev) => ({ ...prev, sendImagesAsZip: e.target.value }))}
-          />
-          <label className="form-check-label" htmlFor="sendImagesAsZipInline">
-            Enviar as imagens individualmente, sem compactar.
-          </label>
-        </div>
-        <div className="form-text">
-          Essa escolha define como os arquivos serão anexados ao e-mail enviado ao lead do portal.
-        </div>
-      </div>
       {hasWorkerRequests && (
         <div className="mb-3" aria-live="polite">
           <p className="text-muted small mb-2">

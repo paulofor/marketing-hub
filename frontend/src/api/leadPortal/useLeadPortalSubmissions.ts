@@ -27,7 +27,6 @@ export interface LeadPortalImagePackage {
   phone?: string | null;
   prompt: string;
   model?: string | null;
-  sendImagesAsZip?: boolean | null;
   plannedOutputs?: number | null;
   freeImages?: number | null;
   generatedImageCount: number;

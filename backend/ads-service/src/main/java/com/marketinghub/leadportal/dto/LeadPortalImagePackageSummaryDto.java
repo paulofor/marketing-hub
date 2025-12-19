@@ -20,7 +20,6 @@ public record LeadPortalImagePackageSummaryDto(
         FlowSubmissionImagePackageLifecycleStatus lifecycleStatus,
         String prompt,
         String model,
-        Boolean sendImagesAsZip,
         Integer plannedOutputs,
         Integer freeImages,
         Integer generatedImageCount,

@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.util.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -66,35 +67,47 @@ public class LeadPortalImagePackageExportController {
                 item.emailHtmlBody()
         );
 
-        byte[] zipBytes = item.zipBytes();
-        String base64Attachment = zipBytes != null && zipBytes.length > 0
-                ? Base64.getEncoder().encodeToString(zipBytes)
-                : "";
-        long sizeBytes = zipBytes != null ? zipBytes.length : 0L;
-        String downloadUrl = fileStorageService.resolvePublicUrl(item.zipObjectKey()).orElse("");
-        LeadPortalImagePackageExportDto.Attachment attachment = new LeadPortalImagePackageExportDto.Attachment(
-                item.attachmentName(),
-                base64Attachment,
-                item.imageCount(),
-                sizeBytes,
-                item.zipObjectKey(),
-                downloadUrl
-        );
 
-        return new LeadPortalImagePackageExportDto(
-                item.packageId(),
-                parseUuid(item.submissionId()),
-                item.submissionName(),
-                item.submissionEmail(),
-                item.status(),
-                item.experimentId(),
-                item.experimentName(),
-                sampleEmail,
-                emailContent,
-                attachment,
-                item.notificationAttempts(),
-                item.notificationLastAttempt()
-        );
+List<LeadPortalImagePackageExportDto.Attachment> attachments = item.attachments().stream()
+        .map(att -> {
+            byte[] bytes = att.bytes();
+            String base64Attachment = bytes != null && bytes.length > 0
+                    ? Base64.getEncoder().encodeToString(bytes)
+                    : "";
+            long sizeBytes = bytes != null ? bytes.length : 0L;
+            String downloadUrl = StringUtils.hasText(att.downloadUrl())
+                    ? att.downloadUrl()
+                    : fileStorageService.resolvePublicUrl(att.storedFileName()).orElse("");
+            return new LeadPortalImagePackageExportDto.Attachment(
+                    att.fileName(),
+                    att.contentType(),
+                    base64Attachment,
+                    att.imageCount(),
+                    sizeBytes,
+                    att.storedFileName(),
+                    downloadUrl
+            );
+        })
+        .toList();
+LeadPortalImagePackageExportDto.Attachment primaryAttachment = attachments.isEmpty() ? null : attachments.get(0);
+
+return new LeadPortalImagePackageExportDto(
+        item.packageId(),
+        parseUuid(item.submissionId()),
+        item.submissionName(),
+        item.submissionEmail(),
+        item.status(),
+        item.experimentId(),
+        item.experimentName(),
+        sampleEmail,
+        emailContent,
+        item.sendImagesAsZip(),
+        item.imageCount(),
+        primaryAttachment,
+        attachments,
+        item.notificationAttempts(),
+        item.notificationLastAttempt()
+);
     }
 
     private UUID parseUuid(String raw) {

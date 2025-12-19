@@ -5,6 +5,7 @@ import com.marketinghub.emailservice.config.LeadPortalDispatchProperties;
 import com.marketinghub.emailservice.service.client.LeadPortalImagePackageClient;
 import com.marketinghub.emailservice.service.client.LeadPortalImagePackageExportResponse;
 import com.marketinghub.emailservice.service.client.RemoteAsset;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import org.slf4j.Logger;
@@ -19,6 +20,7 @@ public class LeadPortalEmailDispatchService {
 
     private static final Logger log = LoggerFactory.getLogger(LeadPortalEmailDispatchService.class);
     private static final MediaType ZIP_MEDIA_TYPE = MediaType.parseMediaType("application/zip");
+    private static final MediaType DEFAULT_MEDIA_TYPE = MediaType.APPLICATION_OCTET_STREAM;
 
     private final LeadPortalImagePackageClient leadPortalImagePackageClient;
     private final EmailSenderService emailSenderService;
@@ -69,16 +71,22 @@ public class LeadPortalEmailDispatchService {
         if (emailContent == null) {
             throw new IllegalStateException("Conteúdo de e-mail ausente para o pacote " + item.packageId());
         }
-        byte[] attachmentBytes = decodeAttachment(item.attachment());
-        if (attachmentBytes.length == 0) {
-            throw new IllegalStateException("Arquivo compactado vazio para o pacote " + item.packageId());
+        List<LeadPortalImagePackageExportResponse.Attachment> attachmentDtos = resolveAttachments(item);
+        if (attachmentDtos.isEmpty()) {
+            throw new IllegalStateException("Nenhum anexo encontrado para o pacote " + item.packageId());
         }
-        String attachmentName = item.attachment() != null && StringUtils.hasText(item.attachment().fileName())
-                ? item.attachment().fileName()
-                : "imagens-watermark-" + item.packageId() + ".zip";
 
-        RemoteAsset asset = new RemoteAsset(attachmentName, ZIP_MEDIA_TYPE, attachmentBytes);
-        EmailAttachmentResource attachment = new EmailAttachmentResource(asset, false, null);
+        List<EmailAttachmentResource> attachments = new ArrayList<>();
+        for (LeadPortalImagePackageExportResponse.Attachment attachmentDto : attachmentDtos) {
+            byte[] attachmentBytes = decodeAttachment(attachmentDto);
+            if (attachmentBytes.length == 0) {
+                throw new IllegalStateException("Anexo vazio para o pacote " + item.packageId());
+            }
+            String attachmentName = resolveAttachmentName(attachmentDto, item);
+            MediaType mediaType = resolveMediaType(attachmentDto, item);
+            RemoteAsset asset = new RemoteAsset(attachmentName, mediaType, attachmentBytes);
+            attachments.add(new EmailAttachmentResource(asset, false, null));
+        }
 
         EmailMessage message = new EmailMessage(
                 emailServiceProperties.defaultFromAddress(),
@@ -88,16 +96,47 @@ public class LeadPortalEmailDispatchService {
                 emailContent.subject(),
                 emailContent.htmlBody(),
                 emailContent.plainBody(),
-                List.of(attachment)
+                attachments
         );
 
-        log.info("Enviando pacote {} para {} com assunto '{}' (arquivo='{}', tamanho={} bytes)",
+        log.info("Enviando pacote {} para {} com assunto '{}' (anexos={})",
                 item.packageId(),
                 item.submissionEmail(),
                 emailContent.subject(),
-                attachmentName,
-                attachmentBytes.length);
+                attachments.size());
         emailSenderService.send(message);
+    }
+
+    private List<LeadPortalImagePackageExportResponse.Attachment> resolveAttachments(LeadPortalImagePackageExportResponse item) {
+        if (item.attachments() != null && !item.attachments().isEmpty()) {
+            return item.attachments();
+        }
+        if (item.attachment() != null) {
+            return List.of(item.attachment());
+        }
+        return List.of();
+    }
+
+    private MediaType resolveMediaType(LeadPortalImagePackageExportResponse.Attachment attachment,
+                                       LeadPortalImagePackageExportResponse item) {
+        if (attachment != null && StringUtils.hasText(attachment.contentType())) {
+            try {
+                return MediaType.parseMediaType(attachment.contentType());
+            } catch (Exception ignored) {
+                // fallback abaixo
+            }
+        }
+        return item.sendImagesAsZip() ? ZIP_MEDIA_TYPE : DEFAULT_MEDIA_TYPE;
+    }
+
+    private String resolveAttachmentName(LeadPortalImagePackageExportResponse.Attachment attachment,
+                                         LeadPortalImagePackageExportResponse item) {
+        if (attachment != null && StringUtils.hasText(attachment.fileName())) {
+            return attachment.fileName();
+        }
+        return item.sendImagesAsZip()
+                ? "imagens-watermark-" + item.packageId() + ".zip"
+                : "imagens-watermark-" + item.packageId() + "-imagem.jpg";
     }
 
     private byte[] decodeAttachment(LeadPortalImagePackageExportResponse.Attachment attachment) {

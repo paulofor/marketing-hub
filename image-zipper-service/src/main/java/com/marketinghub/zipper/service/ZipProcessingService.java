@@ -69,8 +69,12 @@ public class ZipProcessingService {
                     pack.zip_last_attempt,
                     pack.zip_last_error
                 FROM flow_submission_image_package pack
+                JOIN flow_submissions sub ON sub.id = pack.submission_id
+                JOIN lead_portal_flow flow ON flow.slug = sub.flow_slug
+                JOIN experiment exp ON exp.lead_portal_flow_id = flow.id
                 WHERE pack.zip_object_key IS NULL
                   AND pack.status = 'COMPLETED'
+                  AND exp.send_images_as_zip = TRUE
                   AND (pack.zip_last_attempt IS NULL
                        OR pack.zip_last_attempt < TIMESTAMPADD(SECOND, -?, UTC_TIMESTAMP()))
                   AND pack.zip_attempts < ?

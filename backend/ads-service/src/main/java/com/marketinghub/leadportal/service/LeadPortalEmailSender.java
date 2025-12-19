@@ -1,7 +1,7 @@
 package com.marketinghub.leadportal.service;
 
 import com.marketinghub.journey.execution.config.SendGridProperties;
-import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
@@ -15,6 +15,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
@@ -36,7 +37,7 @@ public class LeadPortalEmailSender {
     }
 
     public void sendEmail(String toEmail, String subject, String plainContent, String htmlContent,
-                          byte[] attachment, String attachmentName) {
+                          List<Attachment> attachments) {
         if (!properties.isEnabled()) {
             throw new IllegalStateException("SendGrid integration disabled");
         }
@@ -47,9 +48,12 @@ public class LeadPortalEmailSender {
             throw new IllegalStateException("SendGrid sender e-mail not configured");
         }
 
-        Map<String, Object> payload = buildPayload(toEmail, subject, plainContent, htmlContent, attachment, attachmentName);
+        Map<String, Object> payload = buildPayload(toEmail, subject, plainContent, htmlContent, attachments);
 
-        log.info("Sending watermarked sample e-mail to {}", toEmail);
+        log.info("Sending watermarked sample e-mail to {} (attachments={}, totalBytes={})",
+                toEmail,
+                attachments != null ? attachments.size() : 0,
+                totalAttachmentBytes(attachments));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -72,7 +76,7 @@ public class LeadPortalEmailSender {
     }
 
     private Map<String, Object> buildPayload(String toEmail, String subject, String plainContent, String htmlContent,
-                                             byte[] attachment, String attachmentName) {
+                                             List<Attachment> attachments) {
         Map<String, Object> payload = new HashMap<>();
         Map<String, Object> from = new HashMap<>();
         from.put("email", properties.getFromEmail());
@@ -87,7 +91,7 @@ public class LeadPortalEmailSender {
         payload.put("personalizations", List.of(personalization));
 
         if (plainContent != null && !plainContent.isBlank()) {
-            payload.computeIfAbsent("content", key -> new java.util.ArrayList<Map<String, String>>());
+            payload.computeIfAbsent("content", key -> new ArrayList<Map<String, String>>());
             @SuppressWarnings("unchecked")
             List<Map<String, String>> content = (List<Map<String, String>>) payload.get("content");
             content.add(Map.of(
@@ -96,7 +100,7 @@ public class LeadPortalEmailSender {
             ));
         }
         if (htmlContent != null && !htmlContent.isBlank()) {
-            payload.computeIfAbsent("content", key -> new java.util.ArrayList<Map<String, String>>());
+            payload.computeIfAbsent("content", key -> new ArrayList<Map<String, String>>());
             @SuppressWarnings("unchecked")
             List<Map<String, String>> content = (List<Map<String, String>>) payload.get("content");
             content.add(Map.of(
@@ -105,15 +109,40 @@ public class LeadPortalEmailSender {
             ));
         }
 
-        if (attachment != null && attachment.length > 0) {
-            Map<String, Object> attachmentPayload = new HashMap<>();
-            attachmentPayload.put("content", Base64.getEncoder().encodeToString(attachment));
-            attachmentPayload.put("filename", attachmentName);
-            attachmentPayload.put("type", "application/zip");
-            attachmentPayload.put("disposition", "attachment");
-            payload.put("attachments", List.of(attachmentPayload));
+        if (!CollectionUtils.isEmpty(attachments)) {
+            List<Map<String, Object>> attachmentPayload = new ArrayList<>();
+            for (Attachment attachment : attachments) {
+                if (attachment == null || attachment.content() == null || attachment.content().length == 0) {
+                    continue;
+                }
+                Map<String, Object> attachmentData = new HashMap<>();
+                attachmentData.put("content", Base64.getEncoder().encodeToString(attachment.content()));
+                attachmentData.put("filename", attachment.fileName());
+                attachmentData.put("type", attachment.contentType() != null ? attachment.contentType() : "application/octet-stream");
+                attachmentData.put("disposition", "attachment");
+                attachmentPayload.add(attachmentData);
+            }
+            if (!attachmentPayload.isEmpty()) {
+                payload.put("attachments", attachmentPayload);
+            }
         }
 
         return payload;
+    }
+
+    private long totalAttachmentBytes(List<Attachment> attachments) {
+        if (CollectionUtils.isEmpty(attachments)) {
+            return 0L;
+        }
+        long total = 0L;
+        for (Attachment attachment : attachments) {
+            if (attachment != null && attachment.content() != null) {
+                total += attachment.content().length;
+            }
+        }
+        return total;
+    }
+
+    public record Attachment(String fileName, String contentType, byte[] content) {
     }
 }

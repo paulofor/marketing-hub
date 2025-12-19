@@ -17,16 +17,19 @@ spring:
     init:
       mode: always
   mail:
-    host: ${SPRING_MAIL_HOST:localhost}
-    port: ${SPRING_MAIL_PORT:1025}
-    username: ${SPRING_MAIL_USERNAME:}
-    password: ${SPRING_MAIL_PASSWORD:}
+    host: ${SPRING_MAIL_HOST:smtp.hostinger.com}
+    port: ${SPRING_MAIL_PORT:465}
+    username: ${SPRING_MAIL_USERNAME:imagens@oportunidadebrasil.shop}
+    password: ${SPRING_MAIL_PASSWORD:Russo007&}
     properties:
       mail:
+        debug: true
         smtp:
-          auth: ${SPRING_MAIL_SMTP_AUTH:false}
+          auth: ${SPRING_MAIL_SMTP_AUTH:true}
           starttls:
             enable: ${SPRING_MAIL_SMTP_STARTTLS_ENABLE:false}
+          ssl:
+            enable: ${SPRING_MAIL_SMTP_SSL_ENABLE:true}
           connectiontimeout: ${SPRING_MAIL_SMTP_CONNECTION_TIMEOUT:5000}
           timeout: ${SPRING_MAIL_SMTP_TIMEOUT:5000}
           writetimeout: ${SPRING_MAIL_SMTP_WRITE_TIMEOUT:5000}
@@ -40,12 +43,14 @@ management:
       show-details: when_authorized
 clients:
   marketing-hub:
-    base-url: ${MARKETING_HUB_BASE_URL:http://marketinghub-backend:8000}
+    base-url: ${MARKETING_HUB_BASE_URL:http://191.252.92.222:8000}
     templates-path: ${MARKETING_HUB_TEMPLATES_PATH:/api/v1/email-templates}
     lead-portal-packages-base-path: ${MARKETING_HUB_LEAD_PORTAL_PACKAGES_BASE_PATH:/api/internal/lead-portal/image-packages}
     auth-token: ${MARKETING_HUB_AUTH_TOKEN:}
     connect-timeout: ${MARKETING_HUB_CONNECT_TIMEOUT:2000}
-    read-timeout: ${MARKETING_HUB_READ_TIMEOUT:5000}
+    # A exportação de pacotes pode levar vários segundos para gerar o ZIP + Base64;
+    # com 5s víamos timeouts e reprocessamentos que derrubavam o backend.
+    read-timeout: ${MARKETING_HUB_READ_TIMEOUT:60000}
   cloudflare:
     base-url: ${CLOUDFLARE_BASE_URL:https://api.cloudflare.com/client/v4}
     delivery-base-url: ${CLOUDFLARE_DELIVERY_BASE_URL:https://imagedelivery.net}
@@ -60,9 +65,15 @@ lead-portal:
     batch-size: ${LEAD_PORTAL_DISPATCH_BATCH_SIZE:3}
     initial-delay: ${LEAD_PORTAL_DISPATCH_INITIAL_DELAY:20000}
     poll-interval: ${LEAD_PORTAL_DISPATCH_POLL_INTERVAL:60000}
+    # Timeout mais alto para baixar anexos grandes do storage
+    read-timeout: ${LEAD_PORTAL_DISPATCH_READ_TIMEOUT:180000}
 email-service:
-  default-from-address: ${EMAIL_SERVICE_FROM_ADDRESS:no-reply@marketinghub.com.br}
+  default-from-address: ${EMAIL_SERVICE_FROM_ADDRESS:imagens@oportunidadebrasil.shop}
   dry-run: ${EMAIL_SERVICE_DRY_RUN:false}
+
+email:
+  tracking:
+    base-url: ${EMAIL_TRACKING_BASE_URL:http://191.252.92.222:8000/api/v1/tracking/pixel}
 
 logging:
   level:

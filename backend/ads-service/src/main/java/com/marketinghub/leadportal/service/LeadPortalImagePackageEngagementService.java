@@ -1,5 +1,6 @@
 package com.marketinghub.leadportal.service;
 
+import com.marketinghub.leadportal.FlowSubmissionImagePackageStatus;
 import com.marketinghub.storage.FileStorageService;
 import java.nio.ByteBuffer;
 import java.sql.ResultSet;
@@ -26,10 +27,15 @@ public class LeadPortalImagePackageEngagementService {
 
     private final JdbcTemplate jdbcTemplate;
     private final FileStorageService fileStorageService;
+    private final LeadPortalImagePackageStatusHistoryService statusHistoryService;
 
-    public LeadPortalImagePackageEngagementService(JdbcTemplate jdbcTemplate, FileStorageService fileStorageService) {
+    public LeadPortalImagePackageEngagementService(
+            JdbcTemplate jdbcTemplate,
+            FileStorageService fileStorageService,
+            LeadPortalImagePackageStatusHistoryService statusHistoryService) {
         this.jdbcTemplate = jdbcTemplate;
         this.fileStorageService = fileStorageService;
+        this.statusHistoryService = statusHistoryService;
     }
 
     @Transactional
@@ -38,13 +44,19 @@ public class LeadPortalImagePackageEngagementService {
         if (target.isEmpty() || !matchesSubmission(target.get(), submissionToken)) {
             return false;
         }
+        if (target.get().emailOpenedAt() != null) {
+            return true;
+        }
         Timestamp now = Timestamp.from(Instant.now());
         int updated = jdbcTemplate.update(
-                "UPDATE flow_submission_image_package SET email_opened_at = COALESCE(email_opened_at, ?), updated_at = ? WHERE id = ?",
+                "UPDATE flow_submission_image_package SET email_opened_at = COALESCE(email_opened_at, ?), updated_at = ? "
+                        + "WHERE id = ? AND email_opened_at IS NULL",
                 now,
                 now,
                 packageId);
         if (updated > 0) {
+            statusHistoryService.recordStatusChange(
+                    packageId, FlowSubmissionImagePackageStatus.SAMPLE_EMAIL_OPENED, null);
             log.debug("Marked lead portal package {} as email opened", packageId);
             return true;
         }
@@ -58,6 +70,8 @@ public class LeadPortalImagePackageEngagementService {
             return Optional.empty();
         }
         EngagementTarget engagementTarget = target.get();
+        boolean emailAlreadyOpened = engagementTarget.emailOpenedAt() != null;
+        boolean imagesAlreadyViewed = engagementTarget.imagesViewedAt() != null;
         if (!StringUtils.hasText(engagementTarget.zipObjectKey())) {
             return Optional.empty();
         }
@@ -67,14 +81,29 @@ public class LeadPortalImagePackageEngagementService {
             return Optional.empty();
         }
 
+        if (emailAlreadyOpened && imagesAlreadyViewed) {
+            return downloadUrl;
+        }
+
         Timestamp now = Timestamp.from(Instant.now());
-        jdbcTemplate.update(
+        int updated = jdbcTemplate.update(
                 "UPDATE flow_submission_image_package SET images_viewed_at = COALESCE(images_viewed_at, ?), "
-                        + "email_opened_at = COALESCE(email_opened_at, ?), updated_at = ? WHERE id = ?",
+                        + "email_opened_at = COALESCE(email_opened_at, ?), updated_at = ? "
+                        + "WHERE id = ? AND (images_viewed_at IS NULL OR email_opened_at IS NULL)",
                 now,
                 now,
                 now,
                 packageId);
+        if (updated > 0) {
+            if (!emailAlreadyOpened) {
+                statusHistoryService.recordStatusChange(
+                        packageId, FlowSubmissionImagePackageStatus.SAMPLE_EMAIL_OPENED, null);
+            }
+            if (!imagesAlreadyViewed) {
+                statusHistoryService.recordStatusChange(
+                        packageId, FlowSubmissionImagePackageStatus.SAMPLE_IMAGES_VIEWED, null);
+            }
+        }
         log.debug("Marked lead portal package {} as images viewed", packageId);
         return downloadUrl;
     }
@@ -82,7 +111,8 @@ public class LeadPortalImagePackageEngagementService {
     private Optional<EngagementTarget> loadTarget(long packageId) {
         try {
             return jdbcTemplate.query(
-                            "SELECT submission_id, zip_object_key FROM flow_submission_image_package WHERE id = ?",
+                            "SELECT submission_id, zip_object_key, email_opened_at, images_viewed_at "
+                                    + "FROM flow_submission_image_package WHERE id = ?",
                             (rs, rowNum) -> mapTarget(rs),
                             packageId)
                     .stream()
@@ -95,7 +125,9 @@ public class LeadPortalImagePackageEngagementService {
     private EngagementTarget mapTarget(ResultSet rs) throws SQLException {
         String submissionId = readSubmissionId(rs.getObject("submission_id"));
         String zipObjectKey = rs.getString("zip_object_key");
-        return new EngagementTarget(submissionId, zipObjectKey);
+        Instant emailOpenedAt = toInstant(rs.getTimestamp("email_opened_at"));
+        Instant imagesViewedAt = toInstant(rs.getTimestamp("images_viewed_at"));
+        return new EngagementTarget(submissionId, zipObjectKey, emailOpenedAt, imagesViewedAt);
     }
 
     private boolean matchesSubmission(EngagementTarget target, String submissionToken) {
@@ -130,6 +162,11 @@ public class LeadPortalImagePackageEngagementService {
         }
     }
 
-    private record EngagementTarget(String submissionId, String zipObjectKey) {
+    private Instant toInstant(Timestamp timestamp) {
+        return timestamp == null ? null : timestamp.toInstant();
+    }
+
+    private record EngagementTarget(
+            String submissionId, String zipObjectKey, Instant emailOpenedAt, Instant imagesViewedAt) {
     }
 }

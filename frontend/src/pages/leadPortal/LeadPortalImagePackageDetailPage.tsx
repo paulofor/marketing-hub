@@ -463,7 +463,7 @@ export default function LeadPortalImagePackageDetailPage() {
                               </p>
                             ) : (
                               <p className="lead-portal-image-detail__history-text text-muted mb-0">
-                                Status atualizado
+                                {detail.title}
                               </p>
                             )}
                           </div>

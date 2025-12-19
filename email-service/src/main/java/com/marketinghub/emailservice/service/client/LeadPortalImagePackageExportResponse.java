@@ -1,7 +1,6 @@
 package com.marketinghub.emailservice.service.client;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -17,10 +16,7 @@ public record LeadPortalImagePackageExportResponse(
         String experimentName,
         SampleEmail sampleEmail,
         EmailContent emailContent,
-        boolean sendImagesAsZip,
-        int imageCount,
         Attachment attachment,
-        List<Attachment> attachments,
         int notificationAttempts,
         Instant notificationLastAttempt
 ) {
@@ -45,9 +41,8 @@ public record LeadPortalImagePackageExportResponse(
 
     public record Attachment(
             String fileName,
-            String contentType,
             String base64Content,
-            Integer imageCount,
+            int imageCount,
             long sizeBytes,
             String storedFileName,
             String downloadUrl

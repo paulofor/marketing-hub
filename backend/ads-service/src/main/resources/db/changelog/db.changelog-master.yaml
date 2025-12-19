@@ -314,7 +314,3 @@ databaseChangeLog:
   - include:
       file: V2030_05_20__lead_portal_email_engagement.sql
       relativeToChangelogFile: true
-
-  - include:
-      file: V2030_05_27__experiment_send_images_as_zip.sql
-      relativeToChangelogFile: true

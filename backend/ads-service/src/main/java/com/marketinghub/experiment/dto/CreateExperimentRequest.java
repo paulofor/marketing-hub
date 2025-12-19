@@ -35,7 +35,6 @@ public class CreateExperimentRequest {
     private Integer deliverablesToGenerate;
     private Integer leadPortalFlowsToGenerate;
     private Integer imagesPerPackage;
-    private Boolean sendImagesAsZip;
     private Long journeyTemplateId;
     private Long facebookPageId;
     private Long facebookInstantFormId;

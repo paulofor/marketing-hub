@@ -361,48 +361,42 @@ export default function LeadPortalImagePackageDetailPage() {
 
               <div className="lead-portal-image-detail__section">
                 <h3>Amostras com marca d'água</h3>
-                {expectsZip ? (
-                  sampleZip ? (
-                    <>
-                      <dl className="lead-portal-image-detail__description-list">
-                        <div>
-                          <dt>Gerado em</dt>
-                          <dd>{formatLeadPortalDateTime(sampleZip.generatedAt)}</dd>
-                        </div>
-                        {sampleZip.objectKey ? (
-                          <div>
-                            <dt>Arquivo</dt>
-                            <dd className="lead-portal-image-detail__object-key">
-                              {sampleZip.objectKey}
-                            </dd>
-                          </div>
-                        ) : null}
-                      </dl>
-                      <div className="lead-portal-image-detail__zip-actions">
-                        {sampleZip.downloadUrl ? (
-                          <a
-                            href={sampleZip.downloadUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-sm btn-outline-primary"
-                          >
-                            <FileArchive size={16} className="me-1" /> Baixar pacote de amostras
-                          </a>
-                        ) : (
-                          <span className="text-muted small">
-                            Link do ZIP ainda não disponível.
-                          </span>
-                        )}
+                {sampleZip ? (
+                  <>
+                    <dl className="lead-portal-image-detail__description-list">
+                      <div>
+                        <dt>Gerado em</dt>
+                        <dd>{formatLeadPortalDateTime(sampleZip.generatedAt)}</dd>
                       </div>
-                    </>
-                  ) : (
-                    <div className="alert alert-secondary mb-0" role="status">
-                      O arquivo .zip com as prévias ainda não foi gerado para este pacote.
+                      {sampleZip.objectKey ? (
+                        <div>
+                          <dt>Arquivo</dt>
+                          <dd className="lead-portal-image-detail__object-key">
+                            {sampleZip.objectKey}
+                          </dd>
+                        </div>
+                      ) : null}
+                    </dl>
+                    <div className="lead-portal-image-detail__zip-actions">
+                      {sampleZip.downloadUrl ? (
+                        <a
+                          href={sampleZip.downloadUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-sm btn-outline-primary"
+                        >
+                          <FileArchive size={16} className="me-1" /> Baixar pacote de amostras
+                        </a>
+                      ) : (
+                        <span className="text-muted small">
+                          Link do ZIP ainda não disponível.
+                        </span>
+                      )}
                     </div>
-                  )
+                  </>
                 ) : (
-                  <div className="alert alert-info mb-0" role="status">
-                    As imagens deste pacote serão enviadas diretamente no e-mail, sem compactação. Nenhum arquivo .zip será gerado.
+                  <div className="alert alert-secondary mb-0" role="status">
+                    O arquivo .zip com as prévias ainda não foi gerado para este pacote.
                   </div>
                 )}
               </div>

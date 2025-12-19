@@ -147,11 +147,6 @@ public class Experiment {
     @Column(name = "images_per_package", nullable = false)
     private Integer imagesPerPackage = 20;
 
-    /** Define se o pacote de imagens do portal será enviado como arquivo .zip. */
-    @Builder.Default
-    @Column(name = "send_images_as_zip", nullable = false)
-    private boolean sendImagesAsZip = true;
-
     @CreationTimestamp
     private Instant createdAt;
 

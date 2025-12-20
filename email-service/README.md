@@ -9,9 +9,12 @@ Imagedelivery e realizar o envio automático de e-mails transacionais ou de camp
 - Renderização de placeholders (`{{variavel}}` ou `${variavel}`) com dados enviados pelo cliente ou recuperados dinamicamente do backend;
 - Download de imagens e anexos armazenados no Cloudflare (inline ou anexos tradicionais);
 - Envio de e-mails utilizando SMTP (compatível com provedores como Amazon SES, SendGrid, Postmark, etc.);
-- Registro de logs de envio em banco relacional (MySQL em produção, H2 em memória para desenvolvimento);
+- Registro de logs de envio no banco relacional compartilhado com o backend (MySQL; opcionalmente H2 em memória em desenvolvimento);
 - Endpoints REST para envio unitário, envio em massa e consulta de status;
 - Documentação OpenAPI disponível em `/swagger-ui.html`.
+
+O serviço compartilha o mesmo banco de dados do backend do Marketing Hub (`marketinghubdb`), utilizando a tabela `email_log` para
+registrar os envios.
 
 ## Estrutura dos endpoints
 
@@ -51,9 +54,9 @@ Imagedelivery e realizar o envio automático de e-mails transacionais ou de camp
 
 | Variável | Descrição | Default |
 |----------|-----------|---------|
-| `SPRING_DATASOURCE_URL` | URL do banco de dados | `jdbc:h2:mem:emailservice...` |
-| `SPRING_DATASOURCE_USERNAME` | Usuário do banco | `sa` |
-| `SPRING_DATASOURCE_PASSWORD` | Senha do banco | `""` |
+| `SPRING_DATASOURCE_URL` | URL do banco de dados | `jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&serverTimezone=UTC` |
+| `SPRING_DATASOURCE_USERNAME` | Usuário do banco | `marketing_hub_user` |
+| `SPRING_DATASOURCE_PASSWORD` | Senha do banco | `Ab9!rG4wX8_tMq2Bz7#HpK5V` |
 | `SPRING_MAIL_HOST` | Host SMTP | `smtp.hostinger.com` |
 | `SPRING_MAIL_PORT` | Porta SMTP | `465` |
 | `SPRING_MAIL_USERNAME` | Usuário SMTP | `imagens@oportunidadebrasil.shop` |
@@ -131,9 +134,9 @@ Ao executar, lembre de injetar as configurações necessárias:
 
 ```bash
 docker run --rm \
-  -e SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/marketinghub \
-  -e SPRING_DATASOURCE_USERNAME=marketing \
-  -e SPRING_DATASOURCE_PASSWORD=senha \
+  -e SPRING_DATASOURCE_URL=jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&serverTimezone=UTC \
+  -e SPRING_DATASOURCE_USERNAME=marketing_hub_user \
+  -e SPRING_DATASOURCE_PASSWORD=Ab9!rG4wX8_tMq2Bz7#HpK5V \
   -e SPRING_MAIL_HOST=email-smtp.us-east-1.amazonaws.com \
   -e SPRING_MAIL_PORT=587 \
   -e SPRING_MAIL_SMTP_AUTH=true \

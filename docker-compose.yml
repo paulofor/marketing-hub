@@ -34,9 +34,9 @@ services:
       - "marketinghub-backend:host-gateway"
       - "host.docker.internal:host-gateway"
     environment:
-      SPRING_DATASOURCE_URL: ${EMAIL_SERVICE_DATASOURCE_URL:-jdbc:mysql://mysql:3306/marketing_email}
-      SPRING_DATASOURCE_USERNAME: ${EMAIL_SERVICE_DATASOURCE_USERNAME:-marketing_email}
-      SPRING_DATASOURCE_PASSWORD: ${EMAIL_SERVICE_DATASOURCE_PASSWORD:-marketing_email}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&serverTimezone=UTC}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-marketing_hub_user}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-${MYSQL_PASS:-Ab9!rG4wX8_tMq2Bz7#HpK5V}}
       SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-smtp.hostinger.com}
       SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-465}
       SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-imagens@oportunidadebrasil.shop}

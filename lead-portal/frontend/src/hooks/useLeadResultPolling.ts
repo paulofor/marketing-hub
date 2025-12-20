@@ -17,12 +17,26 @@ export function useLeadResultPolling(
     const interval = setInterval(async () => {
       try {
         const result = await fetchLeadResult(lead.id);
-        if (!isCancelled && result.status === "COMPLETED") {
+        if (isCancelled) {
+          return;
+        }
+
+        const nextResult = result.result ?? lead.result ?? null;
+        const nextCompletedAt = result.completedAt
+          ?? (result.status === "COMPLETED"
+            ? new Date().toISOString()
+            : lead.completedAt ?? null);
+
+        const hasStatusChanged = result.status !== lead.status;
+        const hasResultChanged = (lead.result ?? null) !== nextResult;
+        const hasCompletedAtChanged = (lead.completedAt ?? null) !== nextCompletedAt;
+
+        if (hasStatusChanged || hasResultChanged || hasCompletedAtChanged) {
           onUpdate({
             ...lead,
             status: result.status,
-            result: result.result ?? null,
-            completedAt: result.completedAt ?? new Date().toISOString()
+            result: nextResult,
+            completedAt: nextCompletedAt
           });
         }
       } catch (error) {

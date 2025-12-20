@@ -73,7 +73,8 @@ email-service:
 
 email:
   tracking:
-    base-url: ${EMAIL_TRACKING_BASE_URL:http://191.252.92.222:8000/api/v1/tracking/pixel}
+    # Se não for definido, o rastreamento permanece desativado (consistente com o README)
+    base-url: ${EMAIL_TRACKING_BASE_URL:}
 
 logging:
   level:

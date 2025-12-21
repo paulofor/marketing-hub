@@ -18,6 +18,8 @@ export interface UpdateExperiment {
   deliverablesToGenerate?: number;
   leadPortalFlowsToGenerate?: number;
   imagesPerPackage?: number;
+  openImagesPerPackage?: number | null;
+  compressedImagesPerPackage?: number | null;
   journeyTemplateId?: number;
   facebookPageId?: number | null;
   facebookInstantFormId?: number | null;

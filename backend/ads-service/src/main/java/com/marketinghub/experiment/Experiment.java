@@ -147,6 +147,14 @@ public class Experiment {
     @Column(name = "images_per_package", nullable = false)
     private Integer imagesPerPackage = 20;
 
+    /** Quantidade de imagens abertas por pacote. */
+    @Column(name = "open_images_per_package")
+    private Integer openImagesPerPackage;
+
+    /** Quantidade de imagens compactadas por pacote. */
+    @Column(name = "compressed_images_per_package")
+    private Integer compressedImagesPerPackage;
+
     @CreationTimestamp
     private Instant createdAt;
 

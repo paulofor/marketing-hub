@@ -240,6 +240,10 @@ public class ExperimentService {
         ImageGenerationSelection imageSelection =
                 resolveImageGenerationSelection(request.getImageModelId(), request.getImageModelQualityId());
         int imagesPerPackage = normalizeImagesPerPackage(request.getImagesPerPackage());
+        Integer openImagesPerPackage =
+                normalizeOptionalImagesPerPackage(request.getOpenImagesPerPackage(), "openImagesPerPackage");
+        Integer compressedImagesPerPackage =
+                normalizeOptionalImagesPerPackage(request.getCompressedImagesPerPackage(), "compressedImagesPerPackage");
         Experiment exp = Experiment.builder()
                 .niche(niche)
                 .name(request.getName())
@@ -264,6 +268,8 @@ public class ExperimentService {
                 .deliverablesToGenerate(request.getDeliverablesToGenerate())
                 .leadPortalFlowsToGenerate(request.getLeadPortalFlowsToGenerate())
                 .imagesPerPackage(imagesPerPackage)
+                .openImagesPerPackage(openImagesPerPackage)
+                .compressedImagesPerPackage(compressedImagesPerPackage)
                 .facebookPage(attachFacebookPage(request.getFacebookPageId()))
                 .facebookInstantForm(attachInstantForm(request.getFacebookInstantFormId(), request.getHypothesisId()))
                 .instagramAccount(attachInstagramAccount(request.getInstagramAccountId()))
@@ -332,6 +338,8 @@ public class ExperimentService {
                 .deliverablesToGenerate(original.getDeliverablesToGenerate())
                 .leadPortalFlowsToGenerate(original.getLeadPortalFlowsToGenerate())
                 .imagesPerPackage(original.getImagesPerPackage())
+                .openImagesPerPackage(original.getOpenImagesPerPackage())
+                .compressedImagesPerPackage(original.getCompressedImagesPerPackage())
                 .facebookPage(original.getFacebookPage())
                 .instagramAccount(original.getInstagramAccount())
                 .facebookInstantForm(original.getFacebookInstantForm())
@@ -435,6 +443,16 @@ public class ExperimentService {
         }
         if (request.getImagesPerPackage() != null) {
             exp.setImagesPerPackage(normalizeImagesPerPackage(request.getImagesPerPackage()));
+        }
+        if (request.isOpenImagesPerPackagePresent()) {
+            exp.setOpenImagesPerPackage(
+                    normalizeOptionalImagesPerPackage(
+                            request.getOpenImagesPerPackage(), "openImagesPerPackage"));
+        }
+        if (request.isCompressedImagesPerPackagePresent()) {
+            exp.setCompressedImagesPerPackage(
+                    normalizeOptionalImagesPerPackage(
+                            request.getCompressedImagesPerPackage(), "compressedImagesPerPackage"));
         }
         if (request.getCreativeApproved() != null) {
             exp.setCreativeApproved(request.getCreativeApproved());
@@ -567,6 +585,17 @@ public class ExperimentService {
         }
         if (imagesPerPackage <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "imagesPerPackage must be greater than zero");
+        }
+        return imagesPerPackage;
+    }
+
+    private Integer normalizeOptionalImagesPerPackage(Integer imagesPerPackage, String fieldName) {
+        if (imagesPerPackage == null) {
+            return null;
+        }
+        if (imagesPerPackage <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, fieldName + " must be greater than zero");
         }
         return imagesPerPackage;
     }

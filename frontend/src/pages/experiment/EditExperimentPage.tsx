@@ -25,6 +25,8 @@ interface FormData {
   imageModelId: string;
   imageModelQualityId: string;
   imagesPerPackage: string;
+  openImagesPerPackage: string;
+  compressedImagesPerPackage: string;
 }
 
 export default function EditExperimentPage() {
@@ -55,6 +57,8 @@ export default function EditExperimentPage() {
       imageModelId: "",
       imageModelQualityId: "",
       imagesPerPackage: "",
+      openImagesPerPackage: "",
+      compressedImagesPerPackage: "",
     },
   });
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
@@ -91,6 +95,14 @@ export default function EditExperimentPage() {
           data.imagesPerPackage != null
             ? String(data.imagesPerPackage)
             : "20",
+        openImagesPerPackage:
+          data.openImagesPerPackage != null
+            ? String(data.openImagesPerPackage)
+            : "",
+        compressedImagesPerPackage:
+          data.compressedImagesPerPackage != null
+            ? String(data.compressedImagesPerPackage)
+            : "",
       });
     }
   }, [data, reset]);
@@ -246,6 +258,26 @@ export default function EditExperimentPage() {
         alert("Informe uma quantidade válida de imagens por pacote");
         return;
       }
+      const parsedOpenImagesPerPackage = values.openImagesPerPackage
+        ? Number(values.openImagesPerPackage)
+        : undefined;
+      if (
+        values.openImagesPerPackage &&
+        (Number.isNaN(parsedOpenImagesPerPackage) || parsedOpenImagesPerPackage <= 0)
+      ) {
+        alert("Informe uma quantidade válida de imagens abertas");
+        return;
+      }
+      const parsedCompressedImagesPerPackage = values.compressedImagesPerPackage
+        ? Number(values.compressedImagesPerPackage)
+        : undefined;
+      if (
+        values.compressedImagesPerPackage &&
+        (Number.isNaN(parsedCompressedImagesPerPackage) || parsedCompressedImagesPerPackage <= 0)
+      ) {
+        alert("Informe uma quantidade válida de imagens compactadas");
+        return;
+      }
       const payload: UpdateExperiment = {
         name: values.name,
         hypothesis: data.hypothesis,
@@ -260,6 +292,12 @@ export default function EditExperimentPage() {
         instantFormsToGenerate: data.instantFormsToGenerate ?? undefined,
         emailsToGenerate: data.emailsToGenerate ?? undefined,
         imagesPerPackage: parsedImagesPerPackage,
+        openImagesPerPackage:
+          values.openImagesPerPackage === "" ? null : parsedOpenImagesPerPackage,
+        compressedImagesPerPackage:
+          values.compressedImagesPerPackage === ""
+            ? null
+            : parsedCompressedImagesPerPackage,
       };
 
       if (dirtyFields.imageModelId) {
@@ -403,6 +441,28 @@ export default function EditExperimentPage() {
           min="1"
           step="1"
           {...register("imagesPerPackage")}
+        />
+        <label className="form-label" htmlFor="openImagesPerPackage">
+          Quantidade de imagens abertas
+        </label>
+        <input
+          id="openImagesPerPackage"
+          className="form-control mb-2"
+          type="number"
+          min="1"
+          step="1"
+          {...register("openImagesPerPackage")}
+        />
+        <label className="form-label" htmlFor="compressedImagesPerPackage">
+          Quantidade de imagens compactadas
+        </label>
+        <input
+          id="compressedImagesPerPackage"
+          className="form-control mb-2"
+          type="number"
+          min="1"
+          step="1"
+          {...register("compressedImagesPerPackage")}
         />
         {hasWorkerRequests && (
           <div className="mb-3" aria-live="polite">

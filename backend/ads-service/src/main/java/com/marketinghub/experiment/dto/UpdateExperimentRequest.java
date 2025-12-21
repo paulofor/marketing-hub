@@ -31,6 +31,12 @@ public class UpdateExperimentRequest {
     private Integer deliverablesToGenerate;
     private Integer leadPortalFlowsToGenerate;
     private Integer imagesPerPackage;
+    private Integer openImagesPerPackage;
+    @JsonIgnore
+    private boolean openImagesPerPackagePresent;
+    private Integer compressedImagesPerPackage;
+    @JsonIgnore
+    private boolean compressedImagesPerPackagePresent;
     private Boolean creativeApproved;
     private Long journeyTemplateId;
     @JsonIgnore
@@ -87,6 +93,18 @@ public class UpdateExperimentRequest {
     public void setFollowUpActionUrl(String followUpActionUrl) {
         this.followUpActionUrl = followUpActionUrl;
         this.followUpActionUrlPresent = true;
+    }
+
+    @JsonSetter(value = "openImagesPerPackage", nulls = Nulls.SET)
+    public void setOpenImagesPerPackage(Integer openImagesPerPackage) {
+        this.openImagesPerPackage = openImagesPerPackage;
+        this.openImagesPerPackagePresent = true;
+    }
+
+    @JsonSetter(value = "compressedImagesPerPackage", nulls = Nulls.SET)
+    public void setCompressedImagesPerPackage(Integer compressedImagesPerPackage) {
+        this.compressedImagesPerPackage = compressedImagesPerPackage;
+        this.compressedImagesPerPackagePresent = true;
     }
 
     @JsonSetter(value = "leadPortalFlowId", nulls = Nulls.SET)

@@ -21,7 +21,7 @@ public class LeadPortalImagePackageStatusHistoryService {
     private static final Logger log = LoggerFactory.getLogger(LeadPortalImagePackageStatusHistoryService.class);
 
     private static final String INSERT_SQL = "INSERT INTO flow_submission_image_package_status_history "
-            + "(package_id, status, failure_reason) VALUES (?, ?, ?)";
+            + "(package_id, status, failure_reason, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)";
     private static final String SELECT_SQL = """
             SELECT status, failure_reason, created_at
             FROM flow_submission_image_package_status_history

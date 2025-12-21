@@ -37,6 +37,8 @@ export default function NewExperimentPage() {
     imageModelId: "",
     imageModelQualityId: "",
     imagesPerPackage: "20",
+    openImagesPerPackage: "",
+    compressedImagesPerPackage: "",
   });
   const [autoSampleSize, setAutoSampleSize] = useState(true);
   const [autoMde, setAutoMde] = useState(true);
@@ -181,6 +183,26 @@ export default function NewExperimentPage() {
         alert("Informe uma quantidade válida de imagens por pacote");
         return;
       }
+      const parsedOpenImagesPerPackage = form.openImagesPerPackage
+        ? Number(form.openImagesPerPackage)
+        : undefined;
+      if (
+        form.openImagesPerPackage &&
+        (Number.isNaN(parsedOpenImagesPerPackage) || parsedOpenImagesPerPackage <= 0)
+      ) {
+        alert("Informe uma quantidade válida de imagens abertas");
+        return;
+      }
+      const parsedCompressedImagesPerPackage = form.compressedImagesPerPackage
+        ? Number(form.compressedImagesPerPackage)
+        : undefined;
+      if (
+        form.compressedImagesPerPackage &&
+        (Number.isNaN(parsedCompressedImagesPerPackage) || parsedCompressedImagesPerPackage <= 0)
+      ) {
+        alert("Informe uma quantidade válida de imagens compactadas");
+        return;
+      }
       await create.mutateAsync({
         nicheId: Number(form.nicheId),
         hypothesisId: form.hypothesisId || undefined,
@@ -207,6 +229,12 @@ export default function NewExperimentPage() {
           ? Number(form.imageModelQualityId)
           : undefined,
         imagesPerPackage: parsedImagesPerPackage,
+        openImagesPerPackage:
+          form.openImagesPerPackage === "" ? undefined : parsedOpenImagesPerPackage,
+        compressedImagesPerPackage:
+          form.compressedImagesPerPackage === ""
+            ? undefined
+            : parsedCompressedImagesPerPackage,
       });
       setForm({
         nicheId: nicheIdParam,
@@ -226,6 +254,8 @@ export default function NewExperimentPage() {
         imageModelId: "",
         imageModelQualityId: "",
         imagesPerPackage: "20",
+        openImagesPerPackage: "",
+        compressedImagesPerPackage: "",
       });
       setAutoSampleSize(true);
       setAutoMde(true);
@@ -424,6 +454,51 @@ export default function NewExperimentPage() {
           {preferredImagePrice?.sizeLabel ? ` (tamanho: ${preferredImagePrice.sizeLabel})` : ""}
         </p>
       ) : null}
+      <label className="form-label" htmlFor="imagesPerPackage">
+        Quantidade de imagens por pacote <span className="text-danger">*</span>
+      </label>
+      <input
+        id="imagesPerPackage"
+        className="form-control mb-2"
+        type="number"
+        min="1"
+        step="1"
+        value={form.imagesPerPackage}
+        onChange={(e) =>
+          setForm((prev) => ({ ...prev, imagesPerPackage: e.target.value }))
+        }
+      />
+      <label className="form-label" htmlFor="openImagesPerPackage">
+        Quantidade de imagens abertas
+      </label>
+      <input
+        id="openImagesPerPackage"
+        className="form-control mb-2"
+        type="number"
+        min="1"
+        step="1"
+        value={form.openImagesPerPackage}
+        onChange={(e) =>
+          setForm((prev) => ({ ...prev, openImagesPerPackage: e.target.value }))
+        }
+      />
+      <label className="form-label" htmlFor="compressedImagesPerPackage">
+        Quantidade de imagens compactadas
+      </label>
+      <input
+        id="compressedImagesPerPackage"
+        className="form-control mb-2"
+        type="number"
+        min="1"
+        step="1"
+        value={form.compressedImagesPerPackage}
+        onChange={(e) =>
+          setForm((prev) => ({
+            ...prev,
+            compressedImagesPerPackage: e.target.value,
+          }))
+        }
+      />
       {hasWorkerRequests && (
         <div className="mb-3" aria-live="polite">
           <p className="text-muted small mb-2">

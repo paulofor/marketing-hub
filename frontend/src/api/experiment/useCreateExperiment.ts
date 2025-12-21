@@ -18,6 +18,8 @@ export interface CreateExperiment {
   instantFormsToGenerate?: number;
   emailsToGenerate?: number;
   imagesPerPackage?: number;
+  openImagesPerPackage?: number;
+  compressedImagesPerPackage?: number;
   journeyTemplateId: number;
   facebookPageId?: number;
   facebookInstantFormId?: number;

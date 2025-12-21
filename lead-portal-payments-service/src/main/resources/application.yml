@@ -5,9 +5,10 @@ spring:
   application:
     name: lead-portal-payments-service
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:payments;MODE=MySQL;DB_CLOSE_DELAY=-1}
-    username: ${SPRING_DATASOURCE_USERNAME:sa}
-    password: ${SPRING_DATASOURCE_PASSWORD:}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&serverTimezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:marketing_hub_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:${MYSQL_PASS:Ab9!rG4wX8_tMq2Bz7#HpK5V}}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER:com.mysql.cj.jdbc.Driver}
   jpa:
     hibernate:
       ddl-auto: none

@@ -65,7 +65,7 @@ services:
     image: marketinghub/lead-portal-payments-service:latest
     restart: unless-stopped
     environment:
-      SPRING_DATASOURCE_URL: ${PAYMENTS_DATASOURCE_URL:-jdbc:mysql://mysql:3306/marketinghubdb}
+      SPRING_DATASOURCE_URL: ${PAYMENTS_DATASOURCE_URL:-jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&serverTimezone=UTC}
       SPRING_DATASOURCE_USERNAME: ${PAYMENTS_DATASOURCE_USERNAME:-marketing_hub_user}
       SPRING_DATASOURCE_PASSWORD: ${PAYMENTS_DATASOURCE_PASSWORD:-Ab9!rG4wX8_tMq2Bz7#HpK5V}
       MERCADO_PAGO_ACCESS_TOKEN: ${MERCADO_PAGO_ACCESS_TOKEN:-}

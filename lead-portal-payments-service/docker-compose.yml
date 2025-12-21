@@ -5,8 +5,6 @@ services:
       context: .
     image: lead-portal-payments-service:dev
     restart: unless-stopped
-    env_file:
-      - .env
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://mysql:3306/marketinghubdb}

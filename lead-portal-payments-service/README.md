@@ -76,7 +76,7 @@ cd lead-portal-payments-service
 docker compose up --build -d
 ```
 
-O arquivo `docker-compose.yml` carrega automaticamente as variáveis do `.env` e expõe a aplicação em `http://localhost:8092` (pode alterar com `HOST_HTTP_PORT`). O arquivo `docker-compose.deploy.yml` apenas substitui a imagem local pela publicada no registro para ambientes de produção.
+O arquivo `docker-compose.yml` usa as variáveis definidas no `.env` (o Docker Compose já lê esse arquivo automaticamente quando presente) e expõe a aplicação em `http://localhost:8092` (pode alterar com `HOST_HTTP_PORT`). Em produção, o `docker-compose.deploy.yml` apenas substitui a imagem local pela publicada no registro.
 
 ## Build da imagem Docker
 
@@ -102,7 +102,7 @@ O workflow `CI – Lead Portal Payments Service` (`.github/workflows/lead-portal
 | `GHCR_USERNAME` *(opcional)* | Usuário para login no GHCR (por padrão usa o owner do repo). |
 | `GHCR_TOKEN` *(opcional)* | Token com permissão `write:packages` para login no GHCR (padrão: `GITHUB_TOKEN`). |
 
-> **Importante:** garanta que as variáveis listadas em `.env.example` estejam definidas no servidor (via `.env` ou exportadas no ambiente) antes de rodar o pipeline. O arquivo de deploy ignora `env_file` para não falhar quando o `.env` não existe, mas o serviço ainda exige as credenciais obrigatórias.
+> **Importante:** garanta que as variáveis listadas em `.env.example` estejam definidas no servidor (via `.env` ou exportadas no ambiente) antes de rodar o pipeline. Como o compose base não referencia mais `env_file`, a ausência do `.env` não interrompe o deploy, mas o serviço só funcionará se as credenciais obrigatórias estiverem presentes no ambiente.
 
 ## Observações
 

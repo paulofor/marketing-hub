@@ -102,7 +102,7 @@ O workflow `CI – Lead Portal Payments Service` (`.github/workflows/lead-portal
 | `GHCR_USERNAME` *(opcional)* | Usuário para login no GHCR (por padrão usa o owner do repo). |
 | `GHCR_TOKEN` *(opcional)* | Token com permissão `write:packages` para login no GHCR (padrão: `GITHUB_TOKEN`). |
 
-> **Importante:** crie/atualize o arquivo `.env` no servidor com as mesmas chaves do `.env.example` antes de rodar o pipeline pela primeira vez. O deploy não sobe containers sem as variáveis obrigatórias.
+> **Importante:** garanta que as variáveis listadas em `.env.example` estejam definidas no servidor (via `.env` ou exportadas no ambiente) antes de rodar o pipeline. O arquivo de deploy ignora `env_file` para não falhar quando o `.env` não existe, mas o serviço ainda exige as credenciais obrigatórias.
 
 ## Observações
 

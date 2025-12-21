@@ -2,6 +2,10 @@ services:
   lead-portal-payments-service:
     image: ${LEAD_PORTAL_PAYMENTS_IMAGE}
     build: null
+    # Override the default env_file from the base compose to avoid failing when
+    # a .env file is not present on the target host. Deployment relies on
+    # environment variables and defaults instead.
+    env_file: []
 
 networks:
   lead-portal-payments-net:

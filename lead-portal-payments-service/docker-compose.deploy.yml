@@ -2,6 +2,8 @@ services:
   lead-portal-payments-service:
     image: ${LEAD_PORTAL_PAYMENTS_IMAGE}
     build: null
+    ports:
+      - "${HOST_HTTP_PORT:-8092}:8080"
 networks:
   lead-portal-payments-net:
     external: true

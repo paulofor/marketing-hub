@@ -64,11 +64,45 @@ mvn spring-boot:run
 
 O schema mínimo para a tabela de compras está em `src/main/resources/schema.sql`. Em produção, a base MySQL já utilizada pelos demais serviços pode ser reaproveitada.
 
+## Execução com Docker Compose
+
+Para rodar o serviço em contêiner localmente:
+
+1. Duplique o arquivo `.env.example` para `.env` e ajuste as variáveis conforme a sua infraestrutura (MySQL, credenciais do Mercado Pago, SMTP, bucket, etc.).
+2. Construa e suba o contêiner:
+
+```bash
+cd lead-portal-payments-service
+docker compose up --build -d
+```
+
+O arquivo `docker-compose.yml` carrega automaticamente as variáveis do `.env` e expõe a aplicação em `http://localhost:8092` (pode alterar com `HOST_HTTP_PORT`). O arquivo `docker-compose.deploy.yml` apenas substitui a imagem local pela publicada no registro para ambientes de produção.
+
 ## Build da imagem Docker
 
 ```bash
 docker build -t marketinghub/lead-portal-payments-service:latest -f lead-portal-payments-service/Dockerfile lead-portal-payments-service
 ```
+
+## CI/CD e publicação automática
+
+O workflow `CI – Lead Portal Payments Service` (`.github/workflows/lead-portal-payments-ci.yml`) executa todo o pipeline sempre que houver alterações no módulo:
+
+1. **Testes** – roda `mvn test` com Java 21.
+2. **Build da imagem** – monta a imagem multi-stage e publica no GitHub Container Registry (`ghcr.io/<owner>/lead-portal-payments-service`) com tags `latest` e o SHA do commit, reaproveitando cache remoto.
+3. **Deploy** – apenas em pushes para `main`, o GitHub Actions acessa o VPS `191.252.102.54`, sincroniza este diretório via `rsync`, força o login no GHCR, garante que a network Docker (`public-net` por padrão) exista, aplica `docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --remove-orphans` e finaliza com `docker image prune -af` para remover imagens antigas.
+
+### Segredos necessários no GitHub
+
+| Segredo | Descrição |
+| --- | --- |
+| `VPS_SSH_KEY` | Chave privada (ed25519) com acesso root ao host `191.252.102.54`. |
+| `LEAD_PORTAL_PAYMENTS_REMOTE_PATH` *(opcional)* | Caminho remoto (default `/root/lead-portal-payments-service`). |
+| `LEAD_PORTAL_PAYMENTS_NETWORK` *(opcional)* | Nome da network Docker a ser usada no VPS (default `public-net`). |
+| `GHCR_USERNAME` *(opcional)* | Usuário para login no GHCR (por padrão usa o owner do repo). |
+| `GHCR_TOKEN` *(opcional)* | Token com permissão `write:packages` para login no GHCR (padrão: `GITHUB_TOKEN`). |
+
+> **Importante:** crie/atualize o arquivo `.env` no servidor com as mesmas chaves do `.env.example` antes de rodar o pipeline pela primeira vez. O deploy não sobe containers sem as variáveis obrigatórias.
 
 ## Observações
 

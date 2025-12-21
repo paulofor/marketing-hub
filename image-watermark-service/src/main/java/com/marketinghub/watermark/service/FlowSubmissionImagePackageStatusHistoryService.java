@@ -1,8 +1,6 @@
 package com.marketinghub.watermark.service;
 
 import com.marketinghub.watermark.entity.FlowSubmissionImagePackageEntity;
-import java.sql.Timestamp;
-import java.time.Instant;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -11,7 +9,7 @@ import org.springframework.util.StringUtils;
 public class FlowSubmissionImagePackageStatusHistoryService {
 
     private static final String INSERT_SQL = "INSERT INTO flow_submission_image_package_status_history "
-            + "(package_id, status, failure_reason, created_at) VALUES (?, ?, ?, ?)";
+            + "(package_id, status, failure_reason) VALUES (?, ?, ?)";
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -24,6 +22,6 @@ public class FlowSubmissionImagePackageStatusHistoryService {
             return;
         }
         String normalizedReason = StringUtils.hasText(reason) ? reason.trim() : null;
-        jdbcTemplate.update(INSERT_SQL, packageId, status.name(), normalizedReason, Timestamp.from(Instant.now()));
+        jdbcTemplate.update(INSERT_SQL, packageId, status.name(), normalizedReason);
     }
 }

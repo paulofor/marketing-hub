@@ -21,7 +21,7 @@ public class LeadPortalImagePackageStatusHistoryService {
     private static final Logger log = LoggerFactory.getLogger(LeadPortalImagePackageStatusHistoryService.class);
 
     private static final String INSERT_SQL = "INSERT INTO flow_submission_image_package_status_history "
-            + "(package_id, status, failure_reason, created_at) VALUES (?, ?, ?, ?)";
+            + "(package_id, status, failure_reason) VALUES (?, ?, ?)";
     private static final String SELECT_SQL = """
             SELECT status, failure_reason, created_at
             FROM flow_submission_image_package_status_history
@@ -40,8 +40,7 @@ public class LeadPortalImagePackageStatusHistoryService {
             return;
         }
         String normalizedReason = StringUtils.hasText(reason) ? reason.trim() : null;
-        Timestamp now = Timestamp.from(Instant.now());
-        jdbcTemplate.update(INSERT_SQL, packageId, status.name(), normalizedReason, now);
+        jdbcTemplate.update(INSERT_SQL, packageId, status.name(), normalizedReason);
     }
 
     public List<StatusHistoryEntry> listHistory(long packageId) {

@@ -1,0 +1,9 @@
+services:
+  lead-portal-payments-service:
+    image: ${LEAD_PORTAL_PAYMENTS_IMAGE}
+    build: null
+
+networks:
+  lead-portal-payments-net:
+    external: true
+    name: ${LEAD_PORTAL_PAYMENTS_NETWORK:-public-net}

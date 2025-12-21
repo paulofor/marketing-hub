@@ -183,25 +183,24 @@ export default function NewExperimentPage() {
         alert("Informe uma quantidade válida de imagens por pacote");
         return;
       }
-      const parsedOpenImagesPerPackage = form.openImagesPerPackage
-        ? Number(form.openImagesPerPackage)
-        : undefined;
-      if (
-        form.openImagesPerPackage &&
-        (Number.isNaN(parsedOpenImagesPerPackage) || parsedOpenImagesPerPackage <= 0)
-      ) {
-        alert("Informe uma quantidade válida de imagens abertas");
-        return;
+      let parsedOpenImagesPerPackage: number | undefined;
+      if (form.openImagesPerPackage) {
+        parsedOpenImagesPerPackage = Number(form.openImagesPerPackage);
+        if (Number.isNaN(parsedOpenImagesPerPackage) || parsedOpenImagesPerPackage <= 0) {
+          alert("Informe uma quantidade válida de imagens abertas");
+          return;
+        }
       }
-      const parsedCompressedImagesPerPackage = form.compressedImagesPerPackage
-        ? Number(form.compressedImagesPerPackage)
-        : undefined;
-      if (
-        form.compressedImagesPerPackage &&
-        (Number.isNaN(parsedCompressedImagesPerPackage) || parsedCompressedImagesPerPackage <= 0)
-      ) {
-        alert("Informe uma quantidade válida de imagens compactadas");
-        return;
+      let parsedCompressedImagesPerPackage: number | undefined;
+      if (form.compressedImagesPerPackage) {
+        parsedCompressedImagesPerPackage = Number(form.compressedImagesPerPackage);
+        if (
+          Number.isNaN(parsedCompressedImagesPerPackage) ||
+          parsedCompressedImagesPerPackage <= 0
+        ) {
+          alert("Informe uma quantidade válida de imagens compactadas");
+          return;
+        }
       }
       await create.mutateAsync({
         nicheId: Number(form.nicheId),

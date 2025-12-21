@@ -258,25 +258,24 @@ export default function EditExperimentPage() {
         alert("Informe uma quantidade válida de imagens por pacote");
         return;
       }
-      const parsedOpenImagesPerPackage = values.openImagesPerPackage
-        ? Number(values.openImagesPerPackage)
-        : undefined;
-      if (
-        values.openImagesPerPackage &&
-        (Number.isNaN(parsedOpenImagesPerPackage) || parsedOpenImagesPerPackage <= 0)
-      ) {
-        alert("Informe uma quantidade válida de imagens abertas");
-        return;
+      let parsedOpenImagesPerPackage: number | undefined;
+      if (values.openImagesPerPackage) {
+        parsedOpenImagesPerPackage = Number(values.openImagesPerPackage);
+        if (Number.isNaN(parsedOpenImagesPerPackage) || parsedOpenImagesPerPackage <= 0) {
+          alert("Informe uma quantidade válida de imagens abertas");
+          return;
+        }
       }
-      const parsedCompressedImagesPerPackage = values.compressedImagesPerPackage
-        ? Number(values.compressedImagesPerPackage)
-        : undefined;
-      if (
-        values.compressedImagesPerPackage &&
-        (Number.isNaN(parsedCompressedImagesPerPackage) || parsedCompressedImagesPerPackage <= 0)
-      ) {
-        alert("Informe uma quantidade válida de imagens compactadas");
-        return;
+      let parsedCompressedImagesPerPackage: number | undefined;
+      if (values.compressedImagesPerPackage) {
+        parsedCompressedImagesPerPackage = Number(values.compressedImagesPerPackage);
+        if (
+          Number.isNaN(parsedCompressedImagesPerPackage) ||
+          parsedCompressedImagesPerPackage <= 0
+        ) {
+          alert("Informe uma quantidade válida de imagens compactadas");
+          return;
+        }
       }
       const payload: UpdateExperiment = {
         name: values.name,

@@ -72,13 +72,19 @@ services:
         condition: service_started
     environment:
       CERTBOT_EMAIL: "paulofore@gmail.com.br"
-    command: >-
-      sh -c "
-        certbot certonly --non-interactive --agree-tos --no-eff-email \
-          --email \"${CERTBOT_EMAIL}\" \
-          --webroot --webroot-path=/var/www/certbot \
-          -d ${CERTBOT_DOMAIN:-pagamentopalf.online} -d www.${CERTBOT_DOMAIN:-pagamentopalf.online}
-      "
+    command:
+      - certonly
+      - --non-interactive
+      - --agree-tos
+      - --no-eff-email
+      - --email
+      - "${CERTBOT_EMAIL}"
+      - --webroot
+      - --webroot-path=/var/www/certbot
+      - -d
+      - "${CERTBOT_DOMAIN:-pagamentopalf.online}"
+      - -d
+      - "www.${CERTBOT_DOMAIN:-pagamentopalf.online}"
     volumes:
       - ./docker/proxy/html:/var/www/certbot
       - /etc/letsencrypt:/etc/letsencrypt

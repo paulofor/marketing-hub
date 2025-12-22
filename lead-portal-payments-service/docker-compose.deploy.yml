@@ -23,6 +23,8 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ./docker/proxy/html:/usr/share/nginx/html
+      - ./docker/proxy/certs/dev:/etc/nginx/dev-certs:ro
+      - ./docker/proxy/ensure-certs.sh:/docker-entrypoint.d/40-ensure-certs.sh:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
     restart: unless-stopped
     networks:

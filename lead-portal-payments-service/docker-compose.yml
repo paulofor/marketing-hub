@@ -78,7 +78,7 @@ services:
       - --agree-tos
       - --no-eff-email
       - --email
-      - "${CERTBOT_EMAIL}"
+      - "${CERTBOT_EMAIL:-paulofore@gmail.com.br}"
       - --webroot
       - --webroot-path=/var/www/certbot
       - -d

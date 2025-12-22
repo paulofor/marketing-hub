@@ -78,6 +78,19 @@ docker compose up --build -d
 
 O arquivo `docker-compose.yml` usa as variáveis definidas no `.env` (o Docker Compose já lê esse arquivo automaticamente quando presente) e expõe a aplicação em `http://localhost:8092` (pode alterar com `HOST_HTTP_PORT`). Em produção, o `docker-compose.deploy.yml` apenas substitui a imagem local pela publicada no registro.
 
+### HTTPS e proxy reverso
+
+- O compose agora inclui um **proxy Nginx** (porta 80/443) que termina o TLS com os certificados do Let’s Encrypt montados em `/etc/letsencrypt`. A configuração padrão está em `nginx.conf` e expõe `pagamentopalf.online` com redirecionamento automático para HTTPS.
+- Use o profile `certbot` para emitir/renovar o certificado:
+
+```bash
+cd lead-portal-payments-service
+CERTBOT_DOMAIN=pagamentopalf.online docker compose --profile certbot run --rm certbot-pagamentos
+```
+
+O caminho `./docker/proxy/html` é o webroot para o desafio ACME. Os certificados gerados no host são montados como `read-only` pelo Nginx.
+- As URLs padrão do Mercado Pago no `docker-compose.deploy.yml` já apontam para HTTPS (`https://pagamentopalf.online/api/v1/mercadopago/webhook`), então configure o domínio público antes de ativar o fluxo de pagamentos.
+
 ## Build da imagem Docker
 
 ```bash

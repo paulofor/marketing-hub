@@ -2,8 +2,56 @@ services:
   lead-portal-payments-service:
     image: ${LEAD_PORTAL_PAYMENTS_IMAGE}
     build: null
+    environment:
+      MERCADO_PAGO_NOTIFICATION_URL: ${MERCADO_PAGO_NOTIFICATION_URL:-https://pagamentopalf.online/api/v1/mercadopago/webhook}
+      MERCADO_PAGO_SUCCESS_URL: ${MERCADO_PAGO_SUCCESS_URL:-https://pagamentopalf.online/pagamento/sucesso}
+      MERCADO_PAGO_FAILURE_URL: ${MERCADO_PAGO_FAILURE_URL:-https://pagamentopalf.online/pagamento/falha}
+      MERCADO_PAGO_PENDING_URL: ${MERCADO_PAGO_PENDING_URL:-https://pagamentopalf.online/pagamento/pendente}
     ports:
       - "${HOST_HTTP_PORT:-8092}:8080"
+
+  proxy:
+    image: nginx:1.25-alpine
+    depends_on:
+      lead-portal-payments-service:
+        condition: service_started
+    ports:
+      - "80:80"
+      - "443:443"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/proxy/html:/usr/share/nginx/html
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    restart: unless-stopped
+    networks:
+      - lead-portal-payments-net
+
+  certbot-pagamentos:
+    image: certbot/certbot:latest
+    profiles:
+      - certbot
+    depends_on:
+      proxy:
+        condition: service_started
+    environment:
+      CERTBOT_EMAIL: "paulofore@gmail.com.br"
+    command: >-
+      sh -c "
+        certbot certonly --non-interactive --agree-tos --no-eff-email \
+          --email \"${CERTBOT_EMAIL}\" \
+          --webroot --webroot-path=/var/www/certbot \
+          -d ${CERTBOT_DOMAIN:-pagamentopalf.online} -d www.${CERTBOT_DOMAIN:-pagamentopalf.online}
+      "
+    volumes:
+      - ./docker/proxy/html:/var/www/certbot
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/lib/letsencrypt:/var/lib/letsencrypt
+      - /var/log/letsencrypt:/var/log/letsencrypt
+    restart: "no"
+    networks:
+      - lead-portal-payments-net
 networks:
   lead-portal-payments-net:
     external: true

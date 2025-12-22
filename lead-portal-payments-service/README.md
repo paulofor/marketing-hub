@@ -80,7 +80,7 @@ O arquivo `docker-compose.yml` usa as variáveis definidas no `.env` (o Docker C
 
 ### HTTPS e proxy reverso
 
-- O compose agora inclui um **proxy Nginx** (porta 80/443) que termina o TLS com os certificados do Let’s Encrypt montados em `/etc/letsencrypt`. A configuração padrão está em `nginx.conf` e expõe `pagamentopalf.online` com redirecionamento automático para HTTPS.
+- O compose agora inclui um **proxy Nginx** (porta 80/443) que termina o TLS com os certificados do Let’s Encrypt montados em `/etc/letsencrypt`. A configuração padrão está em `nginx.conf` e expõe `pagamentopalf.online` com redirecionamento automático para HTTPS. Para evitar falha no container quando o diretório não existir (ambiente local), um certificado autoassinado já está versionado em `docker/proxy/certs/dev` e é montado por padrão; em produção, o `docker-compose.deploy.yml` sobrepõe esse caminho com `/etc/letsencrypt` real.
 - Use o profile `certbot` para emitir/renovar o certificado:
 
 ```bash

@@ -58,6 +58,8 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ./docker/proxy/html:/usr/share/nginx/html
+      - ./docker/proxy/certs/dev:/etc/nginx/dev-certs:ro
+      - ./docker/proxy/ensure-certs.sh:/docker-entrypoint.d/40-ensure-certs.sh:ro
       # Certificado autoassinado padrão para ambiente local. Em produção,
       # o docker-compose.deploy.yml monta o diretório real do Let's Encrypt
       # por cima deste caminho, então o certificado válido terá prioridade.

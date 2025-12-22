@@ -75,7 +75,7 @@ services:
     command: >-
       sh -c "
         certbot certonly --non-interactive --agree-tos --no-eff-email \
-          --email \"${CERTBOT_EMAIL}\" \
+          --email \"$CERTBOT_EMAIL\" \
           --webroot --webroot-path=/var/www/certbot \
           -d ${CERTBOT_DOMAIN:-pagamentopalf.online} -d www.${CERTBOT_DOMAIN:-pagamentopalf.online}
       "

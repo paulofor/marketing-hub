@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 public class LeadPortalPaymentsIntegrationProperties {
 
     private boolean enabled = true;
-    private String baseUrl = "http://lead-portal-payments-service:8080";
+    private String baseUrl = "https://pagamentopalf.online";
     private String authToken;
     private Duration connectTimeout = Duration.ofSeconds(2);
     private Duration readTimeout = Duration.ofSeconds(5);

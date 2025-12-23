@@ -5,6 +5,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,9 +22,10 @@ public class LeadPortalImagePackageStatusHistoryService {
 
     private static final Logger log = LoggerFactory.getLogger(LeadPortalImagePackageStatusHistoryService.class);
 
+    private static final ZoneId SAO_PAULO_ZONE = ZoneId.of("America/Sao_Paulo");
+
     private static final String INSERT_SQL = "INSERT INTO flow_submission_image_package_status_history "
-            + "(package_id, status, failure_reason, created_at) VALUES (?, ?, ?, "
-            + "CONVERT_TZ(UTC_TIMESTAMP(), 'UTC', 'America/Sao_Paulo'))";
+            + "(package_id, status, failure_reason, created_at) VALUES (?, ?, ?, ?)";
     private static final String SELECT_SQL = """
             SELECT status, failure_reason, created_at
             FROM flow_submission_image_package_status_history
@@ -41,7 +44,8 @@ public class LeadPortalImagePackageStatusHistoryService {
             return;
         }
         String normalizedReason = StringUtils.hasText(reason) ? reason.trim() : null;
-        jdbcTemplate.update(INSERT_SQL, packageId, status.name(), normalizedReason);
+        Timestamp occurredAt = Timestamp.valueOf(LocalDateTime.now(SAO_PAULO_ZONE));
+        jdbcTemplate.update(INSERT_SQL, packageId, status.name(), normalizedReason, occurredAt);
     }
 
     public List<StatusHistoryEntry> listHistory(long packageId) {

@@ -6,6 +6,7 @@ import com.marketinghub.payments.service.CheckoutService;
 import com.marketinghub.payments.service.DeliveryService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,6 +29,11 @@ public class CheckoutController {
     @PostMapping("/checkout")
     public CreateCheckoutResponse createCheckout(@Valid @RequestBody CreateCheckoutRequest request) {
         return checkoutService.createCheckout(request);
+    }
+
+    @GetMapping("/packages/{packageId}")
+    public CreateCheckoutResponse findByPackage(@PathVariable Long packageId) {
+        return checkoutService.findCheckoutByPackage(packageId);
     }
 
     @PostMapping("/{purchaseId}/resend")

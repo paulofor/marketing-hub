@@ -67,6 +67,12 @@ lead-portal:
     poll-interval: ${LEAD_PORTAL_DISPATCH_POLL_INTERVAL:60000}
     # Timeout mais alto para baixar anexos grandes do storage
     read-timeout: ${LEAD_PORTAL_DISPATCH_READ_TIMEOUT:180000}
+  payment-link:
+    validate-host: ${LEAD_PORTAL_PAYMENT_VALIDATE_HOST:true}
+    allowed-hosts: ${LEAD_PORTAL_PAYMENT_ALLOWED_HOSTS:www.mercadopago.com.br,mercadopago.com.br,www.mercadopago.com}
+    button-color: ${LEAD_PORTAL_PAYMENT_BUTTON_COLOR:#00a650}
+    button-text: ${LEAD_PORTAL_PAYMENT_BUTTON_TEXT:Quero liberar as imagens originais}
+    plain-text-intro: ${LEAD_PORTAL_PAYMENT_PLAIN_INTRO:Finalize o pagamento e libere as imagens originais:}
 email-service:
   default-from-address: ${EMAIL_SERVICE_FROM_ADDRESS:imagens@oportunidadebrasil.shop}
   dry-run: ${EMAIL_SERVICE_DRY_RUN:false}

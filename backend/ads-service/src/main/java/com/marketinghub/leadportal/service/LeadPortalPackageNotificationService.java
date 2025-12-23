@@ -1,15 +1,19 @@
 package com.marketinghub.leadportal.service;
 
 import com.marketinghub.leadportal.FlowSubmissionImagePackageStatus;
+import com.marketinghub.leadportal.integration.LeadPortalPaymentsClient;
+import com.marketinghub.leadportal.integration.LeadPortalPaymentsClient.PaymentCheckoutResponse;
 import com.marketinghub.storage.FileStorageService;
 import com.marketinghub.storage.StorageException;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -44,6 +48,7 @@ public class LeadPortalPackageNotificationService {
     private final FileStorageService fileStorageService;
     private final LeadPortalEmailSender emailSender;
     private final LeadPortalImagePackageStatusHistoryService statusHistoryService;
+    private final LeadPortalPaymentsClient paymentsClient;
 
     @Value("${lead-portal.notifications.enabled:false}")
     private boolean notificationsEnabled;
@@ -64,11 +69,13 @@ public class LeadPortalPackageNotificationService {
             JdbcTemplate jdbcTemplate,
             FileStorageService fileStorageService,
             LeadPortalEmailSender emailSender,
-            LeadPortalImagePackageStatusHistoryService statusHistoryService) {
+            LeadPortalImagePackageStatusHistoryService statusHistoryService,
+            LeadPortalPaymentsClient paymentsClient) {
         this.jdbcTemplate = jdbcTemplate;
         this.fileStorageService = fileStorageService;
         this.emailSender = emailSender;
         this.statusHistoryService = statusHistoryService;
+        this.paymentsClient = paymentsClient;
     }
 
     @PostConstruct
@@ -120,7 +127,8 @@ public class LeadPortalPackageNotificationService {
         }
         int imageCount = pending.imageCount() > 0 ? pending.imageCount() : countWatermarkedAssets(pending.packageId());
         byte[] zipBytes = loadObjectBytes(pending.zipObjectKey());
-        EmailContent content = buildEmailContent(pending, imageCount);
+        PaymentInfo paymentInfo = ensurePaymentInfo(pending);
+        EmailContent content = buildEmailContent(pending, imageCount, paymentInfo);
         return new LeadPortalImagePackageExportItem(
                 pending.packageId(),
                 pending.submissionId(),
@@ -144,7 +152,14 @@ public class LeadPortalPackageNotificationService {
                 imageCount,
                 content.subject(),
                 content.plain(),
-                content.html());
+                content.html(),
+                new LeadPortalImagePackageExportItem.PaymentInfo(
+                        paymentInfo.purchaseId(),
+                        paymentInfo.checkoutUrl(),
+                        paymentInfo.amount(),
+                        paymentInfo.currency(),
+                        paymentInfo.expiresAt(),
+                        paymentInfo.statementDescriptor()));
     }
 
     private boolean lockPackage(long packageId) {
@@ -193,7 +208,13 @@ public class LeadPortalPackageNotificationService {
                     sample.call_to_action AS sample_call_to_action,
                     sample.model AS sample_model,
                     sample.prompt AS sample_prompt,
-                    sample.updated_at AS sample_updated_at
+                    sample.updated_at AS sample_updated_at,
+                    pack.payment_purchase_id,
+                    pack.payment_checkout_url,
+                    pack.payment_checkout_expires_at,
+                    pack.payment_amount,
+                    pack.payment_currency,
+                    pack.payment_statement_descriptor
                 FROM flow_submission_image_package pack
                 JOIN flow_submissions sub ON sub.id = pack.submission_id
                 JOIN lead_portal_flow flow ON flow.slug = sub.flow_slug
@@ -246,7 +267,13 @@ public class LeadPortalPackageNotificationService {
                 rs.getString("zip_object_key"),
                 rs.getLong("zip_size_bytes"),
                 toInstant(rs.getTimestamp("zip_generated_at")),
-                rs.getInt("watermarked_count")
+                rs.getInt("watermarked_count"),
+                (Long) rs.getObject("payment_purchase_id"),
+                rs.getString("payment_checkout_url"),
+                toInstant(rs.getTimestamp("payment_checkout_expires_at")),
+                rs.getBigDecimal("payment_amount"),
+                rs.getString("payment_currency"),
+                rs.getString("payment_statement_descriptor")
         );
     }
 
@@ -257,7 +284,8 @@ public class LeadPortalPackageNotificationService {
         int imageCount = pending.imageCount() > 0 ? pending.imageCount() : countWatermarkedAssets(pending.packageId());
         byte[] zipBytes = loadObjectBytes(pending.zipObjectKey());
 
-        EmailContent content = buildEmailContent(pending, imageCount);
+        PaymentInfo paymentInfo = ensurePaymentInfo(pending);
+        EmailContent content = buildEmailContent(pending, imageCount, paymentInfo);
         emailSender.sendEmail(
                 pending.submissionEmail(),
                 content.subject(),
@@ -291,7 +319,7 @@ public class LeadPortalPackageNotificationService {
         }
     }
 
-    private EmailContent buildEmailContent(PendingPackage pending, int imageCount) {
+    private EmailContent buildEmailContent(PendingPackage pending, int imageCount, PaymentInfo paymentInfo) {
         String subject = pending.sampleSubject();
         String normalizedTrackingBase = normalizeTrackingBaseUrl(trackingBaseUrl);
         String trackingViewUrl = null;
@@ -337,6 +365,9 @@ public class LeadPortalPackageNotificationService {
                     .append(HtmlUtils.htmlEscape(pending.sampleCallToAction().trim()))
                     .append("</p>");
         }
+
+        appendPaymentCallToAction(plain, html, paymentInfo, pending.sampleCallToAction());
+
         if (StringUtils.hasText(trackingViewUrl)) {
             html.append("<p><strong>Visualizar online:</strong> <a href=\"")
                     .append(HtmlUtils.htmlEscape(trackingViewUrl))
@@ -355,6 +386,121 @@ public class LeadPortalPackageNotificationService {
 
         String attachmentName = "imagens-watermark-" + pending.packageId() + ".zip";
         return new EmailContent(subject, plain.toString(), html.toString(), attachmentName);
+    }
+
+
+    private PaymentInfo ensurePaymentInfo(PendingPackage pending) {
+        if (isPaymentLinkValid(pending.paymentCheckoutUrl(), pending.paymentCheckoutExpiresAt())) {
+            return new PaymentInfo(
+                    pending.paymentPurchaseId(),
+                    pending.paymentCheckoutUrl(),
+                    pending.paymentAmount(),
+                    pending.paymentCurrency(),
+                    pending.paymentCheckoutExpiresAt(),
+                    pending.paymentStatementDescriptor());
+        }
+        PaymentCheckoutResponse checkout = paymentsClient.ensureCheckout(
+                pending.packageId(), pending.submissionEmail(), pending.submissionName());
+        if (checkout == null || !StringUtils.hasText(checkout.checkoutUrl())) {
+            throw new IllegalStateException("Serviço de pagamentos não retornou link válido para o pacote "
+                    + pending.packageId());
+        }
+        persistPaymentInfo(pending.packageId(), checkout);
+        return new PaymentInfo(
+                checkout.purchaseId(),
+                checkout.checkoutUrl(),
+                checkout.amount(),
+                checkout.currency(),
+                checkout.expiresAt(),
+                checkout.statementDescriptor());
+    }
+
+    private boolean isPaymentLinkValid(String checkoutUrl, Instant expiresAt) {
+        if (!StringUtils.hasText(checkoutUrl)) {
+            return false;
+        }
+        if (expiresAt == null) {
+            return true;
+        }
+        return expiresAt.isAfter(Instant.now());
+    }
+
+    private void persistPaymentInfo(long packageId, PaymentCheckoutResponse checkout) {
+        Timestamp expiresAt = checkout.expiresAt() != null ? Timestamp.from(checkout.expiresAt()) : null;
+        jdbcTemplate.update(
+                "UPDATE flow_submission_image_package SET payment_purchase_id = ?, payment_checkout_url = ?, "
+                        + "payment_checkout_expires_at = ?, payment_amount = ?, payment_currency = ?, "
+                        + "payment_statement_descriptor = ?, updated_at = ? WHERE id = ?",
+                checkout.purchaseId(),
+                checkout.checkoutUrl(),
+                expiresAt,
+                checkout.amount(),
+                checkout.currency(),
+                checkout.statementDescriptor(),
+                Timestamp.from(Instant.now()),
+                packageId);
+    }
+
+    private void appendPaymentCallToAction(StringBuilder plain,
+                                           StringBuilder html,
+                                           PaymentInfo paymentInfo,
+                                           String suggestedCta) {
+        if (paymentInfo == null || !StringUtils.hasText(paymentInfo.checkoutUrl())) {
+            return;
+        }
+        String paymentUrl = paymentInfo.checkoutUrl().trim();
+        String formattedAmount = formatCurrency(paymentInfo.amount(), paymentInfo.currency());
+        String descriptor = StringUtils.hasText(paymentInfo.statementDescriptor())
+                ? paymentInfo.statementDescriptor()
+                : "Mercado Pago";
+
+        plain.append("Finalize o pagamento e libere as imagens originais:\n")
+                .append(paymentUrl)
+                .append("\n");
+        if (formattedAmount != null) {
+            plain.append("Valor: ").append(formattedAmount).append("\n");
+        }
+        plain.append("Processado por ").append(descriptor).append("\n\n");
+
+        String ctaLabel = StringUtils.hasText(suggestedCta)
+                ? suggestedCta.trim()
+                : "Quero liberar as imagens originais";
+        if (formattedAmount != null) {
+            ctaLabel = ctaLabel + " — " + formattedAmount;
+        }
+
+        html.append("<div style=\"margin:24px 0;padding:16px 20px;border:1px solid #e3e3e3;border-radius:8px;background:#f8f8f8;\">")
+                .append("<p><strong>Finalize o pagamento para liberar os arquivos originais.</strong></p>")
+                .append("<p>Processado por ")
+                .append(HtmlUtils.htmlEscape(descriptor))
+                .append("</p>")
+                .append("<p style=\"text-align:center;\"><a href=\"")
+                .append(HtmlUtils.htmlEscape(paymentUrl))
+                .append("\" target=\"_blank\" rel=\"noopener\" style=\"display:inline-block;padding:14px 28px;background:#00a650;color:#fff;font-weight:600;border-radius:6px;text-decoration:none;\">")
+                .append(HtmlUtils.htmlEscape(ctaLabel))
+                .append("</a></p>")
+                .append("</div>");
+    }
+    private String formatCurrency(BigDecimal amount, String currency) {
+        if (amount == null) {
+            return null;
+        }
+        Locale locale = "BRL".equalsIgnoreCase(currency) ? new Locale("pt", "BR") : Locale.US;
+        NumberFormat formatter = NumberFormat.getCurrencyInstance(locale);
+        try {
+            return formatter.format(amount);
+        } catch (IllegalArgumentException ignored) {
+            return amount.toPlainString() + (StringUtils.hasText(currency) ? " " + currency : "");
+        }
+    }
+
+    private record PaymentInfo(
+            Long purchaseId,
+            String checkoutUrl,
+            BigDecimal amount,
+            String currency,
+            Instant expiresAt,
+            String statementDescriptor) {
     }
 
 
@@ -538,7 +684,13 @@ public class LeadPortalPackageNotificationService {
             String zipObjectKey,
             Long zipSizeBytes,
             Instant zipGeneratedAt,
-            int imageCount) {
+            int imageCount,
+            Long paymentPurchaseId,
+            String paymentCheckoutUrl,
+            Instant paymentCheckoutExpiresAt,
+            BigDecimal paymentAmount,
+            String paymentCurrency,
+            String paymentStatementDescriptor) {
     }
 
     private record EmailContent(String subject, String plain, String html, String attachmentName) {

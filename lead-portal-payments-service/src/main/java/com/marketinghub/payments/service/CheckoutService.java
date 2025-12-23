@@ -14,7 +14,10 @@ import com.marketinghub.payments.model.LeadPortalPurchase;
 import com.marketinghub.payments.model.PurchaseStatus;
 import com.marketinghub.payments.repository.LeadPortalPurchaseRepository;
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -53,54 +56,38 @@ public class CheckoutService {
     @Transactional
     public CreateCheckoutResponse createCheckout(CreateCheckoutRequest request) {
         LeadPortalPackageSummary imagePackage = packageGateway.loadPackage(request.getPackageId());
-        if (imagePackage.status() == null) {
-            throw new IllegalStateException("Status do pacote desconhecido");
-        }
-        if (imagePackage.status() == FlowSubmissionImagePackageStatus.FAILED
-                || imagePackage.status() == FlowSubmissionImagePackageStatus.RECEIVED
-                || imagePackage.status() == FlowSubmissionImagePackageStatus.PROCESSING) {
-            throw new IllegalStateException("Pacote ainda não está pronto para compra");
-        }
+        validatePackageStatus(imagePackage.status());
 
-        BigDecimal amount = imagePackage.totalPrice() != null ? imagePackage.totalPrice() : paymentProperties.getDefaultAmount();
-        String currency = StringUtils.hasText(imagePackage.currency()) ? imagePackage.currency() : paymentProperties.getDefaultCurrency();
+        BigDecimal amount = resolveAmount(imagePackage);
+        String currency = resolveCurrency(imagePackage);
+        String buyerEmail = resolveBuyerEmail(request, imagePackage);
+        String buyerName = resolveBuyerName(request, imagePackage);
 
-        Map<String, Object> metadata = new HashMap<>();
-        metadata.put("packageId", imagePackage.packageId());
-        if (imagePackage.submissionId() != null) {
-            metadata.put("submissionId", imagePackage.submissionId().toString());
-        }
-        if (imagePackage.submissionEmail() != null) {
-            metadata.put("submissionEmail", imagePackage.submissionEmail());
+        LeadPortalPurchase latestPurchase = purchaseRepository
+                .findTopByPackageIdOrderByCreatedAtDesc(imagePackage.packageId())
+                .orElse(null);
+
+        if (isReusableCheckout(latestPurchase)) {
+            refreshPurchase(latestPurchase, imagePackage, amount, currency, buyerName, buyerEmail);
+            purchaseRepository.save(latestPurchase);
+            log.info("Reutilizando preferência {} para o pacote {}", latestPurchase.getMercadoPagoPreferenceId(),
+                    imagePackage.packageId());
+            return toResponse(latestPurchase);
         }
 
-        MercadoPagoPreferenceRequest preferenceRequest = new MercadoPagoPreferenceRequest(
-                java.util.List.of(new MercadoPagoPreferenceRequest.Item(
-                        "Pacote de imagens " + imagePackage.packageId(),
-                        1,
-                        amount,
-                        currency)),
-                new MercadoPagoPreferenceRequest.Payer(resolveBuyerName(request, imagePackage),
-                        resolveBuyerEmail(request, imagePackage)),
-                new MercadoPagoPreferenceRequest.BackUrls(
-                        mercadoPagoProperties.getSuccessUrl(),
-                        mercadoPagoProperties.getFailureUrl(),
-                        mercadoPagoProperties.getPendingUrl()),
-                metadata,
-                mercadoPagoProperties.getNotificationUrl(),
-                mercadoPagoProperties.getStatementDescriptor()
-        );
-
+        MercadoPagoPreferenceRequest preferenceRequest = buildPreferenceRequest(imagePackage,
+                amount, currency, buyerName, buyerEmail);
         MercadoPagoPreferenceResponse response = mercadoPagoClient.createPreference(preferenceRequest);
-        LeadPortalPurchase purchase = purchaseRepository.findTopByPackageIdOrderByCreatedAtDesc(imagePackage.packageId())
-                .orElse(new LeadPortalPurchase());
+
+        LeadPortalPurchase purchase = latestPurchase != null ? latestPurchase : new LeadPortalPurchase();
         purchase.setPackageId(imagePackage.packageId());
         purchase.setSubmissionId(imagePackage.submissionId() != null ? imagePackage.submissionId().toString() : null);
-        purchase.setBuyerEmail(resolveBuyerEmail(request, imagePackage));
-        purchase.setBuyerName(resolveBuyerName(request, imagePackage));
+        purchase.setBuyerEmail(buyerEmail);
+        purchase.setBuyerName(buyerName);
         purchase.setStatus(PurchaseStatus.PREFERENCE_CREATED);
         purchase.setMercadoPagoPreferenceId(response != null ? response.id() : null);
         purchase.setCheckoutUrl(response != null ? response.initPoint() : null);
+        purchase.setCheckoutExpiresAt(resolveCheckoutExpiration());
         purchase.setAmount(amount);
         purchase.setCurrency(currency);
         purchaseRepository.save(purchase);
@@ -108,8 +95,18 @@ public class CheckoutService {
         log.info("Preferência {} criada para o pacote {} (valor {} {})", purchase.getMercadoPagoPreferenceId(),
                 imagePackage.packageId(), amount, currency);
 
-        return new CreateCheckoutResponse(purchase.getId(), imagePackage.packageId(), purchase.getMercadoPagoPreferenceId(),
-                purchase.getCheckoutUrl(), purchase.getStatus().name());
+        return toResponse(purchase);
+    }
+
+    @Transactional(readOnly = true)
+    public CreateCheckoutResponse findCheckoutByPackage(Long packageId) {
+        LeadPortalPurchase purchase = purchaseRepository.findTopByPackageIdOrderByCreatedAtDesc(packageId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Pacote %d não possui preferências criadas".formatted(packageId)));
+        if (!StringUtils.hasText(purchase.getCheckoutUrl())) {
+            throw new IllegalStateException("Pacote " + packageId + " ainda não possui link de checkout");
+        }
+        return toResponse(purchase);
     }
 
     @Transactional
@@ -122,7 +119,8 @@ public class CheckoutService {
             throw new IllegalStateException("Pagamento sem packageId na metadata");
         }
         LeadPortalPurchase purchase = purchaseRepository.findByMercadoPagoPaymentId(paymentDetails.id())
-                .orElseGet(() -> purchaseRepository.findTopByPackageIdOrderByCreatedAtDesc(packageId).orElse(new LeadPortalPurchase()));
+                .orElseGet(() -> purchaseRepository.findTopByPackageIdOrderByCreatedAtDesc(packageId)
+                        .orElse(new LeadPortalPurchase()));
 
         purchase.setPackageId(packageId);
         purchase.setSubmissionId((String) paymentDetails.metadata().getOrDefault("submissionId", null));
@@ -143,6 +141,112 @@ public class CheckoutService {
         }
 
         return purchaseRepository.save(purchase);
+    }
+
+    private void validatePackageStatus(FlowSubmissionImagePackageStatus status) {
+        if (status == null) {
+            throw new IllegalStateException("Status do pacote desconhecido");
+        }
+        if (status == FlowSubmissionImagePackageStatus.FAILED
+                || status == FlowSubmissionImagePackageStatus.RECEIVED
+                || status == FlowSubmissionImagePackageStatus.PROCESSING) {
+            throw new IllegalStateException("Pacote ainda não está pronto para compra");
+        }
+    }
+
+    private BigDecimal resolveAmount(LeadPortalPackageSummary imagePackage) {
+        return imagePackage.totalPrice() != null ? imagePackage.totalPrice() : paymentProperties.getDefaultAmount();
+    }
+
+    private String resolveCurrency(LeadPortalPackageSummary imagePackage) {
+        return StringUtils.hasText(imagePackage.currency())
+                ? imagePackage.currency()
+                : paymentProperties.getDefaultCurrency();
+    }
+
+    private MercadoPagoPreferenceRequest buildPreferenceRequest(LeadPortalPackageSummary imagePackage,
+                                                                BigDecimal amount,
+                                                                String currency,
+                                                                String buyerName,
+                                                                String buyerEmail) {
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("packageId", imagePackage.packageId());
+        if (imagePackage.submissionId() != null) {
+            metadata.put("submissionId", imagePackage.submissionId().toString());
+        }
+        if (imagePackage.submissionEmail() != null) {
+            metadata.put("submissionEmail", imagePackage.submissionEmail());
+        }
+
+        return new MercadoPagoPreferenceRequest(
+                List.of(new MercadoPagoPreferenceRequest.Item(
+                        "Pacote de imagens " + imagePackage.packageId(),
+                        1,
+                        amount,
+                        currency)),
+                new MercadoPagoPreferenceRequest.Payer(buyerName, buyerEmail),
+                new MercadoPagoPreferenceRequest.BackUrls(
+                        mercadoPagoProperties.getSuccessUrl(),
+                        mercadoPagoProperties.getFailureUrl(),
+                        mercadoPagoProperties.getPendingUrl()),
+                metadata,
+                mercadoPagoProperties.getNotificationUrl(),
+                mercadoPagoProperties.getStatementDescriptor()
+        );
+    }
+
+    private void refreshPurchase(LeadPortalPurchase purchase,
+                                 LeadPortalPackageSummary imagePackage,
+                                 BigDecimal amount,
+                                 String currency,
+                                 String buyerName,
+                                 String buyerEmail) {
+        if (imagePackage.submissionId() != null) {
+            purchase.setSubmissionId(imagePackage.submissionId().toString());
+        }
+        purchase.setBuyerEmail(buyerEmail);
+        purchase.setBuyerName(buyerName);
+        purchase.setAmount(amount);
+        purchase.setCurrency(currency);
+        if (purchase.getStatus() == null) {
+            purchase.setStatus(PurchaseStatus.PREFERENCE_CREATED);
+        }
+    }
+
+    private boolean isReusableCheckout(LeadPortalPurchase purchase) {
+        if (purchase == null) {
+            return false;
+        }
+        if (!StringUtils.hasText(purchase.getCheckoutUrl())) {
+            return false;
+        }
+        if (purchase.getStatus() == PurchaseStatus.FAILED || purchase.getStatus() == PurchaseStatus.CANCELED) {
+            return false;
+        }
+        Instant expiresAt = purchase.getCheckoutExpiresAt();
+        return expiresAt == null || expiresAt.isAfter(Instant.now());
+    }
+
+    private Instant resolveCheckoutExpiration() {
+        Duration ttl = paymentProperties.getCheckoutTtl();
+        if (ttl == null || ttl.isZero() || ttl.isNegative()) {
+            return null;
+        }
+        return Instant.now().plus(ttl);
+    }
+
+    private CreateCheckoutResponse toResponse(LeadPortalPurchase purchase) {
+        return new CreateCheckoutResponse(
+                purchase.getId(),
+                purchase.getPackageId(),
+                purchase.getMercadoPagoPreferenceId(),
+                purchase.getCheckoutUrl(),
+                purchase.getStatus() != null ? purchase.getStatus().name() : PurchaseStatus.PREFERENCE_CREATED.name(),
+                purchase.getAmount(),
+                purchase.getCurrency(),
+                purchase.getCheckoutExpiresAt(),
+                mercadoPagoProperties.getStatementDescriptor()
+        );
     }
 
     private Long extractPackageId(Map<String, Object> metadata) {

@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS lead_portal_purchase (
     mp_payment_id VARCHAR(150),
     mp_status VARCHAR(80),
     checkout_url VARCHAR(1200),
+    checkout_expires_at TIMESTAMP NULL,
     amount DECIMAL(12,2),
     currency VARCHAR(8),
     notification_payload LONGTEXT,

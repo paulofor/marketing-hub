@@ -16,6 +16,7 @@ import com.marketinghub.payments.repository.LeadPortalPurchaseRepository;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -45,7 +46,7 @@ public class CheckoutService {
         this.paymentProperties = paymentProperties;
     }
 
-    public MercadoPagoPaymentDetails fetchPayment(String paymentId) {
+    public Optional<MercadoPagoPaymentDetails> fetchPayment(String paymentId) {
         return mercadoPagoClient.fetchPayment(paymentId);
     }
 

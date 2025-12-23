@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.payments.dto.MercadoPagoWebhookPayload;
 import com.marketinghub.payments.integration.mercadopago.MercadoPagoPaymentDetails;
 import com.marketinghub.payments.service.CheckoutService;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -43,9 +44,13 @@ public class MercadoPagoWebhookController {
             return ResponseEntity.badRequest().build();
         }
         try {
-            MercadoPagoPaymentDetails paymentDetails = checkoutService.fetchPayment(resourceId);
+            Optional<MercadoPagoPaymentDetails> paymentDetails = checkoutService.fetchPayment(resourceId);
+            if (paymentDetails.isEmpty()) {
+                log.warn("Pagamento {} não encontrado no Mercado Pago. Webhook ACK sem alterações.", resourceId);
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+            }
             String rawPayload = payload != null ? serialize(payload) : null;
-            checkoutService.updateFromPayment(paymentDetails, rawPayload);
+            checkoutService.updateFromPayment(paymentDetails.get(), rawPayload);
             return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
         } catch (Exception ex) {
             log.error("Erro ao processar webhook do Mercado Pago (id={})", resourceId, ex);

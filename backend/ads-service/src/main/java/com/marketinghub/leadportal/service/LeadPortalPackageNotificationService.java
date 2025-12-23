@@ -1,6 +1,7 @@
 package com.marketinghub.leadportal.service;
 
 import com.marketinghub.leadportal.FlowSubmissionImagePackageStatus;
+import com.marketinghub.leadportal.payments.LeadPortalPaymentLinkService;
 import com.marketinghub.storage.FileStorageService;
 import com.marketinghub.storage.StorageException;
 import jakarta.annotation.PostConstruct;
@@ -44,6 +45,7 @@ public class LeadPortalPackageNotificationService {
     private final FileStorageService fileStorageService;
     private final LeadPortalEmailSender emailSender;
     private final LeadPortalImagePackageStatusHistoryService statusHistoryService;
+    private final LeadPortalPaymentLinkService paymentLinkService;
 
     @Value("${lead-portal.notifications.enabled:false}")
     private boolean notificationsEnabled;
@@ -64,11 +66,13 @@ public class LeadPortalPackageNotificationService {
             JdbcTemplate jdbcTemplate,
             FileStorageService fileStorageService,
             LeadPortalEmailSender emailSender,
-            LeadPortalImagePackageStatusHistoryService statusHistoryService) {
+            LeadPortalImagePackageStatusHistoryService statusHistoryService,
+            LeadPortalPaymentLinkService paymentLinkService) {
         this.jdbcTemplate = jdbcTemplate;
         this.fileStorageService = fileStorageService;
         this.emailSender = emailSender;
         this.statusHistoryService = statusHistoryService;
+        this.paymentLinkService = paymentLinkService;
     }
 
     @PostConstruct
@@ -293,6 +297,11 @@ public class LeadPortalPackageNotificationService {
 
     private EmailContent buildEmailContent(PendingPackage pending, int imageCount) {
         String subject = pending.sampleSubject();
+        String paymentLink = paymentLinkService.resolveCheckoutLink(
+                pending.packageId(),
+                pending.submissionEmail(),
+                pending.submissionName())
+                .orElse(null);
         String normalizedTrackingBase = normalizeTrackingBaseUrl(trackingBaseUrl);
         String trackingViewUrl = null;
         String trackingPixelUrl = null;
@@ -308,6 +317,11 @@ public class LeadPortalPackageNotificationService {
             plain.append(pending.sampleBody().trim()).append("\n\n");
         }
         plain.append("Anexamos ").append(imageCount).append(" imagem(ns) com marca d'água geradas para este lead.\n");
+        if (StringUtils.hasText(paymentLink)) {
+            plain.append("Para receber as imagens originais sem marca d'água, finalize o pagamento com segurança no Mercado Pago: ")
+                    .append(paymentLink)
+                    .append("\n\n");
+        }
         if (StringUtils.hasText(pending.sampleCallToAction())) {
             plain.append("CTA sugerido: ").append(pending.sampleCallToAction().trim()).append("\n");
         }
@@ -332,6 +346,11 @@ public class LeadPortalPackageNotificationService {
         }
         html.append("<p><strong>").append(imageCount)
                 .append(" imagem(ns) com marca d'água estão anexadas a este e-mail.</strong></p>");
+        if (StringUtils.hasText(paymentLink)) {
+            html.append("<p><strong>Receber imagens originais:</strong> <a href=\"")
+                    .append(HtmlUtils.htmlEscape(paymentLink))
+                    .append("\" target=\"_blank\" rel=\"noopener\">Pagar com Mercado Pago</a></p>");
+        }
         if (StringUtils.hasText(pending.sampleCallToAction())) {
             html.append("<p><strong>CTA sugerido:</strong> ")
                     .append(HtmlUtils.htmlEscape(pending.sampleCallToAction().trim()))

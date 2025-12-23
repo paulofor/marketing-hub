@@ -14,6 +14,7 @@ import com.marketinghub.FixtureUtils;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.journey.repository.JourneyTemplateRepository;
 import com.marketinghub.ads.InstagramAccountRepository;
+import com.marketinghub.ads.CampaignRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,6 +73,8 @@ class ExperimentControllerTest {
     @Autowired
     private InstagramAccountRepository instagramAccountRepository;
     @Autowired
+    private CampaignRepository campaignRepository;
+    @Autowired
     private com.marketinghub.leadportal.repository.LeadPortalFlowRepository leadPortalFlowRepository;
 
     Long nicheId;
@@ -91,6 +94,7 @@ class ExperimentControllerTest {
         repository.deleteAll();
         journeyTemplateRepository.deleteAll();
         audienceRepository.deleteAll();
+        campaignRepository.deleteAll();
         instagramAccountRepository.deleteAll();
         hypothesisRepository.deleteAll();
         angleRepository.deleteAll();

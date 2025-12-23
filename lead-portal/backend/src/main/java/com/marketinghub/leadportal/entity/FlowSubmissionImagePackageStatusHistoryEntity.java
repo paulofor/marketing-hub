@@ -6,8 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.time.Instant;
-import org.hibernate.annotations.CreationTimestamp;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "flow_submission_image_package_status_history")
@@ -26,9 +25,8 @@ public class FlowSubmissionImagePackageStatusHistoryEntity {
     @Column(name = "failure_reason", columnDefinition = "TEXT")
     private String failureReason;
 
-    @CreationTimestamp
     @Column(name = "created_at", updatable = false)
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
     public Long getId() {
         return id;
@@ -58,7 +56,11 @@ public class FlowSubmissionImagePackageStatusHistoryEntity {
         this.failureReason = failureReason;
     }
 
-    public Instant getCreatedAt() {
+    public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }

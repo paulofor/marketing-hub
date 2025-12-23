@@ -10,14 +10,15 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.HttpStatusCodeException;
 
 @Component
 public class MercadoPagoClient {
@@ -46,19 +47,21 @@ public class MercadoPagoClient {
         }
     }
 
-    public MercadoPagoPaymentDetails fetchPayment(String paymentId) {
+    public Optional<MercadoPagoPaymentDetails> fetchPayment(String paymentId) {
         try {
             ResponseEntity<JsonNode> response = restClient.get()
                     .uri("/v1/payments/{id}", paymentId)
                     .retrieve()
                     .toEntity(JsonNode.class);
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                return parsePayment(response.getBody());
+                return Optional.of(parsePayment(response.getBody()));
             }
-            throw new IllegalStateException("Pagamento não encontrado no Mercado Pago");
+            log.warn("Pagamento {} não retornou corpo válido no Mercado Pago", paymentId);
+            return Optional.empty();
         } catch (HttpStatusCodeException ex) {
             if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
-                throw new IllegalStateException("Pagamento não encontrado no Mercado Pago");
+                log.warn("Pagamento {} não encontrado no Mercado Pago", paymentId);
+                return Optional.empty();
             }
             throw new IllegalStateException("Erro ao consultar pagamento no Mercado Pago", ex);
         } catch (RestClientException ex) {

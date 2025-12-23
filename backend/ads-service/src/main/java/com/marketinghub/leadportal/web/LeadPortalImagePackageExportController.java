@@ -81,6 +81,17 @@ public class LeadPortalImagePackageExportController {
                 downloadUrl
         );
 
+        LeadPortalImagePackageExportDto.PaymentInfo paymentInfo = null;
+        if (item.paymentInfo() != null) {
+            paymentInfo = new LeadPortalImagePackageExportDto.PaymentInfo(
+                    item.paymentInfo().purchaseId(),
+                    item.paymentInfo().checkoutUrl(),
+                    item.paymentInfo().amount(),
+                    item.paymentInfo().currency(),
+                    item.paymentInfo().expiresAt(),
+                    item.paymentInfo().statementDescriptor());
+        }
+
         return new LeadPortalImagePackageExportDto(
                 item.packageId(),
                 parseUuid(item.submissionId()),
@@ -92,6 +103,7 @@ public class LeadPortalImagePackageExportController {
                 sampleEmail,
                 emailContent,
                 attachment,
+                paymentInfo,
                 item.notificationAttempts(),
                 item.notificationLastAttempt()
         );

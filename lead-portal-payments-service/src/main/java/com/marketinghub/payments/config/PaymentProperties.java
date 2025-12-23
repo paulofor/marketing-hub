@@ -1,6 +1,7 @@
 package com.marketinghub.payments.config;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -10,6 +11,7 @@ public class PaymentProperties {
 
     private BigDecimal defaultAmount = new BigDecimal("49.90");
     private String defaultCurrency = "BRL";
+    private Duration checkoutTtl = Duration.ofHours(72);
 
     public BigDecimal getDefaultAmount() {
         return defaultAmount;
@@ -25,5 +27,13 @@ public class PaymentProperties {
 
     public void setDefaultCurrency(String defaultCurrency) {
         this.defaultCurrency = defaultCurrency;
+    }
+
+    public Duration getCheckoutTtl() {
+        return checkoutTtl;
+    }
+
+    public void setCheckoutTtl(Duration checkoutTtl) {
+        this.checkoutTtl = checkoutTtl;
     }
 }

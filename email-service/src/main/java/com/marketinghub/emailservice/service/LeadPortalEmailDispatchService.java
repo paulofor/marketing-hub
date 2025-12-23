@@ -2,18 +2,25 @@ package com.marketinghub.emailservice.service;
 
 import com.marketinghub.emailservice.config.EmailServiceProperties;
 import com.marketinghub.emailservice.config.LeadPortalDispatchProperties;
+import com.marketinghub.emailservice.config.LeadPortalPaymentLinkProperties;
 import com.marketinghub.emailservice.model.EmailLog;
 import com.marketinghub.emailservice.service.client.LeadPortalImagePackageClient;
 import com.marketinghub.emailservice.service.client.LeadPortalImagePackageExportResponse;
 import com.marketinghub.emailservice.service.client.RemoteAsset;
+import java.math.BigDecimal;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.text.NumberFormat;
 import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.util.HtmlUtils;
 
 @Service
 public class LeadPortalEmailDispatchService {
@@ -27,19 +34,22 @@ public class LeadPortalEmailDispatchService {
     private final LeadPortalDispatchProperties dispatchProperties;
     private final EmailLogService emailLogService;
     private final TrackingPixelService trackingPixelService;
+    private final LeadPortalPaymentLinkProperties paymentLinkProperties;
 
     public LeadPortalEmailDispatchService(LeadPortalImagePackageClient leadPortalImagePackageClient,
                                           EmailSenderService emailSenderService,
                                           EmailServiceProperties emailServiceProperties,
                                           LeadPortalDispatchProperties dispatchProperties,
                                           EmailLogService emailLogService,
-                                          TrackingPixelService trackingPixelService) {
+                                          TrackingPixelService trackingPixelService,
+                                          LeadPortalPaymentLinkProperties paymentLinkProperties) {
         this.leadPortalImagePackageClient = leadPortalImagePackageClient;
         this.emailSenderService = emailSenderService;
         this.emailServiceProperties = emailServiceProperties;
         this.dispatchProperties = dispatchProperties;
         this.emailLogService = emailLogService;
         this.trackingPixelService = trackingPixelService;
+        this.paymentLinkProperties = paymentLinkProperties;
     }
 
     @Scheduled(initialDelayString = "${lead-portal.dispatch.initial-delay:20000}",
@@ -89,8 +99,9 @@ public class LeadPortalEmailDispatchService {
                 emailContent.subject(),
                 "lead-portal-package-" + item.packageId());
 
+        PaymentBodies paymentBodies = enrichWithPaymentLink(emailContent, item.paymentInfo());
         String trackingPixelUrl = trackingPixelService.buildTrackingPixelUrl(emailLog.getRequestId());
-        String htmlBody = trackingPixelService.appendTrackingPixel(emailContent.htmlBody(), trackingPixelUrl);
+        String htmlBody = trackingPixelService.appendTrackingPixel(paymentBodies.htmlBody(), trackingPixelUrl);
 
         RemoteAsset asset = new RemoteAsset(attachmentName, ZIP_MEDIA_TYPE, attachmentBytes);
         EmailAttachmentResource attachment = new EmailAttachmentResource(asset, false, null);
@@ -102,16 +113,18 @@ public class LeadPortalEmailDispatchService {
                 List.of(),
                 emailContent.subject(),
                 htmlBody,
-                emailContent.plainBody(),
+                paymentBodies.plainBody(),
                 List.of(attachment)
         );
 
-        log.info("Enviando pacote {} para {} com assunto '{}' (arquivo='{}', tamanho={} bytes)",
+        Long purchaseId = item.paymentInfo() != null ? item.paymentInfo().purchaseId() : null;
+        log.info("Enviando pacote {} para {} com assunto '{}' (arquivo='{}', tamanho={} bytes, purchaseId={})",
                 item.packageId(),
                 item.submissionEmail(),
                 emailContent.subject(),
                 attachmentName,
-                attachmentBytes.length);
+                attachmentBytes.length,
+                purchaseId);
 
         try {
             emailSenderService.send(message);
@@ -121,6 +134,101 @@ public class LeadPortalEmailDispatchService {
             throw ex;
         }
     }
+
+    private PaymentBodies enrichWithPaymentLink(LeadPortalImagePackageExportResponse.EmailContent emailContent,
+                                                LeadPortalImagePackageExportResponse.PaymentInfo paymentInfo) {
+        String html = emailContent.htmlBody() != null ? emailContent.htmlBody() : "";
+        String plain = emailContent.plainBody() != null ? emailContent.plainBody() : "";
+        if (paymentInfo == null || !StringUtils.hasText(paymentInfo.checkoutUrl())) {
+            return new PaymentBodies(html, plain);
+        }
+        validatePaymentUrl(paymentInfo.checkoutUrl());
+        String normalizedHtml = html.contains(paymentInfo.checkoutUrl()) ? html : html + buildHtmlPaymentBlock(paymentInfo);
+        String normalizedPlain = plain.contains(paymentInfo.checkoutUrl()) ? plain : buildPlainPaymentBlock(plain, paymentInfo);
+        return new PaymentBodies(normalizedHtml, normalizedPlain);
+    }
+
+    private void validatePaymentUrl(String checkoutUrl) {
+        if (!paymentLinkProperties.isValidateHost()) {
+            return;
+        }
+        try {
+            URI uri = new URI(checkoutUrl.trim());
+            String host = uri.getHost();
+            if (!StringUtils.hasText(host)) {
+                throw new IllegalArgumentException("Link de pagamento sem host definido");
+            }
+            boolean allowed = paymentLinkProperties.getAllowedHosts().stream()
+                    .anyMatch(allowedHost -> host.equalsIgnoreCase(allowedHost));
+            if (!allowed) {
+                throw new IllegalArgumentException("Host do link de pagamento não autorizado: " + host);
+            }
+        } catch (URISyntaxException ex) {
+            throw new IllegalArgumentException("URL de pagamento inválida", ex);
+        }
+    }
+
+    private String buildHtmlPaymentBlock(LeadPortalImagePackageExportResponse.PaymentInfo paymentInfo) {
+        String descriptor = StringUtils.hasText(paymentInfo.statementDescriptor())
+                ? paymentInfo.statementDescriptor()
+                : "Mercado Pago";
+        String amount = formatAmount(paymentInfo.amount(), paymentInfo.currency());
+        String label = paymentLinkProperties.getButtonText();
+        if (StringUtils.hasText(amount)) {
+            label = label + " — " + amount;
+        }
+        String buttonColor = StringUtils.hasText(paymentLinkProperties.getButtonColor())
+                ? paymentLinkProperties.getButtonColor()
+                : "#00a650";
+        return new StringBuilder()
+                .append("<div style=\"margin:24px 0;padding:16px 20px;border:1px solid #e3e3e3;border-radius:8px;background:#f8f8f8;\">")
+                .append("<p><strong>Faça o pagamento e libere as imagens originais.</strong></p>")
+                .append("<p>Processado por ")
+                .append(HtmlUtils.htmlEscape(descriptor))
+                .append("</p>")
+                .append("<p style=\"text-align:center;\"><a href=\"")
+                .append(HtmlUtils.htmlEscape(paymentInfo.checkoutUrl().trim()))
+                .append("\" target=\"_blank\" rel=\"noopener\" style=\"display:inline-block;padding:14px 28px;font-weight:600;border-radius:6px;text-decoration:none;color:#fff;background:")
+                .append(HtmlUtils.htmlEscape(buttonColor))
+                .append(";\">")
+                .append(HtmlUtils.htmlEscape(label))
+                .append("</a></p>")
+                .append("</div>")
+                .toString();
+    }
+    private String buildPlainPaymentBlock(String plainBody, LeadPortalImagePackageExportResponse.PaymentInfo paymentInfo) {
+        StringBuilder builder = new StringBuilder();
+        if (StringUtils.hasText(plainBody)) {
+            builder.append(plainBody.trim()).append("\n\n");
+        }
+        builder.append(paymentLinkProperties.getPlainTextIntro()).append("\n")
+                .append(paymentInfo.checkoutUrl());
+        String amount = formatAmount(paymentInfo.amount(), paymentInfo.currency());
+        if (StringUtils.hasText(amount)) {
+            builder.append("\nValor: ").append(amount);
+        }
+        String descriptor = StringUtils.hasText(paymentInfo.statementDescriptor())
+                ? paymentInfo.statementDescriptor()
+                : "Mercado Pago";
+        builder.append("\nPagamento processado por ").append(descriptor).append("\n");
+        return builder.toString();
+    }
+    private String formatAmount(BigDecimal amount, String currency) {
+        if (amount == null) {
+            return null;
+        }
+        Locale locale = "BRL".equalsIgnoreCase(currency) ? new Locale("pt", "BR") : Locale.US;
+        NumberFormat formatter = NumberFormat.getCurrencyInstance(locale);
+        try {
+            return formatter.format(amount);
+        } catch (IllegalArgumentException ignored) {
+            return amount.toPlainString();
+        }
+    }
+
+    private record PaymentBodies(String htmlBody, String plainBody) {
+    }
+
 
     private byte[] decodeAttachment(LeadPortalImagePackageExportResponse.Attachment attachment) {
         if (attachment == null || !StringUtils.hasText(attachment.base64Content())) {

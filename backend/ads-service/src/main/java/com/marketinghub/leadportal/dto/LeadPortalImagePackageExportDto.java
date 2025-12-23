@@ -1,6 +1,7 @@
 package com.marketinghub.leadportal.dto;
 
 import com.marketinghub.leadportal.FlowSubmissionImagePackageStatus;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -18,6 +19,7 @@ public record LeadPortalImagePackageExportDto(
         SampleEmail sampleEmail,
         EmailContent emailContent,
         Attachment attachment,
+        PaymentInfo paymentInfo,
         int notificationAttempts,
         Instant notificationLastAttempt
 ) {
@@ -46,6 +48,16 @@ public record LeadPortalImagePackageExportDto(
             long sizeBytes,
             String storedFileName,
             String downloadUrl
+    ) {
+    }
+
+    public record PaymentInfo(
+            Long purchaseId,
+            String checkoutUrl,
+            BigDecimal amount,
+            String currency,
+            Instant expiresAt,
+            String statementDescriptor
     ) {
     }
 }

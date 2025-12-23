@@ -317,3 +317,7 @@ databaseChangeLog:
   - include:
       file: V2030_06_10__experiment_open_compressed_images.sql
       relativeToChangelogFile: true
+
+  - include:
+      file: V2030_08_20__lead_portal_payment_checkout.sql
+      relativeToChangelogFile: true

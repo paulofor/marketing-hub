@@ -49,6 +49,9 @@ public class LeadPortalPurchase {
     @Column(name = "checkout_url", length = 1200)
     private String checkoutUrl;
 
+    @Column(name = "checkout_expires_at")
+    private Instant checkoutExpiresAt;
+
     @Column(name = "amount")
     private BigDecimal amount;
 
@@ -175,6 +178,14 @@ public class LeadPortalPurchase {
 
     public void setCheckoutUrl(String checkoutUrl) {
         this.checkoutUrl = checkoutUrl;
+    }
+
+    public Instant getCheckoutExpiresAt() {
+        return checkoutExpiresAt;
+    }
+
+    public void setCheckoutExpiresAt(Instant checkoutExpiresAt) {
+        this.checkoutExpiresAt = checkoutExpiresAt;
     }
 
     public BigDecimal getAmount() {

@@ -1,6 +1,7 @@
 package com.marketinghub.leadportal.service;
 
 import com.marketinghub.leadportal.FlowSubmissionImagePackageStatus;
+import java.math.BigDecimal;
 import java.time.Instant;
 
 /**
@@ -29,6 +30,17 @@ public record LeadPortalImagePackageExportItem(
         int imageCount,
         String emailSubject,
         String emailPlainBody,
-        String emailHtmlBody
+        String emailHtmlBody,
+        PaymentInfo paymentInfo
 ) {
+
+    public record PaymentInfo(
+            Long purchaseId,
+            String checkoutUrl,
+            BigDecimal amount,
+            String currency,
+            Instant expiresAt,
+            String statementDescriptor
+    ) {
+    }
 }

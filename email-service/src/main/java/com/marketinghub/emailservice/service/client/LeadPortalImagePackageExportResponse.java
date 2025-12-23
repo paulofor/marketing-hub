@@ -1,5 +1,6 @@
 package com.marketinghub.emailservice.service.client;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -17,6 +18,7 @@ public record LeadPortalImagePackageExportResponse(
         SampleEmail sampleEmail,
         EmailContent emailContent,
         Attachment attachment,
+        PaymentInfo paymentInfo,
         int notificationAttempts,
         Instant notificationLastAttempt
 ) {
@@ -46,6 +48,16 @@ public record LeadPortalImagePackageExportResponse(
             long sizeBytes,
             String storedFileName,
             String downloadUrl
+    ) {
+    }
+
+    public record PaymentInfo(
+            Long purchaseId,
+            String checkoutUrl,
+            BigDecimal amount,
+            String currency,
+            Instant expiresAt,
+            String statementDescriptor
     ) {
     }
 }

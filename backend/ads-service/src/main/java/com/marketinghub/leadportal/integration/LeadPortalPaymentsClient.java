@@ -51,7 +51,7 @@ public class LeadPortalPaymentsClient {
         log.info("Solicitando checkout para o pacote {} no lead-portal-payments (destino: {}, autenticação: {} token)",
                 packageId,
                 uri,
-                headers.getAuthorization() != null ? "com" : "sem");
+                headers.getFirst(HttpHeaders.AUTHORIZATION) != null ? "com" : "sem");
         try {
             ResponseEntity<PaymentCheckoutResponse> response = restTemplate.exchange(
                     uri,

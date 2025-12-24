@@ -195,9 +195,12 @@ export default function LeadPortalImagesPage() {
     });
   }, [submissions]);
 
+  const aggregatedCurrency =
+    submissions.find((submission) => submission.imageCurrency && submission.imageCurrency.trim().length > 0)?.imageCurrency?.toUpperCase() ?? "USD";
+
   const formattedTotalCost =
     totalCostSnapshot.count > 0
-      ? formatUsd(totalCostSnapshot.total, "USD", {
+      ? formatUsd(totalCostSnapshot.total, aggregatedCurrency, {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
         }) ?? "--"

@@ -29,6 +29,7 @@ export default function NewExperimentPage() {
     sampleSize: "",
     mde: "",
     dailyBudget: "",
+    unitPrice: "",
     startDate: "",
     endDate: "",
     journeyTemplateId: "",
@@ -178,6 +179,11 @@ export default function NewExperimentPage() {
         alert("Informe um orçamento diário válido");
         return;
       }
+      const parsedUnitPrice = Number(form.unitPrice);
+      if (!form.unitPrice || Number.isNaN(parsedUnitPrice) || parsedUnitPrice <= 0) {
+        alert("Informe um preço unitário válido");
+        return;
+      }
       const parsedImagesPerPackage = Number(form.imagesPerPackage);
       if (!form.imagesPerPackage || Number.isNaN(parsedImagesPerPackage) || parsedImagesPerPackage <= 0) {
         alert("Informe uma quantidade válida de imagens por pacote");
@@ -212,6 +218,7 @@ export default function NewExperimentPage() {
         sampleSize: form.sampleSize ? Number(form.sampleSize) : undefined,
         mde: form.mde ? Number(form.mde) : undefined,
         dailyBudget: parsedDailyBudget,
+        unitPrice: parsedUnitPrice,
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
         instantFormsToGenerate:
@@ -245,6 +252,7 @@ export default function NewExperimentPage() {
         sampleSize: "",
         mde: "",
         dailyBudget: "",
+        unitPrice: "",
         startDate: "",
         endDate: "",
         journeyTemplateId: "",
@@ -370,6 +378,24 @@ export default function NewExperimentPage() {
           });
         }}
       />
+      <label className="form-label" htmlFor="unitPrice">
+        Preço unitário (R$) <span className="text-danger">*</span>
+      </label>
+      <input
+        id="unitPrice"
+        className="form-control mb-2"
+        placeholder="Valor por imagem em reais"
+        type="number"
+        min="0"
+        step="0.01"
+        value={form.unitPrice}
+        onChange={(e) =>
+          setForm((prev) => ({ ...prev, unitPrice: e.target.value }))
+        }
+      />
+      <div className="form-text mb-2">
+        Usado para gerar o link de pagamento no Mercado Pago.
+      </div>
       <select
         className="form-select mb-2"
         value={form.metricPresetId}

@@ -18,6 +18,7 @@ interface FormData {
   name: string;
   kpiTarget: string;
   dailyBudget: string;
+  unitPrice: string;
   metricPresetId: string;
   journeyTemplateId: string;
   facebookPageId: string;
@@ -50,6 +51,7 @@ export default function EditExperimentPage() {
       name: "",
       kpiTarget: "",
       dailyBudget: "",
+      unitPrice: "",
       metricPresetId: "",
       journeyTemplateId: "",
       facebookPageId: "",
@@ -77,6 +79,7 @@ export default function EditExperimentPage() {
         name: data.name || "",
         kpiTarget: currentKpi != null ? String(currentKpi) : "",
         dailyBudget: data.dailyBudget != null ? String(data.dailyBudget) : "",
+        unitPrice: data.unitPrice != null ? String(data.unitPrice) : "",
         metricPresetId: data.metricPresetId || "",
         journeyTemplateId: data.journeyTemplateId
           ? String(data.journeyTemplateId)
@@ -253,6 +256,11 @@ export default function EditExperimentPage() {
         alert("Informe um orçamento diário válido");
         return;
       }
+      const parsedUnitPrice = Number(values.unitPrice);
+      if (!values.unitPrice || Number.isNaN(parsedUnitPrice) || parsedUnitPrice <= 0) {
+        alert("Informe um preço unitário válido");
+        return;
+      }
       const parsedImagesPerPackage = Number(values.imagesPerPackage);
       if (!values.imagesPerPackage || Number.isNaN(parsedImagesPerPackage) || parsedImagesPerPackage <= 0) {
         alert("Informe uma quantidade válida de imagens por pacote");
@@ -282,6 +290,7 @@ export default function EditExperimentPage() {
         hypothesis: data.hypothesis,
         kpiTarget: Number(values.kpiTarget),
         dailyBudget: parsedDailyBudget,
+        unitPrice: parsedUnitPrice,
         metricPresetId: values.metricPresetId || undefined,
         sampleSize: data.sampleSize ?? undefined,
         mde: data.mdePercent ?? undefined,
@@ -359,6 +368,18 @@ export default function EditExperimentPage() {
           step="0.01"
           {...register("dailyBudget")}
         />
+        <label className="form-label" htmlFor="unitPrice">
+          Preço unitário (R$) <span className="text-danger">*</span>
+        </label>
+        <input
+          id="unitPrice"
+          className="form-control mb-2"
+          type="number"
+          min="0"
+          step="0.01"
+          {...register("unitPrice")}
+        />
+        <div className="form-text mb-2">Usado no link do Mercado Pago.</div>
         <label className="form-label" htmlFor="preset">
           Preset de Métricas
         </label>

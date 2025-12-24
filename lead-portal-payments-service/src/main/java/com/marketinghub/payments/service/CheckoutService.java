@@ -14,10 +14,12 @@ import com.marketinghub.payments.model.LeadPortalPurchase;
 import com.marketinghub.payments.model.PurchaseStatus;
 import com.marketinghub.payments.repository.LeadPortalPurchaseRepository;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -155,13 +157,19 @@ public class CheckoutService {
     }
 
     private BigDecimal resolveAmount(LeadPortalPackageSummary imagePackage) {
-        return imagePackage.totalPrice() != null ? imagePackage.totalPrice() : paymentProperties.getDefaultAmount();
+        BigDecimal amount = imagePackage.totalPrice();
+        if (amount == null) {
+            BigDecimal defaultAmount = paymentProperties.getDefaultAmount();
+            return defaultAmount != null ? defaultAmount.setScale(2, RoundingMode.HALF_UP) : null;
+        }
+        return amount.setScale(2, RoundingMode.HALF_UP);
     }
 
     private String resolveCurrency(LeadPortalPackageSummary imagePackage) {
-        return StringUtils.hasText(imagePackage.currency())
+        String currency = StringUtils.hasText(imagePackage.currency())
                 ? imagePackage.currency()
                 : paymentProperties.getDefaultCurrency();
+        return StringUtils.hasText(currency) ? currency.trim().toUpperCase(Locale.ROOT) : null;
     }
 
     private MercadoPagoPreferenceRequest buildPreferenceRequest(LeadPortalPackageSummary imagePackage,

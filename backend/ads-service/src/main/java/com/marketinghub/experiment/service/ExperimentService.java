@@ -239,6 +239,7 @@ public class ExperimentService {
         String followUpActionUrl = normalizeFollowUpActionUrl(request.getFollowUpActionUrl());
         ImageGenerationSelection imageSelection =
                 resolveImageGenerationSelection(request.getImageModelId(), request.getImageModelQualityId());
+        java.math.BigDecimal unitPrice = normalizeUnitPrice(request.getUnitPrice());
         int imagesPerPackage = normalizeImagesPerPackage(request.getImagesPerPackage());
         Integer openImagesPerPackage =
                 normalizeOptionalImagesPerPackage(request.getOpenImagesPerPackage(), "openImagesPerPackage");
@@ -257,6 +258,7 @@ public class ExperimentService {
                 .targetCvr(request.getTargetCvr())
                 .mdePercent(request.getMdePercent())
                 .dailyBudget(request.getDailyBudget())
+                .unitPrice(unitPrice)
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
                 .status(ExperimentStatus.PLANNED)
@@ -327,6 +329,7 @@ public class ExperimentService {
                 .targetCvr(original.getTargetCvr())
                 .mdePercent(original.getMdePercent())
                 .dailyBudget(original.getDailyBudget())
+                .unitPrice(original.getUnitPrice())
                 .startDate(original.getStartDate())
                 .endDate(original.getEndDate())
                 .status(ExperimentStatus.PLANNED)
@@ -407,6 +410,9 @@ public class ExperimentService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "dailyBudget must be greater than zero");
             }
             exp.setDailyBudget(request.getDailyBudget());
+        }
+        if (request.isUnitPricePresent()) {
+            exp.setUnitPrice(normalizeUnitPrice(request.getUnitPrice()));
         }
         if (request.getSampleSize() != null) {
             exp.setSampleSize(request.getSampleSize());
@@ -577,6 +583,16 @@ public class ExperimentService {
         Experiment exp = repository.findById(id).orElseThrow();
         exp.setLeadPortalFlowsToGenerate(quantity);
         return exp;
+    }
+
+    private java.math.BigDecimal normalizeUnitPrice(java.math.BigDecimal unitPrice) {
+        if (unitPrice == null) {
+            return null;
+        }
+        if (unitPrice.compareTo(java.math.BigDecimal.ZERO) <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "unitPrice must be greater than zero");
+        }
+        return unitPrice.setScale(2, java.math.RoundingMode.HALF_UP);
     }
 
     private int normalizeImagesPerPackage(Integer imagesPerPackage) {

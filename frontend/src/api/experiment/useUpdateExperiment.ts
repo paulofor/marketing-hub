@@ -10,6 +10,7 @@ export interface UpdateExperiment {
   sampleSize?: number;
   mde?: number;
   dailyBudget?: number | null;
+  unitPrice?: number | null;
   startDate?: string;
   endDate?: string;
   creativesToGenerate?: number;

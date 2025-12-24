@@ -22,6 +22,9 @@ public class UpdateExperimentRequest {
     @JsonProperty("mde")
     private BigDecimal mdePercent;
     private BigDecimal dailyBudget;
+    private BigDecimal unitPrice;
+    @JsonIgnore
+    private boolean unitPricePresent;
     private LocalDate startDate;
     private LocalDate endDate;
     private Integer creativesToGenerate;
@@ -117,6 +120,12 @@ public class UpdateExperimentRequest {
     public void setDailyBudget(BigDecimal dailyBudget) {
         this.dailyBudget = dailyBudget;
         this.dailyBudgetPresent = true;
+    }
+
+    @JsonSetter(value = "unitPrice", nulls = Nulls.SET)
+    public void setUnitPrice(BigDecimal unitPrice) {
+        this.unitPrice = unitPrice;
+        this.unitPricePresent = true;
     }
     @JsonSetter(value = "imageModelId", nulls = Nulls.SET)
     public void setImageModelId(Long imageModelId) {

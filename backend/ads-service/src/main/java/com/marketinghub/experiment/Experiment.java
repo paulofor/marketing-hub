@@ -102,6 +102,9 @@ public class Experiment {
     @Column(name = "daily_budget", precision = 10, scale = 2)
     private java.math.BigDecimal dailyBudget;
 
+    @Column(name = "unit_price_brl", precision = 10, scale = 2)
+    private java.math.BigDecimal unitPrice;
+
     /** MDE (Minimum Detectable Effect) percentual. */
     @Column(precision = 5, scale = 2)
     private java.math.BigDecimal mdePercent;

@@ -32,6 +32,7 @@ public class ExperimentDto {
     @JsonProperty("mde")
     private BigDecimal mdePercent;
     private BigDecimal dailyBudget;
+    private BigDecimal unitPrice;
     private LocalDate startDate;
     private LocalDate endDate;
     private ExperimentStatus status;

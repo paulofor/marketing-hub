@@ -104,6 +104,7 @@ public class LeadPortalImagePackageWorkerService {
                     pack.image_height,
                     pack.image_unit_price_usd,
                     pack.image_total_price_usd,
+                    exp.unit_price_brl AS experiment_unit_price_brl,
                     pack.image_currency
                 FROM flow_submission_image_package pack
                 LEFT JOIN flow_submissions sub ON sub.id = pack.submission_id
@@ -235,17 +236,31 @@ public class LeadPortalImagePackageWorkerService {
             }
         }
 
-        BigDecimal unitPrice = resolvedPrice != null ? resolvedPrice.getUnitPriceUsd() : snapshot.imageUnitPriceUsd();
-        BigDecimal totalPrice = unitPrice != null
-                ? unitPrice.multiply(BigDecimal.valueOf(request.images().size()))
-                        .setScale(5, RoundingMode.HALF_UP)
+        java.math.BigDecimal unitPrice;
+        if (snapshot.experimentUnitPriceBrl() != null) {
+            unitPrice = snapshot.experimentUnitPriceBrl().setScale(2, java.math.RoundingMode.HALF_UP);
+        } else if (resolvedPrice != null) {
+            unitPrice = resolvedPrice.getUnitPriceUsd();
+        } else {
+            unitPrice = snapshot.imageUnitPriceUsd();
+        }
+        java.math.BigDecimal totalPrice = unitPrice != null
+                ? unitPrice.multiply(java.math.BigDecimal.valueOf(request.images().size()))
+                        .setScale(unitPrice.scale(), java.math.RoundingMode.HALF_UP)
                 : snapshot.imageTotalPriceUsd();
-        String currency = snapshot.imageCurrency() != null ? snapshot.imageCurrency() : "USD";
+        String currency;
+        if (snapshot.experimentUnitPriceBrl() != null) {
+            currency = "BRL";
+        } else if (StringUtils.hasText(snapshot.imageCurrency())) {
+            currency = snapshot.imageCurrency().trim().toUpperCase(java.util.Locale.ROOT);
+        } else {
+            currency = "USD";
+        }
 
         int updated = jdbcTemplate.update(
                 "UPDATE flow_submission_image_package SET status = ?, model = ?, prompt = ?, failure_reason = NULL, "
                         + "image_model_id = ?, image_model_quality_id = ?, image_orientation = ?, image_width = ?, image_height = ?, "
-                        + "image_unit_price_usd = ?, image_total_price_usd = ?, image_currency = COALESCE(image_currency, ?), updated_at = ? "
+                        + "image_unit_price_usd = ?, image_total_price_usd = ?, image_currency = ?, updated_at = ? "
                         + "WHERE id = ? AND status = ?",
                 FlowSubmissionImagePackageStatus.WATERMARK_PENDING.name(),
                 finalModel,
@@ -369,6 +384,7 @@ public class LeadPortalImagePackageWorkerService {
                 getInteger(rs, "image_height"),
                 rs.getBigDecimal("image_unit_price_usd"),
                 rs.getBigDecimal("image_total_price_usd"),
+                rs.getBigDecimal("experiment_unit_price_brl"),
                 rs.getString("image_currency")), packageId);
         return items.stream().findFirst();
     }
@@ -567,5 +583,6 @@ public class LeadPortalImagePackageWorkerService {
             Integer imageHeight,
             BigDecimal imageUnitPriceUsd,
             BigDecimal imageTotalPriceUsd,
+            BigDecimal experimentUnitPriceBrl,
             String imageCurrency) {}
 }

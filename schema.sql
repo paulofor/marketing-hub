@@ -321,6 +321,7 @@ CREATE TABLE experiment (
     baseline_cvr DECIMAL(5,2) DEFAULT 3.00,
     target_cvr DECIMAL(5,2) DEFAULT 5.00,
     mde_percent DECIMAL(5,2) DEFAULT 40.0,
+    unit_price_brl DECIMAL(10,2),
     creatives_to_generate INT,
     instant_forms_to_generate INT,
     emails_to_generate INT,

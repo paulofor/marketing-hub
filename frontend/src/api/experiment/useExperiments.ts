@@ -59,6 +59,7 @@ export interface Experiment {
   targetCvr?: number | null;
   mdePercent?: number | null;
   dailyBudget?: number | null;
+  unitPrice?: number | null;
   startDate: string | null;
   endDate: string | null;
   metricPresetId?: string | null;

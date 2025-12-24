@@ -3,6 +3,27 @@
 Microserviço responsável por orquestrar templates do Marketing Hub, montar mensagens com ativos hospedados no Cloudflare
 Imagedelivery e realizar o envio automático de e-mails transacionais ou de campanhas.
 
+## Fluxo do e-mail de amostras
+
+```mermaid
+flowchart TD
+    LP[Lead Portal<br/>Exportação do pacote] -->|LeadPortalImagePackageExportDto| ES[Email Service]
+    ES --> V[Validação<br/>destinatário + conteúdo + anexo ZIP]
+    V --> M[Montagem do e-mail]
+    M --> CTA[Injeção do link de compra<br/>(PaymentInfo.checkoutUrl)]
+    CTA --> Bodies[Corpos HTML e texto puro<br/>+ pixel de rastreamento]
+    Bodies --> Attach[Anexo ZIP das imagens<br/>(application/zip)]
+    Attach --> Log[Registro em EmailLog]
+    Log --> Send[Envio via EmailSenderService]
+    Send --> Provider[SMTP/ESP]
+    Provider --> Cliente[Cliente final]
+```
+
+- O pacote exportado pelo Lead Portal entrega o destinatário, assunto, corpos HTML/texto ou prompt, CTA configurável e o anexo ZIP das amostras.
+- Caso `PaymentInfo.checkoutUrl` esteja preenchido, o serviço valida a URL e insere o botão/rodapé de compra se ainda não existir no corpo.
+- O pixel de rastreamento é injetado apenas quando `EMAIL_TRACKING_BASE_URL` está configurada.
+- O log do envio (`EmailLog`) é atualizado com sucesso ou falha após a tentativa no provedor SMTP/ESP.
+
 ## Principais funcionalidades
 
 - Consumo de templates HTML hospedados no backend do Marketing Hub;

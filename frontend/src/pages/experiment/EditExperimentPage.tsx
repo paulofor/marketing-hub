@@ -420,6 +420,7 @@ export default function EditExperimentPage() {
           id="imageModelId"
           className="form-select mb-2"
           {...imageModelRegister}
+          value={selectedImageModelId ?? ""}
           onChange={(event) => {
             imageModelRegister.onChange(event);
             setValue("imageModelQualityId", "", { shouldDirty: true });
@@ -439,6 +440,7 @@ export default function EditExperimentPage() {
           id="imageModelQualityId"
           className="form-select mb-2"
           {...imageModelQualityRegister}
+          value={selectedImageQualityId ?? ""}
           disabled={!availableImageQualities.length}
         >
           <option value="">Selecione a qualidade</option>

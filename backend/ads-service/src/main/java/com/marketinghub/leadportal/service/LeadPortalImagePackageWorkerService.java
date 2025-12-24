@@ -364,6 +364,7 @@ public class LeadPortalImagePackageWorkerService {
                     pack.image_height,
                     pack.image_unit_price_usd,
                     pack.image_total_price_usd,
+                    exp.unit_price_brl AS experiment_unit_price_brl,
                     pack.image_currency
                 FROM flow_submission_image_package pack
                 LEFT JOIN flow_submissions sub ON sub.id = pack.submission_id

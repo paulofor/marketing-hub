@@ -43,19 +43,29 @@ public class LeadPortalPaymentsClient {
         }
         HttpHeaders headers = buildHeaders();
         PaymentCheckoutRequest request = new PaymentCheckoutRequest(packageId, buyerEmail, buyerName);
+        var uri = UriComponentsBuilder.fromHttpUrl(properties.getBaseUrl())
+                .path("/api/v1/payments/checkout")
+                .build()
+                .toUri();
+
+        log.info("Solicitando checkout para o pacote {} no lead-portal-payments (destino: {}, autenticação: {} token)",
+                packageId,
+                uri,
+                headers.getAuthorization() != null ? "com" : "sem");
         try {
             ResponseEntity<PaymentCheckoutResponse> response = restTemplate.exchange(
-                    UriComponentsBuilder.fromHttpUrl(properties.getBaseUrl())
-                            .path("/api/v1/payments/checkout")
-                            .build()
-                            .toUri(),
+                    uri,
                     HttpMethod.POST,
                     new HttpEntity<>(request, headers),
                     PaymentCheckoutResponse.class);
             PaymentCheckoutResponse body = response.getBody();
             if (body == null || !StringUtils.hasText(body.checkoutUrl())) {
+                log.error("Resposta inválida ao solicitar checkout para o pacote {}: status={}, body={}",
+                        packageId, response.getStatusCode(), body);
                 throw new IllegalStateException("Serviço de pagamentos retornou payload inválido para o pacote " + packageId);
             }
+            log.info("Checkout criado com sucesso para o pacote {}: purchaseId={}, checkoutUrl={} (status HTTP {})",
+                    packageId, body.purchaseId(), body.checkoutUrl(), response.getStatusCode());
             return body;
         } catch (RestClientResponseException ex) {
             log.error("Falha HTTP ao solicitar checkout para o pacote {}: {}", packageId, ex.getResponseBodyAsString(), ex);

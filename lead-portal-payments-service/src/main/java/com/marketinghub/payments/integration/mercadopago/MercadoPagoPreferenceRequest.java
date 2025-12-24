@@ -1,5 +1,6 @@
 package com.marketinghub.payments.integration.mercadopago;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +14,11 @@ public record MercadoPagoPreferenceRequest(
         String statementDescriptor
 ) {
 
-    public record Item(String title, Integer quantity, BigDecimal unitPrice, String currencyId) {}
+    public record Item(
+            String title,
+            Integer quantity,
+            @JsonProperty("unit_price") BigDecimal unitPrice,
+            @JsonProperty("currency_id") String currencyId) {}
 
     public record Payer(String name, String email) {}
 

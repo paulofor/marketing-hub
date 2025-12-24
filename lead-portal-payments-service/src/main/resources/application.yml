@@ -18,6 +18,7 @@ spring:
   sql:
     init:
       mode: always
+      schema-locations: classpath:schema.sql,classpath:db/changelog/lead-portal-purchase-add-checkout-expires.sql
   mail:
     host: ${SPRING_MAIL_HOST:localhost}
     port: ${SPRING_MAIL_PORT:1025}

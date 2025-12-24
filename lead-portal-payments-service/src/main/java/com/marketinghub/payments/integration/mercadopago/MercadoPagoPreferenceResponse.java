@@ -1,7 +1,9 @@
 package com.marketinghub.payments.integration.mercadopago;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public record MercadoPagoPreferenceResponse(
         String id,
-        String initPoint
+        @JsonProperty("init_point") String initPoint
 ) {
 }

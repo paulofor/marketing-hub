@@ -81,14 +81,18 @@ public class CheckoutService {
                 amount, currency, buyerName, buyerEmail);
         MercadoPagoPreferenceResponse response = mercadoPagoClient.createPreference(preferenceRequest);
 
+        if (response == null || !StringUtils.hasText(response.initPoint())) {
+            throw new IllegalStateException("Mercado Pago não retornou link de checkout");
+        }
+
         LeadPortalPurchase purchase = latestPurchase != null ? latestPurchase : new LeadPortalPurchase();
         purchase.setPackageId(imagePackage.packageId());
         purchase.setSubmissionId(imagePackage.submissionId() != null ? imagePackage.submissionId().toString() : null);
         purchase.setBuyerEmail(buyerEmail);
         purchase.setBuyerName(buyerName);
         purchase.setStatus(PurchaseStatus.PREFERENCE_CREATED);
-        purchase.setMercadoPagoPreferenceId(response != null ? response.id() : null);
-        purchase.setCheckoutUrl(response != null ? response.initPoint() : null);
+        purchase.setMercadoPagoPreferenceId(response.id());
+        purchase.setCheckoutUrl(response.initPoint());
         purchase.setCheckoutExpiresAt(resolveCheckoutExpiration());
         purchase.setAmount(amount);
         purchase.setCurrency(currency);

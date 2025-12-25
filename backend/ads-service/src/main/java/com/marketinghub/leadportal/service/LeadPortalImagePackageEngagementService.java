@@ -53,16 +53,17 @@ public class LeadPortalImagePackageEngagementService {
         if (target.get().emailOpenedAt() != null) {
             return true;
         }
-        Timestamp now = Timestamp.from(Instant.now());
+        Instant now = Instant.now();
+        Timestamp timestamp = Timestamp.from(now);
         int updated = jdbcTemplate.update(
                 "UPDATE flow_submission_image_package SET email_opened_at = COALESCE(email_opened_at, ?), updated_at = ? "
                         + "WHERE id = ? AND email_opened_at IS NULL",
-                now,
-                now,
+                timestamp,
+                timestamp,
                 packageId);
         if (updated > 0) {
             statusHistoryService.recordStatusChange(
-                    packageId, FlowSubmissionImagePackageStatus.SAMPLE_EMAIL_OPENED, null);
+                    packageId, FlowSubmissionImagePackageStatus.SAMPLE_EMAIL_OPENED, null, now);
             log.debug("Marked lead portal package {} as email opened", packageId);
             return true;
         }
@@ -97,23 +98,24 @@ public class LeadPortalImagePackageEngagementService {
             return downloadUrl;
         }
 
-        Timestamp now = Timestamp.from(Instant.now());
+        Instant now = Instant.now();
+        Timestamp timestamp = Timestamp.from(now);
         int updated = jdbcTemplate.update(
                 "UPDATE flow_submission_image_package SET images_viewed_at = COALESCE(images_viewed_at, ?), "
                         + "email_opened_at = COALESCE(email_opened_at, ?), updated_at = ? "
                         + "WHERE id = ? AND (images_viewed_at IS NULL OR email_opened_at IS NULL)",
-                now,
-                now,
-                now,
+                timestamp,
+                timestamp,
+                timestamp,
                 packageId);
         if (updated > 0) {
             if (!emailAlreadyOpened) {
                 statusHistoryService.recordStatusChange(
-                        packageId, FlowSubmissionImagePackageStatus.SAMPLE_EMAIL_OPENED, null);
+                        packageId, FlowSubmissionImagePackageStatus.SAMPLE_EMAIL_OPENED, null, now);
             }
             if (!imagesAlreadyViewed) {
                 statusHistoryService.recordStatusChange(
-                        packageId, FlowSubmissionImagePackageStatus.SAMPLE_IMAGES_VIEWED, null);
+                        packageId, FlowSubmissionImagePackageStatus.SAMPLE_IMAGES_VIEWED, null, now);
             }
         }
         log.debug("Marked lead portal package {} as images viewed", packageId);

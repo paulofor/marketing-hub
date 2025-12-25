@@ -220,10 +220,11 @@ public class LeadPortalImagePackageService {
 
     @Transactional
     public void retry(long packageId) {
+        Instant now = Instant.now();
         int updated = jdbcTemplate.update(
                 "UPDATE flow_submission_image_package SET status = ?, updated_at = ? WHERE id = ? AND status = ?",
                 FlowSubmissionImagePackageStatus.RECEIVED.name(),
-                Timestamp.from(Instant.now()),
+                Timestamp.from(now),
                 packageId,
                 FlowSubmissionImagePackageStatus.FAILED.name());
         if (updated == 0) {
@@ -233,7 +234,8 @@ public class LeadPortalImagePackageService {
                     HttpStatus.CONFLICT,
                     "Pacote %d não pode ser reprocessado a partir do status %s".formatted(packageId, current));
         } else {
-            statusHistoryService.recordStatusChange(packageId, FlowSubmissionImagePackageStatus.RECEIVED, null);
+            statusHistoryService.recordStatusChange(
+                    packageId, FlowSubmissionImagePackageStatus.RECEIVED, null, now);
         }
     }
 

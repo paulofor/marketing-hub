@@ -245,8 +245,7 @@ public class LeadPortalImagePackageWorkerService {
             unitPrice = snapshot.imageUnitPriceUsd();
         }
         java.math.BigDecimal totalPrice = unitPrice != null
-                ? unitPrice.multiply(java.math.BigDecimal.valueOf(request.images().size()))
-                        .setScale(unitPrice.scale(), java.math.RoundingMode.HALF_UP)
+                ? unitPrice.setScale(unitPrice.scale(), java.math.RoundingMode.HALF_UP)
                 : snapshot.imageTotalPriceUsd();
         String currency;
         if (snapshot.experimentUnitPriceBrl() != null) {

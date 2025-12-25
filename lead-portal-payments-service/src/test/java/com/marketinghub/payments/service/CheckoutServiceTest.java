@@ -14,6 +14,7 @@ import com.marketinghub.payments.dto.CreateCheckoutRequest;
 import com.marketinghub.payments.dto.CreateCheckoutResponse;
 import com.marketinghub.payments.dto.LeadPortalPackageSummary;
 import com.marketinghub.payments.integration.mercadopago.MercadoPagoClient;
+import com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceDetails;
 import com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceResponse;
 import com.marketinghub.payments.model.FlowSubmissionImagePackageStatus;
 import com.marketinghub.payments.model.LeadPortalPurchase;
@@ -161,6 +162,52 @@ class CheckoutServiceTest {
                 mpResponse.initPoint().equals(purchase.getCheckoutUrl())
                         && mpResponse.id().equals(purchase.getMercadoPagoPreferenceId())
                         && purchase.getStatus() == PurchaseStatus.PREFERENCE_CREATED));
+    }
+
+    @Test
+    void shouldCreateNewPreferenceWhenPreviousOneIsClosedInMercadoPago() {
+        CreateCheckoutRequest request = new CreateCheckoutRequest();
+        request.setPackageId(3L);
+
+        LeadPortalPackageSummary summary = new LeadPortalPackageSummary(
+                3L,
+                UUID.randomUUID(),
+                "Submission",
+                "submission@example.com",
+                FlowSubmissionImagePackageStatus.COMPLETED,
+                "prompt",
+                "model",
+                BigDecimal.TEN,
+                "BRL",
+                Instant.now());
+
+        LeadPortalPurchase previousPurchase = new LeadPortalPurchase();
+        previousPurchase.setPackageId(3L);
+        previousPurchase.setStatus(PurchaseStatus.PREFERENCE_CREATED);
+        previousPurchase.setMercadoPagoPreferenceId("pref-old");
+        previousPurchase.setCheckoutUrl("https://mercadopago.com/checkout/old");
+        previousPurchase.setCheckoutExpiresAt(Instant.now().plusSeconds(300));
+
+        MercadoPagoPreferenceResponse mpResponse = new MercadoPagoPreferenceResponse(
+                "pref-new",
+                "https://mercadopago.com/checkout/new");
+
+        when(packageGateway.loadPackage(3L)).thenReturn(summary);
+        when(purchaseRepository.findTopByPackageIdOrderByCreatedAtDesc(3L)).thenReturn(Optional.of(previousPurchase));
+        when(mercadoPagoClient.fetchPreference("pref-old"))
+                .thenReturn(Optional.of(new MercadoPagoPreferenceDetails("pref-old", "closed", null, Instant.now().plusSeconds(60))));
+        when(mercadoPagoClient.createPreference(any())).thenReturn(mpResponse);
+        when(purchaseRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        CreateCheckoutResponse response = checkoutService.createCheckout(request);
+
+        assertThat(response.preferenceId()).isEqualTo(mpResponse.id());
+        assertThat(response.checkoutUrl()).isEqualTo(mpResponse.initPoint());
+        verify(mercadoPagoClient).fetchPreference("pref-old");
+        verify(mercadoPagoClient).createPreference(any());
+        verify(purchaseRepository).save(argThat(purchase ->
+                mpResponse.id().equals(purchase.getMercadoPagoPreferenceId())
+                        && mpResponse.initPoint().equals(purchase.getCheckoutUrl())));
     }
 
     @Test

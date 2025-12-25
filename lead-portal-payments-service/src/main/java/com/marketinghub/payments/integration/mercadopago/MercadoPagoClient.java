@@ -69,6 +69,28 @@ public class MercadoPagoClient {
         }
     }
 
+    public Optional<MercadoPagoPreferenceDetails> fetchPreference(String preferenceId) {
+        try {
+            ResponseEntity<JsonNode> response = restClient.get()
+                    .uri("/checkout/preferences/{id}", preferenceId)
+                    .retrieve()
+                    .toEntity(JsonNode.class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                return Optional.of(parsePreference(response.getBody()));
+            }
+            log.warn("Preferência {} não retornou corpo válido no Mercado Pago", preferenceId);
+            return Optional.empty();
+        } catch (HttpStatusCodeException ex) {
+            if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
+                log.warn("Preferência {} não encontrada no Mercado Pago", preferenceId);
+                return Optional.empty();
+            }
+            throw new IllegalStateException("Erro ao consultar preferência no Mercado Pago", ex);
+        } catch (RestClientException ex) {
+            throw new IllegalStateException("Erro ao consultar preferência no Mercado Pago", ex);
+        }
+    }
+
     private MercadoPagoPaymentDetails parsePayment(JsonNode node) {
         String id = node.path("id").asText(null);
         String status = node.path("status").asText(null);
@@ -81,6 +103,14 @@ public class MercadoPagoClient {
         Instant approvedAt = parseInstant(node.path("date_approved").asText(null));
         Map<String, Object> metadata = toMap(node.path("metadata"));
         return new MercadoPagoPaymentDetails(id, status, amount, currency, description, email, approvedAt, metadata);
+    }
+
+    private MercadoPagoPreferenceDetails parsePreference(JsonNode node) {
+        String id = node.path("id").asText(null);
+        String status = node.path("status").asText(null);
+        String initPoint = node.path("init_point").asText(null);
+        Instant expiration = parseInstant(node.path("expiration_date_to").asText(null));
+        return new MercadoPagoPreferenceDetails(id, status, initPoint, expiration);
     }
 
     private Map<String, Object> toMap(JsonNode node) {

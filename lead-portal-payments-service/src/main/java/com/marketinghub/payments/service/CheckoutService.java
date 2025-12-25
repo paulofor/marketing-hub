@@ -6,6 +6,7 @@ import com.marketinghub.payments.dto.CreateCheckoutRequest;
 import com.marketinghub.payments.dto.CreateCheckoutResponse;
 import com.marketinghub.payments.dto.LeadPortalPackageSummary;
 import com.marketinghub.payments.integration.mercadopago.MercadoPagoClient;
+import com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceDetails;
 import com.marketinghub.payments.integration.mercadopago.MercadoPagoPaymentDetails;
 import com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceRequest;
 import com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceResponse;
@@ -245,14 +246,37 @@ public class CheckoutService {
         if (StringUtils.hasText(purchase.getMercadoPagoPaymentId())) {
             return false;
         }
+        if (!StringUtils.hasText(purchase.getMercadoPagoPreferenceId())) {
+            return false;
+        }
         if (purchase.getStatus() == PurchaseStatus.PENDING_PAYMENT
                 || purchase.getStatus() == PurchaseStatus.APPROVED
                 || purchase.getStatus() == PurchaseStatus.FAILED
                 || purchase.getStatus() == PurchaseStatus.CANCELED) {
             return false;
         }
+        if (!isMercadoPagoPreferenceReusable(purchase.getMercadoPagoPreferenceId())) {
+            return false;
+        }
         Instant expiresAt = purchase.getCheckoutExpiresAt();
         return expiresAt == null || expiresAt.isAfter(Instant.now());
+    }
+
+    private boolean isMercadoPagoPreferenceReusable(String preferenceId) {
+        try {
+            Optional<MercadoPagoPreferenceDetails> preference = mercadoPagoClient.fetchPreference(preferenceId);
+            if (preference.isEmpty()) {
+                return false;
+            }
+            MercadoPagoPreferenceDetails details = preference.get();
+            if (details.expirationDateTo() != null && details.expirationDateTo().isBefore(Instant.now())) {
+                return false;
+            }
+            return "active".equalsIgnoreCase(details.status());
+        } catch (Exception ex) {
+            log.warn("Falha ao consultar status da preferência {} no Mercado Pago", preferenceId, ex);
+            return false;
+        }
     }
 
     private Instant resolveCheckoutExpiration() {

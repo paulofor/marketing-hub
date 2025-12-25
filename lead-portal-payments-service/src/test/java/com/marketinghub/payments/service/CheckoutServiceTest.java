@@ -26,6 +26,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -205,5 +206,114 @@ class CheckoutServiceTest {
                 mpResponse.initPoint().equals(purchase.getCheckoutUrl())
                         && mpResponse.id().equals(purchase.getMercadoPagoPreferenceId())
                         && purchase.getStatus() == PurchaseStatus.PREFERENCE_CREATED));
+    }
+
+    @Test
+    void shouldRejectCheckoutWhenPackageIsNotReady() {
+        CreateCheckoutRequest request = new CreateCheckoutRequest();
+        request.setPackageId(5L);
+
+        LeadPortalPackageSummary summary = new LeadPortalPackageSummary(
+                5L,
+                UUID.randomUUID(),
+                "Submission",
+                "submission@example.com",
+                FlowSubmissionImagePackageStatus.PROCESSING,
+                "prompt",
+                "model",
+                BigDecimal.TEN,
+                "BRL",
+                Instant.now());
+
+        when(packageGateway.loadPackage(5L)).thenReturn(summary);
+
+        assertThatThrownBy(() -> checkoutService.createCheckout(request))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Pacote ainda não está pronto");
+
+        verify(mercadoPagoClient, never()).createPreference(any());
+        verify(purchaseRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldSendAmountCurrencyAndMetadataToMercadoPago() {
+        CreateCheckoutRequest request = new CreateCheckoutRequest();
+        request.setPackageId(6L);
+        request.setBuyerEmail("buyer@example.com");
+        request.setBuyerName("Buyer");
+
+        LeadPortalPackageSummary summary = new LeadPortalPackageSummary(
+                6L,
+                UUID.randomUUID(),
+                "Submission",
+                "submission@example.com",
+                FlowSubmissionImagePackageStatus.COMPLETED,
+                "prompt",
+                "model",
+                new BigDecimal("10"),
+                "brl",
+                Instant.now());
+
+        MercadoPagoPreferenceResponse mpResponse = new MercadoPagoPreferenceResponse(
+                "pref-amount",
+                "https://mercadopago.com/checkout/amount");
+
+        ArgumentCaptor<com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceRequest> requestCaptor =
+                ArgumentCaptor.forClass(com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceRequest.class);
+
+        when(packageGateway.loadPackage(6L)).thenReturn(summary);
+        when(purchaseRepository.findTopByPackageIdOrderByCreatedAtDesc(6L)).thenReturn(Optional.empty());
+        when(mercadoPagoClient.createPreference(requestCaptor.capture())).thenReturn(mpResponse);
+        when(purchaseRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        checkoutService.createCheckout(request);
+
+        com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceRequest sentRequest = requestCaptor.getValue();
+        assertThat(sentRequest.items()).hasSize(1);
+        assertThat(sentRequest.items().get(0).unitPrice()).isEqualByComparingTo(new BigDecimal("10.00"));
+        assertThat(sentRequest.items().get(0).currencyId()).isEqualTo("BRL");
+        assertThat(sentRequest.payer().email()).isEqualTo("buyer@example.com");
+        assertThat(sentRequest.payer().name()).isEqualTo("Buyer");
+        assertThat(sentRequest.metadata()).containsEntry("packageId", 6L);
+        assertThat(sentRequest.metadata()).containsEntry("submissionId", summary.submissionId().toString());
+        assertThat(sentRequest.metadata()).containsEntry("submissionEmail", summary.submissionEmail());
+    }
+
+    @Test
+    void shouldUseDefaultAmountAndCurrencyWhenPackageDoesNotProvide() {
+        CreateCheckoutRequest request = new CreateCheckoutRequest();
+        request.setPackageId(7L);
+
+        LeadPortalPackageSummary summary = new LeadPortalPackageSummary(
+                7L,
+                UUID.randomUUID(),
+                "Submission",
+                "submission@example.com",
+                FlowSubmissionImagePackageStatus.COMPLETED,
+                "prompt",
+                "model",
+                null,
+                null,
+                Instant.now());
+
+        MercadoPagoPreferenceResponse mpResponse = new MercadoPagoPreferenceResponse(
+                "pref-default",
+                "https://mercadopago.com/checkout/default");
+
+        ArgumentCaptor<com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceRequest> requestCaptor =
+                ArgumentCaptor.forClass(com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceRequest.class);
+
+        when(packageGateway.loadPackage(7L)).thenReturn(summary);
+        when(purchaseRepository.findTopByPackageIdOrderByCreatedAtDesc(7L)).thenReturn(Optional.empty());
+        when(mercadoPagoClient.createPreference(requestCaptor.capture())).thenReturn(mpResponse);
+        when(purchaseRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        checkoutService.createCheckout(request);
+
+        com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceRequest sentRequest = requestCaptor.getValue();
+        assertThat(sentRequest.items().get(0).unitPrice()).isEqualByComparingTo(new BigDecimal("49.90"));
+        assertThat(sentRequest.items().get(0).currencyId()).isEqualTo("BRL");
+        assertThat(sentRequest.payer().email()).isEqualTo(summary.submissionEmail());
+        assertThat(sentRequest.payer().name()).isEqualTo(summary.submissionName());
     }
 }

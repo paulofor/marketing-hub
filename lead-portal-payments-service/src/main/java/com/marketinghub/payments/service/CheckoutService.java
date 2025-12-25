@@ -58,12 +58,16 @@ public class CheckoutService {
     @Transactional
     public CreateCheckoutResponse createCheckout(CreateCheckoutRequest request) {
         LeadPortalPackageSummary imagePackage = packageGateway.loadPackage(request.getPackageId());
+        log.info("Validando pacote {} para checkout (status={})", imagePackage.packageId(), imagePackage.status());
         validatePackageStatus(imagePackage.status());
 
         BigDecimal amount = resolveAmount(imagePackage);
         String currency = resolveCurrency(imagePackage);
         String buyerEmail = resolveBuyerEmail(request, imagePackage);
         String buyerName = resolveBuyerName(request, imagePackage);
+
+        log.info("Dados do checkout do pacote {}: valor={} {}, comprador={} ({})", imagePackage.packageId(), amount,
+                currency, buyerName, buyerEmail);
 
         LeadPortalPurchase latestPurchase = purchaseRepository
                 .findTopByPackageIdOrderByCreatedAtDesc(imagePackage.packageId())
@@ -79,9 +83,14 @@ public class CheckoutService {
 
         MercadoPagoPreferenceRequest preferenceRequest = buildPreferenceRequest(imagePackage,
                 amount, currency, buyerName, buyerEmail);
+        log.info("Enviando preferência do pacote {} ao Mercado Pago (notificationUrl={}, statementDescriptor={})",
+                imagePackage.packageId(), mercadoPagoProperties.getNotificationUrl(),
+                mercadoPagoProperties.getStatementDescriptor());
         MercadoPagoPreferenceResponse response = mercadoPagoClient.createPreference(preferenceRequest);
 
         if (response == null || !StringUtils.hasText(response.initPoint())) {
+            log.error("Mercado Pago não retornou init_point para preferência do pacote {} (preferenceId={})",
+                    imagePackage.packageId(), response != null ? response.id() : null);
             throw new IllegalStateException("Mercado Pago não retornou link de checkout");
         }
 
@@ -156,6 +165,7 @@ public class CheckoutService {
         if (status == FlowSubmissionImagePackageStatus.FAILED
                 || status == FlowSubmissionImagePackageStatus.RECEIVED
                 || status == FlowSubmissionImagePackageStatus.PROCESSING) {
+            log.warn("Pacote em status {} ainda não está pronto para compra", status);
             throw new IllegalStateException("Pacote ainda não está pronto para compra");
         }
     }

@@ -69,7 +69,10 @@ lead-portal:
     read-timeout: ${LEAD_PORTAL_DISPATCH_READ_TIMEOUT:180000}
   payment-link:
     validate-host: ${LEAD_PORTAL_PAYMENT_VALIDATE_HOST:true}
-    allowed-hosts: ${LEAD_PORTAL_PAYMENT_ALLOWED_HOSTS:www.mercadopago.com.br,mercadopago.com.br,www.mercadopago.com}
+    allowed-hosts: ${LEAD_PORTAL_PAYMENT_ALLOWED_HOSTS:pagamentopalf.online,www.pagamentopalf.online,www.mercadopago.com.br,mercadopago.com.br,www.mercadopago.com}
+    entrypoint-base-url: ${LEAD_PORTAL_PAYMENT_ENTRYPOINT_BASE_URL:https://pagamentopalf.online/checkout}
+    package-id-query-param: ${LEAD_PORTAL_PAYMENT_PACKAGE_PARAM:packageId}
+    purchase-id-query-param: ${LEAD_PORTAL_PAYMENT_PURCHASE_PARAM:purchaseId}
     button-color: ${LEAD_PORTAL_PAYMENT_BUTTON_COLOR:#00a650}
     button-text: ${LEAD_PORTAL_PAYMENT_BUTTON_TEXT:Quero liberar as imagens originais}
     plain-text-intro: ${LEAD_PORTAL_PAYMENT_PLAIN_INTRO:Finalize o pagamento e libere as imagens originais:}

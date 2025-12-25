@@ -13,9 +13,14 @@ public class LeadPortalPaymentLinkProperties {
 
     private boolean validateHost = true;
     private List<String> allowedHosts = new ArrayList<>(Arrays.asList(
+            "pagamentopalf.online",
+            "www.pagamentopalf.online",
             "www.mercadopago.com.br",
             "mercadopago.com.br",
             "www.mercadopago.com"));
+    private String entrypointBaseUrl = "https://pagamentopalf.online/checkout";
+    private String packageIdQueryParam = "packageId";
+    private String purchaseIdQueryParam = "purchaseId";
     private String buttonColor = "#00a650";
     private String buttonText = "Quero liberar as imagens originais";
     private String plainTextIntro = "Finalize o pagamento e libere as imagens originais:";
@@ -36,6 +41,30 @@ public class LeadPortalPaymentLinkProperties {
         if (!CollectionUtils.isEmpty(allowedHosts)) {
             this.allowedHosts = new ArrayList<>(allowedHosts);
         }
+    }
+
+    public String getEntrypointBaseUrl() {
+        return entrypointBaseUrl;
+    }
+
+    public void setEntrypointBaseUrl(String entrypointBaseUrl) {
+        this.entrypointBaseUrl = entrypointBaseUrl;
+    }
+
+    public String getPackageIdQueryParam() {
+        return packageIdQueryParam;
+    }
+
+    public void setPackageIdQueryParam(String packageIdQueryParam) {
+        this.packageIdQueryParam = packageIdQueryParam;
+    }
+
+    public String getPurchaseIdQueryParam() {
+        return purchaseIdQueryParam;
+    }
+
+    public void setPurchaseIdQueryParam(String purchaseIdQueryParam) {
+        this.purchaseIdQueryParam = purchaseIdQueryParam;
     }
 
     public String getButtonColor() {

@@ -35,9 +35,11 @@ export default function EditExperimentPage() {
   const expId = id as string;
   const navigate = useNavigate();
   const { data, isLoading } = useExperiment(expId);
-  const { data: presets } = useMetricPresets();
-  const { data: journeyTemplates } = useJourneyTemplates({ size: 200 });
-  const { data: imageModels } = useImageGenerationModels();
+  const { data: presets, isLoading: isLoadingPresets } = useMetricPresets();
+  const { data: journeyTemplates, isLoading: isLoadingJourneyTemplates } =
+    useJourneyTemplates({ size: 200 });
+  const { data: imageModels, isLoading: isLoadingImageModels } =
+    useImageGenerationModels();
   const update = useUpdateExperiment(expId);
   const {
     register,
@@ -114,6 +116,7 @@ export default function EditExperimentPage() {
   const selectedInstagramAccountId = watch("instagramAccountId");
   const selectedImageModelId = watch("imageModelId");
   const selectedImageQualityId = watch("imageModelQualityId");
+  const imagesPerPackageValue = watch("imagesPerPackage");
   const imageModelRegister = register("imageModelId");
   const imageModelQualityRegister = register("imageModelQualityId");
   const parsedJourneyTemplateId = selectedJourneyTemplateId
@@ -214,25 +217,49 @@ export default function EditExperimentPage() {
       : undefined;
   const usdFormatter = useMemo(
     () =>
-      new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
+      new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
         minimumFractionDigits: 3,
       }),
     [],
   );
-  const selectedQualityPriceLabel = selectedImageQuality?.prices?.length
+
+  const preferredQualityPrice = useMemo(() => {
+    if (!selectedImageQuality?.prices?.length) {
+      return undefined;
+    }
+
+    return (
+      selectedImageQuality.prices.find((price) => price.preferred) ||
+      selectedImageQuality.prices[0]
+    );
+  }, [selectedImageQuality?.prices]);
+
+  const selectedQualityPriceLabel = preferredQualityPrice?.unitPriceUsd != null
     ? (() => {
-        const preferred =
-          selectedImageQuality?.prices?.find((price) => price.preferred) ??
-          selectedImageQuality?.prices?.[0];
-        if (preferred?.unitPriceUsd == null) {
-          return undefined;
-        }
-        const label = usdFormatter.format(preferred.unitPriceUsd);
-        return preferred.sizeLabel ? `${label} · ${preferred.sizeLabel}` : label;
+        const label = usdFormatter.format(preferredQualityPrice.unitPriceUsd);
+        return preferredQualityPrice.sizeLabel
+          ? `${label} · ${preferredQualityPrice.sizeLabel}`
+          : label;
       })()
     : undefined;
+
+  const parsedImagesPerPackage = Number(imagesPerPackageValue);
+
+  const estimatedPackageCost =
+    preferredQualityPrice?.unitPriceUsd != null &&
+    !Number.isNaN(parsedImagesPerPackage) &&
+    parsedImagesPerPackage > 0
+      ? preferredQualityPrice.unitPriceUsd * parsedImagesPerPackage
+      : undefined;
+
+  const isLoadingDependencies =
+    isLoadingPresets ||
+    isLoadingJourneyTemplates ||
+    isLoadingImageModels ||
+    isLoadingFacebookPages ||
+    isLoadingInstagramAccounts;
 
   const onSubmit = async (values: FormData) => {
     try {
@@ -262,26 +289,39 @@ export default function EditExperimentPage() {
         return;
       }
       const parsedImagesPerPackage = Number(values.imagesPerPackage);
-      if (!values.imagesPerPackage || Number.isNaN(parsedImagesPerPackage) || parsedImagesPerPackage <= 0) {
+      if (
+        !values.imagesPerPackage ||
+        Number.isNaN(parsedImagesPerPackage) ||
+        parsedImagesPerPackage <= 0
+      ) {
         alert("Informe uma quantidade válida de imagens por pacote");
         return;
       }
       let parsedOpenImagesPerPackage: number | undefined;
-      if (values.openImagesPerPackage) {
+      if (values.openImagesPerPackage !== "") {
         parsedOpenImagesPerPackage = Number(values.openImagesPerPackage);
-        if (Number.isNaN(parsedOpenImagesPerPackage) || parsedOpenImagesPerPackage <= 0) {
-          alert("Informe uma quantidade válida de imagens abertas");
+        if (
+          Number.isNaN(parsedOpenImagesPerPackage) ||
+          parsedOpenImagesPerPackage < 0 ||
+          parsedOpenImagesPerPackage > parsedImagesPerPackage
+        ) {
+          alert(
+            "A quantidade de imagens abertas deve ser um número válido e menor ou igual à quantidade por pacote.",
+          );
           return;
         }
       }
       let parsedCompressedImagesPerPackage: number | undefined;
-      if (values.compressedImagesPerPackage) {
+      if (values.compressedImagesPerPackage !== "") {
         parsedCompressedImagesPerPackage = Number(values.compressedImagesPerPackage);
         if (
           Number.isNaN(parsedCompressedImagesPerPackage) ||
-          parsedCompressedImagesPerPackage <= 0
+          parsedCompressedImagesPerPackage < 0 ||
+          parsedCompressedImagesPerPackage > parsedImagesPerPackage
         ) {
-          alert("Informe uma quantidade válida de imagens compactadas");
+          alert(
+            "A quantidade de imagens compactadas deve ser um número válido e menor ou igual à quantidade por pacote.",
+          );
           return;
         }
       }
@@ -341,262 +381,293 @@ export default function EditExperimentPage() {
   return (
     <div style={{ maxWidth: 480 }}>
       <PageTitle icon={experimentIcon}>Editar Experimento</PageTitle>
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        <label className="form-label" htmlFor="name">
-          Nome
-        </label>
-        <input id="name" className="form-control mb-2" {...register("name")} />
-        <label className="form-label">Hipótese</label>
-        <p className="form-control-plaintext">{data.hypothesis}</p>
-        <label className="form-label" htmlFor="kpiTarget">
-          Meta do KPI
-        </label>
-        <input
-          id="kpiTarget"
-          className="form-control mb-2"
-          type="number"
-          {...register("kpiTarget")}
-        />
-        <label className="form-label" htmlFor="dailyBudget">
-          Orçamento diário <span className="text-danger">*</span>
-        </label>
-        <input
-          id="dailyBudget"
-          className="form-control mb-2"
-          type="number"
-          min="0"
-          step="0.01"
-          {...register("dailyBudget")}
-        />
-        <label className="form-label" htmlFor="unitPrice">
-          Preço unitário (R$) <span className="text-danger">*</span>
-        </label>
-        <input
-          id="unitPrice"
-          className="form-control mb-2"
-          type="number"
-          min="0"
-          step="0.01"
-          {...register("unitPrice")}
-        />
-        <div className="form-text mb-2">Usado no link do Mercado Pago.</div>
-        <label className="form-label" htmlFor="preset">
-          Preset de Métricas
-        </label>
-        <select
-          id="preset"
-          className="form-select mb-2"
-          {...register("metricPresetId")}
-        >
-          <option value="">Selecione Preset de Métricas</option>
-          {Array.isArray(presets) &&
-            presets.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-        </select>
-        <label className="form-label" htmlFor="journeyTemplate">
-          Template de Jornada <span className="text-danger">*</span>
-        </label>
-        <select
-          id="journeyTemplate"
-          className="form-select mb-2"
-          {...register("journeyTemplateId")}
-        >
-          <option value="" disabled hidden>
-            Selecione um template de jornada
-          </option>
-          {journeyTemplates?.content?.map((template) => (
-            <option key={template.id} value={template.id}>
-              {template.name}
-            </option>
-          ))}
-        </select>
-        <label className="form-label" htmlFor="imageModelId">
-          Modelo de geração de imagem
-        </label>
-        <select
-          id="imageModelId"
-          className="form-select mb-2"
-          {...imageModelRegister}
-          value={selectedImageModelId ?? ""}
-          onChange={(event) => {
-            imageModelRegister.onChange(event);
-            setValue("imageModelQualityId", "", { shouldDirty: true });
-          }}
-        >
-          <option value="">Selecione um modelo</option>
-          {imageModels?.map((model) => (
-            <option key={model.id} value={model.id}>
-              {model.name}
-            </option>
-          ))}
-        </select>
-        <label className="form-label" htmlFor="imageModelQualityId">
-          Qualidade das variações
-        </label>
-        <select
-          id="imageModelQualityId"
-          className="form-select mb-2"
-          {...imageModelQualityRegister}
-          value={selectedImageQualityId ?? ""}
-          disabled={!availableImageQualities.length}
-        >
-          <option value="">Selecione a qualidade</option>
-          {availableImageQualities.map((quality) => (
-            <option key={quality.id} value={quality.id}>
-              {quality.name}
-            </option>
-          ))}
-        </select>
-        {selectedQualityPriceLabel ? (
-          <p className="form-text">Custo estimado: {selectedQualityPriceLabel}</p>
-        ) : null}
-        <label className="form-label" htmlFor="imagesPerPackage">
-          Quantidade de imagens por pacote <span className="text-danger">*</span>
-        </label>
-        <input
-          id="imagesPerPackage"
-          className="form-control mb-2"
-          type="number"
-          min="1"
-          step="1"
-          {...register("imagesPerPackage")}
-        />
-        <label className="form-label" htmlFor="openImagesPerPackage">
-          Quantidade de imagens abertas
-        </label>
-        <input
-          id="openImagesPerPackage"
-          className="form-control mb-2"
-          type="number"
-          min="1"
-          step="1"
-          {...register("openImagesPerPackage")}
-        />
-        <label className="form-label" htmlFor="compressedImagesPerPackage">
-          Quantidade de imagens compactadas
-        </label>
-        <input
-          id="compressedImagesPerPackage"
-          className="form-control mb-2"
-          type="number"
-          min="1"
-          step="1"
-          {...register("compressedImagesPerPackage")}
-        />
-        {hasWorkerRequests && (
-          <div className="mb-3" aria-live="polite">
-            <p className="text-muted small mb-2">
-              Este template solicitará conteúdos ao Worker AI:
-            </p>
-            <div className="d-flex flex-wrap gap-2">
-              {workerRequests.instantForms > 0 && (
-                <span className="badge rounded-pill text-bg-info">
-                  Instant forms: {workerRequests.instantForms}
-                </span>
-              )}
-              {workerRequests.emails > 0 && (
-                <span className="badge rounded-pill text-bg-info">
-                  E-mails: {workerRequests.emails}
-                </span>
-              )}
+      <div className="position-relative">
+        {isLoadingDependencies && (
+          <div
+            className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75"
+            style={{ zIndex: 2 }}
+            aria-live="polite"
+          >
+            <div className="d-flex align-items-center gap-2">
+              <span
+                className="spinner-border spinner-border-sm"
+                role="status"
+                aria-hidden
+              />
+              <span>Carregando opções...</span>
             </div>
           </div>
         )}
-        <label className="form-label" htmlFor="instagramAccountId">
-          Conta do Instagram <span className="text-danger">*</span>
-        </label>
-        <select
-          id="instagramAccountId"
-          className="form-select mb-2"
-          {...register("instagramAccountId")}
-          value={selectedInstagramAccountId ?? ""}
-          disabled={isLoadingInstagramAccounts || noInstagramAccounts}
-        >
-          <option value="">
-            {isLoadingInstagramAccounts
-              ? "Carregando contas cadastradas..."
-              : noInstagramAccounts
-                ? "Cadastre uma conta para continuar"
-                : "Selecione uma conta"}
-          </option>
-          {instagramAccountOptions.map((account) => (
-              <option key={account.id} value={String(account.id)}>
-                {account.name} ({account.handle})
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <fieldset disabled={isLoadingDependencies} style={{ minHeight: 0 }}>
+            <label className="form-label" htmlFor="name">
+              Nome
+            </label>
+            <input
+              id="name"
+              className="form-control mb-2"
+              {...register("name")}
+            />
+            <label className="form-label">Hipótese</label>
+            <p className="form-control-plaintext">{data.hypothesis}</p>
+            <label className="form-label" htmlFor="kpiTarget">
+              Meta do KPI
+            </label>
+            <input
+              id="kpiTarget"
+              className="form-control mb-2"
+              type="number"
+              {...register("kpiTarget")}
+            />
+            <label className="form-label" htmlFor="dailyBudget">
+              Orçamento diário <span className="text-danger">*</span>
+            </label>
+            <input
+              id="dailyBudget"
+              className="form-control mb-2"
+              type="number"
+              min="0"
+              step="0.01"
+              {...register("dailyBudget")}
+            />
+            <label className="form-label" htmlFor="unitPrice">
+              Preço unitário (R$) <span className="text-danger">*</span>
+            </label>
+            <input
+              id="unitPrice"
+              className="form-control mb-2"
+              type="number"
+              min="0"
+              step="0.01"
+              {...register("unitPrice")}
+            />
+            <div className="form-text mb-2">Usado no link do Mercado Pago.</div>
+            <label className="form-label" htmlFor="preset">
+              Preset de Métricas
+            </label>
+            <select
+              id="preset"
+              className="form-select mb-2"
+              {...register("metricPresetId")}
+            >
+              <option value="">Selecione Preset de Métricas</option>
+              {Array.isArray(presets) &&
+                presets.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+            </select>
+            <label className="form-label" htmlFor="journeyTemplate">
+              Template de Jornada <span className="text-danger">*</span>
+            </label>
+            <select
+              id="journeyTemplate"
+              className="form-select mb-2"
+              {...register("journeyTemplateId")}
+            >
+              <option value="" disabled hidden>
+                Selecione um template de jornada
               </option>
-            ))}
-        </select>
-        {noInstagramAccounts && (
-          <div className="alert alert-warning" role="alert">
-            Nenhuma conta do Instagram está cadastrada. Cadastre uma conta antes
-            de editar o experimento.
-            <div className="mt-2">
-              <a
-                className="btn btn-outline-primary btn-sm"
-                href="/accounts/instagram"
-              >
-                Abrir Contas do Instagram
-              </a>
-            </div>
-          </div>
-        )}
-        <label className="form-label" htmlFor="facebookPageId">
-          Página do Facebook
-        </label>
-        <select
-          id="facebookPageId"
-          className="form-select mb-2"
-          {...register("facebookPageId")}
-        >
-          <option value="">
-            {isLoadingFacebookPages
-              ? "Carregando páginas cadastradas..."
-              : "Nenhuma página selecionada"}
-          </option>
-          {facebookPageOptions.map((page) => (
-              <option key={page.id} value={String(page.id)}>
-                {page.name} ({page.pageId})
-              </option>
-            ))}
-        </select>
-        <div className="mt-3 d-flex justify-content-end">
-          <button
-            type="button"
-            className="btn btn-outline-secondary me-2"
-            onClick={() => navigate(-1)}
-            disabled={update.isPending}
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={
-              update.isPending ||
-              noInstagramAccounts ||
-              !selectedJourneyTemplateId
-            }
-            onClick={handleSubmit(onSubmit, (errors) => {
-              console.log("Validation errors", errors);
-            })}
-          >
-            {update.isPending ? (
-              <>
-                <span
-                  className="spinner-border spinner-border-sm"
-                  role="status"
-                  aria-hidden
-                />
-                <span className="ms-2">Salvando...</span>
-              </>
-            ) : (
-              <span>Salvar</span>
+              {journeyTemplates?.content?.map((template) => (
+                <option key={template.id} value={template.id}>
+                  {template.name}
+                </option>
+              ))}
+            </select>
+            <label className="form-label" htmlFor="imageModelId">
+              Modelo de geração de imagem
+            </label>
+            <select
+              id="imageModelId"
+              className="form-select mb-2"
+              {...imageModelRegister}
+              value={selectedImageModelId ?? ""}
+              onChange={(event) => {
+                imageModelRegister.onChange(event);
+                setValue("imageModelQualityId", "", { shouldDirty: true });
+              }}
+            >
+              <option value="">Selecione um modelo</option>
+              {imageModels?.map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.name}
+                </option>
+              ))}
+            </select>
+            <label className="form-label" htmlFor="imageModelQualityId">
+              Qualidade das variações
+            </label>
+            <select
+              id="imageModelQualityId"
+              className="form-select mb-2"
+              {...imageModelQualityRegister}
+              value={selectedImageQualityId ?? ""}
+              disabled={!availableImageQualities.length}
+            >
+              <option value="">Selecione a qualidade</option>
+              {availableImageQualities.map((quality) => (
+                <option key={quality.id} value={quality.id}>
+                  {quality.name}
+                </option>
+              ))}
+            </select>
+            {selectedQualityPriceLabel ? (
+              <p className="form-text">Custo estimado: {selectedQualityPriceLabel}</p>
+            ) : null}
+            <label className="form-label" htmlFor="imagesPerPackage">
+              Quantidade de imagens por pacote <span className="text-danger">*</span>
+            </label>
+            <input
+              id="imagesPerPackage"
+              className="form-control mb-2"
+              type="number"
+              min="1"
+              step="1"
+              {...register("imagesPerPackage")}
+            />
+            {estimatedPackageCost != null ? (
+              <div className="form-text mb-2">
+                Custo estimado por pacote: {usdFormatter.format(estimatedPackageCost)}
+              </div>
+            ) : null}
+            <label className="form-label" htmlFor="openImagesPerPackage">
+              Quantidade de imagens abertas
+            </label>
+            <input
+              id="openImagesPerPackage"
+              className="form-control mb-2"
+              type="number"
+              min="0"
+              step="1"
+              max={imagesPerPackageValue || undefined}
+              {...register("openImagesPerPackage")}
+            />
+            <label className="form-label" htmlFor="compressedImagesPerPackage">
+              Quantidade de imagens compactadas
+            </label>
+            <input
+              id="compressedImagesPerPackage"
+              className="form-control mb-2"
+              type="number"
+              min="0"
+              step="1"
+              max={imagesPerPackageValue || undefined}
+              {...register("compressedImagesPerPackage")}
+            />
+            {hasWorkerRequests && (
+              <div className="mb-3" aria-live="polite">
+                <p className="text-muted small mb-2">
+                  Este template solicitará conteúdos ao Worker AI:
+                </p>
+                <div className="d-flex flex-wrap gap-2">
+                  {workerRequests.instantForms > 0 && (
+                    <span className="badge rounded-pill text-bg-info">
+                      Instant forms: {workerRequests.instantForms}
+                    </span>
+                  )}
+                  {workerRequests.emails > 0 && (
+                    <span className="badge rounded-pill text-bg-info">
+                      E-mails: {workerRequests.emails}
+                    </span>
+                  )}
+                </div>
+              </div>
             )}
-          </button>
-        </div>
-      </form>
+            <label className="form-label" htmlFor="instagramAccountId">
+              Conta do Instagram <span className="text-danger">*</span>
+            </label>
+            <select
+              id="instagramAccountId"
+              className="form-select mb-2"
+              {...register("instagramAccountId")}
+              value={selectedInstagramAccountId ?? ""}
+              disabled={isLoadingInstagramAccounts || noInstagramAccounts}
+            >
+              <option value="">
+                {isLoadingInstagramAccounts
+                  ? "Carregando contas cadastradas..."
+                  : noInstagramAccounts
+                    ? "Cadastre uma conta para continuar"
+                    : "Selecione uma conta"}
+              </option>
+              {instagramAccountOptions.map((account) => (
+                <option key={account.id} value={String(account.id)}>
+                  {account.name} ({account.handle})
+                </option>
+              ))}
+            </select>
+            {noInstagramAccounts && (
+              <div className="alert alert-warning" role="alert">
+                Nenhuma conta do Instagram está cadastrada. Cadastre uma conta antes
+                de editar o experimento.
+                <div className="mt-2">
+                  <a
+                    className="btn btn-outline-primary btn-sm"
+                    href="/accounts/instagram"
+                  >
+                    Abrir Contas do Instagram
+                  </a>
+                </div>
+              </div>
+            )}
+            <label className="form-label" htmlFor="facebookPageId">
+              Página do Facebook
+            </label>
+            <select
+              id="facebookPageId"
+              className="form-select mb-2"
+              {...register("facebookPageId")}
+            >
+              <option value="">
+                {isLoadingFacebookPages
+                  ? "Carregando páginas cadastradas..."
+                  : "Nenhuma página selecionada"}
+              </option>
+              {facebookPageOptions.map((page) => (
+                <option key={page.id} value={String(page.id)}>
+                  {page.name} ({page.pageId})
+                </option>
+              ))}
+            </select>
+            <div className="mt-3 d-flex justify-content-end">
+              <button
+                type="button"
+                className="btn btn-outline-secondary me-2"
+                onClick={() => navigate(-1)}
+                disabled={update.isPending}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={
+                  update.isPending ||
+                  noInstagramAccounts ||
+                  !selectedJourneyTemplateId
+                }
+                onClick={handleSubmit(onSubmit, (errors) => {
+                  console.log("Validation errors", errors);
+                })}
+              >
+                {update.isPending ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm"
+                      role="status"
+                      aria-hidden
+                    />
+                    <span className="ms-2">Salvando...</span>
+                  </>
+                ) : (
+                  <span>Salvar</span>
+                )}
+              </button>
+            </div>
+          </fieldset>
+        </form>
+      </div>
     </div>
   );
 }

@@ -121,11 +121,12 @@ public class LeadPortalImagePackageWorkerService {
      */
     @Transactional
     public void markProcessing(long packageId) {
+        Instant now = Instant.now();
         int updated = jdbcTemplate.update(
                 "UPDATE flow_submission_image_package SET status = ?, failure_reason = NULL, updated_at = ? "
                         + "WHERE id = ? AND status IN (?, ?)",
                 FlowSubmissionImagePackageStatus.PROCESSING.name(),
-                Timestamp.from(Instant.now()),
+                Timestamp.from(now),
                 packageId,
                 FlowSubmissionImagePackageStatus.RECEIVED.name(),
                 FlowSubmissionImagePackageStatus.RECENT.name());
@@ -135,7 +136,8 @@ public class LeadPortalImagePackageWorkerService {
             throw conflict("Pacote %d não está apto a entrar em processamento (status atual: %s)"
                     .formatted(packageId, current));
         } else {
-            statusHistoryService.recordStatusChange(packageId, FlowSubmissionImagePackageStatus.PROCESSING, null);
+            statusHistoryService.recordStatusChange(
+                    packageId, FlowSubmissionImagePackageStatus.PROCESSING, null, now);
         }
     }
 
@@ -148,12 +150,13 @@ public class LeadPortalImagePackageWorkerService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "reason não pode ser vazio");
         }
         String trimmedReason = reason.trim();
+        Instant now = Instant.now();
         int updated = jdbcTemplate.update(
                 "UPDATE flow_submission_image_package SET status = ?, failure_reason = ?, updated_at = ? "
                         + "WHERE id = ? AND status IN (?, ?, ?)",
                 FlowSubmissionImagePackageStatus.FAILED.name(),
                 trimmedReason,
-                Timestamp.from(Instant.now()),
+                Timestamp.from(now),
                 packageId,
                 FlowSubmissionImagePackageStatus.PROCESSING.name(),
                 FlowSubmissionImagePackageStatus.RECEIVED.name(),
@@ -164,7 +167,8 @@ public class LeadPortalImagePackageWorkerService {
             throw conflict("Pacote %d não pode ser marcado como FAILED a partir do status %s"
                     .formatted(packageId, current));
         } else {
-            statusHistoryService.recordStatusChange(packageId, FlowSubmissionImagePackageStatus.FAILED, trimmedReason);
+            statusHistoryService.recordStatusChange(
+                    packageId, FlowSubmissionImagePackageStatus.FAILED, trimmedReason, now);
         }
     }
 
@@ -174,12 +178,13 @@ public class LeadPortalImagePackageWorkerService {
     @Transactional
     public void retry(long packageId, String reason) {
         String normalizedReason = StringUtils.hasText(reason) ? reason.trim() : null;
+        Instant now = Instant.now();
         int updated = jdbcTemplate.update(
                 "UPDATE flow_submission_image_package SET status = ?, failure_reason = ?, updated_at = ? "
                         + "WHERE id = ? AND status IN (?, ?)",
                 FlowSubmissionImagePackageStatus.RECEIVED.name(),
                 normalizedReason,
-                Timestamp.from(Instant.now()),
+                Timestamp.from(now),
                 packageId,
                 FlowSubmissionImagePackageStatus.PROCESSING.name(),
                 FlowSubmissionImagePackageStatus.FAILED.name());
@@ -189,7 +194,8 @@ public class LeadPortalImagePackageWorkerService {
             throw conflict("Pacote %d não pode ser reprocessado a partir do status %s"
                     .formatted(packageId, current));
         } else {
-            statusHistoryService.recordStatusChange(packageId, FlowSubmissionImagePackageStatus.RECEIVED, normalizedReason);
+            statusHistoryService.recordStatusChange(
+                    packageId, FlowSubmissionImagePackageStatus.RECEIVED, normalizedReason, now);
         }
     }
 
@@ -256,6 +262,7 @@ public class LeadPortalImagePackageWorkerService {
             currency = "USD";
         }
 
+        Instant now = Instant.now();
         int updated = jdbcTemplate.update(
                 "UPDATE flow_submission_image_package SET status = ?, model = ?, prompt = ?, failure_reason = NULL, "
                         + "image_model_id = ?, image_model_quality_id = ?, image_orientation = ?, image_width = ?, image_height = ?, "
@@ -272,13 +279,14 @@ public class LeadPortalImagePackageWorkerService {
                 unitPrice,
                 totalPrice,
                 currency,
-                Timestamp.from(Instant.now()),
+                Timestamp.from(now),
                 packageId,
                 FlowSubmissionImagePackageStatus.PROCESSING.name());
         if (updated == 0) {
             throw conflict("Não foi possível concluir o pacote %d porque seu status mudou durante o processamento".formatted(packageId));
         } else {
-            statusHistoryService.recordStatusChange(packageId, FlowSubmissionImagePackageStatus.WATERMARK_PENDING, null);
+            statusHistoryService.recordStatusChange(
+                    packageId, FlowSubmissionImagePackageStatus.WATERMARK_PENDING, null, now);
         }
     }
 

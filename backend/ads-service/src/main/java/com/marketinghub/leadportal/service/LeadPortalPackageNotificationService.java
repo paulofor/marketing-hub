@@ -531,15 +531,16 @@ public class LeadPortalPackageNotificationService {
         FlowSubmissionImagePackageStatus nextStatus = currentStatus == FlowSubmissionImagePackageStatus.COMPLETED
                 ? currentStatus
                 : FlowSubmissionImagePackageStatus.COMPLETED;
+        Instant now = Instant.now();
         int updated = jdbcTemplate.update(
                 "UPDATE flow_submission_image_package SET notified_at = ?, notification_attempts = notification_attempts + 1, "
                         + "notification_last_attempt = ?, notification_last_error = NULL, status = ? WHERE id = ?",
-                Timestamp.from(Instant.now()),
-                Timestamp.from(Instant.now()),
+                Timestamp.from(now),
+                Timestamp.from(now),
                 nextStatus.name(),
                 packageId);
         if (updated > 0) {
-            statusHistoryService.recordStatusChange(packageId, nextStatus, null);
+            statusHistoryService.recordStatusChange(packageId, nextStatus, null, now);
         }
     }
 
@@ -579,7 +580,7 @@ public class LeadPortalPackageNotificationService {
                     packageId);
             if (updated > 0) {
                 statusHistoryService.recordStatusChange(
-                        packageId, FlowSubmissionImagePackageStatus.FAILED, failureReason);
+                        packageId, FlowSubmissionImagePackageStatus.FAILED, failureReason, now);
                 log.warn(
                         "Pacote {} marcado como FAILED após {} tentativas de envio de e-mail: {}",
                         packageId,

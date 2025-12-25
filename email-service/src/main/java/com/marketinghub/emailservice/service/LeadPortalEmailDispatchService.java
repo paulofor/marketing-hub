@@ -21,6 +21,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.HtmlUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 public class LeadPortalEmailDispatchService {
@@ -99,7 +100,7 @@ public class LeadPortalEmailDispatchService {
                 emailContent.subject(),
                 "lead-portal-package-" + item.packageId());
 
-        PaymentBodies paymentBodies = enrichWithPaymentLink(emailContent, item.paymentInfo());
+        PaymentBodies paymentBodies = enrichWithPaymentLink(emailContent, item.paymentInfo(), item.packageId());
         String trackingPixelUrl = trackingPixelService.buildTrackingPixelUrl(emailLog.getRequestId());
         String htmlBody = trackingPixelService.appendTrackingPixel(paymentBodies.htmlBody(), trackingPixelUrl);
 
@@ -136,16 +137,40 @@ public class LeadPortalEmailDispatchService {
     }
 
     private PaymentBodies enrichWithPaymentLink(LeadPortalImagePackageExportResponse.EmailContent emailContent,
-                                                LeadPortalImagePackageExportResponse.PaymentInfo paymentInfo) {
+                                                LeadPortalImagePackageExportResponse.PaymentInfo paymentInfo,
+                                                long packageId) {
         String html = emailContent.htmlBody() != null ? emailContent.htmlBody() : "";
         String plain = emailContent.plainBody() != null ? emailContent.plainBody() : "";
         if (paymentInfo == null || !StringUtils.hasText(paymentInfo.checkoutUrl())) {
             return new PaymentBodies(html, plain);
         }
-        validatePaymentUrl(paymentInfo.checkoutUrl());
-        String normalizedHtml = html.contains(paymentInfo.checkoutUrl()) ? html : html + buildHtmlPaymentBlock(paymentInfo);
-        String normalizedPlain = plain.contains(paymentInfo.checkoutUrl()) ? plain : buildPlainPaymentBlock(plain, paymentInfo);
+        String paymentUrl = resolvePaymentUrl(packageId, paymentInfo);
+        validatePaymentUrl(paymentUrl);
+        String normalizedHtml = html.contains(paymentUrl) ? html : html + buildHtmlPaymentBlock(paymentInfo, paymentUrl);
+        String normalizedPlain = plain.contains(paymentUrl) ? plain : buildPlainPaymentBlock(plain, paymentInfo, paymentUrl);
         return new PaymentBodies(normalizedHtml, normalizedPlain);
+    }
+
+    private String resolvePaymentUrl(long packageId, LeadPortalImagePackageExportResponse.PaymentInfo paymentInfo) {
+        String directUrl = paymentInfo.checkoutUrl();
+        String entrypoint = paymentLinkProperties.getEntrypointBaseUrl();
+        if (!StringUtils.hasText(entrypoint)) {
+            return directUrl;
+        }
+        try {
+            UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(entrypoint.trim());
+            builder.replaceQueryParam(paymentLinkProperties.getPackageIdQueryParam(), packageId);
+            if (paymentInfo.purchaseId() != null && StringUtils.hasText(paymentLinkProperties.getPurchaseIdQueryParam())) {
+                builder.replaceQueryParam(paymentLinkProperties.getPurchaseIdQueryParam(), paymentInfo.purchaseId());
+            }
+            if (paymentInfo.expiresAt() != null) {
+                builder.replaceQueryParam("expiresAt", paymentInfo.expiresAt());
+            }
+            return builder.build(true).toUriString();
+        } catch (IllegalArgumentException ex) {
+            log.warn("URL base do portal de pagamentos inválida ({}). Usando link direto do Mercado Pago.", entrypoint, ex);
+            return directUrl;
+        }
     }
 
     private void validatePaymentUrl(String checkoutUrl) {
@@ -168,7 +193,7 @@ public class LeadPortalEmailDispatchService {
         }
     }
 
-    private String buildHtmlPaymentBlock(LeadPortalImagePackageExportResponse.PaymentInfo paymentInfo) {
+    private String buildHtmlPaymentBlock(LeadPortalImagePackageExportResponse.PaymentInfo paymentInfo, String paymentUrl) {
         String descriptor = StringUtils.hasText(paymentInfo.statementDescriptor())
                 ? paymentInfo.statementDescriptor()
                 : "Mercado Pago";
@@ -187,7 +212,7 @@ public class LeadPortalEmailDispatchService {
                 .append(HtmlUtils.htmlEscape(descriptor))
                 .append("</p>")
                 .append("<p style=\"text-align:center;\"><a href=\"")
-                .append(HtmlUtils.htmlEscape(paymentInfo.checkoutUrl().trim()))
+                .append(HtmlUtils.htmlEscape(paymentUrl.trim()))
                 .append("\" target=\"_blank\" rel=\"noopener\" style=\"display:inline-block;padding:14px 28px;font-weight:600;border-radius:6px;text-decoration:none;color:#fff;background:")
                 .append(HtmlUtils.htmlEscape(buttonColor))
                 .append(";\">")
@@ -196,13 +221,13 @@ public class LeadPortalEmailDispatchService {
                 .append("</div>")
                 .toString();
     }
-    private String buildPlainPaymentBlock(String plainBody, LeadPortalImagePackageExportResponse.PaymentInfo paymentInfo) {
+    private String buildPlainPaymentBlock(String plainBody, LeadPortalImagePackageExportResponse.PaymentInfo paymentInfo, String paymentUrl) {
         StringBuilder builder = new StringBuilder();
         if (StringUtils.hasText(plainBody)) {
             builder.append(plainBody.trim()).append("\n\n");
         }
         builder.append(paymentLinkProperties.getPlainTextIntro()).append("\n")
-                .append(paymentInfo.checkoutUrl());
+                .append(paymentUrl);
         String amount = formatAmount(paymentInfo.amount(), paymentInfo.currency());
         if (StringUtils.hasText(amount)) {
             builder.append("\nValor: ").append(amount);

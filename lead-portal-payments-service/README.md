@@ -55,6 +55,19 @@ Microserviço responsável por acompanhar pagamentos via Mercado Pago, registrar
 - `POST /api/v1/mercadopago/webhook`: endpoint para receber notificações do Mercado Pago (envie `id` em `data.id` ou como query param `id`).
 - `POST /api/v1/payments/{purchaseId}/resend`: força o reenvio do e-mail com os originais.
 
+## Tela intermediária de checkout (`/checkout`)
+
+- O serviço expõe uma página estática em `/checkout` (por padrão https://pagamentopalf.online/checkout) que funciona como ponte entre o e-mail enviado ao cliente e o checkout do Mercado Pago.
+- A página espera ao menos o parâmetro `packageId` e consulta o endpoint interno `/api/v1/payments/packages/{packageId}` para obter valor, status e o `checkoutUrl` real.
+- Quando chamada com `status`, `collection_status` ou outros parâmetros enviados pelo Mercado Pago, a UI exibe o retorno ao cliente (aprovado, pendente ou falha) reutilizando o mesmo pacote.
+- Os parâmetros suportados são:
+  - `packageId` (obrigatório): ID do pacote exportado pelo Lead Portal.
+  - `purchaseId` (opcional): ID da compra já registrada, usado apenas para exibição.
+  - `status`/`collection_status`: string retornada pelo Mercado Pago para mostrar mensagens de sucesso/falha.
+  - `autoRedirect` (default `true`): define se a página deve redirecionar automaticamente para o Mercado Pago ao carregar a partir do e-mail.
+- Configure `MERCADO_PAGO_SUCCESS_URL`, `MERCADO_PAGO_FAILURE_URL` e `MERCADO_PAGO_PENDING_URL` com `https://pagamentopalf.online/checkout`. O serviço anexa automaticamente `packageId` e `flow=success|failure|pending` antes de enviar a preferência ao Mercado Pago, garantindo que o redirecionamento tenha contexto.
+- O `email-service` passa a apontar seus CTAs para essa mesma rota, adicionando `packageId` e `purchaseId`, o que garante uma experiência consistente em qualquer dispositivo.
+
 ## Execução local
 
 ```bash

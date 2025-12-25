@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 public class CheckoutService {
@@ -201,6 +202,10 @@ public class CheckoutService {
             metadata.put("submissionEmail", imagePackage.submissionEmail());
         }
 
+        String successUrl = buildBackUrl(mercadoPagoProperties.getSuccessUrl(), imagePackage.packageId(), "success");
+        String failureUrl = buildBackUrl(mercadoPagoProperties.getFailureUrl(), imagePackage.packageId(), "failure");
+        String pendingUrl = buildBackUrl(mercadoPagoProperties.getPendingUrl(), imagePackage.packageId(), "pending");
+
         return new MercadoPagoPreferenceRequest(
                 List.of(new MercadoPagoPreferenceRequest.Item(
                         "Pacote de imagens " + imagePackage.packageId(),
@@ -209,13 +214,32 @@ public class CheckoutService {
                         currency)),
                 new MercadoPagoPreferenceRequest.Payer(buyerName, buyerEmail),
                 new MercadoPagoPreferenceRequest.BackUrls(
-                        mercadoPagoProperties.getSuccessUrl(),
-                        mercadoPagoProperties.getFailureUrl(),
-                        mercadoPagoProperties.getPendingUrl()),
+                        successUrl,
+                        failureUrl,
+                        pendingUrl),
                 metadata,
                 mercadoPagoProperties.getNotificationUrl(),
                 mercadoPagoProperties.getStatementDescriptor()
         );
+    }
+
+    private String buildBackUrl(String baseUrl, Long packageId, String flow) {
+        if (!StringUtils.hasText(baseUrl)) {
+            return null;
+        }
+        try {
+            UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl.trim());
+            if (packageId != null) {
+                builder.replaceQueryParam("packageId", packageId);
+            }
+            if (StringUtils.hasText(flow)) {
+                builder.replaceQueryParam("flow", flow);
+            }
+            return builder.build(true).toUriString();
+        } catch (IllegalArgumentException ex) {
+            log.warn("URL de retorno inválida configurada: {}", baseUrl, ex);
+            return baseUrl;
+        }
     }
 
     private void refreshPurchase(LeadPortalPurchase purchase,

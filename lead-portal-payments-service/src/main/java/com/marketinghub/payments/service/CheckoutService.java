@@ -232,7 +232,13 @@ public class CheckoutService {
         if (!StringUtils.hasText(purchase.getCheckoutUrl())) {
             return false;
         }
-        if (purchase.getStatus() == PurchaseStatus.FAILED || purchase.getStatus() == PurchaseStatus.CANCELED) {
+        if (StringUtils.hasText(purchase.getMercadoPagoPaymentId())) {
+            return false;
+        }
+        if (purchase.getStatus() == PurchaseStatus.PENDING_PAYMENT
+                || purchase.getStatus() == PurchaseStatus.APPROVED
+                || purchase.getStatus() == PurchaseStatus.FAILED
+                || purchase.getStatus() == PurchaseStatus.CANCELED) {
             return false;
         }
         Instant expiresAt = purchase.getCheckoutExpiresAt();

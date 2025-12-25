@@ -40,7 +40,7 @@ management:
         include: health,info,prometheus
 
 mercado-pago:
-  access-token: ${MERCADO_PAGO_ACCESS_TOKEN:}
+  access-token: ${MERCADO_PAGO_ACCESS_TOKEN:APP_USR-6371948622467215-020511-5317ef62bbd997d52c2979a29f2c8419-133771061}
   base-url: ${MERCADO_PAGO_BASE_URL:https://api.mercadopago.com}
   notification-url: ${MERCADO_PAGO_NOTIFICATION_URL:http://localhost:8080/api/v1/mercadopago/webhook}
   success-url: ${MERCADO_PAGO_SUCCESS_URL:}

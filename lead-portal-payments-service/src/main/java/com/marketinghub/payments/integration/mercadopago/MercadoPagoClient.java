@@ -74,9 +74,10 @@ public class MercadoPagoClient {
                     .uri("/v1/payments/{id}", paymentId)
                     .retrieve()
                     .toEntity(JsonNode.class);
-            log.info("JSON recebido do Mercado Pago (/v1/payments/{}): {}", paymentId, toJson(response.getBody()));
+            String rawJson = toJson(response.getBody());
+            log.info("JSON recebido do Mercado Pago (/v1/payments/{}): {}", paymentId, rawJson);
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                MercadoPagoPaymentDetails payment = parsePayment(response.getBody());
+                MercadoPagoPaymentDetails payment = parsePayment(response.getBody(), rawJson);
                 log.info("Pagamento {} retornado pelo Mercado Pago com status {} (amount={} {})", paymentId,
                         payment.status(), payment.amount(), payment.currency());
                 return Optional.of(payment);
@@ -136,7 +137,7 @@ public class MercadoPagoClient {
         }
     }
 
-    private MercadoPagoPaymentDetails parsePayment(JsonNode node) {
+    private MercadoPagoPaymentDetails parsePayment(JsonNode node, String rawPayload) {
         String id = node.path("id").asText(null);
         String status = node.path("status").asText(null);
         BigDecimal amount = node.hasNonNull("transaction_amount")
@@ -147,7 +148,8 @@ public class MercadoPagoClient {
         String email = node.path("payer").path("email").asText(null);
         Instant approvedAt = parseInstant(node.path("date_approved").asText(null));
         Map<String, Object> metadata = toMap(node.path("metadata"));
-        return new MercadoPagoPaymentDetails(id, status, amount, currency, description, email, approvedAt, metadata);
+        return new MercadoPagoPaymentDetails(id, status, amount, currency, description, email, approvedAt, metadata,
+                rawPayload);
     }
 
     private MercadoPagoPreferenceDetails parsePreference(JsonNode node) {

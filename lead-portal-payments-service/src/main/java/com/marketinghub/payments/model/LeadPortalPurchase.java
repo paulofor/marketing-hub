@@ -61,6 +61,9 @@ public class LeadPortalPurchase {
     @Column(name = "notification_payload", columnDefinition = "LONGTEXT")
     private String notificationPayload;
 
+    @Column(name = "mp_payment_payload", columnDefinition = "LONGTEXT")
+    private String mercadoPagoPaymentPayload;
+
     @Column(name = "delivery_attempts")
     private Integer deliveryAttempts = 0;
 
@@ -210,6 +213,14 @@ public class LeadPortalPurchase {
 
     public void setNotificationPayload(String notificationPayload) {
         this.notificationPayload = notificationPayload;
+    }
+
+    public String getMercadoPagoPaymentPayload() {
+        return mercadoPagoPaymentPayload;
+    }
+
+    public void setMercadoPagoPaymentPayload(String mercadoPagoPaymentPayload) {
+        this.mercadoPagoPaymentPayload = mercadoPagoPaymentPayload;
     }
 
     public Integer getDeliveryAttempts() {

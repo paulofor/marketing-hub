@@ -145,6 +145,7 @@ public class CheckoutService {
         purchase.setMercadoPagoPaymentId(paymentDetails.id());
         purchase.setMercadoPagoStatus(paymentDetails.status());
         purchase.setNotificationPayload(rawPayload);
+        purchase.setMercadoPagoPaymentPayload(paymentDetails.rawPayload());
         purchase.setAmount(paymentDetails.amount());
         purchase.setCurrency(paymentDetails.currency());
 

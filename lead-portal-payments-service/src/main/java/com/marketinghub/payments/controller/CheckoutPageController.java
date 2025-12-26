@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class CheckoutPageController {
 
-    @GetMapping({"/checkout", "/checkout/", "/checkout/index.html"})
+    @GetMapping({"/checkout", "/checkout/"})
     public String serveCheckoutPage() {
         return "forward:/checkout/index.html";
     }

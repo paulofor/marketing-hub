@@ -7,12 +7,12 @@ Imagedelivery e realizar o envio automático de e-mails transacionais ou de camp
 
 ```mermaid
 flowchart TD
-    LP["Lead Portal\nExportação do pacote"] -->|LeadPortalImagePackageExportDto| ES["Email Service"]
-    ES --> V["Validação\ndestinatário + conteúdo + anexo ZIP"]
+    LP["Lead Portal<br/>Exportação do pacote"] -->|LeadPortalImagePackageExportDto| ES["Email Service"]
+    ES --> V["Validação<br/>destinatário + conteúdo + anexo ZIP"]
     V --> M["Montagem do e-mail"]
-    M --> CTA["Injeção do link de compra\n(PaymentInfo.checkoutUrl)"]
-    CTA --> Bodies["Corpos HTML e texto puro\n+ pixel de rastreamento"]
-    Bodies --> Attach["Anexo ZIP das imagens\n(application/zip)"]
+    M --> CTA["Injeção do link de compra<br/>(PaymentInfo.checkoutUrl)"]
+    CTA --> Bodies["Corpos HTML e texto puro<br/>+ pixel de rastreamento"]
+    Bodies --> Attach["Anexo ZIP das imagens<br/>(application/zip)"]
     Attach --> Log["Registro em EmailLog"]
     Log --> Send["Envio via EmailSenderService"]
     Send --> Provider["SMTP/ESP"]

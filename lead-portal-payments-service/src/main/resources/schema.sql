@@ -27,8 +27,23 @@ CREATE TABLE IF NOT EXISTS lead_portal_purchase (
     INDEX idx_lead_portal_purchase_payment (mp_payment_id)
 );
 
-ALTER TABLE lead_portal_purchase
-    ADD COLUMN IF NOT EXISTS mp_payment_payload LONGTEXT AFTER notification_payload;
+SET @mp_payment_payload_exists = (
+    SELECT COUNT(*)
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'lead_portal_purchase'
+      AND column_name = 'mp_payment_payload'
+);
+
+SET @add_mp_payment_payload_column = IF(
+    @mp_payment_payload_exists = 0,
+    'ALTER TABLE lead_portal_purchase ADD COLUMN mp_payment_payload LONGTEXT AFTER notification_payload',
+    'SELECT 1'
+);
+
+PREPARE add_mp_payment_payload_stmt FROM @add_mp_payment_payload_column;
+EXECUTE add_mp_payment_payload_stmt;
+DEALLOCATE PREPARE add_mp_payment_payload_stmt;
 
 CREATE TABLE IF NOT EXISTS mercadopago_webhook_log (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,

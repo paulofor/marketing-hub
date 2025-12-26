@@ -32,13 +32,13 @@ public class CheckoutController {
     }
 
     @GetMapping("/packages/{packageId}")
-    public CreateCheckoutResponse findByPackage(@PathVariable Long packageId) {
+    public CreateCheckoutResponse findByPackage(@PathVariable("packageId") Long packageId) {
         return checkoutService.findCheckoutByPackage(packageId);
     }
 
     @PostMapping("/{purchaseId}/resend")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public void resendDelivery(@PathVariable Long purchaseId) {
+    public void resendDelivery(@PathVariable("purchaseId") Long purchaseId) {
         deliveryService.deliver(purchaseId);
     }
 }

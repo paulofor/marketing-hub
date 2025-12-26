@@ -4,9 +4,9 @@ services:
     build: null
     environment:
       MERCADO_PAGO_NOTIFICATION_URL: ${MERCADO_PAGO_NOTIFICATION_URL:-https://pagamentopalf.online/api/v1/mercadopago/webhook}
-      MERCADO_PAGO_SUCCESS_URL: ${MERCADO_PAGO_SUCCESS_URL:-https://pagamentopalf.online/pagamento/sucesso}
-      MERCADO_PAGO_FAILURE_URL: ${MERCADO_PAGO_FAILURE_URL:-https://pagamentopalf.online/pagamento/falha}
-      MERCADO_PAGO_PENDING_URL: ${MERCADO_PAGO_PENDING_URL:-https://pagamentopalf.online/pagamento/pendente}
+      MERCADO_PAGO_SUCCESS_URL: ${MERCADO_PAGO_SUCCESS_URL:-https://pagamentopalf.online/checkout}
+      MERCADO_PAGO_FAILURE_URL: ${MERCADO_PAGO_FAILURE_URL:-https://pagamentopalf.online/checkout}
+      MERCADO_PAGO_PENDING_URL: ${MERCADO_PAGO_PENDING_URL:-https://pagamentopalf.online/checkout}
     ports:
       - "${HOST_HTTP_PORT:-8092}:8080"
 

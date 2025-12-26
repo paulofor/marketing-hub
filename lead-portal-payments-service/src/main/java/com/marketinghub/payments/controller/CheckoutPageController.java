@@ -10,4 +10,10 @@ public class CheckoutPageController {
     public String serveCheckoutPage() {
         return "forward:/checkout/index.html";
     }
+
+    @GetMapping({"/pagamento", "/pagamento/", "/pagamento/sucesso", "/pagamento/falha", "/pagamento/pendente"})
+    public String servePaymentAliases() {
+        // Mantém compatibilidade com URLs antigas configuradas no Mercado Pago
+        return "forward:/checkout/index.html";
+    }
 }

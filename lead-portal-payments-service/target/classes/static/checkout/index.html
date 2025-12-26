@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pagamento das imagens originais | PALF</title>
+    <meta
+      name="description"
+      content="Confirme o pagamento do seu pacote de imagens originais com segurança pelo Mercado Pago."
+    />
+    <link rel="stylesheet" href="/checkout/styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <div class="hero__copy">
+          <p class="hero__eyebrow">Portal de Pagamentos</p>
+          <h1>Finalize o pagamento e libere as imagens originais</h1>
+          <p id="heroMessage">
+            Estamos preparando o seu checkout seguro no Mercado Pago.
+          </p>
+        </div>
+        <div class="hero__status" id="statusPill">Carregando</div>
+      </header>
+
+      <main class="content">
+        <section class="card" id="statusCard">
+          <div class="status-icon" id="statusIcon"></div>
+          <div>
+            <h2 id="statusTitle">Buscando informações do pacote…</h2>
+            <p id="statusDescription">
+              Isso leva apenas alguns segundos. Não feche esta página.
+            </p>
+          </div>
+        </section>
+
+        <section class="card" id="detailsCard" hidden>
+          <header>
+            <div>
+              <p class="eyebrow">Resumo do pedido</p>
+              <h3 id="detailsTitle">Pacote #—</h3>
+            </div>
+          </header>
+          <dl class="details">
+            <div>
+              <dt>Identificador do pacote</dt>
+              <dd id="packageId">—</dd>
+            </div>
+            <div>
+              <dt>Número do pedido</dt>
+              <dd id="purchaseId">—</dd>
+            </div>
+            <div>
+              <dt>Valor</dt>
+              <dd id="amount">—</dd>
+            </div>
+            <div>
+              <dt>Pagamento expira em</dt>
+              <dd id="expiresAt">—</dd>
+            </div>
+          </dl>
+          <p class="descriptor" id="statementDescriptor"></p>
+          <button id="payButton" class="primary" disabled>
+            Ir para o Mercado Pago
+          </button>
+          <p class="hint">
+            Você será direcionado para o ambiente seguro do Mercado Pago para
+            concluir a transação.
+          </p>
+        </section>
+
+        <section class="card warning" id="warningCard" hidden>
+          <h2>Algo deu errado</h2>
+          <p id="warningMessage"></p>
+          <button id="retryButton" class="secondary">Tentar novamente</button>
+        </section>
+      </main>
+    </div>
+
+    <footer class="footer">
+      <p>
+        Dúvidas? Entre em contato com o nosso time pelo e-mail
+        <a href="mailto:suporte@marketinghub.com.br">suporte@marketinghub.com.br</a>.
+      </p>
+    </footer>
+
+    <script type="module" src="/checkout/app.js"></script>
+  </body>
+</html>

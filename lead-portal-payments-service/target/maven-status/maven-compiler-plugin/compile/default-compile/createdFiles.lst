@@ -8,6 +8,7 @@ com/marketinghub/payments/config/RestClientConfig.class
 com/marketinghub/payments/integration/mercadopago/MercadoPagoClient$1.class
 com/marketinghub/payments/integration/mercadopago/MercadoPagoPreferenceRequest$Payer.class
 com/marketinghub/payments/dto/MercadoPagoWebhookPayload$Data.class
+com/marketinghub/payments/integration/mercadopago/MercadoPagoPreferenceDetails.class
 com/marketinghub/payments/config/EmailProperties.class
 com/marketinghub/payments/integration/mercadopago/MercadoPagoClient.class
 com/marketinghub/payments/model/PurchaseStatus.class
@@ -34,5 +35,7 @@ com/marketinghub/payments/service/StorageService.class
 com/marketinghub/payments/repository/LeadPortalPurchaseRepository.class
 com/marketinghub/payments/service/LeadPortalPackageGateway.class
 com/marketinghub/payments/dto/CreateCheckoutRequest.class
+com/marketinghub/payments/controller/CheckoutPageController.class
 com/marketinghub/payments/controller/MercadoPagoWebhookController.class
 com/marketinghub/payments/model/FlowSubmissionImagePackageStatus.class
+com/marketinghub/payments/controller/HealthController.class

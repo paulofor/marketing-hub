@@ -11,6 +11,9 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.payments.dto.MercadoPagoWebhookPayload;
 import com.marketinghub.payments.integration.mercadopago.MercadoPagoPaymentDetails;
+import com.marketinghub.payments.model.MercadoPagoWebhookLog;
+import com.marketinghub.payments.model.WebhookProcessingStatus;
+import com.marketinghub.payments.repository.MercadoPagoWebhookLogRepository;
 import com.marketinghub.payments.service.CheckoutService;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -19,10 +22,11 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 @ExtendWith(MockitoExtension.class)
 class MercadoPagoWebhookControllerTest {
@@ -30,11 +34,15 @@ class MercadoPagoWebhookControllerTest {
     @Mock
     private CheckoutService checkoutService;
 
+    @Mock
+    private MercadoPagoWebhookLogRepository webhookLogRepository;
+
     private MercadoPagoWebhookController controller;
 
     @BeforeEach
     void setUp() {
-        controller = new MercadoPagoWebhookController(checkoutService, new ObjectMapper());
+        when(webhookLogRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        controller = new MercadoPagoWebhookController(checkoutService, new ObjectMapper(), webhookLogRepository);
     }
 
     @Test
@@ -52,7 +60,8 @@ class MercadoPagoWebhookControllerTest {
                 "Pagamento teste",
                 "client@example.com",
                 Instant.now(),
-                Map.of("packageId", 1L)
+                Map.of("packageId", 1L),
+                "{\"id\":\"123\"}"
         );
 
         when(checkoutService.fetchPayment("123")).thenReturn(Optional.of(details));
@@ -61,6 +70,15 @@ class MercadoPagoWebhookControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         verify(checkoutService).updateFromPayment(eq(details), any());
+
+        ArgumentCaptor<MercadoPagoWebhookLog> logCaptor = ArgumentCaptor.forClass(MercadoPagoWebhookLog.class);
+        verify(webhookLogRepository).save(logCaptor.capture());
+        MercadoPagoWebhookLog log = logCaptor.getValue();
+        assertThat(log.getProcessingStatus()).isEqualTo(WebhookProcessingStatus.PROCESSED);
+        assertThat(log.getResourceId()).isEqualTo("123");
+        assertThat(log.getMercadoPagoStatus()).isEqualTo("approved");
+        assertThat(log.getMercadoPagoResponse()).isEqualTo("{\"id\":\"123\"}");
+        assertThat(log.getPayload()).isNotBlank();
     }
 
     @Test
@@ -76,6 +94,10 @@ class MercadoPagoWebhookControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         verify(checkoutService, never()).updateFromPayment(any(), any());
+
+        ArgumentCaptor<MercadoPagoWebhookLog> logCaptor = ArgumentCaptor.forClass(MercadoPagoWebhookLog.class);
+        verify(webhookLogRepository).save(logCaptor.capture());
+        assertThat(logCaptor.getValue().getProcessingStatus()).isEqualTo(WebhookProcessingStatus.PAYMENT_NOT_FOUND);
     }
 
     @Test
@@ -84,5 +106,9 @@ class MercadoPagoWebhookControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         verifyNoInteractions(checkoutService);
+
+        ArgumentCaptor<MercadoPagoWebhookLog> logCaptor = ArgumentCaptor.forClass(MercadoPagoWebhookLog.class);
+        verify(webhookLogRepository).save(logCaptor.capture());
+        assertThat(logCaptor.getValue().getProcessingStatus()).isEqualTo(WebhookProcessingStatus.INVALID_REQUEST);
     }
 }

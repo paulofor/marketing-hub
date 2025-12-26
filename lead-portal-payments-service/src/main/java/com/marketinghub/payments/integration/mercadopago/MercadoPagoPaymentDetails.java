@@ -12,6 +12,7 @@ public record MercadoPagoPaymentDetails(
         String description,
         String email,
         Instant dateApproved,
-        Map<String, Object> metadata
+        Map<String, Object> metadata,
+        String rawPayload
 ) {
 }

@@ -41,18 +41,28 @@ public class MercadoPagoClient {
                     request.items() != null && !request.items().isEmpty() ? request.items().get(0).unitPrice() : null,
                     request.items() != null && !request.items().isEmpty() ? request.items().get(0).currencyId() : null,
                     request.notificationUrl());
+            log.info("JSON enviado ao Mercado Pago (/checkout/preferences): {}", toJson(request));
             ResponseEntity<MercadoPagoPreferenceResponse> response = restClient.post()
                     .uri("/checkout/preferences")
                     .body(request)
                     .retrieve()
                     .toEntity(MercadoPagoPreferenceResponse.class);
             MercadoPagoPreferenceResponse body = response.getBody();
+            log.info("JSON recebido do Mercado Pago (/checkout/preferences): {}", toJson(body));
             if (body != null) {
                 log.info("Preferência {} criada no Mercado Pago (initPoint={})", body.id(), body.initPoint());
             }
             return body;
         } catch (RestClientException ex) {
-            log.error("Falha ao criar preferência no Mercado Pago", ex);
+            if (ex instanceof HttpStatusCodeException statusException) {
+                log.error(
+                        "Falha ao criar preferência no Mercado Pago (status={}, body={})",
+                        statusException.getStatusCode(),
+                        statusException.getResponseBodyAsString(),
+                        ex);
+            } else {
+                log.error("Falha ao criar preferência no Mercado Pago", ex);
+            }
             throw new IllegalStateException("Erro ao criar preferência de pagamento", ex);
         }
     }
@@ -64,6 +74,7 @@ public class MercadoPagoClient {
                     .uri("/v1/payments/{id}", paymentId)
                     .retrieve()
                     .toEntity(JsonNode.class);
+            log.info("JSON recebido do Mercado Pago (/v1/payments/{}): {}", paymentId, toJson(response.getBody()));
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 MercadoPagoPaymentDetails payment = parsePayment(response.getBody());
                 log.info("Pagamento {} retornado pelo Mercado Pago com status {} (amount={} {})", paymentId,
@@ -77,8 +88,14 @@ public class MercadoPagoClient {
                 log.warn("Pagamento {} não encontrado no Mercado Pago", paymentId);
                 return Optional.empty();
             }
+            log.error(
+                    "Erro ao consultar pagamento no Mercado Pago (status={}, body={})",
+                    ex.getStatusCode(),
+                    ex.getResponseBodyAsString(),
+                    ex);
             throw new IllegalStateException("Erro ao consultar pagamento no Mercado Pago", ex);
         } catch (RestClientException ex) {
+            log.error("Erro ao consultar pagamento no Mercado Pago", ex);
             throw new IllegalStateException("Erro ao consultar pagamento no Mercado Pago", ex);
         }
     }
@@ -90,6 +107,10 @@ public class MercadoPagoClient {
                     .uri("/checkout/preferences/{id}", preferenceId)
                     .retrieve()
                     .toEntity(JsonNode.class);
+            log.info(
+                    "JSON recebido do Mercado Pago (/checkout/preferences/{}): {}",
+                    preferenceId,
+                    toJson(response.getBody()));
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 MercadoPagoPreferenceDetails preference = parsePreference(response.getBody());
                 log.info("Preferência {} retornada pelo Mercado Pago com status {} (expira em {})", preferenceId,
@@ -103,8 +124,14 @@ public class MercadoPagoClient {
                 log.warn("Preferência {} não encontrada no Mercado Pago", preferenceId);
                 return Optional.empty();
             }
+            log.error(
+                    "Erro ao consultar preferência no Mercado Pago (status={}, body={})",
+                    ex.getStatusCode(),
+                    ex.getResponseBodyAsString(),
+                    ex);
             throw new IllegalStateException("Erro ao consultar preferência no Mercado Pago", ex);
         } catch (RestClientException ex) {
+            log.error("Erro ao consultar preferência no Mercado Pago", ex);
             throw new IllegalStateException("Erro ao consultar preferência no Mercado Pago", ex);
         }
     }
@@ -152,6 +179,18 @@ public class MercadoPagoClient {
             return OffsetDateTime.parse(raw, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toInstant();
         } catch (Exception ex) {
             return null;
+        }
+    }
+
+    private String toJson(Object payload) {
+        if (payload == null) {
+            return "null";
+        }
+        try {
+            return objectMapper.writeValueAsString(payload);
+        } catch (Exception ex) {
+            log.debug("Falha ao serializar payload do Mercado Pago para log", ex);
+            return String.valueOf(payload);
         }
     }
 }

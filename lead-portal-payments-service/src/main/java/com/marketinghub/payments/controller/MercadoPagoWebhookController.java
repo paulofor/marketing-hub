@@ -44,6 +44,7 @@ public class MercadoPagoWebhookController {
             return ResponseEntity.badRequest().build();
         }
         try {
+            log.info("Webhook do Mercado Pago recebido (id={}, topic={}, hasPayload={})", resourceId, topic, payload != null);
             Optional<MercadoPagoPaymentDetails> paymentDetails = checkoutService.fetchPayment(resourceId);
             if (paymentDetails.isEmpty()) {
                 log.warn("Pagamento {} não encontrado no Mercado Pago. Webhook ACK sem alterações.", resourceId);
@@ -51,6 +52,8 @@ public class MercadoPagoWebhookController {
             }
             String rawPayload = payload != null ? serialize(payload) : null;
             checkoutService.updateFromPayment(paymentDetails.get(), rawPayload);
+            log.info("Webhook do Mercado Pago processado com sucesso (id={}, status={})", resourceId,
+                    paymentDetails.get().status());
             return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
         } catch (Exception ex) {
             log.error("Erro ao processar webhook do Mercado Pago (id={})", resourceId, ex);

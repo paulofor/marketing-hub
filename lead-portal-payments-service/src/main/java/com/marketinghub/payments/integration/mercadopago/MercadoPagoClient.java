@@ -35,12 +35,22 @@ public class MercadoPagoClient {
 
     public MercadoPagoPreferenceResponse createPreference(MercadoPagoPreferenceRequest request) {
         try {
+            log.info("Criando preferência no Mercado Pago para packageId={} (payer={}, amount={} {}, notificationUrl={})",
+                    request.metadata().get("packageId"),
+                    request.payer() != null ? request.payer().name() : null,
+                    request.items() != null && !request.items().isEmpty() ? request.items().get(0).unitPrice() : null,
+                    request.items() != null && !request.items().isEmpty() ? request.items().get(0).currencyId() : null,
+                    request.notificationUrl());
             ResponseEntity<MercadoPagoPreferenceResponse> response = restClient.post()
                     .uri("/checkout/preferences")
                     .body(request)
                     .retrieve()
                     .toEntity(MercadoPagoPreferenceResponse.class);
-            return response.getBody();
+            MercadoPagoPreferenceResponse body = response.getBody();
+            if (body != null) {
+                log.info("Preferência {} criada no Mercado Pago (initPoint={})", body.id(), body.initPoint());
+            }
+            return body;
         } catch (RestClientException ex) {
             log.error("Falha ao criar preferência no Mercado Pago", ex);
             throw new IllegalStateException("Erro ao criar preferência de pagamento", ex);
@@ -49,12 +59,16 @@ public class MercadoPagoClient {
 
     public Optional<MercadoPagoPaymentDetails> fetchPayment(String paymentId) {
         try {
+            log.info("Consultando pagamento {} no Mercado Pago", paymentId);
             ResponseEntity<JsonNode> response = restClient.get()
                     .uri("/v1/payments/{id}", paymentId)
                     .retrieve()
                     .toEntity(JsonNode.class);
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                return Optional.of(parsePayment(response.getBody()));
+                MercadoPagoPaymentDetails payment = parsePayment(response.getBody());
+                log.info("Pagamento {} retornado pelo Mercado Pago com status {} (amount={} {})", paymentId,
+                        payment.status(), payment.amount(), payment.currency());
+                return Optional.of(payment);
             }
             log.warn("Pagamento {} não retornou corpo válido no Mercado Pago", paymentId);
             return Optional.empty();
@@ -71,12 +85,16 @@ public class MercadoPagoClient {
 
     public Optional<MercadoPagoPreferenceDetails> fetchPreference(String preferenceId) {
         try {
+            log.info("Consultando preferência {} no Mercado Pago", preferenceId);
             ResponseEntity<JsonNode> response = restClient.get()
                     .uri("/checkout/preferences/{id}", preferenceId)
                     .retrieve()
                     .toEntity(JsonNode.class);
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                return Optional.of(parsePreference(response.getBody()));
+                MercadoPagoPreferenceDetails preference = parsePreference(response.getBody());
+                log.info("Preferência {} retornada pelo Mercado Pago com status {} (expira em {})", preferenceId,
+                        preference.status(), preference.expirationDateTo());
+                return Optional.of(preference);
             }
             log.warn("Preferência {} não retornou corpo válido no Mercado Pago", preferenceId);
             return Optional.empty();

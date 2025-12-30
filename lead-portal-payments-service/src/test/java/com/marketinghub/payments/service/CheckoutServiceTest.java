@@ -15,6 +15,7 @@ import com.marketinghub.payments.dto.CreateCheckoutResponse;
 import com.marketinghub.payments.dto.LeadPortalPackageSummary;
 import com.marketinghub.payments.integration.mercadopago.MercadoPagoClient;
 import com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceDetails;
+import com.marketinghub.payments.integration.mercadopago.MercadoPagoPaymentDetails;
 import com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceResponse;
 import com.marketinghub.payments.model.FlowSubmissionImagePackageStatus;
 import com.marketinghub.payments.model.LeadPortalPurchase;
@@ -22,6 +23,7 @@ import com.marketinghub.payments.model.PurchaseStatus;
 import com.marketinghub.payments.repository.LeadPortalPurchaseRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -322,8 +324,11 @@ class CheckoutServiceTest {
         assertThat(sentRequest.payer().email()).isEqualTo("buyer@example.com");
         assertThat(sentRequest.payer().name()).isEqualTo("Buyer");
         assertThat(sentRequest.metadata()).containsEntry("packageId", 6L);
+        assertThat(sentRequest.metadata()).containsEntry("package_id", 6L);
         assertThat(sentRequest.metadata()).containsEntry("submissionId", summary.submissionId().toString());
+        assertThat(sentRequest.metadata()).containsEntry("submission_id", summary.submissionId().toString());
         assertThat(sentRequest.metadata()).containsEntry("submissionEmail", summary.submissionEmail());
+        assertThat(sentRequest.metadata()).containsEntry("submission_email", summary.submissionEmail());
     }
 
     @Test
@@ -362,5 +367,65 @@ class CheckoutServiceTest {
         assertThat(sentRequest.items().get(0).currencyId()).isEqualTo("BRL");
         assertThat(sentRequest.payer().email()).isEqualTo(summary.submissionEmail());
         assertThat(sentRequest.payer().name()).isEqualTo(summary.submissionName());
+    }
+
+    @Test
+    void shouldUpdatePurchaseFromSnakeCaseMetadataWhenPaymentApproved() {
+        Instant approvalDate = Instant.now();
+        MercadoPagoPaymentDetails paymentDetails = new MercadoPagoPaymentDetails(
+                "pay-1",
+                "approved",
+                new BigDecimal("99.90"),
+                "BRL",
+                "Pagamento teste",
+                null,
+                approvalDate,
+                Map.of(
+                        "package_id", 1234,
+                        "submission_id", "sub-001",
+                        "submission_email", "submission@example.com"
+                ),
+                "{\"id\":\"pay-1\"}");
+
+        when(purchaseRepository.findByMercadoPagoPaymentId("pay-1")).thenReturn(Optional.empty());
+        when(purchaseRepository.findTopByPackageIdOrderByCreatedAtDesc(1234L)).thenReturn(Optional.empty());
+        when(purchaseRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        LeadPortalPurchase purchase = checkoutService.updateFromPayment(paymentDetails, paymentDetails.rawPayload());
+
+        assertThat(purchase.getPackageId()).isEqualTo(1234L);
+        assertThat(purchase.getSubmissionId()).isEqualTo("sub-001");
+        assertThat(purchase.getBuyerEmail()).isEqualTo("submission@example.com");
+        assertThat(purchase.getStatus()).isEqualTo(PurchaseStatus.APPROVED);
+        assertThat(purchase.getPaymentApprovedAt()).isEqualTo(approvalDate);
+    }
+
+    @Test
+    void shouldExtractPackageIdFromStringMetadata() {
+        MercadoPagoPaymentDetails paymentDetails = new MercadoPagoPaymentDetails(
+                "pay-2",
+                "pending",
+                BigDecimal.ONE,
+                "BRL",
+                "Pagamento teste",
+                "payer@example.com",
+                null,
+                Map.of(
+                        "package_id", "5678",
+                        "submission_id", "sub-002",
+                        "submission_email", "payer@example.com"
+                ),
+                "{\"id\":\"pay-2\"}");
+
+        when(purchaseRepository.findByMercadoPagoPaymentId("pay-2")).thenReturn(Optional.empty());
+        when(purchaseRepository.findTopByPackageIdOrderByCreatedAtDesc(5678L)).thenReturn(Optional.empty());
+        when(purchaseRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        LeadPortalPurchase purchase = checkoutService.updateFromPayment(paymentDetails, paymentDetails.rawPayload());
+
+        assertThat(purchase.getPackageId()).isEqualTo(5678L);
+        assertThat(purchase.getSubmissionId()).isEqualTo("sub-002");
+        assertThat(purchase.getBuyerEmail()).isEqualTo("payer@example.com");
+        assertThat(purchase.getStatus()).isEqualTo(PurchaseStatus.PENDING_PAYMENT);
     }
 }

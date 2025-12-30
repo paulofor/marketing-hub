@@ -140,8 +140,10 @@ public class CheckoutService {
                         .orElse(new LeadPortalPurchase()));
 
         purchase.setPackageId(packageId);
-        purchase.setSubmissionId((String) paymentDetails.metadata().getOrDefault("submissionId", null));
-        purchase.setBuyerEmail(paymentDetails.email());
+        purchase.setSubmissionId(extractMetadataString(paymentDetails.metadata(), "submissionId", "submission_id"));
+        String submissionEmail = extractMetadataString(paymentDetails.metadata(), "submissionEmail", "submission_email");
+        String buyerEmail = StringUtils.hasText(paymentDetails.email()) ? paymentDetails.email() : submissionEmail;
+        purchase.setBuyerEmail(buyerEmail);
         purchase.setMercadoPagoPaymentId(paymentDetails.id());
         purchase.setMercadoPagoStatus(paymentDetails.status());
         purchase.setNotificationPayload(rawPayload);
@@ -196,11 +198,14 @@ public class CheckoutService {
                                                                 String buyerEmail) {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("packageId", imagePackage.packageId());
+        metadata.put("package_id", imagePackage.packageId());
         if (imagePackage.submissionId() != null) {
             metadata.put("submissionId", imagePackage.submissionId().toString());
+            metadata.put("submission_id", imagePackage.submissionId().toString());
         }
         if (imagePackage.submissionEmail() != null) {
             metadata.put("submissionEmail", imagePackage.submissionEmail());
+            metadata.put("submission_email", imagePackage.submissionEmail());
         }
 
         String successUrl = buildBackUrl(mercadoPagoProperties.getSuccessUrl(), imagePackage.packageId(), "success");
@@ -327,17 +332,42 @@ public class CheckoutService {
     }
 
     private Long extractPackageId(Map<String, Object> metadata) {
-        Object value = metadata != null ? metadata.get("packageId") : null;
-        if (value == null) {
+        return extractLong(metadata, "packageId", "package_id");
+    }
+
+    private Long extractLong(Map<String, Object> metadata, String... keys) {
+        if (metadata == null || keys == null) {
             return null;
         }
-        if (value instanceof Number number) {
-            return number.longValue();
+        for (String key : keys) {
+            Object value = metadata.get(key);
+            if (value instanceof Number number) {
+                return number.longValue();
+            }
+            if (value instanceof String str && StringUtils.hasText(str)) {
+                try {
+                    return Long.parseLong(str);
+                } catch (NumberFormatException ignored) {
+                }
+            }
         }
-        if (value instanceof String str && StringUtils.hasText(str)) {
-            try {
-                return Long.parseLong(str);
-            } catch (NumberFormatException ignored) {
+        return null;
+    }
+
+    private String extractMetadataString(Map<String, Object> metadata, String... keys) {
+        if (metadata == null || keys == null) {
+            return null;
+        }
+        for (String key : keys) {
+            Object value = metadata.get(key);
+            if (value == null) {
+                continue;
+            }
+            if (value instanceof String str && StringUtils.hasText(str)) {
+                return str;
+            }
+            if (value instanceof Number number) {
+                return number.toString();
             }
         }
         return null;

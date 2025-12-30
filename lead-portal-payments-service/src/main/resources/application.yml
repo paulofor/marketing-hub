@@ -51,11 +51,11 @@ mercado-pago:
 lead-portal:
   storage:
     bucket: ${LEAD_PORTAL_STORAGE_BUCKET:leadportal}
-    endpoint: ${LEAD_PORTAL_STORAGE_ENDPOINT:}
-    access-key-id: ${LEAD_PORTAL_STORAGE_ACCESS_KEY_ID:}
-    secret-access-key: ${LEAD_PORTAL_STORAGE_SECRET_ACCESS_KEY:}
+    endpoint: ${LEAD_PORTAL_STORAGE_ENDPOINT:https://95b059f4f73518a658d07a19438f38c9.r2.cloudflarestorage.com}
+    access-key-id: ${LEAD_PORTAL_STORAGE_ACCESS_KEY_ID:fafc943bd27d2a1c55c84f80778994a0}
+    secret-access-key: ${LEAD_PORTAL_STORAGE_SECRET_ACCESS_KEY:4ee618dd20bb752711ee0242469a70fadb9bdc0c921ded7e1177eeb681ddfc54}
     region: ${LEAD_PORTAL_STORAGE_REGION:auto}
-    public-base-url: ${LEAD_PORTAL_STORAGE_PUBLIC_BASE_URL:}
+    public-base-url: ${LEAD_PORTAL_STORAGE_PUBLIC_BASE_URL:https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev}
     originals-prefix: ${LEAD_PORTAL_ORIGINALS_PREFIX:originals}
 
 payments:

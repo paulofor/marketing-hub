@@ -45,6 +45,9 @@ class CheckoutServiceTest {
     @Mock
     private LeadPortalPurchaseRepository purchaseRepository;
 
+    @Mock
+    private PremiumDeliveryService premiumDeliveryService;
+
     private PaymentProperties paymentProperties;
     private MercadoPagoProperties mercadoPagoProperties;
     private CheckoutService checkoutService;
@@ -58,7 +61,8 @@ class CheckoutServiceTest {
                 packageGateway,
                 purchaseRepository,
                 mercadoPagoProperties,
-                paymentProperties);
+                paymentProperties,
+                premiumDeliveryService);
     }
 
     @Test

@@ -45,6 +45,38 @@ PREPARE add_mp_payment_payload_stmt FROM @add_mp_payment_payload_column;
 EXECUTE add_mp_payment_payload_stmt;
 DEALLOCATE PREPARE add_mp_payment_payload_stmt;
 
+
+CREATE TABLE IF NOT EXISTS lead_portal_premium_delivery (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    purchase_id BIGINT NOT NULL,
+    package_id BIGINT NOT NULL,
+    submission_id VARCHAR(36),
+    submission_name VARCHAR(255),
+    submission_email VARCHAR(320),
+    buyer_name VARCHAR(255),
+    buyer_email VARCHAR(320),
+    recipient_name VARCHAR(255),
+    recipient_email VARCHAR(320) NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING_ZIP',
+    zip_object_key VARCHAR(512),
+    zip_download_url VARCHAR(1024),
+    zip_size_bytes BIGINT,
+    zip_generated_at TIMESTAMP NULL,
+    zip_attempts INT NOT NULL DEFAULT 0,
+    zip_last_attempt TIMESTAMP NULL,
+    zip_last_error TEXT NULL,
+    email_request_id VARCHAR(64),
+    email_sent_at TIMESTAMP NULL,
+    email_attempts INT NOT NULL DEFAULT 0,
+    email_last_attempt TIMESTAMP NULL,
+    email_last_error TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_premium_delivery_purchase FOREIGN KEY (purchase_id) REFERENCES lead_portal_purchase(id)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_premium_delivery_purchase ON lead_portal_premium_delivery(purchase_id);
+CREATE INDEX IF NOT EXISTS idx_premium_delivery_status ON lead_portal_premium_delivery(status, updated_at);
+
 CREATE TABLE IF NOT EXISTS mercadopago_webhook_log (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     resource_id VARCHAR(150),

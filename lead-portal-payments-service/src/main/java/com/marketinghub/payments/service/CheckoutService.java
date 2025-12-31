@@ -40,17 +40,20 @@ public class CheckoutService {
     private final LeadPortalPurchaseRepository purchaseRepository;
     private final MercadoPagoProperties mercadoPagoProperties;
     private final PaymentProperties paymentProperties;
+    private final PremiumDeliveryService premiumDeliveryService;
 
     public CheckoutService(MercadoPagoClient mercadoPagoClient,
                            LeadPortalPackageGateway packageGateway,
                            LeadPortalPurchaseRepository purchaseRepository,
                            MercadoPagoProperties mercadoPagoProperties,
-                           PaymentProperties paymentProperties) {
+                           PaymentProperties paymentProperties,
+                           PremiumDeliveryService premiumDeliveryService) {
         this.mercadoPagoClient = mercadoPagoClient;
         this.packageGateway = packageGateway;
         this.purchaseRepository = purchaseRepository;
         this.mercadoPagoProperties = mercadoPagoProperties;
         this.paymentProperties = paymentProperties;
+        this.premiumDeliveryService = premiumDeliveryService;
     }
 
     public Optional<MercadoPagoPaymentDetails> fetchPayment(String paymentId) {
@@ -160,7 +163,15 @@ public class CheckoutService {
             purchase.setStatus(PurchaseStatus.PENDING_PAYMENT);
         }
 
-        return purchaseRepository.save(purchase);
+        LeadPortalPurchase saved = purchaseRepository.save(purchase);
+        if (saved.getStatus() == PurchaseStatus.APPROVED) {
+            try {
+                premiumDeliveryService.ensureQueued(saved);
+            } catch (Exception ex) {
+                log.error("Falha ao registrar entrega premium para a compra {}", saved.getId(), ex);
+            }
+        }
+        return saved;
     }
 
     private void validatePackageStatus(FlowSubmissionImagePackageStatus status) {

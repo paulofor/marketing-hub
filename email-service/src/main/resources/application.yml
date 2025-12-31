@@ -87,3 +87,14 @@ email:
 logging:
   level:
     com.marketinghub.emailservice: INFO
+
+premium-delivery:
+  email:
+    enabled: ${PREMIUM_DELIVERY_EMAIL_ENABLED:true}
+    batch-size: ${PREMIUM_DELIVERY_EMAIL_BATCH_SIZE:5}
+    max-attempts: ${PREMIUM_DELIVERY_EMAIL_MAX_ATTEMPTS:5}
+    lock-seconds: ${PREMIUM_DELIVERY_EMAIL_LOCK_SECONDS:300}
+    scheduler:
+      delay: ${PREMIUM_DELIVERY_EMAIL_DELAY:60000}
+      initial-delay: ${PREMIUM_DELIVERY_EMAIL_INITIAL_DELAY:30000}
+

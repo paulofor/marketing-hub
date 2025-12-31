@@ -3,7 +3,7 @@ package com.marketinghub.payments.controller;
 import com.marketinghub.payments.dto.CreateCheckoutRequest;
 import com.marketinghub.payments.dto.CreateCheckoutResponse;
 import com.marketinghub.payments.service.CheckoutService;
-import com.marketinghub.payments.service.DeliveryService;
+import com.marketinghub.payments.service.PremiumDeliveryService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,11 +19,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class CheckoutController {
 
     private final CheckoutService checkoutService;
-    private final DeliveryService deliveryService;
+    private final PremiumDeliveryService premiumDeliveryService;
 
-    public CheckoutController(CheckoutService checkoutService, DeliveryService deliveryService) {
+    public CheckoutController(CheckoutService checkoutService, PremiumDeliveryService premiumDeliveryService) {
         this.checkoutService = checkoutService;
-        this.deliveryService = deliveryService;
+        this.premiumDeliveryService = premiumDeliveryService;
     }
 
     @PostMapping("/checkout")
@@ -39,6 +39,6 @@ public class CheckoutController {
     @PostMapping("/{purchaseId}/resend")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void resendDelivery(@PathVariable("purchaseId") Long purchaseId) {
-        deliveryService.deliver(purchaseId);
+        premiumDeliveryService.forceResend(purchaseId);
     }
 }

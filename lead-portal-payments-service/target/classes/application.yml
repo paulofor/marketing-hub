@@ -5,9 +5,10 @@ spring:
   application:
     name: lead-portal-payments-service
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:payments;MODE=MySQL;DB_CLOSE_DELAY=-1}
-    username: ${SPRING_DATASOURCE_USERNAME:sa}
-    password: ${SPRING_DATASOURCE_PASSWORD:}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&serverTimezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:marketing_hub_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:${MYSQL_PASS:Ab9!rG4wX8_tMq2Bz7#HpK5V}}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER:com.mysql.cj.jdbc.Driver}
   jpa:
     hibernate:
       ddl-auto: none
@@ -17,19 +18,7 @@ spring:
   sql:
     init:
       mode: always
-  mail:
-    host: ${SPRING_MAIL_HOST:localhost}
-    port: ${SPRING_MAIL_PORT:1025}
-    username: ${SPRING_MAIL_USERNAME:}
-    password: ${SPRING_MAIL_PASSWORD:}
-    properties:
-      mail:
-        smtp:
-          auth: ${SPRING_MAIL_SMTP_AUTH:false}
-          starttls:
-            enable: ${SPRING_MAIL_SMTP_STARTTLS_ENABLE:false}
-        transport:
-          protocol: smtp
+      schema-locations: classpath:schema.sql,classpath:db/changelog/lead-portal-purchase-add-checkout-expires.sql
 
 management:
   endpoints:
@@ -38,27 +27,18 @@ management:
         include: health,info,prometheus
 
 mercado-pago:
-  access-token: ${MERCADO_PAGO_ACCESS_TOKEN:}
+  access-token: ${MERCADO_PAGO_ACCESS_TOKEN:APP_USR-6371948622467215-020511-5317ef62bbd997d52c2979a29f2c8419-133771061}
   base-url: ${MERCADO_PAGO_BASE_URL:https://api.mercadopago.com}
-  notification-url: ${MERCADO_PAGO_NOTIFICATION_URL:http://localhost:8080/api/v1/mercadopago/webhook}
-  success-url: ${MERCADO_PAGO_SUCCESS_URL:}
-  failure-url: ${MERCADO_PAGO_FAILURE_URL:}
-  pending-url: ${MERCADO_PAGO_PENDING_URL:}
+  notification-url: ${MERCADO_PAGO_NOTIFICATION_URL:https://pagamentopalf.online/api/v1/mercadopago/webhook}
+  success-url: ${MERCADO_PAGO_SUCCESS_URL:https://pagamentopalf.online/checkout}
+  failure-url: ${MERCADO_PAGO_FAILURE_URL:https://pagamentopalf.online/checkout}
+  pending-url: ${MERCADO_PAGO_PENDING_URL:https://pagamentopalf.online/checkout}
   statement-descriptor: ${MERCADO_PAGO_STATEMENT_DESCRIPTOR:MarketingHub}
-
-lead-portal:
-  storage:
-    bucket: ${LEAD_PORTAL_STORAGE_BUCKET:leadportal}
-    endpoint: ${LEAD_PORTAL_STORAGE_ENDPOINT:}
-    access-key-id: ${LEAD_PORTAL_STORAGE_ACCESS_KEY_ID:}
-    secret-access-key: ${LEAD_PORTAL_STORAGE_SECRET_ACCESS_KEY:}
-    region: ${LEAD_PORTAL_STORAGE_REGION:auto}
-    public-base-url: ${LEAD_PORTAL_STORAGE_PUBLIC_BASE_URL:}
-    originals-prefix: ${LEAD_PORTAL_ORIGINALS_PREFIX:originals}
 
 payments:
   default-amount: ${PAYMENTS_DEFAULT_AMOUNT:49.90}
   default-currency: ${PAYMENTS_DEFAULT_CURRENCY:BRL}
+  checkout-ttl: ${PAYMENTS_CHECKOUT_TTL:PT72H}
 
 delivery:
   enabled: ${DELIVERY_ENABLED:true}
@@ -66,8 +46,3 @@ delivery:
   max-attempts: ${DELIVERY_MAX_ATTEMPTS:5}
   initial-delay: ${DELIVERY_INITIAL_DELAY:20000}
   fixed-delay: ${DELIVERY_FIXED_DELAY:60000}
-
-email:
-  from: ${EMAIL_FROM_ADDRESS:no-reply@marketinghub}
-  reply-to: ${EMAIL_REPLY_TO:}
-  subject: ${EMAIL_SUBJECT:Suas imagens originais estão prontas}

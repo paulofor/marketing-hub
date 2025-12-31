@@ -18,14 +18,14 @@ public class DeliveryScheduler {
 
     private final DeliveryProperties properties;
     private final LeadPortalPurchaseRepository purchaseRepository;
-    private final DeliveryService deliveryService;
+    private final PremiumDeliveryService premiumDeliveryService;
 
     public DeliveryScheduler(DeliveryProperties properties,
                              LeadPortalPurchaseRepository purchaseRepository,
-                             DeliveryService deliveryService) {
+                             PremiumDeliveryService premiumDeliveryService) {
         this.properties = properties;
         this.purchaseRepository = purchaseRepository;
-        this.deliveryService = deliveryService;
+        this.premiumDeliveryService = premiumDeliveryService;
     }
 
     @Scheduled(initialDelayString = "${delivery.initial-delay:20000}", fixedDelayString = "${delivery.fixed-delay:60000}")
@@ -47,9 +47,9 @@ public class DeliveryScheduler {
                 continue;
             }
             try {
-                deliveryService.deliver(purchase.getId());
+                premiumDeliveryService.ensureQueued(purchase);
             } catch (Exception ex) {
-                log.error("Erro ao entregar compra {}", purchase.getId(), ex);
+                log.error("Erro ao enfileirar entrega premium da compra {}", purchase.getId(), ex);
             }
         }
     }

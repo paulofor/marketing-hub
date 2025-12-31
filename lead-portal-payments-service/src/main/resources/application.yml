@@ -19,19 +19,6 @@ spring:
     init:
       mode: always
       schema-locations: classpath:schema.sql,classpath:db/changelog/lead-portal-purchase-add-checkout-expires.sql
-  mail:
-    host: ${SPRING_MAIL_HOST:localhost}
-    port: ${SPRING_MAIL_PORT:1025}
-    username: ${SPRING_MAIL_USERNAME:}
-    password: ${SPRING_MAIL_PASSWORD:}
-    properties:
-      mail:
-        smtp:
-          auth: ${SPRING_MAIL_SMTP_AUTH:false}
-          starttls:
-            enable: ${SPRING_MAIL_SMTP_STARTTLS_ENABLE:false}
-        transport:
-          protocol: smtp
 
 management:
   endpoints:
@@ -48,16 +35,6 @@ mercado-pago:
   pending-url: ${MERCADO_PAGO_PENDING_URL:https://pagamentopalf.online/checkout}
   statement-descriptor: ${MERCADO_PAGO_STATEMENT_DESCRIPTOR:MarketingHub}
 
-lead-portal:
-  storage:
-    bucket: ${LEAD_PORTAL_STORAGE_BUCKET:leadportal}
-    endpoint: ${LEAD_PORTAL_STORAGE_ENDPOINT:https://95b059f4f73518a658d07a19438f38c9.r2.cloudflarestorage.com}
-    access-key-id: ${LEAD_PORTAL_STORAGE_ACCESS_KEY_ID:fafc943bd27d2a1c55c84f80778994a0}
-    secret-access-key: ${LEAD_PORTAL_STORAGE_SECRET_ACCESS_KEY:4ee618dd20bb752711ee0242469a70fadb9bdc0c921ded7e1177eeb681ddfc54}
-    region: ${LEAD_PORTAL_STORAGE_REGION:auto}
-    public-base-url: ${LEAD_PORTAL_STORAGE_PUBLIC_BASE_URL:https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev}
-    originals-prefix: ${LEAD_PORTAL_ORIGINALS_PREFIX:originals}
-
 payments:
   default-amount: ${PAYMENTS_DEFAULT_AMOUNT:49.90}
   default-currency: ${PAYMENTS_DEFAULT_CURRENCY:BRL}
@@ -69,8 +46,3 @@ delivery:
   max-attempts: ${DELIVERY_MAX_ATTEMPTS:5}
   initial-delay: ${DELIVERY_INITIAL_DELAY:20000}
   fixed-delay: ${DELIVERY_FIXED_DELAY:60000}
-
-email:
-  from: ${EMAIL_FROM_ADDRESS:no-reply@marketinghub}
-  reply-to: ${EMAIL_REPLY_TO:}
-  subject: ${EMAIL_SUBJECT:Suas imagens originais estão prontas}

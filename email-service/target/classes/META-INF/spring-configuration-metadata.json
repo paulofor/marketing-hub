@@ -24,6 +24,22 @@
       "name": "lead-portal.dispatch",
       "type": "com.marketinghub.emailservice.config.LeadPortalDispatchProperties",
       "sourceType": "com.marketinghub.emailservice.config.LeadPortalDispatchProperties"
+    },
+    {
+      "name": "lead-portal.payment-link",
+      "type": "com.marketinghub.emailservice.config.LeadPortalPaymentLinkProperties",
+      "sourceType": "com.marketinghub.emailservice.config.LeadPortalPaymentLinkProperties"
+    },
+    {
+      "name": "premium-delivery.email",
+      "type": "com.marketinghub.emailservice.config.PremiumDeliveryProperties",
+      "sourceType": "com.marketinghub.emailservice.config.PremiumDeliveryProperties"
+    },
+    {
+      "name": "premium-delivery.email.scheduler",
+      "type": "com.marketinghub.emailservice.config.PremiumDeliveryProperties$Scheduler",
+      "sourceType": "com.marketinghub.emailservice.config.PremiumDeliveryProperties",
+      "sourceMethod": "getScheduler()"
     }
   ],
   "properties": [
@@ -141,6 +157,89 @@
       "type": "java.lang.Long",
       "sourceType": "com.marketinghub.emailservice.config.LeadPortalDispatchProperties",
       "defaultValue": 0
+    },
+    {
+      "name": "lead-portal.payment-link.allowed-hosts",
+      "type": "java.util.List<java.lang.String>",
+      "sourceType": "com.marketinghub.emailservice.config.LeadPortalPaymentLinkProperties"
+    },
+    {
+      "name": "lead-portal.payment-link.button-color",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.emailservice.config.LeadPortalPaymentLinkProperties",
+      "defaultValue": "#00a650"
+    },
+    {
+      "name": "lead-portal.payment-link.button-text",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.emailservice.config.LeadPortalPaymentLinkProperties",
+      "defaultValue": "Quero liberar as imagens originais"
+    },
+    {
+      "name": "lead-portal.payment-link.entrypoint-base-url",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.emailservice.config.LeadPortalPaymentLinkProperties",
+      "defaultValue": "https:\/\/pagamentopalf.online\/checkout"
+    },
+    {
+      "name": "lead-portal.payment-link.package-id-query-param",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.emailservice.config.LeadPortalPaymentLinkProperties",
+      "defaultValue": "packageId"
+    },
+    {
+      "name": "lead-portal.payment-link.plain-text-intro",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.emailservice.config.LeadPortalPaymentLinkProperties",
+      "defaultValue": "Finalize o pagamento e libere as imagens originais:"
+    },
+    {
+      "name": "lead-portal.payment-link.purchase-id-query-param",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.emailservice.config.LeadPortalPaymentLinkProperties",
+      "defaultValue": "purchaseId"
+    },
+    {
+      "name": "lead-portal.payment-link.validate-host",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.marketinghub.emailservice.config.LeadPortalPaymentLinkProperties",
+      "defaultValue": true
+    },
+    {
+      "name": "premium-delivery.email.batch-size",
+      "type": "java.lang.Integer",
+      "sourceType": "com.marketinghub.emailservice.config.PremiumDeliveryProperties",
+      "defaultValue": 5
+    },
+    {
+      "name": "premium-delivery.email.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.marketinghub.emailservice.config.PremiumDeliveryProperties",
+      "defaultValue": true
+    },
+    {
+      "name": "premium-delivery.email.lock-seconds",
+      "type": "java.lang.Integer",
+      "sourceType": "com.marketinghub.emailservice.config.PremiumDeliveryProperties",
+      "defaultValue": 300
+    },
+    {
+      "name": "premium-delivery.email.max-attempts",
+      "type": "java.lang.Integer",
+      "sourceType": "com.marketinghub.emailservice.config.PremiumDeliveryProperties",
+      "defaultValue": 5
+    },
+    {
+      "name": "premium-delivery.email.scheduler.delay",
+      "type": "java.lang.Long",
+      "sourceType": "com.marketinghub.emailservice.config.PremiumDeliveryProperties$Scheduler",
+      "defaultValue": 60000
+    },
+    {
+      "name": "premium-delivery.email.scheduler.initial-delay",
+      "type": "java.lang.Long",
+      "sourceType": "com.marketinghub.emailservice.config.PremiumDeliveryProperties$Scheduler",
+      "defaultValue": 25000
     }
   ],
   "hints": []

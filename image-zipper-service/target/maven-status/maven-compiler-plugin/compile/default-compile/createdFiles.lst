@@ -1,0 +1,15 @@
+com/marketinghub/zipper/config/PremiumDeliveryProperties.class
+com/marketinghub/zipper/service/ZipProcessingService$PendingPackage.class
+com/marketinghub/zipper/service/ZipProcessingService$WatermarkedAsset.class
+com/marketinghub/zipper/config/ZipperProperties.class
+com/marketinghub/zipper/config/StorageProperties.class
+com/marketinghub/zipper/service/PremiumDeliveryZipService$OriginalAsset.class
+com/marketinghub/zipper/service/PremiumDeliveryZipService$PendingDelivery.class
+com/marketinghub/zipper/config/PremiumDeliveryProperties$Scheduler.class
+com/marketinghub/zipper/config/S3ClientConfiguration.class
+com/marketinghub/zipper/service/StorageService.class
+com/marketinghub/zipper/service/PremiumDeliveryZipService.class
+com/marketinghub/zipper/config/ZipperProperties$Scheduler.class
+com/marketinghub/zipper/ImageZipperServiceApplication.class
+com/marketinghub/zipper/service/PremiumDeliveryStatus.class
+com/marketinghub/zipper/service/ZipProcessingService.class

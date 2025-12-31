@@ -2,10 +2,10 @@ spring:
   application:
     name: email-service
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:emailservice;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
-    username: ${SPRING_DATASOURCE_USERNAME:sa}
-    password: ${SPRING_DATASOURCE_PASSWORD:}
-    driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.h2.Driver}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&serverTimezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:marketing_hub_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:${MYSQL_PASS:Ab9!rG4wX8_tMq2Bz7#HpK5V}}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER:com.mysql.cj.jdbc.Driver}
   jpa:
     hibernate:
       ddl-auto: none
@@ -67,14 +67,34 @@ lead-portal:
     poll-interval: ${LEAD_PORTAL_DISPATCH_POLL_INTERVAL:60000}
     # Timeout mais alto para baixar anexos grandes do storage
     read-timeout: ${LEAD_PORTAL_DISPATCH_READ_TIMEOUT:180000}
+  payment-link:
+    validate-host: ${LEAD_PORTAL_PAYMENT_VALIDATE_HOST:true}
+    allowed-hosts: ${LEAD_PORTAL_PAYMENT_ALLOWED_HOSTS:pagamentopalf.online,www.pagamentopalf.online,www.mercadopago.com.br,mercadopago.com.br,www.mercadopago.com}
+    entrypoint-base-url: ${LEAD_PORTAL_PAYMENT_ENTRYPOINT_BASE_URL:https://pagamentopalf.online/checkout}
+    package-id-query-param: ${LEAD_PORTAL_PAYMENT_PACKAGE_PARAM:packageId}
+    purchase-id-query-param: ${LEAD_PORTAL_PAYMENT_PURCHASE_PARAM:purchaseId}
+    button-color: ${LEAD_PORTAL_PAYMENT_BUTTON_COLOR:#00a650}
+    button-text: ${LEAD_PORTAL_PAYMENT_BUTTON_TEXT:Quero liberar as imagens originais}
+    plain-text-intro: ${LEAD_PORTAL_PAYMENT_PLAIN_INTRO:Finalize o pagamento e libere as imagens originais:}
 email-service:
   default-from-address: ${EMAIL_SERVICE_FROM_ADDRESS:imagens@oportunidadebrasil.shop}
   dry-run: ${EMAIL_SERVICE_DRY_RUN:false}
 
 email:
   tracking:
-    base-url: ${EMAIL_TRACKING_BASE_URL:http://191.252.92.222:8000/api/v1/tracking/pixel}
+    base-url: ${EMAIL_TRACKING_BASE_URL:http://191.252.120.96:8086/api/v1/tracking/pixel}
 
 logging:
   level:
     com.marketinghub.emailservice: INFO
+
+premium-delivery:
+  email:
+    enabled: ${PREMIUM_DELIVERY_EMAIL_ENABLED:true}
+    batch-size: ${PREMIUM_DELIVERY_EMAIL_BATCH_SIZE:5}
+    max-attempts: ${PREMIUM_DELIVERY_EMAIL_MAX_ATTEMPTS:5}
+    lock-seconds: ${PREMIUM_DELIVERY_EMAIL_LOCK_SECONDS:300}
+    scheduler:
+      delay: ${PREMIUM_DELIVERY_EMAIL_DELAY:60000}
+      initial-delay: ${PREMIUM_DELIVERY_EMAIL_INITIAL_DELAY:30000}
+

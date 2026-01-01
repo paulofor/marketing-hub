@@ -29,6 +29,7 @@ import {
   Users,
   Workflow,
   AlertTriangle,
+  CreditCard,
 } from "lucide-react";
 import experimentIcon from "../assets/icons/experiment-icon.svg";
 import hypothesisIcon from "../assets/icons/hypothesis-icon.svg";
@@ -147,6 +148,12 @@ const NAV_SECTIONS: NavSection[] = [
         icon: ClipboardCheck,
       },
       { to: "/analytics", label: "Analytics", icon: BarChart3 },
+    ],
+  },
+  {
+    title: "Financeiro",
+    items: [
+      { to: "/payments", label: "Pagamentos", icon: CreditCard },
     ],
   },
   {

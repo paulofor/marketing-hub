@@ -75,6 +75,7 @@ import WhatsAppConsolePage from "./pages/whatsapp/WhatsAppConsolePage";
 import LeadPortalExperimentMetricsPage from "./pages/leadPortal/LeadPortalExperimentMetricsPage";
 import LeadPortalImagesPage from "./pages/leadPortal/LeadPortalImagesPage";
 import LeadPortalImagePackageDetailPage from "./pages/leadPortal/LeadPortalImagePackageDetailPage";
+import PaymentsDashboardPage from "./pages/payments/PaymentsDashboardPage";
 
 export default function App() {
   return (
@@ -207,6 +208,7 @@ export default function App() {
                 path="/lead-portal/images/:packageId"
                 element={<LeadPortalImagePackageDetailPage />}
               />
+              <Route path="/payments" element={<PaymentsDashboardPage />} />
               <Route path="/chat-dialogs" element={<ChatDialogListPage />} />
               <Route path="/chat-dialogs/new" element={<NewChatDialogPage />} />
               <Route path="/prompt-entities" element={<PromptEntitiesPage />} />

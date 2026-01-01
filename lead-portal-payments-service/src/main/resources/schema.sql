@@ -74,8 +74,41 @@ CREATE TABLE IF NOT EXISTS lead_portal_premium_delivery (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_premium_delivery_purchase FOREIGN KEY (purchase_id) REFERENCES lead_portal_purchase(id)
 );
-CREATE UNIQUE INDEX IF NOT EXISTS uq_premium_delivery_purchase ON lead_portal_premium_delivery(purchase_id);
-CREATE INDEX IF NOT EXISTS idx_premium_delivery_status ON lead_portal_premium_delivery(status, updated_at);
+SET @premium_delivery_unique_idx_exists = (
+    SELECT COUNT(*)
+    FROM information_schema.statistics
+    WHERE table_schema = DATABASE()
+      AND table_name = 'lead_portal_premium_delivery'
+      AND index_name = 'uq_premium_delivery_purchase'
+);
+
+SET @create_premium_delivery_unique_idx = IF(
+    @premium_delivery_unique_idx_exists = 0,
+    'CREATE UNIQUE INDEX uq_premium_delivery_purchase ON lead_portal_premium_delivery(purchase_id)',
+    'SELECT 1'
+);
+
+PREPARE create_premium_delivery_unique_idx_stmt FROM @create_premium_delivery_unique_idx;
+EXECUTE create_premium_delivery_unique_idx_stmt;
+DEALLOCATE PREPARE create_premium_delivery_unique_idx_stmt;
+
+SET @premium_delivery_status_idx_exists = (
+    SELECT COUNT(*)
+    FROM information_schema.statistics
+    WHERE table_schema = DATABASE()
+      AND table_name = 'lead_portal_premium_delivery'
+      AND index_name = 'idx_premium_delivery_status'
+);
+
+SET @create_premium_delivery_status_idx = IF(
+    @premium_delivery_status_idx_exists = 0,
+    'CREATE INDEX idx_premium_delivery_status ON lead_portal_premium_delivery(status, updated_at)',
+    'SELECT 1'
+);
+
+PREPARE create_premium_delivery_status_idx_stmt FROM @create_premium_delivery_status_idx;
+EXECUTE create_premium_delivery_status_idx_stmt;
+DEALLOCATE PREPARE create_premium_delivery_status_idx_stmt;
 
 CREATE TABLE IF NOT EXISTS mercadopago_webhook_log (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,

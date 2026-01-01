@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   AlertCircle,
   BadgeCheck,
@@ -6,7 +7,6 @@ import {
   CheckCircle2,
   Clock3,
   CreditCard,
-  History,
   Loader2,
   Mail,
   Receipt,
@@ -15,98 +15,18 @@ import {
 } from "lucide-react";
 import PageTitle from "../../components/PageTitle";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
-import { LeadPortalPayment, LeadPortalPaymentHistory, useLeadPortalPayments } from "../../api/leadPortal/useLeadPortalPayments";
+import { useLeadPortalPayments } from "../../api/leadPortal/useLeadPortalPayments";
+import {
+  buildHistory,
+  formatCurrency,
+  formatDate,
+  resolveCategory,
+  statusBadgeTone,
+  statusLabel,
+} from "./paymentUtils";
 import "./PaymentsDashboardPage.css";
 
 type PaymentFilter = "all" | "pending" | "paid" | "failed";
-
-const currencyFormatter = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-  minimumFractionDigits: 2,
-});
-
-function formatCurrency(value?: number | null, currency?: string | null) {
-  if (value === null || value === undefined) {
-    return "—";
-  }
-  if (currency && currency !== "BRL") {
-    return `${currency} ${value.toFixed(2)}`;
-  }
-  return currencyFormatter.format(value);
-}
-
-function formatDate(value?: string | null) {
-  if (!value) return "—";
-  const date = new Date(value);
-  return date.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
-}
-
-function normalizeStatus(status?: string | null) {
-  return status?.toUpperCase() ?? "";
-}
-
-function statusLabel(status?: string | null) {
-  switch (normalizeStatus(status)) {
-    case "PREFERENCE_CREATED":
-      return "Preferência criada";
-    case "PENDING_PAYMENT":
-      return "Pagamento pendente";
-    case "APPROVED":
-      return "Aprovado";
-    case "DELIVERING":
-      return "Entregando";
-    case "DELIVERED":
-      return "Entregue";
-    case "FAILED":
-      return "Falhou";
-    case "CANCELED":
-    case "CANCELLED":
-      return "Cancelado";
-    default:
-      return status ?? "—";
-  }
-}
-
-function statusBadgeTone(status?: string | null) {
-  const normalized = normalizeStatus(status);
-  if (["APPROVED", "DELIVERED", "DELIVERING"].includes(normalized)) {
-    return "text-bg-success";
-  }
-  if (["FAILED", "CANCELED", "CANCELLED"].includes(normalized)) {
-    return "text-bg-danger";
-  }
-  if (["PREFERENCE_CREATED", "PENDING", "PENDING_PAYMENT"].includes(normalized)) {
-    return "text-bg-warning";
-  }
-  return "text-bg-secondary";
-}
-
-function resolveCategory(payment: LeadPortalPayment): PaymentFilter {
-  const normalized = normalizeStatus(payment.status);
-  if (["APPROVED", "DELIVERED", "DELIVERING"].includes(normalized)) {
-    return "paid";
-  }
-  if (["FAILED", "CANCELED", "CANCELLED"].includes(normalized)) {
-    return "failed";
-  }
-  return "pending";
-}
-
-function buildHistory(payment: LeadPortalPayment) {
-  const history = [...(payment.history || [])];
-  return history
-    .map((item) => ({
-      ...item,
-      atDate: item.at ? new Date(item.at) : null,
-    }))
-    .sort((a, b) => {
-      if (a.atDate && b.atDate) return a.atDate.getTime() - b.atDate.getTime();
-      if (a.atDate) return -1;
-      if (b.atDate) return 1;
-      return 0;
-    });
-}
 
 export default function PaymentsDashboardPage() {
   useBreadcrumbs([
@@ -147,8 +67,8 @@ export default function PaymentsDashboardPage() {
     <div className="payments-page">
       <PageTitle>Pagamentos</PageTitle>
       <p className="text-body-secondary">
-        Acompanhe aqui tudo o que o lead-portal-payments está registrando: número
-        da compra, status atual e o histórico vindo do Mercado Pago/webhook.
+        Acompanhe aqui o status geral de cada compra. Para ver histórico,
+        webhooks e demais detalhes, abra a página dedicada de cada transação.
       </p>
 
       <div className="payments-toolbar" role="group" aria-label="Filtros de status">
@@ -320,13 +240,15 @@ export default function PaymentsDashboardPage() {
                   </header>
 
                   <div className="payments-card__body">
-                    <p className="payments-card__customer">
-                      <User size={16} aria-hidden="true" />
-                      <span>{payment.buyerName || payment.buyerEmail || "Sem comprador"}</span>
-                    </p>
-                    <p className="payments-card__amount">
-                      {formatCurrency(payment.amount, payment.currency)}
-                    </p>
+                    <div className="payments-card__row">
+                      <p className="payments-card__amount">
+                        {formatCurrency(payment.amount, payment.currency)}
+                      </p>
+                      <p className="payments-card__customer">
+                        <User size={16} aria-hidden="true" />
+                        <span>{payment.buyerName || payment.buyerEmail || "Sem comprador"}</span>
+                      </p>
+                    </div>
 
                     <div className="payments-card__meta" aria-label="Detalhes principais">
                       <div className="payments-card__meta-item">
@@ -344,36 +266,22 @@ export default function PaymentsDashboardPage() {
                       {payment.submissionId && (
                         <span className="badge text-bg-light text-dark">Submission {payment.submissionId}</span>
                       )}
-                      {payment.mercadoPagoPaymentId && (
-                        <span className="badge text-bg-info">Payment ID {payment.mercadoPagoPaymentId}</span>
-                      )}
-                      {payment.mercadoPagoPreferenceId && (
-                        <span className="badge text-bg-light text-dark">Pref {payment.mercadoPagoPreferenceId}</span>
-                      )}
                     </div>
                   </div>
 
-                  <footer className="payments-card__footer" aria-label="Contato e histórico">
+                  <footer className="payments-card__footer" aria-label="Contato e detalhes">
                     <div className="payments-card__meta-item">
                       <Mail size={15} aria-hidden="true" />
                       <span>{payment.buyerEmail || "Sem e-mail informado"}</span>
                     </div>
-                    <span className="payments-card__status-note">
-                      Histórico de status abaixo
-                    </span>
+                    <Link
+                      to={`/payments/${payment.id}`}
+                      className="payments-card__link"
+                      aria-label={`Ver detalhes da compra ${payment.id}`}
+                    >
+                      Ver detalhes
+                    </Link>
                   </footer>
-
-                  <div className="payment-history" aria-label="Histórico do pagamento">
-                    <div className="payment-history__title">
-                      <History size={16} aria-hidden="true" />
-                      <span>Histórico</span>
-                    </div>
-                    <ul className="payment-history__list">
-                      {history.map((entry, index) => (
-                        <PaymentHistoryItem key={`${entry.label}-${entry.at ?? index}`} entry={entry} />
-                      ))}
-                    </ul>
-                  </div>
                 </article>
               );
             })}
@@ -384,25 +292,3 @@ export default function PaymentsDashboardPage() {
   );
 }
 
-function PaymentHistoryItem({ entry }: { entry: LeadPortalPaymentHistory & { atDate?: Date | null } }) {
-  return (
-    <li className="payment-history__item">
-      <span className="payment-history__dot" aria-hidden="true" />
-      <div className="payment-history__content">
-        <div className="payment-history__header">
-          <span className="payment-history__label">{entry.label}</span>
-          {entry.status && (
-            <span className={`badge ${statusBadgeTone(entry.status)}`}>
-              {statusLabel(entry.status)}
-            </span>
-          )}
-        </div>
-        <p className="payment-history__time">{formatDate(entry.at)}</p>
-        {entry.detail && <p className="payment-history__detail">{entry.detail}</p>}
-        <span className="payment-history__source">
-          {entry.source === "webhook" ? "Webhook Mercado Pago" : "Sistema"}
-        </span>
-      </div>
-    </li>
-  );
-}

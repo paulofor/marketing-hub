@@ -76,6 +76,7 @@ import LeadPortalExperimentMetricsPage from "./pages/leadPortal/LeadPortalExperi
 import LeadPortalImagesPage from "./pages/leadPortal/LeadPortalImagesPage";
 import LeadPortalImagePackageDetailPage from "./pages/leadPortal/LeadPortalImagePackageDetailPage";
 import PaymentsDashboardPage from "./pages/payments/PaymentsDashboardPage";
+import PaymentDetailPage from "./pages/payments/PaymentDetailPage";
 
 export default function App() {
   return (
@@ -209,6 +210,7 @@ export default function App() {
                 element={<LeadPortalImagePackageDetailPage />}
               />
               <Route path="/payments" element={<PaymentsDashboardPage />} />
+              <Route path="/payments/:id" element={<PaymentDetailPage />} />
               <Route path="/chat-dialogs" element={<ChatDialogListPage />} />
               <Route path="/chat-dialogs/new" element={<NewChatDialogPage />} />
               <Route path="/prompt-entities" element={<PromptEntitiesPage />} />

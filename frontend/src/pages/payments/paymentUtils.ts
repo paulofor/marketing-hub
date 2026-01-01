@@ -26,6 +26,35 @@ export function normalizeStatus(status?: string | null) {
   return status?.toUpperCase() ?? "";
 }
 
+export function resolvePaymentTypeLabel(paymentType?: string | null, paymentMethod?: string | null) {
+  const normalizedType = paymentType?.toLowerCase();
+  const normalizedMethod = paymentMethod?.toLowerCase();
+
+  if (normalizedMethod === "pix") return "Pix";
+
+  switch (normalizedType) {
+    case "ticket":
+      return "Boleto";
+    case "credit_card":
+      return "Cartão de crédito";
+    case "debit_card":
+      return "Cartão de débito";
+    case "bank_transfer":
+      return "Transferência bancária";
+    case "account_money":
+      return "Saldo no Mercado Pago";
+    default:
+      return paymentType || paymentMethod || "";
+  }
+}
+
+export function resolveRejectionLabel(reason?: string | null) {
+  if (!reason) return "";
+  const beautified = reason.replace(/_/g, " ").trim();
+  if (!beautified) return "";
+  return beautified.charAt(0).toUpperCase() + beautified.slice(1);
+}
+
 export function statusLabel(status?: string | null) {
   switch (normalizeStatus(status)) {
     case "PREFERENCE_CREATED":

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertCircle,
+  AlertTriangle,
   BadgeCheck,
   CalendarClock,
   CheckCircle2,
@@ -20,6 +21,8 @@ import {
   buildHistory,
   formatCurrency,
   formatDate,
+  resolvePaymentTypeLabel,
+  resolveRejectionLabel,
   resolveCategory,
   statusBadgeTone,
   statusLabel,
@@ -223,6 +226,7 @@ export default function PaymentsDashboardPage() {
             {visiblePayments.map((payment) => {
               const category = resolveCategory(payment);
               const history = buildHistory(payment);
+              const paymentType = resolvePaymentTypeLabel(payment.paymentType, payment.paymentMethod);
               const lastUpdate = history.length > 0 ? history[history.length - 1] : null;
 
               return (
@@ -251,6 +255,11 @@ export default function PaymentsDashboardPage() {
                     </div>
 
                     <div className="payments-card__meta" aria-label="Detalhes principais">
+                      {paymentType && (
+                        <div className="payments-card__meta-item payments-card__meta-item--accent">
+                          <span>Pagamento: {paymentType}</span>
+                        </div>
+                      )}
                       <div className="payments-card__meta-item">
                         <CreditCard size={15} aria-hidden="true" />
                         <span>{payment.mercadoPagoStatus ? `MP: ${payment.mercadoPagoStatus}` : "Status pendente no MP"}</span>
@@ -259,6 +268,12 @@ export default function PaymentsDashboardPage() {
                         <CalendarClock size={15} aria-hidden="true" />
                         <span>Atualizado em {formatDate(lastUpdate?.at ?? payment.updatedAt)}</span>
                       </div>
+                      {category === "failed" && payment.rejectionReason && (
+                        <div className="payments-card__meta-item payments-card__meta-item--danger">
+                          <AlertTriangle size={15} aria-hidden="true" />
+                          <span>Motivo: {resolveRejectionLabel(payment.rejectionReason)}</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="payments-card__tags" aria-label="Referências">

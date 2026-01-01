@@ -17,6 +17,9 @@ import {
   buildHistory,
   formatCurrency,
   formatDate,
+  resolveCategory,
+  resolvePaymentTypeLabel,
+  resolveRejectionLabel,
   statusBadgeTone,
   statusLabel,
 } from "./paymentUtils";
@@ -111,6 +114,9 @@ export default function PaymentDetailPage() {
   }
 
   const history = buildHistory(payment);
+  const paymentType = resolvePaymentTypeLabel(payment.paymentType, payment.paymentMethod);
+  const rejectionLabel = resolveRejectionLabel(payment.rejectionReason);
+  const isRejected = resolveCategory(payment) === "failed" || payment.mercadoPagoStatus?.toLowerCase() === "rejected";
 
   return (
     <div className="payment-detail-page">
@@ -131,18 +137,26 @@ export default function PaymentDetailPage() {
       </p>
 
       <div className="payments-grid payments-grid--summary" role="list">
-        <div className="payments-card payments-card--emphasis" role="listitem">
-          <div className="payments-card__icon" aria-hidden="true">
-            <CreditCard size={22} />
+          <div className="payments-card payments-card--emphasis" role="listitem">
+            <div className="payments-card__icon" aria-hidden="true">
+              <CreditCard size={22} />
+            </div>
+            <div>
+              <p className="payments-card__label">Valor da compra</p>
+              <p className="payments-card__value">{formatCurrency(payment.amount, payment.currency)}</p>
+              <p className="payments-card__muted">
+                Status no Mercado Pago: {payment.mercadoPagoStatus || "pendente"}
+              </p>
+              <p className="payments-card__muted mb-0">
+                {paymentType ? `Pagamento via ${paymentType}` : "Forma de pagamento não informada"}
+              </p>
+              {isRejected && rejectionLabel && (
+                <p className="payments-card__muted text-danger fw-semibold mb-0">
+                  Motivo da rejeição: {rejectionLabel}
+                </p>
+              )}
+            </div>
           </div>
-          <div>
-            <p className="payments-card__label">Valor da compra</p>
-            <p className="payments-card__value">{formatCurrency(payment.amount, payment.currency)}</p>
-            <p className="payments-card__muted">
-              Status no Mercado Pago: {payment.mercadoPagoStatus || "pendente"}
-            </p>
-          </div>
-        </div>
         <div className="payments-card" role="listitem">
           <div className="payments-card__icon" aria-hidden="true">
             <User size={22} />
@@ -193,6 +207,18 @@ export default function PaymentDetailPage() {
             <div className="payment-detail__info-item">
               <span className="payment-detail__info-label">Preferência</span>
               <span className="payment-detail__info-value">{payment.mercadoPagoPreferenceId}</span>
+            </div>
+          )}
+          {paymentType && (
+            <div className="payment-detail__info-item">
+              <span className="payment-detail__info-label">Tipo de pagamento</span>
+              <span className="payment-detail__info-value">{paymentType}</span>
+            </div>
+          )}
+          {isRejected && rejectionLabel && (
+            <div className="payment-detail__info-item payment-detail__info-item--alert">
+              <span className="payment-detail__info-label">Motivo da rejeição</span>
+              <span className="payment-detail__info-value">{rejectionLabel}</span>
             </div>
           )}
           {payment.checkoutExpiresAt && (

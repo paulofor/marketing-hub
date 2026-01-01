@@ -2,6 +2,8 @@ package com.marketinghub.leadportal.service;
 
 import com.marketinghub.leadportal.dto.LeadPortalPaymentDto;
 import com.marketinghub.leadportal.dto.LeadPortalPaymentHistoryDto;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -15,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -23,17 +27,21 @@ import org.springframework.util.StringUtils;
 @Service
 public class LeadPortalPaymentQueryService {
 
-    private final JdbcTemplate jdbcTemplate;
+    private static final Logger log = LoggerFactory.getLogger(LeadPortalPaymentQueryService.class);
 
-    public LeadPortalPaymentQueryService(JdbcTemplate jdbcTemplate) {
+    private final JdbcTemplate jdbcTemplate;
+    private final ObjectMapper objectMapper;
+
+    public LeadPortalPaymentQueryService(JdbcTemplate jdbcTemplate, ObjectMapper objectMapper) {
         this.jdbcTemplate = jdbcTemplate;
+        this.objectMapper = objectMapper;
     }
 
     public List<LeadPortalPaymentDto> listRecentPayments(int limit) {
         int safeLimit = Math.max(1, Math.min(limit, 200));
         List<LeadPortalPaymentRow> rows = jdbcTemplate.query(
                 "SELECT id, package_id, submission_id, buyer_name, buyer_email, status, mp_payment_id, mp_preference_id, "
-                        + "mp_status, amount, currency, checkout_expires_at, payment_approved_at, delivered_at, created_at, updated_at "
+                        + "mp_status, mp_payment_payload, amount, currency, checkout_expires_at, payment_approved_at, delivered_at, created_at, updated_at "
                         + "FROM lead_portal_purchase ORDER BY created_at DESC LIMIT ?",
                 (rs, rowNum) -> mapPurchase(rs),
                 safeLimit
@@ -100,6 +108,8 @@ public class LeadPortalPaymentQueryService {
 
         history.sort(Comparator.comparing(LeadPortalPaymentHistoryDto::at, Comparator.nullsLast(Comparator.naturalOrder())));
 
+        JsonNode paymentPayload = parsePaymentPayload(row.mercadoPagoPaymentPayload());
+
         return new LeadPortalPaymentDto(
                 row.id(),
                 row.packageId(),
@@ -110,6 +120,9 @@ public class LeadPortalPaymentQueryService {
                 row.mercadoPagoStatus(),
                 row.mercadoPagoPaymentId(),
                 row.mercadoPagoPreferenceId(),
+                extractPaymentType(paymentPayload),
+                extractPaymentMethod(paymentPayload),
+                extractRejectionReason(row.status(), row.mercadoPagoStatus(), paymentPayload),
                 row.amount(),
                 row.currency(),
                 row.checkoutExpiresAt(),
@@ -169,6 +182,7 @@ public class LeadPortalPaymentQueryService {
                 rs.getString("mp_payment_id"),
                 rs.getString("mp_preference_id"),
                 rs.getString("mp_status"),
+                rs.getString("mp_payment_payload"),
                 rs.getBigDecimal("amount"),
                 rs.getString("currency"),
                 toInstant(rs.getTimestamp("checkout_expires_at")),
@@ -226,6 +240,7 @@ public class LeadPortalPaymentQueryService {
             String mercadoPagoPaymentId,
             String mercadoPagoPreferenceId,
             String mercadoPagoStatus,
+            String mercadoPagoPaymentPayload,
             BigDecimal amount,
             String currency,
             Instant checkoutExpiresAt,
@@ -237,5 +252,52 @@ public class LeadPortalPaymentQueryService {
     }
 
     private record WebhookHistoryRow(String resourceId, LeadPortalPaymentHistoryDto history) {
+    }
+
+    private JsonNode parsePaymentPayload(String payload) {
+        if (!StringUtils.hasText(payload)) {
+            return null;
+        }
+        try {
+            return objectMapper.readTree(payload);
+        } catch (Exception ex) {
+            log.warn("Não foi possível interpretar o payload do pagamento do Mercado Pago", ex);
+            return null;
+        }
+    }
+
+    private String extractPaymentType(JsonNode payload) {
+        String value = extractText(payload, "payment_type_id");
+        return StringUtils.hasText(value) ? value : null;
+    }
+
+    private String extractPaymentMethod(JsonNode payload) {
+        String value = extractText(payload, "payment_method_id");
+        return StringUtils.hasText(value) ? value : null;
+    }
+
+    private String extractRejectionReason(String status, String mercadoPagoStatus, JsonNode payload) {
+        boolean rejectedStatus = StringUtils.hasText(status)
+                && Set.of("FAILED", "CANCELED", "CANCELLED").contains(status.toUpperCase());
+        boolean rejectedMpStatus = StringUtils.hasText(mercadoPagoStatus)
+                && "REJECTED".equalsIgnoreCase(mercadoPagoStatus);
+
+        if (!rejectedStatus && !rejectedMpStatus) {
+            return null;
+        }
+
+        return extractText(payload, "status_detail");
+    }
+
+    private String extractText(JsonNode payload, String field) {
+        if (payload == null) {
+            return null;
+        }
+        JsonNode node = payload.get(field);
+        if (node == null || node.isNull()) {
+            return null;
+        }
+        String value = node.asText();
+        return StringUtils.hasText(value) ? value : null;
     }
 }

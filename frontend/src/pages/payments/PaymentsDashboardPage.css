@@ -190,6 +190,18 @@
   font-weight: 600;
 }
 
+.payments-card__meta-item--accent {
+  background: var(--bs-primary-bg-subtle);
+  color: var(--bs-primary-text-emphasis);
+  border-color: var(--bs-primary-border-subtle);
+}
+
+.payments-card__meta-item--danger {
+  background: var(--bs-danger-bg-subtle);
+  color: var(--bs-danger-text-emphasis);
+  border-color: var(--bs-danger-border-subtle);
+}
+
 .payments-card__tags {
   display: flex;
   flex-wrap: wrap;

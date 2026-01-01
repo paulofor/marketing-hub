@@ -19,6 +19,9 @@ export type LeadPortalPayment = {
   mercadoPagoStatus?: string | null;
   mercadoPagoPaymentId?: string | null;
   mercadoPagoPreferenceId?: string | null;
+  paymentType?: string | null;
+  paymentMethod?: string | null;
+  rejectionReason?: string | null;
   amount?: number | null;
   currency?: string | null;
   checkoutExpiresAt?: string | null;

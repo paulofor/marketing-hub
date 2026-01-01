@@ -55,6 +55,12 @@
   gap: 0.25rem;
 }
 
+.payment-detail__info-item--alert {
+  border-color: var(--bs-danger-border-subtle);
+  background: var(--bs-danger-bg-subtle);
+  color: var(--bs-danger-text-emphasis);
+}
+
 .payment-detail__info-label {
   font-size: 0.9rem;
   color: var(--bs-secondary-color);

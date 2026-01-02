@@ -268,6 +268,12 @@ export default function PaymentsDashboardPage() {
                         <CalendarClock size={15} aria-hidden="true" />
                         <span>Atualizado em {formatDate(lastUpdate?.at ?? payment.updatedAt)}</span>
                       </div>
+                      {payment.deliveryError && (
+                        <div className="payments-card__meta-item payments-card__meta-item--danger">
+                          <AlertCircle size={15} aria-hidden="true" />
+                          <span>Erro no envio do e-mail: {payment.deliveryError}</span>
+                        </div>
+                      )}
                       {category === "failed" && payment.rejectionReason && (
                         <div className="payments-card__meta-item payments-card__meta-item--danger">
                           <AlertTriangle size={15} aria-hidden="true" />

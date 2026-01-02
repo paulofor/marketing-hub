@@ -22,6 +22,7 @@ export type LeadPortalPayment = {
   paymentType?: string | null;
   paymentMethod?: string | null;
   rejectionReason?: string | null;
+  deliveryError?: string | null;
   amount?: number | null;
   currency?: string | null;
   checkoutExpiresAt?: string | null;

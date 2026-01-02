@@ -221,6 +221,12 @@ export default function PaymentDetailPage() {
               <span className="payment-detail__info-value">{rejectionLabel}</span>
             </div>
           )}
+          {payment.deliveryError && (
+            <div className="payment-detail__info-item payment-detail__info-item--alert">
+              <span className="payment-detail__info-label">Erro no envio do e-mail</span>
+              <span className="payment-detail__info-value">{payment.deliveryError}</span>
+            </div>
+          )}
           {payment.checkoutExpiresAt && (
             <div className="payment-detail__info-item">
               <span className="payment-detail__info-label">Checkout expira em</span>

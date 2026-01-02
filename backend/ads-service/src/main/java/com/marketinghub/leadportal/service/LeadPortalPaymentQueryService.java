@@ -41,7 +41,8 @@ public class LeadPortalPaymentQueryService {
         int safeLimit = Math.max(1, Math.min(limit, 200));
         List<LeadPortalPaymentRow> rows = jdbcTemplate.query(
                 "SELECT id, package_id, submission_id, buyer_name, buyer_email, status, mp_payment_id, mp_preference_id, "
-                        + "mp_status, mp_payment_payload, amount, currency, checkout_expires_at, payment_approved_at, delivered_at, created_at, updated_at "
+                        + "mp_status, mp_payment_payload, amount, currency, checkout_expires_at, payment_approved_at, delivered_at, "
+                        + "delivery_error, created_at, updated_at "
                         + "FROM lead_portal_purchase ORDER BY created_at DESC LIMIT ?",
                 (rs, rowNum) -> mapPurchase(rs),
                 safeLimit
@@ -98,6 +99,16 @@ public class LeadPortalPaymentQueryService {
         }
 
         Instant currentStatusAt = row.updatedAt() != null ? row.updatedAt() : row.createdAt();
+        if (StringUtils.hasText(row.deliveryError())) {
+            history.add(new LeadPortalPaymentHistoryDto(
+                    currentStatusAt,
+                    "Falha no envio do e-mail",
+                    "FAILED",
+                    "system",
+                    row.deliveryError()
+            ));
+        }
+
         history.add(new LeadPortalPaymentHistoryDto(
                 currentStatusAt,
                 "Status atual",
@@ -123,6 +134,7 @@ public class LeadPortalPaymentQueryService {
                 extractPaymentType(paymentPayload),
                 extractPaymentMethod(paymentPayload),
                 extractRejectionReason(row.status(), row.mercadoPagoStatus(), paymentPayload),
+                row.deliveryError(),
                 row.amount(),
                 row.currency(),
                 row.checkoutExpiresAt(),
@@ -188,6 +200,7 @@ public class LeadPortalPaymentQueryService {
                 toInstant(rs.getTimestamp("checkout_expires_at")),
                 toInstant(rs.getTimestamp("payment_approved_at")),
                 toInstant(rs.getTimestamp("delivered_at")),
+                rs.getString("delivery_error"),
                 toInstant(rs.getTimestamp("created_at")),
                 toInstant(rs.getTimestamp("updated_at"))
         );
@@ -246,6 +259,7 @@ public class LeadPortalPaymentQueryService {
             Instant checkoutExpiresAt,
             Instant paymentApprovedAt,
             Instant deliveredAt,
+            String deliveryError,
             Instant createdAt,
             Instant updatedAt
     ) {

@@ -405,6 +405,32 @@ class CheckoutServiceTest {
     }
 
     @Test
+    void shouldKeepExistingBuyerEmailWhenPaymentDoesNotProvideOne() {
+        LeadPortalPurchase existingPurchase = new LeadPortalPurchase();
+        existingPurchase.setPackageId(999L);
+        existingPurchase.setBuyerEmail("original@example.com");
+
+        MercadoPagoPaymentDetails paymentDetails = new MercadoPagoPaymentDetails(
+                "pay-keep-email",
+                "approved",
+                new BigDecimal("49.90"),
+                "BRL",
+                "Pagamento teste",
+                null,
+                Instant.now(),
+                Map.of("package_id", 999),
+                "{\"id\":\"pay-keep-email\"}");
+
+        when(purchaseRepository.findByMercadoPagoPaymentId("pay-keep-email")).thenReturn(Optional.empty());
+        when(purchaseRepository.findTopByPackageIdOrderByCreatedAtDesc(999L)).thenReturn(Optional.of(existingPurchase));
+        when(purchaseRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        LeadPortalPurchase purchase = checkoutService.updateFromPayment(paymentDetails, paymentDetails.rawPayload());
+
+        assertThat(purchase.getBuyerEmail()).isEqualTo("original@example.com");
+    }
+
+    @Test
     void shouldExtractPackageIdFromStringMetadata() {
         MercadoPagoPaymentDetails paymentDetails = new MercadoPagoPaymentDetails(
                 "pay-2",

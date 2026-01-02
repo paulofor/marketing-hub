@@ -145,7 +145,14 @@ public class CheckoutService {
         purchase.setPackageId(packageId);
         purchase.setSubmissionId(extractMetadataString(paymentDetails.metadata(), "submissionId", "submission_id"));
         String submissionEmail = extractMetadataString(paymentDetails.metadata(), "submissionEmail", "submission_email");
-        String buyerEmail = StringUtils.hasText(paymentDetails.email()) ? paymentDetails.email() : submissionEmail;
+        String buyerEmail = null;
+        if (StringUtils.hasText(paymentDetails.email())) {
+            buyerEmail = paymentDetails.email();
+        } else if (StringUtils.hasText(submissionEmail)) {
+            buyerEmail = submissionEmail;
+        } else if (StringUtils.hasText(purchase.getBuyerEmail())) {
+            buyerEmail = purchase.getBuyerEmail();
+        }
         purchase.setBuyerEmail(buyerEmail);
         purchase.setMercadoPagoPaymentId(paymentDetails.id());
         purchase.setMercadoPagoStatus(paymentDetails.status());

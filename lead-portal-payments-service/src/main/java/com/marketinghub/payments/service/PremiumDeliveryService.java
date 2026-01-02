@@ -36,17 +36,20 @@ public class PremiumDeliveryService {
         if (purchase == null) {
             throw new IllegalArgumentException("Compra inválida");
         }
+        LeadPortalPackageSummary summary = packageGateway.loadPackage(purchase.getPackageId());
         Optional<LeadPortalPremiumDelivery> existing = deliveryRepository.findByPurchaseId(purchase.getId());
         if (existing.isPresent()) {
+            LeadPortalPremiumDelivery delivery = existing.get();
+            hydrateDelivery(delivery, purchase, summary);
+            deliveryRepository.save(delivery);
             log.debug("Entrega premium já registrada para a compra {} (status={})",
-                    purchase.getId(), existing.get().getStatus());
+                    purchase.getId(), delivery.getStatus());
             if (purchase.getStatus() == PurchaseStatus.APPROVED) {
                 purchase.setStatus(PurchaseStatus.DELIVERING);
                 purchaseRepository.save(purchase);
             }
             return;
         }
-        LeadPortalPackageSummary summary = packageGateway.loadPackage(purchase.getPackageId());
         LeadPortalPremiumDelivery delivery = new LeadPortalPremiumDelivery();
         delivery.setPurchaseId(purchase.getId());
         hydrateDelivery(delivery, purchase, summary);
@@ -102,11 +105,11 @@ public class PremiumDeliveryService {
     }
 
     private String resolveRecipientEmail(LeadPortalPurchase purchase, LeadPortalPackageSummary summary) {
-        if (StringUtils.hasText(purchase.getBuyerEmail())) {
-            return purchase.getBuyerEmail();
-        }
         if (summary != null && StringUtils.hasText(summary.submissionEmail())) {
             return summary.submissionEmail();
+        }
+        if (StringUtils.hasText(purchase.getBuyerEmail())) {
+            return purchase.getBuyerEmail();
         }
         throw new IllegalStateException("Compra " + purchase.getId() + " sem e-mail do comprador ou da submissão");
     }

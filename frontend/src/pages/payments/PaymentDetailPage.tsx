@@ -136,6 +136,20 @@ export default function PaymentDetailPage() {
         referências do Mercado Pago e o histórico de eventos recebidos.
       </p>
 
+      {payment.deliveryError && (
+        <div className="payment-detail__alert" role="alert">
+          <AlertCircle size={18} aria-hidden="true" />
+          <div>
+            <p className="payment-detail__alert-title">
+              Não conseguimos entregar o e-mail com as imagens
+            </p>
+            <p className="payment-detail__alert-text mb-0">
+              {payment.deliveryError}
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="payments-grid payments-grid--summary" role="list">
           <div className="payments-card payments-card--emphasis" role="listitem">
             <div className="payments-card__icon" aria-hidden="true">

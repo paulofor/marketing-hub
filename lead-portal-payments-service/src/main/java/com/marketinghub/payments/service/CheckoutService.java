@@ -145,14 +145,7 @@ public class CheckoutService {
         purchase.setPackageId(packageId);
         purchase.setSubmissionId(extractMetadataString(paymentDetails.metadata(), "submissionId", "submission_id"));
         String submissionEmail = extractMetadataString(paymentDetails.metadata(), "submissionEmail", "submission_email");
-        String buyerEmail = null;
-        if (StringUtils.hasText(paymentDetails.email())) {
-            buyerEmail = paymentDetails.email();
-        } else if (StringUtils.hasText(submissionEmail)) {
-            buyerEmail = submissionEmail;
-        } else if (StringUtils.hasText(purchase.getBuyerEmail())) {
-            buyerEmail = purchase.getBuyerEmail();
-        }
+        String buyerEmail = resolveBuyerEmail(submissionEmail, purchase.getBuyerEmail(), paymentDetails.email());
         purchase.setBuyerEmail(buyerEmail);
         purchase.setMercadoPagoPaymentId(paymentDetails.id());
         purchase.setMercadoPagoStatus(paymentDetails.status());
@@ -404,4 +397,15 @@ public class CheckoutService {
         }
         return summary.submissionName();
     }
+
+    private String resolveBuyerEmail(String submissionEmail, String existingBuyerEmail, String mercadopagoEmail) {
+        if (StringUtils.hasText(submissionEmail)) {
+            return submissionEmail;
+        }
+        if (StringUtils.hasText(existingBuyerEmail)) {
+            return existingBuyerEmail;
+        }
+        return StringUtils.hasText(mercadopagoEmail) ? mercadopagoEmail : null;
+    }
+
 }

@@ -17,6 +17,7 @@ public record LeadPortalPaymentDto(
         String paymentType,
         String paymentMethod,
         String rejectionReason,
+        String deliveryError,
         BigDecimal amount,
         String currency,
         Instant checkoutExpiresAt,

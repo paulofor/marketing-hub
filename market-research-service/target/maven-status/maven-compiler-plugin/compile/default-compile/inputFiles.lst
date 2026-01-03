@@ -1,0 +1,14 @@
+/root/ai-hub/src/ai-hub-bdd51946-0271-4956-ab4b-afcbd562a1fe-mciNIl/repo/market-research-service/src/main/java/com/marketinghub/marketresearch/dto/MarketResearchRequest.java
+/root/ai-hub/src/ai-hub-bdd51946-0271-4956-ab4b-afcbd562a1fe-mciNIl/repo/market-research-service/src/main/java/com/marketinghub/marketresearch/MarketResearchServiceApplication.java
+/root/ai-hub/src/ai-hub-bdd51946-0271-4956-ab4b-afcbd562a1fe-mciNIl/repo/market-research-service/src/main/java/com/marketinghub/marketresearch/openai/OpenAiResponse.java
+/root/ai-hub/src/ai-hub-bdd51946-0271-4956-ab4b-afcbd562a1fe-mciNIl/repo/market-research-service/src/main/java/com/marketinghub/marketresearch/config/MarketResearchProperties.java
+/root/ai-hub/src/ai-hub-bdd51946-0271-4956-ab4b-afcbd562a1fe-mciNIl/repo/market-research-service/src/main/java/com/marketinghub/marketresearch/openai/OpenAiClient.java
+/root/ai-hub/src/ai-hub-bdd51946-0271-4956-ab4b-afcbd562a1fe-mciNIl/repo/market-research-service/src/main/java/com/marketinghub/marketresearch/config/WebClientConfig.java
+/root/ai-hub/src/ai-hub-bdd51946-0271-4956-ab4b-afcbd562a1fe-mciNIl/repo/market-research-service/src/main/java/com/marketinghub/marketresearch/dto/MarketResearchResponse.java
+/root/ai-hub/src/ai-hub-bdd51946-0271-4956-ab4b-afcbd562a1fe-mciNIl/repo/market-research-service/src/main/java/com/marketinghub/marketresearch/service/MarketResearchMapper.java
+/root/ai-hub/src/ai-hub-bdd51946-0271-4956-ab4b-afcbd562a1fe-mciNIl/repo/market-research-service/src/main/java/com/marketinghub/marketresearch/service/MarketResearchService.java
+/root/ai-hub/src/ai-hub-bdd51946-0271-4956-ab4b-afcbd562a1fe-mciNIl/repo/market-research-service/src/main/java/com/marketinghub/marketresearch/domain/MarketResearchTask.java
+/root/ai-hub/src/ai-hub-bdd51946-0271-4956-ab4b-afcbd562a1fe-mciNIl/repo/market-research-service/src/main/java/com/marketinghub/marketresearch/openai/OpenAiRequestUtils.java
+/root/ai-hub/src/ai-hub-bdd51946-0271-4956-ab4b-afcbd562a1fe-mciNIl/repo/market-research-service/src/main/java/com/marketinghub/marketresearch/repository/MarketResearchTaskRepository.java
+/root/ai-hub/src/ai-hub-bdd51946-0271-4956-ab4b-afcbd562a1fe-mciNIl/repo/market-research-service/src/main/java/com/marketinghub/marketresearch/controller/MarketResearchController.java
+/root/ai-hub/src/ai-hub-bdd51946-0271-4956-ab4b-afcbd562a1fe-mciNIl/repo/market-research-service/src/main/java/com/marketinghub/marketresearch/domain/MarketResearchStatus.java

@@ -38,7 +38,8 @@ export default function PaymentsDashboardPage() {
   ]);
 
   const [statusFilter, setStatusFilter] = useState<PaymentFilter>("all");
-  const { data: payments = [], isLoading, error } = useLeadPortalPayments(80);
+  const [emailQuery, setEmailQuery] = useState("");
+  const { data: payments = [], isLoading, error } = useLeadPortalPayments(60);
 
   const totals = useMemo(() => {
     return payments.reduce(
@@ -62,9 +63,18 @@ export default function PaymentsDashboardPage() {
   }, [payments]);
 
   const visiblePayments = useMemo(() => {
-    if (statusFilter === "all") return payments;
-    return payments.filter((payment) => resolveCategory(payment) === statusFilter);
-  }, [payments, statusFilter]);
+    const normalizedQuery = emailQuery.trim().toLowerCase();
+
+    return payments.filter((payment) => {
+      const matchesStatus =
+        statusFilter === "all" || resolveCategory(payment) === statusFilter;
+      const matchesEmail = normalizedQuery
+        ? (payment.buyerEmail ?? "").toLowerCase().includes(normalizedQuery)
+        : true;
+
+      return matchesStatus && matchesEmail;
+    });
+  }, [emailQuery, payments, statusFilter]);
 
   return (
     <div className="payments-page">
@@ -130,6 +140,15 @@ export default function PaymentsDashboardPage() {
             <span>Falha/Cancelado</span>
             <span className="payments-toolbar__counter">{totals.failed}</span>
           </button>
+          <label className="payments-toolbar__search" aria-label="Filtrar por e-mail do comprador">
+            <Mail size={16} aria-hidden="true" />
+            <input
+              type="search"
+              placeholder="Buscar por e-mail"
+              value={emailQuery}
+              onChange={(event) => setEmailQuery(event.target.value)}
+            />
+          </label>
         </div>
       </div>
 

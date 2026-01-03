@@ -313,6 +313,10 @@ public class ExperimentService {
         return repository.findReadyForCampaign(ExperimentStatus.PLANNED, ExperimentPlatform.FACEBOOK);
     }
 
+    public java.util.List<Experiment> listReadyForPixel() {
+        return repository.findReadyForPixel(ExperimentStatus.PLANNED, ExperimentPlatform.FACEBOOK);
+    }
+
     @Transactional
     public Experiment duplicate(Long id) {
         Experiment original = repository.findById(id).orElseThrow();
@@ -354,6 +358,20 @@ public class ExperimentService {
                 .build();
         return repository.save(copy);
     }
+
+    @Transactional
+    public Experiment attachFacebookPixel(Long id, String pixelId, String pixelCode, java.time.Instant createdAt) {
+        if (pixelId == null || pixelId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "pixelId is required");
+        }
+        Experiment exp = repository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Experiment not found: " + id));
+        exp.setFacebookPixelId(pixelId.trim());
+        exp.setFacebookPixelCode(pixelCode);
+        exp.setFacebookPixelCreatedAt(createdAt != null ? createdAt : java.time.Instant.now());
+        return exp;
+    }
+
 
     /**
      * Updates the status of an experiment.

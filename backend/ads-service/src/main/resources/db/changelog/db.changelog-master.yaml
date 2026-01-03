@@ -325,3 +325,7 @@ databaseChangeLog:
   - include:
       file: V2030_08_30__experiment_unit_price_brl.sql
       relativeToChangelogFile: true
+
+  - include:
+      file: V2030_09_01__experiment_facebook_pixel.sql
+      relativeToChangelogFile: true

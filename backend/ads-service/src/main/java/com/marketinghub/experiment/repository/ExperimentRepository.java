@@ -47,6 +47,21 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
             """)
     List<Experiment> findReadyForCampaign(@Param("status") ExperimentStatus status,
                                           @Param("platform") ExperimentPlatform platform);
+
+    @Query("""
+            select distinct e from Experiment e
+            join fetch e.niche n
+            left join fetch e.facebookPage fp
+            left join fetch e.facebookInstantForm fif
+            left join fetch e.leadPortalFlow flow
+            where e.status = :status
+              and e.platform = :platform
+              and e.creativeApproved = true
+              and e.facebookPixelId is null
+            """)
+    List<Experiment> findReadyForPixel(@Param("status") ExperimentStatus status,
+                                       @Param("platform") ExperimentPlatform platform);
+
     /**
      * Retrieves experiments configured to generate creatives.
      *

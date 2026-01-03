@@ -76,6 +76,9 @@ public class LeadPortalPurchase {
     @Column(name = "payment_approved_at")
     private Instant paymentApprovedAt;
 
+    @Column(name = "pixel_conversion_recorded_at")
+    private Instant pixelConversionRecordedAt;
+
     @Column(name = "zip_object_key")
     private String zipObjectKey;
 
@@ -253,6 +256,14 @@ public class LeadPortalPurchase {
 
     public void setPaymentApprovedAt(Instant paymentApprovedAt) {
         this.paymentApprovedAt = paymentApprovedAt;
+    }
+
+    public Instant getPixelConversionRecordedAt() {
+        return pixelConversionRecordedAt;
+    }
+
+    public void setPixelConversionRecordedAt(Instant pixelConversionRecordedAt) {
+        this.pixelConversionRecordedAt = pixelConversionRecordedAt;
     }
 
     public String getZipObjectKey() {

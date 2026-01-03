@@ -505,24 +505,67 @@ export default function ExperimentDetailPage() {
           </Tabs.Trigger>
         </Tabs.List>
         <Tabs.Content value="overview" asChild>
-          <div className="card">
-            <div className="card-body p-0">
-              <dl className="row mb-0">
-                {rows.map((r, idx) => (
-                  <Fragment key={r.label}>
-                    <dt
-                      className={`col-sm-3 py-2${idx % 2 === 0 ? " bg-light" : ""}`}
-                    >
-                      {r.label}
-                    </dt>
-                    <dd
-                      className={`col-sm-9 py-2${idx % 2 === 0 ? " bg-light" : ""}`}
-                    >
-                      {r.value}
-                    </dd>
-                  </Fragment>
-                ))}
-              </dl>
+          <div className="d-flex flex-column gap-3">
+            <div className="card">
+              <div className="card-body p-0">
+                <dl className="row mb-0">
+                  {rows.map((r, idx) => (
+                    <Fragment key={r.label}>
+                      <dt
+                        className={`col-sm-3 py-2${idx % 2 === 0 ? " bg-light" : ""}`}
+                      >
+                        {r.label}
+                      </dt>
+                      <dd
+                        className={`col-sm-9 py-2${idx % 2 === 0 ? " bg-light" : ""}`}
+                      >
+                        {r.value}
+                      </dd>
+                    </Fragment>
+                  ))}
+                </dl>
+              </div>
+            </div>
+            <div className="card">
+              <div className="card-body">
+                <div className="d-flex justify-content-between align-items-start mb-2">
+                  <div>
+                    <h5 className="card-title mb-1">Pixel do Facebook</h5>
+                    <p className="text-muted mb-0">
+                      Geramos um pixel por experimento para rastrear conversões do checkout.
+                    </p>
+                  </div>
+                  {data.facebookPixelCreatedAt ? (
+                    <span className="text-muted small">
+                      Criado em {formatDateTimeValue(data.facebookPixelCreatedAt)}
+                    </span>
+                  ) : null}
+                </div>
+                {data.facebookPixelId ? (
+                  <>
+                    <div className="mb-2">
+                      <strong>ID:</strong> {data.facebookPixelId}
+                    </div>
+                    {data.facebookPixelCode ? (
+                      <textarea
+                        readOnly
+                        className="form-control font-monospace"
+                        value={data.facebookPixelCode}
+                        rows={6}
+                      />
+                    ) : (
+                      <div className="alert alert-info mb-0">
+                        Pixel criado, aguardando retorno do código completo pelo Facebook.
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="alert alert-warning mb-0">
+                    Pixel ainda não criado. Ele será criado automaticamente quando o experimento estiver pronto e
+                    aprovado.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </Tabs.Content>

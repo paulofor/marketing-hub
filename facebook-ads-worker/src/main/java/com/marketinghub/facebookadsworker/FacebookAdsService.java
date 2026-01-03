@@ -119,6 +119,63 @@ public class FacebookAdsService {
         return createInstagramCampaign(adAccountId, name, objective);
     }
 
+    public String createPixel(String adAccountId, String name) {
+        if (!hasText(adAccountId)) {
+            throw new IllegalArgumentException("adAccountId must not be blank");
+        }
+        Map<String, Object> body = new HashMap<>();
+        body.put("name", name);
+        body.put("access_token", requireAccessToken());
+        String path = buildVersionedPath("/act_" + adAccountId + "/adspixels");
+        JsonNode response = executePost(path, body);
+        return response.path("id").asText();
+    }
+
+    public String fetchPixelCode(String pixelId) {
+        if (!hasText(pixelId)) {
+            return null;
+        }
+        String path = UriComponentsBuilder.fromPath(buildVersionedPath("/" + pixelId))
+            .queryParam("fields", "code")
+            .queryParam("access_token", requireAccessToken())
+            .build()
+            .toString();
+        FacebookApiResponse response = executeGet(path);
+        JsonNode body = response.body();
+        if (body == null) {
+            return null;
+        }
+        String code = body.path("code").asText(null);
+        return hasText(code) ? code : null;
+    }
+
+    public void sendPurchaseEvent(String pixelId, String eventId, java.math.BigDecimal value, String currency, java.time.Instant eventTime) {
+        if (!hasText(pixelId)) {
+            throw new IllegalArgumentException("pixelId must not be blank");
+        }
+        Map<String, Object> customData = new HashMap<>();
+        if (value != null) {
+            customData.put("value", value);
+        }
+        if (hasText(currency)) {
+            customData.put("currency", currency.trim().toUpperCase(Locale.ROOT));
+        }
+        Map<String, Object> event = new HashMap<>();
+        event.put("event_name", "Purchase");
+        event.put("event_time", (eventTime != null ? eventTime : java.time.Instant.now()).getEpochSecond());
+        if (hasText(eventId)) {
+            event.put("event_id", eventId);
+        }
+        event.put("custom_data", customData);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("data", List.of(event));
+        body.put("access_token", requireAccessToken());
+
+        String path = buildVersionedPath("/" + pixelId + "/events");
+        executePost(path, body);
+    }
+
     public String createAdSet(String adAccountId, AdSetRequest request) {
         Objects.requireNonNull(request, "request");
 

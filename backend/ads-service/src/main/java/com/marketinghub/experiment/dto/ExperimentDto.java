@@ -23,6 +23,9 @@ public class ExperimentDto {
     private FacebookInstantFormDto facebookInstantForm;
     private String followUpActionUrl;
     private InstagramAccountDto instagramAccount;
+    private String facebookPixelId;
+    private String facebookPixelCode;
+    private Instant facebookPixelCreatedAt;
     @JsonProperty("kpiTarget")
     private BigDecimal kpiTargetCpl;
     private BigDecimal stopLossCpl;

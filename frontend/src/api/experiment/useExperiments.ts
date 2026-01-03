@@ -45,6 +45,9 @@ export interface Experiment {
   pageId?: string | null;
   facebookPage?: FacebookPageSummary | null;
   facebookInstantForm?: FacebookInstantFormSummary | null;
+  facebookPixelId?: string | null;
+  facebookPixelCode?: string | null;
+  facebookPixelCreatedAt?: string | null;
   followUpActionUrl?: string | null;
   instagramAccount?: InstagramAccountSummary | null;
   /**

@@ -329,3 +329,8 @@ databaseChangeLog:
   - include:
       file: V2030_09_01__experiment_facebook_pixel.sql
       relativeToChangelogFile: true
+
+
+  - include:
+      file: V2030_09_15__openai_models.sql
+      relativeToChangelogFile: true

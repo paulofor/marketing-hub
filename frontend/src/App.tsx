@@ -23,6 +23,9 @@ import EditNichePage from "./pages/niche/EditNichePage";
 import AiServiceListPage from "./pages/aiService/AiServiceListPage";
 import NewAiServicePage from "./pages/aiService/NewAiServicePage";
 import EditAiServicePage from "./pages/aiService/EditAiServicePage";
+import OpenAiModelListPage from "./pages/openaiModel/OpenAiModelListPage";
+import NewOpenAiModelPage from "./pages/openaiModel/NewOpenAiModelPage";
+import EditOpenAiModelPage from "./pages/openaiModel/EditOpenAiModelPage";
 import MicroserviceListPage from "./pages/microservice/MicroserviceListPage";
 import NewMicroservicePage from "./pages/microservice/NewMicroservicePage";
 import EditMicroservicePage from "./pages/microservice/EditMicroservicePage";
@@ -158,6 +161,12 @@ export default function App() {
               <Route
                 path="/ai-services/:id/edit"
                 element={<EditAiServicePage />}
+              />
+              <Route path="/openai-models" element={<OpenAiModelListPage />} />
+              <Route path="/openai-models/new" element={<NewOpenAiModelPage />} />
+              <Route
+                path="/openai-models/:id/edit"
+                element={<EditOpenAiModelPage />}
               />
               <Route
                 path="/microservices"

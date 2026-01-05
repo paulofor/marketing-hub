@@ -30,6 +30,7 @@ import {
   Workflow,
   AlertTriangle,
   CreditCard,
+  Cpu,
 } from "lucide-react";
 import experimentIcon from "../assets/icons/experiment-icon.svg";
 import hypothesisIcon from "../assets/icons/hypothesis-icon.svg";
@@ -105,6 +106,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: "IA e Conteúdo",
     items: [
       { to: "/ai-services", label: "IA", icon: Bot },
+      { to: "/openai-models", label: "Modelos OpenAI", icon: Cpu },
       { to: "/microservices", label: "Microserviços", icon: Server },
       { to: "/microservices/errors", label: "Erros de microserviço", icon: AlertTriangle },
       { to: "/chat-dialogs", label: "ChatGPT", icon: MessageSquare },

@@ -1,0 +1,177 @@
+import { useEffect, useState, type ChangeEvent } from "react";
+
+export type OpenAiModelFormValues = {
+  name: string;
+  code: string;
+  priceInputStandard: string;
+  priceInputCachedStandard: string;
+  priceOutputStandard: string;
+  priceInputBatch: string;
+  priceInputCachedBatch: string;
+  priceOutputBatch: string;
+};
+
+interface Props {
+  initialValues?: OpenAiModelFormValues;
+  onSubmit: (values: OpenAiModelFormValues) => void;
+  isSubmitting?: boolean;
+  submitLabel?: string;
+}
+
+const DEFAULT_VALUES: OpenAiModelFormValues = {
+  name: "",
+  code: "",
+  priceInputStandard: "",
+  priceInputCachedStandard: "",
+  priceOutputStandard: "",
+  priceInputBatch: "",
+  priceInputCachedBatch: "",
+  priceOutputBatch: "",
+};
+
+export default function OpenAiModelForm({
+  initialValues = DEFAULT_VALUES,
+  onSubmit,
+  isSubmitting = false,
+  submitLabel = "Salvar",
+}: Props) {
+  const [values, setValues] = useState<OpenAiModelFormValues>(initialValues);
+
+  useEffect(() => {
+    setValues(initialValues);
+  }, [initialValues]);
+
+  const handleChange = (field: keyof OpenAiModelFormValues) =>
+    (event: ChangeEvent<HTMLInputElement>) => {
+      setValues((prev) => ({ ...prev, [field]: event.target.value }));
+    };
+
+  const handleSubmit = () => onSubmit(values);
+
+  const renderPriceField = (
+    field: keyof OpenAiModelFormValues,
+    label: string,
+    helper?: string,
+  ) => (
+    <div className="col-md-6">
+      <label className="form-label fw-semibold" htmlFor={field}>
+        {label}
+      </label>
+      <input
+        id={field}
+        type="number"
+        step="0.00001"
+        className="form-control"
+        value={values[field]}
+        onChange={handleChange(field)}
+        min={0}
+        placeholder="0.00000"
+      />
+      {helper ? (
+        <small className="text-body-secondary">{helper}</small>
+      ) : null}
+    </div>
+  );
+
+  return (
+    <div className="card">
+      <div className="card-body">
+        <div className="row g-3">
+          <div className="col-md-6">
+            <label className="form-label fw-semibold" htmlFor="name">
+              Nome do modelo
+            </label>
+            <input
+              id="name"
+              className="form-control"
+              value={values.name}
+              onChange={handleChange("name")}
+              placeholder="ex: GPT-4o mini"
+            />
+          </div>
+          <div className="col-md-6">
+            <label className="form-label fw-semibold" htmlFor="code">
+              Código do modelo
+            </label>
+            <input
+              id="code"
+              className="form-control"
+              value={values.code}
+              onChange={handleChange("code")}
+              placeholder="ex: gpt-4o-mini"
+            />
+          </div>
+        </div>
+
+        <div className="row g-3 mt-3">
+          <div className="col-12">
+            <p className="fw-semibold mb-1">Preços - modo standard (por 1 milhão de tokens)</p>
+            <p className="text-body-secondary small mb-0">
+              Inclui preços de entrada, entrada com cache e saída.
+            </p>
+          </div>
+          {renderPriceField(
+            "priceInputStandard",
+            "Preço de input",
+            "Tokens de entrada sem cache (USD)",
+          )}
+          {renderPriceField(
+            "priceInputCachedStandard",
+            "Preço de input (cacheado)",
+            "Tokens de entrada com cache (USD)",
+          )}
+          {renderPriceField(
+            "priceOutputStandard",
+            "Preço de output",
+            "Tokens de saída (USD)",
+          )}
+        </div>
+
+        <div className="row g-3 mt-3">
+          <div className="col-12">
+            <p className="fw-semibold mb-1">Preços - modo batch (por 1 milhão de tokens)</p>
+            <p className="text-body-secondary small mb-0">
+              Valores aplicados às operações em lote.
+            </p>
+          </div>
+          {renderPriceField(
+            "priceInputBatch",
+            "Preço de input (batch)",
+            "Tokens de entrada sem cache (USD)",
+          )}
+          {renderPriceField(
+            "priceInputCachedBatch",
+            "Preço de input (cacheado, batch)",
+            "Tokens de entrada com cache (USD)",
+          )}
+          {renderPriceField(
+            "priceOutputBatch",
+            "Preço de output (batch)",
+            "Tokens de saída (USD)",
+          )}
+        </div>
+
+        <div className="mt-4">
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  role="status"
+                />
+                Salvando...
+              </>
+            ) : (
+              submitLabel
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

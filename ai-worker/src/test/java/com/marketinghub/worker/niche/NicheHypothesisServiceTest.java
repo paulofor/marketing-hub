@@ -120,7 +120,7 @@ class NicheHypothesisServiceTest {
                   {"title":"H2","promise":"p2","problem":"pr2","persona":"pe2","successRule":"sr2","offerType":"LEAD","kpiTargetCpl":1}
                 ]
                 """;
-        enqueueResponse(content);
+        enqueueBatchResponse(niche.getId(), content);
 
         int initialCount = mockWebServer.getRequestCount();
         Map<Long, List<Hypothesis>> result = service.generate();
@@ -137,7 +137,7 @@ class NicheHypothesisServiceTest {
                 .isNotNull();
         assertThat(first.getPromptAttributeDescriptions()).extracting(PromptAttributeDescription::getId).contains(desc.getId());
         assertThat(hypothesisRepository.count()).isEqualTo(2);
-        assertThat(mockWebServer.getRequestCount() - initialCount).isEqualTo(1);
+        assertThat(mockWebServer.getRequestCount() - initialCount).isEqualTo(4);
         assertThat(nicheRepository.findById(niche.getId()).orElseThrow().getHypothesesToGenerate()).isZero();
     }
 
@@ -155,7 +155,7 @@ class NicheHypothesisServiceTest {
                   {"promise":"p2","problem":"pr2","persona":"pe2","successRule":"sr2","offerType":"LEAD","kpiTargetCpl":1}
                 ]
                 """;
-        enqueueResponse(content);
+        enqueueBatchResponse(niche.getId(), content);
 
         int initialCount = mockWebServer.getRequestCount();
         Map<Long, List<Hypothesis>> result = service.generate();
@@ -163,7 +163,7 @@ class NicheHypothesisServiceTest {
         List<Hypothesis> hyps = result.get(niche.getId());
         assertThat(hyps).hasSize(1);
         assertThat(hypothesisRepository.count()).isEqualTo(1);
-        assertThat(mockWebServer.getRequestCount() - initialCount).isEqualTo(1);
+        assertThat(mockWebServer.getRequestCount() - initialCount).isEqualTo(4);
         assertThat(nicheRepository.findById(niche.getId()).orElseThrow().getHypothesesToGenerate()).isZero();
     }
 
@@ -181,7 +181,7 @@ class NicheHypothesisServiceTest {
                   "offerType":"Teste grátis 14 dias de plataforma SaaS","kpiTargetCpl":1}
                 ]
                 """;
-        enqueueResponse(content);
+        enqueueBatchResponse(niche.getId(), content);
 
         Map<Long, List<Hypothesis>> result = service.generate();
         assertThat(result).containsKey(niche.getId());
@@ -204,7 +204,7 @@ class NicheHypothesisServiceTest {
                   {"promise":"p1","problem":"pr1","persona":"pe1","successRule":"sr1","offerType":"LEAD","kpiTargetCpl":1}
                 ]
                 """;
-        enqueueResponse(content);
+        enqueueBatchResponse(niche.getId(), content);
 
         Map<Long, List<Hypothesis>> result = service.generate();
         assertThat(result).containsKey(niche.getId());
@@ -213,22 +213,43 @@ class NicheHypothesisServiceTest {
         assertThat(nicheRepository.findById(niche.getId()).orElseThrow().getHypothesesToGenerate()).isZero();
     }
 
-    private void enqueueResponse(String content) {
+    private void enqueueBatchResponse(Long nicheId, String content) {
+        mockWebServer.enqueue(jsonResponse("{\"id\":\"file-1\"}"));
+        mockWebServer.enqueue(jsonResponse("{\"id\":\"batch-1\",\"status\":\"validating\"}"));
+        mockWebServer.enqueue(jsonResponse("{\"id\":\"batch-1\",\"status\":\"completed\",\"output_file_id\":\"file-output-1\"}"));
         try {
-            String body = objectMapper.writeValueAsString(
-                    Map.of(
-                            "output", List.of(Map.of(
-                                    "type", "message",
-                                    "role", "assistant",
-                                    "content", List.of(Map.of(
-                                            "type", "output_text",
-                                            "text", content)))),
-                            "output_text", content));
+            Map<String, Object> outputContent = Map.of(
+                    "type", "output_text",
+                    "text", content
+            );
+            Map<String, Object> output = Map.of(
+                    "type", "message",
+                    "role", "assistant",
+                    "content", List.of(outputContent)
+            );
+            Map<String, Object> responseBody = Map.of(
+                    "output", List.of(output),
+                    "output_text", content
+            );
+            Map<String, Object> lineObject = Map.of(
+                    "id", "request-1",
+                    "custom_id", "niche-" + nicheId,
+                    "response", Map.of(
+                            "status_code", 200,
+                            "request_id", "req_123",
+                            "body", responseBody));
+            String line = objectMapper.writeValueAsString(lineObject);
             mockWebServer.enqueue(new MockResponse()
                     .addHeader("Content-Type", "application/json")
-                    .setBody(body));
+                    .setBody(line));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private MockResponse jsonResponse(String body) {
+        return new MockResponse()
+                .addHeader("Content-Type", "application/json")
+                .setBody(body);
     }
 }

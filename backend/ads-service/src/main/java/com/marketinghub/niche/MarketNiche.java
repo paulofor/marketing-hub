@@ -61,6 +61,10 @@ public class MarketNiche {
     /** Quantidade de públicos a serem gerados para este nicho. */
     private Integer audiencesToGenerate;
 
+    /** Modelo do OpenAI a ser utilizado para gerar hipóteses. */
+    @Column(length = 191)
+    private String hypothesisModel;
+
     /** Base segmentation for the Brazilian market. */
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)

@@ -93,6 +93,7 @@ public class HypothesisService {
                 .successRule(req.getSuccessRule())
                 .prompt(req.getPrompt())
                 .model(req.getModel())
+                .costUsd(req.getCostUsd())
                 .promptAttributeDescriptions(attachPromptAttributeDescriptions(req.getPromptAttributeDescriptionIds()))
                 .generatedAt(Instant.now())
                 .offerType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()))

@@ -20,6 +20,7 @@ public class CreateHypothesisRequest {
     private String successRule;
     private String prompt;
     private String model;
+    private BigDecimal costUsd;
     private String offerType;
     private BigDecimal price;
     private BigDecimal kpiTargetCpl;
@@ -50,6 +51,8 @@ public class CreateHypothesisRequest {
     public void setPrompt(String prompt) { this.prompt = prompt; }
     public String getModel() { return model; }
     public void setModel(String model) { this.model = model; }
+    public BigDecimal getCostUsd() { return costUsd; }
+    public void setCostUsd(BigDecimal costUsd) { this.costUsd = costUsd; }
     public String getOfferType() { return offerType; }
     public void setOfferType(String offerType) { this.offerType = offerType; }
     public BigDecimal getPrice() { return price; }

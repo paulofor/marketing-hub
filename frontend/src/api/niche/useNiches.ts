@@ -17,6 +17,7 @@ export interface MarketNiche {
   demographicFilters: string;
   extraTips: string;
   hypothesesToGenerate?: number;
+  hypothesisModel?: string;
   audiencesToGenerate?: number;
   chatDialogId?: number;
   createdAt?: string;

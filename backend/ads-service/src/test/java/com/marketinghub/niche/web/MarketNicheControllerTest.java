@@ -48,9 +48,11 @@ class MarketNicheControllerTest {
         var niche = fixtures.createAndSaveNiche();
         mockMvc.perform(
                         patch("/api/niches/" + niche.getId() + "/hypotheses-to-generate")
-                                .param("quantity", "2"))
+                                .param("quantity", "2")
+                                .param("model", "gpt-4o"))
                 .andExpect(status().isOk());
         var updated = repository.findById(niche.getId()).orElseThrow();
         assertThat(updated.getHypothesesToGenerate()).isEqualTo(2);
+        assertThat(updated.getHypothesisModel()).isEqualTo("gpt-4o");
     }
 }

@@ -54,9 +54,10 @@ class MarketNicheServiceTest {
                 .build();
         repository.save(niche);
 
-        service.requestHypotheses(niche.getId(), 4);
+        service.requestHypotheses(niche.getId(), 4, "gpt-4o");
 
         MarketNiche updated = repository.findById(niche.getId()).orElseThrow();
         assertThat(updated.getHypothesesToGenerate()).isEqualTo(4);
+        assertThat(updated.getHypothesisModel()).isEqualTo("gpt-4o");
     }
 }

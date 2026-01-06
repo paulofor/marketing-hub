@@ -38,12 +38,27 @@ export default function HypothesisDetailPage() {
     { label: data?.title || "...", icon: hypothesisIcon },
   ]);
 
+  const formatUsd = (value?: number | string | null) => {
+    if (value === undefined || value === null) return undefined;
+    const num = typeof value === "string" ? Number(value) : value;
+    if (Number.isNaN(num)) return undefined;
+    return num.toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 4,
+      maximumFractionDigits: 4,
+    });
+  };
+
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
   const list = Array.isArray(experiments) ? experiments : [];
   const audienceList = Array.isArray(audiences) ? audiences : [];
   const instantFormList = Array.isArray(instantForms) ? instantForms : [];
+  const costLabel = formatUsd(data.costUsd) ?? "-";
   const rows = [
+    { label: "Modelo", value: data.model ?? "-" },
+    { label: "Custo (USD)", value: costLabel },
     { label: "Promessa", value: data.promise },
     { label: "Problema", value: data.problem },
     { label: "Persona", value: data.persona },
@@ -65,13 +80,40 @@ export default function HypothesisDetailPage() {
       `**Filtros demográficos & cargos:**\n${niche?.demographicFilters ?? ""}\n\n` +
       `**Dicas extras:**\n${niche?.extraTips ?? ""}\n`;
     const hypothesisMd =
-      `# Hipótese: ${data.title}\n\n` +
-      `**Promessa:**\n${data.promise ?? ""}\n\n` +
-      `**Problema:**\n${data.problem ?? ""}\n\n` +
-      `**Persona:**\n${data.persona ?? ""}\n\n` +
-      `**Mecanismo:**\n${data.mechanism ?? ""}\n\n` +
-      `**Mecanismo único:**\n${data.uniqueMechanism ?? ""}\n\n` +
-      `**Entrega:**\n${data.entrega ?? ""}\n`;
+      `# Hipótese: ${data.title}
+
+` +
+      `**Modelo:**
+${data.model ?? ""}
+
+` +
+      `**Custo (USD):**
+${formatUsd(data.costUsd) ?? ""}
+
+` +
+      `**Promessa:**
+${data.promise ?? ""}
+
+` +
+      `**Problema:**
+${data.problem ?? ""}
+
+` +
+      `**Persona:**
+${data.persona ?? ""}
+
+` +
+      `**Mecanismo:**
+${data.mechanism ?? ""}
+
+` +
+      `**Mecanismo único:**
+${data.uniqueMechanism ?? ""}
+
+` +
+      `**Entrega:**
+${data.entrega ?? ""}
+`;
     const md = `${nicheMd}\n\n${hypothesisMd}`;
     const blob = new Blob([md], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);

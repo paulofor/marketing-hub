@@ -18,7 +18,9 @@ export interface Hypothesis {
   offerType?: string;
   price?: number;
   kpiTargetCpl?: number;
+  costUsd?: number;
   status: string;
+  generatedAt?: string;
   createdAt?: string;
 }
 

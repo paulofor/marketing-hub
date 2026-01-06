@@ -50,7 +50,8 @@ public class NicheHypothesisService {
 
         List<ChatGptClient.HypothesisBatchRequest> batchRequests = niches.stream()
                 .map(niche -> new ChatGptClient.HypothesisBatchRequest(niche,
-                        niche.getHypothesesToGenerate() != null ? niche.getHypothesesToGenerate() : 0))
+                        niche.getHypothesesToGenerate() != null ? niche.getHypothesesToGenerate() : 0,
+                        niche.getHypothesisModel()))
                 .collect(Collectors.toList());
 
         Map<Long, List<CreateHypothesisRequest>> generated = chatGptClient.generateHypothesesBatch(batchRequests);

@@ -15,6 +15,7 @@ import { useRequestHypotheses } from "../../api/niche/useRequestHypotheses";
 import { useExperimentsByNiche } from "../../api/experiment/useExperimentsByNiche";
 import { useDeliverablesByNiche } from "../../api/deliverable/useDeliverablesByNiche";
 import { useCreateDeliverable } from "../../api/deliverable/useCreateDeliverable";
+import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
 import {
   ArrowUpRight,
   Check,
@@ -52,6 +53,7 @@ export default function NicheDetailPage() {
   const { data: deliverables } = useDeliverablesByNiche(nicheId);
   const requestAudiences = useRequestAudiences(id);
   const requestHypotheses = useRequestHypotheses(id);
+  const { data: openAiModels, isLoading: isLoadingModels } = useOpenAiModels();
   const [interestItems, setInterestItems] = useState<string[]>([]);
   const [roleItems, setRoleItems] = useState<string[]>([]);
   const [interestInput, setInterestInput] = useState("");
@@ -68,11 +70,12 @@ export default function NicheDetailPage() {
     defaultValues: { quantity: 1 },
   });
   const {
-    register: registerHypothesisQuantity,
-    handleSubmit: handleSubmitHypothesisQuantity,
-    reset: resetHypothesisQuantity,
-  } = useForm<{ quantity: number }>({
-    defaultValues: { quantity: 1 },
+    register: registerHypothesisRequest,
+    handleSubmit: handleSubmitHypothesisRequest,
+    reset: resetHypothesisRequest,
+    setValue: setHypothesisRequestValue,
+  } = useForm<{ quantity: number; model?: string }>({
+    defaultValues: { quantity: 1, model: "" },
   });
   const {
     register: registerDeliverable,
@@ -101,6 +104,11 @@ export default function NicheDetailPage() {
     setInterestItems(parseList(data?.interestList ?? data?.interests));
     setRoleItems(parseList(data?.roleList ?? data?.demographicFilters));
   }, [data?.demographicFilters, data?.interestList, data?.interests, data?.roleList]);
+
+  useEffect(() => {
+    const defaultModel = data?.hypothesisModel ?? openAiModels?.[0]?.code ?? "";
+    setHypothesisRequestValue("model", defaultModel);
+  }, [data?.hypothesisModel, openAiModels, setHypothesisRequestValue]);
 
   const scrollToSection = useCallback((sectionId: string) => {
     if (typeof document === "undefined") return;
@@ -173,6 +181,7 @@ export default function NicheDetailPage() {
     { label: "Promessas", value: data.promises },
     { label: "Ofertas", value: data.offers },
     { label: "Hipóteses a gerar", value: data.hypothesesToGenerate },
+    { label: "Modelo para hipóteses", value: data.hypothesisModel },
     { label: "Públicos a gerar", value: data.audiencesToGenerate },
     { label: "Segmentação base", value: data.baseSegmentation },
     { label: "Interesses", value: data.interests },
@@ -232,6 +241,17 @@ export default function NicheDetailPage() {
     requestHypotheses.isPending || (isFetching && !isLoading)
       ? "Atualizando hipóteses..."
       : `Solicitadas ao Worker: ${data.hypothesesToGenerate ?? 0}`;
+  const formatUsd = (value?: number | string | null) => {
+    if (value === undefined || value === null) return undefined;
+    const num = typeof value === "string" ? Number(value) : value;
+    if (Number.isNaN(num)) return undefined;
+    return num.toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 4,
+      maximumFractionDigits: 4,
+    });
+  };
   const handleInterestSubmit = (
     event: React.FormEvent<HTMLFormElement>,
   ) => {
@@ -309,13 +329,17 @@ export default function NicheDetailPage() {
       console.log("Validation errors", errors);
     },
   );
-  const onRequestHypotheses = handleSubmitHypothesisQuantity(
-    async ({ quantity }) => {
+  const onRequestHypotheses = handleSubmitHypothesisRequest(
+    async ({ quantity, model }) => {
       if (!quantity || quantity <= 0) return;
+      const selectedModel = model?.trim() || data?.hypothesisModel || openAiModels?.[0]?.code;
       try {
-        await requestHypotheses.mutateAsync(quantity);
+        await requestHypotheses.mutateAsync({ quantity, model: selectedModel });
         alert("Solicitação enviada!");
-        resetHypothesisQuantity({ quantity: 1 });
+        resetHypothesisRequest({
+          quantity: 1,
+          model: selectedModel ?? "",
+        });
       } catch {
         alert("Erro ao solicitar hipóteses");
       }
@@ -866,8 +890,24 @@ export default function NicheDetailPage() {
               className="form-control"
               title="Quantidade de hipóteses que o Worker IA irá gerar"
               disabled={requestHypotheses.isPending}
-              {...registerHypothesisQuantity("quantity", { valueAsNumber: true })}
+              {...registerHypothesisRequest("quantity", { valueAsNumber: true })}
             />
+            <label htmlFor="hypothesis-model" className="visually-hidden">
+              Modelo do OpenAI que o Worker IA irá usar
+            </label>
+            <select
+              id="hypothesis-model"
+              className="form-select"
+              disabled={requestHypotheses.isPending || isLoadingModels}
+              {...registerHypothesisRequest("model")}
+            >
+              <option value="">Selecione um modelo</option>
+              {(openAiModels ?? []).map((modelOption) => (
+                <option key={modelOption.code} value={modelOption.code}>
+                  {modelOption.name} ({modelOption.code})
+                </option>
+              ))}
+            </select>
             <button
               type="submit"
               className="btn btn-secondary"
@@ -896,6 +936,7 @@ export default function NicheDetailPage() {
                 experimentCount === 1
                   ? "1 experimento criado"
                   : `${experimentCount} experimentos criados`;
+              const costLabel = formatUsd(h.costUsd);
               const fields = [
                 { label: "Promessa", value: h.promise },
                 { label: "Problema", value: h.problem },
@@ -909,9 +950,19 @@ export default function NicheDetailPage() {
                   <div className="card-body niche-hypothesis-card__body">
                     <div className="niche-hypothesis-card__head">
                       <h3 className="niche-hypothesis-card__title">{h.title}</h3>
-                      <span className="niche-hypothesis-card__counter">
-                        {experimentLabel}
-                      </span>
+                      <div className="d-flex flex-column align-items-end gap-1">
+                        <span className="niche-hypothesis-card__counter">
+                          {experimentLabel}
+                        </span>
+                        <div className="d-flex gap-2 flex-wrap justify-content-end">
+                          {h.model && (
+                            <span className="badge bg-light text-dark">Modelo: {h.model}</span>
+                          )}
+                          {costLabel && (
+                            <span className="badge bg-light text-dark">Custo: {costLabel}</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     <div className="niche-hypothesis-card__fields">
                       {fields.map((field) => (

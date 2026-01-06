@@ -44,6 +44,7 @@ public class MarketNicheService {
                 .extraTips(request.getExtraTips())
                 .hypothesesToGenerate(request.getHypothesesToGenerate())
                 .audiencesToGenerate(request.getAudiencesToGenerate())
+                .hypothesisModel(normalizeModel(request.getHypothesisModel()))
                 .chatDialog(chat)
                 .build();
         return repository.save(niche);
@@ -69,12 +70,20 @@ public class MarketNicheService {
         niche.setExtraTips(request.getExtraTips());
         niche.setHypothesesToGenerate(request.getHypothesesToGenerate());
         niche.setAudiencesToGenerate(request.getAudiencesToGenerate());
+        niche.setHypothesisModel(normalizeModel(request.getHypothesisModel()));
         ChatDialog chat = null;
         if (request.getChatDialogId() != null) {
             chat = chatDialogRepository.findById(request.getChatDialogId()).orElseThrow();
         }
         niche.setChatDialog(chat);
         return repository.save(niche);
+    }
+
+    private String normalizeModel(String model) {
+        if (model == null || model.isBlank()) {
+            return null;
+        }
+        return model;
     }
 
     /**
@@ -91,9 +100,12 @@ public class MarketNicheService {
      * Requests generation of new hypotheses by setting the pending quantity.
      */
     @Transactional
-    public MarketNiche requestHypotheses(Long id, int quantity) {
+    public MarketNiche requestHypotheses(Long id, int quantity, String model) {
         MarketNiche niche = repository.findById(id).orElseThrow();
         niche.setHypothesesToGenerate(quantity);
+        if (model != null) {
+            niche.setHypothesisModel(normalizeModel(model));
+        }
         return niche;
     }
 

@@ -334,3 +334,8 @@ databaseChangeLog:
   - include:
       file: V2030_09_15__openai_models.sql
       relativeToChangelogFile: true
+
+  - include:
+      file: V2030_10_20__hypothesis_model_and_cost.sql
+      relativeToChangelogFile: true
+

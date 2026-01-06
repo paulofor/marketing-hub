@@ -44,8 +44,10 @@ public class MarketNicheController {
     }
 
     @PatchMapping("/{id}/hypotheses-to-generate")
-    public MarketNicheDto requestHypotheses(@PathVariable Long id, @RequestParam("quantity") int quantity) {
-        return mapper.toDto(service.requestHypotheses(id, quantity));
+    public MarketNicheDto requestHypotheses(@PathVariable Long id,
+                                            @RequestParam("quantity") int quantity,
+                                            @RequestParam(value = "model", required = false) String model) {
+        return mapper.toDto(service.requestHypotheses(id, quantity, model));
     }
 
     @GetMapping

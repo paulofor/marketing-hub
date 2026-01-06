@@ -10,6 +10,7 @@ import com.marketinghub.prompt.PromptAttributeDescription;
 import com.marketinghub.prompt.repository.PromptAttributeDescriptionRepository;
 import com.marketinghub.prompt.repository.PromptAttributeRepository;
 import com.marketinghub.worker.openai.AiGenerationRecorder;
+import com.marketinghub.worker.openai.OpenAiCostEstimator;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
 import org.slf4j.Logger;
@@ -24,6 +25,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
@@ -43,7 +46,7 @@ import java.util.stream.StreamSupport;
 public class ChatGptClient {
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
-    private final String model;
+    private final String defaultModel;
     private final PromptAttributeRepository attributeRepository;
     private final PromptAttributeDescriptionRepository descriptionRepository;
     private final AiGenerationRecorder generationRecorder;
@@ -59,26 +62,28 @@ public class ChatGptClient {
                          ObjectMapper objectMapper,
                          @Value("${openai.api-key:}") String apiKey,
                          @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-                         @Value("${openai.model:gpt-3.5-turbo}") String model,
+                         @Value("${openai.model:gpt-3.5-turbo}") String defaultModel,
                          PromptAttributeRepository attributeRepository,
                          PromptAttributeDescriptionRepository descriptionRepository,
                          AiGenerationRecorder generationRecorder) {
         WebClient.Builder clientBuilder = builder
                 .baseUrl(baseUrl)
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
-        if (OpenAiRequestUtils.requiresReasoning(model)) {
-            clientBuilder.defaultHeader("OpenAI-Beta", "reasoning=1");
-        }
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
+                .defaultHeader("OpenAI-Beta", "reasoning=1");
         this.webClient = clientBuilder.build();
         this.objectMapper = objectMapper;
-        this.model = model;
+        this.defaultModel = defaultModel;
         this.attributeRepository = attributeRepository;
         this.descriptionRepository = descriptionRepository;
         this.generationRecorder = generationRecorder;
     }
 
     public List<CreateHypothesisRequest> generateHypotheses(MarketNiche niche, int quantity) {
-        Map<Long, List<CreateHypothesisRequest>> map = generateHypothesesBatch(List.of(new HypothesisBatchRequest(niche, quantity)));
+        return generateHypotheses(niche, quantity, null);
+    }
+
+    public List<CreateHypothesisRequest> generateHypotheses(MarketNiche niche, int quantity, String model) {
+        Map<Long, List<CreateHypothesisRequest>> map = generateHypothesesBatch(List.of(new HypothesisBatchRequest(niche, quantity, model)));
         return map.getOrDefault(niche.getId(), List.of());
     }
 
@@ -99,18 +104,19 @@ public class ChatGptClient {
             if (quantity == 0) {
                 continue;
             }
+            String requestModel = resolveModel(request.model());
             PromptData promptData = buildPrompt(request.niche(), quantity);
             List<Map<String, Object>> input = List.of(
                     OpenAiRequestUtils.message("system", "Você é um especialista em marketing."),
                     OpenAiRequestUtils.message("user", promptData.prompt())
             );
             Map<String, Object> payload = new LinkedHashMap<>();
-            payload.put("model", model);
+            payload.put("model", requestModel);
             payload.put("input", input);
-            OpenAiRequestUtils.maybeAddReasoning(payload, model);
+            OpenAiRequestUtils.maybeAddReasoning(payload, requestModel);
             String customId = customId(request.niche());
             log.info("Queued batch request {} for niche {}", customId, request.niche().getId());
-            contexts.put(customId, new RequestContext(request.niche(), promptData, payload));
+            contexts.put(customId, new RequestContext(request.niche(), promptData, payload, requestModel));
         }
 
         if (contexts.isEmpty()) {
@@ -136,22 +142,23 @@ public class ChatGptClient {
                     ctx.niche() != null ? String.valueOf(ctx.niche().getId()) : null,
                     ctx.prompt().prompt(),
                     content,
-                    model,
+                    ctx.model(),
                     response.usage());
+            BigDecimal totalCost = OpenAiCostEstimator.estimateUsd(ctx.model(), response.usage());
             if (content == null || content.isBlank()) {
                 log.warn("ChatGPT returned empty content for niche {}", ctx.niche().getId());
                 continue;
             }
             log.info("ChatGPT content for niche {}: {}", ctx.niche().getId(), content);
             try {
-                List<CreateHypothesisRequest> parsed = parseContent(content, ctx.niche(), ctx.prompt());
+                List<CreateHypothesisRequest> parsed = parseContent(content, ctx.niche(), ctx.prompt(), ctx.model(), totalCost);
                 log.info("Parsed hypotheses for niche {}: {}", ctx.niche().getId(), parsed);
                 result.put(ctx.niche().getId(), parsed);
             } catch (Exception e) {
                 log.error("Failed to parse ChatGPT response for niche {}: {}", ctx.niche().getId(), content, e);
                 try {
                     String unescaped = content.replace("\\\"", "\"");
-                    List<CreateHypothesisRequest> parsed = parseContent(unescaped, ctx.niche(), ctx.prompt());
+                    List<CreateHypothesisRequest> parsed = parseContent(unescaped, ctx.niche(), ctx.prompt(), ctx.model(), totalCost);
                     log.info("Parsed hypotheses after unescaping for niche {}: {}", ctx.niche().getId(), parsed);
                     result.put(ctx.niche().getId(), parsed);
                 } catch (Exception ex) {
@@ -212,7 +219,7 @@ public class ChatGptClient {
         return new PromptData(sb.toString(), descriptionIds);
     }
 
-    private List<CreateHypothesisRequest> parseContent(String content, MarketNiche niche, PromptData data) throws Exception {
+    private List<CreateHypothesisRequest> parseContent(String content, MarketNiche niche, PromptData data, String model, BigDecimal totalCost) throws Exception {
         JsonNode root = objectMapper.readTree(content);
         if (root.isArray()) {
             for (JsonNode node : root) {
@@ -226,10 +233,15 @@ public class ChatGptClient {
             }
         }
         CreateHypothesisRequest[] arr = objectMapper.treeToValue(root, CreateHypothesisRequest[].class);
+        BigDecimal costPerHypothesis = null;
+        if (totalCost != null && arr.length > 0) {
+            costPerHypothesis = totalCost.divide(BigDecimal.valueOf(arr.length), 4, RoundingMode.HALF_UP);
+        }
         for (CreateHypothesisRequest req : arr) {
             req.setMarketNicheId(niche.getId());
             req.setPrompt(data.prompt());
             req.setModel(model);
+            req.setCostUsd(costPerHypothesis);
             req.setPromptAttributeDescriptionIds(data.descriptionIds());
         }
         return Arrays.asList(arr);
@@ -380,15 +392,25 @@ public class ChatGptClient {
         return responses;
     }
 
+    private String resolveModel(String requestedModel) {
+        if (requestedModel != null && !requestedModel.isBlank()) {
+            return requestedModel;
+        }
+        if (defaultModel != null && !defaultModel.isBlank()) {
+            return defaultModel;
+        }
+        return "gpt-3.5-turbo";
+    }
+
     private static String customId(MarketNiche niche) {
         return "niche-" + niche.getId();
     }
 
     private record PromptData(String prompt, List<Long> descriptionIds) {}
 
-    public record HypothesisBatchRequest(MarketNiche niche, int quantity) {}
+    public record HypothesisBatchRequest(MarketNiche niche, int quantity, String model) {}
 
-    private record RequestContext(MarketNiche niche, PromptData prompt, Map<String, Object> payload) {}
+    private record RequestContext(MarketNiche niche, PromptData prompt, Map<String, Object> payload, String model) {}
 
     private record OpenAiFile(String id) {}
 

@@ -70,7 +70,12 @@ public class Hypothesis {
     private String prompt;
 
     /** Modelo de IA responsável pela geração desta hipótese. */
+    @Column(length = 191)
     private String model;
+
+    /** Custo estimado em USD para gerar esta hipótese. */
+    @Column(name = "cost_usd", precision = 10, scale = 4)
+    private BigDecimal costUsd;
 
     @ManyToMany
     @JoinTable(name = "hypothesis_prompt_attribute_description",

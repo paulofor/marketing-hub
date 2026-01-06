@@ -27,6 +27,7 @@ public class HypothesisDto {
     private OfferType offerType;
     private BigDecimal price;
     private BigDecimal kpiTargetCpl;
+    private BigDecimal costUsd;
     private HypothesisStatus status;
     private Instant generatedAt;
     private Instant createdAt;

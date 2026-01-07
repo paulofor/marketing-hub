@@ -107,6 +107,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: "/ai-services", label: "IA", icon: Bot },
       { to: "/openai-models", label: "Modelos OpenAI", icon: Cpu },
+      { to: "/differentiated-technologies", label: "Tecnologias diferenciadas", icon: Cpu },
       { to: "/microservices", label: "Microserviços", icon: Server },
       { to: "/microservices/errors", label: "Erros de microserviço", icon: AlertTriangle },
       { to: "/chat-dialogs", label: "ChatGPT", icon: MessageSquare },

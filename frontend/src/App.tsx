@@ -29,6 +29,9 @@ import EditOpenAiModelPage from "./pages/openaiModel/EditOpenAiModelPage";
 import MicroserviceListPage from "./pages/microservice/MicroserviceListPage";
 import NewMicroservicePage from "./pages/microservice/NewMicroservicePage";
 import EditMicroservicePage from "./pages/microservice/EditMicroservicePage";
+import DifferentiatedTechnologyListPage from "./pages/differentiatedTechnology/DifferentiatedTechnologyListPage";
+import NewDifferentiatedTechnologyPage from "./pages/differentiatedTechnology/NewDifferentiatedTechnologyPage";
+import EditDifferentiatedTechnologyPage from "./pages/differentiatedTechnology/EditDifferentiatedTechnologyPage";
 import MicroserviceExceptionListPage from "./pages/microservice/MicroserviceExceptionListPage";
 import ExperimentListPage from "./pages/experiment/ExperimentListPage";
 import NewExperimentPage from "./pages/experiment/NewExperimentPage";
@@ -183,6 +186,18 @@ export default function App() {
               <Route
                 path="/microservices/:id/edit"
                 element={<EditMicroservicePage />}
+              />
+              <Route
+                path="/differentiated-technologies"
+                element={<DifferentiatedTechnologyListPage />}
+              />
+              <Route
+                path="/differentiated-technologies/new"
+                element={<NewDifferentiatedTechnologyPage />}
+              />
+              <Route
+                path="/differentiated-technologies/:id/edit"
+                element={<EditDifferentiatedTechnologyPage />}
               />
               <Route
                 path="/ai/generations"

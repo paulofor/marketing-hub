@@ -67,6 +67,9 @@ import JourneyTemplatesPage from "./pages/journey/JourneyTemplatesPage";
 import JourneyTemplateDetailPage from "./pages/journey/JourneyTemplateDetailPage";
 import NewJourneyTemplatePage from "./pages/journey/NewJourneyTemplatePage";
 import EditJourneyTemplatePage from "./pages/journey/EditJourneyTemplatePage";
+import InteractionJourneyListPage from "./pages/interactionJourney/InteractionJourneyListPage";
+import NewInteractionJourneyPage from "./pages/interactionJourney/NewInteractionJourneyPage";
+import EditInteractionJourneyPage from "./pages/interactionJourney/EditInteractionJourneyPage";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import MainNavigation from "./components/MainNavigation";
@@ -279,6 +282,18 @@ export default function App() {
               <Route
                 path="/journey-templates/new"
                 element={<NewJourneyTemplatePage />}
+              />
+              <Route
+                path="/interaction-journeys"
+                element={<InteractionJourneyListPage />}
+              />
+              <Route
+                path="/interaction-journeys/new"
+                element={<NewInteractionJourneyPage />}
+              />
+              <Route
+                path="/interaction-journeys/:id/edit"
+                element={<EditInteractionJourneyPage />}
               />
               <Route path="/whatsapp" element={<WhatsAppConsolePage />} />
               <Route

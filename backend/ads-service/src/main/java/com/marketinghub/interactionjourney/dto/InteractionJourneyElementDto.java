@@ -18,6 +18,8 @@ public class InteractionJourneyElementDto {
     private String type;
     private String notes;
     private Integer orderIndex;
+    private Integer minQuantity;
+    private Integer maxQuantity;
 
     @Builder.Default
     private List<InteractionJourneyElementDto> children = new ArrayList<>();

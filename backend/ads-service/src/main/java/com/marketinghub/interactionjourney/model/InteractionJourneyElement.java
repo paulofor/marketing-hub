@@ -45,4 +45,10 @@ public class InteractionJourneyElement {
 
     @Column(columnDefinition = "LONGTEXT")
     private String notes;
+
+    @Column(name = "min_quantity")
+    private Integer minQuantity;
+
+    @Column(name = "max_quantity")
+    private Integer maxQuantity;
 }

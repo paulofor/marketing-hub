@@ -129,12 +129,17 @@ public class InteractionJourneyService {
     }
 
     private InteractionJourneyStepDto toDto(InteractionJourneyStep step) {
+        List<InteractionJourneyElement> rootElements = step.getElements() == null
+                ? List.of()
+                : step.getElements().stream()
+                .filter(element -> element.getParent() == null)
+                .toList();
         return InteractionJourneyStepDto.builder()
                 .id(step.getId())
                 .title(step.getTitle())
                 .description(step.getDescription())
                 .orderIndex(step.getOrderIndex())
-                .elements(step.getElements() == null ? List.of() : step.getElements().stream()
+                .elements(rootElements.stream()
                         .map(this::toDto)
                         .toList())
                 .build();

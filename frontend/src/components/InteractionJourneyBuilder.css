@@ -1,0 +1,59 @@
+.interaction-journey-builder .interaction-panel {
+  border-radius: 1rem;
+}
+
+.interaction-step {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
+}
+
+.interaction-step__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.interaction-elements {
+  background: #f8fafc;
+  border: 1px dashed var(--bs-border-color);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+}
+
+.interaction-element {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.65rem;
+  padding: 0.75rem;
+  background: #fff;
+  position: relative;
+}
+
+.interaction-element__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.interaction-element__actions {
+  margin-top: 0.5rem;
+}
+
+.interaction-element__children {
+  margin-top: 0.75rem;
+  border-left: 2px dashed var(--bs-border-color);
+  padding-left: 0.75rem;
+}
+
+.interaction-empty {
+  padding: 1rem;
+  border: 1px dashed var(--bs-border-color);
+  border-radius: 0.75rem;
+  background: #f8fafc;
+}

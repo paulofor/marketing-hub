@@ -160,6 +160,12 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    title: "Interações",
+    items: [
+      { to: "/interaction-journeys", label: "Jornadas de interação", icon: Workflow },
+    ],
+  },
+  {
     title: "Jornadas",
     items: [
       {

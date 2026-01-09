@@ -29,6 +29,12 @@ interface EditableJourney extends InteractionJourney {
 
 const createTempId = () => `tmp-${Math.random().toString(36).slice(2, 10)}`;
 
+const parseQuantityInput = (value: string) => {
+  if (value === "") return null;
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
 function withTempElements(elements: InteractionJourneyElement[] = []): EditableElement[] {
   return elements.map((element) => ({
     ...element,
@@ -56,6 +62,8 @@ function normalizeElements(elements: EditableElement[]): InteractionJourneyEleme
     label: element.label?.trim() || `Elemento ${index + 1}`,
     type: element.type,
     notes: element.notes,
+    minQuantity: element.minQuantity ?? null,
+    maxQuantity: element.maxQuantity ?? null,
     orderIndex: index,
     children: normalizeElements(element.children || []),
   }));
@@ -200,6 +208,8 @@ export default function InteractionJourneyBuilder({
       label: "Novo elemento",
       type: "",
       notes: "",
+      minQuantity: null,
+      maxQuantity: null,
       children: [],
     };
 
@@ -299,6 +309,34 @@ export default function InteractionJourneyBuilder({
                 value={element.type ?? ""}
                 onChange={(e) => updateElement(stepId, element.tempId, { type: e.target.value })}
                 placeholder="Tipo (opcional)"
+              />
+            </div>
+            <div className="d-flex gap-2 flex-wrap mt-2">
+              <input
+                type="number"
+                min={0}
+                className="form-control form-control-sm"
+                value={element.minQuantity ?? ""}
+                onChange={(e) =>
+                  updateElement(stepId, element.tempId, {
+                    minQuantity: parseQuantityInput(e.target.value),
+                  })
+                }
+                placeholder="Quantidade mínima"
+                aria-label="Quantidade mínima"
+              />
+              <input
+                type="number"
+                min={0}
+                className="form-control form-control-sm"
+                value={element.maxQuantity ?? ""}
+                onChange={(e) =>
+                  updateElement(stepId, element.tempId, {
+                    maxQuantity: parseQuantityInput(e.target.value),
+                  })
+                }
+                placeholder="Quantidade máxima"
+                aria-label="Quantidade máxima"
               />
               <div className="btn-group btn-group-sm" role="group" aria-label="Reordenar elemento">
                 <button

@@ -3,6 +3,8 @@ export interface InteractionJourneyElement {
   label: string;
   type?: string;
   notes?: string;
+  minQuantity?: number | null;
+  maxQuantity?: number | null;
   orderIndex?: number;
   children: InteractionJourneyElement[];
 }

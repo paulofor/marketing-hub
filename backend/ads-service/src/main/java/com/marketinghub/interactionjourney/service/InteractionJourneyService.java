@@ -106,6 +106,8 @@ public class InteractionJourneyService {
             element.setType(dto.getType());
             element.setNotes(dto.getNotes());
             element.setOrderIndex(dto.getOrderIndex() != null ? dto.getOrderIndex() : i);
+            element.setMinQuantity(dto.getMinQuantity());
+            element.setMaxQuantity(dto.getMaxQuantity());
 
             List<InteractionJourneyElement> children = buildElements(step, dto.getChildren(), element);
             element.setChildren(children);
@@ -152,6 +154,8 @@ public class InteractionJourneyService {
                 .type(element.getType())
                 .notes(element.getNotes())
                 .orderIndex(element.getOrderIndex())
+                .minQuantity(element.getMinQuantity())
+                .maxQuantity(element.getMaxQuantity())
                 .children(element.getChildren() == null ? List.of() : element.getChildren().stream()
                         .map(this::toDto)
                         .toList())
@@ -161,6 +165,28 @@ public class InteractionJourneyService {
     private void validate(InteractionJourneyDto dto) {
         if (!StringUtils.hasText(dto.getName())) {
             throw new IllegalArgumentException("O nome da jornada de interação é obrigatório.");
+        }
+        List<InteractionJourneyStepDto> stepDtos = Optional.ofNullable(dto.getSteps()).orElse(Collections.emptyList());
+        for (InteractionJourneyStepDto stepDto : stepDtos) {
+            validateElements(stepDto.getElements());
+        }
+    }
+
+    private void validateElements(List<InteractionJourneyElementDto> elements) {
+        List<InteractionJourneyElementDto> safeElements = Optional.ofNullable(elements).orElse(Collections.emptyList());
+        for (InteractionJourneyElementDto element : safeElements) {
+            Integer minQuantity = element.getMinQuantity();
+            Integer maxQuantity = element.getMaxQuantity();
+            if (minQuantity != null && minQuantity < 0) {
+                throw new IllegalArgumentException("A quantidade mínima não pode ser negativa.");
+            }
+            if (maxQuantity != null && maxQuantity < 0) {
+                throw new IllegalArgumentException("A quantidade máxima não pode ser negativa.");
+            }
+            if (minQuantity != null && maxQuantity != null && minQuantity > maxQuantity) {
+                throw new IllegalArgumentException("A quantidade mínima não pode ser maior que a máxima.");
+            }
+            validateElements(element.getChildren());
         }
     }
 }

@@ -50,6 +50,8 @@ public class MarketNicheService {
                 .offers(request.getOffers())
                 .cost(request.getCost())
                 .expense(request.getExpense())
+                .totalCost(request.getTotalCost())
+                .totalRevenue(request.getTotalRevenue())
                 .baseSegmentation(request.getBaseSegmentation())
                 .interests(request.getInterests())
                 .demographicFilters(request.getDemographicFilters())
@@ -79,6 +81,8 @@ public class MarketNicheService {
         niche.setOffers(request.getOffers());
         niche.setCost(request.getCost());
         niche.setExpense(request.getExpense());
+        niche.setTotalCost(request.getTotalCost());
+        niche.setTotalRevenue(request.getTotalRevenue());
         niche.setBaseSegmentation(request.getBaseSegmentation());
         niche.setInterests(request.getInterests());
         niche.setDemographicFilters(request.getDemographicFilters());

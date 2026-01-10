@@ -4,6 +4,7 @@ import com.marketinghub.niche.dto.CreateMarketNicheRequest;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.niche.service.MarketNicheService;
 import com.marketinghub.chat.repository.ChatDialogRepository;
+import com.marketinghub.differentiatedtechnology.repository.DifferentiatedTechnologyRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +26,9 @@ class MarketNicheServiceTest {
     @BeforeEach
     void setup() {
         ChatDialogRepository chatRepo = mock(ChatDialogRepository.class);
-        service = new MarketNicheService(repository, chatRepo);
+        DifferentiatedTechnologyRepository differentiatedTechnologyRepository =
+                mock(DifferentiatedTechnologyRepository.class);
+        service = new MarketNicheService(repository, chatRepo, differentiatedTechnologyRepository);
     }
 
     @Test
@@ -54,7 +57,7 @@ class MarketNicheServiceTest {
                 .build();
         repository.save(niche);
 
-        service.requestHypotheses(niche.getId(), 4, "gpt-4o");
+        service.requestHypotheses(niche.getId(), 4, "gpt-4o", null);
 
         MarketNiche updated = repository.findById(niche.getId()).orElseThrow();
         assertThat(updated.getHypothesesToGenerate()).isEqualTo(4);

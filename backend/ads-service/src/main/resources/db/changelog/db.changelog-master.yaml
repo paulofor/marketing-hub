@@ -357,3 +357,6 @@ databaseChangeLog:
   - include:
       file: V2031_04_15__add_total_cost_revenue_to_niche.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2031_05_15__create_information_source.sql
+      relativeToChangelogFile: true

@@ -17,6 +17,8 @@ import { useDeliverablesByNiche } from "../../api/deliverable/useDeliverablesByN
 import { useCreateDeliverable } from "../../api/deliverable/useCreateDeliverable";
 import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
 import { useDifferentiatedTechnologies } from "../../api/differentiatedTechnology/useDifferentiatedTechnologies";
+import { useInformationSourcesByNiche } from "../../api/informationSource/useInformationSourcesByNiche";
+import { useCreateInformationSource } from "../../api/informationSource/useCreateInformationSource";
 import {
   ArrowUpRight,
   Check,
@@ -60,6 +62,7 @@ export default function NicheDetailPage() {
   const { data: audiences } = useAudiencesByNiche(nicheId);
   const { data: experiments } = useExperimentsByNiche(nicheId);
   const { data: deliverables } = useDeliverablesByNiche(nicheId);
+  const { data: informationSources } = useInformationSourcesByNiche(nicheId);
   const requestAudiences = useRequestAudiences(id);
   const requestHypotheses = useRequestHypotheses(id);
   const { data: openAiModels, isLoading: isLoadingModels } = useOpenAiModels();
@@ -114,6 +117,14 @@ export default function NicheDetailPage() {
     },
   });
   const createDeliverable = useCreateDeliverable(id);
+  const {
+    register: registerInformationSource,
+    handleSubmit: handleSubmitInformationSource,
+    reset: resetInformationSource,
+  } = useForm<{ name: string; url: string }>({
+    defaultValues: { name: "", url: "" },
+  });
+  const createInformationSource = useCreateInformationSource(id);
   const updateNiche = useUpdateNiche();
   useBreadcrumbs([{ label: data?.name || "...", icon: nicheIcon }]);
 
@@ -179,6 +190,13 @@ export default function NicheDetailPage() {
   const experimentsList = Array.isArray(experiments) ? experiments : [];
   const deliverableList = Array.isArray(deliverables)
     ? [...deliverables].sort((a, b) => {
+        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bDate - aDate;
+      })
+    : [];
+  const informationSourceList = Array.isArray(informationSources)
+    ? [...informationSources].sort((a, b) => {
         const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return bDate - aDate;
@@ -404,6 +422,24 @@ export default function NicheDetailPage() {
     },
     (errors) => {
       console.log("Deliverable form errors", errors);
+    },
+  );
+
+  const onCreateInformationSource = handleSubmitInformationSource(
+    async (values) => {
+      try {
+        await createInformationSource.mutateAsync({
+          name: values.name,
+          url: values.url,
+        });
+        resetInformationSource({ name: "", url: "" });
+      } catch (error) {
+        console.error("Failed to create information source", error);
+        alert("Não foi possível salvar a fonte de informação. Tente novamente.");
+      }
+    },
+    (errors) => {
+      console.log("Information source form errors", errors);
     },
   );
 
@@ -696,6 +732,107 @@ export default function NicheDetailPage() {
             </div>
           </article>
         </div>
+      </section>
+      <section
+        className="niche-section"
+        aria-labelledby="niche-information-sources"
+      >
+        <div className="niche-section__header">
+          <div>
+            <h2 className="niche-section__title" id="niche-information-sources">
+              Fontes de informação
+            </h2>
+            <p className="niche-section__subtitle">
+              Registre links relevantes para pesquisas de mercado futuras.
+            </p>
+          </div>
+          <span className="badge text-bg-light text-dark niche-information-sources__badge">
+            {informationSourceList.length} item(s)
+          </span>
+        </div>
+        <form
+          className="niche-information-sources__form"
+          onSubmit={onCreateInformationSource}
+        >
+          <div className="row g-3">
+            <div className="col-md-5">
+              <label htmlFor="information-source-name" className="form-label">
+                Nome *
+              </label>
+              <input
+                id="information-source-name"
+                type="text"
+                className="form-control"
+                placeholder="Ex: Relatório Sebrae 2024"
+                disabled={createInformationSource.isPending}
+                {...registerInformationSource("name", { required: true })}
+              />
+            </div>
+            <div className="col-md-7">
+              <label htmlFor="information-source-url" className="form-label">
+                URL *
+              </label>
+              <input
+                id="information-source-url"
+                type="url"
+                className="form-control"
+                placeholder="https://..."
+                disabled={createInformationSource.isPending}
+                {...registerInformationSource("url", { required: true })}
+              />
+            </div>
+          </div>
+          <div className="d-flex justify-content-end mt-3">
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={createInformationSource.isPending}
+            >
+              {createInformationSource.isPending ? (
+                <span
+                  className="spinner-border spinner-border-sm"
+                  role="status"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Plus size={18} />
+              )}
+              <span>Adicionar fonte</span>
+            </button>
+          </div>
+        </form>
+        {informationSourceList.length === 0 ? (
+          <p className="niche-section__empty">
+            Nenhuma fonte de informação cadastrada ainda.
+          </p>
+        ) : (
+          <div className="niche-section__grid niche-information-sources__grid">
+            {informationSourceList.map((source) => (
+              <article key={source.id} className="card niche-section__card">
+                <div className="card-body niche-information-source-card__body">
+                  <h3 className="niche-information-source-card__title">
+                    {source.name}
+                  </h3>
+                  <a
+                    className="niche-detail__card-link"
+                    href={source.url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {source.url}
+                  </a>
+                </div>
+                <div className="card-footer niche-information-source-card__footer">
+                  {`Atualizado em ${
+                    source.updatedAt
+                      ? new Date(source.updatedAt).toLocaleString("pt-BR")
+                      : "-"
+                  }`}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
       <section className="niche-section" aria-labelledby="niche-deliverables">
         <div className="niche-section__header">

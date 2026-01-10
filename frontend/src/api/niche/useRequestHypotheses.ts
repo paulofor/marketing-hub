@@ -5,14 +5,22 @@ import { MarketNiche } from "./useNiches";
 export interface RequestHypothesesPayload {
   quantity: number;
   model?: string;
+  differentiatedTechnologyId?: number;
 }
 
 export function useRequestHypotheses(id: number) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ quantity, model }: RequestHypothesesPayload) => {
+    mutationFn: async ({
+      quantity,
+      model,
+      differentiatedTechnologyId,
+    }: RequestHypothesesPayload) => {
       const params: Record<string, string | number> = { quantity };
       if (model) params.model = model;
+      if (differentiatedTechnologyId != null) {
+        params.differentiatedTechnologyId = differentiatedTechnologyId;
+      }
       const { data } = await axios.patch<MarketNiche>(
         `/api/niches/${id}/hypotheses-to-generate`,
         undefined,

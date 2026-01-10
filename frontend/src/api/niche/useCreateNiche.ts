@@ -15,6 +15,7 @@ export interface CreateNiche {
   demographicFilters: string;
   extraTips: string;
   chatDialogId?: number;
+  differentiatedTechnologyId?: number;
   hypothesesToGenerate?: number;
   audiencesToGenerate?: number;
 }

@@ -16,6 +16,7 @@ import { useExperimentsByNiche } from "../../api/experiment/useExperimentsByNich
 import { useDeliverablesByNiche } from "../../api/deliverable/useDeliverablesByNiche";
 import { useCreateDeliverable } from "../../api/deliverable/useCreateDeliverable";
 import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
+import { useDifferentiatedTechnologies } from "../../api/differentiatedTechnology/useDifferentiatedTechnologies";
 import {
   ArrowUpRight,
   Check,
@@ -54,6 +55,10 @@ export default function NicheDetailPage() {
   const requestAudiences = useRequestAudiences(id);
   const requestHypotheses = useRequestHypotheses(id);
   const { data: openAiModels, isLoading: isLoadingModels } = useOpenAiModels();
+  const {
+    data: differentiatedTechnologies,
+    isLoading: isLoadingDifferentiatedTechnologies,
+  } = useDifferentiatedTechnologies();
   const [interestItems, setInterestItems] = useState<string[]>([]);
   const [roleItems, setRoleItems] = useState<string[]>([]);
   const [interestInput, setInterestInput] = useState("");
@@ -74,8 +79,12 @@ export default function NicheDetailPage() {
     handleSubmit: handleSubmitHypothesisRequest,
     reset: resetHypothesisRequest,
     setValue: setHypothesisRequestValue,
-  } = useForm<{ quantity: number; model?: string }>({
-    defaultValues: { quantity: 1, model: "" },
+  } = useForm<{
+    quantity: number;
+    model?: string;
+    differentiatedTechnologyId?: number;
+  }>({
+    defaultValues: { quantity: 1, model: "", differentiatedTechnologyId: undefined },
   });
   const {
     register: registerDeliverable,
@@ -109,6 +118,13 @@ export default function NicheDetailPage() {
     const defaultModel = data?.hypothesisModel ?? openAiModels?.[0]?.code ?? "";
     setHypothesisRequestValue("model", defaultModel);
   }, [data?.hypothesisModel, openAiModels, setHypothesisRequestValue]);
+
+  useEffect(() => {
+    setHypothesisRequestValue(
+      "differentiatedTechnologyId",
+      data?.differentiatedTechnologyId ?? undefined,
+    );
+  }, [data?.differentiatedTechnologyId, setHypothesisRequestValue]);
 
   const scrollToSection = useCallback((sectionId: string) => {
     if (typeof document === "undefined") return;
@@ -173,6 +189,9 @@ export default function NicheDetailPage() {
   const updatedAtLabel = data.updatedAt
     ? new Date(data.updatedAt).toLocaleString("pt-BR")
     : undefined;
+  const differentiatedTechnologyName = differentiatedTechnologies?.find(
+    (tech) => tech.id === data.differentiatedTechnologyId,
+  )?.name;
   const infoCards = [
     { label: "Descrição", value: data.description },
     { label: "Categoria de interesse", value: data.interestCategory },
@@ -182,6 +201,7 @@ export default function NicheDetailPage() {
     { label: "Ofertas", value: data.offers },
     { label: "Hipóteses a gerar", value: data.hypothesesToGenerate },
     { label: "Modelo para hipóteses", value: data.hypothesisModel },
+    { label: "Tecnologia diferenciada", value: differentiatedTechnologyName },
     { label: "Públicos a gerar", value: data.audiencesToGenerate },
     { label: "Segmentação base", value: data.baseSegmentation },
     { label: "Interesses", value: data.interests },
@@ -330,15 +350,20 @@ export default function NicheDetailPage() {
     },
   );
   const onRequestHypotheses = handleSubmitHypothesisRequest(
-    async ({ quantity, model }) => {
+    async ({ quantity, model, differentiatedTechnologyId }) => {
       if (!quantity || quantity <= 0) return;
       const selectedModel = model?.trim() || data?.hypothesisModel || openAiModels?.[0]?.code;
       try {
-        await requestHypotheses.mutateAsync({ quantity, model: selectedModel });
+        await requestHypotheses.mutateAsync({
+          quantity,
+          model: selectedModel,
+          differentiatedTechnologyId,
+        });
         alert("Solicitação enviada!");
         resetHypothesisRequest({
           quantity: 1,
           model: selectedModel ?? "",
+          differentiatedTechnologyId,
         });
       } catch {
         alert("Erro ao solicitar hipóteses");
@@ -898,6 +923,7 @@ export default function NicheDetailPage() {
             <select
               id="hypothesis-model"
               className="form-select"
+              title="Modelo do OpenAI que o Worker IA irá usar"
               disabled={requestHypotheses.isPending || isLoadingModels}
               {...registerHypothesisRequest("model")}
             >
@@ -905,6 +931,25 @@ export default function NicheDetailPage() {
               {(openAiModels ?? []).map((modelOption) => (
                 <option key={modelOption.code} value={modelOption.code}>
                   {modelOption.name} ({modelOption.code})
+                </option>
+              ))}
+            </select>
+            <label htmlFor="hypothesis-technology" className="visually-hidden">
+              Tecnologia diferenciada para orientar hipóteses
+            </label>
+            <select
+              id="hypothesis-technology"
+              className="form-select"
+              title="Tecnologia diferenciada para orientar as hipóteses geradas pelo Worker IA"
+              disabled={requestHypotheses.isPending || isLoadingDifferentiatedTechnologies}
+              {...registerHypothesisRequest("differentiatedTechnologyId", {
+                setValueAs: (value) => (value ? Number(value) : undefined),
+              })}
+            >
+              <option value="">Sem tecnologia diferenciada</option>
+              {(differentiatedTechnologies ?? []).map((tech) => (
+                <option key={tech.id} value={tech.id}>
+                  {tech.name}
                 </option>
               ))}
             </select>

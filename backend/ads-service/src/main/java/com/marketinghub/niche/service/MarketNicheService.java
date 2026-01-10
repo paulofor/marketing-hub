@@ -2,11 +2,15 @@ package com.marketinghub.niche.service;
 
 import com.marketinghub.chat.ChatDialog;
 import com.marketinghub.chat.repository.ChatDialogRepository;
+import com.marketinghub.differentiatedtechnology.DifferentiatedTechnology;
+import com.marketinghub.differentiatedtechnology.repository.DifferentiatedTechnologyRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.dto.CreateMarketNicheRequest;
 import com.marketinghub.niche.repository.MarketNicheRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Service layer for market niches.
@@ -15,10 +19,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class MarketNicheService {
     private final MarketNicheRepository repository;
     private final ChatDialogRepository chatDialogRepository;
+    private final DifferentiatedTechnologyRepository differentiatedTechnologyRepository;
 
-    public MarketNicheService(MarketNicheRepository repository, ChatDialogRepository chatDialogRepository) {
+    public MarketNicheService(MarketNicheRepository repository,
+                              ChatDialogRepository chatDialogRepository,
+                              DifferentiatedTechnologyRepository differentiatedTechnologyRepository) {
         this.repository = repository;
         this.chatDialogRepository = chatDialogRepository;
+        this.differentiatedTechnologyRepository = differentiatedTechnologyRepository;
     }
 
     /**
@@ -30,6 +38,8 @@ public class MarketNicheService {
         if (request.getChatDialogId() != null) {
             chat = chatDialogRepository.findById(request.getChatDialogId()).orElseThrow();
         }
+        DifferentiatedTechnology differentiatedTechnology =
+                resolveDifferentiatedTechnology(request.getDifferentiatedTechnologyId());
         MarketNiche niche = MarketNiche.builder()
                 .name(request.getName())
                 .description(request.getDescription())
@@ -45,6 +55,7 @@ public class MarketNicheService {
                 .hypothesesToGenerate(request.getHypothesesToGenerate())
                 .audiencesToGenerate(request.getAudiencesToGenerate())
                 .hypothesisModel(normalizeModel(request.getHypothesisModel()))
+                .differentiatedTechnology(differentiatedTechnology)
                 .chatDialog(chat)
                 .build();
         return repository.save(niche);
@@ -71,6 +82,8 @@ public class MarketNicheService {
         niche.setHypothesesToGenerate(request.getHypothesesToGenerate());
         niche.setAudiencesToGenerate(request.getAudiencesToGenerate());
         niche.setHypothesisModel(normalizeModel(request.getHypothesisModel()));
+        niche.setDifferentiatedTechnology(
+                resolveDifferentiatedTechnology(request.getDifferentiatedTechnologyId()));
         ChatDialog chat = null;
         if (request.getChatDialogId() != null) {
             chat = chatDialogRepository.findById(request.getChatDialogId()).orElseThrow();
@@ -96,15 +109,28 @@ public class MarketNicheService {
         return niche;
     }
 
+    private DifferentiatedTechnology resolveDifferentiatedTechnology(Long id) {
+        if (id == null) {
+            return null;
+        }
+        return differentiatedTechnologyRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Differentiated technology not found: " + id));
+    }
+
     /**
      * Requests generation of new hypotheses by setting the pending quantity.
      */
     @Transactional
-    public MarketNiche requestHypotheses(Long id, int quantity, String model) {
+    public MarketNiche requestHypotheses(Long id, int quantity, String model, Long differentiatedTechnologyId) {
         MarketNiche niche = repository.findById(id).orElseThrow();
         niche.setHypothesesToGenerate(quantity);
         if (model != null) {
             niche.setHypothesisModel(normalizeModel(model));
+        }
+        if (differentiatedTechnologyId != null) {
+            niche.setDifferentiatedTechnology(resolveDifferentiatedTechnology(differentiatedTechnologyId));
         }
         return niche;
     }

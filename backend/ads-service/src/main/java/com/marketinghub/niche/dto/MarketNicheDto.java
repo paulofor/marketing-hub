@@ -19,6 +19,8 @@ public class MarketNicheDto {
     private String offers;
     private BigDecimal cost;
     private BigDecimal expense;
+    private BigDecimal totalCost;
+    private BigDecimal totalRevenue;
     private String baseSegmentation;
     private String interests;
     private String demographicFilters;

@@ -17,6 +17,8 @@ public class CreateMarketNicheRequest {
     private String offers;
     private BigDecimal cost;
     private BigDecimal expense;
+    private BigDecimal totalCost;
+    private BigDecimal totalRevenue;
 
     private String baseSegmentation;
     private String interests;

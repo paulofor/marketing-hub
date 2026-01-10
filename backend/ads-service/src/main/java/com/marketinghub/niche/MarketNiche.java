@@ -65,6 +65,14 @@ public class MarketNiche {
     @Column(precision = 10, scale = 2)
     private BigDecimal expense;
 
+    /** Custo total acumulado para o nicho. */
+    @Column(precision = 12, scale = 2)
+    private BigDecimal totalCost;
+
+    /** Receita total acumulada para o nicho. */
+    @Column(precision = 12, scale = 2)
+    private BigDecimal totalRevenue;
+
     /** Quantidade de hipóteses a serem geradas para este nicho. */
     private Integer hypothesesToGenerate;
 

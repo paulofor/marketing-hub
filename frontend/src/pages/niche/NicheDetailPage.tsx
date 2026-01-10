@@ -209,6 +209,8 @@ export default function NicheDetailPage() {
     { label: "Ofertas", value: data.offers },
     { label: "Custo", value: formatCurrency(data.cost) },
     { label: "Despesa", value: formatCurrency(data.expense) },
+    { label: "Custo total", value: formatCurrency(data.totalCost) },
+    { label: "Receita total", value: formatCurrency(data.totalRevenue) },
     { label: "Hipóteses a gerar", value: data.hypothesesToGenerate },
     { label: "Modelo para hipóteses", value: data.hypothesisModel },
     { label: "Tecnologia diferenciada", value: differentiatedTechnologyName },

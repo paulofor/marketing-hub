@@ -10,6 +10,7 @@ import com.marketinghub.hypothesis.dto.UpdateHypothesisRequest;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.prompt.PromptAttributeDescription;
 import com.marketinghub.prompt.repository.PromptAttributeDescriptionRepository;
+import java.math.BigDecimal;
 import java.util.UUID;
 import java.time.Instant;
 import java.util.HashSet;
@@ -65,6 +66,13 @@ public class HypothesisService {
         // only title is required
     }
 
+    private BigDecimal resolveTotalCostDelta(CreateHypothesisRequest req) {
+        if (req.getCost() != null) {
+            return req.getCost();
+        }
+        return req.getCostUsd();
+    }
+
     private Set<PromptAttributeDescription> attachPromptAttributeDescriptions(List<Long> ids) {
         if (ids == null || ids.isEmpty()) return new HashSet<>();
         Set<PromptAttributeDescription> set = new HashSet<>();
@@ -102,7 +110,17 @@ public class HypothesisService {
                 .price(req.getPrice())
                 .kpiTargetCpl(req.getKpiTargetCpl())
                 .build();
-        return repository.save(h);
+        Hypothesis saved = repository.save(h);
+        BigDecimal delta = resolveTotalCostDelta(req);
+        if (delta != null && saved.getMarketNiche() != null) {
+            MarketNiche niche = saved.getMarketNiche();
+            BigDecimal current = niche.getTotalCost();
+            if (current == null) {
+                current = BigDecimal.ZERO;
+            }
+            niche.setTotalCost(current.add(delta));
+        }
+        return saved;
     }
 
     public Iterable<Hypothesis> listByMarketNiche(Long marketNicheId, HypothesisStatus status) {

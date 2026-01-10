@@ -5,6 +5,7 @@ import lombok.*;
 import com.marketinghub.appidea.AppIdea;
 import com.marketinghub.chat.ChatDialog;
 import com.marketinghub.deliverable.Deliverable;
+import com.marketinghub.differentiatedtechnology.DifferentiatedTechnology;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.audience.Audience;
 import org.hibernate.annotations.CreationTimestamp;
@@ -64,6 +65,11 @@ public class MarketNiche {
     /** Modelo do OpenAI a ser utilizado para gerar hipóteses. */
     @Column(length = 191)
     private String hypothesisModel;
+
+    /** Tecnologia diferenciada selecionada para guiar hipóteses. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "differentiated_technology_id")
+    private DifferentiatedTechnology differentiatedTechnology;
 
     /** Base segmentation for the Brazilian market. */
     @Lob

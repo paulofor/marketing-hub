@@ -11,5 +11,6 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface MarketNicheMapper {
     @Mapping(target = "chatDialogId", source = "chatDialog.id")
+    @Mapping(target = "differentiatedTechnologyId", source = "differentiatedTechnology.id")
     MarketNicheDto toDto(MarketNiche niche);
 }

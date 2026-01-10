@@ -19,6 +19,7 @@ export interface MarketNiche {
   hypothesesToGenerate?: number;
   hypothesisModel?: string;
   audiencesToGenerate?: number;
+  differentiatedTechnologyId?: number | null;
   chatDialogId?: number;
   createdAt?: string;
   updatedAt?: string;

@@ -289,10 +289,17 @@ export default function InteractionJourneyBuilder({
     stepId: string,
     depth = 0,
   ) => {
+    const getDepthClass = (level: number) => {
+      if (level === 0) return "interaction-element--root";
+      if (level === 1) return "interaction-element--nested";
+      if (level === 2) return "interaction-element--nested-2";
+      return "interaction-element--nested-3";
+    };
+
     return elements.map((element, index) => (
       <div
         key={element.tempId}
-        className="interaction-element"
+        className={`interaction-element ${getDepthClass(depth)}`}
         style={{ marginLeft: depth * 16 }}
       >
         <div className="interaction-element__header">

@@ -34,6 +34,26 @@
   position: relative;
 }
 
+.interaction-element--root {
+  border-color: #f5b97a;
+  background: #fff9f2;
+}
+
+.interaction-element--nested {
+  border-color: #8bb7f0;
+  background: #f0f7ff;
+}
+
+.interaction-element--nested-2 {
+  border-color: #b69bf3;
+  background: #f7f0ff;
+}
+
+.interaction-element--nested-3 {
+  border-color: #7bd1a7;
+  background: #f0fff7;
+}
+
 .interaction-element__header {
   display: flex;
   justify-content: space-between;

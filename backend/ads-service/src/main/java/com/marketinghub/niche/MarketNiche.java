@@ -13,6 +13,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 /**
@@ -55,6 +56,14 @@ public class MarketNiche {
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String offers;
+
+    /** Custo estimado para o nicho. */
+    @Column(precision = 10, scale = 2)
+    private BigDecimal cost;
+
+    /** Despesa estimada para o nicho. */
+    @Column(precision = 10, scale = 2)
+    private BigDecimal expense;
 
     /** Quantidade de hipóteses a serem geradas para este nicho. */
     private Integer hypothesesToGenerate;

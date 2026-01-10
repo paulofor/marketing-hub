@@ -1,6 +1,7 @@
 package com.marketinghub.niche.dto;
 
 import java.time.Instant;
+import java.math.BigDecimal;
 import lombok.Data;
 
 /**
@@ -16,6 +17,8 @@ public class MarketNicheDto {
     private String demandVolume;
     private String promises;
     private String offers;
+    private BigDecimal cost;
+    private BigDecimal expense;
     private String baseSegmentation;
     private String interests;
     private String demographicFilters;

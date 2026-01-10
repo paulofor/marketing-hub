@@ -326,6 +326,8 @@ export default function ExperimentDetailPage() {
       label: "CPL-meta",
       value: formatCurrency(data.kpiTarget ?? data.kpiTargetCpl),
     },
+    { label: "Custo", value: formatCurrency(data.cost) },
+    { label: "Despesa", value: formatCurrency(data.expense) },
     { label: "Stop-loss CPL", value: formatCurrency(stopLossCpl) },
     { label: "Baseline CVR", value: formatPercent(data.baselineCvr) },
     { label: "Target CVR", value: formatPercent(data.targetCvr) },

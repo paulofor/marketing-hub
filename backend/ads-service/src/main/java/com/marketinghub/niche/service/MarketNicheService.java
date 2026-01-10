@@ -48,6 +48,8 @@ public class MarketNicheService {
                 .demandVolume(request.getDemandVolume())
                 .promises(request.getPromises())
                 .offers(request.getOffers())
+                .cost(request.getCost())
+                .expense(request.getExpense())
                 .baseSegmentation(request.getBaseSegmentation())
                 .interests(request.getInterests())
                 .demographicFilters(request.getDemographicFilters())
@@ -75,6 +77,8 @@ public class MarketNicheService {
         niche.setDemandVolume(request.getDemandVolume());
         niche.setPromises(request.getPromises());
         niche.setOffers(request.getOffers());
+        niche.setCost(request.getCost());
+        niche.setExpense(request.getExpense());
         niche.setBaseSegmentation(request.getBaseSegmentation());
         niche.setInterests(request.getInterests());
         niche.setDemographicFilters(request.getDemographicFilters());

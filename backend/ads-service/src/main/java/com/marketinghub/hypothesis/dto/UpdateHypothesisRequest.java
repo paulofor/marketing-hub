@@ -14,6 +14,8 @@ public class UpdateHypothesisRequest {
     private String successRule;
     private String prompt;
     private String model;
+    private BigDecimal cost;
+    private BigDecimal expense;
     private String offerType;
     private BigDecimal price;
     private BigDecimal kpiTargetCpl;
@@ -50,6 +52,10 @@ public class UpdateHypothesisRequest {
 
     public String getModel() { return model; }
     public void setModel(String model) { this.model = model; }
+    public BigDecimal getCost() { return cost; }
+    public void setCost(BigDecimal cost) { this.cost = cost; }
+    public BigDecimal getExpense() { return expense; }
+    public void setExpense(BigDecimal expense) { this.expense = expense; }
 
     public String getOfferType() { return offerType; }
     public void setOfferType(String offerType) { this.offerType = offerType; }

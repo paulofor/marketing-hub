@@ -13,6 +13,8 @@ export interface CreateExperiment {
   mde?: number;
   dailyBudget?: number;
   unitPrice: number;
+  cost?: number;
+  expense?: number;
   startDate?: string;
   endDate?: string;
   creativesToGenerate?: number;

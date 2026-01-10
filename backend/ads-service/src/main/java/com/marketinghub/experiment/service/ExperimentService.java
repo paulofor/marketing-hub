@@ -259,6 +259,8 @@ public class ExperimentService {
                 .mdePercent(request.getMdePercent())
                 .dailyBudget(request.getDailyBudget())
                 .unitPrice(unitPrice)
+                .cost(request.getCost())
+                .expense(request.getExpense())
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
                 .status(ExperimentStatus.PLANNED)
@@ -334,6 +336,8 @@ public class ExperimentService {
                 .mdePercent(original.getMdePercent())
                 .dailyBudget(original.getDailyBudget())
                 .unitPrice(original.getUnitPrice())
+                .cost(original.getCost())
+                .expense(original.getExpense())
                 .startDate(original.getStartDate())
                 .endDate(original.getEndDate())
                 .status(ExperimentStatus.PLANNED)
@@ -431,6 +435,12 @@ public class ExperimentService {
         }
         if (request.isUnitPricePresent()) {
             exp.setUnitPrice(normalizeUnitPrice(request.getUnitPrice()));
+        }
+        if (request.isCostPresent()) {
+            exp.setCost(request.getCost());
+        }
+        if (request.isExpensePresent()) {
+            exp.setExpense(request.getExpense());
         }
         if (request.getSampleSize() != null) {
             exp.setSampleSize(request.getSampleSize());

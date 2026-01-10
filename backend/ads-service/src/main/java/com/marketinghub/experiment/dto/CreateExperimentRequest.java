@@ -27,6 +27,8 @@ public class CreateExperimentRequest {
     private BigDecimal mdePercent;
     private BigDecimal dailyBudget;
     private BigDecimal unitPrice;
+    private BigDecimal cost;
+    private BigDecimal expense;
     private LocalDate startDate;
     private LocalDate endDate;
     private Integer creativesToGenerate;

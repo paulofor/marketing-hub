@@ -1,6 +1,7 @@
 package com.marketinghub.niche.dto;
 
 import lombok.Data;
+import java.math.BigDecimal;
 
 /**
  * Request body for creating a market niche.
@@ -14,6 +15,8 @@ public class CreateMarketNicheRequest {
     private String demandVolume;
     private String promises;
     private String offers;
+    private BigDecimal cost;
+    private BigDecimal expense;
 
     private String baseSegmentation;
     private String interests;

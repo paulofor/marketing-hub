@@ -350,3 +350,7 @@ databaseChangeLog:
   - include:
       file: V2031_03_01__add_differentiated_technology_to_niche.sql
       relativeToChangelogFile: true
+
+  - include:
+      file: V2031_04_01__add_cost_expense_fields.sql
+      relativeToChangelogFile: true

@@ -114,6 +114,14 @@ public class Experiment {
     @Column(name = "unit_price_brl", precision = 10, scale = 2)
     private java.math.BigDecimal unitPrice;
 
+    /** Custo estimado em BRL para o experimento. */
+    @Column(precision = 10, scale = 2)
+    private java.math.BigDecimal cost;
+
+    /** Despesa estimada em BRL para o experimento. */
+    @Column(precision = 10, scale = 2)
+    private java.math.BigDecimal expense;
+
     /** MDE (Minimum Detectable Effect) percentual. */
     @Column(precision = 5, scale = 2)
     private java.math.BigDecimal mdePercent;

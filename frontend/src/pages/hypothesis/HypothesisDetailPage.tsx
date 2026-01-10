@@ -49,6 +49,15 @@ export default function HypothesisDetailPage() {
       maximumFractionDigits: 4,
     });
   };
+  const formatBrl = (value?: number | string | null) => {
+    if (value === undefined || value === null) return undefined;
+    const num = typeof value === "string" ? Number(value) : value;
+    if (Number.isNaN(num)) return undefined;
+    return num.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  };
 
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
@@ -56,9 +65,13 @@ export default function HypothesisDetailPage() {
   const audienceList = Array.isArray(audiences) ? audiences : [];
   const instantFormList = Array.isArray(instantForms) ? instantForms : [];
   const costLabel = formatUsd(data.costUsd) ?? "-";
+  const costBrlLabel = formatBrl(data.cost) ?? "-";
+  const expenseBrlLabel = formatBrl(data.expense) ?? "-";
   const rows = [
     { label: "Modelo", value: data.model ?? "-" },
     { label: "Custo (USD)", value: costLabel },
+    { label: "Custo (BRL)", value: costBrlLabel },
+    { label: "Despesa (BRL)", value: expenseBrlLabel },
     { label: "Promessa", value: data.promise },
     { label: "Problema", value: data.problem },
     { label: "Persona", value: data.persona },
@@ -89,6 +102,14 @@ ${data.model ?? ""}
 ` +
       `**Custo (USD):**
 ${formatUsd(data.costUsd) ?? ""}
+
+` +
+      `**Custo (BRL):**
+${formatBrl(data.cost) ?? ""}
+
+` +
+      `**Despesa (BRL):**
+${formatBrl(data.expense) ?? ""}
 
 ` +
       `**Promessa:**

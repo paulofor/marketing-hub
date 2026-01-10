@@ -36,6 +36,8 @@ public class ExperimentDto {
     private BigDecimal mdePercent;
     private BigDecimal dailyBudget;
     private BigDecimal unitPrice;
+    private BigDecimal cost;
+    private BigDecimal expense;
     private LocalDate startDate;
     private LocalDate endDate;
     private ExperimentStatus status;

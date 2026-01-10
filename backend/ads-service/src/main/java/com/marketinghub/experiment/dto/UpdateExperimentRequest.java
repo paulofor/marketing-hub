@@ -25,6 +25,12 @@ public class UpdateExperimentRequest {
     private BigDecimal unitPrice;
     @JsonIgnore
     private boolean unitPricePresent;
+    private BigDecimal cost;
+    @JsonIgnore
+    private boolean costPresent;
+    private BigDecimal expense;
+    @JsonIgnore
+    private boolean expensePresent;
     private LocalDate startDate;
     private LocalDate endDate;
     private Integer creativesToGenerate;
@@ -127,6 +133,18 @@ public class UpdateExperimentRequest {
         this.unitPrice = unitPrice;
         this.unitPricePresent = true;
     }
+
+    @JsonSetter(value = "cost", nulls = Nulls.SET)
+    public void setCost(BigDecimal cost) {
+        this.cost = cost;
+        this.costPresent = true;
+    }
+
+    @JsonSetter(value = "expense", nulls = Nulls.SET)
+    public void setExpense(BigDecimal expense) {
+        this.expense = expense;
+        this.expensePresent = true;
+    }
     @JsonSetter(value = "imageModelId", nulls = Nulls.SET)
     public void setImageModelId(Long imageModelId) {
         this.imageModelId = imageModelId;
@@ -140,4 +158,3 @@ public class UpdateExperimentRequest {
     }
 
 }
-

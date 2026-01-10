@@ -160,6 +160,8 @@ aggregate many associated application ideas.
 - `demand_volume` LONGTEXT
 - `promises` LONGTEXT
 - `offers` LONGTEXT
+- `cost` DECIMAL(10,2)
+- `expense` DECIMAL(10,2)
 - `hypotheses_to_generate` INT
 - `audiences_to_generate` INT
 - `base_segmentation` LONGTEXT
@@ -245,6 +247,8 @@ access type (free or premium) and display order.
 - `entrega` LONGTEXT
 - `price` DECIMAL(6,2)
 - `kpi_target_cpl` DECIMAL(7,2) NOT NULL
+- `cost` DECIMAL(10,2)
+- `expense` DECIMAL(10,2)
 - `status` VARCHAR(20) DEFAULT 'BACKLOG' NOT NULL
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -285,6 +289,8 @@ triggering ad set generation.
 - `target_cvr` DECIMAL(5,2) DEFAULT 5.00
 - `mde_percent` DECIMAL(5,2) DEFAULT 40.0
 - `daily_budget` DECIMAL(10,2)
+- `cost` DECIMAL(10,2)
+- `expense` DECIMAL(10,2)
 - `creatives_to_generate` INT
 - `start_date` DATE
 - `end_date` DATE

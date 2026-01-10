@@ -63,6 +63,8 @@ export interface Experiment {
   mdePercent?: number | null;
   dailyBudget?: number | null;
   unitPrice?: number | null;
+  cost?: number | null;
+  expense?: number | null;
   startDate: string | null;
   endDate: string | null;
   metricPresetId?: string | null;

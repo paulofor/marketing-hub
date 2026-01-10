@@ -43,6 +43,14 @@ function parseList(value?: string | string[]) {
     .filter(Boolean);
 }
 
+const formatCurrency = (value?: number | null) => {
+  if (value === null || value === undefined) return undefined;
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(value);
+};
+
 export default function NicheDetailPage() {
   const { nicheId } = useParams();
   const id = Number(nicheId);
@@ -199,6 +207,8 @@ export default function NicheDetailPage() {
     { label: "Volume de demanda", value: data.demandVolume },
     { label: "Promessas", value: data.promises },
     { label: "Ofertas", value: data.offers },
+    { label: "Custo", value: formatCurrency(data.cost) },
+    { label: "Despesa", value: formatCurrency(data.expense) },
     { label: "Hipóteses a gerar", value: data.hypothesesToGenerate },
     { label: "Modelo para hipóteses", value: data.hypothesisModel },
     { label: "Tecnologia diferenciada", value: differentiatedTechnologyName },

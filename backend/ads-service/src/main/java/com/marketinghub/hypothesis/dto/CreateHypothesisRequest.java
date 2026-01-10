@@ -21,6 +21,8 @@ public class CreateHypothesisRequest {
     private String prompt;
     private String model;
     private BigDecimal costUsd;
+    private BigDecimal cost;
+    private BigDecimal expense;
     private String offerType;
     private BigDecimal price;
     private BigDecimal kpiTargetCpl;
@@ -53,6 +55,10 @@ public class CreateHypothesisRequest {
     public void setModel(String model) { this.model = model; }
     public BigDecimal getCostUsd() { return costUsd; }
     public void setCostUsd(BigDecimal costUsd) { this.costUsd = costUsd; }
+    public BigDecimal getCost() { return cost; }
+    public void setCost(BigDecimal cost) { this.cost = cost; }
+    public BigDecimal getExpense() { return expense; }
+    public void setExpense(BigDecimal expense) { this.expense = expense; }
     public String getOfferType() { return offerType; }
     public void setOfferType(String offerType) { this.offerType = offerType; }
     public BigDecimal getPrice() { return price; }

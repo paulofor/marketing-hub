@@ -11,6 +11,8 @@ export interface UpdateExperiment {
   mde?: number;
   dailyBudget?: number | null;
   unitPrice?: number | null;
+  cost?: number | null;
+  expense?: number | null;
   startDate?: string;
   endDate?: string;
   creativesToGenerate?: number;

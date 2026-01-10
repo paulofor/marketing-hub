@@ -77,6 +77,14 @@ public class Hypothesis {
     @Column(name = "cost_usd", precision = 10, scale = 4)
     private BigDecimal costUsd;
 
+    /** Custo estimado em BRL para a hipótese. */
+    @Column(precision = 10, scale = 2)
+    private BigDecimal cost;
+
+    /** Despesa estimada em BRL para a hipótese. */
+    @Column(precision = 10, scale = 2)
+    private BigDecimal expense;
+
     @ManyToMany
     @JoinTable(name = "hypothesis_prompt_attribute_description",
             joinColumns = @JoinColumn(name = "hypothesis_id"),

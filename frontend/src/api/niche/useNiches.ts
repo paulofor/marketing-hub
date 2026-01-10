@@ -12,6 +12,8 @@ export interface MarketNiche {
   demandVolume: string;
   promises: string;
   offers: string;
+  cost?: number | null;
+  expense?: number | null;
   baseSegmentation: string;
   interests: string;
   demographicFilters: string;

@@ -94,6 +94,8 @@ public class HypothesisService {
                 .prompt(req.getPrompt())
                 .model(req.getModel())
                 .costUsd(req.getCostUsd())
+                .cost(req.getCost())
+                .expense(req.getExpense())
                 .promptAttributeDescriptions(attachPromptAttributeDescriptions(req.getPromptAttributeDescriptionIds()))
                 .generatedAt(Instant.now())
                 .offerType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()))
@@ -146,6 +148,8 @@ public class HypothesisService {
         h.setUniqueMechanism(req.getUniqueMechanism());
         h.setEntrega(req.getEntrega());
         h.setSuccessRule(req.getSuccessRule());
+        h.setCost(req.getCost());
+        h.setExpense(req.getExpense());
         h.setOfferType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()));
         h.setPrice(req.getPrice());
         h.setKpiTargetCpl(req.getKpiTargetCpl());

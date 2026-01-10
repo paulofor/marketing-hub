@@ -19,6 +19,8 @@ export interface Hypothesis {
   price?: number;
   kpiTargetCpl?: number;
   costUsd?: number;
+  cost?: number | null;
+  expense?: number | null;
   status: string;
   generatedAt?: string;
   createdAt?: string;

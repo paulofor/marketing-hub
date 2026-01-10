@@ -8,6 +8,7 @@ import com.marketinghub.deliverable.Deliverable;
 import com.marketinghub.differentiatedtechnology.DifferentiatedTechnology;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.audience.Audience;
+import com.marketinghub.informationsource.InformationSource;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -129,6 +130,11 @@ public class MarketNiche {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private java.util.List<Deliverable> deliverables;
+
+    @OneToMany(mappedBy = "niche")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private java.util.List<InformationSource> informationSources;
 
     @CreationTimestamp
     private Instant createdAt;

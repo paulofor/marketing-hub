@@ -298,6 +298,37 @@
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
+.niche-information-sources__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.niche-information-sources__form .form-label {
+  font-weight: 600;
+}
+
+.niche-information-sources__grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.niche-information-source-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.niche-information-source-card__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.niche-information-source-card__footer {
+  font-size: 0.8rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
 .niche-list-cards {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }

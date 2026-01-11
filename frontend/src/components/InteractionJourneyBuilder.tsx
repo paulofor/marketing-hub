@@ -445,12 +445,12 @@ export default function InteractionJourneyBuilder({
             </div>
             <div className="col-12 col-lg-6">
               <label className="form-label fw-semibold" htmlFor="interaction-journey-description">
-                Contexto e objetivo
+                Descrição para prompt
               </label>
               <textarea
                 id="interaction-journey-description"
                 className="form-control"
-                rows={3}
+                rows={6}
                 value={journey.description ?? ""}
                 onChange={(e) => setJourney((prev) => ({ ...prev, description: e.target.value }))}
                 placeholder="Resumo do roteiro, metas e canais-chave"

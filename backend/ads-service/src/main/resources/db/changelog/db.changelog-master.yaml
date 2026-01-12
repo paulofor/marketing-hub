@@ -360,3 +360,7 @@ databaseChangeLog:
   - include:
       file: V2031_05_15__create_information_source.sql
       relativeToChangelogFile: true
+
+  - include:
+      file: V2031_06_10__create_agent_tables.sql
+      relativeToChangelogFile: true

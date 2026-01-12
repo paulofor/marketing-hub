@@ -60,6 +60,10 @@ import PromptEntitiesPage from "./pages/prompt/PromptEntitiesPage";
 import PromptAttributesPage from "./pages/prompt/PromptAttributesPage";
 import NewPromptEntityPage from "./pages/prompt/NewPromptEntityPage";
 import PromptEntityDescriptionPage from "./pages/prompt/PromptEntityDescriptionPage";
+import AgentListPage from "./pages/agent/AgentListPage";
+import NewAgentPage from "./pages/agent/NewAgentPage";
+import EditAgentPage from "./pages/agent/EditAgentPage";
+import AgentThemePage from "./pages/agent/AgentThemePage";
 import JourneyListPage from "./pages/journey/JourneyListPage";
 import JourneyDetailPage from "./pages/journey/JourneyDetailPage";
 import EditJourneyPage from "./pages/journey/EditJourneyPage";
@@ -174,6 +178,10 @@ export default function App() {
                 path="/openai-models/:id/edit"
                 element={<EditOpenAiModelPage />}
               />
+              <Route path="/agents" element={<AgentListPage />} />
+              <Route path="/agents/new" element={<NewAgentPage />} />
+              <Route path="/agents/:id/edit" element={<EditAgentPage />} />
+              <Route path="/agent-themes" element={<AgentThemePage />} />
               <Route
                 path="/microservices"
                 element={<MicroserviceListPage />}

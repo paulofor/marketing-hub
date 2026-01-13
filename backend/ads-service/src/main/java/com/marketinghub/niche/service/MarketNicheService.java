@@ -58,7 +58,9 @@ public class MarketNicheService {
                 .extraTips(request.getExtraTips())
                 .hypothesesToGenerate(request.getHypothesesToGenerate())
                 .audiencesToGenerate(request.getAudiencesToGenerate())
+                .detailedDescriptionsToGenerate(request.getDetailedDescriptionsToGenerate())
                 .hypothesisModel(normalizeModel(request.getHypothesisModel()))
+                .detailedDescriptionModel(normalizeModel(request.getDetailedDescriptionModel()))
                 .differentiatedTechnology(differentiatedTechnology)
                 .chatDialog(chat)
                 .build();
@@ -89,7 +91,9 @@ public class MarketNicheService {
         niche.setExtraTips(request.getExtraTips());
         niche.setHypothesesToGenerate(request.getHypothesesToGenerate());
         niche.setAudiencesToGenerate(request.getAudiencesToGenerate());
+        niche.setDetailedDescriptionsToGenerate(request.getDetailedDescriptionsToGenerate());
         niche.setHypothesisModel(normalizeModel(request.getHypothesisModel()));
+        niche.setDetailedDescriptionModel(normalizeModel(request.getDetailedDescriptionModel()));
         niche.setDifferentiatedTechnology(
                 resolveDifferentiatedTechnology(request.getDifferentiatedTechnologyId()));
         ChatDialog chat = null;
@@ -114,6 +118,19 @@ public class MarketNicheService {
     public MarketNiche requestAudiences(Long id, int quantity) {
         MarketNiche niche = repository.findById(id).orElseThrow();
         niche.setAudiencesToGenerate(quantity);
+        return niche;
+    }
+
+    /**
+     * Requests generation of detailed descriptions by setting the pending quantity.
+     */
+    @Transactional
+    public MarketNiche requestDetailedDescriptions(Long id, int quantity, String model) {
+        MarketNiche niche = repository.findById(id).orElseThrow();
+        niche.setDetailedDescriptionsToGenerate(Math.max(0, quantity));
+        if (model != null) {
+            niche.setDetailedDescriptionModel(normalizeModel(model));
+        }
         return niche;
     }
 

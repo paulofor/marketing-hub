@@ -27,7 +27,9 @@ public class MarketNicheDto {
     private String extraTips;
     private Integer hypothesesToGenerate;
     private Integer audiencesToGenerate;
+    private Integer detailedDescriptionsToGenerate;
     private String hypothesisModel;
+    private String detailedDescriptionModel;
     private Long differentiatedTechnologyId;
     private Long chatDialogId;
     private Instant createdAt;

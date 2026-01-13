@@ -364,3 +364,7 @@ databaseChangeLog:
   - include:
       file: V2031_06_10__create_agent_tables.sql
       relativeToChangelogFile: true
+
+  - include:
+      file: V2031_07_20__niche_detailed_description.sql
+      relativeToChangelogFile: true

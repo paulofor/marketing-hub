@@ -80,9 +80,16 @@ public class MarketNiche {
     /** Quantidade de públicos a serem gerados para este nicho. */
     private Integer audiencesToGenerate;
 
+    /** Quantidade de descrições detalhadas a serem geradas para este nicho. */
+    private Integer detailedDescriptionsToGenerate;
+
     /** Modelo do OpenAI a ser utilizado para gerar hipóteses. */
     @Column(length = 191)
     private String hypothesisModel;
+
+    /** Modelo do OpenAI a ser utilizado para gerar descrições detalhadas. */
+    @Column(length = 191)
+    private String detailedDescriptionModel;
 
     /** Tecnologia diferenciada selecionada para guiar hipóteses. */
     @ManyToOne(fetch = FetchType.LAZY)

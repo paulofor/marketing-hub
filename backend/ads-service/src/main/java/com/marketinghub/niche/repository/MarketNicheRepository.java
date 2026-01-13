@@ -32,4 +32,15 @@ public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> 
               and n.audiencesToGenerate > 0
             """)
     List<MarketNiche> findAllToGenerateAudiences();
+
+    /**
+     * Retrieves niches configured to generate detailed descriptions.
+     */
+    @Query("""
+            select n from MarketNiche n
+            where n.detailedDescriptionsToGenerate is not null
+              and n.detailedDescriptionsToGenerate > 0
+            """)
+    List<MarketNiche> findAllToGenerateDetailedDescriptions();
+
 }

@@ -166,6 +166,8 @@ CREATE TABLE market_niche (
     offers LONGTEXT,
     hypotheses_to_generate INT,
     audiences_to_generate INT,
+    detailed_descriptions_to_generate INT,
+    detailed_description_model VARCHAR(191),
     base_segmentation LONGTEXT,
     interests LONGTEXT,
     demographic_filters LONGTEXT,
@@ -173,6 +175,24 @@ CREATE TABLE market_niche (
     chat_dialog_id BIGINT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE niche_detailed_description (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    market_niche_id BIGINT NOT NULL,
+    title VARCHAR(255),
+    description LONGTEXT,
+    pains LONGTEXT,
+    desires LONGTEXT,
+    needs LONGTEXT,
+    prompt LONGTEXT,
+    model VARCHAR(191),
+    cost_usd DECIMAL(10,4),
+    input_tokens INT,
+    output_tokens INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_niche_detailed_description_niche FOREIGN KEY (market_niche_id) REFERENCES market_niche(id)
 );
 
 CREATE TABLE lead_portal_flow (

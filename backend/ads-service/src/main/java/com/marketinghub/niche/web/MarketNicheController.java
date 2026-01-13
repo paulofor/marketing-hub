@@ -52,6 +52,13 @@ public class MarketNicheController {
         return mapper.toDto(service.requestHypotheses(id, quantity, model, differentiatedTechnologyId));
     }
 
+    @PatchMapping("/{id}/detailed-descriptions-to-generate")
+    public MarketNicheDto requestDetailedDescriptions(@PathVariable Long id,
+                                                      @RequestParam("quantity") int quantity,
+                                                      @RequestParam(value = "model", required = false) String model) {
+        return mapper.toDto(service.requestDetailedDescriptions(id, quantity, model));
+    }
+
     @GetMapping
     public List<MarketNicheDto> list() {
         return StreamSupport.stream(service.list().spliterator(), false)

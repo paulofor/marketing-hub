@@ -27,7 +27,10 @@ type ExperimentPendingKey =
   | "deliverablesToGenerate"
   | "leadPortalFlowsToGenerate";
 
-type NichePendingKey = "hypothesesToGenerate" | "audiencesToGenerate";
+type NichePendingKey =
+  | "hypothesesToGenerate"
+  | "detailedDescriptionsToGenerate"
+  | "audiencesToGenerate";
 
 type PendingConfig<T extends string> = {
   key: T;
@@ -45,6 +48,7 @@ const EXPERIMENT_PENDING_CONFIG: PendingConfig<ExperimentPendingKey>[] = [
 
 const NICHE_PENDING_CONFIG: PendingConfig<NichePendingKey>[] = [
   { key: "hypothesesToGenerate", label: "Hipóteses", icon: Lightbulb },
+  { key: "detailedDescriptionsToGenerate", label: "Descrições detalhadas", icon: FileText },
   { key: "audiencesToGenerate", label: "Públicos", icon: Users },
 ];
 

@@ -12,6 +12,8 @@ import { useChatDialog } from "../../api/chatDialog/useChatDialog";
 import { useForm } from "react-hook-form";
 import { useRequestAudiences } from "../../api/niche/useRequestAudiences";
 import { useRequestHypotheses } from "../../api/niche/useRequestHypotheses";
+import { useRequestDetailedDescriptions } from "../../api/niche/useRequestDetailedDescriptions";
+import { useNicheDetailedDescriptions } from "../../api/niche/useNicheDetailedDescriptions";
 import { useExperimentsByNiche } from "../../api/experiment/useExperimentsByNiche";
 import { useDeliverablesByNiche } from "../../api/deliverable/useDeliverablesByNiche";
 import { useCreateDeliverable } from "../../api/deliverable/useCreateDeliverable";
@@ -24,6 +26,7 @@ import {
   Check,
   Clock3,
   FileDown,
+  FileText,
   Lightbulb,
   Pencil,
   Package,
@@ -63,8 +66,10 @@ export default function NicheDetailPage() {
   const { data: experiments } = useExperimentsByNiche(nicheId);
   const { data: deliverables } = useDeliverablesByNiche(nicheId);
   const { data: informationSources } = useInformationSourcesByNiche(nicheId);
+  const { data: detailedDescriptions } = useNicheDetailedDescriptions(nicheId);
   const requestAudiences = useRequestAudiences(id);
   const requestHypotheses = useRequestHypotheses(id);
+  const requestDetailedDescriptions = useRequestDetailedDescriptions(id);
   const { data: openAiModels, isLoading: isLoadingModels } = useOpenAiModels();
   const {
     data: differentiatedTechnologies,
@@ -96,6 +101,17 @@ export default function NicheDetailPage() {
     differentiatedTechnologyId?: number;
   }>({
     defaultValues: { quantity: 1, model: "", differentiatedTechnologyId: undefined },
+  });
+  const {
+    register: registerDescriptionRequest,
+    handleSubmit: handleSubmitDescriptionRequest,
+    reset: resetDescriptionRequest,
+    setValue: setDescriptionRequestValue,
+  } = useForm<{
+    quantity: number;
+    model?: string;
+  }>({
+    defaultValues: { quantity: 1, model: "" },
   });
   const {
     register: registerDeliverable,
@@ -137,6 +153,11 @@ export default function NicheDetailPage() {
     const defaultModel = data?.hypothesisModel ?? openAiModels?.[0]?.code ?? "";
     setHypothesisRequestValue("model", defaultModel);
   }, [data?.hypothesisModel, openAiModels, setHypothesisRequestValue]);
+
+  useEffect(() => {
+    const defaultDescriptionModel = data?.detailedDescriptionModel ?? openAiModels?.[0]?.code ?? "";
+    setDescriptionRequestValue("model", defaultDescriptionModel);
+  }, [data?.detailedDescriptionModel, openAiModels, setDescriptionRequestValue]);
 
   useEffect(() => {
     setHypothesisRequestValue(
@@ -195,6 +216,13 @@ export default function NicheDetailPage() {
         return bDate - aDate;
       })
     : [];
+  const detailedDescriptionList = Array.isArray(detailedDescriptions)
+    ? [...detailedDescriptions].sort((a, b) => {
+        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bDate - aDate;
+      })
+    : [];
   const informationSourceList = Array.isArray(informationSources)
     ? [...informationSources].sort((a, b) => {
         const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -231,6 +259,8 @@ export default function NicheDetailPage() {
     { label: "Receita total", value: formatCurrency(data.totalRevenue) },
     { label: "Hipóteses a gerar", value: data.hypothesesToGenerate },
     { label: "Modelo para hipóteses", value: data.hypothesisModel },
+    { label: "Modelo para descrições", value: data.detailedDescriptionModel },
+    { label: "Descrições a gerar", value: data.detailedDescriptionsToGenerate },
     { label: "Tecnologia diferenciada", value: differentiatedTechnologyName },
     { label: "Públicos a gerar", value: data.audiencesToGenerate },
     { label: "Segmentação base", value: data.baseSegmentation },
@@ -267,6 +297,13 @@ export default function NicheDetailPage() {
       targetId: "niche-hypotheses",
     },
     {
+      icon: FileText,
+      label: "Descrições",
+      value: `${detailedDescriptionList.length}`,
+      helper: `Meta: ${data.detailedDescriptionsToGenerate ?? 0}`,
+      targetId: "niche-detailed-descriptions",
+    },
+    {
       icon: Package,
       label: "Entregáveis",
       value: `${deliverableList.length}`,
@@ -291,6 +328,10 @@ export default function NicheDetailPage() {
     requestHypotheses.isPending || (isFetching && !isLoading)
       ? "Atualizando hipóteses..."
       : `Solicitadas ao Worker: ${data.hypothesesToGenerate ?? 0}`;
+  const detailedDescriptionStatusLabel =
+    requestDetailedDescriptions.isPending || (isFetching && !isLoading)
+      ? "Atualizando descrições..."
+      : `Solicitadas ao Worker: ${data.detailedDescriptionsToGenerate ?? 0}`;
   const formatUsd = (value?: number | string | null) => {
     if (value === undefined || value === null) return undefined;
     const num = typeof value === "string" ? Number(value) : value;
@@ -397,6 +438,26 @@ export default function NicheDetailPage() {
         });
       } catch {
         alert("Erro ao solicitar hipóteses");
+      }
+    },
+    (errors) => {
+      console.log("Validation errors", errors);
+    },
+  );
+  const onRequestDetailedDescriptions = handleSubmitDescriptionRequest(
+    async ({ quantity, model }) => {
+      if (!quantity || quantity <= 0) return;
+      const selectedModel =
+        model?.trim() || data?.detailedDescriptionModel || openAiModels?.[0]?.code;
+      try {
+        await requestDetailedDescriptions.mutateAsync({
+          quantity,
+          model: selectedModel,
+        });
+        alert("Solicitação enviada!");
+        resetDescriptionRequest({ quantity: 1, model: selectedModel ?? "" });
+      } catch {
+        alert("Erro ao solicitar descrições detalhadas");
       }
     },
     (errors) => {
@@ -529,6 +590,179 @@ export default function NicheDetailPage() {
             </article>
           ))}
         </div>
+      </section>
+      <section
+        className="niche-section"
+        aria-labelledby="niche-detailed-descriptions"
+        id="niche-detailed-descriptions"
+      >
+        <div className="niche-section__header">
+          <div>
+            <h2
+              className="niche-section__title"
+              id="niche-detailed-descriptions"
+            >
+              Descrição detalhada
+            </h2>
+            <p className="niche-section__subtitle">
+              Gere descrições completas com dores, desejos e necessidades do
+              público do nicho.
+            </p>
+            <p className="niche-section__status">{detailedDescriptionStatusLabel}</p>
+          </div>
+          <form
+            className="niche-section__actions"
+            onSubmit={onRequestDetailedDescriptions}
+          >
+            <label
+              htmlFor="detailed-description-quantity"
+              className="visually-hidden"
+            >
+              Quantidade de descrições detalhadas que o Worker IA irá gerar
+            </label>
+            <input
+              id="detailed-description-quantity"
+              type="number"
+              min={1}
+              className="form-control"
+              title="Quantidade de descrições detalhadas que o Worker IA irá gerar"
+              disabled={requestDetailedDescriptions.isPending}
+              {...registerDescriptionRequest("quantity", { valueAsNumber: true })}
+            />
+            <label
+              htmlFor="detailed-description-model"
+              className="visually-hidden"
+            >
+              Modelo do OpenAI que o Worker IA irá usar
+            </label>
+            <select
+              id="detailed-description-model"
+              className="form-select"
+              title="Modelo do OpenAI que o Worker IA irá usar"
+              disabled={requestDetailedDescriptions.isPending || isLoadingModels}
+              {...registerDescriptionRequest("model")}
+            >
+              <option value="">Selecione um modelo</option>
+              {(openAiModels ?? []).map((modelOption) => (
+                <option key={modelOption.code} value={modelOption.code}>
+                  {modelOption.name} ({modelOption.code})
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="btn btn-secondary"
+              disabled={requestDetailedDescriptions.isPending}
+            >
+              {requestDetailedDescriptions.isPending ? (
+                <span
+                  className="spinner-border spinner-border-sm"
+                  role="status"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Sparkles size={18} />
+              )}
+              <span>Gerar descrição</span>
+            </button>
+          </form>
+        </div>
+        {detailedDescriptionList.length === 0 ? (
+          <p className="niche-section__empty">
+            Nenhuma descrição detalhada ainda.
+          </p>
+        ) : (
+          <div className="niche-section__grid">
+            {detailedDescriptionList.map((description, index) => (
+              <article key={description.id} className="card niche-section__card">
+                <div className="card-body">
+                  <div className="d-flex justify-content-between align-items-start gap-2">
+                    <h3 className="card-title h5 mb-2">
+                      {description.title || `Descrição #${index + 1}`}
+                    </h3>
+                    {description.model ? (
+                      <span className="badge text-bg-light text-dark">
+                        {description.model}
+                      </span>
+                    ) : null}
+                  </div>
+                  {description.description ? (
+                    <p className="niche-detail__card-text mb-3">
+                      {description.description}
+                    </p>
+                  ) : null}
+                  {description.pains ? (
+                    <div className="mb-3">
+                      <h4 className="h6 mb-2">Dores</h4>
+                      <ul className="niche-list">
+                        {description.pains
+                          .split(/
++/)
+                          .filter(Boolean)
+                          .map((pain, painIndex) => (
+                            <li
+                              key={`${description.id}-pain-${painIndex}`}
+                              className="niche-list__item"
+                            >
+                              {pain}
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                  {description.desires ? (
+                    <div className="mb-3">
+                      <h4 className="h6 mb-2">Desejos</h4>
+                      <ul className="niche-list">
+                        {description.desires
+                          .split(/
++/)
+                          .filter(Boolean)
+                          .map((desire, desireIndex) => (
+                            <li
+                              key={`${description.id}-desire-${desireIndex}`}
+                              className="niche-list__item"
+                            >
+                              {desire}
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                  {description.needs ? (
+                    <div className="mb-3">
+                      <h4 className="h6 mb-2">Necessidades</h4>
+                      <ul className="niche-list">
+                        {description.needs
+                          .split(/
++/)
+                          .filter(Boolean)
+                          .map((need, needIndex) => (
+                            <li
+                              key={`${description.id}-need-${needIndex}`}
+                              className="niche-list__item"
+                            >
+                              {need}
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                  <div className="d-flex gap-3 flex-wrap text-body-secondary small mt-2">
+                    {description.costUsd !== undefined && description.costUsd !== null ? (
+                      <span>Custo estimado: {formatUsd(description.costUsd)}</span>
+                    ) : null}
+                    {description.inputTokens || description.outputTokens ? (
+                      <span>
+                        Tokens: in {description.inputTokens ?? "-"} / out {description.outputTokens ?? "-"}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
       <section
         className="niche-section"

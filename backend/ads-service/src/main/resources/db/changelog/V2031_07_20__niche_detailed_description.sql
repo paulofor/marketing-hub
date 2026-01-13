@@ -1,11 +1,21 @@
+--liquibase formatted sql
+--changeset repo:2031-07-20-add-niche-detailed-description-columns dbms:mysql
+--preconditions onFail:MARK_RAN
+--precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'market_niche' AND column_name = 'detailed_descriptions_to_generate';
 -- Cria tabela para descrições detalhadas de nicho e campos de geração
 ALTER TABLE market_niche
-    ADD COLUMN IF NOT EXISTS detailed_descriptions_to_generate INT;
+    ADD COLUMN detailed_descriptions_to_generate INT;
 
+--changeset repo:2031-07-20-add-niche-detailed-description-model-column dbms:mysql
+--preconditions onFail:MARK_RAN
+--precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'market_niche' AND column_name = 'detailed_description_model';
 ALTER TABLE market_niche
-    ADD COLUMN IF NOT EXISTS detailed_description_model VARCHAR(191);
+    ADD COLUMN detailed_description_model VARCHAR(191);
 
-CREATE TABLE IF NOT EXISTS niche_detailed_description (
+--changeset repo:2031-07-20-create-niche-detailed-description-table dbms:mysql
+--preconditions onFail:MARK_RAN
+--precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'niche_detailed_description';
+CREATE TABLE niche_detailed_description (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     market_niche_id BIGINT NOT NULL,
     title VARCHAR(255),

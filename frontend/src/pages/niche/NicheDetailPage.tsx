@@ -696,8 +696,7 @@ export default function NicheDetailPage() {
                       <h4 className="h6 mb-2">Dores</h4>
                       <ul className="niche-list">
                         {description.pains
-                          .split(/
-+/)
+                          .split(/\n+/)
                           .filter(Boolean)
                           .map((pain, painIndex) => (
                             <li
@@ -715,8 +714,7 @@ export default function NicheDetailPage() {
                       <h4 className="h6 mb-2">Desejos</h4>
                       <ul className="niche-list">
                         {description.desires
-                          .split(/
-+/)
+                          .split(/\n+/)
                           .filter(Boolean)
                           .map((desire, desireIndex) => (
                             <li
@@ -734,8 +732,7 @@ export default function NicheDetailPage() {
                       <h4 className="h6 mb-2">Necessidades</h4>
                       <ul className="niche-list">
                         {description.needs
-                          .split(/
-+/)
+                          .split(/\n+/)
                           .filter(Boolean)
                           .map((need, needIndex) => (
                             <li

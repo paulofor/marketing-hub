@@ -4,6 +4,8 @@ import axios from "axios";
 export interface NicheDetailedDescription {
   id: number;
   marketNicheId: number;
+  promptId?: number | null;
+  promptName?: string | null;
   title?: string;
   description?: string;
   pains?: string | null;

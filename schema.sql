@@ -177,9 +177,22 @@ CREATE TABLE market_niche (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+CREATE TABLE prompt (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(191) NOT NULL,
+    domain VARCHAR(100) NOT NULL,
+    template LONGTEXT NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_prompt_domain_name (domain, name),
+    INDEX idx_prompt_domain_active (domain, active)
+);
+
 CREATE TABLE niche_detailed_description (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     market_niche_id BIGINT NOT NULL,
+    prompt_id BIGINT,
     title VARCHAR(255),
     description LONGTEXT,
     pains LONGTEXT,
@@ -192,7 +205,8 @@ CREATE TABLE niche_detailed_description (
     output_tokens INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_niche_detailed_description_niche FOREIGN KEY (market_niche_id) REFERENCES market_niche(id)
+    CONSTRAINT fk_niche_detailed_description_niche FOREIGN KEY (market_niche_id) REFERENCES market_niche(id),
+    CONSTRAINT fk_niche_detailed_description_prompt FOREIGN KEY (prompt_id) REFERENCES prompt(id)
 );
 
 CREATE TABLE lead_portal_flow (

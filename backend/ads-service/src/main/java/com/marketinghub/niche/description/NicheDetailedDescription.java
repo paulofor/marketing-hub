@@ -1,6 +1,7 @@
 package com.marketinghub.niche.description;
 
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.prompt.Prompt;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -28,6 +29,11 @@ public class NicheDetailedDescription {
     @JoinColumn(name = "market_niche_id", nullable = false)
     @ToString.Exclude
     private MarketNiche marketNiche;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "prompt_id")
+    @ToString.Exclude
+    private Prompt promptTemplate;
 
     @Column(length = 255)
     private String title;

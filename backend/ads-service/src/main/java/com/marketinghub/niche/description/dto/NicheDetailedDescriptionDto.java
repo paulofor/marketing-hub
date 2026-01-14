@@ -12,6 +12,8 @@ import java.time.Instant;
 public class NicheDetailedDescriptionDto {
     private Long id;
     private Long marketNicheId;
+    private Long promptId;
+    private String promptName;
     private String title;
     private String description;
     private String pains;

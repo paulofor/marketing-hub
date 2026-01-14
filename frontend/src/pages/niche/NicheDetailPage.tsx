@@ -680,11 +680,18 @@ export default function NicheDetailPage() {
                     <h3 className="card-title h5 mb-2">
                       {description.title || `Descrição #${index + 1}`}
                     </h3>
-                    {description.model ? (
-                      <span className="badge text-bg-light text-dark">
-                        {description.model}
-                      </span>
-                    ) : null}
+                    <div className="d-flex gap-2 flex-wrap justify-content-end">
+                      {description.promptName ? (
+                        <span className="badge text-bg-light text-dark">
+                          Prompt: {description.promptName}
+                        </span>
+                      ) : null}
+                      {description.model ? (
+                        <span className="badge text-bg-light text-dark">
+                          {description.model}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
                   {description.description ? (
                     <p className="niche-detail__card-text mb-3">

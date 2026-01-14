@@ -31,6 +31,7 @@ import {
   AlertTriangle,
   CreditCard,
   Cpu,
+  ScrollText,
 } from "lucide-react";
 import experimentIcon from "../assets/icons/experiment-icon.svg";
 import hypothesisIcon from "../assets/icons/hypothesis-icon.svg";
@@ -114,6 +115,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/microservices/errors", label: "Erros de microserviço", icon: AlertTriangle },
       { to: "/chat-dialogs", label: "ChatGPT", icon: MessageSquare },
       { to: "/prompt-entities", label: "Objetos de Prompt", icon: Shapes },
+      { to: "/prompts", label: "Prompts (templates)", icon: ScrollText },
       { to: "/angles", label: "Angles", icon: Compass },
       { to: "/visual-proofs", label: "Provas Visuais", icon: BadgeCheck },
       {

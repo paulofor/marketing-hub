@@ -90,6 +90,9 @@ import LeadPortalImagesPage from "./pages/leadPortal/LeadPortalImagesPage";
 import LeadPortalImagePackageDetailPage from "./pages/leadPortal/LeadPortalImagePackageDetailPage";
 import PaymentsDashboardPage from "./pages/payments/PaymentsDashboardPage";
 import PaymentDetailPage from "./pages/payments/PaymentDetailPage";
+import PromptListPage from "./pages/promptTemplate/PromptListPage";
+import NewPromptPage from "./pages/promptTemplate/NewPromptPage";
+import EditPromptPage from "./pages/promptTemplate/EditPromptPage";
 
 export default function App() {
   return (
@@ -261,6 +264,9 @@ export default function App() {
                 path="/prompt-entities/:entityId/attributes"
                 element={<PromptAttributesPage />}
               />
+              <Route path="/prompts" element={<PromptListPage />} />
+              <Route path="/prompts/new" element={<NewPromptPage />} />
+              <Route path="/prompts/:id/edit" element={<EditPromptPage />} />
               <Route
                 path="/facebook-campaigns"
                 element={<FacebookCampaignExperimentsPage />}

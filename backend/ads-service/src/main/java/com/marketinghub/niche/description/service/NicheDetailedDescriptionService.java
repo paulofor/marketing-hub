@@ -5,6 +5,8 @@ import com.marketinghub.niche.description.NicheDetailedDescription;
 import com.marketinghub.niche.description.dto.CreateNicheDetailedDescriptionRequest;
 import com.marketinghub.niche.description.repository.NicheDetailedDescriptionRepository;
 import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.prompt.Prompt;
+import com.marketinghub.prompt.repository.PromptRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -19,13 +21,16 @@ import java.util.List;
 public class NicheDetailedDescriptionService {
     private final NicheDetailedDescriptionRepository repository;
     private final MarketNicheRepository nicheRepository;
+    private final PromptRepository promptRepository;
     private final EntityManager em;
 
     public NicheDetailedDescriptionService(NicheDetailedDescriptionRepository repository,
                                            MarketNicheRepository nicheRepository,
+                                           PromptRepository promptRepository,
                                            EntityManager em) {
         this.repository = repository;
         this.nicheRepository = nicheRepository;
+        this.promptRepository = promptRepository;
         this.em = em;
     }
 
@@ -35,6 +40,12 @@ public class NicheDetailedDescriptionService {
             throw new EntityNotFoundException("MarketNiche not found: " + id);
         }
         return em.getReference(MarketNiche.class, id);
+    }
+
+    private Prompt attachPrompt(Long id) {
+        if (id == null) return null;
+        return promptRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Prompt not found: " + id));
     }
 
     private void validate(CreateNicheDetailedDescriptionRequest request) {
@@ -50,8 +61,10 @@ public class NicheDetailedDescriptionService {
     public NicheDetailedDescription create(CreateNicheDetailedDescriptionRequest request) {
         validate(request);
         MarketNiche niche = attachNiche(request.getMarketNicheId());
+        Prompt prompt = attachPrompt(request.getPromptId());
         NicheDetailedDescription description = NicheDetailedDescription.builder()
                 .marketNiche(niche)
+                .promptTemplate(prompt)
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .pains(request.getPains())

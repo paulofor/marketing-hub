@@ -6,6 +6,11 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.description.dto.CreateNicheDetailedDescriptionRequest;
+import com.marketinghub.prompt.Prompt;
+import com.marketinghub.prompt.PromptDomains;
+import com.marketinghub.prompt.service.PromptService;
+import com.marketinghub.worker.prompt.NichePromptContext;
+import com.marketinghub.worker.prompt.PromptTemplateRenderer;
 import com.marketinghub.worker.openai.AiGenerationRecorder;
 import com.marketinghub.worker.openai.OpenAiCostEstimator;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
@@ -34,7 +39,7 @@ import java.util.stream.StreamSupport;
 @Component
 public class NicheDescriptionChatGptClient {
     private static final Logger log = LoggerFactory.getLogger(NicheDescriptionChatGptClient.class);
-    private static final String DOMAIN = "NICHE_DETAILED_DESCRIPTION";
+    private static final String DOMAIN = PromptDomains.NICHE_DETAILED_DESCRIPTION;
     private static final String RESPONSES_ENDPOINT = "/v1/responses";
     private static final String COMPLETION_WINDOW = "24h";
     private static final Duration BATCH_POLL_INTERVAL = Duration.ofMillis(500);
@@ -45,10 +50,14 @@ public class NicheDescriptionChatGptClient {
     private final ObjectMapper objectMapper;
     private final String defaultModel;
     private final AiGenerationRecorder generationRecorder;
+    private final PromptService promptService;
+    private final PromptTemplateRenderer promptTemplateRenderer;
 
     public NicheDescriptionChatGptClient(WebClient.Builder builder,
                                          ObjectMapper objectMapper,
                                          AiGenerationRecorder generationRecorder,
+                                         PromptService promptService,
+                                         PromptTemplateRenderer promptTemplateRenderer,
                                          @Value("${openai.api-key:}") String apiKey,
                                          @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
                                          @Value("${openai.model:gpt-3.5-turbo}") String defaultModel) {
@@ -59,6 +68,8 @@ public class NicheDescriptionChatGptClient {
                 .build();
         this.objectMapper = objectMapper;
         this.generationRecorder = generationRecorder;
+        this.promptService = promptService;
+        this.promptTemplateRenderer = promptTemplateRenderer;
         this.defaultModel = defaultModel;
     }
 
@@ -69,6 +80,7 @@ public class NicheDescriptionChatGptClient {
             return Map.of();
         }
         Map<String, RequestContext> contexts = new LinkedHashMap<>();
+        Prompt promptTemplate = promptService.getActiveByDomainOrThrow(PromptDomains.NICHE_DETAILED_DESCRIPTION);
         for (DescriptionBatchRequest request : requests) {
             if (request == null || request.niche() == null) {
                 continue;
@@ -78,7 +90,7 @@ public class NicheDescriptionChatGptClient {
                 continue;
             }
             String model = resolveModel(request.model());
-            PromptData promptData = buildPrompt(request.niche(), quantity);
+            PromptData promptData = buildPrompt(promptTemplate, request.niche(), quantity);
             List<Map<String, Object>> input = List.of(
                     OpenAiRequestUtils.message("system", "Você é um especialista em marketing."),
                     OpenAiRequestUtils.message("user", promptData.prompt())
@@ -133,34 +145,13 @@ public class NicheDescriptionChatGptClient {
         }
         return result;
     }
-
-    private PromptData buildPrompt(MarketNiche niche, int quantity) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Gere ").append(quantity).append(" descrições detalhadas em formato JSON. ");
-        sb.append("Cada item deve conter as chaves: \"title\", \"overview\", \"pains\", \"desires\", \"needs\". ");
-        sb.append("A chave overview deve ser um parágrafo único que explique dores, desejos e necessidades do público do nicho, pronto para ser reutilizado em outros prompts. ");
-        sb.append("As chaves pains, desires e needs devem ser listas (arrays JSON) com frases diretas. ");
-        sb.append("Use o seguinte nicho como contexto:\n");
-        sb.append("Nome: ").append(niche.getName()).append("\n");
-        if (niche.getDescription() != null) {
-            sb.append("Descrição: ").append(niche.getDescription()).append("\n");
-        }
-        if (niche.getBaseSegmentation() != null) {
-            sb.append("Segmentação base: ").append(niche.getBaseSegmentation()).append("\n");
-        }
-        if (niche.getInterests() != null) {
-            sb.append("Interesses: ").append(niche.getInterests()).append("\n");
-        }
-        if (niche.getDemographicFilters() != null) {
-            sb.append("Filtros demográficos: ").append(niche.getDemographicFilters()).append("\n");
-        }
-        if (niche.getExtraTips() != null) {
-            sb.append("Dicas extras: ").append(niche.getExtraTips()).append("\n");
-        }
-        sb.append("Retorne apenas o array JSON com os objetos solicitados, sem texto adicional.");
-        return new PromptData(sb.toString());
+    private PromptData buildPrompt(Prompt promptTemplate, MarketNiche niche, int quantity) {
+        Map<String, Object> context = new HashMap<>();
+        context.put("quantity", quantity);
+        context.put("niche", NichePromptContext.from(niche));
+        String rendered = promptTemplateRenderer.render(promptTemplate.getTemplate(), context);
+        return new PromptData(promptTemplate.getId(), rendered);
     }
-
     private List<CreateNicheDetailedDescriptionRequest> parseContent(String content, MarketNiche niche, PromptData data, String model, OpenAiResponse.OpenAiUsage usage) throws Exception {
         JsonNode root = objectMapper.readTree(content);
         if (!root.isArray()) {
@@ -188,6 +179,7 @@ public class NicheDescriptionChatGptClient {
             req.setPains(joinArray(node.get("pains")));
             req.setDesires(joinArray(node.get("desires")));
             req.setNeeds(joinArray(node.get("needs")));
+            req.setPromptId(data.promptId());
             req.setPrompt(data.prompt());
             req.setModel(model);
             req.setCostUsd(costPerItem);
@@ -393,7 +385,7 @@ public class NicheDescriptionChatGptClient {
 
     private record RequestContext(MarketNiche niche, PromptData prompt, Map<String, Object> payload, String model) {}
 
-    private record PromptData(String prompt) {}
+    private record PromptData(Long promptId, String prompt) {}
 
     private record OpenAiBatch(String id, String status,
                                @com.fasterxml.jackson.annotation.JsonProperty("output_file_id") String outputFileId) {}

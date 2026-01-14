@@ -11,5 +11,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface NicheDetailedDescriptionMapper {
     @Mapping(target = "marketNicheId", source = "marketNiche.id")
+    @Mapping(target = "promptId", source = "promptTemplate.id")
+    @Mapping(target = "promptName", source = "promptTemplate.name")
     NicheDetailedDescriptionDto toDto(NicheDetailedDescription description);
 }

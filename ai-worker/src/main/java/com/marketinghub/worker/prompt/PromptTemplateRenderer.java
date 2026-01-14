@@ -5,6 +5,8 @@ import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -14,6 +16,7 @@ import java.util.Map;
 
 @Component
 public class PromptTemplateRenderer {
+    private static final Logger log = LoggerFactory.getLogger(PromptTemplateRenderer.class);
     private final Configuration configuration;
 
     public PromptTemplateRenderer() {
@@ -35,6 +38,7 @@ public class PromptTemplateRenderer {
             template.process(context, writer);
             return writer.toString();
         } catch (IOException | TemplateException e) {
+            log.error("Failed to render prompt template with context keys {}", context.keySet(), e);
             throw new IllegalStateException("Failed to render prompt template", e);
         }
     }

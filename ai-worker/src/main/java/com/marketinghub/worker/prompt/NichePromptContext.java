@@ -11,6 +11,42 @@ public record NichePromptContext(Long id,
                                  String extraTips,
                                  String interestCategory,
                                  String roleCategory) {
+    public Long getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public String getBaseSegmentation() {
+        return baseSegmentation;
+    }
+
+    public String getInterests() {
+        return interests;
+    }
+
+    public String getDemographicFilters() {
+        return demographicFilters;
+    }
+
+    public String getExtraTips() {
+        return extraTips;
+    }
+
+    public String getInterestCategory() {
+        return interestCategory;
+    }
+
+    public String getRoleCategory() {
+        return roleCategory;
+    }
+
     public static NichePromptContext from(MarketNiche niche) {
         if (niche == null) {
             return null;

@@ -5,14 +5,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.prompt.Prompt;
 import com.marketinghub.prompt.PromptAttribute;
 import com.marketinghub.prompt.PromptAttributeDescription;
+import com.marketinghub.prompt.PromptDomains;
 import com.marketinghub.prompt.repository.PromptAttributeDescriptionRepository;
 import com.marketinghub.prompt.repository.PromptAttributeRepository;
+import com.marketinghub.prompt.service.PromptService;
 import com.marketinghub.worker.openai.AiGenerationRecorder;
 import com.marketinghub.worker.openai.OpenAiCostEstimator;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
+import com.marketinghub.worker.prompt.NichePromptContext;
+import com.marketinghub.worker.prompt.PromptTemplateRenderer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,9 +37,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -49,9 +56,23 @@ public class ChatGptClient {
     private final String defaultModel;
     private final PromptAttributeRepository attributeRepository;
     private final PromptAttributeDescriptionRepository descriptionRepository;
+    private final PromptService promptService;
+    private final PromptTemplateRenderer promptTemplateRenderer;
     private final AiGenerationRecorder generationRecorder;
     private static final Logger log = LoggerFactory.getLogger(ChatGptClient.class);
-    private static final String DOMAIN = "NICHE_HYPOTHESIS";
+    private static final String DOMAIN = PromptDomains.NICHE_HYPOTHESIS;
+    private static final List<String> DEFAULT_ATTRIBUTES = List.of(
+            "title",
+            "promise",
+            "problem",
+            "persona",
+            "mechanism",
+            "uniqueMechanism",
+            "entrega",
+            "successRule",
+            "offerType",
+            "price"
+    );
     private static final String RESPONSES_ENDPOINT = "/v1/responses";
     private static final String COMPLETION_WINDOW = "24h";
     private static final Duration BATCH_POLL_INTERVAL = Duration.ofMillis(500);
@@ -65,6 +86,8 @@ public class ChatGptClient {
                          @Value("${openai.model:gpt-3.5-turbo}") String defaultModel,
                          PromptAttributeRepository attributeRepository,
                          PromptAttributeDescriptionRepository descriptionRepository,
+                         PromptService promptService,
+                         PromptTemplateRenderer promptTemplateRenderer,
                          AiGenerationRecorder generationRecorder) {
         WebClient.Builder clientBuilder = builder
                 .baseUrl(baseUrl)
@@ -75,6 +98,8 @@ public class ChatGptClient {
         this.defaultModel = defaultModel;
         this.attributeRepository = attributeRepository;
         this.descriptionRepository = descriptionRepository;
+        this.promptService = promptService;
+        this.promptTemplateRenderer = promptTemplateRenderer;
         this.generationRecorder = generationRecorder;
     }
 
@@ -172,51 +197,47 @@ public class ChatGptClient {
     }
 
     private PromptData buildPrompt(MarketNiche niche, int quantity) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Gere ").append(quantity).append(" hipóteses em formato JSON. ");
-        sb.append("Use o seguinte nicho como contexto:\n");
-        sb.append("Nome: ").append(niche.getName()).append("\n");
-        if (niche.getDescription() != null) {
-            sb.append("Descrição: ").append(niche.getDescription()).append("\n");
-        }
-        if (niche.getBaseSegmentation() != null) {
-            sb.append("Segmentação base: ").append(niche.getBaseSegmentation()).append("\n");
-        }
-        if (niche.getInterests() != null) {
-            sb.append("Interesses: ").append(niche.getInterests()).append("\n");
-        }
-        if (niche.getDemographicFilters() != null) {
-            sb.append("Filtros demográficos: ").append(niche.getDemographicFilters()).append("\n");
-        }
-        if (niche.getExtraTips() != null) {
-            sb.append("Dicas extras: ").append(niche.getExtraTips()).append("\n");
-        }
-        List<PromptAttribute> attrs = attributeRepository.findByEntity_Name("hypothesis");
+        Prompt promptTemplate = promptService.getActiveByDomainOrThrow(DOMAIN);
+        PromptRenderContext context = buildPromptContext(niche, quantity);
+        log.info("Building hypothesis prompt. promptId={}, nicheId={}, quantity={}, attributes={}",
+                promptTemplate.getId(), niche != null ? niche.getId() : null, quantity, context.attributeNames());
+        String rendered = promptTemplateRenderer.render(promptTemplate.getTemplate(), context.context());
+        log.info("Rendered hypothesis prompt {} for niche {} ({} chars)", promptTemplate.getId(),
+                niche != null ? niche.getId() : null, rendered.length());
+        return new PromptData(rendered, context.descriptionIds());
+    }
+
+    private PromptRenderContext buildPromptContext(MarketNiche niche, int quantity) {
+        Map<String, Object> context = new HashMap<>();
+        context.put("quantity", quantity);
+        context.put("niche", Optional.ofNullable(NichePromptContext.from(niche)).map(NichePromptContext::asMap).orElse(null));
+
         List<Long> descriptionIds = new ArrayList<>();
-        Map<String, String> descriptions = attrs.stream()
-                .map(attr -> {
-                    var opt = descriptionRepository.findByAttribute_IdAndActiveTrue(attr.getId());
-                    return opt.map(d -> {
-                        descriptionIds.add(d.getId());
-                        return Map.entry(attr.getName(), d.getDescription());
-                    });
-                })
-                .flatMap(java.util.Optional::stream)
-                .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        if (!descriptions.isEmpty()) {
-            sb.append("Cada objeto deve conter as chaves: ")
-                    .append(descriptions.keySet().stream().map(n -> "\\\"" + n + "\\\"")
-                            .collect(java.util.stream.Collectors.joining(", ")))
-                    .append(". ");
-            descriptions.forEach((name, desc) ->
-                    sb.append("Campo \\\"" + name + "\\\": " + desc + ". "));
-        } else {
-            sb.append("Cada objeto deve conter as chaves: \"title\", \"promise\", \"problem\", \"persona\", \"mechanism\", \"uniqueMechanism\", \"entrega\", \"successRule\", \"offerType\", \"price\". ");
+        List<Map<String, Object>> attributes = new ArrayList<>();
+        List<PromptAttribute> attrs = attributeRepository.findByEntity_Name("hypothesis");
+        for (PromptAttribute attr : attrs) {
+            Optional<PromptAttributeDescription> opt = descriptionRepository.findByAttribute_IdAndActiveTrue(attr.getId());
+            if (opt.isEmpty()) {
+                continue;
+            }
+            PromptAttributeDescription desc = opt.get();
+            descriptionIds.add(desc.getId());
+            Map<String, Object> attrMap = new LinkedHashMap<>();
+            attrMap.put("id", desc.getId());
+            attrMap.put("name", attr.getName());
+            attrMap.put("description", desc.getDescription());
+            attributes.add(attrMap);
         }
-        sb.append("O campo \"offerType\" deve ser \"LEAD\" ou \"TRIPWIRE\". ");
-        sb.append("O campo \"price\" deve ser um número. ");
-        sb.append("Retorne apenas um array JSON com esses objetos, sem texto adicional.");
-        return new PromptData(sb.toString(), descriptionIds);
+        List<String> attributeNames = attributes.stream()
+                .map(attr -> attr.get("name"))
+                .filter(java.util.Objects::nonNull)
+                .map(Object::toString)
+                .toList();
+
+        context.put("attributes", attributes);
+        context.put("attributeNames", attributeNames);
+        context.put("defaultAttributes", DEFAULT_ATTRIBUTES);
+        return new PromptRenderContext(context, descriptionIds, attributeNames);
     }
 
     private List<CreateHypothesisRequest> parseContent(String content, MarketNiche niche, PromptData data, String model, BigDecimal totalCost) throws Exception {
@@ -405,6 +426,8 @@ public class ChatGptClient {
     private static String customId(MarketNiche niche) {
         return "niche-" + niche.getId();
     }
+
+    private record PromptRenderContext(Map<String, Object> context, List<Long> descriptionIds, List<String> attributeNames) {}
 
     private record PromptData(String prompt, List<Long> descriptionIds) {}
 

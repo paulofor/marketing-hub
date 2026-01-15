@@ -12,15 +12,29 @@ interface PromptFormProps {
   initialValues?: Partial<PromptFormValues>;
   isSubmitting?: boolean;
   onSubmit: (values: PromptFormValues) => Promise<void> | void;
+  defaultTemplates?: Record<string, string>;
 }
 
-export default function PromptForm({ initialValues, isSubmitting, onSubmit }: PromptFormProps) {
+export default function PromptForm({ initialValues, isSubmitting, onSubmit, defaultTemplates }: PromptFormProps) {
+  const initialDomain = initialValues?.domain ?? PROMPT_DOMAINS[0]?.value ?? "";
   const [name, setName] = useState(initialValues?.name ?? "");
-  const [domain, setDomain] = useState(initialValues?.domain ?? PROMPT_DOMAINS[0]?.value ?? "");
-  const [template, setTemplate] = useState(initialValues?.template ?? "");
+  const [domain, setDomain] = useState(initialDomain);
+  const [template, setTemplate] = useState(initialValues?.template ?? defaultTemplates?.[initialDomain] ?? "");
   const [active, setActive] = useState(Boolean(initialValues?.active));
 
   const variables = useMemo(() => PROMPT_VARIABLES[domain] ?? [], [domain]);
+
+  const handleDomainChange = (newDomain: string) => {
+    setDomain(newDomain);
+    if (!defaultTemplates) return;
+    const nextTemplate = defaultTemplates[newDomain];
+    const currentDefault = defaultTemplates[domain];
+    const shouldReplaceTemplate =
+      nextTemplate !== undefined && (template.trim().length === 0 || template === currentDefault);
+    if (shouldReplaceTemplate) {
+      setTemplate(nextTemplate);
+    }
+  };
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -59,7 +73,7 @@ export default function PromptForm({ initialValues, isSubmitting, onSubmit }: Pr
               id="prompt-domain"
               className="form-select"
               value={domain}
-              onChange={(e) => setDomain(e.target.value)}
+              onChange={(e) => handleDomainChange(e.target.value)}
               required
               disabled={isSubmitting}
             >

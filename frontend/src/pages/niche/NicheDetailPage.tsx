@@ -243,6 +243,8 @@ export default function NicheDetailPage() {
   const updatedAtLabel = data.updatedAt
     ? new Date(data.updatedAt).toLocaleString("pt-BR")
     : undefined;
+  const totalCostLabel = formatCurrency(data.totalCost) ?? "-";
+  const totalRevenueLabel = formatCurrency(data.totalRevenue) ?? "-";
   const differentiatedTechnologyName = differentiatedTechnologies?.find(
     (tech) => tech.id === data.differentiatedTechnologyId,
   )?.name;
@@ -514,6 +516,16 @@ export default function NicheDetailPage() {
             {`Nicho #${data.id}`}
             {updatedAtLabel ? ` • Atualizado em ${updatedAtLabel}` : ""}
           </p>
+          <div className="niche-detail__totals" aria-label="Totais do nicho">
+            <div className="niche-detail__total">
+              <span className="niche-detail__total-label">Custo total</span>
+              <span className="niche-detail__total-value">{totalCostLabel}</span>
+            </div>
+            <div className="niche-detail__total">
+              <span className="niche-detail__total-label">Receita total</span>
+              <span className="niche-detail__total-value">{totalRevenueLabel}</span>
+            </div>
+          </div>
         </div>
         <div className="niche-detail__actions">
           <button

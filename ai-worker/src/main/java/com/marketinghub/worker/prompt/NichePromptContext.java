@@ -2,6 +2,9 @@ package com.marketinghub.worker.prompt;
 
 import com.marketinghub.niche.MarketNiche;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 public record NichePromptContext(Long id,
                                  String name,
                                  String description,
@@ -11,6 +14,21 @@ public record NichePromptContext(Long id,
                                  String extraTips,
                                  String interestCategory,
                                  String roleCategory) {
+
+    public Map<String, Object> asMap() {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", id);
+        map.put("name", name);
+        map.put("description", description);
+        map.put("baseSegmentation", baseSegmentation);
+        map.put("interests", interests);
+        map.put("demographicFilters", demographicFilters);
+        map.put("extraTips", extraTips);
+        map.put("interestCategory", interestCategory);
+        map.put("roleCategory", roleCategory);
+        return map;
+    }
+
     public Long getId() {
         return id;
     }

@@ -148,8 +148,11 @@ public class NicheDescriptionChatGptClient {
     private PromptData buildPrompt(Prompt promptTemplate, MarketNiche niche, int quantity) {
         Map<String, Object> context = new HashMap<>();
         context.put("quantity", quantity);
-        context.put("niche", NichePromptContext.from(niche));
+        context.put("niche", Optional.ofNullable(NichePromptContext.from(niche)).map(NichePromptContext::asMap).orElse(null));
+        log.info("Building detailed description prompt. promptId={}, nicheId={}, quantity={}, context={}",
+                promptTemplate.getId(), niche != null ? niche.getId() : null, quantity, context);
         String rendered = promptTemplateRenderer.render(promptTemplate.getTemplate(), context);
+        log.info("Rendered detailed description prompt {} for niche {} ({} chars)", promptTemplate.getId(), niche != null ? niche.getId() : null, rendered.length());
         return new PromptData(promptTemplate.getId(), rendered);
     }
     private List<CreateNicheDetailedDescriptionRequest> parseContent(String content, MarketNiche niche, PromptData data, String model, OpenAiResponse.OpenAiUsage usage) throws Exception {

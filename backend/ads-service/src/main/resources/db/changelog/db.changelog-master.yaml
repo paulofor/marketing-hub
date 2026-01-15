@@ -376,3 +376,7 @@ databaseChangeLog:
   - include:
       file: V2031_08_15__hypothesis_prompt_template.sql
       relativeToChangelogFile: true
+
+  - include:
+      file: V2031_09_10__update_hypothesis_prompt_with_detailed_description.sql
+      relativeToChangelogFile: true

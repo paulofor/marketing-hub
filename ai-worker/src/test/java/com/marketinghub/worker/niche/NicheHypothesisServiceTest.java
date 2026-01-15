@@ -9,9 +9,12 @@ import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.prompt.PromptAttribute;
 import com.marketinghub.prompt.PromptAttributeDescription;
 import com.marketinghub.prompt.PromptEntity;
+import com.marketinghub.prompt.PromptDomains;
+import com.marketinghub.prompt.Prompt;
 import com.marketinghub.prompt.repository.PromptAttributeDescriptionRepository;
 import com.marketinghub.prompt.repository.PromptAttributeRepository;
 import com.marketinghub.prompt.repository.PromptEntityRepository;
+import com.marketinghub.prompt.repository.PromptRepository;
 import com.marketinghub.worker.config.TestServiceMocksConfig;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -75,6 +78,9 @@ class NicheHypothesisServiceTest {
     @Autowired
     PromptAttributeDescriptionRepository descriptionRepository;
 
+    @Autowired
+    PromptRepository promptRepository;
+
     @Value("${openai.model}")
     String model;
 
@@ -95,6 +101,20 @@ class NicheHypothesisServiceTest {
     void resetDb() {
         hypothesisRepository.deleteAll();
         nicheRepository.deleteAll();
+        descriptionRepository.deleteAll();
+        attributeRepository.deleteAll();
+        entityRepository.deleteAll();
+        promptRepository.deleteAll();
+        createActivePrompt();
+    }
+
+    private void createActivePrompt() {
+        promptRepository.save(Prompt.builder()
+                .name("Test Prompt")
+                .domain(PromptDomains.NICHE_HYPOTHESIS)
+                .template("Generate hypotheses.")
+                .active(true)
+                .build());
     }
 
     @Test

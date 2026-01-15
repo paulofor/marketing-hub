@@ -14,6 +14,7 @@ export interface NicheDetailedDescription {
   prompt?: string;
   model?: string;
   costUsd?: number | null;
+  active?: boolean;
   inputTokens?: number | null;
   outputTokens?: number | null;
   createdAt?: string;

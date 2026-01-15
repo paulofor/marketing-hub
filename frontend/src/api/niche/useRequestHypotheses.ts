@@ -6,6 +6,7 @@ export interface RequestHypothesesPayload {
   quantity: number;
   model?: string;
   differentiatedTechnologyId?: number;
+  detailedDescriptionId?: number;
 }
 
 export function useRequestHypotheses(id: number) {
@@ -15,11 +16,15 @@ export function useRequestHypotheses(id: number) {
       quantity,
       model,
       differentiatedTechnologyId,
+      detailedDescriptionId,
     }: RequestHypothesesPayload) => {
       const params: Record<string, string | number> = { quantity };
       if (model) params.model = model;
       if (differentiatedTechnologyId != null) {
         params.differentiatedTechnologyId = differentiatedTechnologyId;
+      }
+      if (detailedDescriptionId != null) {
+        params.detailedDescriptionId = detailedDescriptionId;
       }
       const { data } = await axios.patch<MarketNiche>(
         `/api/niches/${id}/hypotheses-to-generate`,

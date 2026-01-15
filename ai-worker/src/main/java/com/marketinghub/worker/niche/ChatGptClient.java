@@ -215,7 +215,21 @@ public class ChatGptClient {
     private PromptRenderContext buildPromptContext(MarketNiche niche, int quantity) {
         List<NicheDetailedDescription> detailedDescriptions = List.of();
         if (niche != null && niche.getId() != null) {
-            detailedDescriptions = detailedDescriptionService.listByNiche(niche.getId());
+            if (niche.getHypothesisDetailedDescription() != null
+                    && niche.getHypothesisDetailedDescription().getId() != null) {
+                try {
+                    detailedDescriptions = List.of(detailedDescriptionService.getActiveByNicheAndId(
+                            niche.getId(),
+                            niche.getHypothesisDetailedDescription().getId()));
+                } catch (Exception ex) {
+                    log.warn("Selected detailed description not available for niche {}: {}",
+                            niche.getId(),
+                            niche.getHypothesisDetailedDescription().getId());
+                    detailedDescriptions = detailedDescriptionService.listActiveByNiche(niche.getId());
+                }
+            } else {
+                detailedDescriptions = detailedDescriptionService.listActiveByNiche(niche.getId());
+            }
         }
         Map<String, Object> context = new HashMap<>();
         context.put("quantity", quantity);

@@ -9,6 +9,7 @@ import com.marketinghub.differentiatedtechnology.DifferentiatedTechnology;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.audience.Audience;
 import com.marketinghub.informationsource.InformationSource;
+import com.marketinghub.niche.description.NicheDetailedDescription;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -95,6 +96,12 @@ public class MarketNiche {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "differentiated_technology_id")
     private DifferentiatedTechnology differentiatedTechnology;
+
+    /** Descrição detalhada ativa para orientar hipóteses. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hypothesis_detailed_description_id")
+    @ToString.Exclude
+    private NicheDetailedDescription hypothesisDetailedDescription;
 
     /** Base segmentation for the Brazilian market. */
     @Lob

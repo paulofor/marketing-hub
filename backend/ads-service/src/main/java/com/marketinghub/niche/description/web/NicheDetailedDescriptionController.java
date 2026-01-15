@@ -2,6 +2,7 @@ package com.marketinghub.niche.description.web;
 
 import com.marketinghub.niche.description.dto.CreateNicheDetailedDescriptionRequest;
 import com.marketinghub.niche.description.dto.NicheDetailedDescriptionDto;
+import com.marketinghub.niche.description.dto.UpdateNicheDetailedDescriptionStatusRequest;
 import com.marketinghub.niche.description.mapper.NicheDetailedDescriptionMapper;
 import com.marketinghub.niche.description.service.NicheDetailedDescriptionService;
 import org.springframework.web.bind.annotation.*;
@@ -34,5 +35,12 @@ public class NicheDetailedDescriptionController {
                                               @RequestBody CreateNicheDetailedDescriptionRequest request) {
         request.setMarketNicheId(nicheId);
         return mapper.toDto(service.create(request));
+    }
+
+    @PatchMapping("/{descriptionId}/active")
+    public NicheDetailedDescriptionDto updateActive(@PathVariable Long nicheId,
+                                                    @PathVariable Long descriptionId,
+                                                    @RequestBody UpdateNicheDetailedDescriptionStatusRequest request) {
+        return mapper.toDto(service.updateActive(nicheId, descriptionId, request.isActive()));
     }
 }

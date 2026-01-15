@@ -26,6 +26,14 @@ Nome: ${'${niche.name}'}
 <#if niche.interests?has_content>Interesses: ${'${niche.interests}'}</#if>
 <#if niche.demographicFilters?has_content>Filtros demográficos: ${'${niche.demographicFilters}'}</#if>
 <#if niche.extraTips?has_content>Dicas extras: ${'${niche.extraTips}'}</#if>
+<#if niche.latestDetailedDescription?has_content>
+Use a descrição detalhada mais recente (a última por createdAt/id) como referência:
+<#if niche.latestDetailedDescription.title?has_content>Título: ${'${niche.latestDetailedDescription.title}'}</#if>
+<#if niche.latestDetailedDescription.description?has_content>Descrição: ${'${niche.latestDetailedDescription.description}'}</#if>
+<#if niche.latestDetailedDescription.pains?has_content>Dores: ${'${niche.latestDetailedDescription.pains}'}</#if>
+<#if niche.latestDetailedDescription.desires?has_content>Desejos: ${'${niche.latestDetailedDescription.desires}'}</#if>
+<#if niche.latestDetailedDescription.needs?has_content>Necessidades: ${'${niche.latestDetailedDescription.needs}'}</#if>
+</#if>
 <#if attributes?has_content>
 Cada objeto deve conter as chaves: <#list attributes as attr>"${'${attr.name}'}"<#if attr_has_next>, </#if></#list>.
 <#list attributes as attr>

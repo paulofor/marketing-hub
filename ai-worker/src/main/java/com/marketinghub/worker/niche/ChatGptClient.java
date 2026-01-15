@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.description.NicheDetailedDescription;
+import com.marketinghub.niche.description.service.NicheDetailedDescriptionService;
 import com.marketinghub.prompt.Prompt;
 import com.marketinghub.prompt.PromptAttribute;
 import com.marketinghub.prompt.PromptAttributeDescription;
@@ -59,6 +61,7 @@ public class ChatGptClient {
     private final PromptService promptService;
     private final PromptTemplateRenderer promptTemplateRenderer;
     private final AiGenerationRecorder generationRecorder;
+    private final NicheDetailedDescriptionService detailedDescriptionService;
     private static final Logger log = LoggerFactory.getLogger(ChatGptClient.class);
     private static final String DOMAIN = PromptDomains.NICHE_HYPOTHESIS;
     private static final List<String> DEFAULT_ATTRIBUTES = List.of(
@@ -88,7 +91,8 @@ public class ChatGptClient {
                          PromptAttributeDescriptionRepository descriptionRepository,
                          PromptService promptService,
                          PromptTemplateRenderer promptTemplateRenderer,
-                         AiGenerationRecorder generationRecorder) {
+                         AiGenerationRecorder generationRecorder,
+                         NicheDetailedDescriptionService detailedDescriptionService) {
         WebClient.Builder clientBuilder = builder
                 .baseUrl(baseUrl)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
@@ -101,6 +105,7 @@ public class ChatGptClient {
         this.promptService = promptService;
         this.promptTemplateRenderer = promptTemplateRenderer;
         this.generationRecorder = generationRecorder;
+        this.detailedDescriptionService = detailedDescriptionService;
     }
 
     public List<CreateHypothesisRequest> generateHypotheses(MarketNiche niche, int quantity) {
@@ -208,9 +213,15 @@ public class ChatGptClient {
     }
 
     private PromptRenderContext buildPromptContext(MarketNiche niche, int quantity) {
+        List<NicheDetailedDescription> detailedDescriptions = List.of();
+        if (niche != null && niche.getId() != null) {
+            detailedDescriptions = detailedDescriptionService.listByNiche(niche.getId());
+        }
         Map<String, Object> context = new HashMap<>();
         context.put("quantity", quantity);
-        context.put("niche", Optional.ofNullable(NichePromptContext.from(niche)).map(NichePromptContext::asMap).orElse(null));
+        context.put("niche", Optional.ofNullable(NichePromptContext.from(niche, detailedDescriptions))
+                .map(NichePromptContext::asMap)
+                .orElse(null));
 
         List<Long> descriptionIds = new ArrayList<>();
         List<Map<String, Object>> attributes = new ArrayList<>();

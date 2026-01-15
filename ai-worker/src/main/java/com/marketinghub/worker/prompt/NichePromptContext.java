@@ -1,9 +1,13 @@
 package com.marketinghub.worker.prompt;
 
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.description.NicheDetailedDescription;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 public record NichePromptContext(Long id,
                                  String name,
@@ -13,7 +17,9 @@ public record NichePromptContext(Long id,
                                  String demographicFilters,
                                  String extraTips,
                                  String interestCategory,
-                                 String roleCategory) {
+                                 String roleCategory,
+                                 List<Map<String, Object>> detailedDescriptions,
+                                 Map<String, Object> latestDetailedDescription) {
 
     public Map<String, Object> asMap() {
         Map<String, Object> map = new LinkedHashMap<>();
@@ -26,6 +32,8 @@ public record NichePromptContext(Long id,
         map.put("extraTips", extraTips);
         map.put("interestCategory", interestCategory);
         map.put("roleCategory", roleCategory);
+        map.put("detailedDescriptions", detailedDescriptions);
+        map.put("latestDetailedDescription", latestDetailedDescription);
         return map;
     }
 
@@ -65,10 +73,33 @@ public record NichePromptContext(Long id,
         return roleCategory;
     }
 
+    public List<Map<String, Object>> getDetailedDescriptions() {
+        return detailedDescriptions;
+    }
+
+    public Map<String, Object> getLatestDetailedDescription() {
+        return latestDetailedDescription;
+    }
+
     public static NichePromptContext from(MarketNiche niche) {
+        return from(niche, List.of());
+    }
+
+    public static NichePromptContext from(MarketNiche niche, List<NicheDetailedDescription> detailedDescriptions) {
         if (niche == null) {
             return null;
         }
+        List<Map<String, Object>> descriptionContext = Optional.ofNullable(detailedDescriptions)
+                .orElse(List.of())
+                .stream()
+                .sorted(java.util.Comparator
+                        .comparing(NicheDetailedDescription::getCreatedAt, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()))
+                        .thenComparing(NicheDetailedDescription::getId, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
+                .map(NichePromptContext::mapDetailedDescription)
+                .collect(Collectors.toList());
+        Map<String, Object> latestDetailedDescription = descriptionContext.isEmpty()
+                ? null
+                : descriptionContext.get(descriptionContext.size() - 1);
         return new NichePromptContext(
                 niche.getId(),
                 niche.getName(),
@@ -78,7 +109,24 @@ public record NichePromptContext(Long id,
                 niche.getDemographicFilters(),
                 niche.getExtraTips(),
                 niche.getInterestCategory(),
-                niche.getRoleCategory()
+                niche.getRoleCategory(),
+                descriptionContext,
+                latestDetailedDescription
         );
+    }
+
+    private static Map<String, Object> mapDetailedDescription(NicheDetailedDescription description) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", description.getId());
+        map.put("title", description.getTitle());
+        map.put("description", description.getDescription());
+        map.put("pains", description.getPains());
+        map.put("desires", description.getDesires());
+        map.put("needs", description.getNeeds());
+        map.put("model", description.getModel());
+        map.put("prompt", description.getPrompt());
+        map.put("createdAt", description.getCreatedAt());
+        map.put("updatedAt", description.getUpdatedAt());
+        return map;
     }
 }

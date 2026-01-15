@@ -1,6 +1,7 @@
 package com.marketinghub.niche;
 
 import com.marketinghub.niche.dto.CreateMarketNicheRequest;
+import com.marketinghub.niche.description.repository.NicheDetailedDescriptionRepository;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.niche.service.MarketNicheService;
 import com.marketinghub.chat.repository.ChatDialogRepository;
@@ -28,7 +29,13 @@ class MarketNicheServiceTest {
         ChatDialogRepository chatRepo = mock(ChatDialogRepository.class);
         DifferentiatedTechnologyRepository differentiatedTechnologyRepository =
                 mock(DifferentiatedTechnologyRepository.class);
-        service = new MarketNicheService(repository, chatRepo, differentiatedTechnologyRepository);
+        NicheDetailedDescriptionRepository detailedDescriptionRepository =
+                mock(NicheDetailedDescriptionRepository.class);
+        service = new MarketNicheService(
+                repository,
+                chatRepo,
+                differentiatedTechnologyRepository,
+                detailedDescriptionRepository);
     }
 
     @Test
@@ -57,7 +64,7 @@ class MarketNicheServiceTest {
                 .build();
         repository.save(niche);
 
-        service.requestHypotheses(niche.getId(), 4, "gpt-4o", null);
+        service.requestHypotheses(niche.getId(), 4, "gpt-4o", null, null);
 
         MarketNiche updated = repository.findById(niche.getId()).orElseThrow();
         assertThat(updated.getHypothesesToGenerate()).isEqualTo(4);

@@ -73,6 +73,7 @@ public class NicheDetailedDescriptionService {
                 .prompt(request.getPrompt())
                 .model(request.getModel())
                 .costUsd(request.getCostUsd())
+                .active(true)
                 .inputTokens(request.getInputTokens())
                 .outputTokens(request.getOutputTokens())
                 .build();
@@ -90,5 +91,27 @@ public class NicheDetailedDescriptionService {
 
     public List<NicheDetailedDescription> listByNiche(Long nicheId) {
         return repository.findByMarketNicheId(nicheId);
+    }
+
+    public List<NicheDetailedDescription> listActiveByNiche(Long nicheId) {
+        return repository.findByMarketNicheIdAndActiveTrue(nicheId);
+    }
+
+    @Transactional
+    public NicheDetailedDescription updateActive(Long nicheId, Long descriptionId, boolean active) {
+        NicheDetailedDescription description = repository
+                .findByIdAndMarketNicheId(descriptionId, nicheId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Detailed description not found for niche " + nicheId));
+        description.setActive(active);
+        return description;
+    }
+
+    public NicheDetailedDescription getActiveByNicheAndId(Long nicheId, Long descriptionId) {
+        return repository.findByIdAndMarketNicheIdAndActiveTrue(descriptionId, nicheId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Active detailed description not found for niche " + nicheId));
     }
 }

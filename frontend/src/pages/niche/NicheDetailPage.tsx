@@ -14,6 +14,7 @@ import { useRequestAudiences } from "../../api/niche/useRequestAudiences";
 import { useRequestHypotheses } from "../../api/niche/useRequestHypotheses";
 import { useRequestDetailedDescriptions } from "../../api/niche/useRequestDetailedDescriptions";
 import { useNicheDetailedDescriptions } from "../../api/niche/useNicheDetailedDescriptions";
+import { useUpdateNicheDetailedDescriptionStatus } from "../../api/niche/useUpdateNicheDetailedDescriptionStatus";
 import { useExperimentsByNiche } from "../../api/experiment/useExperimentsByNiche";
 import { useDeliverablesByNiche } from "../../api/deliverable/useDeliverablesByNiche";
 import { useCreateDeliverable } from "../../api/deliverable/useCreateDeliverable";
@@ -70,6 +71,7 @@ export default function NicheDetailPage() {
   const requestAudiences = useRequestAudiences(id);
   const requestHypotheses = useRequestHypotheses(id);
   const requestDetailedDescriptions = useRequestDetailedDescriptions(id);
+  const updateDetailedDescriptionStatus = useUpdateNicheDetailedDescriptionStatus();
   const { data: openAiModels, isLoading: isLoadingModels } = useOpenAiModels();
   const {
     data: differentiatedTechnologies,
@@ -83,6 +85,7 @@ export default function NicheDetailPage() {
     null,
   );
   const [editingRoleIndex, setEditingRoleIndex] = useState<number | null>(null);
+  const [updatingDescriptionId, setUpdatingDescriptionId] = useState<number | null>(null);
   const {
     register: registerAudienceQuantity,
     handleSubmit: handleSubmitAudienceQuantity,
@@ -99,8 +102,14 @@ export default function NicheDetailPage() {
     quantity: number;
     model?: string;
     differentiatedTechnologyId?: number;
+    detailedDescriptionId?: number;
   }>({
-    defaultValues: { quantity: 1, model: "", differentiatedTechnologyId: undefined },
+    defaultValues: {
+      quantity: 1,
+      model: "",
+      differentiatedTechnologyId: undefined,
+      detailedDescriptionId: undefined,
+    },
   });
   const {
     register: registerDescriptionRequest,
@@ -166,6 +175,7 @@ export default function NicheDetailPage() {
     );
   }, [data?.differentiatedTechnologyId, setHypothesisRequestValue]);
 
+
   const scrollToSection = useCallback((sectionId: string) => {
     if (typeof document === "undefined") return;
     const element = document.getElementById(sectionId);
@@ -173,6 +183,49 @@ export default function NicheDetailPage() {
       element.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, []);
+
+  const list = Array.isArray(hypotheses)
+    ? [...hypotheses].sort((a, b) => {
+        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bDate - aDate;
+      })
+    : [];
+  const audienceList = Array.isArray(audiences) ? audiences : [];
+  const experimentsList = Array.isArray(experiments) ? experiments : [];
+  const deliverableList = Array.isArray(deliverables)
+    ? [...deliverables].sort((a, b) => {
+        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bDate - aDate;
+      })
+    : [];
+  const detailedDescriptionList = Array.isArray(detailedDescriptions)
+    ? [...detailedDescriptions].sort((a, b) => {
+        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bDate - aDate;
+      })
+    : [];
+  const activeDetailedDescriptions = detailedDescriptionList.filter(
+    (description) => description.active ?? true,
+  );
+  const informationSourceList = Array.isArray(informationSources)
+    ? [...informationSources].sort((a, b) => {
+        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bDate - aDate;
+      })
+    : [];
+
+  useEffect(() => {
+    const selectedId = data?.hypothesisDetailedDescriptionId ?? undefined;
+    if (selectedId && activeDetailedDescriptions.some((desc) => desc.id === selectedId)) {
+      setHypothesisRequestValue("detailedDescriptionId", selectedId);
+    } else {
+      setHypothesisRequestValue("detailedDescriptionId", undefined);
+    }
+  }, [activeDetailedDescriptions, data?.hypothesisDetailedDescriptionId, setHypothesisRequestValue]);
 
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
@@ -200,36 +253,6 @@ export default function NicheDetailPage() {
     URL.revokeObjectURL(url);
   };
 
-  const list = Array.isArray(hypotheses)
-    ? [...hypotheses].sort((a, b) => {
-        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return bDate - aDate;
-      })
-    : [];
-  const audienceList = Array.isArray(audiences) ? audiences : [];
-  const experimentsList = Array.isArray(experiments) ? experiments : [];
-  const deliverableList = Array.isArray(deliverables)
-    ? [...deliverables].sort((a, b) => {
-        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return bDate - aDate;
-      })
-    : [];
-  const detailedDescriptionList = Array.isArray(detailedDescriptions)
-    ? [...detailedDescriptions].sort((a, b) => {
-        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return bDate - aDate;
-      })
-    : [];
-  const informationSourceList = Array.isArray(informationSources)
-    ? [...informationSources].sort((a, b) => {
-        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return bDate - aDate;
-      })
-    : [];
   const experimentsCountByHypothesis = experimentsList.reduce<
     Record<string, number>
   >((acc, experiment) => {
@@ -423,7 +446,7 @@ export default function NicheDetailPage() {
     },
   );
   const onRequestHypotheses = handleSubmitHypothesisRequest(
-    async ({ quantity, model, differentiatedTechnologyId }) => {
+    async ({ quantity, model, differentiatedTechnologyId, detailedDescriptionId }) => {
       if (!quantity || quantity <= 0) return;
       const selectedModel = model?.trim() || data?.hypothesisModel || openAiModels?.[0]?.code;
       try {
@@ -431,12 +454,14 @@ export default function NicheDetailPage() {
           quantity,
           model: selectedModel,
           differentiatedTechnologyId,
+          detailedDescriptionId,
         });
         alert("Solicitação enviada!");
         resetHypothesisRequest({
           quantity: 1,
           model: selectedModel ?? "",
           differentiatedTechnologyId,
+          detailedDescriptionId,
         });
       } catch {
         alert("Erro ao solicitar hipóteses");
@@ -466,6 +491,24 @@ export default function NicheDetailPage() {
       console.log("Validation errors", errors);
     },
   );
+
+  const onToggleDetailedDescriptionActive = async (
+    descriptionId: number,
+    active: boolean,
+  ) => {
+    try {
+      setUpdatingDescriptionId(descriptionId);
+      await updateDetailedDescriptionStatus.mutateAsync({
+        nicheId: nicheId ?? id,
+        descriptionId,
+        active,
+      });
+    } catch {
+      alert("Erro ao atualizar status da descrição");
+    } finally {
+      setUpdatingDescriptionId(null);
+    }
+  };
 
   const onCreateDeliverable = handleSubmitDeliverable(
     async (values) => {
@@ -692,17 +735,49 @@ export default function NicheDetailPage() {
                     <h3 className="card-title h5 mb-2">
                       {description.title || `Descrição #${index + 1}`}
                     </h3>
-                    <div className="d-flex gap-2 flex-wrap justify-content-end">
-                      {description.promptName ? (
-                        <span className="badge text-bg-light text-dark">
-                          Prompt: {description.promptName}
-                        </span>
-                      ) : null}
-                      {description.model ? (
-                        <span className="badge text-bg-light text-dark">
-                          {description.model}
-                        </span>
-                      ) : null}
+                    <div className="d-flex flex-column align-items-end gap-2">
+                      <div className="d-flex gap-2 flex-wrap justify-content-end">
+                        {description.promptName ? (
+                          <span className="badge text-bg-light text-dark">
+                            Prompt: {description.promptName}
+                          </span>
+                        ) : null}
+                        {description.model ? (
+                          <span className="badge text-bg-light text-dark">
+                            {description.model}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="d-flex align-items-center gap-2">
+                        <div className="form-check form-switch m-0">
+                          <input
+                            id={`detailed-description-active-${description.id}`}
+                            className="form-check-input"
+                            type="checkbox"
+                            checked={description.active ?? true}
+                            disabled={updatingDescriptionId === description.id}
+                            onChange={(event) => {
+                              onToggleDetailedDescriptionActive(
+                                description.id,
+                                event.target.checked,
+                              );
+                            }}
+                          />
+                          <label
+                            className="form-check-label"
+                            htmlFor={`detailed-description-active-${description.id}`}
+                          >
+                            Ativa
+                          </label>
+                        </div>
+                        {updatingDescriptionId === description.id ? (
+                          <span
+                            className="spinner-border spinner-border-sm"
+                            role="status"
+                            aria-hidden="true"
+                          />
+                        ) : null}
+                      </div>
                     </div>
                   </div>
                   {description.description ? (
@@ -1349,6 +1424,30 @@ export default function NicheDetailPage() {
               {(differentiatedTechnologies ?? []).map((tech) => (
                 <option key={tech.id} value={tech.id}>
                   {tech.name}
+                </option>
+              ))}
+            </select>
+            <label
+              htmlFor="hypothesis-detailed-description"
+              className="visually-hidden"
+            >
+              Descrição detalhada ativa para orientar hipóteses
+            </label>
+            <select
+              id="hypothesis-detailed-description"
+              className="form-select"
+              title="Descrição detalhada ativa para orientar as hipóteses geradas pelo Worker IA"
+              disabled={requestHypotheses.isPending}
+              {...registerHypothesisRequest("detailedDescriptionId", {
+                setValueAs: (value) => (value ? Number(value) : undefined),
+              })}
+            >
+              <option value="">Sem descrição detalhada ativa</option>
+              {activeDetailedDescriptions.map((description, index) => (
+                <option key={description.id} value={description.id}>
+                  {description.title ||
+                    description.promptName ||
+                    `Descrição #${index + 1}`}
                 </option>
               ))}
             </select>

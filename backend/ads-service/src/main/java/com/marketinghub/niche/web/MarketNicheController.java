@@ -48,8 +48,15 @@ public class MarketNicheController {
                                             @RequestParam("quantity") int quantity,
                                             @RequestParam(value = "model", required = false) String model,
                                             @RequestParam(value = "differentiatedTechnologyId", required = false)
-                                            Long differentiatedTechnologyId) {
-        return mapper.toDto(service.requestHypotheses(id, quantity, model, differentiatedTechnologyId));
+                                            Long differentiatedTechnologyId,
+                                            @RequestParam(value = "detailedDescriptionId", required = false)
+                                            Long detailedDescriptionId) {
+        return mapper.toDto(service.requestHypotheses(
+                id,
+                quantity,
+                model,
+                differentiatedTechnologyId,
+                detailedDescriptionId));
     }
 
     @PatchMapping("/{id}/detailed-descriptions-to-generate")

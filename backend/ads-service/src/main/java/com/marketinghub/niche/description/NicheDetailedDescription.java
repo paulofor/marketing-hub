@@ -64,6 +64,10 @@ public class NicheDetailedDescription {
     @Column(name = "cost_usd", precision = 10, scale = 4)
     private BigDecimal costUsd;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean active = true;
+
     private Integer inputTokens;
 
     private Integer outputTokens;

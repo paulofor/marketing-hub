@@ -22,6 +22,7 @@ public class NicheDetailedDescriptionDto {
     private String prompt;
     private String model;
     private BigDecimal costUsd;
+    private Boolean active;
     private Integer inputTokens;
     private Integer outputTokens;
     private Instant createdAt;

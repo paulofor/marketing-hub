@@ -6,6 +6,8 @@ import com.marketinghub.differentiatedtechnology.DifferentiatedTechnology;
 import com.marketinghub.differentiatedtechnology.repository.DifferentiatedTechnologyRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.dto.CreateMarketNicheRequest;
+import com.marketinghub.niche.description.NicheDetailedDescription;
+import com.marketinghub.niche.description.repository.NicheDetailedDescriptionRepository;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,13 +22,16 @@ public class MarketNicheService {
     private final MarketNicheRepository repository;
     private final ChatDialogRepository chatDialogRepository;
     private final DifferentiatedTechnologyRepository differentiatedTechnologyRepository;
+    private final NicheDetailedDescriptionRepository detailedDescriptionRepository;
 
     public MarketNicheService(MarketNicheRepository repository,
                               ChatDialogRepository chatDialogRepository,
-                              DifferentiatedTechnologyRepository differentiatedTechnologyRepository) {
+                              DifferentiatedTechnologyRepository differentiatedTechnologyRepository,
+                              NicheDetailedDescriptionRepository detailedDescriptionRepository) {
         this.repository = repository;
         this.chatDialogRepository = chatDialogRepository;
         this.differentiatedTechnologyRepository = differentiatedTechnologyRepository;
+        this.detailedDescriptionRepository = detailedDescriptionRepository;
     }
 
     /**
@@ -144,11 +149,25 @@ public class MarketNicheService {
                         "Differentiated technology not found: " + id));
     }
 
+    private NicheDetailedDescription resolveDetailedDescription(Long nicheId, Long descriptionId) {
+        if (descriptionId == null) {
+            return null;
+        }
+        return detailedDescriptionRepository.findByIdAndMarketNicheIdAndActiveTrue(descriptionId, nicheId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Active detailed description not found for niche: " + descriptionId));
+    }
+
     /**
      * Requests generation of new hypotheses by setting the pending quantity.
      */
     @Transactional
-    public MarketNiche requestHypotheses(Long id, int quantity, String model, Long differentiatedTechnologyId) {
+    public MarketNiche requestHypotheses(Long id,
+                                         int quantity,
+                                         String model,
+                                         Long differentiatedTechnologyId,
+                                         Long detailedDescriptionId) {
         MarketNiche niche = repository.findById(id).orElseThrow();
         niche.setHypothesesToGenerate(quantity);
         if (model != null) {
@@ -156,6 +175,9 @@ public class MarketNicheService {
         }
         if (differentiatedTechnologyId != null) {
             niche.setDifferentiatedTechnology(resolveDifferentiatedTechnology(differentiatedTechnologyId));
+        }
+        if (detailedDescriptionId != null) {
+            niche.setHypothesisDetailedDescription(resolveDetailedDescription(id, detailedDescriptionId));
         }
         return niche;
     }

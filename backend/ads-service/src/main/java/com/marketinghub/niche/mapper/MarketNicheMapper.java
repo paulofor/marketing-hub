@@ -12,5 +12,6 @@ import org.mapstruct.Mapping;
 public interface MarketNicheMapper {
     @Mapping(target = "chatDialogId", source = "chatDialog.id")
     @Mapping(target = "differentiatedTechnologyId", source = "differentiatedTechnology.id")
+    @Mapping(target = "hypothesisDetailedDescriptionId", source = "hypothesisDetailedDescription.id")
     MarketNicheDto toDto(MarketNiche niche);
 }

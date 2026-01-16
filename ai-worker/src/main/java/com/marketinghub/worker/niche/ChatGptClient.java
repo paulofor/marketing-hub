@@ -215,20 +215,20 @@ public class ChatGptClient {
     private PromptRenderContext buildPromptContext(MarketNiche niche, int quantity) {
         List<NicheDetailedDescription> detailedDescriptions = List.of();
         if (niche != null && niche.getId() != null) {
-            if (niche.getHypothesisDetailedDescription() != null
-                    && niche.getHypothesisDetailedDescription().getId() != null) {
+            NicheDetailedDescription hypothesisDetailedDescription = resolveHypothesisDetailedDescription(niche);
+            if (hypothesisDetailedDescription != null && hypothesisDetailedDescription.getId() != null) {
                 try {
                     detailedDescriptions = List.of(detailedDescriptionService.getActiveByNicheAndId(
                             niche.getId(),
-                            niche.getHypothesisDetailedDescription().getId()));
+                            hypothesisDetailedDescription.getId()));
                 } catch (Exception ex) {
                     log.warn("Selected detailed description not available for niche {}: {}",
                             niche.getId(),
-                            niche.getHypothesisDetailedDescription().getId());
-                    detailedDescriptions = detailedDescriptionService.listActiveByNiche(niche.getId());
+                            hypothesisDetailedDescription.getId());
+                    detailedDescriptions = listDetailedDescriptions(niche.getId());
                 }
             } else {
-                detailedDescriptions = detailedDescriptionService.listActiveByNiche(niche.getId());
+                detailedDescriptions = listDetailedDescriptions(niche.getId());
             }
         }
         Map<String, Object> context = new HashMap<>();
@@ -450,6 +450,43 @@ public class ChatGptClient {
 
     private static String customId(MarketNiche niche) {
         return "niche-" + niche.getId();
+    }
+
+    private List<NicheDetailedDescription> listDetailedDescriptions(Long nicheId) {
+        try {
+            java.lang.reflect.Method method = detailedDescriptionService.getClass()
+                    .getMethod("listActiveByNiche", Long.class);
+            Object response = method.invoke(detailedDescriptionService, nicheId);
+            if (response instanceof List<?> list) {
+                return list.stream()
+                        .filter(NicheDetailedDescription.class::isInstance)
+                        .map(NicheDetailedDescription.class::cast)
+                        .toList();
+            }
+        } catch (NoSuchMethodException ignored) {
+            // Older ads-service versions expose only listByNiche.
+        } catch (Exception ex) {
+            log.warn("Failed to call listActiveByNiche for niche {}: {}", nicheId, ex.getMessage());
+        }
+        return detailedDescriptionService.listByNiche(nicheId);
+    }
+
+    private static NicheDetailedDescription resolveHypothesisDetailedDescription(MarketNiche niche) {
+        if (niche == null) {
+            return null;
+        }
+        try {
+            java.lang.reflect.Method method = niche.getClass().getMethod("getHypothesisDetailedDescription");
+            Object response = method.invoke(niche);
+            if (response instanceof NicheDetailedDescription description) {
+                return description;
+            }
+        } catch (NoSuchMethodException ignored) {
+            // Older ads-service versions do not provide hypothesisDetailedDescription.
+        } catch (Exception ex) {
+            log.warn("Failed to resolve hypothesis detailed description for niche {}: {}", niche.getId(), ex.getMessage());
+        }
+        return null;
     }
 
     private record PromptRenderContext(Map<String, Object> context, List<Long> descriptionIds, List<String> attributeNames) {}

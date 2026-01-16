@@ -507,9 +507,29 @@ public class ChatGptClient {
         }
         return listDetailedDescriptions(nicheId).stream()
                 .filter(description -> descriptionId.equals(description.getId()))
-                .filter(description -> Boolean.TRUE.equals(description.getActive()))
+                .filter(this::isDescriptionActive)
                 .findFirst()
                 .orElse(null);
+    }
+
+    private boolean isDescriptionActive(NicheDetailedDescription description) {
+        if (description == null) {
+            return false;
+        }
+        try {
+            java.lang.reflect.Method method = description.getClass().getMethod("getActive");
+            Object response = method.invoke(description);
+            if (response instanceof Boolean active) {
+                return Boolean.TRUE.equals(active);
+            }
+        } catch (NoSuchMethodException ignored) {
+            return true;
+        } catch (Exception ex) {
+            log.warn("Failed to resolve active state for detailed description {}: {}",
+                    description.getId(),
+                    ex.getMessage());
+        }
+        return false;
     }
 
     private record PromptRenderContext(Map<String, Object> context, List<Long> descriptionIds, List<String> attributeNames) {}

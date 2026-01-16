@@ -1,12 +1,15 @@
 import { Link, useNavigate } from "react-router-dom";
+import { useState, useMemo } from "react";
 import PageTitle from "../../components/PageTitle";
 import { usePrompts } from "../../api/promptTemplate/usePrompts";
-import { useState } from "react";
-import { PROMPT_DOMAINS } from "../../constants/prompts";
+import { usePromptDomains } from "../../api/promptDomain/usePromptDomains";
 import { useActivatePrompt } from "../../api/promptTemplate/useActivatePrompt";
 
 export default function PromptListPage() {
-  const [domain, setDomain] = useState(PROMPT_DOMAINS[0]?.value ?? "");
+  const [domain, setDomain] = useState("");
+  const { data: domainData, isLoading: isLoadingDomains } = usePromptDomains();
+  const domainOptions = domainData ?? [];
+  const domainLabels = useMemo(() => new Map(domainOptions.map((item) => [item.code, item.name])), [domainOptions]);
   const { data, isLoading } = usePrompts(domain || undefined);
   const prompts = Array.isArray(data) ? data : [];
   const navigate = useNavigate();
@@ -35,11 +38,12 @@ export default function PromptListPage() {
             className="form-select"
             value={domain}
             onChange={(event) => setDomain(event.target.value)}
+            disabled={isLoadingDomains}
           >
             <option value="">Todos</option>
-            {PROMPT_DOMAINS.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
+            {domainOptions.map((item) => (
+              <option key={item.code} value={item.code}>
+                {item.name}
               </option>
             ))}
           </select>
@@ -64,7 +68,7 @@ export default function PromptListPage() {
               {prompts.map((prompt) => (
                 <tr key={prompt.id} className={prompt.active ? "table-success" : ""}>
                   <td>{prompt.name}</td>
-                  <td>{prompt.domain}</td>
+                  <td>{domainLabels.get(prompt.domain) ?? prompt.domain}</td>
                   <td>
                     {prompt.active ? (
                       <span className="badge text-bg-success">Ativo</span>

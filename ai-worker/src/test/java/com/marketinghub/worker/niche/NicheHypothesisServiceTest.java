@@ -8,11 +8,14 @@ import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.prompt.PromptAttribute;
 import com.marketinghub.prompt.PromptAttributeDescription;
+import com.marketinghub.prompt.PromptDomain;
+import com.marketinghub.prompt.PromptDomainObjectType;
 import com.marketinghub.prompt.PromptEntity;
 import com.marketinghub.prompt.PromptDomains;
 import com.marketinghub.prompt.Prompt;
 import com.marketinghub.prompt.repository.PromptAttributeDescriptionRepository;
 import com.marketinghub.prompt.repository.PromptAttributeRepository;
+import com.marketinghub.prompt.repository.PromptDomainRepository;
 import com.marketinghub.prompt.repository.PromptEntityRepository;
 import com.marketinghub.prompt.repository.PromptRepository;
 import com.marketinghub.worker.config.TestServiceMocksConfig;
@@ -79,6 +82,9 @@ class NicheHypothesisServiceTest {
     PromptAttributeDescriptionRepository descriptionRepository;
 
     @Autowired
+    PromptDomainRepository promptDomainRepository;
+
+    @Autowired
     PromptRepository promptRepository;
 
     @Value("${openai.model}")
@@ -104,7 +110,10 @@ class NicheHypothesisServiceTest {
         descriptionRepository.deleteAll();
         attributeRepository.deleteAll();
         entityRepository.deleteAll();
+        promptDomainRepository.deleteAll();
+        promptDomainRepository.flush();
         promptRepository.deleteAll();
+        seedPromptDomains();
         createActivePrompt();
     }
 
@@ -115,6 +124,25 @@ class NicheHypothesisServiceTest {
                 .template("Generate hypotheses.")
                 .active(true)
                 .build());
+    }
+
+    private void seedPromptDomains() {
+        PromptDomain descriptions = new PromptDomain();
+        descriptions.setCode(PromptDomains.NICHE_DETAILED_DESCRIPTION);
+        descriptions.setName("Descrições detalhadas");
+        descriptions.setObjectTypes(List.of(PromptDomainObjectType.NICHE));
+        promptDomainRepository.save(descriptions);
+
+        PromptDomain hypotheses = new PromptDomain();
+        hypotheses.setCode(PromptDomains.NICHE_HYPOTHESIS);
+        hypotheses.setName("Hipóteses");
+        hypotheses.setObjectTypes(List.of(
+                PromptDomainObjectType.NICHE,
+                PromptDomainObjectType.DETAILED_DESCRIPTION,
+                PromptDomainObjectType.DIFFERENTIATED_TECHNOLOGY,
+                PromptDomainObjectType.HYPOTHESIS
+        ));
+        promptDomainRepository.save(hypotheses);
     }
 
     @Test

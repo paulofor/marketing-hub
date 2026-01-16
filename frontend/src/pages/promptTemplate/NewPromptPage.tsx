@@ -1,8 +1,8 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useCreatePrompt } from "../../api/promptTemplate/useCreatePrompt";
+import { usePromptDomains } from "../../api/promptDomain/usePromptDomains";
 import PageTitle from "../../components/PageTitle";
-import { PROMPT_DOMAINS } from "../../constants/prompts";
 import PromptForm, { PromptFormValues } from "./PromptForm";
 
 const DEFAULT_PROMPT_TEMPLATES: Record<string, string> = {
@@ -53,11 +53,13 @@ O campo "price" deve ser um número.
 Retorne apenas um array JSON com esses objetos, sem texto adicional.`,
 };
 
-const DEFAULT_DOMAIN = PROMPT_DOMAINS[0]?.value ?? "";
-
 export default function NewPromptPage() {
   const navigate = useNavigate();
   const createPrompt = useCreatePrompt();
+  const { data: domains, isLoading } = usePromptDomains();
+  const domainOptions = domains ?? [];
+  const defaultDomain = domainOptions[0]?.code ?? "";
+  const defaultTemplate = defaultDomain ? DEFAULT_PROMPT_TEMPLATES[defaultDomain] ?? "" : "";
 
   async function handleSubmit(values: PromptFormValues) {
     await createPrompt.mutateAsync(values);
@@ -65,14 +67,33 @@ export default function NewPromptPage() {
     navigate("/prompts");
   }
 
+  if (isLoading) {
+    return <p>Carregando domínios disponíveis...</p>;
+  }
+
+  if (domainOptions.length === 0) {
+    return (
+      <div className="d-flex flex-column gap-3">
+        <PageTitle>Novo prompt</PageTitle>
+        <div className="alert alert-warning" role="status">
+          <p className="mb-2">Nenhum domínio de prompt foi configurado ainda.</p>
+          <Link to="/prompt-domains/new" className="btn btn-sm btn-primary">
+            Criar domínio
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="d-flex flex-column gap-3">
       <PageTitle>Novo prompt</PageTitle>
       <PromptForm
+        domains={domainOptions}
         initialValues={{
           name: "",
-          domain: DEFAULT_DOMAIN,
-          template: DEFAULT_PROMPT_TEMPLATES[DEFAULT_DOMAIN] ?? "",
+          domain: defaultDomain,
+          template: defaultTemplate,
           active: true,
         }}
         defaultTemplates={DEFAULT_PROMPT_TEMPLATES}

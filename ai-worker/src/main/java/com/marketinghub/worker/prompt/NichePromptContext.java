@@ -1,5 +1,6 @@
 package com.marketinghub.worker.prompt;
 
+import com.marketinghub.differentiatedtechnology.DifferentiatedTechnology;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.description.NicheDetailedDescription;
 
@@ -19,7 +20,9 @@ public record NichePromptContext(Long id,
                                  String interestCategory,
                                  String roleCategory,
                                  List<Map<String, Object>> detailedDescriptions,
-                                 Map<String, Object> latestDetailedDescription) {
+                                 Map<String, Object> latestDetailedDescription,
+                                 Map<String, Object> hypothesisDetailedDescription,
+                                 Map<String, Object> differentiatedTechnology) {
 
     public Map<String, Object> asMap() {
         Map<String, Object> map = new LinkedHashMap<>();
@@ -34,6 +37,8 @@ public record NichePromptContext(Long id,
         map.put("roleCategory", roleCategory);
         map.put("detailedDescriptions", detailedDescriptions);
         map.put("latestDetailedDescription", latestDetailedDescription);
+        map.put("hypothesisDetailedDescription", hypothesisDetailedDescription);
+        map.put("differentiatedTechnology", differentiatedTechnology);
         return map;
     }
 
@@ -81,6 +86,14 @@ public record NichePromptContext(Long id,
         return latestDetailedDescription;
     }
 
+    public Map<String, Object> getHypothesisDetailedDescription() {
+        return hypothesisDetailedDescription;
+    }
+
+    public Map<String, Object> getDifferentiatedTechnology() {
+        return differentiatedTechnology;
+    }
+
     public static NichePromptContext from(MarketNiche niche) {
         return from(niche, List.of());
     }
@@ -100,6 +113,12 @@ public record NichePromptContext(Long id,
         Map<String, Object> latestDetailedDescription = descriptionContext.isEmpty()
                 ? null
                 : descriptionContext.get(descriptionContext.size() - 1);
+        Map<String, Object> selectedDetailedDescription = Optional.ofNullable(niche.getHypothesisDetailedDescription())
+                .map(NichePromptContext::mapDetailedDescription)
+                .orElse(null);
+        Map<String, Object> differentiatedTechnology = Optional.ofNullable(niche.getDifferentiatedTechnology())
+                .map(NichePromptContext::mapDifferentiatedTechnology)
+                .orElse(null);
         return new NichePromptContext(
                 niche.getId(),
                 niche.getName(),
@@ -111,7 +130,9 @@ public record NichePromptContext(Long id,
                 niche.getInterestCategory(),
                 niche.getRoleCategory(),
                 descriptionContext,
-                latestDetailedDescription
+                latestDetailedDescription,
+                selectedDetailedDescription,
+                differentiatedTechnology
         );
     }
 
@@ -127,6 +148,17 @@ public record NichePromptContext(Long id,
         map.put("prompt", description.getPrompt());
         map.put("createdAt", description.getCreatedAt());
         map.put("updatedAt", description.getUpdatedAt());
+        return map;
+    }
+
+    private static Map<String, Object> mapDifferentiatedTechnology(DifferentiatedTechnology technology) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", technology.getId());
+        map.put("name", technology.getName());
+        map.put("description", technology.getDescription());
+        map.put("promptText", technology.getPromptText());
+        map.put("createdAt", technology.getCreatedAt());
+        map.put("updatedAt", technology.getUpdatedAt());
         return map;
     }
 }

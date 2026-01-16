@@ -26,13 +26,19 @@ Nome: ${'${niche.name}'}
 <#if niche.interests?has_content>Interesses: ${'${niche.interests}'}</#if>
 <#if niche.demographicFilters?has_content>Filtros demográficos: ${'${niche.demographicFilters}'}</#if>
 <#if niche.extraTips?has_content>Dicas extras: ${'${niche.extraTips}'}</#if>
-<#if niche.latestDetailedDescription?has_content>
-Use a descrição detalhada mais recente (a última por createdAt/id) como referência:
-<#if niche.latestDetailedDescription.title?has_content>Título: ${'${niche.latestDetailedDescription.title}'}</#if>
-<#if niche.latestDetailedDescription.description?has_content>Descrição: ${'${niche.latestDetailedDescription.description}'}</#if>
-<#if niche.latestDetailedDescription.pains?has_content>Dores: ${'${niche.latestDetailedDescription.pains}'}</#if>
-<#if niche.latestDetailedDescription.desires?has_content>Desejos: ${'${niche.latestDetailedDescription.desires}'}</#if>
-<#if niche.latestDetailedDescription.needs?has_content>Necessidades: ${'${niche.latestDetailedDescription.needs}'}</#if>
+<#if detailedDescription?has_content>
+Use a descrição detalhada selecionada como referência:
+<#if detailedDescription.title?has_content>Título: ${'${detailedDescription.title}'}</#if>
+<#if detailedDescription.description?has_content>Descrição: ${'${detailedDescription.description}'}</#if>
+<#if detailedDescription.pains?has_content>Dores: ${'${detailedDescription.pains}'}</#if>
+<#if detailedDescription.desires?has_content>Desejos: ${'${detailedDescription.desires}'}</#if>
+<#if detailedDescription.needs?has_content>Necessidades: ${'${detailedDescription.needs}'}</#if>
+</#if>
+<#if technology?has_content>
+Considere a tecnologia diferenciada selecionada pelo usuário:
+<#if technology.name?has_content>Nome: ${'${technology.name}'}</#if>
+<#if technology.description?has_content>Descrição: ${'${technology.description}'}</#if>
+<#if technology.promptText?has_content>Instruções adicionais: ${'${technology.promptText}'}</#if>
 </#if>
 <#if attributes?has_content>
 Cada objeto deve conter as chaves: <#list attributes as attr>"${'${attr.name}'}"<#if attr_has_next>, </#if></#list>.

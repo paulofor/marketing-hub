@@ -234,9 +234,15 @@ public class ChatGptClient {
         }
         Map<String, Object> context = new HashMap<>();
         context.put("quantity", quantity);
-        context.put("niche", Optional.ofNullable(NichePromptContext.from(niche, detailedDescriptions))
+        NichePromptContext promptContext = Optional.ofNullable(NichePromptContext.from(niche, detailedDescriptions)).orElse(null);
+        Map<String, Object> nicheContext = Optional.ofNullable(promptContext)
                 .map(NichePromptContext::asMap)
-                .orElse(null));
+                .orElse(null);
+        context.put("niche", nicheContext);
+        if (nicheContext != null) {
+            context.put("detailedDescription", nicheContext.get("hypothesisDetailedDescription"));
+            context.put("technology", nicheContext.get("differentiatedTechnology"));
+        }
 
         List<Long> descriptionIds = new ArrayList<>();
         List<Map<String, Object>> attributes = new ArrayList<>();

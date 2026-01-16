@@ -9,6 +9,7 @@ import com.marketinghub.niche.dto.CreateMarketNicheRequest;
 import com.marketinghub.niche.description.NicheDetailedDescription;
 import com.marketinghub.niche.description.repository.NicheDetailedDescriptionRepository;
 import com.marketinghub.niche.repository.MarketNicheRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ public class MarketNicheService {
     private final DifferentiatedTechnologyRepository differentiatedTechnologyRepository;
     private final NicheDetailedDescriptionRepository detailedDescriptionRepository;
 
+    @Autowired
     public MarketNicheService(MarketNicheRepository repository,
                               ChatDialogRepository chatDialogRepository,
                               DifferentiatedTechnologyRepository differentiatedTechnologyRepository,
@@ -32,6 +34,12 @@ public class MarketNicheService {
         this.chatDialogRepository = chatDialogRepository;
         this.differentiatedTechnologyRepository = differentiatedTechnologyRepository;
         this.detailedDescriptionRepository = detailedDescriptionRepository;
+    }
+
+    public MarketNicheService(MarketNicheRepository repository,
+                              ChatDialogRepository chatDialogRepository,
+                              DifferentiatedTechnologyRepository differentiatedTechnologyRepository) {
+        this(repository, chatDialogRepository, differentiatedTechnologyRepository, null);
     }
 
     /**
@@ -180,6 +188,13 @@ public class MarketNicheService {
             niche.setHypothesisDetailedDescription(resolveDetailedDescription(id, detailedDescriptionId));
         }
         return niche;
+    }
+
+    public MarketNiche requestHypotheses(Long id,
+                                         int quantity,
+                                         String model,
+                                         Long differentiatedTechnologyId) {
+        return requestHypotheses(id, quantity, model, differentiatedTechnologyId, null);
     }
 
     public Iterable<MarketNiche> list() {

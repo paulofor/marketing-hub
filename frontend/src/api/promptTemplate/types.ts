@@ -14,3 +14,15 @@ export interface PromptPayload {
   template: string;
   active?: boolean;
 }
+
+export interface PromptTemplateValidationRequest {
+  domain: string;
+  template: string;
+}
+
+export interface PromptTemplateValidationResponse {
+  valid: boolean;
+  message: string;
+  missingVariables: string[];
+  availableVariables: string[];
+}

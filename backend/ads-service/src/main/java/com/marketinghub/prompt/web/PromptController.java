@@ -2,9 +2,12 @@ package com.marketinghub.prompt.web;
 
 import com.marketinghub.prompt.dto.CreatePromptRequest;
 import com.marketinghub.prompt.dto.PromptDto;
+import com.marketinghub.prompt.dto.PromptTemplateValidationRequest;
+import com.marketinghub.prompt.dto.PromptTemplateValidationResponse;
 import com.marketinghub.prompt.dto.UpdatePromptRequest;
 import com.marketinghub.prompt.mapper.PromptMapper;
 import com.marketinghub.prompt.service.PromptService;
+import com.marketinghub.prompt.service.PromptTemplateValidationService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,10 +18,12 @@ import java.util.stream.Collectors;
 public class PromptController {
     private final PromptService service;
     private final PromptMapper mapper;
+    private final PromptTemplateValidationService validationService;
 
-    public PromptController(PromptService service, PromptMapper mapper) {
+    public PromptController(PromptService service, PromptMapper mapper, PromptTemplateValidationService validationService) {
         this.service = service;
         this.mapper = mapper;
+        this.validationService = validationService;
     }
 
     @GetMapping
@@ -44,5 +49,10 @@ public class PromptController {
     @PostMapping("/{id}/activate")
     public PromptDto activate(@PathVariable Long id) {
         return mapper.toDto(service.activate(id));
+    }
+
+    @PostMapping("/validate")
+    public PromptTemplateValidationResponse validate(@RequestBody PromptTemplateValidationRequest request) {
+        return validationService.validate(request);
     }
 }

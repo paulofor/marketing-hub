@@ -1,4 +1,7 @@
 import { FormEvent, useMemo, useState } from "react";
+import { toast } from "react-toastify";
+import { useValidatePromptTemplate } from "../../api/promptTemplate/useValidatePromptTemplate";
+import { PromptTemplateValidationResponse } from "../../api/promptTemplate/types";
 import { PROMPT_DOMAINS, PROMPT_VARIABLES } from "../../constants/prompts";
 
 export interface PromptFormValues {
@@ -21,8 +24,11 @@ export default function PromptForm({ initialValues, isSubmitting, onSubmit, defa
   const [domain, setDomain] = useState(initialDomain);
   const [template, setTemplate] = useState(initialValues?.template ?? defaultTemplates?.[initialDomain] ?? "");
   const [active, setActive] = useState(Boolean(initialValues?.active));
+  const [validationResult, setValidationResult] = useState<PromptTemplateValidationResponse | null>(null);
+  const validatePrompt = useValidatePromptTemplate();
 
   const variables = useMemo(() => PROMPT_VARIABLES[domain] ?? [], [domain]);
+  const isBusy = Boolean(isSubmitting || validatePrompt.isPending);
 
   const handleDomainChange = (newDomain: string) => {
     setDomain(newDomain);
@@ -36,8 +42,32 @@ export default function PromptForm({ initialValues, isSubmitting, onSubmit, defa
     }
   };
 
+  const runValidation = async () => {
+    try {
+      const result = await validatePrompt.mutateAsync({ domain, template });
+      setValidationResult(result);
+      if (result.valid) {
+        toast.success("Template validado com sucesso");
+      }
+      return result;
+    } catch (error) {
+      setValidationResult({
+        valid: false,
+        message: "Não foi possível validar o template no momento.",
+        missingVariables: [],
+        availableVariables: [],
+      });
+      toast.error("Falha ao validar o template");
+      return null;
+    }
+  };
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    const validation = await runValidation();
+    if (!validation?.valid) {
+      return;
+    }
     await onSubmit({
       name: name.trim(),
       domain,
@@ -52,7 +82,7 @@ export default function PromptForm({ initialValues, isSubmitting, onSubmit, defa
         <div className="row g-3">
           <div className="col-md-6">
             <label htmlFor="prompt-name" className="form-label">
-              Nome
+              Nome *
             </label>
             <input
               id="prompt-name"
@@ -67,7 +97,7 @@ export default function PromptForm({ initialValues, isSubmitting, onSubmit, defa
           </div>
           <div className="col-md-6">
             <label htmlFor="prompt-domain" className="form-label">
-              Domínio / uso
+              Domínio / uso *
             </label>
             <select
               id="prompt-domain"
@@ -105,7 +135,7 @@ export default function PromptForm({ initialValues, isSubmitting, onSubmit, defa
 
         <div>
           <label htmlFor="prompt-template" className="form-label">
-            Template (FreeMarker)
+            Template (FreeMarker) *
           </label>
           <textarea
             id="prompt-template"
@@ -138,8 +168,32 @@ export default function PromptForm({ initialValues, isSubmitting, onSubmit, defa
           )}
         </div>
 
+        {validationResult ? (
+          <div className={`alert ${validationResult.valid ? "alert-success" : "alert-danger"}`} role="status">
+            <p className="mb-1 fw-semibold">{validationResult.message}</p>
+            {!validationResult.valid && validationResult.missingVariables.length > 0 ? (
+              <div>
+                <p className="mb-1">Variáveis ausentes ou inválidas:</p>
+                <ul className="mb-0">
+                  {validationResult.missingVariables.map((variable) => (
+                    <li key={variable}>
+                      <code>{variable}</code>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="d-flex justify-content-end gap-2">
-          <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+          <button type="button" className="btn btn-outline-primary" onClick={runValidation} disabled={isBusy}>
+            {validatePrompt.isPending ? (
+              <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+            ) : null}
+            <span className="ms-2">Validar sintaxe</span>
+          </button>
+          <button type="submit" className="btn btn-primary" disabled={isBusy}>
             {isSubmitting ? (
               <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
             ) : null}

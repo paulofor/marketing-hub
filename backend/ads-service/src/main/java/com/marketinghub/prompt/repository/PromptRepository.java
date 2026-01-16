@@ -16,6 +16,8 @@ public interface PromptRepository extends JpaRepository<Prompt, Long> {
 
     Optional<Prompt> findFirstByDomainAndActiveTrueOrderByUpdatedAtDesc(String domain);
 
+    boolean existsByDomainIgnoreCase(String domain);
+
     @Modifying
     @Query("update Prompt p set p.active = false where p.domain = :domain and p.id <> :id")
     void deactivateOthers(@Param("domain") String domain, @Param("id") Long id);

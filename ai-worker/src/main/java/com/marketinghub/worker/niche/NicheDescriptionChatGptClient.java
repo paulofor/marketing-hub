@@ -7,7 +7,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.description.dto.CreateNicheDetailedDescriptionRequest;
 import com.marketinghub.prompt.Prompt;
+import com.marketinghub.prompt.PromptDomainObjectType;
 import com.marketinghub.prompt.PromptDomains;
+import com.marketinghub.prompt.service.PromptDomainService;
 import com.marketinghub.prompt.service.PromptService;
 import com.marketinghub.worker.prompt.NichePromptContext;
 import com.marketinghub.worker.prompt.PromptTemplateRenderer;
@@ -51,12 +53,14 @@ public class NicheDescriptionChatGptClient {
     private final String defaultModel;
     private final AiGenerationRecorder generationRecorder;
     private final PromptService promptService;
+    private final PromptDomainService promptDomainService;
     private final PromptTemplateRenderer promptTemplateRenderer;
 
     public NicheDescriptionChatGptClient(WebClient.Builder builder,
                                          ObjectMapper objectMapper,
                                          AiGenerationRecorder generationRecorder,
                                          PromptService promptService,
+                                         PromptDomainService promptDomainService,
                                          PromptTemplateRenderer promptTemplateRenderer,
                                          @Value("${openai.api-key:}") String apiKey,
                                          @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
@@ -69,6 +73,7 @@ public class NicheDescriptionChatGptClient {
         this.objectMapper = objectMapper;
         this.generationRecorder = generationRecorder;
         this.promptService = promptService;
+        this.promptDomainService = promptDomainService;
         this.promptTemplateRenderer = promptTemplateRenderer;
         this.defaultModel = defaultModel;
     }
@@ -146,9 +151,19 @@ public class NicheDescriptionChatGptClient {
         return result;
     }
     private PromptData buildPrompt(Prompt promptTemplate, MarketNiche niche, int quantity) {
+        List<PromptDomainObjectType> objects = promptDomainService.getObjectTypes(DOMAIN);
+        boolean includeNiche = objects.contains(PromptDomainObjectType.NICHE);
+        boolean includeTechnology = objects.contains(PromptDomainObjectType.DIFFERENTIATED_TECHNOLOGY);
+
         Map<String, Object> context = new HashMap<>();
         context.put("quantity", quantity);
-        context.put("niche", Optional.ofNullable(NichePromptContext.from(niche)).map(NichePromptContext::asMap).orElse(null));
+        NichePromptContext promptContext = Optional.ofNullable(NichePromptContext.from(niche)).orElse(null);
+        if (includeNiche) {
+            context.put("niche", promptContext != null ? promptContext.asMap() : null);
+        }
+        if (includeTechnology) {
+            context.put("technology", promptContext != null ? promptContext.getDifferentiatedTechnology() : null);
+        }
         log.info("Building detailed description prompt. promptId={}, nicheId={}, quantity={}, context={}",
                 promptTemplate.getId(), niche != null ? niche.getId() : null, quantity, context);
         String rendered = promptTemplateRenderer.render(promptTemplate.getTemplate(), context);

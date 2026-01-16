@@ -93,6 +93,9 @@ import PaymentDetailPage from "./pages/payments/PaymentDetailPage";
 import PromptListPage from "./pages/promptTemplate/PromptListPage";
 import NewPromptPage from "./pages/promptTemplate/NewPromptPage";
 import EditPromptPage from "./pages/promptTemplate/EditPromptPage";
+import PromptDomainListPage from "./pages/promptDomain/PromptDomainListPage";
+import NewPromptDomainPage from "./pages/promptDomain/NewPromptDomainPage";
+import EditPromptDomainPage from "./pages/promptDomain/EditPromptDomainPage";
 
 export default function App() {
   return (
@@ -252,6 +255,9 @@ export default function App() {
               <Route path="/chat-dialogs" element={<ChatDialogListPage />} />
               <Route path="/chat-dialogs/new" element={<NewChatDialogPage />} />
               <Route path="/prompt-entities" element={<PromptEntitiesPage />} />
+              <Route path="/prompt-domains" element={<PromptDomainListPage />} />
+              <Route path="/prompt-domains/new" element={<NewPromptDomainPage />} />
+              <Route path="/prompt-domains/:id/edit" element={<EditPromptDomainPage />} />
               <Route
                 path="/prompt-entities/new"
                 element={<NewPromptEntityPage />}

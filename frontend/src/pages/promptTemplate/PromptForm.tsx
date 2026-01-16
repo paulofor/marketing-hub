@@ -1,8 +1,8 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import { useValidatePromptTemplate } from "../../api/promptTemplate/useValidatePromptTemplate";
 import { PromptTemplateValidationResponse } from "../../api/promptTemplate/types";
-import { PROMPT_DOMAINS, PROMPT_VARIABLES } from "../../constants/prompts";
+import type { PromptDomain } from "../../api/promptDomain/types";
 
 export interface PromptFormValues {
   name: string;
@@ -16,10 +16,19 @@ interface PromptFormProps {
   isSubmitting?: boolean;
   onSubmit: (values: PromptFormValues) => Promise<void> | void;
   defaultTemplates?: Record<string, string>;
+  domains: PromptDomain[];
+  isLoadingDomains?: boolean;
 }
 
-export default function PromptForm({ initialValues, isSubmitting, onSubmit, defaultTemplates }: PromptFormProps) {
-  const initialDomain = initialValues?.domain ?? PROMPT_DOMAINS[0]?.value ?? "";
+export default function PromptForm({
+  initialValues,
+  isSubmitting,
+  onSubmit,
+  defaultTemplates,
+  domains,
+  isLoadingDomains,
+}: PromptFormProps) {
+  const initialDomain = initialValues?.domain ?? domains[0]?.code ?? "";
   const [name, setName] = useState(initialValues?.name ?? "");
   const [domain, setDomain] = useState(initialDomain);
   const [template, setTemplate] = useState(initialValues?.template ?? defaultTemplates?.[initialDomain] ?? "");
@@ -27,7 +36,52 @@ export default function PromptForm({ initialValues, isSubmitting, onSubmit, defa
   const [validationResult, setValidationResult] = useState<PromptTemplateValidationResponse | null>(null);
   const validatePrompt = useValidatePromptTemplate();
 
-  const variables = useMemo(() => PROMPT_VARIABLES[domain] ?? [], [domain]);
+  useEffect(() => {
+    setName(initialValues?.name ?? "");
+  }, [initialValues?.name]);
+
+  useEffect(() => {
+    if (initialValues?.domain) {
+      setDomain(initialValues.domain);
+    } else if (!domain && domains[0]) {
+      setDomain(domains[0].code);
+    }
+  }, [initialValues?.domain, domains, domain]);
+
+  useEffect(() => {
+    if (initialValues?.template !== undefined) {
+      setTemplate(initialValues.template);
+    } else if (defaultTemplates && domain && defaultTemplates[domain]) {
+      setTemplate(defaultTemplates[domain]);
+    }
+  }, [initialValues?.template, domain, defaultTemplates]);
+
+  useEffect(() => {
+    setActive(Boolean(initialValues?.active));
+  }, [initialValues?.active]);
+
+  const displayedDomains = useMemo(() => {
+    if (!domain) return domains;
+    if (domains.some((item) => item.code === domain)) {
+      return domains;
+    }
+    if (!domain) return domains;
+    return [
+      ...domains,
+      {
+        id: -1,
+        code: domain,
+        name: domain,
+        description: "Domínio não encontrado (desativado)",
+        objects: [],
+        availableVariables: [],
+      },
+    ];
+  }, [domains, domain]);
+
+  const selectedDomain = displayedDomains.find((item) => item.code === domain);
+  const variables = useMemo(() => selectedDomain?.availableVariables ?? [], [selectedDomain]);
+  const objects = selectedDomain?.objects ?? [];
   const isBusy = Boolean(isSubmitting || validatePrompt.isPending);
 
   const handleDomainChange = (newDomain: string) => {
@@ -43,6 +97,10 @@ export default function PromptForm({ initialValues, isSubmitting, onSubmit, defa
   };
 
   const runValidation = async () => {
+    if (!domain) {
+      toast.error("Selecione um domínio antes de validar");
+      return null;
+    }
     try {
       const result = await validatePrompt.mutateAsync({ domain, template });
       setValidationResult(result);
@@ -51,6 +109,7 @@ export default function PromptForm({ initialValues, isSubmitting, onSubmit, defa
       }
       return result;
     } catch (error) {
+      console.error(error);
       setValidationResult({
         valid: false,
         message: "Não foi possível validar o template no momento.",
@@ -74,6 +133,14 @@ export default function PromptForm({ initialValues, isSubmitting, onSubmit, defa
       template,
       active,
     });
+  }
+
+  if (isLoadingDomains) {
+    return <p>Carregando domínios...</p>;
+  }
+
+  if (displayedDomains.length === 0) {
+    return <p>Nenhum domínio disponível.</p>;
   }
 
   return (
@@ -107,13 +174,26 @@ export default function PromptForm({ initialValues, isSubmitting, onSubmit, defa
               required
               disabled={isSubmitting}
             >
-              {PROMPT_DOMAINS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
+              {displayedDomains.map((item) => (
+                <option key={item.code} value={item.code}>
+                  {item.name}
                 </option>
               ))}
             </select>
-            <div className="form-text">Escolha onde este prompt será aplicado.</div>
+            <div className="form-text">
+              {objects.length > 0 ? (
+                <span className="d-inline-flex flex-wrap gap-2">
+                  Objetos habilitados:
+                  {objects.map((object) => (
+                    <span key={object.slug} className="badge text-bg-light">
+                      {object.label}
+                    </span>
+                  ))}
+                </span>
+              ) : (
+                <span>Este domínio não possui objetos configurados.</span>
+              )}
+            </div>
           </div>
         </div>
 

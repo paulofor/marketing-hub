@@ -1,8 +1,9 @@
 package com.marketinghub.prompt.service;
 
-import com.marketinghub.prompt.PromptDomains;
+import com.marketinghub.prompt.PromptDomainObjectType;
 import com.marketinghub.prompt.dto.PromptTemplateValidationRequest;
 import com.marketinghub.prompt.dto.PromptTemplateValidationResponse;
+import jakarta.persistence.EntityNotFoundException;
 import freemarker.core.InvalidReferenceException;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
@@ -14,20 +15,19 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Service
 public class PromptTemplateValidationService {
-    private static final int AVAILABLE_VARIABLE_LIMIT = 120;
     private final Configuration configuration;
+    private final PromptDomainService promptDomainService;
+    private final PromptDomainContextFactory contextFactory;
 
-    public PromptTemplateValidationService() {
+    public PromptTemplateValidationService(PromptDomainService promptDomainService,
+                                           PromptDomainContextFactory contextFactory) {
+        this.promptDomainService = promptDomainService;
+        this.contextFactory = contextFactory;
         this.configuration = new Configuration(Configuration.VERSION_2_3_32);
         this.configuration.setDefaultEncoding(StandardCharsets.UTF_8.name());
         this.configuration.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
@@ -46,13 +46,25 @@ public class PromptTemplateValidationService {
                     .build();
         }
 
-        Map<String, Object> context = buildContext(request.getDomain());
-        List<String> availableVariables = availableVariables(context);
+        Map<String, Object> context;
+        List<String> availableVariables;
+        try {
+            List<PromptDomainObjectType> objects = promptDomainService.getObjectTypes(request.getDomain());
+            context = contextFactory.buildSampleContext(objects);
+            availableVariables = contextFactory.availableVariables(objects);
+        } catch (EntityNotFoundException ex) {
+            return PromptTemplateValidationResponse.builder()
+                    .valid(false)
+                    .message("Domínio não encontrado para validação.")
+                    .missingVariables(List.of())
+                    .availableVariables(List.of())
+                    .build();
+        }
 
         if (context.isEmpty()) {
             return PromptTemplateValidationResponse.builder()
                     .valid(false)
-                    .message("Domínio não suportado para validação.")
+                    .message("Domínio não possui objetos configurados para validação.")
                     .missingVariables(List.of())
                     .availableVariables(availableVariables)
                     .build();
@@ -82,147 +94,6 @@ public class PromptTemplateValidationService {
                     .missingVariables(List.of())
                     .availableVariables(availableVariables)
                     .build();
-        }
-    }
-
-    private Map<String, Object> buildContext(String domain) {
-        if (PromptDomains.NICHE_DETAILED_DESCRIPTION.equals(domain)) {
-            return buildNicheDetailedDescriptionContext();
-        }
-        if (PromptDomains.NICHE_HYPOTHESIS.equals(domain)) {
-            return buildNicheHypothesisContext();
-        }
-        return Map.of();
-    }
-
-    private Map<String, Object> buildNicheDetailedDescriptionContext() {
-        Map<String, Object> context = new LinkedHashMap<>();
-        context.put("quantity", 1);
-        context.put("niche", buildNicheContext(false));
-        return context;
-    }
-
-    private Map<String, Object> buildNicheHypothesisContext() {
-        Map<String, Object> context = new LinkedHashMap<>();
-        context.put("quantity", 1);
-        Map<String, Object> niche = buildNicheContext(true);
-        context.put("niche", niche);
-        context.put("detailedDescription", buildDetailedDescriptionContext());
-        context.put("technology", buildTechnologyContext());
-        context.put("attributes", List.of(buildAttributeContext()));
-        context.put("attributeNames", List.of("title", "promise"));
-        context.put("defaultAttributes", List.of("title", "promise"));
-        return context;
-    }
-
-    private Map<String, Object> buildNicheContext(boolean includeHypothesisFields) {
-        Map<String, Object> niche = new LinkedHashMap<>();
-        niche.put("id", 1L);
-        niche.put("name", "Exemplo");
-        niche.put("description", "Descrição");
-        niche.put("baseSegmentation", "Segmentação");
-        niche.put("interests", "Interesses");
-        niche.put("demographicFilters", "Filtros");
-        niche.put("extraTips", "Dicas");
-        niche.put("interestCategory", "Categoria");
-        niche.put("roleCategory", "Papel");
-        if (includeHypothesisFields) {
-            List<Map<String, Object>> detailedDescriptions = List.of(buildDetailedDescriptionContext());
-            niche.put("detailedDescriptions", detailedDescriptions);
-            niche.put("latestDetailedDescription", buildDetailedDescriptionContext());
-            niche.put("hypothesisDetailedDescription", buildDetailedDescriptionContext());
-            niche.put("differentiatedTechnology", buildDifferentiatedTechnologyContext());
-        }
-        return niche;
-    }
-
-    private Map<String, Object> buildDetailedDescriptionContext() {
-        Map<String, Object> context = new LinkedHashMap<>();
-        context.put("id", 1L);
-        context.put("title", "Título");
-        context.put("description", "Descrição detalhada");
-        context.put("pains", "Dores");
-        context.put("desires", "Desejos");
-        context.put("needs", "Necessidades");
-        context.put("model", "gpt-4o-mini");
-        context.put("prompt", "Prompt");
-        context.put("createdAt", Instant.now());
-        context.put("updatedAt", Instant.now());
-        return context;
-    }
-
-    private Map<String, Object> buildTechnologyContext() {
-        Map<String, Object> context = new LinkedHashMap<>();
-        context.put("id", 1L);
-        context.put("name", "Tecnologia");
-        context.put("description", "Descrição");
-        context.put("promptText", "Texto");
-        context.put("createdAt", Instant.now());
-        context.put("updatedAt", Instant.now());
-        return context;
-    }
-
-    private Map<String, Object> buildDifferentiatedTechnologyContext() {
-        Map<String, Object> context = buildTechnologyContext();
-        context.put("createdAt", Instant.now());
-        context.put("updatedAt", Instant.now());
-        return context;
-    }
-
-    private Map<String, Object> buildAttributeContext() {
-        Map<String, Object> context = new LinkedHashMap<>();
-        context.put("id", 1L);
-        context.put("name", "title");
-        context.put("description", "Descrição do campo");
-        return context;
-    }
-
-    private List<String> availableVariables(Map<String, Object> context) {
-        if (context == null || context.isEmpty()) {
-            return List.of();
-        }
-        Set<String> vars = new LinkedHashSet<>();
-        collectVariables("", context, vars, 3);
-        if (vars.size() > AVAILABLE_VARIABLE_LIMIT) {
-            return vars.stream().limit(AVAILABLE_VARIABLE_LIMIT).toList();
-        }
-        return new ArrayList<>(vars);
-    }
-
-    @SuppressWarnings("unchecked")
-    private void collectVariables(String prefix, Object value, Set<String> acc, int depth) {
-        if (depth < 0 || acc.size() >= AVAILABLE_VARIABLE_LIMIT || value == null) {
-            return;
-        }
-        if (value instanceof Map<?, ?> map) {
-            for (Map.Entry<?, ?> entry : map.entrySet()) {
-                if (!(entry.getKey() instanceof String key)) {
-                    continue;
-                }
-                String path = prefix.isEmpty() ? key : prefix + "." + key;
-                acc.add(path);
-                collectVariables(path, entry.getValue(), acc, depth - 1);
-                if (acc.size() >= AVAILABLE_VARIABLE_LIMIT) {
-                    return;
-                }
-            }
-        } else if (value instanceof List<?> list && !list.isEmpty()) {
-            String listPrefix = prefix.isEmpty() ? "[]" : prefix + "[]";
-            acc.add(listPrefix);
-            Object first = list.get(0);
-            if (first instanceof Map<?, ?> firstMap) {
-                for (Map.Entry<?, ?> entry : firstMap.entrySet()) {
-                    if (!(entry.getKey() instanceof String key)) {
-                        continue;
-                    }
-                    String path = listPrefix + "." + key;
-                    acc.add(path);
-                    collectVariables(path, entry.getValue(), acc, depth - 1);
-                    if (acc.size() >= AVAILABLE_VARIABLE_LIMIT) {
-                        return;
-                    }
-                }
-            }
         }
     }
 

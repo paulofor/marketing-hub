@@ -113,7 +113,7 @@ public record NichePromptContext(Long id,
         Map<String, Object> latestDetailedDescription = descriptionContext.isEmpty()
                 ? null
                 : descriptionContext.get(descriptionContext.size() - 1);
-        Map<String, Object> selectedDetailedDescription = Optional.ofNullable(niche.getHypothesisDetailedDescription())
+        Map<String, Object> selectedDetailedDescription = Optional.ofNullable(resolveHypothesisDetailedDescription(niche))
                 .map(NichePromptContext::mapDetailedDescription)
                 .orElse(null);
         Map<String, Object> differentiatedTechnology = Optional.ofNullable(niche.getDifferentiatedTechnology())
@@ -149,6 +149,24 @@ public record NichePromptContext(Long id,
         map.put("createdAt", description.getCreatedAt());
         map.put("updatedAt", description.getUpdatedAt());
         return map;
+    }
+
+    private static NicheDetailedDescription resolveHypothesisDetailedDescription(MarketNiche niche) {
+        if (niche == null) {
+            return null;
+        }
+        try {
+            java.lang.reflect.Method method = niche.getClass().getMethod("getHypothesisDetailedDescription");
+            Object response = method.invoke(niche);
+            if (response instanceof NicheDetailedDescription description) {
+                return description;
+            }
+        } catch (NoSuchMethodException ignored) {
+            // Older ads-service versions do not provide hypothesisDetailedDescription.
+        } catch (Exception ignored) {
+            return null;
+        }
+        return null;
     }
 
     private static Map<String, Object> mapDifferentiatedTechnology(DifferentiatedTechnology technology) {

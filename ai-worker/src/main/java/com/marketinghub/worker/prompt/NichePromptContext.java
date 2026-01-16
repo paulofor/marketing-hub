@@ -3,6 +3,9 @@ package com.marketinghub.worker.prompt;
 import com.marketinghub.differentiatedtechnology.DifferentiatedTechnology;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.description.NicheDetailedDescription;
+import org.hibernate.Hibernate;
+import org.hibernate.LazyInitializationException;
+import org.hibernate.proxy.HibernateProxy;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -170,7 +173,18 @@ public record NichePromptContext(Long id,
     }
 
     private static Map<String, Object> mapDifferentiatedTechnology(DifferentiatedTechnology technology) {
+        if (technology == null) {
+            return null;
+        }
         Map<String, Object> map = new LinkedHashMap<>();
+        if (!Hibernate.isInitialized(technology)) {
+            try {
+                Hibernate.initialize(technology);
+            } catch (LazyInitializationException ignored) {
+                map.put("id", resolveIdentifier(technology));
+                return map;
+            }
+        }
         map.put("id", technology.getId());
         map.put("name", technology.getName());
         map.put("description", technology.getDescription());
@@ -178,5 +192,15 @@ public record NichePromptContext(Long id,
         map.put("createdAt", technology.getCreatedAt());
         map.put("updatedAt", technology.getUpdatedAt());
         return map;
+    }
+
+    private static Long resolveIdentifier(DifferentiatedTechnology technology) {
+        if (technology instanceof HibernateProxy proxy) {
+            Object id = proxy.getHibernateLazyInitializer().getIdentifier();
+            if (id instanceof Long value) {
+                return value;
+            }
+        }
+        return technology.getId();
     }
 }

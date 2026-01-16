@@ -217,11 +217,12 @@ public class ChatGptClient {
         if (niche != null && niche.getId() != null) {
             NicheDetailedDescription hypothesisDetailedDescription = resolveHypothesisDetailedDescription(niche);
             if (hypothesisDetailedDescription != null && hypothesisDetailedDescription.getId() != null) {
-                try {
-                    detailedDescriptions = List.of(detailedDescriptionService.getActiveByNicheAndId(
-                            niche.getId(),
-                            hypothesisDetailedDescription.getId()));
-                } catch (Exception ex) {
+                NicheDetailedDescription activeDescription = resolveActiveDetailedDescription(
+                        niche.getId(),
+                        hypothesisDetailedDescription.getId());
+                if (activeDescription != null) {
+                    detailedDescriptions = List.of(activeDescription);
+                } else {
                     log.warn("Selected detailed description not available for niche {}: {}",
                             niche.getId(),
                             hypothesisDetailedDescription.getId());
@@ -487,6 +488,28 @@ public class ChatGptClient {
             log.warn("Failed to resolve hypothesis detailed description for niche {}: {}", niche.getId(), ex.getMessage());
         }
         return null;
+    }
+
+    private NicheDetailedDescription resolveActiveDetailedDescription(Long nicheId, Long descriptionId) {
+        try {
+            java.lang.reflect.Method method = detailedDescriptionService.getClass()
+                    .getMethod("getActiveByNicheAndId", Long.class, Long.class);
+            Object response = method.invoke(detailedDescriptionService, nicheId, descriptionId);
+            if (response instanceof NicheDetailedDescription description) {
+                return description;
+            }
+        } catch (NoSuchMethodException ignored) {
+            // Older ads-service versions do not provide getActiveByNicheAndId.
+        } catch (Exception ex) {
+            log.warn("Failed to resolve active detailed description for niche {}: {}",
+                    nicheId,
+                    ex.getMessage());
+        }
+        return listDetailedDescriptions(nicheId).stream()
+                .filter(description -> descriptionId.equals(description.getId()))
+                .filter(description -> Boolean.TRUE.equals(description.getActive()))
+                .findFirst()
+                .orElse(null);
     }
 
     private record PromptRenderContext(Map<String, Object> context, List<Long> descriptionIds, List<String> attributeNames) {}

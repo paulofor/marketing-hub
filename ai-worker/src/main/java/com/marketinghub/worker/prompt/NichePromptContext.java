@@ -116,7 +116,10 @@ public record NichePromptContext(Long id,
         Map<String, Object> latestDetailedDescription = descriptionContext.isEmpty()
                 ? null
                 : descriptionContext.get(descriptionContext.size() - 1);
-        Map<String, Object> selectedDetailedDescription = Optional.ofNullable(resolveHypothesisDetailedDescription(niche))
+        NicheDetailedDescription selectedHypothesisDescription = selectHypothesisDetailedDescription(
+                resolveHypothesisDetailedDescription(niche),
+                detailedDescriptions);
+        Map<String, Object> selectedDetailedDescription = Optional.ofNullable(selectedHypothesisDescription)
                 .map(NichePromptContext::mapDetailedDescription)
                 .orElse(null);
         Map<String, Object> differentiatedTechnology = Optional.ofNullable(niche.getDifferentiatedTechnology())
@@ -139,9 +142,36 @@ public record NichePromptContext(Long id,
         );
     }
 
+    private static NicheDetailedDescription selectHypothesisDetailedDescription(
+            NicheDetailedDescription hypothesis,
+            List<NicheDetailedDescription> detailedDescriptions) {
+        if (hypothesis == null) {
+            return null;
+        }
+        Long hypothesisId = resolveIdentifier(hypothesis);
+        if (hypothesisId != null && detailedDescriptions != null) {
+            for (NicheDetailedDescription description : detailedDescriptions) {
+                if (hypothesisId.equals(resolveIdentifier(description))) {
+                    return description;
+                }
+            }
+        }
+        return hypothesis;
+    }
+
     private static Map<String, Object> mapDetailedDescription(NicheDetailedDescription description) {
+        if (description == null) {
+            return null;
+        }
         Map<String, Object> map = new LinkedHashMap<>();
-        map.put("id", description.getId());
+        map.put("id", resolveIdentifier(description));
+        if (!Hibernate.isInitialized(description)) {
+            try {
+                Hibernate.initialize(description);
+            } catch (LazyInitializationException ignored) {
+                return map;
+            }
+        }
         map.put("title", description.getTitle());
         map.put("description", description.getDescription());
         map.put("pains", description.getPains());
@@ -202,5 +232,18 @@ public record NichePromptContext(Long id,
             }
         }
         return technology.getId();
+    }
+
+    private static Long resolveIdentifier(NicheDetailedDescription description) {
+        if (description == null) {
+            return null;
+        }
+        if (description instanceof HibernateProxy proxy) {
+            Object id = proxy.getHibernateLazyInitializer().getIdentifier();
+            if (id instanceof Long value) {
+                return value;
+            }
+        }
+        return description.getId();
     }
 }

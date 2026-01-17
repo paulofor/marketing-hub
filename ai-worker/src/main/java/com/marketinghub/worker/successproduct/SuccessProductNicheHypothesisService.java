@@ -86,9 +86,13 @@ public class SuccessProductNicheHypothesisService {
     }
 
     private static String resolveDefaultPersona(MarketNiche niche) {
-        if (niche != null && StringUtils.hasText(niche.getName())) {
-            return "Público geral de " + niche.getName();
+        if (niche != null) {
+            String idLabel = niche.getId() != null ? " (ID " + niche.getId() + ")" : "";
+            if (StringUtils.hasText(niche.getName())) {
+                return "Público geral do nicho " + niche.getName() + idLabel;
+            }
+            return "Público geral do nicho" + idLabel;
         }
-        return "Público geral";
+        return "Público geral do nicho";
     }
 }

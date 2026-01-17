@@ -122,9 +122,7 @@ public record NichePromptContext(Long id,
         Map<String, Object> selectedDetailedDescription = Optional.ofNullable(selectedHypothesisDescription)
                 .map(NichePromptContext::mapDetailedDescription)
                 .orElse(null);
-        Map<String, Object> differentiatedTechnology = Optional.ofNullable(niche.getDifferentiatedTechnology())
-                .map(NichePromptContext::mapDifferentiatedTechnology)
-                .orElse(null);
+        Map<String, Object> differentiatedTechnology = mapDifferentiatedTechnology(niche.getDifferentiatedTechnology());
         return new NichePromptContext(
                 niche.getId(),
                 niche.getName(),
@@ -203,24 +201,39 @@ public record NichePromptContext(Long id,
     }
 
     private static Map<String, Object> mapDifferentiatedTechnology(DifferentiatedTechnology technology) {
-        if (technology == null) {
-            return null;
-        }
         Map<String, Object> map = new LinkedHashMap<>();
-        if (!Hibernate.isInitialized(technology)) {
+        Long id = technology != null ? resolveIdentifier(technology) : null;
+        if (technology != null && !Hibernate.isInitialized(technology)) {
             try {
                 Hibernate.initialize(technology);
             } catch (LazyInitializationException ignored) {
-                map.put("id", resolveIdentifier(technology));
-                return map;
+                return populateTechnologyMap(map, id, null, null, null, null, null);
             }
         }
-        map.put("id", technology.getId());
-        map.put("name", technology.getName());
-        map.put("description", technology.getDescription());
-        map.put("promptText", technology.getPromptText());
-        map.put("createdAt", technology.getCreatedAt());
-        map.put("updatedAt", technology.getUpdatedAt());
+        return populateTechnologyMap(
+                map,
+                technology != null ? technology.getId() : id,
+                technology != null ? technology.getName() : null,
+                technology != null ? technology.getDescription() : null,
+                technology != null ? technology.getPromptText() : null,
+                technology != null ? technology.getCreatedAt() : null,
+                technology != null ? technology.getUpdatedAt() : null
+        );
+    }
+
+    private static Map<String, Object> populateTechnologyMap(Map<String, Object> map,
+                                                             Long id,
+                                                             String name,
+                                                             String description,
+                                                             String promptText,
+                                                             Object createdAt,
+                                                             Object updatedAt) {
+        map.put("id", id != null ? id : 0L);
+        map.put("name", textOrDefault(name));
+        map.put("description", textOrDefault(description));
+        map.put("promptText", textOrDefault(promptText));
+        map.put("createdAt", createdAt != null ? createdAt : "");
+        map.put("updatedAt", updatedAt != null ? updatedAt : "");
         return map;
     }
 
@@ -232,6 +245,11 @@ public record NichePromptContext(Long id,
             }
         }
         return technology.getId();
+    }
+
+
+    private static String textOrDefault(String value) {
+        return value != null ? value : "";
     }
 
     private static Long resolveIdentifier(NicheDetailedDescription description) {

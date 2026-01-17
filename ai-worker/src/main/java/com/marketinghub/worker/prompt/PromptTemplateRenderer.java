@@ -51,8 +51,13 @@ public class PromptTemplateRenderer {
             return rendered;
         } catch (IOException | TemplateException e) {
             PromptTemplateException friendly = toPromptTemplateException(e, templateSource, safeContext);
-            log.error("Failed to render prompt template with keys {} | context preview {} | template preview {} | error: {}",
-                    safeContext.keySet(), safeContextPreview(safeContext), preview(templateSource), friendly.getMessage(), e);
+            log.error("Failed to render prompt template with keys {} | context preview {} | focused context {} | template preview {} | error: {}",
+                    safeContext.keySet(),
+                    safeContextPreview(safeContext),
+                    focusedContextPreview(safeContext, List.of("technology", "detailedDescription")),
+                    preview(templateSource),
+                    friendly.getMessage(),
+                    e);
             throw friendly;
         }
     }
@@ -90,6 +95,45 @@ public class PromptTemplateRenderer {
     private Object previewValue(Object value) {
         if (value instanceof String str) {
             return preview(str);
+        }
+        return value;
+    }
+
+    private Map<String, Object> focusedContextPreview(Map<String, Object> context, List<String> keys) {
+        Map<String, Object> preview = new LinkedHashMap<>();
+        if (context == null || keys == null) {
+            return preview;
+        }
+        for (String key : keys) {
+            Object value = context.get(key);
+            preview.put(key, previewValueDeep(value, 2));
+        }
+        return preview;
+    }
+
+    private Object previewValueDeep(Object value, int depth) {
+        if (depth < 0 || value == null) {
+            return value;
+        }
+        if (value instanceof String str) {
+            return preview(str);
+        }
+        if (value instanceof Map<?, ?> map) {
+            Map<String, Object> nested = new LinkedHashMap<>();
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                if (entry.getKey() instanceof String key) {
+                    nested.put(key, previewValueDeep(entry.getValue(), depth - 1));
+                }
+            }
+            return nested;
+        }
+        if (value instanceof List<?> list) {
+            Map<String, Object> summary = new LinkedHashMap<>();
+            summary.put("size", list.size());
+            if (!list.isEmpty()) {
+                summary.put("first", previewValueDeep(list.get(0), depth - 1));
+            }
+            return summary;
         }
         return value;
     }

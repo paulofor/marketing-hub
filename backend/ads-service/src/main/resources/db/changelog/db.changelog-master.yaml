@@ -386,5 +386,5 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
   - include:
-      file: V2031_05_08__prompt_domain_tables.sql
+      file: V2031_10_01__prompt_domain_tables_fix.sql
       relativeToChangelogFile: true

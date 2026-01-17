@@ -54,13 +54,27 @@ public class PromptDomain {
     public void setObjectTypes(List<PromptDomainObjectType> types) {
         if (objects == null) {
             objects = new ArrayList<>();
-        } else {
-            objects.clear();
         }
-        if (types == null || types.isEmpty()) {
+        if (types == null) {
+            objects.clear();
             return;
         }
-        for (PromptDomainObjectType type : types) {
+        List<PromptDomainObjectType> desired = types.stream()
+                .filter(type -> type != null)
+                .distinct()
+                .toList();
+        if (desired.isEmpty()) {
+            objects.clear();
+            return;
+        }
+        objects.removeIf(object -> !desired.contains(object.getObjectType()));
+        List<PromptDomainObjectType> existing = objects.stream()
+                .map(PromptDomainObject::getObjectType)
+                .toList();
+        for (PromptDomainObjectType type : desired) {
+            if (existing.contains(type)) {
+                continue;
+            }
             objects.add(PromptDomainObject.builder()
                     .domain(this)
                     .objectType(type)

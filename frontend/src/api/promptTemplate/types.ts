@@ -23,6 +23,7 @@ export interface PromptTemplateValidationRequest {
 export interface PromptTemplateValidationResponse {
   valid: boolean;
   message: string;
+  renderedPrompt?: string | null;
   missingVariables: string[];
   availableVariables: string[];
 }

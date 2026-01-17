@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -68,7 +69,11 @@ public class SuccessProductNicheHypothesisService {
             CreateHypothesisRequest hypReq = new CreateHypothesisRequest();
             hypReq.setMarketNicheId(niche.getId());
             hypReq.setTitle(data.hypothesisTitle());
-            hypReq.setPersona(data.persona());
+            if (StringUtils.hasText(data.persona())) {
+                hypReq.setPersona(data.persona());
+            } else {
+                hypReq.setPersona(resolveDefaultPersona(niche));
+            }
             hypReq.setProblem(data.problem());
             hypReq.setPromise(data.promise());
             hypReq.setUniqueMechanism(data.uniqueMechanism());
@@ -79,5 +84,15 @@ public class SuccessProductNicheHypothesisService {
             productRepository.save(product);
         }
     }
-}
 
+    private static String resolveDefaultPersona(MarketNiche niche) {
+        if (niche != null) {
+            String idLabel = niche.getId() != null ? " (ID " + niche.getId() + ")" : "";
+            if (StringUtils.hasText(niche.getName())) {
+                return "Público geral do nicho " + niche.getName() + idLabel;
+            }
+            return "Público geral do nicho" + idLabel;
+        }
+        return "Público geral do nicho";
+    }
+}

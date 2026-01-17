@@ -9,6 +9,7 @@ import com.marketinghub.niche.repository.MarketNicheRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -66,6 +67,11 @@ public class NicheHypothesisService {
                     log.error("Skipping hypothesis without title for niche {}: {}", niche.getId(), req);
                     continue;
                 }
+                if (!StringUtils.hasText(req.getPersona())) {
+                    String persona = resolveDefaultPersona(niche);
+                    log.warn("Hypothesis without persona for niche {}. Using fallback '{}'.", niche.getId(), persona);
+                    req.setPersona(persona);
+                }
                 String offerType = req.getOfferType();
                 if (offerType != null) {
                     try {
@@ -84,5 +90,16 @@ public class NicheHypothesisService {
             result.put(niche.getId(), saved);
         }
         return result;
+    }
+
+    private static String resolveDefaultPersona(MarketNiche niche) {
+        if (niche != null) {
+            String idLabel = niche.getId() != null ? " (ID " + niche.getId() + ")" : "";
+            if (StringUtils.hasText(niche.getName())) {
+                return "Público geral do nicho " + niche.getName() + idLabel;
+            }
+            return "Público geral do nicho" + idLabel;
+        }
+        return "Público geral do nicho";
     }
 }

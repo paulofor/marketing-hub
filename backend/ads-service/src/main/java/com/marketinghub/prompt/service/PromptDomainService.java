@@ -74,8 +74,12 @@ public class PromptDomainService {
             domain.setName(request.getName().trim());
         }
         domain.setDescription(request.getDescription());
-        if (request.getObjects() != null && !request.getObjects().isEmpty()) {
-            domain.setObjectTypes(parseObjectTypes(request.getObjects()));
+        if (request.getObjects() != null) {
+            if (request.getObjects().isEmpty()) {
+                domain.setObjectTypes(List.of());
+            } else {
+                domain.setObjectTypes(parseObjectTypes(request.getObjects()));
+            }
         }
         PromptDomain saved = repository.save(domain);
         return enrichDto(saved);

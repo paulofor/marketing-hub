@@ -60,6 +60,10 @@ export default function PromptForm({
     setActive(Boolean(initialValues?.active));
   }, [initialValues?.active]);
 
+  useEffect(() => {
+    setValidationResult(null);
+  }, [template, domain]);
+
   const displayedDomains = useMemo(() => {
     if (!domain) return domains;
     if (domains.some((item) => item.code === domain)) {
@@ -263,6 +267,20 @@ export default function PromptForm({
                 </ul>
               </div>
             ) : null}
+          </div>
+        ) : null}
+
+        {validationResult?.valid && validationResult.renderedPrompt ? (
+          <div className="card border-0 bg-light">
+            <div className="card-body">
+              <h6 className="fw-semibold">Exemplo gerado</h6>
+              <p className="text-muted">
+                Texto renderizado com um registro real de cada objeto disponível para este domínio.
+              </p>
+              <pre className="mb-0" style={{ whiteSpace: "pre-wrap" }}>
+                {validationResult.renderedPrompt}
+              </pre>
+            </div>
           </div>
         ) : null}
 

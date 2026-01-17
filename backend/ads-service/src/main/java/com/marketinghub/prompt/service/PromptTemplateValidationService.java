@@ -41,6 +41,7 @@ public class PromptTemplateValidationService {
             return PromptTemplateValidationResponse.builder()
                     .valid(false)
                     .message("O template não pode estar vazio.")
+                    .renderedPrompt(null)
                     .missingVariables(List.of())
                     .availableVariables(List.of())
                     .build();
@@ -56,6 +57,7 @@ public class PromptTemplateValidationService {
             return PromptTemplateValidationResponse.builder()
                     .valid(false)
                     .message("Domínio não encontrado para validação.")
+                    .renderedPrompt(null)
                     .missingVariables(List.of())
                     .availableVariables(List.of())
                     .build();
@@ -65,6 +67,7 @@ public class PromptTemplateValidationService {
             return PromptTemplateValidationResponse.builder()
                     .valid(false)
                     .message("Domínio não possui objetos configurados para validação.")
+                    .renderedPrompt(null)
                     .missingVariables(List.of())
                     .availableVariables(availableVariables)
                     .build();
@@ -72,10 +75,12 @@ public class PromptTemplateValidationService {
 
         try {
             Template template = new Template("prompt-template-validation", new StringReader(request.getTemplate()), configuration);
-            template.process(context, new StringWriter());
+            StringWriter output = new StringWriter();
+            template.process(context, output);
             return PromptTemplateValidationResponse.builder()
                     .valid(true)
                     .message("Template válido.")
+                    .renderedPrompt(output.toString())
                     .missingVariables(List.of())
                     .availableVariables(availableVariables)
                     .build();
@@ -84,6 +89,7 @@ public class PromptTemplateValidationService {
             return PromptTemplateValidationResponse.builder()
                     .valid(false)
                     .message("Variável ausente ou inválida no template.")
+                    .renderedPrompt(null)
                     .missingVariables(missing == null ? List.of() : List.of(missing))
                     .availableVariables(availableVariables)
                     .build();
@@ -91,6 +97,7 @@ public class PromptTemplateValidationService {
             return PromptTemplateValidationResponse.builder()
                     .valid(false)
                     .message("Erro de sintaxe no template: " + exception.getMessage())
+                    .renderedPrompt(null)
                     .missingVariables(List.of())
                     .availableVariables(availableVariables)
                     .build();

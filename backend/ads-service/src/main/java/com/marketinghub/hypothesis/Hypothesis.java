@@ -53,10 +53,12 @@ public class Hypothesis {
 
     /** Mecanismo que sustenta a promessa. */
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String mechanism;
 
     /** Mecanismo único que sustenta a promessa. */
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String uniqueMechanism;
 
     /** Entrega ou deliverable associado à hipótese. */

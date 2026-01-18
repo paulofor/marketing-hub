@@ -39,8 +39,9 @@ public class Hypothesis {
     @JoinColumn(name = "premise_angle_id")
     private Angle premiseAngle;
 
-    /** Promessa de valor em até 140 caracteres. */
-    @Column(length = 140)
+    /** Promessa de valor com espaço para textos completos gerados pela IA. */
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String promise;
 
     /** Problema ou insight do cliente em uma frase. */

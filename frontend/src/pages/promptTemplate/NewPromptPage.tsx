@@ -58,8 +58,6 @@ export default function NewPromptPage() {
   const createPrompt = useCreatePrompt();
   const { data: domains, isLoading } = usePromptDomains();
   const domainOptions = domains ?? [];
-  const defaultDomain = domainOptions[0]?.code ?? "";
-  const defaultTemplate = defaultDomain ? DEFAULT_PROMPT_TEMPLATES[defaultDomain] ?? "" : "";
 
   async function handleSubmit(values: PromptFormValues) {
     await createPrompt.mutateAsync(values);
@@ -92,13 +90,13 @@ export default function NewPromptPage() {
         domains={domainOptions}
         initialValues={{
           name: "",
-          domain: defaultDomain,
-          template: defaultTemplate,
+          domain: "",
           active: true,
         }}
         defaultTemplates={DEFAULT_PROMPT_TEMPLATES}
         isSubmitting={createPrompt.isPending}
         onSubmit={handleSubmit}
+        autoSelectDomain={false}
       />
     </div>
   );

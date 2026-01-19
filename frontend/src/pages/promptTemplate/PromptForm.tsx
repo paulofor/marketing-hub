@@ -18,6 +18,7 @@ interface PromptFormProps {
   defaultTemplates?: Record<string, string>;
   domains: PromptDomain[];
   isLoadingDomains?: boolean;
+  autoSelectDomain?: boolean;
 }
 
 export default function PromptForm({
@@ -27,8 +28,9 @@ export default function PromptForm({
   defaultTemplates,
   domains,
   isLoadingDomains,
+  autoSelectDomain = true,
 }: PromptFormProps) {
-  const initialDomain = initialValues?.domain ?? domains[0]?.code ?? "";
+  const initialDomain = initialValues?.domain ?? (autoSelectDomain ? domains[0]?.code ?? "" : "");
   const [name, setName] = useState(initialValues?.name ?? "");
   const [domain, setDomain] = useState(initialDomain);
   const [template, setTemplate] = useState(initialValues?.template ?? defaultTemplates?.[initialDomain] ?? "");
@@ -43,10 +45,10 @@ export default function PromptForm({
   useEffect(() => {
     if (initialValues?.domain) {
       setDomain(initialValues.domain);
-    } else if (!domain && domains[0]) {
+    } else if (autoSelectDomain && !domain && domains[0]) {
       setDomain(domains[0].code);
     }
-  }, [initialValues?.domain, domains, domain]);
+  }, [initialValues?.domain, domains, domain, autoSelectDomain]);
 
   useEffect(() => {
     if (initialValues?.template !== undefined) {
@@ -87,6 +89,7 @@ export default function PromptForm({
   const variables = useMemo(() => selectedDomain?.availableVariables ?? [], [selectedDomain]);
   const objects = selectedDomain?.objects ?? [];
   const isBusy = Boolean(isSubmitting || validatePrompt.isPending);
+  const hasDomain = Boolean(domain);
 
   const handleDomainChange = (newDomain: string) => {
     setDomain(newDomain);
@@ -178,6 +181,11 @@ export default function PromptForm({
               required
               disabled={isSubmitting}
             >
+              {!hasDomain ? (
+                <option value="" disabled>
+                  Selecione um domínio
+                </option>
+              ) : null}
               {displayedDomains.map((item) => (
                 <option key={item.code} value={item.code}>
                   {item.name}
@@ -209,7 +217,7 @@ export default function PromptForm({
               type="checkbox"
               checked={active}
               onChange={(e) => setActive(e.target.checked)}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !hasDomain}
             />
             <label className="form-check-label" htmlFor="prompt-active">
               Tornar este prompt o ativo para o domínio selecionado
@@ -229,7 +237,7 @@ export default function PromptForm({
             value={template}
             onChange={(e) => setTemplate(e.target.value)}
             required
-            disabled={isSubmitting}
+            disabled={isSubmitting || !hasDomain}
           />
           <div className="form-text">
             Use variáveis no formato <code>${"{variavel}"}</code> ou estruturas do FreeMarker para
@@ -239,7 +247,9 @@ export default function PromptForm({
 
         <div className="alert alert-light" role="note">
           <p className="mb-2 fw-semibold">Variáveis disponíveis para este domínio</p>
-          {variables.length === 0 ? (
+          {!hasDomain ? (
+            <p className="mb-0">Selecione um domínio para liberar as variáveis e editar o template.</p>
+          ) : variables.length === 0 ? (
             <p className="mb-0">Nenhuma variável definida.</p>
           ) : (
             <ul className="mb-0">
@@ -285,13 +295,18 @@ export default function PromptForm({
         ) : null}
 
         <div className="d-flex justify-content-end gap-2">
-          <button type="button" className="btn btn-outline-primary" onClick={runValidation} disabled={isBusy}>
+          <button
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={runValidation}
+            disabled={isBusy || !hasDomain}
+          >
             {validatePrompt.isPending ? (
               <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
             ) : null}
             <span className="ms-2">Validar sintaxe</span>
           </button>
-          <button type="submit" className="btn btn-primary" disabled={isBusy}>
+          <button type="submit" className="btn btn-primary" disabled={isBusy || !hasDomain}>
             {isSubmitting ? (
               <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
             ) : null}

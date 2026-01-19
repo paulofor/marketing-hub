@@ -309,6 +309,45 @@
   gap: 0.75rem;
 }
 
+.niche-section__actions--hypotheses {
+  align-items: flex-end;
+}
+
+.niche-section__action-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1 1 180px;
+  min-width: 180px;
+}
+
+.niche-section__action-group .form-label {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.niche-section__action-group .form-control,
+.niche-section__action-group .form-select {
+  width: 100%;
+}
+
+.niche-section__actions--hypotheses .form-control,
+.niche-section__actions--hypotheses .form-select {
+  max-width: none;
+}
+
+.niche-section__action-group--submit {
+  flex: 0 0 auto;
+  min-width: 200px;
+  align-items: flex-end;
+}
+
+.niche-section__action-helper {
+  font-weight: 500;
+}
+
 .niche-section__actions .form-control {
   flex: 1 1 140px;
   max-width: 160px;

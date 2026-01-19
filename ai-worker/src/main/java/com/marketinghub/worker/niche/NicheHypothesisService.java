@@ -85,8 +85,9 @@ public class NicheHypothesisService {
                 saved.add(hypothesisService.create(req));
             }
             log.info("Resetting hypothesesToGenerate for niche {} to 0", niche.getId());
-            niche.setHypothesesToGenerate(0);
-            nicheRepository.save(niche);
+            MarketNiche refreshedNiche = nicheRepository.findById(niche.getId()).orElseThrow();
+            refreshedNiche.setHypothesesToGenerate(0);
+            nicheRepository.save(refreshedNiche);
             result.put(niche.getId(), saved);
         }
         return result;

@@ -28,7 +28,8 @@ public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> 
      * Retrieves niches configured to generate audiences.
      */
     @Query("""
-            select n from MarketNiche n
+            select distinct n from MarketNiche n
+            left join fetch n.differentiatedTechnology
             where n.audiencesToGenerate is not null
               and n.audiencesToGenerate > 0
             """)
@@ -38,7 +39,8 @@ public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> 
      * Retrieves niches configured to generate detailed descriptions.
      */
     @Query("""
-            select n from MarketNiche n
+            select distinct n from MarketNiche n
+            left join fetch n.differentiatedTechnology
             where n.detailedDescriptionsToGenerate is not null
               and n.detailedDescriptionsToGenerate > 0
             """)

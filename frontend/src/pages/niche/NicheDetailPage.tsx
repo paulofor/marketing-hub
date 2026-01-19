@@ -1376,97 +1376,115 @@ export default function NicheDetailPage() {
             <p className="niche-section__status">{hypothesisStatusLabel}</p>
           </div>
           <form
-            className="niche-section__actions"
+            className="niche-section__actions niche-section__actions--hypotheses"
             onSubmit={onRequestHypotheses}
           >
-            <label htmlFor="hypothesis-quantity" className="visually-hidden">
-              Quantidade de hipóteses que o Worker IA irá gerar
-            </label>
-            <input
-              id="hypothesis-quantity"
-              type="number"
-              min={1}
-              className="form-control"
-              title="Quantidade de hipóteses que o Worker IA irá gerar"
-              disabled={requestHypotheses.isPending}
-              {...registerHypothesisRequest("quantity", { valueAsNumber: true })}
-            />
-            <label htmlFor="hypothesis-model" className="visually-hidden">
-              Modelo do OpenAI que o Worker IA irá usar
-            </label>
-            <select
-              id="hypothesis-model"
-              className="form-select"
-              title="Modelo do OpenAI que o Worker IA irá usar"
-              disabled={requestHypotheses.isPending || isLoadingModels}
-              {...registerHypothesisRequest("model")}
-            >
-              <option value="">Selecione um modelo</option>
-              {(openAiModels ?? []).map((modelOption) => (
-                <option key={modelOption.code} value={modelOption.code}>
-                  {modelOption.name} ({modelOption.code})
-                </option>
-              ))}
-            </select>
-            <label htmlFor="hypothesis-technology" className="visually-hidden">
-              Tecnologia diferenciada para orientar hipóteses
-            </label>
-            <select
-              id="hypothesis-technology"
-              className="form-select"
-              title="Tecnologia diferenciada para orientar as hipóteses geradas pelo Worker IA"
-              disabled={requestHypotheses.isPending || isLoadingDifferentiatedTechnologies}
-              {...registerHypothesisRequest("differentiatedTechnologyId", {
-                setValueAs: (value) => (value ? Number(value) : undefined),
-              })}
-            >
-              <option value="">Sem tecnologia diferenciada</option>
-              {(differentiatedTechnologies ?? []).map((tech) => (
-                <option key={tech.id} value={tech.id}>
-                  {tech.name}
-                </option>
-              ))}
-            </select>
-            <label
-              htmlFor="hypothesis-detailed-description"
-              className="visually-hidden"
-            >
-              Descrição detalhada ativa para orientar hipóteses
-            </label>
-            <select
-              id="hypothesis-detailed-description"
-              className="form-select"
-              title="Descrição detalhada ativa para orientar as hipóteses geradas pelo Worker IA"
-              disabled={requestHypotheses.isPending}
-              {...registerHypothesisRequest("detailedDescriptionId", {
-                setValueAs: (value) => (value ? Number(value) : undefined),
-              })}
-            >
-              <option value="">Sem descrição detalhada ativa</option>
-              {activeDetailedDescriptions.map((description, index) => (
-                <option key={description.id} value={description.id}>
-                  {description.title ||
-                    description.promptName ||
-                    `Descrição #${index + 1}`}
-                </option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              className="btn btn-secondary"
-              disabled={requestHypotheses.isPending}
-            >
-              {requestHypotheses.isPending ? (
-                <span
-                  className="spinner-border spinner-border-sm"
-                  role="status"
-                  aria-hidden="true"
-                />
-              ) : (
-                <Sparkles size={18} />
-              )}
-              <span>Gerar Hipóteses</span>
-            </button>
+            <div className="niche-section__action-group">
+              <label htmlFor="hypothesis-quantity" className="form-label">
+                Quantidade
+              </label>
+              <input
+                id="hypothesis-quantity"
+                type="number"
+                min={1}
+                className="form-control"
+                title="Quantidade de hipóteses que o Worker IA irá gerar"
+                disabled={requestHypotheses.isPending}
+                {...registerHypothesisRequest("quantity", {
+                  valueAsNumber: true,
+                })}
+              />
+            </div>
+            <div className="niche-section__action-group">
+              <label htmlFor="hypothesis-model" className="form-label">
+                Modelo IA
+              </label>
+              <select
+                id="hypothesis-model"
+                className="form-select"
+                title="Modelo do OpenAI que o Worker IA irá usar"
+                disabled={requestHypotheses.isPending || isLoadingModels}
+                {...registerHypothesisRequest("model")}
+              >
+                <option value="">Selecione um modelo</option>
+                {(openAiModels ?? []).map((modelOption) => (
+                  <option key={modelOption.code} value={modelOption.code}>
+                    {modelOption.name} ({modelOption.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="niche-section__action-group">
+              <label htmlFor="hypothesis-technology" className="form-label">
+                Tecnologia diferenciada
+              </label>
+              <select
+                id="hypothesis-technology"
+                className="form-select"
+                title="Tecnologia diferenciada para orientar as hipóteses geradas pelo Worker IA"
+                disabled={
+                  requestHypotheses.isPending ||
+                  isLoadingDifferentiatedTechnologies
+                }
+                {...registerHypothesisRequest("differentiatedTechnologyId", {
+                  setValueAs: (value) => (value ? Number(value) : undefined),
+                })}
+              >
+                <option value="">Sem tecnologia diferenciada</option>
+                {(differentiatedTechnologies ?? []).map((tech) => (
+                  <option key={tech.id} value={tech.id}>
+                    {tech.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="niche-section__action-group">
+              <label
+                htmlFor="hypothesis-detailed-description"
+                className="form-label"
+              >
+                Descrição detalhada
+              </label>
+              <select
+                id="hypothesis-detailed-description"
+                className="form-select"
+                title="Descrição detalhada ativa para orientar as hipóteses geradas pelo Worker IA"
+                disabled={requestHypotheses.isPending}
+                {...registerHypothesisRequest("detailedDescriptionId", {
+                  setValueAs: (value) => (value ? Number(value) : undefined),
+                })}
+              >
+                <option value="">Sem descrição detalhada ativa</option>
+                {activeDetailedDescriptions.map((description, index) => (
+                  <option key={description.id} value={description.id}>
+                    {description.title ||
+                      description.promptName ||
+                      `Descrição #${index + 1}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="niche-section__action-group niche-section__action-group--submit">
+              <span className="form-label niche-section__action-helper">
+                Solicitar geração
+              </span>
+              <button
+                type="submit"
+                className="btn btn-secondary"
+                disabled={requestHypotheses.isPending}
+              >
+                {requestHypotheses.isPending ? (
+                  <span
+                    className="spinner-border spinner-border-sm"
+                    role="status"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Sparkles size={18} />
+                )}
+                <span>Gerar Hipóteses</span>
+              </button>
+            </div>
           </form>
         </div>
         {list.length === 0 ? (

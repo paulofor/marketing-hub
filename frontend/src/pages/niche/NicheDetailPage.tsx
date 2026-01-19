@@ -266,7 +266,18 @@ export default function NicheDetailPage() {
   const updatedAtLabel = data.updatedAt
     ? new Date(data.updatedAt).toLocaleString("pt-BR")
     : undefined;
-  const totalCostLabel = formatCurrency(data.totalCost) ?? "-";
+  const hypothesisCostTotal = list.reduce((total, hypothesis) => {
+    if (typeof hypothesis.cost === "number") {
+      return total + hypothesis.cost;
+    }
+    if (typeof hypothesis.costUsd === "number") {
+      return total + hypothesis.costUsd;
+    }
+    return total;
+  }, 0);
+  const totalCostValue = (data.totalCost ?? 0) + hypothesisCostTotal;
+  const hasTotalCost = data.totalCost != null || hypothesisCostTotal > 0;
+  const totalCostLabel = hasTotalCost ? formatCurrency(totalCostValue) ?? "-" : "-";
   const totalRevenueLabel = formatCurrency(data.totalRevenue) ?? "-";
   const differentiatedTechnologyName = differentiatedTechnologies?.find(
     (tech) => tech.id === data.differentiatedTechnologyId,
@@ -280,7 +291,10 @@ export default function NicheDetailPage() {
     { label: "Ofertas", value: data.offers },
     { label: "Custo", value: formatCurrency(data.cost) },
     { label: "Despesa", value: formatCurrency(data.expense) },
-    { label: "Custo total", value: formatCurrency(data.totalCost) },
+    {
+      label: "Custo total",
+      value: hasTotalCost ? formatCurrency(totalCostValue) : undefined,
+    },
     { label: "Receita total", value: formatCurrency(data.totalRevenue) },
     { label: "Hipóteses a gerar", value: data.hypothesesToGenerate },
     { label: "Modelo para hipóteses", value: data.hypothesisModel },

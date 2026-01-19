@@ -45,7 +45,8 @@ public class Hypothesis {
     private String promise;
 
     /** Problema ou insight do cliente em uma frase. */
-    @Column
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String problem;
 
     /** Persona alvo dentro do nicho. */

@@ -86,8 +86,22 @@ export default function PromptForm({
   }, [domains, domain]);
 
   const selectedDomain = displayedDomains.find((item) => item.code === domain);
-  const variables = useMemo(() => selectedDomain?.availableVariables ?? [], [selectedDomain]);
   const objects = selectedDomain?.objects ?? [];
+  const variables = useMemo(() => {
+    const available = selectedDomain?.availableVariables ?? [];
+    const contextKeys = objects.map((object) => object.contextKey).filter(Boolean);
+    if (contextKeys.length === 0) {
+      return available;
+    }
+    return available.filter((variable) => {
+      if (variable === "quantity") {
+        return true;
+      }
+      return contextKeys.some(
+        (key) => variable === key || variable.startsWith(`${key}.`) || variable.startsWith(`${key}[]`),
+      );
+    });
+  }, [selectedDomain, objects]);
   const isBusy = Boolean(isSubmitting || validatePrompt.isPending);
   const hasDomain = Boolean(domain);
 

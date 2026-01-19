@@ -18,6 +18,7 @@ public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> 
      */
     @Query("""
             select n from MarketNiche n
+            left join fetch n.differentiatedTechnology
             where n.hypothesesToGenerate is not null
               and n.hypothesesToGenerate > 0
             """)

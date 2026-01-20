@@ -118,6 +118,10 @@ public class Experiment {
     @Column(precision = 10, scale = 2)
     private java.math.BigDecimal cost;
 
+    /** Custo total acumulado do experimento. */
+    @Column(precision = 12, scale = 2)
+    private java.math.BigDecimal totalCost;
+
     /** Despesa estimada em BRL para o experimento. */
     @Column(precision = 10, scale = 2)
     private java.math.BigDecimal expense;

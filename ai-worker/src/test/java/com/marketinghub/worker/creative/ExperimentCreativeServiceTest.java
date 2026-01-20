@@ -60,7 +60,7 @@ class ExperimentCreativeServiceTest {
         CreateCreativeRequest req = new CreateCreativeRequest();
         req.setHeadline("h1");
         req.setPrimaryText("p1");
-        when(chatGptClient.generateCreatives(experiment, 1)).thenReturn(List.of(req));
+        when(chatGptClient.generateCreatives(experiment, 1)).thenReturn(new CreativeChatGptClient.Generation(List.of(req), null, null));
         when(imageClient.generateImage(anyString())).thenReturn("img");
         Creative saved = new Creative();
         when(creativeService.create(1L, req)).thenReturn(saved);
@@ -88,7 +88,7 @@ class ExperimentCreativeServiceTest {
         CreateCreativeRequest req = new CreateCreativeRequest();
         req.setHeadline(longText);
         req.setPrimaryText(longText);
-        when(chatGptClient.generateCreatives(experiment, 1)).thenReturn(List.of(req));
+        when(chatGptClient.generateCreatives(experiment, 1)).thenReturn(new CreativeChatGptClient.Generation(List.of(req), null, null));
         when(imageClient.generateImage(anyString())).thenReturn("img");
         Creative saved = new Creative();
         when(creativeService.create(eq(1L), any(CreateCreativeRequest.class))).thenReturn(saved);
@@ -111,7 +111,7 @@ class ExperimentCreativeServiceTest {
         CreateCreativeRequest req = new CreateCreativeRequest();
         req.setHeadline("headline");
         req.setPrimaryText(hashtags);
-        when(chatGptClient.generateCreatives(experiment, 1)).thenReturn(List.of(req));
+        when(chatGptClient.generateCreatives(experiment, 1)).thenReturn(new CreativeChatGptClient.Generation(List.of(req), null, null));
         when(imageClient.generateImage(anyString())).thenReturn("img");
         when(creativeService.create(eq(1L), any(CreateCreativeRequest.class))).thenReturn(new Creative());
 

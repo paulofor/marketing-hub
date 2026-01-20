@@ -85,6 +85,10 @@ public class Hypothesis {
     @Column(precision = 10, scale = 2)
     private BigDecimal cost;
 
+    /** Custo total acumulado a partir desta hipótese. */
+    @Column(precision = 12, scale = 2)
+    private BigDecimal totalCost;
+
     /** Despesa estimada em BRL para a hipótese. */
     @Column(precision = 10, scale = 2)
     private BigDecimal expense;

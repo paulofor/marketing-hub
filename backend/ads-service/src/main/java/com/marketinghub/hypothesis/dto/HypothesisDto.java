@@ -29,6 +29,7 @@ public class HypothesisDto {
     private BigDecimal kpiTargetCpl;
     private BigDecimal costUsd;
     private BigDecimal cost;
+    private BigDecimal totalCost;
     private BigDecimal expense;
     private HypothesisStatus status;
     private Instant generatedAt;

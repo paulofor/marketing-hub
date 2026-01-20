@@ -103,6 +103,7 @@ public class HypothesisService {
                 .model(req.getModel())
                 .costUsd(req.getCostUsd())
                 .cost(req.getCost())
+                .totalCost(resolveTotalCostDelta(req))
                 .expense(req.getExpense())
                 .promptAttributeDescriptions(attachPromptAttributeDescriptions(req.getPromptAttributeDescriptionIds()))
                 .generatedAt(Instant.now())

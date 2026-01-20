@@ -17,6 +17,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -24,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.marketinghub.worker.openai.AiGenerationRecorder;
+import com.marketinghub.worker.openai.OpenAiCostEstimator;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
 
@@ -73,10 +76,10 @@ public class CreativeChatGptClient {
         }
     }
 
-    public List<CreateCreativeRequest> generateCreatives(Experiment experiment, int quantity) {
+    public Generation generateCreatives(Experiment experiment, int quantity) {
         if (!enabled) {
             log.warn("Skipping creative generation for experiment {} because OpenAI API key is missing", experiment.getId());
-            return List.of();
+            return Generation.empty();
         }
         String prompt = buildPrompt(experiment, quantity);
         List<Map<String, Object>> input = List.of(
@@ -110,7 +113,7 @@ public class CreativeChatGptClient {
 
         if (response == null) {
             log.warn("ChatGPT returned no choices for experiment {}", experiment.getId());
-            return List.of();
+            return Generation.empty();
         }
         if (response.hasError()) {
             throw new RuntimeException("OpenAI error: " + response.errorMessage());
@@ -122,27 +125,41 @@ public class CreativeChatGptClient {
                 content,
                 model,
                 response.usage());
+        BigDecimal totalCostUsd = OpenAiCostEstimator.estimateUsd(model, response.usage());
         if (content == null || content.isBlank()) {
             log.warn("ChatGPT returned empty content for experiment {}", experiment.getId());
-            return List.of();
+            return Generation.empty(totalCostUsd);
         }
         log.info("ChatGPT content: {}", content);
         try {
-            List<CreateCreativeRequest> parsed = parseContent(content);
-            log.info("Parsed creatives: {}", parsed);
-            return parsed;
+            return parseWithCost(content, totalCostUsd);
         } catch (Exception e) {
             log.error("Failed to parse ChatGPT response: {}", content, e);
             try {
                 String unescaped = content.replace("\\\"", "\"");
-                List<CreateCreativeRequest> parsed = parseContent(unescaped);
-                log.info("Parsed creatives after unescaping: {}", parsed);
-                return parsed;
+                return parseWithCost(unescaped, totalCostUsd);
             } catch (Exception ex) {
                 log.error("Failed to parse unescaped ChatGPT response: {}", content, ex);
                 throw new RuntimeException("Failed to parse ChatGPT response", ex);
             }
         }
+    }
+
+    private Generation parseWithCost(String content, BigDecimal totalCostUsd) throws Exception {
+        List<CreateCreativeRequest> parsed = parseContent(content);
+        BigDecimal costPerCreative = calculateCostPerCreative(totalCostUsd, parsed.size());
+        if (costPerCreative != null) {
+            parsed.forEach(req -> req.setCostUsd(costPerCreative));
+        }
+        log.info("Parsed creatives: {}", parsed);
+        return new Generation(parsed, totalCostUsd, costPerCreative);
+    }
+
+    private BigDecimal calculateCostPerCreative(BigDecimal totalCostUsd, int totalCreatives) {
+        if (totalCostUsd == null || totalCreatives <= 0) {
+            return null;
+        }
+        return totalCostUsd.divide(BigDecimal.valueOf(totalCreatives), 4, RoundingMode.HALF_UP);
     }
 
     private String buildPrompt(Experiment experiment, int quantity) {
@@ -178,4 +195,19 @@ public class CreativeChatGptClient {
         return Arrays.asList(arr);
     }
 
+    public record Generation(List<CreateCreativeRequest> creatives,
+                             BigDecimal totalCostUsd,
+                             BigDecimal costPerCreativeUsd) {
+        public Generation {
+            creatives = creatives == null ? List.of() : List.copyOf(creatives);
+        }
+
+        public static Generation empty() {
+            return new Generation(List.of(), null, null);
+        }
+
+        public static Generation empty(BigDecimal totalCostUsd) {
+            return new Generation(List.of(), totalCostUsd, null);
+        }
+    }
 }

@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
@@ -149,7 +150,7 @@ public class CreativeChatGptClient {
         List<CreateCreativeRequest> parsed = parseContent(content);
         BigDecimal costPerCreative = calculateCostPerCreative(totalCostUsd, parsed.size());
         if (costPerCreative != null) {
-            parsed.forEach(req -> req.setCostUsd(costPerCreative));
+            parsed.forEach(req -> applyCostUsd(req, costPerCreative));
         }
         log.info("Parsed creatives: {}", parsed);
         return new Generation(parsed, totalCostUsd, costPerCreative);
@@ -160,6 +161,20 @@ public class CreativeChatGptClient {
             return null;
         }
         return totalCostUsd.divide(BigDecimal.valueOf(totalCreatives), 4, RoundingMode.HALF_UP);
+    }
+
+    private void applyCostUsd(CreateCreativeRequest request, BigDecimal costPerCreative) {
+        if (costPerCreative == null || request == null) {
+            return;
+        }
+        try {
+            Method method = request.getClass().getMethod("setCostUsd", BigDecimal.class);
+            method.invoke(request, costPerCreative);
+        } catch (NoSuchMethodException e) {
+            log.debug("CreateCreativeRequest does not expose setCostUsd; skipping cost attribution");
+        } catch (ReflectiveOperationException e) {
+            log.warn("Failed to set costUsd on CreateCreativeRequest", e);
+        }
     }
 
     private String buildPrompt(Experiment experiment, int quantity) {

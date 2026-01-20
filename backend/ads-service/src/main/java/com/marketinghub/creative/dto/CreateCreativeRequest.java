@@ -1,6 +1,7 @@
 package com.marketinghub.creative.dto;
 
 import com.marketinghub.creative.CreativeStatus;
+import java.math.BigDecimal;
 import lombok.Data;
 
 /**
@@ -18,4 +19,5 @@ public class CreateCreativeRequest {
     private String leadGenFormId;
     private String instagramUserId;
     private CreativeStatus status;
+    private BigDecimal costUsd;
 }

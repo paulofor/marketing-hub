@@ -98,6 +98,7 @@ export default function NicheDetailPage() {
     handleSubmit: handleSubmitHypothesisRequest,
     reset: resetHypothesisRequest,
     setValue: setHypothesisRequestValue,
+    formState: { errors: hypothesisRequestErrors },
   } = useForm<{
     quantity: number;
     model?: string;
@@ -448,20 +449,24 @@ export default function NicheDetailPage() {
   const onRequestHypotheses = handleSubmitHypothesisRequest(
     async ({ quantity, model, differentiatedTechnologyId, detailedDescriptionId }) => {
       if (!quantity || quantity <= 0) return;
-      const selectedModel = model?.trim() || data?.hypothesisModel || openAiModels?.[0]?.code;
+      const selectedModel = model?.trim();
+      const normalizedTechnologyId =
+        differentiatedTechnologyId === 0 ? undefined : differentiatedTechnologyId;
+      const normalizedDescriptionId =
+        detailedDescriptionId === 0 ? undefined : detailedDescriptionId;
       try {
         await requestHypotheses.mutateAsync({
           quantity,
           model: selectedModel,
-          differentiatedTechnologyId,
-          detailedDescriptionId,
+          differentiatedTechnologyId: normalizedTechnologyId,
+          detailedDescriptionId: normalizedDescriptionId,
         });
         alert("Solicitação enviada!");
         resetHypothesisRequest({
           quantity: 1,
           model: selectedModel ?? "",
-          differentiatedTechnologyId,
-          detailedDescriptionId,
+          differentiatedTechnologyId: normalizedTechnologyId,
+          detailedDescriptionId: normalizedDescriptionId,
         });
       } catch {
         alert("Erro ao solicitar hipóteses");
@@ -1379,32 +1384,45 @@ export default function NicheDetailPage() {
             className="niche-section__actions niche-section__actions--hypotheses"
             onSubmit={onRequestHypotheses}
           >
-            <div className="niche-section__action-group">
+            <div className="niche-section__action-group niche-section__action-group--quantity">
               <label htmlFor="hypothesis-quantity" className="form-label">
-                Quantidade
+                Quantidade <span aria-hidden="true">*</span>
               </label>
               <input
                 id="hypothesis-quantity"
                 type="number"
                 min={1}
-                className="form-control"
+                className={`form-control ${
+                  hypothesisRequestErrors.quantity ? "is-invalid" : ""
+                }`}
                 title="Quantidade de hipóteses que o Worker IA irá gerar"
                 disabled={requestHypotheses.isPending}
                 {...registerHypothesisRequest("quantity", {
                   valueAsNumber: true,
+                  required: "Informe a quantidade",
+                  min: { value: 1, message: "Informe pelo menos 1" },
                 })}
               />
+              {hypothesisRequestErrors.quantity && (
+                <div className="invalid-feedback">
+                  {hypothesisRequestErrors.quantity.message}
+                </div>
+              )}
             </div>
             <div className="niche-section__action-group">
               <label htmlFor="hypothesis-model" className="form-label">
-                Modelo IA
+                Modelo IA <span aria-hidden="true">*</span>
               </label>
               <select
                 id="hypothesis-model"
-                className="form-select"
+                className={`form-select ${
+                  hypothesisRequestErrors.model ? "is-invalid" : ""
+                }`}
                 title="Modelo do OpenAI que o Worker IA irá usar"
                 disabled={requestHypotheses.isPending || isLoadingModels}
-                {...registerHypothesisRequest("model")}
+                {...registerHypothesisRequest("model", {
+                  required: "Selecione um modelo",
+                })}
               >
                 <option value="">Selecione um modelo</option>
                 {(openAiModels ?? []).map((modelOption) => (
@@ -1413,14 +1431,23 @@ export default function NicheDetailPage() {
                   </option>
                 ))}
               </select>
+              {hypothesisRequestErrors.model && (
+                <div className="invalid-feedback">
+                  {hypothesisRequestErrors.model.message}
+                </div>
+              )}
             </div>
             <div className="niche-section__action-group">
               <label htmlFor="hypothesis-technology" className="form-label">
-                Tecnologia diferenciada
+                Tecnologia diferenciada <span aria-hidden="true">*</span>
               </label>
               <select
                 id="hypothesis-technology"
-                className="form-select"
+                className={`form-select ${
+                  hypothesisRequestErrors.differentiatedTechnologyId
+                    ? "is-invalid"
+                    : ""
+                }`}
                 title="Tecnologia diferenciada para orientar as hipóteses geradas pelo Worker IA"
                 disabled={
                   requestHypotheses.isPending ||
@@ -1428,33 +1455,44 @@ export default function NicheDetailPage() {
                 }
                 {...registerHypothesisRequest("differentiatedTechnologyId", {
                   setValueAs: (value) => (value ? Number(value) : undefined),
+                  required: "Selecione uma tecnologia",
                 })}
               >
-                <option value="">Sem tecnologia diferenciada</option>
+                <option value="">Selecione uma tecnologia</option>
+                <option value="0">Sem tecnologia diferenciada</option>
                 {(differentiatedTechnologies ?? []).map((tech) => (
                   <option key={tech.id} value={tech.id}>
                     {tech.name}
                   </option>
                 ))}
               </select>
+              {hypothesisRequestErrors.differentiatedTechnologyId && (
+                <div className="invalid-feedback">
+                  {hypothesisRequestErrors.differentiatedTechnologyId.message}
+                </div>
+              )}
             </div>
             <div className="niche-section__action-group">
               <label
                 htmlFor="hypothesis-detailed-description"
                 className="form-label"
               >
-                Descrição detalhada
+                Descrição detalhada <span aria-hidden="true">*</span>
               </label>
               <select
                 id="hypothesis-detailed-description"
-                className="form-select"
+                className={`form-select ${
+                  hypothesisRequestErrors.detailedDescriptionId ? "is-invalid" : ""
+                }`}
                 title="Descrição detalhada ativa para orientar as hipóteses geradas pelo Worker IA"
                 disabled={requestHypotheses.isPending}
                 {...registerHypothesisRequest("detailedDescriptionId", {
                   setValueAs: (value) => (value ? Number(value) : undefined),
+                  required: "Selecione uma descrição",
                 })}
               >
-                <option value="">Sem descrição detalhada ativa</option>
+                <option value="">Selecione uma descrição</option>
+                <option value="0">Sem descrição detalhada ativa</option>
                 {activeDetailedDescriptions.map((description, index) => (
                   <option key={description.id} value={description.id}>
                     {description.title ||
@@ -1463,6 +1501,11 @@ export default function NicheDetailPage() {
                   </option>
                 ))}
               </select>
+              {hypothesisRequestErrors.detailedDescriptionId && (
+                <div className="invalid-feedback">
+                  {hypothesisRequestErrors.detailedDescriptionId.message}
+                </div>
+              )}
             </div>
             <div className="niche-section__action-group niche-section__action-group--submit">
               <span className="form-label niche-section__action-helper">

@@ -1,7 +1,7 @@
 import { apiBaseUrl } from "../config/api";
 
 const ABSOLUTE_URL_PATTERN = /^(?:[a-z][a-z0-9+.-]*:)?\/\//i;
-const DEFAULT_PUBLIC_ASSETS_BASE_URL = "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev";
+const DEFAULT_PUBLIC_ASSETS_BASE_URL = "api";
 
 /**
  * Asset base resolution priority:

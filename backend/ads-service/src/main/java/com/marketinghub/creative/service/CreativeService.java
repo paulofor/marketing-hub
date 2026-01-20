@@ -10,11 +10,14 @@ import com.marketinghub.creative.label.repository.VisualProofRepository;
 import com.marketinghub.creative.label.repository.EmotionalTriggerRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.media.Asset;
 import com.marketinghub.media.AssetStatus;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.media.MediaProvider;
 import com.marketinghub.media.repository.AssetRepository;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.repository.MarketNicheRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -42,6 +46,8 @@ public class CreativeService {
 
     private final CreativeRepository repository;
     private final ExperimentRepository experimentRepository;
+    private final HypothesisRepository hypothesisRepository;
+    private final MarketNicheRepository marketNicheRepository;
     private final AngleRepository angleRepository;
     private final VisualProofRepository visualProofRepository;
     private final EmotionalTriggerRepository emotionalTriggerRepository;
@@ -68,6 +74,7 @@ public class CreativeService {
                 .status(request.getStatus())
                 .build();
         Creative saved = repository.save(creative);
+        applyGenerationCost(exp, request.getCostUsd());
         refreshExperimentApproval(exp);
         return saved;
     }
@@ -127,6 +134,32 @@ public class CreativeService {
                 experiment.getId(), CreativeStatus.READY);
         experiment.setCreativeApproved(hasApprovedCreatives);
         experimentRepository.save(experiment);
+    }
+
+    private void applyGenerationCost(Experiment experiment, BigDecimal costUsd) {
+        if (experiment == null || costUsd == null || costUsd.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+        experiment.setTotalCost(addCost(experiment.getTotalCost(), costUsd));
+        if (experiment.getId() != null) {
+            experimentRepository.incrementTotalCost(experiment.getId(), costUsd);
+        }
+        if (experiment.getHypothesisRef() != null && experiment.getHypothesisRef().getId() != null) {
+            experiment.getHypothesisRef().setTotalCost(addCost(experiment.getHypothesisRef().getTotalCost(), costUsd));
+            hypothesisRepository.incrementTotalCost(experiment.getHypothesisRef().getId(), costUsd);
+        }
+        MarketNiche niche = experiment.getNiche();
+        if (niche != null && niche.getId() != null) {
+            niche.setTotalCost(addCost(niche.getTotalCost(), costUsd));
+            marketNicheRepository.incrementTotalCost(niche.getId(), costUsd);
+        }
+    }
+
+    private BigDecimal addCost(BigDecimal current, BigDecimal delta) {
+        if (current == null) {
+            return delta;
+        }
+        return current.add(delta);
     }
 
     /**

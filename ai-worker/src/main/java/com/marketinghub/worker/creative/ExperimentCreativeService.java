@@ -58,7 +58,8 @@ public class ExperimentCreativeService {
             }
             log.info("Generating {} creatives for experiment {}", qty, exp.getId());
             try {
-                List<CreateCreativeRequest> requests = chatGptClient.generateCreatives(exp, qty);
+                CreativeChatGptClient.Generation generation = chatGptClient.generateCreatives(exp, qty);
+                List<CreateCreativeRequest> requests = generation.creatives();
                 log.info("ChatGPT returned {} creatives for experiment {}", requests.size(), exp.getId());
                 List<Creative> saved = new ArrayList<>();
                 for (CreateCreativeRequest req : requests) {

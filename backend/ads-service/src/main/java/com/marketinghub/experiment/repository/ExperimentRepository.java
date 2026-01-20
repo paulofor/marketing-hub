@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -134,6 +135,14 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update Experiment e set e.facebookInstantForm = null where e.facebookInstantForm.id = :instantFormId")
     int clearFacebookInstantFormById(@Param("instantFormId") Long instantFormId);
+
+    @Modifying
+    @Query("""
+            update Experiment e
+            set e.totalCost = coalesce(e.totalCost, 0) + :delta
+            where e.id = :id
+            """)
+    void incrementTotalCost(@Param("id") Long id, @Param("delta") BigDecimal delta);
 
     Optional<Experiment> findFirstByFacebookInstantForm_Id(Long facebookInstantFormId);
 }

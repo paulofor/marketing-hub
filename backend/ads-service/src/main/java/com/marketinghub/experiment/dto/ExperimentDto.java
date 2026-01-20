@@ -37,6 +37,7 @@ public class ExperimentDto {
     private BigDecimal dailyBudget;
     private BigDecimal unitPrice;
     private BigDecimal cost;
+    private BigDecimal totalCost;
     private BigDecimal expense;
     private LocalDate startDate;
     private LocalDate endDate;

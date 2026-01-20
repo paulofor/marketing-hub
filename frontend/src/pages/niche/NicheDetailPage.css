@@ -313,6 +313,11 @@
   align-items: flex-end;
 }
 
+.niche-section__actions--hypotheses .niche-section__action-group {
+  flex: 1 1 240px;
+  min-width: 220px;
+}
+
 .niche-section__action-group {
   display: flex;
   flex-direction: column;
@@ -336,6 +341,12 @@
 .niche-section__actions--hypotheses .form-control,
 .niche-section__actions--hypotheses .form-select {
   max-width: none;
+}
+
+.niche-section__action-group--quantity {
+  flex: 0 0 140px;
+  min-width: 120px;
+  max-width: 160px;
 }
 
 .niche-section__action-group--submit {

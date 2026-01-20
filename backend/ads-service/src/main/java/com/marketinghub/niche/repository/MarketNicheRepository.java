@@ -1,8 +1,11 @@
 package com.marketinghub.niche.repository;
 
 import com.marketinghub.niche.MarketNiche;
+import java.math.BigDecimal;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -45,5 +48,16 @@ public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> 
               and n.detailedDescriptionsToGenerate > 0
             """)
     List<MarketNiche> findAllToGenerateDetailedDescriptions();
+
+    /**
+     * Increments the total cost accumulated for a niche.
+     */
+    @Modifying
+    @Query("""
+            update MarketNiche n
+            set n.totalCost = coalesce(n.totalCost, 0) + :delta
+            where n.id = :id
+            """)
+    void incrementTotalCost(@Param("id") Long id, @Param("delta") BigDecimal delta);
 
 }

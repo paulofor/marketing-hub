@@ -112,13 +112,8 @@ public class HypothesisService {
                 .build();
         Hypothesis saved = repository.save(h);
         BigDecimal delta = resolveTotalCostDelta(req);
-        if (delta != null && saved.getMarketNiche() != null) {
-            MarketNiche niche = saved.getMarketNiche();
-            BigDecimal current = niche.getTotalCost();
-            if (current == null) {
-                current = BigDecimal.ZERO;
-            }
-            niche.setTotalCost(current.add(delta));
+        if (delta != null && saved.getMarketNiche() != null && saved.getMarketNiche().getId() != null) {
+            nicheRepository.incrementTotalCost(saved.getMarketNiche().getId(), delta);
         }
         return saved;
     }

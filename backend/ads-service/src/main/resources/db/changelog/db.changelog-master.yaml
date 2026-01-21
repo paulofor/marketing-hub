@@ -399,5 +399,9 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
   - include:
+      file: V2031_12_20__lead_portal_prompt_domain.sql
+      relativeToChangelogFile: true
+
+  - include:
       file: V2032_01_10__add_total_cost_to_experiment_and_hypothesis.sql
       relativeToChangelogFile: true

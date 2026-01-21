@@ -2,7 +2,10 @@ package com.marketinghub.prompt.service;
 
 import com.marketinghub.differentiatedtechnology.DifferentiatedTechnology;
 import com.marketinghub.differentiatedtechnology.repository.DifferentiatedTechnologyRepository;
+import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.hypothesis.Hypothesis;
+import com.marketinghub.hypothesis.HypothesisStatus;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.journey.model.Journey;
 import com.marketinghub.journey.repository.JourneyRepository;
@@ -28,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 @Component
 public class PromptDomainContextFactory {
@@ -38,6 +42,7 @@ public class PromptDomainContextFactory {
     private final NicheDetailedDescriptionRepository detailedDescriptionRepository;
     private final DifferentiatedTechnologyRepository technologyRepository;
     private final HypothesisRepository hypothesisRepository;
+    private final ExperimentRepository experimentRepository;
     private final JourneyRepository journeyRepository;
     private final PromptAttributeRepository promptAttributeRepository;
     private final PromptAttributeDescriptionRepository promptAttributeDescriptionRepository;
@@ -46,6 +51,7 @@ public class PromptDomainContextFactory {
                                       NicheDetailedDescriptionRepository detailedDescriptionRepository,
                                       DifferentiatedTechnologyRepository technologyRepository,
                                       HypothesisRepository hypothesisRepository,
+                                      ExperimentRepository experimentRepository,
                                       JourneyRepository journeyRepository,
                                       PromptAttributeRepository promptAttributeRepository,
                                       PromptAttributeDescriptionRepository promptAttributeDescriptionRepository) {
@@ -53,6 +59,7 @@ public class PromptDomainContextFactory {
         this.detailedDescriptionRepository = detailedDescriptionRepository;
         this.technologyRepository = technologyRepository;
         this.hypothesisRepository = hypothesisRepository;
+        this.experimentRepository = experimentRepository;
         this.journeyRepository = journeyRepository;
         this.promptAttributeRepository = promptAttributeRepository;
         this.promptAttributeDescriptionRepository = promptAttributeDescriptionRepository;
@@ -67,6 +74,7 @@ public class PromptDomainContextFactory {
         boolean includeTechnology = objects.contains(PromptDomainObjectType.DIFFERENTIATED_TECHNOLOGY);
         boolean includeHypothesis = objects.contains(PromptDomainObjectType.HYPOTHESIS);
         boolean includeJourney = objects.contains(PromptDomainObjectType.JOURNEY);
+        boolean includeExperiment = objects.contains(PromptDomainObjectType.EXPERIMENT);
 
         Optional<MarketNiche> nicheSample = includeNiche ? findSampleNiche() : Optional.empty();
         Optional<NicheDetailedDescription> detailedSample = includeDetailedDescription
@@ -75,6 +83,14 @@ public class PromptDomainContextFactory {
         Optional<DifferentiatedTechnology> techSample = includeTechnology ? findSampleTechnology() : Optional.empty();
         Optional<Hypothesis> hypothesisSample = includeHypothesis ? findSampleHypothesis() : Optional.empty();
         Optional<Journey> journeySample = includeJourney ? findSampleJourney() : Optional.empty();
+        Optional<Experiment> experimentSample = includeExperiment ? findSampleExperiment() : Optional.empty();
+
+        MarketNiche nicheForExperiment = experimentSample
+                .map(Experiment::getNiche)
+                .orElse(nicheSample.orElse(null));
+        Hypothesis hypothesisForExperiment = experimentSample
+                .map(Experiment::getHypothesisRef)
+                .orElse(hypothesisSample.orElse(null));
 
         Map<String, Object> detailedContext = includeDetailedDescription
                 ? buildDetailedDescriptionContext(detailedSample.orElse(null))
@@ -82,14 +98,17 @@ public class PromptDomainContextFactory {
         Map<String, Object> technologyContext = includeTechnology
                 ? buildTechnologyContext(techSample.orElse(null))
                 : null;
-        Map<String, Object> nicheContext = includeNiche
-                ? buildNicheContext(nicheSample.orElse(null), detailedContext, technologyContext,
+        Map<String, Object> nicheContext = (includeNiche || includeExperiment)
+                ? buildNicheContext(nicheForExperiment, detailedContext, technologyContext,
                 includeDetailedDescription || includeTechnology)
                 : null;
 
-        if (includeNiche) {
+        if (includeNiche && nicheContext != null) {
             context.put("niche", nicheContext);
         }
+        Map<String, Object> hypothesisContext = (includeHypothesis || includeExperiment)
+                ? buildHypothesisContextOrSample(hypothesisForExperiment)
+                : null;
         if (includeDetailedDescription) {
             context.put("detailedDescription", detailedContext);
         }
@@ -111,12 +130,16 @@ public class PromptDomainContextFactory {
             context.put("attributes", attributes);
             context.put("attributeNames", attributeNames);
             context.put("defaultAttributes", attributeNames);
-            if (hypothesisSample.isPresent()) {
-                context.put("hypothesis", buildHypothesisContext(hypothesisSample.get()));
-            }
+            context.put("hypothesis", hypothesisContext != null ? hypothesisContext : buildHypothesisContextOrSample(null));
         }
         if (includeJourney) {
             context.put("journey", buildJourneyContext(journeySample.orElse(null)));
+        }
+        if (includeExperiment) {
+            context.put("experiment", buildExperimentContext(
+                    experimentSample.orElse(null),
+                    nicheContext,
+                    hypothesisContext));
         }
         // Preserve backwards compatibility for legacy keys sourced from the niche context
         if (includeDetailedDescription && nicheContext != null) {
@@ -167,6 +190,12 @@ public class PromptDomainContextFactory {
 
     private Optional<Journey> findSampleJourney() {
         return journeyRepository.findAll(PageRequest.of(0, 1, Sort.by(Sort.Direction.DESC, "createdAt")))
+                .stream()
+                .findFirst();
+    }
+
+    private Optional<Experiment> findSampleExperiment() {
+        return experimentRepository.findAll(PageRequest.of(0, 1, Sort.by(Sort.Direction.DESC, "createdAt")))
                 .stream()
                 .findFirst();
     }
@@ -224,6 +253,54 @@ public class PromptDomainContextFactory {
         context.put("createdAt", technology != null && technology.getCreatedAt() != null ? technology.getCreatedAt() : Instant.now());
         context.put("updatedAt", technology != null && technology.getUpdatedAt() != null ? technology.getUpdatedAt() : Instant.now());
         return context;
+    }
+
+    private Map<String, Object> buildExperimentContext(Experiment experiment,
+                                                         Map<String, Object> nicheContext,
+                                                         Map<String, Object> hypothesisContext) {
+        Map<String, Object> context = new LinkedHashMap<>();
+        context.put("id", experiment != null ? experiment.getId() : 1L);
+        context.put("name", textOrDefault(experiment != null ? experiment.getName() : null, "Experimento Exemplo"));
+        context.put("hypothesisSummary", textOrDefault(experiment != null ? experiment.getHypothesis() : null, "Resumo do experimento"));
+        context.put("status", experiment != null && experiment.getStatus() != null ? experiment.getStatus().name() : "DRAFT");
+        context.put("platform", experiment != null && experiment.getPlatform() != null ? experiment.getPlatform().name() : "META");
+        context.put("leadPortalFlowsToGenerate",
+                experiment != null && experiment.getLeadPortalFlowsToGenerate() != null
+                        ? experiment.getLeadPortalFlowsToGenerate()
+                        : 3);
+        context.put("followUpActionUrl", textOrDefault(
+                experiment != null ? experiment.getFollowUpActionUrl() : null,
+                "https://exemplo.com/acao"));
+        context.put("createdAt", experiment != null && experiment.getCreatedAt() != null ? experiment.getCreatedAt() : Instant.now());
+        context.put("updatedAt", experiment != null && experiment.getUpdatedAt() != null ? experiment.getUpdatedAt() : Instant.now());
+        if (experiment != null && experiment.getJourneyTemplate() != null) {
+            context.put("journeyTemplateId", experiment.getJourneyTemplate().getId());
+        }
+        context.put("hypothesis", hypothesisContext != null ? hypothesisContext : buildHypothesisContextOrSample(null));
+        context.put("niche", nicheContext != null ? nicheContext : buildNicheContext(null, null, null, false));
+        return context;
+    }
+
+    private Map<String, Object> buildHypothesisContextOrSample(Hypothesis hypothesis) {
+        Hypothesis resolved = hypothesis;
+        if (resolved == null) {
+            resolved = new Hypothesis();
+            resolved.setTitle("Hipótese exemplo");
+            resolved.setPromise("Promessa que gera valor para o lead");
+            resolved.setProblem("Principais dores que o lead enfrenta hoje");
+            resolved.setPersona("Perfil de cliente ideal");
+            resolved.setMechanism("Mecanismo principal utilizado pela solução");
+            resolved.setUniqueMechanism("Elemento exclusivo que diferencia a oferta");
+            resolved.setEntrega("Entregável oferecido");
+            resolved.setSuccessRule("Critério utilizado para medir sucesso");
+            resolved.setModel("gpt-4o-mini");
+            resolved.setStatus(HypothesisStatus.BACKLOG);
+            resolved.setGeneratedAt(Instant.now());
+            resolved.setCreatedAt(Instant.now());
+            resolved.setUpdatedAt(Instant.now());
+            resolved.setId(UUID.randomUUID());
+        }
+        return buildHypothesisContext(resolved);
     }
 
     private Map<String, Object> buildHypothesisContext(Hypothesis hypothesis) {

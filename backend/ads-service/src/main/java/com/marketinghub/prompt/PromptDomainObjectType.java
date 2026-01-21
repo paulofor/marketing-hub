@@ -9,6 +9,7 @@ public enum PromptDomainObjectType {
     DIFFERENTIATED_TECHNOLOGY("tecnologia-diferenciada", "Tecnologia diferenciada", "technology"),
     NICHE("nicho", "Nicho", "niche"),
     JOURNEY("jornada", "Jornada", "journey"),
+    EXPERIMENT("experimento", "Experimento", "experiment"),
     HYPOTHESIS("hipotese", "Hipótese", "hypothesis");
 
     private final String slug;

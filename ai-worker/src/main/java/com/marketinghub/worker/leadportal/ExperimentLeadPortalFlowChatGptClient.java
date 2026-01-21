@@ -6,9 +6,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.leadportal.LeadPortalQuestionType;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.prompt.Prompt;
+import com.marketinghub.prompt.PromptDomainObjectType;
+import com.marketinghub.prompt.PromptDomains;
+import com.marketinghub.prompt.service.PromptDomainService;
+import com.marketinghub.prompt.service.PromptService;
 import com.marketinghub.worker.openai.AiGenerationRecorder;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
+import com.marketinghub.worker.prompt.NichePromptContext;
+import com.marketinghub.worker.prompt.PromptTemplateRenderer;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
@@ -23,10 +31,13 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * ChatGPT client responsável por planejar fluxos do portal do lead.
@@ -36,12 +47,15 @@ public class ExperimentLeadPortalFlowChatGptClient {
     private static final Logger log = LoggerFactory.getLogger(ExperimentLeadPortalFlowChatGptClient.class);
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(90);
-    private static final String DOMAIN = "LEAD_PORTAL_FLOW";
+    private static final String DOMAIN = PromptDomains.LEAD_PORTAL_FLOW;
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
     private final String model;
     private final boolean enabled;
+    private final PromptService promptService;
+    private final PromptDomainService promptDomainService;
+    private final PromptTemplateRenderer promptTemplateRenderer;
     private final AiGenerationRecorder generationRecorder;
 
     public ExperimentLeadPortalFlowChatGptClient(WebClient.Builder builder,
@@ -49,9 +63,15 @@ public class ExperimentLeadPortalFlowChatGptClient {
                                                  @Value("${openai.api-key:}") String apiKey,
                                                  @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
                                                  @Value("${openai.model:gpt-3.5-turbo}") String model,
+                                                 PromptService promptService,
+                                                 PromptDomainService promptDomainService,
+                                                 PromptTemplateRenderer promptTemplateRenderer,
                                                  AiGenerationRecorder generationRecorder) {
         this.objectMapper = objectMapper;
         this.model = model;
+        this.promptService = promptService;
+        this.promptDomainService = promptDomainService;
+        this.promptTemplateRenderer = promptTemplateRenderer;
         this.enabled = StringUtils.hasText(apiKey);
         this.generationRecorder = generationRecorder;
 
@@ -81,10 +101,10 @@ public class ExperimentLeadPortalFlowChatGptClient {
                     experiment != null ? experiment.getId() : null);
             return Generation.disabled(model);
         }
-        String prompt = buildPrompt(experiment, quantity);
+        PromptData promptData = buildPrompt(experiment, quantity);
         List<Map<String, Object>> input = List.of(
                 OpenAiRequestUtils.message("system", "Você é um especialista em onboarding de leads."),
-                OpenAiRequestUtils.message("user", prompt)
+                OpenAiRequestUtils.message("user", promptData.prompt())
         );
 
         Map<String, Object> payload = new LinkedHashMap<>();
@@ -107,7 +127,7 @@ public class ExperimentLeadPortalFlowChatGptClient {
         }
         if (response == null) {
             log.warn("ChatGPT retornou resposta vazia para experimento {}", experiment != null ? experiment.getId() : null);
-            return Generation.empty(model, prompt, null);
+            return Generation.empty(model, promptData.prompt(), null);
         }
         if (response.hasError()) {
             throw new RuntimeException("Erro na resposta do ChatGPT: " + response.errorMessage());
@@ -116,14 +136,118 @@ public class ExperimentLeadPortalFlowChatGptClient {
         String content = response.firstText();
         generationRecorder.record(DOMAIN,
                 experiment != null ? String.valueOf(experiment.getId()) : null,
-                prompt,
+                promptData.prompt(),
                 content,
                 model,
                 response.usage());
         log.info("Resposta do ChatGPT para fluxos do portal: {}", content);
 
         List<FlowPlan> plans = parseContent(content);
-        return new Generation(plans, prompt, content, model);
+        return new Generation(plans, promptData.prompt(), content, model);
+    }
+
+    private PromptData buildPrompt(Experiment experiment, int quantity) {
+        Prompt promptTemplate = promptService.getActiveByDomainOrThrow(DOMAIN);
+        Map<String, Object> context = buildPromptContext(experiment, quantity);
+        String rendered = promptTemplateRenderer.render(promptTemplate.getTemplate(), context);
+        log.debug("Prompt do portal do lead renderizado (modelo={}): {}", model, rendered);
+        return new PromptData(rendered, context);
+    }
+
+    private Map<String, Object> buildPromptContext(Experiment experiment, int quantity) {
+        Map<String, Object> context = new LinkedHashMap<>();
+        context.put("quantity", Math.max(1, quantity));
+        context.put("model", model);
+
+        List<PromptDomainObjectType> configuredObjects = promptDomainService.getObjectTypes(DOMAIN);
+        Set<PromptDomainObjectType> objectSet = new HashSet<>(configuredObjects);
+
+        Map<String, Object> hypothesisContext = mapHypothesis(experiment != null ? experiment.getHypothesisRef() : null);
+        Map<String, Object> nicheContext = mapNiche(experiment != null ? experiment.getNiche() : null);
+        Map<String, Object> experimentContext = mapExperiment(experiment, hypothesisContext, nicheContext);
+
+        // Sempre disponibilizamos o contexto completo do experimento
+        context.put("experiment", experimentContext);
+        if (objectSet.contains(PromptDomainObjectType.HYPOTHESIS)) {
+            context.put("hypothesis", hypothesisContext);
+        }
+        if (objectSet.contains(PromptDomainObjectType.NICHE)) {
+            context.put("niche", nicheContext);
+        }
+        return context;
+    }
+
+    private Map<String, Object> mapExperiment(Experiment experiment,
+                                              Map<String, Object> hypothesisContext,
+                                              Map<String, Object> nicheContext) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", experiment != null ? experiment.getId() : null);
+        map.put("name", textOrDefault(experiment != null ? experiment.getName() : null, "Experimento exemplo"));
+        map.put("hypothesisSummary", textOrDefault(experiment != null ? experiment.getHypothesis() : null, "Resumo do experimento"));
+        map.put("status", experiment != null && experiment.getStatus() != null ? experiment.getStatus().name() : "DRAFT");
+        map.put("platform", experiment != null && experiment.getPlatform() != null ? experiment.getPlatform().name() : "META");
+        map.put("leadPortalFlowsToGenerate", experiment != null && experiment.getLeadPortalFlowsToGenerate() != null
+                ? experiment.getLeadPortalFlowsToGenerate()
+                : 3);
+        map.put("followUpActionUrl", textOrDefault(experiment != null ? experiment.getFollowUpActionUrl() : null, "https://exemplo.com/acao"));
+        map.put("createdAt", experiment != null ? experiment.getCreatedAt() : Instant.now());
+        map.put("updatedAt", experiment != null ? experiment.getUpdatedAt() : Instant.now());
+        map.put("hypothesis", hypothesisContext != null ? hypothesisContext : mapHypothesis(null));
+        map.put("niche", nicheContext != null ? nicheContext : defaultNicheContext());
+        return map;
+    }
+
+    private Map<String, Object> mapHypothesis(Hypothesis hypothesis) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", hypothesis != null ? hypothesis.getId() : null);
+        map.put("title", textOrDefault(hypothesis != null ? hypothesis.getTitle() : null, "Hipótese exemplo"));
+        map.put("promise", textOrDefault(hypothesis != null ? hypothesis.getPromise() : null, "Promessa de valor para o lead"));
+        map.put("problem", textOrDefault(hypothesis != null ? hypothesis.getProblem() : null, "Problema recorrente do lead"));
+        map.put("persona", textOrDefault(hypothesis != null ? hypothesis.getPersona() : null, "Persona ideal"));
+        map.put("mechanism", textOrDefault(hypothesis != null ? hypothesis.getMechanism() : null, "Mecanismo responsável pela transformação"));
+        map.put("uniqueMechanism", textOrDefault(hypothesis != null ? hypothesis.getUniqueMechanism() : null, "Elemento exclusivo da solução"));
+        map.put("entrega", textOrDefault(hypothesis != null ? hypothesis.getEntrega() : null, "Entrega principal oferecida"));
+        map.put("successRule", textOrDefault(hypothesis != null ? hypothesis.getSuccessRule() : null, "Critério utilizado para medir sucesso"));
+        map.put("offerType", hypothesis != null && hypothesis.getOfferType() != null ? hypothesis.getOfferType().name() : "LEAD");
+        map.put("price", hypothesis != null ? hypothesis.getPrice() : null);
+        map.put("model", textOrDefault(hypothesis != null ? hypothesis.getModel() : null, model));
+        map.put("generatedAt", hypothesis != null ? hypothesis.getGeneratedAt() : Instant.now());
+        map.put("createdAt", hypothesis != null ? hypothesis.getCreatedAt() : Instant.now());
+        map.put("updatedAt", hypothesis != null ? hypothesis.getUpdatedAt() : Instant.now());
+        return map;
+    }
+
+    private Map<String, Object> mapNiche(MarketNiche niche) {
+        if (niche == null) {
+            return defaultNicheContext();
+        }
+        NichePromptContext context = NichePromptContext.from(niche);
+        if (context != null) {
+            return context.asMap();
+        }
+        return defaultNicheContext();
+    }
+
+    private Map<String, Object> defaultNicheContext() {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", 0L);
+        map.put("name", "Nicho exemplo");
+        map.put("description", "Descrição resumida do nicho");
+        map.put("baseSegmentation", "Segmentação base sugerida");
+        map.put("interests", "Interesses relevantes");
+        map.put("demographicFilters", "Filtros demográficos recomendados");
+        map.put("extraTips", "Dicas adicionais para explorar o público");
+        map.put("interestCategory", "Categoria de interesse principal");
+        map.put("roleCategory", "Categoria de papel do público");
+        map.put("detailedDescriptions", List.of());
+        map.put("latestDetailedDescription", null);
+        map.put("hypothesisDetailedDescription", null);
+        map.put("differentiatedTechnology", Map.of());
+        return map;
+    }
+
+    private String textOrDefault(String value, String fallback) {
+        return StringUtils.hasText(value) ? value : fallback;
     }
 
     private List<FlowPlan> parseContent(String content) {
@@ -158,36 +282,7 @@ public class ExperimentLeadPortalFlowChatGptClient {
         }
     }
 
-    private String buildPrompt(Experiment experiment, int quantity) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Gere até ").append(quantity).append(" fluxos para portal de leads em português no formato JSON.");
-        sb.append(" Cada item deve conter: \"name\" (título amigável), \"slug\" (kebab-case único), \"description\" (objetivo do fluxo) e \"questions\".");
-        sb.append(" Em questions informe objetos com as chaves: \"title\", \"dataKey\" (snake case curto), \"type\" (TEXT, TEXTAREA, NUMBER, EMAIL, PHONE, DATE, SINGLE_CHOICE, MULTIPLE_CHOICE ou IMAGE_UPLOAD), \"required\", \"description\", \"placeholder\" e \"options\" (array, usar quando tipo for SINGLE_CHOICE ou MULTIPLE_CHOICE).");
-        sb.append(" Solicite perguntas simples que façam o lead refletir sobre o problema e o diagnóstico, oferecendo opções de resposta realistas sempre que houver múltipla escolha.");
-        sb.append(" Finalize SEMPRE cada fluxo com uma pergunta do tipo IMAGE_UPLOAD pedindo de forma objetiva uma foto nítida do empreendimento para criar materiais de divulgação e melhorias.");
-        sb.append(" Responda somente com um array JSON válido, sem comentários ou texto extra.\n\n");
-
-        if (experiment != null) {
-            if (StringUtils.hasText(experiment.getName())) {
-                sb.append("Experimento: ").append(experiment.getName()).append("\n");
-            }
-            if (StringUtils.hasText(experiment.getHypothesis())) {
-                sb.append("Resumo do experimento: ").append(experiment.getHypothesis()).append("\n");
-            }
-            Hypothesis hypothesis = experiment.getHypothesisRef();
-            if (hypothesis != null) {
-                if (StringUtils.hasText(hypothesis.getProblem())) {
-                    sb.append("Problema do lead: ").append(hypothesis.getProblem()).append("\n");
-                }
-                if (StringUtils.hasText(hypothesis.getPromise())) {
-                    sb.append("Promessa da solução: ").append(hypothesis.getPromise()).append("\n");
-                }
-                if (StringUtils.hasText(hypothesis.getPersona())) {
-                    sb.append("Persona: ").append(hypothesis.getPersona()).append("\n");
-                }
-            }
-        }
-        return sb.toString();
+    private record PromptData(String prompt, Map<String, Object> context) {
     }
 
     public record Generation(List<FlowPlan> plans, String prompt, String rawResponse, String model) {

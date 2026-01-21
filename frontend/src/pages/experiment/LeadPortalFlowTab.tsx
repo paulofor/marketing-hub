@@ -16,7 +16,7 @@ type FeedbackState = {
 };
 
 export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps) {
-  const { data: flows, isLoading, isError } = useLeadPortalFlows();
+  const { data: flows, isLoading, isError } = useLeadPortalFlows(experiment.id);
   const requestFlows = useRequestLeadPortalFlows(experiment.id);
   const updateExperiment = useUpdateExperiment(experiment.id);
   const updateApproval = useUpdateLeadPortalFlowApproval();

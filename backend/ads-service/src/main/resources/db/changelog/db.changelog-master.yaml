@@ -409,3 +409,7 @@ databaseChangeLog:
   - include:
       file: V2032_01_10__add_total_cost_to_experiment_and_hypothesis.sql
       relativeToChangelogFile: true
+
+  - include:
+      file: V2032_02_20__lead_portal_flow_experiment_id.sql
+      relativeToChangelogFile: true

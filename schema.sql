@@ -214,6 +214,7 @@ CREATE TABLE lead_portal_flow (
     name VARCHAR(150) NOT NULL,
     slug VARCHAR(120) NOT NULL UNIQUE,
     description VARCHAR(500),
+    experiment_id BIGINT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -408,6 +409,9 @@ CREATE TABLE experiment (
     CONSTRAINT fk_experiment_image_model FOREIGN KEY (image_model_id) REFERENCES image_generation_model(id),
     CONSTRAINT fk_experiment_image_model_quality FOREIGN KEY (image_model_quality_id) REFERENCES image_generation_quality(id)
 );
+
+ALTER TABLE lead_portal_flow
+    ADD CONSTRAINT fk_lead_portal_flow_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id);
 
 CREATE TABLE experiment_sample_email (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,

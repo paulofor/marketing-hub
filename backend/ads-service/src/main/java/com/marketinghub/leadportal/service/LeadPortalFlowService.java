@@ -41,6 +41,10 @@ public class LeadPortalFlowService {
         return repository.findAllByOrderByNameAsc();
     }
 
+    public List<LeadPortalFlow> listByExperiment(Long experimentId) {
+        return repository.findAllByExperimentIdOrderByCreatedAtDesc(experimentId);
+    }
+
     public LeadPortalFlow get(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,

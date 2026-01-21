@@ -336,6 +336,7 @@ worker to build ad sets with the correct amount in cents for the Graph API.
 - `description` VARCHAR(500)
 - `model` VARCHAR(128)
 - `prompt` LONGTEXT
+- `experiment_id` BIGINT → FK `experiment.id`
 - `approved` TINYINT(1) DEFAULT 0
 - `approved_at` TIMESTAMP
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -345,6 +346,7 @@ Representa o fluxo configurado no Portal Lead. Cada fluxo é identificado por um
 `slug` único que pode ser consumido pela aplicação externa para carregar as
 perguntas corretas e instruções de coleta de dados. Os campos `model` e `prompt`
 armazenam o histórico de geração realizado pelo Worker IA, enquanto
+`experiment_id` associa o fluxo ao experimento que solicitou sua geração e
 `approved/approved_at` registram quando o fluxo foi validado para uso em
 campanhas.
 

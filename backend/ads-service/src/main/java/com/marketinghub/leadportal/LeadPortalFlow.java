@@ -1,5 +1,6 @@
 package com.marketinghub.leadportal;
 
+import com.marketinghub.experiment.Experiment;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -54,6 +55,12 @@ public class LeadPortalFlow {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private List<LeadPortalFlowQuestion> questions = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "experiment_id")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Experiment experiment;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

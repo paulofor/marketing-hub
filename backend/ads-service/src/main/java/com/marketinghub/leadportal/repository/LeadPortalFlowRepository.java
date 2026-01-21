@@ -18,5 +18,8 @@ public interface LeadPortalFlowRepository extends JpaRepository<LeadPortalFlow, 
     @EntityGraph(attributePaths = "questions")
     List<LeadPortalFlow> findAllByOrderByNameAsc();
 
+    @EntityGraph(attributePaths = "questions")
+    List<LeadPortalFlow> findAllByExperimentIdOrderByCreatedAtDesc(Long experimentId);
+
     Optional<LeadPortalFlow> findBySlug(String slug);
 }

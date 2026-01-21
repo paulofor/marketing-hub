@@ -33,8 +33,9 @@ public class LeadPortalFlowController {
     }
 
     @GetMapping
-    public List<LeadPortalFlowDto> list() {
-        return service.listAll().stream().map(this::toDto).toList();
+    public List<LeadPortalFlowDto> list(@RequestParam(value = "experimentId", required = false) Long experimentId) {
+        List<LeadPortalFlow> flows = experimentId == null ? service.listAll() : service.listByExperiment(experimentId);
+        return flows.stream().map(this::toDto).toList();
     }
 
     @GetMapping("/{id}")

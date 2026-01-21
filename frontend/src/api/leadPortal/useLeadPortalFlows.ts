@@ -28,11 +28,13 @@ export interface LeadPortalFlow {
   questions: LeadPortalFlowQuestion[];
 }
 
-export function useLeadPortalFlows() {
+export function useLeadPortalFlows(experimentId?: number | string) {
   return useQuery({
-    queryKey: ["lead-portal-flows"],
+    queryKey: ["lead-portal-flows", experimentId],
     queryFn: async () => {
-      const { data } = await axios.get<LeadPortalFlow[]>("/api/lead-portal-flows");
+      const { data } = await axios.get<LeadPortalFlow[]>("/api/lead-portal-flows", {
+        params: experimentId ? { experimentId } : undefined,
+      });
       return data;
     },
   });

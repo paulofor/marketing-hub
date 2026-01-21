@@ -100,6 +100,7 @@ public class ExperimentLeadPortalFlowService {
                 .description(trimToNull(plan.description()))
                 .model(generation.model())
                 .prompt(generation.auditTrail())
+                .experiment(experiment)
                 .build();
 
         List<LeadPortalFlowQuestion> questions = buildQuestions(flow, plan.questions());

@@ -399,6 +399,10 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
   - include:
+      file: V2031_12_10__widen_prompt_domain_object_type.sql
+      relativeToChangelogFile: true
+
+  - include:
       file: V2031_12_20__lead_portal_prompt_domain.sql
       relativeToChangelogFile: true
 

@@ -1,13 +1,24 @@
+
 package com.marketinghub.leadportal.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.AdsServiceApplication;
+import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentPlatform;
+import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.hypothesis.Hypothesis;
+import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.journey.model.JourneyTemplate;
+import com.marketinghub.journey.repository.JourneyTemplateRepository;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.LeadPortalQuestionType;
 import com.marketinghub.leadportal.dto.CreateLeadPortalFlowRequest;
 import com.marketinghub.leadportal.dto.LeadPortalFlowQuestionRequest;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.repository.MarketNicheRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +57,14 @@ class LeadPortalFlowControllerTest {
     ObjectMapper mapper;
     @Autowired
     LeadPortalFlowRepository repository;
+    @Autowired
+    ExperimentRepository experimentRepository;
+    @Autowired
+    MarketNicheRepository marketNicheRepository;
+    @Autowired
+    HypothesisRepository hypothesisRepository;
+    @Autowired
+    JourneyTemplateRepository journeyTemplateRepository;
 
     @MockBean
     LeadPortalFlowPublisher flowPublisher;
@@ -53,14 +72,21 @@ class LeadPortalFlowControllerTest {
     @BeforeEach
     void cleanDatabase() {
         repository.deleteAll();
+        experimentRepository.deleteAll();
+        hypothesisRepository.deleteAll();
+        marketNicheRepository.deleteAll();
+        journeyTemplateRepository.deleteAll();
     }
 
     @Test
     void createFlowPersistsQuestions() throws Exception {
+        Experiment experiment = createExperiment();
         CreateLeadPortalFlowRequest request = new CreateLeadPortalFlowRequest();
         request.setName("Fluxo Portal");
         request.setSlug("fluxo-portal");
         request.setDescription("Perguntas para leads vindos da campanha A");
+        request.setExperimentId(experiment.getId());
+        request.setModel("gpt-4o");
         request.setQuestions(List.of(
                 buildQuestion("Qual o seu nome?", "nome", LeadPortalQuestionType.TEXT, true, List.of()),
                 buildQuestion("Envie uma imagem do produto", "imagem_produto", LeadPortalQuestionType.IMAGE_UPLOAD, false, List.of())
@@ -72,24 +98,30 @@ class LeadPortalFlowControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.questions[0].dataKey").value("nome"))
                 .andExpect(jsonPath("$.questions[1].type").value("IMAGE_UPLOAD"))
+                .andExpect(jsonPath("$.experimentId").value(experiment.getId()))
+                .andExpect(jsonPath("$.model").value("gpt-4o"))
                 .andExpect(jsonPath("$.publicUrl").doesNotExist());
 
         assertThat(repository.count()).isEqualTo(1);
         LeadPortalFlow saved = repository.findAll().get(0);
         assertThat(saved.getQuestions()).hasSize(2);
         assertThat(saved.getQuestions().get(0).getPosition()).isZero();
+        assertThat(saved.getExperiment()).isNotNull();
     }
 
     @Test
     void duplicateSlugReturnsConflict() throws Exception {
+        Experiment experiment = createExperiment();
         repository.save(LeadPortalFlow.builder()
                 .name("Fluxo existente")
                 .slug("fluxo-duplicado")
+                .experiment(experiment)
                 .build());
 
         CreateLeadPortalFlowRequest request = new CreateLeadPortalFlowRequest();
         request.setName("Fluxo Portal");
         request.setSlug("fluxo-duplicado");
+        request.setExperimentId(experiment.getId());
         request.setQuestions(List.of(
                 buildQuestion("Qual o seu e-mail?", "email", LeadPortalQuestionType.EMAIL, true, List.of())
         ));
@@ -102,9 +134,11 @@ class LeadPortalFlowControllerTest {
 
     @Test
     void approvalEndpointUpdatesStatus() throws Exception {
+        Experiment experiment = createExperiment();
         LeadPortalFlow flow = repository.save(LeadPortalFlow.builder()
                 .name("Fluxo existente")
                 .slug("fluxo-aprovacao")
+                .experiment(experiment)
                 .build());
 
         mockMvc.perform(patch("/api/lead-portal-flows/" + flow.getId() + "/approval")
@@ -117,6 +151,27 @@ class LeadPortalFlowControllerTest {
         LeadPortalFlow updated = repository.findById(flow.getId()).orElseThrow();
         assertThat(updated.isApproved()).isTrue();
         assertThat(updated.getApprovedAt()).isNotNull();
+    }
+
+    private Experiment createExperiment() {
+        MarketNiche niche = marketNicheRepository.save(MarketNiche.builder().name("Nicho Teste").build());
+        Hypothesis hypothesis = hypothesisRepository.save(Hypothesis.builder()
+                .title("Hipótese Teste")
+                .marketNiche(niche)
+                .build());
+        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder()
+                .name("Template Jornada")
+                .build());
+        Experiment experiment = Experiment.builder()
+                .niche(niche)
+                .name("Experimento Lead Portal")
+                .hypothesis("Resumo")
+                .hypothesisRef(hypothesis)
+                .journeyTemplate(template)
+                .status(ExperimentStatus.PLANNED)
+                .platform(ExperimentPlatform.FACEBOOK)
+                .build();
+        return experimentRepository.save(experiment);
     }
 
     private LeadPortalFlowQuestionRequest buildQuestion(String title,

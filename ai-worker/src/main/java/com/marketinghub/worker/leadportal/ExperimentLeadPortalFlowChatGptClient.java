@@ -13,6 +13,7 @@ import com.marketinghub.prompt.PromptDomains;
 import com.marketinghub.prompt.service.PromptDomainService;
 import com.marketinghub.prompt.service.PromptService;
 import com.marketinghub.worker.openai.AiGenerationRecorder;
+import com.marketinghub.worker.openai.OpenAiCostEstimator;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
 import com.marketinghub.worker.prompt.NichePromptContext;
@@ -23,13 +24,20 @@ import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -48,6 +56,11 @@ public class ExperimentLeadPortalFlowChatGptClient {
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(90);
     private static final String DOMAIN = PromptDomains.LEAD_PORTAL_FLOW;
+    private static final String RESPONSES_ENDPOINT = "/v1/responses";
+    private static final String COMPLETION_WINDOW = "24h";
+    private static final Duration BATCH_POLL_INTERVAL = Duration.ofMillis(500);
+    private static final Duration BATCH_TIMEOUT = Duration.ofMinutes(2);
+    private static final Set<String> TERMINAL_BATCH_STATUSES = Set.of("completed", "failed", "expired", "cancelled");
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
@@ -96,65 +109,228 @@ public class ExperimentLeadPortalFlowChatGptClient {
     }
 
     public Generation generateFlows(Experiment experiment, int quantity) {
-        if (!enabled) {
-            log.warn("Ignorando geração de fluxos do portal para experimento {} por falta de API key",
-                    experiment != null ? experiment.getId() : null);
-            return Generation.disabled(model);
+        if (experiment == null) {
+            return Generation.empty(resolveModel(null), "", null, null);
         }
-        PromptData promptData = buildPrompt(experiment, quantity);
-        List<Map<String, Object>> input = List.of(
-                OpenAiRequestUtils.message("system", "Você é um especialista em onboarding de leads."),
-                OpenAiRequestUtils.message("user", promptData.prompt())
-        );
-
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("model", model);
-        payload.put("input", input);
-        OpenAiRequestUtils.maybeAddReasoning(payload, model);
-
-        OpenAiResponse response;
-        try {
-            response = webClient.post()
-                    .uri("/responses")
-                    .bodyValue(payload)
-                    .retrieve()
-                    .bodyToMono(OpenAiResponse.class)
-                    .block(REQUEST_TIMEOUT);
-        } catch (Exception ex) {
-            log.error("Falha ao consultar ChatGPT para fluxos do portal do lead do experimento {}",
-                    experiment != null ? experiment.getId() : null, ex);
-            throw new RuntimeException("Falha ao consultar ChatGPT para fluxos do portal do lead", ex);
-        }
-        if (response == null) {
-            log.warn("ChatGPT retornou resposta vazia para experimento {}", experiment != null ? experiment.getId() : null);
-            return Generation.empty(model, promptData.prompt(), null);
-        }
-        if (response.hasError()) {
-            throw new RuntimeException("Erro na resposta do ChatGPT: " + response.errorMessage());
-        }
-
-        String content = response.firstText();
-        generationRecorder.record(DOMAIN,
-                experiment != null ? String.valueOf(experiment.getId()) : null,
-                promptData.prompt(),
-                content,
-                model,
-                response.usage());
-        log.info("Resposta do ChatGPT para fluxos do portal: {}", content);
-
-        List<FlowPlan> plans = parseContent(content);
-        return new Generation(plans, promptData.prompt(), content, model);
+        Map<Long, Generation> generations = generateFlowsBatch(List.of(new FlowBatchRequest(experiment, quantity,
+                experiment.getLeadPortalFlowModel())));
+        return generations.getOrDefault(experiment.getId(), Generation.empty(resolveModel(experiment.getLeadPortalFlowModel()), "", null, null));
     }
 
-    private PromptData buildPrompt(Experiment experiment, int quantity) {
+    public Map<Long, Generation> generateFlowsBatch(List<FlowBatchRequest> requests) {
+        if (!enabled) {
+            log.warn("Ignorando geração de fluxos do portal por falta de API key");
+            return Map.of();
+        }
+        Map<String, RequestContext> contexts = new LinkedHashMap<>();
+        for (FlowBatchRequest request : requests) {
+            if (request == null || request.experiment() == null) {
+                continue;
+            }
+            int quantity = Math.max(0, request.quantity());
+            if (quantity == 0) {
+                continue;
+            }
+            Experiment experiment = request.experiment();
+            String requestModel = resolveModel(request.model());
+            PromptData promptData = buildPrompt(experiment, quantity, requestModel);
+            List<Map<String, Object>> input = List.of(
+                    OpenAiRequestUtils.message("system", "Você é um especialista em onboarding de leads."),
+                    OpenAiRequestUtils.message("user", promptData.prompt())
+            );
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("model", requestModel);
+            payload.put("input", input);
+            OpenAiRequestUtils.maybeAddReasoning(payload, requestModel);
+            String customId = customId(experiment);
+            log.info("Queued batch request {} for experiment {}", customId, experiment.getId());
+            contexts.put(customId, new RequestContext(experiment, promptData, payload, requestModel));
+        }
+
+        if (contexts.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<String, OpenAiResponse> responses = executeBatchRequests(contexts);
+        Map<Long, Generation> result = new LinkedHashMap<>();
+
+        for (Map.Entry<String, RequestContext> entry : contexts.entrySet()) {
+            String customId = entry.getKey();
+            RequestContext ctx = entry.getValue();
+            Experiment experiment = ctx.experiment();
+            OpenAiResponse response = responses.get(customId);
+            if (response == null) {
+                log.warn("ChatGPT batch returned no response for experiment {}", experiment.getId());
+                continue;
+            }
+            if (response.hasError()) {
+                throw new RuntimeException("Erro na resposta do ChatGPT: " + response.errorMessage());
+            }
+            String content = response.firstText();
+            generationRecorder.record(DOMAIN,
+                    experiment != null ? String.valueOf(experiment.getId()) : null,
+                    ctx.prompt().prompt(),
+                    content,
+                    ctx.model(),
+                    response.usage());
+            BigDecimal totalCostUsd = OpenAiCostEstimator.estimateUsd(ctx.model(), response.usage());
+            log.info("Resposta do ChatGPT para fluxos do portal: {}", content);
+
+            List<FlowPlan> plans = parseContent(content);
+            result.put(experiment.getId(), new Generation(plans, ctx.prompt().prompt(), content, ctx.model(), totalCostUsd));
+        }
+
+        return result;
+    }
+
+    private Map<String, OpenAiResponse> executeBatchRequests(Map<String, RequestContext> contexts) {
+        String inputFileId = uploadBatchFile(contexts);
+        OpenAiBatch batch = createBatch(inputFileId);
+        OpenAiBatch completed = awaitCompletion(batch);
+        String outputFileId = completed.outputFileId();
+        if (!StringUtils.hasText(outputFileId)) {
+            throw new IllegalStateException("OpenAI batch did not return output_file_id");
+        }
+        String content = downloadFile(outputFileId);
+        return parseBatchOutput(content);
+    }
+
+    private String uploadBatchFile(Map<String, RequestContext> contexts) {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, RequestContext> entry : contexts.entrySet()) {
+            Map<String, Object> line = new LinkedHashMap<>();
+            line.put("custom_id", entry.getKey());
+            line.put("method", "POST");
+            line.put("url", RESPONSES_ENDPOINT);
+            line.put("body", entry.getValue().payload());
+            try {
+                sb.append(objectMapper.writeValueAsString(line)).append("\\n");
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to serialize batch line for " + entry.getKey(), e);
+            }
+        }
+        byte[] payload = sb.toString().getBytes(StandardCharsets.UTF_8);
+        ByteArrayResource resource = new ByteArrayResource(payload) {
+            @Override
+            public String getFilename() {
+                return "lead-portal-flows.jsonl";
+            }
+        };
+        MultiValueMap<String, Object> multipart = new LinkedMultiValueMap<>();
+        multipart.add("purpose", "batch");
+        multipart.add("file", resource);
+        log.info("Uploading {} lead-portal flow requests to OpenAI batch file", contexts.size());
+        OpenAiFile file = webClient.post()
+                .uri("/files")
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(multipart))
+                .retrieve()
+                .bodyToMono(OpenAiFile.class)
+                .block();
+        if (file == null || !StringUtils.hasText(file.id())) {
+            throw new IllegalStateException("OpenAI file upload failed for lead-portal flow batch");
+        }
+        return file.id();
+    }
+
+    private OpenAiBatch createBatch(String inputFileId) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("input_file_id", inputFileId);
+        payload.put("endpoint", RESPONSES_ENDPOINT);
+        payload.put("completion_window", COMPLETION_WINDOW);
+        OpenAiBatch batch = webClient.post()
+                .uri("/batches")
+                .bodyValue(payload)
+                .retrieve()
+                .bodyToMono(OpenAiBatch.class)
+                .block();
+        if (batch == null || batch.id() == null) {
+            throw new IllegalStateException("OpenAI batch creation failed for lead-portal flows");
+        }
+        return batch;
+    }
+
+    private OpenAiBatch awaitCompletion(OpenAiBatch initial) {
+        OpenAiBatch current = initial;
+        Instant start = Instant.now();
+        while (!isTerminal(current)) {
+            if (Duration.between(start, Instant.now()).compareTo(BATCH_TIMEOUT) > 0) {
+                throw new IllegalStateException("Timed out waiting for OpenAI batch " + current.id());
+            }
+            try {
+                Thread.sleep(BATCH_POLL_INTERVAL.toMillis());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrupted while waiting for OpenAI batch", e);
+            }
+            current = webClient.get()
+                    .uri("/batches/{id}", current.id())
+                    .retrieve()
+                    .bodyToMono(OpenAiBatch.class)
+                    .block();
+            if (current == null) {
+                throw new IllegalStateException("OpenAI returned null batch while polling");
+            }
+        }
+        if (!"completed".equals(current.status())) {
+            throw new RuntimeException("OpenAI batch " + current.id() + " finished with status " + current.status());
+        }
+        return current;
+    }
+
+    private boolean isTerminal(OpenAiBatch batch) {
+        if (batch == null || batch.status() == null) return true;
+        return TERMINAL_BATCH_STATUSES.contains(batch.status());
+    }
+
+    private String downloadFile(String fileId) {
+        return webClient.get()
+                .uri("/files/{id}/content", fileId)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+    }
+
+    private Map<String, OpenAiResponse> parseBatchOutput(String content) {
+        Map<String, OpenAiResponse> responses = new LinkedHashMap<>();
+        if (content == null || content.isBlank()) {
+            return responses;
+        }
+        for (String line : content.split("\\n")) {
+            if (line.isBlank()) {
+                continue;
+            }
+            try {
+                BatchOutput output = objectMapper.readValue(line, BatchOutput.class);
+                if (output.response() != null && output.response().isSuccessful()) {
+                    Map<String, Object> body = output.response().body();
+                    if (body == null) {
+                        log.warn("Skipping batch line {} because body is null", output.customId());
+                        continue;
+                    }
+                    OpenAiResponse response = objectMapper.convertValue(body, OpenAiResponse.class);
+                    responses.put(output.customId(), response);
+                } else if (output.response() != null) {
+                    log.error("OpenAI batch request {} failed with status {}", output.customId(), output.response().statusCode());
+                } else if (output.error() != null) {
+                    log.error("OpenAI batch request {} failed: {} - {}", output.customId(), output.error().code(), output.error().message());
+                }
+            } catch (Exception e) {
+                log.error("Failed to parse batch output line: {}", line, e);
+            }
+        }
+        return responses;
+    }
+
+    private PromptData buildPrompt(Experiment experiment, int quantity, String model) {
         Prompt promptTemplate = promptService.getActiveByDomainOrThrow(DOMAIN);
-        Map<String, Object> context = buildPromptContext(experiment, quantity);
+        Map<String, Object> context = buildPromptContext(experiment, quantity, model);
         String rendered = promptTemplateRenderer.render(promptTemplate.getTemplate(), context);
         log.debug("Prompt do portal do lead renderizado (modelo={}): {}", model, rendered);
         return new PromptData(rendered, context);
     }
 
-    private Map<String, Object> buildPromptContext(Experiment experiment, int quantity) {
+    private Map<String, Object> buildPromptContext(Experiment experiment, int quantity, String model) {
         Map<String, Object> context = new LinkedHashMap<>();
         context.put("quantity", Math.max(1, quantity));
         context.put("model", model);
@@ -282,20 +458,39 @@ public class ExperimentLeadPortalFlowChatGptClient {
         }
     }
 
+    private String resolveModel(String requestedModel) {
+        if (StringUtils.hasText(requestedModel)) {
+            return requestedModel;
+        }
+        if (StringUtils.hasText(model)) {
+            return model;
+        }
+        return "gpt-3.5-turbo";
+    }
+
+    public record FlowBatchRequest(Experiment experiment, int quantity, String model) {
+    }
+
+    private record RequestContext(Experiment experiment,
+                                  PromptData prompt,
+                                  Map<String, Object> payload,
+                                  String model) {
+    }
+
     private record PromptData(String prompt, Map<String, Object> context) {
     }
 
-    public record Generation(List<FlowPlan> plans, String prompt, String rawResponse, String model) {
+    public record Generation(List<FlowPlan> plans, String prompt, String rawResponse, String model, BigDecimal totalCostUsd) {
         public Generation {
             plans = plans != null ? List.copyOf(plans) : List.of();
         }
 
         public static Generation disabled(String model) {
-            return new Generation(List.of(), "", null, model);
+            return new Generation(List.of(), "", null, model, null);
         }
 
-        public static Generation empty(String model, String prompt, String rawResponse) {
-            return new Generation(List.of(), prompt, rawResponse, model);
+        public static Generation empty(String model, String prompt, String rawResponse, BigDecimal totalCostUsd) {
+            return new Generation(List.of(), prompt, rawResponse, model, totalCostUsd);
         }
 
         public String auditTrail() {
@@ -328,5 +523,31 @@ public class ExperimentLeadPortalFlowChatGptClient {
                                String description,
                                String placeholder,
                                List<String> options) {
+    }
+
+    private record OpenAiBatch(String id, String status,
+                               @JsonProperty("output_file_id") String outputFileId) {
+    }
+
+    private record OpenAiFile(String id) {
+    }
+
+    private record BatchOutput(@JsonProperty("custom_id") String customId,
+                               BatchOutputResponse response,
+                               BatchOutputError error) {
+    }
+
+    private record BatchOutputResponse(@JsonProperty("status_code") Integer statusCode,
+                                       Map<String, Object> body) {
+        boolean isSuccessful() {
+            return statusCode != null && statusCode >= 200 && statusCode < 300;
+        }
+    }
+
+    private record BatchOutputError(String message, String code) {
+    }
+
+    private static String customId(Experiment experiment) {
+        return "experiment-" + (experiment != null ? experiment.getId() : "unknown");
     }
 }

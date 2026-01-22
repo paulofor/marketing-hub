@@ -12,13 +12,13 @@ import java.util.Optional;
  */
 public interface LeadPortalFlowRepository extends JpaRepository<LeadPortalFlow, Long> {
     @Override
-    @EntityGraph(attributePaths = "questions")
+    @EntityGraph(attributePaths = {"questions", "experiment"})
     List<LeadPortalFlow> findAll();
 
-    @EntityGraph(attributePaths = "questions")
+    @EntityGraph(attributePaths = {"questions", "experiment"})
     List<LeadPortalFlow> findAllByOrderByNameAsc();
 
-    @EntityGraph(attributePaths = "questions")
+    @EntityGraph(attributePaths = {"questions", "experiment"})
     List<LeadPortalFlow> findAllByExperimentIdOrderByCreatedAtDesc(Long experimentId);
 
     Optional<LeadPortalFlow> findBySlug(String slug);

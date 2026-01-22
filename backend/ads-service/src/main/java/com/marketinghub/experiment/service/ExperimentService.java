@@ -279,6 +279,7 @@ public class ExperimentService {
                 .facebookInstantForm(attachInstantForm(request.getFacebookInstantFormId(), request.getHypothesisId()))
                 .instagramAccount(attachInstagramAccount(request.getInstagramAccountId()))
                 .journeyTemplate(journeyTemplate)
+                .leadPortalFlowModel(request.getLeadPortalFlowModel())
                 .leadPortalFlow(leadPortalFlow)
                 .imageGenerationModel(imageSelection.model())
                 .imageGenerationQuality(imageSelection.quality())
@@ -357,6 +358,7 @@ public class ExperimentService {
                 .instagramAccount(original.getInstagramAccount())
                 .facebookInstantForm(original.getFacebookInstantForm())
                 .journeyTemplate(original.getJourneyTemplate())
+                .leadPortalFlowModel(original.getLeadPortalFlowModel())
                 .leadPortalFlow(original.getLeadPortalFlow())
                 .imageGenerationModel(original.getImageGenerationModel())
                 .imageGenerationQuality(original.getImageGenerationQuality())
@@ -496,6 +498,9 @@ public class ExperimentService {
         if (request.isFollowUpActionUrlPresent()) {
             String followUpActionUrl = normalizeFollowUpActionUrl(request.getFollowUpActionUrl());
             exp.setFollowUpActionUrl(followUpActionUrl);
+        }
+        if (request.isLeadPortalFlowModelPresent()) {
+            exp.setLeadPortalFlowModel(request.getLeadPortalFlowModel());
         }
         if (request.isJourneyTemplateIdPresent()) {
             if (request.getJourneyTemplateId() == null) {

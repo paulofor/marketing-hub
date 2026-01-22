@@ -9,6 +9,8 @@ import com.marketinghub.leadportal.dto.UpdateLeadPortalFlowRequest;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
+import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.experiment.Experiment;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,11 +32,14 @@ public class LeadPortalFlowService {
 
     private final LeadPortalFlowRepository repository;
     private final LeadPortalFlowPublisher flowPublisher;
+    private final ExperimentRepository experimentRepository;
 
     public LeadPortalFlowService(LeadPortalFlowRepository repository,
-                                 LeadPortalFlowPublisher flowPublisher) {
+                                 LeadPortalFlowPublisher flowPublisher,
+                                 ExperimentRepository experimentRepository) {
         this.repository = repository;
         this.flowPublisher = flowPublisher;
+        this.experimentRepository = experimentRepository;
     }
 
     public List<LeadPortalFlow> listAll() {
@@ -56,10 +61,16 @@ public class LeadPortalFlowService {
         String name = normalizeName(request.getName());
         String slug = normalizeSlug(request.getSlug());
         ensureUniqueSlug(slug, null);
+        if (request.getExperimentId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "experimentId is required");
+        }
+        Experiment experiment = attachExperiment(request.getExperimentId());
         LeadPortalFlow flow = LeadPortalFlow.builder()
                 .name(name)
                 .slug(slug)
                 .description(trimToNull(request.getDescription()))
+                .model(trimToNull(request.getModel()))
+                .experiment(experiment)
                 .build();
         flow.getQuestions().addAll(buildQuestions(flow, request.getQuestions()));
         return repository.save(flow);
@@ -175,6 +186,12 @@ public class LeadPortalFlowService {
                     throw new ResponseStatusException(HttpStatus.CONFLICT,
                             "slug already in use: " + slug);
                 });
+    }
+
+    private Experiment attachExperiment(Long experimentId) {
+        return experimentRepository.findById(experimentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "experiment not found: " + experimentId));
     }
 
     private String normalizeName(String name) {

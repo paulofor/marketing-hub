@@ -13,6 +13,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface LeadPortalFlowMapper {
     @Mapping(target = "questions", source = "questions")
+    @Mapping(target = "experimentId", source = "experiment.id")
     LeadPortalFlowDto toDto(LeadPortalFlow flow);
 
     LeadPortalFlowQuestionDto toDto(LeadPortalFlowQuestion question);

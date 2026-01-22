@@ -62,6 +62,9 @@ public class UpdateExperimentRequest {
     private String followUpActionUrl;
     @JsonIgnore
     private boolean followUpActionUrlPresent;
+    private String leadPortalFlowModel;
+    @JsonIgnore
+    private boolean leadPortalFlowModelPresent;
     @JsonIgnore
     private boolean dailyBudgetPresent;
     private Long leadPortalFlowId;
@@ -102,6 +105,12 @@ public class UpdateExperimentRequest {
     public void setFollowUpActionUrl(String followUpActionUrl) {
         this.followUpActionUrl = followUpActionUrl;
         this.followUpActionUrlPresent = true;
+    }
+
+    @JsonSetter(value = "leadPortalFlowModel", nulls = Nulls.SET)
+    public void setLeadPortalFlowModel(String leadPortalFlowModel) {
+        this.leadPortalFlowModel = leadPortalFlowModel;
+        this.leadPortalFlowModelPresent = true;
     }
 
     @JsonSetter(value = "openImagesPerPackage", nulls = Nulls.SET)

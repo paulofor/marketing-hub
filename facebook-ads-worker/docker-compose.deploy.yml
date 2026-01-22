@@ -1,0 +1,4 @@
+services:
+  facebook-ads-worker:
+    image: ${FACEBOOK_ADS_WORKER_IMAGE}
+    build: null

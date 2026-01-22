@@ -6,13 +6,18 @@ import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.LeadPortalFlowQuestion;
 import com.marketinghub.leadportal.LeadPortalQuestionType;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
+import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.worker.experiment.ExperimentGenerationRepository;
+import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.niche.repository.MarketNicheRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -32,15 +37,21 @@ public class ExperimentLeadPortalFlowService {
     private final ExperimentRepository experimentRepository;
     private final LeadPortalFlowRepository leadPortalFlowRepository;
     private final ExperimentGenerationRepository generationRepository;
+    private final HypothesisRepository hypothesisRepository;
+    private final MarketNicheRepository marketNicheRepository;
     private final ExperimentLeadPortalFlowChatGptClient chatGptClient;
 
     public ExperimentLeadPortalFlowService(ExperimentRepository experimentRepository,
                                            LeadPortalFlowRepository leadPortalFlowRepository,
                                            ExperimentGenerationRepository generationRepository,
+                                           HypothesisRepository hypothesisRepository,
+                                           MarketNicheRepository marketNicheRepository,
                                            ExperimentLeadPortalFlowChatGptClient chatGptClient) {
         this.experimentRepository = experimentRepository;
         this.leadPortalFlowRepository = leadPortalFlowRepository;
         this.generationRepository = generationRepository;
+        this.hypothesisRepository = hypothesisRepository;
+        this.marketNicheRepository = marketNicheRepository;
         this.chatGptClient = chatGptClient;
     }
 
@@ -48,31 +59,62 @@ public class ExperimentLeadPortalFlowService {
     public Map<Long, List<LeadPortalFlow>> generate() {
         Map<Long, List<LeadPortalFlow>> result = new LinkedHashMap<>();
         List<Experiment> experiments = generationRepository.findAllToGenerateLeadPortalFlows();
+        List<ExperimentLeadPortalFlowChatGptClient.FlowBatchRequest> requests = new ArrayList<>();
         for (Experiment experiment : experiments) {
             Integer quantity = experiment.getLeadPortalFlowsToGenerate();
             if (quantity == null || quantity <= 0) {
                 log.debug("Ignorando experimento {} sem solicitação de fluxos do portal", experiment.getId());
                 continue;
             }
+            requests.add(new ExperimentLeadPortalFlowChatGptClient.FlowBatchRequest(
+                    experiment,
+                    quantity,
+                    experiment.getLeadPortalFlowModel()));
+        }
+
+        Map<Long, ExperimentLeadPortalFlowChatGptClient.Generation> generations;
+        try {
+            generations = chatGptClient.generateFlowsBatch(requests);
+        } catch (Exception ex) {
+            log.error("Falha ao gerar fluxos do portal em lote", ex);
+            return result;
+        }
+
+        for (Experiment experiment : experiments) {
+            Integer quantity = experiment.getLeadPortalFlowsToGenerate();
+            if (quantity == null || quantity <= 0) {
+                continue;
+            }
+            ExperimentLeadPortalFlowChatGptClient.Generation generation = generations.get(experiment.getId());
+            if (generation == null) {
+                log.warn("ChatGPT não retornou geração para o experimento {}", experiment.getId());
+                continue;
+            }
             log.info("Gerando {} fluxo(s) do portal para o experimento {}", quantity, experiment.getId());
             try {
-                ExperimentLeadPortalFlowChatGptClient.Generation generation = chatGptClient.generateFlows(experiment, quantity);
                 List<ExperimentLeadPortalFlowChatGptClient.FlowPlan> plans = generation.plans();
                 if (plans.isEmpty()) {
                     log.warn("ChatGPT não retornou fluxos para o experimento {}", experiment.getId());
                 }
-                List<LeadPortalFlow> savedFlows = new ArrayList<>();
-                int produced = 0;
+                List<LeadPortalFlow> flowsToSave = new ArrayList<>();
                 for (ExperimentLeadPortalFlowChatGptClient.FlowPlan plan : plans) {
-                    if (produced >= quantity) {
+                    if (flowsToSave.size() >= quantity) {
                         break;
                     }
                     LeadPortalFlow flow = buildFlowFromPlan(plan, generation, experiment);
-                    if (flow == null) {
-                        continue;
+                    if (flow != null) {
+                        flowsToSave.add(flow);
                     }
+                }
+                BigDecimal costPerFlow = calculateCostPerFlow(generation.totalCostUsd(), flowsToSave.size());
+                for (LeadPortalFlow flow : flowsToSave) {
+                    flow.setCostUsd(costPerFlow);
+                    flow.setExperiment(experiment);
+                }
+                List<LeadPortalFlow> savedFlows = new ArrayList<>();
+                for (LeadPortalFlow flow : flowsToSave) {
                     savedFlows.add(leadPortalFlowRepository.save(flow));
-                    produced++;
+                    applyGenerationCost(experiment, costPerFlow);
                 }
                 experiment.setLeadPortalFlowsToGenerate(0);
                 experimentRepository.save(experiment);
@@ -100,6 +142,7 @@ public class ExperimentLeadPortalFlowService {
                 .description(trimToNull(plan.description()))
                 .model(generation.model())
                 .prompt(generation.auditTrail())
+                .experiment(experiment)
                 .build();
 
         List<LeadPortalFlowQuestion> questions = buildQuestions(flow, plan.questions());
@@ -235,6 +278,39 @@ public class ExperimentLeadPortalFlowService {
             slug = truncatedBase + suffixValue;
         }
         return truncate(slug, 120);
+    }
+
+    private BigDecimal calculateCostPerFlow(BigDecimal totalCostUsd, int flowCount) {
+        if (totalCostUsd == null || flowCount <= 0) {
+            return null;
+        }
+        return totalCostUsd.divide(BigDecimal.valueOf(flowCount), 4, RoundingMode.HALF_UP);
+    }
+
+    private void applyGenerationCost(Experiment experiment, BigDecimal costUsd) {
+        if (experiment == null || costUsd == null || costUsd.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+        experiment.setTotalCost(addCost(experiment.getTotalCost(), costUsd));
+        if (experiment.getId() != null) {
+            experimentRepository.incrementTotalCost(experiment.getId(), costUsd);
+        }
+        if (experiment.getHypothesisRef() != null && experiment.getHypothesisRef().getId() != null) {
+            experiment.getHypothesisRef().setTotalCost(addCost(experiment.getHypothesisRef().getTotalCost(), costUsd));
+            hypothesisRepository.incrementTotalCost(experiment.getHypothesisRef().getId(), costUsd);
+        }
+        MarketNiche niche = experiment.getNiche();
+        if (niche != null && niche.getId() != null) {
+            niche.setTotalCost(addCost(niche.getTotalCost(), costUsd));
+            marketNicheRepository.incrementTotalCost(niche.getId(), costUsd);
+        }
+    }
+
+    private BigDecimal addCost(BigDecimal current, BigDecimal delta) {
+        if (current == null) {
+            return delta;
+        }
+        return current.add(delta);
     }
 
     private String slugify(String value) {

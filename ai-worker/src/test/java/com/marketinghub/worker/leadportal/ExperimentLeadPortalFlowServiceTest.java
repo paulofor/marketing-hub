@@ -1,12 +1,16 @@
+
 package com.marketinghub.worker.leadportal;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.hypothesis.Hypothesis;
+import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.LeadPortalFlowQuestion;
 import com.marketinghub.leadportal.LeadPortalQuestionType;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.worker.experiment.ExperimentGenerationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,9 +19,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -39,6 +45,12 @@ class ExperimentLeadPortalFlowServiceTest {
     @Mock
     private ExperimentLeadPortalFlowChatGptClient chatGptClient;
 
+    @Mock
+    private HypothesisRepository hypothesisRepository;
+
+    @Mock
+    private MarketNicheRepository marketNicheRepository;
+
     private ExperimentLeadPortalFlowService service;
 
     @BeforeEach
@@ -47,6 +59,8 @@ class ExperimentLeadPortalFlowServiceTest {
                 experimentRepository,
                 leadPortalFlowRepository,
                 generationRepository,
+                hypothesisRepository,
+                marketNicheRepository,
                 chatGptClient
         );
     }
@@ -57,10 +71,14 @@ class ExperimentLeadPortalFlowServiceTest {
         experiment.setId(77L);
         experiment.setLeadPortalFlowsToGenerate(1);
         Hypothesis hypothesis = new Hypothesis();
+        hypothesis.setId(UUID.randomUUID());
         hypothesis.setProblem("Queda de vendas");
         hypothesis.setPromise("Aumentar conversões em 30%");
         hypothesis.setPersona("Donos de pequenos e-commerces");
         experiment.setHypothesisRef(hypothesis);
+        MarketNiche niche = new MarketNiche();
+        niche.setId(15L);
+        experiment.setNiche(niche);
 
         ExperimentLeadPortalFlowChatGptClient.QuestionPlan questionPlan =
                 new ExperimentLeadPortalFlowChatGptClient.QuestionPlan(
@@ -84,11 +102,12 @@ class ExperimentLeadPortalFlowServiceTest {
                         List.of(flowPlan),
                         "prompt-base",
                         "[{\"name\":\"Fluxo Diagnóstico\"}]",
-                        "gpt-4o"
+                        "gpt-4o",
+                        BigDecimal.valueOf(0.12)
                 );
 
         when(generationRepository.findAllToGenerateLeadPortalFlows()).thenReturn(List.of(experiment));
-        when(chatGptClient.generateFlows(experiment, 1)).thenReturn(generation);
+        when(chatGptClient.generateFlowsBatch(any())).thenReturn(Map.of(77L, generation));
         when(leadPortalFlowRepository.findBySlug(any())).thenReturn(Optional.empty());
         when(leadPortalFlowRepository.save(any(LeadPortalFlow.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -106,9 +125,14 @@ class ExperimentLeadPortalFlowServiceTest {
         assertThat(savedFlow.getModel()).isEqualTo("gpt-4o");
         assertThat(savedFlow.getPrompt()).contains("PROMPT:");
         assertThat(savedFlow.getPrompt()).contains("RESPOSTA:");
+        assertThat(savedFlow.getExperiment()).isEqualTo(experiment);
+        assertThat(savedFlow.getCostUsd()).isEqualByComparingTo(BigDecimal.valueOf(0.12));
         assertThat(savedFlow.getQuestions()).isNotEmpty();
         LeadPortalFlowQuestion lastQuestion = savedFlow.getQuestions().get(savedFlow.getQuestions().size() - 1);
         assertThat(lastQuestion.getType()).isEqualTo(LeadPortalQuestionType.IMAGE_UPLOAD);
         assertThat(lastQuestion.getDataKey()).startsWith("foto_problema");
+        verify(experimentRepository).incrementTotalCost(77L, BigDecimal.valueOf(0.12));
+        verify(hypothesisRepository).incrementTotalCost(hypothesis.getId(), BigDecimal.valueOf(0.12));
+        verify(marketNicheRepository).incrementTotalCost(niche.getId(), BigDecimal.valueOf(0.12));
     }
 }

@@ -62,6 +62,9 @@ public class Experiment {
     @Column(name = "follow_up_action_url", length = 512)
     private String followUpActionUrl;
 
+    @Column(name = "lead_portal_flow_model", length = 191)
+    private String leadPortalFlowModel;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lead_portal_flow_id")
     private LeadPortalFlow leadPortalFlow;
@@ -195,6 +198,10 @@ public class Experiment {
     @EqualsAndHashCode.Exclude
     private java.util.List<SampleEmail> sampleEmails;
 
+    @OneToMany(mappedBy = "experiment")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private java.util.List<LeadPortalFlow> leadPortalFlows;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "selected_sample_email_id")

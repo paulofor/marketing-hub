@@ -12,5 +12,7 @@ public class CreateLeadPortalFlowRequest {
     private String name;
     private String slug;
     private String description;
+    private Long experimentId;
+    private String model;
     private List<LeadPortalFlowQuestionRequest> questions;
 }

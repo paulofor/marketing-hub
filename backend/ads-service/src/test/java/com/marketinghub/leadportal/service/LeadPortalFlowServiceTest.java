@@ -4,6 +4,7 @@ import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
+import com.marketinghub.experiment.repository.ExperimentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,6 +29,9 @@ class LeadPortalFlowServiceTest {
 
     @Mock
     private LeadPortalFlowPublisher flowPublisher;
+
+    @Mock
+    private ExperimentRepository experimentRepository;
 
     @InjectMocks
     private LeadPortalFlowService service;

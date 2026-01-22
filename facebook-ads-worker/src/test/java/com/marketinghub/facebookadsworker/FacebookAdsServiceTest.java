@@ -45,12 +45,18 @@ class FacebookAdsServiceTest {
         server.shutdown();
     }
 
+    private RecordedRequest takeRequest(String description) throws InterruptedException {
+        RecordedRequest request = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(request, "Expected request (" + description + ") within timeout.");
+        return request;
+    }
+
     @Test
     void createCampaignPostsCorrectRequest() throws Exception {
         server.enqueue(new MockResponse().setBody("{\"id\":\"123\"}")
             .addHeader("Content-Type", "application/json"));
         String id = service.createInstagramCampaign("1", "Camp");
-        RecordedRequest request = server.takeRequest();
+        RecordedRequest request = takeRequest("request");
         assertEquals("/v23.0/act_1/campaigns", request.getPath());
         JsonNode body = objectMapper.readTree(request.getBody().inputStream());
         assertEquals("Camp", body.get("name").asText());
@@ -65,7 +71,7 @@ class FacebookAdsServiceTest {
         server.enqueue(new MockResponse().setBody("{\"id\":\"456\"}")
             .addHeader("Content-Type", "application/json"));
         String id = service.createCampaign("1", "Camp", "OUTCOME_LEADS");
-        RecordedRequest request = server.takeRequest();
+        RecordedRequest request = takeRequest("request");
         assertEquals("/v23.0/act_1/campaigns", request.getPath());
         JsonNode body = objectMapper.readTree(request.getBody().inputStream());
         assertEquals("Camp", body.get("name").asText());
@@ -92,7 +98,7 @@ class FacebookAdsServiceTest {
             null
         );
         String id = service.createAdSet("1", request);
-        RecordedRequest recorded = server.takeRequest();
+        RecordedRequest recorded = takeRequest("request");
         assertEquals("/v23.0/act_1/adsets", recorded.getPath());
         JsonNode body = objectMapper.readTree(recorded.getBody().inputStream());
         assertEquals("Camp - Ad Set", body.get("name").asText());
@@ -128,7 +134,7 @@ class FacebookAdsServiceTest {
             "AUD-1"
         );
         service.createAdSet("1", request);
-        RecordedRequest recorded = server.takeRequest();
+        RecordedRequest recorded = takeRequest("request");
         JsonNode targeting = objectMapper.readTree(recorded.getBody().inputStream()).get("targeting");
         assertEquals("AUD-1", targeting.get("saved_audience_id").asText());
         assertEquals("BR", targeting.get("geo_locations").get("countries").get(0).asText());
@@ -156,7 +162,7 @@ class FacebookAdsServiceTest {
 
         service.createAdSet("1", request);
 
-        RecordedRequest recorded = server.takeRequest();
+        RecordedRequest recorded = takeRequest("request");
         JsonNode targeting = objectMapper.readTree(recorded.getBody().inputStream()).get("targeting");
         assertNull(targeting.get("languages"));
         JsonNode locales = targeting.get("locales");
@@ -188,7 +194,7 @@ class FacebookAdsServiceTest {
 
         service.createAdSet("1", request);
 
-        RecordedRequest recorded = server.takeRequest();
+        RecordedRequest recorded = takeRequest("request");
         JsonNode targeting = objectMapper.readTree(recorded.getBody().inputStream()).get("targeting");
         JsonNode locales = targeting.get("locales");
         assertNotNull(locales);
@@ -219,7 +225,7 @@ class FacebookAdsServiceTest {
 
         service.createAdSet("1", request);
 
-        RecordedRequest recorded = server.takeRequest();
+        RecordedRequest recorded = takeRequest("request");
         JsonNode targeting = objectMapper.readTree(recorded.getBody().inputStream()).get("targeting");
         JsonNode locales = targeting.get("locales");
         assertNotNull(locales);
@@ -250,7 +256,7 @@ class FacebookAdsServiceTest {
 
         service.createAdSet("1", request);
 
-        RecordedRequest recorded = server.takeRequest();
+        RecordedRequest recorded = takeRequest("request");
         JsonNode targeting = objectMapper.readTree(recorded.getBody().inputStream()).get("targeting");
         JsonNode regions = targeting.get("geo_locations").get("regions");
         assertEquals(2, regions.size());
@@ -283,7 +289,7 @@ class FacebookAdsServiceTest {
 
         service.createAdSet("1", request);
 
-        RecordedRequest searchRequest = server.takeRequest();
+        RecordedRequest searchRequest = takeRequest("request");
         HttpUrl searchUrl = searchRequest.getRequestUrl();
         assertNotNull(searchUrl);
         assertEquals("/v23.0/search", searchUrl.encodedPath());
@@ -294,7 +300,7 @@ class FacebookAdsServiceTest {
         assertEquals("pt_BR", searchUrl.queryParameter("locale"));
         assertEquals("token", searchUrl.queryParameter("access_token"));
 
-        RecordedRequest adSetRequest = server.takeRequest();
+        RecordedRequest adSetRequest = takeRequest("request");
         JsonNode targeting = objectMapper.readTree(adSetRequest.getBody().inputStream()).get("targeting");
         JsonNode interests = targeting.get("interests");
         assertNotNull(interests);
@@ -321,7 +327,7 @@ class FacebookAdsServiceTest {
             "Descrição"
         );
         String id = service.createAdCreative("1", request);
-        RecordedRequest recorded = server.takeRequest();
+        RecordedRequest recorded = takeRequest("request");
         assertEquals("/v23.0/act_1/adcreatives", recorded.getPath());
         JsonNode body = objectMapper.readTree(recorded.getBody().inputStream());
         JsonNode storySpec = body.get("object_story_spec");
@@ -356,7 +362,7 @@ class FacebookAdsServiceTest {
             null
         );
         String id = service.createAdCreative("1", request);
-        RecordedRequest recorded = server.takeRequest();
+        RecordedRequest recorded = takeRequest("request");
         JsonNode body = objectMapper.readTree(recorded.getBody().inputStream());
         JsonNode linkData = body.get("object_story_spec").get("link_data");
         assertEquals("https://www.facebook.com/ads/leadgen/?id=123456789012345", linkData.get("link").asText());
@@ -387,7 +393,7 @@ class FacebookAdsServiceTest {
 
         service.createAdCreative("1", request);
 
-        RecordedRequest recorded = server.takeRequest();
+        RecordedRequest recorded = takeRequest("request");
         JsonNode linkData = objectMapper
             .readTree(recorded.getBody().inputStream())
             .get("object_story_spec")
@@ -429,7 +435,7 @@ class FacebookAdsServiceTest {
             new FacebookAdsService.SavedAudienceRequest("Audience", "Desc", targetingJson)
         );
 
-        RecordedRequest searchRequest = server.takeRequest();
+        RecordedRequest searchRequest = takeRequest("request");
         HttpUrl searchUrl = searchRequest.getRequestUrl();
         assertNotNull(searchUrl);
         assertEquals("/v23.0/search", searchUrl.encodedPath());
@@ -464,7 +470,7 @@ class FacebookAdsServiceTest {
 
         service.createAdCreative("1", request);
 
-        RecordedRequest recorded = server.takeRequest();
+        RecordedRequest recorded = takeRequest("request");
         JsonNode linkData = objectMapper
             .readTree(recorded.getBody().inputStream())
             .get("object_story_spec")
@@ -479,7 +485,7 @@ class FacebookAdsServiceTest {
 
         String hash = service.uploadAdImage("1", "https://cdn.example/img.jpg");
 
-        RecordedRequest request = server.takeRequest();
+        RecordedRequest request = takeRequest("request");
         assertEquals("/v23.0/act_1/adimages", request.getPath());
         JsonNode body = objectMapper.readTree(request.getBody().inputStream());
         assertEquals("https://cdn.example/img.jpg", body.get("url").asText());
@@ -496,7 +502,7 @@ class FacebookAdsServiceTest {
             "creative"
         );
         String id = service.createAd("1", request);
-        RecordedRequest recorded = server.takeRequest();
+        RecordedRequest recorded = takeRequest("request");
         assertEquals("/v23.0/act_1/ads", recorded.getPath());
         JsonNode body = objectMapper.readTree(recorded.getBody().inputStream());
         assertEquals("Camp - Ad", body.get("name").asText());
@@ -519,10 +525,10 @@ class FacebookAdsServiceTest {
 
         assertEquals("form-1", identifier);
 
-        RecordedRequest pageTokenRequest = server.takeRequest();
+        RecordedRequest pageTokenRequest = takeRequest("request");
         assertEquals("/v23.0/999?fields=access_token&access_token=token", pageTokenRequest.getPath());
 
-        RecordedRequest formsRequest = server.takeRequest();
+        RecordedRequest formsRequest = takeRequest("request");
         assertEquals(
             "/v23.0/999/leadgen_forms?fields=id,name,status,draft_id&limit=200&access_token=page-token",
             formsRequest.getPath()
@@ -544,16 +550,16 @@ class FacebookAdsServiceTest {
         service.findInstantFormIdentifier("321", "Nome");
         service.findInstantFormIdentifier("321", "Nome");
 
-        RecordedRequest first = server.takeRequest();
+        RecordedRequest first = takeRequest("request");
         assertEquals("/v23.0/321?fields=access_token&access_token=token", first.getPath());
 
-        RecordedRequest second = server.takeRequest();
+        RecordedRequest second = takeRequest("request");
         assertEquals(
             "/v23.0/321/leadgen_forms?fields=id,name,status,draft_id&limit=200&access_token=cached-page-token",
             second.getPath()
         );
 
-        RecordedRequest third = server.takeRequest();
+        RecordedRequest third = takeRequest("request");
         assertEquals(
             "/v23.0/321/leadgen_forms?fields=id,name,status,draft_id&limit=200&access_token=cached-page-token",
             third.getPath()
@@ -572,7 +578,7 @@ class FacebookAdsServiceTest {
 
         assertNull(identifier);
 
-        RecordedRequest request = server.takeRequest();
+        RecordedRequest request = takeRequest("request");
         assertEquals("/v23.0/432?fields=access_token&access_token=token", request.getPath());
         assertNull(server.takeRequest(100, TimeUnit.MILLISECONDS));
     }
@@ -597,7 +603,7 @@ class FacebookAdsServiceTest {
 
         service.publishInstantForm("123");
 
-        RecordedRequest statusCheck = server.takeRequest();
+        RecordedRequest statusCheck = takeRequest("request");
         assertEquals("GET", statusCheck.getMethod());
         assertEquals("/v23.0/123?access_token=token", statusCheck.getPath());
         assertNull(server.takeRequest(100, TimeUnit.MILLISECONDS));
@@ -612,11 +618,11 @@ class FacebookAdsServiceTest {
 
         service.publishInstantForm(" 123 ");
 
-        RecordedRequest statusCheck = server.takeRequest();
+        RecordedRequest statusCheck = takeRequest("request");
         assertEquals("GET", statusCheck.getMethod());
         assertEquals("/v23.0/123?access_token=token", statusCheck.getPath());
 
-        RecordedRequest publishRequest = server.takeRequest();
+        RecordedRequest publishRequest = takeRequest("request");
         assertEquals("POST", publishRequest.getMethod());
         assertEquals("/v23.0/123", publishRequest.getPath());
         JsonNode body = objectMapper.readTree(publishRequest.getBody().inputStream());
@@ -629,7 +635,7 @@ class FacebookAdsServiceTest {
         server.enqueue(new MockResponse().setBody("{\"data\":[{\"impressions\":\"10\"}]}")
             .addHeader("Content-Type", "application/json"));
         JsonNode node = service.getCampaignMetrics("77");
-        RecordedRequest request = server.takeRequest();
+        RecordedRequest request = takeRequest("request");
         assertEquals("/v23.0/77/insights?access_token=token", request.getPath());
         assertEquals("10", node.get("data").get(0).path("impressions").asText());
     }

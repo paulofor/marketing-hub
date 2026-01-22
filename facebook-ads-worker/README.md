@@ -324,6 +324,8 @@ mvn -s settings.xml package
 ```
 mvn -s settings.xml test
 ```
+Os testes com `MockWebServer` devem utilizar `takeRequest` com timeout e validar
+o retorno para evitar travamentos silenciosos no pipeline.
 
 ## Docker e publicação
 

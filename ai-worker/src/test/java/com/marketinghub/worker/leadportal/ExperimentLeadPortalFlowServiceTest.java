@@ -27,6 +27,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -131,8 +132,9 @@ class ExperimentLeadPortalFlowServiceTest {
         LeadPortalFlowQuestion lastQuestion = savedFlow.getQuestions().get(savedFlow.getQuestions().size() - 1);
         assertThat(lastQuestion.getType()).isEqualTo(LeadPortalQuestionType.IMAGE_UPLOAD);
         assertThat(lastQuestion.getDataKey()).startsWith("foto_problema");
-        verify(experimentRepository).incrementTotalCost(77L, BigDecimal.valueOf(0.12));
-        verify(hypothesisRepository).incrementTotalCost(hypothesis.getId(), BigDecimal.valueOf(0.12));
-        verify(marketNicheRepository).incrementTotalCost(niche.getId(), BigDecimal.valueOf(0.12));
+        BigDecimal expectedCost = new BigDecimal("0.12");
+        verify(experimentRepository).incrementTotalCost(77L, argThat(cost -> cost.compareTo(expectedCost) == 0));
+        verify(hypothesisRepository).incrementTotalCost(hypothesis.getId(), argThat(cost -> cost.compareTo(expectedCost) == 0));
+        verify(marketNicheRepository).incrementTotalCost(niche.getId(), argThat(cost -> cost.compareTo(expectedCost) == 0));
     }
 }

@@ -324,3 +324,26 @@ mvn -s settings.xml package
 ```
 mvn -s settings.xml test
 ```
+
+## Docker e publicação
+
+Para executar o worker como container:
+
+```sh
+docker compose build
+docker compose up -d
+```
+
+Principais variáveis de ambiente (todas já possuem defaults no `docker-compose.yml`):
+
+- `BACKEND_BASE_URL` e `BACKEND_API_PREFIX` para apontar para o backend;
+- `FACEBOOK_GRAPH_API_BASE_URL` e `FACEBOOK_GRAPH_API_VERSION` para controlar a versão da Graph API;
+- `FACEBOOKCAMPAIGN_SCHEDULER_DELAY`, `FACEBOOKPIXEL_SCHEDULER_DELAY`, `FACEBOOK_INTEREST_VALIDATION_SCHEDULER_DELAY` e `FACEBOOK_TOKEN_RENEWAL_SCHEDULER_DELAY` para ajustar as janelas dos agendadores;
+- `FACEBOOK_ADS_WORKER_PORT` caso queira expor a porta HTTP (padrão mapeia `8082:8080`).
+
+O Dockerfile usa Java 21 e gera um jar único (`app.jar`) a partir do Maven. Tokens do GitHub (`GITHUB_TOKEN`/`GITHUB_ACTOR`) são aceitos como build args para quem precisar baixar artefatos privados.
+
+### Pipeline de deploy automático
+
+O workflow `.github/workflows/facebook-ads-worker.yml` replica o fluxo do AI Worker: roda testes Maven, builda a imagem e publica no GitHub Container Registry em
+`ghcr.io/<owner>/facebook-ads-worker:latest` (e com tag do commit). Em pushes para `main`, o action sobe a stack via SSH no VPS `191.252.120.96`, sincronizando os arquivos do diretório `facebook-ads-worker/` e usando `docker-compose.deploy.yml` para apontar para a imagem publicada. Configure os segredos `VPS_SSH_KEY`, `FACEBOOK_ADS_WORKER_REMOTE_PATH` (opcional) e `GHCR_TOKEN`/`GHCR_USERNAME` se for usar credenciais próprias do registry.

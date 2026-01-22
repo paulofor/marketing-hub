@@ -204,7 +204,7 @@ public class ExperimentLeadPortalFlowChatGptClient {
             line.put("url", RESPONSES_ENDPOINT);
             line.put("body", entry.getValue().payload());
             try {
-                sb.append(objectMapper.writeValueAsString(line)).append("\\n");
+                sb.append(objectMapper.writeValueAsString(line)).append("\n");
             } catch (Exception e) {
                 throw new RuntimeException("Failed to serialize batch line for " + entry.getKey(), e);
             }

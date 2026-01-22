@@ -28,6 +28,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -133,8 +134,10 @@ class ExperimentLeadPortalFlowServiceTest {
         assertThat(lastQuestion.getType()).isEqualTo(LeadPortalQuestionType.IMAGE_UPLOAD);
         assertThat(lastQuestion.getDataKey()).startsWith("foto_problema");
         BigDecimal expectedCost = new BigDecimal("0.12");
-        verify(experimentRepository).incrementTotalCost(77L, argThat(cost -> cost.compareTo(expectedCost) == 0));
-        verify(hypothesisRepository).incrementTotalCost(hypothesis.getId(), argThat(cost -> cost.compareTo(expectedCost) == 0));
-        verify(marketNicheRepository).incrementTotalCost(niche.getId(), argThat(cost -> cost.compareTo(expectedCost) == 0));
+        verify(experimentRepository).incrementTotalCost(eq(77L), argThat(cost -> cost.compareTo(expectedCost) == 0));
+        verify(hypothesisRepository)
+                .incrementTotalCost(eq(hypothesis.getId()), argThat(cost -> cost.compareTo(expectedCost) == 0));
+        verify(marketNicheRepository)
+                .incrementTotalCost(eq(niche.getId()), argThat(cost -> cost.compareTo(expectedCost) == 0));
     }
 }

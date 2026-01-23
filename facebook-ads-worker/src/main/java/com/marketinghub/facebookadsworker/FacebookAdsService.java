@@ -268,22 +268,27 @@ public class FacebookAdsService {
         }
 
         Map<String, Object> brazilGeoLocations = new HashMap<>();
+        Object existingGeo = targeting.get("geo_locations");
+        if (existingGeo instanceof Map<?, ?> geoMap && !geoMap.isEmpty()) {
+            brazilGeoLocations.putAll(copyGeoMapWithStringKeys(geoMap));
+        }
+
         brazilGeoLocations.put("countries", List.of(BRAZIL_COUNTRY_CODE));
         targeting.put("geo_locations", brazilGeoLocations);
     }
 
     private static final Map<String, Integer> LOCALE_CODE_TO_ID = Map.of(
-        "pt_BR",
+        "PT_BR",
         16,
-        "pt_PT",
+        "PT_PT",
         86,
-        "es_LA",
+        "ES_LA",
         24,
-        "es_ES",
+        "ES_ES",
         23,
-        "en_US",
+        "EN_US",
         6,
-        "en_GB",
+        "EN_GB",
         47
     );
 
@@ -321,7 +326,7 @@ public class FacebookAdsService {
 
         List<Integer> locales = languagesList
             .stream()
-            .map(this::resolveLocaleValue)
+            .map(this::resolveLocaleValueForLanguages)
             .filter(Objects::nonNull)
             .toList();
 
@@ -391,6 +396,21 @@ public class FacebookAdsService {
 
         LOGGER.warn("Ignoring unsupported locale code '{}' in targeting.languages", text);
         return null;
+    }
+
+
+    private Integer resolveLocaleValueForLanguages(Object value) {
+        Integer resolved = resolveLocaleValue(value);
+        if (resolved == null) {
+            return null;
+        }
+
+        if (value instanceof String && !LOCALE_CODE_TO_ID.containsValue(resolved)) {
+            LOGGER.warn("Ignoring unsupported locale code '{}' in targeting.languages", value);
+            return null;
+        }
+
+        return resolved;
     }
 
     public FacebookInterest lookupClosestInterest(String interestName) {

@@ -1,6 +1,0 @@
-#surefire_0
-#Fri Jan 23 01:00:04 GMT 2026
-basedir=/root/ai-hub/src/ai-hub-3a75dcbc-88ff-42c6-a139-4c0d5c84f7ad-iFekHB/repo/facebook-ads-worker
-failIfNoTests=false
-localRepository=/root/.m2/repository
-test=FacebookCampaignServiceTest\#normalizesAiInstantFormIdentifierBeforeCallingFacebook+publishesInstantFormUsingShareLinkWhenFormIdMissing+createsLeadGenCampaignWhenCreativeProvidesFormId+ignoresConnectionIssuesFetchingExperiments

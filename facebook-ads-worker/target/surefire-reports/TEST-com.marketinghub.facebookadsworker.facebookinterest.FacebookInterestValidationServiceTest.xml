@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClientTest" time="1.016" tests="2" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationServiceTest" time="0.036" tests="2" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="21"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -54,30 +54,28 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="65.0"/>
   </properties>
-  <testcase name="shouldReturnEmptyWhenBackendClosesConnectionBeforeResponding" classname="com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClientTest" time="0.867">
-    <system-out><![CDATA[16:35:32.914 [main] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Requesting Facebook worker configuration from backend: url==>http://localhost:56091/api/accounts/facebook/worker-config, params={}
-16:35:33.259 [reactor-http-epoll-2] WARN reactor.netty.http.client.HttpClientConnect -- [90fc63ca-1, L:/127.0.0.1:48328 ! R:localhost/127.0.0.1:56091] The connection observed an error
-reactor.netty.http.client.PrematureCloseException: Connection prematurely closed BEFORE response
-16:35:33.266 [main] WARN com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Failed to fetch Facebook worker configuration from backend: Connection prematurely closed BEFORE response. Connection will be retried on the next cycle.
+  <testcase name="validatePendingInterestsResolvesMatch" classname="com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationServiceTest" time="0.021">
+    <system-out><![CDATA[16:35:37.878 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Configured Facebook Graph API version: v23.0
+16:35:37.878 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Facebook access token updated: previousToken=null, newToken=***
+16:35:37.880 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationService -- Requesting pending Facebook interests for validation: url==>http://localhost:50067/api/facebook-interests/pending, params={}
+16:35:37.886 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationService -- Received pending Facebook interests from backend: url<==http://localhost:50067/api/facebook-interests/pending, response=[{"id":1,"name":"Pilates"}]
+16:35:37.887 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Sending GET request to Facebook API: path==>/v23.0/search?type=adinterest&q=Pilates&limit=1&fields=id,name&locale=pt_BR&access_***=***
+16:35:37.890 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Facebook API response received: method=GET, path<==/v23.0/search?type=adinterest&q=Pilates&limit=1&fields=id,name&locale=pt_BR&access_***=***, status=200 200 OK, headers={"Content-Length":["***"],"Content-Type":["app...son"]}, body={"data":[{"id":"6003139266461","name":"Pilates Training"}]}
+16:35:37.890 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationService -- Resolved Facebook interest id=1 to Graph API code 6003139266461 (name=Pilates Training)
+16:35:37.891 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationClient -- Reporting Facebook interest validation result: url==>http://localhost:50067/api/facebook-interests/1, payload={"status":"VALID","facebookInterestId":"6003139266461","name":"Pilates Training"}
+16:35:37.897 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationClient -- Backend acknowledged Facebook interest validation result: url<==http://localhost:50067/api/facebook-interests/1
 ]]></system-out>
-    <system-err><![CDATA[Jan 23, 2026 4:35:33 PM okhttp3.mockwebserver.MockWebServer$SocketHandler handle
-WARNING: MockWebServer[56091] connection from /127.0.0.1 didn't make a request
-]]></system-err>
   </testcase>
-  <testcase name="logsMissingConfigurationWarningOnlyOncePerOutage" classname="com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClientTest" time="0.131">
-    <system-out><![CDATA[16:35:33.325 [main] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Requesting Facebook worker configuration from backend: url==>http://localhost:59921/api/accounts/facebook/worker-config, params={}
-16:35:33.366 [reactor-http-epoll-3] WARN com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Facebook worker configuration not found in backend; skipping Facebook automation
-16:35:33.366 [reactor-http-epoll-3] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Backend responded with HTTP 404 when fetching Facebook worker configuration: url<==http://localhost:59921/api/accounts/facebook/worker-config, response=
-16:35:33.366 [main] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Received Facebook worker configuration response from backend: url<==http://localhost:59921/api/accounts/facebook/worker-config, response=null
-16:35:33.367 [main] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Requesting Facebook worker configuration from backend: url==>http://localhost:59921/api/accounts/facebook/worker-config, params={}
-16:35:33.371 [reactor-http-epoll-3] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Backend responded with HTTP 404 when fetching Facebook worker configuration: url<==http://localhost:59921/api/accounts/facebook/worker-config, response=
-16:35:33.371 [main] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Received Facebook worker configuration response from backend: url<==http://localhost:59921/api/accounts/facebook/worker-config, response=null
-16:35:33.371 [main] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Requesting Facebook worker configuration from backend: url==>http://localhost:59921/api/accounts/facebook/worker-config, params={}
-16:35:33.434 [main] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Received Facebook worker configuration response from backend: url<==http://localhost:59921/api/accounts/facebook/worker-config, response={"accountId":1,"adAccountId":"act_1","accessToken":"token","appId":"app","appSecret":"secret","defaultPageId":"42","defaultInstagramActorId":"24","defaultWebsiteUrl":"https://example.com","defaultLeadGenFormId":null,"defaultCreativeMessageTemplate":"Conheça %s","defaultCallToActionType":"LEARN_MORE","adSetDailyBudget":"2000","adSetBillingEvent":"IMPRESSIONS","adSetOptimizationGoal":"LINK_CLICKS","adSetDestinationType":"WEBSITE","adSetBidStrategy":"LOWEST_COST_WITHOUT_CAP","adSetBidAmount":"150","adSetTargetCountry":"BR"}
-16:35:33.443 [main] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Requesting Facebook worker configuration from backend: url==>http://localhost:59921/api/accounts/facebook/worker-config, params={}
-16:35:33.446 [reactor-http-epoll-3] WARN com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Facebook worker configuration not found in backend; skipping Facebook automation
-16:35:33.446 [reactor-http-epoll-3] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Backend responded with HTTP 404 when fetching Facebook worker configuration: url<==http://localhost:59921/api/accounts/facebook/worker-config, response=
-16:35:33.447 [main] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Received Facebook worker configuration response from backend: url<==http://localhost:59921/api/accounts/facebook/worker-config, response=null
+  <testcase name="validatePendingInterestsMarksInvalidWhenNotFound" classname="com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationServiceTest" time="0.013">
+    <system-out><![CDATA[16:35:37.900 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Configured Facebook Graph API version: v23.0
+16:35:37.900 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Facebook access token updated: previousToken=null, newToken=***
+16:35:37.900 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationService -- Requesting pending Facebook interests for validation: url==>http://localhost:40949/api/facebook-interests/pending, params={}
+16:35:37.903 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationService -- Received pending Facebook interests from backend: url<==http://localhost:40949/api/facebook-interests/pending, response=[{"id":2,"name":"Unknown Interest"}]
+16:35:37.905 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Sending GET request to Facebook API: path==>/v23.0/search?type=adinterest&q=Unknown%20Interest&limit=1&fields=id,name&locale=pt_BR&access_***=***
+16:35:37.908 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Facebook API response received: method=GET, path<==/v23.0/search?type=adinterest&q=Unknown%20Interest&limit=1&fields=id,name&locale=pt_BR&access_***=***, status=200 200 OK, headers={"Content-Length":["***"],"Content-Type":["app...son"]}, body={"data":[]}
+16:35:37.908 [main] WARN com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationService -- Marking Facebook interest id=2 as INVALID because no match was found
+16:35:37.908 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationClient -- Reporting Facebook interest validation result: url==>http://localhost:40949/api/facebook-interests/2, payload={"status":"INVALID","facebookInterestId":null,"name":null}
+16:35:37.910 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationClient -- Backend acknowledged Facebook interest validation result: url<==http://localhost:40949/api/facebook-interests/2
 ]]></system-out>
   </testcase>
 </testsuite>

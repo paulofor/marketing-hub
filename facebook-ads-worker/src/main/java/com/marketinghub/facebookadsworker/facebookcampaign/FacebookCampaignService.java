@@ -191,13 +191,6 @@ public class FacebookCampaignService {
             }
 
             Experiment.InstagramAccount instagramAccount = exp.instagramAccount();
-            if (instagramAccount == null || !StringUtils.hasText(instagramAccount.code())) {
-                LOGGER.warn(
-                    "Skipping experiment {} because no Instagram account is configured",
-                    exp.id()
-                );
-                return;
-            }
 
             String resolvedPageId = resolvePageId(config, exp);
             if (!StringUtils.hasText(resolvedPageId)) {
@@ -234,9 +227,15 @@ public class FacebookCampaignService {
             String resolvedCallToAction = coalesce(creative.cta(), config.defaultCallToActionType());
             String resolvedInstagramActorId = coalesce(
                 creative.instagramUserId(),
-                instagramAccount.code(),
+                instagramAccount != null ? instagramAccount.code() : null,
                 config.defaultInstagramActorId()
             );
+            if (!StringUtils.hasText(resolvedInstagramActorId)) {
+                LOGGER.warn(
+                    "Experiment {} does not have an Instagram actor ID; proceeding without instagram_user_id",
+                    exp.id()
+                );
+            }
             String resolvedDestinationType = hasLeadFormDestination ? "ON_AD" : config.adSetDestinationType();
             String resolvedOptimizationGoal = hasLeadFormDestination
                 ? "LEAD_GENERATION"
@@ -837,7 +836,7 @@ public class FacebookCampaignService {
             }
             return new InstantFormResolution(new InstantFormDestination(shareLink, normalizedFormId), null);
         }
-        String publishIdentifier = StringUtils.hasText(facebookFormId) ? facebookFormId : normalizedFormId;
+        String publishIdentifier = StringUtils.hasText(normalizedFormId) ? normalizedFormId : facebookFormId;
         if (StringUtils.hasText(publishIdentifier)) {
             publishIdentifier = publishIdentifier.trim();
         }

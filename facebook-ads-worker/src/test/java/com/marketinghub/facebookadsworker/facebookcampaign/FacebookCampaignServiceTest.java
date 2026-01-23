@@ -577,6 +577,8 @@ class FacebookCampaignServiceTest {
 
         takeBackendRequest("backend request"); // experiments-ready
         takeBackendRequest("backend request"); // creatives fetch
+        RecordedRequest adSetsRequest = takeBackendRequest("backend request");
+        assertEquals("/api/adsets?experimentId=1", adSetsRequest.getPath());
         RecordedRequest backendReport = takeBackendRequest("backend request");
         JsonNode reportedCreative = objectMapper.readTree(backendReport.getBody().inputStream())
             .get("adCreative");
@@ -735,6 +737,8 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[]")
+            .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse()
             .setResponseCode(400)
             .setBody("{\"error\":{\"message\":\"Error validating access token: Session has expired\",\"type\":\"OAuthException\",\"code\":190,\"error_subcode\":463}}")
@@ -743,6 +747,8 @@ class FacebookCampaignServiceTest {
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[]")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
             .addHeader("Content-Type", "application/json"));
@@ -767,6 +773,8 @@ class FacebookCampaignServiceTest {
         assertEquals("/api/facebook-campaigns/experiments-ready", firstExperimentRequest.getPath());
         RecordedRequest firstCreativeRequest = takeBackendRequest("backend request");
         assertEquals("/api/experiments/1/creatives", firstCreativeRequest.getPath());
+        RecordedRequest firstAdSetsRequest = takeBackendRequest("backend request");
+        assertEquals("/api/adsets?experimentId=1", firstAdSetsRequest.getPath());
         RecordedRequest expiredCampaignRequest = takeFacebookRequest("facebook request");
         assertEquals("/v23.0/act_1/campaigns", expiredCampaignRequest.getPath());
 
@@ -774,6 +782,8 @@ class FacebookCampaignServiceTest {
         assertEquals("/api/facebook-campaigns/experiments-ready", secondExperimentRequest.getPath());
         RecordedRequest secondCreativeRequest = takeBackendRequest("backend request");
         assertEquals("/api/experiments/1/creatives", secondCreativeRequest.getPath());
+        RecordedRequest secondAdSetsRequest = takeBackendRequest("backend request");
+        assertEquals("/api/adsets?experimentId=1", secondAdSetsRequest.getPath());
         RecordedRequest renewedCampaignRequest = takeFacebookRequest("facebook request");
         assertEquals("/v23.0/act_1/campaigns", renewedCampaignRequest.getPath());
 
@@ -823,6 +833,8 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[]")
+            .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse()
             .setResponseCode(400)
             .setBody("{\"error\":{\"message\":\"Error validating access token: Session has expired\",\"type\":\"OAuthException\",\"code\":190,\"error_subcode\":463}}")
@@ -836,6 +848,8 @@ class FacebookCampaignServiceTest {
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[]")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
             .addHeader("Content-Type", "application/json"));
@@ -858,6 +872,8 @@ class FacebookCampaignServiceTest {
         assertEquals("/api/facebook-campaigns/experiments-ready", firstExperiment.getPath());
         RecordedRequest firstCreative = takeBackendRequest("backend request");
         assertEquals("/api/experiments/1/creatives", firstCreative.getPath());
+        RecordedRequest firstAdSetsRequest = takeBackendRequest("backend request");
+        assertEquals("/api/adsets?experimentId=1", firstAdSetsRequest.getPath());
         RecordedRequest expiredCampaign = takeFacebookRequest("facebook request");
         assertEquals("/v23.0/act_1/campaigns", expiredCampaign.getPath());
 
@@ -865,6 +881,8 @@ class FacebookCampaignServiceTest {
         assertEquals("/api/facebook-campaigns/experiments-ready", secondExperiment.getPath());
         RecordedRequest secondCreative = takeBackendRequest("backend request");
         assertEquals("/api/experiments/1/creatives", secondCreative.getPath());
+        RecordedRequest secondAdSetsRequest = takeBackendRequest("backend request");
+        assertEquals("/api/adsets?experimentId=1", secondAdSetsRequest.getPath());
         RecordedRequest renewedCampaign = takeFacebookRequest("facebook request");
         assertEquals("/v23.0/act_1/campaigns", renewedCampaign.getPath());
 
@@ -926,6 +944,8 @@ class FacebookCampaignServiceTest {
 
         takeBackendRequest("backend request"); // experiments-ready
         takeBackendRequest("backend request"); // creatives fetch
+        RecordedRequest adSetsRequest = takeBackendRequest("backend request");
+        assertEquals("/api/adsets?experimentId=1", adSetsRequest.getPath());
         takeBackendRequest("backend request"); // campaign report
         RecordedRequest runningPatch = takeBackendRequest("backend request");
         assertEquals("PATCH", runningPatch.getMethod());
@@ -974,6 +994,8 @@ class FacebookCampaignServiceTest {
 
         takeBackendRequest("backend request"); // experiments-ready
         takeBackendRequest("backend request"); // creatives fetch
+        RecordedRequest adSetsRequest = takeBackendRequest("backend request");
+        assertEquals("/api/adsets?experimentId=1", adSetsRequest.getPath());
         takeBackendRequest("backend request"); // campaign report
         RecordedRequest aliasPatch = takeBackendRequest("backend request");
         assertEquals("PATCH", aliasPatch.getMethod());

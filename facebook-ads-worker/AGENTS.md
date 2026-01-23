@@ -33,7 +33,8 @@
   relacionar o conjunto de anúncios criado na Meta ao público do experimento e registrar os códigos
   retornados pelo Facebook.
 - Em testes com `MockWebServer`, utilize `takeRequest` com timeout e valide o retorno para evitar
-  travamentos silenciosos no pipeline.
+  travamentos silenciosos no pipeline. Enfileire respostas para cada chamada esperada para
+  não bloquear o `WebClient`.
 
 - Perguntas personalizadas geradas pelo ChatGPT agora são persistidas no backend
   e devolvidas em JSON para o worker; mantenha compatível qualquer mudança que

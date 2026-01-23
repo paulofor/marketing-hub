@@ -379,6 +379,10 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         backend.enqueue(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueue(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
 
         service.createCampaignsFromExperiments();
 

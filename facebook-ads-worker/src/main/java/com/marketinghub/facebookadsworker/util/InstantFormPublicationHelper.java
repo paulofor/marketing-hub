@@ -25,13 +25,15 @@ public final class InstantFormPublicationHelper {
         }
         String trimmed = facebookFormId.trim();
         if (trimmed.startsWith("ai_form_")) {
+            String normalized = trimmed.replaceFirst("^ai_", "");
             if (logger != null) {
                 logger.info(
-                    "Detected placeholder instant form identifier {}; waiting for Meta to assign the final lead form ID",
-                    trimmed
+                    "Normalized placeholder instant form identifier {} to {} while waiting for Meta confirmation",
+                    trimmed,
+                    normalized
                 );
             }
-            return null;
+            return normalized;
         }
         return trimmed;
     }

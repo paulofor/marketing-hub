@@ -51,9 +51,10 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    experimento no backend (exposta como `facebookPage`, `associatedFacebookPage`
    ou `facebookPageAssociation`) e ignora o experimento caso nenhuma associação
    exista. A mesma regra vale para a identidade do Instagram: o worker consome o
-   campo `instagramAccount` retornado pelo backend e popula `instagram_user_id`
-   com o código cadastrado na conta. Caso o experimento não esteja relacionado a
-   uma conta do Instagram, o worker registra o aviso e pula a publicação.
+   campo `instagramAccount` retornado pelo backend ou o `defaultInstagramActorId`
+   configurado na conta e popula `instagram_user_id` quando disponível. Caso
+   nenhum identificador esteja disponível, o worker registra o aviso e segue
+   sem `instagram_user_id`, permitindo veiculação apenas no Facebook.
    Opcionalmente o fluxo inclui mensagem e call-to-action vindos do próprio
    criativo. A imagem é sempre veiculada via `link_data.picture` — não há hash
    salvo na biblioteca —, garantindo que o anúncio utilize exatamente o ativo
@@ -91,7 +92,10 @@ que o formulário já foi criado manualmente diretamente na Meta. O
 `FacebookCampaignService` apenas publica rascunhos existentes (`publishInstantForm`)
 e reutiliza o identificador resolvido ao montar criativos com
 `call_to_action.value.lead_gen_form_id`, mantendo o destino `ON_AD` e o objetivo
-`OUTCOME_LEADS` conforme as regras mais recentes da Graph API.
+`OUTCOME_LEADS` conforme as regras mais recentes da Graph API. Identificadores
+temporários no formato `ai_form_*` são normalizados para o padrão `form_*`
+antes da publicação, e o share link é reconstruído com o identificador final
+quando disponível.
 
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar
 investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs

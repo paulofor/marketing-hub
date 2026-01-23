@@ -11,6 +11,8 @@
 - Remova campos de segmentação não suportados pela Graph API antes do envio (por exemplo, `detailed_targeting_description`) para evitar erros `(#100) Invalid parameter`.
 - Em `geo_locations` descarte chaves que não sejam texto e remova `regions` cujos `key` não sejam numéricos para manter a compatibilidade com a Graph API.
 - Quando o destino do experimento for um formulário de leads, ajuste o conjunto de anúncios para `destination_type = ON_AD`, force `optimization_goal = LEAD_GENERATION` e não envie `link` externo no criativo; utilize apenas `call_to_action.value.lead_gen_form_id`.
+- Quando não houver `instagramAccount` no experimento, utilize o `defaultInstagramActorId` configurado ou o identificador vindo do criativo, seguindo sem `instagram_user_id` se nenhum valor estiver disponível.
+- Identificadores de instant form no formato `ai_form_*` devem ser normalizados para `form_*` antes de chamar a Graph API.
 - Não mantenha segredos no repositório; use variáveis de ambiente ou GitHub Secrets.
 - Endpoints do backend devem ser acessados com o prefixo configurado em `backend.api-prefix` (default `/api`).
 - Sempre que chamar o backend registre logs com **URL completa**, parâmetros, payload enviado (quando existir) e a resposta recebida

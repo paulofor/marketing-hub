@@ -3,8 +3,8 @@ package com.marketinghub.facebookadsworker.facebookinterest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.facebookadsworker.FacebookAdsService;
+import com.marketinghub.facebookadsworker.testsupport.FailFastMockWebServer;
 import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,15 +18,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 class FacebookInterestValidationServiceTest {
-    private MockWebServer backend;
-    private MockWebServer facebook;
+    private FailFastMockWebServer backend;
+    private FailFastMockWebServer facebook;
     private FacebookInterestValidationService service;
     private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() throws IOException {
-        backend = new MockWebServer();
-        facebook = new MockWebServer();
+        backend = new FailFastMockWebServer();
+        facebook = new FailFastMockWebServer();
         backend.start();
         facebook.start();
 
@@ -58,19 +58,21 @@ class FacebookInterestValidationServiceTest {
 
     @AfterEach
     void tearDown() throws IOException {
+        backend.assertNoUnmatchedRequests();
+        facebook.assertNoUnmatchedRequests();
         backend.shutdown();
         facebook.shutdown();
     }
 
     @Test
     void validatePendingInterestsResolvesMatch() throws Exception {
-        backend.enqueue(new MockResponse()
+        backend.enqueueResponse(new MockResponse()
             .setBody("[{\"id\":1,\"name\":\"Pilates\"}]")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse()
+        facebook.enqueueResponse(new MockResponse()
             .setBody("{\"data\":[{\"id\":\"6003139266461\",\"name\":\"Pilates Training\"}]}" )
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setResponseCode(204));
+        backend.enqueueResponse(new MockResponse().setResponseCode(204));
 
         service.validatePendingInterests();
 
@@ -90,13 +92,13 @@ class FacebookInterestValidationServiceTest {
 
     @Test
     void validatePendingInterestsMarksInvalidWhenNotFound() throws Exception {
-        backend.enqueue(new MockResponse()
+        backend.enqueueResponse(new MockResponse()
             .setBody("[{\"id\":2,\"name\":\"Unknown Interest\"}]")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse()
+        facebook.enqueueResponse(new MockResponse()
             .setBody("{\"data\":[]}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setResponseCode(204));
+        backend.enqueueResponse(new MockResponse().setResponseCode(204));
 
         service.validatePendingInterests();
 

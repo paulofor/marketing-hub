@@ -37,6 +37,8 @@
   não bloquear o `WebClient`.
 - Em testes com `MockWebServer`, prefira `FailFastMockWebServer` (wrapper do `MockWebServer`) e valide se não houve requisições
   sem stub (falha imediata) para evitar respostas pendentes mascararem novas regressões.
+- O `FailFastMockWebServer` expõe `getRequestCount()` para checar quantas requisições o cenário
+  disparou, facilitando asserções nos testes.
 
 - Perguntas personalizadas geradas pelo ChatGPT agora são persistidas no backend
   e devolvidas em JSON para o worker; mantenha compatível qualquer mudança que

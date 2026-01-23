@@ -116,6 +116,8 @@ Os testes de integração usam `FailFastMockWebServer` (wrapper do `MockWebServe
 garantir que toda requisição do worker tenha stub explícito. Caso uma chamada HTTP não
 tenha resposta enfileirada, o teste falha imediatamente, evitando travamentos
 silenciosos durante a execução da suíte.
+O wrapper também expõe `getRequestCount()` para facilitar asserções sobre o número de
+chamadas disparadas pelos serviços em cada cenário de teste.
 
 ## Renovação automática de tokens
 

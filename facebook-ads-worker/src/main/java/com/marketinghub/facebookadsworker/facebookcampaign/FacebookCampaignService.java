@@ -205,9 +205,15 @@ public class FacebookCampaignService {
                 return;
             }
 
+            InstantFormResolution instantFormResolution = null;
             InstantFormDestination instantFormDestination = null;
+            InstantFormPublicationUpdateRequest instantFormUpdate = null;
             if (exp.nextStepInstantForm()) {
-                instantFormDestination = ensureInstantFormDestination(exp);
+                instantFormResolution = ensureInstantFormDestination(exp);
+                if (instantFormResolution != null) {
+                    instantFormDestination = instantFormResolution.destination();
+                    instantFormUpdate = instantFormResolution.publicationUpdate();
+                }
             }
 
             String resolvedWebsiteUrl = resolveDestinationUrl(exp, creative, config, instantFormDestination);
@@ -242,9 +248,29 @@ public class FacebookCampaignService {
                 exp.name(),
                 resolvedCampaignObjective
             );
-            List<ExperimentAdSet> experimentAdSets = fetchExperimentAdSets(exp.id());
-            ExperimentAdSet selectedAdSet = selectExperimentAdSet(experimentAdSets);
-            String resolvedTargetingJson = resolveTargetingJsonFromBackend(selectedAdSet);
+            List<ExperimentAdSet> experimentAdSets = Collections.emptyList();
+            ExperimentAdSet selectedAdSet = null;
+            String resolvedTargetingJson = null;
+            if (!exp.nextStepInstantForm()) {
+                experimentAdSets = fetchExperimentAdSets(exp.id());
+                selectedAdSet = selectExperimentAdSet(experimentAdSets);
+                resolvedTargetingJson = resolveTargetingJsonFromBackend(selectedAdSet);
+            }
+            String savedAudienceId = null;
+            String savedAudienceName = null;
+            if (StringUtils.hasText(resolvedTargetingJson)) {
+                savedAudienceName = buildSavedAudienceName(exp.name(), selectedAdSet);
+                String savedAudienceDescription = selectedAdSet != null ? selectedAdSet.prompt() : null;
+                savedAudienceId = facebookAdsService.createSavedAudience(
+                    config.adAccountId(),
+                    new FacebookAdsService.SavedAudienceRequest(
+                        savedAudienceName,
+                        savedAudienceDescription,
+                        resolvedTargetingJson
+                    )
+                );
+            }
+            String adSetTargetingJson = savedAudienceId == null ? resolvedTargetingJson : null;
             FacebookAdsService.AdSetRequest adSetRequest = new FacebookAdsService.AdSetRequest(
                 exp.name() + " - Ad Set",
                 campaignId,
@@ -256,8 +282,8 @@ public class FacebookCampaignService {
                 config.adSetBidAmount(),
                 resolvedPageId,
                 FacebookAdsService.BRAZIL_COUNTRY_CODE,
-                resolvedTargetingJson,
-                null
+                adSetTargetingJson,
+                savedAudienceId
             );
             String adSetId = facebookAdsService.createAdSet(config.adAccountId(), adSetRequest);
             String resolvedImageUrl = resolveCreativeImageUrl(creative.imageUrl());
@@ -303,8 +329,8 @@ public class FacebookCampaignService {
                     adSetRequest.destinationType(),
                     adSetRequest.pageId(),
                     resolvedTargetingJson,
-                    null,
-                    null,
+                    savedAudienceId,
+                    savedAudienceName,
                     selectedAdSet != null ? selectedAdSet.id() : null
                 ),
                 new CreateCampaignRequest.AdCreative(
@@ -346,6 +372,9 @@ public class FacebookCampaignService {
                 exp.id(),
                 campaignId
             );
+            if (instantFormUpdate != null && exp.facebookInstantForm() != null) {
+                reportInstantFormPublication(exp.facebookInstantForm().id(), instantFormUpdate);
+            }
             markExperimentAsRunning(exp.id(), campaignId);
         } catch (FacebookPermissionException ex) {
             experimentsBlockedByPermissions.add(exp.id());
@@ -788,7 +817,7 @@ public class FacebookCampaignService {
         }
     }
 
-    private InstantFormDestination ensureInstantFormDestination(Experiment experiment) {
+    private InstantFormResolution ensureInstantFormDestination(Experiment experiment) {
         Experiment.InstantForm form = experiment.facebookInstantForm();
         if (form == null) {
             return null;
@@ -806,7 +835,7 @@ public class FacebookCampaignService {
                     form.id()
                 );
             }
-            return new InstantFormDestination(shareLink, normalizedFormId);
+            return new InstantFormResolution(new InstantFormDestination(shareLink, normalizedFormId), null);
         }
         String publishIdentifier = StringUtils.hasText(facebookFormId) ? facebookFormId : normalizedFormId;
         if (StringUtils.hasText(publishIdentifier)) {
@@ -817,8 +846,10 @@ public class FacebookCampaignService {
                 "Experiment {} references an instant form without a resolvable Facebook identifier; skipping publication",
                 experiment.id()
             );
-            return new InstantFormDestination(shareLink, normalizedFormId);
+            return new InstantFormResolution(new InstantFormDestination(shareLink, normalizedFormId), null);
         }
+
+        String status = form.status();
         try {
             LOGGER.info(
                 "Publishing approved instant form before creating Facebook campaign: experimentId={}, formId={}",
@@ -827,9 +858,8 @@ public class FacebookCampaignService {
             );
             facebookAdsService.publishInstantForm(publishIdentifier);
             JsonNode details = facebookAdsService.fetchInstantForm(publishIdentifier);
-            String status = details != null ? details.path("status").asText(null) : null;
-            if (!StringUtils.hasText(status)) {
-                status = form.status();
+            if (details != null) {
+                status = details.path("status").asText(status);
             }
             String resolvedFormId = InstantFormPublicationHelper.normalizeInstantFormId(
                 LOGGER,
@@ -862,10 +892,6 @@ public class FacebookCampaignService {
             if (StringUtils.hasText(normalizedFormId)) {
                 shareLink = InstantFormPublicationHelper.buildInstantFormShareLink(normalizedFormId);
             }
-            reportInstantFormPublication(
-                form.id(),
-                new InstantFormPublicationUpdateRequest(true, Instant.now(), shareLink, status, normalizedFormId)
-            );
         } catch (FacebookAccessTokenExpiredException ex) {
             handleAccessTokenExpirationDuringPublication(ex);
         } catch (FacebookPermissionException ex) {
@@ -886,7 +912,14 @@ public class FacebookCampaignService {
                 ex
             );
         }
-        return new InstantFormDestination(shareLink, normalizedFormId);
+        InstantFormPublicationUpdateRequest publicationUpdate = new InstantFormPublicationUpdateRequest(
+            true,
+            Instant.now(),
+            shareLink,
+            status,
+            normalizedFormId
+        );
+        return new InstantFormResolution(new InstantFormDestination(shareLink, normalizedFormId), publicationUpdate);
     }
 
     private void handleAccessTokenExpirationDuringPublication(FacebookAccessTokenExpiredException ex) {
@@ -940,6 +973,8 @@ public class FacebookCampaignService {
 
     private record AdCreativeCreation(String id, FacebookAdsService.AdCreativeRequest request) {}
 
+    private record InstantFormResolution(InstantFormDestination destination, InstantFormPublicationUpdateRequest publicationUpdate) {}
+
     private record InstantFormDestination(String shareLink, String formId) {}
 
     private String resolveCreativeImageUrl(String imageUrl) {
@@ -971,6 +1006,16 @@ public class FacebookCampaignService {
         }
         return coalesce(creative.destinationUrl(), config.defaultWebsiteUrl());
     }
+
+    private String buildSavedAudienceName(String experimentName, ExperimentAdSet adSet) {
+        StringBuilder builder = new StringBuilder(experimentName);
+        builder.append(" - Audience");
+        if (adSet != null && StringUtils.hasText(adSet.location())) {
+            builder.append(' ').append(adSet.location());
+        }
+        return builder.toString();
+    }
+
 
     private String resolveLeadGenFormId(
         Experiment experiment,

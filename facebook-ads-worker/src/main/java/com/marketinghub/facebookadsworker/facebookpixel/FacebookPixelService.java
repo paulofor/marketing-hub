@@ -34,22 +34,29 @@ public class FacebookPixelService {
     private final String apiPrefix;
     private final FacebookWorkerConfigurationClient configurationClient;
     private final ObjectMapper objectMapper;
+    private final boolean pixelsEnabled;
 
     public FacebookPixelService(FacebookAdsService facebookAdsService,
                                 WebClient.Builder builder,
                                 FacebookWorkerConfigurationClient configurationClient,
                                 @Value("${backend.base-url:http://localhost:8000}") String backendBaseUrl,
                                 @Value("${backend.api-prefix:/api}") String apiPrefix,
-                                ObjectMapper objectMapper) {
+                                ObjectMapper objectMapper,
+                                @Value("${facebookpixel.enabled:false}") boolean pixelsEnabled) {
         this.facebookAdsService = facebookAdsService;
         this.backendClient = builder.build();
         this.backendBaseUrl = backendBaseUrl;
         this.apiPrefix = apiPrefix;
         this.configurationClient = configurationClient;
         this.objectMapper = objectMapper;
+        this.pixelsEnabled = pixelsEnabled;
     }
 
     public void syncPixelsAndConversions() {
+        if (!pixelsEnabled) {
+            LOGGER.debug("Facebook pixel sync disabled via configuration; skipping execution");
+            return;
+        }
         var configOptional = configurationClient.fetchConfiguration();
         if (configOptional.isEmpty()) {
             return;

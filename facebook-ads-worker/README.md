@@ -5,6 +5,14 @@ posicionamentos no Facebook e no Instagram, e coletar métricas usando a API de
 Marketing do Facebook. O serviço reutiliza o modelo de dados definido no
 projeto `backend`, evitando duplicação de entidades.
 
+## Pixels e eventos
+
+A sincronização de pixels e o envio de eventos foram desativados por padrão
+para evitar erros de permissão ao lidar com contas que não liberaram o uso de
+pixels. O agendador `FacebookPixelScheduler` só é registrado quando a
+propriedade `facebookpixel.enabled` está definida como `true`. Mantendo o valor
+padrão (`false`), o worker limita-se a publicar campanha, conjunto e anúncio.
+
 O fluxo automatizado cria toda a hierarquia necessária para veiculação:
 
 1. **Campanha** (`POST /campaigns`) com objetivo `OUTCOME_TRAFFIC` quando o

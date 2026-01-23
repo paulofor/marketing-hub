@@ -112,10 +112,10 @@ durante a análise de incidentes.
 
 ## Testes
 
-Os testes de integração usam `FailFastMockWebServer` para garantir que toda requisição
-do worker tenha stub explícito. Caso uma chamada HTTP não tenha resposta enfileirada,
-o teste falha imediatamente, evitando travamentos silenciosos durante a execução da
-suíte.
+Os testes de integração usam `FailFastMockWebServer` (wrapper do `MockWebServer`) para
+garantir que toda requisição do worker tenha stub explícito. Caso uma chamada HTTP não
+tenha resposta enfileirada, o teste falha imediatamente, evitando travamentos
+silenciosos durante a execução da suíte.
 
 ## Renovação automática de tokens
 

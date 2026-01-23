@@ -1,22 +1,26 @@
 package com.marketinghub.facebookadsworker.testsupport;
 
+import okhttp3.HttpUrl;
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Queue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-public final class FailFastMockWebServer extends MockWebServer {
+public final class FailFastMockWebServer {
+    private final MockWebServer server = new MockWebServer();
     private final Queue<MockResponse> responses = new ArrayDeque<>();
     private final AtomicReference<RecordedRequest> unmatchedRequest = new AtomicReference<>();
 
     public FailFastMockWebServer() {
-        setDispatcher(new Dispatcher() {
+        server.setDispatcher(new Dispatcher() {
             @Override
             public MockResponse dispatch(RecordedRequest request) {
                 MockResponse response = responses.poll();
@@ -33,6 +37,22 @@ public final class FailFastMockWebServer extends MockWebServer {
 
     public void enqueueResponse(MockResponse response) {
         responses.add(response);
+    }
+
+    public void start() throws IOException {
+        server.start();
+    }
+
+    public void shutdown() throws IOException {
+        server.shutdown();
+    }
+
+    public HttpUrl url(String path) {
+        return server.url(path);
+    }
+
+    public RecordedRequest takeRequest(long timeout, TimeUnit unit) throws InterruptedException {
+        return server.takeRequest(timeout, unit);
     }
 
     public void assertNoUnmatchedRequests() {

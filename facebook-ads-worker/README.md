@@ -14,16 +14,17 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    [Marketing API](https://developers.facebook.com/docs/marketing-api/reference/ad-campaign-group#Creating) para contas que
    não se enquadram em categorias especiais.
 2. **Conjunto de anúncios** (`POST /adsets`) atrelado à campanha, também em
-   `PAUSED`, com destino herdado da conta (por exemplo, `WEBSITE`). A
-   segmentação enviada para a Meta é sempre o Brasil inteiro
-   (`geo_locations.countries = ["BR"]`) e com Advantage+ Audience habilitado
-   (`targeting_automation.advantage_audience = 1`), garantindo o alcance
-   nacional independente do público retornado pelo backend (`GET
-   /api/adsets?experimentId={id}`). Interesses e custom audiences são
-   normalizados quando presentes no JSON de segmentação, e campos auxiliares não
-   reconhecidos pela Graph API são removidos (por exemplo,
-   `detailed_targeting_description`) para evitar erros `(#100) Invalid
-   parameter`. Valores enviados em `languages` são convertidos
+   `PAUSED`, com destino herdado da conta (por exemplo, `WEBSITE`). Antes de
+   chamar a Graph API o worker consulta o backend (`GET
+   /api/adsets?experimentId={id}`) para montar a segmentação e, quando
+   necessário, criar uma Saved Audience reutilizável. A segmentação enviada
+   para a Meta é sempre o Brasil inteiro (`geo_locations.countries = ["BR"]`)
+   e com Advantage+ Audience habilitado (`targeting_automation.advantage_audience = 1`),
+   garantindo o alcance nacional independente do público retornado pelo backend.
+   Interesses e custom audiences são normalizados quando presentes no JSON de
+   segmentação, e campos auxiliares não reconhecidos pela Graph API são
+   removidos (por exemplo, `detailed_targeting_description`) para evitar erros
+   `(#100) Invalid parameter`. Valores enviados em `languages` são convertidos
    para `locales` numéricos aceitos pela Meta (por exemplo, `pt_BR` -> `16`) antes do POST e o campo
    original é descartado para manter compatibilidade com a Graph API. Entradas
    de `geo_locations.regions` são aceitas apenas quando o `key` é numérico;

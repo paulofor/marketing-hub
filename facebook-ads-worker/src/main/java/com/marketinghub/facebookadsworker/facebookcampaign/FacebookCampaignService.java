@@ -242,11 +242,6 @@ public class FacebookCampaignService {
                 : config.adSetOptimizationGoal();
             String resolvedCampaignObjective = hasLeadFormDestination ? "OUTCOME_LEADS" : "OUTCOME_TRAFFIC";
 
-            String campaignId = facebookAdsService.createCampaign(
-                config.adAccountId(),
-                exp.name(),
-                resolvedCampaignObjective
-            );
             List<ExperimentAdSet> experimentAdSets = Collections.emptyList();
             ExperimentAdSet selectedAdSet = null;
             String resolvedTargetingJson = null;
@@ -255,6 +250,12 @@ public class FacebookCampaignService {
                 selectedAdSet = selectExperimentAdSet(experimentAdSets);
                 resolvedTargetingJson = resolveTargetingJsonFromBackend(selectedAdSet);
             }
+
+            String campaignId = facebookAdsService.createCampaign(
+                config.adAccountId(),
+                exp.name(),
+                resolvedCampaignObjective
+            );
             String savedAudienceId = null;
             String savedAudienceName = null;
             if (StringUtils.hasText(resolvedTargetingJson)) {

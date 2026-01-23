@@ -21,6 +21,8 @@
   (incluindo aspas em strings) e manter tokens mascarados.
 - Prefixe os valores de URL nos logs de integração com endpoints usando `==>` para requisições e `<==` para respostas (incluindo
   erros), garantindo um padrão visual consistente em todo o módulo.
+- O fluxo de campanhas consulta o backend (`/api/adsets?experimentId={id}`) antes de criar campanhas na Meta para preparar a
+  segmentação e Saved Audiences; mantenha esse detalhe documentado ao ajustar o fluxo.
 - Em caso de erro de permissão do Facebook, o worker bloqueia o experimento em memória até que o serviço seja reiniciado.
 - Ao publicar instant forms aprove os rascunhos com `facebookFormId` nulo e reporte o identificador definitivo recebido da Meta
   através de `PATCH /api/instant-forms/{id}/publication`. A criação automática foi descontinuada; os formulários devem ser

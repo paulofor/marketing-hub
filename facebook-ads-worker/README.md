@@ -110,6 +110,13 @@ garantindo que campos de texto apareçam entre aspas (por exemplo,
 Esse padrão facilita buscas em ferramentas de observabilidade e reduz ambiguidades
 durante a análise de incidentes.
 
+## Testes
+
+Os testes de integração usam `FailFastMockWebServer` para garantir que toda requisição
+do worker tenha stub explícito. Caso uma chamada HTTP não tenha resposta enfileirada,
+o teste falha imediatamente, evitando travamentos silenciosos durante a execução da
+suíte.
+
 ## Renovação automática de tokens
 
 Além da criação de campanhas, o worker monitora tokens configurados nas

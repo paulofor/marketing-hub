@@ -1,12 +1,11 @@
 package com.marketinghub.facebookadsworker;
 
-import com.marketinghub.facebookadsworker.FacebookPermissionException;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.facebookadsworker.FacebookPermissionException;
+import com.marketinghub.facebookadsworker.testsupport.FailFastMockWebServer;
 import okhttp3.HttpUrl;
 import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,13 +25,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FacebookAdsServiceTest {
-    private MockWebServer server;
+    private FailFastMockWebServer server;
     private FacebookAdsService service;
     private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() throws IOException {
-        server = new MockWebServer();
+        server = new FailFastMockWebServer();
         server.start();
         String baseUrl = server.url("/").toString();
         objectMapper = new ObjectMapper();
@@ -42,6 +41,7 @@ class FacebookAdsServiceTest {
 
     @AfterEach
     void tearDown() throws IOException {
+        server.assertNoUnmatchedRequests();
         server.shutdown();
     }
 
@@ -53,7 +53,7 @@ class FacebookAdsServiceTest {
 
     @Test
     void createCampaignPostsCorrectRequest() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"id\":\"123\"}")
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"123\"}")
             .addHeader("Content-Type", "application/json"));
         String id = service.createInstagramCampaign("1", "Camp");
         RecordedRequest request = takeRequest("request");
@@ -68,7 +68,7 @@ class FacebookAdsServiceTest {
 
     @Test
     void createCampaignUsesProvidedObjectiveWhenPresent() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"id\":\"456\"}")
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"456\"}")
             .addHeader("Content-Type", "application/json"));
         String id = service.createCampaign("1", "Camp", "OUTCOME_LEADS");
         RecordedRequest request = takeRequest("request");
@@ -81,7 +81,7 @@ class FacebookAdsServiceTest {
 
     @Test
     void createAdSetPostsCorrectRequest() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"id\":\"222\"}")
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"222\"}")
             .addHeader("Content-Type", "application/json"));
         FacebookAdsService.AdSetRequest request = new FacebookAdsService.AdSetRequest(
             "Camp - Ad Set",
@@ -117,7 +117,7 @@ class FacebookAdsServiceTest {
 
     @Test
     void createAdSetIncludesSavedAudienceWhenProvided() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"id\":\"444\"}")
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"444\"}")
             .addHeader("Content-Type", "application/json"));
         FacebookAdsService.AdSetRequest request = new FacebookAdsService.AdSetRequest(
             "Camp - Ad Set",
@@ -142,7 +142,7 @@ class FacebookAdsServiceTest {
 
     @Test
     void createAdSetRemovesLanguagesFromTargeting() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"id\":\"555\"}")
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"555\"}")
             .addHeader("Content-Type", "application/json"));
         String targetingJson = "{\"languages\":[55,66],\"geo_locations\":{\"countries\":[\"BR\"]}}";
         FacebookAdsService.AdSetRequest request = new FacebookAdsService.AdSetRequest(
@@ -174,7 +174,7 @@ class FacebookAdsServiceTest {
 
     @Test
     void createAdSetConvertsLocaleCodesToNumericIds() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"id\":\"555\"}")
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"555\"}")
             .addHeader("Content-Type", "application/json"));
         String targetingJson = "{\"languages\":[\"pt_BR\",\"6\",\"999\"],\"geo_locations\":{\"countries\":[\"BR\"]}}";
         FacebookAdsService.AdSetRequest request = new FacebookAdsService.AdSetRequest(
@@ -205,7 +205,7 @@ class FacebookAdsServiceTest {
 
     @Test
     void createAdSetCoercesExistingLocalesToNumericIds() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"id\":\"555\"}")
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"555\"}")
             .addHeader("Content-Type", "application/json"));
         String targetingJson = "{\"locales\":[\"pt_br\",\"foo\",55],\"geo_locations\":{\"countries\":[\"BR\"]}}";
         FacebookAdsService.AdSetRequest request = new FacebookAdsService.AdSetRequest(
@@ -236,7 +236,7 @@ class FacebookAdsServiceTest {
 
     @Test
     void createAdSetRemovesNonNumericRegionsFromTargeting() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"id\":\"555\"}")
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"555\"}")
             .addHeader("Content-Type", "application/json"));
         String targetingJson = "{\"geo_locations\":{\"regions\":[{\"key\":\"SP\"},{\"key\":123},{\"key\":\"456\"}],\"countries\":[\"BR\"]}}";
         FacebookAdsService.AdSetRequest request = new FacebookAdsService.AdSetRequest(
@@ -266,9 +266,9 @@ class FacebookAdsServiceTest {
 
     @Test
     void createAdSetResolvesInterestNamesToIds() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"data\":[{\"id\":\"6003139266461\",\"name\":\"Pilates\"}]}" )
+        server.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"6003139266461\",\"name\":\"Pilates\"}]}" )
             .addHeader("Content-Type", "application/json"));
-        server.enqueue(new MockResponse().setBody("{\"id\":\"555\"}")
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"555\"}")
             .addHeader("Content-Type", "application/json"));
 
         String targetingJson = "{\"interests\":[\"Pilates\"],\"geo_locations\":{\"countries\":[\"BR\"]}}";
@@ -311,7 +311,7 @@ class FacebookAdsServiceTest {
 
     @Test
     void createAdCreativePostsCorrectRequest() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"id\":\"333\"}")
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"333\"}")
             .addHeader("Content-Type", "application/json"));
         FacebookAdsService.AdCreativeRequest request = new FacebookAdsService.AdCreativeRequest(
             "Camp - Creative",
@@ -346,7 +346,7 @@ class FacebookAdsServiceTest {
 
     @Test
     void createAdCreativeSupportsLeadForms() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"id\":\"999\"}")
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"999\"}")
             .addHeader("Content-Type", "application/json"));
         FacebookAdsService.AdCreativeRequest request = new FacebookAdsService.AdCreativeRequest(
             "Camp - Lead",
@@ -375,7 +375,7 @@ class FacebookAdsServiceTest {
 
     @Test
     void createAdCreativeKeepsWebsiteLinkWhenLeadFormIsPresent() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"id\":\"998\"}")
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"998\"}")
             .addHeader("Content-Type", "application/json"));
         FacebookAdsService.AdCreativeRequest request = new FacebookAdsService.AdCreativeRequest(
             "Camp - Lead",
@@ -405,7 +405,7 @@ class FacebookAdsServiceTest {
 
     @Test
     void createSavedAudiencePostsCorrectRequest() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"id\":\"SA-1\"}")
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"SA-1\"}")
             .addHeader("Content-Type", "application/json"));
         String targetingJson = "{\"geo_locations\":{\"countries\":[\"BR\"]}}";
         String id = service.createSavedAudience(
@@ -424,9 +424,9 @@ class FacebookAdsServiceTest {
 
     @Test
     void createSavedAudienceNormalizesInterests() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"data\":[{\"id\":\"6001\",\"name\":\"Pilates\"}]}" )
+        server.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"6001\",\"name\":\"Pilates\"}]}" )
             .addHeader("Content-Type", "application/json"));
-        server.enqueue(new MockResponse().setBody("{\"id\":\"SA-2\"}")
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"SA-2\"}")
             .addHeader("Content-Type", "application/json"));
 
         String targetingJson = "{\"interests\":[\"Pilates\"]}";
@@ -452,7 +452,7 @@ class FacebookAdsServiceTest {
 
     @Test
     void createAdCreativeFallsBackToPictureWhenHashMissing() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"id\":\"777\"}")
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"777\"}")
             .addHeader("Content-Type", "application/json"));
         FacebookAdsService.AdCreativeRequest request = new FacebookAdsService.AdCreativeRequest(
             "Camp - Creative",
@@ -480,7 +480,7 @@ class FacebookAdsServiceTest {
 
     @Test
     void uploadAdImageReturnsFirstHash() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"images\":{\"image1\":{\"hash\":\"abc\"}}}")
+        server.enqueueResponse(new MockResponse().setBody("{\"images\":{\"image1\":{\"hash\":\"abc\"}}}")
             .addHeader("Content-Type", "application/json"));
 
         String hash = service.uploadAdImage("1", "https://cdn.example/img.jpg");
@@ -494,7 +494,7 @@ class FacebookAdsServiceTest {
 
     @Test
     void createAdPostsCorrectRequest() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"id\":\"444\"}")
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"444\"}")
             .addHeader("Content-Type", "application/json"));
         FacebookAdsService.AdRequest request = new FacebookAdsService.AdRequest(
             "Camp - Ad",
@@ -514,10 +514,10 @@ class FacebookAdsServiceTest {
 
     @Test
     void findInstantFormIdentifierUsesPageAccessToken() throws Exception {
-        server.enqueue(new MockResponse()
+        server.enqueueResponse(new MockResponse()
             .setBody("{\"access_token\":\"page-token\"}")
             .addHeader("Content-Type", "application/json"));
-        server.enqueue(new MockResponse()
+        server.enqueueResponse(new MockResponse()
             .setBody("{\"data\":[{\"id\":\"form-1\",\"name\":\"Form Teste\",\"status\":\"DRAFT\"}]}")
             .addHeader("Content-Type", "application/json"));
 
@@ -537,13 +537,13 @@ class FacebookAdsServiceTest {
 
     @Test
     void findInstantFormIdentifierCachesPageAccessToken() throws Exception {
-        server.enqueue(new MockResponse()
+        server.enqueueResponse(new MockResponse()
             .setBody("{\"access_token\":\"cached-page-token\"}")
             .addHeader("Content-Type", "application/json"));
-        server.enqueue(new MockResponse()
+        server.enqueueResponse(new MockResponse()
             .setBody("{\"data\":[]}")
             .addHeader("Content-Type", "application/json"));
-        server.enqueue(new MockResponse()
+        server.enqueueResponse(new MockResponse()
             .setBody("{\"data\":[]}")
             .addHeader("Content-Type", "application/json"));
 
@@ -570,7 +570,7 @@ class FacebookAdsServiceTest {
 
     @Test
     void findInstantFormIdentifierReturnsNullWhenPageTokenMissing() throws Exception {
-        server.enqueue(new MockResponse()
+        server.enqueueResponse(new MockResponse()
             .setBody("{\"data\":{}}")
             .addHeader("Content-Type", "application/json"));
 
@@ -585,7 +585,7 @@ class FacebookAdsServiceTest {
 
     @Test
     void findInstantFormIdentifierPropagatesPermissionErrors() {
-        server.enqueue(new MockResponse()
+        server.enqueueResponse(new MockResponse()
             .setResponseCode(403)
             .setBody("{\"error\":{\"type\":\"OAuthException\",\"code\":200,\"message\":\"(#200) Requires pages_manage_ads permission\"}}")
             .addHeader("Content-Type", "application/json"));
@@ -598,7 +598,7 @@ class FacebookAdsServiceTest {
 
     @Test
     void publishInstantFormSkipsPostWhenAlreadyActive() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"status\":\"ACTIVE\"}")
+        server.enqueueResponse(new MockResponse().setBody("{\"status\":\"ACTIVE\"}")
             .addHeader("Content-Type", "application/json"));
 
         service.publishInstantForm("123");
@@ -611,9 +611,9 @@ class FacebookAdsServiceTest {
 
     @Test
     void publishInstantFormPostsWhenStatusIsNotActive() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"status\":\"DRAFT\"}")
+        server.enqueueResponse(new MockResponse().setBody("{\"status\":\"DRAFT\"}")
             .addHeader("Content-Type", "application/json"));
-        server.enqueue(new MockResponse().setBody("{\"success\":true}")
+        server.enqueueResponse(new MockResponse().setBody("{\"success\":true}")
             .addHeader("Content-Type", "application/json"));
 
         service.publishInstantForm(" 123 ");
@@ -632,7 +632,7 @@ class FacebookAdsServiceTest {
 
     @Test
     void metricsRequestsCampaignInsights() throws Exception {
-        server.enqueue(new MockResponse().setBody("{\"data\":[{\"impressions\":\"10\"}]}")
+        server.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"impressions\":\"10\"}]}")
             .addHeader("Content-Type", "application/json"));
         JsonNode node = service.getCampaignMetrics("77");
         RecordedRequest request = takeRequest("request");

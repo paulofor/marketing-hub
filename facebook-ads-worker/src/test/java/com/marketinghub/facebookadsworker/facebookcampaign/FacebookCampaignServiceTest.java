@@ -12,17 +12,21 @@ import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurat
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient.FacebookWorkerConfiguration;
 import com.marketinghub.facebookadsworker.facebooktokenrenewal.FacebookTokenRenewalClient;
 import com.marketinghub.facebookadsworker.facebooktokenrenewal.FacebookTokenRenewalService;
+import com.marketinghub.facebookadsworker.testsupport.FailFastMockWebServer;
 import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import okhttp3.mockwebserver.SocketPolicy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.client.HttpClient;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Optional;
@@ -34,19 +38,21 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Timeout(value = 15, unit = TimeUnit.SECONDS)
 class FacebookCampaignServiceTest {
-    private MockWebServer backend;
-    private MockWebServer facebook;
+    private FailFastMockWebServer backend;
+    private FailFastMockWebServer facebook;
     private FacebookCampaignService service;
     private ObjectMapper objectMapper;
     private FacebookAdsService adsService;
     private StubFacebookWorkerConfigurationClient configurationClient;
+    private WebClient.Builder webClientBuilder;
 
     @BeforeEach
     void setUp() throws IOException {
-        backend = new MockWebServer();
+        backend = new FailFastMockWebServer();
         backend.start();
-        facebook = new MockWebServer();
+        facebook = new FailFastMockWebServer();
         facebook.start();
 
         String facebookUrl = facebook.url("/").toString();
@@ -54,20 +60,24 @@ class FacebookCampaignServiceTest {
         objectMapper = new ObjectMapper();
         configurationClient = new StubFacebookWorkerConfigurationClient();
         configurationClient.setConfiguration(configurationWithAccessToken("token"));
+        HttpClient httpClient = HttpClient.create()
+            .responseTimeout(Duration.ofSeconds(5));
+        webClientBuilder = WebClient.builder()
+            .clientConnector(new ReactorClientHttpConnector(httpClient));
         adsService = new FacebookAdsService(
-            WebClient.builder(),
+            webClientBuilder,
             facebookUrl,
             "v23.0",
             objectMapper
         );
         adsService.updateAccessToken("token");
         FacebookTokenRenewalClient tokenRenewalClient = new FacebookTokenRenewalClient(
-            WebClient.builder(),
+            webClientBuilder,
             backend.url("/").toString(),
             "/api"
         );
         FacebookTokenRenewalService tokenRenewalService = new FacebookTokenRenewalService(
-            WebClient.builder(),
+            webClientBuilder,
             adsService,
             tokenRenewalClient,
             backend.url("/").toString(),
@@ -81,7 +91,7 @@ class FacebookCampaignServiceTest {
         service = new FacebookCampaignService(
             adsService,
             accessTokenManager,
-            WebClient.builder(),
+            webClientBuilder,
             configurationClient,
             backend.url("/").toString(),
             "/api",
@@ -91,6 +101,8 @@ class FacebookCampaignServiceTest {
 
     @AfterEach
     void tearDown() throws IOException {
+        backend.assertNoUnmatchedRequests();
+        facebook.assertNoUnmatchedRequests();
         backend.shutdown();
         facebook.shutdown();
     }
@@ -109,29 +121,29 @@ class FacebookCampaignServiceTest {
 
     @Test
     void createsCampaignHierarchyForEachExperiment() throws Exception {
-        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"10\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("[]")
+        backend.enqueueResponse(new MockResponse().setBody("[]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
 
         service.createCampaignsFromExperiments();
@@ -196,31 +208,31 @@ class FacebookCampaignServiceTest {
 
     @Test
     void createsSavedAudienceWhenTargetingExists() throws Exception {
-        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"10\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"AUD123\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"AUD123\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("[{\"id\":900,\"experimentId\":1,\"location\":\"São Paulo\",\"targetingJson\":\"{\\\"geo_locations\\\":{\\\"countries\\\":[\\\"BR\\\"]}}\",\"prompt\":\"Detalhes\",\"model\":\"gpt-4\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":900,\"experimentId\":1,\"location\":\"São Paulo\",\"targetingJson\":\"{\\\"geo_locations\\\":{\\\"countries\\\":[\\\"BR\\\"]}}\",\"prompt\":\"Detalhes\",\"model\":\"gpt-4\"}]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
 
         service.createCampaignsFromExperiments();
@@ -263,7 +275,7 @@ class FacebookCampaignServiceTest {
 
     @Test
     void usesInstantFormShareLinkWhenJourneyRequiresForm() throws Exception {
-        backend.enqueue(new MockResponse().setBody("[{"
+        backend.enqueueResponse(new MockResponse().setBody("[{"
             + "\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\","
             + "\"dailyBudget\":35.5,"
             + "\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},"
@@ -271,31 +283,31 @@ class FacebookCampaignServiceTest {
             + "\"facebookInstantForm\":{\"id\":33,\"facebookFormId\":\"987654321\",\"name\":\"Lead\",\"status\":\"DRAFT\",\"approved\":true,\"published\":false},"
             + "\"nextStepInstantForm\":true}]" )
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"status\":\"DRAFT\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"status\":\"DRAFT\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"success\":true}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"success\":true}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"status\":\"ACTIVE\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"status\":\"ACTIVE\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"10\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
 
         service.createCampaignsFromExperiments();
@@ -354,34 +366,34 @@ class FacebookCampaignServiceTest {
 
     @Test
     void normalizesAiInstantFormIdentifierBeforeCallingFacebook() throws Exception {
-        backend.enqueue(new MockResponse().setBody("[{"
+        backend.enqueueResponse(new MockResponse().setBody("[{"
             + "\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\","
             + "\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},"
             + "\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},"
             + "\"facebookInstantForm\":{\"id\":33,\"facebookFormId\":\"ai_form_3_1_token\",\"name\":\"Lead\",\"status\":\"DRAFT\",\"approved\":true,\"published\":false},"
             + "\"nextStepInstantForm\":true}]" )
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"status\":\"DRAFT\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"status\":\"DRAFT\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"success\":true}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"success\":true}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"form_3_1_token\",\"status\":\"ACTIVE\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"form_3_1_token\",\"status\":\"ACTIVE\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"10\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
 
         service.createCampaignsFromExperiments();
@@ -426,7 +438,7 @@ class FacebookCampaignServiceTest {
 
     @Test
     void publishesInstantFormUsingShareLinkWhenFormIdMissing() throws Exception {
-        backend.enqueue(new MockResponse()
+        backend.enqueueResponse(new MockResponse()
             .setBody(
                 """
                 [{"id":1,"name":"Exp","pageId":"84",
@@ -437,27 +449,27 @@ class FacebookCampaignServiceTest {
                 """
             )
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"status\":\"DRAFT\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"status\":\"DRAFT\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"success\":true}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"success\":true}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"2468\",\"status\":\"ACTIVE\",\"share_link\":\"https://www.facebook.com/ads/leadgen/?id=2468\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"2468\",\"status\":\"ACTIVE\",\"share_link\":\"https://www.facebook.com/ads/leadgen/?id=2468\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"10\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
 
         service.createCampaignsFromExperiments();
@@ -523,21 +535,25 @@ class FacebookCampaignServiceTest {
             "150",
             "BR"
         ));
-        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"10\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SIGN_UP\",\"leadGenFormId\":\"321123321123321\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SIGN_UP\",\"leadGenFormId\":\"321123321123321\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("[]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
 
         service.createCampaignsFromExperiments();
@@ -573,7 +589,7 @@ class FacebookCampaignServiceTest {
 
     @Test
     void ignoresConnectionIssuesFetchingExperiments() {
-        backend.enqueue(new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START));
+        backend.enqueueResponse(new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START));
 
         service.createCampaignsFromExperiments();
 
@@ -594,7 +610,7 @@ class FacebookCampaignServiceTest {
             service.createCampaignsFromExperiments();
             service.createCampaignsFromExperiments();
 
-            backend.enqueue(new MockResponse().setResponseCode(404));
+            backend.enqueueResponse(new MockResponse().setResponseCode(404));
             configurationClient.setConfiguration(configurationWithAccessToken("token"));
             service.createCampaignsFromExperiments();
 
@@ -618,15 +634,15 @@ class FacebookCampaignServiceTest {
 
     @Test
     void marksExperimentAsFailedWhenFacebookReturnsPermissionError() throws Exception {
-        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse()
+        facebook.enqueueResponse(new MockResponse()
             .setResponseCode(400)
             .setBody("{\"error\":{\"message\":\"Permissions error\",\"type\":\"OAuthException\",\"code\":200,\"error_subcode\":1815066,\"error_user_msg\":\"O usuário não tem permissão para criar anúncios com esta conta de anúncios\"}}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
 
         service.createCampaignsFromExperiments();
@@ -652,16 +668,16 @@ class FacebookCampaignServiceTest {
 
     @Test
     void skipsExperimentAfterPermissionErrorEvenIfBackendKeepsReturningIt() throws Exception {
-        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse()
+        facebook.enqueueResponse(new MockResponse()
             .setResponseCode(400)
             .setBody("{\"error\":{\"message\":\"Permissions error\",\"type\":\"OAuthException\",\"code\":200,\"error_subcode\":1815066}}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setResponseCode(500));
-        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\"}]")
+        backend.enqueueResponse(new MockResponse().setResponseCode(500));
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\"}]")
             .addHeader("Content-Type", "application/json"));
 
         service.createCampaignsFromExperiments();
@@ -708,37 +724,39 @@ class FacebookCampaignServiceTest {
         service = new FacebookCampaignService(
             adsService,
             renewingManager,
-            WebClient.builder(),
+            webClientBuilder,
             configurationClient,
             backend.url("/").toString(),
             "/api",
             objectMapper
         );
 
-        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse()
+        facebook.enqueueResponse(new MockResponse()
             .setResponseCode(400)
             .setBody("{\"error\":{\"message\":\"Error validating access token: Session has expired\",\"type\":\"OAuthException\",\"code\":190,\"error_subcode\":463}}")
             .addHeader("Content-Type", "application/json"));
 
-        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"10\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("[]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
 
         service.createCampaignsFromExperiments();
@@ -794,18 +812,18 @@ class FacebookCampaignServiceTest {
         service = new FacebookCampaignService(
             adsService,
             manager,
-            WebClient.builder(),
+            webClientBuilder,
             configurationClient,
             backend.url("/").toString(),
             "/api",
             objectMapper
         );
 
-        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse()
+        facebook.enqueueResponse(new MockResponse()
             .setResponseCode(400)
             .setBody("{\"error\":{\"message\":\"Error validating access token: Session has expired\",\"type\":\"OAuthException\",\"code\":190,\"error_subcode\":463}}")
             .addHeader("Content-Type", "application/json"));
@@ -815,21 +833,23 @@ class FacebookCampaignServiceTest {
         adsService.updateAccessToken("renewed-by-backend");
         configurationClient.setConfiguration(configurationWithAccessToken("renewed-by-backend"));
 
-        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"10\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("[]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
 
         service.createCampaignsFromExperiments();
@@ -868,19 +888,23 @@ class FacebookCampaignServiceTest {
     void fallsBackToExperimentFacebookPageWhenConfigurationDoesNotProvideOne() throws Exception {
         configurationClient.setConfiguration(configurationWithoutDefaultPageId("token"));
 
-        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"10\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}")
+        backend.enqueueResponse(new MockResponse().setBody("[]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
 
         service.createCampaignsFromExperiments();
@@ -912,24 +936,25 @@ class FacebookCampaignServiceTest {
     void resolvesPageIdFromAssociatedFacebookPageAlias() throws Exception {
         configurationClient.setConfiguration(configurationWithoutDefaultPageId("token"));
 
-        backend.enqueue(
+        backend.enqueueResponse(
             new MockResponse()
                 .setBody("[{\"id\":1,\"name\":\"Exp\",\"associatedFacebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"}}]")
                 .addHeader("Content-Type", "application/json")
         );
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"10\"}").addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"20\"}").addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"30\"}").addHeader("Content-Type", "application/json"));
-        facebook.enqueue(new MockResponse().setBody("{\"id\":\"40\"}").addHeader("Content-Type", "application/json"));
-        backend.enqueue(
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}").addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}").addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}").addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}").addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(
             new MockResponse()
                 .setBody(
                     "[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]"
                 )
                 .addHeader("Content-Type", "application/json")
         );
-        backend.enqueue(new MockResponse().setBody("{}").addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("{}").addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[]").addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}").addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}").addHeader("Content-Type", "application/json"));
 
         service.createCampaignsFromExperiments();
 
@@ -959,9 +984,9 @@ class FacebookCampaignServiceTest {
     void skipsExperimentWhenNoPageCanBeResolved() throws Exception {
         configurationClient.setConfiguration(configurationWithoutDefaultPageId("token"));
 
-        backend.enqueue(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\"}]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
 
         service.createCampaignsFromExperiments();

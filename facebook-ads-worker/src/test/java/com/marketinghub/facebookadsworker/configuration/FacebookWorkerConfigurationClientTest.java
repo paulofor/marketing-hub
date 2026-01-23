@@ -5,8 +5,8 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient.FacebookWorkerConfiguration;
+import com.marketinghub.facebookadsworker.testsupport.FailFastMockWebServer;
 import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.SocketPolicy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,22 +23,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class FacebookWorkerConfigurationClientTest {
 
-    private MockWebServer backend;
+    private FailFastMockWebServer backend;
 
     @BeforeEach
     void setUp() throws IOException {
-        backend = new MockWebServer();
+        backend = new FailFastMockWebServer();
         backend.start();
     }
 
     @AfterEach
     void tearDown() throws IOException {
+        backend.assertNoUnmatchedRequests();
         backend.shutdown();
     }
 
     @Test
     void shouldReturnEmptyWhenBackendClosesConnectionBeforeResponding() throws InterruptedException {
-        backend.enqueue(new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST));
+        backend.enqueueResponse(new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST));
 
         FacebookWorkerConfigurationClient client = new FacebookWorkerConfigurationClient(
             WebClient.builder(),
@@ -56,16 +57,16 @@ class FacebookWorkerConfigurationClientTest {
 
     @Test
     void logsMissingConfigurationWarningOnlyOncePerOutage() {
-        backend.enqueue(new MockResponse().setResponseCode(404));
-        backend.enqueue(new MockResponse().setResponseCode(404));
-        backend.enqueue(new MockResponse()
+        backend.enqueueResponse(new MockResponse().setResponseCode(404));
+        backend.enqueueResponse(new MockResponse().setResponseCode(404));
+        backend.enqueueResponse(new MockResponse()
             .setBody("{\"accountId\":1,\"adAccountId\":\"act_1\",\"accessToken\":\"token\",\"appId\":\"app\",\"appSecret\":\"secret\","
                 + "\"defaultPageId\":\"42\",\"defaultInstagramActorId\":\"24\",\"defaultWebsiteUrl\":\"https://example.com\","
                 + "\"defaultCreativeMessageTemplate\":\"Conheça %s\",\"defaultCallToActionType\":\"LEARN_MORE\",\"adSetDailyBudget\":\"2000\","
                 + "\"adSetBillingEvent\":\"IMPRESSIONS\",\"adSetOptimizationGoal\":\"LINK_CLICKS\",\"adSetDestinationType\":\"WEBSITE\","
                 + "\"adSetBidStrategy\":\"LOWEST_COST_WITHOUT_CAP\",\"adSetBidAmount\":\"150\",\"adSetTargetCountry\":\"BR\"}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueue(new MockResponse().setResponseCode(404));
+        backend.enqueueResponse(new MockResponse().setResponseCode(404));
 
         FacebookWorkerConfigurationClient client = new FacebookWorkerConfigurationClient(
             WebClient.builder(),
@@ -98,4 +99,3 @@ class FacebookWorkerConfigurationClientTest {
         }
     }
 }
-

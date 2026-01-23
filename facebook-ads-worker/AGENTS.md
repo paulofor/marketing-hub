@@ -35,7 +35,7 @@
 - Em testes com `MockWebServer`, utilize `takeRequest` com timeout e valide o retorno para evitar
   travamentos silenciosos no pipeline. Enfileire respostas para cada chamada esperada para
   não bloquear o `WebClient`.
-- Em testes com `MockWebServer`, prefira `FailFastMockWebServer` e valide se não houve requisições
+- Em testes com `MockWebServer`, prefira `FailFastMockWebServer` (wrapper do `MockWebServer`) e valide se não houve requisições
   sem stub (falha imediata) para evitar respostas pendentes mascararem novas regressões.
 
 - Perguntas personalizadas geradas pelo ChatGPT agora são persistidas no backend

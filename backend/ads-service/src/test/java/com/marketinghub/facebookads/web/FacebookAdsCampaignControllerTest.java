@@ -7,6 +7,7 @@ import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.ads.FacebookAccountRepository;
 import com.marketinghub.ads.FacebookPage;
 import com.marketinghub.ads.InstagramAccount;
+import com.marketinghub.audience.repository.AudienceRepository;
 import com.marketinghub.experiment.AdSet;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.journey.model.JourneyTemplate;
@@ -73,6 +74,8 @@ class FacebookAdsCampaignControllerTest {
     FacebookAdsAdRepository adRepository;
     @MockBean
     AdSetRepository experimentAdSetRepository;
+    @MockBean
+    AudienceRepository audienceRepository;
 
     @Test
     void listExperimentsByStatus() throws Exception {
@@ -120,6 +123,8 @@ class FacebookAdsCampaignControllerTest {
                 .facebookPage(page)
                 .instagramAccount(instagramAccount)
                 .build();
+        when(audienceRepository.existsApprovedByNicheAndMatchingHypothesis(10L, hypothesis.getId()))
+                .thenReturn(true);
         when(experimentService.listByStatusAndPlatform(
                 com.marketinghub.experiment.ExperimentStatus.PLANNED,
                 com.marketinghub.experiment.ExperimentPlatform.FACEBOOK))

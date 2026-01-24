@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.ads.FacebookAccountRepository;
+import com.marketinghub.audience.repository.AudienceRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.journey.model.JourneyStep;
@@ -34,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/facebook-campaigns")
@@ -45,6 +47,7 @@ public class FacebookAdsCampaignController {
     private final FacebookAdsAdCreativeRepository adCreativeRepository;
     private final FacebookAdsAdRepository adRepository;
     private final com.marketinghub.experiment.repository.AdSetRepository experimentAdSetRepository;
+    private final AudienceRepository audienceRepository;
     private final ObjectMapper objectMapper;
 
     public FacebookAdsCampaignController(ExperimentService experimentService,
@@ -54,6 +57,7 @@ public class FacebookAdsCampaignController {
                                          FacebookAdsAdCreativeRepository adCreativeRepository,
                                          FacebookAdsAdRepository adRepository,
                                          com.marketinghub.experiment.repository.AdSetRepository experimentAdSetRepository,
+                                         AudienceRepository audienceRepository,
                                          ObjectMapper objectMapper) {
         this.experimentService = experimentService;
         this.campaignRepository = campaignRepository;
@@ -62,6 +66,7 @@ public class FacebookAdsCampaignController {
         this.adCreativeRepository = adCreativeRepository;
         this.adRepository = adRepository;
         this.experimentAdSetRepository = experimentAdSetRepository;
+        this.audienceRepository = audienceRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -332,7 +337,19 @@ public class FacebookAdsCampaignController {
                 }
             }
         }
+        if (!hasApprovedAudiences(experiment)) {
+            missing.add("approvedAudiences");
+        }
         return missing;
+    }
+
+    private boolean hasApprovedAudiences(Experiment experiment) {
+        if (experiment.getNiche() == null) {
+            return false;
+        }
+        UUID hypothesisId = experiment.getHypothesisRef() != null ? experiment.getHypothesisRef().getId() : null;
+        return audienceRepository.existsApprovedByNicheAndMatchingHypothesis(
+                experiment.getNiche().getId(), hypothesisId);
     }
 
     private String resolveExperimentPageId(Experiment experiment) {

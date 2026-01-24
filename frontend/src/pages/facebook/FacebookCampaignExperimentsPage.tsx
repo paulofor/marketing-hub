@@ -4,7 +4,7 @@ import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useFacebookCampaignExperiments } from "../../api/useFacebookCampaignExperiments";
 import PageTitle from "../../components/PageTitle";
 import { useFacebookConfigurationStatus } from "../../api/useFacebookConfigurationStatus";
-import { getMissingConfigurationLabel } from "./missingConfigurationLabels";
+import { MissingConfigurationList } from "./MissingConfigurationList";
 
 export default function FacebookCampaignExperimentsPage() {
   const [status, setStatus] = useState("PLANNED");
@@ -76,11 +76,10 @@ export default function FacebookCampaignExperimentsPage() {
                           <AlertTriangle size={14} aria-hidden="true" />
                           Pendências
                         </span>
-                        <ul className="mb-0 ps-3 small">
-                          {e.missingConfiguration.map((item) => (
-                            <li key={item}>{getMissingConfigurationLabel(item)}</li>
-                          ))}
-                        </ul>
+                        <MissingConfigurationList
+                          items={e.missingConfiguration}
+                          className="mb-0 ps-3 small"
+                        />
                       </div>
                     ) : (
                       <span className="badge text-bg-success d-inline-flex align-items-center gap-1">

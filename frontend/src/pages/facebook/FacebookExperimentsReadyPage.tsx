@@ -17,8 +17,8 @@ import PageTitle from "../../components/PageTitle";
 import { useFacebookReadyExperiments } from "../../api/useFacebookReadyExperiments";
 import { useFacebookConfigurationStatus } from "../../api/useFacebookConfigurationStatus";
 import "./FacebookExperimentsReadyPage.css";
-import { getMissingConfigurationLabel } from "./missingConfigurationLabels";
 import { useFacebookCampaignExperiments } from "../../api/useFacebookCampaignExperiments";
+import { MissingConfigurationList } from "./MissingConfigurationList";
 
 function formatCurrency(value: number | null) {
   if (value === null) return "Sem KPI";
@@ -196,13 +196,10 @@ export default function FacebookExperimentsReadyPage() {
                     <AlertTriangle size={18} />
                     <div>
                       <strong>Pendências antes da campanha</strong>
-                      <ul>
-                        {experiment.missingConfiguration.map((item) => (
-                          <li key={item}>
-                            {getMissingConfigurationLabel(item)}
-                          </li>
-                        ))}
-                      </ul>
+                      <MissingConfigurationList
+                        items={experiment.missingConfiguration}
+                        className="mb-0"
+                      />
                     </div>
                   </>
                 ) : (
@@ -299,11 +296,10 @@ export default function FacebookExperimentsReadyPage() {
 
                 <div className="experiments-ready-pending__missing">
                   <strong>O que falta para publicar</strong>
-                  <ul>
-                    {experiment.missingConfiguration.map((item) => (
-                      <li key={item}>{getMissingConfigurationLabel(item)}</li>
-                    ))}
-                  </ul>
+                  <MissingConfigurationList
+                    items={experiment.missingConfiguration}
+                    className="mb-0"
+                  />
                 </div>
 
                 <dl className="experiments-ready-pending__meta">

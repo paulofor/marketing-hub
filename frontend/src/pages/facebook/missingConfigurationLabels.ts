@@ -15,7 +15,7 @@ const missingConfigurationInfo: Record<string, MissingConfigurationInfo> = {
   approvedAudiences: {
     label: "Aprovar pelo menos uma audiência para o nicho",
     helperText:
-      "Audiências são os públicos que o worker usa nos conjuntos de anúncios. Pelo menos um público do nicho (ou vinculado à mesma hipótese) precisa estar marcado como Aprovado na aba Públicos para liberar a campanha.",
+      "Audiências são os públicos que o worker usa nos conjuntos de anúncios. Pelo menos um público do nicho (ou vinculado à mesma hipótese) precisa estar marcado como Aprovado na aba Públicos do experimento para liberar a campanha.",
   },
 };
 

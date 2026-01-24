@@ -21,6 +21,8 @@ import { useRebuildExperimentJourney } from "../../api/experiment/useRebuildExpe
 import type { JourneyAssignment, JourneyStep } from "../../api/journey/types";
 import DeliverablesTab from "./DeliverablesTab";
 import LeadPortalFlowTab from "./LeadPortalFlowTab";
+import PublicosTab from "./PublicosTab";
+import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
 
 export default function ExperimentDetailPage() {
   const { id } = useParams();
@@ -42,6 +44,9 @@ export default function ExperimentDetailPage() {
     useExperimentJourneyAssignments(expId);
   const { data: template } = useJourneyTemplate(data?.journeyTemplateId ?? undefined);
   const rebuildJourney = useRebuildExperimentJourney(expId);
+  const { data: audiences, isLoading: isLoadingAudiences } = useAudiencesByNiche(
+    nicheIdParam,
+  );
   useBreadcrumbs([
     {
       label: niche?.name || "...",
@@ -125,6 +130,14 @@ export default function ExperimentDetailPage() {
   const experimentInstantForm = data.facebookInstantForm;
   const instagramAccount = data.instagramAccount;
   const hasInstagramAccount = Boolean(instagramAccount);
+  const hasApprovedAudiences = useMemo(() => {
+    if (!Array.isArray(audiences)) return false;
+    return audiences.some(
+      (audience) =>
+        audience.approved &&
+        (!audience.hypothesisId || audience.hypothesisId === data.hypothesisId),
+    );
+  }, [audiences, data.hypothesisId]);
   const readinessChecks = [
     {
       id: "facebook-page",
@@ -179,6 +192,18 @@ export default function ExperimentDetailPage() {
         ? undefined
         : () => navigate(`/experiments/${expId}/edit`),
       actionLabel: hasExperimentPage ? undefined : "Editar experimento",
+    },
+    {
+      id: "approved-audience",
+      title: "Público aprovado para o experimento",
+      isMet: hasApprovedAudiences,
+      hint: isLoadingAudiences
+        ? "Verificando se há públicos aprovados..."
+        : hasApprovedAudiences
+          ? "Já existe pelo menos um público aprovado para este nicho/hipótese."
+          : "Aprove ao menos um público relacionado ao nicho ou à hipótese na aba Públicos para liberar a campanha.",
+      action: hasApprovedAudiences ? undefined : () => setTab("audiences"),
+      actionLabel: hasApprovedAudiences ? undefined : "Ir para Públicos",
     },
     {
       id: "platform",
@@ -483,6 +508,9 @@ export default function ExperimentDetailPage() {
           <Tabs.Trigger value="overview" className="nav-link">
             Overview
           </Tabs.Trigger>
+          <Tabs.Trigger value="audiences" className="nav-link">
+            Públicos
+          </Tabs.Trigger>
           <Tabs.Trigger value="creatives" className="nav-link">
             Criativos
           </Tabs.Trigger>
@@ -570,6 +598,14 @@ export default function ExperimentDetailPage() {
               </div>
             </div>
           </div>
+        </Tabs.Content>
+        <Tabs.Content value="audiences" asChild>
+          <PublicosTab
+            nicheId={data.nicheId}
+            hypothesisId={data.hypothesisId}
+            nicheName={niche?.name}
+            hypothesisTitle={hyp?.title}
+          />
         </Tabs.Content>
         <Tabs.Content value="creatives" asChild>
           <CriativosTab experimentId={expId} />

@@ -7,6 +7,7 @@ export const missingConfigurationLabels: Record<string, string> = {
   endDate: "Definir a data de término",
   journeyTemplate: "Vincular um template de jornada",
   instagramAccount: "Vincular uma conta do Instagram",
+  approvedAudiences: "Aprovar pelo menos uma audiência para o nicho",
 };
 
 export function getMissingConfigurationLabel(key: string) {

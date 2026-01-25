@@ -34,6 +34,7 @@ export default function ExperimentDetailPage() {
     data ? String(data.nicheId) : undefined,
     data ? String(data.hypothesisId) : undefined,
   );
+  const hypothesisId = data?.hypothesisId;
   const nicheIdParam = data?.nicheId != null ? String(data.nicheId) : undefined;
   const { data: presets } = useMetricPresets();
   const [tab, setTab] = useState("overview");
@@ -47,6 +48,14 @@ export default function ExperimentDetailPage() {
   const { data: audiences, isLoading: isLoadingAudiences } = useAudiencesByNiche(
     nicheIdParam,
   );
+  const hasApprovedAudiences = useMemo(() => {
+    if (!Array.isArray(audiences)) return false;
+    return audiences.some(
+      (audience) =>
+        audience.approved &&
+        (!audience.hypothesisId || audience.hypothesisId === hypothesisId),
+    );
+  }, [audiences, hypothesisId]);
   useBreadcrumbs([
     {
       label: niche?.name || "...",
@@ -130,14 +139,6 @@ export default function ExperimentDetailPage() {
   const experimentInstantForm = data.facebookInstantForm;
   const instagramAccount = data.instagramAccount;
   const hasInstagramAccount = Boolean(instagramAccount);
-  const hasApprovedAudiences = useMemo(() => {
-    if (!Array.isArray(audiences)) return false;
-    return audiences.some(
-      (audience) =>
-        audience.approved &&
-        (!audience.hypothesisId || audience.hypothesisId === data.hypothesisId),
-    );
-  }, [audiences, data.hypothesisId]);
   const readinessChecks = [
     {
       id: "facebook-page",

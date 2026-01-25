@@ -33,7 +33,7 @@ public class AudienceTargetingSeed {
     private TargetingSeedType type;
 
     /** Nome exibido do seed (texto vindo do prompt ou do analista). */
-    @Column(nullable = false)
+    @Column(name = "`value`", nullable = false)
     private String value;
 
     /** Identificador retornado pelo Targeting Search (id numérico). */

@@ -434,12 +434,31 @@ CREATE TABLE audience (
     prompt LONGTEXT,
     model VARCHAR(255),
     approved BOOLEAN DEFAULT FALSE,
+    targeting_spec LONGTEXT,
+    targeting_status VARCHAR(30) DEFAULT 'DRAFT',
+    targeting_notes LONGTEXT,
+    source VARCHAR(50),
+    last_reviewed_by VARCHAR(255),
     market_niche_id BIGINT,
     hypothesis_id BINARY(16),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_audience_market_niche FOREIGN KEY (market_niche_id) REFERENCES market_niche(id),
     CONSTRAINT fk_audience_hypothesis FOREIGN KEY (hypothesis_id) REFERENCES hypothesis(id)
+);
+
+CREATE TABLE audience_targeting_seed (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    audience_id BIGINT NOT NULL,
+    type VARCHAR(40) NOT NULL,
+    value VARCHAR(500) NOT NULL,
+    meta_id VARCHAR(100),
+    `key` VARCHAR(200),
+    confidence DECIMAL(10,4),
+    status VARCHAR(40) NOT NULL DEFAULT 'DRAFT',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_audience_seed_audience FOREIGN KEY (audience_id) REFERENCES audience(id) ON DELETE CASCADE
 );
 
 CREATE TABLE fb_instant_form (

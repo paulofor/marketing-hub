@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.audience.Audience;
+import com.marketinghub.audience.TargetingStatus;
 import com.marketinghub.audience.repository.AudienceRepository;
 import com.marketinghub.ads.mapper.FacebookInstantFormMapper;
 import com.marketinghub.experiment.Experiment;
@@ -102,6 +103,8 @@ class FacebookAdSetExperimentServiceTest {
         matching.setName("Matching audience");
         matching.setHypothesis(hypothesis);
         matching.setNiche(niche);
+        matching.setTargetingStatus(TargetingStatus.READY);
+        matching.setTargetingSpec("{\"geo_locations\":{}}");
 
         Audience generic = new Audience();
         generic.setId(2L);
@@ -109,6 +112,8 @@ class FacebookAdSetExperimentServiceTest {
         generic.setName("Generic audience");
         generic.setHypothesis(null);
         generic.setNiche(niche);
+        generic.setTargetingStatus(TargetingStatus.READY);
+        generic.setTargetingSpec("{\"interests\":[]}");
 
         Hypothesis otherHypothesis = new Hypothesis();
         otherHypothesis.setId(UUID.randomUUID());
@@ -118,6 +123,8 @@ class FacebookAdSetExperimentServiceTest {
         other.setName("Other audience");
         other.setHypothesis(otherHypothesis);
         other.setNiche(niche);
+        other.setTargetingStatus(TargetingStatus.READY);
+        other.setTargetingSpec("{\"behavior\":[]}");
 
         when(experimentRepository.findAllReadyForAdSets(eq(ExperimentPlatform.FACEBOOK), anyList()))
                 .thenReturn(List.of(experiment));

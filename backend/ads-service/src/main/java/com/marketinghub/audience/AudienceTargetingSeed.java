@@ -40,6 +40,7 @@ public class AudienceTargetingSeed {
     private String metaId;
 
     /** Chave/slug retornada pelo Targeting Search (key). */
+    @Column(name = "`key`")
     private String key;
 
     /** Confiança ou score atribuído pela IA para priorizar revisão. */

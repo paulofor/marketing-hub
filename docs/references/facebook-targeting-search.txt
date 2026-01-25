@@ -1,0 +1,151 @@
+Title: Targeting Search - Marketing API - Documentation - Meta for Developers
+
+URL Source: https://developers.facebook.com/docs/marketing-api/audiences/reference/targeting-search
+
+Markdown Content:
+Targeting Option Status
+-----------------------
+
+To verify current and/or planned status of targeting objects, use the `targeting_option_list` parameter:
+
+curl -G \ -d 'targeting_option_list=[<TARGETING_OPTION_ ID>,<TARGETING_OPTION_ID>]' -d 'type=targetingoptionstatus' https://graph.facebook.com/<API_VERSION>/search
+The response:
+
+{"data":[{"id":"<TARGETING_OPTION_ ID>","current_status":"NON-DELIVERABLE"},{"id":"<TARGETING_OPTION_ID>","current_status":"NON-DELIVERABLE","future_plan":[{"key":"2018-05-10T00:00:00+0000","value":"DEPRECATING"}]}]
+### Return Fields
+
+| Field | Value |
+| --- | --- |
+| `current_status` | * `NORMAL` * `NON-DELIVERABLE` - Does not deliver, though the ad set may continue to deliver according to predetermined rules. * `DEPRECATING` - Ad sets targeted at this objective continue to deliver, but the object can't be used to create new or update ad sets. When updated, ad sets with with this term will be rejected, unless the term is removed. * `NON-DELIVERABLE-IN-EXCLUSION` - The object can't be used in targeting exclusions. * `UNKNOWN` |
+| `future_plan` | Map of timestamp to status. Returns a map of dates and planned statuses, which are the same values as available under `current_status`. |
+
+Geographic
+----------
+
+Search targeting by country, country group, city, state, zip code, and other geographic areas at `type=adgeolocation`. You can specify optional parameters with `type=adgeolocation`. To find the United States' country code:
+
+curl -G \ -d 'location_types=["country"]' \ -d 'type=adgeolocation' \ -d 'q=un' \ -d 'access_token=<ACCESS_TOKEN>' \ https://graph.facebook.com/v<API_VERSION>/search
+The response:
+
+{ "data": [ { "key": "GB", "name": "United Kingdom", "type": "country", "supports_city": false, "supports_region": false }, { "key": "AE", "name": "United Arab Emirates", "type": "country", "supports_city": false, "supports_region": false }, { "key": "UM", "name": "United States Minor Outlying Islands", "type": "country", "supports_city": false, "supports_region": false } ]}
+`key` is a fixed number unique in per category, such as countries or country groups. Other fields, including `name`, are subject to change. Use `key` to define [Targeting Specs](https://developers.facebook.com/docs/marketing-api/buying-api/targeting).
+
+In the response:
+
+*   if `supports_region` is `true`, this country has region codes
+*   if `supports_city` is `true`, this country has city codes
+
+| Name | Description |
+| --- | --- |
+| `location_types` type: array | `country`, `country_group`, `region`, `city`, `zip`, `geo_market`, or `electoral_district`, latter only in US. `location_types` is preferred over `type=adcountry`, etc. |
+| `region_id` type: int | Region to search from |
+| `country_code` type: string | Country to search from: `country_code=US` |
+
+### Countries
+
+Every country you can target has a country code. Optional parameters for `type=adgeolocation&location_types=['country']`:
+
+| Name | Description |
+| --- | --- |
+| `q` type: string | The string to autocomplete values. To list all countries with `location_types=['country']`, leave this blank `q=`, and set limit to a large number `limit=1000` |
+| `match_country_code` type: boolean | Defaults to `false`. Find country by country code. Match Country by `country_code` versus `name` |
+
+### Country Group
+
+All country groups have a code to search and get a list of countries. For all country groups named `mercosur`:
+
+curl -G \ -d 'location_types=["country_group"]' \ -d 'type=adgeolocation' \ -d 'q=mercosur' \ -d 'access_token=<ACCESS_TOKEN>' \ https://graph.facebook.com/v<API_VERSION>/search
+The response:
+
+{ "data": [ { "key": "mercosur", "name": "Mercosur", "type": "country_group", "country_codes": [ "BR", "AR", "UY", "PY", "VE" ], "is_worldwide": false, "supports_region": true, "supports_city": true } ]}
+If `is_worldwide` is `true`, this is a worldwide country group. If `supports_region` is `true`, the country group has region codes. If `supports_city` is `true`, the group has city codes.
+
+### Regions
+
+To search for all regions starting the code `al`:
+
+curl -G \ -d 'location_types=["region"]' \ -d 'type=adgeolocation' \ -d 'q=al' \ -d 'access_token=<ACCESS_TOKEN>' \ https://graph.facebook.com/v<API_VERSION>/search
+The response:
+
+{ "data": [ { "key": "3843", "name": "Alabama", "type": "region", "country_code": "US", "country_name": "United States", "supports_region": true, "supports_city": true }, { "key": "3844", "name": "Alaska", "type": "region", "country_code": "US", "country_name": "United States", "supports_region": true, "supports_city": true }, { "key": "527", "name": "Alberta", "type": "region", "country_code": "CA", "country_name": "Canada", "supports_region": true, "supports_city": true }, { "key": "1089", "name": "Alsace", "type": "region", "country_code": "FR", "country_name": "France", "supports_region": true, "supports_city": true } ]}
+Options for `type=adgeolocation&location_types=['region']`:
+
+| Name | Description |
+| --- | --- |
+| `q` type: string | String to autocomplete values. To get all countries with `location_types=['region']`: provide no parameters, `q=`, and set the limit to a large number, `limit=1000` |
+
+If `supports_region` is `true`, you can target this region. If `supports_city` is `true`, the region has city codes.
+
+### Cities
+
+**Since March 2019, we have reclassified several cities to other roles, but you can continue to use `city`. The search will return results that were formerly cities.**
+
+To search codes for all cities starting with `Manhattan`:
+
+curl -G \ -d 'location_types=["city"]' \ -d 'type=adgeolocation' \ -d 'q=Manhattan' \ -d 'access_token=ACCESS_TOKEN' \ https://graph.facebook.com/VERSION/search
+The response:
+
+{ "data": [ { "key": "2447439", "name": "Manhattan", "type": "city", "country_code": "US", "country_name": "United States", "region": "Kansas", "region_id": 3859, "supports_region": true, "supports_city": true }, { "key": "2439596", "name": "Manhattan", "type": "city", "country_code": "US", "country_name": "United States", "region": "Illinois", "region_id": 3856, "supports_region": true, "supports_city": true }, { "key": "2479541", "name": "Manhattan", "type": "city", "country_code": "US", "country_name": "United States", "region": "Montana", "region_id": 3869, "supports_region": true, "supports_city": true }, { "key": "2428908", "name": "Manhattan", "type": "city", "country_code": "US", "country_name": "United States", "region": "Florida", "region_id": 3852, 
+ "supports_region": true, "supports_city": true }, { "key": "2703980", "name": "Manhattan", "type": "subcity", "country_code": "US", "country_name": "United States", "region": "New York", "region_id": 3875, "supports_region": true, "supports_city": true, "geo_hierarchy_level": "SUBCITY", "geo_hierarchy_name": "BOROUGH" }, ...
+If `supports_region` is true, the region for this city is available for targeting. If `supports_city` is set `true`, this city is available for targeting.
+
+### Geographic Areas
+
+We have other geographical areas you can use to target. Some of these areas are not yet defined, as noted below.
+
+| Area | Description |
+| --- | --- |
+| `LARGE_GEO_AREA` | Known commonly as a district or governate covering hundreds of square kilometers or more. Example: `Akkar` in `Lebanon`. |
+| `MEDIUM_GEO_AREA` | Known commonly as a county, covering more than one city. Example: `Henrico` county in the state of `Virginia` in `United States` |
+| `SMALL_GEO_AREA` | Known commonly as a residential area near a city or town. Example: `El Rosario` near Marbella in `Spain`. |
+| `SUBCITY` | Such as a borough. Example: `Brooklyn` in `New York`. |
+| `NEIGHBORHOOD` | Area within a city. Example: `Barton Estates, Irving` in `Texas`. |
+| `SUBNEIGHBORHOOD` | Not yet available. |
+| `METRO_AREA` | Densely populated area surround a larger city. Not yet available. |
+
+The hierarchy of geographical areas is as follows, from largest to smallest:
+
+*   `REGION`
+*   `LARGE_GEO_AREA`
+*   `MEDIUM_GEO_AREA`
+*   `SMALL_GEO_AREA`
+*   `METRO_AREA`
+*   `CITY`
+*   `SUBCITY`
+*   `NEIGHBORHOOD`
+*   `SUBNEIGHBORHOOD`
+
+### Zip Code
+
+You can also search zip codes to target on Facebook. For zip code search, we recommend `adgeolocation` with `location_types=['zip']`. Visit the [Meta Helpcenter](https://www.facebook.com/business/help/1544670369157045) to view a list of countries with supported Zip codes.
+
+Search zip codes starting with `9`:
+
+curl -G \ -d 'location_types=["zip"]' \ -d 'type=adgeolocation' \ -d 'q=9' \ -d 'access_token=<ACCESS_TOKEN>' \ https://graph.facebook.com/LATEST-API-VERSION/search
+The response:
+
+{ "data": [ { "key": "US:90028", "name": "90028", "type": "zip", "country_code": "US", "country_name": "United States", "region": "California", "region_id": 3847, "primary_city": "Los Angeles", "primary_city_id": 2420379, "supports_region": true, "supports_city": true }, { "key": "US:94110", "name": "94110", "type": "zip", "country_code": "US", "country_name": "United States", "region": "California", "region_id": 3847, "primary_city": "San Francisco", "primary_city_id": 2421836, "supports_region": true, "supports_city": true }, { "key": "US:94501", "name": "94501", "type": "zip", "country_code": "US", "country_name": "United States", "region": "California", "region_id": 3847, "primary_city": "Alameda", "primary_city_id": 2417628, "supports_region": true, "supports_city": true }, { "key": "US:95190", "name": "95190", "type": "zip", "country_code": "US", "country_name": "United States", "region": "California", "region_id": 3847, "primary_city": "San Jose", "primary_city_id": 2421846, "supports_region": true, "supports_city": true } ]}
+### Locales
+
+Targetable locales by locale codes. To search for all locales starting with `en`:
+
+curl -G \ -d 'type=adlocale' \ -d 'q=en' \ -d 'access_token=<ACCESS_TOKEN>' \ https://graph.facebook.com/v<API_VERSION>/search
+The response:
+
+{{ "data": [ { "key": 51, "name": "English (Upside Down)" }, { "key": 6, "name": "English (US)" }, { "key": 24, "name": "English (UK)" } ] }}
+
+| Name | Description |
+| --- | --- |
+| `q` type: string | String to autocomplete values. To get all locales, leave this blank, `q=`, and set the limit to a large number `limit=1000` |
+
+### Geomarket Codes
+
+To get these, specify `type=adgeolocation` and `location_types=['geo_market']` in your query. To search for DMA and Comscore codes that start with "New":
+
+curl -G \ -d 'location_types=["geo_market"]' \ -d 'type=adgeolocation' \ -d 'q=New' \ -d 'access_token=<ACCESS_TOKEN>' \ https://graph.facebook.com/`v24.0`/search
+The result:
+
+{ "data": [ { "key": "DMA:622", "name": "New Orleans", "type": "geo_market", "country_code": "US", "country_name": "United States", "supports_region": true, "supports_city": true }, { "key": "DMA:501", "name": "New York", "type": "geo_market", "country_code": "US", "country_name": "United States", "supports_region": true, "supports_city": true }, { "key": "DMA:533", "name": "Hartford & New Haven", "type": "geo_market", "country_code": "US", "country_name": "United States", "supports_region": true, "supports_city": true },{ "key": "COMSCORE_MARKET:2051", "name": "New Orleans, LA", "type": "geo_market", "country_code": "US", "country_name": "United States", "supports_region": true, "supports_city": true }, { "key": "COMSCORE_MARKET:2001", "name": "New York, NY", "type": "geo_market", "country_code": "US", "country_name": "United States", "supports_region": true, "supports_city": true }, { "key": "COMSCORE_MARKET:2031", "name": "Hartford-New Haven, CT", "type": "geo_market", "country_code": "US", "country_name": "United States", "supports_region": true, "supports_city": true }, {.... } ]}
+### Electoral Districts
+
+To search for Electoral Districts to target, specify `type=adgeolocation` and `loca...

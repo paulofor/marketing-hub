@@ -1,6 +1,7 @@
 package com.marketinghub.facebookads.service;
 
 import com.marketinghub.audience.Audience;
+import com.marketinghub.audience.TargetingStatus;
 import com.marketinghub.audience.dto.AudienceDto;
 import com.marketinghub.audience.mapper.AudienceMapper;
 import com.marketinghub.audience.repository.AudienceRepository;
@@ -59,6 +60,9 @@ public class FacebookAdSetExperimentService {
         List<ExperimentReadyForAdSetDto> result = new ArrayList<>();
         for (Experiment experiment : experiments) {
             List<AudienceDto> audiences = mapAudiencesForExperiment(experiment);
+            if (audiences.isEmpty()) {
+                continue;
+            }
             ExperimentReadyForAdSetDto dto = new ExperimentReadyForAdSetDto(
                     experimentMapper.toDto(experiment),
                     marketNicheMapper.toDto(experiment.getNiche()),
@@ -89,21 +93,23 @@ public class FacebookAdSetExperimentService {
             return List.of();
         }
         UUID hypothesisId = experiment.getHypothesisRef() != null ? experiment.getHypothesisRef().getId() : null;
-        if (hypothesisId == null) {
-            return audiences;
-        }
         List<Audience> filtered = new ArrayList<>();
         for (Audience audience : audiences) {
             if (!audience.isApproved()) {
                 continue;
             }
+            if (audience.getTargetingStatus() != TargetingStatus.READY) {
+                continue;
+            }
+            if (audience.getTargetingSpec() == null || audience.getTargetingSpec().isBlank()) {
+                continue;
+            }
             if (audience.getHypothesis() == null) {
                 filtered.add(audience);
-            } else if (hypothesisId.equals(audience.getHypothesis().getId())) {
+            } else if (hypothesisId != null && hypothesisId.equals(audience.getHypothesis().getId())) {
                 filtered.add(audience);
             }
         }
         return filtered.isEmpty() ? List.of() : List.copyOf(filtered);
     }
 }
-

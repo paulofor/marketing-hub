@@ -1,8 +1,11 @@
 package com.marketinghub.audience.dto;
 
+import com.marketinghub.audience.AudienceSource;
+import com.marketinghub.audience.TargetingStatus;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -19,4 +22,10 @@ public class AudienceDto {
     private String prompt;
     private String model;
     private boolean approved;
+    private String targetingSpec;
+    private TargetingStatus targetingStatus;
+    private String targetingNotes;
+    private AudienceSource source;
+    private String lastReviewedBy;
+    private List<AudienceTargetingSeedDto> seeds;
 }

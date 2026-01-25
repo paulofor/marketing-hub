@@ -1,6 +1,8 @@
 package com.marketinghub.worker.adset;
 
 import com.marketinghub.audience.Audience;
+import com.marketinghub.audience.AudienceSource;
+import com.marketinghub.audience.TargetingStatus;
 import com.marketinghub.audience.dto.AudienceDto;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentPlatform;
@@ -196,6 +198,12 @@ public class BackendExperimentClient {
             if (!dto.isApproved()) {
                 continue;
             }
+            if (dto.getTargetingStatus() != null && dto.getTargetingStatus() != TargetingStatus.READY) {
+                continue;
+            }
+            if (dto.getTargetingSpec() == null || dto.getTargetingSpec().isBlank()) {
+                continue;
+            }
             UUID audienceHypothesisId = dto.getHypothesisId();
             if (audienceHypothesisId != null && (hypothesisId == null || !audienceHypothesisId.equals(hypothesisId))) {
                 continue;
@@ -207,6 +215,11 @@ public class BackendExperimentClient {
             audience.setPrompt(dto.getPrompt());
             audience.setModel(dto.getModel());
             audience.setApproved(dto.isApproved());
+            audience.setTargetingSpec(dto.getTargetingSpec());
+            audience.setTargetingStatus(dto.getTargetingStatus());
+            audience.setTargetingNotes(dto.getTargetingNotes());
+            audience.setSource(dto.getSource());
+            audience.setLastReviewedBy(dto.getLastReviewedBy());
             audience.setNiche(niche);
             if (audienceHypothesisId != null && hypothesis != null && audienceHypothesisId.equals(hypothesisId)) {
                 audience.setHypothesis(hypothesis);

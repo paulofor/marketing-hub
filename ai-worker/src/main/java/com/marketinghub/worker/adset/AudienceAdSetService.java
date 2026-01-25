@@ -1,6 +1,7 @@
 package com.marketinghub.worker.adset;
 
 import com.marketinghub.audience.Audience;
+import com.marketinghub.audience.TargetingStatus;
 import com.marketinghub.experiment.dto.AdSetDto;
 import com.marketinghub.experiment.dto.CreateAdSetRequest;
 import com.marketinghub.worker.adset.BackendExperimentClient.BackendClientException;
@@ -79,14 +80,23 @@ public class AudienceAdSetService {
                     log.warn("Skipping audience without identifier for experiment {}", experimentId);
                     continue;
                 }
+                if (audience.getTargetingStatus() != null && audience.getTargetingStatus() != TargetingStatus.READY) {
+                    log.info("Skipping audience {} because targeting status is {}", audienceId, audience.getTargetingStatus());
+                    continue;
+                }
+                if (audience.getTargetingSpec() == null || audience.getTargetingSpec().isBlank()) {
+                    log.warn("Audience {} has no targeting_spec, skipping ad set generation", audienceId);
+                    continue;
+                }
                 try {
                     AdSetPlan plan = chatGptClient.planAdSet(experiment, audience);
+                    String targetingJson = audience.getTargetingSpec();
                     CreateAdSetRequest request = new CreateAdSetRequest();
                     request.setExperimentId(experimentId);
                     request.setLocation(plan.location());
                     request.setInterests(join(plan.interests()));
                     request.setLookalikes(join(plan.lookalikes()));
-                    request.setTargetingJson(plan.targetingJson());
+                    request.setTargetingJson(targetingJson);
                     request.setBudget(plan.budget());
                     request.setDurationDays(plan.durationDays());
                     request.setPrompt(plan.prompt());

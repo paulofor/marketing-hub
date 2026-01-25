@@ -2,6 +2,7 @@ package com.marketinghub.worker.audience;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.audience.AudienceSource;
 import com.marketinghub.audience.dto.CreateAudienceRequest;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
@@ -186,6 +187,7 @@ public class AudienceChatGptClient {
             req.setMarketNicheId(niche.getId());
             req.setPrompt(data.prompt());
             req.setModel(model);
+            req.setSource(AudienceSource.AI);
             result.add(req);
             if (result.size() >= quantity) {
                 break;

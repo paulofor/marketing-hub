@@ -14,8 +14,9 @@ public interface AudienceRepository extends CrudRepository<Audience, Long> {
     List<Audience> findByNicheId(Long nicheId);
 
     @Query("""
-            select a from Audience a
+            select distinct a from Audience a
             left join fetch a.hypothesis
+            left join fetch a.targetingSeeds
             where a.niche.id = :nicheId
               and a.approved = true
             """)

@@ -90,6 +90,10 @@ public class MarketNiche {
     @Column(length = 191)
     private String hypothesisModel;
 
+    /** Modelo do OpenAI a ser utilizado para gerar públicos. */
+    @Column(length = 191)
+    private String audienceModel;
+
     /** Modelo do OpenAI a ser utilizado para gerar descrições detalhadas. */
     @Column(length = 191)
     private String detailedDescriptionModel;

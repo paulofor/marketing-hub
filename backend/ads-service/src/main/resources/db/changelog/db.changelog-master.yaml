@@ -417,3 +417,7 @@ databaseChangeLog:
   - include:
       file: V2032_04_01__audience_targeting_spec.sql
       relativeToChangelogFile: true
+  - include:
+      file: V2032_04_15__audience_model.sql
+      relativeToChangelogFile: true
+

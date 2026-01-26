@@ -39,8 +39,10 @@ public class MarketNicheController {
     }
 
     @PatchMapping("/{id}/audiences-to-generate")
-    public MarketNicheDto requestAudiences(@PathVariable Long id, @RequestParam("quantity") int quantity) {
-        return mapper.toDto(service.requestAudiences(id, quantity));
+    public MarketNicheDto requestAudiences(@PathVariable Long id,
+                                            @RequestParam("quantity") int quantity,
+                                            @RequestParam(value = "model", required = false) String model) {
+        return mapper.toDto(service.requestAudiences(id, quantity, model));
     }
 
     @PatchMapping("/{id}/hypotheses-to-generate")

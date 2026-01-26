@@ -28,6 +28,7 @@ public class CreateMarketNicheRequest {
     private Integer audiencesToGenerate;
     private Integer detailedDescriptionsToGenerate;
     private String hypothesisModel;
+    private String audienceModel;
     private String detailedDescriptionModel;
     private Long differentiatedTechnologyId;
     private Long chatDialogId;

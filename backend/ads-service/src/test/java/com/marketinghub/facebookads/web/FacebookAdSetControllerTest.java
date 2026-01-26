@@ -6,7 +6,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.marketinghub.ads.AdsServiceApplication;
-import com.marketinghub.audience.dto.AudienceDto;
+import com.marketinghub.facebookads.dto.TargetingPackageDto;
+import com.marketinghub.targeting.TargetingElementType;
+import com.marketinghub.targeting.dto.TargetingElementDto;
 import com.marketinghub.experiment.dto.ExperimentDto;
 import com.marketinghub.facebookads.dto.ExperimentReadyForAdSetDto;
 import com.marketinghub.facebookads.service.FacebookAdSetExperimentService;
@@ -54,20 +56,33 @@ class FacebookAdSetControllerTest {
         hypothesis.setId(hypothesisId);
         hypothesis.setTitle("Title");
 
-        AudienceDto audience = AudienceDto.builder()
+        TargetingElementDto interest = TargetingElementDto.builder()
                 .id(1L)
-                .name("Audience")
-                .description("Desc")
+                .type(TargetingElementType.INTEREST)
+                .term("Remarketing")
                 .marketNicheId(7L)
                 .hypothesisId(hypothesisId)
-                .approved(true)
+                .build();
+        TargetingElementDto jobTitle = TargetingElementDto.builder()
+                .id(2L)
+                .type(TargetingElementType.JOB_TITLE)
+                .term("CMO")
+                .marketNicheId(7L)
+                .hypothesisId(hypothesisId)
+                .build();
+        TargetingElementDto behavior = TargetingElementDto.builder()
+                .id(3L)
+                .type(TargetingElementType.BEHAVIOR)
+                .term("Engaged Shoppers")
+                .marketNicheId(7L)
+                .hypothesisId(hypothesisId)
                 .build();
 
         ExperimentReadyForAdSetDto dto = new ExperimentReadyForAdSetDto(
                 experiment,
                 niche,
                 hypothesis,
-                List.of(audience));
+                new TargetingPackageDto(List.of(interest), List.of(jobTitle), List.of(behavior)));
 
         when(experimentService.listExperimentsReadyForAdSets()).thenReturn(List.of(dto));
 
@@ -76,7 +91,7 @@ class FacebookAdSetControllerTest {
                 .andExpect(jsonPath("$[0].experiment.id").value(42))
                 .andExpect(jsonPath("$[0].niche.name").value("Health"))
                 .andExpect(jsonPath("$[0].hypothesis.id").value(hypothesisId.toString()))
-                .andExpect(jsonPath("$[0].audiences[0].name").value("Audience"));
+                .andExpect(jsonPath("$[0].targeting.interests[0].term").value("Remarketing"));
     }
 }
 

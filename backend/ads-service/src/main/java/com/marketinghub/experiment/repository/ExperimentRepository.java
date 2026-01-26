@@ -40,10 +40,25 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
               and e.creativeApproved = true
               and ig is not null
               and exists (
-                    select 1 from Audience a
-                    where a.niche = e.niche
-                      and a.approved = true
-                      and (a.hypothesis is null or a.hypothesis = e.hypothesisRef)
+                    select 1 from TargetingElement te
+                    where te.niche = e.niche
+                      and te.type = com.marketinghub.targeting.TargetingElementType.INTEREST
+                      and te.status = com.marketinghub.targeting.TargetingElementStatus.APPROVED
+                      and (te.hypothesis is null or te.hypothesis = e.hypothesisRef)
+              )
+              and exists (
+                    select 1 from TargetingElement te
+                    where te.niche = e.niche
+                      and te.type = com.marketinghub.targeting.TargetingElementType.JOB_TITLE
+                      and te.status = com.marketinghub.targeting.TargetingElementStatus.APPROVED
+                      and (te.hypothesis is null or te.hypothesis = e.hypothesisRef)
+              )
+              and exists (
+                    select 1 from TargetingElement te
+                    where te.niche = e.niche
+                      and te.type = com.marketinghub.targeting.TargetingElementType.BEHAVIOR
+                      and te.status = com.marketinghub.targeting.TargetingElementStatus.APPROVED
+                      and (te.hypothesis is null or te.hypothesis = e.hypothesisRef)
               )
             """)
     List<Experiment> findReadyForCampaign(@Param("status") ExperimentStatus status,
@@ -119,10 +134,25 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
               and e.status in :statuses
               and e.creativeApproved = true
               and exists (
-                    select 1 from Audience a
-                    where a.niche = e.niche
-                      and a.approved = true
-                      and (a.hypothesis is null or a.hypothesis = e.hypothesisRef)
+                    select 1 from TargetingElement te
+                    where te.niche = e.niche
+                      and te.type = com.marketinghub.targeting.TargetingElementType.INTEREST
+                      and te.status = com.marketinghub.targeting.TargetingElementStatus.APPROVED
+                      and (te.hypothesis is null or te.hypothesis = e.hypothesisRef)
+              )
+              and exists (
+                    select 1 from TargetingElement te
+                    where te.niche = e.niche
+                      and te.type = com.marketinghub.targeting.TargetingElementType.JOB_TITLE
+                      and te.status = com.marketinghub.targeting.TargetingElementStatus.APPROVED
+                      and (te.hypothesis is null or te.hypothesis = e.hypothesisRef)
+              )
+              and exists (
+                    select 1 from TargetingElement te
+                    where te.niche = e.niche
+                      and te.type = com.marketinghub.targeting.TargetingElementType.BEHAVIOR
+                      and te.status = com.marketinghub.targeting.TargetingElementStatus.APPROVED
+                      and (te.hypothesis is null or te.hypothesis = e.hypothesisRef)
               )
             """)
     List<Experiment> findAllReadyForAdSets(@Param("platform") ExperimentPlatform platform,

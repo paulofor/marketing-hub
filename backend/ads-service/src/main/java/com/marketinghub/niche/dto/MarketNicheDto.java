@@ -26,10 +26,14 @@ public class MarketNicheDto {
     private String demographicFilters;
     private String extraTips;
     private Integer hypothesesToGenerate;
-    private Integer audiencesToGenerate;
+    private Integer interestsToGenerate;
+    private Integer jobTitlesToGenerate;
+    private Integer behaviorsToGenerate;
     private Integer detailedDescriptionsToGenerate;
     private String hypothesisModel;
-    private String audienceModel;
+    private String interestModel;
+    private String jobTitleModel;
+    private String behaviorModel;
     private String detailedDescriptionModel;
     private Long differentiatedTechnologyId;
     private Long hypothesisDetailedDescriptionId;

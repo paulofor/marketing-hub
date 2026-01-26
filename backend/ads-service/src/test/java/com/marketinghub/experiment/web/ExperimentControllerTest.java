@@ -2,7 +2,7 @@ package com.marketinghub.experiment.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.AdsServiceApplication;
-import com.marketinghub.audience.repository.AudienceRepository;
+import com.marketinghub.targeting.repository.TargetingElementRepository;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.repository.ExperimentRepository;
@@ -69,7 +69,7 @@ class ExperimentControllerTest {
     @Autowired
     private JourneyTemplateRepository journeyTemplateRepository;
     @Autowired
-    private AudienceRepository audienceRepository;
+    private TargetingElementRepository targetingElementRepository;
     @Autowired
     private InstagramAccountRepository instagramAccountRepository;
     @Autowired
@@ -93,7 +93,7 @@ class ExperimentControllerTest {
         creativeRepo.deleteAll();
         repository.deleteAll();
         journeyTemplateRepository.deleteAll();
-        audienceRepository.deleteAll();
+        targetingElementRepository.deleteAll();
         campaignRepository.deleteAll();
         instagramAccountRepository.deleteAll();
         hypothesisRepository.deleteAll();

@@ -1,13 +1,10 @@
 package com.marketinghub.facebookads.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import com.marketinghub.audience.Audience;
-import com.marketinghub.audience.TargetingStatus;
-import com.marketinghub.audience.repository.AudienceRepository;
 import com.marketinghub.ads.mapper.FacebookInstantFormMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentPlatform;
@@ -19,6 +16,11 @@ import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.mapper.HypothesisMapper;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.mapper.MarketNicheMapper;
+import com.marketinghub.targeting.TargetingElement;
+import com.marketinghub.targeting.TargetingElementType;
+import com.marketinghub.targeting.dto.TargetingElementDto;
+import com.marketinghub.targeting.mapper.TargetingElementMapper;
+import com.marketinghub.targeting.repository.TargetingElementRepository;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +35,7 @@ class FacebookAdSetExperimentServiceTest {
     @Mock
     private ExperimentRepository experimentRepository;
     @Mock
-    private AudienceRepository audienceRepository;
+    private TargetingElementRepository targetingElementRepository;
 
     private FacebookAdSetExperimentService service;
 
@@ -43,15 +45,14 @@ class FacebookAdSetExperimentServiceTest {
         injectFacebookInstantFormMapper(experimentMapper);
         MarketNicheMapper marketNicheMapper = Mappers.getMapper(MarketNicheMapper.class);
         HypothesisMapper hypothesisMapper = Mappers.getMapper(HypothesisMapper.class);
-        com.marketinghub.audience.mapper.AudienceMapper audienceMapper =
-                Mappers.getMapper(com.marketinghub.audience.mapper.AudienceMapper.class);
+        TargetingElementMapper targetingElementMapper = Mappers.getMapper(TargetingElementMapper.class);
         service = new FacebookAdSetExperimentService(
                 experimentRepository,
-                audienceRepository,
+                targetingElementRepository,
                 experimentMapper,
                 marketNicheMapper,
                 hypothesisMapper,
-                audienceMapper);
+                targetingElementMapper);
     }
 
     private void injectFacebookInstantFormMapper(ExperimentMapper experimentMapper) {
@@ -77,7 +78,7 @@ class FacebookAdSetExperimentServiceTest {
     }
 
     @Test
-    void listExperimentsReadyFiltersAudiences() {
+    void listExperimentsReadyIncludesTargetingPackage() {
         MarketNiche niche = new MarketNiche();
         niche.setId(5L);
         niche.setName("Health");
@@ -97,39 +98,37 @@ class FacebookAdSetExperimentServiceTest {
         experiment.setPlatform(ExperimentPlatform.FACEBOOK);
         experiment.setCreativeApproved(true);
 
-        Audience matching = new Audience();
-        matching.setId(1L);
-        matching.setApproved(true);
-        matching.setName("Matching audience");
-        matching.setHypothesis(hypothesis);
-        matching.setNiche(niche);
-        matching.setTargetingStatus(TargetingStatus.READY);
-        matching.setTargetingSpec("{\"geo_locations\":{}}");
-
-        Audience generic = new Audience();
-        generic.setId(2L);
-        generic.setApproved(true);
-        generic.setName("Generic audience");
-        generic.setHypothesis(null);
-        generic.setNiche(niche);
-        generic.setTargetingStatus(TargetingStatus.READY);
-        generic.setTargetingSpec("{\"interests\":[]}");
-
-        Hypothesis otherHypothesis = new Hypothesis();
-        otherHypothesis.setId(UUID.randomUUID());
-        Audience other = new Audience();
-        other.setId(3L);
-        other.setApproved(true);
-        other.setName("Other audience");
-        other.setHypothesis(otherHypothesis);
-        other.setNiche(niche);
-        other.setTargetingStatus(TargetingStatus.READY);
-        other.setTargetingSpec("{\"behavior\":[]}");
-
-        when(experimentRepository.findAllReadyForAdSets(eq(ExperimentPlatform.FACEBOOK), anyList()))
+        when(experimentRepository.findAllReadyForAdSets(eq(ExperimentPlatform.FACEBOOK), any()))
                 .thenReturn(List.of(experiment));
-        when(audienceRepository.findDetailedByNicheId(5L))
-                .thenReturn(List.of(matching, generic, other));
+
+        TargetingElement interest = TargetingElement.builder()
+                .id(1L)
+                .niche(niche)
+                .hypothesis(hypothesis)
+                .type(TargetingElementType.INTEREST)
+                .term("Remarketing")
+                .build();
+        TargetingElement jobTitle = TargetingElement.builder()
+                .id(2L)
+                .niche(niche)
+                .hypothesis(hypothesis)
+                .type(TargetingElementType.JOB_TITLE)
+                .term("CMO")
+                .build();
+        TargetingElement behavior = TargetingElement.builder()
+                .id(3L)
+                .niche(niche)
+                .hypothesis(hypothesis)
+                .type(TargetingElementType.BEHAVIOR)
+                .term("Engaged Shoppers")
+                .build();
+
+        when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.INTEREST, hypothesisId))
+                .thenReturn(List.of(interest));
+        when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.JOB_TITLE, hypothesisId))
+                .thenReturn(List.of(jobTitle));
+        when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.BEHAVIOR, hypothesisId))
+                .thenReturn(List.of(behavior));
 
         List<ExperimentReadyForAdSetDto> result = service.listExperimentsReadyForAdSets();
 
@@ -138,7 +137,11 @@ class FacebookAdSetExperimentServiceTest {
         assertThat(dto.getExperiment().getId()).isEqualTo(10L);
         assertThat(dto.getHypothesis()).isNotNull();
         assertThat(dto.getHypothesis().getId()).isEqualTo(hypothesisId);
-        assertThat(dto.getAudiences()).extracting("id").containsExactlyInAnyOrder(1L, 2L);
+        assertThat(dto.getTargeting().getInterests()).extracting(TargetingElementDto::getTerm)
+                .containsExactly("Remarketing");
+        assertThat(dto.getTargeting().getJobTitles()).extracting(TargetingElementDto::getTerm)
+                .containsExactly("CMO");
+        assertThat(dto.getTargeting().getBehaviors()).extracting(TargetingElementDto::getTerm)
+                .containsExactly("Engaged Shoppers");
     }
 }
-

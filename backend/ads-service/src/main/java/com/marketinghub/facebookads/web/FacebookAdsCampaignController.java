@@ -7,7 +7,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.ads.FacebookAccountRepository;
-import com.marketinghub.audience.repository.AudienceRepository;
+import com.marketinghub.targeting.TargetingElementType;
+import com.marketinghub.targeting.repository.TargetingElementRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.journey.model.JourneyStep;
@@ -47,7 +48,7 @@ public class FacebookAdsCampaignController {
     private final FacebookAdsAdCreativeRepository adCreativeRepository;
     private final FacebookAdsAdRepository adRepository;
     private final com.marketinghub.experiment.repository.AdSetRepository experimentAdSetRepository;
-    private final AudienceRepository audienceRepository;
+    private final TargetingElementRepository targetingElementRepository;
     private final ObjectMapper objectMapper;
 
     public FacebookAdsCampaignController(ExperimentService experimentService,
@@ -57,7 +58,7 @@ public class FacebookAdsCampaignController {
                                          FacebookAdsAdCreativeRepository adCreativeRepository,
                                          FacebookAdsAdRepository adRepository,
                                          com.marketinghub.experiment.repository.AdSetRepository experimentAdSetRepository,
-                                         AudienceRepository audienceRepository,
+                                         TargetingElementRepository targetingElementRepository,
                                          ObjectMapper objectMapper) {
         this.experimentService = experimentService;
         this.campaignRepository = campaignRepository;
@@ -66,7 +67,7 @@ public class FacebookAdsCampaignController {
         this.adCreativeRepository = adCreativeRepository;
         this.adRepository = adRepository;
         this.experimentAdSetRepository = experimentAdSetRepository;
-        this.audienceRepository = audienceRepository;
+        this.targetingElementRepository = targetingElementRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -337,19 +338,24 @@ public class FacebookAdsCampaignController {
                 }
             }
         }
-        if (!hasApprovedAudiences(experiment)) {
-            missing.add("approvedAudiences");
+        if (!hasApprovedTargeting(experiment)) {
+            missing.add("approvedTargetingElements");
         }
         return missing;
     }
 
-    private boolean hasApprovedAudiences(Experiment experiment) {
+    private boolean hasApprovedTargeting(Experiment experiment) {
         if (experiment.getNiche() == null) {
             return false;
         }
         UUID hypothesisId = experiment.getHypothesisRef() != null ? experiment.getHypothesisRef().getId() : null;
-        return audienceRepository.existsApprovedByNicheAndMatchingHypothesis(
-                experiment.getNiche().getId(), hypothesisId);
+        Long nicheId = experiment.getNiche().getId();
+        for (TargetingElementType type : TargetingElementType.values()) {
+            if (!targetingElementRepository.existsApprovedForExperiment(nicheId, type, hypothesisId)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private String resolveExperimentPageId(Experiment experiment) {

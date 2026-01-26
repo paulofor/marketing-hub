@@ -62,10 +62,14 @@ public class MarketNicheService {
                 .demographicFilters(request.getDemographicFilters())
                 .extraTips(request.getExtraTips())
                 .hypothesesToGenerate(request.getHypothesesToGenerate())
-                .audiencesToGenerate(request.getAudiencesToGenerate())
+                .interestsToGenerate(request.getInterestsToGenerate())
+                .jobTitlesToGenerate(request.getJobTitlesToGenerate())
+                .behaviorsToGenerate(request.getBehaviorsToGenerate())
                 .detailedDescriptionsToGenerate(request.getDetailedDescriptionsToGenerate())
                 .hypothesisModel(normalizeModel(request.getHypothesisModel()))
-                .audienceModel(normalizeModel(request.getAudienceModel()))
+                .interestModel(normalizeModel(request.getInterestModel()))
+                .jobTitleModel(normalizeModel(request.getJobTitleModel()))
+                .behaviorModel(normalizeModel(request.getBehaviorModel()))
                 .detailedDescriptionModel(normalizeModel(request.getDetailedDescriptionModel()))
                 .differentiatedTechnology(differentiatedTechnology)
                 .chatDialog(chat)
@@ -96,10 +100,14 @@ public class MarketNicheService {
         niche.setDemographicFilters(request.getDemographicFilters());
         niche.setExtraTips(request.getExtraTips());
         niche.setHypothesesToGenerate(request.getHypothesesToGenerate());
-        niche.setAudiencesToGenerate(request.getAudiencesToGenerate());
+        niche.setInterestsToGenerate(request.getInterestsToGenerate());
+        niche.setJobTitlesToGenerate(request.getJobTitlesToGenerate());
+        niche.setBehaviorsToGenerate(request.getBehaviorsToGenerate());
         niche.setDetailedDescriptionsToGenerate(request.getDetailedDescriptionsToGenerate());
         niche.setHypothesisModel(normalizeModel(request.getHypothesisModel()));
-        niche.setAudienceModel(normalizeModel(request.getAudienceModel()));
+        niche.setInterestModel(normalizeModel(request.getInterestModel()));
+        niche.setJobTitleModel(normalizeModel(request.getJobTitleModel()));
+        niche.setBehaviorModel(normalizeModel(request.getBehaviorModel()));
         niche.setDetailedDescriptionModel(normalizeModel(request.getDetailedDescriptionModel()));
         niche.setDifferentiatedTechnology(
                 resolveDifferentiatedTechnology(request.getDifferentiatedTechnologyId()));
@@ -118,15 +126,32 @@ public class MarketNicheService {
         return model;
     }
 
-    /**
-     * Requests generation of new audiences by setting the pending quantity.
-     */
     @Transactional
-    public MarketNiche requestAudiences(Long id, int quantity, String model) {
+    public MarketNiche requestInterests(Long id, int quantity, String model) {
         MarketNiche niche = repository.findById(id).orElseThrow();
-        niche.setAudiencesToGenerate(Math.max(0, quantity));
+        niche.setInterestsToGenerate(Math.max(0, quantity));
         if (model != null) {
-            niche.setAudienceModel(normalizeModel(model));
+            niche.setInterestModel(normalizeModel(model));
+        }
+        return niche;
+    }
+
+    @Transactional
+    public MarketNiche requestJobTitles(Long id, int quantity, String model) {
+        MarketNiche niche = repository.findById(id).orElseThrow();
+        niche.setJobTitlesToGenerate(Math.max(0, quantity));
+        if (model != null) {
+            niche.setJobTitleModel(normalizeModel(model));
+        }
+        return niche;
+    }
+
+    @Transactional
+    public MarketNiche requestBehaviors(Long id, int quantity, String model) {
+        MarketNiche niche = repository.findById(id).orElseThrow();
+        niche.setBehaviorsToGenerate(Math.max(0, quantity));
+        if (model != null) {
+            niche.setBehaviorModel(normalizeModel(model));
         }
         return niche;
     }

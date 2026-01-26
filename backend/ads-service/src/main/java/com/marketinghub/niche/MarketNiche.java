@@ -7,9 +7,9 @@ import com.marketinghub.chat.ChatDialog;
 import com.marketinghub.deliverable.Deliverable;
 import com.marketinghub.differentiatedtechnology.DifferentiatedTechnology;
 import com.marketinghub.experiment.Experiment;
-import com.marketinghub.audience.Audience;
 import com.marketinghub.informationsource.InformationSource;
 import com.marketinghub.niche.description.NicheDetailedDescription;
+import com.marketinghub.targeting.TargetingElement;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -80,8 +80,14 @@ public class MarketNiche {
     /** Quantidade de hipóteses a serem geradas para este nicho. */
     private Integer hypothesesToGenerate;
 
-    /** Quantidade de públicos a serem gerados para este nicho. */
-    private Integer audiencesToGenerate;
+    /** Quantidade de interesses a serem gerados para este nicho. */
+    private Integer interestsToGenerate;
+
+    /** Quantidade de cargos a serem gerados para este nicho. */
+    private Integer jobTitlesToGenerate;
+
+    /** Quantidade de comportamentos a serem gerados para este nicho. */
+    private Integer behaviorsToGenerate;
 
     /** Quantidade de descrições detalhadas a serem geradas para este nicho. */
     private Integer detailedDescriptionsToGenerate;
@@ -90,9 +96,17 @@ public class MarketNiche {
     @Column(length = 191)
     private String hypothesisModel;
 
-    /** Modelo do OpenAI a ser utilizado para gerar públicos. */
+    /** Modelo do OpenAI a ser utilizado para gerar interesses. */
     @Column(length = 191)
-    private String audienceModel;
+    private String interestModel;
+
+    /** Modelo do OpenAI a ser utilizado para gerar cargos. */
+    @Column(length = 191)
+    private String jobTitleModel;
+
+    /** Modelo do OpenAI a ser utilizado para gerar comportamentos. */
+    @Column(length = 191)
+    private String behaviorModel;
 
     /** Modelo do OpenAI a ser utilizado para gerar descrições detalhadas. */
     @Column(length = 191)
@@ -139,7 +153,7 @@ public class MarketNiche {
     private java.util.List<Experiment> experiments;
 
     @OneToMany(mappedBy = "niche")
-    private java.util.List<Audience> audiences;
+    private java.util.List<TargetingElement> targetingElements;
 
     @OneToMany(mappedBy = "niche")
     @ToString.Exclude

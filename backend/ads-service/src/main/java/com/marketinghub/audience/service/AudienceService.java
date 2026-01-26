@@ -59,6 +59,19 @@ public class AudienceService {
                 .source(request.getSource())
                 .targetingStatus(TargetingStatus.DRAFT)
                 .build();
+        applyTargetingSpec(audience, request.getTargetingSpec(), request.getTargetingStatus());
+        if (request.getTargetingNotes() != null) {
+            audience.setTargetingNotes(request.getTargetingNotes());
+        }
+        if (request.getTargetingStatus() != null) {
+            audience.setTargetingStatus(request.getTargetingStatus());
+        }
+        if (request.getSeeds() != null) {
+            List<AudienceTargetingSeed> seeds = buildSeeds(audience, request.getSeeds());
+            if (!seeds.isEmpty()) {
+                audience.setTargetingSeeds(seeds);
+            }
+        }
         return repository.save(audience);
     }
 
@@ -78,14 +91,7 @@ public class AudienceService {
     @Transactional
     public Audience updateTargeting(Long id, UpdateAudienceTargetingRequest request) {
         Audience audience = repository.findById(id).orElseThrow();
-        if (request.getTargetingSpec() != null) {
-            String spec = request.getTargetingSpec().trim();
-            validateTargetingSpec(spec);
-            audience.setTargetingSpec(spec);
-            if (audience.getTargetingStatus() == TargetingStatus.DRAFT && request.getStatus() == null) {
-                audience.setTargetingStatus(TargetingStatus.NEEDS_REVIEW);
-            }
-        }
+        applyTargetingSpec(audience, request.getTargetingSpec(), request.getStatus());
         if (request.getNotes() != null) {
             audience.setTargetingNotes(request.getNotes());
         }
@@ -102,25 +108,9 @@ public class AudienceService {
             throw new IllegalArgumentException("Não é possível aprovar targeting sem targeting_spec preenchido");
         }
         if (request.getSeeds() != null) {
-            if (audience.getTargetingSeeds() == null) {
-                audience.setTargetingSeeds(new ArrayList<>());
-            }
-            audience.getTargetingSeeds().clear();
-            for (AudienceTargetingSeedRequest seedRequest : request.getSeeds()) {
-                if (seedRequest.getType() == null || seedRequest.getValue() == null || seedRequest.getValue().isBlank()) {
-                    continue;
-                }
-                AudienceTargetingSeed seed = AudienceTargetingSeed.builder()
-                        .audience(audience)
-                        .type(seedRequest.getType())
-                        .value(seedRequest.getValue())
-                        .metaId(seedRequest.getMetaId())
-                        .key(seedRequest.getKey())
-                        .confidence(seedRequest.getConfidence())
-                        .status(seedRequest.getStatus() != null ? seedRequest.getStatus() : TargetingSeedStatus.DRAFT)
-                        .build();
-                audience.getTargetingSeeds().add(seed);
-            }
+            List<AudienceTargetingSeed> seeds = ensureSeedCollection(audience);
+            seeds.clear();
+            seeds.addAll(buildSeeds(audience, request.getSeeds()));
         }
         return audience;
     }
@@ -152,6 +142,54 @@ public class AudienceService {
 
     public Iterable<Audience> listByMarketNiche(Long nicheId) {
         return repository.findByNicheId(nicheId);
+    }
+
+    private void applyTargetingSpec(Audience audience, String targetingSpec, TargetingStatus requestedStatus) {
+        if (targetingSpec == null) {
+            return;
+        }
+        String spec = targetingSpec.trim();
+        if (spec.isEmpty()) {
+            audience.setTargetingSpec(null);
+            return;
+        }
+        validateTargetingSpec(spec);
+        audience.setTargetingSpec(spec);
+        if (audience.getTargetingStatus() == TargetingStatus.DRAFT && requestedStatus == null) {
+            audience.setTargetingStatus(TargetingStatus.NEEDS_REVIEW);
+        }
+    }
+
+    private List<AudienceTargetingSeed> ensureSeedCollection(Audience audience) {
+        List<AudienceTargetingSeed> seeds = audience.getTargetingSeeds();
+        if (seeds == null) {
+            seeds = new ArrayList<>();
+            audience.setTargetingSeeds(seeds);
+        }
+        return seeds;
+    }
+
+    private List<AudienceTargetingSeed> buildSeeds(Audience audience, List<AudienceTargetingSeedRequest> seedRequests) {
+        List<AudienceTargetingSeed> seeds = new ArrayList<>();
+        if (seedRequests == null) {
+            return seeds;
+        }
+        for (AudienceTargetingSeedRequest seedRequest : seedRequests) {
+            if (seedRequest == null || seedRequest.getType() == null || seedRequest.getValue() == null || seedRequest.getValue().isBlank()) {
+                continue;
+            }
+            AudienceTargetingSeed seed = AudienceTargetingSeed.builder()
+                    .audience(audience)
+                    .type(seedRequest.getType())
+                    .value(seedRequest.getValue())
+                    .metaId(seedRequest.getMetaId())
+                    .key(seedRequest.getKey())
+                    .confidence(seedRequest.getConfidence())
+                    .status(seedRequest.getStatus() != null ? seedRequest.getStatus() : TargetingSeedStatus.DRAFT)
+                    .build();
+            seeds.add(seed);
+        }
+        return seeds;
     }
 
     private void validateTargetingSpec(String spec) {

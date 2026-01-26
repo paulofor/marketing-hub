@@ -87,11 +87,12 @@ export default function NicheDetailPage() {
   const [editingRoleIndex, setEditingRoleIndex] = useState<number | null>(null);
   const [updatingDescriptionId, setUpdatingDescriptionId] = useState<number | null>(null);
   const {
-    register: registerAudienceQuantity,
-    handleSubmit: handleSubmitAudienceQuantity,
-    reset: resetAudienceQuantity,
-  } = useForm<{ quantity: number }>({
-    defaultValues: { quantity: 1 },
+    register: registerAudienceRequest,
+    handleSubmit: handleSubmitAudienceRequest,
+    reset: resetAudienceRequest,
+    setValue: setAudienceRequestValue,
+  } = useForm<{ quantity: number; model?: string }>({
+    defaultValues: { quantity: 1, model: "" },
   });
   const {
     register: registerHypothesisRequest,
@@ -168,6 +169,11 @@ export default function NicheDetailPage() {
     const defaultDescriptionModel = data?.detailedDescriptionModel ?? openAiModels?.[0]?.code ?? "";
     setDescriptionRequestValue("model", defaultDescriptionModel);
   }, [data?.detailedDescriptionModel, openAiModels, setDescriptionRequestValue]);
+
+  useEffect(() => {
+    const defaultAudienceModel = data?.audienceModel ?? openAiModels?.[0]?.code ?? "";
+    setAudienceRequestValue("model", defaultAudienceModel);
+  }, [data?.audienceModel, openAiModels, setAudienceRequestValue]);
 
   useEffect(() => {
     setHypothesisRequestValue(
@@ -285,6 +291,7 @@ export default function NicheDetailPage() {
     { label: "Receita total", value: formatCurrency(data.totalRevenue) },
     { label: "Hipóteses a gerar", value: data.hypothesesToGenerate },
     { label: "Modelo para hipóteses", value: data.hypothesisModel },
+    { label: "Modelo para públicos", value: data.audienceModel },
     { label: "Modelo para descrições", value: data.detailedDescriptionModel },
     { label: "Descrições a gerar", value: data.detailedDescriptionsToGenerate },
     { label: "Tecnologia diferenciada", value: differentiatedTechnologyName },
@@ -431,13 +438,18 @@ export default function NicheDetailPage() {
   const onSaveRoles = () => {
     updateNiche.mutate({ ...data, interestList: interestItems, roleList: roleItems });
   };
-  const onRequestAudiences = handleSubmitAudienceQuantity(
-    async ({ quantity }) => {
+  const onRequestAudiences = handleSubmitAudienceRequest(
+    async ({ quantity, model }) => {
       if (!quantity || quantity <= 0) return;
+      const selectedModel =
+        model?.trim() || data?.audienceModel || openAiModels?.[0]?.code;
       try {
-        await requestAudiences.mutateAsync(quantity);
+        await requestAudiences.mutateAsync({
+          quantity,
+          model: selectedModel,
+        });
         alert("Solicitação enviada!");
-        resetAudienceQuantity({ quantity: 1 });
+        resetAudienceRequest({ quantity: 1, model: selectedModel ?? "" });
       } catch {
         alert("Erro ao solicitar públicos");
       }
@@ -1322,22 +1334,39 @@ export default function NicheDetailPage() {
             className="niche-section__actions"
             onSubmit={onRequestAudiences}
           >
-            <label htmlFor="audience-quantity" className="visually-hidden">
-              Quantidade de públicos que o Worker IA irá gerar
-            </label>
-            <input
-              id="audience-quantity"
-              type="number"
-              min={1}
-              className="form-control"
-              title="Quantidade de públicos que o Worker IA irá gerar"
-              disabled={requestAudiences.isPending}
-              {...registerAudienceQuantity("quantity", { valueAsNumber: true })}
-            />
+            <div className="niche-section__action-group niche-section__action-group--quantity">
+              <label htmlFor="audience-quantity" className="form-label">
+                Quantidade <span aria-hidden="true">*</span>
+              </label>
+              <input
+                id="audience-quantity"
+                type="number"
+                min={1}
+                className="form-control"
+                title="Quantidade de públicos que o Worker IA irá gerar"
+                disabled={requestAudiences.isPending}
+                {...registerAudienceRequest("quantity", { valueAsNumber: true })}
+              />
+            </div>
+            <div className="niche-section__action-group">
+              <label htmlFor="audience-model" className="form-label">Modelo</label>
+              <select
+                id="audience-model"
+                className="form-select"
+                disabled={requestAudiences.isPending || isLoadingModels}
+                {...registerAudienceRequest("model")}
+              >
+                {(openAiModels ?? []).map((modelOption) => (
+                  <option key={modelOption.code} value={modelOption.code}>
+                    {modelOption.name}
+                  </option>
+                ))}
+              </select>
+            </div>
             <button
               type="submit"
               className="btn btn-secondary"
-              disabled={requestAudiences.isPending}
+              disabled={requestAudiences.isPending || isLoadingModels}
             >
               {requestAudiences.isPending ? (
                 <span

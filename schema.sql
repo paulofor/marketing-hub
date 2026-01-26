@@ -167,6 +167,8 @@ CREATE TABLE market_niche (
     hypotheses_to_generate INT,
     audiences_to_generate INT,
     detailed_descriptions_to_generate INT,
+    hypothesis_model VARCHAR(191),
+    audience_model VARCHAR(191),
     detailed_description_model VARCHAR(191),
     base_segmentation LONGTEXT,
     interests LONGTEXT,

@@ -10,10 +10,12 @@ O fluxo executado pelo `NicheAudienceService` segue os passos abaixo:
 1. Busca nichos com `audiencesToGenerate > 0` usando o `MarketNicheRepository`.
 2. Carrega as hipóteses do nicho para enriquecer o contexto enviado ao ChatGPT.
 3. Monta o prompt no `AudienceChatGptClient`, instruindo o modelo a informar `name`,
-   `description` e `hypothesisId` (quando o público estiver ligado a uma hipótese específica).
-4. Persiste cada público retornado através do `AudienceService`, preenchendo os
-   campos `prompt` e `model` exigidos para rastreabilidade.
-5. Zera o contador `audiencesToGenerate` do nicho para evitar duplicidades.
+   `description`, `hypothesisId` (quando o público estiver ligado a uma hipótese específica) e
+   um objeto `segments` com interesses, comportamentos, cargos, dados demográficos e localizações sugeridas.
+4. Enfileira todos os prompts em uma única chamada usando a API de Batch do OpenAI (`/v1/responses`).
+5. Persiste cada público retornado através do `AudienceService`, preenchendo os
+   campos `prompt`, `model` e os seeds estruturados usados para o targeting.
+6. Zera o contador `audiencesToGenerate` do nicho para evitar duplicidades.
 
 ## Diagrama de fluxo
 

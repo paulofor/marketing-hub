@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
@@ -12,6 +12,7 @@ import { AudienceApprovalCard } from "../../components/AudienceApprovalCard";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import { useForm } from "react-hook-form";
 import { useRequestAudiences } from "../../api/niche/useRequestAudiences";
+import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
 
 export default function HypothesisDetailPage() {
   const { nicheId, hypothesisId } = useParams();
@@ -26,8 +27,12 @@ export default function HypothesisDetailPage() {
   const { data: instantForms, isLoading: isLoadingInstantForms } =
     useInstantFormsByHypothesis(hypothesisId);
   const requestAudiences = useRequestAudiences(nicheNumericId);
-  const { register, handleSubmit, reset } = useForm<{ quantity: number }>({
-    defaultValues: { quantity: 1 },
+  const { data: openAiModels, isLoading: isLoadingModels } = useOpenAiModels();
+  const { register, handleSubmit, reset, setValue } = useForm<{
+    quantity: number;
+    model?: string;
+  }>({
+    defaultValues: { quantity: 1, model: "" },
   });
   useBreadcrumbs([
     {
@@ -37,6 +42,12 @@ export default function HypothesisDetailPage() {
     },
     { label: data?.title || "...", icon: hypothesisIcon },
   ]);
+
+  useEffect(() => {
+    const defaultModel =
+      niche?.audienceModel ?? openAiModels?.[0]?.code ?? "";
+    setValue("model", defaultModel);
+  }, [niche?.audienceModel, openAiModels, setValue]);
 
   const formatUsd = (value?: number | string | null) => {
     if (value === undefined || value === null) return undefined;
@@ -177,24 +188,41 @@ ${data.entrega ?? ""}
         Públicos gerados: {audienceList.length}/
         {niche?.audiencesToGenerate ?? 0}
       </p>
-      <div className="d-flex align-items-center mb-4">
+      <div className="d-flex align-items-center flex-wrap gap-2 mb-4">
         <input
           type="number"
           min={1}
-          className="form-control w-auto me-2"
+          className="form-control w-auto"
           title="Quantidade de públicos que o Worker IA irá gerar"
           {...register("quantity", { valueAsNumber: true })}
         />
+        <select
+          className="form-select w-auto"
+          title="Modelo utilizado pelo Worker IA"
+          disabled={requestAudiences.isPending || isLoadingModels}
+          {...register("model")}
+        >
+          {(openAiModels ?? []).map((modelOption) => (
+            <option key={modelOption.code} value={modelOption.code}>
+              {modelOption.name}
+            </option>
+          ))}
+        </select>
         <button
           type="button"
           className="btn btn-secondary"
           onClick={handleSubmit(
-            async ({ quantity }) => {
+            async ({ quantity, model }) => {
               if (!quantity || quantity <= 0) return;
+              const selectedModel =
+                model?.trim() || niche?.audienceModel || openAiModels?.[0]?.code;
               try {
-                await requestAudiences.mutateAsync(quantity);
+                await requestAudiences.mutateAsync({
+                  quantity,
+                  model: selectedModel,
+                });
                 alert("Solicitação enviada!");
-                reset();
+                reset({ quantity: 1, model: selectedModel ?? "" });
               } catch {
                 alert("Erro ao solicitar públicos");
               }
@@ -203,7 +231,7 @@ ${data.entrega ?? ""}
               console.log("Validation errors", errors);
             },
           )}
-          disabled={requestAudiences.isPending}
+          disabled={requestAudiences.isPending || isLoadingModels}
         >
           Gerar Públicos
         </button>

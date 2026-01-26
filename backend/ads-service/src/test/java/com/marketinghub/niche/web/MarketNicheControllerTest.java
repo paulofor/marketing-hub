@@ -37,10 +37,12 @@ class MarketNicheControllerTest {
         var niche = fixtures.createAndSaveNiche();
         mockMvc.perform(
                         patch("/api/niches/" + niche.getId() + "/audiences-to-generate")
-                                .param("quantity", "3"))
+                                .param("quantity", "3")
+                                .param("model", "gpt-4o-mini"))
                 .andExpect(status().isOk());
         var updated = repository.findById(niche.getId()).orElseThrow();
         assertThat(updated.getAudiencesToGenerate()).isEqualTo(3);
+        assertThat(updated.getAudienceModel()).isEqualTo("gpt-4o-mini");
     }
 
     @Test

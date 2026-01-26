@@ -25,6 +25,7 @@ export interface MarketNiche {
   detailedDescriptionsToGenerate?: number;
   detailedDescriptionModel?: string;
   audiencesToGenerate?: number;
+  audienceModel?: string;
   differentiatedTechnologyId?: number | null;
   hypothesisDetailedDescriptionId?: number | null;
   chatDialogId?: number;

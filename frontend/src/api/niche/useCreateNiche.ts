@@ -18,6 +18,7 @@ export interface CreateNiche {
   differentiatedTechnologyId?: number;
   hypothesesToGenerate?: number;
   audiencesToGenerate?: number;
+  audienceModel?: string;
 }
 
 export function useCreateNiche() {

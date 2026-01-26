@@ -65,6 +65,7 @@ public class MarketNicheService {
                 .audiencesToGenerate(request.getAudiencesToGenerate())
                 .detailedDescriptionsToGenerate(request.getDetailedDescriptionsToGenerate())
                 .hypothesisModel(normalizeModel(request.getHypothesisModel()))
+                .audienceModel(normalizeModel(request.getAudienceModel()))
                 .detailedDescriptionModel(normalizeModel(request.getDetailedDescriptionModel()))
                 .differentiatedTechnology(differentiatedTechnology)
                 .chatDialog(chat)
@@ -98,6 +99,7 @@ public class MarketNicheService {
         niche.setAudiencesToGenerate(request.getAudiencesToGenerate());
         niche.setDetailedDescriptionsToGenerate(request.getDetailedDescriptionsToGenerate());
         niche.setHypothesisModel(normalizeModel(request.getHypothesisModel()));
+        niche.setAudienceModel(normalizeModel(request.getAudienceModel()));
         niche.setDetailedDescriptionModel(normalizeModel(request.getDetailedDescriptionModel()));
         niche.setDifferentiatedTechnology(
                 resolveDifferentiatedTechnology(request.getDifferentiatedTechnologyId()));
@@ -120,9 +122,12 @@ public class MarketNicheService {
      * Requests generation of new audiences by setting the pending quantity.
      */
     @Transactional
-    public MarketNiche requestAudiences(Long id, int quantity) {
+    public MarketNiche requestAudiences(Long id, int quantity, String model) {
         MarketNiche niche = repository.findById(id).orElseThrow();
-        niche.setAudiencesToGenerate(quantity);
+        niche.setAudiencesToGenerate(Math.max(0, quantity));
+        if (model != null) {
+            niche.setAudienceModel(normalizeModel(model));
+        }
         return niche;
     }
 

@@ -46,6 +46,20 @@ public class NicheAudienceService {
     public Map<Long, List<Audience>> generate() {
         Map<Long, List<Audience>> result = new HashMap<>();
         List<MarketNiche> niches = nicheRepository.findAllToGenerateAudiences();
+        List<AudienceChatGptClient.AudienceBatchRequest> batchRequests = new ArrayList<>();
+        for (MarketNiche niche : niches) {
+            Integer qty = niche.getAudiencesToGenerate();
+            if (qty == null || qty <= 0) {
+                continue;
+            }
+            List<Hypothesis> hypotheses = hypothesisRepository.findByMarketNicheId(niche.getId());
+            batchRequests.add(new AudienceChatGptClient.AudienceBatchRequest(
+                    niche, hypotheses, qty, niche.getAudienceModel()));
+        }
+        Map<Long, List<CreateAudienceRequest>> generatedRequests = batchRequests.isEmpty()
+                ? Map.of()
+                : chatGptClient.generateAudiencesBatch(batchRequests);
+
         for (MarketNiche niche : niches) {
             Integer qty = niche.getAudiencesToGenerate();
             if (qty == null || qty <= 0) {
@@ -59,8 +73,7 @@ public class NicheAudienceService {
             log.info("Generating {} audiences for niche {}", qty, niche.getId());
             List<Audience> savedAudiences = new ArrayList<>();
             try {
-                List<Hypothesis> hypotheses = hypothesisRepository.findByMarketNicheId(niche.getId());
-                List<CreateAudienceRequest> requests = chatGptClient.generateAudiences(niche, hypotheses, qty);
+                List<CreateAudienceRequest> requests = generatedRequests.getOrDefault(niche.getId(), List.of());
                 log.info("ChatGPT returned {} audience candidates for niche {}", requests.size(), niche.getId());
 
                 for (CreateAudienceRequest req : requests) {
@@ -90,3 +103,4 @@ public class NicheAudienceService {
         return result;
     }
 }
+

@@ -34,16 +34,17 @@ import java.util.regex.Pattern;
  * structured ad set plans.
  */
 @Component
-public class AudienceAdSetChatGptClient {
+public class TargetingAdSetChatGptClient {
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
     private final String model;
     private final AiGenerationRecorder generationRecorder;
-    private static final Logger log = LoggerFactory.getLogger(AudienceAdSetChatGptClient.class);
+    private static final Logger log = LoggerFactory.getLogger(TargetingAdSetChatGptClient.class);
     private static final Pattern NON_NUMERIC = Pattern.compile("[^0-9,.-]");
     private static final String DOMAIN = "ADSET_PLAN";
+    private static final String DEFAULT_LOCATION = "Brasil";
 
-    public AudienceAdSetChatGptClient(WebClient.Builder builder,
+    public TargetingAdSetChatGptClient(WebClient.Builder builder,
                                       ObjectMapper objectMapper,
                                       @Value("${openai.api-key:}") String apiKey,
                                       @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
@@ -118,50 +119,85 @@ public class AudienceAdSetChatGptClient {
         if (root.has("adSet")) {
             root = root.get("adSet");
         }
-        String location = asText(root, "location");
+        String location = normalizeLocation(asText(root, "location"));
         List<String> interests = asStringList(root.get("interests"));
-        List<String> lookalikes = asStringList(root.get("lookalikes"));
+        List<String> jobTitles = asStringList(root.get("jobTitles"));
+        List<String> behaviors = asStringList(root.get("behaviors"));
         BigDecimal budget = asBigDecimal(root.get("budget"));
         Integer durationDays = asInteger(root.get("durationDays"));
-        String targetingJson = extractTargeting(root.get("targeting"), location, interests, lookalikes);
-        return new AdSetPlan(location, interests, lookalikes, budget, durationDays, targetingJson, prompt, model);
+        String targetingJson = extractTargeting(root.get("targeting"), location, interests, jobTitles, behaviors);
+        return new AdSetPlan(location, interests, jobTitles, behaviors, budget, durationDays, targetingJson, prompt, model);
+    }
+
+    private static String normalizeLocation(String value) {
+        if (value == null || value.isBlank()) {
+            return DEFAULT_LOCATION;
+        }
+        return value.trim();
     }
 
     private String extractTargeting(JsonNode targetingNode,
                                     String location,
                                     List<String> interests,
-                                    List<String> lookalikes) throws JsonProcessingException {
-        if (targetingNode != null && targetingNode.isObject()) {
-            ObjectNode targeting = targetingNode.deepCopy();
-            sanitizeTargeting(targeting);
-            return objectMapper.writeValueAsString(targeting);
-        }
-        ObjectNode targeting = objectMapper.createObjectNode();
-        ObjectNode geo = targeting.putObject("geo_locations");
-        ArrayNode customLocations = geo.putArray("custom_locations");
-        if (location != null && !location.isBlank()) {
-            ObjectNode entry = objectMapper.createObjectNode();
-            entry.put("name", location);
-            customLocations.add(entry);
-        }
-        ArrayNode interestArray = targeting.putArray("interests");
-        for (String interest : interests) {
-            ObjectNode item = objectMapper.createObjectNode();
-            item.put("name", interest);
-            interestArray.add(item);
-        }
-        ArrayNode lookalikeArray = targeting.putArray("custom_audiences");
-        for (String lookalike : lookalikes) {
-            ObjectNode item = objectMapper.createObjectNode();
-            item.put("name", lookalike);
-            lookalikeArray.add(item);
-        }
-        String description = buildDescription(location, interests, lookalikes);
-        if (description != null) {
-            targeting.put("detailed_targeting_description", description);
+                                    List<String> jobTitles,
+                                    List<String> behaviors) throws JsonProcessingException {
+        ObjectNode targeting = targetingNode != null && targetingNode.isObject()
+                ? targetingNode.deepCopy()
+                : objectMapper.createObjectNode();
+        enforceBrazilGeo(targeting);
+        mergeTargetingList(targeting, "interests", interests);
+        mergeTargetingList(targeting, "work_positions", jobTitles);
+        mergeTargetingList(targeting, "behaviors", behaviors);
+        if (!targeting.has("detailed_targeting_description")) {
+            String description = buildDescription(location, interests, jobTitles, behaviors);
+            if (description != null) {
+                targeting.put("detailed_targeting_description", description);
+            }
         }
         sanitizeTargeting(targeting);
         return objectMapper.writeValueAsString(targeting);
+    }
+
+    private void enforceBrazilGeo(ObjectNode targeting) {
+        ObjectNode geo = getOrCreateObject(targeting, "geo_locations");
+        ArrayNode countries = geo.putArray("countries");
+        countries.add("BR");
+        geo.remove("custom_locations");
+        geo.remove("regions");
+        geo.remove("cities");
+        geo.remove("zips");
+        geo.remove("location_types");
+    }
+
+    private ObjectNode getOrCreateObject(ObjectNode parent, String fieldName) {
+        JsonNode existing = parent.get(fieldName);
+        if (existing instanceof ObjectNode objectNode) {
+            return objectNode;
+        }
+        return parent.putObject(fieldName);
+    }
+
+    private void mergeTargetingList(ObjectNode targeting, String fieldName, List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return;
+        }
+        JsonNode existing = targeting.get(fieldName);
+        if (existing instanceof ArrayNode arrayNode && arrayNode.size() > 0) {
+            return;
+        }
+        ArrayNode array = targeting.putArray(fieldName);
+        for (String value : values) {
+            if (value == null) {
+                continue;
+            }
+            String trimmed = value.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            ObjectNode item = objectMapper.createObjectNode();
+            item.put("name", trimmed);
+            array.add(item);
+        }
     }
 
     private void sanitizeTargeting(ObjectNode targeting) {
@@ -192,7 +228,7 @@ public class AudienceAdSetChatGptClient {
         }
     }
 
-    private static String buildDescription(String location, List<String> interests, List<String> lookalikes) {
+    private static String buildDescription(String location, List<String> interests, List<String> jobTitles, List<String> behaviors) {
         StringBuilder sb = new StringBuilder();
         if (location != null && !location.isBlank()) {
             sb.append("Localização: ").append(location.trim());
@@ -203,11 +239,17 @@ public class AudienceAdSetChatGptClient {
             }
             sb.append("Interesses: ").append(String.join(", ", interests));
         }
-        if (!lookalikes.isEmpty()) {
+        if (!jobTitles.isEmpty()) {
             if (sb.length() > 0) {
                 sb.append(" | ");
             }
-            sb.append("Públicos semelhantes: ").append(String.join(", ", lookalikes));
+            sb.append("Cargos: ").append(String.join(", ", jobTitles));
+        }
+        if (!behaviors.isEmpty()) {
+            if (sb.length() > 0) {
+                sb.append(" | ");
+            }
+            sb.append("Comportamentos: ").append(String.join(", ", behaviors));
         }
         return sb.length() == 0 ? null : sb.toString();
     }
@@ -328,14 +370,15 @@ public class AudienceAdSetChatGptClient {
         StringBuilder sb = new StringBuilder();
         sb.append("Planeje um conjunto de anúncios para Meta Ads usando os dados abaixo. ");
         sb.append("Responda somente com um objeto JSON contendo as chaves ");
-        sb.append("location, interests, lookalikes, budget, durationDays e targeting.\n");
+        sb.append("location, interests, jobTitles, behaviors, budget, durationDays e targeting.\n");
         sb.append("Regras para o JSON:\n");
-        sb.append("- interests e lookalikes devem ser arrays de strings.\n");
+        sb.append("- location deve ser sempre \"Brasil\".\n");
+        sb.append("- interests, jobTitles e behaviors devem ser arrays de strings.\n");
         sb.append("- budget deve ser um número decimal em reais (BRL), sem texto adicional.\n");
         sb.append("- durationDays deve ser um número inteiro (quantidade de dias).\n");
         sb.append("- targeting deve ser um objeto seguindo a estrutura padrão do Meta Ads, com as chaves:\n");
-        sb.append("  geo_locations, age_min, age_max, genders, locales, interests, custom_audiences, ");
-        sb.append("excluded_custom_audiences e detailed_targeting_description. Use arrays vazios quando não houver dados.\n");
+        sb.append("  geo_locations, age_min, age_max, genders, locales, interests, work_positions, behaviors ");
+        sb.append("e detailed_targeting_description. Use arrays vazios quando não houver dados.\n");
         sb.append("- Não inclua a chave languages. Caso seja necessário indicar idioma, utilize locales com os códigos aceitos pelo Meta Ads.\n");
         sb.append("Contexto do experimento:\n");
         appendField(sb, "Experimento", experiment.getName());
@@ -357,8 +400,8 @@ public class AudienceAdSetChatGptClient {
         appendTargeting(sb, "Interesses", targeting != null ? targeting.getInterests() : List.of());
         appendTargeting(sb, "Cargos", targeting != null ? targeting.getJobTitles() : List.of());
         appendTargeting(sb, "Comportamentos", targeting != null ? targeting.getBehaviors() : List.of());
-        sb.append("Considere que a campanha usará dados do Brasil quando não houver indicação explícita.\n");
-        sb.append("Use apenas os termos aprovados acima para preencher interests, custom_audiences e demais campos.\n");
+        sb.append("Considere que a campanha sempre terá localização no Brasil.\n");
+        sb.append("Use apenas os termos aprovados acima para preencher interests, jobTitles (work_positions), behaviors e demais campos.\n");
         sb.append("Retorne apenas o JSON solicitado.");
         return sb.toString();
     }
@@ -369,7 +412,7 @@ public class AudienceAdSetChatGptClient {
         }
         sb.append(label).append(": ");
         List<String> values = elements.stream()
-                .map(AudienceAdSetChatGptClient::formatTargetingElement)
+                .map(TargetingAdSetChatGptClient::formatTargetingElement)
                 .filter(value -> value != null && !value.isBlank())
                 .toList();
         sb.append(String.join("; ", values)).append('\n');

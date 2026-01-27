@@ -525,7 +525,8 @@ public class FacebookCampaignService {
         Long experimentId,
         String location,
         String interests,
-        String lookalikes,
+        String jobTitles,
+        String behaviors,
         String targetingJson,
         String prompt,
         String model

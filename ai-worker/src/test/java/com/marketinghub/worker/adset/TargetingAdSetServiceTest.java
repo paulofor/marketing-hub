@@ -26,17 +26,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.reactive.function.client.WebClient;
 
 @ExtendWith(MockitoExtension.class)
-class AudienceAdSetServiceTest {
+class TargetingAdSetServiceTest {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final String BR_TARGETING =
-            "{\"geo_locations\":{\"countries\":[\"BR\"]},\"interests\":[{\"name\":\"Interest\"}]}";
+            "{\"geo_locations\":{\"countries\":[\"BR\"]}," +
+            "\"interests\":[{\"name\":\"Interest\"}]," +
+            "\"work_positions\":[{\"name\":\"Manager\"}]," +
+            "\"behaviors\":[{\"name\":\"Online\"}]}";
 
     private MockWebServer server;
-    private AudienceAdSetService service;
+    private TargetingAdSetService service;
     private BackendExperimentClient backendClient;
 
     @Mock
-    AudienceAdSetChatGptClient chatGptClient;
+    TargetingAdSetChatGptClient chatGptClient;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -46,7 +49,7 @@ class AudienceAdSetServiceTest {
                 WebClient.builder(),
                 server.url("/").toString(),
                 "/api");
-        service = new AudienceAdSetService(backendClient, chatGptClient);
+        service = new TargetingAdSetService(backendClient, chatGptClient);
     }
 
     @AfterEach
@@ -67,14 +70,14 @@ class AudienceAdSetServiceTest {
                 .setHeader("Content-Type", "application/json"));
         server.enqueue(new MockResponse()
                 .setBody("""
-                        {"id":101,"experimentId":10,"location":"BR","interests":"Interest","lookalikes":null,
-                         "targetingJson":"{}","budget":10,"durationDays":7,"prompt":"prompt1","model":"gpt-4"}
+                        {"id":101,"experimentId":10,"location":"BR","interests":"Interest","jobTitles":"Manager",
+                         "behaviors":"Online","targetingJson":"{}","budget":10,"durationDays":7,"prompt":"prompt1","model":"gpt-4"}
                         """)
                 .setHeader("Content-Type", "application/json"));
 
         when(chatGptClient.planAdSet(org.mockito.Mockito.any(), org.mockito.Mockito.any()))
-                .thenReturn(new AdSetPlan("BR", List.of("Interest"), List.of(), BigDecimal.TEN, 7,
-                        BR_TARGETING, "prompt1", "gpt-4"));
+                .thenReturn(new AdSetPlan("BR", List.of("Interest"), List.of("Manager"),
+                        List.of("Online"), BigDecimal.TEN, 7, BR_TARGETING, "prompt1", "gpt-4"));
 
         Map<Long, List<AdSetDto>> result = service.generate();
 

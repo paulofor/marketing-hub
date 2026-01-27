@@ -9,7 +9,8 @@ import java.util.List;
 public record AdSetPlan(
         String location,
         List<String> interests,
-        List<String> lookalikes,
+        List<String> jobTitles,
+        List<String> behaviors,
         BigDecimal budget,
         Integer durationDays,
         String targetingJson,

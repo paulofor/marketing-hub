@@ -34,7 +34,11 @@ public class AdSet {
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String lookalikes;
+    private String jobTitles;
+
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    private String behaviors;
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)

@@ -3,16 +3,45 @@
 DROP TABLE IF EXISTS audience_targeting_seed;
 DROP TABLE IF EXISTS audience;
 
---changeset repo:2034-01-20-update-market-niche-targeting dbms:mysql
-ALTER TABLE market_niche
-    DROP COLUMN IF EXISTS audiences_to_generate,
-    DROP COLUMN IF EXISTS audience_model,
-    ADD COLUMN IF NOT EXISTS interests_to_generate INT,
-    ADD COLUMN IF NOT EXISTS job_titles_to_generate INT,
-    ADD COLUMN IF NOT EXISTS behaviors_to_generate INT,
-    ADD COLUMN IF NOT EXISTS interest_model VARCHAR(191),
-    ADD COLUMN IF NOT EXISTS job_title_model VARCHAR(191),
-    ADD COLUMN IF NOT EXISTS behavior_model VARCHAR(191);
+--changeset repo:2034-01-20-drop-market-niche-audiences-to-generate dbms:mysql
+--preconditions onFail:MARK_RAN
+--precondition-sql-check expectedResult:1 dbms:mysql SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'market_niche' AND column_name = 'audiences_to_generate';
+ALTER TABLE market_niche DROP COLUMN audiences_to_generate;
+
+--changeset repo:2034-01-20-drop-market-niche-audience-model dbms:mysql
+--preconditions onFail:MARK_RAN
+--precondition-sql-check expectedResult:1 dbms:mysql SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'market_niche' AND column_name = 'audience_model';
+ALTER TABLE market_niche DROP COLUMN audience_model;
+
+--changeset repo:2034-01-20-add-market-niche-interests-to-generate dbms:mysql
+--preconditions onFail:MARK_RAN
+--precondition-sql-check expectedResult:0 dbms:mysql SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'market_niche' AND column_name = 'interests_to_generate';
+ALTER TABLE market_niche ADD COLUMN interests_to_generate INT;
+
+--changeset repo:2034-01-20-add-market-niche-job-titles-to-generate dbms:mysql
+--preconditions onFail:MARK_RAN
+--precondition-sql-check expectedResult:0 dbms:mysql SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'market_niche' AND column_name = 'job_titles_to_generate';
+ALTER TABLE market_niche ADD COLUMN job_titles_to_generate INT;
+
+--changeset repo:2034-01-20-add-market-niche-behaviors-to-generate dbms:mysql
+--preconditions onFail:MARK_RAN
+--precondition-sql-check expectedResult:0 dbms:mysql SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'market_niche' AND column_name = 'behaviors_to_generate';
+ALTER TABLE market_niche ADD COLUMN behaviors_to_generate INT;
+
+--changeset repo:2034-01-20-add-market-niche-interest-model dbms:mysql
+--preconditions onFail:MARK_RAN
+--precondition-sql-check expectedResult:0 dbms:mysql SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'market_niche' AND column_name = 'interest_model';
+ALTER TABLE market_niche ADD COLUMN interest_model VARCHAR(191);
+
+--changeset repo:2034-01-20-add-market-niche-job-title-model dbms:mysql
+--preconditions onFail:MARK_RAN
+--precondition-sql-check expectedResult:0 dbms:mysql SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'market_niche' AND column_name = 'job_title_model';
+ALTER TABLE market_niche ADD COLUMN job_title_model VARCHAR(191);
+
+--changeset repo:2034-01-20-add-market-niche-behavior-model dbms:mysql
+--preconditions onFail:MARK_RAN
+--precondition-sql-check expectedResult:0 dbms:mysql SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'market_niche' AND column_name = 'behavior_model';
+ALTER TABLE market_niche ADD COLUMN behavior_model VARCHAR(191);
 
 --changeset repo:2034-01-20-create-targeting-element dbms:mysql
 CREATE TABLE IF NOT EXISTS targeting_element (

@@ -6,7 +6,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
- * Scheduler that periodically generates ad sets from approved audiences.
+ * Scheduler that periodically generates ad sets from approved targeting elements.
  */
 @Component
 public class AudienceAdSetScheduler {

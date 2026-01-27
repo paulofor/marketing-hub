@@ -25,7 +25,6 @@ com/marketinghub/facebookadsworker/facebookpixel/FacebookPixelService$Experiment
 com/marketinghub/facebookadsworker/facebookpixel/FacebookPixelService.class
 com/marketinghub/facebookadsworker/facebookpixel/FacebookPixelService$PixelCreationRequest.class
 com/marketinghub/facebookadsworker/FacebookAdsService$FacebookInterest.class
-com/marketinghub/facebookadsworker/FacebookAdsService$SavedAudienceRequest.class
 com/marketinghub/facebookadsworker/util/UrlUtils.class
 com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService$ExperimentAdSet.class
 com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService$CreateCampaignRequest$AdSet.class
@@ -41,7 +40,6 @@ com/marketinghub/facebookadsworker/FacebookAdsService$AdSetRequest.class
 com/marketinghub/facebookadsworker/FacebookAdsService$FacebookApiResponse.class
 com/marketinghub/facebookadsworker/util/JsonLogFormatter$JsonLogValue.class
 com/marketinghub/facebookadsworker/FacebookAccessTokenManager$RenewalOutcome.class
-com/marketinghub/facebookadsworker/FacebookAdsService$2.class
 com/marketinghub/facebookadsworker/facebooktokenrenewal/FacebookTokenRenewalService.class
 com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.class
 com/marketinghub/facebookadsworker/facebookinstantform/InstantFormPublicationUpdateRequest.class

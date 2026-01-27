@@ -206,13 +206,16 @@ class FacebookCampaignServiceTest {
         assertEquals("/api/experiments/1/status?status=RUNNING", runningPatch.getPath());
     }
 
+    
     @Test
-    void createsSavedAudienceWhenTargetingExists() throws Exception {
+    void buildsTargetingFromAdSetElementsWhenTargetingJsonMissing() throws Exception {
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"AUD123\"}")
+        facebook.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"601\",\"name\":\"Interesse A\"}]}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"602\",\"name\":\"Interesse B\"}]}")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}")
             .addHeader("Content-Type", "application/json"));
@@ -222,7 +225,7 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":900,\"experimentId\":1,\"location\":\"São Paulo\",\"targetingJson\":\"{\\\"geo_locations\\\":{\\\"countries\\\":[\\\"BR\\\"]}}\",\"prompt\":\"Detalhes\",\"model\":\"gpt-4\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":900,\"experimentId\":1,\"location\":\"Brasil\",\"interests\":\"Interesse A\\nInteresse B\",\"jobTitles\":\"Cargo 1\",\"behaviors\":\"Comportamento X\\nComportamento Y\",\"targetingJson\":null,\"prompt\":\"Detalhes\",\"model\":\"gpt-4\"}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
@@ -245,26 +248,28 @@ class FacebookCampaignServiceTest {
         RecordedRequest campaignRequest = takeFacebookRequest("facebook request");
         assertEquals("/v23.0/act_1/campaigns", campaignRequest.getPath());
 
-        RecordedRequest savedAudienceRequest = takeFacebookRequest("facebook request");
-        assertEquals("/v23.0/act_1/saved_audiences", savedAudienceRequest.getPath());
-        JsonNode savedAudienceBody = objectMapper.readTree(savedAudienceRequest.getBody().inputStream());
-        assertEquals("Exp - Audience São Paulo", savedAudienceBody.get("name").asText());
-        assertEquals("Detalhes", savedAudienceBody.get("description").asText());
-        assertEquals("BR", savedAudienceBody.get("targeting").get("geo_locations").get("countries").get(0).asText());
-        assertEquals(
-            1,
-            savedAudienceBody
-                .get("targeting")
-                .get("targeting_automation")
-                .get("advantage_audience")
-                .asInt()
-        );
+        RecordedRequest firstInterestRequest = takeFacebookRequest("facebook request");
+        assertTrue(firstInterestRequest.getPath().contains("/search?type=adinterest"));
+        RecordedRequest secondInterestRequest = takeFacebookRequest("facebook request");
+        assertTrue(secondInterestRequest.getPath().contains("/search?type=adinterest"));
 
         RecordedRequest adSetRequest = takeFacebookRequest("facebook request");
-        JsonNode targeting = objectMapper.readTree(adSetRequest.getBody().inputStream()).get("targeting");
-        assertEquals("AUD123", targeting.get("saved_audience_id").asText());
+        assertEquals("/v23.0/act_1/adsets", adSetRequest.getPath());
+        JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
+        JsonNode targeting = adSetPayload.get("targeting");
+        assertFalse(targeting.has("saved_audience_id"));
         assertEquals("BR", targeting.get("geo_locations").get("countries").get(0).asText());
-        assertEquals(1, targeting.get("targeting_automation").get("advantage_audience").asInt());
+        JsonNode interests = targeting.get("interests");
+        assertEquals(2, interests.size());
+        assertEquals("Interesse A", interests.get(0).get("name").asText());
+        assertEquals("Interesse B", interests.get(1).get("name").asText());
+        JsonNode workPositions = targeting.get("work_positions");
+        assertEquals(1, workPositions.size());
+        assertEquals("Cargo 1", workPositions.get(0).get("name").asText());
+        JsonNode behaviors = targeting.get("behaviors");
+        assertEquals(2, behaviors.size());
+        assertEquals("Comportamento X", behaviors.get(0).get("name").asText());
+        assertEquals("Comportamento Y", behaviors.get(1).get("name").asText());
 
         takeFacebookRequest("facebook request"); // ad creative
         takeFacebookRequest("facebook request"); // ad
@@ -272,7 +277,6 @@ class FacebookCampaignServiceTest {
         takeBackendRequest("backend request"); // report campaign
         takeBackendRequest("backend request"); // mark running
     }
-
     @Test
     void usesInstantFormShareLinkWhenJourneyRequiresForm() throws Exception {
         backend.enqueueResponse(new MockResponse().setBody("[{"

@@ -233,10 +233,6 @@ public class FacebookAdsService {
         normalizeCustomAudiences(targeting);
         normalizeGeoLocations(targeting);
 
-        if (hasText(request.savedAudienceId())) {
-            targeting.put("saved_audience_id", request.savedAudienceId().trim());
-        }
-
         forceBrazilWideTargeting(targeting);
         enableAdvantageAudience(targeting);
 
@@ -840,46 +836,6 @@ public class FacebookAdsService {
     }
 
     public record FacebookInterest(String id, String name) {}
-
-    public String createSavedAudience(String adAccountId, SavedAudienceRequest request) {
-        Objects.requireNonNull(request, "request");
-        if (!hasText(request.name())) {
-            throw new IllegalArgumentException("Saved audience name must not be blank");
-        }
-        if (!hasText(request.targetingJson())) {
-            throw new IllegalArgumentException("Saved audience targeting must not be blank");
-        }
-
-        Map<String, Object> targeting;
-        try {
-            JsonNode node = objectMapper.readTree(request.targetingJson());
-            if (node == null || !node.isObject()) {
-                throw new IllegalArgumentException("Saved audience targeting must be a JSON object");
-            }
-            targeting = objectMapper.convertValue(node, new TypeReference<Map<String, Object>>() {});
-        } catch (IllegalArgumentException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            throw new IllegalArgumentException("Failed to parse saved audience targeting JSON", ex);
-        }
-
-        normalizeInterests(targeting);
-        normalizeCustomAudiences(targeting);
-        forceBrazilWideTargeting(targeting);
-        enableAdvantageAudience(targeting);
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("name", request.name().trim());
-        if (hasText(request.description())) {
-            body.put("description", request.description().trim());
-        }
-        body.put("targeting", targeting);
-        body.put("access_token", requireAccessToken());
-
-        String path = buildVersionedPath("/act_" + adAccountId + "/saved_audiences");
-        JsonNode response = executePost(path, body);
-        return response.path("id").asText();
-    }
 
     public String createAdCreative(String adAccountId, AdCreativeRequest request) {
         Objects.requireNonNull(request, "request");
@@ -1525,11 +1481,9 @@ public class FacebookAdsService {
         String bidAmount,
         String pageId,
         String targetCountry,
-        String targetingJson,
-        String savedAudienceId
+        String targetingJson
     ) {}
 
-    public record SavedAudienceRequest(String name, String description, String targetingJson) {}
 
     public record AdCreativeRequest(
         String name,

@@ -3,8 +3,8 @@ package com.marketinghub.hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.creative.label.Angle;
 import com.marketinghub.prompt.PromptAttributeDescription;
-import com.marketinghub.audience.Audience;
 import com.marketinghub.ads.FacebookInstantForm;
+import com.marketinghub.targeting.TargetingElement;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -128,7 +128,7 @@ public class Hypothesis {
     private Instant updatedAt;
 
     @OneToMany(mappedBy = "hypothesis")
-    private java.util.List<Audience> audiences;
+    private java.util.List<TargetingElement> targetingElements;
 
     @OneToMany(mappedBy = "hypothesis")
     private java.util.List<FacebookInstantForm> instantForms;

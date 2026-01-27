@@ -33,16 +33,42 @@ class MarketNicheControllerTest {
     MarketNicheRepository repository;
 
     @Test
-    void requestAudiencesEndpointUpdatesQuantity() throws Exception {
+    void requestInterestsEndpointUpdatesQuantity() throws Exception {
         var niche = fixtures.createAndSaveNiche();
         mockMvc.perform(
-                        patch("/api/niches/" + niche.getId() + "/audiences-to-generate")
+                        patch("/api/niches/" + niche.getId() + "/interests-to-generate")
                                 .param("quantity", "3")
                                 .param("model", "gpt-4o-mini"))
                 .andExpect(status().isOk());
         var updated = repository.findById(niche.getId()).orElseThrow();
-        assertThat(updated.getAudiencesToGenerate()).isEqualTo(3);
-        assertThat(updated.getAudienceModel()).isEqualTo("gpt-4o-mini");
+        assertThat(updated.getInterestsToGenerate()).isEqualTo(3);
+        assertThat(updated.getInterestModel()).isEqualTo("gpt-4o-mini");
+    }
+
+    @Test
+    void requestJobTitlesEndpointUpdatesQuantity() throws Exception {
+        var niche = fixtures.createAndSaveNiche();
+        mockMvc.perform(
+                        patch("/api/niches/" + niche.getId() + "/job-titles-to-generate")
+                                .param("quantity", "4")
+                                .param("model", "gpt-4o"))
+                .andExpect(status().isOk());
+        var updated = repository.findById(niche.getId()).orElseThrow();
+        assertThat(updated.getJobTitlesToGenerate()).isEqualTo(4);
+        assertThat(updated.getJobTitleModel()).isEqualTo("gpt-4o");
+    }
+
+    @Test
+    void requestBehaviorsEndpointUpdatesQuantity() throws Exception {
+        var niche = fixtures.createAndSaveNiche();
+        mockMvc.perform(
+                        patch("/api/niches/" + niche.getId() + "/behaviors-to-generate")
+                                .param("quantity", "5")
+                                .param("model", "gpt-4o"))
+                .andExpect(status().isOk());
+        var updated = repository.findById(niche.getId()).orElseThrow();
+        assertThat(updated.getBehaviorsToGenerate()).isEqualTo(5);
+        assertThat(updated.getBehaviorModel()).isEqualTo("gpt-4o");
     }
 
     @Test

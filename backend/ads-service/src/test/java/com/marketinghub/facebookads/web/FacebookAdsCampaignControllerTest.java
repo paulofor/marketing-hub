@@ -7,7 +7,8 @@ import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.ads.FacebookAccountRepository;
 import com.marketinghub.ads.FacebookPage;
 import com.marketinghub.ads.InstagramAccount;
-import com.marketinghub.audience.repository.AudienceRepository;
+import com.marketinghub.targeting.TargetingElementType;
+import com.marketinghub.targeting.repository.TargetingElementRepository;
 import com.marketinghub.experiment.AdSet;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.journey.model.JourneyTemplate;
@@ -75,7 +76,7 @@ class FacebookAdsCampaignControllerTest {
     @MockBean
     AdSetRepository experimentAdSetRepository;
     @MockBean
-    AudienceRepository audienceRepository;
+    TargetingElementRepository targetingElementRepository;
 
     @Test
     void listExperimentsByStatus() throws Exception {
@@ -123,7 +124,11 @@ class FacebookAdsCampaignControllerTest {
                 .facebookPage(page)
                 .instagramAccount(instagramAccount)
                 .build();
-        when(audienceRepository.existsApprovedByNicheAndMatchingHypothesis(10L, hypothesis.getId()))
+        when(targetingElementRepository.existsApprovedForExperiment(10L, TargetingElementType.INTEREST, hypothesis.getId()))
+                .thenReturn(true);
+        when(targetingElementRepository.existsApprovedForExperiment(10L, TargetingElementType.JOB_TITLE, hypothesis.getId()))
+                .thenReturn(true);
+        when(targetingElementRepository.existsApprovedForExperiment(10L, TargetingElementType.BEHAVIOR, hypothesis.getId()))
                 .thenReturn(true);
         when(experimentService.listByStatusAndPlatform(
                 com.marketinghub.experiment.ExperimentStatus.PLANNED,

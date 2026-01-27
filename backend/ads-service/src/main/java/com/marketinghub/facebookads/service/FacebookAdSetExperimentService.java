@@ -1,20 +1,23 @@
 package com.marketinghub.facebookads.service;
 
-import com.marketinghub.audience.Audience;
-import com.marketinghub.audience.TargetingStatus;
-import com.marketinghub.audience.dto.AudienceDto;
-import com.marketinghub.audience.mapper.AudienceMapper;
-import com.marketinghub.audience.repository.AudienceRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.facebookads.dto.ExperimentReadyForAdSetDto;
+import com.marketinghub.facebookads.dto.TargetingPackageDto;
 import com.marketinghub.hypothesis.mapper.HypothesisMapper;
 import com.marketinghub.niche.mapper.MarketNicheMapper;
+import com.marketinghub.targeting.TargetingElement;
+import com.marketinghub.targeting.TargetingElementType;
+import com.marketinghub.targeting.dto.TargetingElementDto;
+import com.marketinghub.targeting.mapper.TargetingElementMapper;
+import com.marketinghub.targeting.repository.TargetingElementRepository;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 
@@ -27,29 +30,29 @@ public class FacebookAdSetExperimentService {
             ExperimentStatus.PLANNED, ExperimentStatus.RUNNING, ExperimentStatus.PAUSED);
 
     private final ExperimentRepository experimentRepository;
-    private final AudienceRepository audienceRepository;
+    private final TargetingElementRepository targetingElementRepository;
     private final ExperimentMapper experimentMapper;
     private final MarketNicheMapper marketNicheMapper;
     private final HypothesisMapper hypothesisMapper;
-    private final AudienceMapper audienceMapper;
+    private final TargetingElementMapper targetingElementMapper;
 
     public FacebookAdSetExperimentService(ExperimentRepository experimentRepository,
-                                          AudienceRepository audienceRepository,
+                                          TargetingElementRepository targetingElementRepository,
                                           ExperimentMapper experimentMapper,
                                           MarketNicheMapper marketNicheMapper,
                                           HypothesisMapper hypothesisMapper,
-                                          AudienceMapper audienceMapper) {
+                                          TargetingElementMapper targetingElementMapper) {
         this.experimentRepository = experimentRepository;
-        this.audienceRepository = audienceRepository;
+        this.targetingElementRepository = targetingElementRepository;
         this.experimentMapper = experimentMapper;
         this.marketNicheMapper = marketNicheMapper;
         this.hypothesisMapper = hypothesisMapper;
-        this.audienceMapper = audienceMapper;
+        this.targetingElementMapper = targetingElementMapper;
     }
 
     /**
      * Lists experiments that are ready to have ad sets generated alongside their
-     * approved audiences.
+     * approved targeting elements.
      */
     public List<ExperimentReadyForAdSetDto> listExperimentsReadyForAdSets() {
         List<Experiment> experiments = experimentRepository.findAllReadyForAdSets(
@@ -59,57 +62,45 @@ public class FacebookAdSetExperimentService {
         }
         List<ExperimentReadyForAdSetDto> result = new ArrayList<>();
         for (Experiment experiment : experiments) {
-            List<AudienceDto> audiences = mapAudiencesForExperiment(experiment);
-            if (audiences.isEmpty()) {
+            TargetingPackageDto targeting = buildTargetingPackage(experiment);
+            if (targeting == null) {
                 continue;
             }
             ExperimentReadyForAdSetDto dto = new ExperimentReadyForAdSetDto(
                     experimentMapper.toDto(experiment),
                     marketNicheMapper.toDto(experiment.getNiche()),
                     experiment.getHypothesisRef() != null ? hypothesisMapper.toDto(experiment.getHypothesisRef()) : null,
-                    audiences);
+                    targeting);
             result.add(dto);
         }
         return result;
     }
 
-    private List<AudienceDto> mapAudiencesForExperiment(Experiment experiment) {
+    private TargetingPackageDto buildTargetingPackage(Experiment experiment) {
         if (experiment.getNiche() == null) {
-            return List.of();
+            return null;
         }
-        List<Audience> audiences = audienceRepository.findDetailedByNicheId(experiment.getNiche().getId());
-        if (audiences.isEmpty()) {
-            return List.of();
+        Long nicheId = experiment.getNiche().getId();
+        UUID hypothesisId = experiment.getHypothesisRef() != null ? experiment.getHypothesisRef().getId() : null;
+        Map<TargetingElementType, List<TargetingElementDto>> mapped = new EnumMap<>(TargetingElementType.class);
+        for (TargetingElementType type : TargetingElementType.values()) {
+            List<TargetingElementDto> dtos = mapElements(nicheId, hypothesisId, type);
+            if (dtos.isEmpty()) {
+                return null;
+            }
+            mapped.put(type, dtos);
         }
-        List<Audience> filtered = filterAudiencesForExperiment(audiences, experiment);
-        if (filtered.isEmpty()) {
-            return List.of();
-        }
-        return filtered.stream().map(audienceMapper::toDto).toList();
+        return new TargetingPackageDto(
+                mapped.get(TargetingElementType.INTEREST),
+                mapped.get(TargetingElementType.JOB_TITLE),
+                mapped.get(TargetingElementType.BEHAVIOR));
     }
 
-    private static List<Audience> filterAudiencesForExperiment(List<Audience> audiences, Experiment experiment) {
-        if (audiences.isEmpty()) {
+    private List<TargetingElementDto> mapElements(Long nicheId, UUID hypothesisId, TargetingElementType type) {
+        List<TargetingElement> elements = targetingElementRepository.findApprovedForExperiment(nicheId, type, hypothesisId);
+        if (elements.isEmpty()) {
             return List.of();
         }
-        UUID hypothesisId = experiment.getHypothesisRef() != null ? experiment.getHypothesisRef().getId() : null;
-        List<Audience> filtered = new ArrayList<>();
-        for (Audience audience : audiences) {
-            if (!audience.isApproved()) {
-                continue;
-            }
-            if (audience.getTargetingStatus() != TargetingStatus.READY) {
-                continue;
-            }
-            if (audience.getTargetingSpec() == null || audience.getTargetingSpec().isBlank()) {
-                continue;
-            }
-            if (audience.getHypothesis() == null) {
-                filtered.add(audience);
-            } else if (hypothesisId != null && hypothesisId.equals(audience.getHypothesis().getId())) {
-                filtered.add(audience);
-            }
-        }
-        return filtered.isEmpty() ? List.of() : List.copyOf(filtered);
+        return elements.stream().map(targetingElementMapper::toDto).toList();
     }
 }

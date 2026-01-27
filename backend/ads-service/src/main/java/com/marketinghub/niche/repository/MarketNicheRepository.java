@@ -28,15 +28,37 @@ public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> 
     List<MarketNiche> findAllToGenerateHypotheses();
 
     /**
-     * Retrieves niches configured to generate audiences.
+     * Retrieves niches configured to generate interests.
      */
     @Query("""
             select distinct n from MarketNiche n
             left join fetch n.differentiatedTechnology
-            where n.audiencesToGenerate is not null
-              and n.audiencesToGenerate > 0
+            where n.interestsToGenerate is not null
+              and n.interestsToGenerate > 0
             """)
-    List<MarketNiche> findAllToGenerateAudiences();
+    List<MarketNiche> findAllToGenerateInterests();
+
+    /**
+     * Retrieves niches configured to generate job titles.
+     */
+    @Query("""
+            select distinct n from MarketNiche n
+            left join fetch n.differentiatedTechnology
+            where n.jobTitlesToGenerate is not null
+              and n.jobTitlesToGenerate > 0
+            """)
+    List<MarketNiche> findAllToGenerateJobTitles();
+
+    /**
+     * Retrieves niches configured to generate behaviors.
+     */
+    @Query("""
+            select distinct n from MarketNiche n
+            left join fetch n.differentiatedTechnology
+            where n.behaviorsToGenerate is not null
+              and n.behaviorsToGenerate > 0
+            """)
+    List<MarketNiche> findAllToGenerateBehaviors();
 
     /**
      * Retrieves niches configured to generate detailed descriptions.

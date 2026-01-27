@@ -1,7 +1,6 @@
 package com.marketinghub.experiment;
 
-import com.marketinghub.audience.Audience;
-import com.marketinghub.audience.repository.AudienceRepository;
+import com.marketinghub.targeting.repository.TargetingElementRepository;
 import com.marketinghub.experiment.MetricPreset;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
@@ -48,7 +47,7 @@ class ExperimentServiceTest {
     @Autowired
     JourneyTemplateRepository journeyTemplateRepository;
     @Autowired
-    AudienceRepository audienceRepository;
+    TargetingElementRepository targetingElementRepository;
     @Autowired
     InstagramAccountRepository instagramAccountRepository;
     @Autowired
@@ -308,17 +307,34 @@ class ExperimentServiceTest {
         expApproved.setCreativeApproved(true);
         experimentRepository.save(expApproved);
 
-        audienceRepository.save(Audience.builder()
-                .name("Aprovado")
+        targetingElementRepository.save(com.marketinghub.targeting.TargetingElement.builder()
                 .niche(niche)
                 .hypothesis(hyp)
-                .approved(true)
+                .type(com.marketinghub.targeting.TargetingElementType.INTEREST)
+                .status(com.marketinghub.targeting.TargetingElementStatus.APPROVED)
+                .term("Interest")
                 .build());
-        audienceRepository.save(Audience.builder()
-                .name("Pendente")
+        targetingElementRepository.save(com.marketinghub.targeting.TargetingElement.builder()
                 .niche(niche)
                 .hypothesis(hyp)
-                .approved(false)
+                .type(com.marketinghub.targeting.TargetingElementType.JOB_TITLE)
+                .status(com.marketinghub.targeting.TargetingElementStatus.APPROVED)
+                .term("CMO")
+                .build());
+        targetingElementRepository.save(com.marketinghub.targeting.TargetingElement.builder()
+                .niche(niche)
+                .hypothesis(hyp)
+                .type(com.marketinghub.targeting.TargetingElementType.BEHAVIOR)
+                .status(com.marketinghub.targeting.TargetingElementStatus.APPROVED)
+                .term("Engaged")
+                .build());
+
+        targetingElementRepository.save(com.marketinghub.targeting.TargetingElement.builder()
+                .niche(niche)
+                .hypothesis(hyp)
+                .type(com.marketinghub.targeting.TargetingElementType.INTEREST)
+                .status(com.marketinghub.targeting.TargetingElementStatus.DRAFT)
+                .term("Pending")
                 .build());
 
         CreateExperimentRequest req2 = new CreateExperimentRequest();

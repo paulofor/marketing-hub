@@ -30,10 +30,6 @@ class AudienceAdSetServiceTest {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final String BR_TARGETING =
             "{\"geo_locations\":{\"countries\":[\"BR\"]},\"interests\":[{\"name\":\"Interest\"}]}";
-    private static final String MX_TARGETING =
-            "{\"geo_locations\":{\"countries\":[\"MX\"]}}";
-    private static final String US_TARGETING =
-            "{\"geo_locations\":{\"countries\":[\"US\"]},\"interests\":[{\"name\":\"Another\"}]}";
 
     private MockWebServer server;
     private AudienceAdSetService service;
@@ -59,7 +55,7 @@ class AudienceAdSetServiceTest {
     }
 
     @Test
-    void generateCreatesAdSetsForRelevantAudiences() throws Exception {
+    void generateCreatesAdSetsForTargetingPackage() throws Exception {
         UUID hypothesisId = UUID.randomUUID();
         String experimentsPayload = buildExperimentsPayload(hypothesisId);
 
@@ -75,29 +71,16 @@ class AudienceAdSetServiceTest {
                          "targetingJson":"{}","budget":10,"durationDays":7,"prompt":"prompt1","model":"gpt-4"}
                         """)
                 .setHeader("Content-Type", "application/json"));
-        server.enqueue(new MockResponse()
-                .setBody("""
-                        {"id":102,"experimentId":10,"location":"US","interests":"Another","lookalikes":"Look",
-                         "targetingJson":"{\\"key\\":\\"value\\"}","budget":5,"durationDays":5,
-                         "prompt":"prompt2","model":"gpt-4"}
-                        """)
-                .setHeader("Content-Type", "application/json"));
 
-        when(chatGptClient.planAdSet(
-                        org.mockito.Mockito.any(),
-                        org.mockito.Mockito.argThat(a -> a != null && a.getId().equals(1L))))
-                .thenReturn(new AdSetPlan("BR", List.of("Interest"), List.of(), BigDecimal.TEN, 7, "{}", "prompt1", "gpt-4"));
-        when(chatGptClient.planAdSet(
-                        org.mockito.Mockito.any(),
-                        org.mockito.Mockito.argThat(a -> a != null && a.getId().equals(3L))))
-                .thenReturn(new AdSetPlan("US", List.of("Another"), List.of("Look"), BigDecimal.valueOf(5), 5,
-                        "{\"key\":\"value\"}", "prompt2", "gpt-4"));
+        when(chatGptClient.planAdSet(org.mockito.Mockito.any(), org.mockito.Mockito.any()))
+                .thenReturn(new AdSetPlan("BR", List.of("Interest"), List.of(), BigDecimal.TEN, 7,
+                        BR_TARGETING, "prompt1", "gpt-4"));
 
         Map<Long, List<AdSetDto>> result = service.generate();
 
         assertThat(result).containsKey(10L);
-        assertThat(result.get(10L)).hasSize(2);
-        assertThat(result.get(10L).stream().map(AdSetDto::getId)).containsExactlyInAnyOrder(101L, 102L);
+        assertThat(result.get(10L)).hasSize(1);
+        assertThat(result.get(10L).stream().map(AdSetDto::getId)).containsExactly(101L);
 
         RecordedRequest experimentsRequest = server.takeRequest();
         assertThat(experimentsRequest.getPath()).isEqualTo("/api/facebook-adsets/experiments-ready");
@@ -109,10 +92,6 @@ class AudienceAdSetServiceTest {
         String firstBody = firstCreate.getBody().readUtf8();
         assertThat(firstBody).contains("\"location\":\"BR\"");
         assertThat(firstBody).contains("\"targetingJson\":\"" + escape(BR_TARGETING) + "\"");
-        RecordedRequest secondCreate = server.takeRequest();
-        String secondBody = secondCreate.getBody().readUtf8();
-        assertThat(secondBody).contains("\"location\":\"US\"");
-        assertThat(secondBody).contains("\"targetingJson\":\"" + escape(US_TARGETING) + "\"");
     }
 
     @Test
@@ -153,31 +132,27 @@ class AudienceAdSetServiceTest {
         hypothesis.put("mechanism", "Mechanism");
         hypothesis.put("uniqueMechanism", "Unique");
 
-        ArrayNode audiences = payload.putArray("audiences");
-        audiences.add(audienceNode(1, hypothesisId, BR_TARGETING));
-        audiences.add(audienceNode(2, UUID.randomUUID(), MX_TARGETING));
-        audiences.add(audienceNode(3, null, US_TARGETING));
+        ObjectNode targeting = payload.putObject("targeting");
+        ArrayNode interests = targeting.putArray("interests");
+        interests.add(targetingElementNode(1, "Interest", "Descrição"));
+        ArrayNode jobTitles = targeting.putArray("jobTitles");
+        jobTitles.add(targetingElementNode(2, "Manager", "Cargo"));
+        ArrayNode behaviors = targeting.putArray("behaviors");
+        behaviors.add(targetingElementNode(3, "Online", "Comportamento"));
 
         ArrayNode root = OBJECT_MAPPER.createArrayNode();
         root.add(payload);
         return OBJECT_MAPPER.writeValueAsString(root);
     }
 
-    private static ObjectNode audienceNode(long id, UUID hypothesisId, String targetingSpec) {
-        ObjectNode audience = OBJECT_MAPPER.createObjectNode();
-        audience.put("id", id);
-        audience.put("name", id == 2 ? "Irrelevant" : id == 3 ? "Generic" : "Matching");
-        audience.put("description", "Desc");
-        audience.put("marketNicheId", 5);
-        if (hypothesisId != null) {
-            audience.put("hypothesisId", hypothesisId.toString());
-        } else {
-            audience.putNull("hypothesisId");
-        }
-        audience.put("approved", true);
-        audience.put("targetingStatus", "READY");
-        audience.put("targetingSpec", targetingSpec);
-        return audience;
+    private static ObjectNode targetingElementNode(long id, String term, String description) {
+        ObjectNode element = OBJECT_MAPPER.createObjectNode();
+        element.put("id", id);
+        element.put("term", term);
+        element.put("description", description);
+        element.put("model", "gpt-4");
+        element.put("prompt", "prompt");
+        return element;
     }
 
     private static String escape(String json) {

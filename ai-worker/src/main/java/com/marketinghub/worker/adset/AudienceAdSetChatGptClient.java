@@ -5,10 +5,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.marketinghub.audience.Audience;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.facebookads.dto.TargetingPackageDto;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.targeting.dto.TargetingElementDto;
 import com.marketinghub.worker.openai.AiGenerationRecorder;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
@@ -29,7 +30,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * ChatGPT client responsible for translating audience descriptions into
+ * ChatGPT client responsible for translating approved targeting elements into
  * structured ad set plans.
  */
 @Component
@@ -60,8 +61,8 @@ public class AudienceAdSetChatGptClient {
         this.generationRecorder = generationRecorder;
     }
 
-    public AdSetPlan planAdSet(Experiment experiment, Audience audience) {
-        String prompt = buildPrompt(experiment, audience);
+    public AdSetPlan planAdSet(Experiment experiment, TargetingPackageDto targeting) {
+        String prompt = buildPrompt(experiment, targeting);
         List<Map<String, Object>> input = List.of(
                 OpenAiRequestUtils.message("system", "Você é um especialista em mídia paga para Meta Ads."),
                 OpenAiRequestUtils.message("user", prompt)
@@ -70,7 +71,7 @@ public class AudienceAdSetChatGptClient {
         payload.put("model", model);
         payload.put("input", input);
         OpenAiRequestUtils.maybeAddReasoning(payload, model);
-        log.info("Sending ad set planning prompt for experiment {} audience {}", experiment.getId(), audience.getId());
+        log.info("Sending ad set planning prompt for experiment {}", experiment.getId());
         log.debug("Ad set planning payload: {}", payload);
         OpenAiResponse response = webClient.post()
                 .uri("/responses")
@@ -86,7 +87,7 @@ public class AudienceAdSetChatGptClient {
         }
         String content = response.firstText();
         generationRecorder.record(DOMAIN,
-                audience != null ? String.valueOf(audience.getId()) : null,
+                experiment != null ? String.valueOf(experiment.getId()) : null,
                 prompt,
                 content,
                 model,
@@ -321,7 +322,7 @@ public class AudienceAdSetChatGptClient {
         return text == null || text.isBlank() ? null : text.trim();
     }
 
-    private String buildPrompt(Experiment experiment, Audience audience) {
+    private String buildPrompt(Experiment experiment, TargetingPackageDto targeting) {
         MarketNiche niche = experiment.getNiche();
         Hypothesis hypothesis = experiment.getHypothesisRef();
         StringBuilder sb = new StringBuilder();
@@ -352,12 +353,37 @@ public class AudienceAdSetChatGptClient {
             appendField(sb, "Filtros demográficos", niche.getDemographicFilters());
             appendField(sb, "Dicas extras", niche.getExtraTips());
         }
-        sb.append("Público a ser segmentado:\n");
-        appendField(sb, "Nome do público", audience.getName());
-        appendField(sb, "Descrição do público", audience.getDescription());
+        sb.append("Elementos de segmentação aprovados:\n");
+        appendTargeting(sb, "Interesses", targeting != null ? targeting.getInterests() : List.of());
+        appendTargeting(sb, "Cargos", targeting != null ? targeting.getJobTitles() : List.of());
+        appendTargeting(sb, "Comportamentos", targeting != null ? targeting.getBehaviors() : List.of());
         sb.append("Considere que a campanha usará dados do Brasil quando não houver indicação explícita.\n");
+        sb.append("Use apenas os termos aprovados acima para preencher interests, custom_audiences e demais campos.\n");
         sb.append("Retorne apenas o JSON solicitado.");
         return sb.toString();
+    }
+
+    private static void appendTargeting(StringBuilder sb, String label, List<TargetingElementDto> elements) {
+        if (elements == null || elements.isEmpty()) {
+            return;
+        }
+        sb.append(label).append(": ");
+        List<String> values = elements.stream()
+                .map(AudienceAdSetChatGptClient::formatTargetingElement)
+                .filter(value -> value != null && !value.isBlank())
+                .toList();
+        sb.append(String.join("; ", values)).append('\n');
+    }
+
+    private static String formatTargetingElement(TargetingElementDto element) {
+        if (element == null || element.getTerm() == null || element.getTerm().isBlank()) {
+            return null;
+        }
+        String term = element.getTerm().trim();
+        if (element.getDescription() == null || element.getDescription().isBlank()) {
+            return term;
+        }
+        return term + " (" + element.getDescription().trim() + ")";
     }
 
     private static void appendField(StringBuilder sb, String label, String value) {

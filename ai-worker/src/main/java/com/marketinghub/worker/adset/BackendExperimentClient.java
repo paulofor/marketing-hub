@@ -1,24 +1,20 @@
 package com.marketinghub.worker.adset;
 
-import com.marketinghub.audience.Audience;
-import com.marketinghub.audience.AudienceSource;
-import com.marketinghub.audience.TargetingStatus;
-import com.marketinghub.audience.dto.AudienceDto;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.dto.AdSetDto;
 import com.marketinghub.experiment.dto.CreateAdSetRequest;
+import com.marketinghub.facebookads.dto.TargetingPackageDto;
 import com.marketinghub.facebookads.dto.ExperimentReadyForAdSetDto;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.dto.HypothesisDto;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.dto.MarketNicheDto;
+import com.marketinghub.targeting.dto.TargetingElementDto;
 import com.marketinghub.worker.util.UrlUtils;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,7 +46,7 @@ public class BackendExperimentClient {
     }
 
     /**
-     * Retrieves experiments ready for ad set generation along with their audiences.
+     * Retrieves experiments ready for ad set generation along with their targeting package.
      */
     public List<ReadyExperiment> listExperimentsReadyForAdSets() {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-adsets/experiments-ready");
@@ -145,8 +141,12 @@ public class BackendExperimentClient {
         MarketNiche niche = dto.getNiche() != null ? toMarketNiche(dto.getNiche()) : null;
         Hypothesis hypothesis = dto.getHypothesis() != null ? toHypothesis(dto.getHypothesis()) : null;
         Experiment experiment = toExperiment(dto.getExperiment(), niche, hypothesis);
-        List<Audience> audiences = filterAudiences(dto.getAudiences(), niche, hypothesis);
-        return new ReadyExperiment(experiment, audiences);
+        TargetingPackageDto targeting = dto.getTargeting();
+        if (!hasTargetingElements(targeting)) {
+            log.warn("Experiment {} has no approved targeting package, skipping", experiment.getId());
+            return null;
+        }
+        return new ReadyExperiment(experiment, targeting);
     }
 
     private static Experiment toExperiment(com.marketinghub.experiment.dto.ExperimentDto dto,
@@ -186,47 +186,17 @@ public class BackendExperimentClient {
         return hypothesis;
     }
 
-    private static List<Audience> filterAudiences(List<AudienceDto> dtos,
-                                                  MarketNiche niche,
-                                                  Hypothesis hypothesis) {
-        if (dtos == null || dtos.isEmpty()) {
-            return List.of();
+    private static boolean hasTargetingElements(TargetingPackageDto targeting) {
+        if (targeting == null) {
+            return false;
         }
-        UUID hypothesisId = hypothesis != null ? hypothesis.getId() : null;
-        List<Audience> result = new ArrayList<>();
-        for (AudienceDto dto : dtos) {
-            if (!dto.isApproved()) {
-                continue;
-            }
-            if (dto.getTargetingStatus() != null && dto.getTargetingStatus() != TargetingStatus.READY) {
-                continue;
-            }
-            if (dto.getTargetingSpec() == null || dto.getTargetingSpec().isBlank()) {
-                continue;
-            }
-            UUID audienceHypothesisId = dto.getHypothesisId();
-            if (audienceHypothesisId != null && (hypothesisId == null || !audienceHypothesisId.equals(hypothesisId))) {
-                continue;
-            }
-            Audience audience = new Audience();
-            audience.setId(dto.getId());
-            audience.setName(dto.getName());
-            audience.setDescription(dto.getDescription());
-            audience.setPrompt(dto.getPrompt());
-            audience.setModel(dto.getModel());
-            audience.setApproved(dto.isApproved());
-            audience.setTargetingSpec(dto.getTargetingSpec());
-            audience.setTargetingStatus(dto.getTargetingStatus());
-            audience.setTargetingNotes(dto.getTargetingNotes());
-            audience.setSource(dto.getSource());
-            audience.setLastReviewedBy(dto.getLastReviewedBy());
-            audience.setNiche(niche);
-            if (audienceHypothesisId != null && hypothesis != null && audienceHypothesisId.equals(hypothesisId)) {
-                audience.setHypothesis(hypothesis);
-            }
-            result.add(audience);
-        }
-        return result.isEmpty() ? List.of() : List.copyOf(result);
+        return hasElements(targeting.getInterests())
+                && hasElements(targeting.getJobTitles())
+                && hasElements(targeting.getBehaviors());
+    }
+
+    private static boolean hasElements(List<TargetingElementDto> elements) {
+        return elements != null && !elements.isEmpty();
     }
 
     private static String errorMessage(String method, String url, HttpStatusCode status, String body) {
@@ -246,9 +216,8 @@ public class BackendExperimentClient {
     }
 
     /**
-     * Aggregated experiment data used by the audience ad set service.
+     * Aggregated experiment data used by the ad set service.
      */
-    public record ReadyExperiment(Experiment experiment, List<Audience> audiences) {
+    public record ReadyExperiment(Experiment experiment, TargetingPackageDto targeting) {
     }
 }
-

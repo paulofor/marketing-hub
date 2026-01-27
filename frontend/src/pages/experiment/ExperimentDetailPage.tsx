@@ -21,8 +21,9 @@ import { useRebuildExperimentJourney } from "../../api/experiment/useRebuildExpe
 import type { JourneyAssignment, JourneyStep } from "../../api/journey/types";
 import DeliverablesTab from "./DeliverablesTab";
 import LeadPortalFlowTab from "./LeadPortalFlowTab";
-import PublicosTab from "./PublicosTab";
-import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
+import TargetingTab from "./TargetingTab";
+import { useTargetingElementsByNiche } from "../../api/targeting/useTargetingElementsByNiche";
+import type { TargetingElementType } from "../../api/targeting/types";
 
 export default function ExperimentDetailPage() {
   const { id } = useParams();
@@ -45,17 +46,25 @@ export default function ExperimentDetailPage() {
     useExperimentJourneyAssignments(expId);
   const { data: template } = useJourneyTemplate(data?.journeyTemplateId ?? undefined);
   const rebuildJourney = useRebuildExperimentJourney(expId);
-  const { data: audiences, isLoading: isLoadingAudiences } = useAudiencesByNiche(
-    nicheIdParam,
-  );
-  const hasApprovedAudiences = useMemo(() => {
-    if (!Array.isArray(audiences)) return false;
-    return audiences.some(
-      (audience) =>
-        audience.approved &&
-        (!audience.hypothesisId || audience.hypothesisId === hypothesisId),
+  const { data: targetingElements, isLoading: isLoadingTargeting } =
+    useTargetingElementsByNiche(nicheIdParam);
+  const hypothesisIdAsString = hypothesisId ? String(hypothesisId) : undefined;
+  const hasCompleteTargeting = useMemo(() => {
+    if (!Array.isArray(targetingElements)) return false;
+    const requiredTypes: TargetingElementType[] = [
+      "INTEREST",
+      "JOB_TITLE",
+      "BEHAVIOR",
+    ];
+    return requiredTypes.every((type) =>
+      targetingElements.some(
+        (element) =>
+          element.type === type &&
+          element.status === "APPROVED" &&
+          (!element.hypothesisId || element.hypothesisId === hypothesisIdAsString),
+      ),
     );
-  }, [audiences, hypothesisId]);
+  }, [targetingElements, hypothesisIdAsString]);
   useBreadcrumbs([
     {
       label: niche?.name || "...",
@@ -195,16 +204,16 @@ export default function ExperimentDetailPage() {
       actionLabel: hasExperimentPage ? undefined : "Editar experimento",
     },
     {
-      id: "approved-audience",
-      title: "Público aprovado para o experimento",
-      isMet: hasApprovedAudiences,
-      hint: isLoadingAudiences
-        ? "Verificando se há públicos aprovados..."
-        : hasApprovedAudiences
-          ? "Já existe pelo menos um público aprovado para este nicho/hipótese."
-          : "Aprove ao menos um público relacionado ao nicho ou à hipótese na aba Públicos para liberar a campanha.",
-      action: hasApprovedAudiences ? undefined : () => setTab("audiences"),
-      actionLabel: hasApprovedAudiences ? undefined : "Ir para Públicos",
+      id: "approved-targeting",
+      title: "Segmentação Meta aprovada",
+      isMet: hasCompleteTargeting,
+      hint: isLoadingTargeting
+        ? "Verificando elementos aprovados..."
+        : hasCompleteTargeting
+          ? "Já existem interesses, cargos e comportamentos aprovados para este nicho/hipótese."
+          : "Aprove ao menos um interesse, cargo e comportamento na aba Segmentação para liberar a campanha.",
+      action: hasCompleteTargeting ? undefined : () => setTab("targeting"),
+      actionLabel: hasCompleteTargeting ? undefined : "Ir para Segmentação",
     },
     {
       id: "platform",
@@ -509,8 +518,8 @@ export default function ExperimentDetailPage() {
           <Tabs.Trigger value="overview" className="nav-link">
             Overview
           </Tabs.Trigger>
-          <Tabs.Trigger value="audiences" className="nav-link">
-            Públicos
+          <Tabs.Trigger value="targeting" className="nav-link">
+            Segmentação
           </Tabs.Trigger>
           <Tabs.Trigger value="creatives" className="nav-link">
             Criativos
@@ -600,8 +609,8 @@ export default function ExperimentDetailPage() {
             </div>
           </div>
         </Tabs.Content>
-        <Tabs.Content value="audiences" asChild>
-          <PublicosTab
+        <Tabs.Content value="targeting" asChild>
+          <TargetingTab
             nicheId={data.nicheId}
             hypothesisId={data.hypothesisId}
             nicheName={niche?.name}

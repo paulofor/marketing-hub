@@ -17,8 +17,12 @@ export interface CreateNiche {
   chatDialogId?: number;
   differentiatedTechnologyId?: number;
   hypothesesToGenerate?: number;
-  audiencesToGenerate?: number;
-  audienceModel?: string;
+  interestsToGenerate?: number;
+  interestModel?: string;
+  jobTitlesToGenerate?: number;
+  jobTitleModel?: string;
+  behaviorsToGenerate?: number;
+  behaviorModel?: string;
 }
 
 export function useCreateNiche() {

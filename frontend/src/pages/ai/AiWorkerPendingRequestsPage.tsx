@@ -7,7 +7,9 @@ import {
   Mail,
   FileText,
   Workflow,
-  Users,
+  Target,
+  Briefcase,
+  Activity,
   Lightbulb,
   Clock3,
 } from "lucide-react";
@@ -30,7 +32,9 @@ type ExperimentPendingKey =
 type NichePendingKey =
   | "hypothesesToGenerate"
   | "detailedDescriptionsToGenerate"
-  | "audiencesToGenerate";
+  | "interestsToGenerate"
+  | "jobTitlesToGenerate"
+  | "behaviorsToGenerate";
 
 type PendingConfig<T extends string> = {
   key: T;
@@ -49,7 +53,9 @@ const EXPERIMENT_PENDING_CONFIG: PendingConfig<ExperimentPendingKey>[] = [
 const NICHE_PENDING_CONFIG: PendingConfig<NichePendingKey>[] = [
   { key: "hypothesesToGenerate", label: "Hipóteses", icon: Lightbulb },
   { key: "detailedDescriptionsToGenerate", label: "Descrições detalhadas", icon: FileText },
-  { key: "audiencesToGenerate", label: "Públicos", icon: Users },
+  { key: "interestsToGenerate", label: "Interesses", icon: Target },
+  { key: "jobTitlesToGenerate", label: "Cargos", icon: Briefcase },
+  { key: "behaviorsToGenerate", label: "Comportamentos", icon: Activity },
 ];
 
 function normalizeQuantity(value?: number | null) {
@@ -310,8 +316,8 @@ export default function AiWorkerPendingRequestsPage() {
                           <div>
                             <h3 className="h6 mb-1">{request.name}</h3>
                             <p className="mb-0 text-body-secondary">
-                              Solicitações relacionadas a hipóteses e públicos
-                              do nicho.
+                              Solicitações relacionadas a hipóteses e elementos
+                              de segmentação do nicho.
                             </p>
                           </div>
                           <span className="badge text-bg-info-subtle text-info-emphasis">

@@ -31,7 +31,9 @@ export default function EditNichePage() {
     extraTips: "",
     chatDialogId: undefined,
     hypothesesToGenerate: 0,
-    audiencesToGenerate: 0,
+    interestsToGenerate: 0,
+    jobTitlesToGenerate: 0,
+    behaviorsToGenerate: 0,
   });
 
   useEffect(() => {

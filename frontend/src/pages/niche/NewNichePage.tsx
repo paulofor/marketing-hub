@@ -23,7 +23,9 @@ export default function NewNichePage() {
     extraTips: "",
     chatDialogId: undefined as number | undefined,
     hypothesesToGenerate: 0,
-    audiencesToGenerate: 0,
+    interestsToGenerate: 0,
+    jobTitlesToGenerate: 0,
+    behaviorsToGenerate: 0,
   });
 
   const submit = () => {
@@ -109,16 +111,44 @@ export default function NewNichePage() {
           setForm({ ...form, hypothesesToGenerate: Number(e.target.value) })
         }
       />
-      <input
-        type="number"
-        className="form-control mb-2"
-        placeholder="Qtd. de públicos para gerar"
-        value={form.audiencesToGenerate}
-        title="Quantidade de públicos que o Worker IA irá gerar"
-        onChange={(e) =>
-          setForm({ ...form, audiencesToGenerate: Number(e.target.value) })
-        }
-      />
+      <div className="row g-2 mb-2">
+        <div className="col-12 col-md-4">
+          <input
+            type="number"
+            className="form-control"
+            placeholder="Qtd. de interesses para gerar"
+            value={form.interestsToGenerate}
+            title="Quantidade de interesses que o Worker IA irá gerar"
+            onChange={(e) =>
+              setForm({ ...form, interestsToGenerate: Number(e.target.value) })
+            }
+          />
+        </div>
+        <div className="col-12 col-md-4">
+          <input
+            type="number"
+            className="form-control"
+            placeholder="Qtd. de cargos para gerar"
+            value={form.jobTitlesToGenerate}
+            title="Quantidade de cargos que o Worker IA irá gerar"
+            onChange={(e) =>
+              setForm({ ...form, jobTitlesToGenerate: Number(e.target.value) })
+            }
+          />
+        </div>
+        <div className="col-12 col-md-4">
+          <input
+            type="number"
+            className="form-control"
+            placeholder="Qtd. de comportamentos para gerar"
+            value={form.behaviorsToGenerate}
+            title="Quantidade de comportamentos que o Worker IA irá gerar"
+            onChange={(e) =>
+              setForm({ ...form, behaviorsToGenerate: Number(e.target.value) })
+            }
+          />
+        </div>
+      </div>
       <textarea
         className="form-control mb-2"
         placeholder="Segmentação-base (Brasil)"

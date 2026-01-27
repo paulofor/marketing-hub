@@ -1,17 +1,17 @@
-import { Fragment, useEffect } from "react";
+import { Fragment } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import { useExperimentsByHypothesis } from "../../api/experiment/useExperimentsByHypothesis";
-import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
+import { useTargetingElementsByNiche } from "../../api/targeting/useTargetingElementsByNiche";
 import { useInstantFormsByHypothesis } from "../../api/hypothesis/useInstantFormsByHypothesis";
 import PageTitle from "../../components/PageTitle";
 import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
 import nicheIcon from "../../assets/icons/niche-icon.svg";
-import { AudienceApprovalCard } from "../../components/AudienceApprovalCard";
+import { TargetingElementCard } from "../../components/TargetingElementCard";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
-import { useForm } from "react-hook-form";
-import { useRequestAudiences } from "../../api/niche/useRequestAudiences";
+import type { TargetingElementType } from "../../api/targeting/types";
+import { TargetingGenerationForm } from "../../components/TargetingGenerationForm";
 import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
 
 export default function HypothesisDetailPage() {
@@ -23,17 +23,11 @@ export default function HypothesisDetailPage() {
     nicheId,
     hypothesisId,
   );
-  const { data: audiences } = useAudiencesByNiche(nicheId);
+  const { data: targetingElements, isFetching: isFetchingTargeting } =
+    useTargetingElementsByNiche(nicheId);
   const { data: instantForms, isLoading: isLoadingInstantForms } =
     useInstantFormsByHypothesis(hypothesisId);
-  const requestAudiences = useRequestAudiences(nicheNumericId);
   const { data: openAiModels, isLoading: isLoadingModels } = useOpenAiModels();
-  const { register, handleSubmit, reset, setValue } = useForm<{
-    quantity: number;
-    model?: string;
-  }>({
-    defaultValues: { quantity: 1, model: "" },
-  });
   useBreadcrumbs([
     {
       label: niche?.name || "...",
@@ -43,11 +37,6 @@ export default function HypothesisDetailPage() {
     { label: data?.title || "...", icon: hypothesisIcon },
   ]);
 
-  useEffect(() => {
-    const defaultModel =
-      niche?.audienceModel ?? openAiModels?.[0]?.code ?? "";
-    setValue("model", defaultModel);
-  }, [niche?.audienceModel, openAiModels, setValue]);
 
   const formatUsd = (value?: number | string | null) => {
     if (value === undefined || value === null) return undefined;
@@ -73,8 +62,42 @@ export default function HypothesisDetailPage() {
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
   const list = Array.isArray(experiments) ? experiments : [];
-  const audienceList = Array.isArray(audiences) ? audiences : [];
+  const targetingList = Array.isArray(targetingElements) ? targetingElements : [];
   const instantFormList = Array.isArray(instantForms) ? instantForms : [];
+  const targetingByType: Record<TargetingElementType, typeof targetingList> = {
+    INTEREST: targetingList.filter((element) => element.type === "INTEREST"),
+    JOB_TITLE: targetingList.filter((element) => element.type === "JOB_TITLE"),
+    BEHAVIOR: targetingList.filter((element) => element.type === "BEHAVIOR"),
+  };
+  const targetingConfigs: Array<{
+    type: TargetingElementType;
+    title: string;
+    description: string;
+    requested?: number | null;
+    model?: string | null;
+  }> = [
+    {
+      type: "INTEREST",
+      title: "Interesses",
+      description: "Segmentos prontos para usar como interesses salvos no Meta Ads.",
+      requested: niche?.interestsToGenerate,
+      model: niche?.interestModel,
+    },
+    {
+      type: "JOB_TITLE",
+      title: "Cargos",
+      description: "Funções profissionais associadas à persona desta hipótese.",
+      requested: niche?.jobTitlesToGenerate,
+      model: niche?.jobTitleModel,
+    },
+    {
+      type: "BEHAVIOR",
+      title: "Comportamentos",
+      description: "Ações e hábitos que indicam afinidade com a oferta.",
+      requested: niche?.behaviorsToGenerate,
+      model: niche?.behaviorModel,
+    },
+  ];
   const costLabel = formatUsd(data.costUsd) ?? "-";
   const costBrlLabel = formatBrl(data.cost) ?? "-";
   const expenseBrlLabel = formatBrl(data.expense) ?? "-";
@@ -184,81 +207,65 @@ ${data.entrega ?? ""}
         </div>
       </div>
 
-      <p className="mb-2">
-        Públicos gerados: {audienceList.length}/
-        {niche?.audiencesToGenerate ?? 0}
-      </p>
-      <div className="d-flex align-items-center flex-wrap gap-2 mb-4">
-        <input
-          type="number"
-          min={1}
-          className="form-control w-auto"
-          title="Quantidade de públicos que o Worker IA irá gerar"
-          {...register("quantity", { valueAsNumber: true })}
-        />
-        <select
-          className="form-select w-auto"
-          title="Modelo utilizado pelo Worker IA"
-          disabled={requestAudiences.isPending || isLoadingModels}
-          {...register("model")}
-        >
-          {(openAiModels ?? []).map((modelOption) => (
-            <option key={modelOption.code} value={modelOption.code}>
-              {modelOption.name}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={handleSubmit(
-            async ({ quantity, model }) => {
-              if (!quantity || quantity <= 0) return;
-              const selectedModel =
-                model?.trim() || niche?.audienceModel || openAiModels?.[0]?.code;
-              try {
-                await requestAudiences.mutateAsync({
-                  quantity,
-                  model: selectedModel,
-                });
-                alert("Solicitação enviada!");
-                reset({ quantity: 1, model: selectedModel ?? "" });
-              } catch {
-                alert("Erro ao solicitar públicos");
-              }
-            },
-            (errors) => {
-              console.log("Validation errors", errors);
-            },
-          )}
-          disabled={requestAudiences.isPending || isLoadingModels}
-        >
-          Gerar Públicos
-        </button>
-        <span className="ms-2">
-          {requestAudiences.isPending || isFetchingNiche
-            ? "Atualizando..."
-            : `Solicitados: ${niche?.audiencesToGenerate ?? 0}`}
-        </span>
-      </div>
-
-      {audienceList.length === 0 ? (
-        <p className="text-muted">Nenhum público cadastrado para este nicho.</p>
-      ) : (
-        <div className="row row-cols-1 row-cols-md-2 g-4 mb-4">
-          {audienceList.map((a) => (
-            <div key={a.id} className="col">
-              <AudienceApprovalCard
-                audience={a}
-                nicheId={nicheId}
-                badgeLabel={
-                  a.hypothesisId === hypothesisId ? "Hipótese" : "Nicho"
-                }
-              />
+      <section className="mb-4">
+        <h5 className="mb-2">Segmentação Meta Ads</h5>
+        <p className="text-body-secondary">
+          Localização fixa: Brasil. Gere e aprove elementos separados por interesses, cargos e comportamentos para este nicho.
+        </p>
+        <div className="row row-cols-1 row-cols-lg-3 g-3 mb-3">
+          {targetingConfigs.map((config) => (
+            <div key={config.type} className="col">
+              <div className="border rounded-3 p-3 h-100 d-flex flex-column gap-3">
+                <div>
+                  <strong>{config.title}</strong>
+                  <p className="text-body-secondary small mb-0">
+                    {config.description}
+                  </p>
+                  <span className="badge text-bg-light mt-2">
+                    {targetingByType[config.type].length} cadastrados
+                  </span>
+                </div>
+                <TargetingGenerationForm
+                  nicheId={nicheNumericId}
+                  type={config.type}
+                  openAiModels={openAiModels}
+                  defaultModel={config.model ?? openAiModels?.[0]?.code}
+                  requestedTotal={config.requested}
+                  isLoadingModels={isLoadingModels}
+                  isFetchingStatus={isFetchingTargeting || isFetchingNiche}
+                  ctaLabel={`Gerar ${config.title.toLowerCase()}`}
+                />
+              </div>
             </div>
           ))}
         </div>
-      )}
+        {targetingConfigs.map((config) => (
+          <div key={`${config.type}-list`} className="mb-5">
+            <div className="d-flex align-items-center mb-3">
+              <h6 className="mb-0">{config.title}</h6>
+              <span className="badge text-bg-secondary ms-2">
+                {targetingByType[config.type].length}
+              </span>
+            </div>
+            {targetingByType[config.type].length === 0 ? (
+              <p className="text-muted">Nenhum elemento de {config.title.toLowerCase()} foi cadastrado ainda.</p>
+            ) : (
+              <div className="row row-cols-1 row-cols-md-2 g-3">
+                {targetingByType[config.type].map((element) => (
+                  <div key={element.id} className="col">
+                    <TargetingElementCard
+                      element={element}
+                      badgeLabel={
+                        element.hypothesisId === hypothesisId ? "Hipótese" : "Nicho"
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </section>
 
       <div className="card mb-4">
         <div className="card-header">

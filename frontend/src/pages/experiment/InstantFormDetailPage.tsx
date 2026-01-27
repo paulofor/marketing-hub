@@ -11,7 +11,10 @@ import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
 import nicheIcon from "../../assets/icons/niche-icon.svg";
-import { useFacebookAdSetExperimentsReady } from "../../api/useFacebookAdSetExperimentsReady";
+import {
+  useFacebookAdSetExperimentsReady,
+  type ReadyTargetingElement,
+} from "../../api/useFacebookAdSetExperimentsReady";
 
 function formatCurrency(value?: number | string | null) {
   if (value == null) return "—";
@@ -136,6 +139,65 @@ export default function InstantFormDetailPage() {
 
   const approvalBadgeClass = instantForm.approved ? "text-bg-success" : "text-bg-secondary";
   const approvalLabel = instantForm.approved ? "Aprovado" : "Pendente";
+
+  const renderTargetingGroup = (
+    label: string,
+    items?: ReadyTargetingElement[] | null,
+  ) => {
+    if (!items || items.length === 0) {
+      return (
+        <div className="col" key={label}>
+          <div className="card h-100 border border-dashed border-2 border-secondary-subtle">
+            <div className="card-body text-center text-body-secondary">
+              <strong className="d-block mb-1">{label}</strong>
+              <span className="small">Nenhum elemento aprovado.</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="col" key={label}>
+        <div className="card h-100">
+          <div className="card-body">
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <strong>{label}</strong>
+              <span className="badge text-bg-success">{items.length}</span>
+            </div>
+            <ul className="list-unstyled mb-0 d-flex flex-column gap-3">
+              {items.map((item) => (
+                <li key={`${label}-${item.id}`}>
+                  <div className="fw-semibold">{item.term}</div>
+                  {item.description ? (
+                    <p className="text-muted small mb-1">{item.description}</p>
+                  ) : null}
+                  <dl className="row small mb-0">
+                    <dt className="col-sm-4">Modelo</dt>
+                    <dd className="col-sm-8">{item.model ?? "—"}</dd>
+                    <dt className="col-sm-4">Meta ID</dt>
+                    <dd className="col-sm-8">{item.metaId ?? "—"}</dd>
+                    <dt className="col-sm-4">Prompt</dt>
+                    <dd className="col-sm-8">
+                      {item.prompt ? (
+                        <pre
+                          className="bg-body-tertiary rounded-3 p-2 mb-0"
+                          style={{ whiteSpace: "pre-wrap" }}
+                        >
+                          {item.prompt}
+                        </pre>
+                      ) : (
+                        <span className="text-muted">—</span>
+                      )}
+                    </dd>
+                  </dl>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="mt-3">
@@ -306,7 +368,7 @@ export default function InstantFormDetailPage() {
           ) : !facebookPayload ? (
             <p className="text-muted mb-0">
               Nenhuma preparação encontrada para este experimento. Verifique se ele está elegível na fila de campanhas e se as
-              audiências foram aprovadas.
+              os elementos de segmentação foram aprovados.
             </p>
           ) : (
             <div className="row gy-4">
@@ -393,43 +455,16 @@ export default function InstantFormDetailPage() {
                 </dl>
               </div>
               <div className="col-12">
-                <h6 className="text-uppercase text-muted small">Audiências aprovadas</h6>
-                {facebookPayload.audiences && facebookPayload.audiences.length > 0 ? (
-                  <ul className="list-group list-group-flush">
-                    {facebookPayload.audiences.map((audience) => (
-                      <li key={audience.id} className="list-group-item px-0">
-                        <div className="d-flex flex-column flex-md-row gap-3 justify-content-between align-items-md-start">
-                          <div>
-                            <div className="fw-semibold">{audience.name}</div>
-                            {audience.description ? (
-                              <p className="text-muted small mb-2">{audience.description}</p>
-                            ) : null}
-                            <dl className="row small mb-0">
-                              <dt className="col-sm-3">Modelo</dt>
-                              <dd className="col-sm-9">{audience.model ?? "—"}</dd>
-                              <dt className="col-sm-3">Prompt</dt>
-                              <dd className="col-sm-9">
-                                {audience.prompt ? (
-                                  <pre
-                                    className="bg-body-tertiary rounded-3 p-2 mb-0"
-                                    style={{ whiteSpace: "pre-wrap" }}
-                                  >
-                                    {audience.prompt}
-                                  </pre>
-                                ) : (
-                                  <span className="text-muted">—</span>
-                                )}
-                              </dd>
-                            </dl>
-                          </div>
-                          <span className="badge text-bg-success align-self-start">Aprovada</span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                <h6 className="text-uppercase text-muted small">Segmentação aprovada</h6>
+                {facebookPayload.targeting ? (
+                  <div className="row row-cols-1 row-cols-lg-3 g-3">
+                    {renderTargetingGroup("Interesses", facebookPayload.targeting.interests)}
+                    {renderTargetingGroup("Cargos", facebookPayload.targeting.jobTitles)}
+                    {renderTargetingGroup("Comportamentos", facebookPayload.targeting.behaviors)}
+                  </div>
                 ) : (
                   <p className="text-muted mb-0">
-                    Nenhuma audiência aprovada foi localizada para este experimento.
+                    Nenhum elemento aprovado foi localizado para este experimento.
                   </p>
                 )}
               </div>

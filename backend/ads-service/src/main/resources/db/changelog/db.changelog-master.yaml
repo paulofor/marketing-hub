@@ -422,5 +422,5 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
   - include:
-      file: V2034_01_20__replace_audience_with_targeting_elements.sql
+      file: V2034_01_21__replace_audience_with_targeting_elements.sql
       relativeToChangelogFile: true

@@ -1,3 +1,4 @@
+--liquibase formatted sql
 --changeset repo:2034-01-20-drop-audience-tables dbms:mysql
 DROP TABLE IF EXISTS audience_targeting_seed;
 DROP TABLE IF EXISTS audience;

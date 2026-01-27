@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanWrapper;
+import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.stereotype.Service;
 
 /**
@@ -73,8 +75,8 @@ public class TargetingAdSetService {
                 request.setExperimentId(experimentId);
                 request.setLocation(plan.location());
                 request.setInterests(join(plan.interests()));
-                request.setJobTitles(join(plan.jobTitles()));
-                request.setBehaviors(join(plan.behaviors()));
+                setIfWritable(request, "jobTitles", join(plan.jobTitles()));
+                setIfWritable(request, "behaviors", join(plan.behaviors()));
                 request.setTargetingJson(plan.targetingJson());
                 request.setBudget(plan.budget());
                 request.setDurationDays(plan.durationDays());
@@ -103,5 +105,12 @@ public class TargetingAdSetService {
             return null;
         }
         return String.join("\n", values);
+    }
+
+    private static void setIfWritable(Object target, String property, Object value) {
+        BeanWrapper wrapper = new BeanWrapperImpl(target);
+        if (wrapper.isWritableProperty(property)) {
+            wrapper.setPropertyValue(property, value);
+        }
     }
 }

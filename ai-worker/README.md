@@ -1,13 +1,13 @@
 # AI Worker
 
-Este projeto executa em segundo plano para processar dados cadastrados no Marketing Hub com auxílio do ChatGPT. Ele reutiliza as entidades do **ads-service** geradas no backend e copiadas automaticamente para `lib/ads-service.jar`, eliminando a necessidade de baixar artefatos do GitHub Packages. Durante o processamento, campos como `name` podem ser gerados pela IA.
+Este projeto executa em segundo plano para processar dados cadastrados no Marketing Hub com auxílio do ChatGPT. Ele reutiliza as entidades do **ads-service** publicadas no GitHub Packages, garantindo que o modelo de dados esteja sempre alinhado ao backend. Durante o processamento, campos como `name` podem ser gerados pela IA.
 
 ## Pré-requisitos
 - Java 21
 - Maven
 - MySQL em execução conforme as configurações de `application.properties`.
 
-> Antes de compilar o worker, execute `mvn package -DskipTests` em `backend/ads-service` para garantir que o arquivo `lib/ads-service.jar` esteja atualizado.
+> Antes de compilar o worker, publique o **ads-service** com `cd backend/ads-service && mvn -s ../settings.xml deploy` para disponibilizar o artefato no GitHub Packages.
 
 ## Como compilar
 
@@ -29,7 +29,7 @@ mvn spring-boot:run
 
 ## Executar com Docker
 
-> Antes de gerar a imagem, garanta que `lib/ads-service.jar` esteja atualizado executando `mvn package -DskipTests` em `backend/ads-service`.
+> Antes de gerar a imagem, publique o **ads-service** no GitHub Packages com `cd backend/ads-service && mvn -s ../settings.xml deploy`.
 
 1. Gere a imagem localmente:
    ```bash

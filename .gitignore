@@ -38,5 +38,3 @@ local/
 /vitrines/frontend/node_modules
 /vitrines/frontend/dist
 /vitrines/backend/target
-
-!/ai-worker/lib/ads-service.jar

@@ -72,13 +72,11 @@
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- reuse entities from the ads-service package copied into lib -->
+        <!-- reuse entities from the ads-service package published to GitHub Packages -->
         <dependency>
             <groupId>com.marketinghub</groupId>
             <artifactId>ads-service</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/ads-service.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -100,9 +98,16 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <finalName>app</finalName>
-                    <includeSystemScope>true</includeSystemScope>
                 </configuration>
             </plugin>
         </plugins>
     </build>
+
+    <repositories>
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/paulofor/marketing-hub</url>
+        </repository>
+    </repositories>
 </project>

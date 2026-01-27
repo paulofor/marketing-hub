@@ -89,6 +89,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            GITHUB_ACTOR=${{ github.actor }}
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/ai-worker:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/ai-worker:buildcache,mode=max
       - name: Expose image tag

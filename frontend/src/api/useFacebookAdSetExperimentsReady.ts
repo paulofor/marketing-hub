@@ -1,15 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
-export interface ReadyAudience {
-  id: number;
-  name: string;
-  description?: string | null;
-  prompt?: string | null;
-  model?: string | null;
-  approved: boolean;
-}
-
 export interface ReadyHypothesis {
   id: string;
   title: string;
@@ -51,11 +42,37 @@ export interface ReadyExperiment {
   } | null;
 }
 
+export interface ReadyTargetingElement {
+  id: number;
+  marketNicheId: number;
+  hypothesisId?: string | null;
+  type: "INTEREST" | "JOB_TITLE" | "BEHAVIOR";
+  term: string;
+  description?: string | null;
+  prompt?: string | null;
+  model?: string | null;
+  source?: "MANUAL" | "AI" | null;
+  status: "DRAFT" | "NEEDS_REVIEW" | "APPROVED" | "REJECTED";
+  notes?: string | null;
+  lastReviewedBy?: string | null;
+  metaId?: string | null;
+  metaKey?: string | null;
+  confidence?: number | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface ReadyTargetingPackage {
+  interests: ReadyTargetingElement[];
+  jobTitles: ReadyTargetingElement[];
+  behaviors: ReadyTargetingElement[];
+}
+
 export interface ExperimentReadyForAdSet {
   experiment: ReadyExperiment;
   niche: ReadyNiche | null;
   hypothesis: ReadyHypothesis | null;
-  audiences: ReadyAudience[];
+  targeting: ReadyTargetingPackage;
 }
 
 export function useFacebookAdSetExperimentsReady() {
@@ -70,4 +87,3 @@ export function useFacebookAdSetExperimentsReady() {
     staleTime: 1000 * 30,
   });
 }
-

@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useNiches } from "../../api/niche/useNiches";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
 import { useExperimentsByNiche } from "../../api/experiment/useExperimentsByNiche";
-import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
+import { useTargetingElementsByNiche } from "../../api/targeting/useTargetingElementsByNiche";
 import PageTitle from "../../components/PageTitle";
 import nicheIcon from "../../assets/icons/niche-icon.svg";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
@@ -29,7 +29,7 @@ export default function NicheListPage() {
             <thead>
               <tr>
                 <th>Nome</th>
-                <th>Públicos gerados</th>
+                <th>Segmentação (I/C/B)</th>
                 <th>Hipóteses</th>
                 <th>Experimentos</th>
                 <th>Ações</th>
@@ -50,13 +50,19 @@ export default function NicheListPage() {
 function NicheRow({ niche }: { niche: { id: number; name: string } }) {
   const { data: hyps } = useHypothesesByNiche(String(niche.id), "ALL");
   const { data: exps } = useExperimentsByNiche(String(niche.id));
-  const { data: audiences } = useAudiencesByNiche(String(niche.id));
+  const { data: targeting } = useTargetingElementsByNiche(String(niche.id));
+  const targetingList = Array.isArray(targeting) ? targeting : [];
+  const interestCount = targetingList.filter((item) => item.type === "INTEREST").length;
+  const jobTitleCount = targetingList.filter((item) => item.type === "JOB_TITLE").length;
+  const behaviorCount = targetingList.filter((item) => item.type === "BEHAVIOR").length;
   return (
     <tr>
       <td>
         <Link to={`/niches/${niche.id}`}>{niche.name}</Link>
       </td>
-      <td>{Array.isArray(audiences) ? audiences.length : 0}</td>
+      <td>
+        I: {interestCount} · C: {jobTitleCount} · B: {behaviorCount}
+      </td>
       <td>{Array.isArray(hyps) ? hyps.length : 0}</td>
       <td>{Array.isArray(exps) ? exps.length : 0}</td>
       <td>

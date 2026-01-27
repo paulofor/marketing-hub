@@ -3,14 +3,15 @@ import { Link, useParams } from "react-router-dom";
 import { useNiche } from "../../api/niche/useNiche";
 import { useUpdateNiche } from "../../api/niche/useUpdateNiche";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
-import { useAudiencesByNiche } from "../../api/audience/useAudiencesByNiche";
+import { useTargetingElementsByNiche } from "../../api/targeting/useTargetingElementsByNiche";
 import PageTitle from "../../components/PageTitle";
 import nicheIcon from "../../assets/icons/niche-icon.svg";
-import { AudienceApprovalCard } from "../../components/AudienceApprovalCard";
+import { TargetingElementCard } from "../../components/TargetingElementCard";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import { useChatDialog } from "../../api/chatDialog/useChatDialog";
 import { useForm } from "react-hook-form";
-import { useRequestAudiences } from "../../api/niche/useRequestAudiences";
+import type { TargetingElementType } from "../../api/targeting/types";
+import { TargetingGenerationForm } from "../../components/TargetingGenerationForm";
 import { useRequestHypotheses } from "../../api/niche/useRequestHypotheses";
 import { useRequestDetailedDescriptions } from "../../api/niche/useRequestDetailedDescriptions";
 import { useNicheDetailedDescriptions } from "../../api/niche/useNicheDetailedDescriptions";
@@ -34,7 +35,9 @@ import {
   Plus,
   Sparkles,
   Trash2,
-  Users,
+  Target,
+  Briefcase,
+  Activity,
 } from "lucide-react";
 import "./NicheDetailPage.css";
 
@@ -63,12 +66,12 @@ export default function NicheDetailPage() {
   const { data, isLoading, isFetching } = useNiche(id);
   const { data: chatDialog } = useChatDialog(data?.chatDialogId);
   const { data: hypotheses } = useHypothesesByNiche(nicheId, "ALL");
-  const { data: audiences } = useAudiencesByNiche(nicheId);
+  const { data: targetingElements, isFetching: isFetchingTargeting } =
+    useTargetingElementsByNiche(nicheId);
   const { data: experiments } = useExperimentsByNiche(nicheId);
   const { data: deliverables } = useDeliverablesByNiche(nicheId);
   const { data: informationSources } = useInformationSourcesByNiche(nicheId);
   const { data: detailedDescriptions } = useNicheDetailedDescriptions(nicheId);
-  const requestAudiences = useRequestAudiences(id);
   const requestHypotheses = useRequestHypotheses(id);
   const requestDetailedDescriptions = useRequestDetailedDescriptions(id);
   const updateDetailedDescriptionStatus = useUpdateNicheDetailedDescriptionStatus();
@@ -86,14 +89,6 @@ export default function NicheDetailPage() {
   );
   const [editingRoleIndex, setEditingRoleIndex] = useState<number | null>(null);
   const [updatingDescriptionId, setUpdatingDescriptionId] = useState<number | null>(null);
-  const {
-    register: registerAudienceRequest,
-    handleSubmit: handleSubmitAudienceRequest,
-    reset: resetAudienceRequest,
-    setValue: setAudienceRequestValue,
-  } = useForm<{ quantity: number; model?: string }>({
-    defaultValues: { quantity: 1, model: "" },
-  });
   const {
     register: registerHypothesisRequest,
     handleSubmit: handleSubmitHypothesisRequest,
@@ -171,11 +166,6 @@ export default function NicheDetailPage() {
   }, [data?.detailedDescriptionModel, openAiModels, setDescriptionRequestValue]);
 
   useEffect(() => {
-    const defaultAudienceModel = data?.audienceModel ?? openAiModels?.[0]?.code ?? "";
-    setAudienceRequestValue("model", defaultAudienceModel);
-  }, [data?.audienceModel, openAiModels, setAudienceRequestValue]);
-
-  useEffect(() => {
     setHypothesisRequestValue(
       "differentiatedTechnologyId",
       data?.differentiatedTechnologyId ?? undefined,
@@ -198,7 +188,7 @@ export default function NicheDetailPage() {
         return bDate - aDate;
       })
     : [];
-  const audienceList = Array.isArray(audiences) ? audiences : [];
+  const targetingList = Array.isArray(targetingElements) ? targetingElements : [];
   const experimentsList = Array.isArray(experiments) ? experiments : [];
   const deliverableList = Array.isArray(deliverables)
     ? [...deliverables].sort((a, b) => {
@@ -217,6 +207,44 @@ export default function NicheDetailPage() {
   const activeDetailedDescriptions = detailedDescriptionList.filter(
     (description) => description.active ?? true,
   );
+  const targetingByType: Record<TargetingElementType, typeof targetingList> = {
+    INTEREST: targetingList.filter((element) => element.type === "INTEREST"),
+    JOB_TITLE: targetingList.filter((element) => element.type === "JOB_TITLE"),
+    BEHAVIOR: targetingList.filter((element) => element.type === "BEHAVIOR"),
+  };
+  const targetingConfigs: Array<{
+    type: TargetingElementType;
+    title: string;
+    description: string;
+    requested?: number | null;
+    model?: string | null;
+    anchor: string;
+  }> = [
+    {
+      type: "INTEREST",
+      title: "Interesses",
+      description: "Segmentos para preencher o campo de interesses salvos no Meta Ads.",
+      requested: data?.interestsToGenerate,
+      model: data?.interestModel,
+      anchor: "niche-interests",
+    },
+    {
+      type: "JOB_TITLE",
+      title: "Cargos",
+      description: "Funções profissionais priorizadas ao configurar a persona no Ads Manager.",
+      requested: data?.jobTitlesToGenerate,
+      model: data?.jobTitleModel,
+      anchor: "niche-job-titles",
+    },
+    {
+      type: "BEHAVIOR",
+      title: "Comportamentos",
+      description: "Ações e hábitos monitorados pelo Meta para refinar a entrega.",
+      requested: data?.behaviorsToGenerate,
+      model: data?.behaviorModel,
+      anchor: "niche-behaviors",
+    },
+  ];
   const informationSourceList = Array.isArray(informationSources)
     ? [...informationSources].sort((a, b) => {
         const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -291,11 +319,15 @@ export default function NicheDetailPage() {
     { label: "Receita total", value: formatCurrency(data.totalRevenue) },
     { label: "Hipóteses a gerar", value: data.hypothesesToGenerate },
     { label: "Modelo para hipóteses", value: data.hypothesisModel },
-    { label: "Modelo para públicos", value: data.audienceModel },
+    { label: "Modelo para interesses", value: data.interestModel },
+    { label: "Modelo para cargos", value: data.jobTitleModel },
+    { label: "Modelo para comportamentos", value: data.behaviorModel },
     { label: "Modelo para descrições", value: data.detailedDescriptionModel },
     { label: "Descrições a gerar", value: data.detailedDescriptionsToGenerate },
     { label: "Tecnologia diferenciada", value: differentiatedTechnologyName },
-    { label: "Públicos a gerar", value: data.audiencesToGenerate },
+    { label: "Interesses a gerar", value: data.interestsToGenerate },
+    { label: "Cargos a gerar", value: data.jobTitlesToGenerate },
+    { label: "Comportamentos a gerar", value: data.behaviorsToGenerate },
     { label: "Segmentação base", value: data.baseSegmentation },
     { label: "Interesses", value: data.interests },
     { label: "Filtros demográficos", value: data.demographicFilters },
@@ -316,11 +348,25 @@ export default function NicheDetailPage() {
   ];
   const stats = [
     {
-      icon: Users,
-      label: "Públicos",
-      value: `${audienceList.length}`,
-      helper: `Meta: ${data.audiencesToGenerate ?? 0}`,
-      targetId: "niche-audiences",
+      icon: Target,
+      label: "Interesses",
+      value: `${targetingByType.INTEREST.length}`,
+      helper: `Meta: ${data.interestsToGenerate ?? 0}`,
+      targetId: "niche-interests",
+    },
+    {
+      icon: Briefcase,
+      label: "Cargos",
+      value: `${targetingByType.JOB_TITLE.length}`,
+      helper: `Meta: ${data.jobTitlesToGenerate ?? 0}`,
+      targetId: "niche-job-titles",
+    },
+    {
+      icon: Activity,
+      label: "Comportamentos",
+      value: `${targetingByType.BEHAVIOR.length}`,
+      helper: `Meta: ${data.behaviorsToGenerate ?? 0}`,
+      targetId: "niche-behaviors",
     },
     {
       icon: Lightbulb,
@@ -353,10 +399,6 @@ export default function NicheDetailPage() {
       helper: createdAtLabel ? `Criado em ${createdAtLabel}` : undefined,
     },
   ];
-  const audienceStatusLabel =
-    requestAudiences.isPending || (isFetching && !isLoading)
-      ? "Atualizando públicos..."
-      : `Solicitados ao Worker: ${data.audiencesToGenerate ?? 0}`;
   const hypothesisStatusLabel =
     requestHypotheses.isPending || (isFetching && !isLoading)
       ? "Atualizando hipóteses..."
@@ -438,26 +480,6 @@ export default function NicheDetailPage() {
   const onSaveRoles = () => {
     updateNiche.mutate({ ...data, interestList: interestItems, roleList: roleItems });
   };
-  const onRequestAudiences = handleSubmitAudienceRequest(
-    async ({ quantity, model }) => {
-      if (!quantity || quantity <= 0) return;
-      const selectedModel =
-        model?.trim() || data?.audienceModel || openAiModels?.[0]?.code;
-      try {
-        await requestAudiences.mutateAsync({
-          quantity,
-          model: selectedModel,
-        });
-        alert("Solicitação enviada!");
-        resetAudienceRequest({ quantity: 1, model: selectedModel ?? "" });
-      } catch {
-        alert("Erro ao solicitar públicos");
-      }
-    },
-    (errors) => {
-      console.log("Validation errors", errors);
-    },
-  );
   const onRequestHypotheses = handleSubmitHypothesisRequest(
     async ({ quantity, model, differentiatedTechnologyId, detailedDescriptionId }) => {
       if (!quantity || quantity <= 0) return;
@@ -1319,84 +1341,90 @@ export default function NicheDetailPage() {
           </div>
         )}
       </section>
-      <section className="niche-section" aria-labelledby="niche-audiences">
+      <section className="niche-section" aria-labelledby="niche-targeting">
         <div className="niche-section__header">
           <div>
-            <h2 className="niche-section__title" id="niche-audiences">
-              Públicos
+            <h2 className="niche-section__title" id="niche-targeting">
+              Segmentação Meta Ads
             </h2>
             <p className="niche-section__subtitle">
-              {`${audienceList.length}/${data.audiencesToGenerate ?? 0} gerados ou pendentes`}
+              {targetingList.length === 0
+                ? "Nenhum elemento disponível ainda. Solicite novos itens ao Worker IA."
+                : `${targetingList.length} elementos aprovados ou pendentes.`}
             </p>
-            <p className="niche-section__status">{audienceStatusLabel}</p>
+            <p className="niche-section__status">
+              {isFetchingTargeting || (isFetching && !isLoading)
+                ? "Atualizando segmentação..."
+                : "Mantenha interesses, cargos e comportamentos aprovados para liberar os experimentos."}
+            </p>
           </div>
-          <form
-            className="niche-section__actions"
-            onSubmit={onRequestAudiences}
-          >
-            <div className="niche-section__action-group niche-section__action-group--quantity">
-              <label htmlFor="audience-quantity" className="form-label">
-                Quantidade <span aria-hidden="true">*</span>
-              </label>
-              <input
-                id="audience-quantity"
-                type="number"
-                min={1}
-                className="form-control"
-                title="Quantidade de públicos que o Worker IA irá gerar"
-                disabled={requestAudiences.isPending}
-                {...registerAudienceRequest("quantity", { valueAsNumber: true })}
-              />
-            </div>
-            <div className="niche-section__action-group">
-              <label htmlFor="audience-model" className="form-label">Modelo</label>
-              <select
-                id="audience-model"
-                className="form-select"
-                disabled={requestAudiences.isPending || isLoadingModels}
-                {...registerAudienceRequest("model")}
-              >
-                {(openAiModels ?? []).map((modelOption) => (
-                  <option key={modelOption.code} value={modelOption.code}>
-                    {modelOption.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button
-              type="submit"
-              className="btn btn-secondary"
-              disabled={requestAudiences.isPending || isLoadingModels}
-            >
-              {requestAudiences.isPending ? (
-                <span
-                  className="spinner-border spinner-border-sm"
-                  role="status"
-                  aria-hidden="true"
-                />
-              ) : (
-                <Sparkles size={18} />
-              )}
-              <span>Gerar Públicos</span>
-            </button>
-          </form>
         </div>
-        {audienceList.length === 0 ? (
-          <p className="niche-section__empty">Nenhum público ainda.</p>
-        ) : (
-          <div className="niche-section__grid">
-            {audienceList.map((a) => (
-              <AudienceApprovalCard
-                key={a.id}
-                audience={a}
-                nicheId={nicheId}
-                className="niche-section__card"
-              />
+        <div className="niche-section__body">
+          <div className="row row-cols-1 row-cols-md-3 g-3 mb-4">
+            {targetingConfigs.map((config) => (
+              <div key={config.type} className="col">
+                <div className="border rounded-3 p-3 h-100 d-flex flex-column gap-2">
+                  <div>
+                    <strong>{config.title}</strong>
+                    <p className="text-body-secondary small mb-1">
+                      {config.description}
+                    </p>
+                    <span className="badge text-bg-light">
+                      {targetingByType[config.type].length} cadastrados
+                    </span>
+                  </div>
+                  <TargetingGenerationForm
+                    nicheId={id}
+                    type={config.type}
+                    openAiModels={openAiModels}
+                    defaultModel={config.model ?? openAiModels?.[0]?.code}
+                    requestedTotal={config.requested}
+                    isLoadingModels={isLoadingModels}
+                    isFetchingStatus={isFetchingTargeting || (isFetching && !isLoading)}
+                    ctaLabel={`Gerar ${config.title.toLowerCase()}`}
+                    className="mt-auto"
+                  />
+                </div>
+              </div>
             ))}
           </div>
-        )}
+
+          {targetingConfigs.map((config) => (
+            <div key={`${config.type}-board`} id={config.anchor} className="mb-5">
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                  <h3 className="h5 mb-1">{config.title}</h3>
+                  <p className="text-body-secondary small mb-0">
+                    {targetingByType[config.type].length} elementos cadastrados para o nicho.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm"
+                  onClick={() => scrollToSection(config.anchor)}
+                >
+                  Ir para seção
+                </button>
+              </div>
+              {targetingByType[config.type].length === 0 ? (
+                <p className="niche-section__empty">
+                  Nenhum elemento de {config.title.toLowerCase()} foi gerado ainda.
+                </p>
+              ) : (
+                <div className="row row-cols-1 row-cols-md-2 g-4">
+                  {targetingByType[config.type].map((element) => (
+                    <div key={element.id} className="col">
+                      <TargetingElementCard element={element} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </section>
       <section className="niche-section" aria-labelledby="niche-hypotheses">
+
         <div className="niche-section__header">
           <div>
             <h2 className="niche-section__title" id="niche-hypotheses">

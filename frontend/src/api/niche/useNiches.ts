@@ -22,10 +22,14 @@ export interface MarketNiche {
   extraTips: string;
   hypothesesToGenerate?: number;
   hypothesisModel?: string;
+  interestsToGenerate?: number;
+  interestModel?: string;
+  jobTitlesToGenerate?: number;
+  jobTitleModel?: string;
+  behaviorsToGenerate?: number;
+  behaviorModel?: string;
   detailedDescriptionsToGenerate?: number;
   detailedDescriptionModel?: string;
-  audiencesToGenerate?: number;
-  audienceModel?: string;
   differentiatedTechnologyId?: number | null;
   hypothesisDetailedDescriptionId?: number | null;
   chatDialogId?: number;

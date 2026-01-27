@@ -16,13 +16,13 @@ import org.springframework.stereotype.Service;
  * Service responsible for creating ad set records from approved targeting elements.
  */
 @Service
-public class AudienceAdSetService {
-    private static final Logger log = LoggerFactory.getLogger(AudienceAdSetService.class);
+public class TargetingAdSetService {
+    private static final Logger log = LoggerFactory.getLogger(TargetingAdSetService.class);
     private final BackendExperimentClient backendClient;
-    private final AudienceAdSetChatGptClient chatGptClient;
+    private final TargetingAdSetChatGptClient chatGptClient;
 
-    public AudienceAdSetService(BackendExperimentClient backendClient,
-                                AudienceAdSetChatGptClient chatGptClient) {
+    public TargetingAdSetService(BackendExperimentClient backendClient,
+                                TargetingAdSetChatGptClient chatGptClient) {
         this.backendClient = backendClient;
         this.chatGptClient = chatGptClient;
     }
@@ -73,7 +73,8 @@ public class AudienceAdSetService {
                 request.setExperimentId(experimentId);
                 request.setLocation(plan.location());
                 request.setInterests(join(plan.interests()));
-                request.setLookalikes(join(plan.lookalikes()));
+                request.setJobTitles(join(plan.jobTitles()));
+                request.setBehaviors(join(plan.behaviors()));
                 request.setTargetingJson(plan.targetingJson());
                 request.setBudget(plan.budget());
                 request.setDurationDays(plan.durationDays());

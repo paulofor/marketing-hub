@@ -9,21 +9,21 @@ import org.springframework.stereotype.Component;
  * Scheduler that periodically generates ad sets from approved targeting elements.
  */
 @Component
-public class AudienceAdSetScheduler {
-    private static final Logger log = LoggerFactory.getLogger(AudienceAdSetScheduler.class);
-    private final AudienceAdSetService service;
+public class TargetingAdSetScheduler {
+    private static final Logger log = LoggerFactory.getLogger(TargetingAdSetScheduler.class);
+    private final TargetingAdSetService service;
 
-    public AudienceAdSetScheduler(AudienceAdSetService service) {
+    public TargetingAdSetScheduler(TargetingAdSetService service) {
         this.service = service;
     }
 
     @Scheduled(cron = "0 */5 * * * *")
     public void run() {
-        log.info("AudienceAdSetScheduler started");
+        log.info("TargetingAdSetScheduler started");
         try {
             service.generate();
         } finally {
-            log.info("AudienceAdSetScheduler finished");
+            log.info("TargetingAdSetScheduler finished");
         }
     }
 }

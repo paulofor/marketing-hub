@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenExpiredException;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenManager;
@@ -30,8 +31,10 @@ import reactor.core.publisher.Mono;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -263,21 +266,6 @@ public class FacebookCampaignService {
                 selectedAdSet = selectExperimentAdSet(experimentAdSets);
                 resolvedTargetingJson = resolveTargetingJsonFromBackend(selectedAdSet);
             }
-            String savedAudienceId = null;
-            String savedAudienceName = null;
-            if (StringUtils.hasText(resolvedTargetingJson)) {
-                savedAudienceName = buildSavedAudienceName(exp.name(), selectedAdSet);
-                String savedAudienceDescription = selectedAdSet != null ? selectedAdSet.prompt() : null;
-                savedAudienceId = facebookAdsService.createSavedAudience(
-                    config.adAccountId(),
-                    new FacebookAdsService.SavedAudienceRequest(
-                        savedAudienceName,
-                        savedAudienceDescription,
-                        resolvedTargetingJson
-                    )
-                );
-            }
-            String adSetTargetingJson = savedAudienceId == null ? resolvedTargetingJson : null;
             FacebookAdsService.AdSetRequest adSetRequest = new FacebookAdsService.AdSetRequest(
                 exp.name() + " - Ad Set",
                 campaignId,
@@ -289,8 +277,7 @@ public class FacebookCampaignService {
                 config.adSetBidAmount(),
                 resolvedPageId,
                 FacebookAdsService.BRAZIL_COUNTRY_CODE,
-                adSetTargetingJson,
-                savedAudienceId
+                resolvedTargetingJson
             );
             String adSetId = facebookAdsService.createAdSet(config.adAccountId(), adSetRequest);
             String resolvedImageUrl = resolveCreativeImageUrl(creative.imageUrl());
@@ -336,8 +323,6 @@ public class FacebookCampaignService {
                     adSetRequest.destinationType(),
                     adSetRequest.pageId(),
                     resolvedTargetingJson,
-                    savedAudienceId,
-                    savedAudienceName,
                     selectedAdSet != null ? selectedAdSet.id() : null
                 ),
                 new CreateCampaignRequest.AdCreative(
@@ -478,10 +463,51 @@ public class FacebookCampaignService {
     }
 
     private String resolveTargetingJsonFromBackend(ExperimentAdSet adSet) {
-        if (adSet == null || !StringUtils.hasText(adSet.targetingJson())) {
+        if (adSet == null) {
             return null;
         }
-        return adSet.targetingJson();
+        if (StringUtils.hasText(adSet.targetingJson())) {
+            return adSet.targetingJson();
+        }
+        ObjectNode targeting = objectMapper.createObjectNode();
+        mergeTargetingValues(targeting, "interests", adSet.interests());
+        mergeTargetingValues(targeting, "work_positions", adSet.jobTitles());
+        mergeTargetingValues(targeting, "behaviors", adSet.behaviors());
+        return targeting.isEmpty() ? null : targeting.toString();
+    }
+
+    private void mergeTargetingValues(ObjectNode targeting, String fieldName, String rawValues) {
+        if (targeting == null || !StringUtils.hasText(rawValues)) {
+            return;
+        }
+        List<String> values = splitLines(rawValues);
+        if (values.isEmpty()) {
+            return;
+        }
+        ArrayNode array = targeting.putArray(fieldName);
+        values.forEach(value -> {
+            ObjectNode item = objectMapper.createObjectNode();
+            item.put("name", value);
+            array.add(item);
+        });
+    }
+
+    private List<String> splitLines(String rawValues) {
+        if (!StringUtils.hasText(rawValues)) {
+            return List.of();
+        }
+        String[] parts = rawValues.split("\\r?\\n");
+        LinkedHashSet<String> unique = new LinkedHashSet<>();
+        for (String part : parts) {
+            if (part == null) {
+                continue;
+            }
+            String trimmed = part.trim();
+            if (!trimmed.isEmpty()) {
+                unique.add(trimmed);
+            }
+        }
+        return new ArrayList<>(unique);
     }
 
     private boolean hasTokenChangedSinceExpiration() {
@@ -586,8 +612,6 @@ public class FacebookCampaignService {
             String destinationType,
             String pageId,
             String targetingJson,
-            String savedAudienceId,
-            String savedAudienceName,
             Long experimentAdSetId
         ) {}
 
@@ -1013,15 +1037,6 @@ public class FacebookCampaignService {
             return instantFormDestination.shareLink();
         }
         return coalesce(creative.destinationUrl(), config.defaultWebsiteUrl());
-    }
-
-    private String buildSavedAudienceName(String experimentName, ExperimentAdSet adSet) {
-        StringBuilder builder = new StringBuilder(experimentName);
-        builder.append(" - Audience");
-        if (adSet != null && StringUtils.hasText(adSet.location())) {
-            builder.append(' ').append(adSet.location());
-        }
-        return builder.toString();
     }
 
 

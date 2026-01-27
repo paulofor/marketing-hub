@@ -94,7 +94,6 @@ class FacebookAdsServiceTest {
             "200",
             "42",
             "BR",
-            null,
             null
         );
         String id = service.createAdSet("1", request);
@@ -116,31 +115,6 @@ class FacebookAdsServiceTest {
     }
 
     @Test
-    void createAdSetIncludesSavedAudienceWhenProvided() throws Exception {
-        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"444\"}")
-            .addHeader("Content-Type", "application/json"));
-        FacebookAdsService.AdSetRequest request = new FacebookAdsService.AdSetRequest(
-            "Camp - Ad Set",
-            "123",
-            "1500",
-            "IMPRESSIONS",
-            "LINK_CLICKS",
-            "WEBSITE",
-            "LOWEST_COST_WITHOUT_CAP",
-            "200",
-            "42",
-            "BR",
-            "{\"geo_locations\":{\"countries\":[\"BR\"]}}",
-            "AUD-1"
-        );
-        service.createAdSet("1", request);
-        RecordedRequest recorded = takeRequest("request");
-        JsonNode targeting = objectMapper.readTree(recorded.getBody().inputStream()).get("targeting");
-        assertEquals("AUD-1", targeting.get("saved_audience_id").asText());
-        assertEquals("BR", targeting.get("geo_locations").get("countries").get(0).asText());
-    }
-
-    @Test
     void createAdSetRemovesLanguagesFromTargeting() throws Exception {
         server.enqueueResponse(new MockResponse().setBody("{\"id\":\"555\"}")
             .addHeader("Content-Type", "application/json"));
@@ -156,8 +130,7 @@ class FacebookAdsServiceTest {
             "200",
             "42",
             "BR",
-            targetingJson,
-            null
+            targetingJson
         );
 
         service.createAdSet("1", request);
@@ -188,8 +161,7 @@ class FacebookAdsServiceTest {
             "200",
             "42",
             "BR",
-            targetingJson,
-            null
+            targetingJson
         );
 
         service.createAdSet("1", request);
@@ -219,8 +191,7 @@ class FacebookAdsServiceTest {
             "200",
             "42",
             "BR",
-            targetingJson,
-            null
+            targetingJson
         );
 
         service.createAdSet("1", request);
@@ -250,8 +221,7 @@ class FacebookAdsServiceTest {
             "200",
             "42",
             "BR",
-            targetingJson,
-            null
+            targetingJson
         );
 
         service.createAdSet("1", request);
@@ -283,8 +253,7 @@ class FacebookAdsServiceTest {
             "200",
             "42",
             "BR",
-            targetingJson,
-            null
+            targetingJson
         );
 
         service.createAdSet("1", request);
@@ -401,53 +370,6 @@ class FacebookAdsServiceTest {
         assertEquals("https://example.com/landing", linkData.get("link").asText());
         assertEquals("https://example.com/landing", linkData.get("call_to_action").get("value").get("link").asText());
         assertEquals("123456789012345", linkData.get("call_to_action").get("value").get("lead_gen_form_id").asText());
-    }
-
-    @Test
-    void createSavedAudiencePostsCorrectRequest() throws Exception {
-        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"SA-1\"}")
-            .addHeader("Content-Type", "application/json"));
-        String targetingJson = "{\"geo_locations\":{\"countries\":[\"BR\"]}}";
-        String id = service.createSavedAudience(
-            "1",
-            new FacebookAdsService.SavedAudienceRequest("Audience", "Descrição", targetingJson)
-        );
-        RecordedRequest request = server.takeRequest(1, TimeUnit.SECONDS);
-        assertNotNull(request);
-        assertEquals("/v23.0/act_1/saved_audiences", request.getPath());
-        JsonNode body = objectMapper.readTree(request.getBody().inputStream());
-        assertEquals("Audience", body.get("name").asText());
-        assertEquals("Descrição", body.get("description").asText());
-        assertEquals("BR", body.get("targeting").get("geo_locations").get("countries").get(0).asText());
-        assertEquals("SA-1", id);
-    }
-
-    @Test
-    void createSavedAudienceNormalizesInterests() throws Exception {
-        server.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"6001\",\"name\":\"Pilates\"}]}" )
-            .addHeader("Content-Type", "application/json"));
-        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"SA-2\"}")
-            .addHeader("Content-Type", "application/json"));
-
-        String targetingJson = "{\"interests\":[\"Pilates\"]}";
-        String id = service.createSavedAudience(
-            "1",
-            new FacebookAdsService.SavedAudienceRequest("Audience", "Desc", targetingJson)
-        );
-
-        RecordedRequest searchRequest = takeRequest("request");
-        HttpUrl searchUrl = searchRequest.getRequestUrl();
-        assertNotNull(searchUrl);
-        assertEquals("/v23.0/search", searchUrl.encodedPath());
-        assertEquals("Pilates", searchUrl.queryParameter("q"));
-
-        RecordedRequest savedAudienceRequest = server.takeRequest(1, TimeUnit.SECONDS);
-        assertNotNull(savedAudienceRequest);
-        JsonNode body = objectMapper.readTree(savedAudienceRequest.getBody().inputStream());
-        JsonNode interests = body.get("targeting").get("interests");
-        assertEquals("6001", interests.get(0).get("id").asText());
-        assertEquals("Pilates", interests.get(0).get("name").asText());
-        assertEquals("SA-2", id);
     }
 
     @Test

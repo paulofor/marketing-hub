@@ -217,6 +217,12 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"602\",\"name\":\"Interesse B\"}]}")
             .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"701\",\"name\":\"Cargo 1\"}]}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"801\",\"name\":\"Comportamento X\"}]}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"802\",\"name\":\"Comportamento Y\"}]}")
+            .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}")
@@ -252,6 +258,12 @@ class FacebookCampaignServiceTest {
         assertTrue(firstInterestRequest.getPath().contains("/search?type=adinterest"));
         RecordedRequest secondInterestRequest = takeFacebookRequest("facebook request");
         assertTrue(secondInterestRequest.getPath().contains("/search?type=adinterest"));
+        RecordedRequest jobTitleRequest = takeFacebookRequest("facebook request");
+        assertTrue(jobTitleRequest.getPath().contains("class=job_title"));
+        RecordedRequest firstBehaviorRequest = takeFacebookRequest("facebook request");
+        assertTrue(firstBehaviorRequest.getPath().contains("class=behaviors"));
+        RecordedRequest secondBehaviorRequest = takeFacebookRequest("facebook request");
+        assertTrue(secondBehaviorRequest.getPath().contains("class=behaviors"));
 
         RecordedRequest adSetRequest = takeFacebookRequest("facebook request");
         assertEquals("/v23.0/act_1/adsets", adSetRequest.getPath());

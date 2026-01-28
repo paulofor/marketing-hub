@@ -48,21 +48,25 @@ public class TargetingElementChatGptClient {
     private static final String DOMAIN = "TARGETING_ELEMENT";
     private static final String RESPONSES_ENDPOINT = "/v1/responses";
     private static final String COMPLETION_WINDOW = "24h";
-    private static final Duration BATCH_POLL_INTERVAL = Duration.ofMillis(500);
-    private static final Duration BATCH_TIMEOUT = Duration.ofMinutes(2);
+    private static final Duration DEFAULT_BATCH_POLL_INTERVAL = Duration.ofMillis(500);
+    private static final Duration DEFAULT_BATCH_TIMEOUT = Duration.ofMinutes(5);
     private static final Set<String> TERMINAL_BATCH_STATUSES = Set.of("completed", "failed", "expired", "cancelled");
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
     private final AiGenerationRecorder generationRecorder;
     private final String defaultModel;
+    private final Duration batchPollInterval;
+    private final Duration batchTimeout;
 
     public TargetingElementChatGptClient(WebClient.Builder builder,
                                          ObjectMapper objectMapper,
                                          AiGenerationRecorder generationRecorder,
                                          @Value("${openai.api-key:}") String apiKey,
                                          @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-                                         @Value("${openai.model:gpt-3.5-turbo}") String defaultModel) {
+                                         @Value("${openai.model:gpt-3.5-turbo}") String defaultModel,
+                                         @Value("${openai.batch-poll-interval:PT0.5S}") Duration batchPollInterval,
+                                         @Value("${openai.batch-timeout:PT5M}") Duration batchTimeout) {
         this.webClient = builder
                 .baseUrl(baseUrl)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
@@ -71,6 +75,8 @@ public class TargetingElementChatGptClient {
         this.objectMapper = objectMapper;
         this.generationRecorder = generationRecorder;
         this.defaultModel = defaultModel;
+        this.batchPollInterval = normalizeDuration(batchPollInterval, DEFAULT_BATCH_POLL_INTERVAL);
+        this.batchTimeout = normalizeDuration(batchTimeout, DEFAULT_BATCH_TIMEOUT);
     }
 
     public record TargetingBatchRequest(MarketNiche niche, TargetingElementType type, int quantity, String model) {}
@@ -380,11 +386,11 @@ public class TargetingElementChatGptClient {
         OpenAiBatch current = initial;
         Instant start = Instant.now();
         while (!isTerminal(current)) {
-            if (Duration.between(start, Instant.now()).compareTo(BATCH_TIMEOUT) > 0) {
-                throw new IllegalStateException("Timed out waiting for OpenAI batch " + current.id());
+            if (Duration.between(start, Instant.now()).compareTo(batchTimeout) > 0) {
+                throw new IllegalStateException("Timed out waiting for OpenAI batch " + current.id() + " after " + batchTimeout);
             }
             try {
-                Thread.sleep(BATCH_POLL_INTERVAL.toMillis());
+                Thread.sleep(batchPollInterval.toMillis());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("Interrupted while waiting for OpenAI batch", e);
@@ -470,5 +476,12 @@ public class TargetingElementChatGptClient {
                                @com.fasterxml.jackson.annotation.JsonProperty("output_file_id") String outputFileId) {}
 
     private record OpenAiFile(String id) {}
+
+    private Duration normalizeDuration(Duration candidate, Duration fallback) {
+        if (candidate == null || candidate.isNegative() || candidate.isZero()) {
+            return fallback;
+        }
+        return candidate;
+    }
 }
 

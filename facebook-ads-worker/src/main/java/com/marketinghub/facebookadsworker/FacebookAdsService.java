@@ -16,6 +16,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
@@ -941,9 +942,27 @@ public class FacebookAdsService {
         return response.path("id").asText();
     }
 
-    public JsonNode getCampaignMetrics(String campaignId) {
-        String path = buildVersionedPath("/" + campaignId + "/insights?access_token=" + requireAccessToken());
-        FacebookApiResponse response = executeGet(path);
+    public JsonNode fetchCampaignInsights(String campaignId,
+                                          String datePreset,
+                                          java.util.List<String> fields,
+                                          java.util.Map<String, String> additionalParams) {
+        Objects.requireNonNull(campaignId, "campaignId");
+        var builder = UriComponentsBuilder.fromPath(buildVersionedPath("/" + campaignId + "/insights"))
+            .queryParam("access_token", requireAccessToken());
+        if (fields != null && !fields.isEmpty()) {
+            builder.queryParam("fields", String.join(",", fields));
+        }
+        if (StringUtils.hasText(datePreset)) {
+            builder.queryParam("date_preset", datePreset);
+        }
+        if (additionalParams != null) {
+            additionalParams.forEach((key, value) -> {
+                if (StringUtils.hasText(key) && StringUtils.hasText(value)) {
+                    builder.queryParam(key, value);
+                }
+            });
+        }
+        FacebookApiResponse response = executeGet(builder.build().toString());
         return response.body();
     }
 

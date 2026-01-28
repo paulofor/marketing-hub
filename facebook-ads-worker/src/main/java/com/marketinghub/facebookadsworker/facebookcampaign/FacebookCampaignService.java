@@ -46,6 +46,23 @@ import java.util.concurrent.atomic.AtomicReference;
 public class FacebookCampaignService {
     private static final Logger LOGGER = LoggerFactory.getLogger(FacebookCampaignService.class);
 
+    private static final java.util.List<String> INSIGHTS_FIELDS = java.util.List.of(
+        "campaign_id",
+        "account_id",
+        "account_currency",
+        "date_start",
+        "date_stop",
+        "spend",
+        "impressions",
+        "reach",
+        "clicks",
+        "cpc",
+        "cpm",
+        "ctr",
+        "frequency",
+        "actions"
+    );
+
     private final FacebookAdsService facebookAdsService;
     private final WebClient backendClient;
     private final String backendBaseUrl;
@@ -80,33 +97,27 @@ public class FacebookCampaignService {
         this.objectMapper = objectMapper;
     }
 
-    public void createCampaignsFromExperiments() {
+    private java.util.Optional<FacebookWorkerConfiguration> prepareWorkerConfiguration() {
         if (accessTokenExpired.get()) {
             if (hasTokenChangedSinceExpiration()) {
-                LOGGER.info(
-                    "Detected refreshed Facebook access token after a previous expiration; resuming campaign processing."
-                );
+                LOGGER.info("Detected refreshed Facebook access token after a previous expiration; resuming campaign processing.");
                 accessTokenExpired.set(false);
                 accessTokenExpiryWarningLogged.set(false);
                 lastExpiredAccessToken.set(null);
             } else {
-            FacebookAccessTokenManager.RenewalAttemptResult renewalResult = accessTokenManager.tryRenewAccessTokenIfPossible();
-            if (renewalResult.outcome() == FacebookAccessTokenManager.RenewalOutcome.SUCCESS) {
-                LOGGER.info(
-                    "Facebook access token renewed automatically after a previous expiration; resuming campaign processing."
-                );
-                accessTokenExpired.set(false);
-                accessTokenExpiryWarningLogged.set(false);
-                lastExpiredAccessToken.set(null);
-            } else {
-                if (accessTokenExpiryWarningLogged.compareAndSet(false, true)) {
-                    LOGGER.warn(
-                        "Skipping Facebook campaign processing because the configured access token has expired; renew the token and restart the worker."
-                    );
-                    logAutomaticRenewalOutcome(renewalResult);
+                FacebookAccessTokenManager.RenewalAttemptResult renewalResult = accessTokenManager.tryRenewAccessTokenIfPossible();
+                if (renewalResult.outcome() == FacebookAccessTokenManager.RenewalOutcome.SUCCESS) {
+                    LOGGER.info("Facebook access token renewed automatically after a previous expiration; resuming campaign processing.");
+                    accessTokenExpired.set(false);
+                    accessTokenExpiryWarningLogged.set(false);
+                    lastExpiredAccessToken.set(null);
+                } else {
+                    if (accessTokenExpiryWarningLogged.compareAndSet(false, true)) {
+                        LOGGER.warn("Skipping Facebook campaign processing because the configured access token has expired; renew the token and restart the worker.");
+                        logAutomaticRenewalOutcome(renewalResult);
+                    }
+                    return java.util.Optional.empty();
                 }
-                return;
-            }
             }
         } else {
             accessTokenExpiryWarningLogged.set(false);
@@ -117,7 +128,7 @@ public class FacebookCampaignService {
             if (configurationUnavailableWarningLogged.compareAndSet(false, true)) {
                 LOGGER.warn("Facebook worker configuration is unavailable; skipping campaign creation");
             }
-            return;
+            return java.util.Optional.empty();
         }
         configurationUnavailableWarningLogged.set(false);
 
@@ -125,7 +136,7 @@ public class FacebookCampaignService {
         String configuredToken = config.accessToken();
         if (!StringUtils.hasText(configuredToken)) {
             LOGGER.error("Facebook worker configuration is missing an access token; skipping campaign processing");
-            return;
+            return java.util.Optional.empty();
         }
         String currentToken = facebookAdsService.getCurrentAccessToken();
         if (!Objects.equals(configuredToken, currentToken)) {
@@ -133,9 +144,18 @@ public class FacebookCampaignService {
                 facebookAdsService.updateAccessToken(configuredToken);
             } catch (IllegalArgumentException ex) {
                 LOGGER.error("Facebook worker configuration returned an invalid access token: {}", ex.getMessage());
-                return;
+                return java.util.Optional.empty();
             }
         }
+        return java.util.Optional.of(config);
+    }
+
+    public void createCampaignsFromExperiments() {
+        var configurationOpt = prepareWorkerConfiguration();
+        if (configurationOpt.isEmpty()) {
+            return;
+        }
+        FacebookWorkerConfiguration config = configurationOpt.get();
 
         List<Experiment> experiments = Collections.emptyList();
         String experimentsUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns/experiments-ready");
@@ -183,6 +203,147 @@ public class FacebookCampaignService {
             }
             processExperiment(exp, config);
         });
+    }
+
+    public void syncRunningCampaignMetrics() {
+        var configurationOpt = prepareWorkerConfiguration();
+        if (configurationOpt.isEmpty()) {
+            return;
+        }
+        FacebookWorkerConfiguration config = configurationOpt.get();
+        List<RunningCampaign> campaigns = fetchRunningCampaigns();
+        if (campaigns.isEmpty()) {
+            return;
+        }
+        campaigns.stream()
+            .filter(campaign -> Objects.equals(config.adAccountId(), campaign.adAccountId()))
+            .forEach(campaign -> updateCampaignMetrics(campaign, config));
+    }
+
+    private List<RunningCampaign> fetchRunningCampaigns() {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns/running-campaigns");
+        try {
+            return backendClient.get()
+                .uri(url)
+                .retrieve()
+                .bodyToFlux(RunningCampaign.class)
+                .collectList()
+                .blockOptional()
+                .orElse(List.of());
+        } catch (Exception ex) {
+            LOGGER.warn("Failed to fetch running campaigns from backend: url==>{}", url, ex);
+            return List.of();
+        }
+    }
+
+    private void updateCampaignMetrics(RunningCampaign campaign, FacebookWorkerConfiguration config) {
+        try {
+            JsonNode response = facebookAdsService.fetchCampaignInsights(
+                campaign.campaignId(),
+                "lifetime",
+                INSIGHTS_FIELDS,
+                Map.of("level", "campaign")
+            );
+            CampaignInsights insights = parseCampaignInsights(campaign, response);
+            if (insights == null) {
+                return;
+            }
+            CampaignMetricUpdateRequest request = new CampaignMetricUpdateRequest(
+                config.adAccountId(),
+                campaign.experimentId(),
+                insights.dateStart(),
+                insights.dateStop(),
+                insights.spend(),
+                insights.impressions(),
+                insights.reach(),
+                insights.clicks(),
+                insights.ctr(),
+                insights.cpc(),
+                insights.cpm(),
+                insights.leads(),
+                insights.currency(),
+                insights.raw()
+            );
+            sendMetricsToBackend(campaign.campaignId(), request);
+        } catch (FacebookAccessTokenExpiredException ex) {
+            handleAccessTokenExpiration("syncing campaign metrics", ex);
+        } catch (Exception ex) {
+            LOGGER.warn("Failed to sync metrics for campaign {}: {}", campaign.campaignId(), ex.getMessage(), ex);
+        }
+    }
+
+    private CampaignInsights parseCampaignInsights(RunningCampaign campaign, JsonNode response) {
+        if (response == null) {
+            LOGGER.debug("Insights response for campaign {} is empty", campaign.campaignId());
+            return null;
+        }
+        JsonNode data = response.path("data");
+        if (!data.isArray() || data.isEmpty()) {
+            LOGGER.debug("Insights response for campaign {} does not contain data", campaign.campaignId());
+            return null;
+        }
+        JsonNode node = data.get(0);
+        BigDecimal spend = parseBigDecimal(node.path("spend").asText(null));
+        Long impressions = parseLongValue(node.path("impressions").asText(null));
+        Long reach = parseLongValue(node.path("reach").asText(null));
+        Long clicks = parseLongValue(node.path("clicks").asText(null));
+        BigDecimal cpc = parseBigDecimal(node.path("cpc").asText(null));
+        BigDecimal cpm = parseBigDecimal(node.path("cpm").asText(null));
+        BigDecimal ctr = parseBigDecimal(node.path("ctr").asText(null));
+        Integer leads = extractLeadCount(node.path("actions"));
+        String currency = node.path("account_currency").asText(null);
+        String dateStart = node.path("date_start").asText(null);
+        String dateStop = node.path("date_stop").asText(null);
+        return new CampaignInsights(dateStart, dateStop, spend, impressions, reach, clicks, ctr, cpc, cpm, leads, currency, node);
+    }
+
+    private Integer extractLeadCount(JsonNode actionsNode) {
+        if (actionsNode == null || !actionsNode.isArray()) {
+            return null;
+        }
+        int total = 0;
+        for (JsonNode action : actionsNode) {
+            String actionType = action.path("action_type").asText("").toLowerCase();
+            if (actionType.contains("lead")) {
+                total += action.path("value").asInt(0);
+            }
+        }
+        return total > 0 ? total : null;
+    }
+
+    private BigDecimal parseBigDecimal(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        try {
+            return new BigDecimal(value);
+        } catch (NumberFormatException ex) {
+            LOGGER.debug("Could not parse decimal value '{}': {}", value, ex.getMessage());
+            return null;
+        }
+    }
+
+    private Long parseLongValue(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException ex) {
+            LOGGER.debug("Could not parse long value '{}': {}", value, ex.getMessage());
+            return null;
+        }
+    }
+
+    private void sendMetricsToBackend(String campaignId, CampaignMetricUpdateRequest request) {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns/" + campaignId + "/metrics");
+        LOGGER.info("Reporting campaign metrics to backend: campaignId={}, payload={}", campaignId, JsonLogFormatter.wrap(objectMapper, request));
+        backendClient.post()
+            .uri(url)
+            .bodyValue(request)
+            .retrieve()
+            .toBodilessEntity()
+            .block();
     }
 
     private void processExperiment(Experiment exp, FacebookWorkerConfiguration config) {
@@ -637,6 +798,41 @@ public class FacebookCampaignService {
         ) {}
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record RunningCampaign(Long experimentId, String experimentName, String campaignId, String adAccountId) {}
+
+    private record CampaignInsights(
+        String dateStart,
+        String dateStop,
+        BigDecimal spend,
+        Long impressions,
+        Long reach,
+        Long clicks,
+        BigDecimal ctr,
+        BigDecimal cpc,
+        BigDecimal cpm,
+        Integer leads,
+        String currency,
+        JsonNode raw
+    ) {}
+
+    private record CampaignMetricUpdateRequest(
+        String accountId,
+        Long experimentId,
+        String dateStart,
+        String dateStop,
+        BigDecimal spend,
+        Long impressions,
+        Long reach,
+        Long clicks,
+        BigDecimal ctr,
+        BigDecimal cpc,
+        BigDecimal cpm,
+        Integer leads,
+        String currency,
+        JsonNode rawInsights
+    ) {}
+
     private Creative resolveCreative(long experimentId) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/creatives");
         LOGGER.info(
@@ -925,7 +1121,7 @@ public class FacebookCampaignService {
                 shareLink = InstantFormPublicationHelper.buildInstantFormShareLink(normalizedFormId);
             }
         } catch (FacebookAccessTokenExpiredException ex) {
-            handleAccessTokenExpirationDuringPublication(ex);
+            handleAccessTokenExpiration("publishing instant forms", ex);
         } catch (FacebookPermissionException ex) {
             LOGGER.error(
                 "Facebook permission error while publishing instant form: experimentId={}, formId={}, message={}, details={}",
@@ -954,13 +1150,11 @@ public class FacebookCampaignService {
         return new InstantFormResolution(new InstantFormDestination(shareLink, normalizedFormId), publicationUpdate);
     }
 
-    private void handleAccessTokenExpirationDuringPublication(FacebookAccessTokenExpiredException ex) {
+    private void handleAccessTokenExpiration(String context, FacebookAccessTokenExpiredException ex) {
         lastExpiredAccessToken.compareAndSet(null, facebookAdsService.getCurrentAccessToken());
         FacebookAccessTokenManager.RenewalAttemptResult renewalResult = accessTokenManager.tryRenewAccessTokenIfPossible();
         if (renewalResult.outcome() == FacebookAccessTokenManager.RenewalOutcome.SUCCESS) {
-            LOGGER.info(
-                "Facebook access token renewed automatically after detecting expiration while publishing instant forms."
-            );
+            LOGGER.info("Facebook access token renewed automatically after detecting expiration while {}.", context);
             accessTokenExpired.set(false);
             accessTokenExpiryWarningLogged.set(false);
             lastExpiredAccessToken.set(null);
@@ -970,7 +1164,8 @@ public class FacebookCampaignService {
         accessTokenExpiryWarningLogged.set(false);
         if (firstDetection) {
             LOGGER.error(
-                "Facebook access token expired while publishing instant forms; the worker will pause publication until renewal. message={}, details={}",
+                "Facebook access token expired while {}; the worker will pause processing until renewal. message={}, details={}",
+                context,
                 ex.getMessage(),
                 ex.getErrorDetails()
             );

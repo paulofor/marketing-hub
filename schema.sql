@@ -930,3 +930,26 @@ INSERT INTO prompt_domain_object (prompt_domain_id, object_type)
 SELECT id, 'DIFFERENTIATED_TECHNOLOGY' FROM prompt_domain WHERE code = 'NICHE_HYPOTHESIS';
 INSERT INTO prompt_domain_object (prompt_domain_id, object_type)
 SELECT id, 'HYPOTHESIS' FROM prompt_domain WHERE code = 'NICHE_HYPOTHESIS';
+
+CREATE TABLE facebook_campaign_metric_snapshot (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  campaign_id CHAR(36) NOT NULL,
+  experiment_id BIGINT NOT NULL,
+  account_id VARCHAR(32),
+  currency VARCHAR(16),
+  date_start DATE,
+  date_stop DATE,
+  impressions BIGINT,
+  reach BIGINT,
+  clicks BIGINT,
+  spend DECIMAL(19,4),
+  cpc DECIMAL(19,4),
+  cpm DECIMAL(19,4),
+  ctr DECIMAL(19,4),
+  frequency DECIMAL(19,4),
+  leads INT,
+  raw_response LONGTEXT,
+  captured_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
+  CONSTRAINT fk_metric_snapshot_campaign FOREIGN KEY (campaign_id) REFERENCES facebook_ads_campaign(id) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT fk_metric_snapshot_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id)
+);

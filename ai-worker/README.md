@@ -71,6 +71,11 @@ A aplicação agenda a tarefa `SuccessProductScheduler` para rodar a cada cinco 
 Para que a integração funcione é necessário definir a variável de ambiente `OPENAI_API_KEY` ou a propriedade `openai.api-key` com o token de acesso. O modelo utilizado pode ser configurado pela propriedade `openai.model` (padrão `o3`).
 Caso queira permitir buscas na Internet pelo modelo, defina também `GOOGLE_API_KEY` e `GOOGLE_SEARCH_ID` ou as propriedades `google.api-key` e `google.search-id` com as credenciais do Google Search.
 
+### Ajustes do processamento em lote da OpenAI
+
+- `OPENAI_BATCH_TIMEOUT` / `openai.batch-timeout`: controla quanto tempo o worker aguardará a conclusão de um batch da OpenAI antes de desistir. O padrão é `PT5M` (5 minutos).
+- `OPENAI_BATCH_POLL_INTERVAL` / `openai.batch-poll-interval`: define o intervalo entre cada verificação de status do batch. O padrão é `PT0.5S` (500 ms).
+
 Durante a execução, o worker registra logs informando o início e o término da tarefa, além de detalhes sobre cada produto processado. Verifique o console para acompanhar o andamento.
 
 Edite `src/main/resources/application.properties` caso precise alterar as credenciais ou a URL do banco de dados.

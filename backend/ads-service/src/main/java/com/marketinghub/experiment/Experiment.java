@@ -136,6 +136,7 @@ public class Experiment {
     private LocalDate endDate;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 32)
     private ExperimentStatus status;
 
     @Enumerated(EnumType.STRING)

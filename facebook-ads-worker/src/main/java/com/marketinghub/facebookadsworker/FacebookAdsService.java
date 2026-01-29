@@ -48,6 +48,7 @@ public class FacebookAdsService {
     private final ObjectMapper objectMapper;
     private final ConcurrentMap<String, String> pageAccessTokens;
     private final ConcurrentMap<String, String> interestIdCache;
+    private final ConcurrentMap<TargetingCategoryCacheKey, String> targetingCategoryIdCache;
     private static final Set<String> UNSUPPORTED_TARGETING_FIELDS = Set.of(
         "detailed_targeting_description"
     );
@@ -62,6 +63,7 @@ public class FacebookAdsService {
         this.objectMapper = objectMapper;
         this.pageAccessTokens = new ConcurrentHashMap<>();
         this.interestIdCache = new ConcurrentHashMap<>();
+        this.targetingCategoryIdCache = new ConcurrentHashMap<>();
         LOGGER.info("Configured Facebook Graph API version: {}", this.apiVersion);
     }
 
@@ -230,6 +232,8 @@ public class FacebookAdsService {
 
         removeUnsupportedTargetingFields(targeting);
         normalizeInterests(targeting);
+        normalizeWorkPositions(targeting);
+        normalizeBehaviors(targeting);
         normalizeCustomAudiences(targeting);
         normalizeGeoLocations(targeting);
 
@@ -441,7 +445,7 @@ public class FacebookAdsService {
 
         for (Object interest : interestsList) {
             if (interest instanceof Map<?, ?> interestMap) {
-                String id = extractInterestId(interestMap.get("id"));
+                String id = extractTargetingId(interestMap.get("id"));
                 String name = extractInterestName(interestMap.get("name"));
                 if (!hasText(id) && hasText(name)) {
                     id = resolveInterestId(name);
@@ -500,6 +504,104 @@ public class FacebookAdsService {
         }
 
         targeting.put("interests", normalized);
+    }
+
+    private void normalizeWorkPositions(Map<String, Object> targeting) {
+        normalizeTargetingCategoryList(targeting, "work_positions", TargetingCategoryClass.JOB_TITLE);
+    }
+
+    private void normalizeBehaviors(Map<String, Object> targeting) {
+        normalizeTargetingCategoryList(targeting, "behaviors", TargetingCategoryClass.BEHAVIOR);
+    }
+
+    private void normalizeTargetingCategoryList(
+        Map<String, Object> targeting,
+        String fieldName,
+        TargetingCategoryClass categoryClass
+    ) {
+        if (targeting == null || targeting.isEmpty() || categoryClass == null) {
+            return;
+        }
+        Object rawValue = targeting.get(fieldName);
+        if (!(rawValue instanceof List<?> values) || values.isEmpty()) {
+            return;
+        }
+
+        List<Map<String, Object>> normalized = new ArrayList<>();
+        boolean needsUpdate = false;
+
+        for (Object value : values) {
+            if (value instanceof Map<?, ?> valueMap) {
+                String id = extractTargetingId(valueMap.get("id"));
+                if (!hasText(id)) {
+                    id = extractTargetingId(valueMap.get("key"));
+                }
+                String name = extractInterestName(valueMap.get("name"));
+                if (!hasText(id) && hasText(name)) {
+                    id = resolveTargetingCategoryId(name, categoryClass);
+                    if (hasText(id)) {
+                        needsUpdate = true;
+                    }
+                }
+                if (!hasText(id)) {
+                    needsUpdate = true;
+                    LOGGER.warn(
+                        "Skipping Facebook targeting entry in '{}' because no id/key could be resolved: {}",
+                        fieldName,
+                        JsonLogFormatter.wrap(valueMap)
+                    );
+                    continue;
+                }
+                Map<String, Object> normalizedEntry = new HashMap<>();
+                normalizedEntry.put("id", id);
+                if (hasText(name)) {
+                    normalizedEntry.put("name", name);
+                }
+                if (!valueMap.equals(normalizedEntry)) {
+                    needsUpdate = true;
+                }
+                normalized.add(normalizedEntry);
+            } else if (value instanceof String stringValue) {
+                String id = resolveTargetingCategoryId(stringValue, categoryClass);
+                if (!hasText(id)) {
+                    needsUpdate = true;
+                    LOGGER.warn(
+                        "Skipping Facebook targeting entry '{}' in '{}' because no ID was resolved",
+                        stringValue,
+                        fieldName
+                    );
+                    continue;
+                }
+                Map<String, Object> normalizedEntry = new HashMap<>();
+                normalizedEntry.put("id", id);
+                normalizedEntry.put("name", stringValue.trim());
+                normalized.add(normalizedEntry);
+                needsUpdate = true;
+            } else if (value instanceof Number numberValue) {
+                String id = numberValue.toString();
+                if (!hasText(id)) {
+                    needsUpdate = true;
+                    continue;
+                }
+                Map<String, Object> normalizedEntry = new HashMap<>();
+                normalizedEntry.put("id", id);
+                normalized.add(normalizedEntry);
+                needsUpdate = true;
+            } else {
+                needsUpdate = true;
+            }
+        }
+
+        if (!needsUpdate) {
+            return;
+        }
+
+        if (normalized.isEmpty()) {
+            targeting.remove(fieldName);
+            return;
+        }
+
+        targeting.put(fieldName, normalized);
     }
 
     private void normalizeCustomAudiences(Map<String, Object> targeting) {
@@ -700,7 +802,7 @@ public class FacebookAdsService {
             return hasText(id) ? id : null;
         }
         if (value instanceof String stringValue) {
-            return extractInterestIdFromText(stringValue);
+            return extractTargetingIdFromText(stringValue);
         }
         return null;
     }
@@ -713,7 +815,7 @@ public class FacebookAdsService {
         return hasText(trimmed) ? trimmed : null;
     }
 
-    private String extractInterestId(Object value) {
+    private String extractTargetingId(Object value) {
         if (value == null) {
             return null;
         }
@@ -722,7 +824,7 @@ public class FacebookAdsService {
             return hasText(id) ? id : null;
         }
         if (value instanceof String stringValue) {
-            return extractInterestIdFromText(stringValue);
+            return extractTargetingIdFromText(stringValue);
         }
         return null;
     }
@@ -735,7 +837,7 @@ public class FacebookAdsService {
         return hasText(trimmed) ? trimmed : null;
     }
 
-    private String extractInterestIdFromText(String value) {
+    private String extractTargetingIdFromText(String value) {
         if (value == null) {
             return null;
         }
@@ -762,7 +864,7 @@ public class FacebookAdsService {
             return null;
         }
 
-        String directId = extractInterestIdFromText(normalizedName);
+        String directId = extractTargetingIdFromText(normalizedName);
         if (hasText(directId)) {
             return directId;
         }
@@ -777,6 +879,94 @@ public class FacebookAdsService {
         String resolvedId = resolved != null ? resolved.id() : null;
         interestIdCache.put(cacheKey, resolvedId != null ? resolvedId : "");
         return resolvedId;
+    }
+
+    private String resolveTargetingCategoryId(String value, TargetingCategoryClass categoryClass) {
+        if (!hasText(value) || categoryClass == null) {
+            return null;
+        }
+        String normalizedName = value.trim();
+        if (!hasText(normalizedName)) {
+            return null;
+        }
+
+        String directId = extractTargetingIdFromText(normalizedName);
+        if (hasText(directId)) {
+            return directId;
+        }
+
+        TargetingCategoryCacheKey cacheKey = new TargetingCategoryCacheKey(
+            categoryClass.apiClassName(),
+            normalizedName.toLowerCase(Locale.ROOT)
+        );
+        String cached = targetingCategoryIdCache.get(cacheKey);
+        if (cached != null) {
+            return cached.isEmpty() ? null : cached;
+        }
+
+        FacebookTargetingCategory resolved = fetchTargetingCategoryFromFacebook(normalizedName, categoryClass);
+        String resolvedId = resolved != null ? resolved.id() : null;
+        targetingCategoryIdCache.put(cacheKey, hasText(resolvedId) ? resolvedId : "");
+        return resolvedId;
+    }
+
+    private FacebookTargetingCategory fetchTargetingCategoryFromFacebook(
+        String query,
+        TargetingCategoryClass categoryClass
+    ) {
+        String path = UriComponentsBuilder
+            .fromPath(buildVersionedPath("/search"))
+            .queryParam("type", "adTargetingCategory")
+            .queryParam("class", categoryClass.apiClassName())
+            .queryParam("q", query)
+            .queryParam("limit", 5)
+            .queryParam("access_token", requireAccessToken())
+            .encode(StandardCharsets.UTF_8)
+            .toUriString();
+
+        try {
+            FacebookApiResponse response = executeGet(path);
+            if (response == null || response.body() == null) {
+                return null;
+            }
+            JsonNode data = response.body().path("data");
+            if (data == null || !data.isArray()) {
+                return null;
+            }
+            FacebookTargetingCategory fallback = null;
+            for (JsonNode node : data) {
+                if (node == null || node.isNull()) {
+                    continue;
+                }
+                String id = node.path("id").asText(null);
+                if (!hasText(id)) {
+                    continue;
+                }
+                String name = node.path("name").asText(null);
+                FacebookTargetingCategory candidate = new FacebookTargetingCategory(
+                    id.trim(),
+                    hasText(name) ? name.trim() : null
+                );
+                if (name != null && name.trim().equalsIgnoreCase(query)) {
+                    return candidate;
+                }
+                if (fallback == null) {
+                    fallback = candidate;
+                }
+            }
+            return fallback;
+        } catch (FacebookAccessTokenExpiredException | FacebookPermissionException ex) {
+            throw ex;
+        } catch (RuntimeException ex) {
+            LOGGER.warn(
+                "Facebook targeting search failed for class '{}' and query '{}': {}",
+                categoryClass.apiClassName(),
+                query,
+                ex.getMessage(),
+                ex
+            );
+            return null;
+        }
     }
 
     private FacebookInterest fetchInterestFromFacebook(String interestName) {
@@ -836,6 +1026,7 @@ public class FacebookAdsService {
     }
 
     public record FacebookInterest(String id, String name) {}
+    private record FacebookTargetingCategory(String id, String name) {}
 
     public String createAdCreative(String adAccountId, AdCreativeRequest request) {
         Objects.requireNonNull(request, "request");
@@ -1508,4 +1699,21 @@ public class FacebookAdsService {
     public record TokenRenewalResponse(String accessToken, long expiresInSeconds) {}
 
     private record FacebookApiResponse(HttpStatusCode statusCode, HttpHeaders headers, JsonNode body) {}
+
+    private enum TargetingCategoryClass {
+        JOB_TITLE("job_title"),
+        BEHAVIOR("behaviors");
+
+        private final String apiClassName;
+
+        TargetingCategoryClass(String apiClassName) {
+            this.apiClassName = apiClassName;
+        }
+
+        public String apiClassName() {
+            return apiClassName;
+        }
+    }
+
+    private record TargetingCategoryCacheKey(String categoryClass, String query) {}
 }

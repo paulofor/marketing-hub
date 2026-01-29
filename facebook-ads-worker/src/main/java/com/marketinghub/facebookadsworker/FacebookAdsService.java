@@ -1132,8 +1132,17 @@ public class FacebookAdsService {
         return response.path("id").asText();
     }
 
-    public JsonNode getCampaignMetrics(String campaignId) {
-        String path = buildVersionedPath("/" + campaignId + "/insights?access_token=" + requireAccessToken());
+    public JsonNode getCampaignInsights(String campaignId, Map<String, String> queryParams) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/" + campaignId + "/insights")
+            .queryParam("access_token", requireAccessToken());
+        if (queryParams != null) {
+            queryParams.forEach((key, value) -> {
+                if (hasText(value)) {
+                    builder.queryParam(key, value);
+                }
+            });
+        }
+        String path = buildVersionedPath(builder.toUriString());
         FacebookApiResponse response = executeGet(path);
         return response.body();
     }

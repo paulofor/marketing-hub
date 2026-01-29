@@ -649,6 +649,8 @@ CREATE TABLE facebook_ads_campaign (
   api_version VARCHAR(16),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  metrics_last_synced_at DATETIME(6),
+  metrics_last_error TEXT,
   PRIMARY KEY (id),
   CONSTRAINT fk_facebook_ads_campaign_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id),
   CONSTRAINT fk_facebook_ads_campaign_account FOREIGN KEY (facebook_account_id) REFERENCES fb_account(id)
@@ -930,3 +932,23 @@ INSERT INTO prompt_domain_object (prompt_domain_id, object_type)
 SELECT id, 'DIFFERENTIATED_TECHNOLOGY' FROM prompt_domain WHERE code = 'NICHE_HYPOTHESIS';
 INSERT INTO prompt_domain_object (prompt_domain_id, object_type)
 SELECT id, 'HYPOTHESIS' FROM prompt_domain WHERE code = 'NICHE_HYPOTHESIS';
+
+
+CREATE TABLE experiment_campaign_metric (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  experiment_id BIGINT NOT NULL,
+  campaign_id CHAR(36) NOT NULL,
+  date_start DATE,
+  date_stop DATE,
+  impressions BIGINT,
+  clicks BIGINT,
+  leads BIGINT,
+  spend DECIMAL(12,2),
+  cpc DECIMAL(12,2),
+  cpl DECIMAL(12,2),
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT uk_experiment_campaign_metric_campaign UNIQUE (campaign_id),
+  CONSTRAINT fk_experiment_campaign_metric_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id),
+  CONSTRAINT fk_experiment_campaign_metric_campaign FOREIGN KEY (campaign_id) REFERENCES facebook_ads_campaign(id)
+);

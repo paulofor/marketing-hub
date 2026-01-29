@@ -10,6 +10,8 @@ import com.marketinghub.ads.FacebookAccountRepository;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.repository.TargetingElementRepository;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentCampaignMetric;
+import com.marketinghub.experiment.service.ExperimentCampaignMetricService;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.journey.model.JourneyStep;
 import com.marketinghub.journey.model.JourneyStimulusType;
@@ -31,6 +33,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -50,6 +53,7 @@ public class FacebookAdsCampaignController {
     private final com.marketinghub.experiment.repository.AdSetRepository experimentAdSetRepository;
     private final TargetingElementRepository targetingElementRepository;
     private final ObjectMapper objectMapper;
+    private final ExperimentCampaignMetricService campaignMetricService;
 
     public FacebookAdsCampaignController(ExperimentService experimentService,
                                          FacebookAdsCampaignRepository campaignRepository,
@@ -59,7 +63,8 @@ public class FacebookAdsCampaignController {
                                          FacebookAdsAdRepository adRepository,
                                          com.marketinghub.experiment.repository.AdSetRepository experimentAdSetRepository,
                                          TargetingElementRepository targetingElementRepository,
-                                         ObjectMapper objectMapper) {
+                                         ObjectMapper objectMapper,
+                                         ExperimentCampaignMetricService campaignMetricService) {
         this.experimentService = experimentService;
         this.campaignRepository = campaignRepository;
         this.accountRepository = accountRepository;
@@ -69,6 +74,7 @@ public class FacebookAdsCampaignController {
         this.experimentAdSetRepository = experimentAdSetRepository;
         this.targetingElementRepository = targetingElementRepository;
         this.objectMapper = objectMapper;
+        this.campaignMetricService = campaignMetricService;
     }
 
     @GetMapping("/experiments-ready")
@@ -85,6 +91,14 @@ public class FacebookAdsCampaignController {
                 .listByStatusAndPlatform(status, com.marketinghub.experiment.ExperimentPlatform.FACEBOOK)
                 .stream()
                 .map(this::toSummary)
+                .toList();
+    }
+
+    @GetMapping("/metrics/sync-targets")
+    public List<CampaignMetricsSyncTarget> metricsSyncTargets() {
+        return campaignRepository.findAllByExperimentStatus(com.marketinghub.experiment.ExperimentStatus.RUNNING)
+                .stream()
+                .map(c -> new CampaignMetricsSyncTarget(c.getId(), c.getExperiment().getId(), c.getMetricsLastSyncedAt()))
                 .toList();
     }
 
@@ -133,6 +147,38 @@ public class FacebookAdsCampaignController {
         }
 
         return savedCampaign;
+    }
+
+    @PostMapping("/{campaignId}/metrics")
+    @Transactional
+    public CampaignMetricSummary updateMetrics(
+            @PathVariable String campaignId,
+            @RequestBody CampaignMetricsUpdateRequest request) {
+        ExperimentCampaignMetric metric = campaignMetricService.upsert(
+                campaignId,
+                request.dateStart(),
+                request.dateStop(),
+                request.impressions(),
+                request.clicks(),
+                request.leads(),
+                request.spend());
+        FacebookAdsCampaign campaign = metric.getCampaign();
+        campaign.setMetricsLastSyncedAt(Instant.now());
+        campaign.setMetricsLastError(null);
+        return toMetricSummary(metric);
+    }
+
+    @PostMapping("/{campaignId}/metrics-error")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    @Transactional
+    public void registerMetricsError(
+            @PathVariable String campaignId,
+            @RequestBody CampaignMetricsErrorRequest request) {
+        FacebookAdsCampaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Facebook campaign not found: " + campaignId));
+        campaign.setMetricsLastError(request.message());
+        campaign.setMetricsLastSyncedAt(Instant.now());
     }
 
     private AdSet resolveExperimentAdSet(CreateCampaignRequest.AdSet adSetReq, Experiment experiment) {
@@ -294,7 +340,8 @@ public class FacebookAdsCampaignController {
                 toFacebookPageSummary(experiment),
                 toInstagramAccountSummary(experiment),
                 toInstantFormSummary(experiment),
-                isNextStepInstantForm(experiment));
+                isNextStepInstantForm(experiment),
+                toMetricSummary(experiment.getCampaignMetric()));
     }
 
     private List<String> computeMissingConfiguration(Experiment experiment) {
@@ -398,6 +445,26 @@ public class FacebookAdsCampaignController {
         );
     }
 
+    private CampaignMetricSummary toMetricSummary(ExperimentCampaignMetric metric) {
+        if (metric == null) {
+            return null;
+        }
+        FacebookAdsCampaign campaign = metric.getCampaign();
+        Instant lastSyncedAt = campaign != null ? campaign.getMetricsLastSyncedAt() : null;
+        String lastSyncError = campaign != null ? campaign.getMetricsLastError() : null;
+        return new CampaignMetricSummary(
+                metric.getDateStart(),
+                metric.getDateStop(),
+                metric.getImpressions(),
+                metric.getClicks(),
+                metric.getLeads(),
+                metric.getSpend(),
+                metric.getCpc(),
+                metric.getCpl(),
+                lastSyncedAt,
+                lastSyncError);
+    }
+
     private boolean isNextStepInstantForm(Experiment experiment) {
         if (experiment.getJourneyTemplate() == null) {
             return false;
@@ -434,7 +501,8 @@ public class FacebookAdsCampaignController {
             FacebookPageSummary facebookPage,
             InstagramAccountSummary instagramAccount,
             InstantFormSummary facebookInstantForm,
-            boolean nextStepInstantForm) {}
+            boolean nextStepInstantForm,
+            CampaignMetricSummary metrics) {}
 
     public record FacebookPageSummary(Long id, Long accountId, String pageId, String name) {}
 
@@ -448,6 +516,30 @@ public class FacebookAdsCampaignController {
             boolean approved,
             boolean published,
             String shareLink) {}
+
+    public record CampaignMetricSummary(
+            LocalDate dateStart,
+            LocalDate dateStop,
+            Long impressions,
+            Long clicks,
+            Long leads,
+            BigDecimal spend,
+            BigDecimal cpc,
+            BigDecimal cpl,
+            Instant lastSyncedAt,
+            String lastSyncError) {}
+
+    public record CampaignMetricsSyncTarget(String campaignId, Long experimentId, Instant lastSyncedAt) {}
+
+    public record CampaignMetricsUpdateRequest(
+            LocalDate dateStart,
+            LocalDate dateStop,
+            Long impressions,
+            Long clicks,
+            Long leads,
+            BigDecimal spend) {}
+
+    public record CampaignMetricsErrorRequest(String message) {}
 
     public record CreateCampaignRequest(
             String id,

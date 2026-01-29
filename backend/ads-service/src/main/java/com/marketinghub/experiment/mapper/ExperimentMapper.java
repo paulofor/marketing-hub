@@ -4,6 +4,8 @@ import com.marketinghub.ads.FacebookPage;
 import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.ads.mapper.FacebookInstantFormMapper;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentCampaignMetric;
+import com.marketinghub.experiment.dto.ExperimentCampaignMetricDto;
 import com.marketinghub.experiment.dto.ExperimentDto;
 import com.marketinghub.experiment.dto.FacebookPageDto;
 import com.marketinghub.experiment.dto.InstagramAccountDto;
@@ -32,10 +34,31 @@ public interface ExperimentMapper {
     @org.mapstruct.Mapping(target = "selectedSampleEmailCallToAction", source = "selectedSampleEmail.callToAction")
     @org.mapstruct.Mapping(target = "selectedSampleEmailModel", source = "selectedSampleEmail.model")
     @org.mapstruct.Mapping(target = "selectedSampleEmailUpdatedAt", source = "selectedSampleEmail.updatedAt")
+    @org.mapstruct.Mapping(target = "campaignMetric", expression = "java(toCampaignMetricDto(experiment.getCampaignMetric()))")
     ExperimentDto toDto(Experiment experiment);
 
     @org.mapstruct.Mapping(target = "accountId", source = "account.id")
     FacebookPageDto toDto(FacebookPage page);
 
     InstagramAccountDto toDto(InstagramAccount account);
+
+    default ExperimentCampaignMetricDto toCampaignMetricDto(ExperimentCampaignMetric metric) {
+        if (metric == null) {
+            return null;
+        }
+        ExperimentCampaignMetricDto dto = new ExperimentCampaignMetricDto();
+        dto.setDateStart(metric.getDateStart());
+        dto.setDateStop(metric.getDateStop());
+        dto.setImpressions(metric.getImpressions());
+        dto.setClicks(metric.getClicks());
+        dto.setLeads(metric.getLeads());
+        dto.setSpend(metric.getSpend());
+        dto.setCpc(metric.getCpc());
+        dto.setCpl(metric.getCpl());
+        if (metric.getCampaign() != null) {
+            dto.setLastSyncedAt(metric.getCampaign().getMetricsLastSyncedAt());
+            dto.setLastSyncError(metric.getCampaign().getMetricsLastError());
+        }
+        return dto;
+    }
 }

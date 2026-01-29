@@ -188,6 +188,11 @@ public class Experiment {
     @UpdateTimestamp
     private Instant updatedAt;
 
+    @OneToOne(mappedBy = "experiment", fetch = FetchType.LAZY)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private ExperimentCampaignMetric campaignMetric;
+
     @OneToMany(mappedBy = "experiment")
     @ToString.Exclude
     @EqualsAndHashCode.Exclude

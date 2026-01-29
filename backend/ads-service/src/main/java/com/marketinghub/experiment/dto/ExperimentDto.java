@@ -72,4 +72,5 @@ public class ExperimentDto {
     private String selectedSampleEmailCallToAction;
     private String selectedSampleEmailModel;
     private Instant selectedSampleEmailUpdatedAt;
+    private ExperimentCampaignMetricDto campaignMetric;
 }

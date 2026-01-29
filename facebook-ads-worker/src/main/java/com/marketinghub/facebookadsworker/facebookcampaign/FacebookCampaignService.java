@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenExpiredException;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenManager;
 import com.marketinghub.facebookadsworker.FacebookAdsService;
+import com.marketinghub.facebookadsworker.FacebookAdsService.TargetingNormalizationException;
 import com.marketinghub.facebookadsworker.FacebookPermissionException;
 import com.marketinghub.facebookadsworker.facebookinstantform.InstantFormPublicationUpdateRequest;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient;
@@ -381,7 +382,7 @@ public class FacebookCampaignService {
                 ex.getMessage(),
                 ex.getErrorDetails()
             );
-            markExperimentAsFailed(exp.id());
+            markExperimentAsFailed(exp.id(), ex.getMessage());
         } catch (FacebookAccessTokenExpiredException ex) {
             lastExpiredAccessToken.compareAndSet(null, facebookAdsService.getCurrentAccessToken());
             FacebookAccessTokenManager.RenewalAttemptResult renewalResult = accessTokenManager.tryRenewAccessTokenIfPossible();
@@ -414,6 +415,22 @@ public class FacebookCampaignService {
                 "Skipping experiment {} because the Facebook access token has expired; it will be retried after updating the token.",
                 exp.id()
             );
+        } catch (TargetingNormalizationException ex) {
+            LOGGER.error(
+                "Skipping experiment {} because targeting could not be normalized: {}",
+                exp.id(),
+                ex.getMessage(),
+                ex
+            );
+            markExperimentAsFailed(exp.id(), ex.getMessage());
+        } catch (Exception ex) {
+            LOGGER.error(
+                "Unexpected error while processing experiment {}: {}",
+                exp.id(),
+                ex.getMessage(),
+                ex
+            );
+            markExperimentAsFailed(exp.id(), ex.getMessage());
         }
     }
 
@@ -793,12 +810,13 @@ public class FacebookCampaignService {
         }
     }
 
-    private void markExperimentAsFailed(long experimentId) {
+    private void markExperimentAsFailed(long experimentId, String reason) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/status?status=FAILED");
         LOGGER.info(
-            "Marking experiment as FAILED in backend: url==>{}, params={}",
+            "Marking experiment as FAILED in backend: url==>{}, params={}, reason={}",
             url,
-            JsonLogFormatter.wrap(objectMapper, Collections.emptyMap())
+            JsonLogFormatter.wrap(objectMapper, Collections.emptyMap()),
+            reason
         );
         try {
             backendClient.patch()
@@ -806,10 +824,14 @@ public class FacebookCampaignService {
                 .retrieve()
                 .toBodilessEntity()
                 .block();
-            LOGGER.info("Marked experiment {} as FAILED after Facebook permission error", experimentId);
+            LOGGER.info(
+                "Marked experiment {} as FAILED after campaign processing error: {}",
+                experimentId,
+                reason
+            );
         } catch (Exception ex) {
             LOGGER.warn(
-                "Could not mark experiment {} as FAILED after Facebook permission error: url==>{}, message={}",
+                "Could not mark experiment {} as FAILED after campaign processing error: url==>{}, message={}",
                 experimentId,
                 url,
                 ex.getMessage(),

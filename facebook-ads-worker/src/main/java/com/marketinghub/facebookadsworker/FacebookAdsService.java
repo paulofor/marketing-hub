@@ -210,6 +210,7 @@ public class FacebookAdsService {
     }
 
     private Map<String, Object> buildTargeting(AdSetRequest request) {
+        List<String> targetingErrors = new ArrayList<>();
         Map<String, Object> targeting = new HashMap<>();
         if (hasText(request.targetingJson())) {
             try {
@@ -231,11 +232,15 @@ public class FacebookAdsService {
         }
 
         removeUnsupportedTargetingFields(targeting);
-        normalizeInterests(targeting);
-        normalizeWorkPositions(targeting);
-        normalizeBehaviors(targeting);
+        normalizeInterests(targeting, targetingErrors);
+        normalizeWorkPositions(targeting, targetingErrors);
+        normalizeBehaviors(targeting, targetingErrors);
         normalizeCustomAudiences(targeting);
         normalizeGeoLocations(targeting);
+
+        if (!targetingErrors.isEmpty()) {
+            throw new TargetingNormalizationException(targetingErrors);
+        }
 
         forceBrazilWideTargeting(targeting);
         enableAdvantageAudience(targeting);
@@ -431,7 +436,7 @@ public class FacebookAdsService {
         }
     }
 
-    private void normalizeInterests(Map<String, Object> targeting) {
+    private void normalizeInterests(Map<String, Object> targeting, List<String> targetingErrors) {
         if (targeting == null || targeting.isEmpty()) {
             return;
         }
@@ -471,6 +476,7 @@ public class FacebookAdsService {
                         "Skipping Facebook interest '{}' because no ID was resolved",
                         interestName
                     );
+                    targetingErrors.add("interesse não encontrado na API da Meta: '" + interestName + "'");
                     needsUpdate = true;
                     continue;
                 }
@@ -506,18 +512,19 @@ public class FacebookAdsService {
         targeting.put("interests", normalized);
     }
 
-    private void normalizeWorkPositions(Map<String, Object> targeting) {
-        normalizeTargetingCategoryList(targeting, "work_positions", TargetingCategoryClass.JOB_TITLE);
+    private void normalizeWorkPositions(Map<String, Object> targeting, List<String> targetingErrors) {
+        normalizeTargetingCategoryList(targeting, "work_positions", TargetingCategoryClass.JOB_TITLE, targetingErrors);
     }
 
-    private void normalizeBehaviors(Map<String, Object> targeting) {
-        normalizeTargetingCategoryList(targeting, "behaviors", TargetingCategoryClass.BEHAVIOR);
+    private void normalizeBehaviors(Map<String, Object> targeting, List<String> targetingErrors) {
+        normalizeTargetingCategoryList(targeting, "behaviors", TargetingCategoryClass.BEHAVIOR, targetingErrors);
     }
 
     private void normalizeTargetingCategoryList(
         Map<String, Object> targeting,
         String fieldName,
-        TargetingCategoryClass categoryClass
+        TargetingCategoryClass categoryClass,
+        List<String> targetingErrors
     ) {
         if (targeting == null || targeting.isEmpty() || categoryClass == null) {
             return;
@@ -550,6 +557,7 @@ public class FacebookAdsService {
                         fieldName,
                         JsonLogFormatter.wrap(valueMap)
                     );
+                    addTargetingError(targetingErrors, fieldName, valueMap);
                     continue;
                 }
                 Map<String, Object> normalizedEntry = new HashMap<>();
@@ -570,6 +578,7 @@ public class FacebookAdsService {
                         stringValue,
                         fieldName
                     );
+                    addTargetingError(targetingErrors, fieldName, stringValue);
                     continue;
                 }
                 Map<String, Object> normalizedEntry = new HashMap<>();
@@ -602,6 +611,19 @@ public class FacebookAdsService {
         }
 
         targeting.put(fieldName, normalized);
+    }
+
+    private void addTargetingError(List<String> targetingErrors, String fieldName, Object value) {
+        if (targetingErrors == null) {
+            return;
+        }
+        String humanField = switch (fieldName) {
+            case "work_positions" -> "cargo";
+            case "behaviors" -> "comportamento";
+            case "interests" -> "interesse";
+            default -> fieldName;
+        };
+        targetingErrors.add(humanField + " não encontrado na API da Meta:  + String.valueOf(value) + ");
     }
 
     private void normalizeCustomAudiences(Map<String, Object> targeting) {
@@ -969,61 +991,77 @@ public class FacebookAdsService {
         }
     }
 
-    private FacebookInterest fetchInterestFromFacebook(String interestName) {
-        String path = UriComponentsBuilder
-            .fromPath(buildVersionedPath("/search"))
-            .queryParam("type", "adinterest")
-            .queryParam("q", interestName)
-            .queryParam("limit", 1)
-            .queryParam("fields", "id,name")
-            .queryParam("locale", INTEREST_SEARCH_LOCALE)
-            .queryParam("access_token", requireAccessToken())
-            .encode(StandardCharsets.UTF_8)
-            .toUriString();
 
-        try {
-            FacebookApiResponse response = executeGet(path);
-            if (response == null || response.body() == null) {
-                return null;
-            }
-            JsonNode data = response.body().path("data");
-            if (data == null || !data.isArray()) {
-                return null;
-            }
-            for (JsonNode node : data) {
-                if (node == null || node.isNull()) {
-                    continue;
-                }
-                String id = node.path("id").asText(null);
-                if (hasText(id)) {
-                    String name = node.path("name").asText(null);
-                    String trimmedName = hasText(name) ? name.trim() : null;
-                    return new FacebookInterest(id.trim(), trimmedName);
-                }
-            }
-        } catch (WebClientResponseException ex) {
-            LOGGER.warn(
-                "Facebook interest lookup failed for '{}': status={}, message={}",
-                interestName,
-                ex.getRawStatusCode(),
-                ex.getMessage()
-            );
-        } catch (WebClientRequestException ex) {
-            LOGGER.warn(
-                "Facebook interest lookup failed for '{}': message={}",
-                interestName,
-                ex.getMessage()
-            );
-        } catch (Exception ex) {
-            LOGGER.warn(
-                "Unexpected error while looking up Facebook interest '{}': message={}",
-                interestName,
-                ex.getMessage(),
-                ex
-            );
-        }
-        return null;
+private FacebookInterest fetchInterestFromFacebook(String interestName) {
+    FacebookInterest resolved = searchInterest(interestName, INTEREST_SEARCH_LOCALE);
+    if (resolved == null && !"en_US".equalsIgnoreCase(INTEREST_SEARCH_LOCALE)) {
+        resolved = searchInterest(interestName, "en_US");
     }
+    if (resolved == null) {
+        resolved = searchInterest(interestName, null);
+    }
+    return resolved;
+}
+
+private FacebookInterest searchInterest(String interestName, String locale) {
+    UriComponentsBuilder builder = UriComponentsBuilder
+        .fromPath(buildVersionedPath("/search"))
+        .queryParam("type", "adinterest")
+        .queryParam("q", interestName)
+        .queryParam("limit", 1)
+        .queryParam("fields", "id,name")
+        .queryParam("access_token", requireAccessToken());
+    if (hasText(locale)) {
+        builder.queryParam("locale", locale);
+    }
+    String path = builder.encode(StandardCharsets.UTF_8).toUriString();
+
+    try {
+        FacebookApiResponse response = executeGet(path);
+        if (response == null || response.body() == null) {
+            return null;
+        }
+        JsonNode data = response.body().path("data");
+        if (data == null || !data.isArray()) {
+            return null;
+        }
+        for (JsonNode node : data) {
+            if (node == null || node.isNull()) {
+                continue;
+            }
+            String id = node.path("id").asText(null);
+            if (hasText(id)) {
+                String name = node.path("name").asText(null);
+                String trimmedName = hasText(name) ? name.trim() : null;
+                return new FacebookInterest(id.trim(), trimmedName);
+            }
+        }
+    } catch (WebClientResponseException ex) {
+        LOGGER.warn(
+            "Facebook interest lookup failed for '{}' (locale={}): status={}, message={}",
+            interestName,
+            locale,
+            ex.getRawStatusCode(),
+            ex.getMessage()
+        );
+    } catch (WebClientRequestException ex) {
+        LOGGER.warn(
+            "Facebook interest lookup failed for '{}' (locale={}): message={}",
+            interestName,
+            locale,
+            ex.getMessage()
+        );
+    } catch (Exception ex) {
+        LOGGER.warn(
+            "Unexpected error while looking up Facebook interest '{}' (locale={}): message={}",
+            interestName,
+            locale,
+            ex.getMessage(),
+            ex
+        );
+    }
+    return null;
+}
 
     public record FacebookInterest(String id, String name) {}
     private record FacebookTargetingCategory(String id, String name) {}
@@ -1708,6 +1746,19 @@ public class FacebookAdsService {
     public record TokenRenewalResponse(String accessToken, long expiresInSeconds) {}
 
     private record FacebookApiResponse(HttpStatusCode statusCode, HttpHeaders headers, JsonNode body) {}
+
+    public static class TargetingNormalizationException extends RuntimeException {
+        private final List<String> errors;
+
+        public TargetingNormalizationException(List<String> errors) {
+            super(errors != null && !errors.isEmpty() ? String.join("; ", errors) : "Targeting normalization failed");
+            this.errors = errors != null ? List.copyOf(errors) : List.of();
+        }
+
+        public List<String> getErrors() {
+            return errors;
+        }
+    }
 
     private enum TargetingCategoryClass {
         JOB_TITLE("job_title"),

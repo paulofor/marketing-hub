@@ -2,6 +2,19 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import type { InstagramAccountSummary } from "./experiment/useExperiments";
 
+export interface CampaignMetricSummary {
+  dateStart: string | null;
+  dateStop: string | null;
+  impressions: number | null;
+  clicks: number | null;
+  leads: number | null;
+  spend: number | null;
+  cpc: number | null;
+  cpl: number | null;
+  lastSyncedAt: string | null;
+  lastSyncError: string | null;
+}
+
 export interface ExperimentSummary {
   id: number;
   name: string;
@@ -13,6 +26,7 @@ export interface ExperimentSummary {
   hypothesisTitle: string | null;
   missingConfiguration: string[];
   instagramAccount?: InstagramAccountSummary | null;
+  metrics?: CampaignMetricSummary | null;
 }
 
 export function useFacebookCampaignExperiments(status: string) {

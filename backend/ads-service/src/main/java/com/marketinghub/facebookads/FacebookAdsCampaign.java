@@ -77,6 +77,12 @@ public class FacebookAdsCampaign {
     @Column(name = "country_iso2", length = 2, nullable = false)
     private Set<String> specialAdCountries = new HashSet<>();
 
+    @Column(name = "metrics_last_synced_at")
+    private Instant metricsLastSyncedAt;
+
+    @Column(name = "metrics_last_error", columnDefinition = "TEXT")
+    private String metricsLastError;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

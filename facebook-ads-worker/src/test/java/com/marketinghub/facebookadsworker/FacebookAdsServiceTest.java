@@ -556,9 +556,9 @@ class FacebookAdsServiceTest {
     void metricsRequestsCampaignInsights() throws Exception {
         server.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"impressions\":\"10\"}]}")
             .addHeader("Content-Type", "application/json"));
-        JsonNode node = service.getCampaignMetrics("77");
+        JsonNode node = service.getCampaignInsights("77", Map.of("fields", "impressions"));
         RecordedRequest request = takeRequest("request");
-        assertEquals("/v23.0/77/insights?access_token=token", request.getPath());
+        assertEquals("/v23.0/77/insights?access_token=token&fields=impressions", request.getPath());
         assertEquals("10", node.get("data").get(0).path("impressions").asText());
     }
 }

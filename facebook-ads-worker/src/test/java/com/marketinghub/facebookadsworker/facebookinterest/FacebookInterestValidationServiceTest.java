@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -115,7 +116,7 @@ class FacebookInterestValidationServiceTest {
         assertNotNull(pendingRequest);
         assertEquals("/api/facebook-interests/pending", pendingRequest.getPath());
 
-        List<String> locales = List.of("pt_BR", "en_US", null);
+        List<String> locales = Arrays.asList("pt_BR", "en_US", null);
         for (String locale : locales) {
             RecordedRequest searchRequest = facebook.takeRequest(5, TimeUnit.SECONDS);
             assertNotNull(searchRequest);

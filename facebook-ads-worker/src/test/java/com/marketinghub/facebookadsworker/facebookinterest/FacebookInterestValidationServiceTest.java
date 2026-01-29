@@ -12,9 +12,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 class FacebookInterestValidationServiceTest {
@@ -77,17 +79,24 @@ class FacebookInterestValidationServiceTest {
         service.validatePendingInterests();
 
         RecordedRequest pendingRequest = backend.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(pendingRequest);
         assertEquals("/api/facebook-interests/pending", pendingRequest.getPath());
 
         RecordedRequest searchRequest = facebook.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(searchRequest);
         assertEquals("/v23.0/search", searchRequest.getRequestUrl().encodedPath());
+        assertEquals("adinterest", searchRequest.getRequestUrl().queryParameter("type"));
+        assertEquals("Pilates", searchRequest.getRequestUrl().queryParameter("q"));
+        assertEquals("pt_BR", searchRequest.getRequestUrl().queryParameter("locale"));
 
         RecordedRequest updateRequest = backend.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(updateRequest);
         assertEquals("/api/facebook-interests/1", updateRequest.getPath());
         JsonNode body = objectMapper.readTree(updateRequest.getBody().inputStream());
         assertEquals("VALID", body.get("status").asText());
         assertEquals("6003139266461", body.get("facebookInterestId").asText());
         assertEquals("Pilates Training", body.get("name").asText());
+        assertEquals(1, facebook.getRequestCount());
     }
 
     @Test
@@ -95,20 +104,40 @@ class FacebookInterestValidationServiceTest {
         backend.enqueueResponse(new MockResponse()
             .setBody("[{\"id\":2,\"name\":\"Unknown Interest\"}]")
             .addHeader("Content-Type", "application/json"));
-        facebook.enqueueResponse(new MockResponse()
-            .setBody("{\"data\":[]}")
-            .addHeader("Content-Type", "application/json"));
+        enqueueEmptyInterestResponse();
+        enqueueEmptyInterestResponse();
+        enqueueEmptyInterestResponse();
         backend.enqueueResponse(new MockResponse().setResponseCode(204));
 
         service.validatePendingInterests();
 
-        backend.takeRequest(5, TimeUnit.SECONDS);
-        facebook.takeRequest(5, TimeUnit.SECONDS);
+        RecordedRequest pendingRequest = backend.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(pendingRequest);
+        assertEquals("/api/facebook-interests/pending", pendingRequest.getPath());
+
+        List<String> locales = List.of("pt_BR", "en_US", null);
+        for (String locale : locales) {
+            RecordedRequest searchRequest = facebook.takeRequest(5, TimeUnit.SECONDS);
+            assertNotNull(searchRequest);
+            assertEquals("/v23.0/search", searchRequest.getRequestUrl().encodedPath());
+            assertEquals("adinterest", searchRequest.getRequestUrl().queryParameter("type"));
+            assertEquals("Unknown Interest", searchRequest.getRequestUrl().queryParameter("q"));
+            assertEquals(locale, searchRequest.getRequestUrl().queryParameter("locale"));
+        }
+
         RecordedRequest updateRequest = backend.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(updateRequest);
         assertEquals("/api/facebook-interests/2", updateRequest.getPath());
         JsonNode body = objectMapper.readTree(updateRequest.getBody().inputStream());
         assertEquals("INVALID", body.get("status").asText());
         assertNull(body.get("facebookInterestId").textValue());
         assertNull(body.get("name").textValue());
+        assertEquals(3, facebook.getRequestCount());
+    }
+
+    private void enqueueEmptyInterestResponse() {
+        facebook.enqueueResponse(new MockResponse()
+            .setBody("{\"data\":[]}")
+            .addHeader("Content-Type", "application/json"));
     }
 }

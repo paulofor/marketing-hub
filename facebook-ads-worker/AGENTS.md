@@ -43,6 +43,9 @@
   sem stub (falha imediata) para evitar respostas pendentes mascararem novas regressões.
 - O `FailFastMockWebServer` expõe `getRequestCount()` para checar quantas requisições o cenário
   disparou, facilitando asserções nos testes.
+- Ao testar validação de interesses, lembre que o worker consulta a Graph API em sequência
+  (`pt_BR`, `en_US` e sem locale). Enfileire respostas para cada tentativa para evitar falhas
+  por requisições não stubadas.
 
 - Perguntas personalizadas geradas pelo ChatGPT agora são persistidas no backend
   e devolvidas em JSON para o worker; mantenha compatível qualquer mudança que

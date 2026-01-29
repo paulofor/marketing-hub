@@ -131,6 +131,11 @@ tenha resposta enfileirada, o teste falha imediatamente, evitando travamentos
 silenciosos durante a execução da suíte.
 O wrapper também expõe `getRequestCount()` para facilitar asserções sobre o número de
 chamadas disparadas pelos serviços em cada cenário de teste.
+Os cenários de validação de interesses devem considerar o fallback de locale na Graph API:
+quando não há correspondência em `pt_BR`, o worker tenta novamente em `en_US` e, se ainda
+assim não houver resultado, realiza uma terceira consulta sem locale. Testes que simulam
+esse comportamento precisam enfileirar três respostas para evitar falhas por requisições
+sem stub.
 
 ## Renovação automática de tokens
 

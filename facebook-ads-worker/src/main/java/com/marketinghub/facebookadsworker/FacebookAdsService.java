@@ -18,7 +18,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -943,7 +942,7 @@ public class FacebookAdsService {
             .queryParam("q", query)
             .queryParam("limit", 5)
             .queryParam("access_token", requireAccessToken())
-            .encode(StandardCharsets.UTF_8)
+            .build(false)
             .toUriString();
 
         try {
@@ -1014,7 +1013,7 @@ private FacebookInterest searchInterest(String interestName, String locale) {
     if (hasText(locale)) {
         builder.queryParam("locale", locale);
     }
-    String path = builder.encode(StandardCharsets.UTF_8).toUriString();
+    String path = builder.build(false).toUriString();
 
     try {
         FacebookApiResponse response = executeGet(path);

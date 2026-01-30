@@ -19,6 +19,7 @@ import { useFacebookConfigurationStatus } from "../../api/useFacebookConfigurati
 import { useJourneyTemplate } from "../../api/journey/useJourneyTemplate";
 import { useExperimentJourneyAssignments } from "../../api/experiment/useExperimentJourneyAssignments";
 import { useRebuildExperimentJourney } from "../../api/experiment/useRebuildExperimentJourney";
+import { useUpdateExperimentStatus } from "../../api/experiment/useUpdateExperimentStatus";
 import type { JourneyAssignment, JourneyStep } from "../../api/journey/types";
 import DeliverablesTab from "./DeliverablesTab";
 import LeadPortalFlowTab from "./LeadPortalFlowTab";
@@ -48,6 +49,8 @@ export default function ExperimentDetailPage() {
     useExperimentJourneyAssignments(expId);
   const { data: template } = useJourneyTemplate(data?.journeyTemplateId ?? undefined);
   const rebuildJourney = useRebuildExperimentJourney(expId);
+  const updateExperimentStatus = useUpdateExperimentStatus(expId);
+  const isUpdatingStatus = updateExperimentStatus.isPending;
   const { data: targetingElements, isLoading: isLoadingTargeting } =
     useTargetingElementsByNiche(nicheIdParam);
   const hypothesisIdAsString = hypothesisId ? String(hypothesisId) : undefined;
@@ -235,7 +238,13 @@ export default function ExperimentDetailPage() {
         data.status === "PLANNED"
           ? "O worker poderá buscar este experimento quando os demais itens estiverem prontos."
           : "Altere o status para Planejado na lista de experimentos para liberar o worker de Facebook.",
-      actionLabel: undefined,
+      action:
+        data.status === "PLANNED"
+          ? undefined
+          : () => updateExperimentStatus.mutate("PLANNED"),
+      actionLabel: data.status === "PLANNED" ? undefined : "Marcar como Planejado",
+      actionDisabled: isUpdatingStatus,
+      actionLoading: isUpdatingStatus,
     },
     {
       id: "creatives",
@@ -496,7 +505,11 @@ export default function ExperimentDetailPage() {
                       type="button"
                       className="btn btn-link btn-sm p-0 align-baseline mt-2"
                       onClick={check.action}
+                      disabled={check.actionDisabled}
                     >
+                      {check.actionLoading ? (
+                        <span className="spinner-border spinner-border-sm me-2" role="status" />
+                      ) : null}
                       {check.actionLabel}
                     </button>
                   ) : null}

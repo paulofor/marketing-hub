@@ -636,7 +636,7 @@ public class FacebookAdsService {
             case "interests" -> "interesse";
             default -> fieldName;
         };
-        targetingErrors.add(humanField + " não encontrado na API da Meta:  + String.valueOf(value) + ");
+        targetingErrors.add(humanField + " não encontrado na API da Meta: " + String.valueOf(value));
     }
 
     private void normalizeCustomAudiences(Map<String, Object> targeting) {

@@ -431,3 +431,7 @@ databaseChangeLog:
   - include:
       file: V2034_01_23__experiment_status_string.sql
       relativeToChangelogFile: true
+
+  - include:
+      file: V2034_02_01__create_targeting_request_and_candidate.sql
+      relativeToChangelogFile: true

@@ -27,3 +27,20 @@ export interface TargetingElement {
   createdAt?: string | null;
   updatedAt?: string | null;
 }
+
+export type TargetingCandidateType = "INTEREST" | "BEHAVIOR" | "WORK_POSITION";
+
+export type TargetingAudienceType = "PROSPECT" | "REMARKETING";
+
+export interface TargetingRequest {
+  id: string;
+  descricao: string;
+  idioma: string;
+  pais: string;
+  publico_tipo: TargetingAudienceType;
+  status: string;
+  origin?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  etaSeconds?: number;
+}

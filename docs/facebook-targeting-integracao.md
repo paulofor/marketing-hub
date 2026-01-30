@@ -29,14 +29,60 @@ Front-end  →  Backend (API pública)  →  AI Worker  →  Resolver de Targeti
 ```
 
 ### 1) Solicitação do cliente
-- O cliente solicita ideias de targeting (por nicho ou hipótese) via front-end.
-- O backend cria um registro de "solicitação de targeting" com status `PENDING_AI`.
+- **Entrada**: nicho/hypótese livre (ex.: "noivas minimalistas em SP", "gestores de RH que usam ATS"), idioma
+  preferencial (padrão `pt_BR`), país (padrão `BR`) e tipo de público desejado (prospect/remarketing).
+- **Validações no front-end**: limite de caracteres, prevenção de PII e filtro de palavras proibidas para não
+  trafegar termos que a Meta bloqueia. O front também exibe política de uso de dados da Meta.
+- **API pública**: `POST /api/targeting/requests` com payload `{ descricao, idioma?, pais?, publico_tipo? }`.
+  - Resposta imediata com `requestId`, status `PENDING_AI` e ETA estimado.
+  - Autenticação via token do workspace para manter rastreabilidade.
+- **Persistência**: o backend grava `targeting_requests` com `status=PENDING_AI`, `origem=cliente`,
+  `locale`, `country`, timestamps e usuário que originou a solicitação.
+- **Eventos/filas**: publicar mensagem `targeting.request.created` para o AI Worker, contendo o `requestId` e o
+  contexto acima. Dead-letter com reprocessamento manual via painel ops.
+- **Observabilidade**: log estruturado com `requestId` + tenant, métrica de throughput e taxa de erro de
+  enfileiramento. Dashboard mostra pendências por estado.
 
 ### 2) Geração de hipóteses (AI Worker)
-- O AI Worker recebe a solicitação e gera *candidatos* (palavras-chave/frases) para cada tipo: interesse,
-  comportamento e cargo.
-- Ele retorna ao backend a lista de candidatos com metadados (ex.: explicação do raciocínio, score semântico).
-- Status passa para `PENDING_FACEBOOK_MATCH`.
+- **Consumo**: o AI Worker escuta `targeting.request.created`, busca detalhes do request e resgata contextos
+  adicionais (ex.: persona, etapa do funil, produto).
+- **Geração**:
+  - Produz *candidatos* textuais por tipo (`interest`, `behavior`, `work_position`) com volume limitado
+    (ex.: top 30 por tipo) e diversidade sem duplicar variações triviais.
+  - Inclui *rationale* explicando porque o termo é relevante para o nicho/hypótese.
+  - Atribui `score` semântico (0–1) e tags de intenção (awareness/consideration/decision) para auxiliar o
+    ranqueamento posterior.
+- **Controles de qualidade**:
+  - Bloquear termos proibidos pela Meta (lista local) e qualquer PII detectada pelo classificador.
+  - Garantir idioma solicitado; se faltarem opções, incluir fallback em `en_US` marcado em metadados.
+  - Deduplicação e normalização (lowercase, trim) antes de persistir.
+- **Contrato de saída para Backend**: `POST /internal/targeting/{requestId}/candidates`
+  ```json
+  {
+    "candidates": [
+      {
+        "texto_sugerido": "casamentos minimalistas",
+        "tipo": "interest",
+        "origem": "AI",
+        "score": 0.87,
+        "rationale": "Termo central para noivas que buscam estética clean",
+        "idioma": "pt_BR"
+      },
+      {
+        "texto_sugerido": "HR software buyer",
+        "tipo": "work_position",
+        "origem": "AI",
+        "score": 0.74,
+        "rationale": "Cargos que decidem compras de ATS",
+        "idioma": "en_US"
+      }
+    ]
+  }
+  ```
+- **Persistência**: backend grava em `targeting_candidates` com `status=PENDING_FACEBOOK_MATCH`, mantendo
+  metadados (`rationale`, `score`, `idioma`) para auditoria e UI.
+- **Observabilidade**: métrica de tempo de geração, contagem de candidatos por request e taxa de bloqueio por
+  regras de segurança. Logs incluem `requestId`, `candidateId`, `tipo` e `score`.
 
 ### 3) Resolução e validação (Facebook Ads Worker)
 - Novo componente **TargetingResolverService** (dentro do Facebook Ads Worker) recebe os candidatos e faz

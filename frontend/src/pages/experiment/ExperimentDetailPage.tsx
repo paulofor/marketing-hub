@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useExperiment } from "../../api/experiment/useExperiment";
+import { useExperimentDiagnostics } from "../../api/experiment/useExperimentDiagnostics";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
 import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
@@ -30,6 +31,7 @@ export default function ExperimentDetailPage() {
   const expId = id as string;
   const navigate = useNavigate();
   const { data, isLoading } = useExperiment(expId);
+  const { data: diagnostics, isLoading: isLoadingDiagnostics } = useExperimentDiagnostics(expId);
   const { data: niche } = useNiche(data?.nicheId ?? 0);
   const { data: hyp } = useHypothesis(
     data ? String(data.nicheId) : undefined,
@@ -249,6 +251,11 @@ export default function ExperimentDetailPage() {
     },
   ];
   const isReadyForFacebook = readinessChecks.every((c) => c.isMet);
+  const diagnosticsVariant: Record<string, string> = {
+    ERROR: "danger",
+    WARNING: "warning",
+    INFO: "secondary",
+  };
 
   const selectedEmailOverview = data.selectedSampleEmailSubject ? (
     <div className="d-flex flex-column">
@@ -411,6 +418,44 @@ export default function ExperimentDetailPage() {
           <span className="badge bg-secondary">{data.status}</span>
         </div>
       </div>
+      {isLoadingDiagnostics ? (
+        <div className="alert alert-light d-flex align-items-center gap-2 mt-3" role="status">
+          <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+          <span>Carregando diagnóstico da publicação...</span>
+        </div>
+      ) : diagnostics ? (
+        <div
+          className={`alert alert-${diagnosticsVariant[diagnostics.severity] ?? "secondary"} mt-3`}
+          role="alert"
+        >
+          <div className="d-flex justify-content-between gap-3">
+            <div>
+              <h6 className="alert-heading mb-1">{diagnostics.headline}</h6>
+              <p className="mb-2">{diagnostics.description}</p>
+              {diagnostics.resolution ? (
+                <p className="mb-2">
+                  <strong>Como resolver:</strong> {diagnostics.resolution}
+                </p>
+              ) : null}
+            </div>
+            <span
+              className={`badge text-bg-${diagnosticsVariant[diagnostics.severity] ?? "secondary"} align-self-start`}
+            >
+              {diagnostics.severity}
+            </span>
+          </div>
+          {diagnostics.artifacts.length > 0 ? (
+            <ul className="mb-0 mt-2 small ps-3">
+              {diagnostics.artifacts.map((artifact) => (
+                <li key={`${artifact.type}-${artifact.id}`}>
+                  <strong>{artifact.type}</strong> · {artifact.name || artifact.id} — ID interno {artifact.id}, ID Meta:{" "}
+                  {artifact.externalId ?? "—"}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
       <div className="card border-0 shadow-sm rounded-3 mt-3">
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-start">

@@ -191,11 +191,25 @@ public class FacebookAdsService {
         body.put("status", "PAUSED");
         body.put("destination_type", request.destinationType());
         body.put("targeting", targeting);
-        if (request.bidStrategy() != null && !request.bidStrategy().isBlank()) {
-            body.put("bid_strategy", request.bidStrategy());
+        String bidStrategy = request.bidStrategy();
+        String bidAmount = request.bidAmount();
+
+        if (bidStrategy != null && !bidStrategy.isBlank()) {
+            body.put("bid_strategy", bidStrategy);
         }
-        if (request.bidAmount() != null && !request.bidAmount().isBlank()) {
-            body.put("bid_amount", request.bidAmount());
+
+        boolean isLowestCostWithoutCap = bidStrategy != null
+            && bidStrategy.equalsIgnoreCase("LOWEST_COST_WITHOUT_CAP");
+
+        if (bidAmount != null && !bidAmount.isBlank()) {
+            if (isLowestCostWithoutCap || bidStrategy == null || bidStrategy.isBlank()) {
+                LOGGER.warn(
+                    "Ignoring bid_amount for ad set '{}' because the lowest cost strategy does not accept manual bids",
+                    request.name()
+                );
+            } else {
+                body.put("bid_amount", bidAmount);
+            }
         }
         if (request.pageId() != null && !request.pageId().isBlank()) {
             body.put("promoted_object", Map.of("page_id", request.pageId()));

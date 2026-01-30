@@ -317,6 +317,20 @@ remove o item da segmentação para evitar erros `(#100) Param
 targeting[custom_audiences][X] must be a valid custom audience id` durante a
 criação do conjunto de anúncios.
 
+### Erro `(#100) bid_amount is not allowed when bid strategy is lowest cost`
+
+A documentação oficial de estratégias de lance da Meta
+(https://developers.facebook.com/docs/marketing-api/bidding/#bid-strategy)
+explica que a estratégia **LOWEST_COST_WITHOUT_CAP** não aceita lance manual
+(`bid_amount`). Quando o valor é enviado junto a essa estratégia (ou quando o
+`bid_strategy` fica em branco e a API assume o lowest cost como padrão), a
+Graph API responde com `(#100) Invalid parameter` informando que o
+`bid_amount` não é permitido. Para evitar a rejeição, o worker agora remove
+automaticamente o `bid_amount` quando a estratégia configurada é lowest cost ou
+não foi informada. Quem precisar controlar o lance manualmente deve alterar a
+conta no backend para uma estratégia compatível (por exemplo, COST_CAP) antes
+do próximo ciclo do worker.
+
 ### Erro `(#190) OAuthException` indicando token expirado
 
 Quando o Facebook devolve `code = 190` com `error_subcode = 463/467` ou

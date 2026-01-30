@@ -169,7 +169,7 @@ class FacebookCampaignServiceTest {
         assertEquals("10", adSetPayload.get("campaign_id").asText());
         assertEquals("2500", adSetPayload.get("daily_budget").asText());
         assertEquals("LOWEST_COST_WITHOUT_CAP", adSetPayload.get("bid_strategy").asText());
-        assertEquals("150", adSetPayload.get("bid_amount").asText());
+        assertFalse(adSetPayload.has("bid_amount"));
         assertEquals("WEBSITE", adSetPayload.get("destination_type").asText());
         assertEquals("42", adSetPayload.get("promoted_object").get("page_id").asText());
         JsonNode targeting = adSetPayload.get("targeting");

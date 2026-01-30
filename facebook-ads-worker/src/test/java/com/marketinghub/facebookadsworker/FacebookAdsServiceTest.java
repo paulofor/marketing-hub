@@ -108,11 +108,36 @@ class FacebookAdsServiceTest {
         assertEquals("PAUSED", body.get("status").asText());
         assertEquals("WEBSITE", body.get("destination_type").asText());
         assertEquals("LOWEST_COST_WITHOUT_CAP", body.get("bid_strategy").asText());
-        assertEquals("200", body.get("bid_amount").asText());
+        assertFalse(body.has("bid_amount"));
         assertEquals("BR", body.get("targeting").get("geo_locations").get("countries").get(0).asText());
         assertEquals("42", body.get("promoted_object").get("page_id").asText());
         assertEquals("222", id);
     }
+
+    @Test
+    void createAdSetIncludesBidAmountForManualStrategies() throws Exception {
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"333\"}")
+            .addHeader("Content-Type", "application/json"));
+        FacebookAdsService.AdSetRequest request = new FacebookAdsService.AdSetRequest(
+            "Camp - Ad Set",
+            "123",
+            "1500",
+            "IMPRESSIONS",
+            "LINK_CLICKS",
+            "WEBSITE",
+            "COST_CAP",
+            "200",
+            "42",
+            "BR",
+            null
+        );
+        service.createAdSet("1", request);
+        RecordedRequest recorded = takeRequest("request");
+        JsonNode body = objectMapper.readTree(recorded.getBody().inputStream());
+        assertEquals("COST_CAP", body.get("bid_strategy").asText());
+        assertEquals("200", body.get("bid_amount").asText());
+    }
+
 
     @Test
     void createAdSetRemovesLanguagesFromTargeting() throws Exception {

@@ -12,6 +12,7 @@ import { TargetingElementCard } from "../../components/TargetingElementCard";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import type { TargetingElementType } from "../../api/targeting/types";
 import { TargetingGenerationForm } from "../../components/TargetingGenerationForm";
+import { TargetingRequestForm } from "../../components/TargetingRequestForm";
 import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
 
 export default function HypothesisDetailPage() {
@@ -212,6 +213,13 @@ ${data.entrega ?? ""}
         <p className="text-body-secondary">
           Localização fixa: Brasil. Gere e aprove elementos separados por interesses, cargos e comportamentos para este nicho.
         </p>
+        <TargetingRequestForm
+          className="mb-3"
+          defaultDescricao={`Hipótese ${data.title} (${niche?.name ?? "N/A"})`}
+          defaultIdioma="pt_BR"
+          defaultPais="BR"
+          defaultPublico="PROSPECT"
+        />
         <div className="row row-cols-1 row-cols-lg-3 g-3 mb-3">
           {targetingConfigs.map((config) => (
             <div key={config.type} className="col">

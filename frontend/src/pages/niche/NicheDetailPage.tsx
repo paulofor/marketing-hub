@@ -12,6 +12,7 @@ import { useChatDialog } from "../../api/chatDialog/useChatDialog";
 import { useForm } from "react-hook-form";
 import type { TargetingElementType } from "../../api/targeting/types";
 import { TargetingGenerationForm } from "../../components/TargetingGenerationForm";
+import { TargetingRequestForm } from "../../components/TargetingRequestForm";
 import { useRequestHypotheses } from "../../api/niche/useRequestHypotheses";
 import { useRequestDetailedDescriptions } from "../../api/niche/useRequestDetailedDescriptions";
 import { useNicheDetailedDescriptions } from "../../api/niche/useNicheDetailedDescriptions";
@@ -1360,6 +1361,14 @@ export default function NicheDetailPage() {
           </div>
         </div>
         <div className="niche-section__body">
+          <TargetingRequestForm
+            className="mb-3"
+            defaultDescricao={`Nicho ${data.name}`}
+            defaultIdioma="pt_BR"
+            defaultPais="BR"
+            defaultPublico="PROSPECT"
+          />
+
           <div className="row row-cols-1 row-cols-md-3 g-3 mb-4">
             {targetingConfigs.map((config) => (
               <div key={config.type} className="col">

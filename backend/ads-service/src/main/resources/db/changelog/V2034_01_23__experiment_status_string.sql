@@ -1,3 +1,8 @@
+--liquibase formatted sql
+--changeset repo:2034-01-23-experiment-status-string dbms:mysql
+--preconditions onFail:MARK_RAN
+--precondition-sql-check expectedResult:1 SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'experiment' AND column_name = 'status' AND data_type NOT IN ('varchar','char');
+
 -- Ensure experiment status is stored as the enum name instead of a numeric ordinal
 -- 1) Create a temporary column with the desired type
 ALTER TABLE experiment

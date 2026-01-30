@@ -15,4 +15,6 @@ public interface FacebookAdsCampaignRepository extends JpaRepository<FacebookAds
             where e.status = :status
             """)
     List<FacebookAdsCampaign> findAllByExperimentStatus(@Param("status") ExperimentStatus status);
+
+    List<FacebookAdsCampaign> findByExperimentId(Long experimentId);
 }

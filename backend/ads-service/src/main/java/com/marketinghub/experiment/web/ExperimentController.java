@@ -1,10 +1,12 @@
 package com.marketinghub.experiment.web;
 
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
+import com.marketinghub.experiment.dto.ExperimentDiagnosticsDto;
 import com.marketinghub.experiment.dto.ExperimentDto;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateSelectedSampleEmailRequest;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
+import com.marketinghub.experiment.service.ExperimentDiagnosticsService;
 import com.marketinghub.experiment.service.ExperimentService;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,10 +21,13 @@ import java.util.stream.StreamSupport;
 public class ExperimentController {
     private final ExperimentService service;
     private final ExperimentMapper mapper;
+    private final ExperimentDiagnosticsService diagnosticsService;
 
-    public ExperimentController(ExperimentService service, ExperimentMapper mapper) {
+    public ExperimentController(ExperimentService service, ExperimentMapper mapper,
+                                ExperimentDiagnosticsService diagnosticsService) {
         this.service = service;
         this.mapper = mapper;
+        this.diagnosticsService = diagnosticsService;
     }
 
     @PostMapping
@@ -38,6 +43,11 @@ public class ExperimentController {
     @GetMapping("/{id}")
     public ExperimentDto get(@PathVariable Long id) {
         return mapper.toDto(service.get(id));
+    }
+
+    @GetMapping("/{id}/diagnostics")
+    public ExperimentDiagnosticsDto diagnostics(@PathVariable Long id) {
+        return diagnosticsService.diagnose(id);
     }
 
     @GetMapping

@@ -13,6 +13,7 @@ import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurat
 import com.marketinghub.facebookadsworker.facebooktokenrenewal.FacebookTokenRenewalClient;
 import com.marketinghub.facebookadsworker.facebooktokenrenewal.FacebookTokenRenewalService;
 import com.marketinghub.facebookadsworker.testsupport.FailFastMockWebServer;
+import com.marketinghub.facebookadsworker.facebooktargeting.TargetingResolverProperties;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.RecordedRequest;
 import okhttp3.mockwebserver.SocketPolicy;
@@ -64,11 +65,13 @@ class FacebookCampaignServiceTest {
             .responseTimeout(Duration.ofSeconds(5));
         webClientBuilder = WebClient.builder()
             .clientConnector(new ReactorClientHttpConnector(httpClient));
+        TargetingResolverProperties resolverProperties = new TargetingResolverProperties();
         adsService = new FacebookAdsService(
             webClientBuilder,
             facebookUrl,
             "v23.0",
-            objectMapper
+            objectMapper,
+            resolverProperties
         );
         adsService.updateAccessToken("token");
         FacebookTokenRenewalClient tokenRenewalClient = new FacebookTokenRenewalClient(

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.facebookadsworker.util.InstantFormPublicationHelper;
+import com.marketinghub.facebookadsworker.facebooktargeting.TargetingResolverProperties;
 import com.marketinghub.facebookadsworker.util.JsonLogFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +19,11 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -48,6 +53,8 @@ public class FacebookAdsService {
     private final ConcurrentMap<String, String> pageAccessTokens;
     private final ConcurrentMap<String, String> interestIdCache;
     private final ConcurrentMap<TargetingCategoryCacheKey, String> targetingCategoryIdCache;
+    private final Duration targetingSearchCacheTtl;
+    private final ConcurrentMap<TargetingSearchCacheKey, CachedTargetingSearchResults> targetingSearchCache;
     private static final Set<String> UNSUPPORTED_TARGETING_FIELDS = Set.of(
         "detailed_targeting_description"
     );
@@ -55,7 +62,8 @@ public class FacebookAdsService {
     public FacebookAdsService(WebClient.Builder builder,
                               @Value("${facebook.graph-api.base-url:https://graph.facebook.com}") String baseUrl,
                               @Value("${facebook.graph-api.version:v23.0}") String apiVersion,
-                              ObjectMapper objectMapper) {
+                              ObjectMapper objectMapper,
+                              TargetingResolverProperties resolverProperties) {
         this.webClient = builder.baseUrl(baseUrl).build();
         this.accessToken = new AtomicReference<>(null);
         this.apiVersion = normalizeVersion(apiVersion);
@@ -63,6 +71,11 @@ public class FacebookAdsService {
         this.pageAccessTokens = new ConcurrentHashMap<>();
         this.interestIdCache = new ConcurrentHashMap<>();
         this.targetingCategoryIdCache = new ConcurrentHashMap<>();
+        Duration configuredTtl = resolverProperties != null ? resolverProperties.getCacheTtl() : null;
+        this.targetingSearchCacheTtl = configuredTtl != null && !configuredTtl.isNegative() && !configuredTtl.isZero()
+            ? configuredTtl
+            : Duration.ofMinutes(30);
+        this.targetingSearchCache = new ConcurrentHashMap<>();
         LOGGER.info("Configured Facebook Graph API version: {}", this.apiVersion);
     }
 
@@ -447,6 +460,138 @@ public class FacebookAdsService {
             );
             return null;
         }
+    }
+
+    public List<FacebookTargetingSearchResult> searchTargetingOptions(TargetingSearchRequest request) {
+        if (request == null || request.type() == null || !hasText(request.query())) {
+            return Collections.emptyList();
+        }
+        String normalizedQuery = request.query().trim();
+        if (!hasText(normalizedQuery)) {
+            return Collections.emptyList();
+        }
+        int limit = Math.max(1, request.limit());
+        TargetingSearchCacheKey cacheKey = new TargetingSearchCacheKey(
+            request.type(),
+            normalizedQuery.toLowerCase(Locale.ROOT),
+            normalizeCacheKeyValue(request.locale()),
+            normalizeCacheKeyValue(request.country()),
+            normalizeCacheKeyValue(normalizeAdAccountId(request.adAccountId())),
+            limit
+        );
+        CachedTargetingSearchResults cached = targetingSearchCache.get(cacheKey);
+        if (cached != null && !cached.isExpired()) {
+            return cached.results();
+        }
+        TargetingSearchRequest normalizedRequest = new TargetingSearchRequest(
+            request.type(),
+            normalizedQuery,
+            normalizeAdAccountId(request.adAccountId()),
+            request.locale(),
+            request.country(),
+            limit
+        );
+        List<FacebookTargetingSearchResult> results = executeTargetingSearch(normalizedRequest);
+        List<FacebookTargetingSearchResult> immutableResults = results == null ? Collections.emptyList() : List.copyOf(results);
+        targetingSearchCache.put(cacheKey, new CachedTargetingSearchResults(immutableResults, Instant.now().plus(targetingSearchCacheTtl)));
+        return immutableResults;
+    }
+
+    private List<FacebookTargetingSearchResult> executeTargetingSearch(TargetingSearchRequest request) {
+        UriComponentsBuilder builder = UriComponentsBuilder
+            .fromPath(buildVersionedPath("/search"))
+            .queryParam("type", request.type().graphType())
+            .queryParam("q", request.query())
+            .queryParam("limit", request.limit())
+            .queryParam("fields", "id,name,audience_size,path,description,topic")
+            .queryParam("access_token", requireAccessToken());
+        if (hasText(request.locale())) {
+            builder.queryParam("locale", request.locale());
+        }
+        if (hasText(request.country())) {
+            builder.queryParam("country", request.country());
+        }
+        if (hasText(request.adAccountId())) {
+            builder.queryParam("ad_account_id", request.adAccountId());
+        }
+        String pathValue = builder.build(false).toUriString();
+        try {
+            FacebookApiResponse response = executeGet(pathValue);
+            JsonNode body = response != null ? response.body() : null;
+            JsonNode data = body != null ? body.path("data") : null;
+            if (data == null || !data.isArray()) {
+                return Collections.emptyList();
+            }
+            List<FacebookTargetingSearchResult> results = new ArrayList<>();
+            for (JsonNode node : data) {
+                if (node == null || node.isNull()) {
+                    continue;
+                }
+                String id = node.path("id").asText(null);
+                if (!hasText(id)) {
+                    continue;
+                }
+                String name = node.path("name").asText(null);
+                Long audienceSize = node.hasNonNull("audience_size") ? node.path("audience_size").asLong() : null;
+                List<String> hierarchy = parseTargetingPath(node.path("path"));
+                results.add(new FacebookTargetingSearchResult(
+                    id.trim(),
+                    hasText(name) ? name.trim() : null,
+                    audienceSize,
+                    hierarchy
+                ));
+            }
+            return results;
+        } catch (FacebookAccessTokenExpiredException | FacebookPermissionException ex) {
+            throw ex;
+        } catch (RuntimeException ex) {
+            LOGGER.warn(
+                "Facebook targeting search failed for type={} and term '{}': {}",
+                request.type().graphType(),
+                request.query(),
+                ex.getMessage(),
+                ex
+            );
+            return Collections.emptyList();
+        }
+    }
+
+    private List<String> parseTargetingPath(JsonNode pathNode) {
+        if (pathNode == null || !pathNode.isArray() || pathNode.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> pathValues = new ArrayList<>();
+        for (JsonNode element : pathNode) {
+            if (element == null || element.isNull()) {
+                continue;
+            }
+            String value = element.asText(null);
+            if (hasText(value)) {
+                pathValues.add(value.trim());
+            }
+        }
+        return pathValues.isEmpty() ? Collections.emptyList() : Collections.unmodifiableList(pathValues);
+    }
+
+    private String normalizeCacheKeyValue(String value) {
+        if (!hasText(value)) {
+            return null;
+        }
+        return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeAdAccountId(String adAccountId) {
+        if (!hasText(adAccountId)) {
+            return null;
+        }
+        String trimmed = adAccountId.trim();
+        if (trimmed.regionMatches(true, 0, "act_", 0, 4)) {
+            return "act_" + trimmed.substring(4);
+        }
+        if (trimmed.chars().allMatch(Character::isDigit)) {
+            return "act_" + trimmed;
+        }
+        return trimmed;
     }
 
     private void normalizeInterests(Map<String, Object> targeting, List<String> targetingErrors) {
@@ -1075,6 +1220,51 @@ private FacebookInterest searchInterest(String interestName, String locale) {
     }
     return null;
 }
+
+    public record FacebookTargetingSearchResult(String id, String name, Long audienceSize, List<String> path) {}
+
+    public record TargetingSearchRequest(
+        TargetingSearchType type,
+        String query,
+        String adAccountId,
+        String locale,
+        String country,
+        int limit
+    ) {}
+
+    public enum TargetingSearchType {
+        AD_INTEREST("adinterest"),
+        AD_BEHAVIOR("adbehavior"),
+        AD_WORK_POSITION("adworkposition");
+
+        private final String graphType;
+
+        TargetingSearchType(String graphType) {
+            this.graphType = graphType;
+        }
+
+        public String graphType() {
+            return graphType;
+        }
+    }
+
+    private record TargetingSearchCacheKey(
+        TargetingSearchType type,
+        String query,
+        String locale,
+        String country,
+        String adAccountId,
+        int limit
+    ) {}
+
+    private record CachedTargetingSearchResults(
+        List<FacebookTargetingSearchResult> results,
+        Instant expiresAt
+    ) {
+        boolean isExpired() {
+            return expiresAt != null && Instant.now().isAfter(expiresAt);
+        }
+    }
 
     public record FacebookInterest(String id, String name) {}
     private record FacebookTargetingCategory(String id, String name) {}

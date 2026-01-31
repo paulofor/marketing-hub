@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationServiceTest" time="0.12" tests="2" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.marketinghub.facebookadsworker.facebooktargeting.TargetingResolverServiceTest" time="1.073" tests="2" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="21"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -54,32 +54,14 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="65.0"/>
   </properties>
-  <testcase name="validatePendingInterestsResolvesMatch" classname="com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationServiceTest" time="0.02">
-    <system-out><![CDATA[11:34:24.593 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Configured Facebook Graph API version: v23.0
-11:34:24.593 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Facebook access token updated: previousToken=null, newToken=***
-11:34:24.594 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationService -- Requesting pending Facebook interests for validation: url==>http://localhost:58681/api/facebook-interests/pending, params={}
-11:34:24.600 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationService -- Received pending Facebook interests from backend: url<==http://localhost:58681/api/facebook-interests/pending, response=[{"id":1,"name":"Pilates"}]
-11:34:24.601 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Sending GET request to Facebook API: path==>/v23.0/search?type=adinterest&q=Pilates&limit=1&fields=id,name&access_***=***&locale=pt_BR
-11:34:24.604 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Facebook API response received: method=GET, path<==/v23.0/search?type=adinterest&q=Pilates&limit=1&fields=id,name&access_***=***&locale=pt_BR, status=200 200 OK, headers={"Content-Length":["***"],"Content-Type":["app...son"]}, body={"data":[{"id":"6003139266461","name":"Pilates Training"}]}
-11:34:24.604 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationService -- Resolved Facebook interest id=1 to Graph API code 6003139266461 (name=Pilates Training)
-11:34:24.605 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationClient -- Reporting Facebook interest validation result: url==>http://localhost:58681/api/facebook-interests/1, payload={"status":"VALID","facebookInterestId":"6003139266461","name":"Pilates Training"}
-11:34:24.610 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationClient -- Backend acknowledged Facebook interest validation result: url<==http://localhost:58681/api/facebook-interests/1
+  <testcase name="resolveCandidateWithMatchReportsValidatedOptions" classname="com.marketinghub.facebookadsworker.facebooktargeting.TargetingResolverServiceTest" time="1.047">
+    <system-out><![CDATA[11:34:25.714 [main] INFO com.marketinghub.facebookadsworker.facebooktargeting.TargetingResolverService -- Resolved targeting term 'Pilates' with locale=pt_BR country=BR (1 resultados)
 ]]></system-out>
+    <system-err><![CDATA[WARNING: A Java agent has been loaded dynamically (/root/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.13/byte-buddy-agent-1.14.13.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+]]></system-err>
   </testcase>
-  <testcase name="validatePendingInterestsMarksInvalidWhenNotFound" classname="com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationServiceTest" time="0.098">
-    <system-out><![CDATA[11:34:24.613 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Configured Facebook Graph API version: v23.0
-11:34:24.614 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Facebook access token updated: previousToken=null, newToken=***
-11:34:24.614 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationService -- Requesting pending Facebook interests for validation: url==>http://localhost:43945/api/facebook-interests/pending, params={}
-11:34:24.616 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationService -- Received pending Facebook interests from backend: url<==http://localhost:43945/api/facebook-interests/pending, response=[{"id":2,"name":"Unknown Interest"}]
-11:34:24.617 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Sending GET request to Facebook API: path==>/v23.0/search?type=adinterest&q=Unknown Interest&limit=1&fields=id,name&access_***=***&locale=pt_BR
-11:34:24.620 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Facebook API response received: method=GET, path<==/v23.0/search?type=adinterest&q=Unknown Interest&limit=1&fields=id,name&access_***=***&locale=pt_BR, status=200 200 OK, headers={"Content-Length":["***"],"Content-Type":["app...son"]}, body={"data":[]}
-11:34:24.620 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Sending GET request to Facebook API: path==>/v23.0/search?type=adinterest&q=Unknown Interest&limit=1&fields=id,name&access_***=***&locale=en_US
-11:34:24.662 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Facebook API response received: method=GET, path<==/v23.0/search?type=adinterest&q=Unknown Interest&limit=1&fields=id,name&access_***=***&locale=en_US, status=200 200 OK, headers={"Content-Length":["***"],"Content-Type":["app...son"]}, body={"data":[]}
-11:34:24.663 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Sending GET request to Facebook API: path==>/v23.0/search?type=adinterest&q=Unknown Interest&limit=1&fields=id,name&access_***=***
-11:34:24.706 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Facebook API response received: method=GET, path<==/v23.0/search?type=adinterest&q=Unknown Interest&limit=1&fields=id,name&access_***=***, status=200 200 OK, headers={"Content-Length":["***"],"Content-Type":["app...son"]}, body={"data":[]}
-11:34:24.707 [main] WARN com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationService -- Marking Facebook interest id=2 as INVALID because no match was found
-11:34:24.707 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationClient -- Reporting Facebook interest validation result: url==>http://localhost:43945/api/facebook-interests/2, payload={"status":"INVALID","facebookInterestId":null,"name":null}
-11:34:24.709 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationClient -- Backend acknowledged Facebook interest validation result: url<==http://localhost:43945/api/facebook-interests/2
-]]></system-out>
-  </testcase>
+  <testcase name="resolveCandidateWithoutMatchesReportsNoMatch" classname="com.marketinghub.facebookadsworker.facebooktargeting.TargetingResolverServiceTest" time="0.014"/>
 </testsuite>

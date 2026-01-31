@@ -35,6 +35,9 @@ public class TargetingCandidateIngestionRequest {
         @JsonProperty("idioma")
         private String idioma;
 
+        @JsonProperty("pais")
+        private String pais;
+
         @JsonProperty("intent_tag")
         private String intentTag;
     }

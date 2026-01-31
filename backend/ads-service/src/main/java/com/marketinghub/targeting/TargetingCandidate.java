@@ -4,14 +4,18 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Candidato de targeting enviado pelo AI Worker antes de validação com a Meta.
@@ -22,6 +26,8 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString(exclude = {"request", "options"})
+@EqualsAndHashCode(exclude = {"request", "options"})
 public class TargetingCandidate {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,6 +52,9 @@ public class TargetingCandidate {
     @Column(length = 10)
     private String idioma;
 
+    @Column(length = 5)
+    private String country;
+
     @Column(length = 32)
     private String origem;
 
@@ -63,6 +72,10 @@ public class TargetingCandidate {
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(name = "rejection_reason")
     private String rejectionReason;
+
+    @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<TargetingOption> options = new ArrayList<>();
 
     @CreationTimestamp
     private Instant createdAt;

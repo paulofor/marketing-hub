@@ -30,6 +30,44 @@ export interface TargetingElement {
 
 export type TargetingCandidateType = "INTEREST" | "BEHAVIOR" | "WORK_POSITION";
 
+export type TargetingCandidateStatus =
+  | "PENDING_FACEBOOK_MATCH"
+  | "VALIDATED"
+  | "NO_MATCH";
+
+export interface TargetingOption {
+  id: number;
+  facebook_id: string;
+  name: string;
+  type: TargetingCandidateType;
+  audience_size?: number | null;
+  match_score?: number | null;
+  path: string[];
+  search_locale?: string | null;
+  search_country?: string | null;
+  search_term?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface TargetingCandidate {
+  id: number;
+  request_id: string;
+  texto_sugerido: string;
+  tipo: TargetingCandidateType;
+  status: TargetingCandidateStatus;
+  idioma?: string | null;
+  pais?: string | null;
+  origem?: string | null;
+  intent_tag?: string | null;
+  score?: number | null;
+  rationale?: string | null;
+  rejection_reason?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  options?: TargetingOption[];
+}
+
 export type TargetingAudienceType = "PROSPECT" | "REMARKETING";
 
 export interface TargetingRequest {
@@ -43,4 +81,5 @@ export interface TargetingRequest {
   createdAt?: string;
   updatedAt?: string;
   etaSeconds?: number;
+  candidates?: TargetingCandidate[];
 }

@@ -1,0 +1,199 @@
+import { useMemo } from "react";
+import { toast } from "react-toastify";
+import type {
+  TargetingCandidate,
+  TargetingCandidateStatus,
+  TargetingOption,
+  TargetingRequest,
+} from "../api/targeting/types";
+import { useTargetingRequests } from "../api/targeting/useTargetingRequests";
+import { useReprocessTargetingCandidate } from "../api/targeting/useReprocessTargetingCandidate";
+
+interface TargetingRequestStatusPanelProps {
+  limit?: number;
+  className?: string;
+}
+
+const STATUS_COLORS: Record<TargetingCandidateStatus, string> = {
+  PENDING_FACEBOOK_MATCH: "text-bg-secondary",
+  VALIDATED: "text-bg-success",
+  NO_MATCH: "text-bg-warning",
+};
+
+export function TargetingRequestStatusPanel({ limit = 10, className }: TargetingRequestStatusPanelProps) {
+  const { data, isFetching, refetch } = useTargetingRequests(limit);
+  const reprocessMutation = useReprocessTargetingCandidate(limit);
+  const requests = Array.isArray(data) ? data : [];
+
+  const audienceFormatter = useMemo(() => new Intl.NumberFormat("pt-BR"), []);
+  const pendingCandidateId =
+    (reprocessMutation.variables as { candidateId: number } | undefined)?.candidateId ?? null;
+
+  const handleReprocess = async (candidate: TargetingCandidate) => {
+    try {
+      await reprocessMutation.mutateAsync({ candidateId: candidate.id });
+      toast.success("Candidato reenviado para resolução na Meta.");
+    } catch (error) {
+      console.error("Erro ao reenfileirar candidato", error);
+      toast.error("Não foi possível reprocessar agora. Tente novamente em instantes.");
+    }
+  };
+
+  return (
+    <div className={`card ${className ?? ""}`}>
+      <div className="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h5 className="mb-1">Solicitações recentes de targeting</h5>
+          <p className="text-body-secondary small mb-0">
+            Apenas opções validadas pela Graph API são exibidas ao cliente. Acompanhe rejeições e reprocessamentos.
+          </p>
+        </div>
+        <button className="btn btn-outline-secondary btn-sm" type="button" onClick={() => refetch()} disabled={isFetching}>
+          {isFetching ? "Atualizando..." : "Atualizar"}
+        </button>
+      </div>
+      <div className="card-body">
+        {requests.length === 0 && !isFetching && (
+          <p className="text-body-secondary mb-0">
+            Nenhuma solicitação registrada ainda. Envie uma hipótese para que o AI Worker gere candidatos.
+          </p>
+        )}
+        {isFetching && requests.length === 0 && (
+          <p className="text-body-secondary mb-0">Carregando solicitações...</p>
+        )}
+        {requests.map((request) => (
+          <RequestCard
+            key={request.id}
+            request={request}
+            onReprocess={handleReprocess}
+            audienceFormatter={audienceFormatter}
+            pendingCandidateId={pendingCandidateId}
+            isMutationPending={reprocessMutation.isPending}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+interface RequestCardProps {
+  request: TargetingRequest;
+  onReprocess: (candidate: TargetingCandidate) => void;
+  audienceFormatter: Intl.NumberFormat;
+  pendingCandidateId: number | null;
+  isMutationPending: boolean;
+}
+
+function RequestCard({ request, onReprocess, audienceFormatter, pendingCandidateId, isMutationPending }: RequestCardProps) {
+  const candidates = Array.isArray(request.candidates) ? request.candidates : [];
+  return (
+    <div className="border rounded-3 p-3 mb-3">
+      <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+        <div>
+          <strong className="d-block">{request.descricao || "-"}</strong>
+          <span className="text-body-secondary small">
+            {`Idioma ${request.idioma ?? "-"} · País ${request.pais ?? "-"}`}
+          </span>
+        </div>
+        <span className="badge text-bg-light">{request.status}</span>
+      </div>
+      <div className="mt-3">
+        {candidates.length === 0 && (
+          <p className="text-body-secondary small mb-0">Nenhum candidato recebido desta solicitação.</p>
+        )}
+        {candidates.map((candidate) => (
+          <CandidateCard
+            key={candidate.id}
+            candidate={candidate}
+            onReprocess={onReprocess}
+            audienceFormatter={audienceFormatter}
+            isProcessing={isMutationPending && pendingCandidateId === candidate.id}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+interface CandidateCardProps {
+  candidate: TargetingCandidate;
+  onReprocess: (candidate: TargetingCandidate) => void;
+  audienceFormatter: Intl.NumberFormat;
+  isProcessing: boolean;
+}
+
+function CandidateCard({ candidate, onReprocess, audienceFormatter, isProcessing }: CandidateCardProps) {
+  const options = Array.isArray(candidate.options) ? candidate.options : [];
+  const statusClass = STATUS_COLORS[candidate.status] ?? "text-bg-secondary";
+  return (
+    <div className="bg-light rounded-3 p-3 mb-2">
+      <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+        <div>
+          <div className="fw-semibold">{candidate.texto_sugerido}</div>
+          <div className="text-body-secondary small">{candidate.tipo ?? "-"}</div>
+        </div>
+        <span className={`badge ${statusClass}`}>{candidate.status}</span>
+      </div>
+
+      {candidate.status === "VALIDATED" && options.length > 0 && (
+        <div className="mt-3">
+          <p className="text-body-secondary small fw-semibold mb-2">Opções válidas disponibilizadas</p>
+          <ul className="list-unstyled mb-0">
+            {options.map((option) => (
+              <OptionRow key={`${candidate.id}-${option.facebook_id}`} option={option} formatter={audienceFormatter} />
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {candidate.status === "PENDING_FACEBOOK_MATCH" && (
+        <p className="text-body-secondary small mt-3 mb-0">
+          Aguardando resolução pelo Facebook Ads Worker. Assim que houver opções válidas, elas aparecerão aqui.
+        </p>
+      )}
+
+      {candidate.status === "NO_MATCH" && (
+        <div className="alert alert-warning mt-3 mb-0" role="alert">
+          <div className="small">
+            {candidate.rejection_reason ?? "Nenhuma opção retornada pela Meta para este termo."}
+          </div>
+          <button
+            type="button"
+            className="btn btn-outline-dark btn-sm mt-2"
+            onClick={() => onReprocess(candidate)}
+            disabled={isProcessing}
+          >
+            {isProcessing ? "Reprocessando..." : "Reprocessar candidato"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface OptionRowProps {
+  option: TargetingOption;
+  formatter: Intl.NumberFormat;
+}
+
+function OptionRow({ option, formatter }: OptionRowProps) {
+  const audience = typeof option.audience_size === "number" ? formatter.format(option.audience_size) : "-";
+  const path = Array.isArray(option.path) && option.path.length > 0 ? option.path.join(" › ") : null;
+  return (
+    <li className="py-2 border-top">
+      <div className="d-flex justify-content-between gap-3 flex-wrap">
+        <div>
+          <div className="fw-semibold">{option.name}</div>
+          <div className="text-body-secondary small">ID {option.facebook_id}</div>
+          {path && <div className="text-body-secondary small">{path}</div>}
+        </div>
+        <div className="text-body-secondary small text-end">
+          <div>{audience} pessoas</div>
+          {typeof option.match_score === "number" && (
+            <div>Match {(option.match_score * 100).toFixed(0)}%</div>
+          )}
+        </div>
+      </div>
+    </li>
+  );
+}

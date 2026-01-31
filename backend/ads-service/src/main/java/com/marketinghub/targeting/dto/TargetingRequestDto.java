@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -37,4 +38,6 @@ public class TargetingRequestDto {
 
     /** ETA estimado em segundos para o worker IA responder. */
     private Integer etaSeconds;
+
+    private List<TargetingCandidateDto> candidates;
 }

@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.dto;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 import lombok.Data;
 
 /**
@@ -18,4 +19,6 @@ public class CreateAdSetRequest {
     private Integer durationDays;
     private String prompt;
     private String model;
+    private UUID targetingRequestId;
 }
+

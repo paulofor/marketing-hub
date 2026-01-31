@@ -2,6 +2,7 @@ package com.marketinghub.facebookadsworker.facebookcampaign;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -12,6 +13,8 @@ import com.marketinghub.facebookadsworker.FacebookAdsService;
 import com.marketinghub.facebookadsworker.FacebookAdsService.TargetingNormalizationException;
 import com.marketinghub.facebookadsworker.FacebookPermissionException;
 import com.marketinghub.facebookadsworker.facebookinstantform.InstantFormPublicationUpdateRequest;
+import com.marketinghub.facebookadsworker.facebooktargeting.TargetingCandidateStatus;
+import com.marketinghub.facebookadsworker.facebooktargeting.TargetingCandidateType;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient.FacebookWorkerConfiguration;
 import com.marketinghub.facebookadsworker.util.InstantFormPublicationHelper;
@@ -33,12 +36,16 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.Collections;
 import java.util.List;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -261,11 +268,11 @@ public class FacebookCampaignService {
             }
             List<ExperimentAdSet> experimentAdSets = Collections.emptyList();
             ExperimentAdSet selectedAdSet = null;
-            String resolvedTargetingJson = null;
+            ResolvedTargeting resolvedTargeting = new ResolvedTargeting(null, Collections.emptyList());
             if (!exp.nextStepInstantForm()) {
                 experimentAdSets = fetchExperimentAdSets(exp.id());
                 selectedAdSet = selectExperimentAdSet(experimentAdSets);
-                resolvedTargetingJson = resolveTargetingJsonFromBackend(selectedAdSet);
+                resolvedTargeting = resolveTargetingFromBackend(selectedAdSet);
             }
             FacebookAdsService.AdSetRequest adSetRequest = new FacebookAdsService.AdSetRequest(
                 exp.name() + " - Ad Set",
@@ -278,7 +285,8 @@ public class FacebookCampaignService {
                 config.adSetBidAmount(),
                 resolvedPageId,
                 FacebookAdsService.BRAZIL_COUNTRY_CODE,
-                resolvedTargetingJson
+                resolvedTargeting.targetingJson(),
+                resolvedTargeting.options()
             );
             String adSetId = facebookAdsService.createAdSet(config.adAccountId(), adSetRequest);
             String resolvedImageUrl = resolveCreativeImageUrl(creative.imageUrl());
@@ -323,7 +331,7 @@ public class FacebookCampaignService {
                     adSetRequest.targetCountry(),
                     adSetRequest.destinationType(),
                     adSetRequest.pageId(),
-                    resolvedTargetingJson,
+                    resolvedTargeting.targetingJson(),
                     selectedAdSet != null ? selectedAdSet.id() : null
                 ),
                 new CreateCampaignRequest.AdCreative(
@@ -473,24 +481,41 @@ public class FacebookCampaignService {
         if (adSets == null || adSets.isEmpty()) {
             return null;
         }
+        Optional<ExperimentAdSet> withTargetingRequest = adSets.stream()
+            .filter(adSet -> adSet.targetingRequestId() != null)
+            .findFirst();
+        if (withTargetingRequest.isPresent()) {
+            return withTargetingRequest.get();
+        }
         return adSets.stream()
             .filter(adSet -> StringUtils.hasText(adSet.targetingJson()))
             .findFirst()
             .orElse(adSets.get(0));
     }
 
-    private String resolveTargetingJsonFromBackend(ExperimentAdSet adSet) {
+    private ResolvedTargeting resolveTargetingFromBackend(ExperimentAdSet adSet) {
         if (adSet == null) {
-            return null;
+            return new ResolvedTargeting(null, Collections.emptyList());
+        }
+        if (adSet.targetingRequestId() != null) {
+            List<FacebookAdsService.TargetingOption> options = fetchValidatedTargetingOptions(adSet.targetingRequestId());
+            if (options.isEmpty()) {
+                throw new IllegalStateException(
+                    "No validated targeting options found for request %s".formatted(adSet.targetingRequestId())
+                );
+            }
+            ObjectNode targeting = objectMapper.createObjectNode();
+            appendOptionsToTargeting(targeting, options);
+            return new ResolvedTargeting(targeting.isEmpty() ? null : targeting.toString(), options);
         }
         if (StringUtils.hasText(adSet.targetingJson())) {
-            return adSet.targetingJson();
+            return new ResolvedTargeting(adSet.targetingJson(), Collections.emptyList());
         }
         ObjectNode targeting = objectMapper.createObjectNode();
         mergeTargetingValues(targeting, "interests", adSet.interests());
         mergeTargetingValues(targeting, "work_positions", adSet.jobTitles());
         mergeTargetingValues(targeting, "behaviors", adSet.behaviors());
-        return targeting.isEmpty() ? null : targeting.toString();
+        return new ResolvedTargeting(targeting.isEmpty() ? null : targeting.toString(), Collections.emptyList());
     }
 
     private void mergeTargetingValues(ObjectNode targeting, String fieldName, String rawValues) {
@@ -509,6 +534,50 @@ public class FacebookCampaignService {
         });
     }
 
+    private void appendOptionsToTargeting(ObjectNode targeting, List<FacebookAdsService.TargetingOption> options) {
+        if (targeting == null || options == null || options.isEmpty()) {
+            return;
+        }
+        Map<TargetingCandidateType, ArrayNode> grouped = new EnumMap<>(TargetingCandidateType.class);
+        Map<TargetingCandidateType, Set<String>> seen = new EnumMap<>(TargetingCandidateType.class);
+        for (FacebookAdsService.TargetingOption option : options) {
+            if (option == null || !StringUtils.hasText(option.facebookId())) {
+                continue;
+            }
+            TargetingCandidateType type = option.type();
+            if (type == null) {
+                continue;
+            }
+            String fieldName = mapFieldName(type);
+            if (fieldName == null) {
+                continue;
+            }
+            Set<String> dedup = seen.computeIfAbsent(type, key -> new HashSet<>());
+            String facebookId = option.facebookId().trim();
+            if (!dedup.add(facebookId)) {
+                continue;
+            }
+            ArrayNode array = grouped.computeIfAbsent(type, key -> targeting.putArray(fieldName));
+            ObjectNode node = objectMapper.createObjectNode();
+            node.put("id", facebookId);
+            if (StringUtils.hasText(option.name())) {
+                node.put("name", option.name());
+            }
+            array.add(node);
+        }
+    }
+
+    private String mapFieldName(TargetingCandidateType type) {
+        if (type == null) {
+            return null;
+        }
+        return switch (type) {
+            case BEHAVIOR -> "behaviors";
+            case WORK_POSITION -> "work_positions";
+            case INTEREST -> "interests";
+        };
+    }
+
     private List<String> splitLines(String rawValues) {
         if (!StringUtils.hasText(rawValues)) {
             return List.of();
@@ -525,6 +594,74 @@ public class FacebookCampaignService {
             }
         }
         return new ArrayList<>(unique);
+    }
+
+
+    private List<FacebookAdsService.TargetingOption> fetchValidatedTargetingOptions(UUID targetingRequestId) {
+        String url = UriComponentsBuilder
+            .fromHttpUrl(UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/targeting/requests/" + targetingRequestId))
+            .queryParam("includeCandidates", true)
+            .toUriString();
+        LOGGER.info(
+            "Requesting targeting request from backend: url==>{}, requestId={}",
+            url,
+            targetingRequestId
+        );
+        try {
+            TargetingRequestDetails response = backendClient.get()
+                .uri(url)
+                .retrieve()
+                .bodyToMono(TargetingRequestDetails.class)
+                .block();
+            List<FacebookAdsService.TargetingOption> options = extractValidatedOptions(response);
+            LOGGER.info(
+                "Received {} targeting options from backend for request {}",
+                options.size(),
+                targetingRequestId
+            );
+            return options;
+        } catch (Exception ex) {
+            LOGGER.warn(
+                "Failed to fetch targeting request {} from backend: url==>{}, message={}",
+                targetingRequestId,
+                url,
+                ex.getMessage()
+            );
+            LOGGER.debug("Stacktrace while fetching targeting request {}", targetingRequestId, ex);
+            return Collections.emptyList();
+        }
+    }
+
+    private List<FacebookAdsService.TargetingOption> extractValidatedOptions(TargetingRequestDetails request) {
+        if (request == null || request.candidates() == null) {
+            return Collections.emptyList();
+        }
+        List<FacebookAdsService.TargetingOption> options = new ArrayList<>();
+        for (TargetingCandidateDetails candidate : request.candidates()) {
+            if (candidate == null || candidate.status() != TargetingCandidateStatus.VALIDATED) {
+                continue;
+            }
+            TargetingCandidateType type = candidate.tipo();
+            if (candidate.options() == null) {
+                continue;
+            }
+            for (TargetingOptionDetails option : candidate.options()) {
+                if (option == null || !StringUtils.hasText(option.facebookId())) {
+                    continue;
+                }
+                TargetingCandidateType resolvedType = option.type() != null ? option.type() : type;
+                if (resolvedType == null) {
+                    continue;
+                }
+                options.add(new FacebookAdsService.TargetingOption(
+                    option.facebookId().trim(),
+                    option.name(),
+                    resolvedType,
+                    option.audienceSize()
+                ));
+            }
+        }
+        return options;
     }
 
     private boolean hasTokenChangedSinceExpiration() {
@@ -571,9 +708,12 @@ public class FacebookCampaignService {
         String jobTitles,
         String behaviors,
         String targetingJson,
+        UUID targetingRequestId,
         String prompt,
         String model
     ) {}
+
+    public record ResolvedTargeting(String targetingJson, List<FacebookAdsService.TargetingOption> options) {}
 
     public record Experiment(
         long id,
@@ -604,6 +744,26 @@ public class FacebookCampaignService {
             String shareLink
         ) {}
     }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record TargetingRequestDetails(List<TargetingCandidateDetails> candidates) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record TargetingCandidateDetails(
+        Long id,
+        TargetingCandidateType tipo,
+        TargetingCandidateStatus status,
+        List<TargetingOptionDetails> options
+    ) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record TargetingOptionDetails(
+        @JsonProperty("facebook_id") String facebookId,
+        String name,
+        TargetingCandidateType type,
+        @JsonProperty("audience_size") Long audienceSize
+    ) {}
+
     public record CreateCampaignRequest(
         String id,
         String adAccountId,

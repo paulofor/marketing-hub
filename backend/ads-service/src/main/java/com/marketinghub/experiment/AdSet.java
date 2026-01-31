@@ -8,6 +8,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Advertising set configuration for an experiment.
@@ -40,9 +41,13 @@ public class AdSet {
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String behaviors;
 
+
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String targetingJson;
+
+    @Column(name = "targeting_request_id", columnDefinition = "BINARY(16)")
+    private UUID targetingRequestId;
 
     private java.math.BigDecimal budget;
     private Integer durationDays;

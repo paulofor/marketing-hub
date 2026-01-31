@@ -38,6 +38,7 @@ public class AdSetService {
                 .jobTitles(request.getJobTitles())
                 .behaviors(request.getBehaviors())
                 .targetingJson(request.getTargetingJson())
+                .targetingRequestId(request.getTargetingRequestId())
                 .budget(request.getBudget())
                 .durationDays(request.getDurationDays())
                 .prompt(request.getPrompt())

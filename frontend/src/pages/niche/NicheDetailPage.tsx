@@ -13,6 +13,7 @@ import { useForm } from "react-hook-form";
 import type { TargetingElementType } from "../../api/targeting/types";
 import { TargetingGenerationForm } from "../../components/TargetingGenerationForm";
 import { TargetingRequestForm } from "../../components/TargetingRequestForm";
+import { TargetingRequestStatusPanel } from "../../components/TargetingRequestStatusPanel";
 import { useRequestHypotheses } from "../../api/niche/useRequestHypotheses";
 import { useRequestDetailedDescriptions } from "../../api/niche/useRequestDetailedDescriptions";
 import { useNicheDetailedDescriptions } from "../../api/niche/useNicheDetailedDescriptions";
@@ -1368,6 +1369,8 @@ export default function NicheDetailPage() {
             defaultPais="BR"
             defaultPublico="PROSPECT"
           />
+
+          <TargetingRequestStatusPanel className="mb-4" limit={6} />
 
           <div className="row row-cols-1 row-cols-md-3 g-3 mb-4">
             {targetingConfigs.map((config) => (

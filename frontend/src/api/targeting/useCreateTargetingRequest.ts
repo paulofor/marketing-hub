@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import type { TargetingAudienceType, TargetingRequest } from "./types";
 
@@ -9,7 +9,8 @@ export interface CreateTargetingRequestPayload {
   publico_tipo?: TargetingAudienceType;
 }
 
-export function useCreateTargetingRequest() {
+export function useCreateTargetingRequest(limit = 10) {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: CreateTargetingRequestPayload) => {
       const { data } = await axios.post<TargetingRequest>(
@@ -17,6 +18,9 @@ export function useCreateTargetingRequest() {
         payload,
       );
       return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["targeting-requests", limit] });
     },
   });
 }

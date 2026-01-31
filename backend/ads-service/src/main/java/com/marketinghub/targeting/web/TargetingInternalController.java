@@ -2,6 +2,7 @@ package com.marketinghub.targeting.web;
 
 import com.marketinghub.targeting.TargetingRequest;
 import com.marketinghub.targeting.dto.TargetingCandidateIngestionRequest;
+import com.marketinghub.targeting.dto.TargetingCandidateResolutionUpdateRequest;
 import com.marketinghub.targeting.dto.TargetingRequestDto;
 import com.marketinghub.targeting.mapper.TargetingRequestMapper;
 import com.marketinghub.targeting.service.TargetingRequestService;
@@ -32,5 +33,11 @@ public class TargetingInternalController {
     public void saveCandidates(@PathVariable UUID requestId,
                                @RequestBody TargetingCandidateIngestionRequest payload) {
         service.saveCandidates(requestId, payload);
+    }
+
+    @PatchMapping("/candidates/{candidateId}")
+    public void updateCandidate(@PathVariable Long candidateId,
+                                @RequestBody TargetingCandidateResolutionUpdateRequest payload) {
+        service.applyResolution(candidateId, payload);
     }
 }

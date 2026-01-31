@@ -1,6 +1,7 @@
 com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignServiceTest$StubFacebookAccessTokenManager.class
 com/marketinghub/facebookadsworker/testsupport/FailFastMockWebServer$1.class
 com/marketinghub/facebookadsworker/util/UrlUtilsTest.class
+com/marketinghub/facebookadsworker/facebooktargeting/TargetingResolverServiceTest.class
 com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignServiceTest.class
 com/marketinghub/facebookadsworker/FacebookAdsServiceTest.class
 com/marketinghub/facebookadsworker/facebookinterest/FacebookInterestValidationServiceTest.class

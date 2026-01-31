@@ -3,6 +3,7 @@ package com.marketinghub.facebookadsworker.facebookinterest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.facebookadsworker.FacebookAdsService;
+import com.marketinghub.facebookadsworker.facebooktargeting.TargetingResolverProperties;
 import com.marketinghub.facebookadsworker.testsupport.FailFastMockWebServer;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -35,11 +36,13 @@ class FacebookInterestValidationServiceTest {
 
         objectMapper = new ObjectMapper();
 
+        TargetingResolverProperties resolverProperties = new TargetingResolverProperties();
         FacebookAdsService facebookAdsService = new FacebookAdsService(
             WebClient.builder(),
             facebook.url("/").toString(),
             "v23.0",
-            objectMapper
+            objectMapper,
+            resolverProperties
         );
         facebookAdsService.updateAccessToken("token");
 

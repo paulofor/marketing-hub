@@ -3,6 +3,7 @@ package com.marketinghub.facebookadsworker;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.facebookadsworker.FacebookPermissionException;
+import com.marketinghub.facebookadsworker.facebooktargeting.TargetingResolverProperties;
 import com.marketinghub.facebookadsworker.testsupport.FailFastMockWebServer;
 import okhttp3.HttpUrl;
 import okhttp3.mockwebserver.MockResponse;
@@ -35,7 +36,8 @@ class FacebookAdsServiceTest {
         server.start();
         String baseUrl = server.url("/").toString();
         objectMapper = new ObjectMapper();
-        service = new FacebookAdsService(WebClient.builder(), baseUrl, "v23.0", objectMapper);
+        TargetingResolverProperties resolverProperties = new TargetingResolverProperties();
+        service = new FacebookAdsService(WebClient.builder(), baseUrl, "v23.0", objectMapper, resolverProperties);
         service.updateAccessToken("token");
     }
 

@@ -11,6 +11,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -157,5 +158,18 @@ public class TargetingRequestGenerationService {
         if (score.compareTo(BigDecimal.ZERO) < 0) return BigDecimal.ZERO;
         if (score.compareTo(BigDecimal.ONE) > 0) return BigDecimal.ONE;
         return score;
+    }
+
+    private String normalizeLocale(String locale) {
+        if (!StringUtils.hasText(locale)) {
+            return null;
+        }
+        String normalized = locale.trim().replace('-', '_');
+        if (normalized.length() == 5 && normalized.charAt(2) == '_') {
+            String lang = normalized.substring(0, 2).toLowerCase(Locale.ROOT);
+            String country = normalized.substring(3).toUpperCase(Locale.ROOT);
+            return lang + "_" + country;
+        }
+        return normalized;
     }
 }

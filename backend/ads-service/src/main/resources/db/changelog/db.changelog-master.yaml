@@ -441,5 +441,5 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
   - include:
-      file: V2034_02_03__add_targeting_request_to_adset.sql
+      file: V2034_02_03__add_targeting_request_to_adset.yaml
       relativeToChangelogFile: true

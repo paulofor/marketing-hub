@@ -15,6 +15,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -96,7 +97,8 @@ class FacebookAdsServiceTest {
             "200",
             "42",
             "BR",
-            null
+            null,
+            Collections.emptyList()
         );
         String id = service.createAdSet("1", request);
         RecordedRequest recorded = takeRequest("request");
@@ -131,7 +133,8 @@ class FacebookAdsServiceTest {
             "200",
             "42",
             "BR",
-            null
+            null,
+            Collections.emptyList()
         );
         service.createAdSet("1", request);
         RecordedRequest recorded = takeRequest("request");
@@ -157,7 +160,8 @@ class FacebookAdsServiceTest {
             "200",
             "42",
             "BR",
-            targetingJson
+            targetingJson,
+            Collections.emptyList()
         );
 
         service.createAdSet("1", request);
@@ -188,7 +192,8 @@ class FacebookAdsServiceTest {
             "200",
             "42",
             "BR",
-            targetingJson
+            targetingJson,
+            Collections.emptyList()
         );
 
         service.createAdSet("1", request);
@@ -218,7 +223,8 @@ class FacebookAdsServiceTest {
             "200",
             "42",
             "BR",
-            targetingJson
+            targetingJson,
+            Collections.emptyList()
         );
 
         service.createAdSet("1", request);
@@ -248,7 +254,8 @@ class FacebookAdsServiceTest {
             "200",
             "42",
             "BR",
-            targetingJson
+            targetingJson,
+            Collections.emptyList()
         );
 
         service.createAdSet("1", request);
@@ -280,7 +287,8 @@ class FacebookAdsServiceTest {
             "200",
             "42",
             "BR",
-            targetingJson
+            targetingJson,
+            Collections.emptyList()
         );
 
         service.createAdSet("1", request);

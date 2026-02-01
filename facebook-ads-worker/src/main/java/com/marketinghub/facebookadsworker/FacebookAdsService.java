@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.facebookadsworker.util.InstantFormPublicationHelper;
 import com.marketinghub.facebookadsworker.facebooktargeting.TargetingResolverProperties;
+import com.marketinghub.facebookadsworker.facebooktargeting.TargetingCandidateType;
 import com.marketinghub.facebookadsworker.util.JsonLogFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -25,6 +27,8 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -258,6 +262,7 @@ public class FacebookAdsService {
         }
 
         removeUnsupportedTargetingFields(targeting);
+        mergeTargetingOptions(targeting, request.targetingOptions());
         normalizeInterests(targeting, targetingErrors);
         normalizeWorkPositions(targeting, targetingErrors);
         normalizeBehaviors(targeting, targetingErrors);
@@ -592,6 +597,52 @@ public class FacebookAdsService {
             return "act_" + trimmed;
         }
         return trimmed;
+    }
+
+
+    private void mergeTargetingOptions(Map<String, Object> targeting, List<TargetingOption> targetingOptions) {
+        if (targeting == null || CollectionUtils.isEmpty(targetingOptions)) {
+            return;
+        }
+        Map<TargetingCandidateType, List<Map<String, Object>>> grouped = new EnumMap<>(TargetingCandidateType.class);
+        Map<TargetingCandidateType, Set<String>> seen = new EnumMap<>(TargetingCandidateType.class);
+        for (TargetingOption option : targetingOptions) {
+            if (option == null || !hasText(option.facebookId())) {
+                continue;
+            }
+            TargetingCandidateType type = option.type();
+            if (type == null) {
+                continue;
+            }
+            Set<String> dedup = seen.computeIfAbsent(type, key -> new HashSet<>());
+            String facebookId = option.facebookId().trim();
+            if (!dedup.add(facebookId)) {
+                continue;
+            }
+            Map<String, Object> normalizedEntry = new HashMap<>();
+            normalizedEntry.put("id", facebookId);
+            if (hasText(option.name())) {
+                normalizedEntry.put("name", option.name().trim());
+            }
+            grouped.computeIfAbsent(type, key -> new ArrayList<>()).add(normalizedEntry);
+        }
+
+        if (grouped.isEmpty()) {
+            return;
+        }
+
+        targeting.remove("interests");
+        targeting.remove("behaviors");
+        targeting.remove("work_positions");
+
+        grouped.forEach((type, values) -> {
+            String field = switch (type) {
+                case BEHAVIOR -> "behaviors";
+                case WORK_POSITION -> "work_positions";
+                case INTEREST -> "interests";
+            };
+            targeting.put(field, values);
+        });
     }
 
     private void normalizeInterests(Map<String, Object> targeting, List<String> targetingErrors) {
@@ -1922,8 +1973,15 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         String bidAmount,
         String pageId,
         String targetCountry,
-        String targetingJson
-    ) {}
+        String targetingJson,
+        List<TargetingOption> targetingOptions
+    ) {
+        public AdSetRequest {
+            if (targetingOptions == null) {
+                targetingOptions = Collections.emptyList();
+            }
+        }
+    }
 
 
     public record AdCreativeRequest(
@@ -1944,6 +2002,13 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         String name,
         String adSetId,
         String creativeId
+    ) {}
+
+    public record TargetingOption(
+        String facebookId,
+        String name,
+        TargetingCandidateType type,
+        Long audienceSize
     ) {}
 
     public record TokenRenewalResponse(String accessToken, long expiresInSeconds) {}

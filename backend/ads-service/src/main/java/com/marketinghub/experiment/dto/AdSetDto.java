@@ -2,6 +2,7 @@ package com.marketinghub.experiment.dto;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 import lombok.Data;
 
 /**
@@ -20,6 +21,8 @@ public class AdSetDto {
     private Integer durationDays;
     private String prompt;
     private String model;
+    private UUID targetingRequestId;
     private Instant createdAt;
     private Instant updatedAt;
 }
+

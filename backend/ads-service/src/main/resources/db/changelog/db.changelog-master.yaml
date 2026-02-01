@@ -439,3 +439,8 @@ databaseChangeLog:
   - include:
       file: V2034_02_02__create_targeting_option.sql
       relativeToChangelogFile: true
+
+  - include:
+      file: V2034_02_03__add_targeting_request_to_adset.sql
+      relativeToChangelogFile: true
+

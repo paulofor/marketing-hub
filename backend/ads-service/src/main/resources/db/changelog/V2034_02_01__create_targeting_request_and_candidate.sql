@@ -1,4 +1,8 @@
+--liquibase formatted sql
 --changeset repo:2034-02-01-create-targeting-request-and-candidate dbms:mysql
+--preconditions onFail:MARK_RAN
+--precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'targeting_request';
+--precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'targeting_candidate';
 CREATE TABLE targeting_request (
     id BINARY(16) NOT NULL,
     descricao VARCHAR(500) NOT NULL,

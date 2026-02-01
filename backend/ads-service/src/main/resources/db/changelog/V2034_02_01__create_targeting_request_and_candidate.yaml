@@ -1,0 +1,52 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2034-02-01-create-targeting-request-and-candidate
+      author: repo
+      dbms: mysql
+      preConditions:
+        onFail: MARK_RAN
+        - sqlCheck:
+            dbms: mysql
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'targeting_request';
+        - sqlCheck:
+            dbms: mysql
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'targeting_candidate';
+      changes:
+        - sql:
+            splitStatements: true
+            sql: |
+              CREATE TABLE targeting_request (
+                  id BINARY(16) NOT NULL,
+                  descricao VARCHAR(500) NOT NULL,
+                  locale VARCHAR(10),
+                  country VARCHAR(5),
+                  audience_type VARCHAR(32),
+                  status VARCHAR(32),
+                  origin VARCHAR(32),
+                  created_at datetime(6),
+                  updated_at datetime(6),
+                  PRIMARY KEY (id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              CREATE TABLE targeting_candidate (
+                  id BIGINT NOT NULL AUTO_INCREMENT,
+                  request_id BINARY(16) NOT NULL,
+                  texto_sugerido VARCHAR(255) NOT NULL,
+                  type VARCHAR(32) NOT NULL,
+                  status VARCHAR(32) NOT NULL,
+                  idioma VARCHAR(10),
+                  origem VARCHAR(32),
+                  intent_tag VARCHAR(32),
+                  score DECIMAL(5,4),
+                  rationale LONGTEXT,
+                  rejection_reason LONGTEXT,
+                  created_at datetime(6),
+                  updated_at datetime(6),
+                  PRIMARY KEY (id),
+                  CONSTRAINT fk_targeting_candidate_request FOREIGN KEY (request_id) REFERENCES targeting_request(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              CREATE INDEX idx_targeting_candidate_request ON targeting_candidate(request_id);
+              CREATE INDEX idx_targeting_request_status ON targeting_request(status);

@@ -4,7 +4,7 @@ databaseChangeLog:
       author: repo
       dbms: mysql
       preConditions:
-        onFail: MARK_RAN
+        - onFail: MARK_RAN
         - sqlCheck:
             dbms: mysql
             expectedResult: 0

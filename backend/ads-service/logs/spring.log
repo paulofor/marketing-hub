@@ -7202,3 +7202,352 @@
 2026-01-27T18:15:33.753Z  INFO 250 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
 2026-01-27T18:15:33.754Z  INFO 250 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-12 - Shutdown initiated...
 2026-01-27T18:15:33.754Z  INFO 250 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-12 - Shutdown completed.
+2026-02-01T18:33:09.750Z  INFO 479 --- [main] c.m.journey.JourneyServiceTest           : Starting JourneyServiceTest using Java 21.0.9 with PID 479 (started by root in /root/ai-hub/src/ai-hub-2acec7d8-4fab-4449-86de-267fadc1f10e-hBpeam/repo/backend/ads-service)
+2026-02-01T18:33:09.752Z  INFO 479 --- [main] c.m.journey.JourneyServiceTest           : No active profile set, falling back to 1 default profile: "default"
+2026-02-01T18:33:11.138Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-01T18:33:11.542Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 387 ms. Found 77 JPA repository interfaces.
+2026-02-01T18:33:12.968Z  INFO 479 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-02-01T18:33:13.052Z  INFO 479 --- [main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.4.Final
+2026-02-01T18:33:13.098Z  INFO 479 --- [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-02-01T18:33:13.388Z  INFO 479 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-01T18:33:13.428Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-02-01T18:33:13.658Z  INFO 479 --- [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:testdb user=SA
+2026-02-01T18:33:13.660Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-02-01T18:33:16.999Z  INFO 479 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-02-01T18:33:17.254Z  INFO 479 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:33:17.733Z  INFO 479 --- [main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-02-01T18:33:21.686Z  INFO 479 --- [main] l.s.LeadPortalPackageNotificationService : Lead portal notification service enabled: false (maxAttempts=5, batchSize=3)
+2026-02-01T18:33:22.485Z  WARN 479 --- [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-02-01T18:33:23.222Z  INFO 479 --- [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoint(s) beneath base path '/actuator'
+2026-02-01T18:33:23.313Z  INFO 479 --- [main] c.m.journey.JourneyServiceTest           : Started JourneyServiceTest in 13.795 seconds (process running for 15.742)
+2026-02-01T18:33:25.810Z  INFO 479 --- [main] .m.f.w.FacebookAdsCampaignControllerTest : Starting FacebookAdsCampaignControllerTest using Java 21.0.9 with PID 479 (started by root in /root/ai-hub/src/ai-hub-2acec7d8-4fab-4449-86de-267fadc1f10e-hBpeam/repo/backend/ads-service)
+2026-02-01T18:33:25.810Z  INFO 479 --- [main] .m.f.w.FacebookAdsCampaignControllerTest : No active profile set, falling back to 1 default profile: "default"
+2026-02-01T18:33:26.271Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-01T18:33:26.410Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 138 ms. Found 77 JPA repository interfaces.
+2026-02-01T18:33:28.167Z  INFO 479 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-02-01T18:33:28.171Z  INFO 479 --- [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-02-01T18:33:28.176Z  INFO 479 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-01T18:33:28.177Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
+2026-02-01T18:33:28.179Z  INFO 479 --- [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection conn10: url=jdbc:h2:mem:testdb user=SA
+2026-02-01T18:33:28.179Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
+2026-02-01T18:33:29.321Z  INFO 479 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-02-01T18:33:29.502Z  INFO 479 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:33:30.736Z  INFO 479 --- [main] l.s.LeadPortalPackageNotificationService : Lead portal notification service enabled: false (maxAttempts=5, batchSize=3)
+2026-02-01T18:33:31.099Z  WARN 479 --- [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-02-01T18:33:31.452Z  INFO 479 --- [main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-02-01T18:33:31.452Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-02-01T18:33:31.460Z  INFO 479 --- [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoint(s) beneath base path '/actuator'
+2026-02-01T18:33:31.471Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 18 ms
+2026-02-01T18:33:31.499Z  INFO 479 --- [main] .m.f.w.FacebookAdsCampaignControllerTest : Started FacebookAdsCampaignControllerTest in 5.729 seconds (process running for 23.928)
+2026-02-01T18:33:31.736Z  INFO 479 --- [main] .f.w.FacebookConfigurationControllerTest : Starting FacebookConfigurationControllerTest using Java 21.0.9 with PID 479 (started by root in /root/ai-hub/src/ai-hub-2acec7d8-4fab-4449-86de-267fadc1f10e-hBpeam/repo/backend/ads-service)
+2026-02-01T18:33:31.736Z  INFO 479 --- [main] .f.w.FacebookConfigurationControllerTest : No active profile set, falling back to 1 default profile: "default"
+2026-02-01T18:33:32.432Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-01T18:33:32.535Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 102 ms. Found 77 JPA repository interfaces.
+2026-02-01T18:33:32.771Z  INFO 479 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-02-01T18:33:32.772Z  INFO 479 --- [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-02-01T18:33:32.778Z  INFO 479 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-01T18:33:32.779Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-3 - Starting...
+2026-02-01T18:33:32.781Z  INFO 479 --- [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-3 - Added connection conn20: url=jdbc:h2:mem:testdb user=SA
+2026-02-01T18:33:32.781Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-3 - Start completed.
+2026-02-01T18:33:33.623Z  INFO 479 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-02-01T18:33:33.752Z  INFO 479 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:33:35.095Z  INFO 479 --- [main] l.s.LeadPortalPackageNotificationService : Lead portal notification service enabled: false (maxAttempts=5, batchSize=3)
+2026-02-01T18:33:35.644Z  WARN 479 --- [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-02-01T18:33:35.910Z  INFO 479 --- [main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-02-01T18:33:35.910Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-02-01T18:33:35.914Z  INFO 479 --- [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoint(s) beneath base path '/actuator'
+2026-02-01T18:33:35.921Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 10 ms
+2026-02-01T18:33:35.942Z  INFO 479 --- [main] .f.w.FacebookConfigurationControllerTest : Started FacebookConfigurationControllerTest in 4.219 seconds (process running for 28.371)
+2026-02-01T18:33:36.016Z  INFO 479 --- [main] c.m.f.web.FacebookAdSetControllerTest    : Starting FacebookAdSetControllerTest using Java 21.0.9 with PID 479 (started by root in /root/ai-hub/src/ai-hub-2acec7d8-4fab-4449-86de-267fadc1f10e-hBpeam/repo/backend/ads-service)
+2026-02-01T18:33:36.016Z  INFO 479 --- [main] c.m.f.web.FacebookAdSetControllerTest    : No active profile set, falling back to 1 default profile: "default"
+2026-02-01T18:33:36.282Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-01T18:33:36.357Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 74 ms. Found 77 JPA repository interfaces.
+2026-02-01T18:33:36.638Z  INFO 479 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-02-01T18:33:36.641Z  INFO 479 --- [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-02-01T18:33:36.650Z  INFO 479 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-01T18:33:36.651Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-4 - Starting...
+2026-02-01T18:33:36.653Z  INFO 479 --- [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-4 - Added connection conn30: url=jdbc:h2:mem:testdb user=SA
+2026-02-01T18:33:36.654Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-4 - Start completed.
+2026-02-01T18:33:37.305Z  INFO 479 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-02-01T18:33:37.411Z  INFO 479 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:33:38.393Z  INFO 479 --- [main] l.s.LeadPortalPackageNotificationService : Lead portal notification service enabled: false (maxAttempts=5, batchSize=3)
+2026-02-01T18:33:38.616Z  WARN 479 --- [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-02-01T18:33:38.836Z  INFO 479 --- [main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-02-01T18:33:38.836Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-02-01T18:33:38.839Z  INFO 479 --- [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoint(s) beneath base path '/actuator'
+2026-02-01T18:33:38.846Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 10 ms
+2026-02-01T18:33:38.866Z  INFO 479 --- [main] c.m.f.web.FacebookAdSetControllerTest    : Started FacebookAdSetControllerTest in 2.86 seconds (process running for 31.295)
+2026-02-01T18:33:39.393Z  INFO 479 --- [main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.marketinghub.ads.FacebookInstantFormControllerTest]: FacebookInstantFormControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-02-01T18:33:39.403Z  INFO 479 --- [main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.marketinghub.ads.AdsServiceApplication for test class com.marketinghub.ads.FacebookInstantFormControllerTest
+2026-02-01T18:33:39.694Z  INFO 479 --- [main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.marketinghub.ads.FacebookPageControllerTest]: FacebookPageControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-02-01T18:33:39.696Z  INFO 479 --- [main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.marketinghub.ads.AdsServiceApplication for test class com.marketinghub.ads.FacebookPageControllerTest
+2026-02-01T18:33:39.810Z  INFO 479 --- [main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.marketinghub.ads.FacebookAccountControllerTest]: FacebookAccountControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-02-01T18:33:39.812Z  INFO 479 --- [main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.marketinghub.ads.AdsServiceApplication for test class com.marketinghub.ads.FacebookAccountControllerTest
+2026-02-01T18:33:39.837Z  INFO 479 --- [main] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:33:39.839Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-3 - Shutdown initiated...
+2026-02-01T18:33:39.841Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-3 - Shutdown completed.
+2026-02-01T18:33:39.877Z  INFO 479 --- [main] c.m.ads.FacebookAccountControllerTest    : Starting FacebookAccountControllerTest using Java 21.0.9 with PID 479 (started by root in /root/ai-hub/src/ai-hub-2acec7d8-4fab-4449-86de-267fadc1f10e-hBpeam/repo/backend/ads-service)
+2026-02-01T18:33:39.877Z  INFO 479 --- [main] c.m.ads.FacebookAccountControllerTest    : No active profile set, falling back to 1 default profile: "default"
+2026-02-01T18:33:40.541Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-01T18:33:40.622Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 80 ms. Found 77 JPA repository interfaces.
+2026-02-01T18:33:40.795Z  INFO 479 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-02-01T18:33:40.797Z  INFO 479 --- [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-02-01T18:33:40.803Z  INFO 479 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-01T18:33:40.803Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-5 - Starting...
+2026-02-01T18:33:40.805Z  INFO 479 --- [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-5 - Added connection conn40: url=jdbc:h2:mem:testdb user=SA
+2026-02-01T18:33:40.805Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-5 - Start completed.
+2026-02-01T18:33:41.723Z  INFO 479 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-02-01T18:33:41.807Z  INFO 479 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:33:42.466Z  INFO 479 --- [main] l.s.LeadPortalPackageNotificationService : Lead portal notification service enabled: false (maxAttempts=5, batchSize=3)
+2026-02-01T18:33:42.672Z  WARN 479 --- [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-02-01T18:33:42.895Z  INFO 479 --- [main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-02-01T18:33:42.895Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-02-01T18:33:42.900Z  INFO 479 --- [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoint(s) beneath base path '/actuator'
+2026-02-01T18:33:42.906Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 11 ms
+2026-02-01T18:33:42.925Z  INFO 479 --- [main] c.m.ads.FacebookAccountControllerTest    : Started FacebookAccountControllerTest in 3.081 seconds (process running for 35.354)
+2026-02-01T18:33:42.941Z  WARN 479 --- [main] c.m.ads.FacebookAccountController        : Facebook worker configuration for account id=1 name='Worker Account' is missing both default website URL and default lead form ID; creatives without overrides will be skipped.
+2026-02-01T18:33:43.028Z  WARN 479 --- [main] c.m.ads.FacebookAccountController        : Facebook worker configuration validation failed for account id=6 name='Worker Account': missing ad account id (code=AD_ACCOUNT_ID_MISSING).
+2026-02-01T18:33:43.096Z  WARN 479 --- [main] c.m.ads.FacebookAccountController        : Facebook worker configuration validation failed for account id=14 name='Worker Account': missing ad account id (code=AD_ACCOUNT_ID_MISSING).
+2026-02-01T18:33:43.117Z  INFO 479 --- [main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.marketinghub.ads.FacebookInterestControllerTest]: FacebookInterestControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-02-01T18:33:43.120Z  INFO 479 --- [main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.marketinghub.ads.AdsServiceApplication for test class com.marketinghub.ads.FacebookInterestControllerTest
+2026-02-01T18:33:43.131Z  INFO 479 --- [main] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:33:43.132Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-5 - Shutdown initiated...
+2026-02-01T18:33:43.133Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-5 - Shutdown completed.
+2026-02-01T18:33:43.149Z  INFO 479 --- [main] c.m.ads.FacebookInterestControllerTest   : Starting FacebookInterestControllerTest using Java 21.0.9 with PID 479 (started by root in /root/ai-hub/src/ai-hub-2acec7d8-4fab-4449-86de-267fadc1f10e-hBpeam/repo/backend/ads-service)
+2026-02-01T18:33:43.150Z  INFO 479 --- [main] c.m.ads.FacebookInterestControllerTest   : No active profile set, falling back to 1 default profile: "default"
+2026-02-01T18:33:43.392Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-01T18:33:43.794Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 401 ms. Found 77 JPA repository interfaces.
+2026-02-01T18:33:43.988Z  INFO 479 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-02-01T18:33:43.989Z  INFO 479 --- [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-02-01T18:33:43.994Z  INFO 479 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-01T18:33:43.994Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-6 - Starting...
+2026-02-01T18:33:43.996Z  INFO 479 --- [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-6 - Added connection conn50: url=jdbc:h2:mem:testdb user=SA
+2026-02-01T18:33:43.996Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-6 - Start completed.
+2026-02-01T18:33:44.605Z  INFO 479 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-02-01T18:33:44.670Z  INFO 479 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:33:45.603Z  INFO 479 --- [main] l.s.LeadPortalPackageNotificationService : Lead portal notification service enabled: false (maxAttempts=5, batchSize=3)
+2026-02-01T18:33:45.822Z  WARN 479 --- [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-02-01T18:33:46.046Z  INFO 479 --- [main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-02-01T18:33:46.047Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-02-01T18:33:46.049Z  INFO 479 --- [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoint(s) beneath base path '/actuator'
+2026-02-01T18:33:46.054Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 7 ms
+2026-02-01T18:33:46.073Z  INFO 479 --- [main] c.m.ads.FacebookInterestControllerTest   : Started FacebookInterestControllerTest in 2.937 seconds (process running for 38.503)
+2026-02-01T18:33:46.135Z  INFO 479 --- [main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.marketinghub.ads.CampaignControllerTest]: CampaignControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-02-01T18:33:46.138Z  INFO 479 --- [main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.marketinghub.ads.AdsServiceApplication for test class com.marketinghub.ads.CampaignControllerTest
+2026-02-01T18:33:46.152Z  INFO 479 --- [main] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:33:46.152Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-6 - Shutdown initiated...
+2026-02-01T18:33:46.155Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-6 - Shutdown completed.
+2026-02-01T18:33:46.166Z  INFO 479 --- [main] c.m.ads.CampaignControllerTest           : Starting CampaignControllerTest using Java 21.0.9 with PID 479 (started by root in /root/ai-hub/src/ai-hub-2acec7d8-4fab-4449-86de-267fadc1f10e-hBpeam/repo/backend/ads-service)
+2026-02-01T18:33:46.166Z  INFO 479 --- [main] c.m.ads.CampaignControllerTest           : No active profile set, falling back to 1 default profile: "default"
+2026-02-01T18:33:46.367Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-01T18:33:46.460Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 92 ms. Found 77 JPA repository interfaces.
+2026-02-01T18:33:46.629Z  INFO 479 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-02-01T18:33:46.632Z  INFO 479 --- [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-02-01T18:33:46.636Z  INFO 479 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-01T18:33:46.637Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-7 - Starting...
+2026-02-01T18:33:46.638Z  INFO 479 --- [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-7 - Added connection conn60: url=jdbc:h2:mem:testdb user=SA
+2026-02-01T18:33:46.638Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-7 - Start completed.
+2026-02-01T18:33:47.721Z  INFO 479 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-02-01T18:33:47.800Z  INFO 479 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:33:48.373Z  INFO 479 --- [main] l.s.LeadPortalPackageNotificationService : Lead portal notification service enabled: false (maxAttempts=5, batchSize=3)
+2026-02-01T18:33:48.550Z  WARN 479 --- [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-02-01T18:33:48.785Z  INFO 479 --- [main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-02-01T18:33:48.785Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-02-01T18:33:48.788Z  INFO 479 --- [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoint(s) beneath base path '/actuator'
+2026-02-01T18:33:48.792Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 7 ms
+2026-02-01T18:33:48.817Z  INFO 479 --- [main] c.m.ads.CampaignControllerTest           : Started CampaignControllerTest in 2.66 seconds (process running for 41.246)
+2026-02-01T18:33:48.860Z  INFO 479 --- [main] c.m.a.FacebookTokenRevalidationService   : Requesting Facebook long-lived token via Graph API: accountId=1, endpoint=https://graph.facebook.com/v18.0
+2026-02-01T18:33:48.864Z  INFO 479 --- [main] c.m.a.FacebookTokenRevalidationService   : Generated new Facebook access token: accountId=1, expiresAt=2026-04-02T18:33:48.860578464
+2026-02-01T18:33:48.869Z  INFO 479 --- [main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.marketinghub.product.ProductRepositoryTest]: ProductRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-02-01T18:33:48.897Z  INFO 479 --- [main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.marketinghub.TestBootApplication for test class com.marketinghub.product.ProductRepositoryTest
+2026-02-01T18:33:48.909Z  INFO 479 --- [main] c.m.product.ProductRepositoryTest        : Starting ProductRepositoryTest using Java 21.0.9 with PID 479 (started by root in /root/ai-hub/src/ai-hub-2acec7d8-4fab-4449-86de-267fadc1f10e-hBpeam/repo/backend/ads-service)
+2026-02-01T18:33:48.909Z  INFO 479 --- [main] c.m.product.ProductRepositoryTest        : No active profile set, falling back to 1 default profile: "default"
+2026-02-01T18:33:48.995Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-01T18:33:49.064Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 68 ms. Found 77 JPA repository interfaces.
+2026-02-01T18:33:49.078Z  INFO 479 --- [main] beddedDataSourceBeanFactoryPostProcessor : Replacing 'dataSource' DataSource bean with embedded version
+2026-02-01T18:33:49.099Z  INFO 479 --- [main] o.s.j.d.e.EmbeddedDatabaseFactory        : Starting embedded database: url='jdbc:h2:mem:125d9a91-8a3c-4a5f-9750-90fde920973a;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false', username='sa'
+2026-02-01T18:33:49.128Z  INFO 479 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-02-01T18:33:49.129Z  INFO 479 --- [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-02-01T18:33:49.134Z  INFO 479 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-01T18:33:50.093Z  INFO 479 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-02-01T18:33:50.164Z  INFO 479 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:33:50.425Z  INFO 479 --- [main] c.m.product.ProductRepositoryTest        : Started ProductRepositoryTest in 1.526 seconds (process running for 42.854)
+2026-02-01T18:33:50.864Z  INFO 479 --- [main] c.m.funnel.FunnelControllerTest          : Starting FunnelControllerTest using Java 21.0.9 with PID 479 (started by root in /root/ai-hub/src/ai-hub-2acec7d8-4fab-4449-86de-267fadc1f10e-hBpeam/repo/backend/ads-service)
+2026-02-01T18:33:50.864Z  INFO 479 --- [main] c.m.funnel.FunnelControllerTest          : No active profile set, falling back to 1 default profile: "default"
+2026-02-01T18:33:51.011Z  INFO 479 --- [main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-02-01T18:33:51.011Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-02-01T18:33:51.011Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-02-01T18:33:51.014Z  INFO 479 --- [main] c.m.funnel.FunnelControllerTest          : Started FunnelControllerTest in 0.16 seconds (process running for 43.443)
+2026-02-01T18:33:51.118Z  INFO 479 --- [main] c.m.m.e.MicroserviceExceptionServiceTest : Starting MicroserviceExceptionServiceTest using Java 21.0.9 with PID 479 (started by root in /root/ai-hub/src/ai-hub-2acec7d8-4fab-4449-86de-267fadc1f10e-hBpeam/repo/backend/ads-service)
+2026-02-01T18:33:51.119Z  INFO 479 --- [main] c.m.m.e.MicroserviceExceptionServiceTest : The following 1 profile is active: "test"
+2026-02-01T18:33:51.199Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-01T18:33:51.262Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 62 ms. Found 77 JPA repository interfaces.
+2026-02-01T18:33:51.273Z  INFO 479 --- [main] beddedDataSourceBeanFactoryPostProcessor : Replacing 'dataSource' DataSource bean with embedded version
+2026-02-01T18:33:51.281Z  INFO 479 --- [main] o.s.j.d.e.EmbeddedDatabaseFactory        : Starting embedded database: url='jdbc:h2:mem:b45d0c7e-0291-4e96-8b71-d7fad42ab78b;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false', username='sa'
+2026-02-01T18:33:51.309Z  INFO 479 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-02-01T18:33:51.311Z  INFO 479 --- [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-02-01T18:33:51.316Z  INFO 479 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-01T18:33:51.865Z  INFO 479 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-02-01T18:33:51.994Z  INFO 479 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:33:52.686Z  INFO 479 --- [main] c.m.m.e.MicroserviceExceptionServiceTest : Started MicroserviceExceptionServiceTest in 1.587 seconds (process running for 45.115)
+2026-02-01T18:33:52.734Z  INFO 479 --- [main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.marketinghub.ai.AiServiceRepositoryTest]: AiServiceRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-02-01T18:33:52.754Z  INFO 479 --- [main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.marketinghub.TestBootApplication for test class com.marketinghub.ai.AiServiceRepositoryTest
+2026-02-01T18:33:52.764Z  INFO 479 --- [main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.marketinghub.successproduct.SuccessProductRepositoryTest]: SuccessProductRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-02-01T18:33:52.803Z  INFO 479 --- [main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.marketinghub.TestBootApplication for test class com.marketinghub.successproduct.SuccessProductRepositoryTest
+2026-02-01T18:33:52.819Z  INFO 479 --- [main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.marketinghub.settings.GeneralSettingControllerTest]: GeneralSettingControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-02-01T18:33:52.836Z  INFO 479 --- [main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.marketinghub.TestBootApplication for test class com.marketinghub.settings.GeneralSettingControllerTest
+2026-02-01T18:33:52.847Z  INFO 479 --- [main] c.m.s.GeneralSettingControllerTest       : Starting GeneralSettingControllerTest using Java 21.0.9 with PID 479 (started by root in /root/ai-hub/src/ai-hub-2acec7d8-4fab-4449-86de-267fadc1f10e-hBpeam/repo/backend/ads-service)
+2026-02-01T18:33:52.847Z  INFO 479 --- [main] c.m.s.GeneralSettingControllerTest       : No active profile set, falling back to 1 default profile: "default"
+2026-02-01T18:33:53.043Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-01T18:33:53.103Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 59 ms. Found 77 JPA repository interfaces.
+2026-02-01T18:33:53.297Z  INFO 479 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-02-01T18:33:53.300Z  INFO 479 --- [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-02-01T18:33:53.312Z  INFO 479 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-01T18:33:53.313Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-8 - Starting...
+2026-02-01T18:33:53.314Z  INFO 479 --- [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-8 - Added connection conn83: url=jdbc:h2:mem:testdb-settings user=SA
+2026-02-01T18:33:53.314Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-8 - Start completed.
+2026-02-01T18:33:53.776Z  INFO 479 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-02-01T18:33:53.842Z  INFO 479 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:33:55.133Z  INFO 479 --- [main] l.s.LeadPortalPackageNotificationService : Lead portal notification service enabled: false (maxAttempts=5, batchSize=3)
+2026-02-01T18:33:55.354Z  WARN 479 --- [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-02-01T18:33:55.567Z  INFO 479 --- [main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-02-01T18:33:55.567Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-02-01T18:33:55.570Z  INFO 479 --- [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoint(s) beneath base path '/actuator'
+2026-02-01T18:33:55.576Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 9 ms
+2026-02-01T18:33:55.597Z  INFO 479 --- [main] c.m.s.GeneralSettingControllerTest       : Started GeneralSettingControllerTest in 2.759 seconds (process running for 48.026)
+2026-02-01T18:33:55.629Z  INFO 479 --- [main] c.m.settings.GeneralSettingService       : Updated general setting privacy_policy_url
+2026-02-01T18:33:56.015Z  INFO 479 --- [main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.marketinghub.experiment.ExperimentRepositoryTest]: ExperimentRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-02-01T18:33:56.037Z  INFO 479 --- [main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.marketinghub.TestBootApplication for test class com.marketinghub.experiment.ExperimentRepositoryTest
+2026-02-01T18:33:56.057Z  INFO 479 --- [main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.marketinghub.experiment.web.ExperimentEmailControllerTest]: ExperimentEmailControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-02-01T18:33:56.074Z  INFO 479 --- [main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.marketinghub.TestBootApplication for test class com.marketinghub.experiment.web.ExperimentEmailControllerTest
+2026-02-01T18:33:56.085Z  INFO 479 --- [main] c.m.e.web.ExperimentEmailControllerTest  : Starting ExperimentEmailControllerTest using Java 21.0.9 with PID 479 (started by root in /root/ai-hub/src/ai-hub-2acec7d8-4fab-4449-86de-267fadc1f10e-hBpeam/repo/backend/ads-service)
+2026-02-01T18:33:56.085Z  INFO 479 --- [main] c.m.e.web.ExperimentEmailControllerTest  : No active profile set, falling back to 1 default profile: "default"
+2026-02-01T18:33:56.304Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-01T18:33:56.372Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 66 ms. Found 77 JPA repository interfaces.
+2026-02-01T18:33:56.983Z  INFO 479 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-02-01T18:33:56.991Z  INFO 479 --- [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-02-01T18:33:57.009Z  INFO 479 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-01T18:33:57.010Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-9 - Starting...
+2026-02-01T18:33:57.022Z  INFO 479 --- [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-9 - Added connection conn94: url=jdbc:h2:mem:testdb2 user=SA
+2026-02-01T18:33:57.023Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-9 - Start completed.
+2026-02-01T18:33:57.785Z  INFO 479 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-02-01T18:33:57.820Z  INFO 479 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:33:58.388Z  INFO 479 --- [main] l.s.LeadPortalPackageNotificationService : Lead portal notification service enabled: false (maxAttempts=5, batchSize=3)
+2026-02-01T18:33:58.619Z  WARN 479 --- [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-02-01T18:33:59.014Z  INFO 479 --- [main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-02-01T18:33:59.014Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-02-01T18:33:59.033Z  INFO 479 --- [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoint(s) beneath base path '/actuator'
+2026-02-01T18:33:59.066Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 52 ms
+2026-02-01T18:33:59.145Z  INFO 479 --- [main] c.m.e.web.ExperimentEmailControllerTest  : Started ExperimentEmailControllerTest in 3.069 seconds (process running for 51.574)
+2026-02-01T18:34:00.119Z  INFO 479 --- [main] c.m.experiment.ExperimentControllerTest  : Starting ExperimentControllerTest using Java 21.0.9 with PID 479 (started by root in /root/ai-hub/src/ai-hub-2acec7d8-4fab-4449-86de-267fadc1f10e-hBpeam/repo/backend/ads-service)
+2026-02-01T18:34:00.119Z  INFO 479 --- [main] c.m.experiment.ExperimentControllerTest  : No active profile set, falling back to 1 default profile: "default"
+2026-02-01T18:34:00.320Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-01T18:34:00.385Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 65 ms. Found 77 JPA repository interfaces.
+2026-02-01T18:34:00.539Z  INFO 479 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-02-01T18:34:00.540Z  INFO 479 --- [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-02-01T18:34:00.545Z  INFO 479 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-01T18:34:00.545Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-10 - Starting...
+2026-02-01T18:34:00.546Z  INFO 479 --- [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-10 - Added connection conn104: url=jdbc:h2:mem:testdb user=SA
+2026-02-01T18:34:00.547Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-10 - Start completed.
+2026-02-01T18:34:00.975Z  INFO 479 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-02-01T18:34:01.015Z  INFO 479 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:34:01.900Z  INFO 479 --- [main] l.s.LeadPortalPackageNotificationService : Lead portal notification service enabled: false (maxAttempts=5, batchSize=3)
+2026-02-01T18:34:02.436Z  WARN 479 --- [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-02-01T18:34:02.640Z  INFO 479 --- [main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-02-01T18:34:02.641Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-02-01T18:34:02.644Z  INFO 479 --- [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoint(s) beneath base path '/actuator'
+2026-02-01T18:34:02.651Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 10 ms
+2026-02-01T18:34:02.668Z  INFO 479 --- [main] c.m.experiment.ExperimentControllerTest  : Started ExperimentControllerTest in 2.56 seconds (process running for 55.097)
+2026-02-01T18:34:02.783Z  INFO 479 --- [main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.marketinghub.niche.MarketNicheRepositoryTest]: MarketNicheRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-02-01T18:34:02.804Z  INFO 479 --- [main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.marketinghub.TestBootApplication for test class com.marketinghub.niche.MarketNicheRepositoryTest
+2026-02-01T18:34:02.834Z  INFO 479 --- [main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.marketinghub.niche.MarketNicheServiceTest]: MarketNicheServiceTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-02-01T18:34:02.837Z  INFO 479 --- [main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.marketinghub.TestBootApplication for test class com.marketinghub.niche.MarketNicheServiceTest
+2026-02-01T18:34:03.138Z  INFO 479 --- [main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.marketinghub.creative.label.CreativeAngleIntegrationTest]: CreativeAngleIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-02-01T18:34:03.160Z  INFO 479 --- [main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.marketinghub.TestBootApplication for test class com.marketinghub.creative.label.CreativeAngleIntegrationTest
+2026-02-01T18:34:03.221Z  WARN 479 --- [main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.bind.MethodArgumentNotValidException: Validation failed for argument [0] in public com.marketinghub.creative.label.dto.AngleDto com.marketinghub.creative.label.web.AngleController.create(com.marketinghub.creative.label.dto.CreateAngleRequest): [Field error in object 'createAngleRequest' on field 'name': rejected value []; codes [NotBlank.createAngleRequest.name,NotBlank.name,NotBlank.java.lang.String,NotBlank]; arguments [org.springframework.context.support.DefaultMessageSourceResolvable: codes [createAngleRequest.name,name]; arguments []; default message [name]]; default message [must not be blank]] ]
+2026-02-01T18:34:03.225Z  INFO 479 --- [main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.marketinghub.creative.label.AngleRepositoryTest]: AngleRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-02-01T18:34:03.228Z  INFO 479 --- [main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.marketinghub.TestBootApplication for test class com.marketinghub.creative.label.AngleRepositoryTest
+2026-02-01T18:34:03.245Z  INFO 479 --- [main] c.m.c.service.CreativeServiceTest        : Starting CreativeServiceTest using Java 21.0.9 with PID 479 (started by root in /root/ai-hub/src/ai-hub-2acec7d8-4fab-4449-86de-267fadc1f10e-hBpeam/repo/backend/ads-service)
+2026-02-01T18:34:03.246Z  INFO 479 --- [main] c.m.c.service.CreativeServiceTest        : No active profile set, falling back to 1 default profile: "default"
+2026-02-01T18:34:03.418Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-01T18:34:03.477Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 58 ms. Found 77 JPA repository interfaces.
+2026-02-01T18:34:03.765Z  INFO 479 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-02-01T18:34:03.767Z  INFO 479 --- [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-02-01T18:34:03.771Z  INFO 479 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-01T18:34:03.772Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-11 - Starting...
+2026-02-01T18:34:03.772Z  INFO 479 --- [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-11 - Added connection conn125: url=jdbc:h2:mem:testdb user=SA
+2026-02-01T18:34:03.772Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-11 - Start completed.
+2026-02-01T18:34:04.217Z  INFO 479 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-02-01T18:34:04.281Z  INFO 479 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:34:05.555Z  INFO 479 --- [main] l.s.LeadPortalPackageNotificationService : Lead portal notification service enabled: false (maxAttempts=5, batchSize=3)
+2026-02-01T18:34:05.757Z  WARN 479 --- [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-02-01T18:34:05.929Z  INFO 479 --- [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoint(s) beneath base path '/actuator'
+2026-02-01T18:34:05.946Z  INFO 479 --- [main] c.m.c.service.CreativeServiceTest        : Started CreativeServiceTest in 2.709 seconds (process running for 58.375)
+2026-02-01T18:34:06.210Z  INFO 479 --- [main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.marketinghub.media.AssetRepositoryTest]: AssetRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-02-01T18:34:06.226Z  INFO 479 --- [main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.marketinghub.TestBootApplication for test class com.marketinghub.media.AssetRepositoryTest
+2026-02-01T18:34:06.568Z  INFO 479 --- [main] c.m.l.web.LeadPortalFlowControllerTest   : Starting LeadPortalFlowControllerTest using Java 21.0.9 with PID 479 (started by root in /root/ai-hub/src/ai-hub-2acec7d8-4fab-4449-86de-267fadc1f10e-hBpeam/repo/backend/ads-service)
+2026-02-01T18:34:06.568Z  INFO 479 --- [main] c.m.l.web.LeadPortalFlowControllerTest   : No active profile set, falling back to 1 default profile: "default"
+2026-02-01T18:34:06.759Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-01T18:34:06.825Z  INFO 479 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 65 ms. Found 77 JPA repository interfaces.
+2026-02-01T18:34:07.000Z  INFO 479 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-02-01T18:34:07.001Z  INFO 479 --- [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-02-01T18:34:07.006Z  INFO 479 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-01T18:34:07.006Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-12 - Starting...
+2026-02-01T18:34:07.007Z  INFO 479 --- [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-12 - Added connection conn158: url=jdbc:h2:mem:testdb user=SA
+2026-02-01T18:34:07.007Z  INFO 479 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-12 - Start completed.
+2026-02-01T18:34:07.487Z  INFO 479 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-02-01T18:34:07.536Z  INFO 479 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:34:08.920Z  INFO 479 --- [main] l.s.LeadPortalPackageNotificationService : Lead portal notification service enabled: false (maxAttempts=5, batchSize=3)
+2026-02-01T18:34:09.088Z  WARN 479 --- [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-02-01T18:34:09.254Z  INFO 479 --- [main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-02-01T18:34:09.254Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-02-01T18:34:09.257Z  INFO 479 --- [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoint(s) beneath base path '/actuator'
+2026-02-01T18:34:09.264Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 9 ms
+2026-02-01T18:34:09.278Z  INFO 479 --- [main] c.m.l.web.LeadPortalFlowControllerTest   : Started LeadPortalFlowControllerTest in 2.718 seconds (process running for 61.707)
+2026-02-01T18:34:09.377Z  INFO 479 --- [main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.marketinghub.leadportal.web.LeadPortalImagePackageWorkerControllerTest]: LeadPortalImagePackageWorkerControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-02-01T18:34:09.396Z  INFO 479 --- [main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.marketinghub.TestBootApplication for test class com.marketinghub.leadportal.web.LeadPortalImagePackageWorkerControllerTest
+2026-02-01T18:34:09.406Z  INFO 479 --- [main] adPortalImagePackageWorkerControllerTest : Starting LeadPortalImagePackageWorkerControllerTest using Java 21.0.9 with PID 479 (started by root in /root/ai-hub/src/ai-hub-2acec7d8-4fab-4449-86de-267fadc1f10e-hBpeam/repo/backend/ads-service)
+2026-02-01T18:34:09.406Z  INFO 479 --- [main] adPortalImagePackageWorkerControllerTest : No active profile set, falling back to 1 default profile: "default"
+2026-02-01T18:34:09.650Z  INFO 479 --- [main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-02-01T18:34:09.650Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-02-01T18:34:09.650Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-02-01T18:34:09.652Z  INFO 479 --- [main] adPortalImagePackageWorkerControllerTest : Started LeadPortalImagePackageWorkerControllerTest in 0.253 seconds (process running for 62.082)
+2026-02-01T18:34:09.665Z  WARN 479 --- [main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.bind.MethodArgumentNotValidException: Validation failed for argument [1] in public void com.marketinghub.leadportal.web.LeadPortalImagePackageWorkerController.markFailed(long,com.marketinghub.leadportal.dto.LeadPortalWorkerImageFailureRequest): [Field error in object 'leadPortalWorkerImageFailureRequest' on field 'reason': rejected value []; codes [NotBlank.leadPortalWorkerImageFailureRequest.reason,NotBlank.reason,NotBlank.java.lang.String,NotBlank]; arguments [org.springframework.context.support.DefaultMessageSourceResolvable: codes [leadPortalWorkerImageFailureRequest.reason,reason]; arguments []; default message [reason]]; default message [must not be blank]] ]
+2026-02-01T18:34:09.710Z  WARN 479 --- [main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.bind.MethodArgumentNotValidException: Validation failed for argument [1] in public void com.marketinghub.leadportal.web.LeadPortalImagePackageWorkerController.submitResults(long,com.marketinghub.leadportal.dto.LeadPortalWorkerImageResultRequest): [Field error in object 'leadPortalWorkerImageResultRequest' on field 'images': rejected value [[]]; codes [NotEmpty.leadPortalWorkerImageResultRequest.images,NotEmpty.images,NotEmpty.java.util.List,NotEmpty]; arguments [org.springframework.context.support.DefaultMessageSourceResolvable: codes [leadPortalWorkerImageResultRequest.images,images]; arguments []; default message [images]]; default message [must not be empty]] ]
+2026-02-01T18:34:09.737Z  INFO 479 --- [main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.marketinghub.leadportal.web.LeadPortalImagePackageControllerTest]: LeadPortalImagePackageControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-02-01T18:34:09.740Z  INFO 479 --- [main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.marketinghub.TestBootApplication for test class com.marketinghub.leadportal.web.LeadPortalImagePackageControllerTest
+2026-02-01T18:34:09.749Z  INFO 479 --- [main] l.w.LeadPortalImagePackageControllerTest : Starting LeadPortalImagePackageControllerTest using Java 21.0.9 with PID 479 (started by root in /root/ai-hub/src/ai-hub-2acec7d8-4fab-4449-86de-267fadc1f10e-hBpeam/repo/backend/ads-service)
+2026-02-01T18:34:09.749Z  INFO 479 --- [main] l.w.LeadPortalImagePackageControllerTest : No active profile set, falling back to 1 default profile: "default"
+2026-02-01T18:34:10.003Z  INFO 479 --- [main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-02-01T18:34:10.003Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-02-01T18:34:10.003Z  INFO 479 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-02-01T18:34:10.006Z  INFO 479 --- [main] l.w.LeadPortalImagePackageControllerTest : Started LeadPortalImagePackageControllerTest in 0.264 seconds (process running for 62.435)
+2026-02-01T18:34:10.352Z  INFO 479 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:34:10.353Z  INFO 479 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-02-01T18:34:10.353Z  INFO 479 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-02-01T18:34:10.357Z  INFO 479 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:34:10.357Z  INFO 479 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Shutdown initiated...
+2026-02-01T18:34:10.358Z  INFO 479 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Shutdown completed.
+2026-02-01T18:34:10.362Z  INFO 479 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:34:10.362Z  INFO 479 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-4 - Shutdown initiated...
+2026-02-01T18:34:10.363Z  INFO 479 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-4 - Shutdown completed.
+2026-02-01T18:34:10.366Z  INFO 479 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:34:10.367Z  INFO 479 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-7 - Shutdown initiated...
+2026-02-01T18:34:10.367Z  INFO 479 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-7 - Shutdown completed.
+2026-02-01T18:34:10.368Z  INFO 479 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:34:10.369Z  INFO 479 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:34:10.383Z  INFO 479 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:34:10.383Z  INFO 479 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-8 - Shutdown initiated...
+2026-02-01T18:34:10.385Z  INFO 479 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-8 - Shutdown completed.
+2026-02-01T18:34:10.389Z  INFO 479 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:34:10.390Z  INFO 479 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-9 - Shutdown initiated...
+2026-02-01T18:34:10.390Z  INFO 479 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-9 - Shutdown completed.
+2026-02-01T18:34:10.394Z  INFO 479 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:34:10.394Z  INFO 479 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-10 - Shutdown initiated...
+2026-02-01T18:34:10.395Z  INFO 479 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-10 - Shutdown completed.
+2026-02-01T18:34:10.398Z  INFO 479 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:34:10.399Z  INFO 479 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-11 - Shutdown initiated...
+2026-02-01T18:34:10.399Z  INFO 479 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-11 - Shutdown completed.
+2026-02-01T18:34:10.403Z  INFO 479 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-02-01T18:34:10.403Z  INFO 479 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-12 - Shutdown initiated...
+2026-02-01T18:34:10.404Z  INFO 479 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-12 - Shutdown completed.

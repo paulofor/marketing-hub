@@ -1,3 +1,4 @@
+--liquibase formatted sql
 --changeset repo:2034-02-02-create-targeting-option dbms:mysql
 CREATE TABLE targeting_option (
     id BIGINT NOT NULL AUTO_INCREMENT,

@@ -2,20 +2,22 @@ databaseChangeLog:
   - changeSet:
       id: 2034-02-01-create-targeting-request-and-candidate
       author: repo
-      dbms: mysql
       preConditions:
-        - onFail: MARK_RAN
-        - sqlCheck:
-            dbms: mysql
-            expectedResult: 0
-            sql: SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'targeting_request';
-        - sqlCheck:
-            dbms: mysql
-            expectedResult: 0
-            sql: SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'targeting_candidate';
+        onFail: MARK_RAN
+        and:
+          - dbms:
+              type: mysql
+          - sqlCheck:
+              expectedResult: 0
+              sql: SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'targeting_request';
+          - sqlCheck:
+              expectedResult: 0
+              sql: SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'targeting_candidate';
       changes:
         - sql:
+            dbms: mysql
             splitStatements: true
+            stripComments: true
             sql: |
               CREATE TABLE targeting_request (
                   id BINARY(16) NOT NULL,

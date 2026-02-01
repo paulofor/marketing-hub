@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2034-02-03-add-targeting-request-to-adset
+      author: repo
+      preConditions:
+        onFail: MARK_RAN
+        and:
+          - dbms:
+              type: mysql
+          - sqlCheck:
+              expectedResult: 0
+              sql: |
+                SELECT COUNT(*)
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'ad_set'
+                  AND column_name = 'targeting_request_id';
+          - sqlCheck:
+              expectedResult: 1
+              sql: |
+                SELECT COUNT(*)
+                FROM information_schema.tables
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'targeting_request';
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE ad_set
+                  ADD COLUMN targeting_request_id BINARY(16) AFTER model,
+                  ADD CONSTRAINT fk_ad_set_targeting_request FOREIGN KEY (targeting_request_id) REFERENCES targeting_request(id);
+
+              CREATE INDEX idx_ad_set_targeting_request ON ad_set(targeting_request_id);

@@ -433,7 +433,7 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
   - include:
-      file: V2034_02_01__create_targeting_request_and_candidate.sql
+      file: V2034_02_01__create_targeting_request_and_candidate.yaml
       relativeToChangelogFile: true
 
   - include:
@@ -443,4 +443,3 @@ databaseChangeLog:
   - include:
       file: V2034_02_03__add_targeting_request_to_adset.sql
       relativeToChangelogFile: true
-

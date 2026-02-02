@@ -35,10 +35,13 @@ public class TargetingRequestChatGptClient {
                                          @Value("${openai.api-key:}") String apiKey,
                                          @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
                                          @Value("${openai.model:gpt-3.5-turbo}") String defaultModel) {
-        this.webClient = builder
+        WebClient.Builder clientBuilder = builder
                 .baseUrl(baseUrl)
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
-                .build();
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
+        if (OpenAiRequestUtils.requiresReasoning(defaultModel)) {
+            clientBuilder.defaultHeader("OpenAI-Beta", "reasoning=1");
+        }
+        this.webClient = clientBuilder.build();
         this.objectMapper = objectMapper;
         this.generationRecorder = generationRecorder;
         this.defaultModel = defaultModel;
@@ -46,17 +49,17 @@ public class TargetingRequestChatGptClient {
 
     public List<TargetingCandidateSuggestion> generateCandidates(TargetingRequestDto request) {
         String prompt = buildPrompt(request);
-        Map<String, Object> payload = Map.of(
-                "model", defaultModel,
-                "messages", List.of(
-                        OpenAiRequestUtils.message("system", "Você é um planejador de mídia especialista em Meta Ads."),
-                        OpenAiRequestUtils.message("user", prompt)
-                ),
-                "temperature", 0.4
-        );
+        Map<String, Object> payload = new java.util.LinkedHashMap<>();
+        payload.put("model", defaultModel);
+        payload.put("input", List.of(
+                OpenAiRequestUtils.message("system", "Você é um planejador de mídia especialista em Meta Ads."),
+                OpenAiRequestUtils.message("user", prompt)
+        ));
+        payload.put("temperature", 0.4);
+        OpenAiRequestUtils.maybeAddReasoning(payload, defaultModel);
 
         OpenAiResponse response = webClient.post()
-                .uri("/chat/completions")
+                .uri("/responses")
                 .bodyValue(payload)
                 .retrieve()
                 .bodyToMono(OpenAiResponse.class)

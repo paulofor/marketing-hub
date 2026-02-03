@@ -12,6 +12,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -58,12 +59,28 @@ public class TargetingRequestChatGptClient {
         payload.put("temperature", 0.4);
         OpenAiRequestUtils.maybeAddReasoning(payload, defaultModel);
 
-        OpenAiResponse response = webClient.post()
-                .uri("/responses")
-                .bodyValue(payload)
-                .retrieve()
-                .bodyToMono(OpenAiResponse.class)
-                .block();
+        log.info("Sending OpenAI targeting request {} with model {} and payload: {}",
+                request.id(),
+                defaultModel,
+                safeJson(payload));
+
+        OpenAiResponse response;
+        try {
+            response = webClient.post()
+                    .uri("/responses")
+                    .bodyValue(payload)
+                    .retrieve()
+                    .bodyToMono(OpenAiResponse.class)
+                    .block();
+        } catch (WebClientResponseException ex) {
+            log.error("OpenAI request failed for targeting request {}. Status: {}, Body: {}, Payload: {}",
+                    request.id(),
+                    ex.getStatusCode(),
+                    ex.getResponseBodyAsString(),
+                    safeJson(payload),
+                    ex);
+            throw ex;
+        }
         if (response == null) {
             log.warn("OpenAI returned null response for targeting request {}", request.id());
             return List.of();
@@ -145,5 +162,13 @@ public class TargetingRequestChatGptClient {
             }
         }
         return null;
+    }
+
+    private String safeJson(Map<String, Object> payload) {
+        try {
+            return objectMapper.writeValueAsString(payload);
+        } catch (Exception e) {
+            return String.valueOf(payload);
+        }
     }
 }

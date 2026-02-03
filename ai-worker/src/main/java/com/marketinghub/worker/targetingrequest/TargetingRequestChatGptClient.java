@@ -56,7 +56,9 @@ public class TargetingRequestChatGptClient {
                 OpenAiRequestUtils.message("system", "Você é um planejador de mídia especialista em Meta Ads."),
                 OpenAiRequestUtils.message("user", prompt)
         ));
-        payload.put("temperature", 0.4);
+        if (OpenAiRequestUtils.supportsTemperature(defaultModel)) {
+            payload.put("temperature", 0.4);
+        }
         OpenAiRequestUtils.maybeAddReasoning(payload, defaultModel);
 
         log.info("Sending OpenAI targeting request {} with model {} and payload: {}",

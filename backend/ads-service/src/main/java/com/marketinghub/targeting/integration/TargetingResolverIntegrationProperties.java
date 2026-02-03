@@ -44,4 +44,13 @@ public class TargetingResolverIntegrationProperties {
 
     private Duration connectTimeout = Duration.ofSeconds(2);
     private Duration readTimeout = Duration.ofSeconds(30);
+
+    /** Tempo de espera antes do primeiro ciclo de reprocessamento automático. */
+    private Duration retryInitialDelay = Duration.ofMinutes(1);
+
+    /** Intervalo entre as tentativas de reprocessar candidatos pendentes. */
+    private Duration retryInterval = Duration.ofMinutes(5);
+
+    /** Quantidade máxima de solicitações reprocessadas por ciclo. */
+    private int retryLimit = 25;
 }

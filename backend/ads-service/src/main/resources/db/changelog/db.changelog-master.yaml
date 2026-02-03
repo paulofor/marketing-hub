@@ -443,3 +443,6 @@ databaseChangeLog:
   - include:
       file: V2034_02_03__add_targeting_request_to_adset.yaml
       relativeToChangelogFile: true
+  - include:
+      file: V2034_02_04__dedupe_experiment_campaign_metric.sql
+      relativeToChangelogFile: true

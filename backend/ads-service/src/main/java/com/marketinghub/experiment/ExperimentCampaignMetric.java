@@ -29,8 +29,8 @@ public class ExperimentCampaignMetric {
     @JoinColumn(name = "campaign_id", nullable = false, unique = true, columnDefinition = "CHAR(36)")
     private FacebookAdsCampaign campaign;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "experiment_id", nullable = false)
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "experiment_id", nullable = false, unique = true)
     private Experiment experiment;
 
     private LocalDate dateStart;

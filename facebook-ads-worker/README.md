@@ -123,6 +123,9 @@ erro `(#100) lifetime is not a valid date_preset` quando a Graph API rejeita o
 valor `lifetime`. O retorno é consolidado no backend via
 `POST /api/facebook-campaigns/{campaignId}/metrics`, mantendo a janela de
 datas (`date_start`/`date_stop`) fornecida pela própria Meta.
+Quando a Graph API devolve `data=[]` no Insights (campanhas sem entrega ainda),
+o worker registra a ausência de dados e envia métricas zeradas ao backend para
+atualizar o `metrics_last_synced_at` sem marcar erro.
 
 Para preservar o formato JSON mesmo nos logs, utilize o utilitário
 `JsonLogFormatter.wrap(...)` ao registrar payloads, parâmetros e respostas.

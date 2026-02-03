@@ -48,6 +48,8 @@
   por requisições não stubadas.
 - A coleta de métricas via Insights deve usar `date_preset = maximum` para obter o histórico
   completo; o valor `lifetime` não é aceito pela Graph API e gera erro `(#100)`.
+- Quando a Graph API retorna `data=[]` no Insights, registre o ocorrido e reporte métricas
+  zeradas ao backend em vez de tratar como erro para evitar itens presos como pendentes.
 
 - Perguntas personalizadas geradas pelo ChatGPT agora são persistidas no backend
   e devolvidas em JSON para o worker; mantenha compatível qualquer mudança que

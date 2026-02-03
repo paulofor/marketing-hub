@@ -14,8 +14,8 @@ import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * Candidato de targeting enviado pelo AI Worker antes de validação com a Meta.
@@ -75,7 +75,7 @@ public class TargetingCandidate {
 
     @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<TargetingOption> options = new ArrayList<>();
+    private Set<TargetingOption> options = new LinkedHashSet<>();
 
     @CreationTimestamp
     private Instant createdAt;

@@ -7,6 +7,7 @@ import com.marketinghub.targeting.dto.TargetingOptionDto;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,7 +37,7 @@ public class TargetingCandidateMapper {
                 .build();
     }
 
-    private List<TargetingOptionDto> mapOptions(List<TargetingOption> options) {
+    private List<TargetingOptionDto> mapOptions(Collection<TargetingOption> options) {
         if (options == null || options.isEmpty()) {
             return Collections.emptyList();
         }

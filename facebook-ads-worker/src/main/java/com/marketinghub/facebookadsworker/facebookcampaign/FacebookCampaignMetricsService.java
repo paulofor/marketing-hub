@@ -92,8 +92,8 @@ public class FacebookCampaignMetricsService {
             JsonNode insights = facebookAdsService.getCampaignInsights(target.campaignId(), buildInsightsQuery());
             JsonNode data = insights.path("data");
             if (!data.isArray() || data.isEmpty()) {
-                LOGGER.warn("Facebook returned no insights data for campaign {}", target.campaignId());
-                reportMetricsError(target.campaignId(), "Facebook did not return insights data for campaign");
+                LOGGER.info("Facebook returned no insights data for campaign {}; reporting zeroed metrics", target.campaignId());
+                sendMetrics(target.campaignId(), buildEmptyMetricsPayload());
                 return;
             }
             JsonNode row = data.get(0);
@@ -138,6 +138,10 @@ public class FacebookCampaignMetricsService {
         BigDecimal spend = parseBigDecimal(row.path("spend"));
         Long leads = extractLeadCount(row.path("actions"));
         return new CampaignMetricsUpdateRequest(dateStart, dateStop, impressions, clicks, leads, spend);
+    }
+
+    private CampaignMetricsUpdateRequest buildEmptyMetricsPayload() {
+        return new CampaignMetricsUpdateRequest(null, null, 0L, 0L, 0L, BigDecimal.ZERO);
     }
 
     private Long parseLong(JsonNode node) {

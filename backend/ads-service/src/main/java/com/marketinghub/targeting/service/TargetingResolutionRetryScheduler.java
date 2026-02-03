@@ -8,7 +8,6 @@ import com.marketinghub.targeting.integration.TargetingResolverIntegrationProper
 import com.marketinghub.targeting.repository.TargetingRequestRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -28,16 +27,18 @@ public class TargetingResolutionRetryScheduler {
 
     public TargetingResolutionRetryScheduler(TargetingRequestRepository requestRepository,
                                              TargetingResolverClient targetingResolverClient,
-                                             TargetingResolverIntegrationProperties properties,
-                                             @Value("${targeting.resolution.retry-limit:25}") int retryLimit) {
+                                             TargetingResolverIntegrationProperties properties) {
         this.requestRepository = requestRepository;
         this.targetingResolverClient = targetingResolverClient;
         this.properties = properties;
-        this.retryLimit = retryLimit;
+        int configuredLimit = properties != null ? properties.getRetryLimit() : 25;
+        this.retryLimit = configuredLimit > 0 ? configuredLimit : 25;
     }
 
-    @Scheduled(initialDelayString = "${targeting.resolution.retry-initial-delay:PT1M}",
-               fixedDelayString = "${targeting.resolution.retry-interval:PT5M}")
+    @Scheduled(
+            initialDelayString = "#{@targetingResolverIntegrationProperties.retryInitialDelay?.toMillis() ?: 60000}",
+            fixedDelayString = "#{@targetingResolverIntegrationProperties.retryInterval?.toMillis() ?: 300000}"
+    )
     public void retryPendingCandidates() {
         if (!properties.isEnabled()) {
             return;

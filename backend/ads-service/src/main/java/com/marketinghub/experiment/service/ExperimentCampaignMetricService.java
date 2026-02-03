@@ -35,11 +35,11 @@ public class ExperimentCampaignMetricService {
                 .orElseThrow(() -> new IllegalArgumentException("Facebook campaign not found: " + campaignId));
         Experiment experiment = campaign.getExperiment();
         BigDecimal normalizedSpend = spend != null ? spend.setScale(2, RoundingMode.HALF_UP) : null;
-        ExperimentCampaignMetric metric = repository.findByCampaign(campaign)
+        ExperimentCampaignMetric metric = repository.findByExperiment(experiment)
                 .orElseGet(() -> ExperimentCampaignMetric.builder()
-                        .campaign(campaign)
                         .experiment(experiment)
                         .build());
+        metric.setCampaign(campaign);
         metric.setDateStart(dateStart);
         metric.setDateStop(dateStop);
         metric.setImpressions(impressions);

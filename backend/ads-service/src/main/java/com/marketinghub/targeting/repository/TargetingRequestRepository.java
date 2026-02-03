@@ -24,4 +24,13 @@ public interface TargetingRequestRepository extends JpaRepository<TargetingReque
 
     @EntityGraph(attributePaths = {"candidates", "candidates.options"})
     Optional<TargetingRequest> findDetailedById(UUID id);
+
+    @EntityGraph(attributePaths = {"candidates", "candidates.options"})
+    @Query("""
+            select distinct r from TargetingRequest r
+            join r.candidates c
+            where c.status = com.marketinghub.targeting.TargetingCandidateStatus.PENDING_FACEBOOK_MATCH
+            order by r.createdAt asc
+            """)
+    List<TargetingRequest> findRequestsWithPendingCandidates(Pageable pageable);
 }

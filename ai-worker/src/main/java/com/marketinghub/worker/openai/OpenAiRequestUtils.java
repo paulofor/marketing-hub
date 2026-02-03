@@ -40,6 +40,10 @@ public final class OpenAiRequestUtils {
         }
     }
 
+    public static boolean supportsTemperature(String model) {
+        return !requiresReasoning(model);
+    }
+
     public static boolean requiresReasoning(String model) {
         if (model == null) {
             return false;

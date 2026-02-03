@@ -2,6 +2,7 @@ package com.marketinghub.worker.targetingrequest;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.marketinghub.worker.openai.AiGenerationRecorder;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
@@ -113,13 +114,16 @@ public class TargetingRequestChatGptClient {
         sb.append("Crie no máximo 30 itens por tipo, priorizando diversidade sem variações triviais.\n");
         sb.append("Cada item precisa ter: texto_sugerido, tipo (interest|behavior|work_position), rationale, score (0-1), intent_tag (awareness|consideration|decision) e idioma.\n");
         sb.append("Bloqueie PII, termos proibidos da Meta e garanta que os termos existam na API de targeting search.\n");
-        sb.append("Responda apenas em JSON seguindo o formato {\"candidates\":[{...}]}.\n");
+        sb.append("Responda apenas em JSON seguindo o formato {\"candidates\":[{...}]} e não inclua comentários ou blocos markdown.\n");
         sb.append("Descrição: ").append(request.descricao());
         return sb.toString();
     }
 
     private List<TargetingCandidateSuggestion> parseContent(String content) throws Exception {
-        JsonNode root = objectMapper.readTree(content);
+        String sanitizedContent = sanitizeContent(content);
+        ObjectMapper lenientMapper = objectMapper.copy()
+                .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS.mappedFeature());
+        JsonNode root = lenientMapper.readTree(sanitizedContent);
         JsonNode candidatesNode = root.get("candidates");
         if (candidatesNode == null) {
             candidatesNode = root;
@@ -143,6 +147,21 @@ public class TargetingRequestChatGptClient {
             result.add(new TargetingCandidateSuggestion(texto.trim(), tipo, "AI", score, rationale, idioma, intent));
         }
         return result;
+    }
+
+    private String sanitizeContent(String content) {
+        if (content == null) {
+            return "";
+        }
+        String trimmed = content.trim();
+        if (trimmed.startsWith("```")) {
+            int firstNewline = trimmed.indexOf('\n');
+            int lastFence = trimmed.lastIndexOf("```");
+            if (firstNewline != -1 && lastFence > firstNewline) {
+                trimmed = trimmed.substring(firstNewline + 1, lastFence).trim();
+            }
+        }
+        return trimmed;
     }
 
     private String readText(JsonNode node, String field) {

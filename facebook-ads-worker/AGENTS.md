@@ -46,6 +46,8 @@
 - Ao testar validação de interesses, lembre que o worker consulta a Graph API em sequência
   (`pt_BR`, `en_US` e sem locale). Enfileire respostas para cada tentativa para evitar falhas
   por requisições não stubadas.
+- A coleta de métricas via Insights deve usar `date_preset = maximum` para obter o histórico
+  completo; o valor `lifetime` não é aceito pela Graph API e gera erro `(#100)`.
 
 - Perguntas personalizadas geradas pelo ChatGPT agora são persistidas no backend
   e devolvidas em JSON para o worker; mantenha compatível qualquer mudança que

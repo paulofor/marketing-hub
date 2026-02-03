@@ -115,6 +115,15 @@ presente, os campos estruturados de erro (`type`, `code`, `error_subcode`,
 `error_user_title`, `error_user_msg`, `fbtrace_id` e `error_data`). Isso
 permite cruzar rapidamente o incidente com a documentação oficial.
 
+## Coleta de métricas de campanha
+
+O agendador de métricas consulta o endpoint de Insights (`/{campaignId}/insights`)
+com `date_preset = maximum` para obter o período completo disponível, evitando o
+erro `(#100) lifetime is not a valid date_preset` quando a Graph API rejeita o
+valor `lifetime`. O retorno é consolidado no backend via
+`POST /api/facebook-campaigns/{campaignId}/metrics`, mantendo a janela de
+datas (`date_start`/`date_stop`) fornecida pela própria Meta.
+
 Para preservar o formato JSON mesmo nos logs, utilize o utilitário
 `JsonLogFormatter.wrap(...)` ao registrar payloads, parâmetros e respostas.
 Ele serializa as estruturas para JSON antes da interpolação na mensagem,

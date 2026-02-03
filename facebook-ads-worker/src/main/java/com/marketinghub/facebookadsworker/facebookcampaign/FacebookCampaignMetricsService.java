@@ -122,7 +122,7 @@ public class FacebookCampaignMetricsService {
     private Map<String, String> buildInsightsQuery() {
         Map<String, String> params = new HashMap<>();
         params.put("fields", "campaign_name,impressions,clicks,spend,actions,date_start,date_stop");
-        params.put("date_preset", "lifetime");
+        params.put("date_preset", "maximum");
         params.put("time_increment", "all_days");
         return params;
     }

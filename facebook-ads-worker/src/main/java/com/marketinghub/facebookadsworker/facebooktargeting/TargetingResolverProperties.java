@@ -19,10 +19,18 @@ public class TargetingResolverProperties {
     private int searchLimit = 25;
     /** Quantidade máxima de opções retornadas por candidato. */
     private int resultLimit = 5;
+    /** Controle de variações por seed. */
+    private int maxSeedVariants = 6;
     /** Tempo máximo para manter resultados em cache dentro do FacebookAdsService. */
     private Duration cacheTtl = Duration.ofMinutes(30);
     /** Conta de anúncio padrão usada quando o payload não fornece uma. */
     private String defaultAdAccountId;
+    /** Ativa a chamada de targetingsuggestions após encontrar ao menos uma opção via search. */
+    private boolean suggestionsEnabled = true;
+    /** Limite de sugestões retornadas pela API. */
+    private int suggestionLimit = 10;
+    /** Quantidade de seeds (IDs) usados como base das sugestões. */
+    private int suggestionSeedLimit = 3;
 
     public String getDefaultLocale() {
         return defaultLocale;
@@ -56,6 +64,14 @@ public class TargetingResolverProperties {
         this.resultLimit = resultLimit;
     }
 
+    public int getMaxSeedVariants() {
+        return maxSeedVariants;
+    }
+
+    public void setMaxSeedVariants(int maxSeedVariants) {
+        this.maxSeedVariants = maxSeedVariants;
+    }
+
     public Duration getCacheTtl() {
         return cacheTtl;
     }
@@ -70,5 +86,29 @@ public class TargetingResolverProperties {
 
     public void setDefaultAdAccountId(String defaultAdAccountId) {
         this.defaultAdAccountId = defaultAdAccountId;
+    }
+
+    public boolean isSuggestionsEnabled() {
+        return suggestionsEnabled;
+    }
+
+    public void setSuggestionsEnabled(boolean suggestionsEnabled) {
+        this.suggestionsEnabled = suggestionsEnabled;
+    }
+
+    public int getSuggestionLimit() {
+        return suggestionLimit;
+    }
+
+    public void setSuggestionLimit(int suggestionLimit) {
+        this.suggestionLimit = suggestionLimit;
+    }
+
+    public int getSuggestionSeedLimit() {
+        return suggestionSeedLimit;
+    }
+
+    public void setSuggestionSeedLimit(int suggestionSeedLimit) {
+        this.suggestionSeedLimit = suggestionSeedLimit;
     }
 }

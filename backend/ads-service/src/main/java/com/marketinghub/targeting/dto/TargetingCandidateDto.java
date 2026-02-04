@@ -19,12 +19,22 @@ public class TargetingCandidateDto {
     @JsonProperty("request_id")
     private UUID requestId;
 
+    @JsonProperty("seed")
+    private String seed;
+
+    /** Campo legado para compatibilidade com clientes antigos. */
     @JsonProperty("texto_sugerido")
-    private String textoSugerido;
+    private String legacySeed;
+
+    @JsonProperty("seed_variants")
+    private List<String> seedVariants;
 
     private TargetingCandidateType tipo;
 
     private TargetingCandidateStatus status;
+
+    @JsonProperty("idioma_hint")
+    private String idiomaHint;
 
     private String idioma;
 

@@ -19,6 +19,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -89,16 +90,22 @@ public class TargetingResolverClient {
     }
 
     private CandidatePayload toPayload(TargetingCandidate candidate) {
+        List<String> variants = candidate.getSeedVariants() == null ? List.of() : List.copyOf(candidate.getSeedVariants());
+        ConstraintsPayload constraints = new ConstraintsPayload(candidate.getCountry());
         return new CandidatePayload(
                 candidate.getId(),
-                candidate.getTextoSugerido(),
+                candidate.getSeed(),
+                candidate.getSeed(),
+                variants,
                 candidate.getType(),
-                candidate.getIdioma(),
+                candidate.getLocaleHint(),
+                candidate.getLocaleHint(),
                 candidate.getCountry(),
                 candidate.getOrigem(),
                 candidate.getScore(),
                 candidate.getRationale(),
-                candidate.getIntentTag()
+                candidate.getIntentTag(),
+                constraints
         );
     }
 
@@ -139,13 +146,22 @@ public class TargetingResolverClient {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private record CandidatePayload(
             Long id,
-            @JsonProperty("texto_sugerido") String textoSugerido,
+            @JsonProperty("seed") String seed,
+            @JsonProperty("texto_sugerido") String legacySeed,
+            @JsonProperty("seed_variants") List<String> seedVariants,
             @JsonProperty("tipo") TargetingCandidateType tipo,
+            @JsonProperty("idioma_hint") String idiomaHint,
             @JsonProperty("idioma") String idioma,
             @JsonProperty("pais") String pais,
             @JsonProperty("origem") String origem,
-            @JsonProperty("score") java.math.BigDecimal score,
+            @JsonProperty("score") BigDecimal score,
             @JsonProperty("rationale") String rationale,
-            @JsonProperty("intent_tag") String intentTag
+            @JsonProperty("intent_tag") String intentTag,
+            @JsonProperty("constraints") ConstraintsPayload constraints
+    ) {}
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private record ConstraintsPayload(
+            @JsonProperty("country") String country
     ) {}
 }

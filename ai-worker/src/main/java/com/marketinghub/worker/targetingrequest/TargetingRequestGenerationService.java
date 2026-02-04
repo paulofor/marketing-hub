@@ -6,7 +6,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -24,6 +26,12 @@ public class TargetingRequestGenerationService {
     private static final Pattern PHONE_PATTERN = Pattern.compile("(\\+?\\d[\\s-]?)?(\\(?\\d{2,3}\\)?[\\s-]?)?\\d{4,5}[\\s-]?\\d{4}");
     private static final Set<String> FORBIDDEN_TERMS = Set.of("sexo", "armas", "violência", "ódio", "hate", "drogas");
     private static final int LIMIT_PER_TYPE = 30;
+    private static final int MAX_VARIANTS = 6;
+    private static final int MAX_SEED_WORDS = 4;
+    private static final Pattern MULTIPLE_SPACES = Pattern.compile("\\s+");
+    private static final Pattern LOCATION_SUFFIX_PATTERN = Pattern.compile("(?i)\\s+(em|no|na)\\s+[\\p{L}\\s]{2,}$");
+    private static final Pattern STATE_SUFFIX_PATTERN = Pattern.compile("(?i)\\s+(em|no|na)\\s+[A-Z]{2}$");
+    private static final Pattern PARENTHESIS_SUFFIX_PATTERN = Pattern.compile("\\s*\\([^)]*\\)$");
 
     private final BackendTargetingRequestClient backendClient;
     private final TargetingRequestChatGptClient chatGptClient;
@@ -53,22 +61,33 @@ public class TargetingRequestGenerationService {
         List<TargetingCandidateSuggestion> filtered = filterSuggestions(suggestions, request);
         TargetingCandidateIngestionPayload payload = new TargetingCandidateIngestionPayload(
                 filtered.stream()
-                        .map(this::toPayload)
+                        .map(s -> toPayload(s, request))
                         .toList()
         );
         backendClient.sendCandidates(request.id(), payload);
         log.info("Sent {} candidates for targeting request {}", filtered.size(), request.id());
     }
 
-    private TargetingCandidateIngestionPayload.CandidatePayload toPayload(TargetingCandidateSuggestion suggestion) {
+    private TargetingCandidateIngestionPayload.CandidatePayload toPayload(TargetingCandidateSuggestion suggestion,
+                                                                         TargetingRequestDto request) {
+        TargetingCandidateIngestionPayload.ConstraintsPayload constraints =
+                new TargetingCandidateIngestionPayload.ConstraintsPayload(firstNonBlank(
+                        suggestion.countryConstraint(),
+                        request.countryOrDefault()
+                ));
+        List<String> variants = normalizeVariants(suggestion.seedVariants(), suggestion.seed());
         return new TargetingCandidateIngestionPayload.CandidatePayload(
-                suggestion.textoSugerido(),
+                suggestion.seed(),
+                suggestion.seed(),
+                variants,
                 suggestion.tipo(),
                 StringUtils.hasText(suggestion.origem()) ? suggestion.origem() : "AI",
                 normalizeScore(suggestion.score()),
                 suggestion.rationale(),
-                normalizeLocale(suggestion.idioma()),
-                suggestion.intentTag()
+                resolveLocale(suggestion.idiomaHint(), request),
+                firstNonBlank(suggestion.countryConstraint(), request.countryOrDefault()),
+                suggestion.intentTag(),
+                constraints
         );
     }
 
@@ -77,58 +96,70 @@ public class TargetingRequestGenerationService {
         if (suggestions == null || suggestions.isEmpty()) {
             return List.of();
         }
-        Set<String> seen = new LinkedHashSet<>();
         Map<TargetingCandidateType, List<TargetingCandidateSuggestion>> grouped = new LinkedHashMap<>();
+        Set<String> seen = new LinkedHashSet<>();
         for (TargetingCandidateSuggestion suggestion : suggestions) {
-            if (suggestion == null || !StringUtils.hasText(suggestion.textoSugerido())) {
+            if (suggestion == null || !StringUtils.hasText(suggestion.seed())) {
                 continue;
             }
-            String texto = suggestion.textoSugerido().trim();
-            String normalizedKey = (suggestion.tipo() != null ? suggestion.tipo() : TargetingCandidateType.INTEREST)
-                    + "|" + texto.toLowerCase();
-            if (!seen.add(normalizedKey)) {
+            String sanitizedSeed = sanitizeSeed(suggestion.seed());
+            if (!StringUtils.hasText(sanitizedSeed)) {
                 continue;
             }
-            if (containsForbidden(texto) || hasPii(texto)) {
+            TargetingCandidateType type = suggestion.tipo() != null ? suggestion.tipo() : TargetingCandidateType.INTEREST;
+            String key = type + "|" + sanitizedSeed.toLowerCase(Locale.ROOT);
+            if (!seen.add(key)) {
                 continue;
             }
+            if (containsForbidden(sanitizedSeed) || hasPii(sanitizedSeed)) {
+                continue;
+            }
+            List<String> variants = normalizeVariants(suggestion.seedVariants(), sanitizedSeed);
             TargetingCandidateSuggestion sanitized = new TargetingCandidateSuggestion(
-                    texto,
-                    suggestion.tipo() != null ? suggestion.tipo() : TargetingCandidateType.INTEREST,
+                    sanitizedSeed,
+                    variants,
+                    type,
                     suggestion.origem(),
                     normalizeScore(suggestion.score()),
                     suggestion.rationale(),
-                    resolveLocale(suggestion.idioma(), request),
-                    suggestion.intentTag()
+                    resolveLocale(suggestion.idiomaHint(), request),
+                    suggestion.intentTag(),
+                    suggestion.countryConstraint()
             );
-            grouped.computeIfAbsent(sanitized.tipo(), key -> new ArrayList<>()).add(sanitized);
+            grouped.computeIfAbsent(type, keyType -> new ArrayList<>()).add(sanitized);
         }
 
         if (grouped.isEmpty() && !"en_US".equalsIgnoreCase(request.localeOrDefault())) {
             seen.clear();
             for (TargetingCandidateSuggestion suggestion : suggestions) {
-                if (suggestion == null || !StringUtils.hasText(suggestion.textoSugerido())) {
+                if (suggestion == null || !StringUtils.hasText(suggestion.seed())) {
                     continue;
                 }
-                String texto = suggestion.textoSugerido().trim();
-                String normalizedKey = (suggestion.tipo() != null ? suggestion.tipo() : TargetingCandidateType.INTEREST)
-                        + "|" + texto.toLowerCase();
-                if (!seen.add(normalizedKey)) {
+                String sanitizedSeed = sanitizeSeed(suggestion.seed());
+                if (!StringUtils.hasText(sanitizedSeed)) {
                     continue;
                 }
-                if (containsForbidden(texto) || hasPii(texto)) {
+                TargetingCandidateType type = suggestion.tipo() != null ? suggestion.tipo() : TargetingCandidateType.INTEREST;
+                String key = type + "|" + sanitizedSeed.toLowerCase(Locale.ROOT);
+                if (!seen.add(key)) {
                     continue;
                 }
-                TargetingCandidateSuggestion fallbackSuggestion = new TargetingCandidateSuggestion(
-                        texto,
-                        suggestion.tipo() != null ? suggestion.tipo() : TargetingCandidateType.INTEREST,
+                if (containsForbidden(sanitizedSeed) || hasPii(sanitizedSeed)) {
+                    continue;
+                }
+                List<String> variants = normalizeVariants(suggestion.seedVariants(), sanitizedSeed);
+                TargetingCandidateSuggestion fallback = new TargetingCandidateSuggestion(
+                        sanitizedSeed,
+                        variants,
+                        type,
                         suggestion.origem(),
                         normalizeScore(suggestion.score()),
                         suggestion.rationale(),
                         "en_US",
-                        suggestion.intentTag()
+                        suggestion.intentTag(),
+                        suggestion.countryConstraint()
                 );
-                grouped.computeIfAbsent(fallbackSuggestion.tipo(), key -> new ArrayList<>()).add(fallbackSuggestion);
+                grouped.computeIfAbsent(type, keyType -> new ArrayList<>()).add(fallback);
             }
         }
 
@@ -144,7 +175,7 @@ public class TargetingRequestGenerationService {
     }
 
     private boolean containsForbidden(String value) {
-        String lower = value.toLowerCase();
+        String lower = value.toLowerCase(Locale.ROOT);
         return FORBIDDEN_TERMS.stream().anyMatch(lower::contains);
     }
 
@@ -160,16 +191,62 @@ public class TargetingRequestGenerationService {
         return score;
     }
 
-    private String normalizeLocale(String locale) {
-        if (!StringUtils.hasText(locale)) {
+    private List<String> normalizeVariants(List<String> providedVariants, String seed) {
+        LinkedHashSet<String> variants = new LinkedHashSet<>();
+        if (StringUtils.hasText(seed)) {
+            variants.add(seed);
+            variants.add(removeAccents(seed));
+        }
+        if (providedVariants != null) {
+            for (String variant : providedVariants) {
+                String sanitized = sanitizeSeed(variant);
+                if (StringUtils.hasText(sanitized)) {
+                    variants.add(sanitized);
+                    variants.add(removeAccents(sanitized));
+                }
+            }
+        }
+        variants.removeIf(value -> !StringUtils.hasText(value));
+        return variants.stream().limit(MAX_VARIANTS).toList();
+    }
+
+    private String sanitizeSeed(String raw) {
+        if (!StringUtils.hasText(raw)) {
             return null;
         }
-        String normalized = locale.trim().replace('-', '_');
-        if (normalized.length() == 5 && normalized.charAt(2) == '_') {
-            String lang = normalized.substring(0, 2).toLowerCase(Locale.ROOT);
-            String country = normalized.substring(3).toUpperCase(Locale.ROOT);
-            return lang + "_" + country;
+        String collapsed = MULTIPLE_SPACES.matcher(raw).replaceAll(" ").trim();
+        collapsed = PARENTHESIS_SUFFIX_PATTERN.matcher(collapsed).replaceAll("");
+        collapsed = LOCATION_SUFFIX_PATTERN.matcher(collapsed).replaceAll("");
+        collapsed = STATE_SUFFIX_PATTERN.matcher(collapsed).replaceAll("");
+        collapsed = collapsed.replaceAll("[\\p{Punct}]+$", "");
+        collapsed = collapsed.trim();
+        if (!StringUtils.hasText(collapsed)) {
+            return null;
         }
-        return normalized;
+        String[] tokens = collapsed.split(" ");
+        if (tokens.length <= MAX_SEED_WORDS) {
+            return collapsed;
+        }
+        return String.join(" ", Arrays.asList(tokens).subList(0, MAX_SEED_WORDS));
+    }
+
+    private String removeAccents(String value) {
+        if (!StringUtils.hasText(value)) {
+            return value;
+        }
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD);
+        return normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value;
+            }
+        }
+        return null;
     }
 }

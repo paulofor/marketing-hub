@@ -446,3 +446,7 @@ databaseChangeLog:
   - include:
       file: V2034_02_04__dedupe_experiment_campaign_metric.sql
       relativeToChangelogFile: true
+
+  - include:
+      file: V2034_02_10__targeting_seed_flow.yaml
+      relativeToChangelogFile: true

@@ -52,6 +52,20 @@ inicialização (montado como `/run/secrets/openai_api_key`), dispensando o
 `export` manual da variável. Caso queira sobrescrever o segredo, defina
 `OPENAI_API_KEY` antes do `docker compose up`.
 
+### Pool de conexões MySQL 5.7
+
+Servidores MySQL 5.7 compartilhados (como o da KingHost) derrubam conexões ociosas
+em poucos segundos e impõem limites baixos de sessões simultâneas. Para evitar
+oscilação no pool e o erro `Communications link failure`, o backend expõe os
+parâmetros do HikariCP através de variáveis de ambiente (todas opcionais, com
+defaults seguros):
+
+- `DB_MAX_POOL_SIZE` / `DB_MIN_IDLE` controlam o número máximo de conexões e o mínimo mantido como quente.
+- `DB_CONNECTION_TIMEOUT` e `DB_VALIDATION_TIMEOUT` definem quanto tempo aguardamos ao abrir ou validar uma conexão antes de falhar rapidamente.
+- `DB_IDLE_TIMEOUT`, `DB_MAX_LIFETIME` e `DB_KEEPALIVE_TIME` evitam que o MySQL derrube sessões por ociosidade desalinhada.
+
+Os valores de timeout são expressos em milissegundos (ex.: 20000 = 20s).
+
 ## Email Service
 
 O novo microserviço responsável por renderizar templates do Marketing Hub e

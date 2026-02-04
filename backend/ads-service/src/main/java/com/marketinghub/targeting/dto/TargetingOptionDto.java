@@ -2,6 +2,7 @@ package com.marketinghub.targeting.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.marketinghub.targeting.TargetingCandidateType;
+import com.marketinghub.targeting.TargetingOptionSource;
 import lombok.Builder;
 import lombok.Data;
 
@@ -27,6 +28,9 @@ public class TargetingOptionDto {
     @JsonProperty("match_score")
     private BigDecimal matchScore;
 
+    @JsonProperty("final_score")
+    private BigDecimal finalScore;
+
     private List<String> path;
 
     @JsonProperty("search_locale")
@@ -37,6 +41,12 @@ public class TargetingOptionDto {
 
     @JsonProperty("search_term")
     private String searchTerm;
+
+    @JsonProperty("source")
+    private TargetingOptionSource source;
+
+    @JsonProperty("seed_variant")
+    private String seedVariant;
 
     private Instant createdAt;
 

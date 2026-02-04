@@ -13,12 +13,15 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Serviço responsável por aterrar os candidatos em opções válidas da Meta.
@@ -26,6 +29,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Service
 public class TargetingResolverService {
     private static final Logger LOGGER = LoggerFactory.getLogger(TargetingResolverService.class);
+    private static final double AI_SCORE_WEIGHT = 0.55;
+    private static final double MATCH_SCORE_WEIGHT = 0.35;
+    private static final double SIZE_SCORE_WEIGHT = 0.10;
+    private static final double MIN_AUDIENCE = 1_000d;
+    private static final double MAX_AUDIENCE = 50_000_000d;
 
     private final FacebookAdsService facebookAdsService;
     private final TargetingBackendClient backendClient;
@@ -60,46 +68,63 @@ public class TargetingResolverService {
             return new CandidateResolutionSummary(null, TargetingCandidateStatus.NO_MATCH, 0,
                 "Candidato inválido recebido para o request %s".formatted(requestId));
         }
-        String term = candidate.textoSugerido();
-        if (!StringUtils.hasText(term)) {
+        String primarySeed = sanitizeSeed(firstNonBlank(candidate.seed(), candidate.legacySeed()));
+        List<String> variants = resolveVariants(candidate, primarySeed);
+        if (variants.isEmpty()) {
             TargetingCandidateResolutionUpdate update = new TargetingCandidateResolutionUpdate(
                 TargetingCandidateStatus.NO_MATCH,
-                "Texto sugerido não foi informado",
+                "INVALID_SEED",
                 List.of()
             );
             backendClient.reportResolution(candidate.id(), update);
             return new CandidateResolutionSummary(candidate.id(), TargetingCandidateStatus.NO_MATCH, 0,
-                "Texto sugerido vazio");
+                "Seed ausente ou inválida");
         }
 
         TargetingCandidateType type = candidate.tipo() != null ? candidate.tipo() : TargetingCandidateType.INTEREST;
         FacebookAdsService.TargetingSearchType searchType = mapSearchType(type);
         int limit = resolveLimit(request);
         String adAccountId = resolveAdAccountId(request);
+        List<String> localeFallbacks = buildFallbacks(
+            candidate.idiomaHint(),
+            candidate.idioma(),
+            request != null ? request.getLocale() : null,
+            properties.getDefaultLocale(),
+            "en_US",
+            null
+        );
+        List<String> countryFallbacks = buildFallbacks(
+            candidate.constraints() != null ? candidate.constraints().country() : null,
+            candidate.pais(),
+            request != null ? request.getCountry() : null,
+            properties.getDefaultCountry(),
+            null,
+            null
+        );
+        double aiScore = normalizeScore(candidate.score());
 
-        SearchParameters searchParameters = new SearchParameters(term.trim(), searchType, adAccountId, limit);
-        List<String> localeFallbacks = buildFallbacks(candidate.idioma(), request != null ? request.getLocale() : null, properties.getDefaultLocale(), "en_US", (String) null);
-        List<String> countryFallbacks = buildFallbacks(candidate.pais(), request != null ? request.getCountry() : null, properties.getDefaultCountry(), (String) null);
-
-        SearchOutcome outcome;
-        try {
-            outcome = searchWithFallbacks(searchParameters, localeFallbacks, countryFallbacks);
-        } catch (RuntimeException ex) {
-            LOGGER.error("Failed to resolve targeting candidate {}: {}", candidate.id(), ex.getMessage(), ex);
-            TargetingCandidateResolutionUpdate update = new TargetingCandidateResolutionUpdate(
-                TargetingCandidateStatus.NO_MATCH,
-                "Erro ao consultar a Graph API: " + ex.getMessage(),
-                List.of()
-            );
-            backendClient.reportResolution(candidate.id(), update);
-            return new CandidateResolutionSummary(candidate.id(), TargetingCandidateStatus.NO_MATCH, 0,
-                "Erro ao consultar a Graph API");
+        Map<String, ResolvedOption> resolvedOptions = new LinkedHashMap<>();
+        for (String variant : variants.stream().limit(Math.max(1, properties.getMaxSeedVariants())).toList()) {
+            SearchParameters parameters = new SearchParameters(variant, searchType, adAccountId, limit);
+            SearchOutcome outcome;
+            try {
+                outcome = searchWithFallbacks(parameters, localeFallbacks, countryFallbacks);
+            } catch (RuntimeException ex) {
+                LOGGER.error("Failed to resolve targeting candidate {}: {}", candidate.id(), ex.getMessage(), ex);
+                return reportApiError(candidate.id());
+            }
+            if (outcome.hasResults()) {
+                mergeOptionsFromOutcome(resolvedOptions, outcome, type, variant, aiScore, TargetingOptionSource.SEARCH);
+            }
+            if (resolvedOptions.size() >= properties.getResultLimit()) {
+                break;
+            }
         }
 
-        if (outcome == null || outcome.results().isEmpty()) {
+        if (resolvedOptions.isEmpty()) {
             TargetingCandidateResolutionUpdate update = new TargetingCandidateResolutionUpdate(
                 TargetingCandidateStatus.NO_MATCH,
-                "Nenhuma opção encontrada na Meta para o termo informado",
+                "EMPTY_RESULTS",
                 List.of()
             );
             backendClient.reportResolution(candidate.id(), update);
@@ -107,15 +132,183 @@ public class TargetingResolverService {
                 "Nenhum resultado retornado pela Meta");
         }
 
-        List<TargetingOptionPayload> options = toOptionPayloads(outcome, type, term, properties.getResultLimit());
+        if (properties.isSuggestionsEnabled()) {
+            enrichWithSuggestions(resolvedOptions, type, aiScore, adAccountId, localeFallbacks, countryFallbacks);
+        }
+
+        List<TargetingOptionPayload> optionPayloads = resolvedOptions.values().stream()
+                .sorted(Comparator.comparingDouble(ResolvedOption::finalScore).reversed())
+                .limit(Math.max(1, properties.getResultLimit()))
+                .map(this::toPayload)
+                .toList();
+
         TargetingCandidateResolutionUpdate update = new TargetingCandidateResolutionUpdate(
             TargetingCandidateStatus.VALIDATED,
             null,
-            options
+            optionPayloads
         );
         backendClient.reportResolution(candidate.id(), update);
-        return new CandidateResolutionSummary(candidate.id(), TargetingCandidateStatus.VALIDATED, options.size(),
-            "Opções resolvidas pela Graph API (%d)".formatted(options.size()));
+        return new CandidateResolutionSummary(candidate.id(), TargetingCandidateStatus.VALIDATED, optionPayloads.size(),
+            "Opções resolvidas pela Graph API (%d)".formatted(optionPayloads.size()));
+    }
+
+    private CandidateResolutionSummary reportApiError(Long candidateId) {
+        TargetingCandidateResolutionUpdate update = new TargetingCandidateResolutionUpdate(
+            TargetingCandidateStatus.NO_MATCH,
+            "API_ERROR",
+            List.of()
+        );
+        backendClient.reportResolution(candidateId, update);
+        return new CandidateResolutionSummary(candidateId, TargetingCandidateStatus.NO_MATCH, 0,
+            "Erro ao consultar a Graph API");
+    }
+
+    private void enrichWithSuggestions(Map<String, ResolvedOption> resolvedOptions,
+                                       TargetingCandidateType type,
+                                       double aiScore,
+                                       String adAccountId,
+                                       List<String> localeFallbacks,
+                                       List<String> countryFallbacks) {
+        if (resolvedOptions.isEmpty()) {
+            return;
+        }
+        List<FacebookAdsService.TargetingSuggestionSeed> seeds = resolvedOptions.values().stream()
+                .sorted(Comparator.comparingDouble(ResolvedOption::finalScore).reversed())
+                .limit(Math.max(1, properties.getSuggestionSeedLimit()))
+                .map(option -> new FacebookAdsService.TargetingSuggestionSeed(option.result().id(), mapSearchType(type).graphType()))
+                .toList();
+        if (CollectionUtils.isEmpty(seeds)) {
+            return;
+        }
+        String locale = resolveSuggestionLocale(resolvedOptions.values(), localeFallbacks);
+        String country = resolveSuggestionCountry(resolvedOptions.values(), countryFallbacks);
+        FacebookAdsService.TargetingSuggestionsRequest request = new FacebookAdsService.TargetingSuggestionsRequest(
+                adAccountId,
+                seeds,
+                locale,
+                country,
+                properties.getSuggestionLimit()
+        );
+        List<FacebookAdsService.FacebookTargetingSuggestionResult> suggestions = facebookAdsService.suggestTargetingOptions(request);
+        if (CollectionUtils.isEmpty(suggestions)) {
+            return;
+        }
+        for (FacebookAdsService.FacebookTargetingSuggestionResult suggestion : suggestions) {
+            if (resolvedOptions.containsKey(suggestion.id())) {
+                continue;
+            }
+            double matchScore = resolvedOptions.values().stream()
+                    .mapToDouble(option -> computeMatchScore(option.seedVariant(), suggestion.name()))
+                    .max()
+                    .orElse(0.6);
+            double sizeScore = computeSizeScore(suggestion.audienceSize());
+            double finalScore = blendScores(aiScore, matchScore, sizeScore);
+            ResolvedOption option = new ResolvedOption(
+                    new FacebookAdsService.FacebookTargetingSearchResult(suggestion.id(), suggestion.name(), suggestion.audienceSize(), suggestion.path()),
+                    type,
+                    matchScore,
+                    finalScore,
+                    locale,
+                    country,
+                    null,
+                    resolvedOptions.values().iterator().next().seedVariant(),
+                    TargetingOptionSource.SUGGESTION
+            );
+            resolvedOptions.put(suggestion.id(), option);
+            if (resolvedOptions.size() >= properties.getResultLimit()) {
+                break;
+            }
+        }
+    }
+
+    private String resolveSuggestionLocale(Iterable<ResolvedOption> options, List<String> localeFallbacks) {
+        for (ResolvedOption option : options) {
+            if (StringUtils.hasText(option.locale())) {
+                return option.locale();
+            }
+        }
+        return localeFallbacks.isEmpty() ? null : localeFallbacks.get(0);
+    }
+
+    private String resolveSuggestionCountry(Iterable<ResolvedOption> options, List<String> countryFallbacks) {
+        for (ResolvedOption option : options) {
+            if (StringUtils.hasText(option.country())) {
+                return option.country();
+            }
+        }
+        return countryFallbacks.isEmpty() ? null : countryFallbacks.get(0);
+    }
+
+    private void mergeOptionsFromOutcome(Map<String, ResolvedOption> resolvedOptions,
+                                         SearchOutcome outcome,
+                                         TargetingCandidateType type,
+                                         String seedVariant,
+                                         double aiScore,
+                                         TargetingOptionSource source) {
+        for (FacebookAdsService.FacebookTargetingSearchResult result : outcome.results()) {
+            if (resolvedOptions.size() >= properties.getResultLimit()) {
+                break;
+            }
+            if (resolvedOptions.containsKey(result.id())) {
+                continue;
+            }
+            double matchScore = computeMatchScore(seedVariant, result.name());
+            double sizeScore = computeSizeScore(result.audienceSize());
+            double finalScore = blendScores(aiScore, matchScore, sizeScore);
+            ResolvedOption option = new ResolvedOption(
+                    result,
+                    type,
+                    matchScore,
+                    finalScore,
+                    outcome.locale(),
+                    outcome.country(),
+                    outcome.term(),
+                    seedVariant,
+                    source
+            );
+            resolvedOptions.put(result.id(), option);
+        }
+    }
+
+    private List<String> resolveVariants(TargetingCandidatePayload candidate, String primarySeed) {
+        LinkedHashSet<String> variants = new LinkedHashSet<>();
+        if (StringUtils.hasText(primarySeed)) {
+            variants.add(primarySeed);
+        }
+        if (candidate.seedVariants() != null) {
+            for (String rawVariant : candidate.seedVariants()) {
+                String sanitized = sanitizeSeed(rawVariant);
+                if (StringUtils.hasText(sanitized)) {
+                    variants.add(sanitized);
+                }
+            }
+        }
+        variants.removeIf(value -> !StringUtils.hasText(value));
+        if (variants.isEmpty() && StringUtils.hasText(primarySeed)) {
+            variants.add(primarySeed);
+        }
+        return variants.stream().limit(Math.max(1, properties.getMaxSeedVariants())).toList();
+    }
+
+    private String sanitizeSeed(String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return null;
+        }
+        String trimmed = raw.trim();
+        trimmed = trimmed.replaceAll("\\s+", " ");
+        trimmed = trimmed.replaceAll("(?i)\\s+(em|no|na)\\s+[\\p{L}\\s]{2,}$", "");
+        trimmed = trimmed.replaceAll("(?i)\\s+(em|no|na)\\s+[A-Z]{2}$", "");
+        trimmed = trimmed.replaceAll("\\s*\\([^)]*\\)$", "");
+        trimmed = trimmed.replaceAll("[\\p{Punct}]+$", "");
+        trimmed = trimmed.trim();
+        if (!StringUtils.hasText(trimmed)) {
+            return null;
+        }
+        String[] tokens = trimmed.split(" ");
+        if (tokens.length <= 4) {
+            return trimmed;
+        }
+        return String.join(" ", java.util.Arrays.asList(tokens).subList(0, 4));
     }
 
     private int resolveLimit(TargetingResolutionRequest request) {
@@ -131,17 +324,14 @@ public class TargetingResolverService {
         return properties.getDefaultAdAccountId();
     }
 
-    private List<String> buildFallbacks(String first, String second, String third, String... others) {
-        Set<String> ordered = new LinkedHashSet<>();
+    private List<String> buildFallbacks(String first, String second, String third, String fourth, String fifth, String sixth) {
+        LinkedHashSet<String> ordered = new LinkedHashSet<>();
         addIfHasText(ordered, normalize(first));
         addIfHasText(ordered, normalize(second));
         addIfHasText(ordered, normalize(third));
-        if (others != null) {
-            for (String other : others) {
-                addIfHasText(ordered, normalize(other));
-            }
-        }
-        // se todos forem vazios, precisamos garantir que existe um elemento null
+        addIfHasText(ordered, normalize(fourth));
+        addIfHasText(ordered, normalize(fifth));
+        addIfHasText(ordered, normalize(sixth));
         if (ordered.isEmpty()) {
             ordered.add(null);
         } else if (!ordered.contains(null)) {
@@ -158,13 +348,9 @@ public class TargetingResolverService {
     }
 
     private void addIfHasText(Set<String> target, String value) {
-        if (value == null) {
-            return;
+        if (StringUtils.hasText(value)) {
+            target.add(value);
         }
-        if (value.isEmpty()) {
-            return;
-        }
-        target.add(value);
     }
 
     private SearchOutcome searchWithFallbacks(SearchParameters parameters,
@@ -189,37 +375,11 @@ public class TargetingResolverService {
                         country,
                         results.size()
                     );
-                    return new SearchOutcome(results, locale, country);
+                    return new SearchOutcome(results, locale, country, parameters.term());
                 }
             }
         }
         return SearchOutcome.empty();
-    }
-
-    private List<TargetingOptionPayload> toOptionPayloads(SearchOutcome outcome,
-                                                          TargetingCandidateType type,
-                                                          String term,
-                                                          int limit) {
-        List<TargetingOptionPayload> options = new ArrayList<>();
-        AtomicInteger index = new AtomicInteger();
-        for (FacebookAdsService.FacebookTargetingSearchResult result : outcome.results()) {
-            if (index.incrementAndGet() > Math.max(1, limit)) {
-                break;
-            }
-            double score = computeMatchScore(term, result.name());
-            options.add(new TargetingOptionPayload(
-                result.id(),
-                result.name(),
-                type,
-                result.audienceSize(),
-                toBigDecimal(score),
-                result.path(),
-                outcome.locale(),
-                outcome.country(),
-                term
-            ));
-        }
-        return options;
     }
 
     private double computeMatchScore(String query, String resultName) {
@@ -287,9 +447,55 @@ public class TargetingResolverService {
         return dp[a.length()][b.length()];
     }
 
+    private double computeSizeScore(Long audienceSize) {
+        if (audienceSize == null || audienceSize <= 0) {
+            return 0.5;
+        }
+        double clamped = Math.min(Math.max(audienceSize.doubleValue(), MIN_AUDIENCE), MAX_AUDIENCE);
+        double numerator = Math.log10(clamped) - Math.log10(MIN_AUDIENCE);
+        double denominator = Math.log10(MAX_AUDIENCE) - Math.log10(MIN_AUDIENCE);
+        double normalized = numerator / denominator;
+        return Math.max(0d, Math.min(1d, normalized));
+    }
+
+    private double blendScores(double aiScore, double matchScore, double sizeScore) {
+        double value = (AI_SCORE_WEIGHT * aiScore) + (MATCH_SCORE_WEIGHT * matchScore) + (SIZE_SCORE_WEIGHT * sizeScore);
+        return Math.max(0d, Math.min(1d, value));
+    }
+
+    private double normalizeScore(BigDecimal score) {
+        if (score == null) {
+            return 0.5d;
+        }
+        double value = score.doubleValue();
+        if (value < 0d) {
+            return 0d;
+        }
+        if (value > 1d) {
+            return 1d;
+        }
+        return value;
+    }
+
+    private TargetingOptionPayload toPayload(ResolvedOption option) {
+        return new TargetingOptionPayload(
+            option.result().id(),
+            option.result().name(),
+            option.type(),
+            option.result().audienceSize(),
+            toBigDecimal(option.matchScore()),
+            toBigDecimal(option.finalScore()),
+            option.result().path(),
+            option.locale(),
+            option.country(),
+            option.searchTerm(),
+            option.source(),
+            option.seedVariant()
+        );
+    }
+
     private BigDecimal toBigDecimal(double score) {
-        BigDecimal value = BigDecimal.valueOf(score);
-        return value.setScale(4, RoundingMode.HALF_UP);
+        return BigDecimal.valueOf(score).setScale(4, RoundingMode.HALF_UP);
     }
 
     private FacebookAdsService.TargetingSearchType mapSearchType(TargetingCandidateType candidateType) {
@@ -300,6 +506,30 @@ public class TargetingResolverService {
         };
     }
 
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private record ResolvedOption(
+        FacebookAdsService.FacebookTargetingSearchResult result,
+        TargetingCandidateType type,
+        double matchScore,
+        double finalScore,
+        String locale,
+        String country,
+        String searchTerm,
+        String seedVariant,
+        TargetingOptionSource source
+    ) {}
+
     private record SearchParameters(String term,
                                     FacebookAdsService.TargetingSearchType type,
                                     String adAccountId,
@@ -307,9 +537,14 @@ public class TargetingResolverService {
 
     private record SearchOutcome(List<FacebookAdsService.FacebookTargetingSearchResult> results,
                                  String locale,
-                                 String country) {
-        public static SearchOutcome empty() {
-            return new SearchOutcome(List.of(), null, null);
+                                 String country,
+                                 String term) {
+        boolean hasResults() {
+            return !CollectionUtils.isEmpty(results);
+        }
+
+        static SearchOutcome empty() {
+            return new SearchOutcome(List.of(), null, null, null);
         }
     }
 }

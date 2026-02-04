@@ -1274,6 +1274,68 @@ private FacebookInterest searchInterest(String interestName, String locale) {
 
     public record FacebookTargetingSearchResult(String id, String name, Long audienceSize, List<String> path) {}
 
+    public List<FacebookTargetingSuggestionResult> suggestTargetingOptions(TargetingSuggestionsRequest request) {
+        if (request == null || CollectionUtils.isEmpty(request.seeds())) {
+            return Collections.emptyList();
+        }
+        String normalizedAccount = normalizeAdAccountId(request.adAccountId());
+        if (!hasText(normalizedAccount)) {
+            LOGGER.warn("Cannot request targeting suggestions without ad account id");
+            return Collections.emptyList();
+        }
+        try {
+            String targetingList = objectMapper.writeValueAsString(request.seeds());
+            UriComponentsBuilder builder = UriComponentsBuilder
+                .fromPath(buildVersionedPath("/" + normalizedAccount + "/targetingsuggestions"))
+                .queryParam("targeting_list", targetingList)
+                .queryParam("limit", Math.max(1, request.limit()))
+                .queryParam("access_token", requireAccessToken());
+            if (hasText(request.locale())) {
+                builder.queryParam("locale", request.locale());
+            }
+            if (hasText(request.country())) {
+                builder.queryParam("country", request.country());
+            }
+            FacebookApiResponse response = executeGet(builder.build(false).toUriString());
+            JsonNode data = response.body() != null ? response.body().path("data") : null;
+            if (data == null || !data.isArray()) {
+                return Collections.emptyList();
+            }
+            List<FacebookTargetingSuggestionResult> results = new ArrayList<>();
+            for (JsonNode node : data) {
+                if (node == null || node.isNull()) {
+                    continue;
+                }
+                String id = node.path("id").asText(null);
+                if (!hasText(id)) {
+                    continue;
+                }
+                String name = node.path("name").asText(null);
+                Long audience = node.hasNonNull("audience_size") ? node.path("audience_size").asLong() : null;
+                List<String> pathValues = parseTargetingPath(node.path("path"));
+                results.add(new FacebookTargetingSuggestionResult(id.trim(), hasText(name) ? name.trim() : null, audience, pathValues));
+            }
+            return results;
+        } catch (FacebookAccessTokenExpiredException | FacebookPermissionException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            LOGGER.warn("Facebook targeting suggestions failed for account {}: {}", request.adAccountId(), ex.getMessage(), ex);
+            return Collections.emptyList();
+        }
+    }
+
+    public record FacebookTargetingSuggestionResult(String id, String name, Long audienceSize, List<String> path) {}
+
+    public record TargetingSuggestionsRequest(
+        String adAccountId,
+        List<TargetingSuggestionSeed> seeds,
+        String locale,
+        String country,
+        int limit
+    ) {}
+
+    public record TargetingSuggestionSeed(String id, String type) {}
+
     public record TargetingSearchRequest(
         TargetingSearchType type,
         String query,

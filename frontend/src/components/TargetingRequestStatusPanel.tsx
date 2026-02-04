@@ -20,6 +20,12 @@ const STATUS_COLORS: Record<TargetingCandidateStatus, string> = {
   NO_MATCH: "text-bg-warning",
 };
 
+const SOURCE_LABEL: Record<string, string> = {
+  SEARCH: "Busca",
+  SUGGESTION: "Sugestão",
+  BROWSE: "Browse",
+};
+
 export function TargetingRequestStatusPanel({ limit = 10, className }: TargetingRequestStatusPanelProps) {
   const { data, isFetching, refetch } = useTargetingRequests(limit);
   const reprocessMutation = useReprocessTargetingCandidate(limit);
@@ -124,20 +130,37 @@ interface CandidateCardProps {
 
 function CandidateCard({ candidate, onReprocess, audienceFormatter, isProcessing }: CandidateCardProps) {
   const options = Array.isArray(candidate.options) ? candidate.options : [];
+  const variants = Array.isArray(candidate.seed_variants) ? candidate.seed_variants : [];
   const statusClass = STATUS_COLORS[candidate.status] ?? "text-bg-secondary";
+  const primarySeed = candidate.seed || candidate.texto_sugerido || "-";
+
   return (
     <div className="bg-light rounded-3 p-3 mb-2">
       <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
-        <div>
-          <div className="fw-semibold">{candidate.texto_sugerido}</div>
+        <div className="flex-grow-1">
+          <div className="fw-semibold">{primarySeed}</div>
           <div className="text-body-secondary small">{candidate.tipo ?? "-"}</div>
+          <div className="d-flex flex-wrap gap-2 mt-2">
+            {candidate.idioma_hint && <span className="badge text-bg-light">{candidate.idioma_hint}</span>}
+            {candidate.intent_tag && <span className="badge text-bg-info text-uppercase">{candidate.intent_tag}</span>}
+            {candidate.origem && <span className="badge text-bg-secondary">{candidate.origem}</span>}
+          </div>
+          {variants.length > 1 && (
+            <div className="mt-2 d-flex flex-wrap gap-2">
+              {variants.map((variant) => (
+                <span key={`${candidate.id}-${variant}`} className="badge rounded-pill text-bg-light">
+                  {variant}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         <span className={`badge ${statusClass}`}>{candidate.status}</span>
       </div>
 
       {candidate.status === "VALIDATED" && options.length > 0 && (
         <div className="mt-3">
-          <p className="text-body-secondary small fw-semibold mb-2">Opções válidas disponibilizadas</p>
+          <p className="text-body-secondary small fw-semibold mb-2">Opções validadas</p>
           <ul className="list-unstyled mb-0">
             {options.map((option) => (
               <OptionRow key={`${candidate.id}-${option.facebook_id}`} option={option} formatter={audienceFormatter} />
@@ -155,7 +178,7 @@ function CandidateCard({ candidate, onReprocess, audienceFormatter, isProcessing
       {candidate.status === "NO_MATCH" && (
         <div className="alert alert-warning mt-3 mb-0" role="alert">
           <div className="small">
-            {candidate.rejection_reason ?? "Nenhuma opção retornada pela Meta para este termo."}
+            {candidate.rejection_reason ?? "Nenhuma opção retornada pela Meta para este seed."}
           </div>
           <button
             type="button"
@@ -179,6 +202,9 @@ interface OptionRowProps {
 function OptionRow({ option, formatter }: OptionRowProps) {
   const audience = typeof option.audience_size === "number" ? formatter.format(option.audience_size) : "-";
   const path = Array.isArray(option.path) && option.path.length > 0 ? option.path.join(" › ") : null;
+  const sourceLabel = option.source ? SOURCE_LABEL[option.source] ?? option.source : null;
+  const finalScore = typeof option.final_score === "number" ? `${Math.round(option.final_score * 100)}%` : null;
+
   return (
     <li className="py-2 border-top">
       <div className="d-flex justify-content-between gap-3 flex-wrap">
@@ -186,12 +212,17 @@ function OptionRow({ option, formatter }: OptionRowProps) {
           <div className="fw-semibold">{option.name}</div>
           <div className="text-body-secondary small">ID {option.facebook_id}</div>
           {path && <div className="text-body-secondary small">{path}</div>}
+          <div className="d-flex flex-wrap gap-2 mt-1">
+            {sourceLabel && <span className="badge text-bg-light">{sourceLabel}</span>}
+            {option.seed_variant && <span className="badge text-bg-secondary">Seed: {option.seed_variant}</span>}
+          </div>
         </div>
         <div className="text-body-secondary small text-end">
           <div>{audience} pessoas</div>
           {typeof option.match_score === "number" && (
             <div>Match {(option.match_score * 100).toFixed(0)}%</div>
           )}
+          {finalScore && <div>Score {finalScore}</div>}
         </div>
       </div>
     </li>

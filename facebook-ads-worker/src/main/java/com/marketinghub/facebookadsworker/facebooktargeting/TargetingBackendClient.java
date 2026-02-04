@@ -89,10 +89,13 @@ public class TargetingBackendClient {
         @JsonProperty("type") TargetingCandidateType type,
         @JsonProperty("audience_size") Long audienceSize,
         @JsonProperty("match_score") BigDecimal matchScore,
+        @JsonProperty("final_score") BigDecimal finalScore,
         @JsonProperty("path") List<String> path,
         @JsonProperty("search_locale") String searchLocale,
         @JsonProperty("search_country") String searchCountry,
-        @JsonProperty("search_term") String searchTerm
+        @JsonProperty("search_term") String searchTerm,
+        @JsonProperty("source") TargetingOptionSource source,
+        @JsonProperty("seed_variant") String seedVariant
     ) {
         public TargetingOptionPayload {
             if (CollectionUtils.isEmpty(path)) {

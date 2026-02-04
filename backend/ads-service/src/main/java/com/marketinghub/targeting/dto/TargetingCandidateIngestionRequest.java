@@ -17,8 +17,15 @@ public class TargetingCandidateIngestionRequest {
 
     @Data
     public static class CandidatePayload {
+        @JsonProperty("seed")
+        private String seed;
+
+        /** Campo legado aceito temporariamente. */
         @JsonProperty("texto_sugerido")
-        private String textoSugerido;
+        private String legacySeed;
+
+        @JsonProperty("seed_variants")
+        private List<String> seedVariants = new ArrayList<>();
 
         @JsonProperty("tipo")
         private TargetingCandidateType tipo;
@@ -32,13 +39,28 @@ public class TargetingCandidateIngestionRequest {
         @JsonProperty("rationale")
         private String rationale;
 
+        @JsonProperty("idioma_hint")
+        private String idiomaHint;
+
+        /** Campo legado aceito temporariamente. */
         @JsonProperty("idioma")
         private String idioma;
 
         @JsonProperty("pais")
         private String pais;
 
+        @JsonProperty("constraints")
+        private ConstraintsPayload constraints;
+
         @JsonProperty("intent_tag")
         private String intentTag;
+    }
+
+    @Data
+    public static class ConstraintsPayload {
+        private String country;
+
+        @JsonProperty("locale")
+        private String locale;
     }
 }

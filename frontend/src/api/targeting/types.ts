@@ -42,10 +42,13 @@ export interface TargetingOption {
   type: TargetingCandidateType;
   audience_size?: number | null;
   match_score?: number | null;
+  final_score?: number | null;
   path: string[];
   search_locale?: string | null;
   search_country?: string | null;
   search_term?: string | null;
+  source?: "SEARCH" | "SUGGESTION" | "BROWSE" | null;
+  seed_variant?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
 }
@@ -53,9 +56,12 @@ export interface TargetingOption {
 export interface TargetingCandidate {
   id: number;
   request_id: string;
-  texto_sugerido: string;
+  seed?: string | null;
+  texto_sugerido?: string | null;
+  seed_variants?: string[];
   tipo: TargetingCandidateType;
   status: TargetingCandidateStatus;
+  idioma_hint?: string | null;
   idioma?: string | null;
   pais?: string | null;
   origem?: string | null;

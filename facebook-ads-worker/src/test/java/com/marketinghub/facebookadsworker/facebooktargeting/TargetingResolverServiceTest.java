@@ -10,6 +10,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,25 +34,31 @@ class TargetingResolverServiceTest {
     @BeforeEach
     void setUp() {
         TargetingResolverProperties properties = new TargetingResolverProperties();
+        properties.setSuggestionsEnabled(false);
+        properties.setMaxSeedVariants(1);
         service = new TargetingResolverService(facebookAdsService, backendClient, properties);
     }
 
     @Test
     void resolveCandidateWithMatchReportsValidatedOptions() {
         FacebookAdsService.FacebookTargetingSearchResult result =
-            new FacebookAdsService.FacebookTargetingSearchResult("600313", "Pilates", 1200000L, List.of("Interesses", "Fitness"));
+            new FacebookAdsService.FacebookTargetingSearchResult("600313", "Pilates", 1_200_000L, List.of("Interesses", "Fitness"));
         when(facebookAdsService.searchTargetingOptions(any())).thenReturn(List.of(result));
 
         TargetingResolutionRequest request = new TargetingResolutionRequest();
         request.setCandidates(List.of(new TargetingCandidatePayload(
             10L,
             "Pilates",
+            "Pilates",
+            List.of("Pilates"),
             TargetingCandidateType.INTEREST,
-            null,
-            null,
-            null,
-            null,
-            null,
+            "pt_BR",
+            "pt_BR",
+            "BR",
+            "AI",
+            BigDecimal.valueOf(0.8),
+            "Seed relevante",
+            "awareness",
             null
         )));
 
@@ -70,7 +77,8 @@ class TargetingResolverServiceTest {
         TargetingOptionPayload option = update.options().get(0);
         assertThat(option.facebookId()).isEqualTo("600313");
         assertThat(option.name()).isEqualTo("Pilates");
-        assertThat(option.matchScore()).isNotNull();
+        assertThat(option.source()).isEqualTo(TargetingOptionSource.SEARCH);
+        assertThat(option.finalScore()).isNotNull();
     }
 
     @Test
@@ -83,10 +91,14 @@ class TargetingResolverServiceTest {
         request.setCandidates(List.of(new TargetingCandidatePayload(
             22L,
             "Termo inexistente",
+            "Termo inexistente",
+            List.of("Termo inexistente"),
             TargetingCandidateType.INTEREST,
-            null,
-            null,
-            null,
+            "pt_BR",
+            "pt_BR",
+            "BR",
+            "AI",
+            BigDecimal.valueOf(0.6),
             null,
             null,
             null

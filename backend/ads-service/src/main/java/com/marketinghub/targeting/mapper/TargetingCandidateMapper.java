@@ -6,8 +6,8 @@ import com.marketinghub.targeting.dto.TargetingCandidateDto;
 import com.marketinghub.targeting.dto.TargetingOptionDto;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,13 +18,17 @@ public class TargetingCandidateMapper {
             return null;
         }
         UUID requestId = candidate.getRequest() != null ? candidate.getRequest().getId() : null;
+        List<String> variants = copyVariants(candidate.getSeedVariants());
         return TargetingCandidateDto.builder()
                 .id(candidate.getId())
                 .requestId(requestId)
-                .textoSugerido(candidate.getTextoSugerido())
+                .seed(candidate.getSeed())
+                .legacySeed(candidate.getSeed())
+                .seedVariants(variants)
                 .tipo(candidate.getType())
                 .status(candidate.getStatus())
-                .idioma(candidate.getIdioma())
+                .idiomaHint(candidate.getLocaleHint())
+                .idioma(candidate.getLocaleHint())
                 .pais(candidate.getCountry())
                 .origem(candidate.getOrigem())
                 .intentTag(candidate.getIntentTag())
@@ -35,6 +39,13 @@ public class TargetingCandidateMapper {
                 .updatedAt(candidate.getUpdatedAt())
                 .options(mapOptions(candidate.getOptions()))
                 .build();
+    }
+
+    private List<String> copyVariants(List<String> variants) {
+        if (variants == null || variants.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return List.copyOf(variants);
     }
 
     private List<TargetingOptionDto> mapOptions(Collection<TargetingOption> options) {
@@ -55,10 +66,13 @@ public class TargetingCandidateMapper {
                 .type(option.getType())
                 .audienceSize(option.getAudienceSize())
                 .matchScore(option.getMatchScore())
+                .finalScore(option.getFinalScore())
                 .path(option.getPath() == null ? Collections.emptyList() : List.copyOf(option.getPath()))
                 .searchLocale(option.getSearchLocale())
                 .searchCountry(option.getSearchCountry())
                 .searchTerm(option.getSearchTerm())
+                .source(option.getSource())
+                .seedVariant(option.getSeedVariant())
                 .createdAt(option.getCreatedAt())
                 .updatedAt(option.getUpdatedAt())
                 .build();

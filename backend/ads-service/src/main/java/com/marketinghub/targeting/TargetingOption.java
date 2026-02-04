@@ -51,6 +51,9 @@ public class TargetingOption {
     @Column(name = "match_score", precision = 5, scale = 4)
     private BigDecimal matchScore;
 
+    @Column(name = "final_score", precision = 5, scale = 4)
+    private BigDecimal finalScore;
+
     @ElementCollection
     @CollectionTable(name = "targeting_option_path", joinColumns = @JoinColumn(name = "option_id"))
     @Column(name = "path_entry", length = 255)
@@ -65,6 +68,13 @@ public class TargetingOption {
 
     @Column(name = "search_term", length = 255)
     private String searchTerm;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source", length = 24)
+    private TargetingOptionSource source;
+
+    @Column(name = "seed_variant", length = 255)
+    private String seedVariant;
 
     @CreationTimestamp
     private Instant createdAt;

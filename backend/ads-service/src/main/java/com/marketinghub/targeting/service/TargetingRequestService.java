@@ -5,6 +5,7 @@ import com.marketinghub.targeting.TargetingCandidate;
 import com.marketinghub.targeting.TargetingCandidateStatus;
 import com.marketinghub.targeting.TargetingCandidateType;
 import com.marketinghub.targeting.TargetingOption;
+import com.marketinghub.targeting.TargetingOptionSource;
 import com.marketinghub.targeting.TargetingRequest;
 import com.marketinghub.targeting.TargetingRequestOrigin;
 import com.marketinghub.targeting.TargetingRequestStatus;
@@ -28,11 +29,14 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 @Service
 public class TargetingRequestService {
@@ -40,6 +44,12 @@ public class TargetingRequestService {
     private static final String DEFAULT_LOCALE = "pt_BR";
     private static final String DEFAULT_COUNTRY = "BR";
     private static final int ETA_SECONDS = 90;
+    private static final int MAX_SEED_WORDS = 4;
+    private static final int MAX_VARIANTS = 6;
+    private static final Pattern LOCATION_SUFFIX_PATTERN = Pattern.compile("(?i)\\s+(em|no|na)\\s+[\\p{L}\\s]{2,}$");
+    private static final Pattern STATE_SUFFIX_PATTERN = Pattern.compile("(?i)\\s+(em|no|na)\\s+[A-Z]{2}$");
+    private static final Pattern PARENTHESIS_SUFFIX_PATTERN = Pattern.compile("\\s*\\([^)]*\\)$");
+    private static final Pattern MULTIPLE_SPACES = Pattern.compile("\\s+");
 
     private final TargetingRequestRepository requestRepository;
     private final TargetingCandidateRepository candidateRepository;
@@ -100,45 +110,71 @@ public class TargetingRequestService {
         }
         List<TargetingCandidate> persistedCandidates = new ArrayList<>();
         for (TargetingCandidateIngestionRequest.CandidatePayload candidatePayload : payload.getCandidates()) {
-            if (candidatePayload == null || !StringUtils.hasText(candidatePayload.getTextoSugerido())) {
+            TargetingCandidate candidate = buildCandidate(candidatePayload, request);
+            if (candidate == null) {
                 continue;
             }
-            String idioma = StringUtils.hasText(candidatePayload.getIdioma())
-                    ? candidatePayload.getIdioma()
-                    : request.getLocale();
-            String country = StringUtils.hasText(candidatePayload.getPais())
-                    ? candidatePayload.getPais()
-                    : request.getCountry();
-            TargetingCandidate candidate = TargetingCandidate.builder()
-                    .request(request)
-                    .textoSugerido(candidatePayload.getTextoSugerido().trim())
-                    .type(candidatePayload.getTipo() != null ? candidatePayload.getTipo() : TargetingCandidateType.INTEREST)
-                    .status(TargetingCandidateStatus.PENDING_FACEBOOK_MATCH)
-                    .origem(StringUtils.hasText(candidatePayload.getOrigem()) ? candidatePayload.getOrigem() : "AI")
-                    .score(normalizeScore(candidatePayload.getScore()))
-                    .rationale(candidatePayload.getRationale())
-                    .idioma(normalizeLocale(idioma))
-                    .country(normalizeCountry(country))
-                    .intentTag(candidatePayload.getIntentTag())
-                    .build();
             TargetingCandidate savedCandidate = candidateRepository.save(candidate);
             persistedCandidates.add(savedCandidate);
         }
+        if (persistedCandidates.isEmpty()) {
+            log.warn("No valid candidates found for request {}", requestId);
+            return;
+        }
         request.setStatus(TargetingRequestStatus.COMPLETED);
         requestRepository.save(request);
-        log.info("Persisted {} candidates for request {}", payload.getCandidates().size(), requestId);
+        log.info("Persisted {} candidates for request {}", persistedCandidates.size(), requestId);
         triggerResolutionAfterCommit(request, List.copyOf(persistedCandidates));
+    }
+
+    private TargetingCandidate buildCandidate(TargetingCandidateIngestionRequest.CandidatePayload payload,
+                                              TargetingRequest request) {
+        if (payload == null) {
+            return null;
+        }
+        String seed = sanitizeSeed(resolveSeed(payload));
+        if (!StringUtils.hasText(seed)) {
+            return null;
+        }
+        String locale = firstNonBlank(payload.getIdiomaHint(), payload.getIdioma(), request.getLocale());
+        String country = firstNonBlank(
+                payload.getPais(),
+                payload.getConstraints() != null ? payload.getConstraints().getCountry() : null,
+                request.getCountry()
+        );
+        List<String> variants = normalizeVariants(payload.getSeedVariants(), seed);
+        return TargetingCandidate.builder()
+                .request(request)
+                .seed(seed)
+                .seedVariants(variants)
+                .type(payload.getTipo() != null ? payload.getTipo() : TargetingCandidateType.INTEREST)
+                .status(TargetingCandidateStatus.PENDING_FACEBOOK_MATCH)
+                .origem(StringUtils.hasText(payload.getOrigem()) ? payload.getOrigem() : "AI")
+                .score(normalizeScore(payload.getScore()))
+                .rationale(payload.getRationale())
+                .localeHint(normalizeLocale(locale))
+                .country(normalizeCountry(country))
+                .intentTag(payload.getIntentTag())
+                .build();
     }
 
     @Transactional
     public TargetingCandidate reprocessCandidate(Long candidateId, TargetingCandidateReprocessRequest payload) {
         TargetingCandidate candidate = loadCandidate(candidateId);
         if (payload != null) {
-            if (StringUtils.hasText(payload.getTextoSugerido())) {
-                candidate.setTextoSugerido(payload.getTextoSugerido().trim());
+            String seedInput = firstNonBlank(payload.getSeed(), payload.getLegacySeed());
+            if (StringUtils.hasText(seedInput)) {
+                String sanitized = sanitizeSeed(seedInput);
+                if (StringUtils.hasText(sanitized)) {
+                    candidate.setSeed(sanitized);
+                    candidate.setSeedVariants(normalizeVariants(payload.getSeedVariants(), sanitized));
+                }
+            } else if (!CollectionUtils.isEmpty(payload.getSeedVariants())) {
+                candidate.setSeedVariants(normalizeVariants(payload.getSeedVariants(), candidate.getSeed()));
             }
-            if (StringUtils.hasText(payload.getIdioma())) {
-                candidate.setIdioma(normalizeLocale(payload.getIdioma()));
+            String locale = firstNonBlank(payload.getIdiomaHint(), payload.getIdioma());
+            if (StringUtils.hasText(locale)) {
+                candidate.setLocaleHint(normalizeLocale(locale));
             }
             if (StringUtils.hasText(payload.getPais())) {
                 candidate.setCountry(normalizeCountry(payload.getPais()));
@@ -223,10 +259,13 @@ public class TargetingRequestService {
                 .type(payload.getType() != null ? payload.getType() : candidate.getType())
                 .audienceSize(payload.getAudienceSize())
                 .matchScore(payload.getMatchScore())
+                .finalScore(payload.getFinalScore())
                 .path(path)
                 .searchLocale(normalizeOptionalLocale(payload.getSearchLocale()))
                 .searchCountry(normalizeOptionalCountry(payload.getSearchCountry()))
                 .searchTerm(normalize(payload.getSearchTerm()))
+                .source(payload.getSource())
+                .seedVariant(normalize(payload.getSeedVariant()))
                 .build();
     }
 
@@ -238,7 +277,7 @@ public class TargetingRequestService {
                 .filter(StringUtils::hasText)
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private String normalize(String value) {
@@ -273,5 +312,95 @@ public class TargetingRequestService {
         if (score.compareTo(zero) < 0) return zero;
         if (score.compareTo(one) > 0) return one;
         return score;
+    }
+
+    private String resolveSeed(TargetingCandidateIngestionRequest.CandidatePayload payload) {
+        if (payload == null) {
+            return null;
+        }
+        return firstNonBlank(payload.getSeed(), payload.getLegacySeed());
+    }
+
+    private List<String> normalizeVariants(List<String> providedVariants, String seed) {
+        LinkedHashSet<String> variants = new LinkedHashSet<>();
+        if (StringUtils.hasText(seed)) {
+            variants.add(seed);
+            variants.add(removeAccents(seed));
+            maybeAddGrammaticalVariant(variants, seed);
+        }
+        if (!CollectionUtils.isEmpty(providedVariants)) {
+            for (String variant : providedVariants) {
+                String sanitized = sanitizeSeed(variant);
+                if (StringUtils.hasText(sanitized)) {
+                    variants.add(sanitized);
+                    variants.add(removeAccents(sanitized));
+                }
+            }
+        }
+        variants.removeIf(v -> !StringUtils.hasText(v));
+        return variants.stream().limit(MAX_VARIANTS).toList();
+    }
+
+    private void maybeAddGrammaticalVariant(LinkedHashSet<String> variants, String value) {
+        if (!StringUtils.hasText(value)) {
+            return;
+        }
+        String trimmed = value.trim();
+        if (trimmed.length() <= 3) {
+            return;
+        }
+        if (trimmed.endsWith("s")) {
+            String singular = trimmed.substring(0, trimmed.length() - 1).trim();
+            if (StringUtils.hasText(singular)) {
+                variants.add(singular);
+            }
+        } else {
+            variants.add(trimmed + "s");
+        }
+    }
+
+    private String sanitizeSeed(String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return null;
+        }
+        String collapsed = MULTIPLE_SPACES.matcher(raw).replaceAll(" ").trim();
+        collapsed = PARENTHESIS_SUFFIX_PATTERN.matcher(collapsed).replaceAll("");
+        collapsed = LOCATION_SUFFIX_PATTERN.matcher(collapsed).replaceAll("");
+        collapsed = STATE_SUFFIX_PATTERN.matcher(collapsed).replaceAll("");
+        collapsed = collapsed.replaceAll("[\\p{Punct}]+$", "");
+        collapsed = collapsed.trim();
+        if (collapsed.isEmpty()) {
+            return null;
+        }
+        String limited = limitWords(collapsed, MAX_SEED_WORDS);
+        return limited.isEmpty() ? null : limited;
+    }
+
+    private String limitWords(String value, int maxWords) {
+        String[] tokens = MULTIPLE_SPACES.matcher(value).replaceAll(" ").trim().split(" ");
+        if (tokens.length <= maxWords) {
+            return String.join(" ", tokens).trim();
+        }
+        return String.join(" ", Arrays.copyOf(tokens, maxWords)).trim();
+    }
+
+    private String removeAccents(String value) {
+        if (!StringUtils.hasText(value)) {
+            return value;
+        }
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD);
+        return normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value;
+            }
+        }
+        return null;
     }
 }

@@ -14,7 +14,9 @@ import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -38,7 +40,14 @@ public class TargetingCandidate {
     private TargetingRequest request;
 
     @Column(name = "texto_sugerido", nullable = false, length = 255)
-    private String textoSugerido;
+    private String seed;
+
+    @ElementCollection
+    @CollectionTable(name = "targeting_candidate_seed_variant", joinColumns = @JoinColumn(name = "candidate_id"))
+    @OrderColumn(name = "variant_order")
+    @Column(name = "variant_value", length = 255, nullable = false)
+    @Builder.Default
+    private List<String> seedVariants = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
@@ -49,8 +58,8 @@ public class TargetingCandidate {
     @Builder.Default
     private TargetingCandidateStatus status = TargetingCandidateStatus.PENDING_FACEBOOK_MATCH;
 
-    @Column(length = 10)
-    private String idioma;
+    @Column(name = "idioma", length = 10)
+    private String localeHint;
 
     @Column(length = 5)
     private String country;

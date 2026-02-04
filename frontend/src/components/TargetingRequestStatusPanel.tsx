@@ -8,6 +8,7 @@ import type {
 } from "../api/targeting/types";
 import { useTargetingRequests } from "../api/targeting/useTargetingRequests";
 import { useReprocessTargetingCandidate } from "../api/targeting/useReprocessTargetingCandidate";
+import "./TargetingRequestStatusPanel.css";
 
 interface TargetingRequestStatusPanelProps {
   limit?: number;
@@ -24,6 +25,14 @@ const SOURCE_LABEL: Record<string, string> = {
   SEARCH: "Busca",
   SUGGESTION: "Sugestão",
   BROWSE: "Browse",
+};
+
+type FunnelStageKey = "top" | "mid" | "bottom";
+
+const FUNNEL_STAGE_MAP: Record<string, FunnelStageKey> = {
+  AWARENESS: "top",
+  CONSIDERATION: "mid",
+  DECISION: "bottom",
 };
 
 export function TargetingRequestStatusPanel({ limit = 10, className }: TargetingRequestStatusPanelProps) {
@@ -142,7 +151,7 @@ function CandidateCard({ candidate, onReprocess, audienceFormatter, isProcessing
           <div className="text-body-secondary small">{candidate.tipo ?? "-"}</div>
           <div className="d-flex flex-wrap gap-2 mt-2">
             {candidate.idioma_hint && <span className="badge text-bg-light">{candidate.idioma_hint}</span>}
-            {candidate.intent_tag && <span className="badge text-bg-info text-uppercase">{candidate.intent_tag}</span>}
+            {candidate.intent_tag && <FunnelStageBadge tag={candidate.intent_tag} />}
             {candidate.origem && <span className="badge text-bg-secondary">{candidate.origem}</span>}
           </div>
           {variants.length > 1 && (
@@ -190,6 +199,29 @@ function CandidateCard({ candidate, onReprocess, audienceFormatter, isProcessing
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+function FunnelStageBadge({ tag }: { tag: string }) {
+  const normalized = tag.trim().toUpperCase();
+  const activeStage = FUNNEL_STAGE_MAP[normalized];
+
+  if (!activeStage) {
+    return <span className="badge text-bg-info text-uppercase">{tag}</span>;
+  }
+
+  return (
+    <div className="funnel-stage" aria-label={`Estágio do funil: ${tag}`}>
+      <div className={`funnel-stage__segment funnel-stage__segment--top${activeStage === "top" ? " is-active" : ""}`}>
+        Top
+      </div>
+      <div className={`funnel-stage__segment funnel-stage__segment--mid${activeStage === "mid" ? " is-active" : ""}`}>
+        Mid
+      </div>
+      <div className={`funnel-stage__segment funnel-stage__segment--bottom${activeStage === "bottom" ? " is-active" : ""}`}>
+        Bottom
+      </div>
     </div>
   );
 }

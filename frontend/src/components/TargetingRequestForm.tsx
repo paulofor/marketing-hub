@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import type { TargetingAudienceType } from "../api/targeting/types";
 import { useCreateTargetingRequest } from "../api/targeting/useCreateTargetingRequest";
+import type { TargetingRequestQueryFilters } from "../api/targeting/useTargetingRequests";
 
 interface TargetingRequestFormProps {
   defaultDescricao?: string;
@@ -10,6 +11,9 @@ interface TargetingRequestFormProps {
   defaultPais?: string;
   defaultPublico?: TargetingAudienceType;
   className?: string;
+  nicheId?: number;
+  hypothesisId?: string;
+  queryFilters?: TargetingRequestQueryFilters;
 }
 
 interface FormValues {
@@ -39,9 +43,12 @@ export function TargetingRequestForm({
   defaultPais = "BR",
   defaultPublico = "PROSPECT",
   className,
+  nicheId,
+  hypothesisId,
+  queryFilters,
 }: TargetingRequestFormProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const mutation = useCreateTargetingRequest();
+  const mutation = useCreateTargetingRequest(queryFilters);
   const {
     register,
     handleSubmit,
@@ -92,6 +99,8 @@ export function TargetingRequestForm({
         idioma: values.idioma?.trim() || undefined,
         pais: values.pais?.trim() || undefined,
         publico_tipo: values.publico_tipo,
+        niche_id: nicheId,
+        hypothesis_id: hypothesisId,
       };
       const response = await mutation.mutateAsync(payload);
       toast.success(

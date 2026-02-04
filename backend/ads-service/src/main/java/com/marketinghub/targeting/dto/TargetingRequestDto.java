@@ -31,6 +31,12 @@ public class TargetingRequestDto {
     @JsonProperty("publico_tipo")
     private TargetingAudienceType publicoTipo;
 
+    @JsonProperty("niche_id")
+    private Long nicheId;
+
+    @JsonProperty("hypothesis_id")
+    private UUID hypothesisId;
+
     private TargetingRequestStatus status;
     private TargetingRequestOrigin origin;
     private Instant createdAt;

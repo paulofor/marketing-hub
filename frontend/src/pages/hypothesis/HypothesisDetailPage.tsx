@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
@@ -19,6 +19,11 @@ import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
 export default function HypothesisDetailPage() {
   const { nicheId, hypothesisId } = useParams();
   const nicheNumericId = Number(nicheId);
+  const normalizedNicheId = Number.isFinite(nicheNumericId) ? nicheNumericId : undefined;
+  const targetingRequestFilters = useMemo(
+    () => ({ limit: 6, nicheId: normalizedNicheId, hypothesisId }),
+    [normalizedNicheId, hypothesisId],
+  );
   const { data: niche, isFetching: isFetchingNiche } = useNiche(nicheNumericId);
   const { data, isLoading } = useHypothesis(nicheId, hypothesisId);
   const { data: experiments } = useExperimentsByHypothesis(
@@ -220,8 +225,16 @@ ${data.entrega ?? ""}
           defaultIdioma="pt_BR"
           defaultPais="BR"
           defaultPublico="PROSPECT"
+          nicheId={normalizedNicheId}
+          hypothesisId={hypothesisId}
+          queryFilters={targetingRequestFilters}
         />
-        <TargetingRequestStatusPanel className="mb-4" limit={6} />
+        <TargetingRequestStatusPanel
+          className="mb-4"
+          limit={6}
+          nicheId={normalizedNicheId}
+          hypothesisId={hypothesisId}
+        />
         <div className="row row-cols-1 row-cols-lg-3 g-3 mb-3">
           {targetingConfigs.map((config) => (
             <div key={config.type} className="col">

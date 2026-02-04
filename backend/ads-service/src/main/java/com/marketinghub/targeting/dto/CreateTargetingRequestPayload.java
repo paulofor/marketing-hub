@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.util.UUID;
+
 /**
  * Payload enviado pelo cliente para solicitar hipóteses de targeting.
  */
@@ -24,4 +26,10 @@ public class CreateTargetingRequestPayload {
 
     @JsonProperty("publico_tipo")
     private TargetingAudienceType publicoTipo;
+
+    @JsonProperty("niche_id")
+    private Long nicheId;
+
+    @JsonProperty("hypothesis_id")
+    private UUID hypothesisId;
 }

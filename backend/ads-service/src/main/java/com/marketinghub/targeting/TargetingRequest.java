@@ -1,5 +1,7 @@
 package com.marketinghub.targeting;
 
+import com.marketinghub.hypothesis.Hypothesis;
+import com.marketinghub.niche.MarketNiche;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,8 +27,8 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = "candidates")
-@EqualsAndHashCode(exclude = "candidates")
+@ToString(exclude = {"candidates", "niche", "hypothesis"})
+@EqualsAndHashCode(exclude = {"candidates", "niche", "hypothesis"})
 public class TargetingRequest {
     @Id
     @GeneratedValue
@@ -62,6 +64,14 @@ public class TargetingRequest {
     @Column(length = 32)
     @Builder.Default
     private TargetingRequestOrigin origin = TargetingRequestOrigin.CLIENT;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "market_niche_id")
+    private MarketNiche niche;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hypothesis_id")
+    private Hypothesis hypothesis;
 
     @CreationTimestamp
     private Instant createdAt;

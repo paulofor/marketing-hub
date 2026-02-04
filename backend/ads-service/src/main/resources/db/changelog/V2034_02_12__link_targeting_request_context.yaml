@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2034-02-12-link-targeting-request-context
+      author: repo
+      preConditions:
+        onFail: MARK_RAN
+        and:
+          - dbms:
+              type: mysql
+          - sqlCheck:
+              expectedResult: 0
+              sql: |
+                SELECT COUNT(*)
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'targeting_request'
+                  AND column_name = 'market_niche_id';
+          - sqlCheck:
+              expectedResult: 0
+              sql: |
+                SELECT COUNT(*)
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'targeting_request'
+                  AND column_name = 'hypothesis_id';
+          - sqlCheck:
+              expectedResult: 1
+              sql: |
+                SELECT COUNT(*)
+                FROM information_schema.tables
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'targeting_request';
+          - sqlCheck:
+              expectedResult: 1
+              sql: |
+                SELECT COUNT(*)
+                FROM information_schema.tables
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'market_niche';
+          - sqlCheck:
+              expectedResult: 1
+              sql: |
+                SELECT COUNT(*)
+                FROM information_schema.tables
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'hypothesis';
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE targeting_request
+                  ADD COLUMN market_niche_id BIGINT NULL AFTER origin,
+                  ADD COLUMN hypothesis_id BINARY(16) NULL AFTER market_niche_id,
+                  ADD CONSTRAINT fk_targeting_request_market_niche FOREIGN KEY (market_niche_id) REFERENCES market_niche(id),
+                  ADD CONSTRAINT fk_targeting_request_hypothesis FOREIGN KEY (hypothesis_id) REFERENCES hypothesis(id);
+
+              CREATE INDEX idx_targeting_request_niche ON targeting_request(market_niche_id);
+              CREATE INDEX idx_targeting_request_hypothesis ON targeting_request(hypothesis_id);

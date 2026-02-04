@@ -76,13 +76,17 @@ export interface TargetingCandidate {
 
 export type TargetingAudienceType = "PROSPECT" | "REMARKETING";
 
+export type TargetingRequestStatus = "PENDING_AI" | "COMPLETED" | "FAILED";
+
 export interface TargetingRequest {
   id: string;
   descricao: string;
   idioma: string;
   pais: string;
   publico_tipo: TargetingAudienceType;
-  status: string;
+  niche_id?: number | null;
+  hypothesis_id?: string | null;
+  status: TargetingRequestStatus;
   origin?: string;
   createdAt?: string;
   updatedAt?: string;

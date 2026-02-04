@@ -17,10 +17,17 @@ public interface TargetingRequestRepository extends JpaRepository<TargetingReque
     List<TargetingRequest> findByStatus(@Param("status") TargetingRequestStatus status);
 
     @EntityGraph(attributePaths = {"candidates", "candidates.options"})
-    List<TargetingRequest> findAllByOrderByCreatedAtDesc(Pageable pageable);
-
-    @EntityGraph(attributePaths = {"candidates", "candidates.options"})
-    List<TargetingRequest> findByStatusOrderByCreatedAtDesc(TargetingRequestStatus status, Pageable pageable);
+    @Query("""
+            select r from TargetingRequest r
+            where (:status is null or r.status = :status)
+              and (:nicheId is null or r.niche.id = :nicheId)
+              and (:hypothesisId is null or r.hypothesis.id = :hypothesisId)
+            order by r.createdAt desc
+            """)
+    List<TargetingRequest> findByFilters(@Param("status") TargetingRequestStatus status,
+                                         @Param("nicheId") Long nicheId,
+                                         @Param("hypothesisId") UUID hypothesisId,
+                                         Pageable pageable);
 
     @EntityGraph(attributePaths = {"candidates", "candidates.options"})
     Optional<TargetingRequest> findDetailedById(UUID id);

@@ -28,6 +28,8 @@ public class TargetingRequestMapper {
                 .idioma(request.getLocale())
                 .pais(request.getCountry())
                 .publicoTipo(request.getAudienceType())
+                .nicheId(request.getNiche() != null ? request.getNiche().getId() : null)
+                .hypothesisId(request.getHypothesis() != null ? request.getHypothesis().getId() : null)
                 .status(request.getStatus())
                 .origin(request.getOrigin())
                 .createdAt(request.getCreatedAt())

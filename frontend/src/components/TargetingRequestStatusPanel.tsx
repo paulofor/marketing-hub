@@ -7,12 +7,15 @@ import type {
   TargetingRequest,
 } from "../api/targeting/types";
 import { useTargetingRequests } from "../api/targeting/useTargetingRequests";
+import type { TargetingRequestQueryFilters } from "../api/targeting/useTargetingRequests";
 import { useReprocessTargetingCandidate } from "../api/targeting/useReprocessTargetingCandidate";
 import "./TargetingRequestStatusPanel.css";
 
 interface TargetingRequestStatusPanelProps {
   limit?: number;
   className?: string;
+  nicheId?: number;
+  hypothesisId?: string;
 }
 
 const STATUS_COLORS: Record<TargetingCandidateStatus, string> = {
@@ -35,9 +38,10 @@ const FUNNEL_STAGE_MAP: Record<string, FunnelStageKey> = {
   DECISION: "bottom",
 };
 
-export function TargetingRequestStatusPanel({ limit = 10, className }: TargetingRequestStatusPanelProps) {
-  const { data, isFetching, refetch } = useTargetingRequests(limit);
-  const reprocessMutation = useReprocessTargetingCandidate(limit);
+export function TargetingRequestStatusPanel({ limit = 10, className, nicheId, hypothesisId }: TargetingRequestStatusPanelProps) {
+  const filters: TargetingRequestQueryFilters = { limit, nicheId, hypothesisId };
+  const { data, isFetching, refetch } = useTargetingRequests(filters);
+  const reprocessMutation = useReprocessTargetingCandidate(filters);
   const requests = Array.isArray(data) ? data : [];
 
   const audienceFormatter = useMemo(() => new Intl.NumberFormat("pt-BR"), []);

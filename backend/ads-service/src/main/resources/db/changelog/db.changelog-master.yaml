@@ -450,3 +450,7 @@ databaseChangeLog:
   - include:
       file: V2034_02_10__targeting_seed_flow.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: V2034_02_12__link_targeting_request_context.yaml
+      relativeToChangelogFile: true

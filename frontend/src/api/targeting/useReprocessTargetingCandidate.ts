@@ -1,6 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import type { TargetingCandidate } from "./types";
+import {
+  TARGETING_REQUESTS_QUERY_KEY,
+  buildTargetingRequestsQueryKey,
+  type TargetingRequestQueryFilters,
+} from "./useTargetingRequests";
 
 export interface ReprocessTargetingCandidatePayload {
   candidateId: number;
@@ -9,8 +14,10 @@ export interface ReprocessTargetingCandidatePayload {
   pais?: string;
 }
 
-export function useReprocessTargetingCandidate(limit = 10) {
+export function useReprocessTargetingCandidate(filters?: TargetingRequestQueryFilters) {
   const queryClient = useQueryClient();
+  const queryKey = buildTargetingRequestsQueryKey(filters);
+
   return useMutation({
     mutationFn: async ({ candidateId, ...payload }: ReprocessTargetingCandidatePayload) => {
       const { data } = await axios.post<TargetingCandidate>(
@@ -20,7 +27,8 @@ export function useReprocessTargetingCandidate(limit = 10) {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["targeting-requests", limit] });
+      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: [TARGETING_REQUESTS_QUERY_KEY] });
     },
   });
 }

@@ -8,6 +8,10 @@ import com.marketinghub.targeting.TargetingOption;
 import com.marketinghub.targeting.TargetingOptionSource;
 import com.marketinghub.targeting.TargetingRequest;
 import com.marketinghub.targeting.TargetingRequestOrigin;
+import com.marketinghub.hypothesis.Hypothesis;
+import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.targeting.TargetingRequestStatus;
 import com.marketinghub.targeting.dto.CreateTargetingRequestPayload;
 import com.marketinghub.targeting.dto.TargetingCandidateIngestionRequest;
@@ -54,17 +58,28 @@ public class TargetingRequestService {
     private final TargetingRequestRepository requestRepository;
     private final TargetingCandidateRepository candidateRepository;
     private final TargetingResolverClient targetingResolverClient;
+    private final MarketNicheRepository nicheRepository;
+    private final HypothesisRepository hypothesisRepository;
 
     public TargetingRequestService(TargetingRequestRepository requestRepository,
                                    TargetingCandidateRepository candidateRepository,
-                                   TargetingResolverClient targetingResolverClient) {
+                                   TargetingResolverClient targetingResolverClient,
+                                   MarketNicheRepository nicheRepository,
+                                   HypothesisRepository hypothesisRepository) {
         this.requestRepository = requestRepository;
         this.candidateRepository = candidateRepository;
         this.targetingResolverClient = targetingResolverClient;
+        this.nicheRepository = nicheRepository;
+        this.hypothesisRepository = hypothesisRepository;
     }
 
     @Transactional
     public TargetingRequest create(CreateTargetingRequestPayload payload) {
+        MarketNiche niche = resolveNiche(payload.getNicheId());
+        Hypothesis hypothesis = resolveHypothesis(payload.getHypothesisId());
+        if (hypothesis != null && niche == null) {
+            niche = hypothesis.getMarketNiche();
+        }
         TargetingRequest request = TargetingRequest.builder()
                 .descricao(normalize(payload.getDescricao()))
                 .locale(normalizeLocale(payload.getIdioma()))
@@ -72,20 +87,35 @@ public class TargetingRequestService {
                 .audienceType(payload.getPublicoTipo() != null ? payload.getPublicoTipo() : TargetingAudienceType.PROSPECT)
                 .status(TargetingRequestStatus.PENDING_AI)
                 .origin(TargetingRequestOrigin.CLIENT)
+                .niche(niche)
+                .hypothesis(hypothesis)
                 .build();
         TargetingRequest saved = requestRepository.save(request);
         log.info("Created targeting request {} with status {}", saved.getId(), saved.getStatus());
         return saved;
     }
 
+    private MarketNiche resolveNiche(Long nicheId) {
+        if (nicheId == null) {
+            return null;
+        }
+        return nicheRepository.findById(nicheId)
+                .orElseThrow(() -> new EntityNotFoundException("Market niche %s not found".formatted(nicheId)));
+    }
+
+    private Hypothesis resolveHypothesis(UUID hypothesisId) {
+        if (hypothesisId == null) {
+            return null;
+        }
+        return hypothesisRepository.findById(hypothesisId)
+                .orElseThrow(() -> new EntityNotFoundException("Hypothesis %s not found".formatted(hypothesisId)));
+    }
+
     @Transactional(readOnly = true)
-    public List<TargetingRequest> listRequests(TargetingRequestStatus status, int limit) {
+    public List<TargetingRequest> listRequests(TargetingRequestStatus status, int limit, Long nicheId, UUID hypothesisId) {
         int pageSize = limit > 0 ? limit : 10;
         PageRequest pageable = PageRequest.of(0, pageSize);
-        if (status != null) {
-            return requestRepository.findByStatusOrderByCreatedAtDesc(status, pageable);
-        }
-        return requestRepository.findAllByOrderByCreatedAtDesc(pageable);
+        return requestRepository.findByFilters(status, nicheId, hypothesisId, pageable);
     }
 
     @Transactional(readOnly = true)

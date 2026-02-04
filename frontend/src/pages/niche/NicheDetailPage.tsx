@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useNiche } from "../../api/niche/useNiche";
 import { useUpdateNiche } from "../../api/niche/useUpdateNiche";
@@ -65,6 +65,11 @@ const formatCurrency = (value?: number | null) => {
 export default function NicheDetailPage() {
   const { nicheId } = useParams();
   const id = Number(nicheId);
+  const normalizedNicheId = Number.isFinite(id) ? id : undefined;
+  const targetingRequestFilters = useMemo(
+    () => ({ limit: 6, nicheId: normalizedNicheId }),
+    [normalizedNicheId],
+  );
   const { data, isLoading, isFetching } = useNiche(id);
   const { data: chatDialog } = useChatDialog(data?.chatDialogId);
   const { data: hypotheses } = useHypothesesByNiche(nicheId, "ALL");
@@ -1368,9 +1373,15 @@ export default function NicheDetailPage() {
             defaultIdioma="pt_BR"
             defaultPais="BR"
             defaultPublico="PROSPECT"
+            nicheId={normalizedNicheId}
+            queryFilters={targetingRequestFilters}
           />
 
-          <TargetingRequestStatusPanel className="mb-4" limit={6} />
+          <TargetingRequestStatusPanel
+            className="mb-4"
+            limit={6}
+            nicheId={normalizedNicheId}
+          />
 
           <div className="row row-cols-1 row-cols-md-3 g-3 mb-4">
             {targetingConfigs.map((config) => (

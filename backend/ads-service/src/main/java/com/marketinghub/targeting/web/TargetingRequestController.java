@@ -33,8 +33,10 @@ public class TargetingRequestController {
     @GetMapping("/requests")
     public List<TargetingRequestDto> list(@RequestParam(value = "status", required = false) TargetingRequestStatus status,
                                           @RequestParam(value = "limit", defaultValue = "10") Integer limit,
-                                          @RequestParam(value = "includeCandidates", defaultValue = "true") boolean includeCandidates) {
-        List<TargetingRequest> requests = service.listRequests(status, limit != null ? limit : 10);
+                                          @RequestParam(value = "includeCandidates", defaultValue = "true") boolean includeCandidates,
+                                          @RequestParam(value = "nicheId", required = false) Long nicheId,
+                                          @RequestParam(value = "hypothesisId", required = false) UUID hypothesisId) {
+        List<TargetingRequest> requests = service.listRequests(status, limit != null ? limit : 10, nicheId, hypothesisId);
         return requests.stream()
                 .map(r -> includeCandidates ? mapper.toDetailedDto(r, service.etaSeconds()) : mapper.toDto(r, service.etaSeconds()))
                 .toList();

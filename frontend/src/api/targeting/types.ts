@@ -93,3 +93,11 @@ export interface TargetingRequest {
   etaSeconds?: number;
   candidates?: TargetingCandidate[];
 }
+
+export interface TargetingRecentRequest {
+  id: string;
+  descricao: string;
+  created_at?: string | null;
+  seed_keywords: string[];
+  meta_ads_keywords: string[];
+}

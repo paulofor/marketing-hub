@@ -18,6 +18,7 @@ import com.marketinghub.targeting.dto.TargetingCandidateIngestionRequest;
 import com.marketinghub.targeting.dto.TargetingCandidateReprocessRequest;
 import com.marketinghub.targeting.dto.TargetingCandidateResolutionUpdateRequest;
 import com.marketinghub.targeting.dto.TargetingCandidateResolutionUpdateRequest.OptionPayload;
+import com.marketinghub.targeting.dto.TargetingRecentRequestDto;
 import com.marketinghub.targeting.integration.TargetingResolverClient;
 import com.marketinghub.targeting.repository.TargetingCandidateRepository;
 import com.marketinghub.targeting.repository.TargetingRequestRepository;
@@ -38,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -116,6 +118,16 @@ public class TargetingRequestService {
         int pageSize = limit > 0 ? limit : 10;
         PageRequest pageable = PageRequest.of(0, pageSize);
         return requestRepository.findByFilters(status, nicheId, hypothesisId, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public List<TargetingRecentRequestDto> listRecentRequests(int limit) {
+        int pageSize = limit > 0 ? limit : 10;
+        PageRequest pageable = PageRequest.of(0, pageSize);
+        return requestRepository.findRecentRequests(pageable)
+                .stream()
+                .map(this::toRecentDto)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -250,6 +262,57 @@ public class TargetingRequestService {
 
     public int etaSeconds() {
         return ETA_SECONDS;
+    }
+
+    private TargetingRecentRequestDto toRecentDto(TargetingRequest request) {
+        List<String> seeds = collectSeeds(request);
+        List<String> metaAdsKeywords = collectMetaAdsKeywords(request);
+        return TargetingRecentRequestDto.builder()
+                .id(request.getId())
+                .descricao(request.getDescricao())
+                .createdAt(request.getCreatedAt())
+                .seedKeywords(seeds)
+                .metaAdsKeywords(metaAdsKeywords)
+                .build();
+    }
+
+    private List<String> collectSeeds(TargetingRequest request) {
+        if (request == null || CollectionUtils.isEmpty(request.getCandidates())) {
+            return List.of();
+        }
+        Set<String> seeds = new LinkedHashSet<>();
+        for (TargetingCandidate candidate : request.getCandidates()) {
+            if (candidate == null) {
+                continue;
+            }
+            if (StringUtils.hasText(candidate.getSeed())) {
+                seeds.add(candidate.getSeed());
+            }
+            if (!CollectionUtils.isEmpty(candidate.getSeedVariants())) {
+                candidate.getSeedVariants().stream()
+                        .filter(StringUtils::hasText)
+                        .forEach(seeds::add);
+            }
+        }
+        return List.copyOf(seeds);
+    }
+
+    private List<String> collectMetaAdsKeywords(TargetingRequest request) {
+        if (request == null || CollectionUtils.isEmpty(request.getCandidates())) {
+            return List.of();
+        }
+        Set<String> keywords = new LinkedHashSet<>();
+        for (TargetingCandidate candidate : request.getCandidates()) {
+            if (candidate == null || CollectionUtils.isEmpty(candidate.getOptions())) {
+                continue;
+            }
+            for (TargetingOption option : candidate.getOptions()) {
+                if (option != null && StringUtils.hasText(option.getName())) {
+                    keywords.add(option.getName());
+                }
+            }
+        }
+        return List.copyOf(keywords);
     }
 
     private void triggerResolutionAfterCommit(TargetingRequest request, List<TargetingCandidate> candidates) {

@@ -40,4 +40,8 @@ public interface TargetingRequestRepository extends JpaRepository<TargetingReque
             order by r.createdAt asc
             """)
     List<TargetingRequest> findRequestsWithPendingCandidates(Pageable pageable);
+
+    @EntityGraph(attributePaths = {"candidates", "candidates.options", "candidates.seedVariants"})
+    @Query("select r from TargetingRequest r order by r.createdAt desc")
+    List<TargetingRequest> findRecentRequests(Pageable pageable);
 }

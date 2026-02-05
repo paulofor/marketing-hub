@@ -32,6 +32,7 @@ import {
   CreditCard,
   Cpu,
   ScrollText,
+  Search,
 } from "lucide-react";
 import experimentIcon from "../assets/icons/experiment-icon.svg";
 import hypothesisIcon from "../assets/icons/hypothesis-icon.svg";
@@ -133,6 +134,11 @@ const NAV_SECTIONS: NavSection[] = [
         to: "/ai/pending-requests",
         label: "Fila do Worker IA",
         icon: ClipboardList,
+      },
+      {
+        to: "/targeting/recent-queries",
+        label: "Consultas Meta Ads",
+        icon: Search,
       },
     ],
   },

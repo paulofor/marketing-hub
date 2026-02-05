@@ -378,6 +378,36 @@ class FacebookAdsServiceTest {
     }
 
     @Test
+    void suggestTargetingOptionsUsesInterestSuggestionsSearch() throws Exception {
+        server.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"600313\",\"name\":\"Pilates\",\"audience_size\":1200000,\"path\":[\"Interesses\",\"Fitness\"]}]}" )
+            .addHeader("Content-Type", "application/json"));
+
+        FacebookAdsService.TargetingSuggestionsRequest request = new FacebookAdsService.TargetingSuggestionsRequest(
+            "1",
+            List.of(new FacebookAdsService.TargetingSuggestionSeed("Pilates", "adinterest")),
+            "pt_BR",
+            "BR",
+            50
+        );
+
+        List<FacebookAdsService.FacebookTargetingSuggestionResult> results = service.suggestTargetingOptions(request);
+
+        RecordedRequest searchRequest = takeRequest("request");
+        HttpUrl searchUrl = searchRequest.getRequestUrl();
+        assertNotNull(searchUrl);
+        assertEquals("/v23.0/search", searchUrl.encodedPath());
+        assertEquals("adinterestsuggestion", searchUrl.queryParameter("type"));
+        assertEquals("[\"Pilates\"]", searchUrl.queryParameter("interest_list"));
+        assertEquals("50", searchUrl.queryParameter("limit"));
+        assertEquals("pt_BR", searchUrl.queryParameter("locale"));
+        assertEquals("token", searchUrl.queryParameter("access_token"));
+
+        assertEquals(1, results.size());
+        assertEquals("600313", results.get(0).id());
+        assertEquals("Pilates", results.get(0).name());
+    }
+
+    @Test
     void createAdCreativeKeepsWebsiteLinkWhenLeadFormIsPresent() throws Exception {
         server.enqueueResponse(new MockResponse().setBody("{\"id\":\"998\"}")
             .addHeader("Content-Type", "application/json"));

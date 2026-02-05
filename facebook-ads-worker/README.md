@@ -5,6 +5,10 @@ posicionamentos no Facebook e no Instagram, e coletar métricas usando a API de
 Marketing do Facebook. O serviço reutiliza o modelo de dados definido no
 projeto `backend`, evitando duplicação de entidades.
 
+Para sugerir interesses relacionados a um seed, o worker consulta a Graph API
+via `/search` com `type=adinterestsuggestion` e envia a lista de seeds no
+parâmetro `interest_list`, conforme a documentação oficial de Targeting Search.
+
 ## Pixels e eventos
 
 A sincronização de pixels e o envio de eventos foram desativados por padrão

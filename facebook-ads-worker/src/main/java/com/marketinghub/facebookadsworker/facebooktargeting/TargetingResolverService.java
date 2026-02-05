@@ -175,7 +175,7 @@ public class TargetingResolverService {
         List<FacebookAdsService.TargetingSuggestionSeed> seeds = resolvedOptions.values().stream()
                 .sorted(Comparator.comparingDouble(ResolvedOption::finalScore).reversed())
                 .limit(Math.max(1, properties.getSuggestionSeedLimit()))
-                .map(option -> new FacebookAdsService.TargetingSuggestionSeed(option.result().id(), mapSearchType(type).graphType()))
+                .map(option -> new FacebookAdsService.TargetingSuggestionSeed(resolveSuggestionSeed(option, type), mapSearchType(type).graphType()))
                 .toList();
         if (CollectionUtils.isEmpty(seeds)) {
             return;
@@ -219,6 +219,18 @@ public class TargetingResolverService {
                 break;
             }
         }
+    }
+
+    private String resolveSuggestionSeed(ResolvedOption option, TargetingCandidateType type) {
+        if (type == TargetingCandidateType.INTEREST) {
+            if (StringUtils.hasText(option.result().name())) {
+                return option.result().name();
+            }
+            if (StringUtils.hasText(option.seedVariant())) {
+                return option.seedVariant();
+            }
+        }
+        return option.result().id();
     }
 
     private String resolveSuggestionLocale(Iterable<ResolvedOption> options, List<String> localeFallbacks) {

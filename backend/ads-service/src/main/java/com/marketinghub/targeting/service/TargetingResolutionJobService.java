@@ -1,0 +1,145 @@
+package com.marketinghub.targeting.service;
+
+import com.marketinghub.targeting.TargetingCandidate;
+import com.marketinghub.targeting.TargetingResolutionJob;
+import com.marketinghub.targeting.TargetingResolutionJobStatus;
+import com.marketinghub.targeting.TargetingRequest;
+import com.marketinghub.targeting.repository.TargetingResolutionJobRepository;
+import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.util.CollectionUtils;
+
+import java.time.Instant;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Service
+public class TargetingResolutionJobService {
+    private static final Logger log = LoggerFactory.getLogger(TargetingResolutionJobService.class);
+
+    private final TargetingResolutionJobRepository repository;
+
+    public TargetingResolutionJobService(TargetingResolutionJobRepository repository) {
+        this.repository = repository;
+    }
+
+    public void enqueueAfterCommit(TargetingRequest request, Collection<TargetingCandidate> candidates) {
+        if (request == null || CollectionUtils.isEmpty(candidates)) {
+            return;
+        }
+        Runnable action = () -> enqueueInternal(request, candidates);
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    action.run();
+                }
+            });
+        } else {
+            action.run();
+        }
+    }
+
+    @Transactional
+    protected void enqueueInternal(TargetingRequest request, Collection<TargetingCandidate> candidates) {
+        for (TargetingCandidate candidate : candidates) {
+            if (candidate == null || candidate.getId() == null) {
+                continue;
+            }
+            TargetingResolutionJob job = repository.findByCandidateId(candidate.getId())
+                    .orElse(TargetingResolutionJob.builder().candidate(candidate).request(request).build());
+            job.setRequest(request);
+            job.setCandidate(candidate);
+            job.setStatus(TargetingResolutionJobStatus.PENDING);
+            job.setAttemptCount(0);
+            job.setResultCount(null);
+            job.setLastError(null);
+            job.setLockedAt(null);
+            job.setLockedBy(null);
+            job.setStartedAt(null);
+            job.setFinishedAt(null);
+            repository.save(job);
+            log.debug("Enqueued candidate {} for Meta Ads resolution", candidate.getId());
+        }
+    }
+
+    public Map<UUID, TargetingResolutionSummary> summarizeByRequestIds(List<UUID> requestIds) {
+        if (CollectionUtils.isEmpty(requestIds)) {
+            return Collections.emptyMap();
+        }
+        List<TargetingResolutionJob> jobs = repository.findByRequestIdIn(requestIds);
+        Map<UUID, List<TargetingResolutionJob>> grouped = jobs.stream()
+                .filter(job -> job.getRequest() != null && job.getRequest().getId() != null)
+                .collect(Collectors.groupingBy(job -> job.getRequest().getId()));
+        Map<UUID, TargetingResolutionSummary> summaries = new HashMap<>();
+        for (UUID requestId : requestIds) {
+            List<TargetingResolutionJob> requestJobs = grouped.getOrDefault(requestId, List.of());
+            summaries.put(requestId, summarize(requestJobs));
+        }
+        return summaries;
+    }
+
+    private TargetingResolutionSummary summarize(List<TargetingResolutionJob> jobs) {
+        if (CollectionUtils.isEmpty(jobs)) {
+            return TargetingResolutionSummary.empty();
+        }
+        int pending = 0;
+        int processing = 0;
+        int succeeded = 0;
+        int failed = 0;
+        Instant lastAttempt = null;
+        Instant lastCompleted = null;
+        Instant lastErrorAt = null;
+        String lastError = null;
+        for (TargetingResolutionJob job : jobs) {
+            TargetingResolutionJobStatus status = job.getStatus();
+            if (status == null) {
+                pending++;
+            } else {
+                switch (status) {
+                    case PROCESSING -> processing++;
+                    case SUCCEEDED -> succeeded++;
+                    case FAILED -> failed++;
+                    case PENDING -> pending++;
+                }
+            }
+            if (job.getStartedAt() != null && (lastAttempt == null || job.getStartedAt().isAfter(lastAttempt))) {
+                lastAttempt = job.getStartedAt();
+            }
+            if (job.getFinishedAt() != null && (lastCompleted == null || job.getFinishedAt().isAfter(lastCompleted))) {
+                lastCompleted = job.getFinishedAt();
+            }
+            if (status == TargetingResolutionJobStatus.FAILED && job.getLastError() != null) {
+                Instant updatedAt = job.getUpdatedAt();
+                if (updatedAt == null || lastErrorAt == null || updatedAt.isAfter(lastErrorAt)) {
+                    lastErrorAt = updatedAt;
+                    lastError = job.getLastError();
+                }
+            }
+        }
+        return new TargetingResolutionSummary(pending, processing, succeeded, failed, lastAttempt, lastCompleted, lastError);
+    }
+
+    public record TargetingResolutionSummary(
+            int pending,
+            int processing,
+            int succeeded,
+            int failed,
+            Instant lastAttemptAt,
+            Instant lastCompletedAt,
+            String lastError
+    ) {
+        public static TargetingResolutionSummary empty() {
+            return new TargetingResolutionSummary(0, 0, 0, 0, null, null, null);
+        }
+    }
+}

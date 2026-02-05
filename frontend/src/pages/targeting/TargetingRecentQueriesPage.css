@@ -5,3 +5,11 @@
 .targeting-recent-queries table td {
   min-width: 220px;
 }
+.targeting-recent-queries__resolution {
+  min-width: 240px;
+}
+
+.targeting-recent-queries__resolution .badge {
+  font-weight: 500;
+}
+

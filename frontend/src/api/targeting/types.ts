@@ -78,6 +78,16 @@ export type TargetingAudienceType = "PROSPECT" | "REMARKETING";
 
 export type TargetingRequestStatus = "PENDING_AI" | "COMPLETED" | "FAILED";
 
+export interface TargetingResolutionSummary {
+  pending: number;
+  processing: number;
+  completed: number;
+  failed: number;
+  last_attempt_at?: string | null;
+  last_completed_at?: string | null;
+  last_error?: string | null;
+}
+
 export interface TargetingRequest {
   id: string;
   descricao: string;
@@ -100,4 +110,5 @@ export interface TargetingRecentRequest {
   created_at?: string | null;
   seed_keywords: string[];
   meta_ads_keywords: string[];
+  resolution?: TargetingResolutionSummary | null;
 }

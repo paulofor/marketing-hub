@@ -454,3 +454,6 @@ databaseChangeLog:
   - include:
       file: V2034_02_12__link_targeting_request_context.yaml
       relativeToChangelogFile: true
+  - include:
+      file: V2034_02_24__create_targeting_resolution_job_queue.yaml
+      relativeToChangelogFile: true

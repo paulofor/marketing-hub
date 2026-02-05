@@ -173,7 +173,9 @@ function CandidateCard({ candidate, onReprocess, audienceFormatter, isProcessing
 
       {candidate.status === "VALIDATED" && options.length > 0 && (
         <div className="mt-3">
-          <p className="text-body-secondary small fw-semibold mb-2">Opções validadas</p>
+          <p className="text-body-secondary small fw-semibold mb-2">
+            Opções validadas pelo Facebook
+          </p>
           <ul className="list-unstyled mb-0">
             {options.map((option) => (
               <OptionRow key={`${candidate.id}-${option.facebook_id}`} option={option} formatter={audienceFormatter} />
@@ -249,6 +251,7 @@ function OptionRow({ option, formatter }: OptionRowProps) {
           <div className="text-body-secondary small">ID {option.facebook_id}</div>
           {path && <div className="text-body-secondary small">{path}</div>}
           <div className="d-flex flex-wrap gap-2 mt-1">
+            <span className="badge text-bg-primary">Facebook</span>
             {sourceLabel && <span className="badge text-bg-light">{sourceLabel}</span>}
             {option.seed_variant && <span className="badge text-bg-secondary">Seed: {option.seed_variant}</span>}
           </div>

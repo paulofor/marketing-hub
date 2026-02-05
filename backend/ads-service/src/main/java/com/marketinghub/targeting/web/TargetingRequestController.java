@@ -3,6 +3,7 @@ package com.marketinghub.targeting.web;
 import com.marketinghub.targeting.TargetingRequest;
 import com.marketinghub.targeting.TargetingRequestStatus;
 import com.marketinghub.targeting.dto.CreateTargetingRequestPayload;
+import com.marketinghub.targeting.dto.TargetingRecentRequestDto;
 import com.marketinghub.targeting.dto.TargetingRequestDto;
 import com.marketinghub.targeting.mapper.TargetingRequestMapper;
 import com.marketinghub.targeting.service.TargetingRequestService;
@@ -40,6 +41,11 @@ public class TargetingRequestController {
         return requests.stream()
                 .map(r -> includeCandidates ? mapper.toDetailedDto(r, service.etaSeconds()) : mapper.toDto(r, service.etaSeconds()))
                 .toList();
+    }
+
+    @GetMapping("/requests/recent")
+    public List<TargetingRecentRequestDto> listRecent(@RequestParam(value = "limit", defaultValue = "10") Integer limit) {
+        return service.listRecentRequests(limit != null ? limit : 10);
     }
 
     @GetMapping("/requests/{requestId}")

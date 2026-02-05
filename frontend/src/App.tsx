@@ -96,6 +96,7 @@ import EditPromptPage from "./pages/promptTemplate/EditPromptPage";
 import PromptDomainListPage from "./pages/promptDomain/PromptDomainListPage";
 import NewPromptDomainPage from "./pages/promptDomain/NewPromptDomainPage";
 import EditPromptDomainPage from "./pages/promptDomain/EditPromptDomainPage";
+import TargetingRecentQueriesPage from "./pages/targeting/TargetingRecentQueriesPage";
 
 export default function App() {
   return (
@@ -223,6 +224,10 @@ export default function App() {
               <Route
                 path="/ai/pending-requests"
                 element={<AiWorkerPendingRequestsPage />}
+              />
+              <Route
+                path="/targeting/recent-queries"
+                element={<TargetingRecentQueriesPage />}
               />
               <Route path="/angles" element={<AnglesPage />} />
               <Route path="/visual-proofs" element={<VisualProofsPage />} />

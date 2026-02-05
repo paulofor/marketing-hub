@@ -32,7 +32,7 @@ public interface TargetingRequestRepository extends JpaRepository<TargetingReque
     @EntityGraph(attributePaths = {"candidates", "candidates.options"})
     Optional<TargetingRequest> findDetailedById(UUID id);
 
-    @EntityGraph(attributePaths = {"candidates", "candidates.options"})
+    @EntityGraph(attributePaths = {"candidates", "candidates.options", "candidates.seedVariants"})
     @Query("""
             select distinct r from TargetingRequest r
             join r.candidates c

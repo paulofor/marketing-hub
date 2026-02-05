@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
-import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -26,7 +25,6 @@ public class TargetingRequestGenerationService {
     private static final Pattern PHONE_PATTERN = Pattern.compile("(\\+?\\d[\\s-]?)?(\\(?\\d{2,3}\\)?[\\s-]?)?\\d{4,5}[\\s-]?\\d{4}");
     private static final Set<String> FORBIDDEN_TERMS = Set.of("sexo", "armas", "violência", "ódio", "hate", "drogas");
     private static final int LIMIT_PER_TYPE = 30;
-    private static final int MAX_VARIANTS = 6;
     private static final int MAX_SEED_WORDS = 4;
     private static final Pattern MULTIPLE_SPACES = Pattern.compile("\\s+");
     private static final Pattern LOCATION_SUFFIX_PATTERN = Pattern.compile("(?i)\\s+(em|no|na)\\s+[\\p{L}\\s]{2,}$");
@@ -192,22 +190,10 @@ public class TargetingRequestGenerationService {
     }
 
     private List<String> normalizeVariants(List<String> providedVariants, String seed) {
-        LinkedHashSet<String> variants = new LinkedHashSet<>();
-        if (StringUtils.hasText(seed)) {
-            variants.add(seed);
-            variants.add(removeAccents(seed));
+        if (!StringUtils.hasText(seed)) {
+            return List.of();
         }
-        if (providedVariants != null) {
-            for (String variant : providedVariants) {
-                String sanitized = sanitizeSeed(variant);
-                if (StringUtils.hasText(sanitized)) {
-                    variants.add(sanitized);
-                    variants.add(removeAccents(sanitized));
-                }
-            }
-        }
-        variants.removeIf(value -> !StringUtils.hasText(value));
-        return variants.stream().limit(MAX_VARIANTS).toList();
+        return List.of(seed);
     }
 
     private String sanitizeSeed(String raw) {
@@ -228,14 +214,6 @@ public class TargetingRequestGenerationService {
             return collapsed;
         }
         return String.join(" ", Arrays.asList(tokens).subList(0, MAX_SEED_WORDS));
-    }
-
-    private String removeAccents(String value) {
-        if (!StringUtils.hasText(value)) {
-            return value;
-        }
-        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD);
-        return normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
     }
 
     private String firstNonBlank(String... values) {

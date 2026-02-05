@@ -16,11 +16,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.math.BigDecimal;
-import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -30,7 +28,6 @@ public class TargetingRequestChatGptClient {
     private static final Logger log = LoggerFactory.getLogger(TargetingRequestChatGptClient.class);
     private static final String DOMAIN = "TARGETING_REQUEST";
     private static final int MAX_SEED_WORDS = 4;
-    private static final int MAX_VARIANTS = 6;
     private static final Pattern MULTIPLE_SPACES = Pattern.compile("\\s+");
     private static final Pattern LOCATION_SUFFIX_PATTERN = Pattern.compile("(?i)\\s+(em|no|na)\\s+[\\p{L}\\s]{2,}$");
     private static final Pattern STATE_SUFFIX_PATTERN = Pattern.compile("(?i)\\s+(em|no|na)\\s+[A-Z]{2}$");
@@ -119,7 +116,7 @@ public class TargetingRequestChatGptClient {
     private String buildPrompt(TargetingRequestDto request) {
         StringBuilder sb = new StringBuilder();
         sb.append("Com base na descrição abaixo, gere candidatos de targeting do Facebook seguindo o fluxo seed-first.\n");
-        sb.append("Cada candidato deve conter: seed (1 a 4 palavras, sem localidade), seed_variants (variações singular/plural, sem acentos e versões em inglês quando fizer sentido), tipo (interest|behavior|work_position), rationale, score (0-1), intent_tag e idioma_hint.\n");
+        sb.append("Cada candidato deve conter: seed (1 a 4 palavras, sem localidade), tipo (interest|behavior|work_position), rationale, score (0-1), intent_tag e idioma_hint.\n");
         sb.append("Remova qualquer menção geográfica do seed; restrições de país devem ir em constraints.country.\n");
         sb.append("Use o idioma preferencial ").append(request.localeOrDefault()).append(" e país alvo ").append(request.countryOrDefault()).append(".\n");
         sb.append("Evite termos proibidos pela Meta ou qualquer PII. \n");
@@ -151,7 +148,6 @@ public class TargetingRequestChatGptClient {
             if (!StringUtils.hasText(seed)) {
                 continue;
             }
-            List<String> variants = extractVariants(node.path("seed_variants"), seed);
             TargetingCandidateType tipo = TargetingCandidateType.from(readText(node, "tipo"));
             BigDecimal score = readDecimal(node, "score");
             String rationale = readText(node, "rationale");
@@ -164,7 +160,7 @@ public class TargetingRequestChatGptClient {
             }
             result.add(new TargetingCandidateSuggestion(
                     seed,
-                    variants,
+                    List.of(seed),
                     tipo != null ? tipo : TargetingCandidateType.INTEREST,
                     "AI",
                     score,
@@ -175,25 +171,6 @@ public class TargetingRequestChatGptClient {
             ));
         }
         return result;
-    }
-
-    private List<String> extractVariants(JsonNode node, String seed) {
-        LinkedHashSet<String> variants = new LinkedHashSet<>();
-        if (StringUtils.hasText(seed)) {
-            variants.add(seed);
-            variants.add(removeAccents(seed));
-        }
-        if (node != null && node.isArray()) {
-            node.forEach(element -> {
-                String value = sanitizeSeed(element.asText());
-                if (StringUtils.hasText(value)) {
-                    variants.add(value);
-                    variants.add(removeAccents(value));
-                }
-            });
-        }
-        variants.removeIf(value -> !StringUtils.hasText(value));
-        return variants.stream().limit(MAX_VARIANTS).toList();
     }
 
     private String sanitizeContent(String content) {
@@ -230,14 +207,6 @@ public class TargetingRequestChatGptClient {
             }
         }
         return null;
-    }
-
-    private String removeAccents(String value) {
-        if (!StringUtils.hasText(value)) {
-            return value;
-        }
-        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD);
-        return normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
     }
 
     private String sanitizeSeed(String raw) {

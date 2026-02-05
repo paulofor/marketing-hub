@@ -1,0 +1,74 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2034-02-24-create-targeting-resolution-job
+      author: marketinghub
+      preConditions:
+        onFail: MARK_RAN
+        and:
+          - dbms:
+              type: mysql
+          - sqlCheck:
+              expectedResult: 0
+              sql: SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'targeting_resolution_job';
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE targeting_resolution_job (
+                  id BIGINT NOT NULL AUTO_INCREMENT,
+                  candidate_id BIGINT NOT NULL,
+                  request_id BINARY(16) NOT NULL,
+                  status VARCHAR(20) NOT NULL,
+                  attempt_count INT NOT NULL DEFAULT 0,
+                  result_count INT NULL,
+                  last_error TEXT NULL,
+                  locked_by VARCHAR(64) NULL,
+                  locked_at datetime(6) NULL,
+                  started_at datetime(6) NULL,
+                  finished_at datetime(6) NULL,
+                  created_at datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                  updated_at datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+                  PRIMARY KEY (id),
+                  CONSTRAINT uq_targeting_resolution_job_candidate UNIQUE (candidate_id),
+                  CONSTRAINT fk_trj_candidate FOREIGN KEY (candidate_id) REFERENCES targeting_candidate(id) ON DELETE CASCADE,
+                  CONSTRAINT fk_trj_request FOREIGN KEY (request_id) REFERENCES targeting_request(id) ON DELETE CASCADE
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              CREATE INDEX idx_trj_status ON targeting_resolution_job(status);
+              CREATE INDEX idx_trj_request ON targeting_resolution_job(request_id);
+
+  - changeSet:
+      id: 2034-02-24-backfill-targeting-resolution-job
+      author: marketinghub
+      preConditions:
+        onFail: MARK_RAN
+        and:
+          - dbms:
+              type: mysql
+          - tableExists:
+              tableName: targeting_resolution_job
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO targeting_resolution_job (candidate_id, request_id, status, attempt_count, result_count, created_at, updated_at)
+              SELECT
+                  c.id,
+                  c.request_id,
+                  CASE
+                      WHEN c.status = 'PENDING_FACEBOOK_MATCH' THEN 'PENDING'
+                      WHEN c.status IN ('VALIDATED', 'NO_MATCH') THEN 'SUCCEEDED'
+                      ELSE 'PENDING'
+                  END AS job_status,
+                  0,
+                  NULL,
+                  COALESCE(c.created_at, CURRENT_TIMESTAMP(6)),
+                  COALESCE(c.updated_at, CURRENT_TIMESTAMP(6))
+              FROM targeting_candidate c
+              WHERE NOT EXISTS (
+                  SELECT 1 FROM targeting_resolution_job j WHERE j.candidate_id = c.id
+              );

@@ -66,6 +66,7 @@ public class TargetingBackendClient {
                 JsonLogFormatter.wrap(payload),
                 ex
             );
+            throw new IllegalStateException("Falha ao atualizar candidato no backend", ex);
         }
     }
 

@@ -19,7 +19,8 @@ import com.marketinghub.targeting.dto.TargetingCandidateReprocessRequest;
 import com.marketinghub.targeting.dto.TargetingCandidateResolutionUpdateRequest;
 import com.marketinghub.targeting.dto.TargetingCandidateResolutionUpdateRequest.OptionPayload;
 import com.marketinghub.targeting.dto.TargetingRecentRequestDto;
-import com.marketinghub.targeting.integration.TargetingResolverClient;
+import com.marketinghub.targeting.dto.TargetingResolutionSummaryDto;
+import com.marketinghub.targeting.service.TargetingResolutionJobService.TargetingResolutionSummary;
 import com.marketinghub.targeting.repository.TargetingCandidateRepository;
 import com.marketinghub.targeting.repository.TargetingRequestRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -28,8 +29,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -39,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Locale;
 import java.util.UUID;
@@ -59,18 +59,18 @@ public class TargetingRequestService {
 
     private final TargetingRequestRepository requestRepository;
     private final TargetingCandidateRepository candidateRepository;
-    private final TargetingResolverClient targetingResolverClient;
+    private final TargetingResolutionJobService resolutionJobService;
     private final MarketNicheRepository nicheRepository;
     private final HypothesisRepository hypothesisRepository;
 
     public TargetingRequestService(TargetingRequestRepository requestRepository,
                                    TargetingCandidateRepository candidateRepository,
-                                   TargetingResolverClient targetingResolverClient,
+                                   TargetingResolutionJobService resolutionJobService,
                                    MarketNicheRepository nicheRepository,
                                    HypothesisRepository hypothesisRepository) {
         this.requestRepository = requestRepository;
         this.candidateRepository = candidateRepository;
-        this.targetingResolverClient = targetingResolverClient;
+        this.resolutionJobService = resolutionJobService;
         this.nicheRepository = nicheRepository;
         this.hypothesisRepository = hypothesisRepository;
     }
@@ -124,9 +124,11 @@ public class TargetingRequestService {
     public List<TargetingRecentRequestDto> listRecentRequests(int limit) {
         int pageSize = limit > 0 ? limit : 10;
         PageRequest pageable = PageRequest.of(0, pageSize);
-        return requestRepository.findRecentRequests(pageable)
-                .stream()
-                .map(this::toRecentDto)
+        List<TargetingRequest> requests = requestRepository.findRecentRequests(pageable);
+        Map<UUID, TargetingResolutionSummary> summaries = resolutionJobService
+                .summarizeByRequestIds(requests.stream().map(TargetingRequest::getId).toList());
+        return requests.stream()
+                .map(request -> toRecentDto(request, summaries.get(request.getId())))
                 .toList();
     }
 
@@ -166,7 +168,7 @@ public class TargetingRequestService {
         request.setStatus(TargetingRequestStatus.COMPLETED);
         requestRepository.save(request);
         log.info("Persisted {} candidates for request {}", persistedCandidates.size(), requestId);
-        triggerResolutionAfterCommit(request, List.copyOf(persistedCandidates));
+        resolutionJobService.enqueueAfterCommit(request, List.copyOf(persistedCandidates));
     }
 
     private TargetingCandidate buildCandidate(TargetingCandidateIngestionRequest.CandidatePayload payload,
@@ -229,7 +231,7 @@ public class TargetingRequestService {
         }
         TargetingCandidate saved = candidateRepository.save(candidate);
         log.info("Candidate {} requeued for Facebook resolution", candidateId);
-        triggerResolutionAfterCommit(candidate.getRequest(), List.of(saved));
+        resolutionJobService.enqueueAfterCommit(candidate.getRequest(), List.of(saved));
         return saved;
     }
 
@@ -264,7 +266,7 @@ public class TargetingRequestService {
         return ETA_SECONDS;
     }
 
-    private TargetingRecentRequestDto toRecentDto(TargetingRequest request) {
+    private TargetingRecentRequestDto toRecentDto(TargetingRequest request, TargetingResolutionSummary summary) {
         List<String> seeds = collectSeeds(request);
         List<String> metaAdsKeywords = collectMetaAdsKeywords(request);
         return TargetingRecentRequestDto.builder()
@@ -273,6 +275,22 @@ public class TargetingRequestService {
                 .createdAt(request.getCreatedAt())
                 .seedKeywords(seeds)
                 .metaAdsKeywords(metaAdsKeywords)
+                .resolution(toResolutionDto(summary))
+                .build();
+    }
+
+    private TargetingResolutionSummaryDto toResolutionDto(TargetingResolutionSummary summary) {
+        if (summary == null) {
+            return null;
+        }
+        return TargetingResolutionSummaryDto.builder()
+                .pending(summary.pending())
+                .processing(summary.processing())
+                .completed(summary.succeeded())
+                .failed(summary.failed())
+                .lastAttemptAt(summary.lastAttemptAt())
+                .lastCompletedAt(summary.lastCompletedAt())
+                .lastError(summary.lastError())
                 .build();
     }
 
@@ -313,23 +331,6 @@ public class TargetingRequestService {
             }
         }
         return List.copyOf(keywords);
-    }
-
-    private void triggerResolutionAfterCommit(TargetingRequest request, List<TargetingCandidate> candidates) {
-        if (request == null || CollectionUtils.isEmpty(candidates)) {
-            return;
-        }
-        Runnable action = () -> targetingResolverClient.requestResolution(request, candidates);
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    action.run();
-                }
-            });
-        } else {
-            action.run();
-        }
     }
 
     private TargetingCandidate loadCandidate(Long candidateId) {

@@ -24,4 +24,7 @@ public class TargetingRecentRequestDto {
 
     @JsonProperty("meta_ads_keywords")
     private List<String> metaAdsKeywords;
+
+    @JsonProperty("resolution")
+    private TargetingResolutionSummaryDto resolution;
 }

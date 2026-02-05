@@ -9,6 +9,26 @@ Para sugerir interesses relacionados a um seed, o worker consulta a Graph API
 via `/search` com `type=adinterestsuggestion` e envia a lista de seeds no
 parâmetro `interest_list`, conforme a documentação oficial de Targeting Search.
 
+## Fila de resolução de targeting
+
+O backend grava os candidatos que precisam ser validados na tabela `targeting_resolution_job`.
+O worker não depende mais de chamadas HTTP para receber esses itens: a cada ciclo o componente
+`TargetingResolutionQueueProcessor` consulta diretamente o MySQL, recupera até `targeting.queue.batch-size`
+registros com status `PENDING`, processa cada seed na Graph API e atualiza o status da linha para
+`SUCCEEDED` ou `FAILED`. Jobs travados por reinicializações são liberados automaticamente após o TTL
+configurado em `targeting.queue.lock-ttl`.
+
+Para que o worker acesse a fila é obrigatório configurar as variáveis abaixo (todas com os mesmos valores
+utilizados pelo backend):
+
+- `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`
+- `TARGETING_QUEUE_ENABLED` (default `true`)
+- `TARGETING_QUEUE_BATCH_SIZE` (default `5`)
+- `TARGETING_QUEUE_POLL_INTERVAL` (ISO8601, default `PT30S`)
+- `TARGETING_QUEUE_LOCK_TTL` (default `PT2M`)
+
+Sem essas credenciais o worker não consegue resolver novos candidatos.
+
 ## Pixels e eventos
 
 A sincronização de pixels e o envio de eventos foram desativados por padrão

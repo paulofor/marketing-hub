@@ -3,12 +3,58 @@ import { Clock3, Search } from "lucide-react";
 import PageTitle from "../../components/PageTitle";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import { useTargetingRecentRequests } from "../../api/targeting/useTargetingRecentRequests";
-import type { TargetingRecentRequest } from "../../api/targeting/types";
+import type { TargetingRecentRequest, TargetingResolutionSummary } from "../../api/targeting/types";
 import "./TargetingRecentQueriesPage.css";
 
 function normalizeList(items?: string[] | null) {
   if (!Array.isArray(items)) return [];
   return items.filter((item) => item && item.trim().length > 0);
+}
+
+function ResolutionStatus({
+  summary,
+}: {
+  summary?: TargetingResolutionSummary | null;
+}) {
+  const badges = [
+    { label: "Pendentes", value: summary?.pending ?? 0, className: "text-bg-warning-subtle border-warning-subtle" },
+    { label: "Processando", value: summary?.processing ?? 0, className: "text-bg-info-subtle border-info-subtle" },
+    { label: "Completos", value: summary?.completed ?? 0, className: "text-bg-success-subtle border-success-subtle" },
+    { label: "Falhas", value: summary?.failed ?? 0, className: "text-bg-danger-subtle border-danger-subtle" },
+  ].filter((badge) => badge.value > 0);
+
+  const latestTimestamp = summary?.last_completed_at ?? summary?.last_attempt_at;
+
+  return (
+    <div className="targeting-recent-queries__resolution">
+      <div className="d-flex flex-wrap gap-2 mb-1">
+        {badges.length > 0 ? (
+          badges.map((badge) => (
+            <span
+              key={`${badge.label}-${badge.value}`}
+              className={`badge rounded-pill ${badge.className}`}
+            >
+              {badge.label}: {badge.value}
+            </span>
+          ))
+        ) : (
+          <span className="badge rounded-pill text-bg-light border">Fila vazia</span>
+        )}
+      </div>
+      <div className="text-body-secondary small">
+        {latestTimestamp
+          ? `Última execução: ${formatDateTime(latestTimestamp)}`
+          : summary
+            ? "Ainda não processado pelo Meta Ads."
+            : "Sem registros na fila."}
+      </div>
+      {summary?.last_error ? (
+        <div className="text-danger small text-truncate" title={summary.last_error}>
+          Último erro: {summary.last_error}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function formatDateTime(value?: string | null) {
@@ -39,6 +85,7 @@ export default function TargetingRecentQueriesPage() {
       ...item,
       seed_keywords: normalizeList(item.seed_keywords),
       meta_ads_keywords: normalizeList(item.meta_ads_keywords),
+      resolution: item.resolution ?? null,
     }));
   }, [data]);
 
@@ -84,7 +131,7 @@ export default function TargetingRecentQueriesPage() {
               <tr>
                 <th scope="col">Consulta</th>
                 <th scope="col">Seed keywords</th>
-                <th scope="col">Keywords recuperadas</th>
+                <th scope="col">Status no Meta Ads</th>
               </tr>
             </thead>
             <tbody>
@@ -134,6 +181,9 @@ export default function TargetingRecentQueriesPage() {
                         </span>
                       )}
                     </div>
+                  </td>
+                  <td>
+                    <ResolutionStatus summary={item.resolution} />
                   </td>
                 </tr>
               ))}

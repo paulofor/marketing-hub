@@ -6,6 +6,7 @@ import com.marketinghub.journey.model.JourneyPhase;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.journey.repository.JourneyTemplateRepository;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -34,7 +35,25 @@ public class JourneyTemplateService {
 
     @Transactional(readOnly = true)
     public Page<JourneyTemplate> list(Pageable pageable) {
-        return templateRepository.findAll(pageable);
+        Page<Long> pageIds = templateRepository.findPageIds(pageable);
+        if (pageIds.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, pageIds.getTotalElements());
+        }
+
+        List<JourneyTemplate> templates = templateRepository.findAllWithStepsByIdIn(pageIds.getContent());
+        Map<Long, JourneyTemplate> byId = new HashMap<>();
+        for (JourneyTemplate template : templates) {
+            if (template.getId() != null) {
+                byId.put(template.getId(), template);
+            }
+        }
+
+        List<JourneyTemplate> ordered = pageIds.getContent().stream()
+                .map(byId::get)
+                .filter(Objects::nonNull)
+                .toList();
+
+        return new PageImpl<>(ordered, pageable, pageIds.getTotalElements());
     }
 
     @Transactional(readOnly = true)

@@ -6,18 +6,18 @@ Este documento descreve, ponta a ponta, como a plataforma cria públicos de anú
 
 ```mermaid
 flowchart LR
-    A[Usuário no Frontend\n(TargetingRequestForm)] --> B[Backend\nPOST /api/targeting/requests]
-    B --> C[(targeting_request\nstatus=PENDING_AI)]
-    D[AI Worker Scheduler\n(a cada 2 min)] --> E[GET /api/internal/targeting/requests/pending]
-    E --> F[Gerar seeds com IA\n+ filtros de segurança]
-    F --> G[POST /api/internal/targeting/{requestId}/candidates]
-    G --> H[(targeting_candidate\nstatus=PENDING_FACEBOOK_MATCH)]
-    H --> I[(targeting_resolution_job\nstatus=PENDING)]
-    I --> J[Facebook Ads Worker\nQueue Processor]
-    J --> K[Meta Graph API\nTargeting Search]
-    J --> L[PATCH /api/internal/targeting/candidates/{candidateId}]
-    L --> M[(targeting_option + status do candidate)]
-    M --> N[Frontend\nGET /api/targeting/requests]
+    A["Usuário no Frontend<br/>(TargetingRequestForm)"] --> B["Backend<br/>POST /api/targeting/requests"]
+    B --> C[("targeting_request<br/>status=PENDING_AI")]
+    D["AI Worker Scheduler<br/>(a cada 2 min)"] --> E["GET /api/internal/targeting/requests/pending"]
+    E --> F["Gerar seeds com IA<br/>+ filtros de segurança"]
+    F --> G["POST /api/internal/targeting/{requestId}/candidates"]
+    G --> H[("targeting_candidate<br/>status=PENDING_FACEBOOK_MATCH")]
+    H --> I[("targeting_resolution_job<br/>status=PENDING")]
+    I --> J["Facebook Ads Worker<br/>Queue Processor"]
+    J --> K["Meta Graph API<br/>Targeting Search"]
+    J --> L["PATCH /api/internal/targeting/candidates/{candidateId}"]
+    L --> M[("targeting_option + status do candidate")]
+    M --> N["Frontend<br/>GET /api/targeting/requests"]
 ```
 
 ## 2) Entrada no Frontend (abertura da solicitação)

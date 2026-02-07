@@ -6,6 +6,8 @@ import com.marketinghub.targeting.TargetingCandidateStatus;
 import com.marketinghub.targeting.TargetingCandidateType;
 import com.marketinghub.targeting.TargetingOption;
 import com.marketinghub.targeting.TargetingOptionSource;
+import com.marketinghub.targeting.TargetingResolutionJob;
+import com.marketinghub.targeting.TargetingResolutionJobStatus;
 import com.marketinghub.targeting.TargetingRequest;
 import com.marketinghub.targeting.TargetingRequestOrigin;
 import com.marketinghub.hypothesis.Hypothesis;
@@ -22,6 +24,7 @@ import com.marketinghub.targeting.dto.TargetingRecentRequestDto;
 import com.marketinghub.targeting.dto.TargetingResolutionSummaryDto;
 import com.marketinghub.targeting.service.TargetingResolutionJobService.TargetingResolutionSummary;
 import com.marketinghub.targeting.repository.TargetingCandidateRepository;
+import com.marketinghub.targeting.repository.TargetingResolutionJobRepository;
 import com.marketinghub.targeting.repository.TargetingRequestRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
@@ -34,6 +37,7 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.text.Normalizer;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -59,17 +63,20 @@ public class TargetingRequestService {
 
     private final TargetingRequestRepository requestRepository;
     private final TargetingCandidateRepository candidateRepository;
+    private final TargetingResolutionJobRepository resolutionJobRepository;
     private final TargetingResolutionJobService resolutionJobService;
     private final MarketNicheRepository nicheRepository;
     private final HypothesisRepository hypothesisRepository;
 
     public TargetingRequestService(TargetingRequestRepository requestRepository,
                                    TargetingCandidateRepository candidateRepository,
+                                   TargetingResolutionJobRepository resolutionJobRepository,
                                    TargetingResolutionJobService resolutionJobService,
                                    MarketNicheRepository nicheRepository,
                                    HypothesisRepository hypothesisRepository) {
         this.requestRepository = requestRepository;
         this.candidateRepository = candidateRepository;
+        this.resolutionJobRepository = resolutionJobRepository;
         this.resolutionJobService = resolutionJobService;
         this.nicheRepository = nicheRepository;
         this.hypothesisRepository = hypothesisRepository;
@@ -258,8 +265,35 @@ public class TargetingRequestService {
                 }
             }
         }
-        candidateRepository.save(candidate);
+        TargetingCandidate savedCandidate = candidateRepository.save(candidate);
+        updateResolutionJob(candidateId, payload, savedCandidate);
         log.info("Updated candidate {} with status {}", candidateId, candidate.getStatus());
+    }
+
+    private void updateResolutionJob(Long candidateId,
+                                     TargetingCandidateResolutionUpdateRequest payload,
+                                     TargetingCandidate candidate) {
+        TargetingResolutionJob job = resolutionJobRepository.findByCandidateId(candidateId)
+                .orElseGet(() -> TargetingResolutionJob.builder()
+                        .candidate(candidate)
+                        .request(candidate.getRequest())
+                        .build());
+        Instant now = Instant.now();
+        if (job.getStartedAt() == null) {
+            job.setStartedAt(now);
+        }
+        job.setFinishedAt(now);
+        job.setResultCount(payload.getOptions() != null ? payload.getOptions().size() : 0);
+
+        if (payload.getStatus() == TargetingCandidateStatus.VALIDATED
+                || payload.getStatus() == TargetingCandidateStatus.NO_MATCH) {
+            job.setStatus(TargetingResolutionJobStatus.SUCCEEDED);
+            job.setLastError(null);
+        } else {
+            job.setStatus(TargetingResolutionJobStatus.FAILED);
+            job.setLastError(normalize(payload.getRejectionReason()));
+        }
+        resolutionJobRepository.save(job);
     }
 
     public int etaSeconds() {

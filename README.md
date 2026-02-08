@@ -2,6 +2,13 @@
 This project manages ads, media assets, course plans and now products built with marketing principles. A new **Teste de Nichos** module allows running advertising experiments with creatives and audiences.
 Recursos de IA podem ser cadastrados informando em qual fase do marketing atuam.
 
+## Pull Request de teste
+
+Este PR ajusta apenas a documentação para confirmar que o fluxo de acesso ao
+GitHub (autenticação, push e abertura de PR) está operando corretamente no
+ambiente atual. Nenhuma funcionalidade é alterada; o objetivo é gerar um
+histórico simples que possa ser referenciado ao validar permissões ou tokens.
+
 ```bash
 docker compose up -d      # start MySQL
 cd backend/ads-service && mvn spring-boot:run

@@ -1,0 +1,77 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2034-03-15-experiment-adset-playbook
+      author: repo
+      preConditions:
+        onFail: MARK_RAN
+        and:
+          - dbms:
+              type: mysql
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE experiment_adset_workflow (
+                  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                  experiment_id BIGINT NOT NULL,
+                  status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+                  seed_keyword VARCHAR(255),
+                  seed_locale VARCHAR(10),
+                  seed_interest_id VARCHAR(64),
+                  seed_interest_name VARCHAR(255),
+                  seed_audience_lower BIGINT,
+                  seed_audience_upper BIGINT,
+                  ai_notes LONGTEXT,
+                  last_error LONGTEXT,
+                  completed_at DATETIME(6),
+                  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+                  UNIQUE KEY uq_experiment_adset_workflow_experiment (experiment_id),
+                  CONSTRAINT fk_experiment_adset_workflow_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              CREATE TABLE experiment_adset_job (
+                  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                  workflow_id BIGINT NOT NULL,
+                  type VARCHAR(64) NOT NULL,
+                  worker VARCHAR(32) NOT NULL,
+                  status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+                  resource_id BIGINT,
+                  attempt_count INT NOT NULL DEFAULT 0,
+                  payload LONGTEXT,
+                  result_payload LONGTEXT,
+                  error_message LONGTEXT,
+                  locked_by VARCHAR(191),
+                  locked_at DATETIME(6),
+                  started_at DATETIME(6),
+                  finished_at DATETIME(6),
+                  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+                  CONSTRAINT fk_experiment_adset_job_workflow FOREIGN KEY (workflow_id) REFERENCES experiment_adset_workflow(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              CREATE INDEX idx_experiment_adset_job_status_worker ON experiment_adset_job (status, worker);
+              CREATE INDEX idx_experiment_adset_job_workflow ON experiment_adset_job (workflow_id);
+              CREATE INDEX idx_experiment_adset_job_locked ON experiment_adset_job (locked_at);
+
+              CREATE TABLE experiment_adset_spec (
+                  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                  workflow_id BIGINT NOT NULL,
+                  slot VARCHAR(32) NOT NULL,
+                  label VARCHAR(255),
+                  age_min INT,
+                  age_max INT,
+                  targeting_spec LONGTEXT,
+                  validation_status VARCHAR(32),
+                  validation_response LONGTEXT,
+                  reach_status VARCHAR(32),
+                  reach_response LONGTEXT,
+                  reach_lower_bound BIGINT,
+                  reach_upper_bound BIGINT,
+                  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+                  UNIQUE KEY uq_experiment_adset_spec_slot (workflow_id, slot),
+                  CONSTRAINT fk_experiment_adset_spec_workflow FOREIGN KEY (workflow_id) REFERENCES experiment_adset_workflow(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -1333,6 +1333,11 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         int limit
     ) {}
 
+    public record TargetingValidationRequest(String adAccountId, JsonNode targetingSpec) {}
+
+    public record ReachEstimateRequest(String adAccountId, JsonNode targetingSpec) {}
+
+
     public enum TargetingSearchType {
         AD_INTEREST("adinterest"),
         AD_BEHAVIOR("adbehavior"),
@@ -1346,6 +1351,46 @@ private FacebookInterest searchInterest(String interestName, String locale) {
 
         public String graphType() {
             return graphType;
+        }
+    }
+
+    public JsonNode validateTargetingSpec(TargetingValidationRequest request) {
+        if (request == null || !hasText(request.adAccountId()) || request.targetingSpec() == null) {
+            throw new IllegalArgumentException("targetingSpec e adAccountId são obrigatórios");
+        }
+        String normalizedAccount = normalizeAdAccountId(request.adAccountId());
+        try {
+            String targetingSpec = objectMapper.writeValueAsString(request.targetingSpec());
+            String path = buildVersionedPath("/" + normalizedAccount + "/targetingvalidation");
+            var builder = org.springframework.web.util.UriComponentsBuilder.fromPath(path)
+                    .queryParam("targeting_spec", targetingSpec)
+                    .queryParam("access_token", requireAccessToken());
+            FacebookApiResponse response = executeGet(builder.build(false).toUriString());
+            return response.body();
+        } catch (FacebookAccessTokenExpiredException | FacebookPermissionException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new RuntimeException("Falha ao validar targeting spec: " + ex.getMessage(), ex);
+        }
+    }
+
+    public JsonNode estimateReach(ReachEstimateRequest request) {
+        if (request == null || !hasText(request.adAccountId()) || request.targetingSpec() == null) {
+            throw new IllegalArgumentException("targetingSpec e adAccountId são obrigatórios");
+        }
+        String normalizedAccount = normalizeAdAccountId(request.adAccountId());
+        try {
+            String targetingSpec = objectMapper.writeValueAsString(request.targetingSpec());
+            String path = buildVersionedPath("/" + normalizedAccount + "/reachestimate");
+            var builder = org.springframework.web.util.UriComponentsBuilder.fromPath(path)
+                    .queryParam("targeting_spec", targetingSpec)
+                    .queryParam("access_token", requireAccessToken());
+            FacebookApiResponse response = executeGet(builder.build(false).toUriString());
+            return response.body();
+        } catch (FacebookAccessTokenExpiredException | FacebookPermissionException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new RuntimeException("Falha ao estimar alcance: " + ex.getMessage(), ex);
         }
     }
 

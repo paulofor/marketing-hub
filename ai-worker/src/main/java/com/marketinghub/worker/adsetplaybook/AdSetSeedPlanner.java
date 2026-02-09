@@ -56,6 +56,11 @@ public class AdSetSeedPlanner {
     }
 
     private String chooseKeyword(JsonNode payload) {
+        String nicheName = text(payload, "nicheName", null);
+        if (StringUtils.hasText(nicheName)) {
+            return nicheName.trim();
+        }
+
         Set<String> tokens = new LinkedHashSet<>();
         for (String field : Arrays.asList("experimentName", "hypothesisTitle", "nicheName", "experimentHypothesis")) {
             String value = text(payload, field, null);

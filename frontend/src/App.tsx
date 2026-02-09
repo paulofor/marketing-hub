@@ -39,6 +39,7 @@ import ExperimentDetailPage from "./pages/experiment/ExperimentDetailPage";
 import EditExperimentPage from "./pages/experiment/EditExperimentPage";
 import InstantFormDetailPage from "./pages/experiment/InstantFormDetailPage";
 import ExperimentEmailDetailPage from "./pages/experiment/ExperimentEmailDetailPage";
+import ExperimentAdSetWorkflowPage from "./pages/experiment/ExperimentAdSetWorkflowPage";
 import NicheDetailPage from "./pages/niche/NicheDetailPage";
 import HypothesisDetailPage from "./pages/hypothesis/HypothesisDetailPage";
 import HypothesesPage from "./pages/hypothesis/HypothesesPage";
@@ -170,6 +171,7 @@ export default function App() {
                 <Route path="edit" element={<EditExperimentPage />} />
                 <Route path="instant-forms/:instantFormId" element={<InstantFormDetailPage />} />
                 <Route path="emails/:emailStepId" element={<ExperimentEmailDetailPage />} />
+                <Route path="adset-workflow" element={<ExperimentAdSetWorkflowPage />} />
               </Route>
               <Route path="/hypotheses" element={<HypothesisListPage />} />
               <Route path="/hypotheses/board" element={<HypothesesPage />} />

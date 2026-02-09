@@ -457,3 +457,6 @@ databaseChangeLog:
   - include:
       file: V2034_02_24__create_targeting_resolution_job_queue.yaml
       relativeToChangelogFile: true
+  - include:
+      file: V2034_03_15__experiment_adset_playbook.yaml
+      relativeToChangelogFile: true

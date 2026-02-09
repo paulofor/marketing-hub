@@ -424,6 +424,9 @@ export default function ExperimentDetailPage() {
           <Link to="edit" className="btn btn-outline-secondary me-2">
             Editar
           </Link>
+          <Link to="adset-workflow" className="btn btn-outline-primary me-2">
+            Playbook de Ad Sets
+          </Link>
           <span className="badge bg-secondary">{data.status}</span>
         </div>
       </div>

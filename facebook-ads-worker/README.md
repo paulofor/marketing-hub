@@ -22,12 +22,22 @@ Para que o worker acesse a fila é obrigatório configurar as variáveis abaixo 
 utilizados pelo backend):
 
 - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`
+- Pool JDBC (opcional): `DB_MAX_POOL_SIZE`, `DB_MIN_IDLE`, `DB_CONNECTION_TIMEOUT`,
+  `DB_VALIDATION_TIMEOUT`, `DB_IDLE_TIMEOUT`, `DB_MAX_LIFETIME`, `DB_KEEPALIVE_TIME`
 - `TARGETING_QUEUE_ENABLED` (default `true`)
 - `TARGETING_QUEUE_BATCH_SIZE` (default `5`)
 - `TARGETING_QUEUE_POLL_INTERVAL` (ISO8601, default `PT30S`)
 - `TARGETING_QUEUE_LOCK_TTL` (default `PT2M`)
 
 Sem essas credenciais o worker não consegue resolver novos candidatos.
+
+
+### Padrão de banco alinhado com o backend
+
+Para reduzir divergência operacional entre serviços, o `facebook-ads-worker` usa o
+mesmo padrão de configuração do `backend/ads-service` para host, usuário e parâmetros
+do pool Hikari. Em ambientes containerizados, evite `localhost` para `DB_HOST`, pois
+o valor aponta para o próprio container do worker e pode causar `Connection refused`.
 
 ## Pixels e eventos
 

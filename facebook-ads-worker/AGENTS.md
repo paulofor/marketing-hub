@@ -16,6 +16,7 @@
 - Identificadores de instant form no formato `ai_form_*` devem ser normalizados para `form_*` antes de chamar a Graph API.
 - Não mantenha segredos no repositório; use variáveis de ambiente ou GitHub Secrets.
 - Endpoints do backend devem ser acessados com o prefixo configurado em `backend.api-prefix` (default `/api`).
+- Alinhe a configuração de banco deste módulo com o padrão do `backend/ads-service` (host/usuário/pool Hikari) para evitar divergência entre ambientes.
 - Sempre que chamar o backend registre logs com **URL completa**, parâmetros, payload enviado (quando existir) e a resposta recebida
   para facilitar troubleshooting.
 - Ao registrar payloads ou respostas estruturadas em logs utilize `JsonLogFormatter.wrap(...)` para serializar objetos como JSON

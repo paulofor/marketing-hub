@@ -95,3 +95,19 @@
     max-width: 180px;
   }
 }
+
+.page-title-wrapper {
+  margin-bottom: clamp(1.5rem, 1.2rem + 1vw, 2.25rem);
+}
+
+.page-title-wrapper .page-title {
+  margin-bottom: 0;
+}
+
+.page-title-subtitle {
+  margin: 0.65rem 0 0;
+  max-width: 64ch;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: clamp(0.95rem, 0.9rem + 0.25vw, 1.05rem);
+  line-height: 1.5;
+}

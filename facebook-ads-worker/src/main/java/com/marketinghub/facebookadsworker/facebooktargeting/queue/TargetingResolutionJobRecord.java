@@ -12,6 +12,7 @@ import java.util.UUID;
 public record TargetingResolutionJobRecord(
     long jobId,
     UUID requestId,
+    String requestAdAccountId,
     String requestLocale,
     String requestCountry,
     Long candidateId,

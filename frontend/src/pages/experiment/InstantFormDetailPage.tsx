@@ -139,6 +139,9 @@ export default function InstantFormDetailPage() {
 
   const approvalBadgeClass = instantForm.approved ? "text-bg-success" : "text-bg-secondary";
   const approvalLabel = instantForm.approved ? "Aprovado" : "Pendente";
+  const facebookPageUrl = instantForm.facebookPageExternalId
+    ? `https://www.facebook.com/${instantForm.facebookPageExternalId}`
+    : null;
 
   const renderTargetingGroup = (
     label: string,
@@ -232,6 +235,16 @@ export default function InstantFormDetailPage() {
                 <dd className="col-sm-7">
                   <div className="fw-semibold">{instantForm.facebookPageName}</div>
                   <div className="text-muted small">{instantForm.facebookPageExternalId}</div>
+                  {facebookPageUrl ? (
+                    <a
+                      href={facebookPageUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="small text-break"
+                    >
+                      {facebookPageUrl}
+                    </a>
+                  ) : null}
                 </dd>
                 <dt className="col-sm-5">ID do formulário</dt>
                 <dd className="col-sm-7">{instantForm.facebookFormId ?? "—"}</dd>
@@ -395,6 +408,14 @@ export default function InstantFormDetailPage() {
                       <>
                         <div className="fw-semibold">{facebookPayload.experiment.facebookPage.name}</div>
                         <div className="text-muted">{facebookPayload.experiment.facebookPage.pageId}</div>
+                        <a
+                          href={`https://www.facebook.com/${facebookPayload.experiment.facebookPage.pageId}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="small text-break"
+                        >
+                          {`https://www.facebook.com/${facebookPayload.experiment.facebookPage.pageId}`}
+                        </a>
                       </>
                     ) : (
                       <span className="text-muted">—</span>

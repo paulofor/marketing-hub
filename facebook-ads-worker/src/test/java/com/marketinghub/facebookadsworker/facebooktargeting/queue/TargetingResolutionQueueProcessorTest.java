@@ -60,6 +60,7 @@ class TargetingResolutionQueueProcessorTest {
         verify(jobRepository).markCompleted(job.jobId(), 2);
         ArgumentCaptor<TargetingResolutionRequest> captor = ArgumentCaptor.forClass(TargetingResolutionRequest.class);
         verify(resolverService).resolve(any(UUID.class), captor.capture());
+        assertThat(captor.getValue().getAdAccountId()).isEqualTo("act_987654321");
         assertThat(captor.getValue().getCandidates()).hasSize(1);
         assertThat(captor.getValue().getCandidates().get(0).seed()).isEqualTo("Pilates");
     }
@@ -88,6 +89,7 @@ class TargetingResolutionQueueProcessorTest {
         return new TargetingResolutionJobRecord(
             10L,
             UUID.randomUUID(),
+            "act_987654321",
             "pt_BR",
             "BR",
             55L,

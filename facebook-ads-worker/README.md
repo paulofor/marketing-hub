@@ -32,6 +32,13 @@ utilizados pelo backend):
 Sem essas credenciais o worker não consegue resolver novos candidatos.
 
 
+Também no fluxo de fila (`targeting_resolution_job`), o worker resolve automaticamente o
+`adAccountId` da conta de Facebook associada ao experimento (`ad_set -> experiment -> fb_page -> fb_account`)
+e envia esse valor no `TargetingResolutionRequest`. Com isso, as chamadas para
+`/{adAccountId}/targetingsearch` usam a conta correta do experimento em vez de depender
+exclusivamente do fallback global `targeting.resolver.default-ad-account-id`.
+
+
 ### Padrão de banco alinhado com o backend
 
 Para reduzir divergência operacional entre serviços, o `facebook-ads-worker` usa o

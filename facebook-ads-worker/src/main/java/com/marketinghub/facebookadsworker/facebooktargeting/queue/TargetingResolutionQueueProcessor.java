@@ -69,6 +69,7 @@ public class TargetingResolutionQueueProcessor {
 
     private TargetingResolutionRequest buildRequest(TargetingResolutionJobRecord job) {
         TargetingResolutionRequest request = new TargetingResolutionRequest();
+        request.setAdAccountId(job.requestAdAccountId());
         request.setLocale(job.requestLocale());
         request.setCountry(job.requestCountry());
         request.setCandidates(List.of(job.toPayload()));

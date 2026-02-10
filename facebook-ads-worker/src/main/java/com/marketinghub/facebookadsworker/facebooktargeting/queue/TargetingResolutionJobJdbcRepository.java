@@ -146,6 +146,7 @@ public class TargetingResolutionJobJdbcRepository implements TargetingResolution
             """
             SELECT j.id             AS job_id,
                    j.request_id     AS request_id,
+                   fa.ad_account_id AS request_ad_account_id,
                    r.locale         AS request_locale,
                    r.country        AS request_country,
                    c.id             AS candidate_id,
@@ -161,6 +162,10 @@ public class TargetingResolutionJobJdbcRepository implements TargetingResolution
               FROM targeting_resolution_job j
               JOIN targeting_candidate c ON c.id = j.candidate_id
               JOIN targeting_request r ON r.id = j.request_id
+         LEFT JOIN ad_set a ON a.targeting_request_id = r.id
+         LEFT JOIN experiment e ON e.id = a.experiment_id
+         LEFT JOIN fb_page fp ON fp.id = e.facebook_page_id
+         LEFT JOIN fb_account fa ON fa.id = fp.account_id
              WHERE j.id IN (:jobIds)
             """,
             params
@@ -174,6 +179,7 @@ public class TargetingResolutionJobJdbcRepository implements TargetingResolution
             TargetingResolutionJobRecord record = new TargetingResolutionJobRecord(
                 jobId,
                 requestId,
+                rowSet.getString("request_ad_account_id"),
                 rowSet.getString("request_locale"),
                 rowSet.getString("request_country"),
                 rowSet.getLong("candidate_id"),
@@ -200,6 +206,7 @@ public class TargetingResolutionJobJdbcRepository implements TargetingResolution
                 .map(record -> new TargetingResolutionJobRecord(
                         record.jobId(),
                         record.requestId(),
+                        record.requestAdAccountId(),
                         record.requestLocale(),
                         record.requestCountry(),
                         record.candidateId(),

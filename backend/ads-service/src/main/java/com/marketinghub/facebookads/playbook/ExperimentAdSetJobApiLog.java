@@ -43,7 +43,7 @@ public class ExperimentAdSetJobApiLog {
     @Column(length = 32, nullable = false)
     private String provider;
 
-    @Column(length = 255)
+    @Column(name = "endpoint", columnDefinition = "LONGTEXT")
     private String endpoint;
 
     @Column(name = "http_method", length = 16)

@@ -38,7 +38,7 @@ function buildCurlCommand(
   ];
   if (payload) {
     commandParts.push(
-      `--data-raw '${escapeShellSingleQuotes(formatJson(payload))}'`,
+      `--data-raw '${escapeShellSingleQuotes(payload)}'`,
     );
   }
   return commandParts.join(" \\n");

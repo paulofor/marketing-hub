@@ -1,5 +1,6 @@
 package com.marketinghub.facebookadsworker;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -59,6 +60,7 @@ public class FacebookAdsService {
     private final ConcurrentMap<TargetingCategoryCacheKey, String> targetingCategoryIdCache;
     private final Duration targetingSearchCacheTtl;
     private final ConcurrentMap<TargetingSearchCacheKey, CachedTargetingSearchResults> targetingSearchCache;
+    private final ThreadLocal<FacebookApiCallDebugInfo> lastApiCallDebugInfo = new ThreadLocal<>();
     private static final Set<String> UNSUPPORTED_TARGETING_FIELDS = Set.of(
         "detailed_targeting_description"
     );
@@ -85,6 +87,18 @@ public class FacebookAdsService {
 
     public String getCurrentAccessToken() {
         return accessToken.get();
+    }
+
+    public void clearLastApiCallDebugInfo() {
+        lastApiCallDebugInfo.remove();
+    }
+
+    public FacebookApiCallDebugInfo consumeLastApiCallDebugInfo() {
+        FacebookApiCallDebugInfo info = lastApiCallDebugInfo.get();
+        if (info != null) {
+            lastApiCallDebugInfo.remove();
+        }
+        return info;
     }
 
     private String requireAccessToken() {
@@ -1708,6 +1722,7 @@ private FacebookInterest searchInterest(String interestName, String locale) {
     }
 
     private JsonNode executePost(String path, Map<String, Object> body) {
+        Instant startedAt = Instant.now();
         Map<String, Object> sanitizedBody = sanitizeBody(body);
         String maskedPath = maskAccessTokenInPath(path);
         LOGGER.info(
@@ -1733,6 +1748,16 @@ private FacebookInterest searchInterest(String interestName, String locale) {
             FacebookApiResponse nonNullResponse =
                 apiResponse != null ? apiResponse : new FacebookApiResponse(null, HttpHeaders.EMPTY, objectMapper.nullNode());
             logSuccessfulResponse("POST", maskedPath, nonNullResponse);
+            recordApiCallDebugInfo(
+                "POST",
+                path,
+                toJsonString(body),
+                toJsonString(nonNullResponse.body()),
+                nonNullResponse.statusCode() != null ? nonNullResponse.statusCode().value() : null,
+                null,
+                startedAt,
+                Instant.now()
+            );
             return nonNullResponse.body();
         } catch (WebClientResponseException ex) {
             String responseBody = ex.getResponseBodyAsString();
@@ -1745,6 +1770,16 @@ private FacebookInterest searchInterest(String interestName, String locale) {
                 errorDetails,
                 JsonLogFormatter.wrap(objectMapper, sanitizeHeaders(ex.getHeaders())),
                 ex
+            );
+            recordApiCallDebugInfo(
+                "POST",
+                path,
+                toJsonString(body),
+                responseBody,
+                ex.getRawStatusCode(),
+                ex.getMessage(),
+                startedAt,
+                Instant.now()
             );
             if (isAccessTokenExpired(errorDetails)) {
                 throw new FacebookAccessTokenExpiredException(resolveAccessTokenExpiredMessage(errorDetails), errorDetails, ex);
@@ -1760,11 +1795,22 @@ private FacebookInterest searchInterest(String interestName, String locale) {
                 ex.getMessage(),
                 ex
             );
+            recordApiCallDebugInfo(
+                "POST",
+                path,
+                toJsonString(body),
+                null,
+                null,
+                ex.getMessage(),
+                startedAt,
+                Instant.now()
+            );
             throw ex;
         }
     }
 
     private FacebookApiResponse executeGet(String path) {
+        Instant startedAt = Instant.now();
         String maskedPath = maskAccessTokenInPath(path);
         LOGGER.info("Sending GET request to Facebook API: path==>{}", maskedPath);
         try {
@@ -1784,6 +1830,16 @@ private FacebookInterest searchInterest(String interestName, String locale) {
             FacebookApiResponse nonNullResponse =
                 apiResponse != null ? apiResponse : new FacebookApiResponse(null, HttpHeaders.EMPTY, objectMapper.nullNode());
             logSuccessfulResponse("GET", maskedPath, nonNullResponse);
+            recordApiCallDebugInfo(
+                "GET",
+                path,
+                null,
+                toJsonString(nonNullResponse.body()),
+                nonNullResponse.statusCode() != null ? nonNullResponse.statusCode().value() : null,
+                null,
+                startedAt,
+                Instant.now()
+            );
             return nonNullResponse;
         } catch (WebClientResponseException ex) {
             String responseBody = ex.getResponseBodyAsString();
@@ -1795,6 +1851,16 @@ private FacebookInterest searchInterest(String interestName, String locale) {
                 maskAccessToken(responseBody),
                 errorDetails,
                 ex
+            );
+            recordApiCallDebugInfo(
+                "GET",
+                path,
+                null,
+                responseBody,
+                ex.getRawStatusCode(),
+                ex.getMessage(),
+                startedAt,
+                Instant.now()
             );
             if (isAccessTokenExpired(errorDetails)) {
                 throw new FacebookAccessTokenExpiredException(resolveAccessTokenExpiredMessage(errorDetails), errorDetails, ex);
@@ -1809,6 +1875,16 @@ private FacebookInterest searchInterest(String interestName, String locale) {
                 maskedPath,
                 ex.getMessage(),
                 ex
+            );
+            recordApiCallDebugInfo(
+                "GET",
+                path,
+                null,
+                null,
+                null,
+                ex.getMessage(),
+                startedAt,
+                Instant.now()
             );
             throw ex;
         }
@@ -2162,7 +2238,53 @@ private FacebookInterest searchInterest(String interestName, String locale) {
 
     public record TokenRenewalResponse(String accessToken, long expiresInSeconds) {}
 
+    private void recordApiCallDebugInfo(String method,
+                                        String path,
+                                        String requestBody,
+                                        String responseBody,
+                                        Integer statusCode,
+                                        String errorMessage,
+                                        Instant requestedAt,
+                                        Instant respondedAt) {
+        lastApiCallDebugInfo.set(new FacebookApiCallDebugInfo(
+            method,
+            path,
+            requestBody,
+            responseBody,
+            statusCode,
+            errorMessage,
+            requestedAt,
+            respondedAt
+        ));
+    }
+
+    private String toJsonString(Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            if (value instanceof String str) {
+                return str;
+            }
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException ex) {
+            LOGGER.warn("Failed to serialize value for Facebook API debug info: {}", ex.getMessage());
+            return null;
+        }
+    }
+
     private record FacebookApiResponse(HttpStatusCode statusCode, HttpHeaders headers, JsonNode body) {}
+
+    public record FacebookApiCallDebugInfo(
+            String httpMethod,
+            String endpoint,
+            String requestBody,
+            String responseBody,
+            Integer statusCode,
+            String errorMessage,
+            Instant requestedAt,
+            Instant respondedAt
+    ) {}
 
     public static class TargetingNormalizationException extends RuntimeException {
         private final List<String> errors;

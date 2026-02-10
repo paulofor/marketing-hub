@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2034-11-05-widen-experiment-adset-job-api-log-endpoint
+      author: ai
+      preConditions:
+        onFail: MARK_RAN
+        and:
+          - dbms:
+              type: mysql
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment_adset_job_api_log
+                MODIFY endpoint LONGTEXT NULL;

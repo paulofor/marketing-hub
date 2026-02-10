@@ -464,3 +464,7 @@ databaseChangeLog:
   - include:
       file: V2034_04_20__experiment_adset_job_logs.yaml
       relativeToChangelogFile: true
+  - include:
+      file: V2034_11_05__widen_adset_job_api_log_endpoint.yaml
+      relativeToChangelogFile: true
+

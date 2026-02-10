@@ -1,5 +1,6 @@
 package com.marketinghub.facebookadsworker.facebookplaybook;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -304,34 +305,64 @@ public class ExperimentAdSetPlaybookService {
                                      Supplier<T> executor,
                                      Function<T, JsonNode> responseMapper) {
         Instant startedAt = Instant.now();
+        facebookAdsService.clearLastApiCallDebugInfo();
         try {
             T response = executor.get();
             JsonNode responsePayload = responseMapper != null ? responseMapper.apply(response) : null;
-            logs.add(new ApiCallLog(
-                    "FACEBOOK",
-                    endpoint,
-                    httpMethod,
-                    toJsonNode(requestPayload),
-                    responsePayload,
-                    null,
-                    null,
-                    startedAt,
-                    Instant.now()
-            ));
+            appendApiCallLog(logs, endpoint, httpMethod, requestPayload, responsePayload, null, null, startedAt);
             return response;
         } catch (RuntimeException ex) {
+            appendApiCallLog(logs, endpoint, httpMethod, requestPayload, null, null, ex.getMessage(), startedAt);
+            throw ex;
+        }
+    }
+
+    private void appendApiCallLog(List<ApiCallLog> logs,
+                                  String fallbackEndpoint,
+                                  String httpMethod,
+                                  Object requestPayload,
+                                  JsonNode fallbackResponsePayload,
+                                  Integer fallbackStatusCode,
+                                  String errorMessage,
+                                  Instant startedAt) {
+        FacebookAdsService.FacebookApiCallDebugInfo debugInfo = facebookAdsService.consumeLastApiCallDebugInfo();
+        if (debugInfo != null) {
             logs.add(new ApiCallLog(
                     "FACEBOOK",
-                    endpoint,
-                    httpMethod,
-                    toJsonNode(requestPayload),
-                    null,
-                    null,
-                    ex.getMessage(),
-                    startedAt,
-                    Instant.now()
+                    debugInfo.endpoint(),
+                    debugInfo.httpMethod(),
+                    parseJsonPayload(debugInfo.requestBody()),
+                    parseJsonPayload(debugInfo.responseBody()),
+                    debugInfo.statusCode(),
+                    debugInfo.errorMessage(),
+                    debugInfo.requestedAt(),
+                    debugInfo.respondedAt()
             ));
-            throw ex;
+            return;
+        }
+        logs.add(new ApiCallLog(
+                "FACEBOOK",
+                fallbackEndpoint,
+                httpMethod,
+                toJsonNode(requestPayload),
+                fallbackResponsePayload,
+                fallbackStatusCode,
+                errorMessage,
+                startedAt,
+                Instant.now()
+        ));
+    }
+
+    private JsonNode parseJsonPayload(String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return null;
+        }
+        try {
+            return objectMapper.readTree(raw);
+        } catch (JsonProcessingException ex) {
+            ObjectNode node = objectMapper.createObjectNode();
+            node.put("raw", raw);
+            return node;
         }
     }
 

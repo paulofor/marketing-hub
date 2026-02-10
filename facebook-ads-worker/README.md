@@ -272,7 +272,7 @@ O backend mantém uma lista de interesses do Facebook que ainda não possuem o
 processo periódico (`FacebookInterestValidationScheduler`) que consulta o
 endpoint `/api/facebook-interests/pending` e valida apenas os interesses nunca
 pesquisados. Para cada entrada encontrada o worker pesquisa o interesse na
-Graph API (`/search?type=adinterest&q={nome}`):
+Graph API (`/act_{adAccountId}/targetingsearch?type=adinterest&q={nome}`):
 
 1. Quando a Meta devolve um resultado, o worker associa o `facebookInterestId`
    e, se necessário, atualiza o nome para o rótulo retornado pela API

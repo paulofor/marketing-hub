@@ -113,9 +113,13 @@ public class ExperimentAdSetPlaybookService {
         ObjectNode result = objectMapper.createObjectNode();
         result.put("interestId", first.id());
         result.put("interestName", first.name());
-        if (first.audienceSize() != null) {
-            result.put("audienceLowerBound", first.audienceSize());
-            result.put("audienceUpperBound", first.audienceSize());
+        if (first.audienceSizeLowerBound() != null) {
+            result.put("audienceLowerBound", first.audienceSizeLowerBound());
+        }
+        if (first.audienceSizeUpperBound() != null) {
+            result.put("audienceUpperBound", first.audienceSizeUpperBound());
+        } else if (first.audienceSizeLowerBound() != null) {
+            result.put("audienceUpperBound", first.audienceSizeLowerBound());
         }
         if (first.path() != null) {
             ArrayNode path = objectMapper.createArrayNode();

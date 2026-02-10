@@ -34,6 +34,7 @@ class TargetingResolverServiceTest {
     @BeforeEach
     void setUp() {
         TargetingResolverProperties properties = new TargetingResolverProperties();
+        properties.setDefaultAdAccountId("act_1234567890");
         properties.setSuggestionsEnabled(false);
         properties.setMaxSeedVariants(1);
         service = new TargetingResolverService(facebookAdsService, backendClient, properties);
@@ -42,7 +43,7 @@ class TargetingResolverServiceTest {
     @Test
     void resolveCandidateWithMatchReportsValidatedOptions() {
         FacebookAdsService.FacebookTargetingSearchResult result =
-            new FacebookAdsService.FacebookTargetingSearchResult("600313", "Pilates", 1_200_000L, List.of("Interesses", "Fitness"));
+            new FacebookAdsService.FacebookTargetingSearchResult("600313", "Pilates", 800_000L, 1_200_000L, List.of("Interesses", "Fitness"));
         when(facebookAdsService.searchTargetingOptions(any())).thenReturn(List.of(result));
 
         TargetingResolutionRequest request = new TargetingResolutionRequest();

@@ -66,6 +66,7 @@ class FacebookCampaignServiceTest {
         webClientBuilder = WebClient.builder()
             .clientConnector(new ReactorClientHttpConnector(httpClient));
         TargetingResolverProperties resolverProperties = new TargetingResolverProperties();
+        resolverProperties.setDefaultAdAccountId("act_1234567890");
         adsService = new FacebookAdsService(
             webClientBuilder,
             facebookUrl,
@@ -258,9 +259,9 @@ class FacebookCampaignServiceTest {
         assertEquals("/v23.0/act_1/campaigns", campaignRequest.getPath());
 
         RecordedRequest firstInterestRequest = takeFacebookRequest("facebook request");
-        assertTrue(firstInterestRequest.getPath().contains("/search?type=adinterest"));
+        assertTrue(firstInterestRequest.getPath().contains("/act_1234567890/targetingsearch?type=adinterest"));
         RecordedRequest secondInterestRequest = takeFacebookRequest("facebook request");
-        assertTrue(secondInterestRequest.getPath().contains("/search?type=adinterest"));
+        assertTrue(secondInterestRequest.getPath().contains("/act_1234567890/targetingsearch?type=adinterest"));
         RecordedRequest jobTitleRequest = takeFacebookRequest("facebook request");
         assertTrue(jobTitleRequest.getPath().contains("class=job_title"));
         RecordedRequest firstBehaviorRequest = takeFacebookRequest("facebook request");

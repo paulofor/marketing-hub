@@ -37,6 +37,7 @@ class FacebookInterestValidationServiceTest {
         objectMapper = new ObjectMapper();
 
         TargetingResolverProperties resolverProperties = new TargetingResolverProperties();
+        resolverProperties.setDefaultAdAccountId("act_1234567890");
         FacebookAdsService facebookAdsService = new FacebookAdsService(
             WebClient.builder(),
             facebook.url("/").toString(),
@@ -88,7 +89,7 @@ class FacebookInterestValidationServiceTest {
 
         RecordedRequest searchRequest = facebook.takeRequest(5, TimeUnit.SECONDS);
         assertNotNull(searchRequest);
-        assertEquals("/v23.0/search", searchRequest.getRequestUrl().encodedPath());
+        assertEquals("/v23.0/act_1234567890/targetingsearch", searchRequest.getRequestUrl().encodedPath());
         assertEquals("adinterest", searchRequest.getRequestUrl().queryParameter("type"));
         assertEquals("Pilates", searchRequest.getRequestUrl().queryParameter("q"));
         assertEquals("pt_BR", searchRequest.getRequestUrl().queryParameter("locale"));
@@ -123,7 +124,7 @@ class FacebookInterestValidationServiceTest {
         for (String locale : locales) {
             RecordedRequest searchRequest = facebook.takeRequest(5, TimeUnit.SECONDS);
             assertNotNull(searchRequest);
-            assertEquals("/v23.0/search", searchRequest.getRequestUrl().encodedPath());
+            assertEquals("/v23.0/act_1234567890/targetingsearch", searchRequest.getRequestUrl().encodedPath());
             assertEquals("adinterest", searchRequest.getRequestUrl().queryParameter("type"));
             assertEquals("Unknown Interest", searchRequest.getRequestUrl().queryParameter("q"));
             assertEquals(locale, searchRequest.getRequestUrl().queryParameter("locale"));

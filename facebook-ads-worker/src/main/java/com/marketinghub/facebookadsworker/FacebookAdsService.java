@@ -60,6 +60,7 @@ public class FacebookAdsService {
     private final ConcurrentMap<TargetingCategoryCacheKey, String> targetingCategoryIdCache;
     private final Duration targetingSearchCacheTtl;
     private final ConcurrentMap<TargetingSearchCacheKey, CachedTargetingSearchResults> targetingSearchCache;
+    private final String defaultAdAccountId;
     private final ThreadLocal<FacebookApiCallDebugInfo> lastApiCallDebugInfo = new ThreadLocal<>();
     private static final Set<String> UNSUPPORTED_TARGETING_FIELDS = Set.of(
         "detailed_targeting_description"
@@ -82,6 +83,9 @@ public class FacebookAdsService {
             ? configuredTtl
             : Duration.ofMinutes(30);
         this.targetingSearchCache = new ConcurrentHashMap<>();
+        this.defaultAdAccountId = normalizeAdAccountId(
+            resolverProperties != null ? resolverProperties.getDefaultAdAccountId() : null
+        );
         LOGGER.info("Configured Facebook Graph API version: {}", this.apiVersion);
     }
 
@@ -490,12 +494,17 @@ public class FacebookAdsService {
             return Collections.emptyList();
         }
         int limit = Math.max(1, request.limit());
+        String effectiveAdAccountId = resolveAdAccountId(request.adAccountId());
+        if (!hasText(effectiveAdAccountId)) {
+            LOGGER.warn("Cannot request targeting search without ad account id");
+            return Collections.emptyList();
+        }
         TargetingSearchCacheKey cacheKey = new TargetingSearchCacheKey(
             request.type(),
             normalizedQuery.toLowerCase(Locale.ROOT),
             normalizeCacheKeyValue(request.locale()),
             normalizeCacheKeyValue(request.country()),
-            normalizeCacheKeyValue(normalizeAdAccountId(request.adAccountId())),
+            normalizeCacheKeyValue(effectiveAdAccountId),
             limit
         );
         CachedTargetingSearchResults cached = targetingSearchCache.get(cacheKey);
@@ -505,7 +514,7 @@ public class FacebookAdsService {
         TargetingSearchRequest normalizedRequest = new TargetingSearchRequest(
             request.type(),
             normalizedQuery,
-            normalizeAdAccountId(request.adAccountId()),
+            effectiveAdAccountId,
             request.locale(),
             request.country(),
             limit
@@ -517,21 +526,22 @@ public class FacebookAdsService {
     }
 
     private List<FacebookTargetingSearchResult> executeTargetingSearch(TargetingSearchRequest request) {
+        if (request == null || !hasText(request.adAccountId())) {
+            LOGGER.warn("Cannot execute targeting search without ad account id");
+            return Collections.emptyList();
+        }
         UriComponentsBuilder builder = UriComponentsBuilder
-            .fromPath(buildVersionedPath("/search"))
+            .fromPath(buildVersionedPath("/" + request.adAccountId() + "/targetingsearch"))
             .queryParam("type", request.type().graphType())
             .queryParam("q", request.query())
             .queryParam("limit", request.limit())
-            .queryParam("fields", "id,name,audience_size,path,description,topic")
+            .queryParam("fields", "id,name,audience_size_lower_bound,audience_size_upper_bound,path,description,topic")
             .queryParam("access_token", requireAccessToken());
         if (hasText(request.locale())) {
             builder.queryParam("locale", request.locale());
         }
         if (hasText(request.country())) {
             builder.queryParam("country", request.country());
-        }
-        if (hasText(request.adAccountId())) {
-            builder.queryParam("ad_account_id", request.adAccountId());
         }
         String pathValue = builder.build(false).toUriString();
         try {
@@ -551,12 +561,14 @@ public class FacebookAdsService {
                     continue;
                 }
                 String name = node.path("name").asText(null);
-                Long audienceSize = node.hasNonNull("audience_size") ? node.path("audience_size").asLong() : null;
+                Long audienceSizeLower = node.hasNonNull("audience_size_lower_bound") ? node.path("audience_size_lower_bound").asLong() : null;
+                Long audienceSizeUpper = node.hasNonNull("audience_size_upper_bound") ? node.path("audience_size_upper_bound").asLong() : null;
                 List<String> hierarchy = parseTargetingPath(node.path("path"));
                 results.add(new FacebookTargetingSearchResult(
                     id.trim(),
                     hasText(name) ? name.trim() : null,
-                    audienceSize,
+                    audienceSizeLower,
+                    audienceSizeUpper,
                     hierarchy
                 ));
             }
@@ -613,6 +625,13 @@ public class FacebookAdsService {
         return trimmed;
     }
 
+    private String resolveAdAccountId(String adAccountId) {
+        String normalized = normalizeAdAccountId(adAccountId);
+        if (hasText(normalized)) {
+            return normalized;
+        }
+        return defaultAdAccountId;
+    }
 
     private void mergeTargetingOptions(Map<String, Object> targeting, List<TargetingOption> targetingOptions) {
         if (targeting == null || CollectionUtils.isEmpty(targetingOptions)) {
@@ -1159,8 +1178,13 @@ public class FacebookAdsService {
         String query,
         TargetingCategoryClass categoryClass
     ) {
+        String normalizedAccount = resolveAdAccountId(null);
+        if (!hasText(normalizedAccount)) {
+            LOGGER.warn("Cannot look up targeting category '{}' because ad account id is not configured", query);
+            return null;
+        }
         String path = UriComponentsBuilder
-            .fromPath(buildVersionedPath("/search"))
+            .fromPath(buildVersionedPath("/" + normalizedAccount + "/targetingsearch"))
             .queryParam("type", "adTargetingCategory")
             .queryParam("class", categoryClass.apiClassName())
             .queryParam("q", query)
@@ -1227,8 +1251,13 @@ private FacebookInterest fetchInterestFromFacebook(String interestName) {
 }
 
 private FacebookInterest searchInterest(String interestName, String locale) {
+    String normalizedAccount = resolveAdAccountId(null);
+    if (!hasText(normalizedAccount)) {
+        LOGGER.warn("Cannot look up Facebook interest '{}' because no ad account id is configured", interestName);
+        return null;
+    }
     UriComponentsBuilder builder = UriComponentsBuilder
-        .fromPath(buildVersionedPath("/search"))
+        .fromPath(buildVersionedPath("/" + normalizedAccount + "/targetingsearch"))
         .queryParam("type", "adinterest")
         .queryParam("q", interestName)
         .queryParam("limit", 1)
@@ -1286,7 +1315,20 @@ private FacebookInterest searchInterest(String interestName, String locale) {
     return null;
 }
 
-    public record FacebookTargetingSearchResult(String id, String name, Long audienceSize, List<String> path) {}
+    public record FacebookTargetingSearchResult(
+        String id,
+        String name,
+        Long audienceSizeLowerBound,
+        Long audienceSizeUpperBound,
+        List<String> path
+    ) {
+        public Long audienceSize() {
+            if (audienceSizeUpperBound != null) {
+                return audienceSizeUpperBound;
+            }
+            return audienceSizeLowerBound;
+        }
+    }
 
     public List<FacebookTargetingSuggestionResult> suggestTargetingOptions(TargetingSuggestionsRequest request) {
         if (request == null || CollectionUtils.isEmpty(request.seeds())) {
@@ -1297,7 +1339,7 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         if (onlyInterestSeeds) {
             return suggestInterestSuggestions(request);
         }
-        String normalizedAccount = normalizeAdAccountId(request.adAccountId());
+        String normalizedAccount = resolveAdAccountId(request.adAccountId());
         if (!hasText(normalizedAccount)) {
             LOGGER.warn("Cannot request targeting suggestions without ad account id");
             return Collections.emptyList();

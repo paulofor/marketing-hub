@@ -4,20 +4,32 @@ import { useExperimentAdSetJobDetail } from "../../api/experiment/useExperimentA
 function escapeShellSingleQuotes(value: string) {
   return value.replace(/'/g, "'\\''");
 }
-function normalizeEndpoint(endpoint?: string | null) {
+const FACEBOOK_GRAPH_BASE_URL = "https://graph.facebook.com";
+
+function normalizeEndpoint(endpoint?: string | null, provider?: string | null) {
   if (!endpoint) return "$API_BASE_URL";
   if (/^https?:\/\//i.test(endpoint)) return endpoint;
-  return endpoint.startsWith("/")
-    ? `$API_BASE_URL${endpoint}`
-    : `$API_BASE_URL/${endpoint}`;
+  const normalizedPath = endpoint.startsWith("./")
+    ? endpoint.slice(1)
+    : endpoint;
+
+  if (provider?.toUpperCase() === "FACEBOOK") {
+    return normalizedPath.startsWith("/")
+      ? `${FACEBOOK_GRAPH_BASE_URL}${normalizedPath}`
+      : `${FACEBOOK_GRAPH_BASE_URL}/${normalizedPath}`;
+  }
+  return normalizedPath.startsWith("/")
+    ? `$API_BASE_URL${normalizedPath}`
+    : `$API_BASE_URL/${normalizedPath}`;
 }
 function buildCurlCommand(
   method?: string | null,
   endpoint?: string | null,
+  provider?: string | null,
   payload?: string | null,
 ) {
   const normalizedMethod = (method ?? "GET").toUpperCase();
-  const normalizedEndpoint = normalizeEndpoint(endpoint);
+  const normalizedEndpoint = normalizeEndpoint(endpoint, provider);
   const commandParts = [
     "curl --request",
     normalizedMethod,
@@ -183,11 +195,20 @@ export default function ExperimentAdSetJobDetailPage() {
                         <details>
                           <summary>Versão cURL (teste local)</summary>
                           <p className="small text-muted mt-2 mb-2">
-                            Defina <code>API_BASE_URL</code> antes de executar,
-                            por exemplo:
-                            <code className="ms-1">
-                              export API_BASE_URL=http://localhost:8000
-                            </code>
+                            {log.provider?.toUpperCase() === "FACEBOOK" ? (
+                              <>
+                                URL completa da Graph API do Facebook (ajuste o
+                                domínio/versão se necessário).
+                              </>
+                            ) : (
+                              <>
+                                Defina <code>API_BASE_URL</code> antes de
+                                executar, por exemplo:
+                                <code className="ms-1">
+                                  export API_BASE_URL=http://localhost:8000
+                                </code>
+                              </>
+                            )}
                           </p>
                           <pre
                             className="bg-dark text-white p-2 rounded"
@@ -196,6 +217,7 @@ export default function ExperimentAdSetJobDetailPage() {
                             {buildCurlCommand(
                               log.httpMethod,
                               log.endpoint,
+                              log.provider,
                               log.requestPayload,
                             )}
                           </pre>

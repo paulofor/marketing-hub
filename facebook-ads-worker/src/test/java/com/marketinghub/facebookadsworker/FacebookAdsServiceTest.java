@@ -38,6 +38,7 @@ class FacebookAdsServiceTest {
         String baseUrl = server.url("/").toString();
         objectMapper = new ObjectMapper();
         TargetingResolverProperties resolverProperties = new TargetingResolverProperties();
+        resolverProperties.setDefaultAdAccountId("act_1234567890");
         service = new FacebookAdsService(WebClient.builder(), baseUrl, "v23.0", objectMapper, resolverProperties);
         service.updateAccessToken("token");
     }
@@ -296,7 +297,7 @@ class FacebookAdsServiceTest {
         RecordedRequest searchRequest = takeRequest("request");
         HttpUrl searchUrl = searchRequest.getRequestUrl();
         assertNotNull(searchUrl);
-        assertEquals("/v23.0/search", searchUrl.encodedPath());
+        assertEquals("/v23.0/act_1234567890/targetingsearch", searchUrl.encodedPath());
         assertEquals("adinterest", searchUrl.queryParameter("type"));
         assertEquals("Pilates", searchUrl.queryParameter("q"));
         assertEquals("1", searchUrl.queryParameter("limit"));

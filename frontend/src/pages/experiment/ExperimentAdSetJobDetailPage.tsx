@@ -30,18 +30,24 @@ function buildCurlCommand(
 ) {
   const normalizedMethod = (method ?? "GET").toUpperCase();
   const normalizedEndpoint = normalizeEndpoint(endpoint, provider);
+  const normalizedPayload = payload?.trim();
   const commandParts = [
-    "curl --request",
-    normalizedMethod,
-    `'${escapeShellSingleQuotes(normalizedEndpoint)}'`,
-    "--header 'Content-Type: application/json'",
+    `curl --request ${normalizedMethod}`,
+    `  '${escapeShellSingleQuotes(normalizedEndpoint)}'`,
+    "  --header 'Content-Type: application/json'",
   ];
-  if (payload) {
+  if (
+    normalizedPayload &&
+    normalizedPayload !== "null" &&
+    normalizedPayload !== "undefined"
+  ) {
     commandParts.push(
-      `--data-raw '${escapeShellSingleQuotes(payload)}'`,
+      `  --data-raw '${escapeShellSingleQuotes(normalizedPayload)}'`,
     );
   }
-  return commandParts.join(" \\n");
+  return commandParts
+    .map((part, index) => (index === commandParts.length - 1 ? part : `${part} \\`))
+    .join("\n");
 }
 function formatDateTime(value?: string | null) {
   if (!value) return "—";

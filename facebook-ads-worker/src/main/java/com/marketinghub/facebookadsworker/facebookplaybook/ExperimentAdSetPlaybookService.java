@@ -19,6 +19,7 @@ import org.springframework.util.StringUtils;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -28,6 +29,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Executes Facebook-specific jobs from the playbook queue.
@@ -60,27 +63,28 @@ public class ExperimentAdSetPlaybookService {
         }
         LOGGER.info("Facebook worker processando {} jobs do playbook", jobs.size());
         for (PlaybookJob job : jobs) {
+            List<ApiCallLog> apiLogs = new ArrayList<>();
             try {
                 JsonNode result = switch (job.type()) {
-                    case FACEBOOK_SEED_LOOKUP -> handleSeedLookup(job.payload());
-                    case FACEBOOK_TARGETING_SUGGESTIONS -> handleSuggestions(job.payload());
-                    case FACEBOOK_SOCIAL_POSITIONS -> handlePositions(job.payload());
-                    case FACEBOOK_VALIDATE_SPEC -> handleValidation(job.payload());
-                    case FACEBOOK_REACH_ESTIMATE -> handleReachEstimate(job.payload());
+                    case FACEBOOK_SEED_LOOKUP -> handleSeedLookup(job.payload(), apiLogs);
+                    case FACEBOOK_TARGETING_SUGGESTIONS -> handleSuggestions(job.payload(), apiLogs);
+                    case FACEBOOK_SOCIAL_POSITIONS -> handlePositions(job.payload(), apiLogs);
+                    case FACEBOOK_VALIDATE_SPEC -> handleValidation(job.payload(), apiLogs);
+                    case FACEBOOK_REACH_ESTIMATE -> handleReachEstimate(job.payload(), apiLogs);
                     default -> {
                         LOGGER.warn("Job {} do tipo {} não é processado pelo worker do Facebook", job.id(), job.type());
                         yield objectMapper.createObjectNode();
                     }
                 };
-                client.completeJob(job.id(), result);
+                client.completeJob(job.id(), result, buildApiCallPayloads(apiLogs));
             } catch (Exception ex) {
                 LOGGER.error("Erro ao executar job {} do tipo {}", job.id(), job.type(), ex);
-                client.failJob(job.id(), ex.getMessage() != null ? ex.getMessage() : "Erro desconhecido");
+                client.failJob(job.id(), ex.getMessage() != null ? ex.getMessage() : "Erro desconhecido", buildApiCallPayloads(apiLogs));
             }
         }
     }
 
-    private JsonNode handleSeedLookup(JsonNode payload) {
+    private JsonNode handleSeedLookup(JsonNode payload, List<ApiCallLog> apiLogs) {
         String query = text(payload, "query");
         String locale = text(payload, "locale", "pt_BR");
         String country = text(payload, "country", "BR");
@@ -94,7 +98,14 @@ public class ExperimentAdSetPlaybookService {
                 country,
                 limit
         );
-        List<FacebookTargetingSearchResult> results = facebookAdsService.searchTargetingOptions(request);
+        List<FacebookTargetingSearchResult> results = recordFacebookCall(
+                apiLogs,
+                "/targetingsearch",
+                "GET",
+                request,
+                () -> facebookAdsService.searchTargetingOptions(request),
+                response -> toJsonNode(response)
+        );
         FacebookTargetingSearchResult first = results.stream()
                 .max(Comparator.comparing(FacebookTargetingSearchResult::audienceSize, Comparator.nullsLast(Long::compareTo)))
                 .orElseThrow(() -> new IllegalStateException("Nenhum interesse encontrado para " + query));
@@ -113,7 +124,7 @@ public class ExperimentAdSetPlaybookService {
         return result;
     }
 
-    private JsonNode handleSuggestions(JsonNode payload) {
+    private JsonNode handleSuggestions(JsonNode payload, List<ApiCallLog> apiLogs) {
         String seedInterestId = text(payload, "seedInterestId");
         String locale = text(payload, "locale", "pt_BR");
         String country = text(payload, "country", "BR");
@@ -126,7 +137,14 @@ public class ExperimentAdSetPlaybookService {
                 country,
                 limit
         );
-        List<FacebookTargetingSuggestionResult> suggestions = facebookAdsService.suggestTargetingOptions(request);
+        List<FacebookTargetingSuggestionResult> suggestions = recordFacebookCall(
+                apiLogs,
+                "/targetingsuggestions",
+                "GET",
+                request,
+                () -> facebookAdsService.suggestTargetingOptions(request),
+                response -> toJsonNode(response)
+        );
         ObjectNode result = objectMapper.createObjectNode();
         ArrayNode items = objectMapper.createArrayNode();
         for (FacebookTargetingSuggestionResult suggestion : suggestions) {
@@ -148,7 +166,7 @@ public class ExperimentAdSetPlaybookService {
         return result;
     }
 
-    private JsonNode handlePositions(JsonNode payload) {
+    private JsonNode handlePositions(JsonNode payload, List<ApiCallLog> apiLogs) {
         ArrayNode queries = payload != null && payload.has("queries") && payload.get("queries").isArray()
                 ? (ArrayNode) payload.get("queries")
                 : objectMapper.createArrayNode();
@@ -169,7 +187,15 @@ public class ExperimentAdSetPlaybookService {
                     null,
                     payload.path("limit").asInt(25)
             );
-            facebookAdsService.searchTargetingOptions(request).forEach(result -> {
+            List<FacebookTargetingSearchResult> results = recordFacebookCall(
+                    apiLogs,
+                    "/targetingsearch",
+                    "GET",
+                    request,
+                    () -> facebookAdsService.searchTargetingOptions(request),
+                    response -> toJsonNode(response)
+            );
+            results.forEach(result -> {
                 if (seen.add(result.id())) {
                     collected.add(result);
                 }
@@ -187,11 +213,18 @@ public class ExperimentAdSetPlaybookService {
         return result;
     }
 
-    private JsonNode handleValidation(JsonNode payload) {
+    private JsonNode handleValidation(JsonNode payload, List<ApiCallLog> apiLogs) {
         String adAccountId = text(payload, "adAccountId", null);
         JsonNode targeting = payload.path("targetingSpec");
-        JsonNode apiResponse = facebookAdsService.validateTargetingSpec(
-                new FacebookAdsService.TargetingValidationRequest(adAccountId, targeting));
+        FacebookAdsService.TargetingValidationRequest request =
+                new FacebookAdsService.TargetingValidationRequest(adAccountId, targeting);
+        JsonNode apiResponse = recordFacebookCall(
+                apiLogs,
+                "/targetingvalidation",
+                "GET",
+                request,
+                () -> facebookAdsService.validateTargetingSpec(request),
+                Function.identity());
         boolean isValid = apiResponse != null
                 && apiResponse.path("data").isArray()
                 && apiResponse.path("data").size() > 0
@@ -202,11 +235,18 @@ public class ExperimentAdSetPlaybookService {
         return result;
     }
 
-    private JsonNode handleReachEstimate(JsonNode payload) {
+    private JsonNode handleReachEstimate(JsonNode payload, List<ApiCallLog> apiLogs) {
         String adAccountId = text(payload, "adAccountId", null);
         JsonNode targeting = payload.path("targetingSpec");
-        JsonNode apiResponse = facebookAdsService.estimateReach(
-                new FacebookAdsService.ReachEstimateRequest(adAccountId, targeting));
+        FacebookAdsService.ReachEstimateRequest request =
+                new FacebookAdsService.ReachEstimateRequest(adAccountId, targeting);
+        JsonNode apiResponse = recordFacebookCall(
+                apiLogs,
+                "/reachestimate",
+                "GET",
+                request,
+                () -> facebookAdsService.estimateReach(request),
+                Function.identity());
         JsonNode dataNode = apiResponse != null && apiResponse.path("data").isArray() && apiResponse.path("data").size() > 0
                 ? apiResponse.path("data").get(0)
                 : objectMapper.createObjectNode();
@@ -237,6 +277,86 @@ public class ExperimentAdSetPlaybookService {
         String text = value.asText();
         return StringUtils.hasText(text) ? text : defaultValue;
     }
+
+    private List<ExperimentAdSetPlaybookClient.ApiCallPayload> buildApiCallPayloads(List<ApiCallLog> logs) {
+        if (logs == null || logs.isEmpty()) {
+            return List.of();
+        }
+        return logs.stream()
+                .map(log -> new ExperimentAdSetPlaybookClient.ApiCallPayload(
+                        log.provider(),
+                        log.endpoint(),
+                        log.httpMethod(),
+                        log.statusCode(),
+                        log.requestPayload(),
+                        log.responsePayload(),
+                        log.errorMessage(),
+                        log.requestedAt(),
+                        log.respondedAt()
+                ))
+                .toList();
+    }
+
+    private <T> T recordFacebookCall(List<ApiCallLog> logs,
+                                     String endpoint,
+                                     String httpMethod,
+                                     Object requestPayload,
+                                     Supplier<T> executor,
+                                     Function<T, JsonNode> responseMapper) {
+        Instant startedAt = Instant.now();
+        try {
+            T response = executor.get();
+            JsonNode responsePayload = responseMapper != null ? responseMapper.apply(response) : null;
+            logs.add(new ApiCallLog(
+                    "FACEBOOK",
+                    endpoint,
+                    httpMethod,
+                    toJsonNode(requestPayload),
+                    responsePayload,
+                    null,
+                    null,
+                    startedAt,
+                    Instant.now()
+            ));
+            return response;
+        } catch (RuntimeException ex) {
+            logs.add(new ApiCallLog(
+                    "FACEBOOK",
+                    endpoint,
+                    httpMethod,
+                    toJsonNode(requestPayload),
+                    null,
+                    null,
+                    ex.getMessage(),
+                    startedAt,
+                    Instant.now()
+            ));
+            throw ex;
+        }
+    }
+
+    private JsonNode toJsonNode(Object value) {
+        if (value == null) {
+            return objectMapper.nullNode();
+        }
+        try {
+            return objectMapper.valueToTree(value);
+        } catch (IllegalArgumentException ex) {
+            return objectMapper.createObjectNode().put("error", ex.getMessage());
+        }
+    }
+
+    private record ApiCallLog(
+            String provider,
+            String endpoint,
+            String httpMethod,
+            JsonNode requestPayload,
+            JsonNode responsePayload,
+            Integer statusCode,
+            String errorMessage,
+            Instant requestedAt,
+            Instant respondedAt
+    ) {}
 
     private String buildWorkerId() {
         try {

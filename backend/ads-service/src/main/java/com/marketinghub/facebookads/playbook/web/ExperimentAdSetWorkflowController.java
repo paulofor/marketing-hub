@@ -1,5 +1,6 @@
 package com.marketinghub.facebookads.playbook.web;
 
+import com.marketinghub.facebookads.playbook.dto.ExperimentAdSetJobDetailDto;
 import com.marketinghub.facebookads.playbook.dto.ExperimentAdSetWorkflowDto;
 import com.marketinghub.facebookads.playbook.dto.StartExperimentAdSetWorkflowRequest;
 import com.marketinghub.facebookads.playbook.service.ExperimentAdSetWorkflowService;
@@ -39,4 +40,12 @@ public class ExperimentAdSetWorkflowController {
         StartExperimentAdSetWorkflowRequest payload = request != null ? request : new StartExperimentAdSetWorkflowRequest(false);
         return workflowService.start(experimentId, payload);
     }
+
+
+    @GetMapping("/jobs/{jobId}")
+    public ExperimentAdSetJobDetailDto getJobDetail(@PathVariable Long experimentId,
+                                                     @PathVariable Long jobId) {
+        return workflowService.getJobDetail(experimentId, jobId);
+    }
+
 }

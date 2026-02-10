@@ -10,6 +10,7 @@ import com.marketinghub.ads.FacebookAccountRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.facebookads.playbook.ExperimentAdSetJob;
+import com.marketinghub.facebookads.playbook.ExperimentAdSetJobApiLog;
 import com.marketinghub.facebookads.playbook.ExperimentAdSetJobStatus;
 import com.marketinghub.facebookads.playbook.ExperimentAdSetJobType;
 import com.marketinghub.facebookads.playbook.ExperimentAdSetSpec;
@@ -17,6 +18,8 @@ import com.marketinghub.facebookads.playbook.ExperimentAdSetSpecSlot;
 import com.marketinghub.facebookads.playbook.ExperimentAdSetWorker;
 import com.marketinghub.facebookads.playbook.ExperimentAdSetWorkflow;
 import com.marketinghub.facebookads.playbook.ExperimentAdSetWorkflowStatus;
+import com.marketinghub.facebookads.playbook.dto.ExperimentAdSetJobApiLogRequest;
+import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetJobApiLogRepository;
 import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetJobRepository;
 import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetSpecRepository;
 import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetWorkflowRepository;
@@ -49,11 +52,13 @@ public class ExperimentAdSetWorkflowJobCoordinator {
     private static final Duration LOCK_TTL = Duration.ofMinutes(10);
     private static final String DEFAULT_COUNTRY = "BR";
     private static final String DEFAULT_LOCALE = "pt_BR";
+    private static final String DEFAULT_PROVIDER = "FACEBOOK";
     private static final int SEED_SEARCH_LIMIT = 25;
     private static final int SUGGESTION_LIMIT = 100;
     private static final int POSITION_LIMIT = 25;
 
     private final ExperimentAdSetJobRepository jobRepository;
+    private final ExperimentAdSetJobApiLogRepository jobApiLogRepository;
     private final ExperimentAdSetWorkflowRepository workflowRepository;
     private final ExperimentAdSetSpecRepository specRepository;
     private final ExperimentRepository experimentRepository;
@@ -61,12 +66,14 @@ public class ExperimentAdSetWorkflowJobCoordinator {
     private final ObjectMapper objectMapper;
 
     public ExperimentAdSetWorkflowJobCoordinator(ExperimentAdSetJobRepository jobRepository,
+                                                 ExperimentAdSetJobApiLogRepository jobApiLogRepository,
                                                  ExperimentAdSetWorkflowRepository workflowRepository,
                                                  ExperimentAdSetSpecRepository specRepository,
                                                  ExperimentRepository experimentRepository,
                                                  FacebookAccountRepository facebookAccountRepository,
                                                  ObjectMapper objectMapper) {
         this.jobRepository = jobRepository;
+        this.jobApiLogRepository = jobApiLogRepository;
         this.workflowRepository = workflowRepository;
         this.specRepository = specRepository;
         this.experimentRepository = experimentRepository;
@@ -105,7 +112,8 @@ public class ExperimentAdSetWorkflowJobCoordinator {
     }
 
     @Transactional
-    public ExperimentAdSetJob completeJob(Long jobId, JsonNode result) {
+    public ExperimentAdSetJob completeJob(Long jobId, JsonNode result,
+                                            List<ExperimentAdSetJobApiLogRequest> apiCalls) {
         ExperimentAdSetJob job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new EntityNotFoundException("Job %d não encontrado".formatted(jobId)));
         if (job.getStatus() != ExperimentAdSetJobStatus.RUNNING) {
@@ -117,12 +125,14 @@ public class ExperimentAdSetWorkflowJobCoordinator {
         job.setLockedAt(null);
         job.setLockedBy(null);
         jobRepository.save(job);
+        replaceApiLogs(job, apiCalls);
         handleJobSuccess(job);
         return job;
     }
 
     @Transactional
-    public ExperimentAdSetJob failJob(Long jobId, String errorMessage) {
+    public ExperimentAdSetJob failJob(Long jobId, String errorMessage,
+                                           List<ExperimentAdSetJobApiLogRequest> apiCalls) {
         ExperimentAdSetJob job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new EntityNotFoundException("Job %d não encontrado".formatted(jobId)));
         job.setStatus(ExperimentAdSetJobStatus.FAILED);
@@ -131,8 +141,41 @@ public class ExperimentAdSetWorkflowJobCoordinator {
         job.setLockedAt(null);
         job.setLockedBy(null);
         jobRepository.save(job);
+        replaceApiLogs(job, apiCalls);
         handleJobFailure(job, errorMessage);
         return job;
+    }
+
+    private void replaceApiLogs(ExperimentAdSetJob job, List<ExperimentAdSetJobApiLogRequest> apiCalls) {
+        if (job == null || job.getId() == null) {
+            return;
+        }
+        jobApiLogRepository.deleteByJobId(job.getId());
+        if (CollectionUtils.isEmpty(apiCalls)) {
+            return;
+        }
+        List<ExperimentAdSetJobApiLog> logs = new ArrayList<>();
+        for (ExperimentAdSetJobApiLogRequest call : apiCalls) {
+            if (call == null) {
+                continue;
+            }
+            ExperimentAdSetJobApiLog log = ExperimentAdSetJobApiLog.builder()
+                    .job(job)
+                    .provider(StringUtils.hasText(call.provider()) ? call.provider().trim() : DEFAULT_PROVIDER)
+                    .endpoint(call.endpoint())
+                    .httpMethod(call.httpMethod())
+                    .statusCode(call.statusCode())
+                    .requestedAt(call.requestedAt())
+                    .respondedAt(call.respondedAt())
+                    .requestPayload(call.requestPayload() != null ? writeJson(call.requestPayload()) : null)
+                    .responsePayload(call.responsePayload() != null ? writeJson(call.responsePayload()) : null)
+                    .errorMessage(call.errorMessage())
+                    .build();
+            logs.add(log);
+        }
+        if (!logs.isEmpty()) {
+            jobApiLogRepository.saveAll(logs);
+        }
     }
 
     private void releaseExpiredLocks() {

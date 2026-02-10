@@ -10,6 +10,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -57,20 +58,26 @@ public class ExperimentAdSetPlaybookClient {
                 .orElse(List.of());
     }
 
-    public void completeJob(long jobId, JsonNode result) {
+    public void completeJob(long jobId, JsonNode result, List<ApiCallPayload> apiCalls) {
         String url = baseUrl + "/internal/adset-playbook/jobs/" + jobId + "/complete";
+        Map<String, Object> body = new HashMap<>();
+        body.put("result", result);
+        body.put("apiCalls", apiCalls == null ? List.of() : apiCalls);
         webClient.post()
                 .uri(url)
-                .bodyValue(Map.of("result", result))
+                .bodyValue(body)
                 .exchangeToMono(response -> handleVoidResponse("complete", url, response.statusCode()))
                 .block();
     }
 
-    public void failJob(long jobId, String error) {
+    public void failJob(long jobId, String error, List<ApiCallPayload> apiCalls) {
         String url = baseUrl + "/internal/adset-playbook/jobs/" + jobId + "/fail";
+        Map<String, Object> body = new HashMap<>();
+        body.put("errorMessage", error);
+        body.put("apiCalls", apiCalls == null ? List.of() : apiCalls);
         webClient.post()
                 .uri(url)
-                .bodyValue(Map.of("errorMessage", error))
+                .bodyValue(body)
                 .exchangeToMono(response -> handleVoidResponse("fail", url, response.statusCode()))
                 .block();
     }
@@ -80,6 +87,17 @@ public class ExperimentAdSetPlaybookClient {
             return Mono.error(new IllegalStateException("Backend " + action + " " + url + " retornou " + status));
         }
         return Mono.empty();
+    }
+
+    public record ApiCallPayload(String provider,
+                                 String endpoint,
+                                 String httpMethod,
+                                 Integer statusCode,
+                                 JsonNode requestPayload,
+                                 JsonNode responsePayload,
+                                 String errorMessage,
+                                 Instant requestedAt,
+                                 Instant respondedAt) {
     }
 
     private record JobPayloadResponse(long id,

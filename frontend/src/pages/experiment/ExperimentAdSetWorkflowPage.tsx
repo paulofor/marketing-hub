@@ -178,6 +178,7 @@ function JobsCard({ jobs }: { jobs: ExperimentAdSetJob[] }) {
               <th>Início</th>
               <th>Término</th>
               <th>Erro</th>
+              <th>Detalhe</th>
             </tr>
           </thead>
           <tbody>
@@ -194,6 +195,11 @@ function JobsCard({ jobs }: { jobs: ExperimentAdSetJob[] }) {
                   <td>{formatDate(job.startedAt)}</td>
                   <td>{formatDate(job.finishedAt)}</td>
                   <td className="text-danger">{job.errorMessage ?? ""}</td>
+                  <td>
+                    <Link to={`jobs/${job.id}`} className="btn btn-link btn-sm px-0">
+                      Detalhe
+                    </Link>
+                  </td>
                 </tr>
               ))}
           </tbody>

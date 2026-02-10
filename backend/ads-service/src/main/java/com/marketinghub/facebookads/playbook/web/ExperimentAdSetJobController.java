@@ -9,7 +9,6 @@ import com.marketinghub.facebookads.playbook.dto.ExperimentAdSetJobPayloadDto;
 import com.marketinghub.facebookads.playbook.dto.ExperimentAdSetJobResultRequest;
 import com.marketinghub.facebookads.playbook.service.ExperimentAdSetWorkflowJobCoordinator;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -54,14 +53,14 @@ public class ExperimentAdSetJobController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void completeJob(@PathVariable Long jobId,
                             @Valid @RequestBody ExperimentAdSetJobResultRequest request) {
-        coordinator.completeJob(jobId, request.result());
+        coordinator.completeJob(jobId, request.result(), request.apiCalls());
     }
 
     @PostMapping("/{jobId}/fail")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void failJob(@PathVariable Long jobId,
                         @Valid @RequestBody ExperimentAdSetJobFailureRequest request) {
-        coordinator.failJob(jobId, request.errorMessage());
+        coordinator.failJob(jobId, request.errorMessage(), request.apiCalls());
     }
 
     private ExperimentAdSetJobPayloadDto toPayload(ExperimentAdSetJob job) {

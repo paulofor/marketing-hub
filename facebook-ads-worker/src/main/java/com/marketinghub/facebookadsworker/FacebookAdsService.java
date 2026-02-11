@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.facebookadsworker.util.InstantFormPublicationHelper;
 import com.marketinghub.facebookadsworker.facebooktargeting.TargetingResolverProperties;
@@ -30,6 +31,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.EnumMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -48,6 +50,8 @@ import static org.springframework.util.StringUtils.hasText;
 public class FacebookAdsService {
     private static final Logger LOGGER = LoggerFactory.getLogger(FacebookAdsService.class);
     private static final Pattern INTEREST_WITH_ID_PATTERN = Pattern.compile(".*\\((\\d{5,})\\)\\s*$");
+    private static final Pattern INVALID_INTEREST_ID_PATTERN =
+        Pattern.compile("(?i)interesse\\s+com\\s+id\\s+(\\d+)|interest\\s+with\\s+id\\s+(\\d+)");
     private static final String INTEREST_SEARCH_LOCALE = "pt_BR";
     public static final String BRAZIL_COUNTRY_CODE = "BR";
 
@@ -1415,14 +1419,10 @@ private FacebookInterest searchInterest(String interestName, String locale) {
             throw new IllegalArgumentException("targetingSpec e adAccountId são obrigatórios");
         }
         String normalizedAccount = normalizeAdAccountId(request.adAccountId());
+        ObjectNode targetingSpecNode = copyTargetingSpec(request.targetingSpec());
         try {
-            String targetingSpec = objectMapper.writeValueAsString(request.targetingSpec());
             String path = buildVersionedPath("/" + normalizedAccount + "/targetingvalidation");
-            var builder = org.springframework.web.util.UriComponentsBuilder.fromPath(path)
-                    .queryParam("targeting_spec", targetingSpec)
-                    .queryParam("access_token", requireAccessToken());
-            FacebookApiResponse response = executeGet(builder.build().encode().toUriString());
-            return response.body();
+            return executeTargetingSpecGet(path, targetingSpecNode, "validar targeting spec");
         } catch (FacebookAccessTokenExpiredException | FacebookPermissionException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -1435,19 +1435,112 @@ private FacebookInterest searchInterest(String interestName, String locale) {
             throw new IllegalArgumentException("targetingSpec e adAccountId são obrigatórios");
         }
         String normalizedAccount = normalizeAdAccountId(request.adAccountId());
+        ObjectNode targetingSpecNode = copyTargetingSpec(request.targetingSpec());
         try {
-            String targetingSpec = objectMapper.writeValueAsString(request.targetingSpec());
             String path = buildVersionedPath("/" + normalizedAccount + "/reachestimate");
-            var builder = org.springframework.web.util.UriComponentsBuilder.fromPath(path)
-                    .queryParam("targeting_spec", targetingSpec)
-                    .queryParam("access_token", requireAccessToken());
-            FacebookApiResponse response = executeGet(builder.build().encode().toUriString());
-            return response.body();
+            return executeTargetingSpecGet(path, targetingSpecNode, "estimar alcance");
         } catch (FacebookAccessTokenExpiredException | FacebookPermissionException ex) {
             throw ex;
         } catch (Exception ex) {
             throw new RuntimeException("Falha ao estimar alcance: " + ex.getMessage(), ex);
         }
+    }
+
+    private JsonNode executeTargetingSpecGet(String path, ObjectNode targetingSpecNode, String operationDescription)
+        throws JsonProcessingException {
+        while (true) {
+            String targetingSpec = objectMapper.writeValueAsString(targetingSpecNode);
+            var builder = UriComponentsBuilder.fromPath(path)
+                .queryParam("targeting_spec", targetingSpec)
+                .queryParam("access_token", requireAccessToken());
+            try {
+                FacebookApiResponse response = executeGet(builder.build().encode().toUriString());
+                return response.body();
+            } catch (WebClientResponseException ex) {
+                if (!tryRemoveInvalidInterestFromSpec(targetingSpecNode, ex)) {
+                    throw ex;
+                }
+                LOGGER.warn(
+                    "Facebook retornou interesse inválido durante {}. Repetindo chamada com targeting_spec sanitizado.",
+                    operationDescription
+                );
+            }
+        }
+    }
+
+    private ObjectNode copyTargetingSpec(JsonNode targetingSpec) {
+        if (targetingSpec instanceof ObjectNode objectNode) {
+            return objectNode.deepCopy();
+        }
+        if (targetingSpec != null && targetingSpec.isObject()) {
+            return ((ObjectNode) targetingSpec).deepCopy();
+        }
+        throw new IllegalArgumentException("targetingSpec deve ser um objeto JSON");
+    }
+
+    private boolean tryRemoveInvalidInterestFromSpec(ObjectNode targetingSpecNode, WebClientResponseException ex) {
+        String invalidInterestId = extractInvalidInterestId(ex.getResponseBodyAsString());
+        if (!hasText(invalidInterestId)) {
+            return false;
+        }
+        return removeInterestById(targetingSpecNode, invalidInterestId.trim());
+    }
+
+    private String extractInvalidInterestId(String responseBody) {
+        if (!hasText(responseBody)) {
+            return null;
+        }
+        Matcher matcher = INVALID_INTEREST_ID_PATTERN.matcher(responseBody);
+        if (matcher.find()) {
+            String firstGroup = matcher.group(1);
+            if (hasText(firstGroup)) {
+                return firstGroup;
+            }
+            String secondGroup = matcher.group(2);
+            if (hasText(secondGroup)) {
+                return secondGroup;
+            }
+        }
+        return null;
+    }
+
+    private boolean removeInterestById(JsonNode node, String interestId) {
+        if (node == null || node.isNull() || !hasText(interestId)) {
+            return false;
+        }
+        boolean removed = false;
+        if (node.isObject()) {
+            ObjectNode objectNode = (ObjectNode) node;
+            JsonNode interestsNode = objectNode.get("interests");
+            if (interestsNode instanceof ArrayNode interestsArray) {
+                removed = removeInterestFromArray(interestsArray, interestId) || removed;
+            }
+            Iterator<Map.Entry<String, JsonNode>> fields = objectNode.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> entry = fields.next();
+                removed = removeInterestById(entry.getValue(), interestId) || removed;
+            }
+            return removed;
+        }
+        if (node.isArray()) {
+            for (JsonNode item : node) {
+                removed = removeInterestById(item, interestId) || removed;
+            }
+        }
+        return removed;
+    }
+
+    private boolean removeInterestFromArray(ArrayNode interestsArray, String interestId) {
+        boolean removed = false;
+        for (int index = interestsArray.size() - 1; index >= 0; index--) {
+            JsonNode entry = interestsArray.get(index);
+            String currentId = entry.path("id").asText(null);
+            if (hasText(currentId) && interestId.equals(currentId.trim())) {
+                interestsArray.remove(index);
+                removed = true;
+            }
+        }
+        return removed;
     }
 
     private record TargetingSearchCacheKey(

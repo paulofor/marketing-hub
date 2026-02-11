@@ -155,6 +155,11 @@ logs/cURLs com o contrato oficial da Marketing API.
 O parâmetro de query `targeting_spec` é enviado URL-encoded nas chamadas GET
 para evitar falhas de expansão de template do `UriComponentsBuilder` quando o
 JSON contém chaves como `"geo_locations"` entre chaves (`{}`) no payload.
+Quando a Graph API rejeita o payload com `error_subcode=1487079` e mensagem
+indicando interesse inválido (`interest/interesse ... id <número>`), o serviço
+remove automaticamente esse `id` de todas as listas `interests` (inclusive em
+`flexible_spec`) e reenvia a requisição uma única vez por interesse inválido,
+evitando bloqueio do playbook por dados legados descontinuados pela Meta.
 
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar
 investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs

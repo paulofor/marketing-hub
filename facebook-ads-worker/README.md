@@ -147,6 +147,12 @@ temporários no formato `ai_form_*` são normalizados para o padrão `form_*`
 antes da publicação, e o share link é reconstruído com o identificador final
 quando disponível.
 
+As etapas do playbook de público (`FACEBOOK_VALIDATE_SPEC` e
+`FACEBOOK_REACH_ESTIMATE`) registram o endpoint real da Graph API no formato
+`/{adAccountId}/targetingvalidation` e `/{adAccountId}/reachestimate`, além de
+persistirem o payload com a chave `targeting_spec` (snake_case), alinhando os
+logs/cURLs com o contrato oficial da Marketing API.
+
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar
 investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs
 registram caminho da requisição, payload enviado (com `access_token`

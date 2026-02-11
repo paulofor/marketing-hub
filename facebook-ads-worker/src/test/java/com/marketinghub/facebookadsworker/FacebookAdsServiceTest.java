@@ -678,6 +678,89 @@ class FacebookAdsServiceTest {
         assertTrue(targetingSpecParam.contains("geo_locations"));
     }
 
+
+    @Test
+    void estimateReachRetriesWithoutInvalidInterestFromFlexibleSpec() throws Exception {
+        server.enqueueResponse(new MockResponse()
+            .setResponseCode(400)
+            .setBody("""
+                {"error":{"message":"Invalid parameter","type":"OAuthException","code":100,"error_subcode":1487079,
+                "error_user_msg":"Invalid data for field interests. O interesse com ID 6004382299972 é inválido."}}
+                """)
+            .addHeader("Content-Type", "application/json"));
+        server.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"users\":1234}]}" )
+            .addHeader("Content-Type", "application/json"));
+
+        JsonNode targetingSpec = objectMapper.readTree("""
+            {
+              "geo_locations": {
+                "countries": ["BR"]
+              },
+              "age_min": 18,
+              "flexible_spec": [
+                {
+                  "interests": [
+                    {"id": "6004382299972", "name": "Invalid Interest"},
+                    {"id": "6004382299973", "name": "Valid Interest"}
+                  ]
+                }
+              ]
+            }
+            """);
+
+        JsonNode response = service.estimateReach(
+            new FacebookAdsService.ReachEstimateRequest("act_123", targetingSpec)
+        );
+
+        assertNotNull(response);
+        RecordedRequest firstAttempt = takeRequest("reach estimate first attempt");
+        RecordedRequest secondAttempt = takeRequest("reach estimate second attempt");
+        HttpUrl firstUrl = firstAttempt.getRequestUrl();
+        HttpUrl secondUrl = secondAttempt.getRequestUrl();
+        assertNotNull(firstUrl);
+        assertNotNull(secondUrl);
+        String firstTargetingSpec = firstUrl.queryParameter("targeting_spec");
+        String secondTargetingSpec = secondUrl.queryParameter("targeting_spec");
+        assertNotNull(firstTargetingSpec);
+        assertNotNull(secondTargetingSpec);
+        assertTrue(firstTargetingSpec.contains("6004382299972"));
+        assertFalse(secondTargetingSpec.contains("6004382299972"));
+        assertTrue(secondTargetingSpec.contains("6004382299973"));
+    }
+
+    @Test
+    void validateTargetingSpecDoesNotRetryWhenInvalidInterestIdIsMissing() throws Exception {
+        server.enqueueResponse(new MockResponse()
+            .setResponseCode(400)
+            .setBody("""
+                {"error":{"message":"Invalid parameter","type":"OAuthException","code":100,"error_subcode":1487079,
+                "error_user_msg":"Invalid data for field interests."}}
+                """)
+            .addHeader("Content-Type", "application/json"));
+
+        JsonNode targetingSpec = objectMapper.readTree("""
+            {
+              "geo_locations": {
+                "countries": ["BR"]
+              },
+              "interests": [
+                {"id": "6004382299972", "name": "Interest"}
+              ]
+            }
+            """);
+
+        RuntimeException thrown = assertThrows(
+            RuntimeException.class,
+            () -> service.validateTargetingSpec(
+                new FacebookAdsService.TargetingValidationRequest("act_123", targetingSpec)
+            )
+        );
+        assertTrue(thrown.getCause() instanceof WebClientResponseException);
+
+        takeRequest("targeting validation attempt");
+        assertNull(server.takeRequest(100, TimeUnit.MILLISECONDS));
+    }
+
     @Test
     void metricsRequestsCampaignInsights() throws Exception {
         server.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"impressions\":\"10\"}]}")

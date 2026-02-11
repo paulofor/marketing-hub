@@ -12,6 +12,7 @@
 - Na fila de resolução de targeting (`targeting_resolution_job`), sempre priorize o `ad_account_id` da conta de Facebook associada ao experimento (`ad_set -> experiment -> fb_page -> fb_account`) antes de qualquer fallback global.
 - Sugestões de interesses baseadas em seed devem usar o endpoint `/search` com `type=adinterestsuggestion` e `interest_list` (não `/targetingsuggestions`).
 - Remova campos de segmentação não suportados pela Graph API antes do envio (por exemplo, `detailed_targeting_description`) para evitar erros `(#100) Invalid parameter`.
+- Em chamadas de `/targetingvalidation` e `/reachestimate`, se a Graph API indicar `interest/interesse ... id <número> inválido`, remova esse ID do `targeting_spec` (inclusive em `flexible_spec`) e tente novamente para evitar bloqueio por interesses descontinuados.
 - Em `geo_locations` descarte chaves que não sejam texto e remova `regions` cujos `key` não sejam numéricos para manter a compatibilidade com a Graph API.
 - Quando o destino do experimento for um formulário de leads, ajuste o conjunto de anúncios para `destination_type = ON_AD`, force `optimization_goal = LEAD_GENERATION` e não envie `link` externo no criativo; utilize apenas `call_to_action.value.lead_gen_form_id`.
 - Quando não houver `instagramAccount` no experimento, utilize o `defaultInstagramActorId` configurado ou o identificador vindo do criativo, seguindo sem `instagram_user_id` se nenhum valor estiver disponível.

@@ -1421,7 +1421,7 @@ private FacebookInterest searchInterest(String interestName, String locale) {
             var builder = org.springframework.web.util.UriComponentsBuilder.fromPath(path)
                     .queryParam("targeting_spec", targetingSpec)
                     .queryParam("access_token", requireAccessToken());
-            FacebookApiResponse response = executeGet(builder.build(false).toUriString());
+            FacebookApiResponse response = executeGet(builder.build().encode().toUriString());
             return response.body();
         } catch (FacebookAccessTokenExpiredException | FacebookPermissionException ex) {
             throw ex;
@@ -1441,7 +1441,7 @@ private FacebookInterest searchInterest(String interestName, String locale) {
             var builder = org.springframework.web.util.UriComponentsBuilder.fromPath(path)
                     .queryParam("targeting_spec", targetingSpec)
                     .queryParam("access_token", requireAccessToken());
-            FacebookApiResponse response = executeGet(builder.build(false).toUriString());
+            FacebookApiResponse response = executeGet(builder.build().encode().toUriString());
             return response.body();
         } catch (FacebookAccessTokenExpiredException | FacebookPermissionException ex) {
             throw ex;

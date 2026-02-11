@@ -225,9 +225,9 @@ public class ExperimentAdSetPlaybookService {
                 new FacebookAdsService.TargetingValidationRequest(adAccountId, targeting);
         JsonNode apiResponse = recordFacebookCall(
                 apiLogs,
-                "/targetingvalidation",
+                "/" + normalizeAdAccountId(adAccountId) + "/targetingvalidation",
                 "GET",
-                request,
+                buildTargetingValidationPayload(targeting),
                 () -> facebookAdsService.validateTargetingSpec(request),
                 Function.identity());
         boolean isValid = apiResponse != null
@@ -247,9 +247,9 @@ public class ExperimentAdSetPlaybookService {
                 new FacebookAdsService.ReachEstimateRequest(adAccountId, targeting);
         JsonNode apiResponse = recordFacebookCall(
                 apiLogs,
-                "/reachestimate",
+                "/" + normalizeAdAccountId(adAccountId) + "/reachestimate",
                 "GET",
-                request,
+                buildTargetingValidationPayload(targeting),
                 () -> facebookAdsService.estimateReach(request),
                 Function.identity());
         JsonNode dataNode = apiResponse != null && apiResponse.path("data").isArray() && apiResponse.path("data").size() > 0
@@ -281,6 +281,22 @@ public class ExperimentAdSetPlaybookService {
         }
         String text = value.asText();
         return StringUtils.hasText(text) ? text : defaultValue;
+    }
+
+    private ObjectNode buildTargetingValidationPayload(JsonNode targetingSpec) {
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.set("targeting_spec", targetingSpec == null || targetingSpec.isNull()
+                ? objectMapper.createObjectNode()
+                : targetingSpec);
+        return payload;
+    }
+
+    private String normalizeAdAccountId(String adAccountId) {
+        if (!StringUtils.hasText(adAccountId)) {
+            return "act_<missing>";
+        }
+        String trimmed = adAccountId.trim();
+        return trimmed.startsWith("act_") ? trimmed : "act_" + trimmed;
     }
 
     private List<ExperimentAdSetPlaybookClient.ApiCallPayload> buildApiCallPayloads(List<ApiCallLog> logs) {

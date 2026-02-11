@@ -8,6 +8,7 @@
 - Utilize o `facebook-ads-worker` para todas as chamadas à API do Facebook.
 - Consulte sempre a documentação oficial da Graph API ao trabalhar neste módulo: https://developers.facebook.com/docs/graph-api e https://developers.facebook.com/docs/graph-api/reference.
 - A versão da Graph API é configurável via propriedade `facebook.graph-api.version` (default `v23.0`) e deve estar alinhada com a recomendação oficial.
+- Nas chamadas de validação de público (`/targetingvalidation`) e estimativa de alcance (`/reachestimate`), serializar `targeting_spec` com URL encoding completo para evitar erro de expansão (`Not enough variable values available to expand`) quando o JSON inclui chaves entre `{}`.
 - Na fila de resolução de targeting (`targeting_resolution_job`), sempre priorize o `ad_account_id` da conta de Facebook associada ao experimento (`ad_set -> experiment -> fb_page -> fb_account`) antes de qualquer fallback global.
 - Sugestões de interesses baseadas em seed devem usar o endpoint `/search` com `type=adinterestsuggestion` e `interest_list` (não `/targetingsuggestions`).
 - Remova campos de segmentação não suportados pela Graph API antes do envio (por exemplo, `detailed_targeting_description`) para evitar erros `(#100) Invalid parameter`.

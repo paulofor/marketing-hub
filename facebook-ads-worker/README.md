@@ -152,6 +152,9 @@ As etapas do playbook de público (`FACEBOOK_VALIDATE_SPEC` e
 `/{adAccountId}/targetingvalidation` e `/{adAccountId}/reachestimate`, além de
 persistirem o payload com a chave `targeting_spec` (snake_case), alinhando os
 logs/cURLs com o contrato oficial da Marketing API.
+O parâmetro de query `targeting_spec` é enviado URL-encoded nas chamadas GET
+para evitar falhas de expansão de template do `UriComponentsBuilder` quando o
+JSON contém chaves como `"geo_locations"` entre chaves (`{}`) no payload.
 
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar
 investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs

@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FacebookAdsServiceTest {
     private FailFastMockWebServer server;
@@ -616,6 +617,65 @@ class FacebookAdsServiceTest {
         JsonNode body = objectMapper.readTree(publishRequest.getBody().inputStream());
         assertEquals("ACTIVE", body.get("status").asText());
         assertEquals("token", body.get("access_token").asText());
+    }
+
+
+    @Test
+    void validateTargetingSpecEncodesTargetingSpecQueryParam() throws Exception {
+        server.enqueueResponse(new MockResponse().setBody("{\"data\":[]}")
+            .addHeader("Content-Type", "application/json"));
+
+        JsonNode targetingSpec = objectMapper.readTree("""
+            {
+              "geo_locations": {
+                "countries": ["BR"]
+              },
+              "age_min": 18
+            }
+            """);
+
+        JsonNode response = service.validateTargetingSpec(
+            new FacebookAdsService.TargetingValidationRequest("act_123", targetingSpec)
+        );
+
+        assertNotNull(response);
+        RecordedRequest recorded = takeRequest("targeting validation request");
+        assertTrue(recorded.getPath().startsWith("/v23.0/act_123/targetingvalidation?"));
+        assertFalse(recorded.getPath().contains("targeting_spec={"));
+        HttpUrl requestUrl = recorded.getRequestUrl();
+        assertNotNull(requestUrl);
+        String targetingSpecParam = requestUrl.queryParameter("targeting_spec");
+        assertNotNull(targetingSpecParam);
+        assertTrue(targetingSpecParam.contains("geo_locations"));
+    }
+
+    @Test
+    void estimateReachEncodesTargetingSpecQueryParam() throws Exception {
+        server.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"users\":1234}]}")
+            .addHeader("Content-Type", "application/json"));
+
+        JsonNode targetingSpec = objectMapper.readTree("""
+            {
+              "geo_locations": {
+                "countries": ["BR"]
+              },
+              "age_min": 18
+            }
+            """);
+
+        JsonNode response = service.estimateReach(
+            new FacebookAdsService.ReachEstimateRequest("act_123", targetingSpec)
+        );
+
+        assertNotNull(response);
+        RecordedRequest recorded = takeRequest("reach estimate request");
+        assertTrue(recorded.getPath().startsWith("/v23.0/act_123/reachestimate?"));
+        assertFalse(recorded.getPath().contains("targeting_spec={"));
+        HttpUrl requestUrl = recorded.getRequestUrl();
+        assertNotNull(requestUrl);
+        String targetingSpecParam = requestUrl.queryParameter("targeting_spec");
+        assertNotNull(targetingSpecParam);
+        assertTrue(targetingSpecParam.contains("geo_locations"));
     }
 
     @Test

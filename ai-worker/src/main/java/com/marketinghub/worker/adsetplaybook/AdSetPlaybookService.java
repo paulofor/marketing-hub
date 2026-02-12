@@ -21,15 +21,18 @@ public class AdSetPlaybookService {
     private final AdSetPlaybookClient client;
     private final AdSetSeedPlanner seedPlanner;
     private final AdSetSpecBuilder specBuilder;
+    private final AdSetSpecRecalibrator specRecalibrator;
     private final String workerId;
 
     public AdSetPlaybookService(AdSetPlaybookClient client,
                                 AdSetSeedPlanner seedPlanner,
                                 AdSetSpecBuilder specBuilder,
+                                AdSetSpecRecalibrator specRecalibrator,
                                 @Value("${adset.playbook.worker-id:}") String configuredWorkerId) {
         this.client = client;
         this.seedPlanner = seedPlanner;
         this.specBuilder = specBuilder;
+        this.specRecalibrator = specRecalibrator;
         this.workerId = configuredWorkerId != null && !configuredWorkerId.isBlank()
                 ? configuredWorkerId
                 : generateWorkerId();
@@ -46,6 +49,7 @@ public class AdSetPlaybookService {
                 JsonNode result = switch (job.type()) {
                     case AI_PREPARE_SEED -> seedPlanner.plan(job.payload());
                     case AI_BUILD_SPECS -> specBuilder.build(job.payload());
+                    case AI_RECALIBRATE_SPEC -> specRecalibrator.recalibrate(job.payload());
                     default -> {
                         LOGGER.warn("Worker AI recebeu job não suportado {}", job.type());
                         yield null;

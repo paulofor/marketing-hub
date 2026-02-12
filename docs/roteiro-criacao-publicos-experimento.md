@@ -2,7 +2,7 @@
 
 Este documento descreve um **roteiro prático, curto e eficiente** (começo → fim) para chegar em **3 Ad Sets no Brasil** usando a **Meta Ads API**, com entrada e saída esperadas em cada etapa e comandos prontos para **Git Bash**.
 
-> Endpoints-chave deste fluxo: **Targeting Search** → **Targeting Suggestions** → **Flexible Targeting (`flexible_spec`)** → **Targeting Validation** → **Reach Estimate**.
+> Endpoints-chave deste fluxo: **Targeting Search** → **Interest Suggestions (`/search` + `adinterestsuggestion`)** → **Flexible Targeting (`flexible_spec`)** → **Targeting Validation** → **Reach Estimate**.
 
 ## 0) Preparação do ambiente
 
@@ -65,10 +65,12 @@ curl -sG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/targeti
 **Ação (Targeting Suggestions):**
 
 ```bash
-curl -sG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/targetingsuggestions" \
+curl -sG "https://graph.facebook.com/${API_VERSION}/search" \
   --data-urlencode "access_token=${ACCESS_TOKEN}" \
-  --data-urlencode 'targeting_list=[{"type":"interests","id":"6015636111201"}]' \
-  --data-urlencode "limit=100"
+  --data-urlencode "type=adinterestsuggestion" \
+  --data-urlencode 'interest_list=["6015636111201"]' \
+  --data-urlencode "limit=100" \
+  --data-urlencode "locale=pt_BR"
 ```
 
 **Saída (extrair e listar):**
@@ -268,7 +270,7 @@ Repita para os outros specs.
 Fluxo concluído quando existir:
 
 - ✅ 1 seed confirmado (ID + nome)
-- ✅ sugestões relevantes via `/targetingsuggestions`
+- ✅ sugestões relevantes via `/search?type=adinterestsuggestion`
 - ✅ 3 arquivos `spec_*.json`
 - ✅ validação OK em `/targetingvalidation`
 - ✅ alcance estimado BR em `/reachestimate`

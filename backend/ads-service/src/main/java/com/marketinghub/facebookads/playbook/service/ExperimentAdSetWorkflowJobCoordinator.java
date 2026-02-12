@@ -465,10 +465,15 @@ public class ExperimentAdSetWorkflowJobCoordinator {
         ExperimentAdSetSpec spec = specRepository.findById(specId)
                 .orElseThrow(() -> new EntityNotFoundException("Spec %d não encontrada".formatted(specId)));
         JsonNode result = readJson(job.getResultPayload());
-        spec.setValidationStatus(result != null ? result.path("status").asText("VALID") : "VALID");
+        String validationStatus = result != null ? result.path("status").asText("VALID") : "VALID";
+        spec.setValidationStatus(validationStatus);
         spec.setValidationResponse(result != null ? result.toString() : null);
         specRepository.save(spec);
-        enqueueReachJob(workflow, spec);
+        if (isValidValidationStatus(validationStatus)) {
+            enqueueReachJob(workflow, spec);
+        } else {
+            skipReachForInvalidSpec(workflow, spec, result);
+        }
     }
 
     private void enqueueReachJob(ExperimentAdSetWorkflow workflow, ExperimentAdSetSpec spec) {
@@ -514,6 +519,30 @@ public class ExperimentAdSetWorkflowJobCoordinator {
         spec.setReachLowerBound(asLong(result, "usersLowerBound"));
         spec.setReachUpperBound(asLong(result, "usersUpperBound"));
         spec.setReachResponse(result != null ? result.toString() : null);
+        specRepository.save(spec);
+        checkWorkflowCompletion(workflow);
+    }
+
+    private boolean isValidValidationStatus(String status) {
+        if (!StringUtils.hasText(status)) {
+            return true;
+        }
+        return "VALID".equalsIgnoreCase(status.trim());
+    }
+
+    private void skipReachForInvalidSpec(ExperimentAdSetWorkflow workflow,
+                                          ExperimentAdSetSpec spec,
+                                          JsonNode validationResult) {
+        spec.setReachStatus("SKIPPED");
+        spec.setReachLowerBound(null);
+        spec.setReachUpperBound(null);
+        ObjectNode node = objectMapper.createObjectNode();
+        node.put("status", "SKIPPED");
+        node.put("reason", "Targeting inválido na validação do Facebook");
+        if (validationResult != null) {
+            node.set("validation", validationResult);
+        }
+        spec.setReachResponse(node.toString());
         specRepository.save(spec);
         checkWorkflowCompletion(workflow);
     }

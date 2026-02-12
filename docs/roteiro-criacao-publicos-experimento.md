@@ -206,21 +206,22 @@ JSON
 
 **Objetivo:** validar IDs/nomes de **Detailed Targeting** (principalmente interesses/categorias).
 
-> Importante: esse endpoint **não** valida o `targeting_spec` completo. Use-o apenas como checagem rápida de IDs.
+> Importante: esse endpoint valida IDs de Detailed Targeting (especialmente `interests`/categorias), mas **não** valida o `targeting_spec` completo. Use-o como checagem rápida de IDs antes da validação end-to-end.
 
 **Entrada:** lista de IDs de interesses/categorias coletados dos `spec_*.json`.
 
-**Ação (Targeting Validation):**
+**Ação (Validação de IDs):**
 
 ```bash
-curl -sG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/targetingvalidation" \
+curl -sS --failG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/targetingvalidation" \
   --data-urlencode "access_token=${ACCESS_TOKEN}" \
-  --data-urlencode 'id_list=["6003389760112","6004030160948"]'
+  --data-urlencode 'id_list=["6003389760112","6004030160948"]' \
+  > out_targetingvalidation.json
 ```
 
 Se necessário, valide por nomes com `name_list` ou por estruturas com `targeting_list`.
 
-**Saída:** resposta de validação para os IDs informados.
+**Saída:** `out_targetingvalidation.json` com a validação dos IDs informados.
 
 ---
 
@@ -230,17 +231,18 @@ Se necessário, valide por nomes com `name_list` ou por estruturas com `targetin
 
 **Entrada:** `spec_*.json`
 
-**Ação (Reach Estimate):**
+**Ação (Validação end-to-end do `targeting_spec`):**
 
 ```bash
-curl -sG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/reachestimate" \
+curl -sS --failG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/reachestimate" \
   --data-urlencode "access_token=${ACCESS_TOKEN}" \
-  --data-urlencode "targeting_spec@spec_design.json"
+  --data-urlencode "targeting_spec@spec_2.json" \
+  > reach_2.json
 ```
 
-Repita para os outros specs (`spec_marketing.json` e `spec_smb.json`).
+Repita para os outros specs do pipeline (`spec_design.json`, `spec_marketing.json` e `spec_smb.json`) quando aplicável no seu fluxo.
 
-**Saída:** alcance estimado por ad set (faixa lower/upper).
+**Saída:** `reach_*.json` com alcance estimado por ad set (faixa lower/upper).
 
 ---
 

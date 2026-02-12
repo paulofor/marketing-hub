@@ -17,6 +17,7 @@ public record ExperimentAdSetSpecDto(
         String validationStatus,
         String validationResponse,
         String reachStatus,
+        String reachResponse,
         Long reachLowerBound,
         Long reachUpperBound,
         Instant createdAt,

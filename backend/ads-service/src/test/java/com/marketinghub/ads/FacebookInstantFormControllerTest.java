@@ -57,6 +57,9 @@ class FacebookInstantFormControllerTest {
     FacebookAccountRepository accountRepository;
 
     @Autowired
+    CampaignRepository campaignRepository;
+
+    @Autowired
     ExperimentRepository experimentRepository;
     @Autowired
     HypothesisRepository hypothesisRepository;
@@ -74,6 +77,7 @@ class FacebookInstantFormControllerTest {
     void setup() {
         instantFormRepository.deleteAll();
         experimentRepository.deleteAll();
+        campaignRepository.deleteAll();
         pageRepository.deleteAll();
         accountRepository.deleteAll();
         hypothesisRepository.deleteAll();

@@ -202,34 +202,31 @@ JSON
 
 ---
 
-## 5) Validar cada `targeting_spec`
+## 5) (Opcional) Sanity check de Detailed Targeting (`/targetingvalidation`)
 
-**Objetivo:** confirmar que o JSON é aceito sem erro estrutural.
+**Objetivo:** validar IDs/nomes de **Detailed Targeting** (principalmente interesses/categorias).
 
-**Entrada:** `spec_*.json`
+> Importante: esse endpoint **não** valida o `targeting_spec` completo. Use-o apenas como checagem rápida de IDs.
+
+**Entrada:** lista de IDs de interesses/categorias coletados dos `spec_*.json`.
 
 **Ação (Targeting Validation):**
 
 ```bash
 curl -sG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/targetingvalidation" \
   --data-urlencode "access_token=${ACCESS_TOKEN}" \
-  --data-urlencode "targeting_spec@spec_design.json"
+  --data-urlencode 'id_list=["6003389760112","6004030160948"]'
 ```
 
-Repita para os demais:
+Se necessário, valide por nomes com `name_list` ou por estruturas com `targeting_list`.
 
-```bash
---data-urlencode "targeting_spec@spec_marketing.json"
---data-urlencode "targeting_spec@spec_smb.json"
-```
-
-**Saída:** validação OK ou mensagens indicando ajustes.
+**Saída:** resposta de validação para os IDs informados.
 
 ---
 
 ## 6) Estimar alcance no Brasil
 
-**Objetivo:** medir o tamanho do público já com BR + idade + targeting.
+**Objetivo:** validar de ponta a ponta cada `targeting_spec` (BR + idade + `flexible_spec`) e medir o tamanho do público.
 
 **Entrada:** `spec_*.json`
 
@@ -241,7 +238,7 @@ curl -sG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/reaches
   --data-urlencode "targeting_spec@spec_design.json"
 ```
 
-Repita para os outros specs.
+Repita para os outros specs (`spec_marketing.json` e `spec_smb.json`).
 
 **Saída:** alcance estimado por ad set (faixa lower/upper).
 

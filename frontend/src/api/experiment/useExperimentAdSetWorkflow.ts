@@ -25,7 +25,9 @@ export interface ExperimentAdSetSpec {
   ageMax?: number | null;
   targetingSpec?: string | null;
   validationStatus?: string | null;
+  validationResponse?: string | null;
   reachStatus?: string | null;
+  reachResponse?: string | null;
   reachLowerBound?: number | null;
   reachUpperBound?: number | null;
   createdAt?: string | null;

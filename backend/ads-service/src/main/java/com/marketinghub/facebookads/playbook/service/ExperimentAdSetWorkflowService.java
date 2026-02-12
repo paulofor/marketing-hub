@@ -124,6 +124,7 @@ public class ExperimentAdSetWorkflowService {
                         spec.getValidationStatus(),
                         spec.getValidationResponse(),
                         spec.getReachStatus(),
+                        spec.getReachResponse(),
                         spec.getReachLowerBound(),
                         spec.getReachUpperBound(),
                         spec.getCreatedAt(),

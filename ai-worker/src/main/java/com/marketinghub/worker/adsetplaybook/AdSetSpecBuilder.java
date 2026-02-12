@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,29 +35,32 @@ public class AdSetSpecBuilder {
         List<SuggestionItem> positions = parsePositions(payload.path("positions"));
         SuggestionItem seed = parseSeed(payload.path("seed"));
         List<SuggestionItem> behaviors = suggestions.stream()
-                .filter(item -> "BEHAVIOR".equals(item.type()))
+                .filter(item -> item.type() == SuggestionItemType.BEHAVIOR)
                 .collect(Collectors.toList());
         List<SuggestionItem> interests = suggestions.stream()
-                .filter(item -> "INTEREST".equals(item.type()))
+                .filter(item -> item.type() == SuggestionItemType.INTEREST)
                 .collect(Collectors.toList());
 
         ObjectNode result = mapper.createObjectNode();
         ArrayNode specs = mapper.createArrayNode();
-        specs.add(buildDesignSpec(interests, positions));
-        specs.add(buildMarketingSpec(interests, positions));
+        specs.add(buildDesignSpec(interests, positions, seed));
+        specs.add(buildMarketingSpec(interests, positions, seed));
         specs.add(buildSmbSpec(interests, behaviors, seed));
         result.set("specs", specs);
         return result;
     }
 
-    private ObjectNode buildDesignSpec(List<SuggestionItem> interests, List<SuggestionItem> positions) {
+    private ObjectNode buildDesignSpec(List<SuggestionItem> interests,
+                                       List<SuggestionItem> positions,
+                                       SuggestionItem seed) {
         List<SuggestionItem> designInterests = selectByKeyword(interests, DESIGN_KEYWORDS, 4);
-        if (designInterests.isEmpty() && !interests.isEmpty()) {
-            designInterests = interests.stream().limit(4).collect(Collectors.toList());
-        }
+        designInterests = ensureInterests(designInterests, interests, seed, 4);
         ObjectNode targeting = baseTargeting(18, 45);
         ArrayNode flexible = mapper.createArrayNode();
-        flexible.add(buildInterestBlock(designInterests));
+        JsonNode interestBlock = buildInterestBlock(designInterests);
+        if (interestBlock != null) {
+            flexible.add(interestBlock);
+        }
         JsonNode positionBlock = buildPositionBlock(positions);
         if (positionBlock != null) {
             flexible.add(positionBlock);
@@ -65,14 +69,17 @@ public class AdSetSpecBuilder {
         return specNode("DESIGNERS", "Designers / Edição", targeting);
     }
 
-    private ObjectNode buildMarketingSpec(List<SuggestionItem> interests, List<SuggestionItem> positions) {
+    private ObjectNode buildMarketingSpec(List<SuggestionItem> interests,
+                                          List<SuggestionItem> positions,
+                                          SuggestionItem seed) {
         List<SuggestionItem> marketingInterests = selectByKeyword(interests, MARKETING_KEYWORDS, 4);
-        if (marketingInterests.isEmpty()) {
-            marketingInterests = interests.stream().limit(4).collect(Collectors.toList());
-        }
+        marketingInterests = ensureInterests(marketingInterests, interests, seed, 4);
         ObjectNode targeting = baseTargeting(20, 55);
         ArrayNode flexible = mapper.createArrayNode();
-        flexible.add(buildInterestBlock(marketingInterests));
+        JsonNode interestBlock = buildInterestBlock(marketingInterests);
+        if (interestBlock != null) {
+            flexible.add(interestBlock);
+        }
         JsonNode positionBlock = buildPositionBlock(positions);
         if (positionBlock != null) {
             flexible.add(positionBlock);
@@ -91,11 +98,12 @@ public class AdSetSpecBuilder {
             flexible.add(behaviorBlock);
         }
         List<SuggestionItem> smbInterests = new ArrayList<>();
-        if (seed != null) {
-            smbInterests.add(seed);
+        addIfAbsent(smbInterests, seed);
+        interests.stream().limit(4).forEach(item -> addIfAbsent(smbInterests, item));
+        JsonNode interestBlock = buildInterestBlock(smbInterests);
+        if (interestBlock != null) {
+            flexible.add(interestBlock);
         }
-        smbInterests.addAll(interests.stream().limit(4).collect(Collectors.toList()));
-        flexible.add(buildInterestBlock(smbInterests));
         targeting.set("flexible_spec", flexible);
         return specNode("SMB", "Donos de negócio", targeting);
     }
@@ -123,8 +131,17 @@ public class AdSetSpecBuilder {
     }
 
     private JsonNode buildInterestBlock(List<SuggestionItem> interests) {
+        if (CollectionUtils.isEmpty(interests)) {
+            return null;
+        }
         ArrayNode array = mapper.createArrayNode();
-        interests.stream().limit(5).forEach(item -> array.add(toTargetingOption(item)));
+        interests.stream()
+                .filter(Objects::nonNull)
+                .limit(5)
+                .forEach(item -> array.add(toTargetingOption(item)));
+        if (array.isEmpty()) {
+            return null;
+        }
         ObjectNode block = mapper.createObjectNode();
         block.set("interests", array);
         return block;
@@ -146,7 +163,13 @@ public class AdSetSpecBuilder {
             return null;
         }
         ArrayNode array = mapper.createArrayNode();
-        behaviors.stream().limit(3).forEach(item -> array.add(toTargetingOption(item)));
+        behaviors.stream()
+                .filter(Objects::nonNull)
+                .limit(3)
+                .forEach(item -> array.add(toTargetingOption(item)));
+        if (array.isEmpty()) {
+            return null;
+        }
         ObjectNode block = mapper.createObjectNode();
         block.set("behaviors", array);
         return block;
@@ -187,12 +210,11 @@ public class AdSetSpecBuilder {
         array.forEach(entry -> {
             String id = entry.path("id").asText(null);
             String name = entry.path("name").asText(null);
-            String type = entry.path("type").asText("INTEREST");
             Long audience = entry.has("audienceSize") && entry.get("audienceSize").isNumber()
                     ? entry.get("audienceSize").longValue()
                     : null;
             if (StringUtils.hasText(id) && StringUtils.hasText(name)) {
-                items.add(new SuggestionItem(id.trim(), name.trim(), type.trim().toUpperCase(Locale.ROOT), audience));
+                items.add(new SuggestionItem(id.trim(), name.trim(), resolveType(entry), audience));
             }
         });
         return items;
@@ -211,7 +233,7 @@ public class AdSetSpecBuilder {
             String id = entry.path("id").asText(null);
             String name = entry.path("name").asText(null);
             if (StringUtils.hasText(id) && StringUtils.hasText(name)) {
-                items.add(new SuggestionItem(id.trim(), name.trim(), "WORK_POSITION", null));
+                items.add(new SuggestionItem(id.trim(), name.trim(), SuggestionItemType.WORK_POSITION, null));
             }
         });
         return items;
@@ -226,9 +248,70 @@ public class AdSetSpecBuilder {
         if (!StringUtils.hasText(id) || !StringUtils.hasText(name)) {
             return null;
         }
-        return new SuggestionItem(id.trim(), name.trim(), "INTEREST", null);
+        return new SuggestionItem(id.trim(), name.trim(), SuggestionItemType.INTEREST, null);
     }
 
-    private record SuggestionItem(String id, String name, String type, Long audienceSize) {
+    private List<SuggestionItem> ensureInterests(List<SuggestionItem> primary,
+                                                 List<SuggestionItem> fallback,
+                                                 SuggestionItem seed,
+                                                 int limit) {
+        List<SuggestionItem> result = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(primary)) {
+            result.addAll(primary);
+        }
+        if (result.isEmpty() && !CollectionUtils.isEmpty(fallback)) {
+            result.addAll(fallback.stream().limit(limit).collect(Collectors.toList()));
+        }
+        if (seed != null && result.stream().noneMatch(item -> item.id().equals(seed.id()))) {
+            result.add(0, seed);
+        }
+        return result.stream().limit(limit).collect(Collectors.toList());
+    }
+
+    private void addIfAbsent(List<SuggestionItem> target, SuggestionItem candidate) {
+        if (candidate == null) {
+            return;
+        }
+        boolean exists = target.stream().anyMatch(item -> item.id().equals(candidate.id()));
+        if (!exists) {
+            target.add(candidate);
+        }
+    }
+
+    private SuggestionItemType resolveType(JsonNode entry) {
+        if (entry == null || entry.isNull()) {
+            return SuggestionItemType.INTEREST;
+        }
+        String rawType = entry.path("type").asText(null);
+        if (StringUtils.hasText(rawType)) {
+            String normalized = rawType.trim().toUpperCase(Locale.ROOT);
+            if (normalized.contains("BEHAVIOR")) {
+                return SuggestionItemType.BEHAVIOR;
+            }
+            if (normalized.contains("DEMOGRAPH")) {
+                return SuggestionItemType.DEMOGRAPHIC;
+            }
+        }
+        JsonNode pathNode = entry.get("path");
+        if (pathNode != null && pathNode.isArray() && pathNode.size() > 0) {
+            String category = pathNode.get(0).asText("");
+            if ("Behaviors".equalsIgnoreCase(category)) {
+                return SuggestionItemType.BEHAVIOR;
+            }
+            if ("Demographics".equalsIgnoreCase(category)) {
+                return SuggestionItemType.DEMOGRAPHIC;
+            }
+        }
+        return SuggestionItemType.INTEREST;
+    }
+
+    private enum SuggestionItemType {
+        INTEREST,
+        BEHAVIOR,
+        DEMOGRAPHIC,
+        WORK_POSITION
+    }
+
+    private record SuggestionItem(String id, String name, SuggestionItemType type, Long audienceSize) {
     }
 }

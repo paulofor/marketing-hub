@@ -69,6 +69,12 @@ const JOB_TYPE_INFO: Record<string, { title: string; description: string; docSte
 const PIPELINE_DOC_PATH = "docs/pipeline-3-publicos-meta-ads.md";
 const REACH_MIN = 200_000;
 const REACH_MAX = 20_000_000;
+const ICP_REFERENCE_TEXT = `Produto: Marketing Hub — gera imagens e criativos por IA a partir de foto enviada pelo cliente.
+Mercado: Brasil.
+Quem compra: pequenos negócios, social medias, designers, empreendedores.
+Uso: posts, anúncios, peças promocionais e diversão.
+Dores: falta de tempo/habilidade para criar imagens consistentes; custo de designer; velocidade.
+Canais: Instagram, Facebook, tráfego pago.`;
 
 type StepStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED" | "SKIPPED";
 
@@ -463,6 +469,7 @@ function buildPipelineSteps(workflow: ExperimentAdSetWorkflowDto): PipelineStepS
     buildRecalibrationStep(specs, getJobs("AI_RECALIBRATE_SPEC")),
     buildAdsetCreationStep(workflow),
   ];
+}
 
 function buildIcpStep(workflow: ExperimentAdSetWorkflowDto): PipelineStepSummary {
   const status: StepStatus = workflow.status === "NOT_STARTED" ? "PENDING" : "DONE";
@@ -475,6 +482,10 @@ function buildIcpStep(workflow: ExperimentAdSetWorkflowDto): PipelineStepSummary
       <div className="small">
         <div>Experimento #{workflow.experimentId} precisa ter o ICP documentado antes de acionar a IA.</div>
         <div className="text-muted">Saída esperada: icp.md + ia_worker_config.json (opcional).</div>
+        <SectionLabel className="mt-3">Texto de referência para o icp.md</SectionLabel>
+        <pre className="mt-2 bg-light border rounded p-2 mb-0" style={{ whiteSpace: "pre-wrap" }}>
+          {ICP_REFERENCE_TEXT}
+        </pre>
       </div>
     ),
     helper: docReference("Etapa 1"),
@@ -661,7 +672,6 @@ function buildSpecAssemblyStep(
       </>
     ),
   };
-}
 }
 
 function buildValidationStep(specs: ExperimentAdSetSpec[], jobs: ExperimentAdSetJob[]): PipelineStepSummary {

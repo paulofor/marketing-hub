@@ -547,6 +547,9 @@ function buildValidationStep(specs: ExperimentAdSetSpec[], jobs: ExperimentAdSet
   const invalidSpec = specs.find((spec) => spec.validationStatus && spec.validationStatus !== "VALID");
   const pendingSpec = specs.find((spec) => !spec.validationStatus);
   if (invalidSpec) {
+    const failedValidationJob = jobs
+      .filter((job) => job.status === "FAILED" && typeof job.id === "number")
+      .sort((a, b) => (b.id ?? 0) - (a.id ?? 0))[0];
     return {
       id: "FACEBOOK_VALIDATE_SPEC",
       title: "Targeting Validation",
@@ -556,7 +559,16 @@ function buildValidationStep(specs: ExperimentAdSetSpec[], jobs: ExperimentAdSet
         <div className="small text-danger">
           {slotLabel(invalidSpec.slot)} recebeu status {invalidSpec.validationStatus}.
           {" "}
-          {extractValidationSummary(invalidSpec.validationResponse) ?? "Ver detalhe do job para o erro completo."}
+          {extractValidationSummary(invalidSpec.validationResponse) ?? "Falha retornada pelo Meta."}
+          {failedValidationJob?.id ? (
+            <>
+              {" "}
+              <Link to={`jobs/${failedValidationJob.id}`} className="fw-semibold">
+                Ver detalhe do job #{failedValidationJob.id}
+              </Link>
+              .
+            </>
+          ) : null}
         </div>
       ),
     };

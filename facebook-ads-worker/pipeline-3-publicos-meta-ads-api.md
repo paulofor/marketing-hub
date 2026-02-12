@@ -323,32 +323,32 @@ JSON
 
 ---
 
-## 8) (Opcional) Validar IDs (Targeting Validation)
+## 8) (Opcional) Sanity check de Detailed Targeting (`/targetingvalidation`)
 
 ### Objetivo
-Validar rapidamente se uma lista de **IDs** é reconhecida.  
+Validar rapidamente IDs/nomes de **Detailed Targeting** (principalmente interesses/categorias).  
 **Não** é validação do `targeting_spec` completo.
 
 ### Entrada
-- Lista de IDs (por exemplo, interesses)
+- Lista de IDs de interesses/categorias (extraídos dos specs)
 
 ### Ação
 ```bash
 curl -sS --failG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/targetingvalidation" \
   --data-urlencode "access_token=${ACCESS_TOKEN}" \
-  --data-urlencode "id_list=[6015636111201,6003096002658,6003341931023]" \
+  --data-urlencode "id_list=[\"6015636111201\",\"6003096002658\",\"6003341931023\"]" \
   > out_targetingvalidation.json
 ```
 
 ### Saída
-- `out_targetingvalidation.json` (IDs aceitos/validados).
+- `out_targetingvalidation.json` (validação dos IDs informados).
 
 ---
 
 ## 9) Validar “end-to-end” e medir o alcance no Brasil (Reach Estimate)
 
 ### Objetivo
-Medir se cada público está com tamanho suficiente e sem inconsistências, já com **BR**.
+Validar de ponta a ponta cada `targeting_spec` e medir se cada público está com tamanho suficiente, já com **BR**.
 
 ### Entrada
 - `spec_*.json`

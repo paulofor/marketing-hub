@@ -313,20 +313,20 @@ Gera os arquivos:
 
 ---
 
-## 6) (Opcional) Validar IDs (Targeting Validation)
+## 6) (Opcional) Sanity check de Detailed Targeting (`/targetingvalidation`)
 
 ### Objetivo
-Validar rapidamente se uma lista de **IDs** é reconhecida.  
+Validar rapidamente IDs/nomes de **Detailed Targeting** (principalmente interesses/categorias).  
 **Não** é validação do `targeting_spec` completo.
 
 ### Entrada
-- Lista de IDs (ex.: IDs que aparecem no spec)
+- Lista de IDs de interesses/categorias (extraídos dos specs)
 
 ### Ação
 ```bash
 curl -sS --failG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/targetingvalidation" \
   --data-urlencode "access_token=${ACCESS_TOKEN}" \
-  --data-urlencode "id_list=[6015636111201,6003096002658,6003341931023]" \
+  --data-urlencode "id_list=[\"6015636111201\",\"6003096002658\",\"6003341931023\"]" \
   > out_targetingvalidation.json
 ```
 

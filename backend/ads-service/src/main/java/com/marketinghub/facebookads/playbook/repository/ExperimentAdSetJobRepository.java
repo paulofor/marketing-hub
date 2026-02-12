@@ -26,6 +26,10 @@ public interface ExperimentAdSetJobRepository extends JpaRepository<ExperimentAd
 
     List<ExperimentAdSetJob> findByWorkflowIdAndType(Long workflowId, ExperimentAdSetJobType type);
 
+    long countByWorkflowIdAndType(Long workflowId, ExperimentAdSetJobType type);
+
+    long countByWorkflowIdAndTypeAndResourceId(Long workflowId, ExperimentAdSetJobType type, Long resourceId);
+
     boolean existsByWorkflowIdAndTypeAndStatusIn(Long workflowId,
                                                  ExperimentAdSetJobType type,
                                                  Collection<ExperimentAdSetJobStatus> statuses);

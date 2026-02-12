@@ -56,6 +56,9 @@ public class ExperimentAdSetWorkflowJobCoordinator {
     private static final int SEED_SEARCH_LIMIT = 25;
     private static final int SUGGESTION_LIMIT = 100;
     private static final int POSITION_LIMIT = 25;
+    private static final long MIN_REACH_LOWER_BOUND = 200_000L;
+    private static final long MAX_REACH_UPPER_BOUND = 20_000_000L;
+    private static final int MAX_RECALIBRATION_ATTEMPTS = 2;
 
     private final ExperimentAdSetJobRepository jobRepository;
     private final ExperimentAdSetJobApiLogRepository jobApiLogRepository;
@@ -218,6 +221,7 @@ public class ExperimentAdSetWorkflowJobCoordinator {
             case AI_BUILD_SPECS -> handleSpecGeneration(workflow, job);
             case FACEBOOK_VALIDATE_SPEC -> handleSpecValidation(workflow, job);
             case FACEBOOK_REACH_ESTIMATE -> handleReachEstimate(workflow, job);
+            case AI_RECALIBRATE_SPEC -> handleRecalibration(workflow, job);
         }
     }
 
@@ -520,7 +524,49 @@ public class ExperimentAdSetWorkflowJobCoordinator {
         spec.setReachUpperBound(asLong(result, "usersUpperBound"));
         spec.setReachResponse(result != null ? result.toString() : null);
         specRepository.save(spec);
+
+        if (isReachOutOfRange(spec)) {
+            if (!enqueueRecalibrationJob(workflow, spec)) {
+                String message = "Spec %s fora da faixa de alcance após recalibração (%s-%s)"
+                        .formatted(spec.getSlot(), formatReach(spec.getReachLowerBound()), formatReach(spec.getReachUpperBound()));
+                markWorkflowFailed(workflow, message);
+            }
+            return;
+        }
         checkWorkflowCompletion(workflow);
+    }
+
+    private void handleRecalibration(ExperimentAdSetWorkflow workflow, ExperimentAdSetJob job) {
+        Long specId = job.getResourceId();
+        if (specId == null) {
+            LOGGER.warn("Job {} sem spec associado para recalibração", job.getId());
+            return;
+        }
+        ExperimentAdSetSpec spec = specRepository.findById(specId)
+                .orElseThrow(() -> new EntityNotFoundException("Spec %d não encontrada".formatted(specId)));
+        JsonNode result = readJson(job.getResultPayload());
+        JsonNode targetingNode = result != null ? result.get("targetingSpec") : null;
+        if (targetingNode == null || targetingNode.isNull()) {
+            markWorkflowFailed(workflow, "Recalibração não retornou targetingSpec para a spec " + spec.getSlot());
+            return;
+        }
+        spec.setTargetingSpec(extractTargetingSpec(targetingNode));
+        Integer ageMin = asInt(result, "ageMin");
+        Integer ageMax = asInt(result, "ageMax");
+        if (ageMin != null) {
+            spec.setAgeMin(ageMin);
+        }
+        if (ageMax != null) {
+            spec.setAgeMax(ageMax);
+        }
+        spec.setValidationStatus(null);
+        spec.setValidationResponse(null);
+        spec.setReachStatus(null);
+        spec.setReachResponse(null);
+        spec.setReachLowerBound(null);
+        spec.setReachUpperBound(null);
+        ExperimentAdSetSpec persisted = specRepository.save(spec);
+        enqueueValidationJob(workflow, persisted);
     }
 
     private boolean isValidValidationStatus(String status) {
@@ -528,6 +574,59 @@ public class ExperimentAdSetWorkflowJobCoordinator {
             return true;
         }
         return "VALID".equalsIgnoreCase(status.trim());
+    }
+
+    private boolean isReachOutOfRange(ExperimentAdSetSpec spec) {
+        if (!"READY".equalsIgnoreCase(spec.getReachStatus())) {
+            return false;
+        }
+        Long lower = spec.getReachLowerBound();
+        Long upper = spec.getReachUpperBound();
+        if (lower == null || upper == null) {
+            return false;
+        }
+        return lower < MIN_REACH_LOWER_BOUND || upper > MAX_REACH_UPPER_BOUND;
+    }
+
+    private boolean enqueueRecalibrationJob(ExperimentAdSetWorkflow workflow, ExperimentAdSetSpec spec) {
+        if (spec.getId() == null) {
+            return false;
+        }
+        long attempts = jobRepository.countByWorkflowIdAndTypeAndResourceId(
+                workflow.getId(),
+                ExperimentAdSetJobType.AI_RECALIBRATE_SPEC,
+                spec.getId());
+        if (attempts >= MAX_RECALIBRATION_ATTEMPTS) {
+            return false;
+        }
+        if (jobRepository.existsByWorkflowIdAndTypeAndResourceIdAndStatusIn(
+                workflow.getId(),
+                ExperimentAdSetJobType.AI_RECALIBRATE_SPEC,
+                spec.getId(),
+                EnumSet.of(ExperimentAdSetJobStatus.PENDING, ExperimentAdSetJobStatus.RUNNING))) {
+            return true;
+        }
+        JsonNode targeting = readJson(spec.getTargetingSpec());
+        if (targeting == null || targeting.isNull()) {
+            return false;
+        }
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("specId", spec.getId());
+        payload.put("slot", spec.getSlot() != null ? spec.getSlot().name() : null);
+        payload.put("targetingSpec", targeting);
+        payload.put("ageMin", spec.getAgeMin());
+        payload.put("ageMax", spec.getAgeMax());
+        payload.put("usersLowerBound", spec.getReachLowerBound());
+        payload.put("usersUpperBound", spec.getReachUpperBound());
+        payload.put("reachMinLowerBound", MIN_REACH_LOWER_BOUND);
+        payload.put("reachMaxUpperBound", MAX_REACH_UPPER_BOUND);
+        payload.put("attempt", attempts + 1);
+        createJob(workflow, ExperimentAdSetJobType.AI_RECALIBRATE_SPEC, ExperimentAdSetWorker.AI, payload, spec.getId());
+        return true;
+    }
+
+    private String formatReach(Long value) {
+        return value != null ? value.toString() : "null";
     }
 
     private void checkWorkflowCompletion(ExperimentAdSetWorkflow workflow) {

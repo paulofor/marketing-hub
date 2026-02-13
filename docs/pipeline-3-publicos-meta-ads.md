@@ -196,40 +196,106 @@ Gerar uma lista **pequena** de termos que têm chance real de virar IDs na API.
 
 ---
 
-## 3) Ads Worker converte seeds em IDs (Targeting Search)
+## 3) Ads Worker faz *Discovery* (mineração): 1 seed → catálogo grande de termos com IDs
 
-### FATOS — Objetivo
-Obter **IDs oficiais** para cada seed (por tipo correto).
+### FATOS — Por que mudar esta etapa
+Em muitos nichos (ex.: “agronegócio PME”), o texto do seed **não mapeia bem** para itens específicos na Meta.  
+Para evitar “ficar preso” caçando manualmente termos, esta etapa passa a operar em **modo discovery**:
 
-### FATOS — Entrada
-- `seed_candidates.json`
+- **Entrada mínima**: 1 seed (texto curto)
+- **Saída máxima**: muitos candidatos (interesses/cargos/comportamentos/…) **já com IDs**
+- Depois o **IA Worker** faz seleção/curadoria e monta os 3 públicos.
 
-### FATOS — Ação
-Para cada termo:
-- `type=adinterest` para **interesses**
-- `type=adworkposition` para **cargos**
-- `type=adbehavior` para **comportamentos**
-
-### TEMPLATE — Targeting Search (interest)
-```bash
-curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/targetingsearch"   --data-urlencode "access_token=__ACCESS_TOKEN__"   --data-urlencode "type=adinterest"   --data-urlencode "q=__SEED__"   --data-urlencode "locale=__LOCALE__"   --data-urlencode "limit=25"   --data-urlencode "fields=id,name,type,path,audience_size_lower_bound,audience_size_upper_bound"   > "out_targetingsearch_interest___SEED__.json"
-```
-
-### TEMPLATE — Targeting Search (work position)
-```bash
-curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/targetingsearch"   --data-urlencode "access_token=__ACCESS_TOKEN__"   --data-urlencode "type=adworkposition"   --data-urlencode "q=__JOB_QUERY__"   --data-urlencode "locale=__LOCALE__"   --data-urlencode "limit=25"   --data-urlencode "fields=id,name,type,path,audience_size_lower_bound,audience_size_upper_bound"   > "out_targetingsearch_workposition___JOB_QUERY__.json"
-```
-
-### TEMPLATE — Targeting Search (behavior)
-```bash
-curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/targetingsearch"   --data-urlencode "access_token=__ACCESS_TOKEN__"   --data-urlencode "type=adbehavior"   --data-urlencode "q=__BEHAVIOR_QUERY__"   --data-urlencode "locale=__LOCALE__"   --data-urlencode "limit=25"   --data-urlencode "fields=id,name,type,path,audience_size_lower_bound,audience_size_upper_bound"   > "out_targetingsearch_behavior___BEHAVIOR_QUERY__.json"
-```
-
-### FATOS — Saída
-- Um conjunto de arquivos `out_targetingsearch_*.json` contendo **candidatos com IDs**.
+> Importante: esta etapa é “alto recall”. Vai vir ruído (ex.: `friends of`, `birthday`, `expats`).  
+> O filtro/seleção acontece no IA Worker (Etapas 4–8).
 
 ---
 
+### FATOS — Entrada
+- `seed_candidates.json` (ou um seed único escolhido pela IA)
+- `ia_worker_config.json` (para regras como `limits` e `reject_terms`)
+
+---
+
+### FATOS — Saída
+- `out/targeting_discovery_raw.json` (agregado bruto)
+- `out/targeting_discovery_dedup.json` (agregado deduplicado; pronto para o IA Worker)
+
+Opcional (mas recomendado):
+- `out/discovery/` (um arquivo por chamada)
+- `out/discovery_stats.json` (contagem por tipo)
+
+---
+
+### FATOS — Regras de seed (para funcionar melhor)
+- Seed deve ser **curta** (1–3 palavras).
+- O Ads Worker deve tentar **variações** do seed:
+  - sem acento (`agronegocio`)
+  - inglês/termos do mercado (`agribusiness`, `agriculture`, `farm`, etc.)
+- O Ads Worker pode testar **2 locales** na busca:
+  - `pt_BR` e `en_US` (muitos nomes aparecem em inglês mesmo no Brasil; ID manda)
+
+---
+
+## 3.A) Estratégia A — 1 chamada por seed (rápida): `targetingsearch` sem fixar `type`
+
+### FATOS
+Use quando você quer **volume rápido** com pouca implementação.
+
+### TEMPLATE — Request (salve sempre o JSON bruto)
+```bash
+# TEMPLATE: substitua os placeholders
+SEED="__SEED__"
+mkdir -p out
+
+curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/targetingsearch"   --data-urlencode "access_token=__ACCESS_TOKEN__"   --data-urlencode "q=${SEED}"   --data-urlencode "locale=__LOCALE__"   --data-urlencode "limit=200"   --data-urlencode "fields=id,name,type,path,topic,audience_size_lower_bound,audience_size_upper_bound"   > "out/discovery_targetingsearch_${SEED}.json"
+```
+
+### FATOS — Observação
+Esta estratégia costuma retornar mistura de categorias (interests/behaviors/demographics/life_events…).  
+Isso é OK no modo discovery: o IA Worker filtrará depois.
+
+---
+
+## 3.B) Estratégia B — várias chamadas por seed (mais controlável): `/search` por tipos
+
+### FATOS
+Use quando você quer **controle** e separar claramente:
+- interesses (`adinterest`)
+- cargos (`adworkposition`)
+- comportamentos (`adbehavior`)
+- (opcional) indústrias (`adindustry`)
+- (opcional) empregadores (`adworkemployer`)
+
+### TEMPLATE — Loop por tipo (um arquivo por tipo)
+```bash
+# TEMPLATE: substitua os placeholders
+SEED="__SEED__"
+mkdir -p out/discovery
+
+for TYPE in adinterest adworkposition adbehavior adindustry adworkemployer; do
+  curl -sS --failG "https://graph.facebook.com/__API_VERSION__/search"     --data-urlencode "access_token=__ACCESS_TOKEN__"     --data-urlencode "type=${TYPE}"     --data-urlencode "q=${SEED}"     --data-urlencode "limit=200"     --data-urlencode "locale=__LOCALE__"     --data-urlencode "fields=id,name,type,path,topic,audience_size_lower_bound,audience_size_upper_bound"     > "out/discovery/${TYPE}_${SEED}.json"
+done
+```
+
+### EXEMPLO — Agregar + deduplicar (sem `jq`)
+> EXEMPLO: use Python em **uma linha** (`-c`).  
+> (Evita o erro comum de usar heredoc `python - <<PY` e quebrar o stdin do JSON.)
+
+```bash
+python -c "import json,glob,os; seed=os.environ.get('SEED','__SEED__'); items=[]; for f in glob.glob('out/discovery/*_'+seed+'.json'):   d=json.load(open(f,encoding='utf-8'));   for x in d.get('data',[]):     x['_src']=os.path.basename(f).replace('.json','');     items.append(x); seen=set(); dedup=[]; for x in items:   k=(x.get('id'), x.get('type'));   if k in seen: continue;   seen.add(k); dedup.append(x); json.dump({'seed': seed, 'items': dedup}, open('out/targeting_discovery_dedup.json','w',encoding='utf-8'), ensure_ascii=False, indent=2); json.dump({'seed': seed, 'count': len(dedup)}, open('out/discovery_stats.json','w',encoding='utf-8'), ensure_ascii=False, indent=2); print('OK', len(dedup))"
+```
+
+---
+
+### FATOS — Como o IA Worker usa esta saída
+Na etapa seguinte (Etapa 4), o IA Worker recebe `out/targeting_discovery_dedup.json` e:
+1) filtra por relevância ao ICP  
+2) aplica `reject_terms` (ex.: birthday/friends of/expats/canvas gaming)  
+3) escolhe o **anchor seed** (ID) + lista de IDs úteis  
+4) segue para `targetingsuggestions` e montagem dos 3 specs
+
+---
 ## 4) IA Worker escolhe o anchor seed e IDs úteis
 
 ### FATOS — Objetivo

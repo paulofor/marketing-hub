@@ -1,325 +1,432 @@
-# Pipeline unificado: construção de 3 públicos-alvo (Meta Ads API) — IA Worker + Facebook Ads Worker
+# Pipeline unificado (CANÔNICO): criar 3 públicos-alvo (BR) via Meta Ads API  
+## IA Worker (decide) + Facebook Ads Worker (executa)
 
-Este documento unifica e corrige os dois roteiros existentes, mantendo o que funcionou na prática e removendo caminhos que geraram ruído (ex.: sugestões via `/search?type=adinterestsuggestion` como “Canvas Gaming”, aniversários etc.).  
-O objetivo é um **fluxo reprodutível (começo → fim)** para sair de um **ICP** (texto) e chegar em **3 `targeting_spec` + reach estimate no Brasil**, com decisões tomadas pelo **IA Worker** e execução de chamadas pela **Facebook Ads Worker**.
-
-> Fluxo principal (endpoints): **Targeting Search** → **Targeting Suggestions** → **IA monta `flexible_spec`** → **Reach Estimate** → (opcional) **Create Ad Set**.  
-> Endpoints opcionais: **Targeting Validation** (sanity check de IDs) e **Targeting Description** (auditoria humana).
+Este é o **documento único** para o pipeline de criação de públicos. Ele substitui/aposenta:
+- `docs/roteiro-criacao-publicos-experimento.md`
+- `docs/facebook-ads-worker/pipeline-3-publicos-meta-ads-api-ia-worker.md`
 
 ---
 
-## 1) Resultado final (fim definido)
+## ⚠️ Regras de leitura (IMPORTANTE para modelos que geram código)
 
-Você termina com:
+Este documento separa **FATOS/REGRAS** vs **EXEMPLOS** para evitar que o gerador de código trate exemplos como “verdade”.
 
-1) **3 arquivos JSON** (`targeting_spec`) — um por público/ad set  
+- Tudo marcado com **“EXEMPLO”** é **ilustrativo** e **NÃO** deve ser usado como dado fixo em produção.
+- **Nenhum ID de interesse/cargo/behavior em exemplos é garantido** (ou sequer real).  
+  ✅ Em produção, **todo ID deve vir da API** (Targeting Search / Suggestions).
+- Em blocos de comando/código, os tokens `__ASSIM__` são **placeholders** e devem ser substituídos pelo worker.
+
+**Placeholders padrão (sempre substituir):**
+- `__API_VERSION__` (ex.: `v24.0`)
+- `__AD_ACCOUNT_ID__` (sem `act_`)
+- `__ACCESS_TOKEN__`
+- `__LOCALE__` (ex.: `pt_BR`)
+- `__SEED__` (texto curto)
+- `__ANCHOR_INTEREST_ID__` (ID escolhido via API)
+- `__CAMPAIGN_ID__` (se for criar ad set)
+
+---
+
+## Objetivo final (fim definido)
+
+Ao final do fluxo você terá:
+
+1) **3 `targeting_spec` finais (BR)**  
 - `spec_1.json`, `spec_2.json`, `spec_3.json`
 
-2) **3 respostas de alcance (Brasil)**  
+2) **3 resultados de alcance (BR)**  
 - `reach_1.json`, `reach_2.json`, `reach_3.json`
 
-3) **Trilha de auditoria e reprodutibilidade** (essencial para depuração)  
-- `icp.md` (entrada humana)  
-- `ia_worker_config.json` (regras/limites)  
-- `seed_candidates.json` (seeds sugeridos pela IA)  
-- `seed_selected.json` (IDs selecionados / anchor seed)  
-- `suggestions_raw.json` (sugestões brutas)  
-- `suggestions_curated.json` (curadoria)  
-- `audience_plan.json` (3 hipóteses / arquétipos)  
-- `decision_log.jsonl` (decisões e ajustes com antes/depois)
+3) **Auditoria / reprodutibilidade**
+- `icp.md`
+- `ia_worker_config.json`
+- `seed_candidates.json`
+- `seed_selected.json`
+- `suggestions_raw.json`
+- `suggestions_curated.json`
+- `audience_plan.json`
+- `decision_log.jsonl`
 
-4) (Opcional) **3 Ad Sets criados** via API (`POST /adsets`) ou manual no Ads Manager.
-
----
-
-## 2) Papéis e contrato entre Workers
-
-### IA Worker (decide)
-Responsável por decisões e curadoria, nunca por chamadas à API:
-
-- Lê `icp.md` e gera seeds (palavras-curtas) por tipo
-- Desambigua candidatos (ex.: “Canva (software)” ≠ “Canvas Gaming”)
-- Escolhe 3 hipóteses (arquétipos) e monta `audience_plan.json`
-- Monta e ajusta `spec_1..3.json` (inclusive recalibração por reach)
-- Escreve logs e artefatos intermediários (audit trail)
-
-### Facebook Ads Worker (executa)
-Responsável por executar e salvar chamadas à Meta:
-
-- Executa `/targetingsearch` para seeds (interests / work_positions / behaviors)
-- Executa `/targetingsuggestions` para expandir o anchor seed
-- Executa `/reachestimate` para validar end-to-end cada spec
-- (Opcional) executa `/targetingvalidation`, `/targetingdescription` e `POST /adsets`
-- Salva sempre o JSON bruto (entrada/saída) e status da request
-
-> Regra de ouro: **o IA Worker nunca “chuta” ID**. Todo ID deve vir da API via Ads Worker.
+4) (Opcional) **3 Ad Sets criados** via API (`POST /adsets`) com `status=PAUSED`.
 
 ---
 
-## 3) Pré-requisitos
+## Quem faz o quê (contrato entre workers)
 
-### Variáveis de ambiente (Git Bash)
-**Entrada**
-- `ACCESS_TOKEN`
-- `AD_ACCOUNT_ID` (sem `act_`)
-- `API_VERSION` (ex.: `v24.0`)
-- `LOCALE` (ex.: `pt_BR`)
+### FATOS: responsabilidades
 
-**Ação**
+**IA Worker (decide)**
+- Lê `icp.md` + `ia_worker_config.json`
+- Gera seeds (texto curto) para busca
+- Desambigua e escolhe **anchor seed** (ID)
+- Filtra sugestões e cria **3 hipóteses** (3 públicos diferentes)
+- Monta `spec_1..3.json`
+- Recalibra (loop) com base no reach
+
+**Facebook Ads Worker (executa)**
+- Chama a Meta Ads API e salva JSON bruto
+- Endpoints principais:
+  - `GET /act_<AD_ACCOUNT_ID>/targetingsearch`
+  - `GET /act_<AD_ACCOUNT_ID>/targetingsuggestions`
+  - `GET /act_<AD_ACCOUNT_ID>/reachestimate`
+- Endpoints opcionais:
+  - `GET /act_<AD_ACCOUNT_ID>/targetingvalidation` (sanity check de IDs)
+  - `GET /act_<AD_ACCOUNT_ID>/targetingdescription` (auditoria/explicação)
+  - `POST /act_<AD_ACCOUNT_ID>/adsets`
+
+---
+
+## Regras fixas (não negociáveis)
+
+### FATOS
+- Geografia do experimento: `geo_locations.countries=["BR"]`
+- 3 públicos **diferentes entre si** (3 hipóteses)
+- IDs usados em targeting **sempre** são obtidos via API (não “texto solto”)
+- Todas as etapas devem salvar entrada/saída em arquivo (debug e reprocesso)
+
+---
+
+## 0) Preparação do ambiente
+
+### FATOS — Entrada
+- `__ACCESS_TOKEN__`
+- `__AD_ACCOUNT_ID__` (sem `act_`)
+- `__API_VERSION__`
+- `__LOCALE__`
+
+### EXEMPLO — Ação (Git Bash)
 ```bash
-export API_VERSION="v24.0"
-export AD_ACCOUNT_ID="1234567890"
-export ACCESS_TOKEN="EAAB..."
-export LOCALE="pt_BR"
+# EXEMPLO — substitua valores
+export API_VERSION="__API_VERSION__"
+export AD_ACCOUNT_ID="__AD_ACCOUNT_ID__"
+export ACCESS_TOKEN="__ACCESS_TOKEN__"
+export LOCALE="__LOCALE__"
 ```
 
-**Saída**
-- Ambiente pronto para todas as chamadas.
+### FATOS — Saída
+- Variáveis prontas para o Ads Worker executar requests.
 
-### Padrão de curl (evita “vazio silencioso”)
-Use sempre:
-- `-sS` (silencioso mas mostra erro)
-- `--fail` (código != 200 vira erro)
-- `> arquivo.json` (persistência)
-
-Exemplo:
+### FATOS — Padrão de request (recomendado)
+Use `-sS --fail` e sempre salve a resposta:
 ```bash
-curl -sS --failG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/targetingsearch"   --data-urlencode "access_token=${ACCESS_TOKEN}"   --data-urlencode "type=adinterest"   --data-urlencode "q=canva"   --data-urlencode "locale=${LOCALE}"   --data-urlencode "limit=25"   --data-urlencode "fields=id,name,type,path,audience_size_lower_bound,audience_size_upper_bound"   > out_targetingsearch_interest_canva.json
+# TEMPLATE (não é exemplo): padrão recomendado
+curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/targetingsearch"   --data-urlencode "access_token=__ACCESS_TOKEN__"   --data-urlencode "type=adinterest"   --data-urlencode "q=__SEED__"   --data-urlencode "locale=__LOCALE__"   --data-urlencode "limit=25"   --data-urlencode "fields=id,name,type,path,audience_size_lower_bound,audience_size_upper_bound"   > out.json
 ```
 
 ---
 
-## 4) Pipeline (começo → fim), com entrada e saída por etapa
+## 0.1) Configuração do IA Worker (arquivo de controle)
 
-### Etapa 1 — Definir ICP (entrada humana)
-**Objetivo:** transformar “nicho/mercado” em uma descrição curta, clara e acionável.
+### FATOS — Objetivo
+Centralizar limites e preferências para decisões consistentes.
 
-**Entrada:** texto (markdown) com produto, público, dor, país.
+### EXEMPLO — Arquivo `ia_worker_config.json` (ilustrativo)
+```bash
+cat > ia_worker_config.json <<'JSON'
+{
+  "locale": "__LOCALE__",
+  "geo_countries": ["BR"],
+  "age_min_default": 18,
+  "age_max_default": 54,
 
-**Ação**
+  "limits": {
+    "seed_keywords_max": 12,
+    "suggestions_fetch_limit": 150,
+    "interests_per_audience_max": 12,
+    "behaviors_per_audience_max": 6,
+    "work_positions_per_audience_max": 8
+  },
+
+  "reach_thresholds": {
+    "min_lower_bound": 200000,
+    "max_upper_bound": 20000000
+  },
+
+  "disambiguation": {
+    "reject_terms": ["birthday", "friends of", "expats", "canvas gaming"],
+    "prefer_paths_starting_with": ["Interests", "Behaviors", "Demographics"]
+  }
+}
+JSON
+```
+
+### FATOS — Saída
+- Config de limites/heurísticas para o IA Worker.
+
+---
+
+## 1) ICP (entrada humana)
+
+### FATOS — Objetivo
+Descrever com clareza: produto, público, dores, país.
+
+### EXEMPLO — `icp.md` (ilustrativo)
 ```bash
 cat > icp.md <<'MD'
-Produto: Marketing Hub — gera imagens e criativos por IA a partir de foto enviada pelo cliente.
+Produto: Marketing Hub (IA) — cria imagens personalizadas a partir de foto do cliente.
 Mercado: Brasil.
-Quem compra: pequenos negócios, social medias, designers, empreendedores.
+Quem compra: pequenos negócios e profissionais que precisam de criativos.
 Uso: posts, anúncios, peças promocionais e diversão.
-Dores: falta de tempo/habilidade para criar imagens consistentes; custo de designer; velocidade.
-Canais: Instagram, Facebook, tráfego pago.
+Dores: falta de tempo/habilidade; custo de designer; velocidade e volume.
 MD
 ```
 
-**Saída:** `icp.md`
+### FATOS — Saída
+- `icp.md`
 
 ---
 
-### Etapa 2 — IA Worker gera seeds (texto curto)
-**Objetivo:** gerar uma lista pequena de termos que tenham chance real de virar IDs.
+## 2) IA Worker gera seeds (texto curto)
 
-**Entrada:** `icp.md`, `ia_worker_config.json` (opcional nesta fase).
+### FATOS — Objetivo
+Gerar uma lista **pequena** de termos que têm chance real de virar IDs na API.
 
-**Ação (IA Worker)**
-- Gera seeds por tipo:
-  - `interests`: ferramentas, temas, plataformas, “jobs-to-be-done”
-  - `work_positions`: cargos prováveis (B2B)
-  - `behaviors`: sinais de intenção (admins/owners etc.)
+### FATOS — Entrada
+- `icp.md`
+- `ia_worker_config.json`
 
-**Saída:** `seed_candidates.json`
+### EXEMPLO — Saída `seed_candidates.json` (ilustrativo)
 ```json
 {
-  "interests": ["canva", "photoshop", "graphic design", "image editing", "instagram"],
-  "work_positions": ["social media manager", "graphic designer"],
-  "behaviors": ["small business owners", "business page admins", "facebook page admins"]
+  "interests": ["__SEED_1__", "__SEED_2__", "__SEED_3__"],
+  "work_positions": ["__JOB_QUERY_1__", "__JOB_QUERY_2__"],
+  "behaviors": ["__BEHAVIOR_QUERY_1__"]
 }
 ```
 
 ---
 
-### Etapa 3 — Ads Worker converte seeds em IDs (Targeting Search)
-**Objetivo:** obter **IDs oficiais** para cada seed.
+## 3) Ads Worker converte seeds em IDs (Targeting Search)
 
-**Entrada:** `seed_candidates.json`
+### FATOS — Objetivo
+Obter **IDs oficiais** para cada seed (por tipo correto).
 
-**Ação (Ads Worker)**
-1) Para cada seed em `interests`, chamar `type=adinterest`
-2) Para cada seed em `work_positions`, chamar `type=adworkposition`
-3) Para cada seed em `behaviors`, chamar `type=adbehavior`
-4) Salvar cada retorno bruto em arquivo
+### FATOS — Entrada
+- `seed_candidates.json`
 
-**Comandos (templates)**
-Interesses:
+### FATOS — Ação
+Para cada termo:
+- `type=adinterest` para **interesses**
+- `type=adworkposition` para **cargos**
+- `type=adbehavior` para **comportamentos**
+
+### TEMPLATE — Targeting Search (interest)
 ```bash
-SEED="canva"
-curl -sS --failG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/targetingsearch"   --data-urlencode "access_token=${ACCESS_TOKEN}"   --data-urlencode "type=adinterest"   --data-urlencode "q=${SEED}"   --data-urlencode "locale=${LOCALE}"   --data-urlencode "limit=25"   --data-urlencode "fields=id,name,type,path,audience_size_lower_bound,audience_size_upper_bound"   > "out_targetingsearch_interest_${SEED}.json"
+curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/targetingsearch"   --data-urlencode "access_token=__ACCESS_TOKEN__"   --data-urlencode "type=adinterest"   --data-urlencode "q=__SEED__"   --data-urlencode "locale=__LOCALE__"   --data-urlencode "limit=25"   --data-urlencode "fields=id,name,type,path,audience_size_lower_bound,audience_size_upper_bound"   > "out_targetingsearch_interest___SEED__.json"
 ```
 
-Cargos:
+### TEMPLATE — Targeting Search (work position)
 ```bash
-SEED="social media"
-curl -sS --failG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/targetingsearch"   --data-urlencode "access_token=${ACCESS_TOKEN}"   --data-urlencode "type=adworkposition"   --data-urlencode "q=${SEED}"   --data-urlencode "locale=${LOCALE}"   --data-urlencode "limit=25"   --data-urlencode "fields=id,name,type,path,audience_size_lower_bound,audience_size_upper_bound"   > "out_targetingsearch_workposition_social_media.json"
+curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/targetingsearch"   --data-urlencode "access_token=__ACCESS_TOKEN__"   --data-urlencode "type=adworkposition"   --data-urlencode "q=__JOB_QUERY__"   --data-urlencode "locale=__LOCALE__"   --data-urlencode "limit=25"   --data-urlencode "fields=id,name,type,path,audience_size_lower_bound,audience_size_upper_bound"   > "out_targetingsearch_workposition___JOB_QUERY__.json"
 ```
 
-Behaviors:
+### TEMPLATE — Targeting Search (behavior)
 ```bash
-SEED="small business owners"
-curl -sS --failG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/targetingsearch"   --data-urlencode "access_token=${ACCESS_TOKEN}"   --data-urlencode "type=adbehavior"   --data-urlencode "q=${SEED}"   --data-urlencode "locale=${LOCALE}"   --data-urlencode "limit=25"   --data-urlencode "fields=id,name,type,path,audience_size_lower_bound,audience_size_upper_bound"   > "out_targetingsearch_behavior_smb.json"
+curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/targetingsearch"   --data-urlencode "access_token=__ACCESS_TOKEN__"   --data-urlencode "type=adbehavior"   --data-urlencode "q=__BEHAVIOR_QUERY__"   --data-urlencode "locale=__LOCALE__"   --data-urlencode "limit=25"   --data-urlencode "fields=id,name,type,path,audience_size_lower_bound,audience_size_upper_bound"   > "out_targetingsearch_behavior___BEHAVIOR_QUERY__.json"
 ```
 
-**Saída:** arquivos `out_targetingsearch_*.json` (candidatos com IDs)
+### FATOS — Saída
+- Um conjunto de arquivos `out_targetingsearch_*.json` contendo **candidatos com IDs**.
 
 ---
 
-### Etapa 4 — IA Worker escolhe o “anchor seed” e IDs úteis
-**Objetivo:** selecionar 1 ID principal (anchor) e um conjunto enxuto de IDs para compor públicos.
+## 4) IA Worker escolhe o anchor seed e IDs úteis
 
-**Entrada:** `out_targetingsearch_*.json` + regras de desambiguação.
+### FATOS — Objetivo
+Selecionar 1 **anchor interest** (ID) + um conjunto de IDs para compor 3 públicos.
 
-**Ação (IA Worker)**
-- Regras de desambiguação recomendadas:
-  - Preferir `path` coerente (ex.: **Interests > … > Canva (software)**)
-  - Rejeitar padrões irrelevantes (ex.: “Canvas Gaming”, “Birthday”, “Friends of”, “Expats”)
-  - Priorizar itens mais específicos (pelo `name`/`path`) e com sinal forte no ICP
+### FATOS — Entrada
+- outputs do passo 3 (`out_targetingsearch_*.json`)
+- heurísticas de desambiguação (`reject_terms`, `prefer_paths_starting_with`)
 
-**Saída:** `seed_selected.json`
+### FATOS — Regras de desambiguação
+- Preferir `path` coerente com o ICP (ex.: `Interests > ...`)
+- Rejeitar termos irrelevantes (ex.: birthday/friends of/expats/canvas gaming)
+- Evitar itens muito genéricos quando houver alternativa específica
+
+### EXEMPLO — Saída `seed_selected.json` (ilustrativo)
 ```json
 {
-  "anchor_seed": { "type":"interests", "id":"6015636111201", "name":"Canva (software)" },
+  "anchor_seed": { "type": "interests", "id": "__ANCHOR_INTEREST_ID__", "name": "__ANCHOR_NAME__" },
+  "picked_from_query": "__SEED__",
   "extra_ids": {
-    "work_positions": [
-      { "id":"120762141304604", "name":"Social Media Manager" }
-    ],
-    "behaviors": [
-      { "id":"6002714898572", "name":"Small business owners" }
-    ]
+    "work_positions": [{ "id": "__JOB_ID__", "name": "__JOB_NAME__" }],
+    "behaviors": [{ "id": "__BEHAVIOR_ID__", "name": "__BEHAVIOR_NAME__" }]
   }
 }
 ```
 
 ---
 
-### Etapa 5 — Ads Worker expande o anchor seed (Targeting Suggestions)
-**Objetivo:** obter um “mapa do ecossistema” a partir do seed principal.
+## 5) Ads Worker expande o anchor seed (Targeting Suggestions)
 
-**Entrada:** `seed_selected.json` (`anchor_seed.id`)
+### FATOS — Objetivo
+Expandir o anchor seed em uma lista de sugestões relacionadas.
 
-**Ação (Ads Worker)**
+### FATOS — Entrada
+- `seed_selected.json` (`anchor_seed.id`)
+
+### TEMPLATE — Targeting Suggestions
 ```bash
-ANCHOR_ID="6015636111201"
-
-curl -sS --failG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/targetingsuggestions"   --data-urlencode "access_token=${ACCESS_TOKEN}"   --data-urlencode "targeting_list=[{\"type\":\"interests\",\"id\":\"${ANCHOR_ID}\"}]"   --data-urlencode "limit=150"   > suggestions_raw.json
+curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/targetingsuggestions"   --data-urlencode "access_token=__ACCESS_TOKEN__"   --data-urlencode "targeting_list=[{"type":"interests","id":"__ANCHOR_INTEREST_ID__"}]"   --data-urlencode "limit=__SUGGESTIONS_LIMIT__"   > suggestions_raw.json
 ```
 
-**Saída:** `suggestions_raw.json`
-
-> Nota importante: este é o caminho principal do pipeline.  
-> Evite basear o fluxo em `/search?type=adinterestsuggestion` (muito ruído e ambiguidade em vários casos).
+### FATOS — Saída
+- `suggestions_raw.json` (mistura de interesses/cargos/behaviors etc.)
 
 ---
 
-### Etapa 6 — IA Worker faz curadoria das sugestões
-**Objetivo:** transformar `suggestions_raw.json` em uma lista enxuta, classificada e utilizável.
+## 6) IA Worker faz curadoria das sugestões
 
-**Entrada:** `suggestions_raw.json`, `icp.md`, `ia_worker_config.json`
+### FATOS — Objetivo
+Transformar sugestões brutas em uma lista enxuta, útil e rastreável.
 
-**Ação (IA Worker)**
-- Filtrar e ranquear por:
-  - Relevância (semântica) ao ICP
-  - Tipo (`interests`, `behaviors`, `work_positions`, `industries`, etc.)
-  - Limites por público (ex.: 6–12 interesses, 2–8 cargos, 1–6 behaviors)
-  - Regras de exclusão (reject terms)
+### FATOS — Entrada
+- `suggestions_raw.json`
+- `icp.md`
+- `ia_worker_config.json`
 
-**Saída:** `suggestions_curated.json`
+### FATOS — Saída
+- `suggestions_curated.json` (filtrado e ranqueado)
+
+### EXEMPLO — Formato de `suggestions_curated.json` (ilustrativo)
+```json
+{
+  "interests": [{ "id": "__ID__", "name": "__NAME__", "score": 0.0 }],
+  "work_positions": [{ "id": "__ID__", "name": "__NAME__", "score": 0.0 }],
+  "behaviors": [{ "id": "__ID__", "name": "__NAME__", "score": 0.0 }]
+}
+```
 
 ---
 
-### Etapa 7 — IA Worker define 3 hipóteses (arquétipos)
-**Objetivo:** escolher 3 públicos **diferentes entre si**, para testar hipóteses.
+## 7) IA Worker define 3 hipóteses (3 públicos diferentes)
 
-**Entrada:** `icp.md`, `suggestions_curated.json`
+### FATOS — Objetivo
+Criar 3 públicos **diferentes entre si** para testar hipóteses.
 
-**Ação (IA Worker)**
-- Escolher 3 “baldes” coerentes com o produto e o funil.
-- **Design / Marketing / SMB** foi um exemplo que funciona para o Marketing Hub, mas **não é obrigatório**.
+### FATOS — Importante
+“Design / Marketing / SMB” foi apenas um trio **de exemplo**.  
+O trio real deve ser derivado do seu ICP e das sugestões disponíveis.
 
-**Saída:** `audience_plan.json`
+### EXEMPLO — Saída `audience_plan.json` (ilustrativo)
 ```json
 {
   "audiences": [
-    {"key":"A", "name":"Creators", "include_types":["interests","work_positions"]},
-    {"key":"B", "name":"Marketing", "include_types":["interests","work_positions"]},
-    {"key":"C", "name":"SMB_Deciders", "include_types":["behaviors","interests"]}
+    { "key": "A", "name": "__AUDIENCE_NAME_A__", "strategy": "__STRATEGY_A__" },
+    { "key": "B", "name": "__AUDIENCE_NAME_B__", "strategy": "__STRATEGY_B__" },
+    { "key": "C", "name": "__AUDIENCE_NAME_C__", "strategy": "__STRATEGY_C__" }
   ]
 }
 ```
 
 ---
 
-### Etapa 8 — IA Worker monta 3 `targeting_spec` com `flexible_spec`
-**Objetivo:** produzir os 3 JSONs finais prontos para reach/adset.
+## 8) IA Worker monta 3 `targeting_spec` finais (com `flexible_spec`)
 
-**Entrada:** `audience_plan.json`, `seed_selected.json`, `suggestions_curated.json`, regras de geo/idade.
+### FATOS — Objetivo
+Gerar `spec_1.json`, `spec_2.json`, `spec_3.json` prontos para `reachestimate` (e depois para criar ad sets).
 
-**Saída:** `spec_1.json`, `spec_2.json`, `spec_3.json`
+### FATOS — Entrada
+- `seed_selected.json`
+- `suggestions_curated.json`
+- `audience_plan.json`
+- `geo_countries=["BR"]` e faixa etária
 
----
+### FATOS — Saída
+- `spec_1.json`, `spec_2.json`, `spec_3.json`
 
-### Etapa 9 — (Opcional) Sanity check de IDs (`/targetingvalidation`)
-**Objetivo:** checar rapidamente se **IDs** de Detailed Targeting são válidos (cheque auxiliar).
-
-**Entrada:** lista de IDs (extraída dos specs)
-
-**Ação (Ads Worker)**
-```bash
-curl -sS --failG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/targetingvalidation"   --data-urlencode "access_token=${ACCESS_TOKEN}"   --data-urlencode "id_list=[\"6015636111201\",\"6003389760112\"]"   > out_targetingvalidation.json
+### EXEMPLO — `spec_1.json` (ilustrativo; substitua IDs)
+```json
+{
+  "geo_locations": { "countries": ["BR"] },
+  "age_min": 20,
+  "age_max": 55,
+  "flexible_spec": [
+    { "interests": [{ "id": "__INTEREST_ID__", "name": "__INTEREST_NAME__" }] },
+    { "work_positions": [{ "id": "__JOB_ID__", "name": "__JOB_NAME__" }] }
+  ]
+}
 ```
 
-**Saída:** `out_targetingvalidation.json`
-
 ---
 
-### Etapa 10 — Reach Estimate (validação end-to-end)
-**Objetivo:** validar se o spec funciona e medir tamanho real no Brasil.
+## 9) (Opcional) Sanity check de IDs (`/targetingvalidation`)
 
-**Entrada:** `spec_1.json`, `spec_2.json`, `spec_3.json`
+### FATOS — Objetivo
+Checagem auxiliar para validar IDs (não substitui `reachestimate`).
 
-**Ação (Ads Worker)**
+### FATOS — Entrada
+- lista de IDs extraída dos specs
+
+### TEMPLATE — `targetingvalidation` por `id_list`
 ```bash
-curl -sS --failG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/reachestimate"   --data-urlencode "access_token=${ACCESS_TOKEN}"   --data-urlencode "targeting_spec@spec_1.json"   > reach_1.json
+curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/targetingvalidation"   --data-urlencode "access_token=__ACCESS_TOKEN__"   --data-urlencode "id_list=["__ID_1__","__ID_2__"]"   > out_targetingvalidation.json
 ```
 
-**Saída:** `reach_1.json`, `reach_2.json`, `reach_3.json`
+### FATOS — Saída
+- `out_targetingvalidation.json` (se falhar/oscilar, trate como opcional)
 
 ---
 
-### Etapa 11 — Recalibração automática (IA Worker) [recomendado]
-**Objetivo:** ajustar specs para bater a faixa de alcance desejada.
+## 10) Reach Estimate (validação end-to-end)
 
-**Entrada:** `reach_*.json` + thresholds do `ia_worker_config.json`
+### FATOS — Objetivo
+Validar se o `targeting_spec` funciona e medir alcance BR.
 
-**Saída:** specs atualizados + novas medições + `decision_log.jsonl`
+### FATOS — Entrada
+- `spec_1.json`, `spec_2.json`, `spec_3.json`
 
----
+### TEMPLATE — Reach Estimate
+```bash
+curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/reachestimate"   --data-urlencode "access_token=__ACCESS_TOKEN__"   --data-urlencode "targeting_spec@spec_1.json"   > reach_1.json
+```
 
-### Etapa 12 — (Opcional) Criar Ad Sets via API (fim operacional)
-**Entrada:** `campaign_id` + `targeting_spec`  
-**Saída:** 3 ad sets criados (recomendado iniciar com `PAUSED`)
-
----
-
-## 5) Observações importantes (para evitar resultados “estranhos”)
-
-- **Idioma dos nomes**: mesmo com `locale=pt_BR`, vários `name` vêm em inglês. Isso é normal — o que manda é o **ID**.
-- **Tipo importa**: a seleção correta começa no `type=` certo no `targetingsearch`.
-- **Desambiguação é obrigatória**: “Canva” traz “Canvas”; “agricultura” traz itens amplos e às vezes fora do país.
-- **ICP (frase) ≠ targeting**: ICP vira seeds curtas; seeds viram IDs.
-- **Reach é o juiz**: reachestimate é a validação “de verdade” do spec.
+### FATOS — Saída
+- `reach_1.json`, `reach_2.json`, `reach_3.json`
 
 ---
 
-## 6) Checklist rápido de conclusão
+## 11) Recalibração automática (IA Worker) — recomendado
+
+### FATOS — Objetivo
+Ajustar os specs para ficar dentro de uma faixa desejada de reach (definida no config).
+
+### FATOS — Entrada
+- `reach_*.json`
+- `ia_worker_config.json`
+
+### FATOS — Saída
+- specs atualizados + novas medições
+- `decision_log.jsonl` com “antes/depois + motivo”
+
+---
+
+## 12) (Opcional) Criar Ad Sets via API
+
+### FATOS — Objetivo
+Criar 3 ad sets (recomendado iniciar `PAUSED`).
+
+### FATOS — Entrada
+- `__CAMPAIGN_ID__`
+- `spec_*.json`
+- orçamento/objetivo/otimização
+
+### EXEMPLO — Create Ad Set (ilustrativo; substituir placeholders)
+```bash
+curl -sS --failX POST "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/adsets"   --data-urlencode "access_token=__ACCESS_TOKEN__"   --data-urlencode "name=__ADSET_NAME__"   --data-urlencode "campaign_id=__CAMPAIGN_ID__"   --data-urlencode "daily_budget=__DAILY_BUDGET__"   --data-urlencode "billing_event=IMPRESSIONS"   --data-urlencode "optimization_goal=REACH"   --data-urlencode "status=PAUSED"   --data-urlencode "targeting@spec_1.json"
+```
+
+---
+
+## Checklist de conclusão
 
 - ✅ `icp.md`
-- ✅ `seed_candidates.json` + `seed_selected.json`
-- ✅ `suggestions_raw.json` + `suggestions_curated.json`
+- ✅ `ia_worker_config.json`
+- ✅ `seed_candidates.json`
+- ✅ `seed_selected.json` (anchor seed com ID real)
+- ✅ `suggestions_raw.json`
+- ✅ `suggestions_curated.json`
 - ✅ `audience_plan.json`
 - ✅ `spec_1.json`, `spec_2.json`, `spec_3.json`
 - ✅ `reach_1.json`, `reach_2.json`, `reach_3.json`
@@ -327,11 +434,22 @@ curl -sS --failG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}
 
 ---
 
-## 7) Referências oficiais (Meta)
+## Observações rápidas (para evitar “resultados estranhos”)
 
+### FATOS
+- Mesmo com `locale=pt_BR`, nomes/path podem vir em inglês. **ID manda.**
+- O `type=` usado no `targetingsearch` define onde aquele ID pode entrar no spec.
+- ICP (texto) serve para **gerar seeds curtas**, não para virar targeting direto.
+- `reachestimate` é a validação prática do `targeting_spec`.
+
+---
+
+## Referências oficiais (Meta)
+
+(Links de referência; não são parte do fluxo executável)
 - Targeting Search: https://developers.facebook.com/docs/marketing-api/audiences/reference/targeting-search/
 - Ad Account Targeting Search: https://developers.facebook.com/docs/marketing-api/reference/ad-account/targetingsearch/
-- Ad Account Targeting Suggestions: https://developers.secure.facebook.com/docs/marketing-api/reference/ad-account/targetingsuggestions/
+- Targeting Suggestions: https://developers.secure.facebook.com/docs/marketing-api/reference/ad-account/targetingsuggestions/
 - Flexible Targeting (`flexible_spec`): https://developers.facebook.com/docs/marketing-api/audiences/reference/flexible-targeting/
 - Reach Estimate: https://developers.facebook.com/docs/marketing-api/reference/ad-account/reachestimate/
 - Targeting Validation: https://developers.secure.facebook.com/docs/marketing-api/reference/ad-account/targetingvalidation/

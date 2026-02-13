@@ -147,6 +147,14 @@ temporários no formato `ai_form_*` são normalizados para o padrão `form_*`
 antes da publicação, e o share link é reconstruído com o identificador final
 quando disponível.
 
+Na etapa de discovery do playbook (`FACEBOOK_SEED_LOOKUP`), o worker usa apenas
+`GET /act_<AD_ACCOUNT_ID>/targetingsearch` com chamadas separadas por tipo
+(`adinterest`, `adbehavior` e `adworkposition`) para manter o payload alinhado
+ao contrato da Graph API e evitar mistura de categorias em uma única requisição.
+As queries são recebidas em campos distintos (`interestQueries`,
+`behaviorQueries`, `workPositionQueries`) e cada categoria é consultada com seu
+respectivo `type`.
+
 As etapas do playbook de público (`FACEBOOK_VALIDATE_SPEC` e
 `FACEBOOK_REACH_ESTIMATE`) registram o endpoint real da Graph API no formato
 `/{adAccountId}/targetingvalidation` e `/{adAccountId}/reachestimate`, além de

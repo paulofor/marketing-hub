@@ -7,6 +7,8 @@ import java.util.List;
  */
 public record ExperimentAdSetJobDetailDto(
         ExperimentAdSetJobDto job,
+        String payload,
+        String resultPayload,
         List<ExperimentAdSetJobApiLogDto> apiLogs
 ) {
 }

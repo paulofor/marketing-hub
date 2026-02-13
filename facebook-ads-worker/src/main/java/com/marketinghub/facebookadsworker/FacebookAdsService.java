@@ -54,6 +54,7 @@ public class FacebookAdsService {
         Pattern.compile("(?i)interesse\\s+com\\s+id\\s+(\\d+)|interest\\s+with\\s+id\\s+(\\d+)");
     private static final String INTEREST_SEARCH_LOCALE = "pt_BR";
     public static final String BRAZIL_COUNTRY_CODE = "BR";
+    private static final String TARGETING_SEARCH_FIELDS = "id,name,type,audience_size_lower_bound,audience_size_upper_bound,path,description,topic";
 
     private final WebClient webClient;
     private final AtomicReference<String> accessToken;
@@ -490,7 +491,7 @@ public class FacebookAdsService {
     }
 
     public List<FacebookTargetingSearchResult> searchTargetingOptions(TargetingSearchRequest request) {
-        if (request == null || request.type() == null || !hasText(request.query())) {
+        if (request == null || !hasText(request.query())) {
             return Collections.emptyList();
         }
         String normalizedQuery = request.query().trim();
@@ -529,6 +530,38 @@ public class FacebookAdsService {
         return immutableResults;
     }
 
+    public List<FacebookTargetingSearchResult> searchGlobalTargetingOptions(TargetingSearchRequest request) {
+        if (request == null || request.type() == null || request.type().graphType() == null || !hasText(request.query())) {
+            return Collections.emptyList();
+        }
+        String normalizedQuery = request.query().trim();
+        if (!hasText(normalizedQuery)) {
+            return Collections.emptyList();
+        }
+        int limit = Math.max(1, request.limit());
+        UriComponentsBuilder builder = UriComponentsBuilder
+            .fromPath(buildVersionedPath("/search"))
+            .queryParam("type", request.type().graphType())
+            .queryParam("q", normalizedQuery)
+            .queryParam("limit", limit)
+            .queryParam("fields", TARGETING_SEARCH_FIELDS)
+            .queryParam("access_token", requireAccessToken());
+        if (hasText(request.locale())) {
+            builder.queryParam("locale", request.locale());
+        }
+        if (hasText(request.country())) {
+            builder.queryParam("country", request.country());
+        }
+        try {
+            return fetchTargetingResults(builder.build(false).toUriString());
+        } catch (FacebookAccessTokenExpiredException | FacebookPermissionException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            LOGGER.warn("Facebook global targeting search failed for query {}: {}", normalizedQuery, ex.getMessage(), ex);
+            return Collections.emptyList();
+        }
+    }
+
     private List<FacebookTargetingSearchResult> executeTargetingSearch(TargetingSearchRequest request) {
         if (request == null || !hasText(request.adAccountId())) {
             LOGGER.warn("Cannot execute targeting search without ad account id");
@@ -536,11 +569,13 @@ public class FacebookAdsService {
         }
         UriComponentsBuilder builder = UriComponentsBuilder
             .fromPath(buildVersionedPath("/" + request.adAccountId() + "/targetingsearch"))
-            .queryParam("type", request.type().graphType())
             .queryParam("q", request.query())
             .queryParam("limit", request.limit())
-            .queryParam("fields", "id,name,audience_size_lower_bound,audience_size_upper_bound,path,description,topic")
+            .queryParam("fields", TARGETING_SEARCH_FIELDS)
             .queryParam("access_token", requireAccessToken());
+        if (request.type() != null && hasText(request.type().graphType())) {
+            builder.queryParam("type", request.type().graphType());
+        }
         if (hasText(request.locale())) {
             builder.queryParam("locale", request.locale());
         }
@@ -549,34 +584,7 @@ public class FacebookAdsService {
         }
         String pathValue = builder.build(false).toUriString();
         try {
-            FacebookApiResponse response = executeGet(pathValue);
-            JsonNode body = response != null ? response.body() : null;
-            JsonNode data = body != null ? body.path("data") : null;
-            if (data == null || !data.isArray()) {
-                return Collections.emptyList();
-            }
-            List<FacebookTargetingSearchResult> results = new ArrayList<>();
-            for (JsonNode node : data) {
-                if (node == null || node.isNull()) {
-                    continue;
-                }
-                String id = node.path("id").asText(null);
-                if (!hasText(id)) {
-                    continue;
-                }
-                String name = node.path("name").asText(null);
-                Long audienceSizeLower = node.hasNonNull("audience_size_lower_bound") ? node.path("audience_size_lower_bound").asLong() : null;
-                Long audienceSizeUpper = node.hasNonNull("audience_size_upper_bound") ? node.path("audience_size_upper_bound").asLong() : null;
-                List<String> hierarchy = parseTargetingPath(node.path("path"));
-                results.add(new FacebookTargetingSearchResult(
-                    id.trim(),
-                    hasText(name) ? name.trim() : null,
-                    audienceSizeLower,
-                    audienceSizeUpper,
-                    hierarchy
-                ));
-            }
-            return results;
+            return fetchTargetingResults(pathValue);
         } catch (FacebookAccessTokenExpiredException | FacebookPermissionException ex) {
             throw ex;
         } catch (RuntimeException ex) {
@@ -1322,6 +1330,8 @@ private FacebookInterest searchInterest(String interestName, String locale) {
     public record FacebookTargetingSearchResult(
         String id,
         String name,
+        String type,
+        String topic,
         Long audienceSizeLowerBound,
         Long audienceSizeUpperBound,
         List<String> path
@@ -1367,6 +1377,48 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         }
     }
 
+    private List<FacebookTargetingSearchResult> fetchTargetingResults(String pathValue) {
+        try {
+            FacebookApiResponse response = executeGet(pathValue);
+            JsonNode body = response != null ? response.body() : null;
+            JsonNode data = body != null ? body.path("data") : null;
+            if (data == null || !data.isArray()) {
+                return Collections.emptyList();
+            }
+            List<FacebookTargetingSearchResult> results = new ArrayList<>();
+            for (JsonNode node : data) {
+                if (node == null || node.isNull()) {
+                    continue;
+                }
+                String id = node.path("id").asText(null);
+                if (!hasText(id)) {
+                    continue;
+                }
+                String name = node.path("name").asText(null);
+                String type = node.path("type").asText(null);
+                String topic = node.path("topic").asText(null);
+                Long audienceSizeLower = node.hasNonNull("audience_size_lower_bound") ? node.path("audience_size_lower_bound").asLong() : null;
+                Long audienceSizeUpper = node.hasNonNull("audience_size_upper_bound") ? node.path("audience_size_upper_bound").asLong() : null;
+                List<String> hierarchy = parseTargetingPath(node.path("path"));
+                results.add(new FacebookTargetingSearchResult(
+                    id.trim(),
+                    hasText(name) ? name.trim() : null,
+                    type,
+                    topic,
+                    audienceSizeLower,
+                    audienceSizeUpper,
+                    hierarchy
+                ));
+            }
+            return results;
+        } catch (FacebookAccessTokenExpiredException | FacebookPermissionException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            LOGGER.warn("Facebook targeting search failed for path {}: {}", pathValue, ex.getMessage(), ex);
+            return Collections.emptyList();
+        }
+    }
+
     public record FacebookTargetingSuggestionResult(String id, String name, Long audienceSize, List<String> path) {}
 
     public record TargetingSuggestionsRequest(
@@ -1394,9 +1446,12 @@ private FacebookInterest searchInterest(String interestName, String locale) {
 
 
     public enum TargetingSearchType {
+        ANY(null),
         AD_INTEREST("adinterest"),
         AD_BEHAVIOR("adbehavior"),
-        AD_WORK_POSITION("adworkposition");
+        AD_WORK_POSITION("adworkposition"),
+        AD_INDUSTRY("adindustry"),
+        AD_WORK_EMPLOYER("adworkemployer");
 
         private final String graphType;
 

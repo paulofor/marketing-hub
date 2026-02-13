@@ -102,7 +102,7 @@ public class ExperimentAdSetWorkflowService {
                 .stream()
                 .map(this::toApiLogDto)
                 .collect(Collectors.toList());
-        return new ExperimentAdSetJobDetailDto(toJobDto(job), apiLogs);
+        return new ExperimentAdSetJobDetailDto(toJobDto(job), job.getPayload(), job.getResultPayload(), apiLogs);
     }
 
     private ExperimentAdSetWorkflowDto buildDto(ExperimentAdSetWorkflow workflow) {

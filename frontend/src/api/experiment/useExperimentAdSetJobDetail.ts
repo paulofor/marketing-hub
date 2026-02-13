@@ -18,6 +18,8 @@ export interface ExperimentAdSetJobApiLog {
 
 export interface ExperimentAdSetJobDetailDto {
   job: ExperimentAdSetJob;
+  payload?: string | null;
+  resultPayload?: string | null;
   apiLogs: ExperimentAdSetJobApiLog[];
 }
 

@@ -86,7 +86,7 @@ export default function ExperimentAdSetJobDetailPage() {
       </div>
     );
   }
-  const { job, apiLogs } = data;
+  const { job, apiLogs, payload, resultPayload } = data;
   const backLink = `/experiments/${experimentId}/adset-workflow`;
   const isFacebookJob = (job.worker ?? "").toUpperCase() === "FACEBOOK";
   const requestSectionTitle = isFacebookJob ? "Chamadas ao Facebook" : "Chamadas do AI Worker (ChatGPT batch)";
@@ -138,6 +138,30 @@ export default function ExperimentAdSetJobDetailPage() {
               </div>
             ) : null}
           </div>
+        </div>
+      </div>
+      <div className="card mb-4">
+        <div className="card-header">Payloads persistidos</div>
+        <div className="card-body">
+          {payload ? (
+            <details open>
+              <summary>Payload enviado ao worker</summary>
+              <pre className="bg-light p-2 mt-2 rounded" style={{ whiteSpace: "pre-wrap" }}>
+                {formatJson(payload)}
+              </pre>
+            </details>
+          ) : null}
+          {resultPayload ? (
+            <details className="mt-3" open>
+              <summary>Resultado registrado</summary>
+              <pre className="bg-light p-2 mt-2 rounded" style={{ whiteSpace: "pre-wrap" }}>
+                {formatJson(resultPayload)}
+              </pre>
+            </details>
+          ) : null}
+          {!payload && !resultPayload ? (
+            <p className="text-muted mb-0">Nenhum payload disponível para este job.</p>
+          ) : null}
         </div>
       </div>
       <div className="card">

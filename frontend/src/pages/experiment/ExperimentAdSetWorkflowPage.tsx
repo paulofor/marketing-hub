@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { useQueries } from "@tanstack/react-query";
 import axios from "axios";
 import PageTitle from "../../components/PageTitle";
+import { ExperimentAdSetJobDetailDto } from "../../api/experiment/useExperimentAdSetJobDetail";
 import {
   ExperimentAdSetWorkflowDto,
   ExperimentAdSetSpec,
@@ -35,8 +36,8 @@ const JOB_TYPE_INFO: Record<
     docStep: "Docs pipeline-3 · Etapa 2",
   },
   FACEBOOK_SEED_LOOKUP: {
-    title: "Targeting Search (interest)",
-    description: "Meta /targetingsearch para transformar seed em interesse",
+    title: "Discovery (Meta)",
+    description: "Meta roda /targetingsearch e /search (limit 200) para gerar catálogo de IDs",
     docStep: "Docs pipeline-3 · Etapa 3",
   },
   FACEBOOK_SOCIAL_POSITIONS: {
@@ -101,6 +102,30 @@ type PipelineStepSummary = {
   optional?: boolean;
   detail?: ReactNode;
   helper?: ReactNode;
+  jobLinks?: PipelineJobLink[];
+};
+
+type PipelineJobLink = {
+  jobId: number;
+  label: string;
+};
+
+type DiscoveryTopItem = {
+  id?: string;
+  name?: string;
+  type?: string;
+  audienceLower?: number | null;
+  audienceUpper?: number | null;
+  sources?: string[];
+  terms?: string[];
+};
+
+type DiscoverySummary = {
+  seeds: string[];
+  locales: string[];
+  stats?: { rawCalls?: number; rawItems?: number; dedupItems?: number; byType?: Record<string, number> };
+  topItems: DiscoveryTopItem[];
+  jobId?: number;
 };
 
 type TargetingResolutionByTerm = {
@@ -316,9 +341,7 @@ function PipelineTimeline({
         String(job.id),
       ],
       queryFn: async () => {
-        const { data } = await axios.get<{
-          apiLogs: Array<{ requestPayload?: string | null; responsePayload?: string | null }>;
-        }>(
+        const { data } = await axios.get<ExperimentAdSetJobDetailDto>(
           `/api/experiments/${workflow.experimentId}/adset-playbook/jobs/${job.id}`,
         );
         return data;
@@ -329,13 +352,24 @@ function PipelineTimeline({
   });
 
   const resolvedTerms = useMemo(
-    () => parseResolvedTermsFromJobDetails(jobDetailQueries.map((query) => query.data)),
+    () =>
+      parseResolvedTermsFromJobDetails(
+        jobDetailQueries.map((query) => query.data),
+      ),
     [jobDetailQueries],
   );
 
+  const discoveryDetail = jobDetailQueries.find(
+    (query) => query.data?.job?.type === "FACEBOOK_SEED_LOOKUP",
+  )?.data;
+  const discoverySummary = useMemo(
+    () => parseDiscoverySummaryFromJobDetail(discoveryDetail),
+    [discoveryDetail],
+  );
+
   const steps = useMemo(
-    () => buildPipelineSteps(workflow, resolvedTerms),
-    [workflow, resolvedTerms],
+    () => buildPipelineSteps(workflow, resolvedTerms, discoverySummary),
+    [workflow, resolvedTerms, discoverySummary],
   );
   return (
     <div className="card h-100">
@@ -348,75 +382,47 @@ function PipelineTimeline({
         </small>
       </div>
       <div className="card-body">
-        <ol className="list-unstyled mb-0">
-          {steps.map((step, index) => (
-            <li
-              key={step.id}
-              className={
-                index < steps.length - 1 ? "pb-3 mb-3 border-bottom" : ""
-              }
-            >
-              <div className="d-flex justify-content-between align-items-start gap-3">
-                <div>
-                  <div className="d-flex align-items-center gap-2">
-                    <span className="fw-semibold">
-                      {index + 1}. {step.title}
-                    </span>
-                    {step.optional ? (
-                      <span className="badge text-bg-light">Opcional</span>
-                    ) : null}
-                  </div>
-                  <p className="text-muted small mb-2">{step.description}</p>
-                  {step.detail}
-                  {step.helper ? (
-                    <div className="small mt-2">{step.helper}</div>
-                  ) : null}
-                </div>
-                <StatusBadge status={step.status} />
-              </div>
-            </li>
+        <div className="row g-3">
+          {steps.map((step) => (
+            <div key={step.id} className="col-12 col-lg-6">
+              <PipelineStepCard step={step} />
+            </div>
           ))}
-        </ol>
+        </div>
       </div>
     </div>
   );
 }
 
-function SpecsCard({ specs }: { specs: ExperimentAdSetSpec[] }) {
-  if (!specs?.length) {
-    return (
-      <div className="card h-100">
-        <div className="card-header">Targeting specs</div>
-        <div className="card-body text-muted">
-          Aguardando saída da etapa "IA monta públicos".
-        </div>
-      </div>
-    );
-  }
+function PipelineStepCard({ step }: { step: PipelineStepSummary }) {
   return (
-    <div className="card h-100">
-      <div className="card-header d-flex flex-column flex-lg-row justify-content-between gap-2">
+    <div className="border rounded p-3 h-100 d-flex flex-column">
+      <div className="d-flex justify-content-between align-items-start gap-2">
         <div>
-          <div className="fw-semibold">Targeting specs (3 hipóteses)</div>
-          <small className="text-muted">
-            Produto final das Etapas 6-10 ({PIPELINE_DOC_PATH}) · flexible_spec
-            pronto para exportar
-          </small>
+          <div className="fw-semibold">{step.title}</div>
+          <div className="text-muted small">{step.description}</div>
         </div>
-        <small className="text-muted">
-          Faixa ideal do Reach no BR: {formatNumber(REACH_MIN)} –{" "}
-          {formatNumber(REACH_MAX)} pessoas
-        </small>
+        <StatusBadge status={step.status} />
       </div>
-      <div className="card-body">
-        <div className="row g-3">
-          {specs.map((spec) => (
-            <div key={spec.id} className="col-12 col-lg-4">
-              <SpecCardItem spec={spec} />
-            </div>
+      <div className="mt-3 flex-grow-1 small">
+        {step.detail ?? <span className="text-muted">Sem dados desta etapa.</span>}
+      </div>
+      {step.jobLinks?.length ? (
+        <div className="mt-3 d-flex flex-wrap gap-2">
+          {step.jobLinks.map((link) => (
+            <Link
+              key={`${step.id}-${link.jobId}`}
+              to={`jobs/${link.jobId}`}
+              className="btn btn-sm btn-outline-secondary"
+            >
+              {link.label}
+            </Link>
           ))}
         </div>
-      </div>
+      ) : null}
+      {step.helper ? (
+        <div className="mt-3 text-muted small">{step.helper}</div>
+      ) : null}
     </div>
   );
 }
@@ -604,6 +610,7 @@ function JobsCard({ jobs }: { jobs: ExperimentAdSetJob[] }) {
 function buildPipelineSteps(
   workflow: ExperimentAdSetWorkflowDto,
   resolvedTerms: TargetingSearchResolvedTerms,
+  discoverySummary?: DiscoverySummary,
 ): PipelineStepSummary[] {
   const aiPlan = safeJsonParse<{
     searchTerms?: string[];
@@ -637,6 +644,7 @@ function buildPipelineSteps(
       getJobs("FACEBOOK_SOCIAL_POSITIONS"),
       positionQueries,
       resolvedTerms,
+      discoverySummary,
     ),
     buildAnchorSeedStep(workflow, getJobs("FACEBOOK_SEED_LOOKUP")),
     buildSuggestionExpansionStep(
@@ -724,6 +732,7 @@ function buildSeedGenerationStep(
       </div>
     ),
     helper: docReference("Etapa 2"),
+    jobLinks: latestJobLink(jobs, "IA · seed_candidates.json"),
   };
 }
 
@@ -733,6 +742,7 @@ function buildTargetingSearchStep(
   positionJobs: ExperimentAdSetJob[],
   positionQueries: string[],
   resolvedTerms: TargetingSearchResolvedTerms,
+  discoverySummary?: DiscoverySummary,
 ): PipelineStepSummary {
   const interestStatus = inferStatusFromJobs(interestJobs);
   const positionsStatus: StepStatus =
@@ -747,24 +757,26 @@ function buildTargetingSearchStep(
   }
   return {
     id: "DOC_STEP_3",
-    title: "Etapa 3 · Targeting Search (IDs oficiais)",
+    title: "Etapa 3 · Discovery (IDs oficiais)",
     description:
-      "Ads Worker chama /targetingsearch para cada seed (interests, work_positions e behaviors).",
+      "Ads Worker roda /targetingsearch (mix) e /search por tipo (limit 200) para ampliar o catálogo de IDs.",
     status,
     detail: (
-      <div className="small">
+      <div className="small d-flex flex-column gap-3">
         <div>
-          Keyword consultada: <strong>{workflow.seedKeyword ?? "—"}</strong>
+          <SectionLabel>Resumo do discovery</SectionLabel>
+          <DiscoverySummaryCard summary={discoverySummary} />
         </div>
-        <div>Locale: {workflow.seedLocale ?? "—"}</div>
-        <SectionLabel className="mt-2">Interesses (adinterest)</SectionLabel>
-        <ResolvedTermList
-          items={resolvedTerms.interests}
-          placeholder="Nenhum ID de interesse encontrado até agora."
-        />
+        <div>
+          <SectionLabel>Interesses confirmados (adinterest)</SectionLabel>
+          <ResolvedTermList
+            items={resolvedTerms.interests}
+            placeholder="Nenhum ID de interesse encontrado até agora."
+          />
+        </div>
         {positionQueries.length ? (
-          <div className="mt-2">
-            <SectionLabel>Queries de cargos (adworkposition)</SectionLabel>
+          <div>
+            <SectionLabel>Queries e IDs de cargos (adworkposition)</SectionLabel>
             <BadgeList items={positionQueries} />
             <ResolvedTermList
               items={resolvedTerms.workPositions}
@@ -774,19 +786,21 @@ function buildTargetingSearchStep(
               Status dos cargos: {STEP_STATUS_META[positionsStatus].label}
             </div>
           </div>
-        ) : (
-          <div className="text-muted mt-2">
-            Sem cargos adicionais nesta rodada.
-          </div>
-        )}
-        <SectionLabel className="mt-2">Comportamentos (adbehavior)</SectionLabel>
-        <ResolvedTermList
-          items={resolvedTerms.behaviors}
-          placeholder="Nenhum ID de comportamento encontrado até agora."
-        />
+        ) : null}
+        <div>
+          <SectionLabel>Comportamentos (adbehavior)</SectionLabel>
+          <ResolvedTermList
+            items={resolvedTerms.behaviors}
+            placeholder="Nenhum ID de comportamento encontrado até agora."
+          />
+        </div>
       </div>
     ),
     helper: docReference("Etapa 3"),
+    jobLinks: mergeJobLinks(
+      latestJobLink(interestJobs, "Discovery (Graph API)"),
+      latestJobLink(positionJobs, "Busca adicional de cargos"),
+    ),
   };
 }
 
@@ -841,6 +855,7 @@ function buildSuggestionExpansionStep(
       </div>
     ),
     helper: docReference("Etapa 5"),
+    jobLinks: latestJobLink(jobs, "Meta /targetingsuggestions"),
   };
 }
 
@@ -860,6 +875,7 @@ function buildSuggestionCurationStep(
       </div>
     ),
     helper: docReference("Etapa 6"),
+    jobLinks: latestJobLink(aiBuildJobs, "IA · curadoria"),
   };
 }
 
@@ -898,6 +914,7 @@ function buildAudiencePlanStep(
       </div>
     ),
     helper: docReference("Etapa 7"),
+    jobLinks: latestJobLink(aiBuildJobs, "IA · audience_plan"),
   };
 }
 
@@ -931,6 +948,7 @@ function buildSpecAssemblyStep(
         <div className="mt-2">{docReference("Etapa 8")}</div>
       </>
     ),
+    jobLinks: latestJobLink(aiBuildJobs, "IA · spec_1..3"),
   };
 }
 
@@ -941,6 +959,7 @@ function buildValidationStep(
   const title = "Etapa 9 · Targeting Validation (opcional)";
   const description =
     "Meta verifica se todos os IDs do flexible_spec existem antes de rodar reachestimate.";
+  const validationLinks = latestJobLink(jobs, "Meta /targetingvalidation");
   if (!specs.length) {
     return {
       id: "FACEBOOK_VALIDATE_SPEC",
@@ -953,6 +972,7 @@ function buildValidationStep(
         </span>
       ),
       helper: docReference("Etapa 9"),
+    jobLinks: validationLinks,
     };
   }
   const invalidSpec = specs.find(
@@ -989,6 +1009,7 @@ function buildValidationStep(
         </div>
       ),
       helper: docReference("Etapa 9"),
+    jobLinks: validationLinks,
     };
   }
   if (pendingSpec) {
@@ -1006,6 +1027,7 @@ function buildValidationStep(
         </div>
       ),
       helper: docReference("Etapa 9"),
+    jobLinks: validationLinks,
     };
   }
   return {
@@ -1034,6 +1056,7 @@ function buildReachStep(
   const title = "Etapa 10 · Reach Estimate (BR)";
   const description =
     "Meta estima o alcance real no Brasil e dispara recalibração se sair da faixa.";
+  const reachLinks = latestJobLink(jobs, "Meta /reachestimate");
   if (!specs.length) {
     return {
       id: "FACEBOOK_REACH_ESTIMATE",
@@ -1044,6 +1067,7 @@ function buildReachStep(
         <span className="text-muted">Depende da validação dos públicos.</span>
       ),
       helper: docReference("Etapa 10"),
+      jobLinks: reachLinks,
     };
   }
   const notValidated = specs.some((spec) => spec.validationStatus !== "VALID");
@@ -1059,6 +1083,7 @@ function buildReachStep(
         </span>
       ),
       helper: docReference("Etapa 10"),
+      jobLinks: reachLinks,
     };
   }
   const waitingSpec = specs.find(
@@ -1078,6 +1103,7 @@ function buildReachStep(
         </span>
       ),
       helper: docReference("Etapa 10"),
+      jobLinks: reachLinks,
     };
   }
   const outOfRange = specs.find((spec) => isSpecReachOutOfRange(spec));
@@ -1095,6 +1121,7 @@ function buildReachStep(
         </div>
       ),
       helper: docReference("Etapa 10"),
+      jobLinks: reachLinks,
     };
   }
   return {
@@ -1113,6 +1140,7 @@ function buildReachStep(
         <div className="mt-2">{docReference("Etapa 10")}</div>
       </>
     ),
+    jobLinks: reachLinks,
   };
 }
 
@@ -1123,6 +1151,10 @@ function buildRecalibrationStep(
   const title = "Etapa 11 · Recalibração automática (IA)";
   const description =
     "IA ajusta o flexible_spec quando o reach sai da faixa ideal.";
+  const recalibrationLinks = jobs
+    .filter((job): job is ExperimentAdSetJob & { id: number } => typeof job.id === "number")
+    .map((job) => ({ jobId: job.id, label: `Recalibração #${job.id}` }))
+    .slice(0, 3);
   if (!jobs.length) {
     const outOfRange = specs.some((spec) => isSpecReachOutOfRange(spec));
     return {
@@ -1171,6 +1203,7 @@ function buildRecalibrationStep(
       </div>
     ),
     helper: docReference("Etapa 11"),
+    jobLinks: recalibrationLinks.length ? recalibrationLinks : undefined,
   };
 }
 
@@ -1289,8 +1322,74 @@ function ResolvedTermList({
   );
 }
 
+function DiscoverySummaryCard({ summary }: { summary?: DiscoverySummary }) {
+  if (!summary) {
+    return (
+      <div className="text-muted">
+        Discovery ainda não foi executado nesta rodada.
+      </div>
+    );
+  }
+  return (
+    <div className="d-flex flex-column gap-2">
+      <div>
+        <SectionLabel>Seeds consultados</SectionLabel>
+        <BadgeList
+          items={summary.seeds}
+          placeholder="Nenhum seed disponível."
+        />
+      </div>
+      <div>
+        <SectionLabel>Locales utilizados</SectionLabel>
+        <BadgeList
+          items={summary.locales}
+          placeholder="Locales não informados."
+        />
+      </div>
+      {summary.stats ? (
+        <div className="text-muted small">
+          {summary.stats.rawCalls ?? 0} chamadas · {summary.stats.rawItems ?? 0} itens brutos · {summary.stats.dedupItems ?? 0} IDs únicos.
+        </div>
+      ) : null}
+      {summary.topItems.length ? (
+        <div>
+          <SectionLabel>Principais candidatos</SectionLabel>
+          <ul className="list-unstyled mb-0 small">
+            {summary.topItems.map((item, index) => (
+              <li key={`${item.id ?? item.name ?? index}`} className="mb-2">
+                <div className="fw-semibold">{item.name ?? item.id ?? "ID desconhecido"}</div>
+                <div className="text-muted">
+                  {item.type ?? "—"} · {formatAudienceRange(item.audienceLower, item.audienceUpper)}
+                </div>
+                {item.sources?.length ? (
+                  <div className="text-muted">Fontes: {item.sources.join(", ")}</div>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function latestJobLink(jobs: ExperimentAdSetJob[], label: string): PipelineJobLink[] | undefined {
+  const sorted = jobs
+    .filter((job): job is ExperimentAdSetJob & { id: number } => typeof job.id === "number")
+    .sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
+  const job = sorted[0];
+  return job?.id ? [{ jobId: job.id, label }] : undefined;
+}
+
+function mergeJobLinks(
+  ...links: Array<PipelineJobLink[] | undefined>
+): PipelineJobLink[] | undefined {
+  const merged = links.flatMap((link) => link ?? []);
+  return merged.length ? merged : undefined;
+}
+
 function parseResolvedTermsFromJobDetails(
-  details: Array<{ apiLogs?: Array<{ requestPayload?: string | null; responsePayload?: string | null }> } | undefined>,
+  details: Array<ExperimentAdSetJobDetailDto | undefined>,
 ): TargetingSearchResolvedTerms {
   const map: Record<"adinterest" | "adworkposition" | "adbehavior", Map<string, Set<string>>> = {
     adinterest: new Map(),
@@ -1351,6 +1450,57 @@ function extractCandidates(response: unknown): Array<{ id?: unknown }> {
   if (Array.isArray(record.data)) return record.data as Array<{ id?: unknown }>;
   if (Array.isArray(record.items)) return record.items as Array<{ id?: unknown }>;
   return [];
+}
+
+function parseDiscoverySummaryFromJobDetail(
+  detail?: ExperimentAdSetJobDetailDto,
+): DiscoverySummary | undefined {
+  const node = safeJsonParse<any>(detail?.resultPayload);
+  if (!node) return undefined;
+  const seeds = Array.isArray(node.seedTerms)
+    ? node.seedTerms.map((value: unknown) => String(value))
+    : [];
+  const locales = Array.isArray(node.locales)
+    ? node.locales.map((value: unknown) => String(value))
+    : [];
+  const statsNode = node.stats ?? {};
+  const stats = {
+    rawCalls: toNumber(statsNode.rawCalls ?? statsNode.raw_calls),
+    rawItems: toNumber(statsNode.rawItems ?? statsNode.raw_items),
+    dedupItems: toNumber(statsNode.dedupItems ?? statsNode.dedup_items),
+    byType: typeof statsNode.byType === "object" ? statsNode.byType : undefined,
+  };
+  const dedupArray = Array.isArray(node.dedup) ? node.dedup : [];
+  const topItems = dedupArray
+    .map((item: any) => ({
+      id: typeof item.id === "string" ? item.id : undefined,
+      name: typeof item.name === "string" ? item.name : undefined,
+      type: typeof item.type === "string" ? item.type : undefined,
+      audienceLower: toNumber(item.audienceLowerBound ?? item.audience_lower_bound),
+      audienceUpper: toNumber(item.audienceUpperBound ?? item.audience_upper_bound),
+      sources: Array.isArray(item.sources)
+        ? item.sources.map((value: unknown) => String(value))
+        : [],
+      terms: Array.isArray(item.terms)
+        ? item.terms.map((value: unknown) => String(value))
+        : [],
+    }))
+    .sort((a, b) => {
+      const aAudience = a.audienceUpper ?? a.audienceLower ?? 0;
+      const bAudience = b.audienceUpper ?? b.audienceLower ?? 0;
+      return bAudience - aAudience;
+    })
+    .slice(0, 5);
+  return {
+    seeds,
+    locales,
+    stats:
+      stats.rawCalls != null || stats.rawItems != null || stats.dedupItems != null
+        ? stats
+        : undefined,
+    topItems,
+    jobId: detail?.job?.id,
+  };
 }
 
 function SectionLabel({
@@ -1447,6 +1597,17 @@ function formatNumber(value?: number | null) {
   return new Intl.NumberFormat("pt-BR").format(value);
 }
 
+function toNumber(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+  return undefined;
+}
+
 function formatDate(value?: string | null) {
   if (!value) return "—";
   const date = new Date(value);
@@ -1482,4 +1643,15 @@ function formatJson(value?: string | null) {
   } catch (error) {
     return value;
   }
+}
+
+function formatAudienceRange(lower?: number | null, upper?: number | null) {
+  if (lower != null && upper != null) {
+    return `${formatNumber(lower)} – ${formatNumber(upper)} pessoas`;
+  }
+  const fallback = lower ?? upper;
+  if (fallback == null) {
+    return "Sem estimativa";
+  }
+  return `${formatNumber(fallback)} pessoas`;
 }

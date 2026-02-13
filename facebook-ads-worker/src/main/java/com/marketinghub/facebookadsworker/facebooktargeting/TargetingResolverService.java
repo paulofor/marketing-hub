@@ -204,7 +204,14 @@ public class TargetingResolverService {
             double sizeScore = computeSizeScore(suggestion.audienceSize());
             double finalScore = blendScores(aiScore, matchScore, sizeScore);
             ResolvedOption option = new ResolvedOption(
-                    new FacebookAdsService.FacebookTargetingSearchResult(suggestion.id(), suggestion.name(), suggestion.audienceSize(), suggestion.audienceSize(), suggestion.path()),
+                    new FacebookAdsService.FacebookTargetingSearchResult(
+                            suggestion.id(),
+                            suggestion.name(),
+                            "INTEREST",
+                            null,
+                            suggestion.audienceSize(),
+                            suggestion.audienceSize(),
+                            suggestion.path()),
                     type,
                     matchScore,
                     finalScore,

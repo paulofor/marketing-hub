@@ -43,7 +43,14 @@ class TargetingResolverServiceTest {
     @Test
     void resolveCandidateWithMatchReportsValidatedOptions() {
         FacebookAdsService.FacebookTargetingSearchResult result =
-            new FacebookAdsService.FacebookTargetingSearchResult("600313", "Pilates", 800_000L, 1_200_000L, List.of("Interesses", "Fitness"));
+            new FacebookAdsService.FacebookTargetingSearchResult(
+                "600313",
+                "Pilates",
+                "INTEREST",
+                null,
+                800_000L,
+                1_200_000L,
+                List.of("Interesses", "Fitness"));
         when(facebookAdsService.searchTargetingOptions(any())).thenReturn(List.of(result));
 
         TargetingResolutionRequest request = new TargetingResolutionRequest();

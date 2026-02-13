@@ -36,6 +36,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -53,7 +54,9 @@ public class ExperimentAdSetWorkflowJobCoordinator {
     private static final String DEFAULT_COUNTRY = "BR";
     private static final String DEFAULT_LOCALE = "pt_BR";
     private static final String DEFAULT_PROVIDER = "FACEBOOK";
-    private static final int SEED_SEARCH_LIMIT = 25;
+    private static final int DISCOVERY_LIMIT = 200;
+    private static final int DISCOVERY_SEED_LIMIT = 12;
+    private static final String DISCOVERY_FALLBACK_LOCALE = "en_US";
     private static final int SUGGESTION_LIMIT = 150;
     private static final int POSITION_LIMIT = 25;
     private static final long MIN_REACH_LOWER_BOUND = 200_000L;
@@ -255,20 +258,20 @@ public class ExperimentAdSetWorkflowJobCoordinator {
             markWorkflowFailed(workflow, ex.getMessage());
             return;
         }
-        String query = null;
-        ArrayNode searchTerms = seedNode != null && seedNode.has("searchTerms") && seedNode.get("searchTerms").isArray()
-                ? (ArrayNode) seedNode.get("searchTerms")
-                : null;
-        if (searchTerms != null && searchTerms.size() > 0) {
-            query = text(searchTerms.get(0));
+        List<String> searchTerms = extractSearchTerms(seedNode, workflow);
+        if (searchTerms.isEmpty() && StringUtils.hasText(workflow.getSeedKeyword())) {
+            searchTerms = List.of(workflow.getSeedKeyword().trim());
         }
-        if (!StringUtils.hasText(query)) {
-            query = workflow.getSeedKeyword();
-        }
+        List<String> locales = extractDiscoveryLocales(seedNode, workflow);
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("query", query);
+        if (!searchTerms.isEmpty()) {
+            payload.put("query", searchTerms.get(0));
+        }
+        payload.put("seedKeyword", workflow.getSeedKeyword());
+        payload.put("searchTerms", searchTerms);
+        payload.put("locales", locales);
         payload.put("locale", workflow.getSeedLocale() != null ? workflow.getSeedLocale() : DEFAULT_LOCALE);
-        payload.put("limit", SEED_SEARCH_LIMIT);
+        payload.put("limit", DISCOVERY_LIMIT);
         payload.put("country", DEFAULT_COUNTRY);
         payload.put("adAccountId", adAccountId);
         createJob(workflow, ExperimentAdSetJobType.FACEBOOK_SEED_LOOKUP, ExperimentAdSetWorker.FACEBOOK, payload, null);
@@ -743,6 +746,48 @@ public class ExperimentAdSetWorkflowJobCoordinator {
             }
         }
         return values.stream().distinct().limit(5).toList();
+    }
+
+    private List<String> extractSearchTerms(JsonNode seedNode, ExperimentAdSetWorkflow workflow) {
+        LinkedHashSet<String> terms = new LinkedHashSet<>();
+        if (seedNode != null) {
+            JsonNode searchTerms = seedNode.path("searchTerms");
+            if (searchTerms != null && searchTerms.isArray()) {
+                for (JsonNode entry : searchTerms) {
+                    String value = text(entry);
+                    if (StringUtils.hasText(value)) {
+                        terms.add(value.trim());
+                    }
+                }
+            }
+        }
+        if (StringUtils.hasText(workflow.getSeedKeyword())) {
+            terms.add(workflow.getSeedKeyword().trim());
+        }
+        return terms.stream().filter(StringUtils::hasText).limit(DISCOVERY_SEED_LIMIT).toList();
+    }
+
+    private List<String> extractDiscoveryLocales(JsonNode seedNode, ExperimentAdSetWorkflow workflow) {
+        LinkedHashSet<String> locales = new LinkedHashSet<>();
+        String workflowLocale = workflow.getSeedLocale() != null ? workflow.getSeedLocale().trim() : DEFAULT_LOCALE;
+        if (StringUtils.hasText(workflowLocale)) {
+            locales.add(workflowLocale);
+        }
+        if (!DISCOVERY_FALLBACK_LOCALE.equalsIgnoreCase(workflowLocale)) {
+            locales.add(DISCOVERY_FALLBACK_LOCALE);
+        }
+        if (seedNode != null) {
+            JsonNode localeNode = seedNode.path("locales");
+            if (localeNode != null && localeNode.isArray()) {
+                for (JsonNode entry : localeNode) {
+                    String value = text(entry);
+                    if (StringUtils.hasText(value)) {
+                        locales.add(value.trim());
+                    }
+                }
+            }
+        }
+        return locales.stream().filter(StringUtils::hasText).limit(4).toList();
     }
 
     private JsonNode safeJsonNode(String raw) {

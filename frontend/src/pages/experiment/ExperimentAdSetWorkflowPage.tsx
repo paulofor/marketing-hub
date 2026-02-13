@@ -1,5 +1,7 @@
 import { useMemo, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useQueries } from "@tanstack/react-query";
+import axios from "axios";
 import PageTitle from "../../components/PageTitle";
 import {
   ExperimentAdSetWorkflowDto,
@@ -99,6 +101,17 @@ type PipelineStepSummary = {
   optional?: boolean;
   detail?: ReactNode;
   helper?: ReactNode;
+};
+
+type TargetingResolutionByTerm = {
+  term: string;
+  ids: string[];
+};
+
+type TargetingSearchResolvedTerms = {
+  interests: TargetingResolutionByTerm[];
+  workPositions: TargetingResolutionByTerm[];
+  behaviors: TargetingResolutionByTerm[];
 };
 
 export default function ExperimentAdSetWorkflowPage() {
@@ -281,7 +294,49 @@ function PipelineTimeline({
 }: {
   workflow: ExperimentAdSetWorkflowDto;
 }) {
-  const steps = useMemo(() => buildPipelineSteps(workflow), [workflow]);
+  const jobsForResolution = useMemo(
+    () =>
+      (workflow.jobs ?? [])
+        .filter(
+          (job) =>
+            job.status === "SUCCEEDED" &&
+            (job.type === "FACEBOOK_SEED_LOOKUP" ||
+              job.type === "FACEBOOK_SOCIAL_POSITIONS"),
+        )
+        .sort((a, b) => (b.id ?? 0) - (a.id ?? 0))
+        .slice(0, 2),
+    [workflow.jobs],
+  );
+
+  const jobDetailQueries = useQueries({
+    queries: jobsForResolution.map((job) => ({
+      queryKey: [
+        "experiment-adset-job-detail",
+        workflow.experimentId,
+        String(job.id),
+      ],
+      queryFn: async () => {
+        const { data } = await axios.get<{
+          apiLogs: Array<{ requestPayload?: string | null; responsePayload?: string | null }>;
+        }>(
+          `/api/experiments/${workflow.experimentId}/adset-playbook/jobs/${job.id}`,
+        );
+        return data;
+      },
+      enabled: Boolean(workflow.experimentId && job.id),
+      staleTime: 30_000,
+    })),
+  });
+
+  const resolvedTerms = useMemo(
+    () => parseResolvedTermsFromJobDetails(jobDetailQueries.map((query) => query.data)),
+    [jobDetailQueries],
+  );
+
+  const steps = useMemo(
+    () => buildPipelineSteps(workflow, resolvedTerms),
+    [workflow, resolvedTerms],
+  );
   return (
     <div className="card h-100">
       <div className="card-header d-flex flex-column gap-1">
@@ -548,6 +603,7 @@ function JobsCard({ jobs }: { jobs: ExperimentAdSetJob[] }) {
 
 function buildPipelineSteps(
   workflow: ExperimentAdSetWorkflowDto,
+  resolvedTerms: TargetingSearchResolvedTerms,
 ): PipelineStepSummary[] {
   const aiPlan = safeJsonParse<{
     searchTerms?: string[];
@@ -580,6 +636,7 @@ function buildPipelineSteps(
       getJobs("FACEBOOK_SEED_LOOKUP"),
       getJobs("FACEBOOK_SOCIAL_POSITIONS"),
       positionQueries,
+      resolvedTerms,
     ),
     buildAnchorSeedStep(workflow, getJobs("FACEBOOK_SEED_LOOKUP")),
     buildSuggestionExpansionStep(
@@ -675,6 +732,7 @@ function buildTargetingSearchStep(
   interestJobs: ExperimentAdSetJob[],
   positionJobs: ExperimentAdSetJob[],
   positionQueries: string[],
+  resolvedTerms: TargetingSearchResolvedTerms,
 ): PipelineStepSummary {
   const interestStatus = inferStatusFromJobs(interestJobs);
   const positionsStatus: StepStatus =
@@ -699,10 +757,19 @@ function buildTargetingSearchStep(
           Keyword consultada: <strong>{workflow.seedKeyword ?? "—"}</strong>
         </div>
         <div>Locale: {workflow.seedLocale ?? "—"}</div>
+        <SectionLabel className="mt-2">Interesses (adinterest)</SectionLabel>
+        <ResolvedTermList
+          items={resolvedTerms.interests}
+          placeholder="Nenhum ID de interesse encontrado até agora."
+        />
         {positionQueries.length ? (
           <div className="mt-2">
             <SectionLabel>Queries de cargos (adworkposition)</SectionLabel>
             <BadgeList items={positionQueries} />
+            <ResolvedTermList
+              items={resolvedTerms.workPositions}
+              placeholder="Nenhum ID de cargo encontrado até agora."
+            />
             <div className="text-muted mt-1">
               Status dos cargos: {STEP_STATUS_META[positionsStatus].label}
             </div>
@@ -712,6 +779,11 @@ function buildTargetingSearchStep(
             Sem cargos adicionais nesta rodada.
           </div>
         )}
+        <SectionLabel className="mt-2">Comportamentos (adbehavior)</SectionLabel>
+        <ResolvedTermList
+          items={resolvedTerms.behaviors}
+          placeholder="Nenhum ID de comportamento encontrado até agora."
+        />
       </div>
     ),
     helper: docReference("Etapa 3"),
@@ -1194,6 +1266,91 @@ function BadgeList({
       ))}
     </div>
   );
+}
+
+function ResolvedTermList({
+  items,
+  placeholder,
+}: {
+  items: TargetingResolutionByTerm[];
+  placeholder: string;
+}) {
+  if (!items.length) {
+    return <div className="text-muted">{placeholder}</div>;
+  }
+  return (
+    <ul className="list-unstyled mb-0 mt-1">
+      {items.map((item) => (
+        <li key={`${item.term}-${item.ids.join("-")}`} className="mb-1">
+          <span className="fw-semibold">{item.term}</span>: <code>{item.ids.join(", ")}</code>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function parseResolvedTermsFromJobDetails(
+  details: Array<{ apiLogs?: Array<{ requestPayload?: string | null; responsePayload?: string | null }> } | undefined>,
+): TargetingSearchResolvedTerms {
+  const map: Record<"adinterest" | "adworkposition" | "adbehavior", Map<string, Set<string>>> = {
+    adinterest: new Map(),
+    adworkposition: new Map(),
+    adbehavior: new Map(),
+  };
+
+  details.forEach((detail) => {
+    detail?.apiLogs?.forEach((log) => {
+      const request = safeJsonParse<Record<string, unknown>>(log.requestPayload);
+      const response = safeJsonParse<unknown>(log.responsePayload);
+      const rawType = String(request?.type ?? "").toLowerCase();
+      const normalizedType: "adinterest" | "adworkposition" | "adbehavior" | null =
+        rawType.includes("work")
+          ? "adworkposition"
+          : rawType.includes("behavior")
+            ? "adbehavior"
+            : rawType.includes("interest")
+              ? "adinterest"
+              : null;
+      if (!normalizedType) return;
+      const queryValue = String(request?.query ?? request?.q ?? "").trim();
+      if (!queryValue) return;
+
+      const candidates = extractCandidates(response);
+      if (!candidates.length) return;
+      const byTerm = map[normalizedType];
+      const ids = byTerm.get(queryValue) ?? new Set<string>();
+      candidates.forEach((item) => {
+        const id = String(item?.id ?? "").trim();
+        if (id) ids.add(id);
+      });
+      if (ids.size > 0) {
+        byTerm.set(queryValue, ids);
+      }
+    });
+  });
+
+  const toList = (entries: Map<string, Set<string>>): TargetingResolutionByTerm[] =>
+    Array.from(entries.entries()).map(([term, ids]) => ({
+      term,
+      ids: Array.from(ids),
+    }));
+
+  return {
+    interests: toList(map.adinterest),
+    workPositions: toList(map.adworkposition),
+    behaviors: toList(map.adbehavior),
+  };
+}
+
+function extractCandidates(response: unknown): Array<{ id?: unknown }> {
+  if (Array.isArray(response)) {
+    return response as Array<{ id?: unknown }>;
+  }
+  if (!response || typeof response !== "object") return [];
+  const record = response as Record<string, unknown>;
+  if (Array.isArray(record.data)) return record.data as Array<{ id?: unknown }>;
+  if (Array.isArray(record.items)) return record.items as Array<{ id?: unknown }>;
+  return [];
 }
 
 function SectionLabel({

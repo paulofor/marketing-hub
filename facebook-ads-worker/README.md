@@ -467,3 +467,20 @@ O Dockerfile usa Java 21 e gera um jar único (`app.jar`) a partir do Maven. Tok
 
 O workflow `.github/workflows/facebook-ads-worker.yml` replica o fluxo do AI Worker: roda testes Maven, builda a imagem e publica no GitHub Container Registry em
 `ghcr.io/<owner>/facebook-ads-worker:latest` (e com tag do commit). Em pushes para `main`, o action sobe a stack via SSH no VPS `191.252.120.96`, sincronizando os arquivos do diretório `facebook-ads-worker/` e usando `docker-compose.deploy.yml` para apontar para a imagem publicada. Configure os segredos `VPS_SSH_KEY`, `FACEBOOK_ADS_WORKER_REMOTE_PATH` (opcional) e `GHCR_TOKEN`/`GHCR_USERNAME` se for usar credenciais próprias do registry.
+
+
+## Logs em arquivo no container
+
+O `docker-compose.yml` do Facebook Ads Worker agora define `LOGGING_FILE_NAME` para gravar logs em arquivo dentro do container.
+
+- Caminho padrão do arquivo: `/var/log/facebook-ads-worker/application.log`
+- Diretório no host (bind mount): `./logs` (configurável com `FACEBOOK_ADS_WORKER_LOG_DIR`)
+- Arquivo de log (configurável com `FACEBOOK_ADS_WORKER_LOG_FILE`)
+
+Exemplo de override:
+
+```bash
+FACEBOOK_ADS_WORKER_LOG_DIR=/var/log/marketinghub/facebook-ads-worker \
+FACEBOOK_ADS_WORKER_LOG_FILE=/var/log/facebook-ads-worker/worker.log \
+docker compose up -d
+```

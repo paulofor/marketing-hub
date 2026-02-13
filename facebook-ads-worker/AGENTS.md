@@ -70,3 +70,5 @@
   - implementar uma classe `*Service` com a lógica de integração com a API do Facebook;
   - criar um `*Scheduler` com `@Scheduled` para executar o serviço periodicamente;
   - encapsular qualquer cliente do Facebook dentro do mesmo pacote.
+
+- Configuração padrão de execução em Docker grava logs em arquivo (`LOGGING_FILE_NAME`) com volume dedicado em `/var/log/facebook-ads-worker`; preserve esse comportamento ao ajustar compose/deploy.

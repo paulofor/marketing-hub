@@ -79,3 +79,20 @@ Caso queira permitir buscas na Internet pelo modelo, defina também `GOOGLE_API_
 Durante a execução, o worker registra logs informando o início e o término da tarefa, além de detalhes sobre cada produto processado. Verifique o console para acompanhar o andamento.
 
 Edite `src/main/resources/application.properties` caso precise alterar as credenciais ou a URL do banco de dados.
+
+
+### Logs em arquivo no container
+
+O `docker-compose.yml` do AI Worker agora define `LOGGING_FILE_NAME` para persistir logs em arquivo dentro do container.
+
+- Caminho padrão do arquivo: `/var/log/ai-worker/application.log`
+- Diretório no host (bind mount): `./logs` (configurável com `AI_WORKER_LOG_DIR`)
+- Arquivo de log (configurável com `AI_WORKER_LOG_FILE`)
+
+Exemplo de override:
+
+```bash
+AI_WORKER_LOG_DIR=/var/log/marketinghub/ai-worker \
+AI_WORKER_LOG_FILE=/var/log/ai-worker/worker.log \
+docker compose up -d
+```

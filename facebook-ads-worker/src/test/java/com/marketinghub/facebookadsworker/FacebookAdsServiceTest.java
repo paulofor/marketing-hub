@@ -15,6 +15,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -380,7 +382,7 @@ class FacebookAdsServiceTest {
     }
 
     @Test
-    void suggestTargetingOptionsUsesInterestSuggestionsSearch() throws Exception {
+    void suggestTargetingOptionsUsesAccountTargetingSuggestionsEndpoint() throws Exception {
         server.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"600313\",\"name\":\"Pilates\",\"audience_size\":1200000,\"path\":[\"Interesses\",\"Fitness\"]}]}" )
             .addHeader("Content-Type", "application/json"));
 
@@ -397,11 +399,13 @@ class FacebookAdsServiceTest {
         RecordedRequest searchRequest = takeRequest("request");
         HttpUrl searchUrl = searchRequest.getRequestUrl();
         assertNotNull(searchUrl);
-        assertEquals("/v23.0/search", searchUrl.encodedPath());
-        assertEquals("adinterestsuggestion", searchUrl.queryParameter("type"));
-        assertEquals("[\"Pilates\"]", searchUrl.queryParameter("interest_list"));
+        assertEquals("/v23.0/act_1/targetingsuggestions", searchUrl.encodedPath());
+        String targetingListParam = searchUrl.queryParameter("targeting_list");
+        assertNotNull(targetingListParam);
+        assertEquals("[{\"id\":\"Pilates\",\"type\":\"adinterest\"}]", URLDecoder.decode(targetingListParam, StandardCharsets.UTF_8));
         assertEquals("50", searchUrl.queryParameter("limit"));
         assertEquals("pt_BR", searchUrl.queryParameter("locale"));
+        assertEquals("BR", searchUrl.queryParameter("country"));
         assertEquals("token", searchUrl.queryParameter("access_token"));
 
         assertEquals(1, results.size());

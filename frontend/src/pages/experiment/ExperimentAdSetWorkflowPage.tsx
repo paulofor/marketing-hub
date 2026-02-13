@@ -23,7 +23,10 @@ const SLOT_LABELS: Record<string, string> = {
   UNKNOWN: "Público",
 };
 
-const JOB_TYPE_INFO: Record<string, { title: string; description: string; docStep: string }> = {
+const JOB_TYPE_INFO: Record<
+  string,
+  { title: string; description: string; docStep: string }
+> = {
   AI_PREPARE_SEED: {
     title: "Planejar seed (IA)",
     description: "Lê o ICP do experimento e escolhe keyword/search terms",
@@ -46,7 +49,8 @@ const JOB_TYPE_INFO: Record<string, { title: string; description: string; docSte
   },
   AI_BUILD_SPECS: {
     title: "Montar 3 públicos (IA)",
-    description: "IA Worker cria flexible_spec para Designers · Marketing · SMB",
+    description:
+      "IA Worker cria flexible_spec para Designers · Marketing · SMB",
     docStep: "Docs pipeline-3 · Etapas 6-8",
   },
   FACEBOOK_VALIDATE_SPEC: {
@@ -78,13 +82,14 @@ Canais: Instagram, Facebook, tráfego pago.`;
 
 type StepStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED" | "SKIPPED";
 
-const STEP_STATUS_META: Record<StepStatus, { label: string; variant: string }> = {
-  PENDING: { label: "Aguardando", variant: "secondary" },
-  RUNNING: { label: "Em execução", variant: "info" },
-  DONE: { label: "Concluído", variant: "success" },
-  FAILED: { label: "Com erro", variant: "danger" },
-  SKIPPED: { label: "Ignorado", variant: "light" },
-};
+const STEP_STATUS_META: Record<StepStatus, { label: string; variant: string }> =
+  {
+    PENDING: { label: "Aguardando", variant: "secondary" },
+    RUNNING: { label: "Em execução", variant: "info" },
+    DONE: { label: "Concluído", variant: "success" },
+    FAILED: { label: "Com erro", variant: "danger" },
+    SKIPPED: { label: "Ignorado", variant: "light" },
+  };
 
 type PipelineStepSummary = {
   id: string;
@@ -117,18 +122,25 @@ export default function ExperimentAdSetWorkflowPage() {
           title="Playbook de Ad Sets"
           subtitle={
             <span>
-              Experimento <Link to={`/experiments/${experimentId}`}>#{experimentId}</Link>
+              Experimento{" "}
+              <Link to={`/experiments/${experimentId}`}>#{experimentId}</Link>
             </span>
           }
         />
         <div className="d-flex gap-2">
-          <span className={`badge text-bg-${statusVariant} align-self-center px-3 py-2`}>
+          <span
+            className={`badge text-bg-${statusVariant} align-self-center px-3 py-2`}
+          >
             {data.status}
           </span>
           <button
             type="button"
             className="btn btn-primary"
-            disabled={startWorkflow.isPending || (!canStart && !canRestart) || data.status === "RUNNING"}
+            disabled={
+              startWorkflow.isPending ||
+              (!canStart && !canRestart) ||
+              data.status === "RUNNING"
+            }
             onClick={() => startWorkflow.mutate(canRestart)}
           >
             {startWorkflow.isPending ? "Processando..." : buttonLabel}
@@ -169,26 +181,50 @@ function PipelineDocExplainer() {
     <div className="alert alert-info mb-4" role="alert">
       <div className="fw-semibold">Fluxo oficial · 3 públicos Meta Ads</div>
       <p className="mb-2 small">
-        Entrada: icp.md → IA Worker decide seeds/arquétipos → Facebook Ads Worker executa chamadas até reach READY.
+        Entrada: icp.md → IA Worker decide seeds/arquétipos → Facebook Ads
+        Worker executa chamadas até reach READY.
       </p>
       <ul className="mb-2 small ps-3">
-        <li>Saída: spec_1.json…spec_3.json + reach_1.json…reach_3.json e toda a trilha de auditoria.</li>
-        <li>IA Worker nunca chuta IDs; todo ID vem da Graph API via Ads Worker.</li>
-        <li>Jobs com worker = AI acionam ChatGPT em batch; jobs com worker = FACEBOOK gravam cada request da Graph API.</li>
-        <li>Ordem: Targeting Search → Suggestions → flexible_spec → Validation → Reach → (opcional) criação de Ad Sets.</li>
+        <li>
+          Saída: spec_1.json…spec_3.json + reach_1.json…reach_3.json e toda a
+          trilha de auditoria.
+        </li>
+        <li>
+          IA Worker nunca chuta IDs; todo ID vem da Graph API via Ads Worker.
+        </li>
+        <li>
+          Jobs com worker = AI acionam ChatGPT em batch; jobs com worker =
+          FACEBOOK gravam cada request da Graph API.
+        </li>
+        <li>
+          Ordem: Targeting Search → Suggestions → flexible_spec → Validation →
+          Reach → (opcional) criação de Ad Sets.
+        </li>
       </ul>
-      <div className="small text-muted mb-1">Guia completo: {PIPELINE_DOC_PATH}</div>
+      <div className="small text-muted mb-1">
+        Guia completo: {PIPELINE_DOC_PATH}
+      </div>
       <div className="small text-muted">
-        Use o cartão "Histórico de jobs" e clique em <strong>Detalhe</strong> para ver as chamadas cruas (Graph API ou ChatGPT batch).
+        Use o cartão "Histórico de jobs" e clique em <strong>Detalhe</strong>{" "}
+        para ver as chamadas cruas (Graph API ou ChatGPT batch).
       </div>
     </div>
   );
 }
 
 function SeedCard({ workflow }: { workflow: ExperimentAdSetWorkflowDto }) {
-  const aiPlan = safeJsonParse<{ searchTerms?: string[]; positionQueries?: string[] }>(workflow.aiNotes);
-  const searchTerms = collectStrings(aiPlan?.searchTerms);
-  const positionQueries = collectStrings(aiPlan?.positionQueries);
+  const aiPlan = safeJsonParse<{
+    searchTerms?: string[];
+    positionQueries?: string[];
+    interests?: string[];
+    work_positions?: string[];
+    behaviors?: string[];
+  }>(workflow.aiNotes);
+  const searchTerms = collectStrings(aiPlan?.searchTerms ?? aiPlan?.interests);
+  const positionQueries = collectStrings(
+    aiPlan?.positionQueries ?? aiPlan?.work_positions,
+  );
+  const behaviorQueries = collectStrings(aiPlan?.behaviors);
   return (
     <div className="card h-100">
       <div className="card-header">
@@ -206,18 +242,31 @@ function SeedCard({ workflow }: { workflow: ExperimentAdSetWorkflowDto }) {
           <dt className="col-sm-5">Interesse</dt>
           <dd className="col-sm-7">{workflow.seedInterestName ?? "—"}</dd>
           <dt className="col-sm-5">Audience (lower)</dt>
-          <dd className="col-sm-7">{formatNumber(workflow.seedAudienceLower)}</dd>
+          <dd className="col-sm-7">
+            {formatNumber(workflow.seedAudienceLower)}
+          </dd>
           <dt className="col-sm-5">Audience (upper)</dt>
-          <dd className="col-sm-7">{formatNumber(workflow.seedAudienceUpper)}</dd>
+          <dd className="col-sm-7">
+            {formatNumber(workflow.seedAudienceUpper)}
+          </dd>
         </dl>
         <SectionLabel>Termos usados no Targeting Search</SectionLabel>
-        <BadgeList items={searchTerms} placeholder="IA ainda não devolveu os termos" />
+        <BadgeList
+          items={searchTerms}
+          placeholder="IA ainda não devolveu os termos"
+        />
         <SectionLabel className="mt-3">Cargos consultados no Meta</SectionLabel>
-        <BadgeList items={positionQueries} placeholder="Sem queries adicionais" />
+        <BadgeList
+          items={positionQueries}
+          placeholder="Sem queries adicionais"
+        />
         {workflow.aiNotes ? (
           <details className="mt-3">
             <summary>Ver JSON bruto dessa etapa</summary>
-            <pre className="mt-2 small bg-light p-2 rounded overflow-auto" style={{ maxHeight: 220 }}>
+            <pre
+              className="mt-2 small bg-light p-2 rounded overflow-auto"
+              style={{ maxHeight: 220 }}
+            >
               {formatJson(workflow.aiNotes)}
             </pre>
           </details>
@@ -227,12 +276,18 @@ function SeedCard({ workflow }: { workflow: ExperimentAdSetWorkflowDto }) {
   );
 }
 
-function PipelineTimeline({ workflow }: { workflow: ExperimentAdSetWorkflowDto }) {
+function PipelineTimeline({
+  workflow,
+}: {
+  workflow: ExperimentAdSetWorkflowDto;
+}) {
   const steps = useMemo(() => buildPipelineSteps(workflow), [workflow]);
   return (
     <div className="card h-100">
       <div className="card-header d-flex flex-column gap-1">
-        <div className="fw-semibold">Pipeline dos 3 públicos (Meta Ads API)</div>
+        <div className="fw-semibold">
+          Pipeline dos 3 públicos (Meta Ads API)
+        </div>
         <small className="text-muted">
           Sequência oficial · {PIPELINE_DOC_PATH} (Etapas 1–12)
         </small>
@@ -242,7 +297,9 @@ function PipelineTimeline({ workflow }: { workflow: ExperimentAdSetWorkflowDto }
           {steps.map((step, index) => (
             <li
               key={step.id}
-              className={index < steps.length - 1 ? "pb-3 mb-3 border-bottom" : ""}
+              className={
+                index < steps.length - 1 ? "pb-3 mb-3 border-bottom" : ""
+              }
             >
               <div className="d-flex justify-content-between align-items-start gap-3">
                 <div>
@@ -250,11 +307,15 @@ function PipelineTimeline({ workflow }: { workflow: ExperimentAdSetWorkflowDto }
                     <span className="fw-semibold">
                       {index + 1}. {step.title}
                     </span>
-                    {step.optional ? <span className="badge text-bg-light">Opcional</span> : null}
+                    {step.optional ? (
+                      <span className="badge text-bg-light">Opcional</span>
+                    ) : null}
                   </div>
                   <p className="text-muted small mb-2">{step.description}</p>
                   {step.detail}
-                  {step.helper ? <div className="small mt-2">{step.helper}</div> : null}
+                  {step.helper ? (
+                    <div className="small mt-2">{step.helper}</div>
+                  ) : null}
                 </div>
                 <StatusBadge status={step.status} />
               </div>
@@ -271,7 +332,9 @@ function SpecsCard({ specs }: { specs: ExperimentAdSetSpec[] }) {
     return (
       <div className="card h-100">
         <div className="card-header">Targeting specs</div>
-        <div className="card-body text-muted">Aguardando saída da etapa "IA monta públicos".</div>
+        <div className="card-body text-muted">
+          Aguardando saída da etapa "IA monta públicos".
+        </div>
       </div>
     );
   }
@@ -281,11 +344,13 @@ function SpecsCard({ specs }: { specs: ExperimentAdSetSpec[] }) {
         <div>
           <div className="fw-semibold">Targeting specs (3 hipóteses)</div>
           <small className="text-muted">
-            Produto final das Etapas 6-10 ({PIPELINE_DOC_PATH}) · flexible_spec pronto para exportar
+            Produto final das Etapas 6-10 ({PIPELINE_DOC_PATH}) · flexible_spec
+            pronto para exportar
           </small>
         </div>
         <small className="text-muted">
-          Faixa ideal do Reach no BR: {formatNumber(REACH_MIN)} – {formatNumber(REACH_MAX)} pessoas
+          Faixa ideal do Reach no BR: {formatNumber(REACH_MIN)} –{" "}
+          {formatNumber(REACH_MAX)} pessoas
         </small>
       </div>
       <div className="card-body">
@@ -313,10 +378,14 @@ function SpecCardItem({ spec }: { spec: ExperimentAdSetSpec }) {
           <div className="small text-muted">{spec.label ?? "Sem rótulo"}</div>
         </div>
         <div className="text-end d-flex flex-column gap-2">
-          <span className={`badge text-bg-${statusToVariant(spec.validationStatus)}`}>
+          <span
+            className={`badge text-bg-${statusToVariant(spec.validationStatus)}`}
+          >
             Validação: {spec.validationStatus ?? "PENDENTE"}
           </span>
-          <span className={`badge text-bg-${statusToVariant(spec.reachStatus)}`}>
+          <span
+            className={`badge text-bg-${statusToVariant(spec.reachStatus)}`}
+          >
             Reach: {spec.reachStatus ?? "—"}
           </span>
         </div>
@@ -327,11 +396,20 @@ function SpecCardItem({ spec }: { spec: ExperimentAdSetSpec }) {
         <dt className="col-6">Idade máxima</dt>
         <dd className="col-6">{spec.ageMax ?? "—"}</dd>
       </dl>
-      <div className={`small ${reachOutOfRange ? "text-warning" : "text-muted"}`}>
-        Alcance estimado: <strong>{formatNumber(spec.reachLowerBound)} – {formatNumber(spec.reachUpperBound)}</strong> pessoas.
+      <div
+        className={`small ${reachOutOfRange ? "text-warning" : "text-muted"}`}
+      >
+        Alcance estimado:{" "}
+        <strong>
+          {formatNumber(spec.reachLowerBound)} –{" "}
+          {formatNumber(spec.reachUpperBound)}
+        </strong>{" "}
+        pessoas.
         {reachOutOfRange ? " Fora da faixa recomendada (200k-20M)." : null}
       </div>
-      {reachSummary ? <div className="small text-muted mt-1">Meta: {reachSummary}</div> : null}
+      {reachSummary ? (
+        <div className="small text-muted mt-1">Meta: {reachSummary}</div>
+      ) : null}
       {validationSummary ? (
         <div className="alert alert-warning small py-2 mt-2 mb-0">
           {validationSummary}
@@ -341,7 +419,10 @@ function SpecCardItem({ spec }: { spec: ExperimentAdSetSpec }) {
         {spec.targetingSpec ? (
           <details className="mt-3">
             <summary>Targeting spec (JSON)</summary>
-            <pre className="small bg-light p-2 rounded mt-2 overflow-auto" style={{ maxHeight: 200 }}>
+            <pre
+              className="small bg-light p-2 rounded mt-2 overflow-auto"
+              style={{ maxHeight: 200 }}
+            >
               {formatJson(spec.targetingSpec)}
             </pre>
           </details>
@@ -349,7 +430,10 @@ function SpecCardItem({ spec }: { spec: ExperimentAdSetSpec }) {
         {spec.validationResponse ? (
           <details className="mt-2">
             <summary>Resposta do Targeting Validation</summary>
-            <pre className="small bg-light p-2 rounded mt-2 overflow-auto" style={{ maxHeight: 200 }}>
+            <pre
+              className="small bg-light p-2 rounded mt-2 overflow-auto"
+              style={{ maxHeight: 200 }}
+            >
               {formatJson(spec.validationResponse)}
             </pre>
           </details>
@@ -357,7 +441,10 @@ function SpecCardItem({ spec }: { spec: ExperimentAdSetSpec }) {
         {spec.reachResponse ? (
           <details className="mt-2">
             <summary>Resposta do Reach Estimate</summary>
-            <pre className="small bg-light p-2 rounded mt-2 overflow-auto" style={{ maxHeight: 200 }}>
+            <pre
+              className="small bg-light p-2 rounded mt-2 overflow-auto"
+              style={{ maxHeight: 200 }}
+            >
               {formatJson(spec.reachResponse)}
             </pre>
           </details>
@@ -384,7 +471,9 @@ function JobsCard({ jobs }: { jobs: ExperimentAdSetJob[] }) {
       <div className="card-header d-flex flex-column gap-1">
         <div className="fw-semibold">Histórico de jobs</div>
         <small className="text-muted">
-          Cada job salva as chamadas externas (Graph API para FACEBOOK, ChatGPT batch para AI). Clique em "Detalhe" para ver os payloads enviados/recebidos.
+          Cada job salva as chamadas externas (Graph API para FACEBOOK, ChatGPT
+          batch para AI). Clique em "Detalhe" para ver os payloads
+          enviados/recebidos.
         </small>
       </div>
       <div className="table-responsive">
@@ -409,26 +498,37 @@ function JobsCard({ jobs }: { jobs: ExperimentAdSetJob[] }) {
                 return (
                   <tr key={job.id}>
                     <td>
-                      <div className="fw-semibold">{info?.title ?? job.type ?? "—"}</div>
+                      <div className="fw-semibold">
+                        {info?.title ?? job.type ?? "—"}
+                      </div>
                       <div className="text-muted small">{job.type}</div>
                       {info?.description ? (
-                        <div className="text-muted small">{info.description}</div>
+                        <div className="text-muted small">
+                          {info.description}
+                        </div>
                       ) : null}
                       {info?.docStep ? (
                         <div className="text-muted small">{info.docStep}</div>
                       ) : null}
                     </td>
                     <td>
-                      <span className={`badge text-bg-${statusToVariant(job.status)}`}>
+                      <span
+                        className={`badge text-bg-${statusToVariant(job.status)}`}
+                      >
                         {job.status}
                       </span>
                     </td>
                     <td>{job.worker}</td>
                     <td>{formatDate(job.startedAt)}</td>
                     <td>{formatDate(job.finishedAt)}</td>
-                    <td className="text-danger small">{job.errorMessage ?? ""}</td>
+                    <td className="text-danger small">
+                      {job.errorMessage ?? ""}
+                    </td>
                     <td>
-                      <Link to={`jobs/${job.id}`} className="btn btn-link btn-sm px-0">
+                      <Link
+                        to={`jobs/${job.id}`}
+                        className="btn btn-link btn-sm px-0"
+                      >
                         Detalhe
                       </Link>
                     </td>
@@ -439,16 +539,28 @@ function JobsCard({ jobs }: { jobs: ExperimentAdSetJob[] }) {
         </table>
       </div>
       <div className="card-footer text-muted small">
-        Referência: {PIPELINE_DOC_PATH}. O link "Detalhe" mostra cada request feita ao Facebook Ads.
+        Referência: {PIPELINE_DOC_PATH}. O link "Detalhe" mostra cada request
+        feita ao Facebook Ads.
       </div>
     </div>
   );
 }
 
-function buildPipelineSteps(workflow: ExperimentAdSetWorkflowDto): PipelineStepSummary[] {
-  const aiPlan = safeJsonParse<{ searchTerms?: string[]; positionQueries?: string[] }>(workflow.aiNotes);
-  const searchTerms = collectStrings(aiPlan?.searchTerms);
-  const positionQueries = collectStrings(aiPlan?.positionQueries);
+function buildPipelineSteps(
+  workflow: ExperimentAdSetWorkflowDto,
+): PipelineStepSummary[] {
+  const aiPlan = safeJsonParse<{
+    searchTerms?: string[];
+    positionQueries?: string[];
+    interests?: string[];
+    work_positions?: string[];
+    behaviors?: string[];
+  }>(workflow.aiNotes);
+  const searchTerms = collectStrings(aiPlan?.searchTerms ?? aiPlan?.interests);
+  const positionQueries = collectStrings(
+    aiPlan?.positionQueries ?? aiPlan?.work_positions,
+  );
+  const behaviorQueries = collectStrings(aiPlan?.behaviors);
   const jobsByType = groupJobsByType(workflow.jobs);
   const getJobs = (type: string) => jobsByType.get(type) ?? [];
   const specs = workflow.specs ?? [];
@@ -456,7 +568,13 @@ function buildPipelineSteps(workflow: ExperimentAdSetWorkflowDto): PipelineStepS
 
   return [
     buildIcpStep(workflow),
-    buildSeedGenerationStep(workflow, getJobs("AI_PREPARE_SEED"), searchTerms, positionQueries),
+    buildSeedGenerationStep(
+      workflow,
+      getJobs("AI_PREPARE_SEED"),
+      searchTerms,
+      positionQueries,
+      behaviorQueries,
+    ),
     buildTargetingSearchStep(
       workflow,
       getJobs("FACEBOOK_SEED_LOOKUP"),
@@ -464,7 +582,10 @@ function buildPipelineSteps(workflow: ExperimentAdSetWorkflowDto): PipelineStepS
       positionQueries,
     ),
     buildAnchorSeedStep(workflow, getJobs("FACEBOOK_SEED_LOOKUP")),
-    buildSuggestionExpansionStep(workflow, getJobs("FACEBOOK_TARGETING_SUGGESTIONS")),
+    buildSuggestionExpansionStep(
+      workflow,
+      getJobs("FACEBOOK_TARGETING_SUGGESTIONS"),
+    ),
     buildSuggestionCurationStep(aiBuildJobs),
     buildAudiencePlanStep(specs, aiBuildJobs),
     buildSpecAssemblyStep(specs, aiBuildJobs),
@@ -475,19 +596,33 @@ function buildPipelineSteps(workflow: ExperimentAdSetWorkflowDto): PipelineStepS
   ];
 }
 
-function buildIcpStep(workflow: ExperimentAdSetWorkflowDto): PipelineStepSummary {
-  const status: StepStatus = workflow.status === "NOT_STARTED" ? "PENDING" : "DONE";
+function buildIcpStep(
+  workflow: ExperimentAdSetWorkflowDto,
+): PipelineStepSummary {
+  const status: StepStatus =
+    workflow.status === "NOT_STARTED" ? "PENDING" : "DONE";
   return {
     id: "DOC_STEP_1",
     title: "Etapa 1 · Definir ICP (entrada humana)",
-    description: "Produto, público, dor e país viram o arquivo icp.md que guia todo o playbook.",
+    description:
+      "Produto, público, dor e país viram o arquivo icp.md que guia todo o playbook.",
     status,
     detail: (
       <div className="small">
-        <div>Experimento #{workflow.experimentId} precisa ter o ICP documentado antes de acionar a IA.</div>
-        <div className="text-muted">Saída esperada: icp.md + ia_worker_config.json (opcional).</div>
-        <SectionLabel className="mt-3">Texto de referência para o icp.md</SectionLabel>
-        <pre className="mt-2 bg-light border rounded p-2 mb-0" style={{ whiteSpace: "pre-wrap" }}>
+        <div>
+          Experimento #{workflow.experimentId} precisa ter o ICP documentado
+          antes de acionar a IA.
+        </div>
+        <div className="text-muted">
+          Saída esperada: icp.md + ia_worker_config.json (opcional).
+        </div>
+        <SectionLabel className="mt-3">
+          Texto de referência para o icp.md
+        </SectionLabel>
+        <pre
+          className="mt-2 bg-light border rounded p-2 mb-0"
+          style={{ whiteSpace: "pre-wrap" }}
+        >
           {ICP_REFERENCE_TEXT}
         </pre>
       </div>
@@ -501,6 +636,7 @@ function buildSeedGenerationStep(
   jobs: ExperimentAdSetJob[],
   searchTerms: string[],
   positionQueries: string[],
+  behaviorQueries: string[],
 ): PipelineStepSummary {
   return {
     id: "DOC_STEP_2",
@@ -510,11 +646,24 @@ function buildSeedGenerationStep(
     status: inferStatusFromJobs(jobs),
     detail: (
       <div className="small">
-        <div>Seed keyword sugerida: <strong>{workflow.seedKeyword ?? "—"}</strong></div>
-        <SectionLabel className="mt-2">Search terms enviados ao Targeting Search</SectionLabel>
-        <BadgeList items={searchTerms} placeholder="IA ainda não retornou searchTerms." />
-        <SectionLabel className="mt-2">Consultas de cargos (work_positions)</SectionLabel>
-        <BadgeList items={positionQueries} placeholder="Sem cargos sugeridos nesta rodada." />
+        <div>
+          Seed keyword sugerida: <strong>{workflow.seedKeyword ?? "—"}</strong>
+        </div>
+        <SectionLabel className="mt-2">Lista de interests</SectionLabel>
+        <BadgeList
+          items={searchTerms}
+          placeholder="IA ainda não retornou interests."
+        />
+        <SectionLabel className="mt-2">Lista de work_positions</SectionLabel>
+        <BadgeList
+          items={positionQueries}
+          placeholder="Sem work_positions sugeridos nesta rodada."
+        />
+        <SectionLabel className="mt-2">Lista de behaviors</SectionLabel>
+        <BadgeList
+          items={behaviorQueries}
+          placeholder="Sem behaviors sugeridos nesta rodada."
+        />
       </div>
     ),
     helper: docReference("Etapa 2"),
@@ -529,7 +678,9 @@ function buildTargetingSearchStep(
 ): PipelineStepSummary {
   const interestStatus = inferStatusFromJobs(interestJobs);
   const positionsStatus: StepStatus =
-    positionQueries.length === 0 && positionJobs.length === 0 ? "SKIPPED" : inferStatusFromJobs(positionJobs);
+    positionQueries.length === 0 && positionJobs.length === 0
+      ? "SKIPPED"
+      : inferStatusFromJobs(positionJobs);
   let status: StepStatus = interestStatus;
   if (interestStatus === "FAILED" || positionsStatus === "FAILED") {
     status = "FAILED";
@@ -544,16 +695,22 @@ function buildTargetingSearchStep(
     status,
     detail: (
       <div className="small">
-        <div>Keyword consultada: <strong>{workflow.seedKeyword ?? "—"}</strong></div>
+        <div>
+          Keyword consultada: <strong>{workflow.seedKeyword ?? "—"}</strong>
+        </div>
         <div>Locale: {workflow.seedLocale ?? "—"}</div>
         {positionQueries.length ? (
           <div className="mt-2">
             <SectionLabel>Queries de cargos (adworkposition)</SectionLabel>
             <BadgeList items={positionQueries} />
-            <div className="text-muted mt-1">Status dos cargos: {STEP_STATUS_META[positionsStatus].label}</div>
+            <div className="text-muted mt-1">
+              Status dos cargos: {STEP_STATUS_META[positionsStatus].label}
+            </div>
           </div>
         ) : (
-          <div className="text-muted mt-2">Sem cargos adicionais nesta rodada.</div>
+          <div className="text-muted mt-2">
+            Sem cargos adicionais nesta rodada.
+          </div>
         )}
       </div>
     ),
@@ -565,18 +722,26 @@ function buildAnchorSeedStep(
   workflow: ExperimentAdSetWorkflowDto,
   interestJobs: ExperimentAdSetJob[],
 ): PipelineStepSummary {
-  const status: StepStatus = workflow.seedInterestId ? "DONE" : inferStatusFromJobs(interestJobs);
+  const status: StepStatus = workflow.seedInterestId
+    ? "DONE"
+    : inferStatusFromJobs(interestJobs);
   return {
     id: "DOC_STEP_4",
     title: "Etapa 4 · IA escolhe o anchor seed",
-    description: "IA Worker salva seed_selected.json com o interest anchor aprovado e IDs auxiliares.",
+    description:
+      "IA Worker salva seed_selected.json com o interest anchor aprovado e IDs auxiliares.",
     status,
     detail: (
       <div className="small">
-        <div>Anchor: <strong>{workflow.seedInterestName ?? "—"}</strong></div>
-        <div>ID Meta: <code>{workflow.seedInterestId ?? "—"}</code></div>
         <div>
-          Audience estimada: {formatNumber(workflow.seedAudienceLower)} – {formatNumber(workflow.seedAudienceUpper)} pessoas
+          Anchor: <strong>{workflow.seedInterestName ?? "—"}</strong>
+        </div>
+        <div>
+          ID Meta: <code>{workflow.seedInterestId ?? "—"}</code>
+        </div>
+        <div>
+          Audience estimada: {formatNumber(workflow.seedAudienceLower)} –{" "}
+          {formatNumber(workflow.seedAudienceUpper)} pessoas
         </div>
       </div>
     ),
@@ -596,7 +761,10 @@ function buildSuggestionExpansionStep(
     status: inferStatusFromJobs(jobs),
     detail: (
       <div className="small">
-        <div>Seed anchor: {workflow.seedInterestName ?? "—"} ({workflow.seedInterestId ?? "—"})</div>
+        <div>
+          Seed anchor: {workflow.seedInterestName ?? "—"} (
+          {workflow.seedInterestId ?? "—"})
+        </div>
         <div className="text-muted">Chamadas registradas: {jobs.length}</div>
       </div>
     ),
@@ -604,7 +772,9 @@ function buildSuggestionExpansionStep(
   };
 }
 
-function buildSuggestionCurationStep(aiBuildJobs: ExperimentAdSetJob[]): PipelineStepSummary {
+function buildSuggestionCurationStep(
+  aiBuildJobs: ExperimentAdSetJob[],
+): PipelineStepSummary {
   return {
     id: "DOC_STEP_6",
     title: "Etapa 6 · Curadoria das sugestões (IA)",
@@ -613,7 +783,8 @@ function buildSuggestionCurationStep(aiBuildJobs: ExperimentAdSetJob[]): Pipelin
     status: inferStatusFromJobs(aiBuildJobs),
     detail: (
       <div className="small">
-        Saída esperada: suggestions_curated.json com interesses, cargos e behaviors ordenados por relevância.
+        Saída esperada: suggestions_curated.json com interesses, cargos e
+        behaviors ordenados por relevância.
       </div>
     ),
     helper: docReference("Etapa 6"),
@@ -624,7 +795,9 @@ function buildAudiencePlanStep(
   specs: ExperimentAdSetSpec[],
   aiBuildJobs: ExperimentAdSetJob[],
 ): PipelineStepSummary {
-  const status: StepStatus = specs.length ? "DONE" : inferStatusFromJobs(aiBuildJobs);
+  const status: StepStatus = specs.length
+    ? "DONE"
+    : inferStatusFromJobs(aiBuildJobs);
   const labels = Array.from(
     new Set(
       specs
@@ -635,7 +808,8 @@ function buildAudiencePlanStep(
   return {
     id: "DOC_STEP_7",
     title: "Etapa 7 · Definir 3 hipóteses (audience_plan.json)",
-    description: "IA Worker transforma as sugestões em 3 arquétipos distintos para teste.",
+    description:
+      "IA Worker transforma as sugestões em 3 arquétipos distintos para teste.",
     status,
     detail: (
       <div className="small">
@@ -645,7 +819,9 @@ function buildAudiencePlanStep(
             <BadgeList items={labels} />
           </>
         ) : (
-          <span className="text-muted">IA está montando o arquivo audience_plan.json.</span>
+          <span className="text-muted">
+            IA está montando o arquivo audience_plan.json.
+          </span>
         )}
       </div>
     ),
@@ -657,7 +833,9 @@ function buildSpecAssemblyStep(
   specs: ExperimentAdSetSpec[],
   aiBuildJobs: ExperimentAdSetJob[],
 ): PipelineStepSummary {
-  const status: StepStatus = specs.length ? "DONE" : inferStatusFromJobs(aiBuildJobs);
+  const status: StepStatus = specs.length
+    ? "DONE"
+    : inferStatusFromJobs(aiBuildJobs);
   return {
     id: "DOC_STEP_8",
     title: "Etapa 8 · Montar 3 targeting_spec (flexible_spec)",
@@ -666,19 +844,28 @@ function buildSpecAssemblyStep(
     status,
     detail: (
       <div className="small">
-        Specs gerados: {specs.length || "—"} · cada público recebe um slot (Designers, Marketing, SMB).
+        Specs gerados: {specs.length || "—"} · cada público recebe um slot
+        (Designers, Marketing, SMB).
       </div>
     ),
     helper: (
       <>
-        {specs.length ? renderSpecStatusList(specs, (spec) => spec.label ?? slotLabel(spec.slot)) : null}
+        {specs.length
+          ? renderSpecStatusList(
+              specs,
+              (spec) => spec.label ?? slotLabel(spec.slot),
+            )
+          : null}
         <div className="mt-2">{docReference("Etapa 8")}</div>
       </>
     ),
   };
 }
 
-function buildValidationStep(specs: ExperimentAdSetSpec[], jobs: ExperimentAdSetJob[]): PipelineStepSummary {
+function buildValidationStep(
+  specs: ExperimentAdSetSpec[],
+  jobs: ExperimentAdSetJob[],
+): PipelineStepSummary {
   const title = "Etapa 9 · Targeting Validation (opcional)";
   const description =
     "Meta verifica se todos os IDs do flexible_spec existem antes de rodar reachestimate.";
@@ -688,11 +875,17 @@ function buildValidationStep(specs: ExperimentAdSetSpec[], jobs: ExperimentAdSet
       title,
       description,
       status: inferStatusFromJobs(jobs),
-      detail: <span className="text-muted">Depende da etapa "IA monta as 3 hipóteses".</span>,
+      detail: (
+        <span className="text-muted">
+          Depende da etapa "IA monta as 3 hipóteses".
+        </span>
+      ),
       helper: docReference("Etapa 9"),
     };
   }
-  const invalidSpec = specs.find((spec) => spec.validationStatus && spec.validationStatus !== "VALID");
+  const invalidSpec = specs.find(
+    (spec) => spec.validationStatus && spec.validationStatus !== "VALID",
+  );
   const pendingSpec = specs.find((spec) => !spec.validationStatus);
   if (invalidSpec) {
     const failedValidationJob = jobs
@@ -705,12 +898,17 @@ function buildValidationStep(specs: ExperimentAdSetSpec[], jobs: ExperimentAdSet
       status: "FAILED",
       detail: (
         <div className="small text-danger">
-          {slotLabel(invalidSpec.slot)} recebeu status {invalidSpec.validationStatus}.{' '}
-          {extractValidationSummary(invalidSpec.validationResponse) ?? "Falha retornada pelo Meta."}
+          {slotLabel(invalidSpec.slot)} recebeu status{" "}
+          {invalidSpec.validationStatus}.{" "}
+          {extractValidationSummary(invalidSpec.validationResponse) ??
+            "Falha retornada pelo Meta."}
           {failedValidationJob?.id ? (
             <>
-              {' '}
-              <Link to={`jobs/${failedValidationJob.id}`} className="fw-semibold">
+              {" "}
+              <Link
+                to={`jobs/${failedValidationJob.id}`}
+                className="fw-semibold"
+              >
                 Ver detalhe do job #{failedValidationJob.id}
               </Link>
               .
@@ -726,10 +924,13 @@ function buildValidationStep(specs: ExperimentAdSetSpec[], jobs: ExperimentAdSet
       id: "FACEBOOK_VALIDATE_SPEC",
       title,
       description,
-      status: jobs.some((job) => job.status === "RUNNING") ? "RUNNING" : "PENDING",
+      status: jobs.some((job) => job.status === "RUNNING")
+        ? "RUNNING"
+        : "PENDING",
       detail: (
         <div className="small text-muted">
-          Aguardando validação para {slotLabel(pendingSpec.slot)} (ver histórico de jobs).
+          Aguardando validação para {slotLabel(pendingSpec.slot)} (ver histórico
+          de jobs).
         </div>
       ),
       helper: docReference("Etapa 9"),
@@ -740,7 +941,11 @@ function buildValidationStep(specs: ExperimentAdSetSpec[], jobs: ExperimentAdSet
     title,
     description,
     status: "DONE",
-    detail: <div className="small">Todos os públicos receberam <strong>VALID</strong>.</div>,
+    detail: (
+      <div className="small">
+        Todos os públicos receberam <strong>VALID</strong>.
+      </div>
+    ),
     helper: (
       <>
         {renderSpecStatusList(specs, (spec) => spec.validationStatus ?? "—")}
@@ -750,16 +955,22 @@ function buildValidationStep(specs: ExperimentAdSetSpec[], jobs: ExperimentAdSet
   };
 }
 
-function buildReachStep(specs: ExperimentAdSetSpec[], jobs: ExperimentAdSetJob[]): PipelineStepSummary {
+function buildReachStep(
+  specs: ExperimentAdSetSpec[],
+  jobs: ExperimentAdSetJob[],
+): PipelineStepSummary {
   const title = "Etapa 10 · Reach Estimate (BR)";
-  const description = "Meta estima o alcance real no Brasil e dispara recalibração se sair da faixa.";
+  const description =
+    "Meta estima o alcance real no Brasil e dispara recalibração se sair da faixa.";
   if (!specs.length) {
     return {
       id: "FACEBOOK_REACH_ESTIMATE",
       title,
       description,
       status: inferStatusFromJobs(jobs),
-      detail: <span className="text-muted">Depende da validação dos públicos.</span>,
+      detail: (
+        <span className="text-muted">Depende da validação dos públicos.</span>
+      ),
       helper: docReference("Etapa 10"),
     };
   }
@@ -770,18 +981,30 @@ function buildReachStep(specs: ExperimentAdSetSpec[], jobs: ExperimentAdSetJob[]
       title,
       description,
       status: "PENDING",
-      detail: <span className="text-muted">Executado somente após todos receberem VALID.</span>,
+      detail: (
+        <span className="text-muted">
+          Executado somente após todos receberem VALID.
+        </span>
+      ),
       helper: docReference("Etapa 10"),
     };
   }
-  const waitingSpec = specs.find((spec) => spec.validationStatus === "VALID" && !spec.reachStatus);
+  const waitingSpec = specs.find(
+    (spec) => spec.validationStatus === "VALID" && !spec.reachStatus,
+  );
   if (waitingSpec) {
     return {
       id: "FACEBOOK_REACH_ESTIMATE",
       title,
       description,
-      status: jobs.some((job) => job.status === "RUNNING") ? "RUNNING" : "PENDING",
-      detail: <span className="text-muted">Aguardando resposta para {slotLabel(waitingSpec.slot)}.</span>,
+      status: jobs.some((job) => job.status === "RUNNING")
+        ? "RUNNING"
+        : "PENDING",
+      detail: (
+        <span className="text-muted">
+          Aguardando resposta para {slotLabel(waitingSpec.slot)}.
+        </span>
+      ),
       helper: docReference("Etapa 10"),
     };
   }
@@ -794,8 +1017,9 @@ function buildReachStep(specs: ExperimentAdSetSpec[], jobs: ExperimentAdSetJob[]
       status: "FAILED",
       detail: (
         <div className="small text-warning">
-          {slotLabel(outOfRange.slot)} ficou fora da faixa de {formatNumber(REACH_MIN)} – {formatNumber(REACH_MAX)} pessoas. Uma nova rodada
-          de recalibração foi solicitada.
+          {slotLabel(outOfRange.slot)} ficou fora da faixa de{" "}
+          {formatNumber(REACH_MIN)} – {formatNumber(REACH_MAX)} pessoas. Uma
+          nova rodada de recalibração foi solicitada.
         </div>
       ),
       helper: docReference("Etapa 10"),
@@ -809,16 +1033,24 @@ function buildReachStep(specs: ExperimentAdSetSpec[], jobs: ExperimentAdSetJob[]
     detail: <div className="small">Todos os públicos com status READY.</div>,
     helper: (
       <>
-        {renderSpecStatusList(specs, (spec) => `${formatNumber(spec.reachLowerBound)} – ${formatNumber(spec.reachUpperBound)} pessoas`)}
+        {renderSpecStatusList(
+          specs,
+          (spec) =>
+            `${formatNumber(spec.reachLowerBound)} – ${formatNumber(spec.reachUpperBound)} pessoas`,
+        )}
         <div className="mt-2">{docReference("Etapa 10")}</div>
       </>
     ),
   };
 }
 
-function buildRecalibrationStep(specs: ExperimentAdSetSpec[], jobs: ExperimentAdSetJob[]): PipelineStepSummary {
+function buildRecalibrationStep(
+  specs: ExperimentAdSetSpec[],
+  jobs: ExperimentAdSetJob[],
+): PipelineStepSummary {
   const title = "Etapa 11 · Recalibração automática (IA)";
-  const description = "IA ajusta o flexible_spec quando o reach sai da faixa ideal.";
+  const description =
+    "IA ajusta o flexible_spec quando o reach sai da faixa ideal.";
   if (!jobs.length) {
     const outOfRange = specs.some((spec) => isSpecReachOutOfRange(spec));
     return {
@@ -848,12 +1080,18 @@ function buildRecalibrationStep(specs: ExperimentAdSetSpec[], jobs: ExperimentAd
         Ajustes disparados para:
         <ul className="mb-0 ps-3">
           {jobs.map((job) => {
-            const specSlot = specs.find((spec) => spec.id === job.resourceId)?.slot;
-            const label = specSlot ? slotLabel(specSlot) : `Spec ${job.resourceId ?? "—"}`;
+            const specSlot = specs.find(
+              (spec) => spec.id === job.resourceId,
+            )?.slot;
+            const label = specSlot
+              ? slotLabel(specSlot)
+              : `Spec ${job.resourceId ?? "—"}`;
             return (
               <li key={job.id}>
                 {label} · Job #{job.id} · Status {job.status}
-                {job.attemptCount != null ? ` · Tentativas ${job.attemptCount}` : null}
+                {job.attemptCount != null
+                  ? ` · Tentativas ${job.attemptCount}`
+                  : null}
               </li>
             );
           })}
@@ -864,8 +1102,11 @@ function buildRecalibrationStep(specs: ExperimentAdSetSpec[], jobs: ExperimentAd
   };
 }
 
-function buildAdsetCreationStep(workflow: ExperimentAdSetWorkflowDto): PipelineStepSummary {
-  const status: StepStatus = workflow.status === "FAILED" ? "FAILED" : "PENDING";
+function buildAdsetCreationStep(
+  workflow: ExperimentAdSetWorkflowDto,
+): PipelineStepSummary {
+  const status: StepStatus =
+    workflow.status === "FAILED" ? "FAILED" : "PENDING";
   return {
     id: "DOC_STEP_12",
     title: "Etapa 12 · Criar Ad Sets (opcional)",
@@ -875,14 +1116,17 @@ function buildAdsetCreationStep(workflow: ExperimentAdSetWorkflowDto): PipelineS
     status,
     detail: (
       <div className="small">
-        Liberado assim que os 3 públicos estiverem READY; recomenda-se publicar em modo PAUSED e conectados a um campaign_id.
+        Liberado assim que os 3 públicos estiverem READY; recomenda-se publicar
+        em modo PAUSED e conectados a um campaign_id.
       </div>
     ),
     helper: docReference("Etapa 12"),
   };
 }
 
-function groupJobsByType(jobs?: ExperimentAdSetJob[]): Map<string, ExperimentAdSetJob[]> {
+function groupJobsByType(
+  jobs?: ExperimentAdSetJob[],
+): Map<string, ExperimentAdSetJob[]> {
   const map = new Map<string, ExperimentAdSetJob[]>();
   (jobs ?? []).forEach((job) => {
     if (!job.type) return;
@@ -928,14 +1172,23 @@ function docReference(stepLabel: string): ReactNode {
   );
 }
 
-function BadgeList({ items, placeholder }: { items: string[]; placeholder?: string }) {
+function BadgeList({
+  items,
+  placeholder,
+}: {
+  items: string[];
+  placeholder?: string;
+}) {
   if (!items.length) {
     return <span className="text-muted">{placeholder ?? "—"}</span>;
   }
   return (
     <div className="d-flex flex-wrap gap-2">
       {items.map((item, index) => (
-        <span key={`${item}-${index}`} className="badge text-bg-light border text-muted">
+        <span
+          key={`${item}-${index}`}
+          className="badge text-bg-light border text-muted"
+        >
           {item}
         </span>
       ))}
@@ -943,9 +1196,17 @@ function BadgeList({ items, placeholder }: { items: string[]; placeholder?: stri
   );
 }
 
-function SectionLabel({ children, className }: { children: ReactNode; className?: string }) {
+function SectionLabel({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <div className={`text-uppercase text-muted small fw-semibold ${className ?? ""}`.trim()}>
+    <div
+      className={`text-uppercase text-muted small fw-semibold ${className ?? ""}`.trim()}
+    >
       {children}
     </div>
   );
@@ -980,7 +1241,8 @@ function safeJsonParse<T = unknown>(value?: string | null): T | undefined {
 function extractValidationSummary(raw?: string | null): string | undefined {
   const node = safeJsonParse<any>(raw);
   if (!node) return undefined;
-  if (typeof node.message === "string" && node.message.trim()) return node.message;
+  if (typeof node.message === "string" && node.message.trim())
+    return node.message;
   const details = node.details;
   if (details) {
     if (typeof details.message === "string" && details.message.trim()) {
@@ -992,7 +1254,9 @@ function extractValidationSummary(raw?: string | null): string | undefined {
     const data = Array.isArray(details.data) ? details.data : [];
     const first = data[0];
     if (first) {
-      return first.error_message ?? first.description ?? first.summary ?? undefined;
+      return (
+        first.error_message ?? first.description ?? first.summary ?? undefined
+      );
     }
   }
   return undefined;
@@ -1004,7 +1268,11 @@ function extractReachSummary(raw?: string | null): string | undefined {
   const first = dataArray[0];
   if (!first) return undefined;
   if (first.estimate_ready === false) return "Meta ainda calculando o reach.";
-  if (first.estimate_ready === true && first.users_lower_bound && first.users_upper_bound) {
+  if (
+    first.estimate_ready === true &&
+    first.users_lower_bound &&
+    first.users_upper_bound
+  ) {
     return `${formatNumber(first.users_lower_bound)} – ${formatNumber(first.users_upper_bound)} pessoas.`;
   }
   return undefined;
@@ -1026,7 +1294,10 @@ function formatDate(value?: string | null) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+  return date.toLocaleString("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
 }
 
 function statusToVariant(status?: string | null) {

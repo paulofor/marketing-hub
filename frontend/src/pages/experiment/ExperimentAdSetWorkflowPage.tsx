@@ -314,6 +314,73 @@ function SeedCard({ workflow }: { workflow: ExperimentAdSetWorkflowDto }) {
   );
 }
 
+function SpecsCard({ specs }: { specs: ExperimentAdSetSpec[] }) {
+  return (
+    <div className="card border-0 shadow-sm h-100">
+      <div className="card-body">
+        <div className="d-flex align-items-center justify-content-between mb-3">
+          <h2 className="h6 mb-0">Públicos gerados</h2>
+          <span className="badge text-bg-light border text-muted">
+            {specs.length} specs
+          </span>
+        </div>
+
+        {!specs.length ? (
+          <p className="text-muted mb-0 small">
+            Nenhum público gerado até o momento.
+          </p>
+        ) : (
+          <div className="table-responsive">
+            <table className="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Slot</th>
+                  <th>Faixa etária</th>
+                  <th>Validação</th>
+                  <th>Reach</th>
+                </tr>
+              </thead>
+              <tbody>
+                {specs.map((spec) => (
+                  <tr key={spec.id}>
+                    <td>{slotLabel(spec.slot)}</td>
+                    <td>
+                      {spec.ageMin ?? "—"} - {spec.ageMax ?? "—"}
+                    </td>
+                    <td>
+                      <span
+                        className={`badge text-bg-${statusToVariant(
+                          spec.validationStatus,
+                        )}`}
+                      >
+                        {spec.validationStatus ?? "—"}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="d-flex flex-column gap-1">
+                        <span
+                          className={`badge text-bg-${statusToVariant(
+                            spec.reachStatus,
+                          )} align-self-start`}
+                        >
+                          {spec.reachStatus ?? "—"}
+                        </span>
+                        <span className="small text-muted">
+                          {formatNumber(spec.reachLowerBound)} – {formatNumber(spec.reachUpperBound)}
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function PipelineTimeline({
   workflow,
 }: {
@@ -1470,22 +1537,33 @@ function parseDiscoverySummaryFromJobDetail(
     dedupItems: toNumber(statsNode.dedupItems ?? statsNode.dedup_items),
     byType: typeof statsNode.byType === "object" ? statsNode.byType : undefined,
   };
-  const dedupArray = Array.isArray(node.dedup) ? node.dedup : [];
+  const dedupArray: unknown[] = Array.isArray(node.dedup) ? node.dedup : [];
   const topItems = dedupArray
-    .map((item: any) => ({
-      id: typeof item.id === "string" ? item.id : undefined,
-      name: typeof item.name === "string" ? item.name : undefined,
-      type: typeof item.type === "string" ? item.type : undefined,
-      audienceLower: toNumber(item.audienceLowerBound ?? item.audience_lower_bound),
-      audienceUpper: toNumber(item.audienceUpperBound ?? item.audience_upper_bound),
-      sources: Array.isArray(item.sources)
-        ? item.sources.map((value: unknown) => String(value))
-        : [],
-      terms: Array.isArray(item.terms)
-        ? item.terms.map((value: unknown) => String(value))
-        : [],
-    }))
-    .sort((a, b) => {
+    .map((item): DiscoveryTopItem => {
+      if (!item || typeof item !== "object") {
+        return {};
+      }
+      const record = item as Record<string, unknown>;
+      return {
+        id: typeof record.id === "string" ? record.id : undefined,
+        name: typeof record.name === "string" ? record.name : undefined,
+        type: typeof record.type === "string" ? record.type : undefined,
+        audienceLower: toNumber(
+          record.audienceLowerBound ?? record.audience_lower_bound,
+        ),
+        audienceUpper: toNumber(
+          record.audienceUpperBound ?? record.audience_upper_bound,
+        ),
+        sources: Array.isArray(record.sources)
+          ? record.sources.map((value: unknown) => String(value))
+          : [],
+        terms: Array.isArray(record.terms)
+          ? record.terms.map((value: unknown) => String(value))
+          : [],
+      };
+    })
+    .filter((item) => item.id || item.name)
+    .sort((a: DiscoveryTopItem, b: DiscoveryTopItem) => {
       const aAudience = a.audienceUpper ?? a.audienceLower ?? 0;
       const bAudience = b.audienceUpper ?? b.audienceLower ?? 0;
       return bAudience - aAudience;

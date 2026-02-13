@@ -258,17 +258,22 @@ public class ExperimentAdSetWorkflowJobCoordinator {
             markWorkflowFailed(workflow, ex.getMessage());
             return;
         }
-        List<String> searchTerms = extractSearchTerms(seedNode, workflow);
-        if (searchTerms.isEmpty() && StringUtils.hasText(workflow.getSeedKeyword())) {
-            searchTerms = List.of(workflow.getSeedKeyword().trim());
+        List<String> interestQueries = extractSearchTerms(seedNode, workflow);
+        if (interestQueries.isEmpty() && StringUtils.hasText(workflow.getSeedKeyword())) {
+            interestQueries = List.of(workflow.getSeedKeyword().trim());
         }
+        List<String> behaviorQueries = extractBehaviorQueries(workflow);
+        List<String> workPositionQueries = extractPositionQueries(workflow);
         List<String> locales = extractDiscoveryLocales(seedNode, workflow);
         Map<String, Object> payload = new LinkedHashMap<>();
-        if (!searchTerms.isEmpty()) {
-            payload.put("query", searchTerms.get(0));
+        if (!interestQueries.isEmpty()) {
+            payload.put("query", interestQueries.get(0));
         }
         payload.put("seedKeyword", workflow.getSeedKeyword());
-        payload.put("searchTerms", searchTerms);
+        payload.put("searchTerms", interestQueries);
+        payload.put("interestQueries", interestQueries);
+        payload.put("behaviorQueries", behaviorQueries);
+        payload.put("workPositionQueries", workPositionQueries);
         payload.put("locales", locales);
         payload.put("locale", workflow.getSeedLocale() != null ? workflow.getSeedLocale() : DEFAULT_LOCALE);
         payload.put("limit", DISCOVERY_LIMIT);
@@ -276,9 +281,8 @@ public class ExperimentAdSetWorkflowJobCoordinator {
         payload.put("adAccountId", adAccountId);
         createJob(workflow, ExperimentAdSetJobType.FACEBOOK_SEED_LOOKUP, ExperimentAdSetWorker.FACEBOOK, payload, null);
 
-        List<String> positionQueries = extractPositionQueries(workflow);
-        if (!positionQueries.isEmpty()) {
-            enqueuePositionsJob(workflow, adAccountId, positionQueries);
+        if (!workPositionQueries.isEmpty()) {
+            enqueuePositionsJob(workflow, adAccountId, workPositionQueries);
         }
     }
 
@@ -735,6 +739,25 @@ public class ExperimentAdSetWorkflowJobCoordinator {
             return List.of();
         }
         JsonNode queries = node.path("positionQueries");
+        if (queries == null || !queries.isArray() || queries.isEmpty()) {
+            return List.of();
+        }
+        List<String> values = new ArrayList<>();
+        for (JsonNode item : queries) {
+            String value = text(item);
+            if (StringUtils.hasText(value)) {
+                values.add(value.trim());
+            }
+        }
+        return values.stream().distinct().limit(5).toList();
+    }
+
+    private List<String> extractBehaviorQueries(ExperimentAdSetWorkflow workflow) {
+        JsonNode node = readJson(workflow.getAiNotes());
+        if (node == null) {
+            return List.of();
+        }
+        JsonNode queries = node.path("behaviors");
         if (queries == null || !queries.isArray() || queries.isEmpty()) {
             return List.of();
         }

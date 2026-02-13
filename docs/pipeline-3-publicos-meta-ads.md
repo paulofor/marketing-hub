@@ -237,45 +237,48 @@ Opcional (mas recomendado):
 
 ---
 
-## 3.A) Estratégia A — 1 chamada por seed (rápida): `targetingsearch` sem fixar `type`
+## 3.A) Estratégia canônica — chamadas separadas por tipo em `/targetingsearch`
 
 ### FATOS
-Use quando você quer **volume rápido** com pouca implementação.
+No pipeline em produção, a etapa 3 deve executar **chamadas independentes** por categoria:
+- interesses (`type=adinterest`)
+- comportamentos (`type=adbehavior`)
+- cargos (`type=adworkposition`)
 
-### TEMPLATE — Request (salve sempre o JSON bruto)
+### TEMPLATE — Requests por tipo (um arquivo por tipo)
 ```bash
 # TEMPLATE: substitua os placeholders
-SEED="__SEED__"
-mkdir -p out
-
-curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/targetingsearch"   --data-urlencode "access_token=__ACCESS_TOKEN__"   --data-urlencode "q=${SEED}"   --data-urlencode "locale=__LOCALE__"   --data-urlencode "limit=200"   --data-urlencode "fields=id,name,type,path,topic,audience_size_lower_bound,audience_size_upper_bound"   > "out/discovery_targetingsearch_${SEED}.json"
-```
-
-### FATOS — Observação
-Esta estratégia costuma retornar mistura de categorias (interests/behaviors/demographics/life_events…).  
-Isso é OK no modo discovery: o IA Worker filtrará depois.
-
----
-
-## 3.B) Estratégia B — várias chamadas por seed (mais controlável): `/search` por tipos
-
-### FATOS
-Use quando você quer **controle** e separar claramente:
-- interesses (`adinterest`)
-- cargos (`adworkposition`)
-- comportamentos (`adbehavior`)
-- (opcional) indústrias (`adindustry`)
-- (opcional) empregadores (`adworkemployer`)
-
-### TEMPLATE — Loop por tipo (um arquivo por tipo)
-```bash
-# TEMPLATE: substitua os placeholders
-SEED="__SEED__"
+SEED_INTEREST="__SEED__"
+SEED_BEHAVIOR="__SEED__"
+SEED_POSITION="__SEED__"
 mkdir -p out/discovery
 
-for TYPE in adinterest adworkposition adbehavior adindustry adworkemployer; do
-  curl -sS --failG "https://graph.facebook.com/__API_VERSION__/search"     --data-urlencode "access_token=__ACCESS_TOKEN__"     --data-urlencode "type=${TYPE}"     --data-urlencode "q=${SEED}"     --data-urlencode "limit=200"     --data-urlencode "locale=__LOCALE__"     --data-urlencode "fields=id,name,type,path,topic,audience_size_lower_bound,audience_size_upper_bound"     > "out/discovery/${TYPE}_${SEED}.json"
-done
+curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/targetingsearch" \
+  --data-urlencode "access_token=__ACCESS_TOKEN__" \
+  --data-urlencode "type=adinterest" \
+  --data-urlencode "q=${SEED_INTEREST}" \
+  --data-urlencode "locale=__LOCALE__" \
+  --data-urlencode "limit=200" \
+  --data-urlencode "fields=id,name,type,path,topic,audience_size_lower_bound,audience_size_upper_bound" \
+  > "out/discovery/adinterest_${SEED_INTEREST}.json"
+
+curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/targetingsearch" \
+  --data-urlencode "access_token=__ACCESS_TOKEN__" \
+  --data-urlencode "type=adbehavior" \
+  --data-urlencode "q=${SEED_BEHAVIOR}" \
+  --data-urlencode "locale=__LOCALE__" \
+  --data-urlencode "limit=200" \
+  --data-urlencode "fields=id,name,type,path,audience_size_lower_bound,audience_size_upper_bound" \
+  > "out/discovery/adbehavior_${SEED_BEHAVIOR}.json"
+
+curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/targetingsearch" \
+  --data-urlencode "access_token=__ACCESS_TOKEN__" \
+  --data-urlencode "type=adworkposition" \
+  --data-urlencode "q=${SEED_POSITION}" \
+  --data-urlencode "locale=__LOCALE__" \
+  --data-urlencode "limit=200" \
+  --data-urlencode "fields=id,name,type,path,audience_size_lower_bound,audience_size_upper_bound" \
+  > "out/discovery/adworkposition_${SEED_POSITION}.json"
 ```
 
 ### EXEMPLO — Agregar + deduplicar (sem `jq`)

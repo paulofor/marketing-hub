@@ -50,14 +50,6 @@ public class ExperimentAdSetPlaybookService {
             "canvas gaming"
     );
 
-    private static final List<TargetingSearchType> DISCOVERY_CATALOG_TYPES = List.of(
-            TargetingSearchType.AD_INTEREST,
-            TargetingSearchType.AD_WORK_POSITION,
-            TargetingSearchType.AD_BEHAVIOR,
-            TargetingSearchType.AD_INDUSTRY,
-            TargetingSearchType.AD_WORK_EMPLOYER
-    );
-
     private final ExperimentAdSetPlaybookClient client;
     private final FacebookAdsService facebookAdsService;
     private final ObjectMapper objectMapper;
@@ -106,46 +98,27 @@ public class ExperimentAdSetPlaybookService {
     private JsonNode handleSeedLookup(JsonNode payload, List<ApiCallLog> apiLogs) {
         DiscoveryPlan plan = DiscoveryPlan.fromPayload(payload);
         DiscoveryAccumulator accumulator = new DiscoveryAccumulator(objectMapper);
-        for (DiscoverySeed seed : plan.seeds()) {
+        for (DiscoveryTypedQuery typedQuery : plan.typedQueries()) {
             for (String locale : plan.locales()) {
-                for (String variant : seed.variants()) {
-                    TargetingSearchRequest discoveryRequest = new TargetingSearchRequest(
-                            TargetingSearchType.ANY,
-                            variant,
-                            plan.adAccountId(),
-                            locale,
-                            plan.country(),
-                            plan.limit()
-                    );
-                    List<FacebookTargetingSearchResult> discoveryResults = recordFacebookCall(
-                            apiLogs,
-                            "/targetingsearch",
-                            "GET",
-                            discoveryRequest,
-                            () -> facebookAdsService.searchTargetingOptions(discoveryRequest),
-                            response -> toJsonNode(response)
-                    );
-                    accumulator.addCall(seed.original(), variant, locale, "targetingsearch", discoveryResults);
-                }
-                for (TargetingSearchType type : plan.catalogTypes()) {
+                for (DiscoverySeed seed : typedQuery.seeds()) {
                     for (String variant : seed.variants()) {
-                        TargetingSearchRequest catalogRequest = new TargetingSearchRequest(
-                                type,
+                        TargetingSearchRequest discoveryRequest = new TargetingSearchRequest(
+                                typedQuery.type(),
                                 variant,
                                 plan.adAccountId(),
                                 locale,
                                 plan.country(),
                                 plan.limit()
                         );
-                        List<FacebookTargetingSearchResult> catalogResults = recordFacebookCall(
+                        List<FacebookTargetingSearchResult> discoveryResults = recordFacebookCall(
                                 apiLogs,
-                                "/search",
+                                "/targetingsearch",
                                 "GET",
-                                catalogRequest,
-                                () -> facebookAdsService.searchGlobalTargetingOptions(catalogRequest),
+                                discoveryRequest,
+                                () -> facebookAdsService.searchTargetingOptions(discoveryRequest),
                                 response -> toJsonNode(response)
                         );
-                        accumulator.addCall(seed.original(), variant, locale, "search:" + type.graphType(), catalogResults);
+                        accumulator.addCall(seed.original(), variant, locale, "targetingsearch:" + typedQuery.type().graphType(), discoveryResults);
                     }
                 }
             }
@@ -166,6 +139,38 @@ public class ExperimentAdSetPlaybookService {
             result.put("audienceUpperBound", anchor.audienceSizeLowerBound());
         }
         return result;
+    }
+
+    private static List<DiscoverySeed> buildSeeds(JsonNode payload, String primaryField, String secondaryField, String fallbackField, int maxSeeds) {
+        LinkedHashSet<String> rawTerms = new LinkedHashSet<>();
+        appendTerms(rawTerms, payload, primaryField);
+        appendTerms(rawTerms, payload, secondaryField);
+        appendTerms(rawTerms, payload, fallbackField);
+        List<DiscoverySeed> seeds = rawTerms.stream()
+                .filter(StringUtils::hasText)
+                .map(DiscoverySeed::from)
+                .limit(maxSeeds)
+                .toList();
+        return seeds.isEmpty() ? List.of(DiscoverySeed.from("marketing")) : seeds;
+    }
+
+    private static void appendTerms(LinkedHashSet<String> terms, JsonNode payload, String fieldName) {
+        if (payload == null || !StringUtils.hasText(fieldName)) {
+            return;
+        }
+        JsonNode node = payload.path(fieldName);
+        if (node != null && node.isArray()) {
+            for (JsonNode value : node) {
+                if (value != null && value.isTextual() && StringUtils.hasText(value.asText())) {
+                    terms.add(value.asText().trim());
+                }
+            }
+            return;
+        }
+        String value = node != null ? node.asText(null) : null;
+        if (StringUtils.hasText(value)) {
+            terms.add(value.trim());
+        }
     }
 
     private JsonNode handleSuggestions(JsonNode payload, List<ApiCallLog> apiLogs) {
@@ -417,14 +422,14 @@ public class ExperimentAdSetPlaybookService {
         private static final int MAX_LOCALES = 4;
         private static final int DEFAULT_LIMIT = 200;
 
-        private final List<DiscoverySeed> seeds;
+        private final List<DiscoveryTypedQuery> typedQueries;
         private final List<String> locales;
         private final String adAccountId;
         private final String country;
         private final int limit;
 
-        private DiscoveryPlan(List<DiscoverySeed> seeds, List<String> locales, String adAccountId, String country, int limit) {
-            this.seeds = seeds;
+        private DiscoveryPlan(List<DiscoveryTypedQuery> typedQueries, List<String> locales, String adAccountId, String country, int limit) {
+            this.typedQueries = typedQueries;
             this.locales = locales;
             this.adAccountId = adAccountId;
             this.country = country;
@@ -432,36 +437,20 @@ public class ExperimentAdSetPlaybookService {
         }
 
         static DiscoveryPlan fromPayload(JsonNode payload) {
-            LinkedHashSet<String> rawTerms = new LinkedHashSet<>();
-            if (payload != null) {
-                JsonNode searchTerms = payload.path("searchTerms");
-                if (searchTerms != null && searchTerms.isArray()) {
-                    for (JsonNode node : searchTerms) {
-                        if (node != null && node.isTextual() && StringUtils.hasText(node.asText())) {
-                            rawTerms.add(node.asText().trim());
-                        }
-                    }
-                }
-                String query = payload.path("query").asText(null);
-                if (StringUtils.hasText(query)) {
-                    rawTerms.add(query.trim());
-                }
-                String seedKeyword = payload.path("seedKeyword").asText(null);
-                if (StringUtils.hasText(seedKeyword)) {
-                    rawTerms.add(seedKeyword.trim());
-                }
-            }
-            if (rawTerms.isEmpty()) {
-                rawTerms.add("marketing");
-            }
-            List<DiscoverySeed> seeds = rawTerms.stream()
-                    .filter(StringUtils::hasText)
-                    .map(DiscoverySeed::from)
-                    .limit(MAX_SEEDS)
-                    .toList();
-            if (seeds.isEmpty()) {
-                seeds = List.of(DiscoverySeed.from("marketing"));
-            }
+            List<DiscoveryTypedQuery> typedQueries = List.of(
+                    new DiscoveryTypedQuery(
+                            TargetingSearchType.AD_INTEREST,
+                            buildSeeds(payload, "interestQueries", "searchTerms", "seedKeyword", MAX_SEEDS)
+                    ),
+                    new DiscoveryTypedQuery(
+                            TargetingSearchType.AD_BEHAVIOR,
+                            buildSeeds(payload, "behaviorQueries", "behaviors", null, MAX_SEEDS)
+                    ),
+                    new DiscoveryTypedQuery(
+                            TargetingSearchType.AD_WORK_POSITION,
+                            buildSeeds(payload, "workPositionQueries", "positionQueries", null, MAX_SEEDS)
+                    )
+            );
 
             LinkedHashSet<String> localeSet = new LinkedHashSet<>();
             String preferredLocale = payload != null ? payload.path("locale").asText(null) : null;
@@ -500,11 +489,11 @@ public class ExperimentAdSetPlaybookService {
             int limit = payload != null && payload.has("limit")
                     ? Math.max(1, Math.min(DEFAULT_LIMIT, payload.get("limit").asInt(DEFAULT_LIMIT)))
                     : DEFAULT_LIMIT;
-            return new DiscoveryPlan(seeds, locales, adAccountId, country, limit);
+            return new DiscoveryPlan(typedQueries, locales, adAccountId, country, limit);
         }
 
-        List<DiscoverySeed> seeds() {
-            return seeds;
+        List<DiscoveryTypedQuery> typedQueries() {
+            return typedQueries;
         }
 
         List<String> locales() {
@@ -522,10 +511,9 @@ public class ExperimentAdSetPlaybookService {
         int limit() {
             return limit;
         }
+    }
 
-        List<TargetingSearchType> catalogTypes() {
-            return DISCOVERY_CATALOG_TYPES;
-        }
+    private record DiscoveryTypedQuery(TargetingSearchType type, List<DiscoverySeed> seeds) {
     }
 
     private static class DiscoverySeed {
@@ -622,9 +610,13 @@ public class ExperimentAdSetPlaybookService {
         ObjectNode build(DiscoveryPlan plan) {
             ObjectNode root = mapper.createObjectNode();
             root.put("strategy", "discovery_v2");
-            ArrayNode seedArray = mapper.createArrayNode();
-            plan.seeds().forEach(seed -> seedArray.add(seed.original()));
-            root.set("seedTerms", seedArray);
+            ObjectNode seedTermsByType = mapper.createObjectNode();
+            for (DiscoveryTypedQuery typedQuery : plan.typedQueries()) {
+                ArrayNode seedArray = mapper.createArrayNode();
+                typedQuery.seeds().forEach(seed -> seedArray.add(seed.original()));
+                seedTermsByType.set(typedQuery.type().graphType(), seedArray);
+            }
+            root.set("seedTerms", seedTermsByType);
             ArrayNode localeArray = mapper.createArrayNode();
             plan.locales().forEach(localeArray::add);
             root.set("locales", localeArray);

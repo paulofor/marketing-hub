@@ -13,10 +13,13 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -103,4 +106,52 @@ class ExperimentAdSetPlaybookServiceTest {
         assertNotNull(requestPayload);
         assertEquals(45, requestPayload.path("targeting_spec").path("age_max").asInt());
     }
+    @Test
+    void processQueueUsesTargetingSearchByTypeForDiscoveryStep() {
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("adAccountId", "act_1234567890");
+        payload.put("locale", "pt_BR");
+        payload.put("country", "BR");
+        payload.put("limit", 10);
+        payload.putArray("interestQueries").add("escola particular");
+        payload.putArray("behaviorQueries").add("education");
+        payload.putArray("workPositionQueries").add("school principal");
+
+        PlaybookJob job = new PlaybookJob(
+                77L,
+                PlaybookJobType.FACEBOOK_SEED_LOOKUP,
+                1L,
+                2L,
+                payload,
+                Instant.now());
+
+        when(client.claimJobs("worker-test", 5)).thenReturn(List.of(job));
+        when(facebookAdsService.searchTargetingOptions(any(FacebookAdsService.TargetingSearchRequest.class)))
+                .thenAnswer(invocation -> {
+                    FacebookAdsService.TargetingSearchRequest request = invocation.getArgument(0);
+                    if (request.type() == FacebookAdsService.TargetingSearchType.AD_INTEREST) {
+                        return List.of(new FacebookAdsService.FacebookTargetingSearchResult(
+                                "6003139266461",
+                                "Escola particular",
+                                "adinterest",
+                                "Education",
+                                1000L,
+                                2000L,
+                                List.of("Interests")));
+                    }
+                    return List.of();
+                });
+
+        service.processQueue();
+
+        ArgumentCaptor<FacebookAdsService.TargetingSearchRequest> requestCaptor = ArgumentCaptor.forClass(FacebookAdsService.TargetingSearchRequest.class);
+        verify(facebookAdsService, atLeastOnce()).searchTargetingOptions(requestCaptor.capture());
+        List<FacebookAdsService.TargetingSearchRequest> requests = requestCaptor.getAllValues();
+        assertTrue(requests.stream().anyMatch(request -> request.type() == FacebookAdsService.TargetingSearchType.AD_INTEREST));
+        assertTrue(requests.stream().anyMatch(request -> request.type() == FacebookAdsService.TargetingSearchType.AD_BEHAVIOR));
+        assertTrue(requests.stream().anyMatch(request -> request.type() == FacebookAdsService.TargetingSearchType.AD_WORK_POSITION));
+        assertTrue(requests.stream().noneMatch(request -> request.type() == FacebookAdsService.TargetingSearchType.ANY));
+        verify(facebookAdsService, never()).searchGlobalTargetingOptions(any(FacebookAdsService.TargetingSearchRequest.class));
+    }
+
 }

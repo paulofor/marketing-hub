@@ -88,6 +88,11 @@ export default function ExperimentAdSetJobDetailPage() {
   }
   const { job, apiLogs } = data;
   const backLink = `/experiments/${experimentId}/adset-workflow`;
+  const isFacebookJob = (job.worker ?? "").toUpperCase() === "FACEBOOK";
+  const requestSectionTitle = isFacebookJob ? "Chamadas ao Facebook" : "Chamadas do AI Worker (ChatGPT batch)";
+  const emptyLogMessage = isFacebookJob
+    ? "Nenhuma chamada registrada para este job."
+    : "Chamadas ao ChatGPT em modo batch serão exibidas aqui assim que o worker registrar os payloads.";
   return (
     <div className="container-fluid">
       <div className="d-flex align-items-center justify-content-between mb-4">
@@ -136,12 +141,10 @@ export default function ExperimentAdSetJobDetailPage() {
         </div>
       </div>
       <div className="card">
-        <div className="card-header">Chamadas ao Facebook</div>
+        <div className="card-header">{requestSectionTitle}</div>
         <div className="card-body">
           {!apiLogs?.length ? (
-            <p className="text-muted mb-0">
-              Nenhuma chamada registrada para este job.
-            </p>
+            <p className="text-muted mb-0">{emptyLogMessage}</p>
           ) : (
             apiLogs.map((log) => {
               const durationMs =

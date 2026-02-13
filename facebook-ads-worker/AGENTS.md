@@ -10,7 +10,7 @@
 - A versão da Graph API é configurável via propriedade `facebook.graph-api.version` (default `v23.0`) e deve estar alinhada com a recomendação oficial.
 - Nas chamadas de validação de público (`/targetingvalidation`) e estimativa de alcance (`/reachestimate`), serializar `targeting_spec` com URL encoding completo para evitar erro de expansão (`Not enough variable values available to expand`) quando o JSON inclui chaves entre `{}`.
 - Na fila de resolução de targeting (`targeting_resolution_job`), sempre priorize o `ad_account_id` da conta de Facebook associada ao experimento (`ad_set -> experiment -> fb_page -> fb_account`) antes de qualquer fallback global.
-- Sugestões de interesses baseadas em seed devem usar o endpoint `/search` com `type=adinterestsuggestion` e `interest_list` (não `/targetingsuggestions`).
+- Sugestões de interesses baseadas em seed devem usar o endpoint `/act_<AD_ACCOUNT_ID>/targetingsuggestions` com o parâmetro `targeting_list=[{"type":"interests","id":"..."}]` guardando os seeds escolhidos.
 - Remova campos de segmentação não suportados pela Graph API antes do envio (por exemplo, `detailed_targeting_description`) para evitar erros `(#100) Invalid parameter`.
 - Em chamadas de `/targetingvalidation` e `/reachestimate`, se a Graph API indicar `interest/interesse ... id <número> inválido`, remova esse ID do `targeting_spec` (inclusive em `flexible_spec`) e tente novamente para evitar bloqueio por interesses descontinuados.
 - Em `geo_locations` descarte chaves que não sejam texto e remova `regions` cujos `key` não sejam numéricos para manter a compatibilidade com a Graph API.

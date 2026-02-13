@@ -54,7 +54,7 @@ public class ExperimentAdSetWorkflowJobCoordinator {
     private static final String DEFAULT_LOCALE = "pt_BR";
     private static final String DEFAULT_PROVIDER = "FACEBOOK";
     private static final int SEED_SEARCH_LIMIT = 25;
-    private static final int SUGGESTION_LIMIT = 100;
+    private static final int SUGGESTION_LIMIT = 150;
     private static final int POSITION_LIMIT = 25;
     private static final long MIN_REACH_LOWER_BOUND = 200_000L;
     private static final long MAX_REACH_UPPER_BOUND = 20_000_000L;

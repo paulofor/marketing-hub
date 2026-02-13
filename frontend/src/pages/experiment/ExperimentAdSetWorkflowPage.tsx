@@ -174,9 +174,13 @@ function PipelineDocExplainer() {
       <ul className="mb-2 small ps-3">
         <li>Saída: spec_1.json…spec_3.json + reach_1.json…reach_3.json e toda a trilha de auditoria.</li>
         <li>IA Worker nunca chuta IDs; todo ID vem da Graph API via Ads Worker.</li>
+        <li>Jobs com worker = AI acionam ChatGPT em batch; jobs com worker = FACEBOOK gravam cada request da Graph API.</li>
         <li>Ordem: Targeting Search → Suggestions → flexible_spec → Validation → Reach → (opcional) criação de Ad Sets.</li>
       </ul>
-      <div className="small text-muted mb-0">Guia completo: {PIPELINE_DOC_PATH}</div>
+      <div className="small text-muted mb-1">Guia completo: {PIPELINE_DOC_PATH}</div>
+      <div className="small text-muted">
+        Use o cartão "Histórico de jobs" e clique em <strong>Detalhe</strong> para ver as chamadas cruas (Graph API ou ChatGPT batch).
+      </div>
     </div>
   );
 }
@@ -380,7 +384,7 @@ function JobsCard({ jobs }: { jobs: ExperimentAdSetJob[] }) {
       <div className="card-header d-flex flex-column gap-1">
         <div className="fw-semibold">Histórico de jobs</div>
         <small className="text-muted">
-          Cada job do Facebook guarda as chamadas da Graph API. Clique em "Detalhe" para ver os payloads enviados/recebidos.
+          Cada job salva as chamadas externas (Graph API para FACEBOOK, ChatGPT batch para AI). Clique em "Detalhe" para ver os payloads enviados/recebidos.
         </small>
       </div>
       <div className="table-responsive">

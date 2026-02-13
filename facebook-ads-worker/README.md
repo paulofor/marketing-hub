@@ -6,8 +6,8 @@ Marketing do Facebook. O serviço reutiliza o modelo de dados definido no
 projeto `backend`, evitando duplicação de entidades.
 
 Para sugerir interesses relacionados a um seed, o worker consulta a Graph API
-via `/search` com `type=adinterestsuggestion` e envia a lista de seeds no
-parâmetro `interest_list`, conforme a documentação oficial de Targeting Search.
+via `/act_<AD_ACCOUNT_ID>/targetingsuggestions` e envia a lista de seeds no
+parâmetro `targeting_list` (por exemplo, `[{"type":"interests","id":"6003139266461"}]`).
 
 ## Fila de resolução de targeting
 

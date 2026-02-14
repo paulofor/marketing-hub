@@ -46,7 +46,9 @@ function buildCurlCommand(
     );
   }
   return commandParts
-    .map((part, index) => (index === commandParts.length - 1 ? part : `${part} \\`))
+    .map((part, index) =>
+      index === commandParts.length - 1 ? part : `${part} \\`,
+    )
     .join("\n");
 }
 function formatDateTime(value?: string | null) {
@@ -89,10 +91,14 @@ export default function ExperimentAdSetJobDetailPage() {
   const { job, apiLogs, payload, resultPayload } = data;
   const backLink = `/experiments/${experimentId}/adset-workflow`;
   const isFacebookJob = (job.worker ?? "").toUpperCase() === "FACEBOOK";
-  const requestSectionTitle = isFacebookJob ? "Chamadas ao Facebook" : "Chamadas do AI Worker (ChatGPT batch)";
+  const requestSectionTitle = isFacebookJob
+    ? "Chamadas ao Facebook"
+    : "Chamadas do AI Worker (ChatGPT batch)";
   const emptyLogMessage = isFacebookJob
     ? "Nenhuma chamada registrada para este job."
     : "Chamadas ao ChatGPT em modo batch serão exibidas aqui assim que o worker registrar os payloads.";
+  const payloadAccordionId = `job-${job.id}-payloads`;
+  const requestsAccordionId = `job-${job.id}-requests`;
   return (
     <div className="container-fluid">
       <div className="d-flex align-items-center justify-content-between mb-4">
@@ -143,24 +149,76 @@ export default function ExperimentAdSetJobDetailPage() {
       <div className="card mb-4">
         <div className="card-header">Payloads persistidos</div>
         <div className="card-body">
-          {payload ? (
-            <details open>
-              <summary>Payload enviado ao worker</summary>
-              <pre className="bg-light p-2 mt-2 rounded" style={{ whiteSpace: "pre-wrap" }}>
-                {formatJson(payload)}
-              </pre>
-            </details>
-          ) : null}
-          {resultPayload ? (
-            <details className="mt-3" open>
-              <summary>Resultado registrado</summary>
-              <pre className="bg-light p-2 mt-2 rounded" style={{ whiteSpace: "pre-wrap" }}>
-                {formatJson(resultPayload)}
-              </pre>
-            </details>
+          {payload || resultPayload ? (
+            <div className="accordion" id={payloadAccordionId}>
+              {payload ? (
+                <div className="accordion-item">
+                  <h2 className="accordion-header" id="payload-heading">
+                    <button
+                      className="accordion-button collapsed"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#payload-collapse"
+                      aria-expanded="false"
+                      aria-controls="payload-collapse"
+                    >
+                      Payload enviado ao worker
+                    </button>
+                  </h2>
+                  <div
+                    id="payload-collapse"
+                    className="accordion-collapse collapse"
+                    aria-labelledby="payload-heading"
+                    data-bs-parent={`#${payloadAccordionId}`}
+                  >
+                    <div className="accordion-body">
+                      <pre
+                        className="bg-light p-2 mb-0 rounded"
+                        style={{ whiteSpace: "pre-wrap" }}
+                      >
+                        {formatJson(payload)}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+              {resultPayload ? (
+                <div className="accordion-item">
+                  <h2 className="accordion-header" id="result-heading">
+                    <button
+                      className="accordion-button collapsed"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#result-collapse"
+                      aria-expanded="false"
+                      aria-controls="result-collapse"
+                    >
+                      Resultado registrado
+                    </button>
+                  </h2>
+                  <div
+                    id="result-collapse"
+                    className="accordion-collapse collapse"
+                    aria-labelledby="result-heading"
+                    data-bs-parent={`#${payloadAccordionId}`}
+                  >
+                    <div className="accordion-body">
+                      <pre
+                        className="bg-light p-2 mb-0 rounded"
+                        style={{ whiteSpace: "pre-wrap" }}
+                      >
+                        {formatJson(resultPayload)}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
           ) : null}
           {!payload && !resultPayload ? (
-            <p className="text-muted mb-0">Nenhum payload disponível para este job.</p>
+            <p className="text-muted mb-0">
+              Nenhum payload disponível para este job.
+            </p>
           ) : null}
         </div>
       </div>
@@ -170,97 +228,119 @@ export default function ExperimentAdSetJobDetailPage() {
           {!apiLogs?.length ? (
             <p className="text-muted mb-0">{emptyLogMessage}</p>
           ) : (
-            apiLogs.map((log) => {
-              const durationMs =
-                log.requestedAt && log.respondedAt
-                  ? Math.max(
-                      0,
-                      new Date(log.respondedAt).getTime() -
-                        new Date(log.requestedAt).getTime(),
-                    )
-                  : null;
-              return (
-                <div key={log.id} className="mb-4 border rounded">
-                  <div className="p-3 border-bottom bg-light d-flex flex-column flex-md-row justify-content-between gap-2">
-                    <div>
-                      <strong>{log.provider}</strong> · {log.httpMethod ?? "—"}{" "}
-                      · {log.endpoint ?? "—"}
-                    </div>
-                    <div className="text-muted small">
-                      Início: {formatDateTime(log.requestedAt)}
-                      {log.respondedAt
-                        ? ` · Fim: ${formatDateTime(log.respondedAt)}`
-                        : null}
-                      {durationMs != null ? ` · ${durationMs} ms` : null}
+            <div className="accordion" id={requestsAccordionId}>
+              {apiLogs.map((log) => {
+                const durationMs =
+                  log.requestedAt && log.respondedAt
+                    ? Math.max(
+                        0,
+                        new Date(log.respondedAt).getTime() -
+                          new Date(log.requestedAt).getTime(),
+                      )
+                    : null;
+                const requestHeaderId = `request-heading-${log.id}`;
+                const requestCollapseId = `request-collapse-${log.id}`;
+                return (
+                  <div key={log.id} className="accordion-item">
+                    <h2 className="accordion-header" id={requestHeaderId}>
+                      <button
+                        className="accordion-button collapsed"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target={`#${requestCollapseId}`}
+                        aria-expanded="false"
+                        aria-controls={requestCollapseId}
+                      >
+                        <span>
+                          <strong>{log.provider}</strong> ·{" "}
+                          {log.httpMethod ?? "—"} · {log.endpoint ?? "—"}
+                        </span>
+                      </button>
+                    </h2>
+                    <div
+                      id={requestCollapseId}
+                      className="accordion-collapse collapse"
+                      aria-labelledby={requestHeaderId}
+                      data-bs-parent={`#${requestsAccordionId}`}
+                    >
+                      <div className="accordion-body">
+                        <div className="text-muted small mb-3">
+                          Início: {formatDateTime(log.requestedAt)}
+                          {log.respondedAt
+                            ? ` · Fim: ${formatDateTime(log.respondedAt)}`
+                            : null}
+                          {durationMs != null ? ` · ${durationMs} ms` : null}
+                        </div>
+                        <dl className="row mb-3 small">
+                          <dt className="col-sm-3">Status HTTP</dt>
+                          <dd className="col-sm-9">{log.statusCode ?? "—"}</dd>
+                          <dt className="col-sm-3">Mensagem de erro</dt>
+                          <dd className="col-sm-9">
+                            {log.errorMessage ?? "—"}
+                          </dd>
+                        </dl>
+                        <div className="row g-3">
+                          <div className="col-12 col-lg-6">
+                            <details>
+                              <summary>Payload enviado</summary>
+                              <pre
+                                className="bg-dark text-white p-2 mt-2 rounded"
+                                style={{ whiteSpace: "pre-wrap" }}
+                              >
+                                {formatJson(log.requestPayload)}
+                              </pre>
+                            </details>
+                          </div>
+                          <div className="col-12 col-lg-6">
+                            <details>
+                              <summary>Resposta recebida</summary>
+                              <pre
+                                className="bg-dark text-white p-2 mt-2 rounded"
+                                style={{ whiteSpace: "pre-wrap" }}
+                              >
+                                {formatJson(log.responsePayload)}
+                              </pre>
+                            </details>
+                          </div>
+                          <div className="col-12">
+                            <details>
+                              <summary>Versão cURL (teste local)</summary>
+                              <p className="small text-muted mt-2 mb-2">
+                                {log.provider?.toUpperCase() === "FACEBOOK" ? (
+                                  <>
+                                    URL completa da Graph API do Facebook
+                                    (ajuste o domínio/versão se necessário).
+                                  </>
+                                ) : (
+                                  <>
+                                    Defina <code>API_BASE_URL</code> antes de
+                                    executar, por exemplo:
+                                    <code className="ms-1">
+                                      export API_BASE_URL=http://localhost:8000
+                                    </code>
+                                  </>
+                                )}
+                              </p>
+                              <pre
+                                className="bg-dark text-white p-2 rounded"
+                                style={{ whiteSpace: "pre-wrap" }}
+                              >
+                                {buildCurlCommand(
+                                  log.httpMethod,
+                                  log.endpoint,
+                                  log.provider,
+                                  log.requestPayload,
+                                )}
+                              </pre>
+                            </details>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="p-3">
-                    <dl className="row mb-3 small">
-                      <dt className="col-sm-3">Status HTTP</dt>
-                      <dd className="col-sm-9">{log.statusCode ?? "—"}</dd>
-                      <dt className="col-sm-3">Mensagem de erro</dt>
-                      <dd className="col-sm-9">{log.errorMessage ?? "—"}</dd>
-                    </dl>
-                    <div className="row g-3">
-                      <div className="col-12 col-lg-6">
-                        <details open>
-                          <summary>Payload enviado</summary>
-                          <pre
-                            className="bg-dark text-white p-2 mt-2 rounded"
-                            style={{ whiteSpace: "pre-wrap" }}
-                          >
-                            {formatJson(log.requestPayload)}
-                          </pre>
-                        </details>
-                      </div>
-                      <div className="col-12 col-lg-6">
-                        <details open>
-                          <summary>Resposta recebida</summary>
-                          <pre
-                            className="bg-dark text-white p-2 mt-2 rounded"
-                            style={{ whiteSpace: "pre-wrap" }}
-                          >
-                            {formatJson(log.responsePayload)}
-                          </pre>
-                        </details>
-                      </div>
-                      <div className="col-12">
-                        <details>
-                          <summary>Versão cURL (teste local)</summary>
-                          <p className="small text-muted mt-2 mb-2">
-                            {log.provider?.toUpperCase() === "FACEBOOK" ? (
-                              <>
-                                URL completa da Graph API do Facebook (ajuste o
-                                domínio/versão se necessário).
-                              </>
-                            ) : (
-                              <>
-                                Defina <code>API_BASE_URL</code> antes de
-                                executar, por exemplo:
-                                <code className="ms-1">
-                                  export API_BASE_URL=http://localhost:8000
-                                </code>
-                              </>
-                            )}
-                          </p>
-                          <pre
-                            className="bg-dark text-white p-2 rounded"
-                            style={{ whiteSpace: "pre-wrap" }}
-                          >
-                            {buildCurlCommand(
-                              log.httpMethod,
-                              log.endpoint,
-                              log.provider,
-                              log.requestPayload,
-                            )}
-                          </pre>
-                        </details>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
+                );
+              })}
+            </div>
           )}
         </div>
       </div>

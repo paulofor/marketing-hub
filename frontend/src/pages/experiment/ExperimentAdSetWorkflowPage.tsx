@@ -859,6 +859,7 @@ function buildTargetingSearchStep(
           <ResolvedTermList
             items={resolvedTerms.interests}
             placeholder="Nenhum ID de interesse encontrado até agora."
+            showIds={false}
           />
         </div>
         {positionQueries.length ? (
@@ -868,6 +869,7 @@ function buildTargetingSearchStep(
             <ResolvedTermList
               items={resolvedTerms.workPositions}
               placeholder="Nenhum ID de cargo encontrado até agora."
+              showIds={false}
             />
             <div className="text-muted mt-1">
               Status dos cargos: {STEP_STATUS_META[positionsStatus].label}
@@ -879,6 +881,7 @@ function buildTargetingSearchStep(
           <ResolvedTermList
             items={resolvedTerms.behaviors}
             placeholder="Nenhum ID de comportamento encontrado até agora."
+            showIds={false}
           />
         </div>
         <div>
@@ -1455,9 +1458,11 @@ function BadgeList({
 function ResolvedTermList({
   items,
   placeholder,
+  showIds = true,
 }: {
   items: TargetingResolutionByTerm[];
   placeholder: string;
+  showIds?: boolean;
 }) {
   if (!items.length) {
     return <div className="text-muted">{placeholder}</div>;
@@ -1466,7 +1471,12 @@ function ResolvedTermList({
     <ul className="list-unstyled mb-0 mt-1">
       {items.map((item) => (
         <li key={`${item.term}-${item.ids.join("-")}`} className="mb-1">
-          <span className="fw-semibold">{item.term}</span>: <code>{item.ids.join(", ")}</code>
+          <span className="fw-semibold">{item.term}</span>: {" "}
+          {showIds ? (
+            <code>{item.ids.join(", ")}</code>
+          ) : (
+            <span className="text-muted">{item.ids.length} IDs encontrados</span>
+          )}
         </li>
       ))}
     </ul>

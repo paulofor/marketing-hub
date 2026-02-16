@@ -9,6 +9,7 @@
 - Consulte sempre a documentação oficial da Graph API ao trabalhar neste módulo: https://developers.facebook.com/docs/graph-api e https://developers.facebook.com/docs/graph-api/reference.
 - A versão da Graph API é configurável via propriedade `facebook.graph-api.version` (default `v23.0`) e deve estar alinhada com a recomendação oficial.
 - Nas chamadas de validação de público (`/targetingvalidation`) e estimativa de alcance (`/reachestimate`), serializar `targeting_spec` com URL encoding completo para evitar erro de expansão (`Not enough variable values available to expand`) quando o JSON inclui chaves entre `{}`.
+- Ao serializar `targeting_spec`, use codificação estrita (UTF-8) e preserve espaços como `%20` (não `+`) para manter compatibilidade com a Graph API.
 - Na fila de resolução de targeting (`targeting_resolution_job`), sempre priorize o `ad_account_id` da conta de Facebook associada ao experimento (`ad_set -> experiment -> fb_page -> fb_account`) antes de qualquer fallback global.
 - Sugestões de interesses baseadas em seed devem usar o endpoint `/act_<AD_ACCOUNT_ID>/targetingsuggestions` com o parâmetro `targeting_list=[{"type":"interests","id":"..."}]` guardando os seeds escolhidos.
 - No discovery de público do playbook (`FACEBOOK_SEED_LOOKUP`), execute chamadas separadas em `/act_<AD_ACCOUNT_ID>/targetingsearch` para `adinterest`, `adbehavior` e `adworkposition`; não use payload misto sem `type` nem fallback por `/search` para essa etapa.

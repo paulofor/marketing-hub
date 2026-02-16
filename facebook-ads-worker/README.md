@@ -170,9 +170,10 @@ As etapas do playbook de público (`FACEBOOK_VALIDATE_SPEC` e
 `/{adAccountId}/targetingvalidation` e `/{adAccountId}/reachestimate`, além de
 persistirem o payload com a chave `targeting_spec` (snake_case), alinhando os
 logs/cURLs com o contrato oficial da Marketing API.
-O parâmetro de query `targeting_spec` é enviado URL-encoded nas chamadas GET
-para evitar falhas de expansão de template do `UriComponentsBuilder` quando o
-JSON contém chaves como `"geo_locations"` entre chaves (`{}`) no payload.
+O parâmetro de query `targeting_spec` é enviado com URL encoding estrito nas
+chamadas GET (incluindo espaços como `%20`, nunca `+`) para evitar falhas de
+expansão de template do `UriComponentsBuilder` e rejeições da Graph API quando
+o JSON contém chaves como `"geo_locations"` entre chaves (`{}`) no payload.
 Quando a Graph API rejeita o payload com `error_subcode=1487079` e mensagem
 indicando interesse inválido (`interest/interesse ... id <número>`), o serviço
 remove automaticamente esse `id` de todas as listas `interests` (inclusive em

@@ -683,6 +683,40 @@ class FacebookAdsServiceTest {
     }
 
 
+
+    @Test
+    void estimateReachEncodesSpacesAsPercentTwentyInTargetingSpecQueryParam() throws Exception {
+        server.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"users\":1234}]}" )
+            .addHeader("Content-Type", "application/json"));
+
+        JsonNode targetingSpec = objectMapper.readTree("""
+            {
+              "geo_locations": {
+                "countries": ["BR"]
+              },
+              "interests": [
+                {
+                  "id": "6004382299973",
+                  "name": "Ensino fundamental"
+                }
+              ]
+            }
+            """);
+
+        JsonNode response = service.estimateReach(
+            new FacebookAdsService.ReachEstimateRequest("act_123", targetingSpec)
+        );
+
+        assertNotNull(response);
+        RecordedRequest recorded = takeRequest("reach estimate request with spaces");
+        HttpUrl requestUrl = recorded.getRequestUrl();
+        assertNotNull(requestUrl);
+        String encodedQuery = requestUrl.encodedQuery();
+        assertNotNull(encodedQuery);
+        assertTrue(encodedQuery.contains("Ensino%20fundamental"), encodedQuery);
+        assertFalse(encodedQuery.contains("Ensino+fundamental"), encodedQuery);
+    }
+
     @Test
     void estimateReachRetriesWithoutInvalidInterestFromFlexibleSpec() throws Exception {
         server.enqueueResponse(new MockResponse()

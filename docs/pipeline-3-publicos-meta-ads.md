@@ -503,6 +503,236 @@ curl -sS --failX POST "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOU
 
 ---
 
+## Exemplo prático (entrada/saída) — ponta a ponta
+
+> Este bloco é **didático** para facilitar o entendimento rápido do fluxo.
+> IDs, tamanhos e nomes abaixo são exemplos ilustrativos.
+
+### Etapa 1 — `AI_PREPARE_SEED`
+
+**Entrada (payload resumido):**
+```json
+{
+  "experimentName": "Criativos para pequenos negócios",
+  "experimentHypothesis": "Empreendedores locais convertem mais com criativos rápidos",
+  "nicheName": "Comércio local",
+  "hypothesisPersona": "Dono de loja",
+  "defaultLocale": "pt_BR"
+}
+```
+
+**Saída (result):**
+```json
+{
+  "seedKeyword": "marketing local",
+  "seedLocale": "pt_BR",
+  "interests": ["marketing digital", "mídias sociais", "publicidade online"],
+  "work_positions": ["Social Media Manager", "Marketing Manager"],
+  "behaviors": ["Small business owners"],
+  "searchTerms": ["marketing digital", "mídias sociais"],
+  "positionQueries": ["Social Media Manager"],
+  "notes": "Seed derivado via ChatGPT com candidatos por tipo"
+}
+```
+
+### Etapa 2 — `FACEBOOK_SEED_LOOKUP`
+
+**Entrada (payload resumido):**
+```json
+{
+  "seedKeyword": "marketing local",
+  "interestQueries": ["marketing digital", "mídias sociais"],
+  "behaviorQueries": ["Small business owners"],
+  "workPositionQueries": ["Social Media Manager"],
+  "locales": ["pt_BR", "en_US"],
+  "country": "BR",
+  "limit": 200,
+  "adAccountId": "1234567890"
+}
+```
+
+**Saída (result resumido):**
+```json
+{
+  "interestId": "6003139266461",
+  "interestName": "Marketing digital",
+  "audienceLowerBound": 1200000,
+  "audienceUpperBound": 1800000,
+  "items": [
+    { "id": "6003139266461", "name": "Marketing digital", "type": "adinterest" },
+    { "id": "6015642363132", "name": "Small business owners", "type": "adbehavior" }
+  ]
+}
+```
+
+### Etapa 3 — `FACEBOOK_TARGETING_SUGGESTIONS`
+
+**Entrada (payload resumido):**
+```json
+{
+  "seedInterestId": "6003139266461",
+  "locale": "pt_BR",
+  "country": "BR",
+  "limit": 150,
+  "adAccountId": "1234567890"
+}
+```
+
+**Saída (result resumido):**
+```json
+{
+  "items": [
+    {
+      "id": "6003349442621",
+      "name": "Publicidade",
+      "type": "INTEREST",
+      "audienceSize": 5400000,
+      "path": ["Interests", "Business and industry", "Advertising"]
+    }
+  ]
+}
+```
+
+### Etapa 4 — `AI_BUILD_SPECS`
+
+**Entrada (payload resumido):**
+```json
+{
+  "country": "BR",
+  "seed": {
+    "interestId": "6003139266461",
+    "interestName": "Marketing digital"
+  },
+  "suggestions": {
+    "items": [
+      { "id": "6003349442621", "name": "Publicidade", "type": "INTEREST" }
+    ]
+  },
+  "positions": {
+    "items": [
+      { "id": "987654", "name": "Social Media Manager" }
+    ]
+  }
+}
+```
+
+**Saída (result resumido):**
+```json
+{
+  "specs": [
+    {
+      "slot": "DESIGNERS",
+      "label": "Designers / Edição",
+      "ageMin": 18,
+      "ageMax": 45,
+      "targetingSpec": {
+        "geo_locations": { "countries": ["BR"] },
+        "age_min": 18,
+        "age_max": 45,
+        "flexible_spec": [
+          { "interests": [{ "id": "6003349442621", "name": "Publicidade" }] },
+          { "work_positions": [{ "id": "987654", "name": "Social Media Manager" }] }
+        ]
+      }
+    }
+  ]
+}
+```
+
+### Etapa 5 — `FACEBOOK_VALIDATE_SPEC`
+
+**Entrada (payload resumido):**
+```json
+{
+  "specId": 101,
+  "slot": "DESIGNERS",
+  "adAccountId": "1234567890",
+  "targetingSpec": {
+    "geo_locations": { "countries": ["BR"] },
+    "age_min": 18,
+    "age_max": 45,
+    "flexible_spec": [
+      { "interests": [{ "id": "6003349442621", "name": "Publicidade" }] }
+    ]
+  }
+}
+```
+
+**Saída (result):**
+```json
+{
+  "status": "VALID",
+  "details": {
+    "data": [
+      { "is_valid": true }
+    ]
+  }
+}
+```
+
+### Etapa 6 — `FACEBOOK_REACH_ESTIMATE`
+
+**Entrada:** o mesmo `targetingSpec` validado da etapa anterior.
+
+**Saída (result):**
+```json
+{
+  "status": "READY",
+  "usersLowerBound": 380000,
+  "usersUpperBound": 950000,
+  "details": {
+    "data": [
+      {
+        "users_lower_bound": 380000,
+        "users_upper_bound": 950000
+      }
+    ]
+  }
+}
+```
+
+### Etapa 7 — `AI_RECALIBRATE_SPEC` (quando necessário)
+
+**Quando roda:** somente se o reach sair da faixa alvo.
+
+**Entrada (payload resumido):**
+```json
+{
+  "specId": 101,
+  "targetingSpec": {
+    "age_min": 20,
+    "age_max": 40,
+    "flexible_spec": [
+      { "interests": [{ "id": "6003349442621", "name": "Publicidade" }] },
+      { "behaviors": [{ "id": "6015642363132", "name": "Small business owners" }] }
+    ]
+  },
+  "usersLowerBound": 120000,
+  "usersUpperBound": 180000,
+  "reachMinLowerBound": 200000,
+  "reachMaxUpperBound": 20000000,
+  "attempt": 1
+}
+```
+
+**Saída (result):**
+```json
+{
+  "specId": 101,
+  "ageMin": 18,
+  "ageMax": 43,
+  "targetingSpec": {
+    "age_min": 18,
+    "age_max": 43,
+    "flexible_spec": [
+      { "interests": [{ "id": "6003349442621", "name": "Publicidade" }] }
+    ]
+  }
+}
+```
+
+---
+
 ## Observações rápidas (para evitar “resultados estranhos”)
 
 ### FATOS

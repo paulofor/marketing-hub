@@ -83,7 +83,13 @@ Uso: posts, anúncios, peças promocionais e diversão.
 Dores: falta de tempo/habilidade para criar imagens consistentes; custo de designer; velocidade.
 Canais: Instagram, Facebook, tráfego pago.`;
 
-type StepStatus = "PENDING" | "RUNNING" | "DONE" | "FAILED" | "SKIPPED";
+type StepStatus =
+  | "PENDING"
+  | "RUNNING"
+  | "DONE"
+  | "FAILED"
+  | "WARNING"
+  | "SKIPPED";
 
 const STEP_STATUS_META: Record<StepStatus, { label: string; variant: string }> =
   {
@@ -91,6 +97,7 @@ const STEP_STATUS_META: Record<StepStatus, { label: string; variant: string }> =
     RUNNING: { label: "Em execução", variant: "info" },
     DONE: { label: "Concluído", variant: "success" },
     FAILED: { label: "Com erro", variant: "danger" },
+    WARNING: { label: "Atenção", variant: "warning" },
     SKIPPED: { label: "Ignorado", variant: "light" },
   };
 
@@ -875,9 +882,24 @@ function buildAnchorSeedStep(
   workflow: ExperimentAdSetWorkflowDto,
   interestJobs: ExperimentAdSetJob[],
 ): PipelineStepSummary {
-  const status: StepStatus = workflow.seedInterestId
+  const anchorValidation = validateAnchorSeed(
+    workflow.seedInterestId,
+    workflow.seedInterestName,
+  );
+  const inferredStatus = inferStatusFromJobs(interestJobs);
+  const status: StepStatus = anchorValidation.valid
     ? "DONE"
-    : inferStatusFromJobs(interestJobs);
+    : inferredStatus === "FAILED"
+      ? "FAILED"
+      : interestJobs.length
+        ? "WARNING"
+        : inferredStatus;
+
+  const guidanceMessage =
+    workflow.lastError && workflow.lastError.includes("Anchor seed inválido")
+      ? workflow.lastError
+      : `Anchor seed inválido para concluir a etapa 4. ${anchorValidation.reason} Revise seeds da etapa 1/3 e execute novamente.`;
+
   return {
     id: "DOC_STEP_4",
     title: "Etapa 4 · IA escolhe o anchor seed",
@@ -892,6 +914,9 @@ function buildAnchorSeedStep(
         <div>
           ID Meta: <code>{workflow.seedInterestId ?? "—"}</code>
         </div>
+        {!anchorValidation.valid ? (
+          <div className="text-warning-emphasis mt-1">{guidanceMessage}</div>
+        ) : null}
         <div>
           Audience estimada: {formatNumber(workflow.seedAudienceLower)} –{" "}
           {formatNumber(workflow.seedAudienceUpper)} pessoas
@@ -1319,6 +1344,36 @@ function inferStatusFromJobs(jobs: ExperimentAdSetJob[]): StepStatus {
   if (jobs.some((job) => job.status === "RUNNING")) return "RUNNING";
   if (jobs.some((job) => job.status === "SUCCEEDED")) return "DONE";
   return "PENDING";
+}
+
+function validateAnchorSeed(seedId?: string | null, seedName?: string | null) {
+  if (!seedId?.trim()) {
+    return { valid: false, reason: "ID do seed não foi definido." };
+  }
+  if (!seedName?.trim()) {
+    return { valid: false, reason: "Nome do seed não foi definido." };
+  }
+  const normalizedName = seedName.trim().toLowerCase();
+  const invalidNames = new Set([
+    "unspecified",
+    "generic",
+    "genérico",
+    "generico",
+    "n/a",
+    "na",
+  ]);
+  if (
+    invalidNames.has(normalizedName) ||
+    normalizedName.includes("unspecified") ||
+    normalizedName.includes("não especificado") ||
+    normalizedName.includes("nao especificado")
+  ) {
+    return {
+      valid: false,
+      reason: `Nome do seed (${seedName.trim()}) é genérico e não qualifica um anchor válido.`,
+    };
+  }
+  return { valid: true, reason: "" };
 }
 
 function renderSpecStatusList(

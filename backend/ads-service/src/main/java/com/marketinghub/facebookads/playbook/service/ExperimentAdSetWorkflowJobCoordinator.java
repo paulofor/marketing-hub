@@ -62,6 +62,14 @@ public class ExperimentAdSetWorkflowJobCoordinator {
     private static final long MIN_REACH_LOWER_BOUND = 200_000L;
     private static final long MAX_REACH_UPPER_BOUND = 20_000_000L;
     private static final int MAX_RECALIBRATION_ATTEMPTS = 2;
+    private static final Set<String> INVALID_ANCHOR_SEED_NAMES = Set.of(
+            "unspecified",
+            "generic",
+            "genérico",
+            "generico",
+            "n/a",
+            "na"
+    );
 
     private final ExperimentAdSetJobRepository jobRepository;
     private final ExperimentAdSetJobApiLogRepository jobApiLogRepository;
@@ -308,12 +316,32 @@ public class ExperimentAdSetWorkflowJobCoordinator {
             markWorkflowFailed(workflow, "Meta não retornou ID para o seed");
             return;
         }
+        String interestName = text(node, "interestName");
+        if (!isValidAnchorSeedName(interestName)) {
+            markWorkflowFailed(
+                    workflow,
+                    "Anchor seed inválido: '%s'. Revise os seeds da etapa 1/3 e execute novamente."
+                            .formatted(StringUtils.hasText(interestName) ? interestName.trim() : "(vazio)")
+            );
+            return;
+        }
         workflow.setSeedInterestId(interestId.trim());
-        workflow.setSeedInterestName(text(node, "interestName"));
+        workflow.setSeedInterestName(interestName.trim());
         workflow.setSeedAudienceLower(asLong(node, "audienceLowerBound"));
         workflow.setSeedAudienceUpper(asLong(node, "audienceUpperBound"));
         workflowRepository.save(workflow);
         enqueueSuggestionJob(workflow);
+    }
+
+    private boolean isValidAnchorSeedName(String interestName) {
+        if (!StringUtils.hasText(interestName)) {
+            return false;
+        }
+        String normalized = interestName.trim().toLowerCase(Locale.ROOT);
+        return !INVALID_ANCHOR_SEED_NAMES.contains(normalized)
+                && !normalized.contains("unspecified")
+                && !normalized.contains("não especificado")
+                && !normalized.contains("nao especificado");
     }
 
     private void enqueueSuggestionJob(ExperimentAdSetWorkflow workflow) {

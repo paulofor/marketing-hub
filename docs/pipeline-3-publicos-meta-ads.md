@@ -110,7 +110,14 @@ export LOCALE="__LOCALE__"
 Use `-sS --fail` e sempre salve a resposta:
 ```bash
 # TEMPLATE (não é exemplo): padrão recomendado
-curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/targetingsearch"   --data-urlencode "access_token=__ACCESS_TOKEN__"   --data-urlencode "type=adinterest"   --data-urlencode "q=__SEED__"   --data-urlencode "locale=__LOCALE__"   --data-urlencode "limit=25"   --data-urlencode "fields=id,name,type,path,audience_size_lower_bound,audience_size_upper_bound"   > out.json
+curl -sS --failG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/targetingsearch" \
+  --data-urlencode "access_token=${ACCESS_TOKEN}" \
+  --data-urlencode "type=adinterest" \
+  --data-urlencode "q=${SEED}" \
+  --data-urlencode "locale=${LOCALE}" \
+  --data-urlencode "limit=25" \
+  --data-urlencode "fields=id,name,type,path,audience_size_lower_bound,audience_size_upper_bound" \
+  > out.json
 ```
 
 ---
@@ -253,29 +260,29 @@ SEED_BEHAVIOR="__SEED__"
 SEED_POSITION="__SEED__"
 mkdir -p out/discovery
 
-curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/targetingsearch" \
-  --data-urlencode "access_token=__ACCESS_TOKEN__" \
+curl -sS --failG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/targetingsearch" \
+  --data-urlencode "access_token=${ACCESS_TOKEN}" \
   --data-urlencode "type=adinterest" \
   --data-urlencode "q=${SEED_INTEREST}" \
-  --data-urlencode "locale=__LOCALE__" \
+  --data-urlencode "locale=${LOCALE}" \
   --data-urlencode "limit=200" \
   --data-urlencode "fields=id,name,type,path,topic,audience_size_lower_bound,audience_size_upper_bound" \
   > "out/discovery/adinterest_${SEED_INTEREST}.json"
 
-curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/targetingsearch" \
-  --data-urlencode "access_token=__ACCESS_TOKEN__" \
+curl -sS --failG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/targetingsearch" \
+  --data-urlencode "access_token=${ACCESS_TOKEN}" \
   --data-urlencode "type=adbehavior" \
   --data-urlencode "q=${SEED_BEHAVIOR}" \
-  --data-urlencode "locale=__LOCALE__" \
+  --data-urlencode "locale=${LOCALE}" \
   --data-urlencode "limit=200" \
   --data-urlencode "fields=id,name,type,path,audience_size_lower_bound,audience_size_upper_bound" \
   > "out/discovery/adbehavior_${SEED_BEHAVIOR}.json"
 
-curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/targetingsearch" \
-  --data-urlencode "access_token=__ACCESS_TOKEN__" \
+curl -sS --failG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/targetingsearch" \
+  --data-urlencode "access_token=${ACCESS_TOKEN}" \
   --data-urlencode "type=adworkposition" \
   --data-urlencode "q=${SEED_POSITION}" \
-  --data-urlencode "locale=__LOCALE__" \
+  --data-urlencode "locale=${LOCALE}" \
   --data-urlencode "limit=200" \
   --data-urlencode "fields=id,name,type,path,audience_size_lower_bound,audience_size_upper_bound" \
   > "out/discovery/adworkposition_${SEED_POSITION}.json"
@@ -337,7 +344,11 @@ Expandir o anchor seed em uma lista de sugestões relacionadas.
 
 ### TEMPLATE — Targeting Suggestions
 ```bash
-curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/targetingsuggestions"   --data-urlencode "access_token=__ACCESS_TOKEN__"   --data-urlencode "targeting_list=[{"type":"interests","id":"__ANCHOR_INTEREST_ID__"}]"   --data-urlencode "limit=__SUGGESTIONS_LIMIT__"   > suggestions_raw.json
+curl -sS --failG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/targetingsuggestions" \
+  --data-urlencode "access_token=${ACCESS_TOKEN}" \
+  --data-urlencode "targeting_list=[{\"type\":\"interests\",\"id\":\"${ANCHOR_INTEREST_ID}\"}]" \
+  --data-urlencode "limit=${SUGGESTIONS_LIMIT}" \
+  > suggestions_raw.json
 ```
 
 ### FATOS — Saída
@@ -430,7 +441,10 @@ Checagem auxiliar para validar IDs (não substitui `reachestimate`).
 
 ### TEMPLATE — `targetingvalidation` por `id_list`
 ```bash
-curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/targetingvalidation"   --data-urlencode "access_token=__ACCESS_TOKEN__"   --data-urlencode "id_list=["__ID_1__","__ID_2__"]"   > out_targetingvalidation.json
+curl -sS --failG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/targetingvalidation" \
+  --data-urlencode "access_token=${ACCESS_TOKEN}" \
+  --data-urlencode "id_list=[\"${ID_1}\",\"${ID_2}\"]" \
+  > out_targetingvalidation.json
 ```
 
 ### FATOS — Saída
@@ -448,7 +462,10 @@ Validar se o `targeting_spec` funciona e medir alcance BR.
 
 ### TEMPLATE — Reach Estimate
 ```bash
-curl -sS --failG "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/reachestimate"   --data-urlencode "access_token=__ACCESS_TOKEN__"   --data-urlencode "targeting_spec@spec_1.json"   > reach_1.json
+curl -sS --failG "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/reachestimate" \
+  --data-urlencode "access_token=${ACCESS_TOKEN}" \
+  --data-urlencode "targeting_spec@spec_1.json" \
+  > reach_1.json
 ```
 
 ### FATOS — Saída
@@ -483,7 +500,15 @@ Criar 3 ad sets (recomendado iniciar `PAUSED`).
 
 ### EXEMPLO — Create Ad Set (ilustrativo; substituir placeholders)
 ```bash
-curl -sS --failX POST "https://graph.facebook.com/__API_VERSION__/act___AD_ACCOUNT_ID__/adsets"   --data-urlencode "access_token=__ACCESS_TOKEN__"   --data-urlencode "name=__ADSET_NAME__"   --data-urlencode "campaign_id=__CAMPAIGN_ID__"   --data-urlencode "daily_budget=__DAILY_BUDGET__"   --data-urlencode "billing_event=IMPRESSIONS"   --data-urlencode "optimization_goal=REACH"   --data-urlencode "status=PAUSED"   --data-urlencode "targeting@spec_1.json"
+curl -sS --failX POST "https://graph.facebook.com/${API_VERSION}/act_${AD_ACCOUNT_ID}/adsets" \
+  --data-urlencode "access_token=${ACCESS_TOKEN}" \
+  --data-urlencode "name=${ADSET_NAME}" \
+  --data-urlencode "campaign_id=${CAMPAIGN_ID}" \
+  --data-urlencode "daily_budget=${DAILY_BUDGET}" \
+  --data-urlencode "billing_event=IMPRESSIONS" \
+  --data-urlencode "optimization_goal=REACH" \
+  --data-urlencode "status=PAUSED" \
+  --data-urlencode "targeting@spec_1.json"
 ```
 
 ---

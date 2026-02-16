@@ -732,7 +732,11 @@ function buildPipelineSteps(
       discoverySummary,
       discoveryResultJson,
     ),
-    buildAnchorSeedStep(workflow, getJobs("FACEBOOK_SEED_LOOKUP")),
+    buildAnchorSeedStep(
+      workflow,
+      getJobs("FACEBOOK_SEED_LOOKUP"),
+      getJobs("AI_PREPARE_SEED"),
+    ),
     buildSuggestionExpansionStep(
       workflow,
       getJobs("FACEBOOK_TARGETING_SUGGESTIONS"),
@@ -913,6 +917,7 @@ function buildTargetingSearchStep(
 function buildAnchorSeedStep(
   workflow: ExperimentAdSetWorkflowDto,
   interestJobs: ExperimentAdSetJob[],
+  aiSeedJobs: ExperimentAdSetJob[],
 ): PipelineStepSummary {
   const anchorValidation = validateAnchorSeed(
     workflow.seedInterestId,
@@ -953,9 +958,14 @@ function buildAnchorSeedStep(
           Audience estimada: {formatNumber(workflow.seedAudienceLower)} –{" "}
           {formatNumber(workflow.seedAudienceUpper)} pessoas
         </div>
+        <div className="text-muted mt-2">
+          Abra a interação com o ChatGPT para visualizar lado a lado o JSON
+          enviado e a resposta recebida.
+        </div>
       </div>
     ),
     helper: docReference("Etapa 4"),
+    jobLinks: latestJobLink(aiSeedJobs, "Interação com ChatGPT (JSON visual)"),
   };
 }
 

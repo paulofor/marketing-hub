@@ -178,6 +178,11 @@ indicando interesse inválido (`interest/interesse ... id <número>`), o serviç
 remove automaticamente esse `id` de todas as listas `interests` (inclusive em
 `flexible_spec`) e reenvia a requisição uma única vez por interesse inválido,
 evitando bloqueio do playbook por dados legados descontinuados pela Meta.
+Na etapa `FACEBOOK_VALIDATE_SPEC`, respostas do `/targetingvalidation` com
+`data=[]` (sem itens) são tratadas como válidas (`VALID`) para manter
+compatibilidade com contas/versões da Graph API que não retornam `is_valid`
+no array, enquanto um `is_valid` explícito em nível de raiz ou item continua
+sendo respeitado.
 
 Todas as chamadas à Graph API são logadas detalhadamente para facilitar
 investigações de erros (por exemplo, respostas `400 Bad Request`). Os logs

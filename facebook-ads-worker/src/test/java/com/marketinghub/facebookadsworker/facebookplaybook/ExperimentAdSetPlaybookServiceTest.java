@@ -154,4 +154,96 @@ class ExperimentAdSetPlaybookServiceTest {
         verify(facebookAdsService, never()).searchGlobalTargetingOptions(any(FacebookAdsService.TargetingSearchRequest.class));
     }
 
+    @Test
+    void processQueueAddsAnchorSelectionReasonAndRejectedCandidatesToSeedLookupResult() {
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("adAccountId", "act_1234567890");
+        payload.put("locale", "pt_BR");
+        payload.put("country", "BR");
+        payload.put("limit", 10);
+        payload.putArray("interestQueries").add("escola particular");
+
+        PlaybookJob job = new PlaybookJob(
+                78L,
+                PlaybookJobType.FACEBOOK_SEED_LOOKUP,
+                1L,
+                2L,
+                payload,
+                Instant.now());
+
+        when(client.claimJobs("worker-test", 5)).thenReturn(List.of(job));
+        when(facebookAdsService.searchTargetingOptions(any(FacebookAdsService.TargetingSearchRequest.class)))
+                .thenAnswer(invocation -> {
+                    FacebookAdsService.TargetingSearchRequest request = invocation.getArgument(0);
+                    if (request.type() != FacebookAdsService.TargetingSearchType.AD_INTEREST) {
+                        return List.of();
+                    }
+                    return List.of(
+                            new FacebookAdsService.FacebookTargetingSearchResult(
+                                    "1",
+                                    "unknown",
+                                    "adinterest",
+                                    "Education",
+                                    10L,
+                                    100L,
+                                    List.of("Interests")
+                            ),
+                            new FacebookAdsService.FacebookTargetingSearchResult(
+                                    "2",
+                                    "Escola particular",
+                                    "adinterest",
+                                    "Education",
+                                    1000L,
+                                    2000L,
+                                    List.of("Interests", "Education")
+                            )
+                    );
+                });
+
+        ArgumentCaptor<JsonNode> resultCaptor = ArgumentCaptor.forClass(JsonNode.class);
+        service.processQueue();
+
+        verify(client).completeJob(eq(78L), resultCaptor.capture(), any());
+        JsonNode result = resultCaptor.getValue();
+        assertEquals("2", result.path("interestId").asText());
+        assertTrue(result.hasNonNull("anchorSelectionReason"));
+        assertTrue(result.path("anchorSelectionReason").asText().length() > 10);
+        assertTrue(result.path("rejectedCandidates").isArray());
+        assertTrue(result.path("rejectedCandidates").toString().contains("unknown"));
+    }
+
+    @Test
+    void processQueueFailsStep4WhenNoCandidatePassesMinimumScore() {
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("adAccountId", "act_1234567890");
+        payload.put("locale", "pt_BR");
+        payload.put("country", "BR");
+        payload.put("limit", 10);
+        payload.putArray("interestQueries").add("escola particular");
+
+        PlaybookJob job = new PlaybookJob(
+                79L,
+                PlaybookJobType.FACEBOOK_SEED_LOOKUP,
+                1L,
+                2L,
+                payload,
+                Instant.now());
+
+        when(client.claimJobs("worker-test", 5)).thenReturn(List.of(job));
+        when(facebookAdsService.searchTargetingOptions(any(FacebookAdsService.TargetingSearchRequest.class)))
+                .thenReturn(List.of(new FacebookAdsService.FacebookTargetingSearchResult(
+                        "1",
+                        "general business",
+                        "adinterest",
+                        "General",
+                        10L,
+                        100L,
+                        List.of("Interests")
+                )));
+
+        service.processQueue();
+
+        verify(client).failJob(eq(79L), eq("Etapa 4: nenhum anchor de interesse atingiu o score mínimo de relevância"), any());
+    }
+
 }

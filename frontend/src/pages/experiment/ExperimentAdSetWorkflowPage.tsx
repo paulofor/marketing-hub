@@ -436,14 +436,24 @@ function PipelineTimeline({
   const discoveryDetail = jobDetailQueries.find(
     (query) => query.data?.job?.type === "FACEBOOK_SEED_LOOKUP",
   )?.data;
+  const discoveryResultJson = useMemo(
+    () => buildDiscoveryResultJson(jobDetailQueries.map((query) => query.data)),
+    [jobDetailQueries],
+  );
   const discoverySummary = useMemo(
     () => parseDiscoverySummaryFromJobDetail(discoveryDetail),
     [discoveryDetail],
   );
 
   const steps = useMemo(
-    () => buildPipelineSteps(workflow, resolvedTerms, discoverySummary),
-    [workflow, resolvedTerms, discoverySummary],
+    () =>
+      buildPipelineSteps(
+        workflow,
+        resolvedTerms,
+        discoverySummary,
+        discoveryResultJson,
+      ),
+    [workflow, resolvedTerms, discoverySummary, discoveryResultJson],
   );
   return (
     <div className="card h-100">
@@ -685,6 +695,7 @@ function buildPipelineSteps(
   workflow: ExperimentAdSetWorkflowDto,
   resolvedTerms: TargetingSearchResolvedTerms,
   discoverySummary?: DiscoverySummary,
+  discoveryResultJson?: string,
 ): PipelineStepSummary[] {
   const aiPlan = safeJsonParse<{
     searchTerms?: string[];
@@ -719,6 +730,7 @@ function buildPipelineSteps(
       positionQueries,
       resolvedTerms,
       discoverySummary,
+      discoveryResultJson,
     ),
     buildAnchorSeedStep(workflow, getJobs("FACEBOOK_SEED_LOOKUP")),
     buildSuggestionExpansionStep(
@@ -817,6 +829,7 @@ function buildTargetingSearchStep(
   positionQueries: string[],
   resolvedTerms: TargetingSearchResolvedTerms,
   discoverySummary?: DiscoverySummary,
+  discoveryResultJson?: string,
 ): PipelineStepSummary {
   const interestStatus = inferStatusFromJobs(interestJobs);
   const positionsStatus: StepStatus =
@@ -867,6 +880,22 @@ function buildTargetingSearchStep(
             items={resolvedTerms.behaviors}
             placeholder="Nenhum ID de comportamento encontrado até agora."
           />
+        </div>
+        <div>
+          <SectionLabel>Resultado JSON do discovery</SectionLabel>
+          {discoveryResultJson ? (
+            <details>
+              <summary>Abrir JSON consolidado</summary>
+              <pre
+                className="mt-2 bg-light border rounded p-2 mb-0"
+                style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
+              >
+                {formatJson(discoveryResultJson)}
+              </pre>
+            </details>
+          ) : (
+            <div className="text-muted">Resultado ainda não disponível.</div>
+          )}
         </div>
       </div>
     ),
@@ -1508,6 +1537,53 @@ function mergeJobLinks(
 ): PipelineJobLink[] | undefined {
   const merged = links.flatMap((link) => link ?? []);
   return merged.length ? merged : undefined;
+}
+
+function buildDiscoveryResultJson(
+  details: Array<ExperimentAdSetJobDetailDto | undefined>,
+): string | undefined {
+  const discoveryJobs = details.filter(
+    (detail): detail is ExperimentAdSetJobDetailDto =>
+      Boolean(
+        detail &&
+          (detail.job?.type === "FACEBOOK_SEED_LOOKUP" ||
+            detail.job?.type === "FACEBOOK_SOCIAL_POSITIONS"),
+      ),
+  );
+  if (!discoveryJobs.length) {
+    return undefined;
+  }
+
+  const payload = discoveryJobs.map((detail) => {
+    const responses = detail.apiLogs
+      .map((log) => ({
+        provider: log.provider,
+        endpoint: log.endpoint,
+        statusCode: log.statusCode,
+        response: safeJsonParse<unknown>(log.responsePayload),
+      }))
+      .filter((log) => log.response != null);
+
+    return {
+      jobId: detail.job.id,
+      jobType: detail.job.type,
+      status: detail.job.status,
+      resultPayload: safeJsonParse<unknown>(detail.resultPayload),
+      responses: responses.length ? responses : undefined,
+    };
+  });
+
+  if (
+    payload.every(
+      (item) =>
+        item.resultPayload == null &&
+        (!item.responses || item.responses.length === 0),
+    )
+  ) {
+    return undefined;
+  }
+
+  return JSON.stringify({ jobs: payload });
 }
 
 function parseResolvedTermsFromJobDetails(

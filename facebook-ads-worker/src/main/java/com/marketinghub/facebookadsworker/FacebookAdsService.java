@@ -23,6 +23,9 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -58,6 +61,7 @@ public class FacebookAdsService {
 
     private final WebClient webClient;
     private final AtomicReference<String> accessToken;
+    private final String graphApiBaseUrl;
     private final String apiVersion;
     private final ObjectMapper objectMapper;
     private final ConcurrentMap<String, String> pageAccessTokens;
@@ -78,6 +82,7 @@ public class FacebookAdsService {
                               TargetingResolverProperties resolverProperties) {
         this.webClient = builder.baseUrl(baseUrl).build();
         this.accessToken = new AtomicReference<>(null);
+        this.graphApiBaseUrl = normalizeBaseUrl(baseUrl);
         this.apiVersion = normalizeVersion(apiVersion);
         this.objectMapper = objectMapper;
         this.pageAccessTokens = new ConcurrentHashMap<>();
@@ -1500,11 +1505,13 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         throws JsonProcessingException {
         while (true) {
             String targetingSpec = objectMapper.writeValueAsString(targetingSpecNode);
-            var builder = UriComponentsBuilder.fromPath(path)
-                .queryParam("targeting_spec", targetingSpec)
-                .queryParam("access_token", requireAccessToken());
+            String requestPath = UriComponentsBuilder.fromPath(path)
+                .queryParam("targeting_spec", strictUrlEncode(targetingSpec))
+                .queryParam("access_token", strictUrlEncode(requireAccessToken()))
+                .build(true)
+                .toUriString();
             try {
-                FacebookApiResponse response = executeGet(builder.build().encode().toUriString());
+                FacebookApiResponse response = executeGetAbsolute(requestPath);
                 return response.body();
             } catch (WebClientResponseException ex) {
                 if (!tryRemoveInvalidInterestFromSpec(targetingSpecNode, ex)) {
@@ -1516,6 +1523,21 @@ private FacebookInterest searchInterest(String interestName, String locale) {
                 );
             }
         }
+    }
+
+    private String strictUrlEncode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
+    }
+
+    private String normalizeBaseUrl(String baseUrl) {
+        if (!hasText(baseUrl)) {
+            return "https://graph.facebook.com";
+        }
+        String trimmed = baseUrl.trim();
+        if (trimmed.endsWith("/")) {
+            return trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed;
     }
 
     private ObjectNode copyTargetingSpec(JsonNode targetingSpec) {
@@ -1969,6 +1991,87 @@ private FacebookInterest searchInterest(String interestName, String locale) {
             FacebookApiResponse apiResponse = webClient
                 .get()
                 .uri(path)
+                .exchangeToMono(response -> {
+                    if (response.statusCode().isError()) {
+                        return response.createException().flatMap(Mono::error);
+                    }
+                    return response
+                        .bodyToMono(JsonNode.class)
+                        .defaultIfEmpty(objectMapper.nullNode())
+                        .map(body -> new FacebookApiResponse(response.statusCode(), response.headers().asHttpHeaders(), body));
+                })
+                .block();
+            FacebookApiResponse nonNullResponse =
+                apiResponse != null ? apiResponse : new FacebookApiResponse(null, HttpHeaders.EMPTY, objectMapper.nullNode());
+            logSuccessfulResponse("GET", maskedPath, nonNullResponse);
+            recordApiCallDebugInfo(
+                "GET",
+                path,
+                null,
+                toJsonString(nonNullResponse.body()),
+                nonNullResponse.statusCode() != null ? nonNullResponse.statusCode().value() : null,
+                null,
+                startedAt,
+                Instant.now()
+            );
+            return nonNullResponse;
+        } catch (WebClientResponseException ex) {
+            String responseBody = ex.getResponseBodyAsString();
+            ObjectNode errorDetails = extractErrorDetails(responseBody);
+            LOGGER.error(
+                "Facebook API GET request failed: path<=={}, status={}, responseBody={}, errorDetails={}",
+                maskedPath,
+                ex.getRawStatusCode(),
+                maskAccessToken(responseBody),
+                errorDetails,
+                ex
+            );
+            recordApiCallDebugInfo(
+                "GET",
+                path,
+                null,
+                responseBody,
+                ex.getRawStatusCode(),
+                ex.getMessage(),
+                startedAt,
+                Instant.now()
+            );
+            if (isAccessTokenExpired(errorDetails)) {
+                throw new FacebookAccessTokenExpiredException(resolveAccessTokenExpiredMessage(errorDetails), errorDetails, ex);
+            }
+            if (isPermissionError(errorDetails)) {
+                throw new FacebookPermissionException(resolvePermissionMessage(errorDetails), errorDetails, ex);
+            }
+            throw ex;
+        } catch (WebClientRequestException ex) {
+            LOGGER.error(
+                "Facebook API GET request could not be completed: path==>{}, message={}",
+                maskedPath,
+                ex.getMessage(),
+                ex
+            );
+            recordApiCallDebugInfo(
+                "GET",
+                path,
+                null,
+                null,
+                null,
+                ex.getMessage(),
+                startedAt,
+                Instant.now()
+            );
+            throw ex;
+        }
+    }
+
+    private FacebookApiResponse executeGetAbsolute(String path) {
+        Instant startedAt = Instant.now();
+        String maskedPath = maskAccessTokenInPath(path);
+        LOGGER.info("Sending GET request to Facebook API: path==>{}", maskedPath);
+        try {
+            FacebookApiResponse apiResponse = webClient
+                .get()
+                .uri(URI.create(graphApiBaseUrl + path))
                 .exchangeToMono(response -> {
                     if (response.statusCode().isError()) {
                         return response.createException().flatMap(Mono::error);

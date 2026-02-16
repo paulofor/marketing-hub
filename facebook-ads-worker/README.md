@@ -9,6 +9,16 @@ Para sugerir interesses relacionados a um seed, o worker consulta a Graph API
 via `/act_<AD_ACCOUNT_ID>/targetingsuggestions` e envia a lista de seeds no
 parâmetro `targeting_list` (por exemplo, `[{"type":"interests","id":"6003139266461"}]`).
 
+No fluxo de discovery (`FACEBOOK_SEED_LOOKUP`), a seleção do anchor de interesse
+passou a priorizar um **score de relevância** (match com termos seed, aderência
+do `path` ao contexto ICP e penalização para termos amplos/genéricos). A
+**audiência** agora é usada apenas como desempate entre candidatos com o mesmo
+score. Candidatos com nomes genéricos (por exemplo, `unknown`, `unspecified`,
+`não especificado`) são rejeitados explicitamente e o payload final inclui
+`anchorSelectionReason` e `rejectedCandidates` para rastreabilidade da decisão.
+Se nenhum candidato atingir o score mínimo, a etapa 4 falha com erro claro em
+vez de persistir anchor genérico.
+
 ## Fila de resolução de targeting
 
 O backend grava os candidatos que precisam ser validados na tabela `targeting_resolution_job`.

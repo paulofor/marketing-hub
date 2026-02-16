@@ -49,6 +49,29 @@ public class ExperimentAdSetPlaybookService {
             "expatriado",
             "canvas gaming"
     );
+    private static final Set<String> DISCOVERY_GENERIC_ANCHOR_TERMS = Set.of(
+            "unspecified",
+            "unknown",
+            "not specified",
+            "n/a",
+            "nao especificado",
+            "não especificado",
+            "nao informado",
+            "não informado",
+            "desconhecido",
+            "indefinido"
+    );
+    private static final Set<String> DISCOVERY_BROAD_TERMS = Set.of(
+            "marketing",
+            "business",
+            "negocios",
+            "negócios",
+            "empresa",
+            "empresas",
+            "general",
+            "geral"
+    );
+    private static final int DISCOVERY_MIN_RELEVANCE_SCORE = 25;
 
     private final ExperimentAdSetPlaybookClient client;
     private final FacebookAdsService facebookAdsService;
@@ -97,7 +120,7 @@ public class ExperimentAdSetPlaybookService {
 
     private JsonNode handleSeedLookup(JsonNode payload, List<ApiCallLog> apiLogs) {
         DiscoveryPlan plan = DiscoveryPlan.fromPayload(payload);
-        DiscoveryAccumulator accumulator = new DiscoveryAccumulator(objectMapper);
+        DiscoveryAccumulator accumulator = new DiscoveryAccumulator(objectMapper, plan);
         for (DiscoveryTypedQuery typedQuery : plan.typedQueries()) {
             for (String locale : plan.locales()) {
                 for (DiscoverySeed seed : typedQuery.seeds()) {
@@ -126,7 +149,7 @@ public class ExperimentAdSetPlaybookService {
         ObjectNode result = accumulator.build(plan);
         FacebookTargetingSearchResult anchor = accumulator.bestInterest();
         if (anchor == null || !StringUtils.hasText(anchor.id())) {
-            throw new IllegalStateException("Nenhum interesse relevante encontrado para o discovery");
+            throw new IllegalStateException("Etapa 4: nenhum anchor de interesse atingiu o score mínimo de relevância");
         }
         result.put("interestId", anchor.id());
         result.put("interestName", anchor.name());
@@ -559,14 +582,22 @@ public class ExperimentAdSetPlaybookService {
         private final ArrayNode rawCalls;
         private final LinkedHashMap<String, ObjectNode> dedup;
         private final Map<String, Integer> typeCounts;
+        private final Set<String> normalizedSeedTerms;
+        private final Set<String> normalizedIcpTerms;
+        private final ArrayNode rejectedCandidates;
         private long rawItems = 0;
         private FacebookTargetingSearchResult bestInterest;
+        private int bestInterestScore = Integer.MIN_VALUE;
+        private String anchorSelectionReason = "Nenhum candidato de interesse avaliado até o momento";
 
-        DiscoveryAccumulator(ObjectMapper mapper) {
+        DiscoveryAccumulator(ObjectMapper mapper, DiscoveryPlan plan) {
             this.mapper = mapper;
             this.rawCalls = mapper.createArrayNode();
             this.dedup = new LinkedHashMap<>();
             this.typeCounts = new LinkedHashMap<>();
+            this.normalizedSeedTerms = extractSeedTerms(plan);
+            this.normalizedIcpTerms = extractIcpTerms(plan);
+            this.rejectedCandidates = mapper.createArrayNode();
         }
 
         void addCall(String seed, String variant, String locale, String source, List<FacebookTargetingSearchResult> results) {
@@ -639,6 +670,8 @@ public class ExperimentAdSetPlaybookService {
                     .limit(15)
                     .forEach(anchors::add);
             root.set("anchorCandidates", anchors);
+            root.put("anchorSelectionReason", anchorSelectionReason);
+            root.set("rejectedCandidates", rejectedCandidates);
             return root;
         }
 
@@ -688,36 +721,172 @@ public class ExperimentAdSetPlaybookService {
         }
 
         private void updateBestInterest(FacebookTargetingSearchResult candidate) {
-            if (candidate == null || !"INTEREST".equals(normalizeType(candidate.type())) || !isAnchorAllowed(candidate)) {
+            if (candidate == null || !"INTEREST".equals(normalizeType(candidate.type()))) {
+                return;
+            }
+            String rejectReason = isAnchorAllowed(candidate);
+            if (rejectReason != null) {
+                registerRejectedCandidate(candidate, rejectReason, Integer.MIN_VALUE);
+                return;
+            }
+            int candidateScore = relevanceScore(candidate);
+            if (candidateScore < DISCOVERY_MIN_RELEVANCE_SCORE) {
+                registerRejectedCandidate(candidate,
+                        "Score de relevância insuficiente (" + candidateScore + " < " + DISCOVERY_MIN_RELEVANCE_SCORE + ")",
+                        candidateScore);
                 return;
             }
             if (bestInterest == null) {
                 bestInterest = candidate;
+                bestInterestScore = candidateScore;
+                anchorSelectionReason = "Selecionado por maior score de relevância inicial=" + candidateScore;
                 return;
             }
-            Long currentUpper = bestInterest.audienceSizeUpperBound();
-            Long candidateUpper = candidate.audienceSizeUpperBound();
-            if (candidateUpper != null && (currentUpper == null || candidateUpper > currentUpper)) {
+            if (candidateScore > bestInterestScore) {
                 bestInterest = candidate;
+                bestInterestScore = candidateScore;
+                anchorSelectionReason = "Candidato substituído por score de relevância maior=" + candidateScore;
                 return;
             }
-            if (candidateUpper == null && currentUpper == null) {
-                Long currentLower = bestInterest.audienceSizeLowerBound();
-                Long candidateLower = candidate.audienceSizeLowerBound();
-                if (candidateLower != null && (currentLower == null || candidateLower > currentLower)) {
+            if (candidateScore == bestInterestScore) {
+                if (hasGreaterAudience(candidate, bestInterest)) {
                     bestInterest = candidate;
+                    anchorSelectionReason = "Empate de score resolvido por maior audiência";
+                } else {
+                    anchorSelectionReason = "Anchor mantido por score equivalente e audiência não superior";
                 }
             }
         }
 
-        private boolean isAnchorAllowed(FacebookTargetingSearchResult candidate) {
+        private String isAnchorAllowed(FacebookTargetingSearchResult candidate) {
             if (candidate == null || !StringUtils.hasText(candidate.name())) {
+                return "Nome ausente";
+            }
+            String normalized = normalizeText(candidate.name());
+            if (DISCOVERY_GENERIC_ANCHOR_TERMS.stream().anyMatch(normalized::contains)) {
+                return "Nome genérico/rejeitado: " + candidate.name();
+            }
+            boolean blocklisted = DISCOVERY_ANCHOR_BLOCKLIST.stream()
+                    .map(term -> term.toLowerCase(Locale.ROOT))
+                    .anyMatch(normalized::contains);
+            return blocklisted ? "Termo bloqueado pela blocklist" : null;
+        }
+
+        private int relevanceScore(FacebookTargetingSearchResult candidate) {
+            int score = 0;
+            Set<String> candidateTerms = candidateTerms(candidate);
+            if (!normalizedSeedTerms.isEmpty() && candidateTerms.stream().anyMatch(normalizedSeedTerms::contains)) {
+                score += 40;
+            }
+            if (!normalizedIcpTerms.isEmpty() && pathMatchesIcp(candidate)) {
+                score += 25;
+            }
+            if (containsBroadTerm(candidateTerms)) {
+                score -= 30;
+            }
+            if (StringUtils.hasText(candidate.topic())) {
+                String topic = normalizeText(candidate.topic());
+                if (normalizedIcpTerms.stream().anyMatch(topic::contains)) {
+                    score += 10;
+                }
+            }
+            return score;
+        }
+
+        private boolean pathMatchesIcp(FacebookTargetingSearchResult candidate) {
+            if (candidate.path() == null || candidate.path().isEmpty()) {
                 return false;
             }
-            String normalized = candidate.name().toLowerCase(Locale.ROOT);
-            return DISCOVERY_ANCHOR_BLOCKLIST.stream()
-                    .map(term -> term.toLowerCase(Locale.ROOT))
-                    .noneMatch(normalized::contains);
+            return candidate.path().stream()
+                    .filter(StringUtils::hasText)
+                    .map(this::normalizeText)
+                    .anyMatch(pathEntry -> normalizedIcpTerms.stream().anyMatch(pathEntry::contains));
+        }
+
+        private boolean containsBroadTerm(Set<String> candidateTerms) {
+            return candidateTerms.stream().anyMatch(term -> DISCOVERY_BROAD_TERMS.contains(term));
+        }
+
+        private boolean hasGreaterAudience(FacebookTargetingSearchResult candidate, FacebookTargetingSearchResult current) {
+            Long currentUpper = current.audienceSizeUpperBound();
+            Long candidateUpper = candidate.audienceSizeUpperBound();
+            if (candidateUpper != null && (currentUpper == null || candidateUpper > currentUpper)) {
+                return true;
+            }
+            if (candidateUpper == null && currentUpper == null) {
+                Long currentLower = current.audienceSizeLowerBound();
+                Long candidateLower = candidate.audienceSizeLowerBound();
+                return candidateLower != null && (currentLower == null || candidateLower > currentLower);
+            }
+            return false;
+        }
+
+        private void registerRejectedCandidate(FacebookTargetingSearchResult candidate, String reason, int score) {
+            ObjectNode rejected = mapper.createObjectNode();
+            if (StringUtils.hasText(candidate.id())) {
+                rejected.put("id", candidate.id());
+            }
+            rejected.put("name", candidate.name());
+            rejected.put("reason", reason);
+            if (score != Integer.MIN_VALUE) {
+                rejected.put("relevanceScore", score);
+            }
+            rejectedCandidates.add(rejected);
+        }
+
+        private Set<String> extractSeedTerms(DiscoveryPlan plan) {
+            return plan.typedQueries().stream()
+                    .flatMap(query -> query.seeds().stream())
+                    .flatMap(seed -> seed.variants().stream())
+                    .map(this::normalizeText)
+                    .filter(StringUtils::hasText)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+        }
+
+        private Set<String> extractIcpTerms(DiscoveryPlan plan) {
+            return plan.typedQueries().stream()
+                    .flatMap(query -> query.seeds().stream())
+                    .map(DiscoverySeed::original)
+                    .map(this::normalizeText)
+                    .flatMap(value -> List.of(value.split("\\s+")).stream())
+                    .filter(token -> token.length() >= 4)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+        }
+
+        private Set<String> candidateTerms(FacebookTargetingSearchResult candidate) {
+            LinkedHashSet<String> terms = new LinkedHashSet<>();
+            if (StringUtils.hasText(candidate.name())) {
+                String normalizedName = normalizeText(candidate.name());
+                terms.add(normalizedName);
+                terms.addAll(List.of(normalizedName.split("\\s+")));
+            }
+            if (StringUtils.hasText(candidate.topic())) {
+                String normalizedTopic = normalizeText(candidate.topic());
+                terms.add(normalizedTopic);
+                terms.addAll(List.of(normalizedTopic.split("\\s+")));
+            }
+            if (candidate.path() != null) {
+                candidate.path().stream()
+                        .filter(StringUtils::hasText)
+                        .map(this::normalizeText)
+                        .forEach(pathValue -> {
+                            terms.add(pathValue);
+                            terms.addAll(List.of(pathValue.split("\\s+")));
+                        });
+            }
+            return terms;
+        }
+
+        private String normalizeText(String value) {
+            if (!StringUtils.hasText(value)) {
+                return "";
+            }
+            return Normalizer.normalize(value, Normalizer.Form.NFD)
+                    .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
+                    .toLowerCase(Locale.ROOT)
+                    .replaceAll("[^\\p{Alnum}\\s]", " ")
+                    .replaceAll("\\s+", " ")
+                    .trim();
         }
 
         private String normalizeType(String raw) {

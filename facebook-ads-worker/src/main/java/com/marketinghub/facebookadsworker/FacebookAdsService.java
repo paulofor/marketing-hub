@@ -55,6 +55,9 @@ public class FacebookAdsService {
     private static final Pattern INTEREST_WITH_ID_PATTERN = Pattern.compile(".*\\((\\d{5,})\\)\\s*$");
     private static final Pattern INVALID_INTEREST_ID_PATTERN =
         Pattern.compile("(?i)interesse\\s+com\\s+id\\s+(\\d+)|interest\\s+with\\s+id\\s+(\\d+)");
+    private static final Pattern INVALID_TARGETING_FIELD_PATTERN = Pattern.compile("(?i)field\\s+([a-z_]+)");
+    private static final Pattern INVALID_WORK_POSITION_ID_PATTERN =
+        Pattern.compile("(?i)cargos?\\s+com\\s+identifica(?:ç|c)(?:ão|ao)\\s+(\\d+)");
     private static final String INTEREST_SEARCH_LOCALE = "pt_BR";
     public static final String BRAZIL_COUNTRY_CODE = "BR";
     private static final String TARGETING_SEARCH_FIELDS = "id,name,type,audience_size_lower_bound,audience_size_upper_bound,path,description,topic";
@@ -1551,11 +1554,37 @@ private FacebookInterest searchInterest(String interestName, String locale) {
     }
 
     private boolean tryRemoveInvalidInterestFromSpec(ObjectNode targetingSpecNode, WebClientResponseException ex) {
-        String invalidInterestId = extractInvalidInterestId(ex.getResponseBodyAsString());
+        String responseBody = ex.getResponseBodyAsString();
+        String invalidField = extractInvalidTargetingField(responseBody);
+        String invalidInterestId = extractInvalidInterestId(responseBody);
+
+        if ("work_positions".equals(invalidField) && !hasText(invalidInterestId)) {
+            invalidInterestId = extractInvalidWorkPositionId(responseBody);
+        }
+
         if (!hasText(invalidInterestId)) {
             return false;
         }
+
+        if ("work_positions".equals(invalidField)) {
+            return removeTargetingByFieldAndId(targetingSpecNode, "work_positions", invalidInterestId.trim());
+        }
+
         return removeInterestById(targetingSpecNode, invalidInterestId.trim());
+    }
+
+    private String extractInvalidTargetingField(String responseBody) {
+        if (!hasText(responseBody)) {
+            return null;
+        }
+        Matcher matcher = INVALID_TARGETING_FIELD_PATTERN.matcher(responseBody);
+        if (matcher.find()) {
+            String fieldName = matcher.group(1);
+            if (hasText(fieldName)) {
+                return fieldName.trim().toLowerCase(Locale.ROOT);
+            }
+        }
+        return null;
     }
 
     private String extractInvalidInterestId(String responseBody) {
@@ -1574,6 +1603,46 @@ private FacebookInterest searchInterest(String interestName, String locale) {
             }
         }
         return null;
+    }
+
+    private String extractInvalidWorkPositionId(String responseBody) {
+        if (!hasText(responseBody)) {
+            return null;
+        }
+        Matcher matcher = INVALID_WORK_POSITION_ID_PATTERN.matcher(responseBody);
+        if (matcher.find()) {
+            String id = matcher.group(1);
+            if (hasText(id)) {
+                return id;
+            }
+        }
+        return null;
+    }
+
+    private boolean removeTargetingByFieldAndId(JsonNode node, String fieldName, String targetId) {
+        if (node == null || node.isNull() || !hasText(fieldName) || !hasText(targetId)) {
+            return false;
+        }
+        boolean removed = false;
+        if (node.isObject()) {
+            ObjectNode objectNode = (ObjectNode) node;
+            JsonNode fieldNode = objectNode.get(fieldName);
+            if (fieldNode instanceof ArrayNode fieldArray) {
+                removed = removeInterestFromArray(fieldArray, targetId) || removed;
+            }
+            Iterator<Map.Entry<String, JsonNode>> fields = objectNode.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> entry = fields.next();
+                removed = removeTargetingByFieldAndId(entry.getValue(), fieldName, targetId) || removed;
+            }
+            return removed;
+        }
+        if (node.isArray()) {
+            for (JsonNode item : node) {
+                removed = removeTargetingByFieldAndId(item, fieldName, targetId) || removed;
+            }
+        }
+        return removed;
     }
 
     private boolean removeInterestById(JsonNode node, String interestId) {

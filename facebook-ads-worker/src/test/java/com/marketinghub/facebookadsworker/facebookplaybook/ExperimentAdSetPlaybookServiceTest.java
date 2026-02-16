@@ -106,6 +106,58 @@ class ExperimentAdSetPlaybookServiceTest {
         assertNotNull(requestPayload);
         assertEquals(45, requestPayload.path("targeting_spec").path("age_max").asInt());
     }
+
+
+    @Test
+    void processQueueTreatsEmptyValidationDataAsValid() throws Exception {
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("adAccountId", "939323521124952");
+        payload.set("targetingSpec", objectMapper.readTree("{\"age_min\":22}"));
+
+        PlaybookJob job = new PlaybookJob(
+                120L,
+                PlaybookJobType.FACEBOOK_VALIDATE_SPEC,
+                1L,
+                42L,
+                payload,
+                Instant.now());
+
+        when(client.claimJobs("worker-test", 5)).thenReturn(List.of(job));
+        when(facebookAdsService.validateTargetingSpec(any(FacebookAdsService.TargetingValidationRequest.class)))
+                .thenReturn(objectMapper.readTree("{\"data\":[]}"));
+
+        ArgumentCaptor<JsonNode> resultCaptor = ArgumentCaptor.forClass(JsonNode.class);
+        service.processQueue();
+
+        verify(client).completeJob(eq(120L), resultCaptor.capture(), any());
+        assertEquals("VALID", resultCaptor.getValue().path("status").asText());
+    }
+
+    @Test
+    void processQueueUsesTopLevelValidationFlagWhenGraphReturnsIsValid() throws Exception {
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("adAccountId", "939323521124952");
+        payload.set("targetingSpec", objectMapper.readTree("{\"age_min\":22}"));
+
+        PlaybookJob job = new PlaybookJob(
+                121L,
+                PlaybookJobType.FACEBOOK_VALIDATE_SPEC,
+                1L,
+                42L,
+                payload,
+                Instant.now());
+
+        when(client.claimJobs("worker-test", 5)).thenReturn(List.of(job));
+        when(facebookAdsService.validateTargetingSpec(any(FacebookAdsService.TargetingValidationRequest.class)))
+                .thenReturn(objectMapper.readTree("{\"is_valid\":false,\"data\":[]}"));
+
+        ArgumentCaptor<JsonNode> resultCaptor = ArgumentCaptor.forClass(JsonNode.class);
+        service.processQueue();
+
+        verify(client).completeJob(eq(121L), resultCaptor.capture(), any());
+        assertEquals("INVALID", resultCaptor.getValue().path("status").asText());
+    }
+
     @Test
     void processQueueUsesTargetingSearchByTypeForDiscoveryStep() {
         ObjectNode payload = objectMapper.createObjectNode();

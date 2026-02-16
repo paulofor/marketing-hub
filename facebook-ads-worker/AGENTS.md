@@ -14,6 +14,7 @@
 - No discovery de público do playbook (`FACEBOOK_SEED_LOOKUP`), execute chamadas separadas em `/act_<AD_ACCOUNT_ID>/targetingsearch` para `adinterest`, `adbehavior` e `adworkposition`; não use payload misto sem `type` nem fallback por `/search` para essa etapa.
 - Remova campos de segmentação não suportados pela Graph API antes do envio (por exemplo, `detailed_targeting_description`) para evitar erros `(#100) Invalid parameter`.
 - Em chamadas de `/targetingvalidation` e `/reachestimate`, se a Graph API indicar `interest/interesse ... id <número> inválido`, remova esse ID do `targeting_spec` (inclusive em `flexible_spec`) e tente novamente para evitar bloqueio por interesses descontinuados.
+- Na etapa `FACEBOOK_VALIDATE_SPEC`, trate respostas do `/targetingvalidation` com `data=[]` como `VALID` quando não houver `is_valid` explícito, preservando compatibilidade com variações da Graph API.
 - Em `geo_locations` descarte chaves que não sejam texto e remova `regions` cujos `key` não sejam numéricos para manter a compatibilidade com a Graph API.
 - Quando o destino do experimento for um formulário de leads, ajuste o conjunto de anúncios para `destination_type = ON_AD`, force `optimization_goal = LEAD_GENERATION` e não envie `link` externo no criativo; utilize apenas `call_to_action.value.lead_gen_form_id`.
 - Quando não houver `instagramAccount` no experimento, utilize o `defaultInstagramActorId` configurado ou o identificador vindo do criativo, seguindo sem `instagram_user_id` se nenhum valor estiver disponível.

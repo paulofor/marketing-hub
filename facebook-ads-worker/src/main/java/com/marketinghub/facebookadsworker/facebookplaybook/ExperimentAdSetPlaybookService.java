@@ -297,14 +297,38 @@ public class ExperimentAdSetPlaybookService {
                 buildTargetingValidationPayload(targeting),
                 () -> facebookAdsService.validateTargetingSpec(request),
                 Function.identity());
-        boolean isValid = apiResponse != null
-                && apiResponse.path("data").isArray()
-                && apiResponse.path("data").size() > 0
-                && apiResponse.path("data").get(0).path("is_valid").asBoolean(true);
+        boolean isValid = isTargetingValidationValid(apiResponse);
         ObjectNode result = objectMapper.createObjectNode();
         result.put("status", isValid ? "VALID" : "INVALID");
         result.set("details", apiResponse);
         return result;
+    }
+
+    private boolean isTargetingValidationValid(JsonNode apiResponse) {
+        if (apiResponse == null || apiResponse.isNull()) {
+            return false;
+        }
+        JsonNode topLevelFlag = apiResponse.get("is_valid");
+        if (topLevelFlag != null && topLevelFlag.isBoolean()) {
+            return topLevelFlag.asBoolean();
+        }
+        JsonNode dataNode = apiResponse.path("data");
+        if (!dataNode.isArray()) {
+            return false;
+        }
+        if (dataNode.isEmpty()) {
+            return true;
+        }
+        JsonNode firstItem = dataNode.get(0);
+        JsonNode itemFlag = firstItem != null ? firstItem.get("is_valid") : null;
+        if (itemFlag != null && itemFlag.isBoolean()) {
+            return itemFlag.asBoolean();
+        }
+        JsonNode fallbackFlag = firstItem != null ? firstItem.get("valid") : null;
+        if (fallbackFlag != null && fallbackFlag.isBoolean()) {
+            return fallbackFlag.asBoolean();
+        }
+        return false;
     }
 
     private JsonNode handleReachEstimate(JsonNode payload, List<ApiCallLog> apiLogs) {

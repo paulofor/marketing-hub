@@ -41,6 +41,7 @@ import InstantFormDetailPage from "./pages/experiment/InstantFormDetailPage";
 import ExperimentEmailDetailPage from "./pages/experiment/ExperimentEmailDetailPage";
 import ExperimentAdSetWorkflowPage from "./pages/experiment/ExperimentAdSetWorkflowPage";
 import ExperimentAdSetJobDetailPage from "./pages/experiment/ExperimentAdSetJobDetailPage";
+import ExperimentFacebookApiLogsPage from "./pages/experiment/ExperimentFacebookApiLogsPage";
 import NicheDetailPage from "./pages/niche/NicheDetailPage";
 import HypothesisDetailPage from "./pages/hypothesis/HypothesisDetailPage";
 import HypothesesPage from "./pages/hypothesis/HypothesesPage";
@@ -173,6 +174,7 @@ export default function App() {
                 <Route path="instant-forms/:instantFormId" element={<InstantFormDetailPage />} />
                 <Route path="emails/:emailStepId" element={<ExperimentEmailDetailPage />} />
                 <Route path="adset-workflow" element={<ExperimentAdSetWorkflowPage />} />
+                <Route path="facebook-api-logs" element={<ExperimentFacebookApiLogsPage />} />
                 <Route path="adset-workflow/jobs/:jobId" element={<ExperimentAdSetJobDetailPage />} />
               </Route>
               <Route path="/hypotheses" element={<HypothesisListPage />} />

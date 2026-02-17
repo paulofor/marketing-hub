@@ -455,6 +455,9 @@ export default function ExperimentDetailPage() {
           <Link to="adset-workflow" className="btn btn-outline-primary me-2">
             Playbook de Ad Sets
           </Link>
+          <Link to="facebook-api-logs" className="btn btn-outline-info me-2">
+            Chamadas Meta
+          </Link>
           <span className="badge bg-secondary">{data.status}</span>
         </div>
       </div>

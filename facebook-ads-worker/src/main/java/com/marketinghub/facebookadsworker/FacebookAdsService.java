@@ -1557,9 +1557,16 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         String responseBody = ex.getResponseBodyAsString();
         String invalidField = extractInvalidTargetingField(responseBody);
         String invalidInterestId = extractInvalidInterestId(responseBody);
+        String invalidWorkPositionId = extractInvalidWorkPositionId(responseBody);
+
+        if (hasText(invalidWorkPositionId)
+            && removeTargetingByFieldAndId(targetingSpecNode, "work_positions", invalidWorkPositionId.trim())) {
+            pruneEmptyTargetingNodes(targetingSpecNode);
+            return true;
+        }
 
         if ("work_positions".equals(invalidField) && !hasText(invalidInterestId)) {
-            invalidInterestId = extractInvalidWorkPositionId(responseBody);
+            invalidInterestId = invalidWorkPositionId;
         }
 
         if (!hasText(invalidInterestId)) {
@@ -1567,10 +1574,18 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         }
 
         if ("work_positions".equals(invalidField)) {
-            return removeTargetingByFieldAndId(targetingSpecNode, "work_positions", invalidInterestId.trim());
+            boolean removed = removeTargetingByFieldAndId(targetingSpecNode, "work_positions", invalidInterestId.trim());
+            if (removed) {
+                pruneEmptyTargetingNodes(targetingSpecNode);
+            }
+            return removed;
         }
 
-        return removeInterestById(targetingSpecNode, invalidInterestId.trim());
+        boolean removed = removeInterestById(targetingSpecNode, invalidInterestId.trim());
+        if (removed) {
+            pruneEmptyTargetingNodes(targetingSpecNode);
+        }
+        return removed;
     }
 
     private String extractInvalidTargetingField(String responseBody) {
@@ -1682,6 +1697,51 @@ private FacebookInterest searchInterest(String interestName, String locale) {
             }
         }
         return removed;
+    }
+
+    private void pruneEmptyTargetingNodes(JsonNode node) {
+        if (node == null || node.isNull()) {
+            return;
+        }
+        if (node.isObject()) {
+            ObjectNode objectNode = (ObjectNode) node;
+            List<String> fieldsToRemove = new ArrayList<>();
+            Iterator<Map.Entry<String, JsonNode>> fields = objectNode.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> entry = fields.next();
+                JsonNode value = entry.getValue();
+                pruneEmptyTargetingNodes(value);
+                if (isRemovableEmptyTargetingNode(value)) {
+                    fieldsToRemove.add(entry.getKey());
+                }
+            }
+            fieldsToRemove.forEach(objectNode::remove);
+            return;
+        }
+
+        if (node.isArray()) {
+            ArrayNode arrayNode = (ArrayNode) node;
+            for (int index = arrayNode.size() - 1; index >= 0; index--) {
+                JsonNode item = arrayNode.get(index);
+                pruneEmptyTargetingNodes(item);
+                if (isRemovableEmptyTargetingNode(item)) {
+                    arrayNode.remove(index);
+                }
+            }
+        }
+    }
+
+    private boolean isRemovableEmptyTargetingNode(JsonNode node) {
+        if (node == null || node.isNull()) {
+            return true;
+        }
+        if (node.isArray()) {
+            return node.isEmpty();
+        }
+        if (!node.isObject()) {
+            return false;
+        }
+        return node.isEmpty();
     }
 
     private record TargetingSearchCacheKey(

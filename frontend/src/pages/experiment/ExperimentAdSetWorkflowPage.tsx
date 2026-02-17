@@ -37,7 +37,8 @@ const JOB_TYPE_INFO: Record<
   },
   FACEBOOK_SEED_LOOKUP: {
     title: "Discovery (Meta)",
-    description: "Meta roda /targetingsearch e /search (limit 200) para gerar catálogo de IDs",
+    description:
+      "Meta roda /targetingsearch e /search (limit 200) para gerar catálogo de IDs",
     docStep: "Docs pipeline-3 · Etapa 3",
   },
   FACEBOOK_SOCIAL_POSITIONS: {
@@ -130,7 +131,12 @@ type DiscoveryTopItem = {
 type DiscoverySummary = {
   seeds: string[];
   locales: string[];
-  stats?: { rawCalls?: number; rawItems?: number; dedupItems?: number; byType?: Record<string, number> };
+  stats?: {
+    rawCalls?: number;
+    rawItems?: number;
+    dedupItems?: number;
+    byType?: Record<string, number>;
+  };
   topItems: DiscoveryTopItem[];
   jobId?: number;
 };
@@ -322,6 +328,12 @@ function SeedCard({ workflow }: { workflow: ExperimentAdSetWorkflowDto }) {
 }
 
 function SpecsCard({ specs }: { specs: ExperimentAdSetSpec[] }) {
+  const sortedSpecs = specs
+    .slice()
+    .sort((a, b) =>
+      slotLabel(a.slot).localeCompare(slotLabel(b.slot), "pt-BR"),
+    );
+
   return (
     <div className="card border-0 shadow-sm h-100">
       <div className="card-body">
@@ -337,50 +349,67 @@ function SpecsCard({ specs }: { specs: ExperimentAdSetSpec[] }) {
             Nenhum público gerado até o momento.
           </p>
         ) : (
-          <div className="table-responsive">
-            <table className="table table-sm align-middle mb-0">
-              <thead>
-                <tr>
-                  <th>Slot</th>
-                  <th>Faixa etária</th>
-                  <th>Validação</th>
-                  <th>Reach</th>
-                </tr>
-              </thead>
-              <tbody>
-                {specs.map((spec) => (
-                  <tr key={spec.id}>
-                    <td>{slotLabel(spec.slot)}</td>
-                    <td>
-                      {spec.ageMin ?? "—"} - {spec.ageMax ?? "—"}
-                    </td>
-                    <td>
-                      <span
-                        className={`badge text-bg-${statusToVariant(
-                          spec.validationStatus,
-                        )}`}
-                      >
-                        {spec.validationStatus ?? "—"}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="d-flex flex-column gap-1">
+          <div className="d-flex flex-column gap-3">
+            <div className="table-responsive">
+              <table className="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Slot</th>
+                    <th>Faixa etária</th>
+                    <th>Validação</th>
+                    <th>Reach</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedSpecs.map((spec) => (
+                    <tr key={spec.id}>
+                      <td>{slotLabel(spec.slot)}</td>
+                      <td>
+                        {spec.ageMin ?? "—"} - {spec.ageMax ?? "—"}
+                      </td>
+                      <td>
                         <span
                           className={`badge text-bg-${statusToVariant(
-                            spec.reachStatus,
-                          )} align-self-start`}
+                            spec.validationStatus,
+                          )}`}
                         >
-                          {spec.reachStatus ?? "—"}
+                          {spec.validationStatus ?? "—"}
                         </span>
-                        <span className="small text-muted">
-                          {formatNumber(spec.reachLowerBound)} – {formatNumber(spec.reachUpperBound)}
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
+                      <td>
+                        <div className="d-flex flex-column gap-1">
+                          <span
+                            className={`badge text-bg-${statusToVariant(
+                              spec.reachStatus,
+                            )} align-self-start`}
+                          >
+                            {spec.reachStatus ?? "—"}
+                          </span>
+                          <span className="small text-muted">
+                            {formatNumber(spec.reachLowerBound)} –{" "}
+                            {formatNumber(spec.reachUpperBound)}
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="border-top pt-3">
+              <div className="small text-muted mb-2">
+                Abra os cartões abaixo para ver a especificação completa de cada
+                público sem sair desta tela.
+              </div>
+              <div className="row g-3">
+                {sortedSpecs.map((spec) => (
+                  <div key={`spec-card-${spec.id}`} className="col-12 col-xl-4">
+                    <SpecCardItem spec={spec} />
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -489,7 +518,9 @@ function PipelineStepCard({ step }: { step: PipelineStepSummary }) {
         <StatusBadge status={step.status} />
       </div>
       <div className="mt-3 flex-grow-1 small">
-        {step.detail ?? <span className="text-muted">Sem dados desta etapa.</span>}
+        {step.detail ?? (
+          <span className="text-muted">Sem dados desta etapa.</span>
+        )}
       </div>
       {step.jobLinks?.length ? (
         <div className="mt-3 d-flex flex-wrap gap-2">
@@ -868,7 +899,9 @@ function buildTargetingSearchStep(
         </div>
         {positionQueries.length ? (
           <div>
-            <SectionLabel>Queries e IDs de cargos (adworkposition)</SectionLabel>
+            <SectionLabel>
+              Queries e IDs de cargos (adworkposition)
+            </SectionLabel>
             <BadgeList items={positionQueries} />
             <ResolvedTermList
               items={resolvedTerms.workPositions}
@@ -1106,7 +1139,7 @@ function buildValidationStep(
         </span>
       ),
       helper: docReference("Etapa 9"),
-    jobLinks: validationLinks,
+      jobLinks: validationLinks,
     };
   }
   const invalidSpec = specs.find(
@@ -1143,7 +1176,7 @@ function buildValidationStep(
         </div>
       ),
       helper: docReference("Etapa 9"),
-    jobLinks: validationLinks,
+      jobLinks: validationLinks,
     };
   }
   if (pendingSpec) {
@@ -1161,7 +1194,7 @@ function buildValidationStep(
         </div>
       ),
       helper: docReference("Etapa 9"),
-    jobLinks: validationLinks,
+      jobLinks: validationLinks,
     };
   }
   return {
@@ -1286,7 +1319,10 @@ function buildRecalibrationStep(
   const description =
     "IA ajusta o flexible_spec quando o reach sai da faixa ideal.";
   const recalibrationLinks = jobs
-    .filter((job): job is ExperimentAdSetJob & { id: number } => typeof job.id === "number")
+    .filter(
+      (job): job is ExperimentAdSetJob & { id: number } =>
+        typeof job.id === "number",
+    )
     .map((job) => ({ jobId: job.id, label: `Recalibração #${job.id}` }))
     .slice(0, 3);
   if (!jobs.length) {
@@ -1481,11 +1517,13 @@ function ResolvedTermList({
     <ul className="list-unstyled mb-0 mt-1">
       {items.map((item) => (
         <li key={`${item.term}-${item.ids.join("-")}`} className="mb-1">
-          <span className="fw-semibold">{item.term}</span>: {" "}
+          <span className="fw-semibold">{item.term}</span>:{" "}
           {showIds ? (
             <code>{item.ids.join(", ")}</code>
           ) : (
-            <span className="text-muted">{item.ids.length} IDs encontrados</span>
+            <span className="text-muted">
+              {item.ids.length} IDs encontrados
+            </span>
           )}
         </li>
       ))}
@@ -1519,7 +1557,8 @@ function DiscoverySummaryCard({ summary }: { summary?: DiscoverySummary }) {
       </div>
       {summary.stats ? (
         <div className="text-muted small">
-          {summary.stats.rawCalls ?? 0} chamadas · {summary.stats.rawItems ?? 0} itens brutos · {summary.stats.dedupItems ?? 0} IDs únicos.
+          {summary.stats.rawCalls ?? 0} chamadas · {summary.stats.rawItems ?? 0}{" "}
+          itens brutos · {summary.stats.dedupItems ?? 0} IDs únicos.
         </div>
       ) : null}
       {summary.topItems.length ? (
@@ -1528,12 +1567,17 @@ function DiscoverySummaryCard({ summary }: { summary?: DiscoverySummary }) {
           <ul className="list-unstyled mb-0 small">
             {summary.topItems.map((item, index) => (
               <li key={`${item.id ?? item.name ?? index}`} className="mb-2">
-                <div className="fw-semibold">{item.name ?? item.id ?? "ID desconhecido"}</div>
+                <div className="fw-semibold">
+                  {item.name ?? item.id ?? "ID desconhecido"}
+                </div>
                 <div className="text-muted">
-                  {item.type ?? "—"} · {formatAudienceRange(item.audienceLower, item.audienceUpper)}
+                  {item.type ?? "—"} ·{" "}
+                  {formatAudienceRange(item.audienceLower, item.audienceUpper)}
                 </div>
                 {item.sources?.length ? (
-                  <div className="text-muted">Fontes: {item.sources.join(", ")}</div>
+                  <div className="text-muted">
+                    Fontes: {item.sources.join(", ")}
+                  </div>
                 ) : null}
               </li>
             ))}
@@ -1544,9 +1588,15 @@ function DiscoverySummaryCard({ summary }: { summary?: DiscoverySummary }) {
   );
 }
 
-function latestJobLink(jobs: ExperimentAdSetJob[], label: string): PipelineJobLink[] | undefined {
+function latestJobLink(
+  jobs: ExperimentAdSetJob[],
+  label: string,
+): PipelineJobLink[] | undefined {
   const sorted = jobs
-    .filter((job): job is ExperimentAdSetJob & { id: number } => typeof job.id === "number")
+    .filter(
+      (job): job is ExperimentAdSetJob & { id: number } =>
+        typeof job.id === "number",
+    )
     .sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
   const job = sorted[0];
   return job?.id ? [{ jobId: job.id, label }] : undefined;
@@ -1566,8 +1616,8 @@ function buildDiscoveryResultJson(
     (detail): detail is ExperimentAdSetJobDetailDto =>
       Boolean(
         detail &&
-          (detail.job?.type === "FACEBOOK_SEED_LOOKUP" ||
-            detail.job?.type === "FACEBOOK_SOCIAL_POSITIONS"),
+        (detail.job?.type === "FACEBOOK_SEED_LOOKUP" ||
+          detail.job?.type === "FACEBOOK_SOCIAL_POSITIONS"),
       ),
   );
   if (!discoveryJobs.length) {
@@ -1609,7 +1659,10 @@ function buildDiscoveryResultJson(
 function parseResolvedTermsFromJobDetails(
   details: Array<ExperimentAdSetJobDetailDto | undefined>,
 ): TargetingSearchResolvedTerms {
-  const map: Record<"adinterest" | "adworkposition" | "adbehavior", Map<string, Set<string>>> = {
+  const map: Record<
+    "adinterest" | "adworkposition" | "adbehavior",
+    Map<string, Set<string>>
+  > = {
     adinterest: new Map(),
     adworkposition: new Map(),
     adbehavior: new Map(),
@@ -1617,17 +1670,22 @@ function parseResolvedTermsFromJobDetails(
 
   details.forEach((detail) => {
     detail?.apiLogs?.forEach((log) => {
-      const request = safeJsonParse<Record<string, unknown>>(log.requestPayload);
+      const request = safeJsonParse<Record<string, unknown>>(
+        log.requestPayload,
+      );
       const response = safeJsonParse<unknown>(log.responsePayload);
       const rawType = String(request?.type ?? "").toLowerCase();
-      const normalizedType: "adinterest" | "adworkposition" | "adbehavior" | null =
-        rawType.includes("work")
-          ? "adworkposition"
-          : rawType.includes("behavior")
-            ? "adbehavior"
-            : rawType.includes("interest")
-              ? "adinterest"
-              : null;
+      const normalizedType:
+        | "adinterest"
+        | "adworkposition"
+        | "adbehavior"
+        | null = rawType.includes("work")
+        ? "adworkposition"
+        : rawType.includes("behavior")
+          ? "adbehavior"
+          : rawType.includes("interest")
+            ? "adinterest"
+            : null;
       if (!normalizedType) return;
       const queryValue = String(request?.query ?? request?.q ?? "").trim();
       if (!queryValue) return;
@@ -1646,7 +1704,9 @@ function parseResolvedTermsFromJobDetails(
     });
   });
 
-  const toList = (entries: Map<string, Set<string>>): TargetingResolutionByTerm[] =>
+  const toList = (
+    entries: Map<string, Set<string>>,
+  ): TargetingResolutionByTerm[] =>
     Array.from(entries.entries()).map(([term, ids]) => ({
       term,
       ids: Array.from(ids),
@@ -1666,7 +1726,8 @@ function extractCandidates(response: unknown): Array<{ id?: unknown }> {
   if (!response || typeof response !== "object") return [];
   const record = response as Record<string, unknown>;
   if (Array.isArray(record.data)) return record.data as Array<{ id?: unknown }>;
-  if (Array.isArray(record.items)) return record.items as Array<{ id?: unknown }>;
+  if (Array.isArray(record.items))
+    return record.items as Array<{ id?: unknown }>;
   return [];
 }
 
@@ -1724,7 +1785,9 @@ function parseDiscoverySummaryFromJobDetail(
     seeds,
     locales,
     stats:
-      stats.rawCalls != null || stats.rawItems != null || stats.dedupItems != null
+      stats.rawCalls != null ||
+      stats.rawItems != null ||
+      stats.dedupItems != null
         ? stats
         : undefined,
     topItems,

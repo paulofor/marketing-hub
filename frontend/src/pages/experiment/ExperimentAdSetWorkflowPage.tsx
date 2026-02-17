@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQueries } from "@tanstack/react-query";
 import axios from "axios";
@@ -322,6 +322,15 @@ function SeedCard({ workflow }: { workflow: ExperimentAdSetWorkflowDto }) {
 }
 
 function SpecsCard({ specs }: { specs: ExperimentAdSetSpec[] }) {
+  const [expandedSpecId, setExpandedSpecId] = useState<number | null>(
+    specs[0]?.id ?? null,
+  );
+
+  const toggleSpecDetails = (specId?: number | null) => {
+    if (!specId) return;
+    setExpandedSpecId((current) => (current === specId ? null : specId));
+  };
+
   return (
     <div className="card border-0 shadow-sm h-100">
       <div className="card-body">
@@ -345,6 +354,7 @@ function SpecsCard({ specs }: { specs: ExperimentAdSetSpec[] }) {
                   <th>Faixa etária</th>
                   <th>Validação</th>
                   <th>Reach</th>
+                  <th className="text-end">Especificação</th>
                 </tr>
               </thead>
               <tbody>
@@ -377,12 +387,45 @@ function SpecsCard({ specs }: { specs: ExperimentAdSetSpec[] }) {
                         </span>
                       </div>
                     </td>
+                    <td className="text-end">
+                      {spec.id ? (
+                        <button
+                          type="button"
+                          className="btn btn-outline-secondary btn-sm"
+                          onClick={() => toggleSpecDetails(spec.id)}
+                        >
+                          {expandedSpecId === spec.id
+                            ? "Ocultar detalhes"
+                            : "Ver detalhes"}
+                        </button>
+                      ) : (
+                        <span className="small text-muted">—</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
+
+        {specs.length ? (
+          <div className="row g-3 mt-2">
+            {specs
+              .filter((spec) => spec.id === expandedSpecId)
+              .map((spec) => (
+                <div key={`detail-${spec.id}`} className="col-12">
+                  <SpecCardItem spec={spec} />
+                </div>
+              ))}
+            {!specs.some((spec) => spec.id === expandedSpecId) ? (
+              <div className="col-12 small text-muted">
+                Clique em <strong>Ver detalhes</strong> para visualizar o JSON
+                do targeting, validação e reach de cada público.
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </div>
   );

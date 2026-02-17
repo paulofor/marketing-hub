@@ -1555,9 +1555,10 @@ private FacebookInterest searchInterest(String interestName, String locale) {
 
     private boolean tryRemoveInvalidInterestFromSpec(ObjectNode targetingSpecNode, WebClientResponseException ex) {
         String responseBody = ex.getResponseBodyAsString();
-        String invalidField = extractInvalidTargetingField(responseBody);
-        String invalidInterestId = extractInvalidInterestId(responseBody);
-        String invalidWorkPositionId = extractInvalidWorkPositionId(responseBody);
+        String normalizedBody = normalizeErrorResponseText(responseBody);
+        String invalidField = extractInvalidTargetingField(normalizedBody);
+        String invalidInterestId = extractInvalidInterestId(normalizedBody);
+        String invalidWorkPositionId = extractInvalidWorkPositionId(normalizedBody);
 
         if (hasText(invalidWorkPositionId)
             && removeTargetingByFieldAndId(targetingSpecNode, "work_positions", invalidWorkPositionId.trim())) {
@@ -1632,6 +1633,48 @@ private FacebookInterest searchInterest(String interestName, String locale) {
             }
         }
         return null;
+    }
+
+    private String normalizeErrorResponseText(String responseBody) {
+        if (!hasText(responseBody)) {
+            return "";
+        }
+        List<String> snippets = new ArrayList<>();
+        try {
+            JsonNode root = objectMapper.readTree(responseBody);
+            JsonNode errorNode = root.path("error");
+            if (!errorNode.isMissingNode() && !errorNode.isNull()) {
+                appendErrorText(snippets, errorNode.path("message"));
+                appendErrorText(snippets, errorNode.path("error_user_title"));
+                appendErrorText(snippets, errorNode.path("error_user_msg"));
+                JsonNode errorData = errorNode.path("error_data");
+                if (errorData.isTextual()) {
+                    snippets.add(errorData.asText());
+                } else if (!errorData.isMissingNode() && !errorData.isNull()) {
+                    snippets.add(errorData.toString());
+                }
+            } else if (root.isTextual()) {
+                snippets.add(root.asText());
+            }
+        } catch (JsonProcessingException e) {
+            return responseBody;
+        }
+        if (snippets.isEmpty()) {
+            return responseBody;
+        }
+        return snippets.stream()
+                .filter(s -> hasText(s))
+                .map(String::trim)
+                .collect(Collectors.joining(" "));
+    }
+
+    private void appendErrorText(List<String> snippets, JsonNode node) {
+        if (node != null && node.isTextual()) {
+            String textValue = node.asText();
+            if (hasText(textValue)) {
+                snippets.add(textValue);
+            }
+        }
     }
 
     private boolean removeTargetingByFieldAndId(JsonNode node, String fieldName, String targetId) {

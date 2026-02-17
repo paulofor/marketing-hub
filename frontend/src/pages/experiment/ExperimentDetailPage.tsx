@@ -32,7 +32,11 @@ export default function ExperimentDetailPage() {
   const expId = id as string;
   const navigate = useNavigate();
   const { data, isLoading } = useExperiment(expId);
-  const { data: diagnostics, isLoading: isLoadingDiagnostics } = useExperimentDiagnostics(expId);
+  const {
+    data: diagnostics,
+    isLoading: isLoadingDiagnostics,
+    dataUpdatedAt: diagnosticsUpdatedAt,
+  } = useExperimentDiagnostics(expId);
   const { data: niche } = useNiche(data?.nicheId ?? 0);
   const { data: hyp } = useHypothesis(
     data ? String(data.nicheId) : undefined,
@@ -47,7 +51,9 @@ export default function ExperimentDetailPage() {
     useFacebookConfigurationStatus();
   const { data: journeyAssignments, isLoading: isLoadingJourneyAssignments } =
     useExperimentJourneyAssignments(expId);
-  const { data: template } = useJourneyTemplate(data?.journeyTemplateId ?? undefined);
+  const { data: template } = useJourneyTemplate(
+    data?.journeyTemplateId ?? undefined,
+  );
   const rebuildJourney = useRebuildExperimentJourney(expId);
   const updateExperimentStatus = useUpdateExperimentStatus(expId);
   const isUpdatingStatus = updateExperimentStatus.isPending;
@@ -66,7 +72,8 @@ export default function ExperimentDetailPage() {
         (element) =>
           element.type === type &&
           element.status === "APPROVED" &&
-          (!element.hypothesisId || element.hypothesisId === hypothesisIdAsString),
+          (!element.hypothesisId ||
+            element.hypothesisId === hypothesisIdAsString),
       ),
     );
   }, [targetingElements, hypothesisIdAsString]);
@@ -87,7 +94,9 @@ export default function ExperimentDetailPage() {
   const hasInstantFormSteps = templateSteps.some(
     (step) => step.stimulusType === "INSTANT_FORM",
   );
-  const hasEmailSteps = templateSteps.some((step) => step.stimulusType === "EMAIL");
+  const hasEmailSteps = templateSteps.some(
+    (step) => step.stimulusType === "EMAIL",
+  );
 
   useEffect(() => {
     if (tab === "instant-form" && !hasInstantFormSteps) {
@@ -107,7 +116,9 @@ export default function ExperimentDetailPage() {
     );
     const pairs = assignments.map((assignment) => ({
       assignment,
-      step: assignment.nextStepId ? stepIndex.get(assignment.nextStepId) : undefined,
+      step: assignment.nextStepId
+        ? stepIndex.get(assignment.nextStepId)
+        : undefined,
     }));
     pairs.sort((a, b) => {
       const posA = a.step?.position ?? Number.MAX_SAFE_INTEGER;
@@ -140,6 +151,10 @@ export default function ExperimentDetailPage() {
       timeStyle: "short",
     });
   };
+  const diagnosticsTimestamp =
+    diagnosticsUpdatedAt > 0
+      ? formatDateTimeValue(new Date(diagnosticsUpdatedAt).toISOString())
+      : null;
   const baseKpi = data.kpiTarget ?? data.kpiTargetCpl;
   const stopLossFactor = preset?.stopLossFactor;
   const stopLossCpl =
@@ -181,8 +196,12 @@ export default function ExperimentDetailPage() {
             hint: experimentInstantForm
               ? `O formulário ${experimentInstantForm.name}${experimentInstantForm.facebookFormId ? ` (${experimentInstantForm.facebookFormId})` : ""} será usado na captura.`
               : "Associe um instant form compatível na aba Instant Forms para destravar a etapa de captura.",
-            action: experimentInstantForm ? undefined : () => setTab("instant-form"),
-            actionLabel: experimentInstantForm ? undefined : "Ir para Instant Forms",
+            action: experimentInstantForm
+              ? undefined
+              : () => setTab("instant-form"),
+            actionLabel: experimentInstantForm
+              ? undefined
+              : "Ir para Instant Forms",
           },
         ]
       : []),
@@ -193,7 +212,9 @@ export default function ExperimentDetailPage() {
       hint: hasInstagramAccount
         ? `Este experimento usa a conta ${instagramAccount?.handle}.`
         : "Associe uma conta do Instagram ao experimento para liberar as campanhas.",
-      action: hasInstagramAccount ? undefined : () => navigate(`/experiments/${expId}/edit`),
+      action: hasInstagramAccount
+        ? undefined
+        : () => navigate(`/experiments/${expId}/edit`),
       actionLabel: hasInstagramAccount ? undefined : "Editar experimento",
     },
     {
@@ -242,7 +263,8 @@ export default function ExperimentDetailPage() {
         data.status === "PLANNED"
           ? undefined
           : () => updateExperimentStatus.mutate("PLANNED"),
-      actionLabel: data.status === "PLANNED" ? undefined : "Marcar como Planejado",
+      actionLabel:
+        data.status === "PLANNED" ? undefined : "Marcar como Planejado",
       actionDisabled: isUpdatingStatus,
       actionLoading: isUpdatingStatus,
     },
@@ -253,9 +275,7 @@ export default function ExperimentDetailPage() {
       hint: data.creativeApproved
         ? "Os criativos já estão aprovados."
         : "Revise e aprove pelo menos um criativo na aba Criativos.",
-      action: data.creativeApproved
-        ? undefined
-        : () => setTab("creatives"),
+      action: data.creativeApproved ? undefined : () => setTab("creatives"),
       actionLabel: "Ir para Criativos",
     },
   ];
@@ -341,7 +361,10 @@ export default function ExperimentDetailPage() {
     },
     { label: "Criativos a gerar", value: data.creativesToGenerate ?? "—" },
     { label: "E-mails a gerar", value: data.emailsToGenerate ?? "—" },
-    { label: "E-mails de amostra a gerar", value: data.sampleEmailsToGenerate ?? "—" },
+    {
+      label: "E-mails de amostra a gerar",
+      value: data.sampleEmailsToGenerate ?? "—",
+    },
     {
       label: "E-mail de amostra selecionado",
       value: selectedEmailOverview,
@@ -352,7 +375,9 @@ export default function ExperimentDetailPage() {
         <div className="d-flex flex-column">
           <span>{data.leadPortalFlowName}</span>
           {data.leadPortalFlowSlug ? (
-            <span className="text-muted small">Slug: {data.leadPortalFlowSlug}</span>
+            <span className="text-muted small">
+              Slug: {data.leadPortalFlowSlug}
+            </span>
           ) : null}
         </div>
       ) : (
@@ -414,7 +439,10 @@ export default function ExperimentDetailPage() {
           >
             {rebuildJourney.isPending ? (
               <>
-                <span className="spinner-border spinner-border-sm me-2" role="status" />
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  role="status"
+                />
                 Criando jornada...
               </>
             ) : (
@@ -431,8 +459,15 @@ export default function ExperimentDetailPage() {
         </div>
       </div>
       {isLoadingDiagnostics ? (
-        <div className="alert alert-light d-flex align-items-center gap-2 mt-3" role="status">
-          <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+        <div
+          className="alert alert-light d-flex align-items-center gap-2 mt-3"
+          role="status"
+        >
+          <span
+            className="spinner-border spinner-border-sm"
+            role="status"
+            aria-hidden="true"
+          />
           <span>Carregando diagnóstico da publicação...</span>
         </div>
       ) : diagnostics ? (
@@ -443,10 +478,17 @@ export default function ExperimentDetailPage() {
           <div className="d-flex justify-content-between gap-3">
             <div>
               <h6 className="alert-heading mb-1">{diagnostics.headline}</h6>
+              {diagnosticsTimestamp ? (
+                <p className="mb-2 small text-body-secondary">
+                  <strong>Data e hora da mensagem:</strong>{" "}
+                  {diagnosticsTimestamp}
+                </p>
+              ) : null}
               <p className="mb-2">{diagnostics.description}</p>
               {diagnostics.resolution ? (
                 <p className="mb-2">
-                  <strong>Como resolver:</strong> {diagnostics.resolution}
+                  <strong>O que deve ser corrigido:</strong>{" "}
+                  {diagnostics.resolution}
                 </p>
               ) : null}
             </div>
@@ -457,14 +499,20 @@ export default function ExperimentDetailPage() {
             </span>
           </div>
           {diagnostics.artifacts.length > 0 ? (
-            <ul className="mb-0 mt-2 small ps-3">
-              {diagnostics.artifacts.map((artifact) => (
-                <li key={`${artifact.type}-${artifact.id}`}>
-                  <strong>{artifact.type}</strong> · {artifact.name || artifact.id} — ID interno {artifact.id}, ID Meta:{" "}
-                  {artifact.externalId ?? "—"}
-                </li>
-              ))}
-            </ul>
+            <>
+              <p className="mb-2 mt-2 small">
+                <strong>Itens com pendência para corrigir:</strong>
+              </p>
+              <ul className="mb-0 small ps-3">
+                {diagnostics.artifacts.map((artifact) => (
+                  <li key={`${artifact.type}-${artifact.id}`}>
+                    <strong>{artifact.type}</strong> ·{" "}
+                    {artifact.name || artifact.id} — ID interno {artifact.id},
+                    ID Meta: {artifact.externalId ?? "—"}
+                  </li>
+                ))}
+              </ul>
+            </>
           ) : null}
         </div>
       ) : null}
@@ -511,7 +559,10 @@ export default function ExperimentDetailPage() {
                       disabled={check.actionDisabled}
                     >
                       {check.actionLoading ? (
-                        <span className="spinner-border spinner-border-sm me-2" role="status" />
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          role="status"
+                        />
                       ) : null}
                       {check.actionLabel}
                     </button>
@@ -552,7 +603,9 @@ export default function ExperimentDetailPage() {
                     <div className="d-flex justify-content-between align-items-start">
                       <div>
                         <div className="fw-semibold">
-                          {step?.name ?? step?.phase ?? `Passo ${assignment.nextStepId ?? "—"}`}
+                          {step?.name ??
+                            step?.phase ??
+                            `Passo ${assignment.nextStepId ?? "—"}`}
                         </div>
                         <div className="text-muted small">
                           {step?.phase ?? "—"} · {step?.stimulusType ?? "—"}
@@ -567,8 +620,8 @@ export default function ExperimentDetailPage() {
               </ul>
             ) : (
               <div className="text-muted small mt-3">
-                Nenhuma jornada criada ainda. Clique em "Criar jornada" para gerar os
-                passos do template.
+                Nenhuma jornada criada ainda. Clique em "Criar jornada" para
+                gerar os passos do template.
               </div>
             )}
           </div>
@@ -633,12 +686,14 @@ export default function ExperimentDetailPage() {
                   <div>
                     <h5 className="card-title mb-1">Pixel do Facebook</h5>
                     <p className="text-muted mb-0">
-                      Geramos um pixel por experimento para rastrear conversões do checkout.
+                      Geramos um pixel por experimento para rastrear conversões
+                      do checkout.
                     </p>
                   </div>
                   {data.facebookPixelCreatedAt ? (
                     <span className="text-muted small">
-                      Criado em {formatDateTimeValue(data.facebookPixelCreatedAt)}
+                      Criado em{" "}
+                      {formatDateTimeValue(data.facebookPixelCreatedAt)}
                     </span>
                   ) : null}
                 </div>
@@ -656,14 +711,15 @@ export default function ExperimentDetailPage() {
                       />
                     ) : (
                       <div className="alert alert-info mb-0">
-                        Pixel criado, aguardando retorno do código completo pelo Facebook.
+                        Pixel criado, aguardando retorno do código completo pelo
+                        Facebook.
                       </div>
                     )}
                   </>
                 ) : (
                   <div className="alert alert-warning mb-0">
-                    Pixel ainda não criado. Ele será criado automaticamente quando o experimento estiver pronto e
-                    aprovado.
+                    Pixel ainda não criado. Ele será criado automaticamente
+                    quando o experimento estiver pronto e aprovado.
                   </div>
                 )}
               </div>

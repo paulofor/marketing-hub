@@ -816,6 +816,61 @@ class FacebookAdsServiceTest {
         assertTrue(secondTargetingSpec.contains("103146456392613"));
     }
 
+
+    @Test
+    void estimateReachRetriesWithoutInvalidWorkPositionWhenFieldNameIsMissing() throws Exception {
+        server.enqueueResponse(new MockResponse()
+            .setResponseCode(400)
+            .setBody("""
+                {"error":{"message":"Invalid parameter","type":"OAuthException","code":100,"error_subcode":1487079,
+                "error_user_msg":"A especificação de direcionamento indicada não é válida porque: Os cargos com identificação 6004030160948 são inválidos."}}
+                """)
+            .addHeader("Content-Type", "application/json"));
+        server.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"users\":1234}]}" )
+            .addHeader("Content-Type", "application/json"));
+
+        JsonNode targetingSpec = objectMapper.readTree("""
+            {
+              "geo_locations": {
+                "countries": ["BR"]
+              },
+              "age_min": 18,
+              "flexible_spec": [
+                {
+                  "interests": [
+                    {"id": "104145029623317", "name": "Pedagogia"}
+                  ]
+                },
+                {
+                  "work_positions": [
+                    {"id": "6004030160948", "name": "Invalid Job"}
+                  ]
+                }
+              ]
+            }
+            """);
+
+        JsonNode response = service.estimateReach(
+            new FacebookAdsService.ReachEstimateRequest("act_123", targetingSpec)
+        );
+
+        assertNotNull(response);
+        RecordedRequest firstAttempt = takeRequest("reach estimate first attempt");
+        RecordedRequest secondAttempt = takeRequest("reach estimate second attempt");
+        HttpUrl firstUrl = firstAttempt.getRequestUrl();
+        HttpUrl secondUrl = secondAttempt.getRequestUrl();
+        assertNotNull(firstUrl);
+        assertNotNull(secondUrl);
+        String firstTargetingSpec = firstUrl.queryParameter("targeting_spec");
+        String secondTargetingSpec = secondUrl.queryParameter("targeting_spec");
+        assertNotNull(firstTargetingSpec);
+        assertNotNull(secondTargetingSpec);
+        assertTrue(firstTargetingSpec.contains("6004030160948"));
+        assertFalse(secondTargetingSpec.contains("6004030160948"));
+        assertTrue(secondTargetingSpec.contains("104145029623317"));
+        assertFalse(secondTargetingSpec.contains("\"work_positions\":[]"));
+    }
+
     @Test
     void validateTargetingSpecDoesNotRetryWhenInvalidInterestIdIsMissing() throws Exception {
         server.enqueueResponse(new MockResponse()

@@ -77,3 +77,5 @@
   - encapsular qualquer cliente do Facebook dentro do mesmo pacote.
 
 - Configuração padrão de execução em Docker grava logs em arquivo (`LOGGING_FILE_NAME`) com volume dedicado em `/var/log/facebook-ads-worker`; preserve esse comportamento ao ajustar compose/deploy.
+
+- Os testes de campanha devem considerar a sequência de backend com `/api/experiments/{id}/adset-playbook` antes do fallback em `/api/adsets?experimentId={id}` e possíveis POSTs em `/api/experiments/{id}/facebook-api-logs` entre as etapas de criação.

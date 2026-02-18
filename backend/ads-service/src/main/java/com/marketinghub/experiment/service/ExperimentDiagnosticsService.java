@@ -65,8 +65,8 @@ public class ExperimentDiagnosticsService {
 
         if (statusFailed && hasPendingArtifacts) {
             severity = ExperimentDiagnosticsSeverity.ERROR;
-            headline = "Worker falhou antes de publicar no Meta";
-            description = buildPendingDescription(stuckCampaigns, stuckAdSets, stuckAds);
+            headline = "Experimento falhou com pendências de publicação";
+            description = buildFailedWithPendingDescription(stuckCampaigns, stuckAdSets, stuckAds);
             resolution = buildFailedResolution(campaigns, true);
         } else if (statusFailed) {
             severity = ExperimentDiagnosticsSeverity.WARNING;
@@ -103,6 +103,11 @@ public class ExperimentDiagnosticsService {
         );
     }
 
+    private static String buildFailedWithPendingDescription(long campaigns, long adSets, long ads) {
+        return "%s O fluxo foi interrompido antes de concluir a publicação completa no Meta Ads; confira os detalhes em Chamadas Meta e no Playbook de Ad Sets para localizar o ponto de falha."
+                .formatted(buildPendingDescription(campaigns, adSets, ads));
+    }
+
     private static String buildHealthyDescription(Experiment experiment, List<FacebookAdsCampaign> campaigns) {
         String campaignSummary = campaigns.isEmpty()
                 ? "Nenhuma campanha foi gerada ainda para este experimento."
@@ -125,7 +130,7 @@ public class ExperimentDiagnosticsService {
                 })
                 .orElse("a conta de anúncios configurada");
         if (suggestAccountReview) {
-            return "Revise o acesso e as permissões da conta %s, corrija os bloqueios e depois volte o status do experimento para Planejado para liberar uma nova tentativa.".formatted(accountInfo);
+            return "Revise o acesso e as permissões da conta %s, corrija os bloqueios identificados nos logs e depois volte o status do experimento para Planejado para liberar uma nova tentativa.".formatted(accountInfo);
         }
         return "Volte o status para Planejado quando as pendências estiverem resolvidas para que o worker possa reenfileirar a publicação.";
     }

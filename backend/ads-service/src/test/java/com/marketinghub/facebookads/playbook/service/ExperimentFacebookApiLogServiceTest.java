@@ -11,6 +11,7 @@ import com.marketinghub.facebookads.playbook.ExperimentAdSetWorker;
 import com.marketinghub.facebookads.playbook.ExperimentAdSetWorkflow;
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
 import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetJobApiLogRepository;
+import com.marketinghub.facebookads.playbook.repository.ExperimentFacebookApiLogEntryRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,11 +38,19 @@ class ExperimentFacebookApiLogServiceTest {
     @Mock
     private ExperimentAdSetJobApiLogRepository jobApiLogRepository;
 
+    @Mock
+    private ExperimentFacebookApiLogEntryRepository apiLogEntryRepository;
+
     private ExperimentFacebookApiLogService service;
 
     @BeforeEach
     void setUp() {
-        service = new ExperimentFacebookApiLogService(experimentRepository, jobApiLogRepository, new ObjectMapper());
+        service = new ExperimentFacebookApiLogService(
+                experimentRepository,
+                jobApiLogRepository,
+                apiLogEntryRepository,
+                new ObjectMapper()
+        );
     }
 
     @Test
@@ -85,6 +94,8 @@ class ExperimentFacebookApiLogServiceTest {
                 .build();
         when(jobApiLogRepository.findByJobWorkflowExperimentId(eq(6L), any(Pageable.class)))
                 .thenReturn(List.of(log));
+        when(apiLogEntryRepository.findByExperimentId(eq(6L), any(Pageable.class)))
+                .thenReturn(List.of());
 
         List<ExperimentFacebookApiLogDto> dtos = service.findLogs(6L, 5);
 

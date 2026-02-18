@@ -9,6 +9,8 @@ import com.marketinghub.facebookads.playbook.ExperimentAdSetJobStatus;
 import com.marketinghub.facebookads.playbook.ExperimentAdSetJobType;
 import com.marketinghub.facebookads.playbook.ExperimentAdSetWorker;
 import com.marketinghub.facebookads.playbook.ExperimentAdSetWorkflow;
+import com.marketinghub.facebookads.playbook.ExperimentFacebookApiLogContext;
+import com.marketinghub.facebookads.playbook.ExperimentFacebookApiLogEntry;
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
 import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetJobApiLogRepository;
 import com.marketinghub.facebookads.playbook.repository.ExperimentFacebookApiLogEntryRepository;
@@ -106,5 +108,39 @@ class ExperimentFacebookApiLogServiceTest {
         assertThat(dto.endpoint()).doesNotContain("abc123456789");
         assertThat(dto.requestPayload()).doesNotContain("abc123456789");
         assertThat(dto.durationMs()).isEqualTo(1000L);
+    }
+
+    @Test
+    void shouldReturnCustomLogEntries() {
+        when(experimentRepository.existsById(7L)).thenReturn(true);
+        Experiment experiment = new Experiment();
+        experiment.setId(7L);
+        ExperimentFacebookApiLogEntry entry = new ExperimentFacebookApiLogEntry();
+        entry.setExperiment(experiment);
+        entry.setId(88L);
+        entry.setContext(ExperimentFacebookApiLogContext.CAMPAIGN_AD_SET);
+        entry.setProvider("FACEBOOK");
+        entry.setEndpoint("/v19.0/adsets?access_token=secret987654321");
+        entry.setHttpMethod("GET");
+        entry.setStatusCode(200);
+        entry.setRequestPayload("{\"access_token\":\"secret987654321\"}");
+        entry.setResponsePayload("{\"data\":[]}");
+        entry.setRequestedAt(Instant.parse("2024-01-02T10:00:00Z"));
+        entry.setRespondedAt(Instant.parse("2024-01-02T10:00:02Z"));
+        entry.setCreatedAt(Instant.parse("2024-01-02T10:00:03Z"));
+        when(jobApiLogRepository.findByJobWorkflowExperimentId(eq(7L), any(Pageable.class)))
+                .thenReturn(List.of());
+        when(apiLogEntryRepository.findByExperimentId(eq(7L), any(Pageable.class)))
+                .thenReturn(List.of(entry));
+
+        List<ExperimentFacebookApiLogDto> dtos = service.findLogs(7L, 10);
+
+        assertThat(dtos).hasSize(1);
+        ExperimentFacebookApiLogDto dto = dtos.getFirst();
+        assertThat(dto.context()).isEqualTo(ExperimentFacebookApiLogContext.CAMPAIGN_AD_SET.name());
+        assertThat(dto.endpoint()).doesNotContain("secret987654321");
+        assertThat(dto.requestPayload()).doesNotContain("secret987654321");
+        assertThat(dto.durationMs()).isEqualTo(2000L);
+        assertThat(dto.createdAt()).isEqualTo(Instant.parse("2024-01-02T10:00:03Z"));
     }
 }

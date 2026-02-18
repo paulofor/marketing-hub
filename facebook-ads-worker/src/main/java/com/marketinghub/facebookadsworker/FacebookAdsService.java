@@ -56,6 +56,8 @@ public class FacebookAdsService {
     private static final Pattern INVALID_INTEREST_ID_PATTERN =
         Pattern.compile("(?i)interesse\\s+com\\s+id\\s+(\\d+)|interest\\s+with\\s+id\\s+(\\d+)");
     private static final Pattern INVALID_TARGETING_FIELD_PATTERN = Pattern.compile("(?i)field\\s+([a-z_]+)");
+    private static final Pattern INVALID_TARGETING_FIELD_INDEX_PATTERN =
+        Pattern.compile("(?i)targeting\\[([a-z_]+)]\\[(\\d+)]\\[id]");
     private static final Pattern INVALID_WORK_POSITION_ID_PATTERN =
         Pattern.compile("(?i)cargos?\\s+com\\s+identifica(?:ç|c)(?:ão|ao)\\s+(\\d+)");
     private static final String INTEREST_SEARCH_LOCALE = "pt_BR";
@@ -266,8 +268,29 @@ public class FacebookAdsService {
 
         String path = buildVersionedPath("/act_" + adAccountId + "/adsets");
 
-        JsonNode response = executePost(path, body);
+        JsonNode response = executeAdSetPost(path, body, request.name());
         return response.path("id").asText();
+    }
+
+    private JsonNode executeAdSetPost(String path, Map<String, Object> body, String adSetName) {
+        ObjectNode targetingNode = objectMapper.valueToTree(body.get("targeting"));
+        int attempt = 0;
+        while (true) {
+            body.put("targeting", objectMapper.convertValue(targetingNode, new TypeReference<Map<String, Object>>() {}));
+            try {
+                return executePost(path, body);
+            } catch (WebClientResponseException ex) {
+                attempt++;
+                boolean removed = tryRemoveInvalidInterestFromSpec(targetingNode, ex);
+                if (!removed || attempt >= 10) {
+                    throw ex;
+                }
+                LOGGER.warn(
+                    "Facebook retornou segmentação inválida ao criar ad set '{}'. Tentando novamente sem item inválido.",
+                    adSetName
+                );
+            }
+        }
     }
 
     private Map<String, Object> buildTargeting(AdSetRequest request) {
@@ -1571,7 +1594,19 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         }
 
         if (!hasText(invalidInterestId)) {
-            return false;
+            TargetingFieldIndex invalidFieldIndex = extractInvalidTargetingFieldIndex(normalizedBody);
+            if (invalidFieldIndex == null) {
+                return false;
+            }
+            boolean removedByIndex = removeTargetingByFieldAndIndex(
+                targetingSpecNode,
+                invalidFieldIndex.fieldName(),
+                invalidFieldIndex.index()
+            );
+            if (removedByIndex) {
+                pruneEmptyTargetingNodes(targetingSpecNode);
+            }
+            return removedByIndex;
         }
 
         if ("work_positions".equals(invalidField)) {
@@ -1601,6 +1636,30 @@ private FacebookInterest searchInterest(String interestName, String locale) {
             }
         }
         return null;
+    }
+
+    private TargetingFieldIndex extractInvalidTargetingFieldIndex(String responseBody) {
+        if (!hasText(responseBody)) {
+            return null;
+        }
+        Matcher matcher = INVALID_TARGETING_FIELD_INDEX_PATTERN.matcher(responseBody);
+        if (!matcher.find()) {
+            return null;
+        }
+        String fieldName = matcher.group(1);
+        String indexValue = matcher.group(2);
+        if (!hasText(fieldName) || !hasText(indexValue)) {
+            return null;
+        }
+        try {
+            int index = Integer.parseInt(indexValue.trim());
+            if (index < 0) {
+                return null;
+            }
+            return new TargetingFieldIndex(fieldName.trim(), index);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 
     private String extractInvalidInterestId(String responseBody) {
@@ -1698,6 +1757,33 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         if (node.isArray()) {
             for (JsonNode item : node) {
                 removed = removeTargetingByFieldAndId(item, fieldName, targetId) || removed;
+            }
+        }
+        return removed;
+    }
+
+    private boolean removeTargetingByFieldAndIndex(JsonNode node, String fieldName, int index) {
+        if (node == null || node.isNull() || !hasText(fieldName) || index < 0) {
+            return false;
+        }
+        boolean removed = false;
+        if (node.isObject()) {
+            ObjectNode objectNode = (ObjectNode) node;
+            JsonNode fieldNode = objectNode.get(fieldName);
+            if (fieldNode instanceof ArrayNode fieldArray && index < fieldArray.size()) {
+                fieldArray.remove(index);
+                removed = true;
+            }
+            Iterator<Map.Entry<String, JsonNode>> fields = objectNode.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> entry = fields.next();
+                removed = removeTargetingByFieldAndIndex(entry.getValue(), fieldName, index) || removed;
+            }
+            return removed;
+        }
+        if (node.isArray()) {
+            for (JsonNode item : node) {
+                removed = removeTargetingByFieldAndIndex(item, fieldName, index) || removed;
             }
         }
         return removed;
@@ -2742,4 +2828,6 @@ private FacebookInterest searchInterest(String interestName, String locale) {
     }
 
     private record TargetingCategoryCacheKey(String categoryClass, String query) {}
+
+    private record TargetingFieldIndex(String fieldName, int index) {}
 }

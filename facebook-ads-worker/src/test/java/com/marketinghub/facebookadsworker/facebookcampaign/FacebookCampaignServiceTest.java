@@ -212,20 +212,10 @@ class FacebookCampaignServiceTest {
 
     
     @Test
-    void buildsTargetingFromAdSetElementsWhenTargetingJsonMissing() throws Exception {
+    void usesAudiencePipelineTargetingWhenCreatingAdSet() throws Exception {
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
-            .addHeader("Content-Type", "application/json"));
-        facebook.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"601\",\"name\":\"Interesse A\"}]}")
-            .addHeader("Content-Type", "application/json"));
-        facebook.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"602\",\"name\":\"Interesse B\"}]}")
-            .addHeader("Content-Type", "application/json"));
-        facebook.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"701\",\"name\":\"Cargo 1\"}]}")
-            .addHeader("Content-Type", "application/json"));
-        facebook.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"801\",\"name\":\"Comportamento X\"}]}")
-            .addHeader("Content-Type", "application/json"));
-        facebook.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"802\",\"name\":\"Comportamento Y\"}]}")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}")
             .addHeader("Content-Type", "application/json"));
@@ -235,7 +225,9 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":900,\"experimentId\":1,\"location\":\"Brasil\",\"interests\":\"Interesse A\\nInteresse B\",\"jobTitles\":\"Cargo 1\",\"behaviors\":\"Comportamento X\\nComportamento Y\",\"targetingJson\":null,\"prompt\":\"Detalhes\",\"model\":\"gpt-4\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":900,\"experimentId\":1,\"location\":\"Brasil\",\"targetingRequestId\":\"1c9fc7e0-5731-4453-a9f7-a4d404fb80fd\",\"targetingJson\":null,\"prompt\":\"Detalhes\",\"model\":\"gpt-4\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{\"candidates\":[{\"id\":11,\"tipo\":\"INTEREST\",\"status\":\"VALIDATED\",\"options\":[{\"facebook_id\":\"601\",\"name\":\"Interesse A\",\"type\":\"INTEREST\"},{\"facebook_id\":\"602\",\"name\":\"Interesse B\",\"type\":\"INTEREST\"}]},{\"id\":12,\"tipo\":\"WORK_POSITION\",\"status\":\"VALIDATED\",\"options\":[{\"facebook_id\":\"701\",\"name\":\"Cargo 1\",\"type\":\"WORK_POSITION\"}]},{\"id\":13,\"tipo\":\"BEHAVIOR\",\"status\":\"VALIDATED\",\"options\":[{\"facebook_id\":\"801\",\"name\":\"Comportamento X\",\"type\":\"BEHAVIOR\"},{\"facebook_id\":\"802\",\"name\":\"Comportamento Y\",\"type\":\"BEHAVIOR\"}]}]}")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
@@ -254,20 +246,14 @@ class FacebookCampaignServiceTest {
         takeBackendRequest("backend request"); // creatives
         RecordedRequest adSetsRequest = takeBackendRequest("backend request");
         assertEquals("/api/adsets?experimentId=1", adSetsRequest.getPath());
+        RecordedRequest targetingRequest = takeBackendRequest("backend request");
+        assertEquals(
+            "/api/targeting/requests/1c9fc7e0-5731-4453-a9f7-a4d404fb80fd?includeCandidates=true",
+            targetingRequest.getPath()
+        );
 
         RecordedRequest campaignRequest = takeFacebookRequest("facebook request");
         assertEquals("/v23.0/act_1/campaigns", campaignRequest.getPath());
-
-        RecordedRequest firstInterestRequest = takeFacebookRequest("facebook request");
-        assertTrue(firstInterestRequest.getPath().contains("/act_1234567890/targetingsearch?type=adinterest"));
-        RecordedRequest secondInterestRequest = takeFacebookRequest("facebook request");
-        assertTrue(secondInterestRequest.getPath().contains("/act_1234567890/targetingsearch?type=adinterest"));
-        RecordedRequest jobTitleRequest = takeFacebookRequest("facebook request");
-        assertTrue(jobTitleRequest.getPath().contains("class=job_title"));
-        RecordedRequest firstBehaviorRequest = takeFacebookRequest("facebook request");
-        assertTrue(firstBehaviorRequest.getPath().contains("class=behaviors"));
-        RecordedRequest secondBehaviorRequest = takeFacebookRequest("facebook request");
-        assertTrue(secondBehaviorRequest.getPath().contains("class=behaviors"));
 
         RecordedRequest adSetRequest = takeFacebookRequest("facebook request");
         assertEquals("/v23.0/act_1/adsets", adSetRequest.getPath());

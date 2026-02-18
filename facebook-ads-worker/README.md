@@ -76,7 +76,10 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    `PAUSED`, com destino herdado da conta (por exemplo, `WEBSITE`). Antes de
    chamar a Graph API o worker consulta o backend (`GET
    /api/adsets?experimentId={id}`) para montar a segmentação e, quando
-   necessário, criar uma Saved Audience reutilizável. A segmentação enviada
+   necessário, criar uma Saved Audience reutilizável. Sempre que o ad set
+   possuir `targetingRequestId`, o worker prioriza as opções validadas pelo
+   pipeline de público via `GET /api/targeting/requests/{id}?includeCandidates=true`.
+   A segmentação enviada
    para a Meta é sempre o Brasil inteiro (`geo_locations.countries = ["BR"]`)
    e com Advantage+ Audience habilitado (`targeting_automation.advantage_audience = 1`),
    garantindo o alcance nacional independente do público retornado pelo backend.
@@ -91,6 +94,10 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    para evitar a rejeição `(#100) Invalid parameter` devolvida pela Meta. Chaves
    não textuais em `geo_locations` também são ignoradas antes do envio para a
    Graph API, garantindo que o payload use apenas campos com nomes válidos.
+   Se a Meta rejeitar o `POST /adsets` com erro no formato
+   `targeting[<campo>][<índice>][id]` (por exemplo, `interests` ou
+   `work_positions`), o worker remove automaticamente o item inválido pelo
+   índice indicado na mensagem e tenta novamente a criação do conjunto.
    Quando o criativo aponta para um formulário de leads,
    o worker ajusta automaticamente `destination_type = ON_AD` e força
    `optimization_goal = LEAD_GENERATION` para satisfazer as regras da Graph API

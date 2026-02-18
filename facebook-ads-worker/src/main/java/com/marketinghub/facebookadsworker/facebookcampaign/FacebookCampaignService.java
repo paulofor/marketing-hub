@@ -196,6 +196,10 @@ public class FacebookCampaignService {
     }
 
     private void processExperiment(Experiment exp, FacebookWorkerConfiguration config) {
+        String campaignId = null;
+        String adSetId = null;
+        String adId = null;
+        boolean publishReported = false;
         try {
             Creative creative = resolveCreative(exp.id());
             if (creative == null) {
@@ -281,10 +285,6 @@ public class FacebookCampaignService {
                     resolvedTargeting = resolveTargetingFromBackend(selectedAdSet);
                 }
             }
-            String campaignId = null;
-            String adSetId = null;
-            String adId = null;
-            boolean publishReported = false;
             try {
                 campaignId = executeFacebookCallWithLogging(
                     exp.id(),

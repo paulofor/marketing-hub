@@ -19,6 +19,11 @@ score. Candidatos com nomes genéricos (por exemplo, `unknown`, `unspecified`,
 Se nenhum candidato atingir o score mínimo, a etapa 4 falha com erro claro em
 vez de persistir anchor genérico.
 
+
+## Testes com MockWebServer
+
+A suíte `FacebookCampaignServiceTest` usa `FailFastMockWebServer` com respostas condicionais de fallback para endpoints de telemetria (`/facebook-api-logs`), publicação de instant form (`/instant-forms/{id}/publication`), status de experimento e fallbacks de campanhas/adsets. Isso evita falhas por requisições auxiliares fora da ordem principal, mantendo os cenários focados no fluxo funcional de criação de campanha.
+
 ## Fila de resolução de targeting
 
 O backend grava os candidatos que precisam ser validados na tabela `targeting_resolution_job`.

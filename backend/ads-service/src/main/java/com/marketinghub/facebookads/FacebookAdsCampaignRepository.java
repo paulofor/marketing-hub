@@ -16,5 +16,15 @@ public interface FacebookAdsCampaignRepository extends JpaRepository<FacebookAds
             """)
     List<FacebookAdsCampaign> findAllByExperimentStatus(@Param("status") ExperimentStatus status);
 
+    @Query("""
+            select distinct c from FacebookAdsCampaign c
+            left join fetch c.adSets s
+            left join fetch s.experimentAdSet eas
+            left join fetch s.ads ads
+            where c.experiment.id = :experimentId
+            order by c.createdAt asc
+            """)
+    List<FacebookAdsCampaign> findDetailedByExperimentId(@Param("experimentId") Long experimentId);
+
     List<FacebookAdsCampaign> findByExperimentId(Long experimentId);
 }

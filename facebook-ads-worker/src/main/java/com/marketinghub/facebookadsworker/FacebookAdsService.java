@@ -328,12 +328,12 @@ public class FacebookAdsService {
         }
 
         forceBrazilWideTargeting(targeting);
-        enableAdvantageAudience(targeting);
+        disableAdvantageAudience(targeting);
 
         return targeting;
     }
 
-    private void enableAdvantageAudience(Map<String, Object> targeting) {
+    private void disableAdvantageAudience(Map<String, Object> targeting) {
         if (targeting == null) {
             return;
         }
@@ -348,7 +348,7 @@ public class FacebookAdsService {
             });
         }
 
-        automation.put("advantage_audience", 1);
+        automation.put("advantage_audience", 0);
         targeting.put("targeting_automation", automation);
     }
 

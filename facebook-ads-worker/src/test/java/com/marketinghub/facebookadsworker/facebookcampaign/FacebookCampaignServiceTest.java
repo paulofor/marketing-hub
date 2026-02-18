@@ -225,7 +225,7 @@ class FacebookCampaignServiceTest {
         assertEquals("42", adSetPayload.get("promoted_object").get("page_id").asText());
         JsonNode targeting = adSetPayload.get("targeting");
         assertEquals("BR", targeting.get("geo_locations").get("countries").get(0).asText());
-        assertEquals(1, targeting.get("targeting_automation").get("advantage_audience").asInt());
+        assertEquals(0, targeting.get("targeting_automation").get("advantage_audience").asInt());
 
         RecordedRequest postCreative = takeFacebookRequest("facebook request");
         assertEquals("/v23.0/act_1/adcreatives", postCreative.getPath());

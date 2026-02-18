@@ -126,6 +126,7 @@ export default function ExperimentFacebookApiLogsPage() {
                 <tr>
                   <th style={{ width: "4rem" }}>Log</th>
                   <th>Horário</th>
+                  <th>Contexto</th>
                   <th>Job</th>
                   <th>Endpoint</th>
                   <th>Status</th>
@@ -155,6 +156,12 @@ export default function ExperimentFacebookApiLogsPage() {
                           <small className="text-muted">
                             {formatDuration(log.durationMs)}
                           </small>
+                        </td>
+                        <td>
+                          <div className="fw-semibold">{formatContextLabel(log)}</div>
+                          <div className="small text-muted">
+                            {contextOrigin(log)}
+                          </div>
                         </td>
                         <td>
                           <div className="fw-semibold">
@@ -255,6 +262,34 @@ function isErrorStatus(log?: ExperimentFacebookApiLog | null) {
   if (log.statusCode && log.statusCode >= 400) return true;
   return Boolean(log.errorMessage);
 }
+
+const CONTEXT_LABELS: Record<string, string> = {
+  CAMPAIGN_CREATION: "Campanha",
+  CAMPAIGN_AD_SET: "Conjunto de anúncios",
+  CAMPAIGN_AD_CREATIVE: "Criativo",
+  CAMPAIGN_AD: "Anúncio",
+};
+
+function formatContextLabel(log: ExperimentFacebookApiLog) {
+  if (log.context) {
+    return CONTEXT_LABELS[log.context] ?? log.context;
+  }
+  if (log.jobType) {
+    return `Playbook · ${log.jobType}`;
+  }
+  return "—";
+}
+
+function contextOrigin(log: ExperimentFacebookApiLog) {
+  if (log.context) {
+    return "Campanha";
+  }
+  if (log.jobType) {
+    return "Playbook";
+  }
+  return "—";
+}
+
 
 function formatDateTime(value?: string | null) {
   if (!value) return null;

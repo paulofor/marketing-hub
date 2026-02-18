@@ -38,6 +38,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.Comparator;
 import java.util.Collections;
 import java.util.List;
 import java.util.LinkedHashSet;
@@ -49,6 +50,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 @Service
 public class FacebookCampaignService {
@@ -253,12 +255,42 @@ public class FacebookCampaignService {
                 : config.adSetOptimizationGoal();
             String resolvedCampaignObjective = hasLeadFormDestination ? "OUTCOME_LEADS" : "OUTCOME_TRAFFIC";
 
+            List<ExperimentAdSet> experimentAdSets = Collections.emptyList();
+            ExperimentAdSet selectedAdSet = null;
+            AdSetPlaybookSpec selectedSpec = null;
+            ResolvedTargeting resolvedTargeting = new ResolvedTargeting(null, Collections.emptyList());
+            String adSetName = exp.name() + " - Ad Set";
+            if (!exp.nextStepInstantForm()) {
+                List<AdSetPlaybookSpec> readySpecs = fetchReadyPlaybookSpecs(exp.id());
+                selectedSpec = selectPrimarySpec(readySpecs);
+                experimentAdSets = fetchExperimentAdSets(exp.id());
+                selectedAdSet = selectExperimentAdSet(experimentAdSets);
+                if (selectedSpec != null) {
+                    resolvedTargeting = new ResolvedTargeting(
+                        normalizeTargetingSpec(selectedSpec.targetingSpec()),
+                        Collections.emptyList()
+                    );
+                    adSetName = buildAdSetName(exp.name(), selectedSpec);
+                    LOGGER.info(
+                        "Using ad set playbook spec {} ({}) for experiment {}",
+                        selectedSpec.id(),
+                        selectedSpec.slot(),
+                        exp.id()
+                    );
+                } else {
+                    resolvedTargeting = resolveTargetingFromBackend(selectedAdSet);
+                }
+            }
             String campaignId;
             try {
-                campaignId = facebookAdsService.createCampaign(
-                    config.adAccountId(),
-                    exp.name(),
-                    resolvedCampaignObjective
+                campaignId = executeFacebookCallWithLogging(
+                    exp.id(),
+                    ExperimentFacebookApiLogContext.CAMPAIGN_CREATION,
+                    () -> facebookAdsService.createCampaign(
+                        config.adAccountId(),
+                        exp.name(),
+                        resolvedCampaignObjective
+                    )
                 );
             } catch (FacebookAccessTokenExpiredException ex) {
                 if (!exp.nextStepInstantForm()) {
@@ -266,16 +298,8 @@ public class FacebookCampaignService {
                 }
                 throw ex;
             }
-            List<ExperimentAdSet> experimentAdSets = Collections.emptyList();
-            ExperimentAdSet selectedAdSet = null;
-            ResolvedTargeting resolvedTargeting = new ResolvedTargeting(null, Collections.emptyList());
-            if (!exp.nextStepInstantForm()) {
-                experimentAdSets = fetchExperimentAdSets(exp.id());
-                selectedAdSet = selectExperimentAdSet(experimentAdSets);
-                resolvedTargeting = resolveTargetingFromBackend(selectedAdSet);
-            }
             FacebookAdsService.AdSetRequest adSetRequest = new FacebookAdsService.AdSetRequest(
-                exp.name() + " - Ad Set",
+                adSetName,
                 campaignId,
                 resolveDailyBudget(exp, config),
                 config.adSetBillingEvent(),
@@ -288,7 +312,11 @@ public class FacebookCampaignService {
                 resolvedTargeting.targetingJson(),
                 resolvedTargeting.options()
             );
-            String adSetId = facebookAdsService.createAdSet(config.adAccountId(), adSetRequest);
+            String adSetId = executeFacebookCallWithLogging(
+                exp.id(),
+                ExperimentFacebookApiLogContext.CAMPAIGN_AD_SET,
+                () -> facebookAdsService.createAdSet(config.adAccountId(), adSetRequest)
+            );
             String resolvedImageUrl = resolveCreativeImageUrl(creative.imageUrl());
             AdCreativeCreation adCreativeCreation = createAdCreativeWithFallback(
                 config.adAccountId(),
@@ -310,12 +338,16 @@ public class FacebookCampaignService {
                 adSetId,
                 creativeId
             );
-            String adId = facebookAdsService.createAd(config.adAccountId(), adRequest);
+            String adId = executeFacebookCallWithLogging(
+                exp.id(),
+                ExperimentFacebookApiLogContext.CAMPAIGN_AD,
+                () -> facebookAdsService.createAd(config.adAccountId(), adRequest)
+            );
             CreateCampaignRequest req = new CreateCampaignRequest(
                 campaignId,
                 config.adAccountId(),
                 exp.name(),
-                "OUTCOME_TRAFFIC",
+                resolvedCampaignObjective,
                 "CAMPAIGN",
                 exp.id(),
                 config.accountId(),
@@ -726,6 +758,55 @@ public class FacebookCampaignService {
 
     public record ResolvedTargeting(String targetingJson, List<FacebookAdsService.TargetingOption> options) {}
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record AdSetPlaybookWorkflowResponse(
+        Long workflowId,
+        String status,
+        String lastError,
+        List<AdSetPlaybookSpec> specs
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record AdSetPlaybookSpec(
+        Long id,
+        String slot,
+        String label,
+        Integer ageMin,
+        Integer ageMax,
+        String targetingSpec,
+        String validationStatus,
+        String reachStatus,
+        Instant createdAt
+    ) {
+    }
+
+    private record ExperimentFacebookApiLogIngestionRequest(
+        ExperimentFacebookApiLogContext context,
+        List<ExperimentFacebookApiLogPayload> logs
+    ) {
+    }
+
+    private record ExperimentFacebookApiLogPayload(
+        String provider,
+        String endpoint,
+        String httpMethod,
+        Integer statusCode,
+        JsonNode requestPayload,
+        JsonNode responsePayload,
+        String errorMessage,
+        Instant requestedAt,
+        Instant respondedAt
+    ) {
+    }
+
+    private enum ExperimentFacebookApiLogContext {
+        CAMPAIGN_CREATION,
+        CAMPAIGN_AD_SET,
+        CAMPAIGN_AD_CREATIVE,
+        CAMPAIGN_AD
+    }
+
     public record Experiment(
         long id,
         String name,
@@ -858,6 +939,137 @@ public class FacebookCampaignService {
         }
     }
 
+    private List<AdSetPlaybookSpec> fetchReadyPlaybookSpecs(long experimentId) {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/adset-playbook");
+        try {
+            AdSetPlaybookWorkflowResponse response = backendClient.get()
+                .uri(url)
+                .retrieve()
+                .bodyToMono(AdSetPlaybookWorkflowResponse.class)
+                .block();
+            if (response == null || response.specs() == null) {
+                return Collections.emptyList();
+            }
+            return response.specs().stream()
+                .filter(spec -> spec != null && StringUtils.hasText(spec.targetingSpec()))
+                .filter(spec -> "VALID".equalsIgnoreCase(spec.validationStatus()))
+                .filter(spec -> "READY".equalsIgnoreCase(spec.reachStatus()))
+                .toList();
+        } catch (Exception ex) {
+            LOGGER.warn("Failed to fetch ad set playbook for experiment {}: {}", experimentId, ex.getMessage());
+            LOGGER.debug("Stacktrace while fetching ad set playbook for experiment {}", experimentId, ex);
+            return Collections.emptyList();
+        }
+    }
+
+    private AdSetPlaybookSpec selectPrimarySpec(List<AdSetPlaybookSpec> specs) {
+        if (specs == null || specs.isEmpty()) {
+            return null;
+        }
+        return specs.stream()
+            .sorted(Comparator.comparingInt(spec -> slotPriority(spec.slot()))
+                .thenComparing(spec -> spec.id() != null ? spec.id() : Long.MAX_VALUE))
+            .findFirst()
+            .orElse(null);
+    }
+
+    private int slotPriority(String slot) {
+        if (!StringUtils.hasText(slot)) {
+            return Integer.MAX_VALUE;
+        }
+        return switch (slot.trim().toUpperCase(java.util.Locale.ROOT)) {
+            case "MARKETING" -> 0;
+            case "SMB" -> 1;
+            case "DESIGNERS" -> 2;
+            default -> 3;
+        };
+    }
+
+    private String buildAdSetName(String experimentName, AdSetPlaybookSpec spec) {
+        if (spec != null) {
+            if (StringUtils.hasText(spec.label())) {
+                return experimentName + " - " + spec.label().trim();
+            }
+            if (StringUtils.hasText(spec.slot())) {
+                return experimentName + " - " + spec.slot().trim();
+            }
+        }
+        return experimentName + " - Ad Set";
+    }
+
+    private String normalizeTargetingSpec(String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return raw;
+        }
+        try {
+            JsonNode node = objectMapper.readTree(raw);
+            return objectMapper.writeValueAsString(node);
+        } catch (Exception ex) {
+            LOGGER.warn("Failed to normalize targeting spec JSON: {}", ex.getMessage());
+            LOGGER.debug("Stacktrace while normalizing targeting spec JSON", ex);
+            return raw;
+        }
+    }
+
+    private <T> T executeFacebookCallWithLogging(Long experimentId,
+                                                 ExperimentFacebookApiLogContext context,
+                                                 Supplier<T> action) {
+        facebookAdsService.clearLastApiCallDebugInfo();
+        try {
+            return action.get();
+        } finally {
+            logFacebookApiCall(experimentId, context);
+        }
+    }
+
+    private void logFacebookApiCall(Long experimentId, ExperimentFacebookApiLogContext context) {
+        if (experimentId == null || context == null) {
+            facebookAdsService.clearLastApiCallDebugInfo();
+            return;
+        }
+        FacebookAdsService.FacebookApiCallDebugInfo debugInfo = facebookAdsService.consumeLastApiCallDebugInfo();
+        if (debugInfo == null) {
+            return;
+        }
+        ExperimentFacebookApiLogPayload payload = new ExperimentFacebookApiLogPayload(
+            "FACEBOOK",
+            debugInfo.endpoint(),
+            debugInfo.httpMethod(),
+            debugInfo.statusCode(),
+            parseJson(debugInfo.requestBody()),
+            parseJson(debugInfo.responseBody()),
+            debugInfo.errorMessage(),
+            debugInfo.requestedAt(),
+            debugInfo.respondedAt()
+        );
+        ExperimentFacebookApiLogIngestionRequest body = new ExperimentFacebookApiLogIngestionRequest(
+            context,
+            List.of(payload)
+        );
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/facebook-api-logs");
+        try {
+            backendClient.post()
+                .uri(url)
+                .bodyValue(body)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+        } catch (Exception ex) {
+            LOGGER.debug("Failed to register Facebook API log for experiment {}: {}", experimentId, ex.getMessage());
+        }
+    }
+
+    private JsonNode parseJson(String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return null;
+        }
+        try {
+            return objectMapper.readTree(raw);
+        } catch (Exception ex) {
+            return objectMapper.getNodeFactory().textNode(raw);
+        }
+    }
+
     private static String coalesce(String... values) {
         if (values == null) {
             return null;
@@ -912,7 +1124,11 @@ public class FacebookCampaignService {
         );
 
         try {
-            String creativeId = facebookAdsService.createAdCreative(adAccountId, primaryRequest);
+            String creativeId = executeFacebookCallWithLogging(
+                experiment.id(),
+                ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
+                () -> facebookAdsService.createAdCreative(adAccountId, primaryRequest)
+            );
             return new AdCreativeCreation(creativeId, primaryRequest);
         } catch (FacebookPermissionException ex) {
             if (!StringUtils.hasText(instagramActorId) || !isInstagramPermissionError(ex)) {
@@ -941,7 +1157,11 @@ public class FacebookCampaignService {
                 description
             );
 
-            String creativeId = facebookAdsService.createAdCreative(adAccountId, fallbackRequest);
+            String creativeId = executeFacebookCallWithLogging(
+                experiment.id(),
+                ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
+                () -> facebookAdsService.createAdCreative(adAccountId, fallbackRequest)
+            );
             LOGGER.info(
                 "Created Facebook ad creative without Instagram user ID after permission error: experimentId={}, creativeId={}",
                 experiment.id(),

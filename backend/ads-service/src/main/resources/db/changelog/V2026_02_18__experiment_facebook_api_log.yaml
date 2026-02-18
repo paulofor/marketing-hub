@@ -1,0 +1,33 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-02-18-experiment-facebook-api-log
+      author: repo
+      preConditions:
+        onFail: MARK_RAN
+        and:
+          - dbms:
+              type: mysql
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE experiment_facebook_api_log (
+                  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                  experiment_id BIGINT NOT NULL,
+                  context VARCHAR(64) NOT NULL,
+                  provider VARCHAR(32) NOT NULL,
+                  endpoint LONGTEXT,
+                  http_method VARCHAR(16),
+                  status_code INT,
+                  requested_at DATETIME(6),
+                  responded_at DATETIME(6),
+                  request_payload LONGTEXT,
+                  response_payload LONGTEXT,
+                  error_message LONGTEXT,
+                  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                  CONSTRAINT fk_experiment_facebook_api_log_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id) ON DELETE CASCADE
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              CREATE INDEX idx_experiment_facebook_api_log_experiment ON experiment_facebook_api_log (experiment_id, requested_at, created_at);

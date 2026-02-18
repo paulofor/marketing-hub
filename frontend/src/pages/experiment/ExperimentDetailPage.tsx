@@ -25,6 +25,7 @@ import DeliverablesTab from "./DeliverablesTab";
 import LeadPortalFlowTab from "./LeadPortalFlowTab";
 import TargetingTab from "./TargetingTab";
 import { useTargetingElementsByNiche } from "../../api/targeting/useTargetingElementsByNiche";
+import { useExperimentAdSetWorkflow } from "../../api/experiment/useExperimentAdSetWorkflow";
 import type { TargetingElementType } from "../../api/targeting/types";
 
 export default function ExperimentDetailPage() {
@@ -59,6 +60,8 @@ export default function ExperimentDetailPage() {
   const isUpdatingStatus = updateExperimentStatus.isPending;
   const { data: targetingElements, isLoading: isLoadingTargeting } =
     useTargetingElementsByNiche(nicheIdParam);
+  const { data: adSetWorkflow, isLoading: isLoadingAdSetWorkflow } =
+    useExperimentAdSetWorkflow(expId);
   const hypothesisIdAsString = hypothesisId ? String(hypothesisId) : undefined;
   const hasCompleteTargeting = useMemo(() => {
     if (!Array.isArray(targetingElements)) return false;
@@ -284,6 +287,19 @@ export default function ExperimentDetailPage() {
     ERROR: "danger",
     WARNING: "warning",
     INFO: "secondary",
+  };
+
+  const workflowStatusVariant: Record<string, string> = {
+    NOT_STARTED: "secondary",
+    RUNNING: "info",
+    COMPLETED: "success",
+    FAILED: "danger",
+  };
+  const workflowStatusLabel: Record<string, string> = {
+    NOT_STARTED: "Não iniciado",
+    RUNNING: "Em andamento",
+    COMPLETED: "Concluído",
+    FAILED: "Com erro",
   };
 
   const selectedEmailOverview = data.selectedSampleEmailSubject ? (
@@ -575,6 +591,55 @@ export default function ExperimentDetailPage() {
             ))}
           </ul>
         </div>
+      <div className="card border-0 shadow-sm rounded-3 mt-3">
+        <div className="card-body">
+          <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
+            <div>
+              <h5 className="card-title mb-1">Pipeline de Públicos</h5>
+              <p className="text-muted small mb-0">
+                Geração automatizada de segmentações validadas com a Meta Ads
+              </p>
+            </div>
+            <div className="d-flex flex-wrap gap-2">
+              <Link to="adset-workflow" className="btn btn-outline-primary btn-sm">
+                Ver playbook
+              </Link>
+              <Link to="facebook-api-logs" className="btn btn-outline-secondary btn-sm">
+                Logs da Graph API
+              </Link>
+            </div>
+          </div>
+          {isLoadingAdSetWorkflow ? (
+            <p className="text-muted small mt-3 mb-0">Carregando pipeline...</p>
+          ) : adSetWorkflow ? (
+            <>
+              <div className="d-flex flex-wrap gap-3 align-items-center mt-3">
+                <span className={`badge text-bg-${workflowStatusVariant[adSetWorkflow.status ?? "NOT_STARTED"] ?? "secondary"}`}>
+                  {workflowStatusLabel[adSetWorkflow.status ?? "NOT_STARTED"]}
+                </span>
+                <div className="small text-muted">
+                  Specs prontas: {adSetWorkflow.specs?.filter((spec) => spec.reachStatus?.toUpperCase() === "READY").length ?? 0} / {adSetWorkflow.specs?.length ?? 0}
+                </div>
+                <div className="small text-muted">
+                  Última atualização: {formatDateTimeValue(
+                    adSetWorkflow.updatedAt ?? adSetWorkflow.completedAt ?? adSetWorkflow.createdAt,
+                  )}
+                </div>
+              </div>
+              {adSetWorkflow.lastError ? (
+                <div className="alert alert-warning mt-3 mb-0" role="alert">
+                  <strong>Último erro:</strong> {adSetWorkflow.lastError}
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <p className="text-muted small mt-3 mb-0">
+              Este experimento ainda não iniciou o playbook de públicos. Use o botão acima para configurar.
+            </p>
+          )}
+        </div>
+      </div>
+
       </div>
       {data.journeyTemplateId ? (
         <div className="card border-0 shadow-sm rounded-3 mt-3">

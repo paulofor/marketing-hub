@@ -14,6 +14,7 @@ public record ExperimentFacebookApiLogDto(
         ExperimentAdSetJobStatus jobStatus,
         Long workflowId,
         Long resourceId,
+        String context,
         String provider,
         String endpoint,
         String httpMethod,

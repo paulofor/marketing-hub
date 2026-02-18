@@ -9,6 +9,7 @@ export interface ExperimentFacebookApiLog {
   jobStatus?: string | null;
   workflowId?: number | null;
   resourceId?: number | null;
+  context?: string | null;
   provider?: string | null;
   endpoint?: string | null;
   httpMethod?: string | null;

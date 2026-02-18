@@ -967,7 +967,7 @@ public class FacebookCampaignService {
             return null;
         }
         return specs.stream()
-            .sorted(Comparator.comparingInt(spec -> slotPriority(spec.slot()))
+            .sorted(Comparator.<AdSetPlaybookSpec>comparingInt(spec -> slotPriority(spec.slot()))
                 .thenComparing(spec -> spec.id() != null ? spec.id() : Long.MAX_VALUE))
             .findFirst()
             .orElse(null);

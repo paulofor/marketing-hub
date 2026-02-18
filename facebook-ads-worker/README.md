@@ -457,6 +457,14 @@ repetidamente, o log registra uma mensagem de erro com os detalhes retornados
 pela Graph API, orientando a atualizar o token manualmente na interface e
 reiniciar o serviço após a substituição.
 
+### Erro de compilação `cannot find symbol` no `FacebookCampaignService`
+
+As variáveis de rastreamento de publicação (`campaignId`, `adSetId`, `adId` e
+`publishReported`) precisam permanecer no escopo inteiro do método
+`processExperiment`, porque são usadas no bloco `finally` para rollback da
+publicação parcial. Se elas forem declaradas apenas no `try` interno, o build
+falha com `cannot find symbol` durante a compilação.
+
 ### Erro de compilação `cannot find symbol: variable Objects`
 
 Ao adicionar novos métodos no `FacebookAdsService`, certifique-se de importar

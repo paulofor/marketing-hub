@@ -3,31 +3,30 @@ package com.marketinghub.facebookads.playbook.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
-import com.marketinghub.facebookads.playbook.ExperimentAdSetJob;
-import com.marketinghub.facebookads.playbook.ExperimentAdSetJobApiLog;
-import com.marketinghub.facebookads.playbook.ExperimentAdSetWorkflow;
+import com.marketinghub.facebookads.playbook.*;
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
+import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogIngestionRequest;
 import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetJobApiLogRepository;
+import com.marketinghub.facebookads.playbook.repository.ExperimentFacebookApiLogEntryRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 @Service
-@Transactional(readOnly = true)
 public class ExperimentFacebookApiLogService {
 
     private static final int DEFAULT_LIMIT = 100;
@@ -39,16 +38,20 @@ public class ExperimentFacebookApiLogService {
 
     private final ExperimentRepository experimentRepository;
     private final ExperimentAdSetJobApiLogRepository jobApiLogRepository;
+    private final ExperimentFacebookApiLogEntryRepository apiLogEntryRepository;
     private final ObjectMapper objectMapper;
 
     public ExperimentFacebookApiLogService(ExperimentRepository experimentRepository,
                                            ExperimentAdSetJobApiLogRepository jobApiLogRepository,
+                                           ExperimentFacebookApiLogEntryRepository apiLogEntryRepository,
                                            ObjectMapper objectMapper) {
         this.experimentRepository = experimentRepository;
         this.jobApiLogRepository = jobApiLogRepository;
+        this.apiLogEntryRepository = apiLogEntryRepository;
         this.objectMapper = objectMapper;
     }
 
+    @Transactional(readOnly = true)
     public List<ExperimentFacebookApiLogDto> findLogs(Long experimentId, int limit) {
         if (experimentId == null) {
             throw new EntityNotFoundException("Experimento não informado");
@@ -62,17 +65,65 @@ public class ExperimentFacebookApiLogService {
                 resolvedLimit,
                 Sort.by(Sort.Order.desc("requestedAt").nullsLast(), Sort.Order.desc("createdAt"))
         );
-        List<ExperimentAdSetJobApiLog> logs = jobApiLogRepository.findByJobWorkflowExperimentId(experimentId, pageable);
-        return logs.stream()
-                .map(this::toDto)
+        List<ExperimentAdSetJobApiLog> jobLogs = jobApiLogRepository.findByJobWorkflowExperimentId(experimentId, pageable);
+        List<ExperimentFacebookApiLogEntry> customLogs = apiLogEntryRepository.findByExperimentId(experimentId, pageable);
+        return Stream.concat(
+                        jobLogs.stream().map(this::toDto),
+                        customLogs.stream().map(this::toDto)
+                )
+                .sorted(Comparator.comparing(this::sortKey, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+                .limit(resolvedLimit)
                 .toList();
     }
 
-    private int resolveLimit(int limit) {
-        if (limit <= 0) {
-            return DEFAULT_LIMIT;
+    @Transactional
+    public void registerLogs(Long experimentId, ExperimentFacebookApiLogIngestionRequest request) {
+        if (experimentId == null) {
+            throw new EntityNotFoundException("Experimento não informado");
         }
-        return Math.min(limit, MAX_LIMIT);
+        Experiment experiment = experimentRepository.findById(experimentId)
+                .orElseThrow(() -> new EntityNotFoundException("Experimento %d não encontrado".formatted(experimentId)));
+        if (request == null || CollectionUtils.isEmpty(request.logs())) {
+            return;
+        }
+        ExperimentFacebookApiLogContext context = request.context() != null
+                ? request.context()
+                : ExperimentFacebookApiLogContext.CAMPAIGN_AD_SET;
+        List<ExperimentFacebookApiLogEntry> entries = new ArrayList<>();
+        for (ExperimentFacebookApiLogIngestionRequest.ApiCallPayload payload : request.logs()) {
+            if (payload == null) {
+                continue;
+            }
+            ExperimentFacebookApiLogEntry entry = new ExperimentFacebookApiLogEntry();
+            entry.setExperiment(experiment);
+            entry.setContext(context);
+            entry.setProvider(resolveProvider(payload.provider()));
+            entry.setEndpoint(payload.endpoint());
+            entry.setHttpMethod(payload.httpMethod());
+            entry.setStatusCode(payload.statusCode());
+            entry.setRequestedAt(payload.requestedAt());
+            entry.setRespondedAt(payload.respondedAt());
+            entry.setRequestPayload(asJsonString(payload.requestPayload()));
+            entry.setResponsePayload(asJsonString(payload.responsePayload()));
+            entry.setErrorMessage(payload.errorMessage());
+            entries.add(entry);
+        }
+        if (!entries.isEmpty()) {
+            apiLogEntryRepository.saveAll(entries);
+        }
+    }
+
+    private Instant sortKey(ExperimentFacebookApiLogDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        if (dto.requestedAt() != null) {
+            return dto.requestedAt();
+        }
+        if (dto.respondedAt() != null) {
+            return dto.respondedAt();
+        }
+        return dto.createdAt();
     }
 
     private ExperimentFacebookApiLogDto toDto(ExperimentAdSetJobApiLog log) {
@@ -91,6 +142,7 @@ public class ExperimentFacebookApiLogService {
                 job != null ? job.getStatus() : null,
                 workflow != null ? workflow.getId() : null,
                 job != null ? job.getResourceId() : null,
+                job != null && job.getType() != null ? job.getType().name() : null,
                 log.getProvider(),
                 sanitizeEndpoint(log.getEndpoint()),
                 log.getHttpMethod(),
@@ -103,6 +155,42 @@ public class ExperimentFacebookApiLogService {
                 sanitizePayload(log.getResponsePayload()),
                 log.getCreatedAt()
         );
+    }
+
+    private ExperimentFacebookApiLogDto toDto(ExperimentFacebookApiLogEntry entry) {
+        Instant requestedAt = entry.getRequestedAt();
+        Instant respondedAt = entry.getRespondedAt();
+        Long durationMs = (requestedAt != null && respondedAt != null)
+                ? Duration.between(requestedAt, respondedAt).toMillis()
+                : null;
+        return new ExperimentFacebookApiLogDto(
+                entry.getId(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                entry.getContext() != null ? entry.getContext().name() : null,
+                entry.getProvider(),
+                sanitizeEndpoint(entry.getEndpoint()),
+                entry.getHttpMethod(),
+                entry.getStatusCode(),
+                entry.getErrorMessage(),
+                requestedAt,
+                respondedAt,
+                durationMs,
+                sanitizePayload(entry.getRequestPayload()),
+                sanitizePayload(entry.getResponsePayload()),
+                entry.getCreatedAt()
+        );
+    }
+
+    private int resolveLimit(int limit) {
+        if (limit <= 0) {
+            return DEFAULT_LIMIT;
+        }
+        return Math.min(limit, MAX_LIMIT);
     }
 
     private String sanitizeEndpoint(String endpoint) {
@@ -189,5 +277,19 @@ public class ExperimentFacebookApiLogService {
             return "***";
         }
         return trimmed.substring(0, 3) + "…" + trimmed.substring(trimmed.length() - 2);
+    }
+
+    private String resolveProvider(String provider) {
+        if (StringUtils.hasText(provider)) {
+            return provider.trim();
+        }
+        return "FACEBOOK";
+    }
+
+    private String asJsonString(JsonNode node) {
+        if (node == null || node.isNull()) {
+            return null;
+        }
+        return node.toString();
     }
 }

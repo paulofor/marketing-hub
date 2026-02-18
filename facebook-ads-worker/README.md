@@ -513,3 +513,8 @@ FACEBOOK_ADS_WORKER_LOG_DIR=/var/log/marketinghub/facebook-ads-worker \
 FACEBOOK_ADS_WORKER_LOG_FILE=/var/log/facebook-ads-worker/worker.log \
 docker compose up -d
 ```
+
+## Notas de teste (FacebookCampaignServiceTest)
+
+- O fluxo atual consulta primeiro o playbook (`/api/experiments/{id}/adset-playbook`) e só então faz fallback para `/api/adsets?experimentId={id}` quando necessário.
+- As chamadas à Graph API podem gerar registros intermediários em `/api/experiments/{id}/facebook-api-logs`; por isso, asserções de ordem rígida de requests no backend devem considerar esses POSTs adicionais.

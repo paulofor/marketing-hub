@@ -79,3 +79,5 @@
 - Configuração padrão de execução em Docker grava logs em arquivo (`LOGGING_FILE_NAME`) com volume dedicado em `/var/log/facebook-ads-worker`; preserve esse comportamento ao ajustar compose/deploy.
 
 - Os testes de campanha devem considerar a sequência de backend com `/api/experiments/{id}/adset-playbook` antes do fallback em `/api/adsets?experimentId={id}` e possíveis POSTs em `/api/experiments/{id}/facebook-api-logs` entre as etapas de criação.
+
+- Em testes com `FailFastMockWebServer`, mantenha stubs explícitos para o fluxo principal e use respostas condicionais de fallback apenas para chamadas auxiliares (logs/status/publicação), para evitar flakiness por ordem de requisição.

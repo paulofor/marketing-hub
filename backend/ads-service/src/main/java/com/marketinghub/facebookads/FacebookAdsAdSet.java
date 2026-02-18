@@ -10,6 +10,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "facebook_ads_ad_set")
@@ -68,6 +70,9 @@ public class FacebookAdsAdSet {
 
     @Column(name = "targeting_json", nullable = false, columnDefinition = "LONGTEXT")
     private String targetingJson;
+
+    @OneToMany(mappedBy = "adSet", fetch = FetchType.LAZY)
+    private List<FacebookAdsAd> ads = new ArrayList<>();
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

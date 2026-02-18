@@ -261,6 +261,51 @@ class FacebookCampaignServiceTest {
 
     
     @Test
+    void deletesFacebookCampaignWhenAdSetCreationFails() throws Exception {
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"99\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse()
+            .setResponseCode(400)
+            .setBody("{\"error\":{\"message\":\"Invalid\",\"code\":100}}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"success\":true}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{\"specs\":[]}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        RecordedRequest experimentsReady = takeBackendRequest("backend request");
+        assertEquals("/api/facebook-campaigns/experiments-ready", experimentsReady.getPath());
+        takeBackendRequest("backend request"); // creatives
+        takeBackendRequest("backend request"); // adset playbook
+
+        RecordedRequest postCampaign = takeFacebookRequest("facebook request");
+        assertEquals("/v23.0/act_1/campaigns", postCampaign.getPath());
+
+        RecordedRequest failedAdSet = takeFacebookRequest("facebook request");
+        assertEquals("/v23.0/act_1/adsets", failedAdSet.getPath());
+
+        RecordedRequest cleanupDelete = takeFacebookRequest("facebook cleanup");
+        assertEquals("DELETE", cleanupDelete.getMethod());
+        assertTrue(cleanupDelete.getPath().startsWith("/v23.0/99"));
+    }
+
+    @Test
     void usesAudiencePipelineTargetingWhenCreatingAdSet() throws Exception {
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));

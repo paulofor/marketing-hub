@@ -10,7 +10,9 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -76,6 +78,9 @@ public class FacebookAdsCampaign {
     )
     @Column(name = "country_iso2", length = 2, nullable = false)
     private Set<String> specialAdCountries = new HashSet<>();
+
+    @OneToMany(mappedBy = "campaign", fetch = FetchType.LAZY)
+    private List<FacebookAdsAdSet> adSets = new ArrayList<>();
 
     @Column(name = "metrics_last_synced_at")
     private Instant metricsLastSyncedAt;

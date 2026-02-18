@@ -274,6 +274,42 @@ class FacebookAdsServiceTest {
     }
 
     @Test
+    void createAdSetRetriesRemovingAdvantageAudienceWhenAgeCapErrorOccurs() throws Exception {
+        server.enqueueResponse(new MockResponse()
+            .setResponseCode(400)
+            .setBody("{\"error\":{\"message\":\"Invalid parameter\",\"code\":100,\"error_subcode\":1870189}}")
+            .addHeader("Content-Type", "application/json"));
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"777"}")
+            .addHeader("Content-Type", "application/json"));
+        String targetingJson = "{\"targeting_automation\":{\"advantage_audience\":1},\"geo_locations\":{\"countries\":[\"BR\"]}}";
+        FacebookAdsService.AdSetRequest request = new FacebookAdsService.AdSetRequest(
+            "Camp - Advantage",
+            "123",
+            "1500",
+            "IMPRESSIONS",
+            "LINK_CLICKS",
+            "WEBSITE",
+            "LOWEST_COST_WITHOUT_CAP",
+            null,
+            "42",
+            "BR",
+            targetingJson,
+            Collections.emptyList()
+        );
+
+        String id = service.createAdSet("1", request);
+
+        RecordedRequest firstAttempt = takeRequest("first ad set attempt");
+        JsonNode firstBody = objectMapper.readTree(firstAttempt.getBody().inputStream());
+        assertTrue(firstBody.get("targeting").has("targeting_automation"));
+
+        RecordedRequest secondAttempt = takeRequest("retry without advantage audience");
+        JsonNode secondBody = objectMapper.readTree(secondAttempt.getBody().inputStream());
+        assertFalse(secondBody.get("targeting").has("targeting_automation"));
+        assertEquals("777", id);
+    }
+
+    @Test
     void createAdSetResolvesInterestNamesToIds() throws Exception {
         server.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"6003139266461\",\"name\":\"Pilates\"}]}" )
             .addHeader("Content-Type", "application/json"));

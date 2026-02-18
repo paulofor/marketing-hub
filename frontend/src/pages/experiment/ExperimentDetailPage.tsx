@@ -20,6 +20,7 @@ import { useJourneyTemplate } from "../../api/journey/useJourneyTemplate";
 import { useExperimentJourneyAssignments } from "../../api/experiment/useExperimentJourneyAssignments";
 import { useRebuildExperimentJourney } from "../../api/experiment/useRebuildExperimentJourney";
 import { useUpdateExperimentStatus } from "../../api/experiment/useUpdateExperimentStatus";
+import { useExperimentFacebookCampaigns } from "../../api/experiment/useExperimentFacebookCampaigns";
 import type { JourneyAssignment, JourneyStep } from "../../api/journey/types";
 import DeliverablesTab from "./DeliverablesTab";
 import LeadPortalFlowTab from "./LeadPortalFlowTab";
@@ -62,6 +63,10 @@ export default function ExperimentDetailPage() {
     useTargetingElementsByNiche(nicheIdParam);
   const { data: adSetWorkflow, isLoading: isLoadingAdSetWorkflow } =
     useExperimentAdSetWorkflow(expId);
+  const {
+    data: facebookCampaigns,
+    isLoading: isLoadingFacebookCampaigns,
+  } = useExperimentFacebookCampaigns(expId);
   const hypothesisIdAsString = hypothesisId ? String(hypothesisId) : undefined;
   const hasCompleteTargeting = useMemo(() => {
     if (!Array.isArray(targetingElements)) return false;
@@ -590,6 +595,73 @@ export default function ExperimentDetailPage() {
               </li>
             ))}
           </ul>
+          <div className="mt-4">
+            <h6 className="text-uppercase small text-muted">Execução registrada</h6>
+            {isLoadingFacebookCampaigns ? (
+              <p className="text-muted small mb-0">Carregando campanhas publicadas...</p>
+            ) : !facebookCampaigns?.length ? (
+              <p className="text-muted small mb-0">Nenhuma publicação registrada para este experimento.</p>
+            ) : (
+              <div className="d-flex flex-column gap-3">
+                {facebookCampaigns.map((campaign) => (
+                  <div key={campaign.id} className="border rounded-3 p-3">
+                    <div className="d-flex justify-content-between flex-wrap gap-2">
+                      <div>
+                        <div className="fw-semibold">{campaign.name}</div>
+                        <div className="text-muted small">
+                          Objetivo: {campaign.objective ?? "—"} · Criada em {formatDateTimeValue(campaign.createdAt)}
+                        </div>
+                      </div>
+                      <span className={`badge text-bg-${campaign.status === "PAUSED" ? "secondary" : "success"}`}>{campaign.status}</span>
+                    </div>
+                    {campaign.issues?.length ? (
+                      <div className="alert alert-warning mt-3 mb-2" role="alert">
+                        <ul className="mb-0 ps-3">
+                          {campaign.issues.map((issue) => (
+                            <li key={`${campaign.id}-${issue}`}>{issue}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                    {campaign.adSets.length ? (
+                      <div className="d-flex flex-column gap-3 mt-3">
+                        {campaign.adSets.map((adSet) => (
+                          <div key={adSet.id} className="border rounded-3 p-3 bg-body-tertiary">
+                            <div className="d-flex justify-content-between flex-wrap gap-2">
+                              <div>
+                                <div className="fw-semibold">{adSet.name}</div>
+                                <div className="text-muted small">
+                                  {adSet.experimentAdSetId
+                                    ? `Segmento aprovado #${adSet.experimentAdSetId}`
+                                    : "Sem vínculo com segmento aprovado"}
+                                  · {adSet.ads.length} anúncio{adSet.ads.length === 1 ? "" : "s"}
+                                </div>
+                              </div>
+                              <span className={`badge text-bg-${adSet.experimentAdSetId ? "success" : "warning"}`}>{adSet.status}</span>
+                            </div>
+                            {adSet.issues?.length ? (
+                              <ul className="text-warning small mb-0 mt-2 ps-3">
+                                {adSet.issues.map((issue) => (
+                                  <li key={`${adSet.id}-${issue}`}>{issue}</li>
+                                ))}
+                              </ul>
+                            ) : null}
+                            <div className="small text-muted mt-2">
+                              {adSet.ads.length
+                                ? `Anúncios: ${adSet.ads.map((ad) => ad.name).join(", ")}`
+                                : "Nenhum anúncio publicado neste conjunto."}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted small mb-0 mt-3">Nenhum conjunto de anúncios registrado.</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       <div className="card border-0 shadow-sm rounded-3 mt-3">
         <div className="card-body">

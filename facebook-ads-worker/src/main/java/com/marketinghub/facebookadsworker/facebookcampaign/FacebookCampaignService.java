@@ -281,7 +281,10 @@ public class FacebookCampaignService {
                     resolvedTargeting = resolveTargetingFromBackend(selectedAdSet);
                 }
             }
-            String campaignId;
+            String campaignId = null;
+            String adSetId = null;
+            String adId = null;
+            boolean publishReported = false;
             try {
                 campaignId = executeFacebookCallWithLogging(
                     exp.id(),
@@ -312,7 +315,7 @@ public class FacebookCampaignService {
                 resolvedTargeting.targetingJson(),
                 resolvedTargeting.options()
             );
-            String adSetId = executeFacebookCallWithLogging(
+            adSetId = executeFacebookCallWithLogging(
                 exp.id(),
                 ExperimentFacebookApiLogContext.CAMPAIGN_AD_SET,
                 () -> facebookAdsService.createAdSet(config.adAccountId(), adSetRequest)
@@ -338,7 +341,7 @@ public class FacebookCampaignService {
                 adSetId,
                 creativeId
             );
-            String adId = executeFacebookCallWithLogging(
+            adId = executeFacebookCallWithLogging(
                 exp.id(),
                 ExperimentFacebookApiLogContext.CAMPAIGN_AD,
                 () -> facebookAdsService.createAd(config.adAccountId(), adRequest)
@@ -399,6 +402,7 @@ public class FacebookCampaignService {
                 .retrieve()
                 .toBodilessEntity()
                 .block();
+            publishReported = true;
             LOGGER.info(
                 "Successfully reported Facebook campaign creation to backend: url<=={}, experimentId={}, campaignId={}",
                 createCampaignUrl,
@@ -471,6 +475,35 @@ public class FacebookCampaignService {
                 ex
             );
             markExperimentAsFailed(exp.id(), ex.getMessage());
+        } finally {
+            if (!publishReported) {
+                cleanupFailedPublication(campaignId, adSetId, adId);
+            }
+        }
+    }
+
+    private void cleanupFailedPublication(String campaignId, String adSetId, String adId) {
+        if (!StringUtils.hasText(campaignId)) {
+            return;
+        }
+        if (StringUtils.hasText(adId)) {
+            try {
+                facebookAdsService.deleteAd(adId);
+            } catch (Exception cleanupEx) {
+                LOGGER.warn("Failed to delete Facebook ad {} during cleanup: {}", adId, cleanupEx.getMessage());
+            }
+        }
+        if (StringUtils.hasText(adSetId)) {
+            try {
+                facebookAdsService.deleteAdSet(adSetId);
+            } catch (Exception cleanupEx) {
+                LOGGER.warn("Failed to delete Facebook ad set {} during cleanup: {}", adSetId, cleanupEx.getMessage());
+            }
+        }
+        try {
+            facebookAdsService.deleteCampaign(campaignId);
+        } catch (Exception cleanupEx) {
+            LOGGER.warn("Failed to delete Facebook campaign {} during cleanup: {}", campaignId, cleanupEx.getMessage());
         }
     }
 

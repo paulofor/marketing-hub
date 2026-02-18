@@ -80,6 +80,8 @@ public class FacebookAdsService {
         "detailed_targeting_description"
     );
 
+    private static final int ADVANTAGE_PLUS_AGE_CAP_ERROR = 1870189;
+
     public FacebookAdsService(WebClient.Builder builder,
                               @Value("${facebook.graph-api.base-url:https://graph.facebook.com}") String baseUrl,
                               @Value("${facebook.graph-api.version:v23.0}") String apiVersion,
@@ -281,14 +283,11 @@ public class FacebookAdsService {
                 return executePost(path, body);
             } catch (WebClientResponseException ex) {
                 attempt++;
-                boolean removed = tryRemoveInvalidInterestFromSpec(targetingNode, ex);
-                if (!removed || attempt >= 10) {
+                String mitigationMessage = sanitizeTargetingAfterAdSetError(targetingNode, ex, adSetName);
+                if (mitigationMessage == null || attempt >= 10) {
                     throw ex;
                 }
-                LOGGER.warn(
-                    "Facebook retornou segmentação inválida ao criar ad set '{}'. Tentando novamente sem item inválido.",
-                    adSetName
-                );
+                LOGGER.warn(mitigationMessage);
             }
         }
     }
@@ -1576,6 +1575,39 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         throw new IllegalArgumentException("targetingSpec deve ser um objeto JSON");
     }
 
+    private String sanitizeTargetingAfterAdSetError(ObjectNode targetingNode,
+                                                   WebClientResponseException ex,
+                                                   String adSetName) {
+        if (tryRemoveInvalidInterestFromSpec(targetingNode, ex)) {
+            return "Facebook retornou segmentação inválida ao criar ad set '" + adSetName
+                + "'. Tentando novamente sem item inválido.";
+        }
+        if (tryDisableAdvantageAudienceAutomation(targetingNode, ex)) {
+            return "Facebook rejeitou o conjunto '" + adSetName
+                + "' porque o público Advantage+ impede limitar a idade máxima. Removendo targeting_automation e tentando novamente.";
+        }
+        return null;
+    }
+
+    private boolean tryDisableAdvantageAudienceAutomation(ObjectNode targetingNode,
+                                                          WebClientResponseException ex) {
+        if (targetingNode == null) {
+            return false;
+        }
+        ObjectNode errorDetails = extractErrorDetails(ex.getResponseBodyAsString());
+        if (errorDetails == null) {
+            return false;
+        }
+        if (errorDetails.path("error_subcode").asInt() != ADVANTAGE_PLUS_AGE_CAP_ERROR) {
+            return false;
+        }
+        if (!targetingNode.has("targeting_automation")) {
+            return false;
+        }
+        targetingNode.remove("targeting_automation");
+        return true;
+    }
+
     private boolean tryRemoveInvalidInterestFromSpec(ObjectNode targetingSpecNode, WebClientResponseException ex) {
         String responseBody = ex.getResponseBodyAsString();
         String normalizedBody = normalizeErrorResponseText(responseBody);
@@ -2019,6 +2051,40 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         return response.path("id").asText();
     }
 
+    public void deleteAd(String adId) {
+        deleteMarketingObject(adId, "ad");
+    }
+
+    public void deleteAdSet(String adSetId) {
+        deleteMarketingObject(adSetId, "ad set");
+    }
+
+    public void deleteCampaign(String campaignId) {
+        deleteMarketingObject(campaignId, "campaign");
+    }
+
+    private void deleteMarketingObject(String objectId, String objectLabel) {
+        if (!hasText(objectId)) {
+            return;
+        }
+        String path = UriComponentsBuilder
+            .fromPath(buildVersionedPath("/" + objectId))
+            .queryParam("access_token", requireAccessToken())
+            .build()
+            .toString();
+        try {
+            executeDelete(path);
+            LOGGER.info("Deleted Facebook {} {} after cleanup request", objectLabel, objectId);
+        } catch (FacebookPermissionException | FacebookAccessTokenExpiredException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            LOGGER.warn(
+                "Failed to delete Facebook {} {} after cleanup request: {}",
+                objectLabel, objectId, ex.getMessage()
+            );
+        }
+    }
+
     public JsonNode getCampaignInsights(String campaignId, Map<String, String> queryParams) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/" + campaignId + "/insights")
             .queryParam("access_token", requireAccessToken());
@@ -2231,6 +2297,91 @@ private FacebookInterest searchInterest(String interestName, String locale) {
                 "POST",
                 path,
                 toJsonString(body),
+                null,
+                null,
+                ex.getMessage(),
+                startedAt,
+                Instant.now()
+            );
+            throw ex;
+        }
+    }
+
+    private JsonNode executeDelete(String path) {
+        Instant startedAt = Instant.now();
+        String maskedPath = maskAccessTokenInPath(path);
+        LOGGER.info(
+            "Sending DELETE request to Facebook API: path==>{}",
+            maskedPath
+        );
+        try {
+            FacebookApiResponse apiResponse = webClient
+                .delete()
+                .uri(path)
+                .exchangeToMono(response -> {
+                    if (response.statusCode().isError()) {
+                        return response.createException().flatMap(Mono::error);
+                    }
+                    return response
+                        .bodyToMono(JsonNode.class)
+                        .defaultIfEmpty(objectMapper.nullNode())
+                        .map(bodyNode -> new FacebookApiResponse(response.statusCode(), response.headers().asHttpHeaders(), bodyNode));
+                })
+                .block();
+            FacebookApiResponse nonNullResponse =
+                apiResponse != null ? apiResponse : new FacebookApiResponse(null, HttpHeaders.EMPTY, objectMapper.nullNode());
+            logSuccessfulResponse("DELETE", maskedPath, nonNullResponse);
+            recordApiCallDebugInfo(
+                "DELETE",
+                path,
+                null,
+                toJsonString(nonNullResponse.body()),
+                nonNullResponse.statusCode() != null ? nonNullResponse.statusCode().value() : null,
+                null,
+                startedAt,
+                Instant.now()
+            );
+            return nonNullResponse.body();
+        } catch (WebClientResponseException ex) {
+            String responseBody = ex.getResponseBodyAsString();
+            ObjectNode errorDetails = extractErrorDetails(responseBody);
+            LOGGER.error(
+                "Facebook API DELETE request failed: path<=={}, status={}, responseBody={}, errorDetails={}, headers={}",
+                maskedPath,
+                ex.getRawStatusCode(),
+                maskAccessToken(responseBody),
+                errorDetails,
+                JsonLogFormatter.wrap(objectMapper, sanitizeHeaders(ex.getHeaders())),
+                ex
+            );
+            recordApiCallDebugInfo(
+                "DELETE",
+                path,
+                null,
+                responseBody,
+                ex.getRawStatusCode(),
+                ex.getMessage(),
+                startedAt,
+                Instant.now()
+            );
+            if (isAccessTokenExpired(errorDetails)) {
+                throw new FacebookAccessTokenExpiredException(resolveAccessTokenExpiredMessage(errorDetails), errorDetails, ex);
+            }
+            if (isPermissionError(errorDetails)) {
+                throw new FacebookPermissionException(resolvePermissionMessage(errorDetails), errorDetails, ex);
+            }
+            throw ex;
+        } catch (WebClientRequestException ex) {
+            LOGGER.error(
+                "Facebook API DELETE request could not be completed: path==>{}, message={}",
+                maskedPath,
+                ex.getMessage(),
+                ex
+            );
+            recordApiCallDebugInfo(
+                "DELETE",
+                path,
+                null,
                 null,
                 null,
                 ex.getMessage(),

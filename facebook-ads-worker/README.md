@@ -218,6 +218,12 @@ Para preservar o formato JSON mesmo nos logs, utilize o utilitário
 Ele serializa as estruturas para JSON antes da interpolação na mensagem,
 garantindo que campos de texto apareçam entre aspas (por exemplo,
 `{"nome":"Paulo"}`) em vez da forma padrão de `Map.toString()` (`{nome=Paulo}`).
+
+## Atualizações recentes
+
+- O critério de ordenação de `AdSetPlaybookSpec` no `FacebookCampaignService`
+  agora força a tipagem explícita no `Comparator`, evitando inferência para
+  `Object` e falhas de compilação ao acessar `slot()` e `id()`.
 Esse padrão facilita buscas em ferramentas de observabilidade e reduz ambiguidades
 durante a análise de incidentes.
 

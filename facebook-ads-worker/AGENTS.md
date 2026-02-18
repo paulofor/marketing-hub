@@ -15,6 +15,7 @@
 - No discovery de público do playbook (`FACEBOOK_SEED_LOOKUP`), execute chamadas separadas em `/act_<AD_ACCOUNT_ID>/targetingsearch` para `adinterest`, `adbehavior` e `adworkposition`; não use payload misto sem `type` nem fallback por `/search` para essa etapa.
 - Remova campos de segmentação não suportados pela Graph API antes do envio (por exemplo, `detailed_targeting_description`) para evitar erros `(#100) Invalid parameter`.
 - Em chamadas de `/targetingvalidation` e `/reachestimate`, se a Graph API indicar `interest/interesse ... id <número> inválido`, remova esse ID do `targeting_spec` (inclusive em `flexible_spec`) e tente novamente para evitar bloqueio por interesses descontinuados.
+- Na criação de ad sets (`POST /adsets`), se a Meta responder com erro no formato `targeting[<campo>][<índice>][id]`, remova o item inválido pelo índice indicado e reenvie a requisição para evitar falha definitiva por IDs descontinuados.
 - Na etapa `FACEBOOK_VALIDATE_SPEC`, trate respostas do `/targetingvalidation` com `data=[]` como `VALID` quando não houver `is_valid` explícito, preservando compatibilidade com variações da Graph API.
 - Em `geo_locations` descarte chaves que não sejam texto e remova `regions` cujos `key` não sejam numéricos para manter a compatibilidade com a Graph API.
 - Quando o destino do experimento for um formulário de leads, ajuste o conjunto de anúncios para `destination_type = ON_AD`, force `optimization_goal = LEAD_GENERATION` e não envie `link` externo no criativo; utilize apenas `call_to_action.value.lead_gen_form_id`.
@@ -31,6 +32,8 @@
   erros), garantindo um padrão visual consistente em todo o módulo.
 - O fluxo de campanhas consulta o backend (`/api/adsets?experimentId={id}`) antes de criar campanhas na Meta para preparar a
   segmentação e Saved Audiences; mantenha esse detalhe documentado ao ajustar o fluxo.
+- Na criação de campanhas, priorize sempre a segmentação validada pelo pipeline de público (`targetingRequestId` com
+  `GET /api/targeting/requests/{id}?includeCandidates=true`); use `targetingJson`/campos legados apenas como fallback de compatibilidade.
 - Em caso de erro de permissão do Facebook, o worker bloqueia o experimento em memória até que o serviço seja reiniciado.
 - Ao publicar instant forms aprove os rascunhos com `facebookFormId` nulo e reporte o identificador definitivo recebido da Meta
   através de `PATCH /api/instant-forms/{id}/publication`. A criação automática foi descontinuada; os formulários devem ser

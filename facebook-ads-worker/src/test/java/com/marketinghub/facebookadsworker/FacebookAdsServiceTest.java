@@ -318,6 +318,90 @@ class FacebookAdsServiceTest {
     }
 
     @Test
+    void createAdSetRetriesAfterInvalidInterestIdAndRemovesEntry() throws Exception {
+        server.enqueueResponse(new MockResponse()
+            .setResponseCode(400)
+            .setBody("""
+                {"error":{"message":"(#100) Param targeting[interests][0][id] must be a valid interest id","type":"OAuthException","code":100}}
+                """)
+            .addHeader("Content-Type", "application/json"));
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"556\"}")
+            .addHeader("Content-Type", "application/json"));
+
+        String targetingJson = "{\"interests\":[{\"id\":\"6023080302983\",\"name\":\"Parents (0-12 years)\"},{\"id\":\"6003306206853\",\"name\":\"Early childhood education\"}],\"geo_locations\":{\"countries\":[\"BR\"]}}";
+        FacebookAdsService.AdSetRequest request = new FacebookAdsService.AdSetRequest(
+            "Camp - Ad Set",
+            "123",
+            "1500",
+            "IMPRESSIONS",
+            "LINK_CLICKS",
+            "WEBSITE",
+            "LOWEST_COST_WITHOUT_CAP",
+            "200",
+            "42",
+            "BR",
+            targetingJson,
+            Collections.emptyList()
+        );
+
+        String id = service.createAdSet("1", request);
+
+        RecordedRequest firstAttempt = takeRequest("first adset request");
+        JsonNode firstTargeting = objectMapper.readTree(firstAttempt.getBody().inputStream()).get("targeting");
+        assertEquals(2, firstTargeting.get("interests").size());
+
+        RecordedRequest secondAttempt = takeRequest("retry adset request");
+        JsonNode secondTargeting = objectMapper.readTree(secondAttempt.getBody().inputStream()).get("targeting");
+        JsonNode interests = secondTargeting.get("interests");
+        assertNotNull(interests);
+        assertEquals(1, interests.size());
+        assertEquals("6003306206853", interests.get(0).get("id").asText());
+        assertEquals("556", id);
+    }
+
+    @Test
+    void createAdSetRetriesAfterInvalidWorkPositionIdAndRemovesEntry() throws Exception {
+        server.enqueueResponse(new MockResponse()
+            .setResponseCode(400)
+            .setBody("""
+                {"error":{"message":"(#100) Param targeting[work_positions][1][id] must be a valid work position id","type":"OAuthException","code":100}}
+                """)
+            .addHeader("Content-Type", "application/json"));
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"557\"}")
+            .addHeader("Content-Type", "application/json"));
+
+        String targetingJson = "{\"work_positions\":[{\"id\":\"2\",\"name\":\"Diretor(a) de escola\"},{\"id\":\"3\",\"name\":\"Coordenador(a) pedagógico(a)\"}],\"geo_locations\":{\"countries\":[\"BR\"]}}";
+        FacebookAdsService.AdSetRequest request = new FacebookAdsService.AdSetRequest(
+            "Camp - Ad Set",
+            "123",
+            "1500",
+            "IMPRESSIONS",
+            "LINK_CLICKS",
+            "WEBSITE",
+            "LOWEST_COST_WITHOUT_CAP",
+            "200",
+            "42",
+            "BR",
+            targetingJson,
+            Collections.emptyList()
+        );
+
+        String id = service.createAdSet("1", request);
+
+        RecordedRequest firstAttempt = takeRequest("first adset request");
+        JsonNode firstTargeting = objectMapper.readTree(firstAttempt.getBody().inputStream()).get("targeting");
+        assertEquals(2, firstTargeting.get("work_positions").size());
+
+        RecordedRequest secondAttempt = takeRequest("retry adset request");
+        JsonNode secondTargeting = objectMapper.readTree(secondAttempt.getBody().inputStream()).get("targeting");
+        JsonNode workPositions = secondTargeting.get("work_positions");
+        assertNotNull(workPositions);
+        assertEquals(1, workPositions.size());
+        assertEquals("2", workPositions.get(0).get("id").asText());
+        assertEquals("557", id);
+    }
+
+    @Test
     void createAdCreativePostsCorrectRequest() throws Exception {
         server.enqueueResponse(new MockResponse().setBody("{\"id\":\"333\"}")
             .addHeader("Content-Type", "application/json"));

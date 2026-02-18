@@ -497,6 +497,7 @@ public class FacebookCampaignService {
         if (adSet == null) {
             return new ResolvedTargeting(null, Collections.emptyList());
         }
+
         if (adSet.targetingRequestId() != null) {
             List<FacebookAdsService.TargetingOption> options = fetchValidatedTargetingOptions(adSet.targetingRequestId());
             if (options.isEmpty()) {
@@ -504,13 +505,23 @@ public class FacebookCampaignService {
                     "No validated targeting options found for request %s".formatted(adSet.targetingRequestId())
                 );
             }
+
             ObjectNode targeting = objectMapper.createObjectNode();
             appendOptionsToTargeting(targeting, options);
             return new ResolvedTargeting(targeting.isEmpty() ? null : targeting.toString(), options);
         }
+
         if (StringUtils.hasText(adSet.targetingJson())) {
+            LOGGER.warn(
+                "Experiment ad set {} does not provide targetingRequestId. Falling back to legacy targetingJson payload.",
+                adSet.id()
+            );
             return new ResolvedTargeting(adSet.targetingJson(), Collections.emptyList());
         }
+        LOGGER.warn(
+            "Experiment ad set {} does not provide targetingRequestId. Falling back to legacy line-based targeting fields.",
+            adSet.id()
+        );
         ObjectNode targeting = objectMapper.createObjectNode();
         mergeTargetingValues(targeting, "interests", adSet.interests());
         mergeTargetingValues(targeting, "work_positions", adSet.jobTitles());

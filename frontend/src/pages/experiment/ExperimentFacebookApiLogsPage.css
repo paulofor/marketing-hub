@@ -1,0 +1,13 @@
+.facebook-api-log-expanded-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 520px));
+}
+
+.facebook-api-log-expanded-card {
+  min-width: 0;
+}
+
+.facebook-api-log-expanded-card pre {
+  margin-bottom: 0;
+}

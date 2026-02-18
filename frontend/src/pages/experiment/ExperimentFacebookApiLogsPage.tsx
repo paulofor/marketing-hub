@@ -5,6 +5,7 @@ import {
   ExperimentFacebookApiLog,
   useExperimentFacebookApiLogs,
 } from "../../api/experiment/useExperimentFacebookApiLogs";
+import "./ExperimentFacebookApiLogsPage.css";
 
 const LIMIT_OPTIONS = [25, 50, 100, 200, 400];
 
@@ -202,14 +203,14 @@ export default function ExperimentFacebookApiLogsPage() {
                       </tr>
                       {isExpanded ? (
                         <tr>
-                          <td colSpan={7}>
+                          <td colSpan={8}>
                             <div className="bg-light rounded border p-3">
-                              <div className="row g-3">
-                                <div className="col-12 col-lg-6">
+                              <div className="facebook-api-log-expanded-grid">
+                                <div className="facebook-api-log-expanded-card">
                                   <h6 className="h6">Request</h6>
                                   <PayloadViewer payload={log.requestPayload} />
                                 </div>
-                                <div className="col-12 col-lg-6">
+                                <div className="facebook-api-log-expanded-card">
                                   <h6 className="h6">Response</h6>
                                   <PayloadViewer payload={log.responsePayload} />
                                 </div>

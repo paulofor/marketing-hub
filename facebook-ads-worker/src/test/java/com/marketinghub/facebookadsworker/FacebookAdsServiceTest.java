@@ -118,6 +118,7 @@ class FacebookAdsServiceTest {
         assertEquals("LOWEST_COST_WITHOUT_CAP", body.get("bid_strategy").asText());
         assertFalse(body.has("bid_amount"));
         assertEquals("BR", body.get("targeting").get("geo_locations").get("countries").get(0).asText());
+        assertEquals(0, body.get("targeting").get("targeting_automation").get("advantage_audience").asInt());
         assertEquals("42", body.get("promoted_object").get("page_id").asText());
         assertEquals("222", id);
     }

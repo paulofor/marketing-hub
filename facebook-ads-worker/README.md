@@ -86,7 +86,7 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    pipeline de público via `GET /api/targeting/requests/{id}?includeCandidates=true`.
    A segmentação enviada
    para a Meta é sempre o Brasil inteiro (`geo_locations.countries = ["BR"]`)
-   e com Advantage+ Audience habilitado (`targeting_automation.advantage_audience = 1`),
+   e com Advantage+ Audience desabilitado (`targeting_automation.advantage_audience = 0`),
    garantindo o alcance nacional independente do público retornado pelo backend.
    Interesses e custom audiences são normalizados quando presentes no JSON de
    segmentação, e campos auxiliares não reconhecidos pela Graph API são

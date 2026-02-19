@@ -109,7 +109,8 @@ public class FacebookAdsCampaignController {
 
     @PostMapping
     @Transactional
-    public FacebookAdsCampaign create(@RequestBody CreateCampaignRequest req) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public void create(@RequestBody CreateCampaignRequest req) {
         Experiment experiment;
         try {
             experiment = experimentService.get(req.experimentId());
@@ -151,8 +152,6 @@ public class FacebookAdsCampaignController {
             }
             adRepository.save(mapAd(req.ad(), savedAdSet, savedCreative));
         }
-
-        return savedCampaign;
     }
 
     @PostMapping("/{campaignId}/metrics")

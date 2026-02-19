@@ -23,7 +23,11 @@ import { useExperimentJourneyAssignments } from "../../api/experiment/useExperim
 import { useRebuildExperimentJourney } from "../../api/experiment/useRebuildExperimentJourney";
 import { useUpdateExperimentStatus } from "../../api/experiment/useUpdateExperimentStatus";
 import { useExperimentFacebookCampaigns } from "../../api/experiment/useExperimentFacebookCampaigns";
-import { useExperimentCampaignReset, useExperimentCampaignResetPreview } from "../../api/experiment/useExperimentCampaignReset";
+import {
+  useExperimentCampaignReset,
+  useExperimentCampaignResetPreview,
+  type ExperimentCampaignResetSummary,
+} from "../../api/experiment/useExperimentCampaignReset";
 import type { JourneyAssignment, JourneyStep } from "../../api/journey/types";
 import DeliverablesTab from "./DeliverablesTab";
 import LeadPortalFlowTab from "./LeadPortalFlowTab";
@@ -77,7 +81,6 @@ export default function ExperimentDetailPage() {
     isError: isResetPreviewError,
     error: resetPreviewError,
     refetch: refetchResetPreview,
-    remove: removeResetPreview,
   } = useExperimentCampaignResetPreview(expId);
   const resetCampaigns = useExperimentCampaignReset(expId);
   const hypothesisIdAsString = hypothesisId ? String(hypothesisId) : undefined;
@@ -151,6 +154,11 @@ export default function ExperimentDetailPage() {
   }, [journeyAssignments?.assignments, templateSteps]);
 
   const openResetModal = () => setIsResetModalOpen(true);
+
+  useEffect(() => {
+    if (!isResetModalOpen) return;
+    void refetchResetPreview();
+  }, [isResetModalOpen, refetchResetPreview]);
 
   const closeResetModal = () => {
     if (resetCampaigns.isPending) return;

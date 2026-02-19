@@ -218,6 +218,13 @@ Quando a Graph API devolve `data=[]` no Insights (campanhas sem entrega ainda),
 o worker registra a ausência de dados e envia métricas zeradas ao backend para
 atualizar o `metrics_last_synced_at` sem marcar erro.
 
+Para reduzir poluição de logs em produção, as chamadas frequentes de métricas
+(`GET /api/facebook-campaigns/metrics/sync-targets`,
+`POST /api/facebook-campaigns/{campaignId}/metrics` e
+`POST /api/facebook-campaigns/{campaignId}/metrics-error`) não são mais emitidas
+em nível `INFO`; o serviço mantém apenas mensagens de erro/aviso e um resumo
+em `DEBUG` com a quantidade de campanhas processadas.
+
 Para preservar o formato JSON mesmo nos logs, utilize o utilitário
 `JsonLogFormatter.wrap(...)` ao registrar payloads, parâmetros e respostas.
 Ele serializa as estruturas para JSON antes da interpolação na mensagem,

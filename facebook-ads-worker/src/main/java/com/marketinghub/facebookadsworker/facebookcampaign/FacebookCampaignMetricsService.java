@@ -1,14 +1,12 @@
 package com.marketinghub.facebookadsworker.facebookcampaign;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenExpiredException;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenManager;
 import com.marketinghub.facebookadsworker.FacebookAdsService;
 import com.marketinghub.facebookadsworker.FacebookPermissionException;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient.FacebookWorkerConfiguration;
-import com.marketinghub.facebookadsworker.util.JsonLogFormatter;
 import com.marketinghub.facebookadsworker.util.UrlUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +39,6 @@ public class FacebookCampaignMetricsService {
     private final FacebookWorkerConfigurationClient configurationClient;
     private final String backendBaseUrl;
     private final String apiPrefix;
-    private final ObjectMapper objectMapper;
     private final AtomicBoolean configurationUnavailableWarningLogged = new AtomicBoolean(false);
 
     public FacebookCampaignMetricsService(FacebookAdsService facebookAdsService,
@@ -49,15 +46,13 @@ public class FacebookCampaignMetricsService {
                                           FacebookWorkerConfigurationClient configurationClient,
                                           WebClient.Builder builder,
                                           @Value("${backend.base-url:http://localhost:8000}") String backendBaseUrl,
-                                          @Value("${backend.api-prefix:/api}") String apiPrefix,
-                                          ObjectMapper objectMapper) {
+                                          @Value("${backend.api-prefix:/api}") String apiPrefix) {
         this.facebookAdsService = facebookAdsService;
         this.accessTokenManager = accessTokenManager;
         this.configurationClient = configurationClient;
         this.backendClient = builder.build();
         this.backendBaseUrl = backendBaseUrl;
         this.apiPrefix = apiPrefix;
-        this.objectMapper = objectMapper;
     }
 
     public void syncCampaignMetrics() {
@@ -201,11 +196,6 @@ public class FacebookCampaignMetricsService {
 
     private void sendMetrics(String campaignId, CampaignMetricsUpdateRequest payload) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns/" + campaignId + "/metrics");
-        LOGGER.info(
-            "Reporting Facebook campaign metrics to backend: url==>{}, payload={}",
-            url,
-            JsonLogFormatter.wrap(objectMapper, payload)
-        );
         backendClient.post()
             .uri(url)
             .bodyValue(payload)
@@ -222,11 +212,6 @@ public class FacebookCampaignMetricsService {
         String sanitized = sanitizeMessage(message);
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns/" + campaignId + "/metrics-error");
         CampaignMetricsErrorRequest request = new CampaignMetricsErrorRequest(sanitized);
-        LOGGER.info(
-            "Reporting Facebook campaign metrics error to backend: url==>{}, payload={}",
-            url,
-            JsonLogFormatter.wrap(objectMapper, request)
-        );
         try {
             backendClient.post()
                 .uri(url)
@@ -248,7 +233,6 @@ public class FacebookCampaignMetricsService {
 
     private List<CampaignMetricsSyncTarget> fetchSyncTargets() {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns/metrics/sync-targets");
-        LOGGER.info("Requesting campaign metrics sync targets from backend: url==>{}", url);
         try {
             List<CampaignMetricsSyncTarget> targets = backendClient.get()
                 .uri(url)
@@ -256,11 +240,7 @@ public class FacebookCampaignMetricsService {
                 .bodyToFlux(CampaignMetricsSyncTarget.class)
                 .collectList()
                 .block();
-            LOGGER.info(
-                "Received campaign metrics sync targets response: url<=={}, response={}",
-                url,
-                JsonLogFormatter.wrap(objectMapper, targets)
-            );
+            LOGGER.debug("Fetched {} campaign metrics sync targets", targets == null ? 0 : targets.size());
             return targets != null ? targets : Collections.emptyList();
         } catch (WebClientRequestException ex) {
             LOGGER.warn("Could not fetch campaign metrics sync targets from backend: url==>{}", url, ex);

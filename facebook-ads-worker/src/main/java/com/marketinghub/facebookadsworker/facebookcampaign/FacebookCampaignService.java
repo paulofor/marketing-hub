@@ -231,10 +231,13 @@ public class FacebookCampaignService {
             boolean hasWebsiteDestination = StringUtils.hasText(resolvedWebsiteUrl);
             boolean hasLeadFormDestination = StringUtils.hasText(resolvedLeadGenFormId);
             if (!hasWebsiteDestination && !hasLeadFormDestination) {
+                String reason = "experiment is missing a destination URL, lead portal flow URL or lead form";
                 LOGGER.warn(
-                    "Skipping experiment {} because no destination URL or lead form is configured",
-                    exp.id()
+                    "Skipping experiment {} because {}",
+                    exp.id(),
+                    reason
                 );
+                markExperimentAsFailed(exp.id(), reason);
                 return;
             }
 
@@ -851,7 +854,8 @@ public class FacebookCampaignService {
         @JsonAlias("facebookInstantForm")
         InstantForm facebookInstantForm,
         @JsonAlias("nextStepInstantForm")
-        boolean nextStepInstantForm
+        boolean nextStepInstantForm,
+        LeadPortalFlow leadPortalFlow
     ) {
         public FacebookPage associatedPage() {
             return facebookPage;
@@ -868,6 +872,7 @@ public class FacebookCampaignService {
             boolean published,
             String shareLink
         ) {}
+        public record LeadPortalFlow(Long id, String name, String slug, String publicUrl) {}
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -1481,6 +1486,24 @@ public class FacebookCampaignService {
                 instantFormDestination.shareLink()
             );
             return instantFormDestination.shareLink();
+        }
+        Experiment.LeadPortalFlow leadPortalFlow = experiment.leadPortalFlow();
+        if (leadPortalFlow != null) {
+            if (StringUtils.hasText(leadPortalFlow.publicUrl())) {
+                LOGGER.info(
+                    "Using lead portal flow public URL as destination for experiment {}: flowId={}, url={}",
+                    experiment.id(),
+                    leadPortalFlow.id(),
+                    leadPortalFlow.publicUrl()
+                );
+                return leadPortalFlow.publicUrl();
+            } else {
+                LOGGER.warn(
+                    "Lead portal flow {} selected for experiment {} but it has no public URL; falling back to creative destination",
+                    leadPortalFlow.id(),
+                    experiment.id()
+                );
+            }
         }
         return coalesce(creative.destinationUrl(), config.defaultWebsiteUrl());
     }

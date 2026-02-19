@@ -15,6 +15,8 @@ import com.marketinghub.experiment.service.ExperimentCampaignMetricService;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.journey.model.JourneyStep;
 import com.marketinghub.journey.model.JourneyStimulusType;
+import com.marketinghub.leadportal.LeadPortalFlow;
+import com.marketinghub.leadportal.support.LeadPortalPublicUrlResolver;
 import com.marketinghub.facebookads.AdCreativeKind;
 import com.marketinghub.facebookads.BudgetMode;
 import com.marketinghub.facebookads.FacebookAdsAd;
@@ -54,6 +56,7 @@ public class FacebookAdsCampaignController {
     private final TargetingElementRepository targetingElementRepository;
     private final ObjectMapper objectMapper;
     private final ExperimentCampaignMetricService campaignMetricService;
+    private final LeadPortalPublicUrlResolver leadPortalPublicUrlResolver;
 
     public FacebookAdsCampaignController(ExperimentService experimentService,
                                          FacebookAdsCampaignRepository campaignRepository,
@@ -64,7 +67,8 @@ public class FacebookAdsCampaignController {
                                          com.marketinghub.experiment.repository.AdSetRepository experimentAdSetRepository,
                                          TargetingElementRepository targetingElementRepository,
                                          ObjectMapper objectMapper,
-                                         ExperimentCampaignMetricService campaignMetricService) {
+                                         ExperimentCampaignMetricService campaignMetricService,
+                                         LeadPortalPublicUrlResolver leadPortalPublicUrlResolver) {
         this.experimentService = experimentService;
         this.campaignRepository = campaignRepository;
         this.accountRepository = accountRepository;
@@ -75,6 +79,7 @@ public class FacebookAdsCampaignController {
         this.targetingElementRepository = targetingElementRepository;
         this.objectMapper = objectMapper;
         this.campaignMetricService = campaignMetricService;
+        this.leadPortalPublicUrlResolver = leadPortalPublicUrlResolver;
     }
 
     @GetMapping("/experiments-ready")
@@ -337,6 +342,7 @@ public class FacebookAdsCampaignController {
                 experiment.getNiche() != null ? experiment.getNiche().getName() : null,
                 experiment.getHypothesisRef() != null ? experiment.getHypothesisRef().getTitle() : null,
                 computeMissingConfiguration(experiment),
+                toLeadPortalFlowSummary(experiment),
                 toFacebookPageSummary(experiment),
                 toInstagramAccountSummary(experiment),
                 toInstantFormSummary(experiment),
@@ -410,6 +416,19 @@ public class FacebookAdsCampaignController {
             return null;
         }
         return experiment.getFacebookPage().getPageId();
+    }
+
+    private LeadPortalFlowSummary toLeadPortalFlowSummary(Experiment experiment) {
+        LeadPortalFlow flow = experiment.getLeadPortalFlow();
+        if (flow == null) {
+            return null;
+        }
+        return new LeadPortalFlowSummary(
+                flow.getId(),
+                flow.getName(),
+                flow.getSlug(),
+                leadPortalPublicUrlResolver.resolve(flow)
+        );
     }
 
     private FacebookPageSummary toFacebookPageSummary(Experiment experiment) {
@@ -498,11 +517,14 @@ public class FacebookAdsCampaignController {
             String nicheName,
             String hypothesisTitle,
             List<String> missingConfiguration,
+            LeadPortalFlowSummary leadPortalFlow,
             FacebookPageSummary facebookPage,
             InstagramAccountSummary instagramAccount,
             InstantFormSummary facebookInstantForm,
             boolean nextStepInstantForm,
             CampaignMetricSummary metrics) {}
+
+    public record LeadPortalFlowSummary(Long id, String name, String slug, String publicUrl) {}
 
     public record FacebookPageSummary(Long id, Long accountId, String pageId, String name) {}
 

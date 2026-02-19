@@ -35,6 +35,7 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
             left join fetch fif.page fifp
             left join fetch e.journeyTemplate jt
             left join fetch jt.steps steps
+            left join fetch e.leadPortalFlow flow
             where e.status = :status
               and e.platform = :platform
               and e.creativeApproved = true

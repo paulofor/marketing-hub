@@ -5,11 +5,9 @@ import com.marketinghub.leadportal.dto.CreateLeadPortalFlowRequest;
 import com.marketinghub.leadportal.dto.LeadPortalFlowDto;
 import com.marketinghub.leadportal.dto.UpdateLeadPortalFlowApprovalRequest;
 import com.marketinghub.leadportal.dto.UpdateLeadPortalFlowRequest;
-import com.marketinghub.leadportal.integration.LeadPortalIntegrationProperties;
+import com.marketinghub.leadportal.support.LeadPortalPublicUrlResolver;
 import com.marketinghub.leadportal.mapper.LeadPortalFlowMapper;
 import com.marketinghub.leadportal.service.LeadPortalFlowService;
-import org.springframework.util.StringUtils;
-import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,14 +20,14 @@ import java.util.List;
 public class LeadPortalFlowController {
     private final LeadPortalFlowService service;
     private final LeadPortalFlowMapper mapper;
-    private final LeadPortalIntegrationProperties integrationProperties;
+    private final LeadPortalPublicUrlResolver publicUrlResolver;
 
     public LeadPortalFlowController(LeadPortalFlowService service,
                                     LeadPortalFlowMapper mapper,
-                                    LeadPortalIntegrationProperties integrationProperties) {
+                                    LeadPortalPublicUrlResolver publicUrlResolver) {
         this.service = service;
         this.mapper = mapper;
-        this.integrationProperties = integrationProperties;
+        this.publicUrlResolver = publicUrlResolver;
     }
 
     @GetMapping
@@ -66,18 +64,6 @@ public class LeadPortalFlowController {
     }
 
     private String resolvePublicUrl(LeadPortalFlow flow) {
-        if (!flow.isApproved()) {
-            return null;
-        }
-        if (!integrationProperties.isEnabled()) {
-            return null;
-        }
-        if (!StringUtils.hasText(integrationProperties.getBaseUrl())) {
-            return null;
-        }
-        return UriComponentsBuilder.fromHttpUrl(integrationProperties.getBaseUrl())
-                .path("/flows/{slug}")
-                .buildAndExpand(flow.getSlug())
-                .toUriString();
+        return publicUrlResolver.resolve(flow);
     }
 }

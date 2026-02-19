@@ -12,7 +12,7 @@ const LIMIT_OPTIONS = [25, 50, 100, 200, 400];
 export default function ExperimentFacebookApiLogsPage() {
   const { id } = useParams();
   const experimentId = id ?? "";
-  const [limit, setLimit] = useState(100);
+  const [limit, setLimit] = useState(25);
   const { data, isLoading, isFetching, refetch } =
     useExperimentFacebookApiLogs(experimentId, limit);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});

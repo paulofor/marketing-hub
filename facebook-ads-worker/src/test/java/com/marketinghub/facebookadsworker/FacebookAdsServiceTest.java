@@ -279,7 +279,7 @@ class FacebookAdsServiceTest {
             .setResponseCode(400)
             .setBody("{\"error\":{\"message\":\"Invalid parameter\",\"code\":100,\"error_subcode\":1870189}}")
             .addHeader("Content-Type", "application/json"));
-        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"777"}")
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"777\"}")
             .addHeader("Content-Type", "application/json"));
         String targetingJson = "{\"targeting_automation\":{\"advantage_audience\":1},\"geo_locations\":{\"countries\":[\"BR\"]}}";
         FacebookAdsService.AdSetRequest request = new FacebookAdsService.AdSetRequest(

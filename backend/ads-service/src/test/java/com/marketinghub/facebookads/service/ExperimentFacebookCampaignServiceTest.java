@@ -94,6 +94,10 @@ class ExperimentFacebookCampaignServiceTest {
         campaign.setAdSets(new ArrayList<>(List.of(linkedAdSet, orphanAdSet)));
 
         when(campaignRepository.findDetailedByExperimentId(1L)).thenReturn(List.of(campaign));
+        linkedAdSet.setCampaign(campaign);
+        orphanAdSet.setCampaign(campaign);
+        when(adSetRepository.findDetailedByCampaignIds(List.of("C1")))
+                .thenReturn(List.of(linkedAdSet, orphanAdSet));
 
         List<ExperimentFacebookCampaignDto> dtos = service.listByExperiment(1L);
         assertEquals(1, dtos.size());

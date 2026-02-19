@@ -1,10 +1,12 @@
 package com.marketinghub.facebookads.web;
 
 import com.marketinghub.facebookads.dto.ExperimentFacebookCampaignDto;
+import com.marketinghub.facebookads.dto.ExperimentFacebookCampaignResetSummary;
 import com.marketinghub.facebookads.service.ExperimentFacebookCampaignService;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -20,5 +22,15 @@ public class ExperimentFacebookCampaignController {
     @GetMapping
     public List<ExperimentFacebookCampaignDto> list(@PathVariable Long experimentId) {
         return service.listByExperiment(experimentId);
+    }
+
+    @GetMapping("/reset-preview")
+    public ExperimentFacebookCampaignResetSummary previewReset(@PathVariable Long experimentId) {
+        return service.previewReset(experimentId);
+    }
+
+    @PostMapping("/reset")
+    public ExperimentFacebookCampaignResetSummary reset(@PathVariable Long experimentId) {
+        return service.reset(experimentId);
     }
 }

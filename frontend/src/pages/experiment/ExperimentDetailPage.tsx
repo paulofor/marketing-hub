@@ -1,5 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { toast } from "react-toastify";
 import { useExperiment } from "../../api/experiment/useExperiment";
 import { useExperimentDiagnostics } from "../../api/experiment/useExperimentDiagnostics";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
@@ -21,6 +23,7 @@ import { useExperimentJourneyAssignments } from "../../api/experiment/useExperim
 import { useRebuildExperimentJourney } from "../../api/experiment/useRebuildExperimentJourney";
 import { useUpdateExperimentStatus } from "../../api/experiment/useUpdateExperimentStatus";
 import { useExperimentFacebookCampaigns } from "../../api/experiment/useExperimentFacebookCampaigns";
+import { useExperimentCampaignReset, useExperimentCampaignResetPreview } from "../../api/experiment/useExperimentCampaignReset";
 import type { JourneyAssignment, JourneyStep } from "../../api/journey/types";
 import DeliverablesTab from "./DeliverablesTab";
 import LeadPortalFlowTab from "./LeadPortalFlowTab";
@@ -67,6 +70,16 @@ export default function ExperimentDetailPage() {
     data: facebookCampaigns,
     isLoading: isLoadingFacebookCampaigns,
   } = useExperimentFacebookCampaigns(expId);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const {
+    data: resetPreviewData,
+    isFetching: isFetchingResetPreview,
+    isError: isResetPreviewError,
+    error: resetPreviewError,
+    refetch: refetchResetPreview,
+    remove: removeResetPreview,
+  } = useExperimentCampaignResetPreview(expId);
+  const resetCampaigns = useExperimentCampaignReset(expId);
   const hypothesisIdAsString = hypothesisId ? String(hypothesisId) : undefined;
   const hasCompleteTargeting = useMemo(() => {
     if (!Array.isArray(targetingElements)) return false;
@@ -137,9 +150,51 @@ export default function ExperimentDetailPage() {
     return pairs;
   }, [journeyAssignments?.assignments, templateSteps]);
 
+  const openResetModal = () => setIsResetModalOpen(true);
+
+  const closeResetModal = () => {
+    if (resetCampaigns.isPending) return;
+    setIsResetModalOpen(false);
+  };
+
+  const handleConfirmReset = async () => {
+    try {
+      const summary = await resetCampaigns.mutateAsync();
+      if (summary.campaigns > 0) {
+        toast.success(
+          `Reset concluído: ${summary.campaigns} campanha(s), ${summary.adSets} conjunto(s), ${summary.ads} anúncio(s) e ${summary.creatives} criativo(s) foram removidos.`,
+        );
+      } else {
+        toast.info("Não havia campanhas pendentes para remover.");
+      }
+      setIsResetModalOpen(false);
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? error.response?.data?.message ?? error.response?.data?.detail ??
+          "Não foi possível resetar as campanhas pendentes."
+        : "Não foi possível resetar as campanhas pendentes.";
+      toast.error(message);
+    }
+  };
+
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
   const preset = presets?.find((p) => p.id === data.metricPresetId);
+  const resetPreviewSummary: ExperimentCampaignResetSummary =
+    resetPreviewData ?? { campaigns: 0, adSets: 0, ads: 0, creatives: 0 };
+  const totalItemsToReset =
+    resetPreviewSummary.campaigns +
+    resetPreviewSummary.adSets +
+    resetPreviewSummary.ads +
+    resetPreviewSummary.creatives;
+  const hasItemsToReset = totalItemsToReset > 0;
+  const previewErrorMessage = isResetPreviewError
+    ? resetPreviewError instanceof Error
+      ? resetPreviewError.message
+      : "Não foi possível carregar a prévia do reset."
+    : null;
+  const confirmResetDisabled =
+    isFetchingResetPreview || !hasItemsToReset || Boolean(previewErrorMessage) || resetCampaigns.isPending;
   const formatCurrency = (n?: number | null) =>
     n != null
       ? new Intl.NumberFormat("pt-BR", {
@@ -479,6 +534,25 @@ export default function ExperimentDetailPage() {
           <Link to="facebook-api-logs" className="btn btn-outline-info me-2">
             Chamadas Meta
           </Link>
+          <button
+            type="button"
+            className="btn btn-outline-danger me-2"
+            onClick={openResetModal}
+            disabled={resetCampaigns.isPending}
+          >
+            {resetCampaigns.isPending ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"
+                />
+                Resetando...
+              </>
+            ) : (
+              "Resetar pendências"
+            )}
+          </button>
           <span className="badge bg-secondary">{data.status}</span>
         </div>
       </div>
@@ -909,6 +983,97 @@ export default function ExperimentDetailPage() {
           <DeliverablesTab experiment={data} nicheName={niche?.name} />
         </Tabs.Content>
       </Tabs.Root>
+      {isResetModalOpen ? (
+        <div className="modal d-block" tabIndex={-1} role="dialog" aria-modal="true">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Resetar campanhas pendentes</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  aria-label="Fechar"
+                  onClick={closeResetModal}
+                  disabled={resetCampaigns.isPending}
+                />
+              </div>
+              <div className="modal-body">
+                <p>
+                  Este reset apaga campanhas, conjuntos e anúncios que foram salvos apenas localmente e ainda não
+                  possuem ID do Meta. Utilize a ação quando quiser recomeçar a publicação do experimento do zero.
+                </p>
+                {previewErrorMessage ? (
+                  <div className="alert alert-danger" role="alert">
+                    {previewErrorMessage}
+                  </div>
+                ) : isFetchingResetPreview ? (
+                  <div className="d-flex align-items-center gap-2">
+                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                    <span>Calculando itens que serão removidos...</span>
+                  </div>
+                ) : hasItemsToReset ? (
+                  <table className="table table-sm mb-3">
+                    <tbody>
+                      <tr>
+                        <td>Campanhas locais sem ID do Meta</td>
+                        <td className="text-end fw-semibold">{resetPreviewSummary.campaigns}</td>
+                      </tr>
+                      <tr>
+                        <td>Conjuntos de anúncios</td>
+                        <td className="text-end fw-semibold">{resetPreviewSummary.adSets}</td>
+                      </tr>
+                      <tr>
+                        <td>Anúncios</td>
+                        <td className="text-end fw-semibold">{resetPreviewSummary.ads}</td>
+                      </tr>
+                      <tr>
+                        <td>Criativos vinculados</td>
+                        <td className="text-end fw-semibold">{resetPreviewSummary.creatives}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                ) : (
+                  <p className="text-muted mb-0">
+                    Nenhuma campanha sem ID do Meta foi encontrada para este experimento.
+                  </p>
+                )}
+                <p className="text-muted small mt-3 mb-0">
+                  Somente ativos sem ID do Meta serão excluídos. Tudo que já foi publicado permanece intacto.
+                </p>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={closeResetModal}
+                  disabled={resetCampaigns.isPending}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={handleConfirmReset}
+                  disabled={confirmResetDisabled}
+                >
+                  {resetCampaigns.isPending ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                        aria-hidden="true"
+                      />
+                      Resetando...
+                    </>
+                  ) : (
+                    "Confirmar reset"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

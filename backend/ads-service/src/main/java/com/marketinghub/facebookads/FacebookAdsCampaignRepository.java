@@ -20,7 +20,6 @@ public interface FacebookAdsCampaignRepository extends JpaRepository<FacebookAds
             select distinct c from FacebookAdsCampaign c
             left join fetch c.adSets s
             left join fetch s.experimentAdSet eas
-            left join fetch s.ads ads
             where c.experiment.id = :experimentId
             order by c.createdAt asc
             """)

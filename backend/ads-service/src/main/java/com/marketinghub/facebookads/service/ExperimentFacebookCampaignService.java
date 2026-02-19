@@ -13,8 +13,11 @@ import com.marketinghub.facebookads.dto.ExperimentFacebookAdSetDto;
 import com.marketinghub.facebookads.dto.ExperimentFacebookCampaignDto;
 import com.marketinghub.facebookads.dto.ExperimentFacebookCampaignResetSummary;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
@@ -50,10 +53,36 @@ public class ExperimentFacebookCampaignService {
         if (campaigns == null || campaigns.isEmpty()) {
             return List.of();
         }
+        hydrateAdSets(campaigns);
         return campaigns.stream()
             .sorted(Comparator.comparing(FacebookAdsCampaign::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())))
             .map(this::toDto)
             .collect(Collectors.toList());
+    }
+
+    private void hydrateAdSets(List<FacebookAdsCampaign> campaigns) {
+        List<String> campaignIds = campaigns.stream()
+                .map(FacebookAdsCampaign::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        if (campaignIds.isEmpty()) {
+            return;
+        }
+        List<FacebookAdsAdSet> adSets = adSetRepository.findDetailedByCampaignIds(campaignIds);
+        Map<String, List<FacebookAdsAdSet>> adSetsByCampaignId = groupAdSetsByCampaignId(adSets);
+        campaigns.forEach(campaign -> campaign.setAdSets(new ArrayList<>(
+                adSetsByCampaignId.getOrDefault(campaign.getId(), List.of()))));
+    }
+
+    private Map<String, List<FacebookAdsAdSet>> groupAdSetsByCampaignId(Collection<FacebookAdsAdSet> adSets) {
+        Map<String, List<FacebookAdsAdSet>> grouped = new HashMap<>();
+        for (FacebookAdsAdSet adSet : adSets) {
+            if (adSet.getCampaign() == null || adSet.getCampaign().getId() == null) {
+                continue;
+            }
+            grouped.computeIfAbsent(adSet.getCampaign().getId(), ignored -> new ArrayList<>()).add(adSet);
+        }
+        return grouped;
     }
 
     @Transactional(readOnly = true)

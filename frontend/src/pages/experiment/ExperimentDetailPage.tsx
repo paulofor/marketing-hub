@@ -613,8 +613,8 @@ export default function ExperimentDetailPage() {
                 {diagnostics.artifacts.map((artifact) => (
                   <li key={`${artifact.type}-${artifact.id}`}>
                     <strong>{artifact.type}</strong> ·{" "}
-                    {artifact.name || artifact.id} — ID interno {artifact.id},
-                    ID Meta: {artifact.externalId ?? "—"}
+                    {artifact.name || artifact.id} — ID interno: {artifact.id}
+                    {artifact.externalId ? ` · ID Meta: ${artifact.externalId}` : ""}
                   </li>
                 ))}
               </ul>

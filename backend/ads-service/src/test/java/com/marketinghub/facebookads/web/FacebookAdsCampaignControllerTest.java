@@ -20,6 +20,7 @@ import com.marketinghub.facebookads.FacebookAdsAdCreative;
 import com.marketinghub.facebookads.FacebookAdsAdCreativeRepository;
 import com.marketinghub.facebookads.FacebookAdsAdRepository;
 import com.marketinghub.facebookads.FacebookAdsAdSet;
+import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.experiment.repository.AdSetRepository;
 import org.junit.jupiter.api.Test;
@@ -188,6 +189,7 @@ class FacebookAdsCampaignControllerTest {
         String payload = """
             {
               "id": "cmp123",
+              "externalId": "meta-campaign-123",
               "adAccountId": "act_555",
               "name": "Exp",
               "objective": "OUTCOME_TRAFFIC",
@@ -196,6 +198,7 @@ class FacebookAdsCampaignControllerTest {
               "facebookAccountId": 77,
               "adSet": {
                 "id": "adset123",
+                "externalId": "meta-adset-123",
                 "name": "Exp - Ad Set",
                 "billingEvent": "IMPRESSIONS",
                 "optimizationGoal": "LINK_CLICKS",
@@ -223,6 +226,7 @@ class FacebookAdsCampaignControllerTest {
               },
               "ad": {
                 "id": "ad987",
+                "externalId": "meta-ad-123",
                 "name": "Exp - Ad",
                 "adSetId": "adset123",
                 "creativeId": "creative123"
@@ -236,13 +240,21 @@ class FacebookAdsCampaignControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("cmp123"))
                 .andExpect(jsonPath("$.adAccountId").value("act_555"))
-                .andExpect(jsonPath("$.experiment.id").value(42));
+                .andExpect(jsonPath("$.experiment.id").value(42))
+                .andExpect(jsonPath("$.externalId").value("meta-campaign-123"));
+
+        ArgumentCaptor<FacebookAdsCampaign> campaignCaptor = ArgumentCaptor.forClass(FacebookAdsCampaign.class);
+        verify(campaignRepository).save(campaignCaptor.capture());
+        FacebookAdsCampaign savedCampaign = campaignCaptor.getValue();
+        assertThat(savedCampaign.getId()).isEqualTo("cmp123");
+        assertThat(savedCampaign.getExternalId()).isEqualTo("meta-campaign-123");
 
         ArgumentCaptor<FacebookAdsAdSet> adSetCaptor = ArgumentCaptor.forClass(FacebookAdsAdSet.class);
         verify(adSetRepository).save(adSetCaptor.capture());
         FacebookAdsAdSet savedAdSet = adSetCaptor.getValue();
         assertThat(savedAdSet.getId()).isEqualTo("adset123");
         assertThat(savedAdSet.getCampaign().getId()).isEqualTo("cmp123");
+        assertThat(savedAdSet.getExternalId()).isEqualTo("meta-adset-123");
         assertThat(savedAdSet.getExperimentAdSet()).isNotNull();
         assertThat(savedAdSet.getExperimentAdSet().getId()).isEqualTo(101L);
         JsonNode targetingJson = objectMapper.readTree(savedAdSet.getTargetingJson());
@@ -266,6 +278,7 @@ class FacebookAdsCampaignControllerTest {
         verify(adRepository).save(adCaptor.capture());
         FacebookAdsAd savedAd = adCaptor.getValue();
         assertThat(savedAd.getId()).isEqualTo("ad987");
+        assertThat(savedAd.getExternalId()).isEqualTo("meta-ad-123");
         assertThat(savedAd.getAdSet().getId()).isEqualTo("adset123");
         assertThat(savedAd.getCreative().getId()).isEqualTo("creative123");
     }

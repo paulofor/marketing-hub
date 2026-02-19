@@ -122,6 +122,7 @@ public class FacebookAdsCampaignController {
                         "Facebook account not found: " + req.facebookAccountId()));
         FacebookAdsCampaign campaign = new FacebookAdsCampaign();
         campaign.setId(req.id());
+        campaign.setExternalId(resolveMetaId(req.externalId(), req.id()));
         campaign.setAdAccountId(req.adAccountId());
         campaign.setName(req.name());
         campaign.setObjective(req.objective());
@@ -205,6 +206,7 @@ public class FacebookAdsCampaignController {
                                       AdSet experimentAdSet) {
         FacebookAdsAdSet adSet = new FacebookAdsAdSet();
         adSet.setId(adSetReq.id());
+        adSet.setExternalId(resolveMetaId(adSetReq.externalId(), adSetReq.id()));
         adSet.setCampaign(campaign);
         adSet.setName(adSetReq.name());
         adSet.setExperimentAdSet(experimentAdSet);
@@ -234,6 +236,7 @@ public class FacebookAdsCampaignController {
                                  FacebookAdsAdCreative creative) {
         FacebookAdsAd ad = new FacebookAdsAd();
         ad.setId(adReq.id());
+        ad.setExternalId(resolveMetaId(adReq.externalId(), adReq.id()));
         ad.setName(adReq.name());
         ad.setAdSet(adSet);
         ad.setCreative(creative);
@@ -255,6 +258,25 @@ public class FacebookAdsCampaignController {
             return Long.parseLong(numeric.trim());
         } catch (NumberFormatException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid numeric value: " + numeric, ex);
+        }
+    }
+
+    private String resolveMetaId(String externalId, String fallbackId) {
+        if (StringUtils.hasText(externalId)) {
+            return externalId.trim();
+        }
+        if (StringUtils.hasText(fallbackId) && !isUuid(fallbackId)) {
+            return fallbackId.trim();
+        }
+        return null;
+    }
+
+    private boolean isUuid(String value) {
+        try {
+            UUID.fromString(value.trim());
+            return true;
+        } catch (IllegalArgumentException ex) {
+            return false;
         }
     }
 
@@ -565,6 +587,7 @@ public class FacebookAdsCampaignController {
 
     public record CreateCampaignRequest(
             String id,
+            String externalId,
             String adAccountId,
             String name,
             String objective,
@@ -577,6 +600,7 @@ public class FacebookAdsCampaignController {
 
         public record AdSet(
                 String id,
+                String externalId,
                 String name,
                 String billingEvent,
                 String optimizationGoal,
@@ -605,6 +629,7 @@ public class FacebookAdsCampaignController {
 
         public record Ad(
                 String id,
+                String externalId,
                 String name,
                 String adSetId,
                 String creativeId) {}

@@ -50,9 +50,9 @@ public class ExperimentDiagnosticsService {
                 ? List.of()
                 : adRepository.findByAdSetIdIn(adSetIds);
 
-        long stuckCampaigns = campaigns.stream().filter(c -> !hasExternalId(c.getExternalId())).count();
-        long stuckAdSets = adSets.stream().filter(s -> !hasExternalId(s.getExternalId())).count();
-        long stuckAds = ads.stream().filter(a -> !hasExternalId(a.getExternalId())).count();
+        long stuckCampaigns = campaigns.stream().filter(c -> !hasMetaId(c.getExternalId(), c.getId())).count();
+        long stuckAdSets = adSets.stream().filter(s -> !hasMetaId(s.getExternalId(), s.getId())).count();
+        long stuckAds = ads.stream().filter(a -> !hasMetaId(a.getExternalId(), a.getId())).count();
         List<ExperimentPublishingArtifactDto> artifacts = collectArtifacts(campaigns, adSets, ads);
 
         boolean hasPendingArtifacts = !artifacts.isEmpty();
@@ -90,8 +90,27 @@ public class ExperimentDiagnosticsService {
         return new ExperimentDiagnosticsDto(severity, headline, description, resolution, artifacts);
     }
 
-    private static boolean hasExternalId(String externalId) {
-        return StringUtils.hasText(externalId);
+    private static boolean hasMetaId(String externalId, String internalId) {
+        return StringUtils.hasText(resolveMetaId(externalId, internalId));
+    }
+
+    private static String resolveMetaId(String externalId, String internalId) {
+        if (StringUtils.hasText(externalId)) {
+            return externalId;
+        }
+        if (StringUtils.hasText(internalId) && !isUuid(internalId)) {
+            return internalId;
+        }
+        return null;
+    }
+
+    private static boolean isUuid(String value) {
+        try {
+            java.util.UUID.fromString(value.trim());
+            return true;
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
     }
 
     private static String buildPendingDescription(long campaigns, long adSets, long ads) {
@@ -113,7 +132,9 @@ public class ExperimentDiagnosticsService {
                 ? "Nenhuma campanha foi gerada ainda para este experimento."
                 : campaigns.stream()
                         .map(c -> "%s (%s)".formatted(c.getName(),
-                                hasExternalId(c.getExternalId()) ? "Meta ID " + c.getExternalId() : "sem ID externo"))
+                                hasMetaId(c.getExternalId(), c.getId())
+                                        ? "Meta ID " + resolveMetaId(c.getExternalId(), c.getId())
+                                        : "sem ID externo"))
                         .collect(Collectors.joining(", "));
         return "Status atual: %s. %s".formatted(experiment.getStatus(), campaignSummary);
     }
@@ -140,29 +161,29 @@ public class ExperimentDiagnosticsService {
                                                                           List<FacebookAdsAd> ads) {
         List<ExperimentPublishingArtifactDto> artifacts = new ArrayList<>();
         campaigns.stream()
-                .filter(c -> !hasExternalId(c.getExternalId()))
+                .filter(c -> !hasMetaId(c.getExternalId(), c.getId()))
                 .forEach(c -> artifacts.add(new ExperimentPublishingArtifactDto(
                         "CAMPAIGN",
                         c.getId(),
                         c.getName(),
                         c.getStatus().name(),
-                        c.getExternalId())));
+                        resolveMetaId(c.getExternalId(), c.getId()))));
         adSets.stream()
-                .filter(a -> !hasExternalId(a.getExternalId()))
+                .filter(a -> !hasMetaId(a.getExternalId(), a.getId()))
                 .forEach(a -> artifacts.add(new ExperimentPublishingArtifactDto(
                         "AD_SET",
                         a.getId(),
                         a.getName(),
                         a.getStatus().name(),
-                        a.getExternalId())));
+                        resolveMetaId(a.getExternalId(), a.getId()))));
         ads.stream()
-                .filter(a -> !hasExternalId(a.getExternalId()))
+                .filter(a -> !hasMetaId(a.getExternalId(), a.getId()))
                 .forEach(a -> artifacts.add(new ExperimentPublishingArtifactDto(
                         "AD",
                         a.getId(),
                         a.getName(),
                         a.getStatus().name(),
-                        a.getExternalId())));
+                        resolveMetaId(a.getExternalId(), a.getId()))));
         return artifacts;
     }
 }

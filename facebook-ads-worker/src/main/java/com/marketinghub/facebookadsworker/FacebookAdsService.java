@@ -60,6 +60,7 @@ public class FacebookAdsService {
         Pattern.compile("(?i)targeting\\[([a-z_]+)]\\[(\\d+)]\\[id]");
     private static final Pattern INVALID_WORK_POSITION_ID_PATTERN =
         Pattern.compile("(?i)cargos?\\s+com\\s+identifica(?:ç|c)(?:ão|ao)\\s+(\\d+)");
+    private static final String INSIGHTS_PATH_FRAGMENT = "/insights";
     private static final String INTEREST_SEARCH_LOCALE = "pt_BR";
     public static final String BRAZIL_COUNTRY_CODE = "BR";
     private static final String TARGETING_SEARCH_FIELDS = "id,name,type,audience_size_lower_bound,audience_size_upper_bound,path,description,topic";
@@ -2395,7 +2396,10 @@ private FacebookInterest searchInterest(String interestName, String locale) {
     private FacebookApiResponse executeGet(String path) {
         Instant startedAt = Instant.now();
         String maskedPath = maskAccessTokenInPath(path);
-        LOGGER.info("Sending GET request to Facebook API: path==>{}", maskedPath);
+        boolean insightsPath = isInsightsPath(path);
+        if (!insightsPath) {
+            LOGGER.info("Sending GET request to Facebook API: path==>{}", maskedPath);
+        }
         try {
             FacebookApiResponse apiResponse = webClient
                 .get()
@@ -2412,7 +2416,7 @@ private FacebookInterest searchInterest(String interestName, String locale) {
                 .block();
             FacebookApiResponse nonNullResponse =
                 apiResponse != null ? apiResponse : new FacebookApiResponse(null, HttpHeaders.EMPTY, objectMapper.nullNode());
-            logSuccessfulResponse("GET", maskedPath, nonNullResponse);
+            logSuccessfulResponse("GET", maskedPath, nonNullResponse, insightsPath);
             recordApiCallDebugInfo(
                 "GET",
                 path,
@@ -2476,7 +2480,10 @@ private FacebookInterest searchInterest(String interestName, String locale) {
     private FacebookApiResponse executeGetAbsolute(String path) {
         Instant startedAt = Instant.now();
         String maskedPath = maskAccessTokenInPath(path);
-        LOGGER.info("Sending GET request to Facebook API: path==>{}", maskedPath);
+        boolean insightsPath = isInsightsPath(path);
+        if (!insightsPath) {
+            LOGGER.info("Sending GET request to Facebook API: path==>{}", maskedPath);
+        }
         try {
             FacebookApiResponse apiResponse = webClient
                 .get()
@@ -2493,7 +2500,7 @@ private FacebookInterest searchInterest(String interestName, String locale) {
                 .block();
             FacebookApiResponse nonNullResponse =
                 apiResponse != null ? apiResponse : new FacebookApiResponse(null, HttpHeaders.EMPTY, objectMapper.nullNode());
-            logSuccessfulResponse("GET", maskedPath, nonNullResponse);
+            logSuccessfulResponse("GET", maskedPath, nonNullResponse, insightsPath);
             recordApiCallDebugInfo(
                 "GET",
                 path,
@@ -2582,6 +2589,13 @@ private FacebookInterest searchInterest(String interestName, String locale) {
     }
 
     private void logSuccessfulResponse(String method, String maskedPath, FacebookApiResponse response) {
+        logSuccessfulResponse(method, maskedPath, response, false);
+    }
+
+    private void logSuccessfulResponse(String method, String maskedPath, FacebookApiResponse response, boolean insightsPath) {
+        if (insightsPath) {
+            return;
+        }
         LOGGER.info(
             "Facebook API response received: method={}, path<=={}, status={}, headers={}, body={}",
             method,
@@ -2590,6 +2604,11 @@ private FacebookInterest searchInterest(String interestName, String locale) {
             JsonLogFormatter.wrap(objectMapper, sanitizeHeaders(response.headers())),
             response.body()
         );
+    }
+
+
+    private boolean isInsightsPath(String path) {
+        return hasText(path) && path.contains(INSIGHTS_PATH_FRAGMENT);
     }
 
     private String formatStatus(HttpStatusCode statusCode) {

@@ -87,7 +87,6 @@ public class FacebookCampaignMetricsService {
             JsonNode insights = facebookAdsService.getCampaignInsights(target.campaignId(), buildInsightsQuery());
             JsonNode data = insights.path("data");
             if (!data.isArray() || data.isEmpty()) {
-                LOGGER.info("Facebook returned no insights data for campaign {}; reporting zeroed metrics", target.campaignId());
                 sendMetrics(target.campaignId(), buildEmptyMetricsPayload());
                 return;
             }

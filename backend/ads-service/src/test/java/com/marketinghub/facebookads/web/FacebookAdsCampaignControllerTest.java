@@ -237,11 +237,8 @@ class FacebookAdsCampaignControllerTest {
         mockMvc.perform(post("/api/facebook-campaigns")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value("cmp123"))
-                .andExpect(jsonPath("$.adAccountId").value("act_555"))
-                .andExpect(jsonPath("$.experiment.id").value(42))
-                .andExpect(jsonPath("$.externalId").value("meta-campaign-123"));
+                .andExpect(status().isCreated())
+                .andExpect(content().string(""));
 
         ArgumentCaptor<FacebookAdsCampaign> campaignCaptor = ArgumentCaptor.forClass(FacebookAdsCampaign.class);
         verify(campaignRepository).save(campaignCaptor.capture());

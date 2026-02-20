@@ -60,8 +60,8 @@
   por requisições não stubadas.
 - A coleta de métricas via Insights deve usar `date_preset = maximum` para obter o histórico
   completo; o valor `lifetime` não é aceito pela Graph API e gera erro `(#100)`.
-- Quando a Graph API retorna `data=[]` no Insights, registre o ocorrido e reporte métricas
-  zeradas ao backend em vez de tratar como erro para evitar itens presos como pendentes.
+- Quando a Graph API retorna `data=[]` no Insights, reporte métricas zeradas ao backend
+  em vez de tratar como erro para evitar itens presos como pendentes.
 - Chamadas de Insights (`/{campaignId}/insights`) devem evitar logs de sucesso em `INFO`
   para reduzir poluição; mantenha logs de erro/aviso para troubleshooting.
 

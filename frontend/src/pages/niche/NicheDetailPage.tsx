@@ -96,6 +96,10 @@ export default function NicheDetailPage() {
   );
   const [editingRoleIndex, setEditingRoleIndex] = useState<number | null>(null);
   const [updatingDescriptionId, setUpdatingDescriptionId] = useState<number | null>(null);
+  const [detailedDescriptionFeedback, setDetailedDescriptionFeedback] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
   const {
     register: registerHypothesisRequest,
     handleSubmit: handleSubmitHypothesisRequest,
@@ -414,6 +418,7 @@ export default function NicheDetailPage() {
     requestDetailedDescriptions.isPending || (isFetching && !isLoading)
       ? "Atualizando descrições..."
       : `Solicitadas ao Worker: ${data.detailedDescriptionsToGenerate ?? 0}`;
+  const pendingDetailedDescriptions = Math.max(0, data.detailedDescriptionsToGenerate ?? 0);
   const formatUsd = (value?: number | string | null) => {
     if (value === undefined || value === null) return undefined;
     const num = typeof value === "string" ? Number(value) : value;
@@ -527,10 +532,20 @@ export default function NicheDetailPage() {
           quantity,
           model: selectedModel,
         });
-        alert("Solicitação enviada!");
+        setDetailedDescriptionFeedback({
+          type: "success",
+          message:
+            quantity === 1
+              ? "Solicitação enviada para o processamento em batch do Worker IA."
+              : `Solicitação enviada para o processamento em batch (${quantity} descrições).`,
+        });
         resetDescriptionRequest({ quantity: 1, model: selectedModel ?? "" });
       } catch {
-        alert("Erro ao solicitar descrições detalhadas");
+        setDetailedDescriptionFeedback({
+          type: "error",
+          message:
+            "Não foi possível enviar a solicitação para o batch do Worker IA. Tente novamente.",
+        });
       }
     },
     (errors) => {
@@ -710,6 +725,36 @@ export default function NicheDetailPage() {
               público do nicho.
             </p>
             <p className="niche-section__status">{detailedDescriptionStatusLabel}</p>
+            <div className="niche-section__status-hints" role="status" aria-live="polite">
+              {requestDetailedDescriptions.isPending ? (
+                <span className="badge text-bg-info-subtle text-info-emphasis">
+                  Enviando solicitação para o batch...
+                </span>
+              ) : pendingDetailedDescriptions > 0 ? (
+                <span className="badge text-bg-warning-subtle text-warning-emphasis">
+                  {pendingDetailedDescriptions} item(ns) aguardando processamento no Worker IA.
+                </span>
+              ) : (
+                <span className="badge text-bg-success-subtle text-success-emphasis">
+                  Sem itens pendentes no batch.
+                </span>
+              )}
+              <Link to="/ai/pending-requests" className="niche-section__status-link">
+                Ver fila completa do Worker IA
+              </Link>
+            </div>
+            {detailedDescriptionFeedback ? (
+              <div
+                className={`alert py-2 px-3 mt-2 mb-0 ${
+                  detailedDescriptionFeedback.type === "success"
+                    ? "alert-success"
+                    : "alert-danger"
+                }`}
+                role="alert"
+              >
+                {detailedDescriptionFeedback.message}
+              </div>
+            ) : null}
           </div>
           <form
             className="niche-section__actions"

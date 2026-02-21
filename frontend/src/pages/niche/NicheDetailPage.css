@@ -734,3 +734,34 @@
     justify-content: center;
   }
 }
+
+.niche-hypothesis-manual {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.niche-hypothesis-manual__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.niche-hypothesis-manual__content {
+  margin-top: 1rem;
+}
+
+.niche-hypothesis-manual__card {
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  box-shadow: none;
+}
+
+.niche-hypothesis-manual__helper {
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 0.9rem;
+}
+
+.niche-hypothesis-manual__helper strong {
+  font-weight: 600;
+}

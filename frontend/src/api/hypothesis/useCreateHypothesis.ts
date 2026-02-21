@@ -6,18 +6,22 @@ import { Hypothesis } from "./useHypothesisBoard";
 export interface CreateHypothesis {
   marketNicheId: number;
   title: string;
-  premiseAngleId?: number;
-  promise: string;
   problem: string;
-  persona: string;
+  premiseAngleId?: number;
+  promise?: string;
+  persona?: string;
   mechanism?: string;
   uniqueMechanism?: string;
   entrega?: string;
-  successRule: string;
+  successRule?: string;
   prompt?: string;
   model?: string;
   offerType?: string;
   kpiTargetCpl?: number;
+  price?: number;
+  costUsd?: number;
+  cost?: number;
+  expense?: number;
 }
 
 export function useCreateHypothesis() {
@@ -35,6 +39,8 @@ export function useCreateHypothesis() {
       queryClient.invalidateQueries({
         queryKey: ["hypothesis-board", String(variables.marketNicheId)],
       });
+      queryClient.invalidateQueries({ queryKey: ["niche-hypotheses"] });
+      queryClient.invalidateQueries({ queryKey: ["hypotheses"] });
       toast.success("Hipótese criada");
     },
     onError: () => {

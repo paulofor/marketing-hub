@@ -44,6 +44,7 @@ class HypothesisServiceTest {
     void createValidHypothesis() {
         CreateHypothesisRequest req = new CreateHypothesisRequest();
         req.setTitle("Teste");
+        req.setProblem("Problema");
         Hypothesis h = service.create(req);
         assertThat(h.getId()).isNotNull();
         assertThat(h.getStatus()).isEqualTo(HypothesisStatus.BACKLOG);
@@ -54,6 +55,7 @@ class HypothesisServiceTest {
     void createHypothesisWithoutAngle() {
         CreateHypothesisRequest req = new CreateHypothesisRequest();
         req.setTitle("Sem ângulo");
+        req.setProblem("Problema");
         Hypothesis h = service.create(req);
         assertThat(h.getPremiseAngle()).isNull();
     }
@@ -62,6 +64,16 @@ class HypothesisServiceTest {
     void validateTitle() {
         CreateHypothesisRequest req = new CreateHypothesisRequest();
         req.setTitle("   ");
+        req.setProblem("Problema");
+        assertThatThrownBy(() -> service.create(req))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    }
+
+    @Test
+    void validateProblem() {
+        CreateHypothesisRequest req = new CreateHypothesisRequest();
+        req.setTitle("Ok");
+        req.setProblem("   ");
         assertThatThrownBy(() -> service.create(req))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     }
@@ -73,6 +85,7 @@ class HypothesisServiceTest {
         CreateHypothesisRequest req = new CreateHypothesisRequest();
         req.setMarketNicheId(niche.getId());
         req.setTitle("H1");
+        req.setProblem("Problema");
 
         Hypothesis h1 = service.create(req);
         Hypothesis h2 = service.create(req);
@@ -92,6 +105,7 @@ class HypothesisServiceTest {
         CreateHypothesisRequest req = new CreateHypothesisRequest();
         req.setMarketNicheId(niche.getId());
         req.setTitle("H1");
+        req.setProblem("Problema");
 
         Hypothesis h = service.create(req);
 
@@ -113,6 +127,7 @@ class HypothesisServiceTest {
         PromptAttributeDescription desc = descriptionRepository.save(PromptAttributeDescription.builder().attribute(attr).description("d").build());
         CreateHypothesisRequest req = new CreateHypothesisRequest();
         req.setTitle("Teste");
+        req.setProblem("Problema");
         req.setPromptAttributeDescriptionIds(java.util.List.of(desc.getId()));
         Hypothesis h = service.create(req);
         assertThat(h.getPromptAttributeDescriptions()).extracting(PromptAttributeDescription::getId).contains(desc.getId());

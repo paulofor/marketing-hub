@@ -66,7 +66,9 @@ public class HypothesisService {
         if (req.getProblem() == null || req.getProblem().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "problem required");
         }
-        // only title and problem are required
+        if (req.getPersona() == null || req.getPersona().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "persona required");
+        }
     }
 
     private BigDecimal resolveTotalCostDelta(CreateHypothesisRequest req) {
@@ -146,6 +148,9 @@ public class HypothesisService {
     private void validate(UpdateHypothesisRequest req) {
         if (req.getTitle() == null || req.getTitle().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "title required");
+        }
+        if (req.getPersona() == null || req.getPersona().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "persona required");
         }
     }
 

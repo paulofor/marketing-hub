@@ -15,6 +15,7 @@ import { TargetingGenerationForm } from "../../components/TargetingGenerationFor
 import { TargetingRequestForm } from "../../components/TargetingRequestForm";
 import { TargetingRequestStatusPanel } from "../../components/TargetingRequestStatusPanel";
 import { useRequestHypotheses } from "../../api/niche/useRequestHypotheses";
+import { HypothesisManualForm } from "../../components/HypothesisManualForm";
 import { useRequestDetailedDescriptions } from "../../api/niche/useRequestDetailedDescriptions";
 import { useNicheDetailedDescriptions } from "../../api/niche/useNicheDetailedDescriptions";
 import { useUpdateNicheDetailedDescriptionStatus } from "../../api/niche/useUpdateNicheDetailedDescriptionStatus";
@@ -40,6 +41,7 @@ import {
   Target,
   Briefcase,
   Activity,
+  Minus,
 } from "lucide-react";
 import "./NicheDetailPage.css";
 
@@ -100,6 +102,7 @@ export default function NicheDetailPage() {
     type: "success" | "error";
     message: string;
   } | null>(null);
+  const [isManualHypothesisFormVisible, setManualHypothesisFormVisible] = useState(false);
   const {
     register: registerHypothesisRequest,
     handleSubmit: handleSubmitHypothesisRequest,
@@ -190,6 +193,10 @@ export default function NicheDetailPage() {
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "start" });
     }
+  }, []);
+
+  const handleManualHypothesisSuccess = useCallback(() => {
+    setManualHypothesisFormVisible(false);
   }, []);
 
   const list = Array.isArray(hypotheses)
@@ -1654,6 +1661,34 @@ export default function NicheDetailPage() {
               </button>
             </div>
           </form>
+        </div>
+        <div className="niche-hypothesis-manual">
+          <button
+            type="button"
+            className="btn btn-outline-primary niche-hypothesis-manual__toggle"
+            onClick={() => setManualHypothesisFormVisible((prev) => !prev)}
+            aria-expanded={isManualHypothesisFormVisible}
+            aria-controls="niche-manual-hypothesis-form"
+          >
+            {isManualHypothesisFormVisible ? <Minus size={16} /> : <Plus size={16} />}
+            <span>
+              {isManualHypothesisFormVisible
+                ? "Fechar formulário manual"
+                : "Criar hipótese manual"}
+            </span>
+          </button>
+          {isManualHypothesisFormVisible && (
+            <div
+              id="niche-manual-hypothesis-form"
+              className="niche-hypothesis-manual__content"
+            >
+              <HypothesisManualForm
+                nicheId={normalizedNicheId}
+                onCancel={() => setManualHypothesisFormVisible(false)}
+                onSuccess={handleManualHypothesisSuccess}
+              />
+            </div>
+          )}
         </div>
         {list.length === 0 ? (
           <p className="niche-section__empty">Nenhuma hipótese ainda.</p>

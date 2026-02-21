@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -78,13 +77,8 @@ public class NicheDetailedDescriptionService {
                 .outputTokens(request.getOutputTokens())
                 .build();
         NicheDetailedDescription saved = repository.save(description);
-        BigDecimal delta = request.getCostUsd();
-        if (delta != null && niche != null) {
-            BigDecimal current = niche.getTotalCost();
-            if (current == null) {
-                current = BigDecimal.ZERO;
-            }
-            niche.setTotalCost(current.add(delta));
+        if (niche != null) {
+            niche.setTotalCost(repository.sumCostUsdByMarketNicheId(niche.getId()));
         }
         return saved;
     }

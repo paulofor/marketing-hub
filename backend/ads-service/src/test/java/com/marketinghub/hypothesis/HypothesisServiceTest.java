@@ -45,6 +45,7 @@ class HypothesisServiceTest {
         CreateHypothesisRequest req = new CreateHypothesisRequest();
         req.setTitle("Teste");
         req.setProblem("Problema");
+        req.setPersona("Persona");
         Hypothesis h = service.create(req);
         assertThat(h.getId()).isNotNull();
         assertThat(h.getStatus()).isEqualTo(HypothesisStatus.BACKLOG);
@@ -56,6 +57,7 @@ class HypothesisServiceTest {
         CreateHypothesisRequest req = new CreateHypothesisRequest();
         req.setTitle("Sem ângulo");
         req.setProblem("Problema");
+        req.setPersona("Persona");
         Hypothesis h = service.create(req);
         assertThat(h.getPremiseAngle()).isNull();
     }
@@ -78,6 +80,17 @@ class HypothesisServiceTest {
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     }
 
+
+    @Test
+    void validatePersona() {
+        CreateHypothesisRequest req = new CreateHypothesisRequest();
+        req.setTitle("Ok");
+        req.setProblem("Problema");
+        req.setPersona("   ");
+        assertThatThrownBy(() -> service.create(req))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    }
+
     @Test
     void listByMarketNicheWithNullStatusReturnsAll() {
         MarketNiche niche = fixtures.createAndSaveNiche();
@@ -86,6 +99,7 @@ class HypothesisServiceTest {
         req.setMarketNicheId(niche.getId());
         req.setTitle("H1");
         req.setProblem("Problema");
+        req.setPersona("Persona");
 
         Hypothesis h1 = service.create(req);
         Hypothesis h2 = service.create(req);
@@ -106,11 +120,13 @@ class HypothesisServiceTest {
         req.setMarketNicheId(niche.getId());
         req.setTitle("H1");
         req.setProblem("Problema");
+        req.setPersona("Persona");
 
         Hypothesis h = service.create(req);
 
         com.marketinghub.hypothesis.dto.UpdateHypothesisRequest u = new com.marketinghub.hypothesis.dto.UpdateHypothesisRequest();
         u.setTitle("H2");
+        u.setPersona("Persona atualizada");
 
         Hypothesis updated = service.update(h.getId(), u);
         assertThat(updated.getTitle()).isEqualTo("H2");
@@ -128,6 +144,7 @@ class HypothesisServiceTest {
         CreateHypothesisRequest req = new CreateHypothesisRequest();
         req.setTitle("Teste");
         req.setProblem("Problema");
+        req.setPersona("Persona");
         req.setPromptAttributeDescriptionIds(java.util.List.of(desc.getId()));
         Hypothesis h = service.create(req);
         assertThat(h.getPromptAttributeDescriptions()).extracting(PromptAttributeDescription::getId).contains(desc.getId());

@@ -5,7 +5,7 @@ interface ManualHypothesisFormValues {
   title: string;
   promise?: string;
   problem: string;
-  persona?: string;
+  persona: string;
   mechanism?: string;
   uniqueMechanism?: string;
   entrega?: string;
@@ -72,8 +72,9 @@ export function HypothesisManualForm({
         <div className="d-flex flex-column gap-1">
           <h3 className="h5 mb-0">Adicionar hipótese manualmente</h3>
           <p className="niche-hypothesis-manual__helper mb-0">
-            Preencha os campos que desejar. Somente <strong>Título</strong> e
-            <strong> Problema</strong> são obrigatórios.
+            Preencha os campos para cadastrar a hipótese manualmente.
+            <strong> Título</strong>, <strong>Problema</strong> e
+            <strong> Persona</strong> são obrigatórios.
           </p>
         </div>
         <form className="mt-4" onSubmit={onSubmit} noValidate>
@@ -104,9 +105,17 @@ export function HypothesisManualForm({
               <input
                 id="manual-hypothesis-persona"
                 type="text"
-                className="form-control"
-                {...register("persona")}
+                className={`form-control ${errors.persona ? "is-invalid" : ""}`}
+                {...register("persona", {
+                  required: "Informe a persona",
+                  minLength: { value: 2, message: "Mínimo 2 caracteres" },
+                })}
               />
+              {errors.persona && (
+                <div className="invalid-feedback d-block">
+                  {errors.persona.message}
+                </div>
+              )}
             </div>
             <div className="col-12 col-md-6">
               <label className="form-label" htmlFor="manual-hypothesis-promise">

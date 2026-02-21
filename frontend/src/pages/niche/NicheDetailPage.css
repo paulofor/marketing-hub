@@ -302,6 +302,19 @@
   color: var(--bs-secondary-color, #6c757d);
 }
 
+.niche-section__status-hints {
+  margin-top: 0.6rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.niche-section__status-link {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 .niche-section__actions {
   display: flex;
   flex-wrap: wrap;

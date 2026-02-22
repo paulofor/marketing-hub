@@ -87,6 +87,7 @@ import GlobalAutomationAlerts from "./components/GlobalAutomationAlerts";
 import AiGenerationListPage from "./pages/ai/AiGenerationListPage";
 import AiWorkerPendingRequestsPage from "./pages/ai/AiWorkerPendingRequestsPage";
 import PrivacyPolicySettingsPage from "./pages/settings/PrivacyPolicySettingsPage";
+import EmailSettingsPage from "./pages/settings/EmailSettingsPage";
 import WhatsAppConsolePage from "./pages/whatsapp/WhatsAppConsolePage";
 import LeadPortalExperimentMetricsPage from "./pages/leadPortal/LeadPortalExperimentMetricsPage";
 import LeadPortalImagesPage from "./pages/leadPortal/LeadPortalImagesPage";
@@ -330,6 +331,10 @@ export default function App() {
               <Route
                 path="/settings/privacy-policy"
                 element={<PrivacyPolicySettingsPage />}
+              />
+              <Route
+                path="/settings/email-service"
+                element={<EmailSettingsPage />}
               />
               <Route path="*" element={<div>Início</div>} />
             </Routes>

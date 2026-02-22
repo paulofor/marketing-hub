@@ -2,9 +2,14 @@ package com.marketinghub.emailservice.service;
 
 import com.marketinghub.emailservice.config.EmailServiceProperties;
 import com.marketinghub.emailservice.exception.EmailSendingException;
+import com.marketinghub.emailservice.settings.EmailSmtpConfigurationService;
+import com.marketinghub.emailservice.settings.EmailSmtpSettingsData;
+import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ByteArrayResource;
@@ -13,29 +18,50 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 @Service
 public class EmailSenderService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailSenderService.class);
 
-    private final JavaMailSender javaMailSender;
-    private final EmailServiceProperties properties;
+    private final JavaMailSender defaultMailSender;
+    private final EmailServiceProperties fallbackProperties;
+    private final EmailSmtpConfigurationService smtpConfigurationService;
 
-    public EmailSenderService(JavaMailSender javaMailSender, EmailServiceProperties properties) {
-        this.javaMailSender = javaMailSender;
-        this.properties = properties;
+    public EmailSenderService(JavaMailSender defaultMailSender,
+                              EmailServiceProperties fallbackProperties,
+                              EmailSmtpConfigurationService smtpConfigurationService) {
+        this.defaultMailSender = defaultMailSender;
+        this.fallbackProperties = fallbackProperties;
+        this.smtpConfigurationService = smtpConfigurationService;
     }
 
     public void send(EmailMessage message) {
-        if (properties.dryRun()) {
-            log.info("[DRY-RUN] Envio de e-mail simulado para {} com assunto '{}'", message.to(), message.subject());
+        Optional<EmailSmtpSettingsData> customConfig = smtpConfigurationService.fetchSettings();
+        if (customConfig.isPresent()) {
+            EmailSmtpSettingsData config = customConfig.get();
+            if (Boolean.TRUE.equals(config.dryRun())) {
+                log.info("[DRY-RUN] SMTP configurado em modo simulação. Ignorando envio para {}", message.to());
+                return;
+            }
+            JavaMailSenderImpl customSender = smtpConfigurationService.buildMailSender(config);
+            dispatch(customSender, message, "custom");
             return;
         }
 
-        String mailConfigDescription = describeMailConfiguration();
-        log.info("Preparando envio de e-mail: de={}, para={}, cc={}, bcc={}, assunto='{}', anexos={}, tamanhoAnexos={} bytes, config={}",
+        if (fallbackProperties.dryRun()) {
+            log.info("[DRY-RUN] Envio de e-mail simulado (configuração padrão) para {}", message.to());
+            return;
+        }
+        dispatch(defaultMailSender, message, "default");
+    }
+
+    private void dispatch(JavaMailSender mailSender, EmailMessage message, String configLabel) {
+        String mailConfigDescription = describeMailConfiguration(mailSender, configLabel);
+        log.info("Preparando envio de e-mail: de={} (nome='{}'), para={}, cc={}, bcc={}, assunto='{}', anexos={}, tamanhoAnexos={} bytes, config={}",
                 message.from(),
+                message.fromName(),
                 formatList(message.to()),
                 formatList(message.cc()),
                 formatList(message.bcc()),
@@ -45,10 +71,10 @@ public class EmailSenderService {
                 mailConfigDescription);
 
         try {
-            MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, StandardCharsets.UTF_8.name());
 
-            helper.setFrom(message.from());
+            applyFrom(helper, message);
             helper.setTo(message.to().toArray(String[]::new));
 
             if (!CollectionUtils.isEmpty(message.cc())) {
@@ -68,11 +94,20 @@ public class EmailSenderService {
 
             addAttachments(helper, message.attachments());
 
-            javaMailSender.send(mimeMessage);
+            mailSender.send(mimeMessage);
             log.info("E-mail enviado com sucesso para {} (configuração: {})", String.join(",", message.to()), mailConfigDescription);
         } catch (Exception ex) {
             log.error("Erro ao enviar e-mail para {}. Configuração SMTP: {}", formatList(message.to()), mailConfigDescription, ex);
             throw new EmailSendingException("Falha ao enviar e-mail (" + mailConfigDescription + ")", ex);
+        }
+    }
+
+    private void applyFrom(MimeMessageHelper helper, EmailMessage message)
+            throws UnsupportedEncodingException, jakarta.mail.MessagingException {
+        if (StringUtils.hasText(message.fromName())) {
+            helper.setFrom(new InternetAddress(message.from(), message.fromName(), StandardCharsets.UTF_8.name()));
+        } else {
+            helper.setFrom(message.from());
         }
     }
 
@@ -109,15 +144,16 @@ public class EmailSenderService {
         return total;
     }
 
-    private String describeMailConfiguration() {
-        if (javaMailSender instanceof JavaMailSenderImpl sender) {
-            String protocol = sender.getProtocol() != null ? sender.getProtocol() : "smtp";
-            var properties = sender.getJavaMailProperties();
-            return String.format("host=%s:%d, protocol=%s, username=%s, tls=%s, ssl=%s, auth=%s, timeouts=[connect=%sms, read=%sms, write=%sms]",
-                    sender.getHost(),
-                    sender.getPort(),
+    private String describeMailConfiguration(JavaMailSender sender, String label) {
+        if (sender instanceof JavaMailSenderImpl impl) {
+            String protocol = impl.getProtocol() != null ? impl.getProtocol() : "smtp";
+            var properties = impl.getJavaMailProperties();
+            return String.format("%s: host=%s:%d, protocol=%s, username=%s, tls=%s, ssl=%s, auth=%s, timeouts=[connect=%sms, read=%sms, write=%sms]",
+                    label,
+                    impl.getHost(),
+                    impl.getPort(),
                     protocol,
-                    sender.getUsername(),
+                    impl.getUsername(),
                     properties.getProperty("mail.smtp.starttls.enable", "n/a"),
                     properties.getProperty("mail.smtp.ssl.enable", "n/a"),
                     properties.getProperty("mail.smtp.auth", "n/a"),
@@ -125,7 +161,7 @@ public class EmailSenderService {
                     properties.getProperty("mail.smtp.timeout", "n/a"),
                     properties.getProperty("mail.smtp.writetimeout", "n/a"));
         }
-        return "JavaMailSender=" + javaMailSender.getClass().getSimpleName();
+        return label + ": JavaMailSender=" + sender.getClass().getSimpleName();
     }
 
     private String formatList(List<String> values) {

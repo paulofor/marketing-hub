@@ -4,6 +4,7 @@ import java.util.List;
 
 public record EmailMessage(
         String from,
+        String fromName,
         List<String> to,
         List<String> cc,
         List<String> bcc,

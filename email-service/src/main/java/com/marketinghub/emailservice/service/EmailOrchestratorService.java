@@ -10,6 +10,7 @@ import com.marketinghub.emailservice.service.client.CloudflareImageClient;
 import com.marketinghub.emailservice.service.client.MarketingHubClient;
 import com.marketinghub.emailservice.service.client.MarketingHubTemplateResponse;
 import com.marketinghub.emailservice.service.client.RemoteAsset;
+import com.marketinghub.emailservice.settings.EmailSmtpConfigurationService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +35,7 @@ public class EmailOrchestratorService {
     private final EmailLogService emailLogService;
     private final EmailServiceProperties emailServiceProperties;
     private final TrackingPixelService trackingPixelService;
+    private final EmailSmtpConfigurationService smtpConfigurationService;
 
     public EmailOrchestratorService(MarketingHubClient marketingHubClient,
                                     CloudflareImageClient cloudflareImageClient,
@@ -41,7 +43,8 @@ public class EmailOrchestratorService {
                                     EmailSenderService emailSenderService,
                                     EmailLogService emailLogService,
                                     EmailServiceProperties emailServiceProperties,
-                                    TrackingPixelService trackingPixelService) {
+                                    TrackingPixelService trackingPixelService,
+                                    EmailSmtpConfigurationService smtpConfigurationService) {
         this.marketingHubClient = marketingHubClient;
         this.cloudflareImageClient = cloudflareImageClient;
         this.templateRenderingService = templateRenderingService;
@@ -49,6 +52,7 @@ public class EmailOrchestratorService {
         this.emailLogService = emailLogService;
         this.emailServiceProperties = emailServiceProperties;
         this.trackingPixelService = trackingPixelService;
+        this.smtpConfigurationService = smtpConfigurationService;
     }
 
     public EmailResponseDto sendEmail(EmailRequestDto request) {
@@ -80,8 +84,11 @@ public class EmailOrchestratorService {
 
             List<EmailAttachmentResource> attachments = resolveAttachments(request.attachments());
 
+            String fromAddress = smtpConfigurationService.resolveFromAddress();
+            String fromName = smtpConfigurationService.resolveFromName();
             EmailMessage message = new EmailMessage(
-                    emailServiceProperties.defaultFromAddress(),
+                    fromAddress,
+                    fromName,
                     request.to(),
                     defaultList(request.cc()),
                     defaultList(request.bcc()),

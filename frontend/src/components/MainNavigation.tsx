@@ -33,6 +33,7 @@ import {
   Cpu,
   ScrollText,
   Search,
+  Mail,
 } from "lucide-react";
 import experimentIcon from "../assets/icons/experiment-icon.svg";
 import hypothesisIcon from "../assets/icons/hypothesis-icon.svg";
@@ -211,6 +212,11 @@ const NAV_SECTIONS: NavSection[] = [
         to: "/whatsapp",
         label: "WhatsApp",
         icon: MessageSquare,
+      },
+      {
+        to: "/settings/email-service",
+        label: "Serviço de e-mail",
+        icon: Mail,
       },
       {
         to: "/settings/privacy-policy",

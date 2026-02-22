@@ -7,6 +7,7 @@ import com.marketinghub.emailservice.model.EmailLog;
 import com.marketinghub.emailservice.service.client.LeadPortalImagePackageClient;
 import com.marketinghub.emailservice.service.client.LeadPortalImagePackageExportResponse;
 import com.marketinghub.emailservice.service.client.RemoteAsset;
+import com.marketinghub.emailservice.settings.EmailSmtpConfigurationService;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -36,6 +37,7 @@ public class LeadPortalEmailDispatchService {
     private final EmailLogService emailLogService;
     private final TrackingPixelService trackingPixelService;
     private final LeadPortalPaymentLinkProperties paymentLinkProperties;
+    private final EmailSmtpConfigurationService smtpConfigurationService;
 
     public LeadPortalEmailDispatchService(LeadPortalImagePackageClient leadPortalImagePackageClient,
                                           EmailSenderService emailSenderService,
@@ -43,7 +45,8 @@ public class LeadPortalEmailDispatchService {
                                           LeadPortalDispatchProperties dispatchProperties,
                                           EmailLogService emailLogService,
                                           TrackingPixelService trackingPixelService,
-                                          LeadPortalPaymentLinkProperties paymentLinkProperties) {
+                                          LeadPortalPaymentLinkProperties paymentLinkProperties,
+                                          EmailSmtpConfigurationService smtpConfigurationService) {
         this.leadPortalImagePackageClient = leadPortalImagePackageClient;
         this.emailSenderService = emailSenderService;
         this.emailServiceProperties = emailServiceProperties;
@@ -51,6 +54,7 @@ public class LeadPortalEmailDispatchService {
         this.emailLogService = emailLogService;
         this.trackingPixelService = trackingPixelService;
         this.paymentLinkProperties = paymentLinkProperties;
+        this.smtpConfigurationService = smtpConfigurationService;
     }
 
     @Scheduled(initialDelayString = "${lead-portal.dispatch.initial-delay:20000}",
@@ -107,8 +111,11 @@ public class LeadPortalEmailDispatchService {
         RemoteAsset asset = new RemoteAsset(attachmentName, ZIP_MEDIA_TYPE, attachmentBytes);
         EmailAttachmentResource attachment = new EmailAttachmentResource(asset, false, null);
 
+        String fromAddress = smtpConfigurationService.resolveFromAddress();
+        String fromName = smtpConfigurationService.resolveFromName();
         EmailMessage message = new EmailMessage(
-                emailServiceProperties.defaultFromAddress(),
+                fromAddress,
+                fromName,
                 List.of(item.submissionEmail()),
                 List.of(),
                 List.of(),

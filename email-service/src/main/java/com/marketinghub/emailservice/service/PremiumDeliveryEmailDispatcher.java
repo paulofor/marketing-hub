@@ -15,6 +15,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
+import com.marketinghub.emailservice.settings.EmailSmtpConfigurationService;
 import org.springframework.util.StringUtils;
 
 @Service
@@ -28,19 +29,22 @@ public class PremiumDeliveryEmailDispatcher {
     private final EmailLogService emailLogService;
     private final EmailServiceProperties emailServiceProperties;
     private final TrackingPixelService trackingPixelService;
+    private final EmailSmtpConfigurationService smtpConfigurationService;
 
     public PremiumDeliveryEmailDispatcher(PremiumDeliveryProperties properties,
                                           JdbcTemplate jdbcTemplate,
                                           EmailSenderService emailSenderService,
                                           EmailLogService emailLogService,
                                           EmailServiceProperties emailServiceProperties,
-                                          TrackingPixelService trackingPixelService) {
+                                          TrackingPixelService trackingPixelService,
+                                          EmailSmtpConfigurationService smtpConfigurationService) {
         this.properties = properties;
         this.jdbcTemplate = jdbcTemplate;
         this.emailSenderService = emailSenderService;
         this.emailLogService = emailLogService;
         this.emailServiceProperties = emailServiceProperties;
         this.trackingPixelService = trackingPixelService;
+        this.smtpConfigurationService = smtpConfigurationService;
     }
 
     @Scheduled(initialDelayString = "${premium-delivery.email.scheduler.initial-delay:25000}",
@@ -140,8 +144,11 @@ public class PremiumDeliveryEmailDispatcher {
         htmlBody = trackingPixelService.appendTrackingPixel(htmlBody, trackingPixelUrl);
         String textBody = buildTextBody(record);
 
+        String fromAddress = smtpConfigurationService.resolveFromAddress();
+        String fromName = smtpConfigurationService.resolveFromName();
         EmailMessage message = new EmailMessage(
-                emailServiceProperties.defaultFromAddress(),
+                fromAddress,
+                fromName,
                 List.of(record.recipientEmail()),
                 List.of(),
                 List.of(),

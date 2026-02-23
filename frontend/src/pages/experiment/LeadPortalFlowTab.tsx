@@ -1,9 +1,15 @@
+import axios from "axios";
 import { useMemo, useState } from "react";
 import type { Experiment } from "../../api/experiment/useExperiments";
 import { useLeadPortalFlows } from "../../api/leadPortal/useLeadPortalFlows";
 import { useUpdateLeadPortalFlowApproval } from "../../api/leadPortal/useUpdateLeadPortalFlowApproval";
 import { useRequestLeadPortalFlows } from "../../api/experiment/useRequestLeadPortalFlows";
 import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
+import {
+  type CreateLeadPortalFlowQuestionRequest,
+  type LeadPortalQuestionType,
+  useCreateLeadPortalFlow,
+} from "../../api/leadPortal/useCreateLeadPortalFlow";
 import WorkerRequestBanner from "./WorkerRequestBanner";
 
 interface LeadPortalFlowTabProps {
@@ -19,10 +25,20 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
   const { data: flows, isLoading, isError } = useLeadPortalFlows(experiment.id);
   const requestFlows = useRequestLeadPortalFlows(experiment.id);
   const updateExperiment = useUpdateExperiment(experiment.id);
+  const createFlow = useCreateLeadPortalFlow();
   const updateApproval = useUpdateLeadPortalFlowApproval();
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [pendingAssignmentId, setPendingAssignmentId] = useState<number | null>(null);
   const [pendingApprovalId, setPendingApprovalId] = useState<number | null>(null);
+  const [isCreateFormVisible, setIsCreateFormVisible] = useState(false);
+  const [newFlowName, setNewFlowName] = useState("Formulário simples para personal trainer");
+  const [newFlowSlug, setNewFlowSlug] = useState("formulario-simples-personal-trainer");
+  const [newFlowDescription, setNewFlowDescription] = useState(
+    "Fluxo simples para coleta inicial de informações sem necessidade de envio de imagens.",
+  );
+  const [manualQuestions, setManualQuestions] = useState<CreateLeadPortalFlowQuestionRequest[]>(() =>
+    createSimpleFormTemplateQuestions(),
+  );
 
   const sortedFlows = useMemo(() => {
     if (!Array.isArray(flows)) return [];
@@ -107,6 +123,104 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
     }
   };
 
+  const handleFlowNameChange = (value: string) => {
+    setNewFlowName(value);
+    setNewFlowSlug(toSlug(value));
+  };
+
+  const handleQuestionChange = (
+    index: number,
+    key: keyof CreateLeadPortalFlowQuestionRequest,
+    value: string | boolean,
+  ) => {
+    setManualQuestions((current) =>
+      current.map((question, questionIndex) => {
+        if (questionIndex !== index) return question;
+
+        if (key === "title") {
+          const title = String(value);
+          return { ...question, title, dataKey: toDataKey(title) };
+        }
+
+        if (key === "type") {
+          const nextType = value as LeadPortalQuestionType;
+          const isChoiceType = nextType === "SINGLE_CHOICE" || nextType === "MULTIPLE_CHOICE";
+          return {
+            ...question,
+            type: nextType,
+            options: isChoiceType ? question.options ?? [] : undefined,
+          };
+        }
+
+        return { ...question, [key]: value };
+      }),
+    );
+  };
+
+  const handleQuestionOptionsChange = (index: number, value: string) => {
+    const options = value
+      .split("\n")
+      .map((option) => option.trim())
+      .filter(Boolean);
+    setManualQuestions((current) =>
+      current.map((question, questionIndex) =>
+        questionIndex === index ? { ...question, options } : question,
+      ),
+    );
+  };
+
+  const addQuestion = () => {
+    setManualQuestions((current) => [
+      ...current,
+      {
+        title: "Nova pergunta",
+        dataKey: `campo_${current.length + 1}`,
+        type: "TEXT",
+        required: false,
+        options: undefined,
+      },
+    ]);
+  };
+
+  const removeQuestion = (index: number) => {
+    setManualQuestions((current) => current.filter((_, questionIndex) => questionIndex !== index));
+  };
+
+  const handleCreateSimpleFlow = async () => {
+    if (manualQuestions.length === 0) {
+      setFeedback({ variant: "error", message: "Adicione pelo menos uma pergunta para criar o fluxo." });
+      return;
+    }
+
+    try {
+      await createFlow.mutateAsync({
+        name: newFlowName,
+        slug: newFlowSlug,
+        description: newFlowDescription,
+        experimentId: experiment.id,
+        model: "manual",
+        questions: manualQuestions.map((question) => ({
+          ...question,
+          options:
+            question.type === "SINGLE_CHOICE" || question.type === "MULTIPLE_CHOICE"
+              ? question.options ?? []
+              : undefined,
+        })),
+      });
+
+      setFeedback({
+        variant: "success",
+        message: "Fluxo simples criado com sucesso. Agora você já pode vinculá-lo ao experimento.",
+      });
+      setIsCreateFormVisible(false);
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? error.response?.data?.message ?? "Não foi possível criar o fluxo simples."
+        : "Não foi possível criar o fluxo simples.";
+      setFeedback({ variant: "error", message });
+    }
+  };
+
   return (
     <div className="d-flex flex-column gap-3">
       <WorkerRequestBanner
@@ -121,6 +235,184 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
         isRequesting={requestFlows.isPending}
         helperText="Os fluxos gerados ficam disponíveis para revisão e aprovação antes de serem publicados."
       />
+
+      <div className="card border-0 shadow-sm">
+        <div className="card-body d-flex flex-column gap-3">
+          <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
+            <div>
+              <h5 className="mb-1">Criar formulário simples (sem imagem)</h5>
+              <p className="text-muted small mb-0">
+                Monte um fluxo manual para o portal com perguntas diretas, como nome, contato e tipo de aula.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn btn-outline-primary btn-sm"
+              onClick={() => setIsCreateFormVisible((value) => !value)}
+              disabled={createFlow.isPending}
+            >
+              {isCreateFormVisible ? "Fechar formulário" : "Novo formulário simples"}
+            </button>
+          </div>
+
+          {isCreateFormVisible ? (
+            <div className="d-flex flex-column gap-3">
+              <div className="row g-3">
+                <div className="col-md-6">
+                  <label className="form-label">Nome do fluxo *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={newFlowName}
+                    onChange={(event) => handleFlowNameChange(event.target.value)}
+                  />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Slug *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={newFlowSlug}
+                    onChange={(event) => setNewFlowSlug(toSlug(event.target.value))}
+                  />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">Descrição</label>
+                  <textarea
+                    className="form-control"
+                    rows={2}
+                    value={newFlowDescription}
+                    onChange={(event) => setNewFlowDescription(event.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="d-flex flex-column gap-3">
+                {manualQuestions.map((question, index) => {
+                  const isChoiceType =
+                    question.type === "SINGLE_CHOICE" || question.type === "MULTIPLE_CHOICE";
+                  return (
+                    <div key={`${question.dataKey}-${index}`} className="border rounded p-3">
+                      <div className="d-flex justify-content-between align-items-start gap-3 mb-3">
+                        <h6 className="mb-0">Pergunta {index + 1}</h6>
+                        <button
+                          type="button"
+                          className="btn btn-outline-danger btn-sm"
+                          onClick={() => removeQuestion(index)}
+                          disabled={manualQuestions.length === 1 || createFlow.isPending}
+                        >
+                          Remover
+                        </button>
+                      </div>
+
+                      <div className="row g-3">
+                        <div className="col-md-6">
+                          <label className="form-label">Título *</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            value={question.title}
+                            onChange={(event) =>
+                              handleQuestionChange(index, "title", event.target.value)
+                            }
+                          />
+                        </div>
+                        <div className="col-md-6">
+                          <label className="form-label">Chave de dados *</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            value={question.dataKey}
+                            onChange={(event) =>
+                              handleQuestionChange(index, "dataKey", toDataKey(event.target.value))
+                            }
+                          />
+                        </div>
+                        <div className="col-md-4">
+                          <label className="form-label">Tipo *</label>
+                          <select
+                            className="form-select"
+                            value={question.type}
+                            onChange={(event) => handleQuestionChange(index, "type", event.target.value)}
+                          >
+                            <option value="TEXT">Texto curto</option>
+                            <option value="TEXTAREA">Texto longo</option>
+                            <option value="PHONE">Telefone</option>
+                            <option value="SINGLE_CHOICE">Escolha única</option>
+                            <option value="MULTIPLE_CHOICE">Múltipla escolha</option>
+                          </select>
+                        </div>
+                        <div className="col-md-8 d-flex align-items-end">
+                          <div className="form-check">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id={`required-question-${index}`}
+                              checked={question.required}
+                              onChange={(event) =>
+                                handleQuestionChange(index, "required", event.target.checked)
+                              }
+                            />
+                            <label className="form-check-label" htmlFor={`required-question-${index}`}>
+                              Pergunta obrigatória
+                            </label>
+                          </div>
+                        </div>
+                        {isChoiceType ? (
+                          <div className="col-12">
+                            <label className="form-label">Opções (uma por linha) *</label>
+                            <textarea
+                              className="form-control"
+                              rows={4}
+                              value={(question.options ?? []).join("\n")}
+                              onChange={(event) =>
+                                handleQuestionOptionsChange(index, event.target.value)
+                              }
+                            />
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <div className="d-flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary btn-sm"
+                    onClick={addQuestion}
+                    disabled={createFlow.isPending}
+                  >
+                    Adicionar pergunta
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary btn-sm"
+                    onClick={() => setManualQuestions(createSimpleFormTemplateQuestions())}
+                    disabled={createFlow.isPending}
+                  >
+                    Restaurar exemplo
+                  </button>
+                </div>
+              </div>
+
+              <div className="d-flex justify-content-end">
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={handleCreateSimpleFlow}
+                  disabled={createFlow.isPending}
+                >
+                  {createFlow.isPending ? (
+                    <span className="spinner-border spinner-border-sm" role="status" />
+                  ) : null}
+                  {createFlow.isPending ? "Criando..." : "Criar formulário"}
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
 
       {feedback ? (
         <div
@@ -264,6 +556,73 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
       </div>
     </div>
   );
+}
+
+function createSimpleFormTemplateQuestions(): CreateLeadPortalFlowQuestionRequest[] {
+  return [
+    {
+      title: "Nome",
+      dataKey: "nome",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title: "Trabalha em alguma academia ou studio? Qual nome?",
+      dataKey: "academia_ou_studio",
+      type: "TEXT",
+      required: false,
+    },
+    {
+      title: "Forma de contato",
+      dataKey: "forma_contato",
+      type: "SINGLE_CHOICE",
+      required: true,
+      options: ["Telefone", "WhatsApp", "Instagram"],
+    },
+    {
+      title: "Tipo de aulas que presta",
+      dataKey: "tipo_aulas",
+      type: "MULTIPLE_CHOICE",
+      required: true,
+      options: ["Musculação", "Yoga", "Outros"],
+    },
+    {
+      title: "Se marcou outros, descreva quais aulas presta",
+      dataKey: "outras_aulas",
+      type: "TEXTAREA",
+      required: false,
+    },
+  ];
+}
+
+function toSlug(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function toDataKey(value: string) {
+  const normalized = value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s_-]/g, "")
+    .replace(/\s+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^-+|-+$/g, "");
+
+  if (!normalized) {
+    return "campo";
+  }
+
+  return /^[a-z]/.test(normalized) ? normalized : `campo_${normalized}`;
 }
 
 function formatDate(value?: string | null) {

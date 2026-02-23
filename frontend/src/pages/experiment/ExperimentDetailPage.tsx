@@ -23,6 +23,7 @@ import { useExperimentJourneyAssignments } from "../../api/experiment/useExperim
 import { useRebuildExperimentJourney } from "../../api/experiment/useRebuildExperimentJourney";
 import { useUpdateExperimentStatus } from "../../api/experiment/useUpdateExperimentStatus";
 import { useExperimentFacebookCampaigns } from "../../api/experiment/useExperimentFacebookCampaigns";
+import { useExperimentReadiness } from "../../api/experiment/useExperimentReadiness";
 import {
   useExperimentCampaignReset,
   useExperimentCampaignResetPreview,
@@ -75,6 +76,10 @@ export default function ExperimentDetailPage() {
     isLoading: isLoadingFacebookCampaigns,
   } = useExperimentFacebookCampaigns(expId);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const {
+    data: readinessSummary,
+    isLoading: isLoadingReadiness,
+  } = useExperimentReadiness(expId);
   const {
     data: resetPreviewData,
     isFetching: isFetchingResetPreview,
@@ -203,6 +208,8 @@ export default function ExperimentDetailPage() {
     : null;
   const confirmResetDisabled =
     isFetchingResetPreview || !hasItemsToReset || Boolean(previewErrorMessage) || resetCampaigns.isPending;
+  const readinessIssues = readinessSummary?.issues ?? [];
+  const hasReadinessIssues = readinessIssues.length > 0;
   const formatCurrency = (n?: number | null) =>
     n != null
       ? new Intl.NumberFormat("pt-BR", {
@@ -620,6 +627,33 @@ export default function ExperimentDetailPage() {
               </ul>
             </>
           ) : null}
+        </div>
+      ) : null}
+      {isLoadingReadiness ? (
+        <div
+          className="alert alert-light d-flex align-items-center gap-2 mt-3"
+          role="status"
+        >
+          <span
+            className="spinner-border spinner-border-sm"
+            role="status"
+            aria-hidden="true"
+          />
+          <span>Carregando pendências básicas...</span>
+        </div>
+      ) : hasReadinessIssues ? (
+        <div className="alert alert-warning mt-3" role="alert">
+          <h6 className="alert-heading mb-2">Pendências antes da publicação</h6>
+          <ul className="mb-0 ps-3">
+            {readinessIssues.map((issue, index) => (
+              <li key={`${issue.type}-${index}`} className="mb-2">
+                <strong>{issue.title}</strong>: {issue.description}
+                {issue.recommendation ? (
+                  <div className="small text-body-secondary">{issue.recommendation}</div>
+                ) : null}
+              </li>
+            ))}
+          </ul>
         </div>
       ) : null}
       <div className="card border-0 shadow-sm rounded-3 mt-3">

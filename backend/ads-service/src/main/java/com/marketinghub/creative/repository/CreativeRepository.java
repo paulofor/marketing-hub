@@ -19,4 +19,6 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
 
     @Query("select c from Creative c join fetch c.experiment where c.id = :id")
     Optional<Creative> findByIdWithExperiment(@Param("id") Long id);
+
+    long countByExperimentId(Long experimentId);
 }

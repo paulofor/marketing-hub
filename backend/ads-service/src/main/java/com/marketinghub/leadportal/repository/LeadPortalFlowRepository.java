@@ -22,4 +22,6 @@ public interface LeadPortalFlowRepository extends JpaRepository<LeadPortalFlow, 
     List<LeadPortalFlow> findAllByExperimentIdOrderByCreatedAtDesc(Long experimentId);
 
     Optional<LeadPortalFlow> findBySlug(String slug);
+
+    long countByExperimentId(Long experimentId);
 }

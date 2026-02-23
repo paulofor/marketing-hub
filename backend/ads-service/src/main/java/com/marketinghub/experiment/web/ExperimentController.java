@@ -4,10 +4,12 @@ import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.ExperimentDiagnosticsDto;
 import com.marketinghub.experiment.dto.ExperimentDto;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
+import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
 import com.marketinghub.experiment.dto.UpdateSelectedSampleEmailRequest;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
 import com.marketinghub.experiment.service.ExperimentDiagnosticsService;
 import com.marketinghub.experiment.service.ExperimentService;
+import com.marketinghub.experiment.service.ExperimentReadinessService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,12 +24,15 @@ public class ExperimentController {
     private final ExperimentService service;
     private final ExperimentMapper mapper;
     private final ExperimentDiagnosticsService diagnosticsService;
+    private final ExperimentReadinessService readinessService;
 
     public ExperimentController(ExperimentService service, ExperimentMapper mapper,
-                                ExperimentDiagnosticsService diagnosticsService) {
+                                ExperimentDiagnosticsService diagnosticsService,
+                                ExperimentReadinessService readinessService) {
         this.service = service;
         this.mapper = mapper;
         this.diagnosticsService = diagnosticsService;
+        this.readinessService = readinessService;
     }
 
     @PostMapping
@@ -48,6 +53,11 @@ public class ExperimentController {
     @GetMapping("/{id}/diagnostics")
     public ExperimentDiagnosticsDto diagnostics(@PathVariable Long id) {
         return diagnosticsService.diagnose(id);
+    }
+
+    @GetMapping("/{id}/readiness")
+    public ExperimentReadinessSummaryDto readiness(@PathVariable Long id) {
+        return readinessService.summarize(id);
     }
 
     @GetMapping

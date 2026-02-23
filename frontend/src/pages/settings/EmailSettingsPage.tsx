@@ -246,6 +246,12 @@ export default function EmailSettingsPage() {
                     ) : null}
                     <dt className="col-sm-4">TLS</dt>
                     <dd className="col-sm-8">{preset.useStartTls ? "STARTTLS" : preset.useSsl ? "SSL" : "Sem criptografia"}</dd>
+                    {preset.usernameHint ? (
+                      <>
+                        <dt className="col-sm-4">Usuário / Senha</dt>
+                        <dd className="col-sm-8">{preset.usernameHint}</dd>
+                      </>
+                    ) : null}
                     <dt className="col-sm-4">Plano</dt>
                     <dd className="col-sm-8">{preset.pricingSummary}</dd>
                     <dt className="col-sm-4">Free tier</dt>

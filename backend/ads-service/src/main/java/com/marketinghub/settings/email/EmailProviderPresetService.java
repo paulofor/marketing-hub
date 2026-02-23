@@ -13,6 +13,7 @@ public class EmailProviderPresetService {
                 sendGrid(),
                 mailtrap(),
                 brevo(),
+                mailjet(),
                 resend()
         );
     }
@@ -95,6 +96,33 @@ public class EmailProviderPresetService {
                         "Streams separados para transacional e marketing"
                 ),
                 "Cada domínio verificado possui credenciais diferentes; copie sempre do painel do domínio correto."
+        );
+    }
+
+    private EmailProviderPresetResponse mailjet() {
+        return new EmailProviderPresetResponse(
+                "mailjet",
+                "Mailjet",
+                "Planos em dólar com 6.000 envios gratuitos",
+                "SMTP relay europeu com editor drag-and-drop, automações e multiusuário integrado.",
+                "https://dev.mailjet.com/smtp-relay/configuration/",
+                "https://www.mailjet.com/pricing/",
+                "Free mantém 6.000 emails/mês (200/dia); Essential começa em US$ 17/mês e Premium em US$ 27/mês para 15.000 envios.",
+                "Equipes que precisam de campanhas e automações com editor visual",
+                "Plano Free inclui editor, formulários e APIs sem custo.",
+                "in-v3.mailjet.com",
+                587,
+                List.of(25, 80, 465, 588, 2525),
+                true,
+                true,
+                false,
+                "Login = API Key pública (MJAPIKEYPUBLIC) e senha = chave privada (MJAPIKEYPRIVATE).",
+                List.of(
+                        "Editor drag-and-drop com templates prontos",
+                        "Automação e segmentação disponíveis já no Essential",
+                        "Multiusuário e colaboração em tempo real nos planos Premium"
+                ),
+                "Autentique o domínio e escolha a porta 587 ou 465 conforme firewall local."
         );
     }
 

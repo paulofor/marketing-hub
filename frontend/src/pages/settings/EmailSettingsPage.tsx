@@ -7,6 +7,7 @@ import {
   useTestEmailSettings,
   useUpdateEmailSmtpSettings,
 } from "../../api/settings/useEmailSmtpSettings";
+import { EmailProviderPreset, useEmailProviderPresets } from "../../api/settings/useEmailProviderPresets";
 
 interface FormState {
   providerName: string;
@@ -57,6 +58,7 @@ export default function EmailSettingsPage() {
   const { data, isLoading, isError } = useEmailSmtpSettings();
   const updateSettings = useUpdateEmailSmtpSettings();
   const testEmail = useTestEmailSettings();
+  const { data: providerPresets, isLoading: isLoadingPresets, isError: presetsError } = useEmailProviderPresets();
   const [formState, setFormState] = useState<FormState>(DEFAULT_FORM);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordTouched, setPasswordTouched] = useState(false);
@@ -95,6 +97,22 @@ export default function EmailSettingsPage() {
       ...prev,
       [field]: value,
     }));
+  };
+
+  const handleApplyPreset = (preset: EmailProviderPreset) => {
+    setFormState((prev) => ({
+      ...prev,
+      providerName: preset.name,
+      host: preset.host || prev.host,
+      port: preset.port != null ? String(preset.port) : prev.port,
+      authEnabled: preset.authEnabled,
+      username: "",
+      useStartTls: preset.useStartTls,
+      useSsl: preset.useSsl,
+    }));
+    setPasswordInput("");
+    setPasswordTouched(false);
+    toast.info(`Preset ${preset.name} aplicado. Revise remetente, usuário e senha antes de salvar.`);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -158,6 +176,121 @@ export default function EmailSettingsPage() {
       const message = axiosErrorMessage(error) ?? "Não foi possível enviar o e-mail de teste.";
       toast.error(message);
     }
+  };
+
+  const renderProviderPresets = () => {
+    if (isLoadingPresets) {
+      return (
+        <section className="card mt-3">
+          <div className="card-header">
+            <h5 className="mb-1">Sugestões de provedores</h5>
+            <p className="text-muted mb-0">Carregando presets de SMTP...</p>
+          </div>
+          <div className="card-body">
+            <p className="mb-0">Carregando presets...</p>
+          </div>
+        </section>
+      );
+    }
+    if (presetsError) {
+      return (
+        <section className="card mt-3">
+          <div className="card-header">
+            <h5 className="mb-1">Sugestões de provedores</h5>
+            <p className="text-muted mb-0">Use um dos modelos para preencher rapidamente o formulário.</p>
+          </div>
+          <div className="card-body">
+            <div className="alert alert-warning mb-0" role="alert">
+              Não foi possível carregar os presets agora. Recarregue a página ou informe o provedor manualmente.
+            </div>
+          </div>
+        </section>
+      );
+    }
+    if (!providerPresets || providerPresets.length === 0) {
+      return null;
+    }
+    return (
+      <section className="card mt-3">
+        <div className="card-header">
+          <h5 className="mb-1">Sugestões de provedores</h5>
+          <p className="text-muted mb-0">
+            Clique em "Aplicar preset" para preencher host, porta e segurança conforme a documentação oficial e depois informe as credenciais.
+          </p>
+        </div>
+        <div className="card-body">
+          <div className="row g-3">
+            {providerPresets.map((preset) => (
+              <div key={preset.id} className="col-12 col-lg-6">
+                <div className="border rounded-3 h-100 d-flex flex-column p-3">
+                  <div className="d-flex justify-content-between align-items-start gap-2">
+                    <div>
+                      <h6 className="mb-1">{preset.name}</h6>
+                      <p className="text-muted small mb-1">{preset.headline}</p>
+                    </div>
+                    <span className="badge text-bg-light text-body-secondary">{preset.bestFor}</span>
+                  </div>
+                  <p className="mb-2 small">{preset.summary}</p>
+                  <dl className="row small mb-2">
+                    <dt className="col-sm-4">Host</dt>
+                    <dd className="col-sm-8">
+                      <code>{preset.host}</code>
+                    </dd>
+                    <dt className="col-sm-4">Porta padrão</dt>
+                    <dd className="col-sm-8">{preset.port ?? "—"}</dd>
+                    {preset.alternativePorts.length ? (
+                      <>
+                        <dt className="col-sm-4">Alternativas</dt>
+                        <dd className="col-sm-8">{preset.alternativePorts.join(", ")}</dd>
+                      </>
+                    ) : null}
+                    <dt className="col-sm-4">TLS</dt>
+                    <dd className="col-sm-8">{preset.useStartTls ? "STARTTLS" : preset.useSsl ? "SSL" : "Sem criptografia"}</dd>
+                    <dt className="col-sm-4">Plano</dt>
+                    <dd className="col-sm-8">{preset.pricingSummary}</dd>
+                    <dt className="col-sm-4">Free tier</dt>
+                    <dd className="col-sm-8">{preset.freeTier}</dd>
+                  </dl>
+                  <ul className="small ps-3 mb-2">
+                    {preset.highlights.map((highlight) => (
+                      <li key={highlight}>{highlight}</li>
+                    ))}
+                  </ul>
+                  {preset.notes ? (
+                    <p className="text-muted small mb-2">{preset.notes}</p>
+                  ) : null}
+                  <div className="mt-auto d-flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-primary"
+                      onClick={() => handleApplyPreset(preset)}
+                    >
+                      Aplicar preset
+                    </button>
+                    <a
+                      className="btn btn-sm btn-link"
+                      href={preset.docsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Docs
+                    </a>
+                    <a
+                      className="btn btn-sm btn-link"
+                      href={preset.pricingUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Preços
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
   };
 
   const renderForm = () => {
@@ -405,6 +538,8 @@ export default function EmailSettingsPage() {
       <div className="d-flex justify-content-between align-items-center gap-3">
         <PageTitle>Serviço de e-mail</PageTitle>
       </div>
+
+      {renderProviderPresets()}
 
       <section className="card mt-3">
         <div className="card-header">

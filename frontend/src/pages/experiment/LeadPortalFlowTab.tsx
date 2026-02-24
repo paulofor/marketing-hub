@@ -7,7 +7,6 @@ import { useRequestLeadPortalFlows } from "../../api/experiment/useRequestLeadPo
 import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
 import {
   type CreateLeadPortalFlowQuestionRequest,
-  type LeadPortalQuestionType,
   useCreateLeadPortalFlow,
 } from "../../api/leadPortal/useCreateLeadPortalFlow";
 import WorkerRequestBanner from "./WorkerRequestBanner";
@@ -51,9 +50,34 @@ export default function LeadPortalFlowTab({
   const [newFlowDescription, setNewFlowDescription] = useState(
     "Fluxo simples para coleta inicial de informações sem necessidade de envio de imagens.",
   );
-  const [manualQuestions, setManualQuestions] = useState<
-    CreateLeadPortalFlowQuestionRequest[]
-  >(() => createSimpleFormTemplateQuestions());
+  const [workQuestionTitle, setWorkQuestionTitle] = useState(
+    "Trabalha em alguma academia ou studio? Qual nome?",
+  );
+  const [optionsQuestionTitle, setOptionsQuestionTitle] = useState(
+    "Tipo de aulas que presta",
+  );
+  const [optionsQuestionValues, setOptionsQuestionValues] = useState(
+    "Musculação\nYoga\nPilates",
+  );
+  const [otherOptionsTitle, setOtherOptionsTitle] = useState(
+    "Se nenhuma opção anterior representar seu cenário, descreva aqui",
+  );
+
+  const manualQuestions = useMemo(
+    () =>
+      createSimpleFormTemplateQuestions({
+        workQuestionTitle,
+        optionsQuestionTitle,
+        optionsQuestionValues,
+        otherOptionsTitle,
+      }),
+    [
+      workQuestionTitle,
+      optionsQuestionTitle,
+      optionsQuestionValues,
+      otherOptionsTitle,
+    ],
+  );
 
   const sortedFlows = useMemo(() => {
     if (!Array.isArray(flows)) return [];
@@ -150,72 +174,29 @@ export default function LeadPortalFlowTab({
     setNewFlowSlug(toSlug(value));
   };
 
-  const handleQuestionChange = (
-    index: number,
-    key: keyof CreateLeadPortalFlowQuestionRequest,
-    value: string | boolean,
-  ) => {
-    setManualQuestions((current) =>
-      current.map((question, questionIndex) => {
-        if (questionIndex !== index) return question;
-
-        if (key === "title") {
-          const title = String(value);
-          return { ...question, title, dataKey: toDataKey(title) };
-        }
-
-        if (key === "type") {
-          const nextType = value as LeadPortalQuestionType;
-          const isChoiceType =
-            nextType === "SINGLE_CHOICE" || nextType === "MULTIPLE_CHOICE";
-          return {
-            ...question,
-            type: nextType,
-            options: isChoiceType ? (question.options ?? []) : undefined,
-          };
-        }
-
-        return { ...question, [key]: value };
-      }),
-    );
-  };
-
-  const handleQuestionOptionsChange = (index: number, value: string) => {
-    const options = value
-      .split("\n")
-      .map((option) => option.trim())
-      .filter(Boolean);
-    setManualQuestions((current) =>
-      current.map((question, questionIndex) =>
-        questionIndex === index ? { ...question, options } : question,
-      ),
-    );
-  };
-
-  const addQuestion = () => {
-    setManualQuestions((current) => [
-      ...current,
-      {
-        title: "Nova pergunta",
-        dataKey: `campo_${current.length + 1}`,
-        type: "TEXT",
-        required: false,
-        options: undefined,
-      },
-    ]);
-  };
-
-  const removeQuestion = (index: number) => {
-    setManualQuestions((current) =>
-      current.filter((_, questionIndex) => questionIndex !== index),
-    );
-  };
-
   const handleCreateSimpleFlow = async () => {
-    if (manualQuestions.length === 0) {
+    if (
+      !workQuestionTitle.trim() ||
+      !optionsQuestionTitle.trim() ||
+      !otherOptionsTitle.trim()
+    ) {
       setFeedback({
         variant: "error",
-        message: "Adicione pelo menos uma pergunta para criar o fluxo.",
+        message:
+          "Preencha os títulos variáveis do template antes de criar o formulário.",
+      });
+      return;
+    }
+
+    if (
+      optionsQuestionValues
+        .split("\n")
+        .map((option) => option.trim())
+        .filter(Boolean).length === 0
+    ) {
+      setFeedback({
+        variant: "error",
+        message: "Informe pelo menos uma opção para a pergunta de lista.",
       });
       return;
     }
@@ -337,148 +318,75 @@ export default function LeadPortalFlowTab({
                 </div>
               </div>
 
-              <div className="d-flex flex-column gap-3">
-                {manualQuestions.map((question, index) => {
-                  const isChoiceType =
-                    question.type === "SINGLE_CHOICE" ||
-                    question.type === "MULTIPLE_CHOICE";
-                  return (
-                    <div
-                      key={`${question.dataKey}-${index}`}
-                      className="border rounded p-3"
-                    >
-                      <div className="d-flex justify-content-between align-items-start gap-3 mb-3">
-                        <h6 className="mb-0">Pergunta {index + 1}</h6>
-                        <button
-                          type="button"
-                          className="btn btn-outline-danger btn-sm"
-                          onClick={() => removeQuestion(index)}
-                          disabled={
-                            manualQuestions.length === 1 || createFlow.isPending
-                          }
-                        >
-                          Remover
-                        </button>
-                      </div>
+              <div className="border rounded p-3 bg-light">
+                <h6 className="mb-3">Template padrão do formulário</h6>
+                <div className="row g-3">
+                  <div className="col-12">
+                    <label className="form-label">
+                      Pergunta 3 (local de trabalho) *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={workQuestionTitle}
+                      onChange={(event) =>
+                        setWorkQuestionTitle(event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label">
+                      Pergunta 5 (lista de opções) *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={optionsQuestionTitle}
+                      onChange={(event) =>
+                        setOptionsQuestionTitle(event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label">
+                      Opções da pergunta 5 (uma por linha) *
+                    </label>
+                    <textarea
+                      className="form-control"
+                      rows={4}
+                      value={optionsQuestionValues}
+                      onChange={(event) =>
+                        setOptionsQuestionValues(event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label">
+                      Pergunta 6 (campo livre) *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={otherOptionsTitle}
+                      onChange={(event) =>
+                        setOtherOptionsTitle(event.target.value)
+                      }
+                    />
+                  </div>
+                </div>
 
-                      <div className="row g-3">
-                        <div className="col-md-6">
-                          <label className="form-label">Título *</label>
-                          <input
-                            type="text"
-                            className="form-control"
-                            value={question.title}
-                            onChange={(event) =>
-                              handleQuestionChange(
-                                index,
-                                "title",
-                                event.target.value,
-                              )
-                            }
-                          />
-                        </div>
-                        <div className="col-md-6">
-                          <label className="form-label">Chave de dados *</label>
-                          <input
-                            type="text"
-                            className="form-control"
-                            value={question.dataKey}
-                            onChange={(event) =>
-                              handleQuestionChange(
-                                index,
-                                "dataKey",
-                                toDataKey(event.target.value),
-                              )
-                            }
-                          />
-                        </div>
-                        <div className="col-md-4">
-                          <label className="form-label">Tipo *</label>
-                          <select
-                            className="form-select"
-                            value={question.type}
-                            onChange={(event) =>
-                              handleQuestionChange(
-                                index,
-                                "type",
-                                event.target.value,
-                              )
-                            }
-                          >
-                            <option value="TEXT">Texto curto</option>
-                            <option value="TEXTAREA">Texto longo</option>
-                            <option value="PHONE">Telefone</option>
-                            <option value="SINGLE_CHOICE">Escolha única</option>
-                            <option value="MULTIPLE_CHOICE">
-                              Múltipla escolha
-                            </option>
-                          </select>
-                        </div>
-                        <div className="col-md-8 d-flex align-items-end">
-                          <div className="form-check">
-                            <input
-                              className="form-check-input"
-                              type="checkbox"
-                              id={`required-question-${index}`}
-                              checked={question.required}
-                              onChange={(event) =>
-                                handleQuestionChange(
-                                  index,
-                                  "required",
-                                  event.target.checked,
-                                )
-                              }
-                            />
-                            <label
-                              className="form-check-label"
-                              htmlFor={`required-question-${index}`}
-                            >
-                              Pergunta obrigatória
-                            </label>
-                          </div>
-                        </div>
-                        {isChoiceType ? (
-                          <div className="col-12">
-                            <label className="form-label">
-                              Opções (uma por linha) *
-                            </label>
-                            <textarea
-                              className="form-control"
-                              rows={4}
-                              value={(question.options ?? []).join("\n")}
-                              onChange={(event) =>
-                                handleQuestionOptionsChange(
-                                  index,
-                                  event.target.value,
-                                )
-                              }
-                            />
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-                  );
-                })}
-
-                <div className="d-flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary btn-sm"
-                    onClick={addQuestion}
-                    disabled={createFlow.isPending}
-                  >
-                    Adicionar pergunta
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary btn-sm"
-                    onClick={() =>
-                      setManualQuestions(createSimpleFormTemplateQuestions())
-                    }
-                    disabled={createFlow.isPending}
-                  >
-                    Restaurar exemplo
-                  </button>
+                <div className="mt-3">
+                  <p className="small text-muted mb-2">
+                    Estrutura fixa aplicada automaticamente:
+                  </p>
+                  <ol className="small mb-0 ps-3">
+                    {manualQuestions.map((question) => (
+                      <li key={question.dataKey}>
+                        {question.title}
+                        {question.required ? " *" : ""}
+                      </li>
+                    ))}
+                  </ol>
                 </div>
               </div>
 
@@ -844,7 +752,24 @@ function renderPreviewField(
   }
 }
 
-function createSimpleFormTemplateQuestions(): CreateLeadPortalFlowQuestionRequest[] {
+interface SimpleFlowTemplateConfig {
+  workQuestionTitle: string;
+  optionsQuestionTitle: string;
+  optionsQuestionValues: string;
+  otherOptionsTitle: string;
+}
+
+function createSimpleFormTemplateQuestions({
+  workQuestionTitle,
+  optionsQuestionTitle,
+  optionsQuestionValues,
+  otherOptionsTitle,
+}: SimpleFlowTemplateConfig): CreateLeadPortalFlowQuestionRequest[] {
+  const parsedOptions = optionsQuestionValues
+    .split("\n")
+    .map((option) => option.trim())
+    .filter(Boolean);
+
   return [
     {
       title: "Nome",
@@ -853,52 +778,62 @@ function createSimpleFormTemplateQuestions(): CreateLeadPortalFlowQuestionReques
       required: true,
     },
     {
-      title: "Trabalha em alguma academia ou studio? Qual nome?",
-      dataKey: "academia_ou_studio",
+      title: "E-mail",
+      dataKey: "email",
+      type: "EMAIL",
+      required: true,
+      placeholder: "voce@email.com",
+    },
+    {
+      title:
+        workQuestionTitle.trim() ||
+        "Trabalha em alguma academia ou studio? Qual nome?",
+      dataKey: "local_trabalho",
       type: "TEXT",
-      required: false,
+      required: true,
     },
     {
       title: "Forma de contato",
       dataKey: "forma_contato",
       type: "SINGLE_CHOICE",
       required: true,
-      options: ["Telefone", "WhatsApp", "Instagram"],
+      options: ["Instagram", "WhatsApp", "Telefone"],
     },
     {
-      title: "Qual é o número de telefone para contato?",
-      dataKey: "telefone",
-      type: "TEXT",
-      required: false,
-      description:
-        "Preencha este campo quando a forma de contato escolhida for Telefone.",
-    },
-    {
-      title: "Qual é o WhatsApp para contato?",
-      dataKey: "whatsapp",
-      type: "TEXT",
-      required: false,
-      description:
-        "Preencha este campo quando a forma de contato escolhida for WhatsApp.",
-    },
-    {
-      title: "Qual é o Instagram para contato?",
+      title: "Qual é o seu @ no Instagram?",
       dataKey: "instagram",
       type: "TEXT",
       required: false,
       description:
-        "Preencha este campo quando a forma de contato escolhida for Instagram.",
+        "Este campo aparece quando a forma de contato for Instagram.",
     },
     {
-      title: "Tipo de aulas que presta",
-      dataKey: "tipo_aulas",
+      title: "Qual é o seu número do WhatsApp?",
+      dataKey: "whatsapp",
+      type: "TEXT",
+      required: false,
+      description: "Este campo aparece quando a forma de contato for WhatsApp.",
+    },
+    {
+      title: "Qual é o seu número de telefone?",
+      dataKey: "telefone",
+      type: "TEXT",
+      required: false,
+      description: "Este campo aparece quando a forma de contato for Telefone.",
+    },
+    {
+      title: optionsQuestionTitle.trim() || "Em quais frentes você atua?",
+      dataKey: "lista_opcoes",
       type: "MULTIPLE_CHOICE",
       required: true,
-      options: ["Musculação", "Yoga", "Outros"],
+      options:
+        parsedOptions.length > 0 ? parsedOptions : ["Opção 1", "Opção 2"],
     },
     {
-      title: "Se marcou outros, descreva quais aulas presta",
-      dataKey: "outras_aulas",
+      title:
+        otherOptionsTitle.trim() ||
+        "Existe algo importante que não apareceu na lista acima?",
+      dataKey: "outras_opcoes",
       type: "TEXTAREA",
       required: false,
     },

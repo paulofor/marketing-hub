@@ -7,8 +7,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.ads.FacebookAccountRepository;
-import com.marketinghub.targeting.TargetingElementType;
-import com.marketinghub.targeting.repository.TargetingElementRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.service.ExperimentCampaignMetricService;
@@ -37,7 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -53,9 +50,9 @@ public class FacebookAdsCampaignController {
     private final FacebookAdsAdCreativeRepository adCreativeRepository;
     private final FacebookAdsAdRepository adRepository;
     private final com.marketinghub.experiment.repository.AdSetRepository experimentAdSetRepository;
-    private final TargetingElementRepository targetingElementRepository;
     private final ObjectMapper objectMapper;
     private final ExperimentCampaignMetricService campaignMetricService;
+    private final com.marketinghub.experiment.service.ExperimentReadinessService experimentReadinessService;
     private final LeadPortalPublicUrlResolver leadPortalPublicUrlResolver;
 
     public FacebookAdsCampaignController(ExperimentService experimentService,
@@ -65,9 +62,9 @@ public class FacebookAdsCampaignController {
                                          FacebookAdsAdCreativeRepository adCreativeRepository,
                                          FacebookAdsAdRepository adRepository,
                                          com.marketinghub.experiment.repository.AdSetRepository experimentAdSetRepository,
-                                         TargetingElementRepository targetingElementRepository,
                                          ObjectMapper objectMapper,
                                          ExperimentCampaignMetricService campaignMetricService,
+                                         com.marketinghub.experiment.service.ExperimentReadinessService experimentReadinessService,
                                          LeadPortalPublicUrlResolver leadPortalPublicUrlResolver) {
         this.experimentService = experimentService;
         this.campaignRepository = campaignRepository;
@@ -76,15 +73,19 @@ public class FacebookAdsCampaignController {
         this.adCreativeRepository = adCreativeRepository;
         this.adRepository = adRepository;
         this.experimentAdSetRepository = experimentAdSetRepository;
-        this.targetingElementRepository = targetingElementRepository;
         this.objectMapper = objectMapper;
         this.campaignMetricService = campaignMetricService;
+        this.experimentReadinessService = experimentReadinessService;
         this.leadPortalPublicUrlResolver = leadPortalPublicUrlResolver;
     }
 
     @GetMapping("/experiments-ready")
     public List<ExperimentSummary> experimentsReady() {
-        return experimentService.listReadyForCampaign().stream()
+        return experimentService
+                .listByStatusAndPlatform(com.marketinghub.experiment.ExperimentStatus.PLANNED,
+                        com.marketinghub.experiment.ExperimentPlatform.FACEBOOK)
+                .stream()
+                .filter(experimentReadinessService::isReadyForCampaign)
                 .map(this::toSummary)
                 .toList();
     }
@@ -362,74 +363,13 @@ public class FacebookAdsCampaignController {
                 experiment.getEndDate(),
                 experiment.getNiche() != null ? experiment.getNiche().getName() : null,
                 experiment.getHypothesisRef() != null ? experiment.getHypothesisRef().getTitle() : null,
-                computeMissingConfiguration(experiment),
+                experimentReadinessService.computeMissingConfiguration(experiment),
                 toLeadPortalFlowSummary(experiment),
                 toFacebookPageSummary(experiment),
                 toInstagramAccountSummary(experiment),
                 toInstantFormSummary(experiment),
                 isNextStepInstantForm(experiment),
                 toMetricSummary(experiment.getCampaignMetric()));
-    }
-
-    private List<String> computeMissingConfiguration(Experiment experiment) {
-        List<String> missing = new ArrayList<>();
-        if (!experiment.isCreativeApproved()) {
-            missing.add("creativeApproval");
-        }
-        if (experiment.getKpiTargetCpl() == null) {
-            missing.add("kpiTargetCpl");
-        }
-        if (experiment.getStopLossCpl() == null) {
-            missing.add("stopLossCpl");
-        }
-        if (experiment.getSampleSize() == null) {
-            missing.add("sampleSize");
-        }
-        if (experiment.getStartDate() == null) {
-            missing.add("startDate");
-        }
-        if (experiment.getEndDate() == null) {
-            missing.add("endDate");
-        }
-        if (experiment.getJourneyTemplate() == null) {
-            missing.add("journeyTemplate");
-        }
-        if (!StringUtils.hasText(resolveExperimentPageId(experiment))) {
-            missing.add("pageId");
-        }
-        if (experiment.getInstagramAccount() == null) {
-            missing.add("instagramAccount");
-        }
-        if (isNextStepInstantForm(experiment)) {
-            if (experiment.getFacebookInstantForm() == null) {
-                missing.add("facebookInstantForm");
-            } else {
-                if (!experiment.getFacebookInstantForm().isApproved()) {
-                    missing.add("facebookInstantFormApproval");
-                }
-                if (!experiment.getFacebookInstantForm().isPublished()) {
-                    missing.add("facebookInstantFormPublication");
-                }
-            }
-        }
-        if (!hasApprovedTargeting(experiment)) {
-            missing.add("approvedTargetingElements");
-        }
-        return missing;
-    }
-
-    private boolean hasApprovedTargeting(Experiment experiment) {
-        if (experiment.getNiche() == null) {
-            return false;
-        }
-        UUID hypothesisId = experiment.getHypothesisRef() != null ? experiment.getHypothesisRef().getId() : null;
-        Long nicheId = experiment.getNiche().getId();
-        for (TargetingElementType type : TargetingElementType.values()) {
-            if (!targetingElementRepository.existsApprovedForExperiment(nicheId, type, hypothesisId)) {
-                return false;
-            }
-        }
-        return true;
     }
 
     private String resolveExperimentPageId(Experiment experiment) {

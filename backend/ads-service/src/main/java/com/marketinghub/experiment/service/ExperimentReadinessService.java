@@ -11,6 +11,8 @@ import com.marketinghub.facebookads.playbook.ExperimentAdSetWorkflow;
 import com.marketinghub.facebookads.playbook.ExperimentAdSetWorkflowStatus;
 import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetSpecRepository;
 import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetWorkflowRepository;
+import com.marketinghub.journey.model.JourneyStep;
+import com.marketinghub.journey.model.JourneyStimulusType;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.repository.TargetingElementRepository;
@@ -19,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
@@ -59,17 +62,9 @@ public class ExperimentReadinessService {
         long leadPortalFlowCount = leadPortalFlowRepository.countByExperimentId(experimentId);
         boolean hasLeadPortalFlow = leadPortalFlowCount > 0 || experiment.getLeadPortalFlow() != null;
 
-        Long nicheId = experiment.getNiche() != null ? experiment.getNiche().getId() : null;
-        UUID hypothesisId = experiment.getHypothesisRef() != null ? experiment.getHypothesisRef().getId() : null;
-
-        List<TargetingElementType> missingTypes = new ArrayList<>(determineMissingTargeting(nicheId, hypothesisId));
+        List<String> missingConfiguration = computeMissingConfiguration(experiment);
+        List<TargetingElementType> missingTypes = mapMissingTargetingTypes(experiment, missingConfiguration);
         boolean hasCompleteTargeting = missingTypes.isEmpty();
-        boolean hasReadyAdSetSpecs = hasReadyAdSetSpecs(experimentId);
-
-        if (!hasCompleteTargeting && hasReadyAdSetSpecs) {
-            missingTypes.clear();
-            hasCompleteTargeting = true;
-        }
 
         List<ExperimentReadinessIssueDto> issues = new ArrayList<>();
         if (!hasCreatives) {
@@ -111,6 +106,66 @@ public class ExperimentReadinessService {
         );
     }
 
+    public boolean isReadyForCampaign(Experiment experiment) {
+        return computeMissingConfiguration(experiment).isEmpty();
+    }
+
+    public List<String> computeMissingConfiguration(Experiment experiment) {
+        List<String> missing = new ArrayList<>();
+        if (!experiment.isCreativeApproved()) {
+            missing.add("creativeApproval");
+        }
+        if (experiment.getKpiTargetCpl() == null) {
+            missing.add("kpiTargetCpl");
+        }
+        if (experiment.getStopLossCpl() == null) {
+            missing.add("stopLossCpl");
+        }
+        if (experiment.getSampleSize() == null) {
+            missing.add("sampleSize");
+        }
+        if (experiment.getStartDate() == null) {
+            missing.add("startDate");
+        }
+        if (experiment.getEndDate() == null) {
+            missing.add("endDate");
+        }
+        if (experiment.getJourneyTemplate() == null) {
+            missing.add("journeyTemplate");
+        }
+        if (!StringUtils.hasText(resolveExperimentPageId(experiment))) {
+            missing.add("pageId");
+        }
+        if (experiment.getInstagramAccount() == null) {
+            missing.add("instagramAccount");
+        }
+        if (isNextStepInstantForm(experiment)) {
+            if (experiment.getFacebookInstantForm() == null) {
+                missing.add("facebookInstantForm");
+            } else {
+                if (!experiment.getFacebookInstantForm().isApproved()) {
+                    missing.add("facebookInstantFormApproval");
+                }
+                if (!experiment.getFacebookInstantForm().isPublished()) {
+                    missing.add("facebookInstantFormPublication");
+                }
+            }
+        }
+        if (!hasApprovedTargeting(experiment)) {
+            missing.add("approvedTargetingElements");
+        }
+        return List.copyOf(missing);
+    }
+
+    private List<TargetingElementType> mapMissingTargetingTypes(Experiment experiment, List<String> missingConfiguration) {
+        if (!missingConfiguration.contains("approvedTargetingElements")) {
+            return List.of();
+        }
+        Long nicheId = experiment.getNiche() != null ? experiment.getNiche().getId() : null;
+        UUID hypothesisId = experiment.getHypothesisRef() != null ? experiment.getHypothesisRef().getId() : null;
+        return determineMissingTargeting(nicheId, hypothesisId);
+    }
+
     private boolean hasReadyAdSetSpecs(Long experimentId) {
         if (experimentId == null) {
             return false;
@@ -143,6 +198,13 @@ public class ExperimentReadinessService {
         return !StringUtils.hasText(validation) || "VALID".equalsIgnoreCase(validation.trim());
     }
 
+    private boolean hasApprovedTargeting(Experiment experiment) {
+        Long nicheId = experiment.getNiche() != null ? experiment.getNiche().getId() : null;
+        UUID hypothesisId = experiment.getHypothesisRef() != null ? experiment.getHypothesisRef().getId() : null;
+        List<TargetingElementType> missing = determineMissingTargeting(nicheId, hypothesisId);
+        return missing.isEmpty() || hasReadyAdSetSpecs(experiment.getId());
+    }
+
     private List<TargetingElementType> determineMissingTargeting(Long nicheId, UUID hypothesisId) {
         EnumSet<TargetingElementType> missing = EnumSet.noneOf(TargetingElementType.class);
         if (nicheId == null) {
@@ -156,6 +218,34 @@ public class ExperimentReadinessService {
             }
         }
         return List.copyOf(missing);
+    }
+
+    private String resolveExperimentPageId(Experiment experiment) {
+        if (experiment.getFacebookPage() == null) {
+            return null;
+        }
+        return experiment.getFacebookPage().getPageId();
+    }
+
+    private boolean isNextStepInstantForm(Experiment experiment) {
+        if (experiment.getJourneyTemplate() == null) {
+            return false;
+        }
+        List<JourneyStep> steps = experiment.getJourneyTemplate().getSteps();
+        if (steps == null || steps.isEmpty()) {
+            return false;
+        }
+        List<JourneyStep> ordered = steps.stream()
+                .sorted(Comparator.comparingInt(step -> step.getPosition() != null ? step.getPosition() : Integer.MAX_VALUE))
+                .toList();
+        JourneyStep previous = null;
+        for (JourneyStep step : ordered) {
+            if (previous != null && previous.getStimulusType() == JourneyStimulusType.AD) {
+                return step.getStimulusType() == JourneyStimulusType.INSTANT_FORM;
+            }
+            previous = step;
+        }
+        return false;
     }
 
     private String describeTargetingTypes(List<TargetingElementType> types) {

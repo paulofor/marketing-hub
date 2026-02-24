@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useAngles } from "../../api/angle/useAngles";
 import { useHypotheses } from "../../api/hypothesis/useHypotheses";
 import { useNiches } from "../../api/niche/useNiches";
@@ -88,6 +89,12 @@ export default function HypothesisList() {
                   </select>
                 </td>
                 <td>
+                  <Link
+                    className="btn btn-sm btn-outline-dark me-1"
+                    to={`/niches/${h.marketNicheId}/hypotheses/${h.id}/edit`}
+                  >
+                    Editar
+                  </Link>
                   <button className="btn btn-sm btn-outline-primary me-1">
                     Gerar Landing
                   </button>

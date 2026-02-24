@@ -4,7 +4,7 @@ import {
   FlowQuestion,
   FlowQuestionType,
   FlowSubmissionResponse,
-  LeadPortalFlow
+  LeadPortalFlow,
 } from "../types";
 
 type AnswerValue = string | string[] | File | null;
@@ -14,9 +14,14 @@ interface FlowFormProps {
 }
 
 export default function FlowForm({ flow }: FlowFormProps) {
-  const { questions: displayQuestions, contactEmailKey, contactNameKey } = useMemo(
-    () => enhanceQuestions(flow.questions),
-    [flow.questions]
+  const {
+    questions: displayQuestions,
+    contactEmailKey,
+    contactNameKey,
+  } = useMemo(() => enhanceQuestions(flow.questions), [flow.questions]);
+  const contactFollowUpConfig = useMemo(
+    () => resolveContactFollowUpConfig(displayQuestions),
+    [displayQuestions],
   );
 
   const initialAnswers = useMemo(() => {
@@ -29,11 +34,35 @@ export default function FlowForm({ flow }: FlowFormProps) {
     return Object.fromEntries(entries) as Record<string, AnswerValue>;
   }, [displayQuestions]);
 
-  const [answers, setAnswers] = useState<Record<string, AnswerValue>>(initialAnswers);
+  const [answers, setAnswers] =
+    useState<Record<string, AnswerValue>>(initialAnswers);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submissionResult, setSubmissionResult] = useState<FlowSubmissionResponse | null>(null);
+  const [submissionResult, setSubmissionResult] =
+    useState<FlowSubmissionResponse | null>(null);
+
+  const visibleQuestions = useMemo(() => {
+    if (!contactFollowUpConfig) {
+      return displayQuestions;
+    }
+
+    const selectedContact = answers[contactFollowUpConfig.contactQuestionKey];
+    const selectedValue =
+      typeof selectedContact === "string" ? selectedContact : "";
+    const activeFollowUpKey =
+      contactFollowUpConfig.followUpByOption[selectedValue];
+
+    return displayQuestions.filter((question) => {
+      const match = Object.values(
+        contactFollowUpConfig.followUpByOption,
+      ).includes(question.dataKey);
+      if (!match) {
+        return true;
+      }
+      return question.dataKey === activeFollowUpKey;
+    });
+  }, [answers, contactFollowUpConfig, displayQuestions]);
 
   useEffect(() => {
     setAnswers(initialAnswers);
@@ -49,7 +78,7 @@ export default function FlowForm({ flow }: FlowFormProps) {
     }
     const validation: Record<string, string> = {};
 
-    displayQuestions.forEach((question) => {
+    visibleQuestions.forEach((question) => {
       const value = answers[question.dataKey];
       if (!question.required && question.type !== "EMAIL") {
         return;
@@ -83,7 +112,7 @@ export default function FlowForm({ flow }: FlowFormProps) {
     const emailAnswer = answers[contactEmailKey];
     const preparedAnswers: Record<string, string | string[]> = {};
 
-    displayQuestions.forEach((question) => {
+    visibleQuestions.forEach((question) => {
       const value = answers[question.dataKey];
       if (question.type === "IMAGE_UPLOAD") {
         return;
@@ -97,10 +126,14 @@ export default function FlowForm({ flow }: FlowFormProps) {
       }
     });
 
-    const imageQuestion = displayQuestions.find(
-      (question) => question.type === "IMAGE_UPLOAD" && answers[question.dataKey] instanceof File
+    const imageQuestion = visibleQuestions.find(
+      (question) =>
+        question.type === "IMAGE_UPLOAD" &&
+        answers[question.dataKey] instanceof File,
     );
-    const imageFile = imageQuestion ? (answers[imageQuestion.dataKey] as File) : null;
+    const imageFile = imageQuestion
+      ? (answers[imageQuestion.dataKey] as File)
+      : null;
 
     setIsSubmitting(true);
     setSubmitError(null);
@@ -112,13 +145,16 @@ export default function FlowForm({ flow }: FlowFormProps) {
           name: typeof nameAnswer === "string" ? nameAnswer.trim() : "",
           email: typeof emailAnswer === "string" ? emailAnswer.trim() : "",
           answers: preparedAnswers,
-          imageKey: imageQuestion?.dataKey
+          imageKey: imageQuestion?.dataKey,
         },
-        imageFile
+        imageFile,
       );
       setSubmissionResult(response);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Não foi possível enviar suas respostas.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível enviar suas respostas.";
       setSubmitError(message);
     } finally {
       setIsSubmitting(false);
@@ -126,10 +162,27 @@ export default function FlowForm({ flow }: FlowFormProps) {
   };
 
   const updateAnswer = (question: FlowQuestion, value: AnswerValue) => {
-    setAnswers((current) => ({
-      ...current,
-      [question.dataKey]: value
-    }));
+    setAnswers((current) => {
+      const next = {
+        ...current,
+        [question.dataKey]: value,
+      };
+
+      if (
+        contactFollowUpConfig?.contactQuestionKey === question.dataKey &&
+        typeof value === "string"
+      ) {
+        Object.entries(contactFollowUpConfig.followUpByOption).forEach(
+          ([option, key]) => {
+            if (option !== value) {
+              next[key] = "";
+            }
+          },
+        );
+      }
+
+      return next;
+    });
   };
 
   const handleOptionToggle = (question: FlowQuestion, option: string) => {
@@ -145,7 +198,12 @@ export default function FlowForm({ flow }: FlowFormProps) {
   };
 
   if (submissionResult) {
-    return <ThankYouPanel name={submissionResult.name} email={submissionResult.email} />;
+    return (
+      <ThankYouPanel
+        name={submissionResult.name}
+        email={submissionResult.email}
+      />
+    );
   }
 
   return (
@@ -153,7 +211,7 @@ export default function FlowForm({ flow }: FlowFormProps) {
       {submitError ? <div className="error-banner">{submitError}</div> : null}
 
       <ol className="flow-question-list">
-        {displayQuestions.map((question, index) => (
+        {visibleQuestions.map((question, index) => (
           <li key={question.dataKey} className="flow-question-item">
             <QuestionField
               index={index + 1}
@@ -177,7 +235,9 @@ export default function FlowForm({ flow }: FlowFormProps) {
 function enhanceQuestions(questions: FlowQuestion[]) {
   const normalized = [...questions];
 
-  const emailIndex = normalized.findIndex((question) => question.type === "EMAIL");
+  const emailIndex = normalized.findIndex(
+    (question) => question.type === "EMAIL",
+  );
   let contactEmailKey: string;
   if (emailIndex === -1) {
     const emailQuestion: FlowQuestion = {
@@ -187,7 +247,7 @@ function enhanceQuestions(questions: FlowQuestion[]) {
       required: true,
       description: "Precisamos do seu e-mail para retornar o resultado.",
       placeholder: "voce@email.com",
-      options: []
+      options: [],
     };
     normalized.unshift(emailQuestion);
     contactEmailKey = emailQuestion.dataKey;
@@ -209,7 +269,7 @@ function enhanceQuestions(questions: FlowQuestion[]) {
       required: true,
       description: "Assim conseguimos personalizar nossa resposta.",
       placeholder: "Seu nome",
-      options: []
+      options: [],
     };
     normalized.unshift(nameQuestion);
     contactNameKey = nameQuestion.dataKey;
@@ -230,7 +290,58 @@ function isNameQuestion(question: FlowQuestion) {
   }
   const key = question.dataKey.toLowerCase();
   const title = question.title.toLowerCase();
-  return key.includes("nome") || key.includes("name") || title.includes("nome") || title.includes("name");
+  return (
+    key.includes("nome") ||
+    key.includes("name") ||
+    title.includes("nome") ||
+    title.includes("name")
+  );
+}
+
+interface ContactFollowUpConfig {
+  contactQuestionKey: string;
+  followUpByOption: Record<string, string>;
+}
+
+function resolveContactFollowUpConfig(
+  questions: FlowQuestion[],
+): ContactFollowUpConfig | null {
+  const contactQuestion = questions.find(
+    (question) =>
+      question.type === "SINGLE_CHOICE" &&
+      question.dataKey.toLowerCase() === "forma_contato",
+  );
+
+  if (!contactQuestion) {
+    return null;
+  }
+
+  const keyByOption = new Map<string, string>([
+    ["instagram", "instagram"],
+    ["whatsapp", "whatsapp"],
+    ["telefone", "telefone"],
+    ["phone", "telefone"],
+  ]);
+
+  const followUpByOption: Record<string, string> = {};
+  contactQuestion.options.forEach((option) => {
+    const normalizedOption = option.trim().toLowerCase();
+    const expectedKey = keyByOption.get(normalizedOption);
+    if (!expectedKey) {
+      return;
+    }
+
+    const followUpQuestion = questions.find(
+      (question) => question.dataKey.toLowerCase() === expectedKey,
+    );
+    if (followUpQuestion) {
+      followUpByOption[option] = followUpQuestion.dataKey;
+    }
+  });
+
+  return Object.keys(followUpByOption).length > 0
+    ? { contactQuestionKey: contactQuestion.dataKey, followUpByOption }
+    : null;
 }
 
 function ThankYouPanel({ name, email }: { name: string; email: string }) {
@@ -238,7 +349,8 @@ function ThankYouPanel({ name, email }: { name: string; email: string }) {
     <div className="thank-you-card">
       <h2>Respostas enviadas!</h2>
       <p>
-        Obrigado, {name || "cliente"}. Recebemos suas respostas e em breve entraremos em contato pelo e-mail
+        Obrigado, {name || "cliente"}. Recebemos suas respostas e em breve
+        entraremos em contato pelo e-mail
         <strong> {email}</strong>.
       </p>
       <p>Você pode fechar esta página com segurança.</p>
@@ -255,17 +367,28 @@ interface QuestionFieldProps {
   onToggleOption: (question: FlowQuestion, option: string) => void;
 }
 
-function QuestionField({ index, question, value, error, onChange, onToggleOption }: QuestionFieldProps) {
+function QuestionField({
+  index,
+  question,
+  value,
+  error,
+  onChange,
+  onToggleOption,
+}: QuestionFieldProps) {
   return (
     <div className={`flow-question ${error ? "flow-question-error" : ""}`}>
       <label className="flow-question-label">
         <span className="flow-question-number">{index}.</span>
         <span>
           {question.title}
-          {question.required ? <span className="required-indicator">*</span> : null}
+          {question.required ? (
+            <span className="required-indicator">*</span>
+          ) : null}
         </span>
       </label>
-      {question.description ? <p className="flow-question-description">{question.description}</p> : null}
+      {question.description ? (
+        <p className="flow-question-description">{question.description}</p>
+      ) : null}
 
       <InputByType
         question={question}
@@ -286,13 +409,18 @@ interface InputByTypeProps {
   onToggleOption: (question: FlowQuestion, option: string) => void;
 }
 
-function InputByType({ question, value, onChange, onToggleOption }: InputByTypeProps) {
+function InputByType({
+  question,
+  value,
+  onChange,
+  onToggleOption,
+}: InputByTypeProps) {
   const commonProps = {
     name: question.dataKey,
     required: question.required,
     placeholder: question.placeholder ?? undefined,
     onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      onChange(question, event.target.value)
+      onChange(question, event.target.value),
   };
 
   switch (question.type) {
@@ -339,7 +467,9 @@ function InputByType({ question, value, onChange, onToggleOption }: InputByTypeP
       return (
         <div className="flow-options">
           {question.options.map((option) => {
-            const selected = Array.isArray(value) ? value.includes(option) : false;
+            const selected = Array.isArray(value)
+              ? value.includes(option)
+              : false;
             return (
               <label key={option} className="flow-option">
                 <input

@@ -580,6 +580,27 @@ function createSimpleFormTemplateQuestions(): CreateLeadPortalFlowQuestionReques
       options: ["Telefone", "WhatsApp", "Instagram"],
     },
     {
+      title: "Qual é o número de telefone para contato?",
+      dataKey: "telefone",
+      type: "TEXT",
+      required: false,
+      description: "Preencha este campo quando a forma de contato escolhida for Telefone.",
+    },
+    {
+      title: "Qual é o WhatsApp para contato?",
+      dataKey: "whatsapp",
+      type: "TEXT",
+      required: false,
+      description: "Preencha este campo quando a forma de contato escolhida for WhatsApp.",
+    },
+    {
+      title: "Qual é o Instagram para contato?",
+      dataKey: "instagram",
+      type: "TEXT",
+      required: false,
+      description: "Preencha este campo quando a forma de contato escolhida for Instagram.",
+    },
+    {
       title: "Tipo de aulas que presta",
       dataKey: "tipo_aulas",
       type: "MULTIPLE_CHOICE",

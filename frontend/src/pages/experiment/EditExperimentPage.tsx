@@ -19,6 +19,8 @@ interface FormData {
   kpiTarget: string;
   dailyBudget: string;
   unitPrice: string;
+  startDate: string;
+  endDate: string;
   metricPresetId: string;
   journeyTemplateId: string;
   facebookPageId: string;
@@ -28,6 +30,17 @@ interface FormData {
   imagesPerPackage: string;
   openImagesPerPackage: string;
   compressedImagesPerPackage: string;
+}
+
+function toDateInputValue(value?: string | null) {
+  if (!value) {
+    return "";
+  }
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "";
+  }
+  return parsedDate.toISOString().slice(0, 10);
 }
 
 export default function EditExperimentPage() {
@@ -54,6 +67,8 @@ export default function EditExperimentPage() {
       kpiTarget: "",
       dailyBudget: "",
       unitPrice: "",
+      startDate: "",
+      endDate: "",
       metricPresetId: "",
       journeyTemplateId: "",
       facebookPageId: "",
@@ -82,6 +97,8 @@ export default function EditExperimentPage() {
         kpiTarget: currentKpi != null ? String(currentKpi) : "",
         dailyBudget: data.dailyBudget != null ? String(data.dailyBudget) : "",
         unitPrice: data.unitPrice != null ? String(data.unitPrice) : "",
+        startDate: toDateInputValue(data.startDate),
+        endDate: toDateInputValue(data.endDate),
         metricPresetId: data.metricPresetId || "",
         journeyTemplateId: data.journeyTemplateId
           ? String(data.journeyTemplateId)
@@ -334,8 +351,8 @@ export default function EditExperimentPage() {
         metricPresetId: values.metricPresetId || undefined,
         sampleSize: data.sampleSize ?? undefined,
         mde: data.mdePercent ?? undefined,
-        startDate: data.startDate ?? undefined,
-        endDate: data.endDate ?? undefined,
+        startDate: values.startDate || undefined,
+        endDate: values.endDate || undefined,
         instagramAccountId: Number(values.instagramAccountId),
         instantFormsToGenerate: data.instantFormsToGenerate ?? undefined,
         emailsToGenerate: data.emailsToGenerate ?? undefined,
@@ -442,6 +459,24 @@ export default function EditExperimentPage() {
               {...register("unitPrice")}
             />
             <div className="form-text mb-2">Usado no link do Mercado Pago.</div>
+            <label className="form-label" htmlFor="startDate">
+              Data de início
+            </label>
+            <input
+              id="startDate"
+              className="form-control mb-2"
+              type="date"
+              {...register("startDate")}
+            />
+            <label className="form-label" htmlFor="endDate">
+              Data de término
+            </label>
+            <input
+              id="endDate"
+              className="form-control mb-2"
+              type="date"
+              {...register("endDate")}
+            />
             <label className="form-label" htmlFor="preset">
               Preset de Métricas
             </label>

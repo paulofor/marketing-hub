@@ -2,19 +2,28 @@ package com.marketinghub.experiment.service;
 
 import com.marketinghub.creative.repository.CreativeRepository;
 import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
+import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueType;
+import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
+import com.marketinghub.facebookads.playbook.ExperimentAdSetSpec;
+import com.marketinghub.facebookads.playbook.ExperimentAdSetSpecSlot;
+import com.marketinghub.facebookads.playbook.ExperimentAdSetWorkflow;
+import com.marketinghub.facebookads.playbook.ExperimentAdSetWorkflowStatus;
+import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetSpecRepository;
+import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetWorkflowRepository;
+import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.repository.TargetingElementRepository;
-import com.marketinghub.hypothesis.Hypothesis;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,6 +40,10 @@ class ExperimentReadinessServiceTest {
     private LeadPortalFlowRepository leadPortalFlowRepository;
     @Mock
     private TargetingElementRepository targetingElementRepository;
+    @Mock
+    private ExperimentAdSetWorkflowRepository adSetWorkflowRepository;
+    @Mock
+    private ExperimentAdSetSpecRepository adSetSpecRepository;
 
     @InjectMocks
     private ExperimentReadinessService service;
@@ -43,6 +56,7 @@ class ExperimentReadinessServiceTest {
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(0L);
         when(leadPortalFlowRepository.countByExperimentId(experimentId)).thenReturn(0L);
+        when(adSetWorkflowRepository.findByExperimentId(experimentId)).thenReturn(Optional.empty());
         for (TargetingElementType type : TargetingElementType.values()) {
             when(targetingElementRepository.existsApprovedForExperiment(experiment.getNiche().getId(), type,
                     experiment.getHypothesisRef().getId())).thenReturn(false);
@@ -55,7 +69,7 @@ class ExperimentReadinessServiceTest {
         assertThat(summary.hasCompleteTargeting()).isFalse();
         assertThat(summary.missingTargetingTypes()).containsExactlyInAnyOrder(TargetingElementType.values());
         assertThat(summary.issues()).hasSize(3);
-        assertThat(summary.issues()).extracting(i -> i.type())
+        assertThat(summary.issues()).extracting(ExperimentReadinessIssueDto::type)
                 .containsExactlyInAnyOrder(
                         ExperimentReadinessIssueType.CREATIVE,
                         ExperimentReadinessIssueType.LEAD_PORTAL_FLOW,
@@ -71,6 +85,7 @@ class ExperimentReadinessServiceTest {
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(2L);
         when(leadPortalFlowRepository.countByExperimentId(experimentId)).thenReturn(1L);
+        when(adSetWorkflowRepository.findByExperimentId(experimentId)).thenReturn(Optional.empty());
         for (TargetingElementType type : TargetingElementType.values()) {
             when(targetingElementRepository.existsApprovedForExperiment(experiment.getNiche().getId(), type,
                     experiment.getHypothesisRef().getId())).thenReturn(true);
@@ -83,6 +98,40 @@ class ExperimentReadinessServiceTest {
         assertThat(summary.hasCompleteTargeting()).isTrue();
         assertThat(summary.missingTargetingTypes()).isEmpty();
         assertThat(summary.issues()).isEmpty();
+    }
+
+    @Test
+    void shouldTreatReadyAdSetSpecsAsCompleteTargeting() {
+        Long experimentId = 9L;
+        Experiment experiment = buildExperiment(20L);
+
+        when(experimentService.get(experimentId)).thenReturn(experiment);
+        when(creativeRepository.countByExperimentId(experimentId)).thenReturn(1L);
+        when(leadPortalFlowRepository.countByExperimentId(experimentId)).thenReturn(1L);
+        for (TargetingElementType type : TargetingElementType.values()) {
+            when(targetingElementRepository.existsApprovedForExperiment(experiment.getNiche().getId(), type,
+                    experiment.getHypothesisRef().getId())).thenReturn(false);
+        }
+
+        ExperimentAdSetWorkflow workflow = ExperimentAdSetWorkflow.builder()
+                .id(42L)
+                .status(ExperimentAdSetWorkflowStatus.COMPLETED)
+                .build();
+        when(adSetWorkflowRepository.findByExperimentId(experimentId)).thenReturn(Optional.of(workflow));
+
+        List<ExperimentAdSetSpec> specs = List.of(
+                buildSpec(ExperimentAdSetSpecSlot.DESIGNERS),
+                buildSpec(ExperimentAdSetSpecSlot.MARKETING),
+                buildSpec(ExperimentAdSetSpecSlot.SMB)
+        );
+        when(adSetSpecRepository.findByWorkflowId(workflow.getId())).thenReturn(specs);
+
+        ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
+
+        assertThat(summary.hasCompleteTargeting()).isTrue();
+        assertThat(summary.missingTargetingTypes()).isEmpty();
+        assertThat(summary.issues()).extracting(ExperimentReadinessIssueDto::type)
+                .doesNotContain(ExperimentReadinessIssueType.TARGETING);
     }
 
     private Experiment buildExperiment(Long nicheId) {
@@ -98,5 +147,13 @@ class ExperimentReadinessServiceTest {
         experiment.setNiche(niche);
         experiment.setHypothesisRef(hypothesis);
         return experiment;
+    }
+
+    private ExperimentAdSetSpec buildSpec(ExperimentAdSetSpecSlot slot) {
+        ExperimentAdSetSpec spec = new ExperimentAdSetSpec();
+        spec.setSlot(slot);
+        spec.setReachStatus("READY");
+        spec.setValidationStatus("VALID");
+        return spec;
     }
 }

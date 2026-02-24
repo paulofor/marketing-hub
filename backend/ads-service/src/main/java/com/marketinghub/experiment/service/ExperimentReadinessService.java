@@ -5,11 +5,18 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueType;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
+import com.marketinghub.facebookads.playbook.ExperimentAdSetSpec;
+import com.marketinghub.facebookads.playbook.ExperimentAdSetSpecSlot;
+import com.marketinghub.facebookads.playbook.ExperimentAdSetWorkflow;
+import com.marketinghub.facebookads.playbook.ExperimentAdSetWorkflowStatus;
+import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetSpecRepository;
+import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetWorkflowRepository;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.repository.TargetingElementRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -26,15 +33,21 @@ public class ExperimentReadinessService {
     private final CreativeRepository creativeRepository;
     private final LeadPortalFlowRepository leadPortalFlowRepository;
     private final TargetingElementRepository targetingElementRepository;
+    private final ExperimentAdSetWorkflowRepository adSetWorkflowRepository;
+    private final ExperimentAdSetSpecRepository adSetSpecRepository;
 
     public ExperimentReadinessService(ExperimentService experimentService,
                                       CreativeRepository creativeRepository,
                                       LeadPortalFlowRepository leadPortalFlowRepository,
-                                      TargetingElementRepository targetingElementRepository) {
+                                      TargetingElementRepository targetingElementRepository,
+                                      ExperimentAdSetWorkflowRepository adSetWorkflowRepository,
+                                      ExperimentAdSetSpecRepository adSetSpecRepository) {
         this.experimentService = experimentService;
         this.creativeRepository = creativeRepository;
         this.leadPortalFlowRepository = leadPortalFlowRepository;
         this.targetingElementRepository = targetingElementRepository;
+        this.adSetWorkflowRepository = adSetWorkflowRepository;
+        this.adSetSpecRepository = adSetSpecRepository;
     }
 
     @Transactional(readOnly = true)
@@ -49,8 +62,14 @@ public class ExperimentReadinessService {
         Long nicheId = experiment.getNiche() != null ? experiment.getNiche().getId() : null;
         UUID hypothesisId = experiment.getHypothesisRef() != null ? experiment.getHypothesisRef().getId() : null;
 
-        List<TargetingElementType> missingTypes = determineMissingTargeting(nicheId, hypothesisId);
+        List<TargetingElementType> missingTypes = new ArrayList<>(determineMissingTargeting(nicheId, hypothesisId));
         boolean hasCompleteTargeting = missingTypes.isEmpty();
+        boolean hasReadyAdSetSpecs = hasReadyAdSetSpecs(experimentId);
+
+        if (!hasCompleteTargeting && hasReadyAdSetSpecs) {
+            missingTypes.clear();
+            hasCompleteTargeting = true;
+        }
 
         List<ExperimentReadinessIssueDto> issues = new ArrayList<>();
         if (!hasCreatives) {
@@ -90,6 +109,38 @@ public class ExperimentReadinessService {
                 List.copyOf(missingTypes),
                 List.copyOf(issues)
         );
+    }
+
+    private boolean hasReadyAdSetSpecs(Long experimentId) {
+        if (experimentId == null) {
+            return false;
+        }
+        return adSetWorkflowRepository.findByExperimentId(experimentId)
+                .filter(workflow -> workflow.getStatus() == ExperimentAdSetWorkflowStatus.COMPLETED)
+                .filter(this::hasEnoughReadySpecs)
+                .isPresent();
+    }
+
+    private boolean hasEnoughReadySpecs(ExperimentAdSetWorkflow workflow) {
+        List<ExperimentAdSetSpec> specs = adSetSpecRepository.findByWorkflowId(workflow.getId());
+        if (specs.isEmpty()) {
+            return false;
+        }
+        long readyCount = specs.stream()
+                .filter(this::isSpecReady)
+                .count();
+        return readyCount >= ExperimentAdSetSpecSlot.values().length;
+    }
+
+    private boolean isSpecReady(ExperimentAdSetSpec spec) {
+        if (spec == null) {
+            return false;
+        }
+        if (!"READY".equalsIgnoreCase(spec.getReachStatus())) {
+            return false;
+        }
+        String validation = spec.getValidationStatus();
+        return !StringUtils.hasText(validation) || "VALID".equalsIgnoreCase(validation.trim());
     }
 
     private List<TargetingElementType> determineMissingTargeting(Long nicheId, UUID hypothesisId) {

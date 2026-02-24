@@ -64,6 +64,35 @@ erDiagram
       VARCHAR model
     }
 
+    EXPERIMENT_ADSET_WORKFLOW {
+      BIGINT id PK
+      BIGINT experiment_id FK
+      ENUM status
+      VARCHAR seed_keyword
+      VARCHAR seed_locale
+      VARCHAR seed_interest_id
+      VARCHAR seed_interest_name
+      BIGINT seed_audience_lower
+      BIGINT seed_audience_upper
+      LONGTEXT ai_notes
+      LONGTEXT last_error
+      DATETIME completed_at
+    }
+
+    EXPERIMENT_ADSET_SPEC {
+      BIGINT id PK
+      BIGINT workflow_id FK
+      ENUM slot
+      VARCHAR label
+      INT age_min
+      INT age_max
+      LONGTEXT targeting_spec
+      VARCHAR validation_status
+      VARCHAR reach_status
+      BIGINT reach_lower_bound
+      BIGINT reach_upper_bound
+    }
+
     CREATIVE {
       BIGINT id PK
       BIGINT experiment_id FK
@@ -168,6 +197,8 @@ erDiagram
     EXPERIMENT ||--o{ CREATIVE : gera
     EXPERIMENT ||--o{ CREATIVE_VARIANT : detalha
     EXPERIMENT ||--o{ AD_SET : segmenta
+    EXPERIMENT ||--|| EXPERIMENT_ADSET_WORKFLOW : orquestra
+    EXPERIMENT_ADSET_WORKFLOW ||--o{ EXPERIMENT_ADSET_SPEC : gera
     EXPERIMENT ||--o{ LANDING_PAGE : direciona
 
     EXPERIMENT ||--o{ FACEBOOK_ADS_CAMPAIGN : publica
@@ -192,6 +223,7 @@ erDiagram
 2. **Públicos e segmentação**
    - `target_audience` nasce de nicho/hipótese e pode ser aprovado antes da mídia.
    - `ad_set` materializa segmentação e orçamento no contexto do experimento.
+   - `experiment_adset_workflow` + `experiment_adset_spec` coordenam o playbook automático dos três públicos (slots Designers, Marketing e SMB) e sinalizam quando todos estão com status READY.
 
 3. **Criativos**
    - `creative` guarda peças geradas (com `model` e `prompt`).

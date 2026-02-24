@@ -21,28 +21,46 @@ type FeedbackState = {
   message: string;
 };
 
-export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps) {
+type PreviewViewport = "desktop" | "mobile";
+
+export default function LeadPortalFlowTab({
+  experiment,
+}: LeadPortalFlowTabProps) {
   const { data: flows, isLoading, isError } = useLeadPortalFlows(experiment.id);
   const requestFlows = useRequestLeadPortalFlows(experiment.id);
   const updateExperiment = useUpdateExperiment(experiment.id);
   const createFlow = useCreateLeadPortalFlow();
   const updateApproval = useUpdateLeadPortalFlowApproval();
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
-  const [pendingAssignmentId, setPendingAssignmentId] = useState<number | null>(null);
-  const [pendingApprovalId, setPendingApprovalId] = useState<number | null>(null);
+  const [pendingAssignmentId, setPendingAssignmentId] = useState<number | null>(
+    null,
+  );
+  const [pendingApprovalId, setPendingApprovalId] = useState<number | null>(
+    null,
+  );
+  const [previewViewportByFlow, setPreviewViewportByFlow] = useState<
+    Record<number, PreviewViewport>
+  >({});
   const [isCreateFormVisible, setIsCreateFormVisible] = useState(false);
-  const [newFlowName, setNewFlowName] = useState("Formulário simples para personal trainer");
-  const [newFlowSlug, setNewFlowSlug] = useState("formulario-simples-personal-trainer");
+  const [newFlowName, setNewFlowName] = useState(
+    "Formulário simples para personal trainer",
+  );
+  const [newFlowSlug, setNewFlowSlug] = useState(
+    "formulario-simples-personal-trainer",
+  );
   const [newFlowDescription, setNewFlowDescription] = useState(
     "Fluxo simples para coleta inicial de informações sem necessidade de envio de imagens.",
   );
-  const [manualQuestions, setManualQuestions] = useState<CreateLeadPortalFlowQuestionRequest[]>(() =>
-    createSimpleFormTemplateQuestions(),
-  );
+  const [manualQuestions, setManualQuestions] = useState<
+    CreateLeadPortalFlowQuestionRequest[]
+  >(() => createSimpleFormTemplateQuestions());
 
   const sortedFlows = useMemo(() => {
     if (!Array.isArray(flows)) return [];
-    return [...flows].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return [...flows].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
   }, [flows]);
 
   const requestedCount = experiment.leadPortalFlowsToGenerate ?? 0;
@@ -52,9 +70,10 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
     await requestFlows.mutateAsync(quantity);
     setFeedback({
       variant: "success",
-      message: quantity === 1
-        ? "Solicitamos 1 fluxo do portal ao Worker IA."
-        : `Solicitamos ${quantity} fluxos do portal ao Worker IA.`,
+      message:
+        quantity === 1
+          ? "Solicitamos 1 fluxo do portal ao Worker IA."
+          : `Solicitamos ${quantity} fluxos do portal ao Worker IA.`,
     });
   };
 
@@ -84,7 +103,8 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
         instantFormsToGenerate: experiment.instantFormsToGenerate ?? undefined,
         emailsToGenerate: experiment.emailsToGenerate ?? undefined,
         deliverablesToGenerate: experiment.deliverablesToGenerate ?? undefined,
-        leadPortalFlowsToGenerate: experiment.leadPortalFlowsToGenerate ?? undefined,
+        leadPortalFlowsToGenerate:
+          experiment.leadPortalFlowsToGenerate ?? undefined,
         journeyTemplateId: experiment.journeyTemplateId ?? undefined,
         facebookPageId: experiment.facebookPage?.id ?? null,
         facebookInstantFormId: experiment.facebookInstantForm?.id ?? null,
@@ -101,7 +121,8 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
     } catch {
       setFeedback({
         variant: "error",
-        message: "Não foi possível atualizar o experimento. Tente novamente em instantes.",
+        message:
+          "Não foi possível atualizar o experimento. Tente novamente em instantes.",
       });
     } finally {
       setPendingAssignmentId(null);
@@ -116,7 +137,8 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
     } catch {
       setFeedback({
         variant: "error",
-        message: "Não foi possível atualizar a aprovação deste fluxo. Tente novamente.",
+        message:
+          "Não foi possível atualizar a aprovação deste fluxo. Tente novamente.",
       });
     } finally {
       setPendingApprovalId(null);
@@ -144,11 +166,12 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
 
         if (key === "type") {
           const nextType = value as LeadPortalQuestionType;
-          const isChoiceType = nextType === "SINGLE_CHOICE" || nextType === "MULTIPLE_CHOICE";
+          const isChoiceType =
+            nextType === "SINGLE_CHOICE" || nextType === "MULTIPLE_CHOICE";
           return {
             ...question,
             type: nextType,
-            options: isChoiceType ? question.options ?? [] : undefined,
+            options: isChoiceType ? (question.options ?? []) : undefined,
           };
         }
 
@@ -183,12 +206,17 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
   };
 
   const removeQuestion = (index: number) => {
-    setManualQuestions((current) => current.filter((_, questionIndex) => questionIndex !== index));
+    setManualQuestions((current) =>
+      current.filter((_, questionIndex) => questionIndex !== index),
+    );
   };
 
   const handleCreateSimpleFlow = async () => {
     if (manualQuestions.length === 0) {
-      setFeedback({ variant: "error", message: "Adicione pelo menos uma pergunta para criar o fluxo." });
+      setFeedback({
+        variant: "error",
+        message: "Adicione pelo menos uma pergunta para criar o fluxo.",
+      });
       return;
     }
 
@@ -202,23 +230,36 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
         questions: manualQuestions.map((question) => ({
           ...question,
           options:
-            question.type === "SINGLE_CHOICE" || question.type === "MULTIPLE_CHOICE"
-              ? question.options ?? []
+            question.type === "SINGLE_CHOICE" ||
+            question.type === "MULTIPLE_CHOICE"
+              ? (question.options ?? [])
               : undefined,
         })),
       });
 
       setFeedback({
         variant: "success",
-        message: "Fluxo simples criado com sucesso. Agora você já pode vinculá-lo ao experimento.",
+        message:
+          "Fluxo simples criado com sucesso. Agora você já pode vinculá-lo ao experimento.",
       });
       setIsCreateFormVisible(false);
     } catch (error) {
       const message = axios.isAxiosError(error)
-        ? error.response?.data?.message ?? "Não foi possível criar o fluxo simples."
+        ? (error.response?.data?.message ??
+          "Não foi possível criar o fluxo simples.")
         : "Não foi possível criar o fluxo simples.";
       setFeedback({ variant: "error", message });
     }
+  };
+
+  const handlePreviewViewportChange = (
+    flowId: number,
+    viewport: PreviewViewport,
+  ) => {
+    setPreviewViewportByFlow((current) => ({
+      ...current,
+      [flowId]: viewport,
+    }));
   };
 
   return (
@@ -242,7 +283,8 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
             <div>
               <h5 className="mb-1">Criar formulário simples (sem imagem)</h5>
               <p className="text-muted small mb-0">
-                Monte um fluxo manual para o portal com perguntas diretas, como nome, contato e tipo de aula.
+                Monte um fluxo manual para o portal com perguntas diretas, como
+                nome, contato e tipo de aula.
               </p>
             </div>
             <button
@@ -251,7 +293,9 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
               onClick={() => setIsCreateFormVisible((value) => !value)}
               disabled={createFlow.isPending}
             >
-              {isCreateFormVisible ? "Fechar formulário" : "Novo formulário simples"}
+              {isCreateFormVisible
+                ? "Fechar formulário"
+                : "Novo formulário simples"}
             </button>
           </div>
 
@@ -264,7 +308,9 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
                     type="text"
                     className="form-control"
                     value={newFlowName}
-                    onChange={(event) => handleFlowNameChange(event.target.value)}
+                    onChange={(event) =>
+                      handleFlowNameChange(event.target.value)
+                    }
                   />
                 </div>
                 <div className="col-md-6">
@@ -273,7 +319,9 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
                     type="text"
                     className="form-control"
                     value={newFlowSlug}
-                    onChange={(event) => setNewFlowSlug(toSlug(event.target.value))}
+                    onChange={(event) =>
+                      setNewFlowSlug(toSlug(event.target.value))
+                    }
                   />
                 </div>
                 <div className="col-12">
@@ -282,7 +330,9 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
                     className="form-control"
                     rows={2}
                     value={newFlowDescription}
-                    onChange={(event) => setNewFlowDescription(event.target.value)}
+                    onChange={(event) =>
+                      setNewFlowDescription(event.target.value)
+                    }
                   />
                 </div>
               </div>
@@ -290,16 +340,22 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
               <div className="d-flex flex-column gap-3">
                 {manualQuestions.map((question, index) => {
                   const isChoiceType =
-                    question.type === "SINGLE_CHOICE" || question.type === "MULTIPLE_CHOICE";
+                    question.type === "SINGLE_CHOICE" ||
+                    question.type === "MULTIPLE_CHOICE";
                   return (
-                    <div key={`${question.dataKey}-${index}`} className="border rounded p-3">
+                    <div
+                      key={`${question.dataKey}-${index}`}
+                      className="border rounded p-3"
+                    >
                       <div className="d-flex justify-content-between align-items-start gap-3 mb-3">
                         <h6 className="mb-0">Pergunta {index + 1}</h6>
                         <button
                           type="button"
                           className="btn btn-outline-danger btn-sm"
                           onClick={() => removeQuestion(index)}
-                          disabled={manualQuestions.length === 1 || createFlow.isPending}
+                          disabled={
+                            manualQuestions.length === 1 || createFlow.isPending
+                          }
                         >
                           Remover
                         </button>
@@ -313,7 +369,11 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
                             className="form-control"
                             value={question.title}
                             onChange={(event) =>
-                              handleQuestionChange(index, "title", event.target.value)
+                              handleQuestionChange(
+                                index,
+                                "title",
+                                event.target.value,
+                              )
                             }
                           />
                         </div>
@@ -324,7 +384,11 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
                             className="form-control"
                             value={question.dataKey}
                             onChange={(event) =>
-                              handleQuestionChange(index, "dataKey", toDataKey(event.target.value))
+                              handleQuestionChange(
+                                index,
+                                "dataKey",
+                                toDataKey(event.target.value),
+                              )
                             }
                           />
                         </div>
@@ -333,13 +397,21 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
                           <select
                             className="form-select"
                             value={question.type}
-                            onChange={(event) => handleQuestionChange(index, "type", event.target.value)}
+                            onChange={(event) =>
+                              handleQuestionChange(
+                                index,
+                                "type",
+                                event.target.value,
+                              )
+                            }
                           >
                             <option value="TEXT">Texto curto</option>
                             <option value="TEXTAREA">Texto longo</option>
                             <option value="PHONE">Telefone</option>
                             <option value="SINGLE_CHOICE">Escolha única</option>
-                            <option value="MULTIPLE_CHOICE">Múltipla escolha</option>
+                            <option value="MULTIPLE_CHOICE">
+                              Múltipla escolha
+                            </option>
                           </select>
                         </div>
                         <div className="col-md-8 d-flex align-items-end">
@@ -350,23 +422,35 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
                               id={`required-question-${index}`}
                               checked={question.required}
                               onChange={(event) =>
-                                handleQuestionChange(index, "required", event.target.checked)
+                                handleQuestionChange(
+                                  index,
+                                  "required",
+                                  event.target.checked,
+                                )
                               }
                             />
-                            <label className="form-check-label" htmlFor={`required-question-${index}`}>
+                            <label
+                              className="form-check-label"
+                              htmlFor={`required-question-${index}`}
+                            >
                               Pergunta obrigatória
                             </label>
                           </div>
                         </div>
                         {isChoiceType ? (
                           <div className="col-12">
-                            <label className="form-label">Opções (uma por linha) *</label>
+                            <label className="form-label">
+                              Opções (uma por linha) *
+                            </label>
                             <textarea
                               className="form-control"
                               rows={4}
                               value={(question.options ?? []).join("\n")}
                               onChange={(event) =>
-                                handleQuestionOptionsChange(index, event.target.value)
+                                handleQuestionOptionsChange(
+                                  index,
+                                  event.target.value,
+                                )
                               }
                             />
                           </div>
@@ -388,7 +472,9 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
                   <button
                     type="button"
                     className="btn btn-outline-secondary btn-sm"
-                    onClick={() => setManualQuestions(createSimpleFormTemplateQuestions())}
+                    onClick={() =>
+                      setManualQuestions(createSimpleFormTemplateQuestions())
+                    }
                     disabled={createFlow.isPending}
                   >
                     Restaurar exemplo
@@ -404,7 +490,10 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
                   disabled={createFlow.isPending}
                 >
                   {createFlow.isPending ? (
-                    <span className="spinner-border spinner-border-sm" role="status" />
+                    <span
+                      className="spinner-border spinner-border-sm"
+                      role="status"
+                    />
                   ) : null}
                   {createFlow.isPending ? "Criando..." : "Criar formulário"}
                 </button>
@@ -426,15 +515,23 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
       {isLoading ? (
         <p className="text-muted">Carregando fluxos do portal...</p>
       ) : isError ? (
-        <p className="text-danger">Não foi possível carregar os fluxos disponíveis.</p>
+        <p className="text-danger">
+          Não foi possível carregar os fluxos disponíveis.
+        </p>
       ) : sortedFlows.length === 0 ? (
-        <p className="text-muted">Nenhum fluxo do portal disponível no momento.</p>
+        <p className="text-muted">
+          Nenhum fluxo do portal disponível no momento.
+        </p>
       ) : (
         <div className="d-flex flex-column gap-3">
           {sortedFlows.map((flow) => {
             const isSelected = assignedFlowId === flow.id;
-            const isApproving = pendingApprovalId === flow.id && updateApproval.isPending;
-            const isAssigning = pendingAssignmentId === flow.id || (pendingAssignmentId === 0 && flow.id === assignedFlowId);
+            const isApproving =
+              pendingApprovalId === flow.id && updateApproval.isPending;
+            const isAssigning =
+              pendingAssignmentId === flow.id ||
+              (pendingAssignmentId === 0 && flow.id === assignedFlowId);
+            const activeViewport = previewViewportByFlow[flow.id] ?? "desktop";
             return (
               <div key={flow.id} className="card border-0 shadow-sm">
                 <div className="card-body">
@@ -443,36 +540,53 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
                       <h5 className="card-title mb-1 d-flex align-items-center gap-2">
                         {flow.name}
                         {isSelected ? (
-                          <span className="badge text-bg-primary">Selecionado</span>
+                          <span className="badge text-bg-primary">
+                            Selecionado
+                          </span>
                         ) : null}
                         {flow.approved ? (
-                          <span className="badge text-bg-success">Aprovado</span>
+                          <span className="badge text-bg-success">
+                            Aprovado
+                          </span>
                         ) : (
-                          <span className="badge text-bg-secondary">Pendente</span>
+                          <span className="badge text-bg-secondary">
+                            Pendente
+                          </span>
                         )}
                       </h5>
                       <p className="text-muted small mb-0">Slug: {flow.slug}</p>
                       {flow.publicUrl ? (
                         <p className="text-muted small mt-2 mb-0">
                           URL pública:{" "}
-                          <a href={flow.publicUrl} target="_blank" rel="noopener noreferrer">
+                          <a
+                            href={flow.publicUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
                             {flow.publicUrl}
                           </a>
                         </p>
                       ) : null}
                       {flow.description ? (
-                        <p className="text-muted small mt-2 mb-0">{flow.description}</p>
+                        <p className="text-muted small mt-2 mb-0">
+                          {flow.description}
+                        </p>
                       ) : null}
                     </div>
                     <div className="d-flex flex-column gap-2">
                       <button
                         type="button"
                         className="btn btn-outline-secondary btn-sm"
-                        onClick={() => handleToggleApproval(flow.id, !flow.approved)}
+                        onClick={() =>
+                          handleToggleApproval(flow.id, !flow.approved)
+                        }
                         disabled={isApproving}
                       >
                         {isApproving ? (
-                          <span className="spinner-border spinner-border-sm" role="status" />
+                          <span
+                            className="spinner-border spinner-border-sm"
+                            role="status"
+                          />
                         ) : null}
                         {isApproving
                           ? "Atualizando..."
@@ -487,7 +601,10 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
                         disabled={isAssigning || updateExperiment.isPending}
                       >
                         {isAssigning || updateExperiment.isPending ? (
-                          <span className="spinner-border spinner-border-sm" role="status" />
+                          <span
+                            className="spinner-border spinner-border-sm"
+                            role="status"
+                          />
                         ) : null}
                         {isAssigning || updateExperiment.isPending
                           ? "Aplicando..."
@@ -499,18 +616,60 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
                   </div>
 
                   <div className="mt-3">
+                    <div className="border rounded bg-light p-3 mb-3">
+                      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                        <h6 className="fw-semibold mb-0">
+                          Pré-visualização para o lead
+                        </h6>
+                        <div
+                          className="btn-group btn-group-sm"
+                          role="group"
+                          aria-label="Alternar visualização"
+                        >
+                          <button
+                            type="button"
+                            className={`btn ${activeViewport === "desktop" ? "btn-primary" : "btn-outline-primary"}`}
+                            onClick={() =>
+                              handlePreviewViewportChange(flow.id, "desktop")
+                            }
+                          >
+                            Desktop
+                          </button>
+                          <button
+                            type="button"
+                            className={`btn ${activeViewport === "mobile" ? "btn-primary" : "btn-outline-primary"}`}
+                            onClick={() =>
+                              handlePreviewViewportChange(flow.id, "mobile")
+                            }
+                          >
+                            Celular
+                          </button>
+                        </div>
+                      </div>
+                      <LeadFlowPreview
+                        flowName={flow.name}
+                        questions={flow.questions}
+                        viewport={activeViewport}
+                      />
+                    </div>
+
                     <h6 className="fw-semibold">Perguntas</h6>
                     <ol className="list-group list-group-numbered">
                       {flow.questions.map((question) => (
                         <li key={question.id} className="list-group-item">
                           <div className="d-flex justify-content-between align-items-start gap-3">
                             <div>
-                              <div className="fw-semibold">{question.title}</div>
+                              <div className="fw-semibold">
+                                {question.title}
+                              </div>
                               <div className="text-muted small">
-                                Campo: {question.dataKey} · Tipo: {question.type.replace(/_/g, " ")}
+                                Campo: {question.dataKey} · Tipo:{" "}
+                                {question.type.replace(/_/g, " ")}
                               </div>
                               {question.description ? (
-                                <p className="text-muted small mb-0">{question.description}</p>
+                                <p className="text-muted small mb-0">
+                                  {question.description}
+                                </p>
                               ) : null}
                               {question.options.length > 0 ? (
                                 <ul className="text-muted small mb-0 mt-2 ps-3">
@@ -531,7 +690,9 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
 
                   <div className="mt-3 d-flex flex-wrap gap-3 text-muted small">
                     {flow.model ? <span>Modelo: {flow.model}</span> : null}
-                    {flow.approvedAt ? <span>Aprovado em: {formatDate(flow.approvedAt)}</span> : null}
+                    {flow.approvedAt ? (
+                      <span>Aprovado em: {formatDate(flow.approvedAt)}</span>
+                    ) : null}
                     <span>Criado em: {formatDate(flow.createdAt)}</span>
                   </div>
                 </div>
@@ -556,6 +717,131 @@ export default function LeadPortalFlowTab({ experiment }: LeadPortalFlowTabProps
       </div>
     </div>
   );
+}
+
+interface LeadFlowPreviewProps {
+  flowName: string;
+  questions: Array<{
+    id: number;
+    title: string;
+    type: string;
+    required: boolean;
+    options: string[];
+    placeholder?: string | null;
+  }>;
+  viewport: PreviewViewport;
+}
+
+function LeadFlowPreview({
+  flowName,
+  questions,
+  viewport,
+}: LeadFlowPreviewProps) {
+  const isMobile = viewport === "mobile";
+  return (
+    <div className="d-flex justify-content-center">
+      <div
+        className="border rounded-4 bg-white shadow-sm p-3"
+        style={{
+          width: "100%",
+          maxWidth: isMobile ? "380px" : "920px",
+        }}
+      >
+        <div className="border-bottom pb-2 mb-3">
+          <h6 className="mb-1">{flowName}</h6>
+          <p className="text-muted small mb-0">
+            Assim o lead verá o formulário no portal.
+          </p>
+        </div>
+        <form
+          className="d-flex flex-column gap-3"
+          onSubmit={(event) => event.preventDefault()}
+        >
+          {questions.map((question) => (
+            <div key={question.id}>
+              <label className="form-label fw-semibold">
+                {question.title}
+                {question.required ? " *" : ""}
+              </label>
+              {renderPreviewField(question)}
+            </div>
+          ))}
+          <button type="button" className="btn btn-primary" disabled>
+            Enviar respostas
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function renderPreviewField(
+  question: LeadFlowPreviewProps["questions"][number],
+) {
+  switch (question.type) {
+    case "TEXTAREA":
+      return (
+        <textarea
+          className="form-control"
+          rows={3}
+          placeholder={question.placeholder ?? "Digite sua resposta"}
+          disabled
+        />
+      );
+    case "SINGLE_CHOICE":
+      return (
+        <select className="form-select" disabled defaultValue="">
+          <option value="" disabled>
+            Selecione uma opção
+          </option>
+          {question.options.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      );
+    case "MULTIPLE_CHOICE":
+      return (
+        <div className="d-flex flex-column gap-2">
+          {question.options.map((option) => (
+            <div className="form-check" key={option}>
+              <input
+                className="form-check-input"
+                type="checkbox"
+                value={option}
+                id={`${question.id}-${option}`}
+                disabled
+              />
+              <label
+                className="form-check-label"
+                htmlFor={`${question.id}-${option}`}
+              >
+                {option}
+              </label>
+            </div>
+          ))}
+        </div>
+      );
+    case "PHONE":
+      return (
+        <input
+          type="tel"
+          className="form-control"
+          placeholder={question.placeholder ?? "(11) 99999-9999"}
+          disabled
+        />
+      );
+    default:
+      return (
+        <input
+          type="text"
+          className="form-control"
+          placeholder={question.placeholder ?? "Digite sua resposta"}
+          disabled
+        />
+      );
+  }
 }
 
 function createSimpleFormTemplateQuestions(): CreateLeadPortalFlowQuestionRequest[] {
@@ -584,21 +870,24 @@ function createSimpleFormTemplateQuestions(): CreateLeadPortalFlowQuestionReques
       dataKey: "telefone",
       type: "TEXT",
       required: false,
-      description: "Preencha este campo quando a forma de contato escolhida for Telefone.",
+      description:
+        "Preencha este campo quando a forma de contato escolhida for Telefone.",
     },
     {
       title: "Qual é o WhatsApp para contato?",
       dataKey: "whatsapp",
       type: "TEXT",
       required: false,
-      description: "Preencha este campo quando a forma de contato escolhida for WhatsApp.",
+      description:
+        "Preencha este campo quando a forma de contato escolhida for WhatsApp.",
     },
     {
       title: "Qual é o Instagram para contato?",
       dataKey: "instagram",
       type: "TEXT",
       required: false,
-      description: "Preencha este campo quando a forma de contato escolhida for Instagram.",
+      description:
+        "Preencha este campo quando a forma de contato escolhida for Instagram.",
     },
     {
       title: "Tipo de aulas que presta",

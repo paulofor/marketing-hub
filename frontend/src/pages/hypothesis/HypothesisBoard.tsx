@@ -9,6 +9,7 @@ import { Hypothesis } from "../../api/hypothesis/useHypothesisBoard";
 import { useUpdateHypothesisStatus } from "../../api/hypothesis/useUpdateHypothesisStatus";
 import { CSS } from "@dnd-kit/utilities";
 import { useAngles } from "../../api/angle/useAngles";
+import { Link } from "react-router-dom";
 
 interface ColumnProps {
   id: string;
@@ -18,7 +19,13 @@ interface ColumnProps {
   angleMap: Map<number, string>;
 }
 
-function Column({ id, title, items, color, angleMap }: ColumnProps) {
+function Column({
+  id,
+  title,
+  items,
+  color,
+  angleMap,
+}: ColumnProps) {
   const { setNodeRef } = useDroppable({ id });
   return (
     <div
@@ -67,6 +74,12 @@ function Card({
           {angleMap.get(item.premiseAngleId ?? 0)} {item.offerType}
         </span>
         <div className="mt-2 d-flex gap-1">
+          <Link
+            className="btn btn-sm btn-outline-dark"
+            to={`/niches/${item.marketNicheId}/hypotheses/${item.id}/edit`}
+          >
+            Editar
+          </Link>
           <button className="btn btn-sm btn-outline-primary">
             Gerar Landing
           </button>

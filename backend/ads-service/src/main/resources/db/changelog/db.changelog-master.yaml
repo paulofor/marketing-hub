@@ -471,3 +471,7 @@ databaseChangeLog:
       file: V2034_11_05__widen_adset_job_api_log_endpoint.yaml
       relativeToChangelogFile: true
 
+
+  - include:
+      file: V2035_01_15__backfill_cost_totals.yaml
+      relativeToChangelogFile: true

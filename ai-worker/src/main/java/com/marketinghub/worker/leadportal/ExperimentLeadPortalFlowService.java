@@ -6,10 +6,7 @@ import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.LeadPortalFlowQuestion;
 import com.marketinghub.leadportal.LeadPortalQuestionType;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
-import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.worker.experiment.ExperimentGenerationRepository;
-import com.marketinghub.hypothesis.repository.HypothesisRepository;
-import com.marketinghub.niche.repository.MarketNicheRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -37,21 +34,18 @@ public class ExperimentLeadPortalFlowService {
     private final ExperimentRepository experimentRepository;
     private final LeadPortalFlowRepository leadPortalFlowRepository;
     private final ExperimentGenerationRepository generationRepository;
-    private final HypothesisRepository hypothesisRepository;
-    private final MarketNicheRepository marketNicheRepository;
+    private final CostAttributionService costAttributionService;
     private final ExperimentLeadPortalFlowChatGptClient chatGptClient;
 
     public ExperimentLeadPortalFlowService(ExperimentRepository experimentRepository,
                                            LeadPortalFlowRepository leadPortalFlowRepository,
                                            ExperimentGenerationRepository generationRepository,
-                                           HypothesisRepository hypothesisRepository,
-                                           MarketNicheRepository marketNicheRepository,
+                                           CostAttributionService costAttributionService,
                                            ExperimentLeadPortalFlowChatGptClient chatGptClient) {
         this.experimentRepository = experimentRepository;
         this.leadPortalFlowRepository = leadPortalFlowRepository;
         this.generationRepository = generationRepository;
-        this.hypothesisRepository = hypothesisRepository;
-        this.marketNicheRepository = marketNicheRepository;
+        this.costAttributionService = costAttributionService;
         this.chatGptClient = chatGptClient;
     }
 
@@ -288,29 +282,10 @@ public class ExperimentLeadPortalFlowService {
     }
 
     private void applyGenerationCost(Experiment experiment, BigDecimal costUsd) {
-        if (experiment == null || costUsd == null || costUsd.compareTo(BigDecimal.ZERO) <= 0) {
+        if (experiment == null) {
             return;
         }
-        experiment.setTotalCost(addCost(experiment.getTotalCost(), costUsd));
-        if (experiment.getId() != null) {
-            experimentRepository.incrementTotalCost(experiment.getId(), costUsd);
-        }
-        if (experiment.getHypothesisRef() != null && experiment.getHypothesisRef().getId() != null) {
-            experiment.getHypothesisRef().setTotalCost(addCost(experiment.getHypothesisRef().getTotalCost(), costUsd));
-            hypothesisRepository.incrementTotalCost(experiment.getHypothesisRef().getId(), costUsd);
-        }
-        MarketNiche niche = experiment.getNiche();
-        if (niche != null && niche.getId() != null) {
-            niche.setTotalCost(addCost(niche.getTotalCost(), costUsd));
-            marketNicheRepository.incrementTotalCost(niche.getId(), costUsd);
-        }
-    }
-
-    private BigDecimal addCost(BigDecimal current, BigDecimal delta) {
-        if (current == null) {
-            return delta;
-        }
-        return current.add(delta);
+        costAttributionService.addUsdCostToExperimentHierarchy(experiment, costUsd);
     }
 
     private String slugify(String value) {

@@ -1,0 +1,111 @@
+databaseChangeLog:
+  - changeSet:
+      id: backfill-hypothesis-total-cost
+      author: dev-team
+      preConditions:
+        onFail: MARK_RAN
+        dbms:
+          type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            dbms: mysql
+            sql: |-
+              SET @usd_to_brl := 5.00;
+              UPDATE hypothesis
+                 SET total_cost = ROUND(
+                       CASE
+                         WHEN cost IS NOT NULL THEN cost
+                         WHEN cost_usd IS NOT NULL THEN cost_usd * @usd_to_brl
+                         ELSE 0
+                       END,
+                       2)
+               WHERE (total_cost IS NULL OR total_cost = 0)
+                 AND (cost IS NOT NULL OR cost_usd IS NOT NULL);
+
+  - changeSet:
+      id: backfill-experiment-total-cost
+      author: dev-team
+      preConditions:
+        onFail: MARK_RAN
+        dbms:
+          type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            dbms: mysql
+            sql: |-
+              SET @usd_to_brl := 5.00;
+              UPDATE experiment e
+                   LEFT JOIN (
+                       SELECT CAST(reference_id AS UNSIGNED) AS experiment_id,
+                              ROUND(SUM(cost_usd) * @usd_to_brl, 2) AS ai_cost_brl
+                         FROM ai_worker_generation
+                        WHERE domain IN (
+                              'CREATIVE_COPY',
+                              'LEAD_PORTAL_FLOW',
+                              'EXPERIMENT_EMAIL',
+                              'EXPERIMENT_INSTANT_FORM',
+                              'EXPERIMENT_SAMPLE_EMAIL',
+                              'EXPERIMENT_DELIVERABLE'
+                        )
+                          AND reference_id REGEXP '^[0-9]+$'
+                        GROUP BY CAST(reference_id AS UNSIGNED)
+                   ) ai ON ai.experiment_id = e.id
+                   LEFT JOIN (
+                       SELECT experiment_id,
+                              ROUND(SUM(COALESCE(spend, 0)), 2) AS spend_total
+                         FROM experiment_campaign_metric
+                        GROUP BY experiment_id
+                   ) m ON m.experiment_id = e.id
+                 SET e.total_cost = ROUND(
+                       COALESCE(e.total_cost, 0)
+                       + COALESCE(ai.ai_cost_brl, 0)
+                       + COALESCE(m.spend_total, 0),
+                       2)
+               WHERE (e.total_cost IS NULL OR e.total_cost = 0)
+                 AND (COALESCE(ai.ai_cost_brl, 0) <> 0 OR COALESCE(m.spend_total, 0) <> 0);
+
+  - changeSet:
+      id: backfill-market-niche-total-cost
+      author: dev-team
+      preConditions:
+        onFail: MARK_RAN
+        dbms:
+          type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            dbms: mysql
+            sql: |-
+              SET @usd_to_brl := 5.00;
+              UPDATE market_niche n
+                   LEFT JOIN (
+                       SELECT market_niche_id,
+                              ROUND(SUM(COALESCE(total_cost, 0)), 2) AS hypothesis_total
+                         FROM hypothesis
+                        GROUP BY market_niche_id
+                   ) h ON h.market_niche_id = n.id
+                   LEFT JOIN (
+                       SELECT niche_id,
+                              ROUND(SUM(COALESCE(total_cost, 0)), 2) AS experiment_total
+                         FROM experiment
+                        GROUP BY niche_id
+                   ) e ON e.niche_id = n.id
+                   LEFT JOIN (
+                       SELECT market_niche_id,
+                              ROUND(SUM(COALESCE(cost_usd, 0)) * @usd_to_brl, 2) AS description_total
+                         FROM niche_detailed_description
+                        GROUP BY market_niche_id
+                   ) d ON d.market_niche_id = n.id
+                 SET n.total_cost = ROUND(
+                       COALESCE(h.hypothesis_total, 0)
+                       + COALESCE(e.experiment_total, 0)
+                       + COALESCE(d.description_total, 0),
+                       2)
+               WHERE COALESCE(h.hypothesis_total, 0)
+                     + COALESCE(e.experiment_total, 0)
+                     + COALESCE(d.description_total, 0) > 0;

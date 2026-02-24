@@ -7,6 +7,8 @@ import com.marketinghub.niche.description.repository.NicheDetailedDescriptionRep
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.prompt.Prompt;
 import com.marketinghub.prompt.repository.PromptRepository;
+import com.marketinghub.finance.CurrencyConversionService;
+import com.marketinghub.cost.CostAttributionService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -22,15 +25,21 @@ public class NicheDetailedDescriptionService {
     private final MarketNicheRepository nicheRepository;
     private final PromptRepository promptRepository;
     private final EntityManager em;
+    private final CurrencyConversionService currencyConversionService;
+    private final CostAttributionService costAttributionService;
 
     public NicheDetailedDescriptionService(NicheDetailedDescriptionRepository repository,
                                            MarketNicheRepository nicheRepository,
                                            PromptRepository promptRepository,
-                                           EntityManager em) {
+                                           EntityManager em,
+                                           CurrencyConversionService currencyConversionService,
+                                           CostAttributionService costAttributionService) {
         this.repository = repository;
         this.nicheRepository = nicheRepository;
         this.promptRepository = promptRepository;
         this.em = em;
+        this.currencyConversionService = currencyConversionService;
+        this.costAttributionService = costAttributionService;
     }
 
     private MarketNiche attachNiche(Long id) {
@@ -77,9 +86,8 @@ public class NicheDetailedDescriptionService {
                 .outputTokens(request.getOutputTokens())
                 .build();
         NicheDetailedDescription saved = repository.save(description);
-        if (niche != null) {
-            niche.setTotalCost(repository.sumCostUsdByMarketNicheId(niche.getId()));
-        }
+        BigDecimal delta = currencyConversionService.usdToBrl(request.getCostUsd());
+        costAttributionService.addCostToNiche(niche, delta);
         return saved;
     }
 

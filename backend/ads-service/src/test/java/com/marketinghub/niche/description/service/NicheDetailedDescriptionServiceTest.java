@@ -6,6 +6,8 @@ import com.marketinghub.niche.description.dto.CreateNicheDetailedDescriptionRequ
 import com.marketinghub.niche.description.repository.NicheDetailedDescriptionRepository;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.prompt.repository.PromptRepository;
+import com.marketinghub.finance.CurrencyConversionService;
+import com.marketinghub.cost.CostAttributionService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,12 +33,17 @@ class NicheDetailedDescriptionServiceTest {
     private PromptRepository promptRepository;
     @Mock
     private EntityManager em;
+    @Mock
+    private CurrencyConversionService currencyConversionService;
+    @Mock
+    private CostAttributionService costAttributionService;
 
     private NicheDetailedDescriptionService service;
 
     @BeforeEach
     void setup() {
-        service = new NicheDetailedDescriptionService(repository, nicheRepository, promptRepository, em);
+        service = new NicheDetailedDescriptionService(repository, nicheRepository, promptRepository, em,
+                currencyConversionService, costAttributionService);
     }
 
     @Test
@@ -53,11 +60,10 @@ class NicheDetailedDescriptionServiceTest {
         when(nicheRepository.existsById(nicheId)).thenReturn(true);
         when(em.getReference(MarketNiche.class, nicheId)).thenReturn(niche);
         when(repository.save(any(NicheDetailedDescription.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(repository.sumCostUsdByMarketNicheId(nicheId)).thenReturn(new BigDecimal("0.0015"));
+        when(currencyConversionService.usdToBrl(new BigDecimal("0.0015"))).thenReturn(new BigDecimal("0.01"));
 
         service.create(request);
 
-        assertThat(niche.getTotalCost()).isEqualByComparingTo("0.0015");
-        verify(repository).sumCostUsdByMarketNicheId(nicheId);
+        verify(costAttributionService).addCostToNiche(niche, new BigDecimal("0.01"));
     }
 }

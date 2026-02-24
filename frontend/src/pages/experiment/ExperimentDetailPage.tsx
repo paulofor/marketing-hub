@@ -33,9 +33,7 @@ import type { JourneyAssignment, JourneyStep } from "../../api/journey/types";
 import DeliverablesTab from "./DeliverablesTab";
 import LeadPortalFlowTab from "./LeadPortalFlowTab";
 import TargetingTab from "./TargetingTab";
-import { useTargetingElementsByNiche } from "../../api/targeting/useTargetingElementsByNiche";
 import { useExperimentAdSetWorkflow } from "../../api/experiment/useExperimentAdSetWorkflow";
-import type { TargetingElementType } from "../../api/targeting/types";
 
 export default function ExperimentDetailPage() {
   const { id } = useParams();
@@ -52,8 +50,6 @@ export default function ExperimentDetailPage() {
     data ? String(data.nicheId) : undefined,
     data ? String(data.hypothesisId) : undefined,
   );
-  const hypothesisId = data?.hypothesisId;
-  const nicheIdParam = data?.nicheId != null ? String(data.nicheId) : undefined;
   const { data: presets } = useMetricPresets();
   const [tab, setTab] = useState("overview");
   const [journeyError, setJourneyError] = useState<string | null>(null);
@@ -67,8 +63,6 @@ export default function ExperimentDetailPage() {
   const rebuildJourney = useRebuildExperimentJourney(expId);
   const updateExperimentStatus = useUpdateExperimentStatus(expId);
   const isUpdatingStatus = updateExperimentStatus.isPending;
-  const { data: targetingElements, isLoading: isLoadingTargeting } =
-    useTargetingElementsByNiche(nicheIdParam);
   const { data: adSetWorkflow, isLoading: isLoadingAdSetWorkflow } =
     useExperimentAdSetWorkflow(expId);
   const {
@@ -88,24 +82,7 @@ export default function ExperimentDetailPage() {
     refetch: refetchResetPreview,
   } = useExperimentCampaignResetPreview(expId);
   const resetCampaigns = useExperimentCampaignReset(expId);
-  const hypothesisIdAsString = hypothesisId ? String(hypothesisId) : undefined;
-  const hasCompleteTargeting = useMemo(() => {
-    if (!Array.isArray(targetingElements)) return false;
-    const requiredTypes: TargetingElementType[] = [
-      "INTEREST",
-      "JOB_TITLE",
-      "BEHAVIOR",
-    ];
-    return requiredTypes.every((type) =>
-      targetingElements.some(
-        (element) =>
-          element.type === type &&
-          element.status === "APPROVED" &&
-          (!element.hypothesisId ||
-            element.hypothesisId === hypothesisIdAsString),
-      ),
-    );
-  }, [targetingElements, hypothesisIdAsString]);
+  const hasCompleteTargeting = readinessSummary?.hasCompleteTargeting ?? false;
   useBreadcrumbs([
     {
       label: niche?.name || "...",
@@ -311,7 +288,7 @@ export default function ExperimentDetailPage() {
       id: "approved-targeting",
       title: "Segmentação Meta aprovada",
       isMet: hasCompleteTargeting,
-      hint: isLoadingTargeting
+      hint: isLoadingReadiness
         ? "Verificando elementos aprovados..."
         : hasCompleteTargeting
           ? "Já existem interesses, cargos e comportamentos aprovados para este nicho/hipótese."

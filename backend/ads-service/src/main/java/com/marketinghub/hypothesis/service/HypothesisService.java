@@ -10,6 +10,8 @@ import com.marketinghub.hypothesis.dto.UpdateHypothesisRequest;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.prompt.PromptAttributeDescription;
 import com.marketinghub.prompt.repository.PromptAttributeDescriptionRepository;
+import com.marketinghub.cost.CostAttributionService;
+import com.marketinghub.finance.CurrencyConversionService;
 import java.math.BigDecimal;
 import java.util.UUID;
 import java.time.Instant;
@@ -30,17 +32,23 @@ public class HypothesisService {
     private final AngleRepository angleRepository;
     private final PromptAttributeDescriptionRepository descriptionRepository;
     private final EntityManager em;
+    private final CurrencyConversionService currencyConversionService;
+    private final CostAttributionService costAttributionService;
 
     public HypothesisService(HypothesisRepository repository,
                              MarketNicheRepository nicheRepository,
                              AngleRepository angleRepository,
                              PromptAttributeDescriptionRepository descriptionRepository,
-                             EntityManager em) {
+                             EntityManager em,
+                             CurrencyConversionService currencyConversionService,
+                             CostAttributionService costAttributionService) {
         this.repository = repository;
         this.nicheRepository = nicheRepository;
         this.angleRepository = angleRepository;
         this.descriptionRepository = descriptionRepository;
         this.em = em;
+        this.currencyConversionService = currencyConversionService;
+        this.costAttributionService = costAttributionService;
     }
 
     private MarketNiche attachNiche(Long id) {
@@ -73,9 +81,12 @@ public class HypothesisService {
 
     private BigDecimal resolveTotalCostDelta(CreateHypothesisRequest req) {
         if (req.getCost() != null) {
-            return req.getCost();
+            return currencyConversionService.normalizeBrl(req.getCost());
         }
-        return req.getCostUsd();
+        if (req.getCostUsd() != null) {
+            return currencyConversionService.usdToBrl(req.getCostUsd());
+        }
+        return null;
     }
 
     private Set<PromptAttributeDescription> attachPromptAttributeDescriptions(List<Long> ids) {
@@ -118,8 +129,8 @@ public class HypothesisService {
                 .build();
         Hypothesis saved = repository.save(h);
         BigDecimal delta = resolveTotalCostDelta(req);
-        if (delta != null && saved.getMarketNiche() != null && saved.getMarketNiche().getId() != null) {
-            nicheRepository.incrementTotalCost(saved.getMarketNiche().getId(), delta);
+        if (delta != null) {
+            costAttributionService.addCostToNiche(saved.getMarketNiche(), delta);
         }
         return saved;
     }

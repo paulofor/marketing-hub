@@ -4,13 +4,11 @@ package com.marketinghub.worker.leadportal;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.hypothesis.Hypothesis;
-import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.LeadPortalFlowQuestion;
 import com.marketinghub.leadportal.LeadPortalQuestionType;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.worker.experiment.ExperimentGenerationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,10 +46,7 @@ class ExperimentLeadPortalFlowServiceTest {
     private ExperimentLeadPortalFlowChatGptClient chatGptClient;
 
     @Mock
-    private HypothesisRepository hypothesisRepository;
-
-    @Mock
-    private MarketNicheRepository marketNicheRepository;
+    private CostAttributionService costAttributionService;
 
     private ExperimentLeadPortalFlowService service;
 
@@ -61,8 +56,7 @@ class ExperimentLeadPortalFlowServiceTest {
                 experimentRepository,
                 leadPortalFlowRepository,
                 generationRepository,
-                hypothesisRepository,
-                marketNicheRepository,
+                costAttributionService,
                 chatGptClient
         );
     }
@@ -134,10 +128,8 @@ class ExperimentLeadPortalFlowServiceTest {
         assertThat(lastQuestion.getType()).isEqualTo(LeadPortalQuestionType.IMAGE_UPLOAD);
         assertThat(lastQuestion.getDataKey()).startsWith("foto_problema");
         BigDecimal expectedCost = new BigDecimal("0.12");
-        verify(experimentRepository).incrementTotalCost(eq(77L), argThat(cost -> cost.compareTo(expectedCost) == 0));
-        verify(hypothesisRepository)
-                .incrementTotalCost(eq(hypothesis.getId()), argThat(cost -> cost.compareTo(expectedCost) == 0));
-        verify(marketNicheRepository)
-                .incrementTotalCost(eq(niche.getId()), argThat(cost -> cost.compareTo(expectedCost) == 0));
+        verify(costAttributionService)
+                .addUsdCostToExperimentHierarchy(eq(experiment),
+                        argThat(cost -> cost.compareTo(expectedCost) == 0));
     }
 }

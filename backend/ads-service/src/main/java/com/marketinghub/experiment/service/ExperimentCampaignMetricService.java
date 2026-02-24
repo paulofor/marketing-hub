@@ -4,6 +4,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.repository.ExperimentCampaignMetricRepository;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
+import com.marketinghub.cost.CostAttributionService;
 import com.marketinghub.facebookads.FacebookAdsCampaignRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,11 +17,14 @@ import java.time.LocalDate;
 public class ExperimentCampaignMetricService {
     private final ExperimentCampaignMetricRepository repository;
     private final FacebookAdsCampaignRepository campaignRepository;
+    private final CostAttributionService costAttributionService;
 
     public ExperimentCampaignMetricService(ExperimentCampaignMetricRepository repository,
-                                           FacebookAdsCampaignRepository campaignRepository) {
+                                           FacebookAdsCampaignRepository campaignRepository,
+                                           CostAttributionService costAttributionService) {
         this.repository = repository;
         this.campaignRepository = campaignRepository;
+        this.costAttributionService = costAttributionService;
     }
 
     @Transactional
@@ -39,6 +43,7 @@ public class ExperimentCampaignMetricService {
                 .orElseGet(() -> ExperimentCampaignMetric.builder()
                         .experiment(experiment)
                         .build());
+        BigDecimal previousSpend = metric.getSpend();
         metric.setCampaign(campaign);
         metric.setDateStart(dateStart);
         metric.setDateStop(dateStop);
@@ -49,7 +54,7 @@ public class ExperimentCampaignMetricService {
         metric.setCpc(calculateCpc(normalizedSpend, clicks));
         metric.setCpl(calculateCpl(normalizedSpend, leads));
         ExperimentCampaignMetric saved = repository.save(metric);
-        updateExperimentTotalCost(experiment, normalizedSpend);
+        applySpendDelta(experiment, normalizedSpend, previousSpend);
         return saved;
     }
 
@@ -67,10 +72,16 @@ public class ExperimentCampaignMetricService {
         return spend.divide(BigDecimal.valueOf(leads), 2, RoundingMode.HALF_UP);
     }
 
-    private void updateExperimentTotalCost(Experiment experiment, BigDecimal spend) {
-        if (experiment == null || spend == null) {
+    private void applySpendDelta(Experiment experiment, BigDecimal newSpend, BigDecimal previousSpend) {
+        if (experiment == null) {
             return;
         }
-        experiment.setTotalCost(spend);
+        BigDecimal current = newSpend == null ? BigDecimal.ZERO : newSpend;
+        BigDecimal previous = previousSpend == null ? BigDecimal.ZERO : previousSpend;
+        BigDecimal delta = current.subtract(previous);
+        if (delta.compareTo(BigDecimal.ZERO) == 0) {
+            return;
+        }
+        costAttributionService.addCostToExperimentHierarchy(experiment, delta);
     }
 }

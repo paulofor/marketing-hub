@@ -51,7 +51,7 @@ class ExperimentReadinessServiceTest {
     @Test
     void shouldReportAllIssuesWhenNothingIsReady() {
         Long experimentId = 7L;
-        Experiment experiment = buildExperiment(16L);
+        Experiment experiment = buildExperiment(experimentId, 16L);
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(0L);
@@ -80,12 +80,11 @@ class ExperimentReadinessServiceTest {
     @Test
     void shouldReturnNoIssuesWhenEverythingIsReady() {
         Long experimentId = 8L;
-        Experiment experiment = buildExperiment(18L);
+        Experiment experiment = buildExperiment(experimentId, 18L);
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(2L);
         when(leadPortalFlowRepository.countByExperimentId(experimentId)).thenReturn(1L);
-        when(adSetWorkflowRepository.findByExperimentId(experimentId)).thenReturn(Optional.empty());
         for (TargetingElementType type : TargetingElementType.values()) {
             when(targetingElementRepository.existsApprovedForExperiment(experiment.getNiche().getId(), type,
                     experiment.getHypothesisRef().getId())).thenReturn(true);
@@ -103,7 +102,7 @@ class ExperimentReadinessServiceTest {
     @Test
     void shouldTreatReadyAdSetSpecsAsCompleteTargeting() {
         Long experimentId = 9L;
-        Experiment experiment = buildExperiment(20L);
+        Experiment experiment = buildExperiment(experimentId, 20L);
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(1L);
@@ -134,7 +133,7 @@ class ExperimentReadinessServiceTest {
                 .doesNotContain(ExperimentReadinessIssueType.TARGETING);
     }
 
-    private Experiment buildExperiment(Long nicheId) {
+    private Experiment buildExperiment(Long experimentId, Long nicheId) {
         MarketNiche niche = new MarketNiche();
         niche.setId(nicheId);
 
@@ -143,7 +142,7 @@ class ExperimentReadinessServiceTest {
         hypothesis.setMarketNiche(niche);
 
         Experiment experiment = new Experiment();
-        experiment.setId(0L);
+        experiment.setId(experimentId);
         experiment.setNiche(niche);
         experiment.setHypothesisRef(hypothesis);
         return experiment;

@@ -1745,6 +1745,13 @@ export default function NicheDetailPage() {
                     </div>
                     <div className="niche-hypothesis-card__actions">
                       <Link
+                        className="btn btn-sm btn-outline-secondary"
+                        to={`hypotheses/${h.id}/edit`}
+                      >
+                        <span>Editar</span>
+                        <Pencil size={16} />
+                      </Link>
+                      <Link
                         className="btn btn-sm btn-outline-primary"
                         to={`hypotheses/${h.id}`}
                       >

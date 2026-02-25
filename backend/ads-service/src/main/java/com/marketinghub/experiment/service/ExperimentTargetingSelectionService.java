@@ -98,7 +98,7 @@ public class ExperimentTargetingSelectionService {
                 .status(TargetingRequestStatus.COMPLETED)
                 .origin(TargetingRequestOrigin.INTERNAL)
                 .niche(experiment.getNiche())
-                .hypothesis(experiment.getHypothesis())
+                .hypothesis(experiment.getHypothesisRef())
                 .build();
         TargetingRequest savedRequest = targetingRequestRepository.save(request);
 

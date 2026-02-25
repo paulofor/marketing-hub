@@ -1,20 +1,58 @@
 # Checklist de publicação de experimento para campanha no Facebook Ads
 
-Este documento descreve **o que um experimento precisa ter** para ser publicado como campanha e enviado ao Facebook Ads com sucesso.
+Este checklist garante que um experimento só seja publicado quando tiver todos os
+recursos essenciais configurados. Ele serve de base para o cartão "Campanha de
+Facebook Ads" na tela de detalhes do experimento.
 
+## 1. Bloqueios de publicação (diagnóstico do worker)
 
-## 1) Referencia de Conta do Facebook
+O worker de Facebook só publica se **todos os itens abaixo** estiverem prontos.
+A regra está implementada em `ExperimentReadinessService` e abastece o alerta
+cinza do diagnóstico.
 
-## 2) Página do Facebook
+1. **Criativos aprovados**
+   - Pelo menos um criativo aprovado ou em produção no contexto do experimento.
+   - Fonte de dados: tabela `creative` + flag `experiment.creative_approved`.
+   - Ação recomendada: gerar/aprovar na aba _Criativos_.
+2. **Fluxo do Portal do Lead**
+   - O experimento precisa ter um fluxo associado (`lead_portal_flow`).
+   - Fonte de dados: `lead_portal_flow` vinculado ao experimento.
+   - Ação: criar ou associar na aba _Portal do Lead_.
+3. **Público completo**
+   - Necessário aprovar ao menos um interesse, um cargo e um comportamento (ou
+     concluir o playbook de ad sets).
+   - Fonte: elementos aprovados de segmentação (`targeting_element`).
+   - Ação: aprovar itens na aba _Segmentação_.
 
-## 3) Conta do Instagram
+Se algum dos itens acima estiver pendente, o worker interrompe a publicação e o
+alerta apresenta a lista detalhada das inconsistências.
 
-## 4) Fluxo Lead escolhido ( url de destino )
+## 2. Configurações obrigatórias do experimento
 
-## 5) Valor diario definido
+Além dos bloqueios, o checklist também monitora as informações operacionais
+previstas na rotina de publicação:
 
-## 6) Publico escolhido ( pelo pipeline de definição de publico )
+1. **Conta do Facebook Ads conectada** – precisa haver uma conta autorizada em
+   _Contas do Facebook_ (dados expostos por `useFacebookConfigurationStatus`).
+2. **Página do Facebook definida** – a página escolhida no experimento precisa
+   existir e estar ativa no hub.
+3. **Conta do Instagram vinculada** – usada para veicular os anúncios.
+4. **Valor diário definido** – orçamento diário (`experiment.daily_budget`) que
+   orienta a automação de mídia.
 
-## 7) Criativos escolhidos/aprovados 
+Esses itens não bloqueiam o worker sozinhos, mas ajudam o time a identificar se
+há configuração faltante antes de liberar a campanha.
 
+## 3. Como o checklist aparece na interface
 
+- O cartão **Campanha de Facebook Ads** combina o alerta cinza (lógica do worker)
+  com a visualização em lista.
+- A primeira seção "Bloqueios de publicação" mostra exatamente os três
+  critérios que travam o worker.
+- A segunda seção "Configurações do experimento" exibe os itens operacionais
+  acima (conta, página, Instagram e orçamento).
+- Uma terceira seção "Fluxo operacional do Meta" relembra passos complementares
+  (instant form, plataforma e status Planejado).
+
+Quando todos os bloqueios estão prontos, o cartão sinaliza **Pronto** e o worker
+pode publicar as campanhas para o experimento.

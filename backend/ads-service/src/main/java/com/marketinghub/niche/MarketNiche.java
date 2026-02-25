@@ -17,6 +17,7 @@ import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Entity representing a market niche that can be tested manually or via AI.
@@ -137,6 +138,21 @@ public class MarketNiche {
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String demographicFilters;
+
+    /** Curated list of interests manually maintained for this niche. */
+    @Convert(converter = com.marketinghub.niche.persistence.StringListConverter.class)
+    @Column(name = "interest_list", columnDefinition = "LONGTEXT")
+    private List<String> interestList;
+
+    /** Curated list of job titles manually maintained for this niche. */
+    @Convert(converter = com.marketinghub.niche.persistence.StringListConverter.class)
+    @Column(name = "role_list", columnDefinition = "LONGTEXT")
+    private List<String> roleList;
+
+    /** Curated list of behaviors manually maintained for this niche. */
+    @Convert(converter = com.marketinghub.niche.persistence.StringListConverter.class)
+    @Column(name = "behavior_list", columnDefinition = "LONGTEXT")
+    private List<String> behaviorList;
 
     /** Extra tips for advertising this niche. */
     @Lob

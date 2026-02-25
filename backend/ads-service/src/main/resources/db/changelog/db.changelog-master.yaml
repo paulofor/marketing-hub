@@ -215,6 +215,12 @@ databaseChangeLog:
       file: V2026_12_30__add_questions_to_fb_instant_form.sql
       relativeToChangelogFile: true
   - include:
+      file: V2026_12_31__add_niche_segment_lists.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2027_01_02__create_experiment_targeting_selection.sql
+      relativeToChangelogFile: true
+  - include:
       file: V2028_02_01__create_whatsapp_tables.sql
       relativeToChangelogFile: true
   - include:

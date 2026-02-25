@@ -1,11 +1,23 @@
+import { useEffect, useMemo, useState } from "react";
 import { Activity, Briefcase, Target } from "lucide-react";
 import { useTargetingElementsByNiche } from "../../api/targeting/useTargetingElementsByNiche";
-import type { TargetingElement, TargetingElementType } from "../../api/targeting/types";
+import type {
+  TargetingCandidateType,
+  TargetingElement,
+  TargetingElementType,
+} from "../../api/targeting/types";
 import { TargetingElementCard } from "../../components/TargetingElementCard";
+import { useNiche } from "../../api/niche/useNiche";
+import {
+  useExperimentTargetingSelections,
+  useRunSimpleAudienceFlow,
+  useSaveExperimentTargetingSelections,
+} from "../../api/experiment/useExperimentTargetingSelections";
 
 interface TargetingTabProps {
   nicheId?: number;
   hypothesisId?: string;
+  experimentId?: number;
   nicheName?: string | null;
   hypothesisTitle?: string | null;
 }
@@ -39,16 +51,39 @@ const TYPE_CONFIGS: Array<{
 export default function TargetingTab({
   nicheId,
   hypothesisId,
+  experimentId,
   nicheName,
   hypothesisTitle,
 }: TargetingTabProps) {
   const nicheIdAsString = nicheId != null ? String(nicheId) : undefined;
+  const { data } = useNiche(Number(nicheId));
+  const { data: savedSelections } = useExperimentTargetingSelections(experimentId);
+  const saveSelections = useSaveExperimentTargetingSelections(experimentId);
+  const runSimpleFlow = useRunSimpleAudienceFlow(experimentId);
   const {
-    data,
+    data: targetingElements,
     isLoading,
     isFetching,
     isError,
   } = useTargetingElementsByNiche(nicheIdAsString);
+
+  const [selectedTerms, setSelectedTerms] = useState<Set<string>>(new Set());
+
+  const nicheOptions = useMemo(
+    () => [
+      ...(data?.interestList ?? []).map((term) => ({ candidateType: "INTEREST" as TargetingCandidateType, term })),
+      ...(data?.roleList ?? []).map((term) => ({ candidateType: "WORK_POSITION" as TargetingCandidateType, term })),
+      ...(data?.behaviorList ?? []).map((term) => ({ candidateType: "BEHAVIOR" as TargetingCandidateType, term })),
+    ],
+    [data?.behaviorList, data?.interestList, data?.roleList],
+  );
+
+  useEffect(() => {
+    const initial = new Set(
+      (savedSelections ?? []).map((item) => `${item.candidateType}::${item.term}`),
+    );
+    setSelectedTerms(initial);
+  }, [savedSelections]);
 
   if (nicheIdAsString == null || !hypothesisId) {
     return (
@@ -60,38 +95,82 @@ export default function TargetingTab({
     );
   }
 
-  if (isLoading) {
-    return (
-      <div className="mt-3">
-        <p>Carregando elementos de segmentação...</p>
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="mt-3">
-        <p className="text-danger">Não foi possível carregar os elementos de segmentação.</p>
-      </div>
-    );
-  }
-
-  const list = Array.isArray(data) ? data : [];
+  const list = Array.isArray(targetingElements) ? targetingElements : [];
   const updating = isFetching && !isLoading;
+
+  const onToggle = (candidateType: TargetingCandidateType, term: string) => {
+    const key = `${candidateType}::${term}`;
+    setSelectedTerms((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const onSave = async () => {
+    const items = Array.from(selectedTerms).map((entry) => {
+      const [candidateType, term] = entry.split("::");
+      return { candidateType: candidateType as TargetingCandidateType, term };
+    });
+    await saveSelections.mutateAsync({ items });
+  };
+
+  const onRunSimpleFlow = async () => {
+    await onSave();
+    await runSimpleFlow.mutateAsync();
+    alert("Fluxo simples executado. A resolução dos IDs no Facebook foi enfileirada.");
+  };
 
   return (
     <div className="mt-3">
-      {updating && (
-        <p className="text-muted small">Atualizando elementos...</p>
-      )}
+      {updating && <p className="text-muted small">Atualizando elementos...</p>}
+
+      <section className="mb-4 card">
+        <div className="card-body">
+          <h6>Fluxo simples de público (novo)</h6>
+          <p className="text-body-secondary small mb-3">
+            Selecione interesses, cargos e comportamentos salvos no nicho para criar o público da campanha.
+          </p>
+          <div className="row g-2">
+            {nicheOptions.map((item) => {
+              const key = `${item.candidateType}::${item.term}`;
+              return (
+                <div className="col-12 col-md-6" key={key}>
+                  <label className="form-check border rounded p-2 w-100">
+                    <input
+                      className="form-check-input me-2"
+                      type="checkbox"
+                      checked={selectedTerms.has(key)}
+                      onChange={() => onToggle(item.candidateType, item.term)}
+                    />
+                    <span className="form-check-label">
+                      <strong>{item.term}</strong>
+                      <span className="text-body-secondary ms-2">({item.candidateType})</span>
+                    </span>
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+          <div className="d-flex gap-2 mt-3">
+            <button className="btn btn-outline-primary btn-sm" onClick={onSave} disabled={saveSelections.isPending}>
+              {saveSelections.isPending ? <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" /> : null}
+              <span className="ms-1">Salvar seleção</span>
+            </button>
+            <button className="btn btn-primary btn-sm" onClick={onRunSimpleFlow} disabled={runSimpleFlow.isPending || saveSelections.isPending}>
+              {runSimpleFlow.isPending ? <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" /> : null}
+              <span className="ms-1">Executar fluxo simples</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {isError ? <p className="text-danger">Não foi possível carregar os elementos de segmentação.</p> : null}
       {TYPE_CONFIGS.map(({ type, title, description, icon: Icon }) => {
         const ofType = list.filter((element) => element.type === type);
-        const relatedToHypothesis = ofType.filter(
-          (element) => element.hypothesisId === hypothesisId,
-        );
-        const relatedToNiche = ofType.filter(
-          (element) => element.hypothesisId !== hypothesisId,
-        );
+        const relatedToHypothesis = ofType.filter((element) => element.hypothesisId === hypothesisId);
+        const relatedToNiche = ofType.filter((element) => element.hypothesisId !== hypothesisId);
 
         return (
           <section key={type} className="mb-5">
@@ -101,9 +180,7 @@ export default function TargetingTab({
                 <h5 className="mb-0">{title}</h5>
                 <p className="text-body-secondary small mb-0">{description}</p>
               </div>
-              <span className="badge text-bg-secondary ms-auto">
-                {ofType.length}
-              </span>
+              <span className="badge text-bg-secondary ms-auto">{ofType.length}</span>
             </div>
             <p className="text-body-secondary small">
               Elementos aprovados para {nicheName ?? "o nicho"}. Priorize os associados à hipótese
@@ -136,12 +213,7 @@ interface TargetingListProps {
   badgeLabel: string;
 }
 
-function TargetingList({
-  title,
-  elements,
-  emptyMessage,
-  badgeLabel,
-}: TargetingListProps) {
+function TargetingList({ title, elements, emptyMessage, badgeLabel }: TargetingListProps) {
   const list = Array.isArray(elements) ? elements : [];
 
   return (

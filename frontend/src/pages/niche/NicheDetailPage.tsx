@@ -91,12 +91,15 @@ export default function NicheDetailPage() {
   } = useDifferentiatedTechnologies();
   const [interestItems, setInterestItems] = useState<string[]>([]);
   const [roleItems, setRoleItems] = useState<string[]>([]);
+  const [behaviorItems, setBehaviorItems] = useState<string[]>([]);
   const [interestInput, setInterestInput] = useState("");
   const [roleInput, setRoleInput] = useState("");
+  const [behaviorInput, setBehaviorInput] = useState("");
   const [editingInterestIndex, setEditingInterestIndex] = useState<number | null>(
     null,
   );
   const [editingRoleIndex, setEditingRoleIndex] = useState<number | null>(null);
+  const [editingBehaviorIndex, setEditingBehaviorIndex] = useState<number | null>(null);
   const [updatingDescriptionId, setUpdatingDescriptionId] = useState<number | null>(null);
   const [detailedDescriptionFeedback, setDetailedDescriptionFeedback] = useState<{
     type: "success" | "error";
@@ -167,7 +170,8 @@ export default function NicheDetailPage() {
   useEffect(() => {
     setInterestItems(parseList(data?.interestList ?? data?.interests));
     setRoleItems(parseList(data?.roleList ?? data?.demographicFilters));
-  }, [data?.demographicFilters, data?.interestList, data?.interests, data?.roleList]);
+    setBehaviorItems(parseList(data?.behaviorList));
+  }, [data?.behaviorList, data?.demographicFilters, data?.interestList, data?.interests, data?.roleList]);
 
   useEffect(() => {
     const defaultModel = data?.hypothesisModel ?? openAiModels?.[0]?.code ?? "";
@@ -471,6 +475,22 @@ export default function NicheDetailPage() {
     setRoleInput("");
     setEditingRoleIndex(null);
   };
+  const handleBehaviorSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const value = behaviorInput.trim();
+    if (!value) return;
+    setBehaviorItems((prev) => {
+      if (editingBehaviorIndex !== null) {
+        return prev.map((item, index) =>
+          index === editingBehaviorIndex ? value : item,
+        );
+      }
+      if (prev.includes(value)) return prev;
+      return [...prev, value];
+    });
+    setBehaviorInput("");
+    setEditingBehaviorIndex(null);
+  };
   const onEditInterest = (index: number) => {
     setInterestInput(interestItems[index]);
     setEditingInterestIndex(index);
@@ -478,6 +498,10 @@ export default function NicheDetailPage() {
   const onEditRole = (index: number) => {
     setRoleInput(roleItems[index]);
     setEditingRoleIndex(index);
+  };
+  const onEditBehavior = (index: number) => {
+    setBehaviorInput(behaviorItems[index]);
+    setEditingBehaviorIndex(index);
   };
   const onRemoveInterest = (index: number) => {
     setInterestItems((prev) => prev.filter((_, itemIndex) => itemIndex !== index));
@@ -493,11 +517,21 @@ export default function NicheDetailPage() {
       setRoleInput("");
     }
   };
+  const onRemoveBehavior = (index: number) => {
+    setBehaviorItems((prev) => prev.filter((_, itemIndex) => itemIndex !== index));
+    if (editingBehaviorIndex === index) {
+      setEditingBehaviorIndex(null);
+      setBehaviorInput("");
+    }
+  };
   const onSaveInterests = () => {
-    updateNiche.mutate({ ...data, interestList: interestItems, roleList: roleItems });
+    updateNiche.mutate({ ...data, interestList: interestItems, roleList: roleItems, behaviorList: behaviorItems });
   };
   const onSaveRoles = () => {
-    updateNiche.mutate({ ...data, interestList: interestItems, roleList: roleItems });
+    updateNiche.mutate({ ...data, interestList: interestItems, roleList: roleItems, behaviorList: behaviorItems });
+  };
+  const onSaveBehaviors = () => {
+    updateNiche.mutate({ ...data, interestList: interestItems, roleList: roleItems, behaviorList: behaviorItems });
   };
   const onRequestHypotheses = handleSubmitHypothesisRequest(
     async ({ quantity, model, differentiatedTechnologyId, detailedDescriptionId }) => {
@@ -963,7 +997,7 @@ export default function NicheDetailPage() {
               Segmentações sugeridas
             </h2>
             <p className="niche-section__subtitle">
-              Listas de interesses e cargos indicados para anunciar neste nicho.
+              Listas de interesses, cargos e comportamentos indicados para anunciar neste nicho.
             </p>
           </div>
         </div>
@@ -1155,6 +1189,99 @@ export default function NicheDetailPage() {
             </div>
           </article>
         </div>
+          <article className="card niche-section__card niche-list-card">
+            <div className="card-body">
+              <div className="niche-list-card__head">
+                <h3 className="niche-list-card__title">Comportamentos</h3>
+                <span className="badge text-bg-light text-dark">
+                  {behaviorItems.length} itens
+                </span>
+              </div>
+              <form className="niche-list-form" onSubmit={handleBehaviorSubmit}>
+                <div className="form-floating flex-grow-1">
+                  <input
+                    id="niche-behavior-input"
+                    type="text"
+                    className="form-control"
+                    placeholder="Novo comportamento"
+                    required
+                    value={behaviorInput}
+                    onChange={(event) => setBehaviorInput(event.target.value)}
+                    disabled={updateNiche.isPending}
+                  />
+                  <label htmlFor="niche-behavior-input">Comportamento *</label>
+                </div>
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-sm"
+                  disabled={!behaviorInput.trim() || updateNiche.isPending}
+                >
+                  {editingBehaviorIndex !== null ? (
+                    <Check size={16} />
+                  ) : (
+                    <Plus size={16} />
+                  )}
+                  <span>
+                    {editingBehaviorIndex !== null
+                      ? "Atualizar comportamento"
+                      : "Adicionar comportamento"}
+                  </span>
+                </button>
+              </form>
+              {behaviorItems.length === 0 ? (
+                <p className="niche-section__empty niche-list-card__empty">
+                  Nenhum comportamento cadastrado.
+                </p>
+              ) : (
+                <ul className="niche-list">
+                  {behaviorItems.map((item, index) => (
+                    <li key={`${item}-${index}`} className="niche-list__item">
+                      <span>{item}</span>
+                      <div className="niche-list__actions">
+                        <button
+                          type="button"
+                          className="btn btn-light btn-sm niche-list__action"
+                          onClick={() => onEditBehavior(index)}
+                          disabled={updateNiche.isPending}
+                          title="Editar comportamento"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-outline-danger btn-sm niche-list__action"
+                          onClick={() => onRemoveBehavior(index)}
+                          disabled={updateNiche.isPending}
+                          title="Remover comportamento"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="d-flex justify-content-end">
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={onSaveBehaviors}
+                  disabled={updateNiche.isPending}
+                >
+                  {updateNiche.isPending ? (
+                    <span
+                      className="spinner-border spinner-border-sm"
+                      role="status"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Check size={16} />
+                  )}
+                  <span>Salvar comportamentos</span>
+                </button>
+              </div>
+            </div>
+          </article>
       </section>
       <section
         className="niche-section"

@@ -1092,6 +1092,7 @@ export default function ExperimentDetailPage() {
           <TargetingTab
             nicheId={data.nicheId}
             hypothesisId={data.hypothesisId}
+            experimentId={Number(expId)}
             nicheName={niche?.name}
             hypothesisTitle={hyp?.title}
           />

@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -47,6 +48,18 @@ public class FlowSubmissionImagePackageEntity {
 
     @Column(name = "prompt", nullable = false, columnDefinition = "LONGTEXT")
     private String prompt;
+
+    @Column(name = "failure_reason", columnDefinition = "TEXT")
+    private String failureReason;
+
+    @Column(name = "image_unit_price_usd")
+    private BigDecimal imageUnitPriceUsd;
+
+    @Column(name = "image_total_price_usd")
+    private BigDecimal imageTotalPriceUsd;
+
+    @Column(name = "image_currency", length = 10)
+    private String imageCurrency;
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private Instant createdAt;
@@ -116,6 +129,38 @@ public class FlowSubmissionImagePackageEntity {
 
     public void setPrompt(String prompt) {
         this.prompt = prompt;
+    }
+
+    public String getFailureReason() {
+        return failureReason;
+    }
+
+    public void setFailureReason(String failureReason) {
+        this.failureReason = failureReason;
+    }
+
+    public BigDecimal getImageUnitPriceUsd() {
+        return imageUnitPriceUsd;
+    }
+
+    public void setImageUnitPriceUsd(BigDecimal imageUnitPriceUsd) {
+        this.imageUnitPriceUsd = imageUnitPriceUsd;
+    }
+
+    public BigDecimal getImageTotalPriceUsd() {
+        return imageTotalPriceUsd;
+    }
+
+    public void setImageTotalPriceUsd(BigDecimal imageTotalPriceUsd) {
+        this.imageTotalPriceUsd = imageTotalPriceUsd;
+    }
+
+    public String getImageCurrency() {
+        return imageCurrency;
+    }
+
+    public void setImageCurrency(String imageCurrency) {
+        this.imageCurrency = imageCurrency;
     }
 
     public Instant getCreatedAt() {

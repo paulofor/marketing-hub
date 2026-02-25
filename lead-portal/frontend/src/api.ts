@@ -4,7 +4,9 @@ import {
   FlowSubmissionResponse,
   LeadDetails,
   LeadPortalFlow,
-  LeadStatus
+  LeadStatus,
+  ImageMaterialDashboard,
+  ImageMaterialCase
 } from "./types";
 
 function stripTrailingSlash(url: string): string {
@@ -79,6 +81,30 @@ export async function fetchLeadResult(
     result?: string | null;
     completedAt?: string | null;
   };
+}
+
+export async function fetchImageMaterialDashboard(
+  flowSlug: string,
+  limit = 8
+): Promise<ImageMaterialDashboard> {
+  const params = new URLSearchParams({ flowSlug, limit: String(limit) });
+  const response = await fetch(buildUrl(`/image-material/dashboard?${params.toString()}`));
+  if (!response.ok) {
+    const message = await extractError(response);
+    throw new Error(message);
+  }
+  return (await response.json()) as ImageMaterialDashboard;
+}
+
+export async function fetchImageMaterialCase(submissionId: string): Promise<ImageMaterialCase> {
+  const response = await fetch(
+    buildUrl(`/image-material/submissions/${encodeURIComponent(submissionId)}`)
+  );
+  if (!response.ok) {
+    const message = await extractError(response);
+    throw new Error(message);
+  }
+  return (await response.json()) as ImageMaterialCase;
 }
 
 export async function fetchLeadPortalFlow(slug: string): Promise<LeadPortalFlow> {

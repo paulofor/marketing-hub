@@ -6,6 +6,7 @@ import com.marketinghub.leadportal.model.Flow;
 import com.marketinghub.leadportal.model.FlowQuestion;
 import com.marketinghub.leadportal.model.FlowQuestionType;
 import com.marketinghub.leadportal.model.FlowSubmission;
+import com.marketinghub.leadportal.model.FlowImagePrompt;
 import com.marketinghub.leadportal.repository.FlowSubmissionRepository;
 import com.marketinghub.leadportal.repository.FlowSubmissionImagePackageRepository;
 import com.marketinghub.leadportal.storage.FileStorageService;
@@ -20,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -32,18 +34,21 @@ public class FlowSubmissionService {
     private final FlowSubmissionImagePackageRepository imagePackageRepository;
     private final FileStorageService fileStorageService;
     private final FlowSubmissionImagePackageStatusHistoryService statusHistoryService;
+    private final FlowImagePromptService imagePromptService;
 
     public FlowSubmissionService(
             FlowService flowService,
             FlowSubmissionRepository repository,
             FlowSubmissionImagePackageRepository imagePackageRepository,
             FileStorageService fileStorageService,
-            FlowSubmissionImagePackageStatusHistoryService statusHistoryService) {
+            FlowSubmissionImagePackageStatusHistoryService statusHistoryService,
+            FlowImagePromptService imagePromptService) {
         this.flowService = flowService;
         this.repository = repository;
         this.imagePackageRepository = imagePackageRepository;
         this.fileStorageService = fileStorageService;
         this.statusHistoryService = statusHistoryService;
+        this.imagePromptService = imagePromptService;
     }
 
     public FlowSubmission create(String slug, FlowSubmissionRequest request, MultipartFile imageFile) {
@@ -145,15 +150,34 @@ public class FlowSubmissionService {
     }
 
     private void registerImagePackage(Flow flow, FlowSubmission submission, boolean hasImage) {
-        if (!hasImage) {
+        Optional<FlowImagePrompt> promptSpec = imagePromptService.buildPrompt(flow, submission);
+        if (promptSpec.isEmpty() && !hasImage) {
+            log.info("Skipping image package for submission {} in flow {} because there is no prompt/template.",
+                    submission.id(), flow.slug());
             return;
         }
+
+        FlowImagePrompt spec = promptSpec.orElseGet(() -> new FlowImagePrompt(
+                Optional.ofNullable(flow.prompt()).orElse(""),
+                flow.model(),
+                null,
+                null));
 
         FlowSubmissionImagePackageEntity imagePackage = new FlowSubmissionImagePackageEntity();
         imagePackage.setSubmissionId(submission.id());
         imagePackage.setStatus(FlowSubmissionImagePackageEntity.Status.RECENT.name());
-        imagePackage.setModel(flow.model());
-        imagePackage.setPrompt(Optional.ofNullable(flow.prompt()).orElse(""));
+        if (StringUtils.hasText(spec.model())) {
+            imagePackage.setModel(spec.model());
+        } else {
+            imagePackage.setModel(flow.model());
+        }
+        imagePackage.setPrompt(spec.prompt());
+        if (spec.plannedOutputs() != null) {
+            imagePackage.setPlannedOutputs(spec.plannedOutputs());
+        }
+        if (spec.freeImages() != null) {
+            imagePackage.setFreeImages(spec.freeImages());
+        }
 
         FlowSubmissionImagePackageEntity savedPackage = imagePackageRepository.save(imagePackage);
         statusHistoryService.recordStatusChange(savedPackage.getId(), FlowSubmissionImagePackageEntity.Status.RECENT, null);

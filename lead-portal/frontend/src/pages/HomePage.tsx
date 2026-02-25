@@ -15,6 +15,9 @@ export default function HomePage() {
         <p>
           Envie uma imagem de referência e acompanhe o processamento automático do seu lead.
         </p>
+        <nav className="internal-links">
+          <a href="/monitoramento/imagens">Painel interno de imagens</a>
+        </nav>
       </header>
       <main>
         <LeadForm onLeadCreated={setLead} />

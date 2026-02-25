@@ -30,10 +30,36 @@ import {
   type ExperimentCampaignResetSummary,
 } from "../../api/experiment/useExperimentCampaignReset";
 import type { JourneyAssignment, JourneyStep } from "../../api/journey/types";
+import type { TargetingElementType } from "../../api/targeting/types";
 import DeliverablesTab from "./DeliverablesTab";
 import LeadPortalFlowTab from "./LeadPortalFlowTab";
 import TargetingTab from "./TargetingTab";
 import { useExperimentAdSetWorkflow } from "../../api/experiment/useExperimentAdSetWorkflow";
+
+type ChecklistItem = {
+  id: string;
+  title: string;
+  isMet: boolean;
+  hint?: string;
+  isLoading?: boolean;
+  action?: () => void;
+  actionLabel?: string;
+  actionDisabled?: boolean;
+  actionLoading?: boolean;
+};
+
+const TARGETING_LABEL: Record<TargetingElementType, string> = {
+  INTEREST: "interesses",
+  JOB_TITLE: "cargos",
+  BEHAVIOR: "comportamentos",
+};
+
+const describeTargetingTypes = (types: TargetingElementType[]): string => {
+  if (!types.length) {
+    return "";
+  }
+  return types.map((type) => TARGETING_LABEL[type] ?? type.toLowerCase()).join(", ");
+};
 
 export default function ExperimentDetailPage() {
   const { id } = useParams();
@@ -223,25 +249,132 @@ export default function ExperimentDetailPage() {
   const experimentInstantForm = data.facebookInstantForm;
   const instagramAccount = data.instagramAccount;
   const hasInstagramAccount = Boolean(instagramAccount);
-  const readinessChecks = [
+  const facebookWorker = facebookConfig?.worker;
+  const hasFacebookWorkerAccount = facebookWorker?.hasAccount ?? false;
+  const isFacebookWorkerReady = facebookWorker?.ready ?? false;
+  const facebookAccountLabel =
+    facebookWorker?.accountName ?? facebookWorker?.accountId ?? null;
+  const readinessMissingTargeting = readinessSummary?.missingTargetingTypes ?? [];
+  const hasLeadPortalFlow =
+    readinessSummary?.hasLeadPortalFlow ??
+    Boolean(data.leadPortalFlowId ?? data.leadPortalFlowName);
+  const hasCreativesReady = readinessSummary?.hasCreatives ?? data.creativeApproved;
+  const readinessCreativeCount = readinessSummary?.creativeCount ?? 0;
+  const hasDailyBudget = data.dailyBudget != null && data.dailyBudget > 0;
+  const leadPortalFlowLabel =
+    data.leadPortalFlowName ??
+    data.leadPortalFlowSlug ??
+    (data.leadPortalFlowId ? `#${data.leadPortalFlowId}` : null);
+
+  const blockingChecklist: ChecklistItem[] = [
     {
-      id: "facebook-page",
-      title: "Página do Facebook configurada",
-      isMet: hasConfiguredFacebookPage,
-      hint: hasConfiguredFacebookPage
-        ? "Já existe ao menos uma página configurada para publicar campanhas."
-        : isLoadingFacebookConfig
-          ? "Verificando páginas configuradas..."
-          : "Cadastre e relacione uma página do Facebook na tela Contas do Facebook.",
-      action:
-        !isLoadingFacebookConfig && !hasConfiguredFacebookPage
-          ? () => navigate("/accounts/facebook")
-          : undefined,
-      actionLabel:
-        !isLoadingFacebookConfig && !hasConfiguredFacebookPage
-          ? "Abrir Contas do Facebook"
-          : undefined,
+      id: "creatives",
+      title: "Criativos aprovados",
+      isMet: hasCreativesReady,
+      isLoading: isLoadingReadiness,
+      hint: isLoadingReadiness
+        ? "Verificando criativos aprovados..."
+        : hasCreativesReady
+          ? readinessCreativeCount > 0
+            ? `${readinessCreativeCount} criativo${readinessCreativeCount === 1 ? "" : "s"} pronto${readinessCreativeCount === 1 ? "" : "s"} para o Meta.`
+            : "Os criativos já estão aprovados e prontos para o Meta."
+          : "Revise e aprove pelo menos um criativo na aba Criativos.",
+      action: hasCreativesReady ? undefined : () => setTab("creatives"),
+      actionLabel: hasCreativesReady ? undefined : "Ir para Criativos",
     },
+    {
+      id: "lead-portal-flow",
+      title: "Fluxo do Portal do Lead",
+      isMet: hasLeadPortalFlow,
+      isLoading: isLoadingReadiness,
+      hint: hasLeadPortalFlow
+        ? leadPortalFlowLabel
+          ? `Fluxo ${leadPortalFlowLabel} vinculado ao experimento.`
+          : "Já existe um fluxo do Portal do Lead vinculado."
+        : "Solicite ou vincule um fluxo aprovado na aba Portal do Lead.",
+      action: hasLeadPortalFlow ? undefined : () => setTab("lead-portal"),
+      actionLabel: hasLeadPortalFlow ? undefined : "Ir para Portal do Lead",
+    },
+    {
+      id: "targeting",
+      title: "Público completo",
+      isMet: hasCompleteTargeting,
+      isLoading: isLoadingReadiness,
+      hint: isLoadingReadiness
+        ? "Verificando elementos aprovados..."
+        : hasCompleteTargeting
+          ? "Interesses, cargos e comportamentos aprovados."
+          : readinessMissingTargeting.length
+            ? `Faltam aprovar: ${describeTargetingTypes(readinessMissingTargeting)}.`
+            : "Aprove ao menos um interesse, um cargo e um comportamento na aba Segmentação.",
+      action: hasCompleteTargeting ? undefined : () => setTab("targeting"),
+      actionLabel: hasCompleteTargeting ? undefined : "Ir para Segmentação",
+    },
+  ];
+
+  const configurationChecklist: ChecklistItem[] = [
+    {
+      id: "facebook-account",
+      title: "Conta do Facebook Ads conectada",
+      isMet: isFacebookWorkerReady,
+      isLoading: isLoadingFacebookConfig,
+      hint: isLoadingFacebookConfig
+        ? "Verificando credenciais conectadas..."
+        : isFacebookWorkerReady
+          ? facebookAccountLabel
+            ? `Conta ${facebookAccountLabel} pronta para publicar.`
+            : "Conta conectada e pronta para publicar."
+          : hasFacebookWorkerAccount
+            ? "Existe uma conta conectada, mas o worker precisa ser reautorizado. Abra Contas do Facebook."
+            : "Nenhuma conta conectada. Acesse Contas do Facebook e conecte a conta do Meta Ads.",
+      action: isFacebookWorkerReady ? undefined : () => navigate("/accounts/facebook"),
+      actionLabel: isFacebookWorkerReady ? undefined : "Abrir Contas do Facebook",
+    },
+    {
+      id: "experiment-page",
+      title: "Página do Facebook definida",
+      isMet: hasExperimentPage,
+      hint: hasExperimentPage
+        ? `Este experimento usa a página ${experimentPage?.name ?? experimentPage?.pageId}.`
+        : hasConfiguredFacebookPage
+          ? "Escolha a página do experimento na tela de edição."
+          : "Nenhuma página conectada ao hub. Configure nas Contas do Facebook antes de editar o experimento.",
+      action: hasExperimentPage
+        ? undefined
+        : hasConfiguredFacebookPage
+          ? () => navigate(`/experiments/${expId}/edit`)
+          : () => navigate("/accounts/facebook"),
+      actionLabel: hasExperimentPage
+        ? undefined
+        : hasConfiguredFacebookPage
+          ? "Editar experimento"
+          : "Configurar páginas",
+    },
+    {
+      id: "instagram-account",
+      title: "Conta do Instagram vinculada",
+      isMet: hasInstagramAccount,
+      hint: hasInstagramAccount
+        ? `Este experimento usa a conta ${instagramAccount?.handle}.`
+        : "Associe uma conta do Instagram ao experimento para liberar as campanhas.",
+      action: hasInstagramAccount
+        ? undefined
+        : () => navigate(`/experiments/${expId}/edit`),
+      actionLabel: hasInstagramAccount ? undefined : "Editar experimento",
+    },
+    {
+      id: "daily-budget",
+      title: "Valor diário definido",
+      isMet: hasDailyBudget,
+      hint: hasDailyBudget
+        ? `Investimento diário de ${formatCurrency(data.dailyBudget)}.`
+        : "Defina o orçamento diário para orientar o worker de mídia.",
+      action: hasDailyBudget ? undefined : () => navigate(`/experiments/${expId}/edit`),
+      actionLabel: hasDailyBudget ? undefined : "Editar experimento",
+    },
+  ];
+
+  const operationalChecklist: ChecklistItem[] = [
     ...(hasInstantFormSteps
       ? [
           {
@@ -261,42 +394,6 @@ export default function ExperimentDetailPage() {
         ]
       : []),
     {
-      id: "instagram-account",
-      title: "Conta de Instagram vinculada",
-      isMet: hasInstagramAccount,
-      hint: hasInstagramAccount
-        ? `Este experimento usa a conta ${instagramAccount?.handle}.`
-        : "Associe uma conta do Instagram ao experimento para liberar as campanhas.",
-      action: hasInstagramAccount
-        ? undefined
-        : () => navigate(`/experiments/${expId}/edit`),
-      actionLabel: hasInstagramAccount ? undefined : "Editar experimento",
-    },
-    {
-      id: "experiment-page",
-      title: "Página definida no experimento",
-      isMet: hasExperimentPage,
-      hint: hasExperimentPage
-        ? `Este experimento usa a página ${experimentPage?.name ?? experimentPage?.pageId}.`
-        : "Defina a página na edição do experimento para garantir que os anúncios publiquem no local correto. A edição deve ser feita no experimento.",
-      action: hasExperimentPage
-        ? undefined
-        : () => navigate(`/experiments/${expId}/edit`),
-      actionLabel: hasExperimentPage ? undefined : "Editar experimento",
-    },
-    {
-      id: "approved-targeting",
-      title: "Segmentação Meta aprovada",
-      isMet: hasCompleteTargeting,
-      hint: isLoadingReadiness
-        ? "Verificando elementos aprovados..."
-        : hasCompleteTargeting
-          ? "Já existem interesses, cargos e comportamentos aprovados para este nicho/hipótese."
-          : "Aprove ao menos um interesse, cargo e comportamento na aba Segmentação para liberar a campanha.",
-      action: hasCompleteTargeting ? undefined : () => setTab("targeting"),
-      actionLabel: hasCompleteTargeting ? undefined : "Ir para Segmentação",
-    },
-    {
       id: "platform",
       title: "Plataforma configurada para Facebook Ads",
       isMet: data.platform === "FACEBOOK",
@@ -304,7 +401,6 @@ export default function ExperimentDetailPage() {
         data.platform === "FACEBOOK"
           ? "Este experimento já usa a plataforma do Facebook."
           : `Plataforma atual: ${data.platform}. Ajuste para Facebook Ads para liberar a campanha.`,
-      actionLabel: undefined,
     },
     {
       id: "status",
@@ -323,18 +419,31 @@ export default function ExperimentDetailPage() {
       actionDisabled: isUpdatingStatus,
       actionLoading: isUpdatingStatus,
     },
-    {
-      id: "creatives",
-      title: "Criativos aprovados",
-      isMet: data.creativeApproved,
-      hint: data.creativeApproved
-        ? "Os criativos já estão aprovados."
-        : "Revise e aprove pelo menos um criativo na aba Criativos.",
-      action: data.creativeApproved ? undefined : () => setTab("creatives"),
-      actionLabel: "Ir para Criativos",
-    },
   ];
-  const isReadyForFacebook = readinessChecks.every((c) => c.isMet);
+  const checklistGroups = [
+    {
+      id: "blocking",
+      title: "Bloqueios de publicação",
+      description:
+        "Itens que impedem a publicação automática. Mesma lógica do diagnóstico cinza.",
+      items: blockingChecklist,
+    },
+    {
+      id: "configuration",
+      title: "Configurações do experimento",
+      description:
+        "Verificações previstas no documento de publicação (conta, página, Instagram e orçamento).",
+      items: configurationChecklist,
+    },
+    {
+      id: "operational",
+      title: "Fluxo operacional do Meta",
+      description:
+        "Ajustes que ajudam o worker a executar o plano end-to-end no Meta Ads.",
+      items: operationalChecklist,
+    },
+  ].filter((group) => group.items.length > 0);
+  const isReadyForFacebook = blockingChecklist.every((c) => c.isMet);
   const diagnosticsVariant: Record<string, string> = {
     ERROR: "danger",
     WARNING: "warning",
@@ -606,33 +715,6 @@ export default function ExperimentDetailPage() {
           ) : null}
         </div>
       ) : null}
-      {isLoadingReadiness ? (
-        <div
-          className="alert alert-light d-flex align-items-center gap-2 mt-3"
-          role="status"
-        >
-          <span
-            className="spinner-border spinner-border-sm"
-            role="status"
-            aria-hidden="true"
-          />
-          <span>Carregando pendências básicas...</span>
-        </div>
-      ) : hasReadinessIssues ? (
-        <div className="alert alert-warning mt-3" role="alert">
-          <h6 className="alert-heading mb-2">Pendências antes da publicação</h6>
-          <ul className="mb-0 ps-3">
-            {readinessIssues.map((issue, index) => (
-              <li key={`${issue.type}-${index}`} className="mb-2">
-                <strong>{issue.title}</strong>: {issue.description}
-                {issue.recommendation ? (
-                  <div className="small text-body-secondary">{issue.recommendation}</div>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
       <div className="card border-0 shadow-sm rounded-3 mt-3">
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-start">
@@ -646,48 +728,95 @@ export default function ExperimentDetailPage() {
             </span>
           </div>
           <p className="card-text mt-2">
-            {isReadyForFacebook
-              ? "Este experimento já atende aos requisitos mínimos para virar uma campanha no Facebook Ads quando o worker executar."
-              : "Para liberar este experimento para campanha no Facebook Ads, resolva os itens abaixo."}
+            Checklist consolidado das regras de publicação. Ele reflete o documento
+            interno e o diagnóstico automático do worker.
           </p>
-          <ul className="list-unstyled mb-0 d-flex flex-column gap-2">
-            {readinessChecks.map((check) => (
-              <li
-                key={check.id}
-                className="d-flex align-items-start gap-3 p-3 bg-body-tertiary rounded-3"
-              >
-                <span
-                  className={`badge flex-shrink-0 ${
-                    check.isMet ? "text-bg-success" : "text-bg-warning"
-                  }`}
-                >
-                  {check.isMet ? "Pronto" : "Pendente"}
-                </span>
-                <div className="flex-grow-1">
-                  <div className="fw-semibold text-body">{check.title}</div>
-                  {check.hint ? (
-                    <div className="text-muted small mt-1">{check.hint}</div>
-                  ) : null}
-                  {!check.isMet && check.action ? (
-                    <button
-                      type="button"
-                      className="btn btn-link btn-sm p-0 align-baseline mt-2"
-                      onClick={check.action}
-                      disabled={check.actionDisabled}
+          {isLoadingReadiness ? (
+            <div
+              className="alert alert-light d-flex align-items-center gap-2 mt-3"
+              role="status"
+            >
+              <span
+                className="spinner-border spinner-border-sm"
+                role="status"
+                aria-hidden="true"
+              />
+              <span>Carregando pendências básicas...</span>
+            </div>
+          ) : hasReadinessIssues ? (
+            <div className="alert alert-warning mt-3" role="alert">
+              <h6 className="alert-heading mb-2">Pendências antes da publicação</h6>
+              <ul className="mb-0 ps-3">
+                {readinessIssues.map((issue, index) => (
+                  <li key={`${issue.type}-${index}`} className="mb-2">
+                    <strong>{issue.title}</strong>: {issue.description}
+                    {issue.recommendation ? (
+                      <div className="small text-body-secondary">{issue.recommendation}</div>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <div className="alert alert-secondary mt-3" role="status">
+              Nenhuma inconsistência detectada pelo worker. Este experimento pode
+              ser publicado quando você liberar o status e demais automações.
+            </div>
+          )}
+          {checklistGroups.map((group, index) => (
+            <div key={group.id} className={index === 0 ? "mt-3" : "mt-4"}>
+              <h6 className="text-uppercase small text-muted mb-1">{group.title}</h6>
+              {group.description ? (
+                <p className="text-muted small mb-2">{group.description}</p>
+              ) : null}
+              <ul className="list-unstyled mb-0 d-flex flex-column gap-2">
+                {group.items.map((check) => (
+                  <li
+                    key={check.id}
+                    className="d-flex align-items-start gap-3 p-3 bg-body-tertiary rounded-3"
+                  >
+                    <span
+                      className={`badge flex-shrink-0 ${
+                        check.isLoading
+                          ? "text-bg-secondary"
+                          : check.isMet
+                            ? "text-bg-success"
+                            : "text-bg-warning"
+                      }`}
                     >
-                      {check.actionLoading ? (
-                        <span
-                          className="spinner-border spinner-border-sm me-2"
-                          role="status"
-                        />
+                      {check.isLoading
+                        ? "Verificando"
+                        : check.isMet
+                          ? "Pronto"
+                          : "Pendente"}
+                    </span>
+                    <div className="flex-grow-1">
+                      <div className="fw-semibold text-body">{check.title}</div>
+                      {check.hint ? (
+                        <div className="text-muted small mt-1">{check.hint}</div>
                       ) : null}
-                      {check.actionLabel}
-                    </button>
-                  ) : null}
-                </div>
-              </li>
-            ))}
-          </ul>
+                      {!check.isMet && check.action && check.actionLabel ? (
+                        <button
+                          type="button"
+                          className="btn btn-link btn-sm p-0 align-baseline mt-2"
+                          onClick={check.action}
+                          disabled={check.actionDisabled}
+                        >
+                          {check.actionLoading ? (
+                            <span
+                              className="spinner-border spinner-border-sm me-2"
+                              role="status"
+                            />
+                          ) : null}
+                          {check.actionLabel}
+                        </button>
+                      ) : null}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
           <div className="mt-4">
             <h6 className="text-uppercase small text-muted">Execução registrada</h6>
             {isLoadingFacebookCampaigns ? (
@@ -756,6 +885,7 @@ export default function ExperimentDetailPage() {
             )}
           </div>
         </div>
+      </div>
       <div className="card border-0 shadow-sm rounded-3 mt-3">
         <div className="card-body">
           <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
@@ -805,7 +935,6 @@ export default function ExperimentDetailPage() {
         </div>
       </div>
 
-      </div>
       {data.journeyTemplateId ? (
         <div className="card border-0 shadow-sm rounded-3 mt-3">
           <div className="card-body">

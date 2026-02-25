@@ -20,6 +20,9 @@ erDiagram
     MARKET_NICHE {
       BIGINT id PK
       VARCHAR name
+      LONGTEXT interest_list
+      LONGTEXT role_list
+      LONGTEXT behavior_list
     }
 
     HYPOTHESIS {
@@ -52,6 +55,13 @@ erDiagram
       LONGTEXT prompt
       VARCHAR model
       BOOLEAN approved
+    }
+
+    EXPERIMENT_TARGETING_SELECTION {
+      BIGINT id PK
+      BIGINT experiment_id FK
+      VARCHAR candidate_type
+      VARCHAR term
     }
 
     AD_SET {
@@ -196,6 +206,7 @@ erDiagram
 
     EXPERIMENT ||--o{ CREATIVE : gera
     EXPERIMENT ||--o{ CREATIVE_VARIANT : detalha
+    EXPERIMENT ||--o{ EXPERIMENT_TARGETING_SELECTION : seleciona
     EXPERIMENT ||--o{ AD_SET : segmenta
     EXPERIMENT ||--|| EXPERIMENT_ADSET_WORKFLOW : orquestra
     EXPERIMENT_ADSET_WORKFLOW ||--o{ EXPERIMENT_ADSET_SPEC : gera
@@ -244,3 +255,10 @@ erDiagram
   preenchidos nos objetos aplicáveis (ex.: público, criativo, ad set, fluxo).
 - O experimento funciona como eixo de rastreabilidade entre planejamento,
   geração por IA, publicação de mídia e métricas.
+
+
+## Atualização do fluxo simples de público
+
+- `market_niche` agora mantém listas curadas (`interest_list`, `role_list`, `behavior_list`).
+- `experiment_targeting_selection` registra as escolhas feitas na aba de segmentação do experimento.
+- O disparo do fluxo simples cria uma `targeting_request` interna para resolver os códigos da Meta Ads.

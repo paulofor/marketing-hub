@@ -23,6 +23,9 @@ public class CreateMarketNicheRequest {
     private String baseSegmentation;
     private String interests;
     private String demographicFilters;
+    private java.util.List<String> interestList;
+    private java.util.List<String> roleList;
+    private java.util.List<String> behaviorList;
     private String extraTips;
     private Integer hypothesesToGenerate;
     private Integer interestsToGenerate;

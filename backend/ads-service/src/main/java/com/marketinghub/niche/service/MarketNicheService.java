@@ -60,6 +60,9 @@ public class MarketNicheService {
                 .baseSegmentation(request.getBaseSegmentation())
                 .interests(request.getInterests())
                 .demographicFilters(request.getDemographicFilters())
+                .interestList(normalizeStringList(request.getInterestList()))
+                .roleList(normalizeStringList(request.getRoleList()))
+                .behaviorList(normalizeStringList(request.getBehaviorList()))
                 .extraTips(request.getExtraTips())
                 .hypothesesToGenerate(request.getHypothesesToGenerate())
                 .interestsToGenerate(request.getInterestsToGenerate())
@@ -98,6 +101,9 @@ public class MarketNicheService {
         niche.setBaseSegmentation(request.getBaseSegmentation());
         niche.setInterests(request.getInterests());
         niche.setDemographicFilters(request.getDemographicFilters());
+        niche.setInterestList(normalizeStringList(request.getInterestList()));
+        niche.setRoleList(normalizeStringList(request.getRoleList()));
+        niche.setBehaviorList(normalizeStringList(request.getBehaviorList()));
         niche.setExtraTips(request.getExtraTips());
         niche.setHypothesesToGenerate(request.getHypothesesToGenerate());
         niche.setInterestsToGenerate(request.getInterestsToGenerate());
@@ -117,6 +123,17 @@ public class MarketNicheService {
         }
         niche.setChatDialog(chat);
         return repository.save(niche);
+    }
+
+
+    private java.util.List<String> normalizeStringList(java.util.List<String> values) {
+        if (values == null) {
+            return java.util.List.of();
+        }
+        return values.stream()
+                .filter(item -> item != null && !item.isBlank())
+                .map(String::trim)
+                .toList();
     }
 
     private String normalizeModel(String model) {

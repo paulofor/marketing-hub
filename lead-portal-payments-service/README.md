@@ -105,6 +105,25 @@ CERTBOT_DOMAIN=pagamentopalf.online docker compose --profile certbot run --rm ce
 O caminho `./docker/proxy/html` é o webroot para o desafio ACME. Os certificados gerados no host são montados como `read-only` pelo Nginx.
 - As URLs padrão do Mercado Pago no `docker-compose.deploy.yml` já apontam para HTTPS (`https://pagamentopalf.online/api/v1/mercadopago/webhook`), então configure o domínio público antes de ativar o fluxo de pagamentos.
 
+#### Checklist de emissão/renovação (proxy + certbot-pagamentos)
+
+Antes de executar a emissão, valide este fluxo:
+
+1. **DNS A/AAAA**
+   - `pagamentopalf.online`, `www.pagamentopalf.online`, `vitrineproduto.online` e `www.vitrineproduto.online` devem apontar para o mesmo host que executa o container `proxy`.
+   - Se o token ACME for criado mas o Let’s Encrypt responder `404` para `www.vitrineproduto.online`, a causa mais comum é DNS divergente (subdomínio apontando para outro IP).
+2. **Volume compartilhado de webroot (obrigatório)**
+   - `proxy`: `./docker/proxy/html:/usr/share/nginx/html`
+   - `certbot-pagamentos`: `./docker/proxy/html:/var/www/certbot`
+   - Esse mapeamento precisa ser exatamente o mesmo no host para que o arquivo criado pelo certbot fique visível para o Nginx.
+3. **Comando do certbot com webroot correto**
+   - Mantenha `--webroot --webroot-path=/var/www/certbot` no serviço `certbot-pagamentos`.
+   - Durante a execução, confirme se o token aparece em `./docker/proxy/html/.well-known/acme-challenge/`.
+4. **Permissões de escrita no webroot**
+   - Garanta permissão de escrita no diretório `docker/proxy/html` para o processo do container `certbot-pagamentos`; sem isso, o token não será criado.
+5. **Reload/recreate do Nginx após emissão**
+   - Após gerar ou renovar certificados, recarregue o `proxy` para consumir os arquivos novos em `/etc/letsencrypt` (por exemplo: `docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d proxy`).
+
 ## Build da imagem Docker
 
 ```bash

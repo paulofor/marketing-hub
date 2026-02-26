@@ -123,3 +123,12 @@ services:
       - "8093:8080"
     volumes:
       - /etc/openai/chave:/run/secrets/openai_api_key:ro
+
+  institutional-site:
+    build:
+      context: ./institutional-site
+      dockerfile: Dockerfile
+    image: marketinghub/institutional-site:latest
+    restart: unless-stopped
+    ports:
+      - "${INSTITUTIONAL_SITE_PORT:-8091}:80"

@@ -88,6 +88,22 @@ O serviço será exposto em `http://localhost:8085` (configurável) e disponibil
 Swagger UI em `/swagger-ui.html`. Ajuste as variáveis de ambiente relacionadas a
 SMTP, Marketing Hub e Cloudflare no `.env` antes de subir o container.
 
+## Site institucional (Marketing Hub)
+
+O módulo `institutional-site` publica o site estático utilizado em verificações como
+o onboarding do Amazon SES e serve como vitrine corporativa. Ele roda no mesmo
+servidor do serviço de pagamentos (IP 191.252.102.54) e expõe uma página principal,
+política de privacidade e endpoint de saúde.
+
+```bash
+docker compose build institutional-site
+INSTITUTIONAL_SITE_PORT=8091 docker compose up -d institutional-site
+curl -I http://localhost:8091/healthz
+```
+
+Aponte o DNS do domínio corporativo para o IP público e, caso utilize um proxy
+reverso, encaminhe o tráfego para a porta configurada (padrão 8091).
+
 To run the Media Hub locally:
 
 ```bash

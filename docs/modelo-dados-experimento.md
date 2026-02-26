@@ -183,6 +183,7 @@ erDiagram
     LEAD_PORTAL_FLOW {
       BIGINT id PK
       BIGINT experiment_id FK
+      BIGINT market_niche_id FK
       VARCHAR name
       VARCHAR slug
       VARCHAR model
@@ -216,6 +217,7 @@ erDiagram
     HYPOTHESIS ||--o{ EXPERIMENT : orienta
 
     MARKET_NICHE ||--o{ TARGET_AUDIENCE : possui
+    MARKET_NICHE ||--o{ LEAD_PORTAL_FLOW : disponibiliza
     HYPOTHESIS ||--o{ TARGET_AUDIENCE : refina
 
     EXPERIMENT ||--o{ CREATIVE : gera

@@ -80,18 +80,21 @@ class ExperimentControllerTest {
     Long nicheId;
 
     private Long createLeadPortalFlow() {
+        MarketNiche niche = nicheRepo.findById(nicheId).orElseThrow();
         String slug = "flow-" + UUID.randomUUID();
         return leadPortalFlowRepository.save(
                 com.marketinghub.leadportal.LeadPortalFlow.builder()
                         .name("Fluxo " + slug)
                         .slug(slug)
+                        .marketNiche(niche)
                         .build()).getId();
     }
 
     @BeforeEach
     void cleanDb() {
-        creativeRepo.deleteAll();
         repository.deleteAll();
+        leadPortalFlowRepository.deleteAll();
+        creativeRepo.deleteAll();
         journeyTemplateRepository.deleteAll();
         targetingElementRepository.deleteAll();
         campaignRepository.deleteAll();

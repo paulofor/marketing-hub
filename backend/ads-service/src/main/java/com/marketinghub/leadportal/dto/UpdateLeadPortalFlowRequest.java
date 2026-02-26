@@ -12,6 +12,7 @@ public class UpdateLeadPortalFlowRequest {
     private String name;
     private String slug;
     private String description;
+    private Long marketNicheId;
     private Long experimentId;
     private String model;
     private List<LeadPortalFlowQuestionRequest> questions;

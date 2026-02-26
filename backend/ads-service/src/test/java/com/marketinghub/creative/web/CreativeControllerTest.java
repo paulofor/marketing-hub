@@ -59,6 +59,8 @@ class CreativeControllerTest {
     com.marketinghub.creative.label.repository.VisualProofRepository visualProofRepository;
     @Autowired
     com.marketinghub.creative.label.repository.EmotionalTriggerRepository emotionalTriggerRepository;
+    @Autowired
+    com.marketinghub.leadportal.repository.LeadPortalFlowRepository leadPortalFlowRepository;
 
     Long expId;
 
@@ -66,6 +68,7 @@ class CreativeControllerTest {
     void setup() {
         repository.deleteAll();
         experimentRepository.deleteAll();
+        leadPortalFlowRepository.deleteAll();
         hypothesisRepository.deleteAll();
         marketNicheRepository.deleteAll();
         MarketNiche niche = fixtures.createAndSaveNiche();

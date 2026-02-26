@@ -26,7 +26,8 @@ export interface CreateLeadPortalFlowRequest {
   name: string;
   slug: string;
   description?: string;
-  experimentId: number | string;
+  experimentId?: number | string | null;
+  marketNicheId: number | string;
   model?: string;
   questions: CreateLeadPortalFlowQuestionRequest[];
 }

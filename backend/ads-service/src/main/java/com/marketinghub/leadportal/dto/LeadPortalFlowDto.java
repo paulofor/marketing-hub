@@ -17,6 +17,7 @@ public class LeadPortalFlowDto {
     private String description;
     private String model;
     private String prompt;
+    private Long marketNicheId;
     private Long experimentId;
     private java.math.BigDecimal costUsd;
     private boolean approved;

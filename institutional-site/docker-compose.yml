@@ -1,0 +1,10 @@
+services:
+  institutional-site:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: marketinghub/institutional-site:latest
+    container_name: institutional-site
+    restart: unless-stopped
+    ports:
+      - "${INSTITUTIONAL_SITE_PORT:-8091}:80"

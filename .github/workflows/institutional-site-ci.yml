@@ -18,7 +18,7 @@ env:
   DEPLOY_HOST: 191.252.102.54
   DEPLOY_USER: ${{ secrets.INSTITUTIONAL_SITE_DEPLOY_USER != '' && secrets.INSTITUTIONAL_SITE_DEPLOY_USER || 'root' }}
   APP_DIR: ${{ secrets.INSTITUTIONAL_SITE_APP_DIR != '' && secrets.INSTITUTIONAL_SITE_APP_DIR || '/root/institucional-site' }}
-  SITE_URL: http://www.vitrineproduto.online
+  SITE_URL: http://vitrineproduto.online
 
 jobs:
   build:
@@ -57,5 +57,5 @@ jobs:
             && docker compose up -d institutional-site"
       - name: Validate public URL
         run: |
-          curl --fail --show-error --silent --location --retry 6 --retry-delay 10 --retry-connrefused ${SITE_URL}/ > /dev/null
-          curl --fail --show-error --silent --location --retry 6 --retry-delay 10 --retry-connrefused ${SITE_URL}/healthz
+          curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused ${SITE_URL}/ > /dev/null
+          curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused ${SITE_URL}/healthz

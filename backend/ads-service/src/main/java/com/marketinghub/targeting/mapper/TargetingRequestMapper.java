@@ -30,6 +30,7 @@ public class TargetingRequestMapper {
                 .publicoTipo(request.getAudienceType())
                 .nicheId(request.getNiche() != null ? request.getNiche().getId() : null)
                 .hypothesisId(request.getHypothesis() != null ? request.getHypothesis().getId() : null)
+                .experimentId(request.getExperiment() != null ? request.getExperiment().getId() : null)
                 .status(request.getStatus())
                 .origin(request.getOrigin())
                 .createdAt(request.getCreatedAt())

@@ -2,6 +2,7 @@ package com.marketinghub.experiment.service;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentTargetingSelection;
+import com.marketinghub.experiment.dto.ExperimentSimpleFlowStatusDto;
 import com.marketinghub.experiment.dto.ExperimentTargetingSelectionDto;
 import com.marketinghub.experiment.dto.SaveExperimentTargetingSelectionsRequest;
 import com.marketinghub.experiment.repository.ExperimentRepository;
@@ -13,6 +14,7 @@ import com.marketinghub.targeting.TargetingRequestOrigin;
 import com.marketinghub.targeting.TargetingRequestStatus;
 import com.marketinghub.targeting.dto.TargetingRequestDto;
 import com.marketinghub.targeting.mapper.TargetingRequestMapper;
+import com.marketinghub.targeting.mapper.TargetingResolutionSummaryMapper;
 import com.marketinghub.targeting.repository.TargetingCandidateRepository;
 import com.marketinghub.targeting.repository.TargetingRequestRepository;
 import com.marketinghub.targeting.service.TargetingResolutionJobService;
@@ -25,12 +27,14 @@ import java.util.Locale;
 
 @Service
 public class ExperimentTargetingSelectionService {
+    private static final int SIMPLE_FLOW_RESOLUTION_ETA_SECONDS = 90;
     private final ExperimentRepository experimentRepository;
     private final ExperimentTargetingSelectionRepository repository;
     private final TargetingRequestRepository targetingRequestRepository;
     private final TargetingCandidateRepository targetingCandidateRepository;
     private final TargetingResolutionJobService targetingResolutionJobService;
     private final TargetingRequestMapper targetingRequestMapper;
+    private final TargetingResolutionSummaryMapper targetingResolutionSummaryMapper;
 
     public ExperimentTargetingSelectionService(
             ExperimentRepository experimentRepository,
@@ -38,13 +42,15 @@ public class ExperimentTargetingSelectionService {
             TargetingRequestRepository targetingRequestRepository,
             TargetingCandidateRepository targetingCandidateRepository,
             TargetingResolutionJobService targetingResolutionJobService,
-            TargetingRequestMapper targetingRequestMapper) {
+            TargetingRequestMapper targetingRequestMapper,
+            TargetingResolutionSummaryMapper targetingResolutionSummaryMapper) {
         this.experimentRepository = experimentRepository;
         this.repository = repository;
         this.targetingRequestRepository = targetingRequestRepository;
         this.targetingCandidateRepository = targetingCandidateRepository;
         this.targetingResolutionJobService = targetingResolutionJobService;
         this.targetingRequestMapper = targetingRequestMapper;
+        this.targetingResolutionSummaryMapper = targetingResolutionSummaryMapper;
     }
 
     @Transactional(readOnly = true)
@@ -99,6 +105,7 @@ public class ExperimentTargetingSelectionService {
                 .origin(TargetingRequestOrigin.INTERNAL)
                 .niche(experiment.getNiche())
                 .hypothesis(experiment.getHypothesisRef())
+                .experiment(experiment)
                 .build();
         TargetingRequest savedRequest = targetingRequestRepository.save(request);
 
@@ -116,6 +123,26 @@ public class ExperimentTargetingSelectionService {
                 .toList();
         List<TargetingCandidate> savedCandidates = targetingCandidateRepository.saveAll(candidates);
         targetingResolutionJobService.enqueueAfterCommit(savedRequest, savedCandidates);
-        return targetingRequestMapper.toDetailedDto(savedRequest, 90);
+        return targetingRequestMapper.toDetailedDto(savedRequest, SIMPLE_FLOW_RESOLUTION_ETA_SECONDS);
+    }
+
+    @Transactional(readOnly = true)
+    public ExperimentSimpleFlowStatusDto getSimpleFlowStatus(Long experimentId) {
+        if (experimentId == null) {
+            return ExperimentSimpleFlowStatusDto.builder().build();
+        }
+        return targetingRequestRepository.findFirstByExperimentIdOrderByCreatedAtDesc(experimentId)
+                .map(request -> {
+                    TargetingRequestDto requestDto = targetingRequestMapper
+                            .toDetailedDto(request, SIMPLE_FLOW_RESOLUTION_ETA_SECONDS);
+                    var summary = targetingResolutionJobService
+                            .summarizeByRequestIds(List.of(request.getId()))
+                            .get(request.getId());
+                    return ExperimentSimpleFlowStatusDto.builder()
+                            .request(requestDto)
+                            .resolution(targetingResolutionSummaryMapper.toDto(summary))
+                            .build();
+                })
+                .orElseGet(() -> ExperimentSimpleFlowStatusDto.builder().build());
     }
 }

@@ -233,6 +233,9 @@ databaseChangeLog:
       file: V2027_01_10__create_general_setting.sql
       relativeToChangelogFile: true
   - include:
+      file: V2027_02_05__add_experiment_fk_to_targeting_request.sql
+      relativeToChangelogFile: true
+  - include:
       file: V2027_02_23__link_fb_adset_to_experiment_adset.sql
       relativeToChangelogFile: true
   - include:

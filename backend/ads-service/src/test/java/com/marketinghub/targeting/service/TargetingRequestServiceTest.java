@@ -10,6 +10,7 @@ import com.marketinghub.targeting.TargetingRequest;
 import com.marketinghub.targeting.TargetingResolutionJob;
 import com.marketinghub.targeting.TargetingResolutionJobStatus;
 import com.marketinghub.targeting.dto.TargetingCandidateResolutionUpdateRequest;
+import com.marketinghub.targeting.mapper.TargetingResolutionSummaryMapper;
 import com.marketinghub.targeting.repository.TargetingCandidateRepository;
 import com.marketinghub.targeting.repository.TargetingRequestRepository;
 import com.marketinghub.targeting.repository.TargetingResolutionJobRepository;
@@ -44,6 +45,8 @@ class TargetingRequestServiceTest {
     @Mock
     private TargetingResolutionJobService resolutionJobService;
     @Mock
+    private TargetingResolutionSummaryMapper resolutionSummaryMapper;
+    @Mock
     private MarketNicheRepository nicheRepository;
     @Mock
     private HypothesisRepository hypothesisRepository;
@@ -57,6 +60,7 @@ class TargetingRequestServiceTest {
                 candidateRepository,
                 resolutionJobRepository,
                 resolutionJobService,
+                resolutionSummaryMapper,
                 nicheRepository,
                 hypothesisRepository
         );

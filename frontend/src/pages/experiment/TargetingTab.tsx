@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Activity, Briefcase, Target } from "lucide-react";
 import { useTargetingElementsByNiche } from "../../api/targeting/useTargetingElementsByNiche";
 import type {
+  TargetingCandidateStatus,
   TargetingCandidateType,
   TargetingElement,
   TargetingElementType,
@@ -13,6 +14,7 @@ import {
   useRunSimpleAudienceFlow,
   useSaveExperimentTargetingSelections,
 } from "../../api/experiment/useExperimentTargetingSelections";
+import { useExperimentSimpleFlowStatus } from "../../api/experiment/useExperimentSimpleFlowStatus";
 
 interface TargetingTabProps {
   nicheId?: number;
@@ -20,6 +22,27 @@ interface TargetingTabProps {
   experimentId?: number;
   nicheName?: string | null;
   hypothesisTitle?: string | null;
+}
+
+const CANDIDATE_TYPE_LABEL: Record<TargetingCandidateType, string> = {
+  INTEREST: "Interesse",
+  WORK_POSITION: "Cargo",
+  BEHAVIOR: "Comportamento",
+};
+
+const CANDIDATE_STATUS_CONFIG: Record<TargetingCandidateStatus, { label: string; badge: string }> = {
+  PENDING_FACEBOOK_MATCH: { label: "Buscando na Meta", badge: "warning" },
+  VALIDATED: { label: "Validado", badge: "success" },
+  NO_MATCH: { label: "Sem correspondência", badge: "secondary" },
+};
+
+function formatDateTime(value?: string | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+  return date.toLocaleString();
 }
 
 const TYPE_CONFIGS: Array<{
@@ -66,6 +89,8 @@ export default function TargetingTab({
     isFetching,
     isError,
   } = useTargetingElementsByNiche(nicheIdAsString);
+  const { data: simpleFlowStatus, isLoading: isSimpleFlowStatusLoading, isFetching: isSimpleFlowStatusFetching } =
+    useExperimentSimpleFlowStatus(experimentId);
 
   const [selectedTerms, setSelectedTerms] = useState<Set<string>>(new Set());
 
@@ -97,6 +122,16 @@ export default function TargetingTab({
 
   const list = Array.isArray(targetingElements) ? targetingElements : [];
   const updating = isFetching && !isLoading;
+  const flowRequest = simpleFlowStatus?.request ?? null;
+  const resolutionSummary = simpleFlowStatus?.resolution ?? null;
+  const pendingJobs = (resolutionSummary?.pending ?? 0) + (resolutionSummary?.processing ?? 0);
+  const simpleFlowLoading = isSimpleFlowStatusLoading || (isSimpleFlowStatusFetching && !!flowRequest);
+  const summaryItems = [
+    { label: "Pendentes", value: resolutionSummary?.pending ?? 0, variant: "secondary" },
+    { label: "Em processamento", value: resolutionSummary?.processing ?? 0, variant: "info" },
+    { label: "Concluídos", value: resolutionSummary?.completed ?? 0, variant: "success" },
+    { label: "Falhas", value: resolutionSummary?.failed ?? 0, variant: "danger" },
+  ];
 
   const onToggle = (candidateType: TargetingCandidateType, term: string) => {
     const key = `${candidateType}::${term}`;
@@ -163,6 +198,102 @@ export default function TargetingTab({
               <span className="ms-1">Executar fluxo simples</span>
             </button>
           </div>
+        </div>
+      </section>
+
+      <section className="mb-4 card">
+        <div className="card-body">
+          <div className="d-flex align-items-center justify-content-between mb-2">
+            <div>
+              <h6 className="mb-0">Status do fluxo simples</h6>
+              <p className="text-body-secondary small mb-0">
+                Monitoramos automaticamente a busca dos IDs oficiais na Meta Ads. Execute novamente se houver falhas.
+              </p>
+            </div>
+            {simpleFlowLoading ? (
+              <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+            ) : pendingJobs > 0 ? (
+              <span className="badge text-bg-warning">Processando</span>
+            ) : null}
+          </div>
+          {flowRequest ? (
+            <>
+              <div className="d-flex flex-wrap gap-2 mb-3">
+                <span className="badge text-bg-light">
+                  Última execução: {formatDateTime(flowRequest.updatedAt ?? flowRequest.createdAt) ?? "—"}
+                </span>
+                <span className="badge text-bg-light">Termos enviados: {flowRequest.candidates?.length ?? 0}</span>
+                <span className={`badge text-bg-${pendingJobs > 0 ? "warning" : "success"}`}>
+                  {pendingJobs > 0 ? "Resolvendo na Meta" : "Resolução concluída"}
+                </span>
+              </div>
+              <div className="d-flex flex-wrap gap-2 mb-3">
+                {summaryItems.map((item) => (
+                  <span key={item.label} className={`badge text-bg-${item.variant}`}>
+                    {item.label}: {item.value}
+                  </span>
+                ))}
+              </div>
+              {resolutionSummary?.last_error ? (
+                <div className="alert alert-danger py-2">
+                  <strong>Último erro:</strong> {resolutionSummary.last_error}
+                </div>
+              ) : null}
+              <div className="d-flex flex-column gap-3">
+                {(flowRequest.candidates ?? []).map((candidate) => {
+                  const key = candidate.id ?? `${candidate.tipo}-${candidate.seed ?? candidate.texto_sugerido}`;
+                  const statusConfig = candidate.status ? CANDIDATE_STATUS_CONFIG[candidate.status] : undefined;
+                  const badgeClass = statusConfig ? statusConfig.badge : "light";
+                  const label = statusConfig?.label ?? "Sem status";
+                  const primaryLabel = candidate.seed ?? candidate.texto_sugerido ?? "Termo sem descrição";
+                  const options = candidate.options ?? [];
+                  const noOptionMessage = candidate.status === "NO_MATCH"
+                    ? "A Meta não encontrou correspondências para este termo. Tente ajustar o texto."
+                    : pendingJobs > 0
+                      ? "Ainda estamos buscando opções para este termo..."
+                      : "Nenhuma opção retornada. Considere editar o termo e executar novamente.";
+                  return (
+                    <div key={key} className="border rounded p-2">
+                      <div className="d-flex flex-wrap align-items-start justify-content-between gap-2">
+                        <div>
+                          <strong>{primaryLabel}</strong>
+                          <p className="text-body-secondary small mb-1">
+                            {CANDIDATE_TYPE_LABEL[candidate.tipo] ?? "Segmento"}
+                          </p>
+                        </div>
+                        <span className={`badge text-bg-${badgeClass}`}>{label}</span>
+                      </div>
+                      {options.length > 0 ? (
+                        <ul className="list-unstyled small mb-0">
+                          {options.slice(0, 3).map((option) => (
+                            <li key={option.id ?? option.facebook_id}>
+                              <strong>{option.name}</strong>
+                              {option.audience_size ? (
+                                <span className="text-body-secondary ms-1">
+                                  • {option.audience_size.toLocaleString("pt-BR")}
+                                </span>
+                              ) : null}
+                            </li>
+                          ))}
+                          {options.length > 3 ? (
+                            <li className="text-body-secondary">
+                              +{options.length - 3} outras sugestões registradas
+                            </li>
+                          ) : null}
+                        </ul>
+                      ) : (
+                        <p className="text-body-secondary small mb-0">{noOptionMessage}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <p className="text-muted mb-0">
+              Nenhuma execução registrada. Salve as segmentações acima e clique em “Executar fluxo simples”.
+            </p>
+          )}
         </div>
       </section>
 

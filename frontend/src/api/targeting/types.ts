@@ -96,6 +96,7 @@ export interface TargetingRequest {
   publico_tipo: TargetingAudienceType;
   niche_id?: number | null;
   hypothesis_id?: string | null;
+  experiment_id?: number | null;
   status: TargetingRequestStatus;
   origin?: string;
   createdAt?: string;

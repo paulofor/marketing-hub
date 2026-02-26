@@ -4,6 +4,7 @@ import com.marketinghub.targeting.TargetingRequest;
 import com.marketinghub.targeting.TargetingResolutionJob;
 import com.marketinghub.targeting.TargetingResolutionJobStatus;
 import com.marketinghub.targeting.repository.TargetingResolutionJobRepository;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -23,9 +24,12 @@ class TargetingResolutionJobServiceTest {
     @Mock
     private TargetingResolutionJobRepository repository;
 
+    @Mock
+    private EntityManager entityManager;
+
     @Test
     void summarizeByRequestIdsShouldReturnLatestFinishedAtAsLastCompletedAt() {
-        TargetingResolutionJobService service = new TargetingResolutionJobService(repository);
+        TargetingResolutionJobService service = new TargetingResolutionJobService(repository, entityManager);
         UUID requestId = UUID.randomUUID();
         Instant firstFinish = Instant.parse("2026-01-01T10:00:00Z");
         Instant latestFinish = Instant.parse("2026-01-01T12:00:00Z");

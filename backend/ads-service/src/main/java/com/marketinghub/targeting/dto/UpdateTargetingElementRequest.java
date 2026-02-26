@@ -23,5 +23,7 @@ public class UpdateTargetingElementRequest {
     private String lastReviewedBy;
     private String metaId;
     private String metaKey;
+    private Long metaAudienceSizeLowerBound;
+    private Long metaAudienceSizeUpperBound;
     private BigDecimal confidence;
 }

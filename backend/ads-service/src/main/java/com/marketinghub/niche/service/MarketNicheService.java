@@ -9,6 +9,7 @@ import com.marketinghub.niche.dto.CreateMarketNicheRequest;
 import com.marketinghub.niche.description.NicheDetailedDescription;
 import com.marketinghub.niche.description.repository.NicheDetailedDescriptionRepository;
 import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.targeting.service.TargetingElementSyncService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,15 +24,18 @@ public class MarketNicheService {
     private final ChatDialogRepository chatDialogRepository;
     private final DifferentiatedTechnologyRepository differentiatedTechnologyRepository;
     private final NicheDetailedDescriptionRepository detailedDescriptionRepository;
+    private final TargetingElementSyncService targetingElementSyncService;
 
     public MarketNicheService(MarketNicheRepository repository,
                               ChatDialogRepository chatDialogRepository,
                               DifferentiatedTechnologyRepository differentiatedTechnologyRepository,
-                              NicheDetailedDescriptionRepository detailedDescriptionRepository) {
+                              NicheDetailedDescriptionRepository detailedDescriptionRepository,
+                              TargetingElementSyncService targetingElementSyncService) {
         this.repository = repository;
         this.chatDialogRepository = chatDialogRepository;
         this.differentiatedTechnologyRepository = differentiatedTechnologyRepository;
         this.detailedDescriptionRepository = detailedDescriptionRepository;
+        this.targetingElementSyncService = targetingElementSyncService;
     }
 
     /**
@@ -77,7 +81,9 @@ public class MarketNicheService {
                 .differentiatedTechnology(differentiatedTechnology)
                 .chatDialog(chat)
                 .build();
-        return repository.save(niche);
+        MarketNiche saved = repository.save(niche);
+        targetingElementSyncService.syncManualLists(saved);
+        return saved;
     }
 
     public MarketNiche get(Long id) {
@@ -122,7 +128,9 @@ public class MarketNicheService {
             chat = chatDialogRepository.findById(request.getChatDialogId()).orElseThrow();
         }
         niche.setChatDialog(chat);
-        return repository.save(niche);
+        MarketNiche saved = repository.save(niche);
+        targetingElementSyncService.syncManualLists(saved);
+        return saved;
     }
 
 

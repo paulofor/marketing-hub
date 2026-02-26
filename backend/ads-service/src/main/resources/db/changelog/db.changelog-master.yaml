@@ -486,5 +486,9 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
   - include:
+      file: V2035_02_26__add_meta_audience_bounds_to_targeting_element.sql
+      relativeToChangelogFile: true
+
+  - include:
       file: V2034_03_15__lead_portal_flow_market_niche.sql
       relativeToChangelogFile: true

@@ -8,3 +8,10 @@ services:
     restart: unless-stopped
     ports:
       - "${INSTITUTIONAL_SITE_PORT:-8091}:80"
+    networks:
+      - shared-public
+
+networks:
+  shared-public:
+    name: ${INSTITUTIONAL_SITE_NETWORK:-institutional-site-net}
+    external: ${INSTITUTIONAL_SITE_NETWORK_EXTERNAL:-false}

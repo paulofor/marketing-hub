@@ -18,7 +18,11 @@ env:
   DEPLOY_HOST: 191.252.102.54
   DEPLOY_USER: ${{ secrets.INSTITUTIONAL_SITE_DEPLOY_USER != '' && secrets.INSTITUTIONAL_SITE_DEPLOY_USER || 'root' }}
   APP_DIR: ${{ secrets.INSTITUTIONAL_SITE_APP_DIR != '' && secrets.INSTITUTIONAL_SITE_APP_DIR || '/root/institucional-site' }}
-  SITE_URL: http://vitrineproduto.online
+  SITE_URL: https://vitrineproduto.online
+  SITE_HEALTH_URL: https://vitrineproduto.online/healthz
+  SITE_HTTP_URL: http://vitrineproduto.online
+  INSTITUTIONAL_SITE_NETWORK: ${{ secrets.INSTITUTIONAL_SITE_NETWORK != '' && secrets.INSTITUTIONAL_SITE_NETWORK || 'public-net' }}
+  INSTITUTIONAL_SITE_NETWORK_EXTERNAL: "true"
 
 jobs:
   build:
@@ -49,13 +53,20 @@ jobs:
           rsync -avz --delete \
             -e "ssh ${SSH_COMMON_ARGS}" \
             institutional-site/ "${DEPLOY_USER}@${DEPLOY_HOST}:${APP_DIR}/"
+      - name: Ensure shared Docker network exists
+        run: |
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "docker network inspect ${INSTITUTIONAL_SITE_NETWORK} >/dev/null 2>&1 || docker network create ${INSTITUTIONAL_SITE_NETWORK}"
       - name: Deploy institutional-site
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
             && cd ${APP_DIR} \
+            && export INSTITUTIONAL_SITE_NETWORK='${INSTITUTIONAL_SITE_NETWORK}' \
+            && export INSTITUTIONAL_SITE_NETWORK_EXTERNAL='${INSTITUTIONAL_SITE_NETWORK_EXTERNAL}' \
             && docker compose build institutional-site \
             && docker compose up -d institutional-site"
       - name: Validate public URL
         run: |
           curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused ${SITE_URL}/ > /dev/null
-          curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused ${SITE_URL}/healthz
+          curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused ${SITE_HEALTH_URL}
+          curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused --head --location ${SITE_HTTP_URL}/

@@ -1,5 +1,6 @@
 package com.marketinghub.experiment.web;
 
+import com.marketinghub.experiment.dto.ExperimentSimpleFlowStatusDto;
 import com.marketinghub.experiment.dto.ExperimentTargetingSelectionDto;
 import com.marketinghub.experiment.dto.SaveExperimentTargetingSelectionsRequest;
 import com.marketinghub.experiment.service.ExperimentTargetingSelectionService;
@@ -27,6 +28,11 @@ public class ExperimentTargetingSelectionController {
     public List<ExperimentTargetingSelectionDto> save(@PathVariable Long experimentId,
                                                        @Valid @RequestBody SaveExperimentTargetingSelectionsRequest request) {
         return service.save(experimentId, request);
+    }
+
+    @GetMapping("/run-simple-flow/status")
+    public ExperimentSimpleFlowStatusDto getSimpleFlowStatus(@PathVariable Long experimentId) {
+        return service.getSimpleFlowStatus(experimentId);
     }
 
     @PostMapping("/run-simple-flow")

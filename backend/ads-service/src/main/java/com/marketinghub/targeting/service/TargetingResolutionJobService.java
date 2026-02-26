@@ -5,6 +5,8 @@ import com.marketinghub.targeting.TargetingResolutionJob;
 import com.marketinghub.targeting.TargetingResolutionJobStatus;
 import com.marketinghub.targeting.TargetingRequest;
 import com.marketinghub.targeting.repository.TargetingResolutionJobRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -27,16 +30,27 @@ public class TargetingResolutionJobService {
     private static final Logger log = LoggerFactory.getLogger(TargetingResolutionJobService.class);
 
     private final TargetingResolutionJobRepository repository;
+    private final EntityManager entityManager;
 
-    public TargetingResolutionJobService(TargetingResolutionJobRepository repository) {
+    public TargetingResolutionJobService(TargetingResolutionJobRepository repository,
+                                         EntityManager entityManager) {
         this.repository = repository;
+        this.entityManager = entityManager;
     }
 
     public void enqueueAfterCommit(TargetingRequest request, Collection<TargetingCandidate> candidates) {
-        if (request == null || CollectionUtils.isEmpty(candidates)) {
+        if (request == null || request.getId() == null || CollectionUtils.isEmpty(candidates)) {
             return;
         }
-        Runnable action = () -> enqueueInternal(request, candidates);
+        UUID requestId = request.getId();
+        List<Long> candidateIds = candidates.stream()
+                .map(TargetingCandidate::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        if (CollectionUtils.isEmpty(candidateIds)) {
+            return;
+        }
+        Runnable action = () -> enqueueInternal(requestId, candidateIds);
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
@@ -50,15 +64,32 @@ public class TargetingResolutionJobService {
     }
 
     @Transactional
-    protected void enqueueInternal(TargetingRequest request, Collection<TargetingCandidate> candidates) {
-        for (TargetingCandidate candidate : candidates) {
-            if (candidate == null || candidate.getId() == null) {
+    protected void enqueueInternal(UUID requestId, Collection<Long> candidateIds) {
+        if (requestId == null || CollectionUtils.isEmpty(candidateIds)) {
+            return;
+        }
+        TargetingRequest requestRef;
+        try {
+            requestRef = entityManager.getReference(TargetingRequest.class, requestId);
+        } catch (EntityNotFoundException ex) {
+            log.warn("Targeting request {} not found when scheduling Meta resolution", requestId);
+            return;
+        }
+        for (Long candidateId : candidateIds) {
+            if (candidateId == null) {
                 continue;
             }
-            TargetingResolutionJob job = repository.findByCandidateId(candidate.getId())
-                    .orElse(TargetingResolutionJob.builder().candidate(candidate).request(request).build());
-            job.setRequest(request);
-            job.setCandidate(candidate);
+            TargetingCandidate candidateRef;
+            try {
+                candidateRef = entityManager.getReference(TargetingCandidate.class, candidateId);
+            } catch (EntityNotFoundException ex) {
+                log.warn("Targeting candidate {} not found when scheduling Meta resolution", candidateId);
+                continue;
+            }
+            TargetingResolutionJob job = repository.findByCandidateId(candidateId)
+                    .orElse(TargetingResolutionJob.builder().candidate(candidateRef).request(requestRef).build());
+            job.setRequest(requestRef);
+            job.setCandidate(candidateRef);
             job.setStatus(TargetingResolutionJobStatus.PENDING);
             job.setAttemptCount(0);
             job.setResultCount(null);
@@ -68,7 +99,7 @@ public class TargetingResolutionJobService {
             job.setStartedAt(null);
             job.setFinishedAt(null);
             repository.save(job);
-            log.debug("Enqueued candidate {} for Meta Ads resolution", candidate.getId());
+            log.debug("Enqueued candidate {} for Meta Ads resolution", candidateId);
         }
     }
 

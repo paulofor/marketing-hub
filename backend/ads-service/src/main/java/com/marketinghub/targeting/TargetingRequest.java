@@ -1,5 +1,6 @@
 package com.marketinghub.targeting;
 
+import com.marketinghub.experiment.Experiment;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import jakarta.persistence.*;
@@ -27,8 +28,8 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = {"candidates", "niche", "hypothesis"})
-@EqualsAndHashCode(exclude = {"candidates", "niche", "hypothesis"})
+@ToString(exclude = {"candidates", "niche", "hypothesis", "experiment"})
+@EqualsAndHashCode(exclude = {"candidates", "niche", "hypothesis", "experiment"})
 public class TargetingRequest {
     @Id
     @GeneratedValue
@@ -72,6 +73,10 @@ public class TargetingRequest {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hypothesis_id")
     private Hypothesis hypothesis;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "experiment_id")
+    private Experiment experiment;
 
     @CreationTimestamp
     private Instant createdAt;

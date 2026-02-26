@@ -37,6 +37,9 @@ public class TargetingRequestDto {
     @JsonProperty("hypothesis_id")
     private UUID hypothesisId;
 
+    @JsonProperty("experiment_id")
+    private Long experimentId;
+
     private TargetingRequestStatus status;
     private TargetingRequestOrigin origin;
     private Instant createdAt;

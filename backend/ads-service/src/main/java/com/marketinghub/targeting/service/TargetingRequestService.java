@@ -22,6 +22,7 @@ import com.marketinghub.targeting.dto.TargetingCandidateResolutionUpdateRequest;
 import com.marketinghub.targeting.dto.TargetingCandidateResolutionUpdateRequest.OptionPayload;
 import com.marketinghub.targeting.dto.TargetingRecentRequestDto;
 import com.marketinghub.targeting.dto.TargetingResolutionSummaryDto;
+import com.marketinghub.targeting.mapper.TargetingResolutionSummaryMapper;
 import com.marketinghub.targeting.service.TargetingResolutionJobService.TargetingResolutionSummary;
 import com.marketinghub.targeting.repository.TargetingCandidateRepository;
 import com.marketinghub.targeting.repository.TargetingResolutionJobRepository;
@@ -65,6 +66,7 @@ public class TargetingRequestService {
     private final TargetingCandidateRepository candidateRepository;
     private final TargetingResolutionJobRepository resolutionJobRepository;
     private final TargetingResolutionJobService resolutionJobService;
+    private final TargetingResolutionSummaryMapper resolutionSummaryMapper;
     private final MarketNicheRepository nicheRepository;
     private final HypothesisRepository hypothesisRepository;
 
@@ -72,12 +74,14 @@ public class TargetingRequestService {
                                    TargetingCandidateRepository candidateRepository,
                                    TargetingResolutionJobRepository resolutionJobRepository,
                                    TargetingResolutionJobService resolutionJobService,
+                                   TargetingResolutionSummaryMapper resolutionSummaryMapper,
                                    MarketNicheRepository nicheRepository,
                                    HypothesisRepository hypothesisRepository) {
         this.requestRepository = requestRepository;
         this.candidateRepository = candidateRepository;
         this.resolutionJobRepository = resolutionJobRepository;
         this.resolutionJobService = resolutionJobService;
+        this.resolutionSummaryMapper = resolutionSummaryMapper;
         this.nicheRepository = nicheRepository;
         this.hypothesisRepository = hypothesisRepository;
     }
@@ -309,22 +313,7 @@ public class TargetingRequestService {
                 .createdAt(request.getCreatedAt())
                 .seedKeywords(seeds)
                 .metaAdsKeywords(metaAdsKeywords)
-                .resolution(toResolutionDto(summary))
-                .build();
-    }
-
-    private TargetingResolutionSummaryDto toResolutionDto(TargetingResolutionSummary summary) {
-        if (summary == null) {
-            return null;
-        }
-        return TargetingResolutionSummaryDto.builder()
-                .pending(summary.pending())
-                .processing(summary.processing())
-                .completed(summary.succeeded())
-                .failed(summary.failed())
-                .lastAttemptAt(summary.lastAttemptAt())
-                .lastCompletedAt(summary.lastCompletedAt())
-                .lastError(summary.lastError())
+                .resolution(resolutionSummaryMapper.toDto(summary))
                 .build();
     }
 

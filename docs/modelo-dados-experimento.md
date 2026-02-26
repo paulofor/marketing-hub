@@ -64,6 +64,19 @@ erDiagram
       VARCHAR term
     }
 
+    TARGETING_REQUEST {
+      BINARY16 id PK
+      BIGINT experiment_id FK
+      BIGINT market_niche_id FK
+      BINARY16 hypothesis_id FK
+      VARCHAR descricao
+      VARCHAR locale
+      VARCHAR country
+      VARCHAR audience_type
+      VARCHAR status
+      VARCHAR origin
+    }
+
     AD_SET {
       BIGINT id PK
       BIGINT experiment_id FK
@@ -198,6 +211,7 @@ erDiagram
     }
 
     MARKET_NICHE ||--o{ HYPOTHESIS : organiza
+    EXPERIMENT ||--o{ TARGETING_REQUEST : solicita
     MARKET_NICHE ||--o{ EXPERIMENT : agrupa
     HYPOTHESIS ||--o{ EXPERIMENT : orienta
 
@@ -262,3 +276,4 @@ erDiagram
 - `market_niche` agora mantém listas curadas (`interest_list`, `role_list`, `behavior_list`).
 - `experiment_targeting_selection` registra as escolhas feitas na aba de segmentação do experimento.
 - O disparo do fluxo simples cria uma `targeting_request` interna para resolver os códigos da Meta Ads.
+- `targeting_request` agora possui `experiment_id` (FK) para rastrear execuções por experimento e permitir expor status/erros operacionais diretamente na UI.

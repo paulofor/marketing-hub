@@ -36,6 +36,18 @@ Ainda na aba Segmentação:
 - `GET /api/experiments/{experimentId}/targeting-selections`
 - `POST /api/experiments/{experimentId}/targeting-selections/run-simple-flow`
 
+
+## 4) Monitoramento e diagnóstico
+
+Depois de executar o fluxo simples, a aba de segmentação do experimento exibe um painel com:
+
+- resumo da última `targeting_request` gerada para o experimento (data/hora e quantidade de termos resolvidos);
+- contagem de jobs pendentes/em processamento/concluídos/falhos na Meta Ads;
+- lista dos candidatos enviados com respectivos status e até 3 opções retornadas por termo;
+- mensagem de erro mais recente quando algum job falha, facilitando o ajuste do termo e nova execução.
+
+O painel é atualizado automaticamente a cada 10 segundos enquanto houver candidatos pendentes, garantindo visibilidade do progresso e das causas de falha sem depender de logs externos.
+
 ## Referência da Meta Ads API
 
 Consulta de interesses/cargos/comportamentos via Graph API:

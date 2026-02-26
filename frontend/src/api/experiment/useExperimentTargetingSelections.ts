@@ -56,6 +56,7 @@ export function useRunSimpleAudienceFlow(experimentId?: number) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["experiment-targeting-selections", experimentId] });
+      queryClient.invalidateQueries({ queryKey: ["experiment-simple-flow-status", experimentId] });
     },
   });
 }

@@ -95,6 +95,8 @@ O arquivo `docker-compose.yml` usa as variáveis definidas no `.env` (o Docker C
 
 - O compose agora inclui um **proxy Nginx** (porta 80/443) que termina o TLS com os certificados do Let’s Encrypt montados em `/etc/letsencrypt`. A configuração padrão está em `nginx.conf` e expõe `pagamentopalf.online` com redirecionamento automático para HTTPS. Para evitar falha no container quando o diretório não existir (ambiente local), um certificado autoassinado já está versionado em `docker/proxy/certs/dev` e é montado por padrão; em produção, o `docker-compose.deploy.yml` sobrepõe esse caminho com `/etc/letsencrypt` real.
 > **Nota:** o proxy executa `docker/proxy/ensure-certs.sh` antes de iniciar o Nginx. O script copia automaticamente o certificado válido do Let’s Encrypt quando presente em `/etc/letsencrypt` e, caso ainda não exista (por exemplo, no primeiro deploy), reutiliza o certificado autoassinado de `docker/proxy/certs/dev` para manter o container saudável. Assim que o certificado real for emitido com o profile `certbot`, basta recriar o serviço para que o arquivo atualizado seja detectado.
+- O mesmo proxy também publica `https://vitrineproduto.online`, roteando para o container `institutional-site` ligado à network compartilhada (`public-net`). Certifique-se de que o compose do site esteja conectado a essa network (variáveis `INSTITUTIONAL_SITE_NETWORK=public-net` e `INSTITUTIONAL_SITE_NETWORK_EXTERNAL=true`) para que o upstream `institutional-site` seja resolvido corretamente.
+
 - Use o profile `certbot` para emitir/renovar o certificado:
 
 ```bash

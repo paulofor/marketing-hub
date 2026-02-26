@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://marketinghub.com/sitemap.xml
+Sitemap: http://www.vitrineproduto.online/sitemap.xml

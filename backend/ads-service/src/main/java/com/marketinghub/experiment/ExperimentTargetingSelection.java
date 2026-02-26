@@ -1,6 +1,7 @@
 package com.marketinghub.experiment;
 
 import com.marketinghub.targeting.TargetingCandidateType;
+import com.marketinghub.targeting.TargetingElement;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -29,6 +30,11 @@ public class ExperimentTargetingSelection {
 
     @Column(name = "term", nullable = false, length = 191)
     private String term;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "targeting_element_id")
+    @ToString.Exclude
+    private TargetingElement targetingElement;
 
     @CreationTimestamp
     private Instant createdAt;

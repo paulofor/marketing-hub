@@ -51,6 +51,22 @@ type FormState = {
   confidence: string;
 };
 
+const audienceFormatter = new Intl.NumberFormat("pt-BR");
+
+function formatAudienceRange(lower?: number | null, upper?: number | null) {
+  if (typeof lower === "number" && typeof upper === "number") {
+    if (lower === upper) return audienceFormatter.format(lower);
+    return `${audienceFormatter.format(lower)} – ${audienceFormatter.format(upper)}`;
+  }
+  if (typeof lower === "number") {
+    return `≥ ${audienceFormatter.format(lower)}`;
+  }
+  if (typeof upper === "number") {
+    return `≤ ${audienceFormatter.format(upper)}`;
+  }
+  return "—";
+}
+
 function buildFormState(element: TargetingElement): FormState {
   return {
     term: element.term,
@@ -79,6 +95,10 @@ export function TargetingElementCard({
     element.marketNicheId,
   ]);
   const updateElement = useUpdateTargetingElement(nicheId);
+  const audienceRangeLabel = formatAudienceRange(
+    element.metaAudienceSizeLowerBound,
+    element.metaAudienceSizeUpperBound,
+  );
 
   useEffect(() => {
     if (!showModal) return;

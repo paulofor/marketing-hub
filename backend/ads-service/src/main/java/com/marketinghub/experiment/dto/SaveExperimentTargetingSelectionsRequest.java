@@ -19,5 +19,7 @@ public class SaveExperimentTargetingSelectionsRequest {
 
         @NotBlank
         private String term;
+
+        private Long targetingElementId;
     }
 }

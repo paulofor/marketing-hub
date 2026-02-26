@@ -36,6 +36,43 @@ const CANDIDATE_STATUS_CONFIG: Record<TargetingCandidateStatus, { label: string;
   NO_MATCH: { label: "Sem correspondência", badge: "secondary" },
 };
 
+interface EnrichedTargetingOption {
+  candidateType: TargetingCandidateType;
+  term: string;
+  targetingElementId?: number | null;
+  metaId?: string | null;
+  audienceLower?: number | null;
+  audienceUpper?: number | null;
+}
+
+const audienceFormatter = new Intl.NumberFormat("pt-BR");
+
+function formatAudienceRange(lower?: number | null, upper?: number | null) {
+  if (typeof lower === "number" && typeof upper === "number") {
+    if (lower === upper) {
+      return audienceFormatter.format(lower);
+    }
+    return `${audienceFormatter.format(lower)} – ${audienceFormatter.format(upper)}`;
+  }
+  if (typeof lower === "number") {
+    return `≥ ${audienceFormatter.format(lower)}`;
+  }
+  if (typeof upper === "number") {
+    return `≤ ${audienceFormatter.format(upper)}`;
+  }
+  return "—";
+}
+
+const buildSelectionKey = (candidateType: TargetingCandidateType, term: string, targetingElementId?: number | null) => {
+  if (typeof targetingElementId === "number") {
+    return `ELEMENT::${targetingElementId}`;
+  }
+  return `${candidateType}::${term.trim().toLowerCase()}`;
+};
+
+const buildOptionKey = (option: EnrichedTargetingOption) =>
+  buildSelectionKey(option.candidateType, option.term, option.targetingElementId);
+
 function formatDateTime(value?: string | null) {
   if (!value) return null;
   const date = new Date(value);
@@ -94,20 +131,54 @@ export default function TargetingTab({
 
   const [selectedTerms, setSelectedTerms] = useState<Set<string>>(new Set());
 
-  const nicheOptions = useMemo(
-    () => [
-      ...(data?.interestList ?? []).map((term) => ({ candidateType: "INTEREST" as TargetingCandidateType, term })),
-      ...(data?.roleList ?? []).map((term) => ({ candidateType: "WORK_POSITION" as TargetingCandidateType, term })),
-      ...(data?.behaviorList ?? []).map((term) => ({ candidateType: "BEHAVIOR" as TargetingCandidateType, term })),
-    ],
-    [data?.behaviorList, data?.interestList, data?.roleList],
-  );
+  const list = Array.isArray(targetingElements) ? targetingElements : [];
+
+
+  const enrichedOptions = useMemo(() => {
+    if (!Array.isArray(list)) return [];
+    return list
+      .filter((element) =>
+        element.status === "APPROVED" && typeof element.metaId === "string" && element.metaId.trim() !== "",
+      )
+      .map((element) => {
+        const candidateType: TargetingCandidateType =
+          element.type === "JOB_TITLE" ? "WORK_POSITION" : (element.type as TargetingCandidateType);
+        return {
+          candidateType,
+          term: element.term,
+          targetingElementId: element.id,
+          metaId: element.metaId ?? undefined,
+          audienceLower: element.metaAudienceSizeLowerBound ?? null,
+          audienceUpper: element.metaAudienceSizeUpperBound ?? null,
+        };
+      })
+      .sort((a, b) => {
+        if (a.candidateType === b.candidateType) {
+          return a.term.localeCompare(b.term, "pt-BR");
+        }
+        return a.candidateType.localeCompare(b.candidateType);
+      });
+  }, [list]);
+  const enrichedOptionsByKey = useMemo(() => {
+    const map = new Map<string, EnrichedTargetingOption>();
+    enrichedOptions.forEach((option) => {
+      map.set(buildOptionKey(option), option);
+    });
+    return map;
+  }, [enrichedOptions]);
+
 
   useEffect(() => {
-    const initial = new Set(
-      (savedSelections ?? []).map((item) => `${item.candidateType}::${item.term}`),
+    if (!savedSelections) {
+      setSelectedTerms(new Set());
+      return;
+    }
+    const mapped = new Set(
+      savedSelections.map((item) =>
+        buildSelectionKey(item.candidateType, item.term, item.targetingElementId),
+      ),
     );
-    setSelectedTerms(initial);
+    setSelectedTerms(mapped);
   }, [savedSelections]);
 
   if (nicheIdAsString == null || !hypothesisId) {
@@ -120,7 +191,6 @@ export default function TargetingTab({
     );
   }
 
-  const list = Array.isArray(targetingElements) ? targetingElements : [];
   const updating = isFetching && !isLoading;
   const flowRequest = simpleFlowStatus?.request ?? null;
   const resolutionSummary = simpleFlowStatus?.resolution ?? null;
@@ -133,21 +203,28 @@ export default function TargetingTab({
     { label: "Falhas", value: resolutionSummary?.failed ?? 0, variant: "danger" },
   ];
 
-  const onToggle = (candidateType: TargetingCandidateType, term: string) => {
-    const key = `${candidateType}::${term}`;
+  const onToggle = (candidateType: TargetingCandidateType, term: string, targetingElementId?: number | null) => {
+    const key = buildSelectionKey(candidateType, term, targetingElementId);
     setSelectedTerms((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
       return next;
     });
   };
 
   const onSave = async () => {
-    const items = Array.from(selectedTerms).map((entry) => {
-      const [candidateType, term] = entry.split("::");
-      return { candidateType: candidateType as TargetingCandidateType, term };
-    });
+    const items = Array.from(selectedTerms)
+      .map((entry) => enrichedOptionsByKey.get(entry))
+      .filter((option): option is EnrichedTargetingOption => Boolean(option))
+      .map((option) => ({
+        candidateType: option.candidateType,
+        term: option.term,
+        targetingElementId: option.targetingElementId ?? null,
+      }));
     await saveSelections.mutateAsync({ items });
   };
 
@@ -167,27 +244,38 @@ export default function TargetingTab({
           <p className="text-body-secondary small mb-3">
             Selecione interesses, cargos e comportamentos salvos no nicho para criar o público da campanha.
           </p>
-          <div className="row g-2">
-            {nicheOptions.map((item) => {
-              const key = `${item.candidateType}::${item.term}`;
-              return (
-                <div className="col-12 col-md-6" key={key}>
-                  <label className="form-check border rounded p-2 w-100">
-                    <input
-                      className="form-check-input me-2"
-                      type="checkbox"
-                      checked={selectedTerms.has(key)}
-                      onChange={() => onToggle(item.candidateType, item.term)}
-                    />
-                    <span className="form-check-label">
-                      <strong>{item.term}</strong>
-                      <span className="text-body-secondary ms-2">({item.candidateType})</span>
-                    </span>
-                  </label>
-                </div>
-              );
-            })}
-          </div>
+          {enrichedOptions.length === 0 ? (
+            <p className="text-muted">
+              Nenhum elemento aprovado com ID oficial da Meta. Salve novas segmentações no nicho e aguarde o
+              enriquecimento automático do worker.
+            </p>
+          ) : (
+            <div className="row g-2">
+              {enrichedOptions.map((item) => {
+                const key = buildOptionKey(item);
+                const rangeLabel = formatAudienceRange(item.audienceLower, item.audienceUpper);
+                return (
+                  <div className="col-12 col-md-6" key={key}>
+                    <label className="form-check border rounded p-2 w-100">
+                      <input
+                        className="form-check-input me-2"
+                        type="checkbox"
+                        checked={selectedTerms.has(key)}
+                        onChange={() => onToggle(item.candidateType, item.term, item.targetingElementId)}
+                      />
+                      <span className="form-check-label">
+                        <strong>{item.term}</strong>
+                        <span className="d-block text-body-secondary small mt-1">
+                          {CANDIDATE_TYPE_LABEL[item.candidateType]} · Meta ID: {item.metaId}
+                          {rangeLabel !== "—" ? ` · Alcance: ${rangeLabel}` : ""}
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+          )}
           <div className="d-flex gap-2 mt-3">
             <button className="btn btn-outline-primary btn-sm" onClick={onSave} disabled={saveSelections.isPending}>
               {saveSelections.isPending ? <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" /> : null}

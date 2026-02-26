@@ -7,12 +7,14 @@ export interface ExperimentTargetingSelection {
   experimentId: number;
   candidateType: TargetingCandidateType;
   term: string;
+  targetingElementId?: number | null;
 }
 
 export interface SaveExperimentTargetingSelectionsPayload {
   items: Array<{
     candidateType: TargetingCandidateType;
     term: string;
+    targetingElementId?: number | null;
   }>;
 }
 

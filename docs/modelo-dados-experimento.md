@@ -62,6 +62,7 @@ erDiagram
       BIGINT experiment_id FK
       VARCHAR candidate_type
       VARCHAR term
+      BIGINT targeting_element_id FK
     }
 
     TARGETING_REQUEST {
@@ -223,6 +224,7 @@ erDiagram
     EXPERIMENT ||--o{ CREATIVE : gera
     EXPERIMENT ||--o{ CREATIVE_VARIANT : detalha
     EXPERIMENT ||--o{ EXPERIMENT_TARGETING_SELECTION : seleciona
+    TARGETING_ELEMENT ||--o{ EXPERIMENT_TARGETING_SELECTION : referencia
     EXPERIMENT ||--o{ AD_SET : segmenta
     EXPERIMENT ||--|| EXPERIMENT_ADSET_WORKFLOW : orquestra
     EXPERIMENT_ADSET_WORKFLOW ||--o{ EXPERIMENT_ADSET_SPEC : gera

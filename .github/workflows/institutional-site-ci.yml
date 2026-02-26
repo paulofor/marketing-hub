@@ -18,8 +18,8 @@ env:
   DEPLOY_HOST: 191.252.102.54
   DEPLOY_USER: ${{ secrets.INSTITUTIONAL_SITE_DEPLOY_USER != '' && secrets.INSTITUTIONAL_SITE_DEPLOY_USER || 'root' }}
   APP_DIR: ${{ secrets.INSTITUTIONAL_SITE_APP_DIR != '' && secrets.INSTITUTIONAL_SITE_APP_DIR || '/root/institucional-site' }}
-  SITE_URL: https://vitrineproduto.online
-  SITE_HEALTH_URL: https://vitrineproduto.online/healthz
+  SITE_URL: http://vitrineproduto.online
+  SITE_HEALTH_URL: http://vitrineproduto.online/healthz
   SITE_HTTP_URL: http://vitrineproduto.online
   INSTITUTIONAL_SITE_NETWORK: ${{ secrets.INSTITUTIONAL_SITE_NETWORK != '' && secrets.INSTITUTIONAL_SITE_NETWORK || 'public-net' }}
   INSTITUTIONAL_SITE_NETWORK_EXTERNAL: "true"

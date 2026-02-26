@@ -11,6 +11,16 @@ servido por um container Nginx otimizado para cache e verificações de saúde.
 - `nginx/default.conf`: cabeçalho de segurança, cache e endpoint `/healthz`.
 - `Dockerfile`: empacota os arquivos estáticos em uma imagem `nginx:alpine` com healthcheck.
 
+
+## CI/CD
+
+Existe um workflow dedicado no GitHub Actions: **CI – Institutional Site** (`.github/workflows/institutional-site-ci.yml`).
+
+- Em `pull_request` e `push` com alterações em `institutional-site/**`, o pipeline valida o build da imagem Docker.
+- Em `push` para `main`, o pipeline faz deploy automático no servidor, executando `git pull`, `docker compose build institutional-site` e `docker compose up -d institutional-site`.
+- Caso o repositório no servidor não esteja em `/opt/marketinghub/app`, configure o secret `INSTITUTIONAL_SITE_APP_DIR`.
+- Após deploy em `main`, o workflow valida disponibilidade pública em `http://www.vitrineproduto.online` e no endpoint `/healthz`.
+
 ## Como executar localmente
 
 ```bash
@@ -38,12 +48,14 @@ docker compose stop institutional-site && docker compose rm -f institutional-sit
    ```bash
    docker compose up -d institutional-site
    ```
-4. Aponte o DNS público para o IP 191.252.102.54 (ou exponha via proxy existente) e libere a porta
-   configurada (padrão `8091`).
+4. Publicação oficial: `http://www.vitrineproduto.online` apontando para o IP `191.252.102.54` (direto ou via proxy).
+   Mantenha a porta configurada (padrão `8091`) liberada quando não houver proxy na frente.
 5. Valide acessos:
    ```bash
-   curl -I http://191.252.102.54:8091/
-   curl -I http://191.252.102.54:8091/privacy-policy/
+   curl -I http://www.vitrineproduto.online/
+   curl -I http://www.vitrineproduto.online/privacy-policy/
+   curl -I http://www.vitrineproduto.online/healthz
+   # fallback técnico direto no host/porta
    curl -I http://191.252.102.54:8091/healthz
    ```
 

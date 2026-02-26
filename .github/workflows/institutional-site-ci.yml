@@ -1,0 +1,52 @@
+name: CI – Institutional Site
+
+on:
+  push:
+    branches: ["main", "master"]
+    paths:
+      - 'institutional-site/**'
+      - '.github/workflows/institutional-site-ci.yml'
+  pull_request:
+    paths:
+      - 'institutional-site/**'
+      - '.github/workflows/institutional-site-ci.yml'
+
+permissions:
+  contents: read
+
+env:
+  VPS_IP: 191.252.102.54
+  APP_DIR: ${{ secrets.INSTITUTIONAL_SITE_APP_DIR != '' && secrets.INSTITUTIONAL_SITE_APP_DIR || '/opt/marketinghub/app' }}
+  SITE_URL: http://www.vitrineproduto.online
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build institutional-site image
+        run: docker build -t marketinghub/institutional-site:ci institutional-site
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Add VPS to known_hosts
+        run: ssh-keyscan -H ${VPS_IP} >> ~/.ssh/known_hosts
+      - name: Deploy institutional-site
+        run: |
+          ssh marketinghub@${VPS_IP} "set -euo pipefail \
+            && cd ${APP_DIR} \
+            && git pull --ff-only origin main \
+            && docker compose build institutional-site \
+            && docker compose up -d institutional-site"
+      - name: Validate public URL
+        run: |
+          curl --fail --show-error --silent --location --retry 6 --retry-delay 10 --retry-connrefused ${SITE_URL}/ > /dev/null
+          curl --fail --show-error --silent --location --retry 6 --retry-delay 10 --retry-connrefused ${SITE_URL}/healthz

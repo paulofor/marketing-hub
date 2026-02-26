@@ -24,6 +24,7 @@
 - Identificadores de instant form no formato `ai_form_*` devem ser normalizados para `form_*` antes de chamar a Graph API.
 - Não mantenha segredos no repositório; use variáveis de ambiente ou GitHub Secrets.
 - Endpoints do backend devem ser acessados com o prefixo configurado em `backend.api-prefix` (default `/api`).
+- Na sincronização de segmentações salvas manualmente no nicho, o worker deve consultar `GET /{graphVersion}/search` com `type` específico (`adinterest`, `adworkposition`, `adbehavior`) para obter `id`, `audience_size_lower_bound` e `audience_size_upper_bound`, reportando os valores ao backend em `/api/internal/targeting/elements/{id}/metaads`.
 - Alinhe a configuração de banco deste módulo com o padrão do `backend/ads-service` (host/usuário/pool Hikari) para evitar divergência entre ambientes.
 - Sempre que chamar o backend registre logs com **URL completa**, parâmetros, payload enviado (quando existir) e a resposta recebida
   para facilitar troubleshooting.

@@ -15,6 +15,8 @@ import java.util.UUID;
  */
 public interface TargetingElementRepository extends JpaRepository<TargetingElement, Long> {
 
+    List<TargetingElement> findByNicheId(Long nicheId);
+
     @Query("""
             select e from TargetingElement e
             where (:nicheId is null or e.niche.id = :nicheId)
@@ -48,4 +50,19 @@ public interface TargetingElementRepository extends JpaRepository<TargetingEleme
     boolean existsApprovedForExperiment(@Param("nicheId") Long nicheId,
                                         @Param("type") TargetingElementType type,
                                         @Param("hypothesisId") UUID hypothesisId);
+
+    @Query("""
+            select e from TargetingElement e
+            where e.source = com.marketinghub.targeting.TargetingElementSource.MANUAL
+              and e.hypothesis is null
+              and e.type in (
+                com.marketinghub.targeting.TargetingElementType.INTEREST,
+                com.marketinghub.targeting.TargetingElementType.JOB_TITLE,
+                com.marketinghub.targeting.TargetingElementType.BEHAVIOR
+              )
+              and (e.metaId is null or e.metaAudienceSizeLowerBound is null or e.metaAudienceSizeUpperBound is null)
+            order by e.updatedAt asc, e.id asc
+            """)
+    List<TargetingElement> findMetaAdsPending(org.springframework.data.domain.Pageable pageable);
+
 }

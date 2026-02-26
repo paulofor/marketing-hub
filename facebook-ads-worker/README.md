@@ -20,6 +20,24 @@ Se nenhum candidato atingir o score mínimo, a etapa 4 falha com erro claro em
 vez de persistir anchor genérico.
 
 
+
+## Enriquecimento de segmentações manuais de nicho
+
+Além da fila de candidatos de targeting, o worker também processa os termos
+cadastrados manualmente na tela de nicho (interesses, cargos e comportamentos).
+O scheduler `MetaAdsTargetingEnrichmentScheduler` busca itens pendentes no backend
+(`GET /api/internal/targeting/elements/metaads-pending`) e consulta a Graph API
+no endpoint global `/search` com o `type` correspondente (`adinterest`,
+`adworkposition` ou `adbehavior`) para capturar:
+
+- código oficial da Meta (`id`),
+- limite mínimo estimado (`audience_size_lower_bound`),
+- limite máximo estimado (`audience_size_upper_bound`).
+
+Após encontrar o melhor match, o worker envia os dados para o backend via
+`PATCH /api/internal/targeting/elements/{id}/metaads`, mantendo a base local
+alinhada com os identificadores e faixas de audiência retornados pela Meta.
+
 ## Testes com MockWebServer
 
 A suíte `FacebookCampaignServiceTest` usa `FailFastMockWebServer` com respostas condicionais de fallback para endpoints de telemetria (`/facebook-api-logs`), publicação de instant form (`/instant-forms/{id}/publication`), status de experimento e fallbacks de campanhas/adsets. Isso evita falhas por requisições auxiliares fora da ordem principal, mantendo os cenários focados no fluxo funcional de criação de campanha.

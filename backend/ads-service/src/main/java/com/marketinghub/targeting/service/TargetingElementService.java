@@ -62,6 +62,8 @@ public class TargetingElementService {
                 .lastReviewedBy(request.getLastReviewedBy())
                 .metaId(request.getMetaId())
                 .metaKey(request.getMetaKey())
+                .metaAudienceSizeLowerBound(request.getMetaAudienceSizeLowerBound())
+                .metaAudienceSizeUpperBound(request.getMetaAudienceSizeUpperBound())
                 .confidence(request.getConfidence())
                 .build();
         if (request.getStatus() != null) {
@@ -105,6 +107,12 @@ public class TargetingElementService {
         }
         if (request.getMetaKey() != null) {
             element.setMetaKey(request.getMetaKey());
+        }
+        if (request.getMetaAudienceSizeLowerBound() != null) {
+            element.setMetaAudienceSizeLowerBound(request.getMetaAudienceSizeLowerBound());
+        }
+        if (request.getMetaAudienceSizeUpperBound() != null) {
+            element.setMetaAudienceSizeUpperBound(request.getMetaAudienceSizeUpperBound());
         }
         if (request.getConfidence() != null) {
             element.setConfidence(request.getConfidence());

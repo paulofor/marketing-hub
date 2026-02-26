@@ -73,6 +73,12 @@ public class TargetingElement {
     @Column(length = 191)
     private String metaKey;
 
+    @Column(name = "meta_audience_size_lower_bound")
+    private Long metaAudienceSizeLowerBound;
+
+    @Column(name = "meta_audience_size_upper_bound")
+    private Long metaAudienceSizeUpperBound;
+
     @Column(precision = 10, scale = 4)
     private BigDecimal confidence;
 

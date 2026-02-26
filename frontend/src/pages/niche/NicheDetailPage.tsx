@@ -21,7 +21,9 @@ import { useNicheDetailedDescriptions } from "../../api/niche/useNicheDetailedDe
 import { useUpdateNicheDetailedDescriptionStatus } from "../../api/niche/useUpdateNicheDetailedDescriptionStatus";
 import { useExperimentsByNiche } from "../../api/experiment/useExperimentsByNiche";
 import { useDeliverablesByNiche } from "../../api/deliverable/useDeliverablesByNiche";
+import { useLeadPortalFlows } from "../../api/leadPortal/useLeadPortalFlows";
 import { useCreateDeliverable } from "../../api/deliverable/useCreateDeliverable";
+import SimpleLeadPortalFormCard from "../../components/leadPortal/SimpleLeadPortalFormCard";
 import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
 import { useDifferentiatedTechnologies } from "../../api/differentiatedTechnology/useDifferentiatedTechnologies";
 import { useInformationSourcesByNiche } from "../../api/informationSource/useInformationSourcesByNiche";
@@ -64,6 +66,18 @@ const formatCurrency = (value?: number | null) => {
   }).format(value);
 };
 
+const formatDateTime = (value?: string | null) => {
+  if (!value) return "—";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "—";
+  return parsed.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 export default function NicheDetailPage() {
   const { nicheId } = useParams();
   const id = Number(nicheId);
@@ -80,6 +94,17 @@ export default function NicheDetailPage() {
   const { data: experiments } = useExperimentsByNiche(nicheId);
   const { data: deliverables } = useDeliverablesByNiche(nicheId);
   const { data: informationSources } = useInformationSourcesByNiche(nicheId);
+  const {
+    data: nicheLeadPortalFlows,
+    isLoading: isLoadingLeadPortalFlows,
+    isError: isLeadPortalFlowsError,
+    refetch: refetchLeadPortalFlows,
+  } = useLeadPortalFlows(
+    normalizedNicheId ? { nicheId: normalizedNicheId } : {},
+  );
+  const leadPortalFlowList = Array.isArray(nicheLeadPortalFlows)
+    ? nicheLeadPortalFlows
+    : [];
   const { data: detailedDescriptions } = useNicheDetailedDescriptions(nicheId);
   const requestHypotheses = useRequestHypotheses(id);
   const requestDetailedDescriptions = useRequestDetailedDescriptions(id);
@@ -1527,6 +1552,78 @@ export default function NicheDetailPage() {
           </div>
         )}
       </section>
+      <section className="niche-section" aria-labelledby="niche-lead-portal-flows">
+        <div className="niche-section__header">
+          <div>
+            <h2 className="niche-section__title" id="niche-lead-portal-flows">
+              Formulários simples do nicho
+            </h2>
+            <p className="niche-section__subtitle">
+              Cadastre formulários sem imagem uma vez e reutilize em todos os experimentos relacionados.
+            </p>
+          </div>
+        </div>
+        <div className="niche-section__body d-flex flex-column gap-3">
+          <SimpleLeadPortalFormCard
+            marketNicheId={normalizedNicheId}
+            onCreated={refetchLeadPortalFlows}
+          />
+          <div className="card border-0 shadow-sm">
+            <div className="card-body d-flex flex-column gap-3">
+              <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 className="mb-0">Formulários disponíveis</h5>
+                <span className="badge text-bg-light text-dark">
+                  {leadPortalFlowList.length} item(s)
+                </span>
+              </div>
+              {isLoadingLeadPortalFlows ? (
+                <p className="text-muted mb-0">Carregando formulários...</p>
+              ) : isLeadPortalFlowsError ? (
+                <p className="text-danger mb-0">
+                  Não foi possível carregar os formulários deste nicho.
+                </p>
+              ) : leadPortalFlowList.length === 0 ? (
+                <p className="niche-section__empty mb-0">
+                  Nenhum formulário cadastrado ainda.
+                </p>
+              ) : (
+                <div className="d-flex flex-column gap-3">
+                  {leadPortalFlowList.map((flow) => (
+                    <article key={flow.id} className="card border-0 shadow-sm">
+                      <div className="card-body">
+                        <div className="d-flex flex-wrap gap-2 align-items-center mb-1">
+                          <h6 className="mb-0">{flow.name}</h6>
+                          <span
+                            className={`badge ${flow.approved ? "text-bg-success" : "text-bg-secondary"}`}
+                          >
+                            {flow.approved ? "Aprovado" : "Pendente"}
+                          </span>
+                        </div>
+                        <p className="text-muted small mb-1">Slug: {flow.slug}</p>
+                        <p className="text-muted small mb-1">
+                          Atualizado em {formatDateTime(flow.updatedAt)}
+                        </p>
+                        {flow.publicUrl ? (
+                          <p className="text-muted small mb-1">
+                            URL pública:{" "}
+                            <a href={flow.publicUrl} target="_blank" rel="noopener noreferrer">
+                              {flow.publicUrl}
+                            </a>
+                          </p>
+                        ) : null}
+                        <p className="text-muted small mb-0">
+                          {flow.questions.length} pergunta(s)
+                        </p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="niche-section" aria-labelledby="niche-targeting">
         <div className="niche-section__header">
           <div>

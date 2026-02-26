@@ -12,7 +12,7 @@ import com.marketinghub.facebookads.playbook.ExperimentAdSetWorkflowStatus;
 import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetSpecRepository;
 import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetWorkflowRepository;
 import com.marketinghub.hypothesis.Hypothesis;
-import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
+import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.repository.TargetingElementRepository;
@@ -37,8 +37,6 @@ class ExperimentReadinessServiceTest {
     @Mock
     private CreativeRepository creativeRepository;
     @Mock
-    private LeadPortalFlowRepository leadPortalFlowRepository;
-    @Mock
     private TargetingElementRepository targetingElementRepository;
     @Mock
     private ExperimentAdSetWorkflowRepository adSetWorkflowRepository;
@@ -55,7 +53,6 @@ class ExperimentReadinessServiceTest {
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(0L);
-        when(leadPortalFlowRepository.countByExperimentId(experimentId)).thenReturn(0L);
         when(adSetWorkflowRepository.findByExperimentId(experimentId)).thenReturn(Optional.empty());
         for (TargetingElementType type : TargetingElementType.values()) {
             when(targetingElementRepository.existsApprovedForExperiment(experiment.getNiche().getId(), type,
@@ -81,10 +78,10 @@ class ExperimentReadinessServiceTest {
     void shouldReturnNoIssuesWhenEverythingIsReady() {
         Long experimentId = 8L;
         Experiment experiment = buildExperiment(experimentId, 18L);
+        experiment.setLeadPortalFlow(new LeadPortalFlow());
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(2L);
-        when(leadPortalFlowRepository.countByExperimentId(experimentId)).thenReturn(1L);
         for (TargetingElementType type : TargetingElementType.values()) {
             when(targetingElementRepository.existsApprovedForExperiment(experiment.getNiche().getId(), type,
                     experiment.getHypothesisRef().getId())).thenReturn(true);
@@ -103,10 +100,10 @@ class ExperimentReadinessServiceTest {
     void shouldTreatReadyAdSetSpecsAsCompleteTargeting() {
         Long experimentId = 9L;
         Experiment experiment = buildExperiment(experimentId, 20L);
+        experiment.setLeadPortalFlow(new LeadPortalFlow());
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(1L);
-        when(leadPortalFlowRepository.countByExperimentId(experimentId)).thenReturn(1L);
         for (TargetingElementType type : TargetingElementType.values()) {
             when(targetingElementRepository.existsApprovedForExperiment(experiment.getNiche().getId(), type,
                     experiment.getHypothesisRef().getId())).thenReturn(false);

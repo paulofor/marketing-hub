@@ -79,6 +79,7 @@ public class FixtureUtils {
                 LeadPortalFlow.builder()
                         .name("Fluxo " + java.util.UUID.randomUUID())
                         .slug("flow-" + java.util.UUID.randomUUID())
+                        .marketNiche(niche)
                         .build());
         Experiment exp = Experiment.builder()
                 .niche(niche)

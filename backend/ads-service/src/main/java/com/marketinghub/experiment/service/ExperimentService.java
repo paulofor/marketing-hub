@@ -139,13 +139,20 @@ public class ExperimentService {
         return entityManager.getReference(JourneyTemplate.class, journeyTemplateId);
     }
 
-    private LeadPortalFlow attachLeadPortalFlow(Long flowId) {
+    private LeadPortalFlow attachLeadPortalFlow(Long flowId, Long nicheId) {
         if (flowId == null) {
             return null;
         }
-        if (!leadPortalFlowRepository.existsById(flowId)) {
+        LeadPortalFlow flow = leadPortalFlowRepository.findById(flowId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "leadPortalFlowId not found: " + flowId));
+        if (flow.getMarketNiche() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "leadPortalFlowId not found: " + flowId);
+                    "leadPortalFlowId is not associated with a market niche");
+        }
+        if (nicheId != null && !flow.getMarketNiche().getId().equals(nicheId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "leadPortalFlowId must belong to the experiment's niche");
         }
         return entityManager.getReference(LeadPortalFlow.class, flowId);
     }
@@ -235,7 +242,7 @@ public class ExperimentService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "baselineCvr must be < targetCvr");
         }
         JourneyTemplate journeyTemplate = attachJourneyTemplate(request.getJourneyTemplateId());
-        LeadPortalFlow leadPortalFlow = attachLeadPortalFlow(request.getLeadPortalFlowId());
+        LeadPortalFlow leadPortalFlow = attachLeadPortalFlow(request.getLeadPortalFlowId(), niche.getId());
         String followUpActionUrl = normalizeFollowUpActionUrl(request.getFollowUpActionUrl());
         ImageGenerationSelection imageSelection =
                 resolveImageGenerationSelection(request.getImageModelId(), request.getImageModelQualityId());
@@ -521,7 +528,7 @@ public class ExperimentService {
             if (request.getLeadPortalFlowId() == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "leadPortalFlowId required");
             }
-            exp.setLeadPortalFlow(attachLeadPortalFlow(request.getLeadPortalFlowId()));
+            exp.setLeadPortalFlow(attachLeadPortalFlow(request.getLeadPortalFlowId(), exp.getNiche().getId()));
         }
         if (request.isImageModelIdPresent() || request.isImageModelQualityIdPresent()) {
             Long currentModelId = request.isImageModelIdPresent()

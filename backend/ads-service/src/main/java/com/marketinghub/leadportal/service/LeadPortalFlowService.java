@@ -10,7 +10,9 @@ import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.niche.MarketNiche;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,13 +35,16 @@ public class LeadPortalFlowService {
     private final LeadPortalFlowRepository repository;
     private final LeadPortalFlowPublisher flowPublisher;
     private final ExperimentRepository experimentRepository;
+    private final MarketNicheRepository marketNicheRepository;
 
     public LeadPortalFlowService(LeadPortalFlowRepository repository,
                                  LeadPortalFlowPublisher flowPublisher,
-                                 ExperimentRepository experimentRepository) {
+                                 ExperimentRepository experimentRepository,
+                                 MarketNicheRepository marketNicheRepository) {
         this.repository = repository;
         this.flowPublisher = flowPublisher;
         this.experimentRepository = experimentRepository;
+        this.marketNicheRepository = marketNicheRepository;
     }
 
     public List<LeadPortalFlow> listAll() {
@@ -47,7 +52,22 @@ public class LeadPortalFlowService {
     }
 
     public List<LeadPortalFlow> listByExperiment(Long experimentId) {
-        return repository.findAllByExperimentIdOrderByCreatedAtDesc(experimentId);
+        if (experimentId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "experimentId is required");
+        }
+        Experiment experiment = attachExperiment(experimentId);
+        Long nicheId = experiment.getNiche() != null ? experiment.getNiche().getId() : null;
+        if (nicheId == null) {
+            return List.of();
+        }
+        return repository.findAllByMarketNicheIdOrderByCreatedAtDesc(nicheId);
+    }
+
+    public List<LeadPortalFlow> listByMarketNiche(Long marketNicheId) {
+        if (marketNicheId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "marketNicheId is required");
+        }
+        return repository.findAllByMarketNicheIdOrderByCreatedAtDesc(marketNicheId);
     }
 
     public LeadPortalFlow get(Long id) {
@@ -61,15 +81,25 @@ public class LeadPortalFlowService {
         String name = normalizeName(request.getName());
         String slug = normalizeSlug(request.getSlug());
         ensureUniqueSlug(slug, null);
-        if (request.getExperimentId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "experimentId is required");
+        Long marketNicheId = request.getMarketNicheId();
+        if (marketNicheId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "marketNicheId is required");
         }
-        Experiment experiment = attachExperiment(request.getExperimentId());
+        MarketNiche marketNiche = attachMarketNiche(marketNicheId);
+        Experiment experiment = request.getExperimentId() == null
+                ? null
+                : attachExperiment(request.getExperimentId());
+        if (experiment != null && experiment.getNiche() != null &&
+                !Objects.equals(experiment.getNiche().getId(), marketNiche.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "experimentId must belong to the provided marketNicheId");
+        }
         LeadPortalFlow flow = LeadPortalFlow.builder()
                 .name(name)
                 .slug(slug)
                 .description(trimToNull(request.getDescription()))
                 .model(trimToNull(request.getModel()))
+                .marketNiche(marketNiche)
                 .experiment(experiment)
                 .build();
         flow.getQuestions().addAll(buildQuestions(flow, request.getQuestions()));
@@ -89,6 +119,9 @@ public class LeadPortalFlowService {
         }
         if (request.getDescription() != null) {
             flow.setDescription(trimToNull(request.getDescription()));
+        }
+        if (request.getMarketNicheId() != null) {
+            flow.setMarketNiche(attachMarketNiche(request.getMarketNicheId()));
         }
         if (request.getQuestions() != null) {
             flow.getQuestions().clear();
@@ -192,6 +225,15 @@ public class LeadPortalFlowService {
         return experimentRepository.findById(experimentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "experiment not found: " + experimentId));
+    }
+
+    private MarketNiche attachMarketNiche(Long marketNicheId) {
+        if (marketNicheId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "marketNicheId is required");
+        }
+        return marketNicheRepository.findById(marketNicheId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "market niche not found: " + marketNicheId));
     }
 
     private String normalizeName(String name) {

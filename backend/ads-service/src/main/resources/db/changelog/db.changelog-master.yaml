@@ -484,3 +484,7 @@ databaseChangeLog:
   - include:
       file: V2035_01_15__backfill_cost_totals.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: V2034_03_15__lead_portal_flow_market_niche.sql
+      relativeToChangelogFile: true

@@ -17,6 +17,7 @@ export interface LeadPortalFlow {
   id: number;
   name: string;
   slug: string;
+  marketNicheId?: number | null;
   publicUrl?: string | null;
   description?: string | null;
   model?: string | null;
@@ -28,13 +29,25 @@ export interface LeadPortalFlow {
   questions: LeadPortalFlowQuestion[];
 }
 
-export function useLeadPortalFlows(experimentId?: number | string) {
+interface UseLeadPortalFlowsParams {
+  experimentId?: number | string;
+  nicheId?: number | string;
+}
+
+export function useLeadPortalFlows({
+  experimentId,
+  nicheId,
+}: UseLeadPortalFlowsParams = {}) {
   return useQuery({
-    queryKey: ["lead-portal-flows", experimentId],
+    queryKey: ["lead-portal-flows", experimentId ?? null, nicheId ?? null],
     queryFn: async () => {
-      const { data } = await axios.get<LeadPortalFlow[]>("/api/lead-portal-flows", {
-        params: experimentId ? { experimentId } : undefined,
-      });
+      const params: Record<string, number | string> = {};
+      if (experimentId) params.experimentId = experimentId;
+      if (nicheId) params.nicheId = nicheId;
+      const { data } = await axios.get<LeadPortalFlow[]>(
+        "/api/lead-portal-flows",
+        { params: Object.keys(params).length ? params : undefined },
+      );
       return data;
     },
   });

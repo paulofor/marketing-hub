@@ -85,6 +85,7 @@ class LeadPortalFlowControllerTest {
         request.setName("Fluxo Portal");
         request.setSlug("fluxo-portal");
         request.setDescription("Perguntas para leads vindos da campanha A");
+        request.setMarketNicheId(experiment.getNiche().getId());
         request.setExperimentId(experiment.getId());
         request.setModel("gpt-4o");
         request.setQuestions(List.of(
@@ -115,12 +116,14 @@ class LeadPortalFlowControllerTest {
         repository.save(LeadPortalFlow.builder()
                 .name("Fluxo existente")
                 .slug("fluxo-duplicado")
+                .marketNiche(experiment.getNiche())
                 .experiment(experiment)
                 .build());
 
         CreateLeadPortalFlowRequest request = new CreateLeadPortalFlowRequest();
         request.setName("Fluxo Portal");
         request.setSlug("fluxo-duplicado");
+        request.setMarketNicheId(experiment.getNiche().getId());
         request.setExperimentId(experiment.getId());
         request.setQuestions(List.of(
                 buildQuestion("Qual o seu e-mail?", "email", LeadPortalQuestionType.EMAIL, true, List.of())
@@ -138,6 +141,7 @@ class LeadPortalFlowControllerTest {
         LeadPortalFlow flow = repository.save(LeadPortalFlow.builder()
                 .name("Fluxo existente")
                 .slug("fluxo-aprovacao")
+                .marketNiche(experiment.getNiche())
                 .experiment(experiment)
                 .build());
 

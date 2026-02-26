@@ -1,6 +1,7 @@
 package com.marketinghub.leadportal;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.niche.MarketNiche;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -60,6 +61,12 @@ public class LeadPortalFlow {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private List<LeadPortalFlowQuestion> questions = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "market_niche_id")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private MarketNiche marketNiche;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "experiment_id")

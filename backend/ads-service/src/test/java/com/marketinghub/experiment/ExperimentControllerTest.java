@@ -51,12 +51,13 @@ class ExperimentControllerTest {
     @Autowired
     com.marketinghub.leadportal.repository.LeadPortalFlowRepository leadPortalFlowRepository;
 
-    private Long createLeadPortalFlow() {
+    private Long createLeadPortalFlow(MarketNiche niche) {
         String slug = "flow-" + UUID.randomUUID();
         return leadPortalFlowRepository.save(
                 com.marketinghub.leadportal.LeadPortalFlow.builder()
                         .name("Fluxo " + slug)
                         .slug(slug)
+                        .marketNiche(niche)
                         .build()).getId();
     }
 
@@ -95,7 +96,7 @@ class ExperimentControllerTest {
         req.setTargetCvr(new BigDecimal("5"));
         req.setMdePercent(new BigDecimal("40"));
         req.setJourneyTemplateId(template.getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow());
+        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
         mockMvc.perform(post("/api/niches/" + niche.getId() + "/experiments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(req)))
@@ -137,7 +138,7 @@ class ExperimentControllerTest {
         req.setStartDate(java.time.LocalDate.of(2024,2,1));
         req.setEndDate(java.time.LocalDate.of(2024,1,1));
         req.setJourneyTemplateId(template.getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow());
+        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
         mockMvc.perform(post("/api/niches/" + niche.getId() + "/experiments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(req)))

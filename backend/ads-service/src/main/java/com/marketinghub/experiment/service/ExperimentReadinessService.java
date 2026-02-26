@@ -13,7 +13,6 @@ import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetSpecRepos
 import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetWorkflowRepository;
 import com.marketinghub.journey.model.JourneyStep;
 import com.marketinghub.journey.model.JourneyStimulusType;
-import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.repository.TargetingElementRepository;
 import org.springframework.stereotype.Service;
@@ -34,20 +33,17 @@ import java.util.stream.Collectors;
 public class ExperimentReadinessService {
     private final ExperimentService experimentService;
     private final CreativeRepository creativeRepository;
-    private final LeadPortalFlowRepository leadPortalFlowRepository;
     private final TargetingElementRepository targetingElementRepository;
     private final ExperimentAdSetWorkflowRepository adSetWorkflowRepository;
     private final ExperimentAdSetSpecRepository adSetSpecRepository;
 
     public ExperimentReadinessService(ExperimentService experimentService,
                                       CreativeRepository creativeRepository,
-                                      LeadPortalFlowRepository leadPortalFlowRepository,
                                       TargetingElementRepository targetingElementRepository,
                                       ExperimentAdSetWorkflowRepository adSetWorkflowRepository,
                                       ExperimentAdSetSpecRepository adSetSpecRepository) {
         this.experimentService = experimentService;
         this.creativeRepository = creativeRepository;
-        this.leadPortalFlowRepository = leadPortalFlowRepository;
         this.targetingElementRepository = targetingElementRepository;
         this.adSetWorkflowRepository = adSetWorkflowRepository;
         this.adSetSpecRepository = adSetSpecRepository;
@@ -59,8 +55,8 @@ public class ExperimentReadinessService {
         long creativeCount = creativeRepository.countByExperimentId(experimentId);
         boolean hasCreatives = creativeCount > 0;
 
-        long leadPortalFlowCount = leadPortalFlowRepository.countByExperimentId(experimentId);
-        boolean hasLeadPortalFlow = leadPortalFlowCount > 0 || experiment.getLeadPortalFlow() != null;
+        long leadPortalFlowCount = experiment.getLeadPortalFlow() != null ? 1L : 0L;
+        boolean hasLeadPortalFlow = leadPortalFlowCount > 0;
 
         List<String> missingConfiguration = computeMissingConfiguration(experiment);
         List<TargetingElementType> missingTypes = mapMissingTargetingTypes(experiment, missingConfiguration);

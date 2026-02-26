@@ -17,7 +17,7 @@ permissions:
 env:
   DEPLOY_HOST: 191.252.102.54
   DEPLOY_USER: ${{ secrets.INSTITUTIONAL_SITE_DEPLOY_USER != '' && secrets.INSTITUTIONAL_SITE_DEPLOY_USER || 'root' }}
-  APP_DIR: ${{ secrets.INSTITUTIONAL_SITE_APP_DIR != '' && secrets.INSTITUTIONAL_SITE_APP_DIR || '/opt/marketinghub/app' }}
+  APP_DIR: ${{ secrets.INSTITUTIONAL_SITE_APP_DIR != '' && secrets.INSTITUTIONAL_SITE_APP_DIR || '/root/institucional-site' }}
   SITE_URL: http://www.vitrineproduto.online
 
 jobs:
@@ -44,11 +44,15 @@ jobs:
           printf '%s\n' "SSH_COMMON_ARGS=-i $HOME/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o TCPKeepAlive=yes -o ConnectTimeout=60" >> "$GITHUB_ENV"
       - name: Add VPS to known_hosts
         run: ssh-keyscan -H ${DEPLOY_HOST} >> ~/.ssh/known_hosts
+      - name: Sync institutional-site files
+        run: |
+          rsync -avz --delete \
+            -e "ssh ${SSH_COMMON_ARGS}" \
+            institutional-site/ "${DEPLOY_USER}@${DEPLOY_HOST}:${APP_DIR}/"
       - name: Deploy institutional-site
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
             && cd ${APP_DIR} \
-            && git pull --ff-only origin main \
             && docker compose build institutional-site \
             && docker compose up -d institutional-site"
       - name: Validate public URL

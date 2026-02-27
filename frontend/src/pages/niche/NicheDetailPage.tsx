@@ -53,14 +53,10 @@ type MetaAdsStatus = "PENDING" | "READY";
 
 function resolveMetaAdsStatus(element?: { metaId?: string | null; metaAudienceSizeLowerBound?: number | null; metaAudienceSizeUpperBound?: number | null; } | null): MetaAdsStatus {
   if (!element) return "PENDING";
-  if (
-    typeof element.metaId === "string" &&
-    element.metaId.trim() !== "" &&
-    element.metaAudienceSizeLowerBound !== null &&
-    element.metaAudienceSizeLowerBound !== undefined &&
-    element.metaAudienceSizeUpperBound !== null &&
-    element.metaAudienceSizeUpperBound !== undefined
-  ) {
+  const hasMetaId = typeof element.metaId === "string" && element.metaId.trim() !== "";
+  const hasAudienceData = typeof element.metaAudienceSizeLowerBound === "number"
+    || typeof element.metaAudienceSizeUpperBound === "number";
+  if (hasMetaId && hasAudienceData) {
     return "READY";
   }
   return "PENDING";
@@ -83,6 +79,26 @@ function formatMetaAudienceRange(lower?: number | null, upper?: number | null) {
   }
   return "—";
 }
+
+
+function renderMetaAdsSummary(element?: TargetingElement | null) {
+  if (!element || resolveMetaAdsStatus(element) !== "READY") {
+    return null;
+  }
+  const rangeLabel = formatMetaAudienceRange(
+    element.metaAudienceSizeLowerBound,
+    element.metaAudienceSizeUpperBound,
+  );
+  return (
+    <div className="text-body-secondary small mt-1">
+      <span>Meta ID: <code>{element.metaId}</code></span>
+      {rangeLabel !== "—" ? (
+        <span className="d-block">Alcance estimado: {rangeLabel} pessoas</span>
+      ) : null}
+    </div>
+  );
+}
+
 
 type MetaReadyEntry = { term: string; element: TargetingElement };
 
@@ -1210,8 +1226,9 @@ export default function NicheDetailPage() {
                     return (
                       <li key={`${item}-${index}`} className="niche-list__item">
                         <span>{item}</span>
+                        {renderMetaAdsSummary(manualElement)}
                         <span className={`badge rounded-pill ${metaAdsStatus === "READY" ? "text-bg-success-subtle border border-success-subtle" : "text-bg-warning-subtle text-dark border border-warning-subtle"}`}>
-                          {metaAdsStatus === "READY" ? "Meta Ads processado" : "Pendente Meta Ads"}
+                          {metaAdsStatus === "READY" ? "Meta Ads pronto" : "Pendente Meta Ads"}
                         </span>
                         <div className="niche-list__actions">
                           {manualElement ? (
@@ -1328,8 +1345,9 @@ export default function NicheDetailPage() {
                     return (
                       <li key={`${item}-${index}`} className="niche-list__item">
                         <span>{item}</span>
+                        {renderMetaAdsSummary(manualElement)}
                         <span className={`badge rounded-pill ${metaAdsStatus === "READY" ? "text-bg-success-subtle border border-success-subtle" : "text-bg-warning-subtle text-dark border border-warning-subtle"}`}>
-                          {metaAdsStatus === "READY" ? "Meta Ads processado" : "Pendente Meta Ads"}
+                          {metaAdsStatus === "READY" ? "Meta Ads pronto" : "Pendente Meta Ads"}
                         </span>
                         <div className="niche-list__actions">
                           {manualElement ? (
@@ -1447,8 +1465,9 @@ export default function NicheDetailPage() {
                     return (
                       <li key={`${item}-${index}`} className="niche-list__item">
                         <span>{item}</span>
+                        {renderMetaAdsSummary(manualElement)}
                         <span className={`badge rounded-pill ${metaAdsStatus === "READY" ? "text-bg-success-subtle border border-success-subtle" : "text-bg-warning-subtle text-dark border border-warning-subtle"}`}>
-                          {metaAdsStatus === "READY" ? "Meta Ads processado" : "Pendente Meta Ads"}
+                          {metaAdsStatus === "READY" ? "Meta Ads pronto" : "Pendente Meta Ads"}
                         </span>
                         <div className="niche-list__actions">
                           {manualElement ? (

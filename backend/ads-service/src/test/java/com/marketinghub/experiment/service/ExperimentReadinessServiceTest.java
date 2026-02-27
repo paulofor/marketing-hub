@@ -15,7 +15,7 @@ import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.targeting.TargetingElementType;
-import com.marketinghub.targeting.repository.TargetingElementRepository;
+import com.marketinghub.experiment.repository.ExperimentTargetingSelectionRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -37,7 +37,7 @@ class ExperimentReadinessServiceTest {
     @Mock
     private CreativeRepository creativeRepository;
     @Mock
-    private TargetingElementRepository targetingElementRepository;
+    private ExperimentTargetingSelectionRepository targetingSelectionRepository;
     @Mock
     private ExperimentAdSetWorkflowRepository adSetWorkflowRepository;
     @Mock
@@ -54,10 +54,7 @@ class ExperimentReadinessServiceTest {
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(0L);
         when(adSetWorkflowRepository.findByExperimentId(experimentId)).thenReturn(Optional.empty());
-        for (TargetingElementType type : TargetingElementType.values()) {
-            when(targetingElementRepository.existsApprovedForExperiment(experiment.getNiche().getId(), type,
-                    experiment.getHypothesisRef().getId())).thenReturn(false);
-        }
+        when(targetingSelectionRepository.countByExperimentId(experimentId)).thenReturn(0L);
 
         ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
 
@@ -82,10 +79,7 @@ class ExperimentReadinessServiceTest {
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(2L);
-        for (TargetingElementType type : TargetingElementType.values()) {
-            when(targetingElementRepository.existsApprovedForExperiment(experiment.getNiche().getId(), type,
-                    experiment.getHypothesisRef().getId())).thenReturn(true);
-        }
+        when(targetingSelectionRepository.countByExperimentId(experimentId)).thenReturn(2L);
 
         ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
 
@@ -104,10 +98,6 @@ class ExperimentReadinessServiceTest {
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(1L);
-        for (TargetingElementType type : TargetingElementType.values()) {
-            when(targetingElementRepository.existsApprovedForExperiment(experiment.getNiche().getId(), type,
-                    experiment.getHypothesisRef().getId())).thenReturn(false);
-        }
 
         ExperimentAdSetWorkflow workflow = ExperimentAdSetWorkflow.builder()
                 .id(42L)

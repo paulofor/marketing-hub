@@ -14,17 +14,14 @@ import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetWorkflowR
 import com.marketinghub.journey.model.JourneyStep;
 import com.marketinghub.journey.model.JourneyStimulusType;
 import com.marketinghub.targeting.TargetingElementType;
-import com.marketinghub.targeting.repository.TargetingElementRepository;
+import com.marketinghub.experiment.repository.ExperimentTargetingSelectionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Consolida pendências básicas de preparação do experimento.
@@ -33,18 +30,18 @@ import java.util.stream.Collectors;
 public class ExperimentReadinessService {
     private final ExperimentService experimentService;
     private final CreativeRepository creativeRepository;
-    private final TargetingElementRepository targetingElementRepository;
+    private final ExperimentTargetingSelectionRepository targetingSelectionRepository;
     private final ExperimentAdSetWorkflowRepository adSetWorkflowRepository;
     private final ExperimentAdSetSpecRepository adSetSpecRepository;
 
     public ExperimentReadinessService(ExperimentService experimentService,
                                       CreativeRepository creativeRepository,
-                                      TargetingElementRepository targetingElementRepository,
+                                      ExperimentTargetingSelectionRepository targetingSelectionRepository,
                                       ExperimentAdSetWorkflowRepository adSetWorkflowRepository,
                                       ExperimentAdSetSpecRepository adSetSpecRepository) {
         this.experimentService = experimentService;
         this.creativeRepository = creativeRepository;
-        this.targetingElementRepository = targetingElementRepository;
+        this.targetingSelectionRepository = targetingSelectionRepository;
         this.adSetWorkflowRepository = adSetWorkflowRepository;
         this.adSetSpecRepository = adSetSpecRepository;
     }
@@ -59,7 +56,7 @@ public class ExperimentReadinessService {
         boolean hasLeadPortalFlow = leadPortalFlowCount > 0;
 
         List<String> missingConfiguration = computeMissingConfiguration(experiment);
-        List<TargetingElementType> missingTypes = mapMissingTargetingTypes(experiment, missingConfiguration);
+        List<TargetingElementType> missingTypes = mapMissingTargetingTypes(missingConfiguration);
         boolean hasCompleteTargeting = missingTypes.isEmpty();
 
         List<ExperimentReadinessIssueDto> issues = new ArrayList<>();
@@ -84,9 +81,9 @@ public class ExperimentReadinessService {
         if (!hasCompleteTargeting) {
             issues.add(new ExperimentReadinessIssueDto(
                     ExperimentReadinessIssueType.TARGETING,
-                    "Público incompleto",
-                    "Faltam elementos aprovados para: " + describeTargetingTypes(missingTypes) + ".",
-                    "Acesse a aba Segmentação e aprove ao menos um interesse, um cargo e um comportamento.",
+                    "Público não selecionado",
+                    "Ainda não há nenhuma segmentação salva para este experimento.",
+                    "Acesse a aba Segmentação, marque ao menos um interesse, cargo ou comportamento com ID oficial da Meta e salve o público.",
                     List.copyOf(missingTypes)
             ));
         }
@@ -147,19 +144,36 @@ public class ExperimentReadinessService {
                 }
             }
         }
-        if (!hasApprovedTargeting(experiment)) {
-            missing.add("approvedTargetingElements");
+        if (!hasConfiguredTargeting(experiment)) {
+            missing.add("targetingSelections");
         }
         return List.copyOf(missing);
     }
 
-    private List<TargetingElementType> mapMissingTargetingTypes(Experiment experiment, List<String> missingConfiguration) {
-        if (!missingConfiguration.contains("approvedTargetingElements")) {
+    private List<TargetingElementType> mapMissingTargetingTypes(List<String> missingConfiguration) {
+        if (!missingConfiguration.contains("targetingSelections")) {
             return List.of();
         }
-        Long nicheId = experiment.getNiche() != null ? experiment.getNiche().getId() : null;
-        UUID hypothesisId = experiment.getHypothesisRef() != null ? experiment.getHypothesisRef().getId() : null;
-        return determineMissingTargeting(nicheId, hypothesisId);
+        return List.of(
+                TargetingElementType.INTEREST,
+                TargetingElementType.JOB_TITLE,
+                TargetingElementType.BEHAVIOR
+        );
+    }
+
+
+    private boolean hasConfiguredTargeting(Experiment experiment) {
+        if (experiment == null) {
+            return false;
+        }
+        return hasReadyAdSetSpecs(experiment.getId()) || hasSelectedTargeting(experiment.getId());
+    }
+
+    private boolean hasSelectedTargeting(Long experimentId) {
+        if (experimentId == null) {
+            return false;
+        }
+        return targetingSelectionRepository.countByExperimentId(experimentId) > 0;
     }
 
     private boolean hasReadyAdSetSpecs(Long experimentId) {
@@ -194,28 +208,6 @@ public class ExperimentReadinessService {
         return !StringUtils.hasText(validation) || "VALID".equalsIgnoreCase(validation.trim());
     }
 
-    private boolean hasApprovedTargeting(Experiment experiment) {
-        Long nicheId = experiment.getNiche() != null ? experiment.getNiche().getId() : null;
-        UUID hypothesisId = experiment.getHypothesisRef() != null ? experiment.getHypothesisRef().getId() : null;
-        List<TargetingElementType> missing = determineMissingTargeting(nicheId, hypothesisId);
-        return missing.isEmpty() || hasReadyAdSetSpecs(experiment.getId());
-    }
-
-    private List<TargetingElementType> determineMissingTargeting(Long nicheId, UUID hypothesisId) {
-        EnumSet<TargetingElementType> missing = EnumSet.noneOf(TargetingElementType.class);
-        if (nicheId == null) {
-            missing.addAll(List.of(TargetingElementType.values()));
-            return List.copyOf(missing);
-        }
-        for (TargetingElementType type : TargetingElementType.values()) {
-            boolean exists = targetingElementRepository.existsApprovedForExperiment(nicheId, type, hypothesisId);
-            if (!exists) {
-                missing.add(type);
-            }
-        }
-        return List.copyOf(missing);
-    }
-
     private String resolveExperimentPageId(Experiment experiment) {
         if (experiment.getFacebookPage() == null) {
             return null;
@@ -244,17 +236,4 @@ public class ExperimentReadinessService {
         return false;
     }
 
-    private String describeTargetingTypes(List<TargetingElementType> types) {
-        return types.stream()
-                .map(this::humanReadable)
-                .collect(Collectors.joining(", "));
-    }
-
-    private String humanReadable(TargetingElementType type) {
-        return switch (type) {
-            case INTEREST -> "interesses";
-            case JOB_TITLE -> "cargos";
-            case BEHAVIOR -> "comportamentos";
-        };
-    }
 }

@@ -30,7 +30,6 @@ import {
   type ExperimentCampaignResetSummary,
 } from "../../api/experiment/useExperimentCampaignReset";
 import type { JourneyAssignment, JourneyStep } from "../../api/journey/types";
-import type { TargetingElementType } from "../../api/targeting/types";
 import DeliverablesTab from "./DeliverablesTab";
 import LeadPortalFlowTab from "./LeadPortalFlowTab";
 import TargetingTab from "./TargetingTab";
@@ -46,19 +45,6 @@ type ChecklistItem = {
   actionLabel?: string;
   actionDisabled?: boolean;
   actionLoading?: boolean;
-};
-
-const TARGETING_LABEL: Record<TargetingElementType, string> = {
-  INTEREST: "interesses",
-  JOB_TITLE: "cargos",
-  BEHAVIOR: "comportamentos",
-};
-
-const describeTargetingTypes = (types: TargetingElementType[]): string => {
-  if (!types.length) {
-    return "";
-  }
-  return types.map((type) => TARGETING_LABEL[type] ?? type.toLowerCase()).join(", ");
 };
 
 export default function ExperimentDetailPage() {
@@ -254,7 +240,6 @@ export default function ExperimentDetailPage() {
   const isFacebookWorkerReady = facebookWorker?.ready ?? false;
   const facebookAccountLabel =
     facebookWorker?.accountName ?? facebookWorker?.accountId ?? null;
-  const readinessMissingTargeting = readinessSummary?.missingTargetingTypes ?? [];
   const hasLeadPortalFlow =
     readinessSummary?.hasLeadPortalFlow ??
     Boolean(data.leadPortalFlowId ?? data.leadPortalFlowName);
@@ -303,10 +288,8 @@ export default function ExperimentDetailPage() {
       hint: isLoadingReadiness
         ? "Verificando elementos aprovados..."
         : hasCompleteTargeting
-          ? "Interesses, cargos e comportamentos aprovados."
-          : readinessMissingTargeting.length
-            ? `Faltam aprovar: ${describeTargetingTypes(readinessMissingTargeting)}.`
-            : "Aprove ao menos um interesse, um cargo e um comportamento na aba Segmentação.",
+          ? "Público salvo na aba Segmentação."
+          : "Selecione e salve pelo menos uma segmentação com ID da Meta na aba Segmentação.",
       action: hasCompleteTargeting ? undefined : () => setTab("targeting"),
       actionLabel: hasCompleteTargeting ? undefined : "Ir para Segmentação",
     },

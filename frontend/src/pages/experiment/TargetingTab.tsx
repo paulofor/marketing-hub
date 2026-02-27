@@ -178,6 +178,35 @@ export default function TargetingTab({
 
   const requiresJobTitlesConfirmation = selectedJobTitlesCount >= 2;
 
+  const selectedOptions = useMemo(() => {
+    return Array.from(selectedTerms)
+      .map((entry) => enrichedOptionsByKey.get(entry))
+      .filter((option): option is EnrichedTargetingOption => option != null);
+  }, [enrichedOptionsByKey, selectedTerms]);
+
+  const aggregatedAudience = useMemo(() => {
+    let lowerTotal = 0;
+    let upperTotal = 0;
+    let hasLower = false;
+    let hasUpper = false;
+    selectedOptions.forEach((option) => {
+      if (typeof option.audienceLower === "number") {
+        lowerTotal += option.audienceLower;
+        hasLower = true;
+      }
+      if (typeof option.audienceUpper === "number") {
+        upperTotal += option.audienceUpper;
+        hasUpper = true;
+      }
+    });
+    return {
+      lower: hasLower ? lowerTotal : null,
+      upper: hasUpper ? upperTotal : null,
+    };
+  }, [selectedOptions]);
+
+  const totalAudienceRange = formatAudienceRange(aggregatedAudience.lower, aggregatedAudience.upper);
+
 
   useEffect(() => {
     if (!savedSelections) {
@@ -264,6 +293,7 @@ export default function TargetingTab({
           <h6>Fluxo simples de público (novo)</h6>
           <p className="text-body-secondary small mb-3">
             Selecione interesses, cargos e comportamentos salvos no nicho para criar o público da campanha.
+            Combinamos tudo usando lógica <strong>OR</strong>, portanto cada item somará novas pessoas ao alcance.
           </p>
           {enrichedOptions.length === 0 ? (
             <p className="text-muted">
@@ -271,7 +301,8 @@ export default function TargetingTab({
               enriquecimento automático do worker.
             </p>
           ) : (
-            <div className="row g-2">
+            <>
+              <div className="row g-2">
               {enrichedOptions.map((item) => {
                 const key = buildOptionKey(item);
                 const rangeLabel = formatAudienceRange(item.audienceLower, item.audienceUpper);
@@ -296,6 +327,20 @@ export default function TargetingTab({
                 );
               })}
             </div>
+              <div className={`alert ${selectedOptions.length > 0 ? "alert-info" : "alert-light"} mt-3 mb-0`}>
+                <div className="fw-semibold mb-1">Público estimado (OR)</div>
+                <p className="mb-1">
+                  {selectedOptions.length > 0
+                    ? totalAudienceRange !== "—"
+                      ? `Alcance combinado de ${totalAudienceRange} pessoas.`
+                      : "Selecione opções com alcance disponível para ver o total estimado."
+                    : "Selecione ao menos uma segmentação para montar seu público."}
+                </p>
+                <p className="text-body-secondary small mb-0">
+                  Cada item selecionado é somado com lógica OR. Misture interesses, cargos e comportamentos para ajustar o volume.
+                </p>
+              </div>
+            </>
           )}
           <div className="d-flex gap-2 mt-3">
             {requiresJobTitlesConfirmation ? (

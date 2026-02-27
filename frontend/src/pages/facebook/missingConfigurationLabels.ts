@@ -17,6 +17,11 @@ const missingConfigurationInfo: Record<string, MissingConfigurationInfo> = {
     helperText:
       "Audiências são os públicos que o worker usa nos conjuntos de anúncios. Pelo menos um público do nicho (ou vinculado à mesma hipótese) precisa estar marcado como Aprovado na aba Públicos do experimento para liberar a campanha.",
   },
+  targetingSelections: {
+    label: "Salvar pelo menos uma segmentação com ID da Meta",
+    helperText:
+      "Selecione interesses, cargos ou comportamentos na aba Segmentação, salve a lista e execute o fluxo simples para liberar o público alvo.",
+  },
 };
 
 export function getMissingConfigurationInfo(key: string): MissingConfigurationInfo {

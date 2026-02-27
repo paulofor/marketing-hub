@@ -8,5 +8,7 @@ import java.util.List;
 public interface ExperimentTargetingSelectionRepository extends JpaRepository<ExperimentTargetingSelection, Long> {
     List<ExperimentTargetingSelection> findByExperimentIdOrderByCandidateTypeAscTermAsc(Long experimentId);
 
+    long countByExperimentId(Long experimentId);
+
     void deleteByExperimentId(Long experimentId);
 }

@@ -15,6 +15,7 @@ import com.marketinghub.journey.model.JourneyStep;
 import com.marketinghub.journey.model.JourneyStimulusType;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.support.LeadPortalPublicUrlResolver;
+import com.marketinghub.leadportal.service.LeadPortalMetricsService;
 import com.marketinghub.facebookads.AdCreativeKind;
 import com.marketinghub.facebookads.BudgetMode;
 import com.marketinghub.facebookads.FacebookAdsAd;
@@ -26,6 +27,7 @@ import com.marketinghub.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookAdsCampaignRepository;
 import com.marketinghub.experiment.AdSet;
+import com.marketinghub.leadportal.dto.LeadPortalExperimentMetricsDto;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +38,10 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 
@@ -55,6 +60,8 @@ public class FacebookAdsCampaignController {
     private final com.marketinghub.experiment.service.ExperimentReadinessService experimentReadinessService;
     private final LeadPortalPublicUrlResolver leadPortalPublicUrlResolver;
 
+    private final LeadPortalMetricsService leadPortalMetricsService;
+
     public FacebookAdsCampaignController(ExperimentService experimentService,
                                          FacebookAdsCampaignRepository campaignRepository,
                                          FacebookAccountRepository accountRepository,
@@ -65,7 +72,8 @@ public class FacebookAdsCampaignController {
                                          ObjectMapper objectMapper,
                                          ExperimentCampaignMetricService campaignMetricService,
                                          com.marketinghub.experiment.service.ExperimentReadinessService experimentReadinessService,
-                                         LeadPortalPublicUrlResolver leadPortalPublicUrlResolver) {
+                                         LeadPortalPublicUrlResolver leadPortalPublicUrlResolver,
+                                         LeadPortalMetricsService leadPortalMetricsService) {
         this.experimentService = experimentService;
         this.campaignRepository = campaignRepository;
         this.accountRepository = accountRepository;
@@ -77,27 +85,43 @@ public class FacebookAdsCampaignController {
         this.campaignMetricService = campaignMetricService;
         this.experimentReadinessService = experimentReadinessService;
         this.leadPortalPublicUrlResolver = leadPortalPublicUrlResolver;
+        this.leadPortalMetricsService = leadPortalMetricsService;
     }
 
     @GetMapping("/experiments-ready")
     public List<ExperimentSummary> experimentsReady() {
+        Map<Long, LeadPortalExperimentMetricsDto> leadPortalMetrics = indexLeadPortalMetrics();
         return experimentService
                 .listByStatusAndPlatform(com.marketinghub.experiment.ExperimentStatus.PLANNED,
                         com.marketinghub.experiment.ExperimentPlatform.FACEBOOK)
                 .stream()
                 .filter(experimentReadinessService::isReadyForCampaign)
-                .map(this::toSummary)
+                .map(experiment -> toSummary(experiment, leadPortalMetrics.get(experiment.getId())))
                 .toList();
     }
 
     @GetMapping("/experiments")
     public List<ExperimentSummary> experiments(@RequestParam("status")
             com.marketinghub.experiment.ExperimentStatus status) {
+        Map<Long, LeadPortalExperimentMetricsDto> leadPortalMetrics = indexLeadPortalMetrics();
         return experimentService
                 .listByStatusAndPlatform(status, com.marketinghub.experiment.ExperimentPlatform.FACEBOOK)
                 .stream()
-                .map(this::toSummary)
+                .map(experiment -> toSummary(experiment, leadPortalMetrics.get(experiment.getId())))
                 .toList();
+    }
+
+    private Map<Long, LeadPortalExperimentMetricsDto> indexLeadPortalMetrics() {
+        List<LeadPortalExperimentMetricsDto> metrics = leadPortalMetricsService.listExperimentMetrics();
+        if (metrics == null || metrics.isEmpty()) {
+            return Map.of();
+        }
+        return metrics.stream()
+                .collect(Collectors.toMap(
+                        LeadPortalExperimentMetricsDto::experimentId,
+                        dto -> dto,
+                        (first, second) -> first,
+                        LinkedHashMap::new));
     }
 
     @GetMapping("/metrics/sync-targets")
@@ -350,7 +374,7 @@ public class FacebookAdsCampaignController {
         return linkData.toString();
     }
 
-    private ExperimentSummary toSummary(Experiment experiment) {
+    private ExperimentSummary toSummary(Experiment experiment, LeadPortalExperimentMetricsDto leadPortalMetrics) {
         String pageId = resolveExperimentPageId(experiment);
         return new ExperimentSummary(
                 experiment.getId(),
@@ -369,6 +393,7 @@ public class FacebookAdsCampaignController {
                 toInstagramAccountSummary(experiment),
                 toInstantFormSummary(experiment),
                 isNextStepInstantForm(experiment),
+                toLeadPortalFunnelSummary(leadPortalMetrics),
                 toMetricSummary(experiment.getCampaignMetric()));
     }
 
@@ -377,6 +402,14 @@ public class FacebookAdsCampaignController {
             return null;
         }
         return experiment.getFacebookPage().getPageId();
+    }
+
+    private LeadPortalFunnelSummary toLeadPortalFunnelSummary(LeadPortalExperimentMetricsDto metrics) {
+        if (metrics == null) {
+            return null;
+        }
+        long submissions = metrics.uniqueLeads() != null ? metrics.uniqueLeads().size() : 0L;
+        return new LeadPortalFunnelSummary(metrics.leadsAccessed(), submissions);
     }
 
     private LeadPortalFlowSummary toLeadPortalFlowSummary(Experiment experiment) {
@@ -483,6 +516,7 @@ public class FacebookAdsCampaignController {
             InstagramAccountSummary instagramAccount,
             InstantFormSummary facebookInstantForm,
             boolean nextStepInstantForm,
+            LeadPortalFunnelSummary leadPortalFunnel,
             CampaignMetricSummary metrics) {}
 
     public record LeadPortalFlowSummary(Long id, String name, String slug, String publicUrl) {}
@@ -490,6 +524,8 @@ public class FacebookAdsCampaignController {
     public record FacebookPageSummary(Long id, Long accountId, String pageId, String name) {}
 
     public record InstagramAccountSummary(Long id, String handle, String code, String name) {}
+
+    public record LeadPortalFunnelSummary(Long formAccesses, Long formSubmissions) {}
 
     public record InstantFormSummary(
             Long id,

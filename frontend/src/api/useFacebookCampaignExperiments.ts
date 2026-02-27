@@ -15,6 +15,11 @@ export interface CampaignMetricSummary {
   lastSyncError: string | null;
 }
 
+export interface LeadPortalFunnelSummary {
+  formAccesses: number | null;
+  formSubmissions: number | null;
+}
+
 export interface ExperimentSummary {
   id: number;
   name: string;
@@ -26,6 +31,7 @@ export interface ExperimentSummary {
   hypothesisTitle: string | null;
   missingConfiguration: string[];
   instagramAccount?: InstagramAccountSummary | null;
+  leadPortalFunnel?: LeadPortalFunnelSummary | null;
   metrics?: CampaignMetricSummary | null;
 }
 

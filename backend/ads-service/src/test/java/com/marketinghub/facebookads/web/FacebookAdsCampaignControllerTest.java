@@ -21,6 +21,9 @@ import com.marketinghub.facebookads.FacebookAdsAdRepository;
 import com.marketinghub.facebookads.FacebookAdsAdSet;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookAdsAdSetRepository;
+import com.marketinghub.leadportal.dto.LeadPortalExperimentMetricsDto;
+import com.marketinghub.leadportal.dto.LeadPortalExperimentUserDto;
+import com.marketinghub.leadportal.service.LeadPortalMetricsService;
 import com.marketinghub.experiment.repository.AdSetRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,6 +81,9 @@ class FacebookAdsCampaignControllerTest {
     @MockBean
     ExperimentTargetingSelectionRepository targetingSelectionRepository;
 
+    @MockBean
+    LeadPortalMetricsService leadPortalMetricsService;
+
     @Test
     void listExperimentsByStatus() throws Exception {
         var niche = MarketNiche.builder()
@@ -129,6 +135,23 @@ class FacebookAdsCampaignControllerTest {
                 com.marketinghub.experiment.ExperimentStatus.PLANNED,
                 com.marketinghub.experiment.ExperimentPlatform.FACEBOOK))
                 .thenReturn(List.of(exp));
+        when(leadPortalMetricsService.listExperimentMetrics()).thenReturn(List.of(
+                new LeadPortalExperimentMetricsDto(
+                        exp.getId(),
+                        exp.getName(),
+                        25L,
+                        5L,
+                        List.of(new LeadPortalExperimentUserDto("Lead 1", "lead@example.com", null, false)),
+                        0L,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        0L,
+                        0L,
+                        null)));
+
         mockMvc.perform(get("/api/facebook-campaigns/experiments").param("status", "PLANNED"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1))
@@ -145,7 +168,9 @@ class FacebookAdsCampaignControllerTest {
                 .andExpect(jsonPath("$[0].nicheName").value("Test Nicho"))
                 .andExpect(jsonPath("$[0].hypothesisTitle").value("Hipótese do Nicho"))
                 .andExpect(jsonPath("$[0].missingConfiguration").isArray())
-                .andExpect(jsonPath("$[0].missingConfiguration").isEmpty());
+                .andExpect(jsonPath("$[0].missingConfiguration").isEmpty())
+                .andExpect(jsonPath("$[0].leadPortalFunnel.formAccesses").value(25))
+                .andExpect(jsonPath("$[0].leadPortalFunnel.formSubmissions").value(1));
     }
 
     @Test

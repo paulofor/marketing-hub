@@ -29,36 +29,53 @@ export default function FacebookCampaignExperimentsPage() {
       return <span className="text-muted">--</span>;
     }
     const metrics = experiment.metrics;
-    if (!metrics) {
+    const leadPortalFunnel = experiment.leadPortalFunnel;
+    if (!metrics && !leadPortalFunnel) {
       return <span className="text-muted">Aguardando dados</span>;
     }
     return (
       <div className="small">
         <div className="d-flex flex-wrap gap-3">
-          <span>
-            <strong>Impr.</strong> {formatNumber(metrics.impressions)}
-          </span>
-          <span>
-            <strong>Cliques</strong> {formatNumber(metrics.clicks)}
-          </span>
-          <span>
-            <strong>Leads</strong> {formatNumber(metrics.leads)}
-          </span>
-          <span>
-            <strong>Custo</strong> {formatCurrency(metrics.spend)}
-          </span>
-          <span>
-            <strong>CPL</strong> {formatCurrency(metrics.cpl)}
-          </span>
-        </div>
-        <div className="text-muted mt-1">
-          {metrics.lastSyncedAt
-            ? `Atualizado em ${formatDateTime(metrics.lastSyncedAt)}`
-            : "Última atualização indisponível"}
-          {metrics.lastSyncError ? (
-            <span className="text-danger ms-2">Erro: {metrics.lastSyncError}</span>
+          {metrics ? (
+            <>
+              <span>
+                <strong>Impr.</strong> {formatNumber(metrics.impressions)}
+              </span>
+              <span>
+                <strong>Cliques</strong> {formatNumber(metrics.clicks)}
+              </span>
+              <span>
+                <strong>Leads</strong> {formatNumber(metrics.leads)}
+              </span>
+              <span>
+                <strong>Custo</strong> {formatCurrency(metrics.spend)}
+              </span>
+              <span>
+                <strong>CPL</strong> {formatCurrency(metrics.cpl)}
+              </span>
+            </>
+          ) : null}
+          {leadPortalFunnel ? (
+            <>
+              <span>
+                <strong>Form visto</strong> {formatNumber(leadPortalFunnel.formAccesses)}
+              </span>
+              <span>
+                <strong>Form enviado</strong> {formatNumber(leadPortalFunnel.formSubmissions)}
+              </span>
+            </>
           ) : null}
         </div>
+        {metrics ? (
+          <div className="text-muted mt-1">
+            {metrics.lastSyncedAt
+              ? `Atualizado em ${formatDateTime(metrics.lastSyncedAt)}`
+              : "Última atualização indisponível"}
+            {metrics.lastSyncError ? (
+              <span className="text-danger ms-2">Erro: {metrics.lastSyncError}</span>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     );
   };

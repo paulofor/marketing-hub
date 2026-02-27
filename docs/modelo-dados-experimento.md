@@ -267,6 +267,12 @@ erDiagram
    - `lead_portal_flow` e `lead_portal_submission` registram captação de leads.
    - `metric_snapshot` consolida desempenho por criativo + ad set.
 
+### Métricas do Portal do Lead
+
+- `flow_access` guarda cada visita ao fluxo (data/hora, IP, visitor_id quando disponível) e permite contar quantas pessoas visualizaram o formulário do portal.
+- `lead_portal_submission` e `flow_submissions` concentram os envios efetivos; a aplicação consolida contatos únicos por experimento para saber quantos completaram o preenchimento.
+- Esses agregados são expostos via `LeadPortalMetricsService` e abastecem telas operacionais (por exemplo, `/facebook-campaigns`) com as métricas "Form visto" e "Form enviado".
+
 ## Observações de implementação
 
 - Registros gerados por processos do Worker IA devem manter `model` e `prompt`

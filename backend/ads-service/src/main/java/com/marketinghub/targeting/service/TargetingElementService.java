@@ -125,6 +125,21 @@ public class TargetingElementService {
         return repository.findById(id).orElseThrow();
     }
 
+    @Transactional
+    public TargetingElement requestMetaAdsReprocessing(Long id) {
+        TargetingElement element = repository.findById(id).orElseThrow();
+        if (element.getType() != TargetingElementType.INTEREST
+                && element.getType() != TargetingElementType.JOB_TITLE
+                && element.getType() != TargetingElementType.BEHAVIOR) {
+            throw new IllegalArgumentException("Tipo de elemento não suportado para reprocessamento Meta Ads");
+        }
+        element.setMetaId(null);
+        element.setMetaKey(null);
+        element.setMetaAudienceSizeLowerBound(null);
+        element.setMetaAudienceSizeUpperBound(null);
+        return repository.save(element);
+    }
+
     public List<TargetingElement> list(TargetingElementType type, TargetingElementStatus status) {
         return repository.findByFilters(null, type, status);
     }

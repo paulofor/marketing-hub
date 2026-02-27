@@ -37,6 +37,11 @@ public class TargetingElementController {
         return mapper.toDto(service.update(id, request));
     }
 
+    @PostMapping("/targeting-elements/{id}/metaads/reprocess")
+    public TargetingElementDto requestMetaAdsReprocessing(@PathVariable Long id) {
+        return mapper.toDto(service.requestMetaAdsReprocessing(id));
+    }
+
     @GetMapping("/targeting-elements/{id}")
     public TargetingElementDto get(@PathVariable Long id) {
         return mapper.toDto(service.get(id));

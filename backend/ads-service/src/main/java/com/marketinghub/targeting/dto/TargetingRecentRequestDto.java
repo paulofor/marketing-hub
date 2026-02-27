@@ -13,6 +13,9 @@ import java.util.UUID;
 public class TargetingRecentRequestDto {
     private UUID id;
 
+    @JsonProperty("experiment_id")
+    private Long experimentId;
+
     @JsonProperty("descricao")
     private String descricao;
 

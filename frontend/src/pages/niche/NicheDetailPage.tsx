@@ -1210,7 +1210,7 @@ export default function NicheDetailPage() {
                     return (
                       <li key={`${item}-${index}`} className="niche-list__item">
                         <span>{item}</span>
-                        <span className={`badge rounded-pill ${metaAdsStatus === "READY" ? "text-bg-success-subtle border border-success-subtle" : "text-bg-warning-subtle border border-warning-subtle"}`}>
+                        <span className={`badge rounded-pill ${metaAdsStatus === "READY" ? "text-bg-success-subtle border border-success-subtle" : "text-bg-warning-subtle text-dark border border-warning-subtle"}`}>
                           {metaAdsStatus === "READY" ? "Meta Ads processado" : "Pendente Meta Ads"}
                         </span>
                         <div className="niche-list__actions">
@@ -1328,7 +1328,7 @@ export default function NicheDetailPage() {
                     return (
                       <li key={`${item}-${index}`} className="niche-list__item">
                         <span>{item}</span>
-                        <span className={`badge rounded-pill ${metaAdsStatus === "READY" ? "text-bg-success-subtle border border-success-subtle" : "text-bg-warning-subtle border border-warning-subtle"}`}>
+                        <span className={`badge rounded-pill ${metaAdsStatus === "READY" ? "text-bg-success-subtle border border-success-subtle" : "text-bg-warning-subtle text-dark border border-warning-subtle"}`}>
                           {metaAdsStatus === "READY" ? "Meta Ads processado" : "Pendente Meta Ads"}
                         </span>
                         <div className="niche-list__actions">
@@ -1447,7 +1447,7 @@ export default function NicheDetailPage() {
                     return (
                       <li key={`${item}-${index}`} className="niche-list__item">
                         <span>{item}</span>
-                        <span className={`badge rounded-pill ${metaAdsStatus === "READY" ? "text-bg-success-subtle border border-success-subtle" : "text-bg-warning-subtle border border-warning-subtle"}`}>
+                        <span className={`badge rounded-pill ${metaAdsStatus === "READY" ? "text-bg-success-subtle border border-success-subtle" : "text-bg-warning-subtle text-dark border border-warning-subtle"}`}>
                           {metaAdsStatus === "READY" ? "Meta Ads processado" : "Pendente Meta Ads"}
                         </span>
                         <div className="niche-list__actions">

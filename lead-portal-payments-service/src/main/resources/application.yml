@@ -29,10 +29,10 @@ management:
 mercado-pago:
   access-token: ${MERCADO_PAGO_ACCESS_TOKEN:APP_USR-6371948622467215-020511-5317ef62bbd997d52c2979a29f2c8419-133771061}
   base-url: ${MERCADO_PAGO_BASE_URL:https://api.mercadopago.com}
-  notification-url: ${MERCADO_PAGO_NOTIFICATION_URL:https://pagamentopalf.online/api/v1/mercadopago/webhook}
-  success-url: ${MERCADO_PAGO_SUCCESS_URL:https://pagamentopalf.online/checkout}
-  failure-url: ${MERCADO_PAGO_FAILURE_URL:https://pagamentopalf.online/checkout}
-  pending-url: ${MERCADO_PAGO_PENDING_URL:https://pagamentopalf.online/checkout}
+  notification-url: ${MERCADO_PAGO_NOTIFICATION_URL:https://pagamentopalf.site/api/v1/mercadopago/webhook}
+  success-url: ${MERCADO_PAGO_SUCCESS_URL:https://pagamentopalf.site/checkout}
+  failure-url: ${MERCADO_PAGO_FAILURE_URL:https://pagamentopalf.site/checkout}
+  pending-url: ${MERCADO_PAGO_PENDING_URL:https://pagamentopalf.site/checkout}
   statement-descriptor: ${MERCADO_PAGO_STATEMENT_DESCRIPTOR:MarketingHub}
 
 payments:

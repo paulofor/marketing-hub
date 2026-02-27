@@ -13,12 +13,12 @@ public class LeadPortalPaymentLinkProperties {
 
     private boolean validateHost = true;
     private List<String> allowedHosts = new ArrayList<>(Arrays.asList(
-            "pagamentopalf.online",
-            "www.pagamentopalf.online",
+            "pagamentopalf.site",
+            "www.pagamentopalf.site",
             "www.mercadopago.com.br",
             "mercadopago.com.br",
             "www.mercadopago.com"));
-    private String entrypointBaseUrl = "https://pagamentopalf.online/checkout";
+    private String entrypointBaseUrl = "https://pagamentopalf.site/checkout";
     private String packageIdQueryParam = "packageId";
     private String purchaseIdQueryParam = "purchaseId";
     private String buttonColor = "#00a650";

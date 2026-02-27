@@ -92,6 +92,7 @@ import WhatsAppConsolePage from "./pages/whatsapp/WhatsAppConsolePage";
 import LeadPortalExperimentMetricsPage from "./pages/leadPortal/LeadPortalExperimentMetricsPage";
 import LeadPortalImagesPage from "./pages/leadPortal/LeadPortalImagesPage";
 import LeadPortalImagePackageDetailPage from "./pages/leadPortal/LeadPortalImagePackageDetailPage";
+import LeadPortalFormResponsesPage from "./pages/leadPortal/LeadPortalFormResponsesPage";
 import PaymentsDashboardPage from "./pages/payments/PaymentsDashboardPage";
 import PaymentDetailPage from "./pages/payments/PaymentDetailPage";
 import PromptListPage from "./pages/promptTemplate/PromptListPage";
@@ -253,6 +254,10 @@ export default function App() {
               <Route
                 path="/lead-portal/metrics"
                 element={<LeadPortalExperimentMetricsPage />}
+              />
+              <Route
+                path="/lead-portal/form-responses"
+                element={<LeadPortalFormResponsesPage />}
               />
               <Route
                 path="/lead-portal/images"

@@ -1,0 +1,197 @@
+.lead-portal-form-responses {
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.lead-portal-form-responses__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.lead-portal-form-responses__eyebrow {
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  color: var(--mh-color-muted, #6c757d);
+  margin-bottom: 0.2rem;
+}
+
+.lead-portal-form-responses__subtitle {
+  color: var(--mh-color-muted, #6c757d);
+  margin-bottom: 0;
+}
+
+.lead-portal-form-responses__refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  background: #fff;
+  font-weight: 600;
+  transition: background 0.2s ease;
+}
+
+.lead-portal-form-responses__refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.lead-portal-form-responses__refresh:not(:disabled):hover {
+  background: #f5f5f5;
+}
+
+.lead-portal-form-responses__state {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0.75rem;
+  background: #fff;
+}
+
+.lead-portal-form-responses__state--error {
+  border-color: rgba(220, 53, 69, 0.4);
+}
+
+.lead-portal-form-responses__state--empty {
+  border-style: dashed;
+}
+
+.lead-portal-form-responses__state button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #0d6efd;
+  font-weight: 600;
+}
+
+.lead-portal-form-responses__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.lead-portal-form-responses__card {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.07);
+}
+
+.lead-portal-form-responses__card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.lead-portal-form-responses__flow {
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.lead-portal-form-responses__meta {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.9rem;
+  color: var(--mh-color-muted, #6c757d);
+}
+
+.lead-portal-form-responses__meta svg {
+  color: var(--mh-color-muted, #6c757d);
+}
+
+.lead-portal-form-responses__experiment {
+  background: #eef2ff;
+  color: #4338ca;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.lead-portal-form-responses__contacts {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.lead-portal-form-responses__contacts span,
+.lead-portal-form-responses__contacts a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  color: #212529;
+  text-decoration: none;
+}
+
+.lead-portal-form-responses__contacts a:hover {
+  text-decoration: underline;
+}
+
+.lead-portal-form-responses__answers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.lead-portal-form-responses__answer {
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.lead-portal-form-responses__answer-key {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--mh-color-muted, #6c757d);
+}
+
+.lead-portal-form-responses__answer-value {
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.lead-portal-form-responses__empty-answers {
+  margin: 0;
+  font-style: italic;
+  color: var(--mh-color-muted, #6c757d);
+}
+
+@media (max-width: 768px) {
+  .lead-portal-form-responses {
+    padding: 1.5rem;
+  }
+
+  .lead-portal-form-responses__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .lead-portal-form-responses__answers {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+}

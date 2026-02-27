@@ -34,6 +34,7 @@ import {
   ScrollText,
   Search,
   Mail,
+  Inbox,
 } from "lucide-react";
 import experimentIcon from "../assets/icons/experiment-icon.svg";
 import hypothesisIcon from "../assets/icons/hypothesis-icon.svg";
@@ -151,6 +152,11 @@ const NAV_SECTIONS: NavSection[] = [
         to: "/lead-portal/metrics",
         label: "Envio de imagem no portal",
         icon: Image,
+      },
+      {
+        to: "/lead-portal/form-responses",
+        label: "Respostas de formulários",
+        icon: Inbox,
       },
       {
         to: "/lead-portal/images",

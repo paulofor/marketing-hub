@@ -35,6 +35,9 @@ public class TargetingMetaAdsSyncService {
         if (StringUtils.hasText(request.metaId())) {
             element.setMetaId(request.metaId().trim());
         }
+        if (StringUtils.hasText(request.metaKey())) {
+            element.setMetaKey(request.metaKey().trim());
+        }
         if (request.metaAudienceSizeLowerBound() != null) {
             element.setMetaAudienceSizeLowerBound(request.metaAudienceSizeLowerBound());
         }

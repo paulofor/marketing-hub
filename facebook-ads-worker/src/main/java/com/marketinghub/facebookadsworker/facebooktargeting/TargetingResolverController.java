@@ -24,7 +24,7 @@ public class TargetingResolverController {
     @PostMapping("/{requestId}/resolve")
     public ResponseEntity<TargetingResolutionResponse> resolve(@PathVariable UUID requestId,
                                                                @RequestBody TargetingResolutionRequest request) {
-        TargetingResolutionResponse response = service.resolve(requestId, request);
+        TargetingResolutionResponse response = service.resolve(requestId, request, null);
         return ResponseEntity.ok(response);
     }
 }

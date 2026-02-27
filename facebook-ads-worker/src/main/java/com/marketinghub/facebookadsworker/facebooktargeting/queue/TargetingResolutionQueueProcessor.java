@@ -51,7 +51,7 @@ public class TargetingResolutionQueueProcessor {
     private void processJob(TargetingResolutionJobRecord job) {
         try {
             TargetingResolutionRequest request = buildRequest(job);
-            TargetingResolutionResponse response = resolverService.resolve(job.requestId(), request);
+            TargetingResolutionResponse response = resolverService.resolve(job.requestId(), request, job.experimentId());
             TargetingResolutionResponse.CandidateResolutionSummary summary = response.candidates().stream()
                     .filter(candidate -> job.candidateId().equals(candidate.id()))
                     .findFirst()

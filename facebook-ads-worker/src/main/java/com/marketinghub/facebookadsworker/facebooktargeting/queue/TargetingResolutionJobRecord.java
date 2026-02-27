@@ -15,6 +15,7 @@ public record TargetingResolutionJobRecord(
     String requestAdAccountId,
     String requestLocale,
     String requestCountry,
+    Long experimentId,
     Long candidateId,
     String seed,
     List<String> seedVariants,

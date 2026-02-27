@@ -1,7 +1,7 @@
-package com.marketinghub.facebookads.playbook;
+package com.marketinghub.facebookadsworker.facebookapi;
 
 /**
- * Categorizes Graph API calls for experiments so the UI can distinguish contexts.
+ * Contextos disponíveis para registrar chamadas da Graph API por experimento.
  */
 public enum ExperimentFacebookApiLogContext {
     PLAYBOOK,

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.facebookadsworker.FacebookAccessTokenManager;
 import com.marketinghub.facebookadsworker.FacebookAdsService;
+import com.marketinghub.facebookadsworker.facebookapi.ExperimentFacebookApiLogClient;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient.FacebookWorkerConfiguration;
 import com.marketinghub.facebookadsworker.facebooktokenrenewal.FacebookTokenRenewalClient;
@@ -49,6 +50,7 @@ class FacebookCampaignServiceTest {
     private FacebookAdsService adsService;
     private StubFacebookWorkerConfigurationClient configurationClient;
     private WebClient.Builder webClientBuilder;
+    private ExperimentFacebookApiLogClient apiLogClient;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -93,6 +95,12 @@ class FacebookCampaignServiceTest {
             configurationClient,
             tokenRenewalService
         );
+        apiLogClient = new ExperimentFacebookApiLogClient(
+            webClientBuilder,
+            objectMapper,
+            backend.url("/").toString(),
+            "/api"
+        );
         service = new FacebookCampaignService(
             adsService,
             accessTokenManager,
@@ -100,7 +108,8 @@ class FacebookCampaignServiceTest {
             configurationClient,
             backend.url("/").toString(),
             "/api",
-            objectMapper
+            objectMapper,
+            apiLogClient
         );
         backend.enqueueConditionalResponse(
             request -> "/api/experiments/1/facebook-api-logs".equals(request.getPath()) && "POST".equals(request.getMethod()),
@@ -864,7 +873,8 @@ class FacebookCampaignServiceTest {
             configurationClient,
             backend.url("/").toString(),
             "/api",
-            objectMapper
+            objectMapper,
+            apiLogClient
         );
 
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
@@ -952,7 +962,8 @@ class FacebookCampaignServiceTest {
             configurationClient,
             backend.url("/").toString(),
             "/api",
-            objectMapper
+            objectMapper,
+            apiLogClient
         );
 
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")

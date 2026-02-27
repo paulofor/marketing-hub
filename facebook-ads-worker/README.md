@@ -258,6 +258,9 @@ garantindo que campos de texto apareçam entre aspas (por exemplo,
 - O critério de ordenação de `AdSetPlaybookSpec` no `FacebookCampaignService`
   agora força a tipagem explícita no `Comparator`, evitando inferência para
   `Object` e falhas de compilação ao acessar `slot()` e `id()`.
+- O enriquecimento de segmentações manuais no endpoint global `/{graphVersion}/search`
+  deixou de enviar o parâmetro `fields`; a Graph API já retorna os campos
+  necessários (`id` e `name`) para os tipos suportados nesse fluxo.
 Esse padrão facilita buscas em ferramentas de observabilidade e reduz ambiguidades
 durante a análise de incidentes.
 

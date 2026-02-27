@@ -309,6 +309,39 @@ class FacebookAdsServiceTest {
         assertEquals("777", id);
     }
 
+
+    @Test
+    void searchGlobalTargetingOptionsDoesNotSendFieldsParameter() throws Exception {
+        server.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"1419795191647433\",\"name\":\"Certified Personal Trainer\"}]}" )
+            .addHeader("Content-Type", "application/json"));
+
+        List<FacebookAdsService.FacebookTargetingSearchResult> results = service.searchGlobalTargetingOptions(
+            new FacebookAdsService.TargetingSearchRequest(
+                FacebookAdsService.TargetingSearchType.AD_WORK_POSITION,
+                "Personal Trainer",
+                null,
+                "pt_BR",
+                "BR",
+                200
+            )
+        );
+
+        RecordedRequest request = takeRequest("global search request");
+        HttpUrl requestUrl = request.getRequestUrl();
+        assertNotNull(requestUrl);
+        assertEquals("/v23.0/search", requestUrl.encodedPath());
+        assertEquals("adworkposition", requestUrl.queryParameter("type"));
+        assertEquals("Personal Trainer", requestUrl.queryParameter("q"));
+        assertEquals("200", requestUrl.queryParameter("limit"));
+        assertNull(requestUrl.queryParameter("fields"));
+        assertEquals("pt_BR", requestUrl.queryParameter("locale"));
+        assertEquals("BR", requestUrl.queryParameter("country"));
+        assertEquals("token", requestUrl.queryParameter("access_token"));
+        assertEquals(1, results.size());
+        assertEquals("1419795191647433", results.get(0).id());
+        assertEquals("Certified Personal Trainer", results.get(0).name());
+    }
+
     @Test
     void createAdSetResolvesInterestNamesToIds() throws Exception {
         server.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"6003139266461\",\"name\":\"Pilates\"}]}" )

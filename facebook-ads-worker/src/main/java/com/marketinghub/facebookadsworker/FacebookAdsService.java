@@ -575,7 +575,6 @@ public class FacebookAdsService {
             .queryParam("type", request.type().graphType())
             .queryParam("q", normalizedQuery)
             .queryParam("limit", limit)
-            .queryParam("fields", TARGETING_SEARCH_FIELDS)
             .queryParam("access_token", requireAccessToken());
         if (hasText(request.locale())) {
             builder.queryParam("locale", request.locale());

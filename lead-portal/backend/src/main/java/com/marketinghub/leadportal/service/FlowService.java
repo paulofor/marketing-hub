@@ -1,5 +1,6 @@
 package com.marketinghub.leadportal.service;
 
+import com.marketinghub.leadportal.catalog.SimpleFlowCatalog;
 import com.marketinghub.leadportal.entity.FlowAccessEntity;
 import com.marketinghub.leadportal.entity.FlowEntity;
 import com.marketinghub.leadportal.exception.FlowNotFoundException;
@@ -18,15 +19,26 @@ public class FlowService {
     private final FlowRepository repository;
     private final FlowAccessRepository accessRepository;
     private final MeterRegistry meterRegistry;
+    private final SimpleFlowCatalog simpleFlowCatalog;
 
-    public FlowService(FlowRepository repository, FlowAccessRepository accessRepository, MeterRegistry meterRegistry) {
+    public FlowService(
+            FlowRepository repository,
+            FlowAccessRepository accessRepository,
+            MeterRegistry meterRegistry,
+            SimpleFlowCatalog simpleFlowCatalog) {
         this.repository = repository;
         this.accessRepository = accessRepository;
         this.meterRegistry = meterRegistry;
+        this.simpleFlowCatalog = simpleFlowCatalog;
     }
 
     @Transactional
     public Flow save(Flow flow) {
+        if (simpleFlowCatalog.supports(flow.slug())) {
+            throw new IllegalArgumentException(
+                    "Fluxos simples são gerenciados automaticamente e não podem ser editados.");
+        }
+
         FlowEntity entityToSave = FlowEntity.fromModel(flow);
         repository
                 .findById(flow.slug())
@@ -38,14 +50,40 @@ public class FlowService {
 
     @Transactional(readOnly = true)
     public Flow get(String slug) {
-        return repository
+        return simpleFlowCatalog.find(slug).orElseGet(() -> repository
                 .findById(slug)
                 .map(FlowEntity::toModel)
-                .orElseThrow(() -> new FlowNotFoundException(slug));
+                .orElseThrow(() -> new FlowNotFoundException(slug)));
     }
 
     @Transactional
     public Flow getAndTrackAccess(String slug, FlowAccessMetadata accessMetadata) {
+        return simpleFlowCatalog.find(slug)
+                .map(flow -> {
+                    recordAccessMetric(slug);
+                    return flow;
+                })
+                .orElseGet(() -> fetchAndTrackPersistedFlow(slug, accessMetadata));
+    }
+
+    @Transactional
+    public void delete(String slug) {
+        if (simpleFlowCatalog.supports(slug)) {
+            throw new IllegalArgumentException(
+                    "Fluxos simples são gerenciados automaticamente e não podem ser excluídos.");
+        }
+
+        if (repository.existsById(slug)) {
+            repository.deleteById(slug);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Collection<Flow> list() {
+        return repository.findAll().stream().map(FlowEntity::toModel).toList();
+    }
+
+    private Flow fetchAndTrackPersistedFlow(String slug, FlowAccessMetadata accessMetadata) {
         FlowEntity entity = repository
                 .findById(slug)
                 .orElseThrow(() -> new FlowNotFoundException(slug));
@@ -55,18 +93,6 @@ public class FlowService {
         registerAccess(slug, accessMetadata);
 
         return entity.toModel();
-    }
-
-    @Transactional
-    public void delete(String slug) {
-        if (repository.existsById(slug)) {
-            repository.deleteById(slug);
-        }
-    }
-
-    @Transactional(readOnly = true)
-    public Collection<Flow> list() {
-        return repository.findAll().stream().map(FlowEntity::toModel).toList();
     }
 
     private void registerAccess(String slug, FlowAccessMetadata metadata) {

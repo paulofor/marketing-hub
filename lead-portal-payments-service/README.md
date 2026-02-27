@@ -57,7 +57,7 @@ Microserviço responsável por acompanhar pagamentos via Mercado Pago, registrar
 
 ## Tela intermediária de checkout (`/checkout`)
 
-- O serviço expõe uma página estática em `/checkout` (por padrão https://pagamentopalf.online/checkout) que funciona como ponte entre o e-mail enviado ao cliente e o checkout do Mercado Pago.
+- O serviço expõe uma página estática em `/checkout` (por padrão https://pagamentopalf.site/checkout) que funciona como ponte entre o e-mail enviado ao cliente e o checkout do Mercado Pago.
 - A página espera ao menos o parâmetro `packageId` e consulta o endpoint interno `/api/v1/payments/packages/{packageId}` para obter valor, status e o `checkoutUrl` real.
 - Quando chamada com `status`, `collection_status` ou outros parâmetros enviados pelo Mercado Pago, a UI exibe o retorno ao cliente (aprovado, pendente ou falha) reutilizando o mesmo pacote.
 - Os parâmetros suportados são:
@@ -65,7 +65,7 @@ Microserviço responsável por acompanhar pagamentos via Mercado Pago, registrar
   - `purchaseId` (opcional): ID da compra já registrada, usado apenas para exibição.
   - `status`/`collection_status`: string retornada pelo Mercado Pago para mostrar mensagens de sucesso/falha.
   - `autoRedirect` (default `true`): define se a página deve redirecionar automaticamente para o Mercado Pago ao carregar a partir do e-mail.
-- Configure `MERCADO_PAGO_SUCCESS_URL`, `MERCADO_PAGO_FAILURE_URL` e `MERCADO_PAGO_PENDING_URL` com `https://pagamentopalf.online/checkout`. O serviço anexa automaticamente `packageId` e `flow=success|failure|pending` antes de enviar a preferência ao Mercado Pago, garantindo que o redirecionamento tenha contexto.
+- Configure `MERCADO_PAGO_SUCCESS_URL`, `MERCADO_PAGO_FAILURE_URL` e `MERCADO_PAGO_PENDING_URL` com `https://pagamentopalf.site/checkout`. O serviço anexa automaticamente `packageId` e `flow=success|failure|pending` antes de enviar a preferência ao Mercado Pago, garantindo que o redirecionamento tenha contexto.
 - O `email-service` passa a apontar seus CTAs para essa mesma rota, adicionando `packageId` e `purchaseId`, o que garante uma experiência consistente em qualquer dispositivo.
 
 ## Execução local
@@ -93,19 +93,19 @@ O arquivo `docker-compose.yml` usa as variáveis definidas no `.env` (o Docker C
 
 ### HTTPS e proxy reverso
 
-- O compose agora inclui um **proxy Nginx** (porta 80/443) que termina o TLS com os certificados do Let’s Encrypt montados em `/etc/letsencrypt`. A configuração padrão está em `nginx.conf` e expõe `pagamentopalf.online` com redirecionamento automático para HTTPS. Para evitar falha no container quando o diretório não existir (ambiente local), um certificado autoassinado já está versionado em `docker/proxy/certs/dev` e é montado por padrão; em produção, o `docker-compose.deploy.yml` sobrepõe esse caminho com `/etc/letsencrypt` real.
-> **Nota:** o proxy executa `docker/proxy/ensure-certs.sh` antes de iniciar o Nginx. O script copia automaticamente o certificado válido do Let’s Encrypt quando presente em `/etc/letsencrypt` e, caso ainda não exista (por exemplo, no primeiro deploy), reutiliza o certificado autoassinado de `docker/proxy/certs/dev` para manter o container saudável. Assim que o certificado real for emitido com o profile `certbot`, basta recriar o serviço para que o arquivo atualizado seja detectado.
+- O compose agora inclui um **proxy Nginx** (porta 80/443) que termina o TLS com os certificados do Let’s Encrypt montados em `/etc/letsencrypt` e persiste tudo em `/etc/nginx/certs/live/<domínio>`. A configuração padrão está em `nginx.conf` e expõe `pagamentopalf.site` com redirecionamento automático para HTTPS. Em produção, montamos `/etc/nginx/certs` do host (que já possui o certificado válido de `vitrineproduto.online` em `/etc/nginx/certs/live/vitrineproduto.online/`) e mantemos o bind de `/etc/letsencrypt`; em ambiente local continuamos com os certificados autoassinados em `docker/proxy/certs/dev` para não quebrar o container.
+> **Nota:** o proxy executa `docker/proxy/ensure-certs.sh` antes de iniciar o Nginx. O script agora itera sobre todos os domínios definidos (por padrão `pagamentopalf.site` e `vitrineproduto.online`), reaproveita os arquivos já disponíveis em `/etc/nginx/certs/live/<domínio>` quando existirem e, caso contrário, copia automaticamente de `/etc/letsencrypt` ou utiliza o fallback autoassinado. Assim que o certificado real for emitido com o profile `certbot`, basta recriar o serviço para que o arquivo atualizado seja detectado.
 - O mesmo proxy também publica `https://vitrineproduto.online`, roteando para o container `institutional-site` ligado à network compartilhada (`public-net`). Certifique-se de que o compose do site esteja conectado a essa network (variáveis `INSTITUTIONAL_SITE_NETWORK=public-net` e `INSTITUTIONAL_SITE_NETWORK_EXTERNAL=true`) para que o upstream `institutional-site` seja resolvido corretamente.
 
 - Use o profile `certbot` para emitir/renovar o certificado:
 
 ```bash
 cd lead-portal-payments-service
-CERTBOT_DOMAIN=pagamentopalf.online docker compose --profile certbot run --rm certbot-pagamentos
+CERTBOT_DOMAIN=pagamentopalf.site docker compose --profile certbot run --rm certbot-pagamentos
 ```
 
 O caminho `./docker/proxy/html` é o webroot para o desafio ACME. Os certificados gerados no host são montados como `read-only` pelo Nginx.
-- As URLs padrão do Mercado Pago no `docker-compose.deploy.yml` já apontam para HTTPS (`https://pagamentopalf.online/api/v1/mercadopago/webhook`), então configure o domínio público antes de ativar o fluxo de pagamentos.
+- As URLs padrão do Mercado Pago no `docker-compose.deploy.yml` já apontam para HTTPS (`https://pagamentopalf.site/api/v1/mercadopago/webhook`), então configure o domínio público antes de ativar o fluxo de pagamentos.
 
 ## Build da imagem Docker
 

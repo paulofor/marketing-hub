@@ -26,11 +26,11 @@ flowchart TD
 
 ### Tela intermediária de pagamento
 
-- O botão de compra injetado pelo serviço agora aponta para a página intermediária publicada em `https://pagamentopalf.online/checkout`, onde o cliente revisa os dados do pacote antes de seguir para o Mercado Pago.
+- O botão de compra injetado pelo serviço agora aponta para a página intermediária publicada em `https://pagamentopalf.site/checkout`, onde o cliente revisa os dados do pacote antes de seguir para o Mercado Pago.
 - O `packageId` e, quando disponível, o `purchaseId` são anexados como query params para que a página recupere o checkout diretamente da API `/api/v1/payments/packages/{packageId}`.
-- O host `pagamentopalf.online` passa a fazer parte da lista padrão de domínios autorizados para CTAs e pode ser ajustado via `LEAD_PORTAL_PAYMENT_ALLOWED_HOSTS`.
+- O host `pagamentopalf.site` passa a fazer parte da lista padrão de domínios autorizados para CTAs e pode ser ajustado via `LEAD_PORTAL_PAYMENT_ALLOWED_HOSTS`.
 - Novas variáveis permitem customizar o link intermediário:
-  - `LEAD_PORTAL_PAYMENT_ENTRYPOINT_BASE_URL` (default `https://pagamentopalf.online/checkout`)
+  - `LEAD_PORTAL_PAYMENT_ENTRYPOINT_BASE_URL` (default `https://pagamentopalf.site/checkout`)
   - `LEAD_PORTAL_PAYMENT_PACKAGE_PARAM` (default `packageId`)
   - `LEAD_PORTAL_PAYMENT_PURCHASE_PARAM` (default `purchaseId`)
 

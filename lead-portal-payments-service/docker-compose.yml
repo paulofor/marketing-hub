@@ -87,9 +87,9 @@ services:
       - --webroot
       - --webroot-path=/var/www/certbot
       - -d
-      - "${CERTBOT_DOMAIN:-pagamentopalf.online}"
+      - "${CERTBOT_DOMAIN:-pagamentopalf.site}"
       - -d
-      - "www.${CERTBOT_DOMAIN:-pagamentopalf.online}"
+      - "www.${CERTBOT_DOMAIN:-pagamentopalf.site}"
     volumes:
       - ./docker/proxy/html:/var/www/certbot
       - /etc/letsencrypt:/etc/letsencrypt

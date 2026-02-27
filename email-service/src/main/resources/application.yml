@@ -69,8 +69,8 @@ lead-portal:
     read-timeout: ${LEAD_PORTAL_DISPATCH_READ_TIMEOUT:180000}
   payment-link:
     validate-host: ${LEAD_PORTAL_PAYMENT_VALIDATE_HOST:true}
-    allowed-hosts: ${LEAD_PORTAL_PAYMENT_ALLOWED_HOSTS:pagamentopalf.online,www.pagamentopalf.online,www.mercadopago.com.br,mercadopago.com.br,www.mercadopago.com}
-    entrypoint-base-url: ${LEAD_PORTAL_PAYMENT_ENTRYPOINT_BASE_URL:https://pagamentopalf.online/checkout}
+    allowed-hosts: ${LEAD_PORTAL_PAYMENT_ALLOWED_HOSTS:pagamentopalf.site,www.pagamentopalf.site,www.mercadopago.com.br,mercadopago.com.br,www.mercadopago.com}
+    entrypoint-base-url: ${LEAD_PORTAL_PAYMENT_ENTRYPOINT_BASE_URL:https://pagamentopalf.site/checkout}
     package-id-query-param: ${LEAD_PORTAL_PAYMENT_PACKAGE_PARAM:packageId}
     purchase-id-query-param: ${LEAD_PORTAL_PAYMENT_PURCHASE_PARAM:purchaseId}
     button-color: ${LEAD_PORTAL_PAYMENT_BUTTON_COLOR:#00a650}

@@ -3,10 +3,10 @@ services:
     image: ${LEAD_PORTAL_PAYMENTS_IMAGE}
     build: null
     environment:
-      MERCADO_PAGO_NOTIFICATION_URL: ${MERCADO_PAGO_NOTIFICATION_URL:-https://pagamentopalf.online/api/v1/mercadopago/webhook}
-      MERCADO_PAGO_SUCCESS_URL: ${MERCADO_PAGO_SUCCESS_URL:-https://pagamentopalf.online/checkout}
-      MERCADO_PAGO_FAILURE_URL: ${MERCADO_PAGO_FAILURE_URL:-https://pagamentopalf.online/checkout}
-      MERCADO_PAGO_PENDING_URL: ${MERCADO_PAGO_PENDING_URL:-https://pagamentopalf.online/checkout}
+      MERCADO_PAGO_NOTIFICATION_URL: ${MERCADO_PAGO_NOTIFICATION_URL:-https://pagamentopalf.site/api/v1/mercadopago/webhook}
+      MERCADO_PAGO_SUCCESS_URL: ${MERCADO_PAGO_SUCCESS_URL:-https://pagamentopalf.site/checkout}
+      MERCADO_PAGO_FAILURE_URL: ${MERCADO_PAGO_FAILURE_URL:-https://pagamentopalf.site/checkout}
+      MERCADO_PAGO_PENDING_URL: ${MERCADO_PAGO_PENDING_URL:-https://pagamentopalf.site/checkout}
     ports:
       - "${HOST_HTTP_PORT:-8092}:8080"
 
@@ -26,6 +26,7 @@ services:
       - ./docker/proxy/certs/dev:/etc/nginx/dev-certs:ro
       - ./docker/proxy/ensure-certs.sh:/docker-entrypoint.d/40-ensure-certs.sh:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /etc/nginx/certs:/etc/nginx/certs
     restart: unless-stopped
     networks:
       - lead-portal-payments-net
@@ -41,13 +42,20 @@ services:
       CERTBOT_EMAIL: "paulofore@gmail.com.br"
     command: >-
       sh -c "
+        PRIMARY_DOMAIN="${CERTBOT_PRIMARY_DOMAIN:-pagamentopalf.site}"
+        DOMAIN_ARGS="-d ${PRIMARY_DOMAIN} -d www.${PRIMARY_DOMAIN}"
+        if [ -n "${CERTBOT_SECONDARY_DOMAIN:-}" ]; then
+          DOMAIN_ARGS="${DOMAIN_ARGS} -d ${CERTBOT_SECONDARY_DOMAIN} -d www.${CERTBOT_SECONDARY_DOMAIN}"
+        fi
+        if [ -n "${CERTBOT_EXTRA_DOMAINS:-}" ]; then
+          for extra in ${CERTBOT_EXTRA_DOMAINS}; do
+            DOMAIN_ARGS="${DOMAIN_ARGS} -d ${extra}"
+          done
+        fi
         certbot certonly --non-interactive --agree-tos --no-eff-email \
-          --email \"${CERTBOT_EMAIL}\" \
+          --email "${CERTBOT_EMAIL}" \
           --webroot --webroot-path=/var/www/certbot \
-          -d ${CERTBOT_PRIMARY_DOMAIN:-pagamentopalf.online} \
-          -d www.${CERTBOT_PRIMARY_DOMAIN:-pagamentopalf.online} \
-          -d ${CERTBOT_SECONDARY_DOMAIN:-vitrineproduto.online} \
-          -d www.${CERTBOT_SECONDARY_DOMAIN:-vitrineproduto.online}
+          ${DOMAIN_ARGS}
       "
     volumes:
       - ./docker/proxy/html:/var/www/certbot

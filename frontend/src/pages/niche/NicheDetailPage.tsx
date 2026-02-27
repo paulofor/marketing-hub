@@ -27,6 +27,7 @@ import SimpleLeadPortalFormCard from "../../components/leadPortal/SimpleLeadPort
 import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
 import { useDifferentiatedTechnologies } from "../../api/differentiatedTechnology/useDifferentiatedTechnologies";
 import { useInformationSourcesByNiche } from "../../api/informationSource/useInformationSourcesByNiche";
+import { useRequestMetaAdsReprocess } from "../../api/targeting/useRequestMetaAdsReprocess";
 import { useCreateInformationSource } from "../../api/informationSource/useCreateInformationSource";
 import {
   ArrowUpRight,
@@ -44,8 +45,26 @@ import {
   Briefcase,
   Activity,
   Minus,
+  RotateCcw,
 } from "lucide-react";
 import "./NicheDetailPage.css";
+
+type MetaAdsStatus = "PENDING" | "READY";
+
+function resolveMetaAdsStatus(element?: { metaId?: string | null; metaAudienceSizeLowerBound?: number | null; metaAudienceSizeUpperBound?: number | null; } | null): MetaAdsStatus {
+  if (!element) return "PENDING";
+  if (
+    typeof element.metaId === "string" &&
+    element.metaId.trim() !== "" &&
+    element.metaAudienceSizeLowerBound !== null &&
+    element.metaAudienceSizeLowerBound !== undefined &&
+    element.metaAudienceSizeUpperBound !== null &&
+    element.metaAudienceSizeUpperBound !== undefined
+  ) {
+    return "READY";
+  }
+  return "PENDING";
+}
 
 function parseList(value?: string | string[]) {
   if (!value) return [] as string[];
@@ -190,6 +209,7 @@ export default function NicheDetailPage() {
   });
   const createInformationSource = useCreateInformationSource(id);
   const updateNiche = useUpdateNiche();
+  const requestMetaAdsReprocess = useRequestMetaAdsReprocess();
   useBreadcrumbs([{ label: data?.name || "...", icon: nicheIcon }]);
 
   useEffect(() => {
@@ -236,6 +256,27 @@ export default function NicheDetailPage() {
       })
     : [];
   const targetingList = Array.isArray(targetingElements) ? targetingElements : [];
+
+  const findManualElement = useCallback(
+    (type: TargetingElementType, term: string) => {
+      const normalizedTerm = term.trim().toLocaleLowerCase("pt-BR");
+      return targetingList.find(
+        (element) =>
+          element.type === type
+          && (element.source === "MANUAL" || !element.source)
+          && (element.term ?? "").trim().toLocaleLowerCase("pt-BR") === normalizedTerm,
+      );
+    },
+    [targetingList],
+  );
+
+  const onRequestMetaAdsReprocess = useCallback(
+    (elementId: number) => {
+      requestMetaAdsReprocess.mutate({ id: elementId, nicheId: normalizedNicheId });
+    },
+    [normalizedNicheId, requestMetaAdsReprocess],
+  );
+
   const experimentsList = Array.isArray(experiments) ? experiments : [];
   const deliverableList = Array.isArray(deliverables)
     ? [...deliverables].sort((a, b) => {
@@ -1072,31 +1113,55 @@ export default function NicheDetailPage() {
                 </p>
               ) : (
                 <ul className="niche-list">
-                  {interestItems.map((item, index) => (
-                    <li key={`${item}-${index}`} className="niche-list__item">
-                      <span>{item}</span>
-                      <div className="niche-list__actions">
-                        <button
-                          type="button"
-                          className="btn btn-light btn-sm niche-list__action"
-                          onClick={() => onEditInterest(index)}
-                          disabled={updateNiche.isPending}
-                          title="Editar interesse"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-outline-danger btn-sm niche-list__action"
-                          onClick={() => onRemoveInterest(index)}
-                          disabled={updateNiche.isPending}
-                          title="Remover interesse"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </li>
-                  ))}
+                  {interestItems.map((item, index) => {
+                    const manualElement = findManualElement("INTEREST", item);
+                    const metaAdsStatus = resolveMetaAdsStatus(manualElement);
+                    const isReprocessLoading = requestMetaAdsReprocess.isPending
+                      && requestMetaAdsReprocess.variables?.id === manualElement?.id;
+                    return (
+                      <li key={`${item}-${index}`} className="niche-list__item">
+                        <span>{item}</span>
+                        <span className={`badge rounded-pill ${metaAdsStatus === "READY" ? "text-bg-success-subtle border border-success-subtle" : "text-bg-warning-subtle border border-warning-subtle"}`}>
+                          {metaAdsStatus === "READY" ? "Meta Ads processado" : "Pendente Meta Ads"}
+                        </span>
+                        <div className="niche-list__actions">
+                          {manualElement ? (
+                            <button
+                              type="button"
+                              className="btn btn-outline-secondary btn-sm niche-list__action"
+                              onClick={() => onRequestMetaAdsReprocess(manualElement.id)}
+                              disabled={updateNiche.isPending || isReprocessLoading}
+                              title="Solicitar novo processamento"
+                            >
+                              {isReprocessLoading ? (
+                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                              ) : (
+                                <RotateCcw size={16} />
+                              )}
+                            </button>
+                          ) : null}
+                          <button
+                            type="button"
+                            className="btn btn-light btn-sm niche-list__action"
+                            onClick={() => onEditInterest(index)}
+                            disabled={updateNiche.isPending || isReprocessLoading}
+                            title="Editar interesse"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-outline-danger btn-sm niche-list__action"
+                            onClick={() => onRemoveInterest(index)}
+                            disabled={updateNiche.isPending || isReprocessLoading}
+                            title="Remover interesse"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
               <div className="d-flex justify-content-end">
@@ -1165,31 +1230,55 @@ export default function NicheDetailPage() {
                 </p>
               ) : (
                 <ul className="niche-list">
-                  {roleItems.map((item, index) => (
-                    <li key={`${item}-${index}`} className="niche-list__item">
-                      <span>{item}</span>
-                      <div className="niche-list__actions">
-                        <button
-                          type="button"
-                          className="btn btn-light btn-sm niche-list__action"
-                          onClick={() => onEditRole(index)}
-                          disabled={updateNiche.isPending}
-                          title="Editar cargo"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-outline-danger btn-sm niche-list__action"
-                          onClick={() => onRemoveRole(index)}
-                          disabled={updateNiche.isPending}
-                          title="Remover cargo"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </li>
-                  ))}
+                  {roleItems.map((item, index) => {
+                    const manualElement = findManualElement("JOB_TITLE", item);
+                    const metaAdsStatus = resolveMetaAdsStatus(manualElement);
+                    const isReprocessLoading = requestMetaAdsReprocess.isPending
+                      && requestMetaAdsReprocess.variables?.id === manualElement?.id;
+                    return (
+                      <li key={`${item}-${index}`} className="niche-list__item">
+                        <span>{item}</span>
+                        <span className={`badge rounded-pill ${metaAdsStatus === "READY" ? "text-bg-success-subtle border border-success-subtle" : "text-bg-warning-subtle border border-warning-subtle"}`}>
+                          {metaAdsStatus === "READY" ? "Meta Ads processado" : "Pendente Meta Ads"}
+                        </span>
+                        <div className="niche-list__actions">
+                          {manualElement ? (
+                            <button
+                              type="button"
+                              className="btn btn-outline-secondary btn-sm niche-list__action"
+                              onClick={() => onRequestMetaAdsReprocess(manualElement.id)}
+                              disabled={updateNiche.isPending || isReprocessLoading}
+                              title="Solicitar novo processamento"
+                            >
+                              {isReprocessLoading ? (
+                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                              ) : (
+                                <RotateCcw size={16} />
+                              )}
+                            </button>
+                          ) : null}
+                          <button
+                            type="button"
+                            className="btn btn-light btn-sm niche-list__action"
+                            onClick={() => onEditRole(index)}
+                            disabled={updateNiche.isPending || isReprocessLoading}
+                            title="Editar cargo"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-outline-danger btn-sm niche-list__action"
+                            onClick={() => onRemoveRole(index)}
+                            disabled={updateNiche.isPending || isReprocessLoading}
+                            title="Remover cargo"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
               <div className="d-flex justify-content-end">
@@ -1259,31 +1348,55 @@ export default function NicheDetailPage() {
                 </p>
               ) : (
                 <ul className="niche-list">
-                  {behaviorItems.map((item, index) => (
-                    <li key={`${item}-${index}`} className="niche-list__item">
-                      <span>{item}</span>
-                      <div className="niche-list__actions">
-                        <button
-                          type="button"
-                          className="btn btn-light btn-sm niche-list__action"
-                          onClick={() => onEditBehavior(index)}
-                          disabled={updateNiche.isPending}
-                          title="Editar comportamento"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-outline-danger btn-sm niche-list__action"
-                          onClick={() => onRemoveBehavior(index)}
-                          disabled={updateNiche.isPending}
-                          title="Remover comportamento"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </li>
-                  ))}
+                  {behaviorItems.map((item, index) => {
+                    const manualElement = findManualElement("BEHAVIOR", item);
+                    const metaAdsStatus = resolveMetaAdsStatus(manualElement);
+                    const isReprocessLoading = requestMetaAdsReprocess.isPending
+                      && requestMetaAdsReprocess.variables?.id === manualElement?.id;
+                    return (
+                      <li key={`${item}-${index}`} className="niche-list__item">
+                        <span>{item}</span>
+                        <span className={`badge rounded-pill ${metaAdsStatus === "READY" ? "text-bg-success-subtle border border-success-subtle" : "text-bg-warning-subtle border border-warning-subtle"}`}>
+                          {metaAdsStatus === "READY" ? "Meta Ads processado" : "Pendente Meta Ads"}
+                        </span>
+                        <div className="niche-list__actions">
+                          {manualElement ? (
+                            <button
+                              type="button"
+                              className="btn btn-outline-secondary btn-sm niche-list__action"
+                              onClick={() => onRequestMetaAdsReprocess(manualElement.id)}
+                              disabled={updateNiche.isPending || isReprocessLoading}
+                              title="Solicitar novo processamento"
+                            >
+                              {isReprocessLoading ? (
+                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                              ) : (
+                                <RotateCcw size={16} />
+                              )}
+                            </button>
+                          ) : null}
+                          <button
+                            type="button"
+                            className="btn btn-light btn-sm niche-list__action"
+                            onClick={() => onEditBehavior(index)}
+                            disabled={updateNiche.isPending || isReprocessLoading}
+                            title="Editar comportamento"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-outline-danger btn-sm niche-list__action"
+                            onClick={() => onRemoveBehavior(index)}
+                            disabled={updateNiche.isPending || isReprocessLoading}
+                            title="Remover comportamento"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
               <div className="d-flex justify-content-end">

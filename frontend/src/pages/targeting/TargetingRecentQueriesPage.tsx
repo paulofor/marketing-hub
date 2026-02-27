@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import { Clock3, Search } from "lucide-react";
 import PageTitle from "../../components/PageTitle";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
@@ -131,7 +132,9 @@ export default function TargetingRecentQueriesPage() {
               <tr>
                 <th scope="col">Consulta</th>
                 <th scope="col">Seed keywords</th>
-                <th scope="col">Status no Meta Ads</th>
+                <th scope="col">Keywords no Meta Ads</th>
+                <th scope="col">Fila de processamento</th>
+                <th scope="col">Histórico de chamadas</th>
               </tr>
             </thead>
             <tbody>
@@ -184,6 +187,20 @@ export default function TargetingRecentQueriesPage() {
                   </td>
                   <td>
                     <ResolutionStatus summary={item.resolution} />
+                  </td>
+                  <td>
+                    {item.experiment_id ? (
+                      <Link
+                        to={`/experiments/${item.experiment_id}/facebook-api-logs`}
+                        className="btn btn-outline-primary btn-sm"
+                      >
+                        Ver chamada/resposta da Meta
+                      </Link>
+                    ) : (
+                      <span className="text-body-secondary small">
+                        Sem experimento vinculado
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}

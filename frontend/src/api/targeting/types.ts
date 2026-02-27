@@ -109,6 +109,7 @@ export interface TargetingRequest {
 
 export interface TargetingRecentRequest {
   id: string;
+  experiment_id?: number | null;
   descricao: string;
   created_at?: string | null;
   seed_keywords: string[];

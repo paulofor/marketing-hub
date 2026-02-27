@@ -309,6 +309,7 @@ public class TargetingRequestService {
         List<String> metaAdsKeywords = collectMetaAdsKeywords(request);
         return TargetingRecentRequestDto.builder()
                 .id(request.getId())
+                .experimentId(request.getExperiment() != null ? request.getExperiment().getId() : null)
                 .descricao(request.getDescricao())
                 .createdAt(request.getCreatedAt())
                 .seedKeywords(seeds)

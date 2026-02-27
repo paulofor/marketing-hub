@@ -15,6 +15,8 @@ import com.marketinghub.facebookadsworker.FacebookPermissionException;
 import com.marketinghub.facebookadsworker.facebookinstantform.InstantFormPublicationUpdateRequest;
 import com.marketinghub.facebookadsworker.facebooktargeting.TargetingCandidateStatus;
 import com.marketinghub.facebookadsworker.facebooktargeting.TargetingCandidateType;
+import com.marketinghub.facebookadsworker.facebookapi.ExperimentFacebookApiLogClient;
+import com.marketinghub.facebookadsworker.facebookapi.ExperimentFacebookApiLogContext;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient.FacebookWorkerConfiguration;
 import com.marketinghub.facebookadsworker.util.InstantFormPublicationHelper;
@@ -68,6 +70,7 @@ public class FacebookCampaignService {
     private final FacebookAccessTokenManager accessTokenManager;
     private final AtomicBoolean configurationUnavailableWarningLogged;
     private final ObjectMapper objectMapper;
+    private final ExperimentFacebookApiLogClient experimentFacebookApiLogClient;
 
     public FacebookCampaignService(FacebookAdsService facebookAdsService,
                                    FacebookAccessTokenManager accessTokenManager,
@@ -75,7 +78,8 @@ public class FacebookCampaignService {
                                    FacebookWorkerConfigurationClient configurationClient,
                                    @Value("${backend.base-url:http://localhost:8000}") String backendBaseUrl,
                                    @Value("${backend.api-prefix:/api}") String apiPrefix,
-                                   ObjectMapper objectMapper) {
+                                   ObjectMapper objectMapper,
+                                   ExperimentFacebookApiLogClient experimentFacebookApiLogClient) {
         this.facebookAdsService = facebookAdsService;
         this.accessTokenManager = accessTokenManager;
         this.backendClient = builder.build();
@@ -88,6 +92,7 @@ public class FacebookCampaignService {
         this.lastExpiredAccessToken = new AtomicReference<>(null);
         this.configurationUnavailableWarningLogged = new AtomicBoolean(false);
         this.objectMapper = objectMapper;
+        this.experimentFacebookApiLogClient = experimentFacebookApiLogClient;
     }
 
     public void createCampaignsFromExperiments() {
@@ -817,32 +822,6 @@ public class FacebookCampaignService {
     ) {
     }
 
-    private record ExperimentFacebookApiLogIngestionRequest(
-        ExperimentFacebookApiLogContext context,
-        List<ExperimentFacebookApiLogPayload> logs
-    ) {
-    }
-
-    private record ExperimentFacebookApiLogPayload(
-        String provider,
-        String endpoint,
-        String httpMethod,
-        Integer statusCode,
-        JsonNode requestPayload,
-        JsonNode responsePayload,
-        String errorMessage,
-        Instant requestedAt,
-        Instant respondedAt
-    ) {
-    }
-
-    private enum ExperimentFacebookApiLogContext {
-        CAMPAIGN_CREATION,
-        CAMPAIGN_AD_SET,
-        CAMPAIGN_AD_CREATIVE,
-        CAMPAIGN_AD
-    }
-
     public record Experiment(
         long id,
         String name,
@@ -1056,44 +1035,11 @@ public class FacebookCampaignService {
         try {
             return action.get();
         } finally {
-            logFacebookApiCall(experimentId, context);
-        }
-    }
-
-    private void logFacebookApiCall(Long experimentId, ExperimentFacebookApiLogContext context) {
-        if (experimentId == null || context == null) {
-            facebookAdsService.clearLastApiCallDebugInfo();
-            return;
-        }
-        FacebookAdsService.FacebookApiCallDebugInfo debugInfo = facebookAdsService.consumeLastApiCallDebugInfo();
-        if (debugInfo == null) {
-            return;
-        }
-        ExperimentFacebookApiLogPayload payload = new ExperimentFacebookApiLogPayload(
-            "FACEBOOK",
-            debugInfo.endpoint(),
-            debugInfo.httpMethod(),
-            debugInfo.statusCode(),
-            parseJson(debugInfo.requestBody()),
-            parseJson(debugInfo.responseBody()),
-            debugInfo.errorMessage(),
-            debugInfo.requestedAt(),
-            debugInfo.respondedAt()
-        );
-        ExperimentFacebookApiLogIngestionRequest body = new ExperimentFacebookApiLogIngestionRequest(
-            context,
-            List.of(payload)
-        );
-        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/facebook-api-logs");
-        try {
-            backendClient.post()
-                .uri(url)
-                .bodyValue(body)
-                .retrieve()
-                .toBodilessEntity()
-                .block();
-        } catch (Exception ex) {
-            LOGGER.debug("Failed to register Facebook API log for experiment {}: {}", experimentId, ex.getMessage());
+            experimentFacebookApiLogClient.logCall(
+                experimentId,
+                context,
+                facebookAdsService.consumeLastApiCallDebugInfo()
+            );
         }
     }
 

@@ -269,6 +269,7 @@ const CONTEXT_LABELS: Record<string, string> = {
   CAMPAIGN_AD_SET: "Conjunto de anúncios",
   CAMPAIGN_AD_CREATIVE: "Criativo",
   CAMPAIGN_AD: "Anúncio",
+  TARGETING_SIMPLE_FLOW: "Fluxo simples de público",
 };
 
 function formatContextLabel(log: ExperimentFacebookApiLog) {
@@ -283,7 +284,7 @@ function formatContextLabel(log: ExperimentFacebookApiLog) {
 
 function contextOrigin(log: ExperimentFacebookApiLog) {
   if (log.context) {
-    return "Campanha";
+    return log.context === "TARGETING_SIMPLE_FLOW" ? "Fluxo simples" : "Campanha";
   }
   if (log.jobType) {
     return "Playbook";

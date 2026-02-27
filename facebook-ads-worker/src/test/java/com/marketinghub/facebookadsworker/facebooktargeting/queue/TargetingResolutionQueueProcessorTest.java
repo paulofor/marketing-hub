@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -46,7 +47,7 @@ class TargetingResolutionQueueProcessorTest {
     void pollQueueProcessesJobAndMarksCompletion() {
         TargetingResolutionJobRecord job = sampleJob();
         when(jobRepository.claimPendingJobs(anyString(), anyInt())).thenReturn(List.of(job));
-        when(resolverService.resolve(any(UUID.class), any(TargetingResolutionRequest.class)))
+        when(resolverService.resolve(any(UUID.class), any(TargetingResolutionRequest.class), any()))
             .thenReturn(new TargetingResolutionResponse(
                 job.requestId(),
                 List.of(new TargetingResolutionResponse.CandidateResolutionSummary(
@@ -59,7 +60,7 @@ class TargetingResolutionQueueProcessorTest {
         verify(jobRepository).releaseExpiredLocks(properties.getLockTtl());
         verify(jobRepository).markCompleted(job.jobId(), 2);
         ArgumentCaptor<TargetingResolutionRequest> captor = ArgumentCaptor.forClass(TargetingResolutionRequest.class);
-        verify(resolverService).resolve(any(UUID.class), captor.capture());
+        verify(resolverService).resolve(any(UUID.class), captor.capture(), eq(1L));
         assertThat(captor.getValue().getAdAccountId()).isEqualTo("act_987654321");
         assertThat(captor.getValue().getCandidates()).hasSize(1);
         assertThat(captor.getValue().getCandidates().get(0).seed()).isEqualTo("Pilates");
@@ -69,7 +70,7 @@ class TargetingResolutionQueueProcessorTest {
     void pollQueueMarksFailureWhenResolverThrows() {
         TargetingResolutionJobRecord job = sampleJob();
         when(jobRepository.claimPendingJobs(anyString(), anyInt())).thenReturn(List.of(job));
-        when(resolverService.resolve(any(UUID.class), any(TargetingResolutionRequest.class)))
+        when(resolverService.resolve(any(UUID.class), any(TargetingResolutionRequest.class), any()))
             .thenThrow(new IllegalStateException("backend offline"));
 
         processor.pollQueue();
@@ -92,6 +93,7 @@ class TargetingResolutionQueueProcessorTest {
             "act_987654321",
             "pt_BR",
             "BR",
+            1L,
             55L,
             "Pilates",
             List.of("Pilates"),

@@ -2,6 +2,8 @@ package com.marketinghub.facebookadsworker.facebooktargeting;
 
 import com.marketinghub.facebookadsworker.FacebookAdsService;
 import com.marketinghub.facebookadsworker.facebooktargeting.TargetingBackendClient.TargetingCandidateResolutionUpdate;
+import com.marketinghub.facebookadsworker.facebookapi.ExperimentFacebookApiLogClient;
+import com.marketinghub.facebookadsworker.facebookapi.ExperimentFacebookApiLogContext;
 import com.marketinghub.facebookadsworker.facebooktargeting.TargetingBackendClient.TargetingOptionPayload;
 import com.marketinghub.facebookadsworker.facebooktargeting.TargetingResolutionResponse.CandidateResolutionSummary;
 import org.slf4j.Logger;
@@ -37,17 +39,20 @@ public class TargetingResolverService {
 
     private final FacebookAdsService facebookAdsService;
     private final TargetingBackendClient backendClient;
+    private final ExperimentFacebookApiLogClient experimentFacebookApiLogClient;
     private final TargetingResolverProperties properties;
 
     public TargetingResolverService(FacebookAdsService facebookAdsService,
                                     TargetingBackendClient backendClient,
+                                    ExperimentFacebookApiLogClient experimentFacebookApiLogClient,
                                     TargetingResolverProperties properties) {
         this.facebookAdsService = facebookAdsService;
         this.backendClient = backendClient;
+        this.experimentFacebookApiLogClient = experimentFacebookApiLogClient;
         this.properties = properties;
     }
 
-    public TargetingResolutionResponse resolve(UUID requestId, TargetingResolutionRequest request) {
+    public TargetingResolutionResponse resolve(UUID requestId, TargetingResolutionRequest request, Long experimentId) {
         List<TargetingCandidatePayload> candidates = request != null ? request.getCandidates() : List.of();
         if (CollectionUtils.isEmpty(candidates)) {
             LOGGER.info("Received targeting resolution request {} without candidates", requestId);
@@ -56,14 +61,15 @@ public class TargetingResolverService {
 
         List<CandidateResolutionSummary> summaries = new ArrayList<>();
         for (TargetingCandidatePayload candidate : candidates) {
-            summaries.add(processCandidate(requestId, request, candidate));
+            summaries.add(processCandidate(requestId, request, candidate, experimentId));
         }
         return new TargetingResolutionResponse(requestId, summaries);
     }
 
     private CandidateResolutionSummary processCandidate(UUID requestId,
                                                          TargetingResolutionRequest request,
-                                                         TargetingCandidatePayload candidate) {
+                                                         TargetingCandidatePayload candidate,
+                                                         Long experimentId) {
         if (candidate == null || candidate.id() == null) {
             return new CandidateResolutionSummary(null, TargetingCandidateStatus.NO_MATCH, 0,
                 "Candidato inválido recebido para o request %s".formatted(requestId));
@@ -108,7 +114,7 @@ public class TargetingResolverService {
             SearchParameters parameters = new SearchParameters(variant, searchType, adAccountId, limit);
             SearchOutcome outcome;
             try {
-                outcome = searchWithFallbacks(parameters, localeFallbacks, countryFallbacks);
+                outcome = searchWithFallbacks(experimentId, parameters, localeFallbacks, countryFallbacks);
             } catch (RuntimeException ex) {
                 LOGGER.error("Failed to resolve targeting candidate {}: {}", candidate.id(), ex.getMessage(), ex);
                 return reportApiError(candidate.id());
@@ -372,7 +378,8 @@ public class TargetingResolverService {
         }
     }
 
-    private SearchOutcome searchWithFallbacks(SearchParameters parameters,
+    private SearchOutcome searchWithFallbacks(Long experimentId,
+                                              SearchParameters parameters,
                                               List<String> locales,
                                               List<String> countries) {
         for (String locale : locales) {
@@ -385,7 +392,17 @@ public class TargetingResolverService {
                     country,
                     parameters.limit()
                 );
+                if (experimentId != null) {
+                    facebookAdsService.clearLastApiCallDebugInfo();
+                }
                 List<FacebookAdsService.FacebookTargetingSearchResult> results = facebookAdsService.searchTargetingOptions(request);
+                if (experimentId != null) {
+                    experimentFacebookApiLogClient.logCall(
+                        experimentId,
+                        ExperimentFacebookApiLogContext.TARGETING_SIMPLE_FLOW,
+                        facebookAdsService.consumeLastApiCallDebugInfo()
+                    );
+                }
                 if (!CollectionUtils.isEmpty(results)) {
                     LOGGER.info(
                         "Resolved targeting term '{}' with locale={} country={} ({} resultados)",

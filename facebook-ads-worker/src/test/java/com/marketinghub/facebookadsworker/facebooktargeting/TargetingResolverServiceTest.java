@@ -1,6 +1,7 @@
 package com.marketinghub.facebookadsworker.facebooktargeting;
 
 import com.marketinghub.facebookadsworker.FacebookAdsService;
+import com.marketinghub.facebookadsworker.facebookapi.ExperimentFacebookApiLogClient;
 import com.marketinghub.facebookadsworker.facebooktargeting.TargetingBackendClient.TargetingCandidateResolutionUpdate;
 import com.marketinghub.facebookadsworker.facebooktargeting.TargetingBackendClient.TargetingOptionPayload;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +30,9 @@ class TargetingResolverServiceTest {
     @Mock
     private TargetingBackendClient backendClient;
 
+    @Mock
+    private ExperimentFacebookApiLogClient experimentFacebookApiLogClient;
+
     private TargetingResolverService service;
 
     @BeforeEach
@@ -37,7 +41,7 @@ class TargetingResolverServiceTest {
         properties.setDefaultAdAccountId("act_1234567890");
         properties.setSuggestionsEnabled(false);
         properties.setMaxSeedVariants(1);
-        service = new TargetingResolverService(facebookAdsService, backendClient, properties);
+        service = new TargetingResolverService(facebookAdsService, backendClient, experimentFacebookApiLogClient, properties);
     }
 
     @Test
@@ -70,7 +74,7 @@ class TargetingResolverServiceTest {
             null
         )));
 
-        TargetingResolutionResponse response = service.resolve(UUID.randomUUID(), request);
+        TargetingResolutionResponse response = service.resolve(UUID.randomUUID(), request, null);
 
         assertThat(response.candidates()).hasSize(1);
         TargetingResolutionResponse.CandidateResolutionSummary summary = response.candidates().get(0);
@@ -112,7 +116,7 @@ class TargetingResolverServiceTest {
             null
         )));
 
-        TargetingResolutionResponse response = service.resolve(UUID.randomUUID(), request);
+        TargetingResolutionResponse response = service.resolve(UUID.randomUUID(), request, null);
 
         assertThat(response.candidates()).hasSize(1);
         assertThat(response.candidates().get(0).status()).isEqualTo(TargetingCandidateStatus.NO_MATCH);

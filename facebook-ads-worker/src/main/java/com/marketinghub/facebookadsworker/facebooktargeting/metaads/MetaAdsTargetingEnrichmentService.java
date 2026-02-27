@@ -71,6 +71,7 @@ public class MetaAdsTargetingEnrichmentService {
                     element.id(),
                     new MetaAdsUpdatePayload(
                             selected.id(),
+                            selected.name(),
                             selected.audienceSizeLowerBound(),
                             selected.audienceSizeUpperBound())
             );

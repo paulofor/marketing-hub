@@ -149,6 +149,7 @@ public class TargetingResolutionJobJdbcRepository implements TargetingResolution
                    fa.ad_account_id AS request_ad_account_id,
                    r.locale         AS request_locale,
                    r.country        AS request_country,
+                   r.experiment_id  AS experiment_id,
                    c.id             AS candidate_id,
                    c.texto_sugerido AS seed,
                    c.type           AS candidate_type,
@@ -176,12 +177,15 @@ public class TargetingResolutionJobJdbcRepository implements TargetingResolution
             UUID requestId = toUuid((byte[]) rowSet.getObject("request_id"));
             TargetingCandidateType type = TargetingCandidateType.valueOf(rowSet.getString("candidate_type"));
             BigDecimal score = rowSet.getBigDecimal("score");
+            Object experimentIdRaw = rowSet.getObject("experiment_id");
+            Long experimentId = experimentIdRaw == null ? null : rowSet.getLong("experiment_id");
             TargetingResolutionJobRecord record = new TargetingResolutionJobRecord(
                 jobId,
                 requestId,
                 rowSet.getString("request_ad_account_id"),
                 rowSet.getString("request_locale"),
                 rowSet.getString("request_country"),
+                experimentId,
                 rowSet.getLong("candidate_id"),
                 rowSet.getString("seed"),
                 new ArrayList<>(),
@@ -209,6 +213,7 @@ public class TargetingResolutionJobJdbcRepository implements TargetingResolution
                         record.requestAdAccountId(),
                         record.requestLocale(),
                         record.requestCountry(),
+                        record.experimentId(),
                         record.candidateId(),
                         record.seed(),
                         variants.getOrDefault(record.candidateId(), List.of()),

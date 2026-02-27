@@ -10,7 +10,7 @@ import { TargetingElementCard } from "../../components/TargetingElementCard";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import { useChatDialog } from "../../api/chatDialog/useChatDialog";
 import { useForm } from "react-hook-form";
-import type { TargetingElementType } from "../../api/targeting/types";
+import type { TargetingElement, TargetingElementType } from "../../api/targeting/types";
 import { TargetingGenerationForm } from "../../components/TargetingGenerationForm";
 import { TargetingRequestForm } from "../../components/TargetingRequestForm";
 import { TargetingRequestStatusPanel } from "../../components/TargetingRequestStatusPanel";
@@ -64,6 +64,65 @@ function resolveMetaAdsStatus(element?: { metaId?: string | null; metaAudienceSi
     return "READY";
   }
   return "PENDING";
+}
+
+const audienceFormatter = new Intl.NumberFormat("pt-BR");
+
+function formatMetaAudienceRange(lower?: number | null, upper?: number | null) {
+  if (typeof lower === "number" && typeof upper === "number") {
+    if (lower === upper) {
+      return audienceFormatter.format(lower);
+    }
+    return `${audienceFormatter.format(lower)} – ${audienceFormatter.format(upper)}`;
+  }
+  if (typeof lower === "number") {
+    return `≥ ${audienceFormatter.format(lower)}`;
+  }
+  if (typeof upper === "number") {
+    return `≤ ${audienceFormatter.format(upper)}`;
+  }
+  return "—";
+}
+
+type MetaReadyEntry = { term: string; element: TargetingElement };
+
+function MetaAdsDetailsTable({ entries }: { entries: MetaReadyEntry[] }) {
+  if (!entries.length) {
+    return null;
+  }
+  return (
+    <div className="mt-2">
+      <div className="table-responsive">
+        <table className="table table-sm align-middle mb-0 text-body-secondary">
+          <thead>
+            <tr>
+              <th scope="col">Termo</th>
+              <th scope="col">Meta</th>
+              <th scope="col">ID</th>
+              <th scope="col">Alcance estimado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map(({ term, element }) => {
+              const displayName = element.metaKey?.trim() || element.term;
+              const rangeLabel = formatMetaAudienceRange(
+                element.metaAudienceSizeLowerBound,
+                element.metaAudienceSizeUpperBound,
+              );
+              return (
+                <tr key={`${term}-${element.id}`}>
+                  <td>{term}</td>
+                  <td>{displayName}</td>
+                  <td>{element.metaId ?? "—"}</td>
+                  <td>{rangeLabel}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }
 
 function parseList(value?: string | string[]) {
@@ -269,6 +328,36 @@ export default function NicheDetailPage() {
     },
     [targetingList],
   );
+
+  const interestMetaReady = useMemo<MetaReadyEntry[]>(() => {
+    return interestItems.reduce<MetaReadyEntry[]>((acc, term) => {
+      const element = findManualElement("INTEREST", term);
+      if (element && resolveMetaAdsStatus(element) === "READY") {
+        acc.push({ term, element });
+      }
+      return acc;
+    }, []);
+  }, [interestItems, findManualElement]);
+
+  const roleMetaReady = useMemo<MetaReadyEntry[]>(() => {
+    return roleItems.reduce<MetaReadyEntry[]>((acc, term) => {
+      const element = findManualElement("JOB_TITLE", term);
+      if (element && resolveMetaAdsStatus(element) === "READY") {
+        acc.push({ term, element });
+      }
+      return acc;
+    }, []);
+  }, [roleItems, findManualElement]);
+
+  const behaviorMetaReady = useMemo<MetaReadyEntry[]>(() => {
+    return behaviorItems.reduce<MetaReadyEntry[]>((acc, term) => {
+      const element = findManualElement("BEHAVIOR", term);
+      if (element && resolveMetaAdsStatus(element) === "READY") {
+        acc.push({ term, element });
+      }
+      return acc;
+    }, []);
+  }, [behaviorItems, findManualElement]);
 
   const onRequestMetaAdsReprocess = useCallback(
     (elementId: number) => {
@@ -1164,6 +1253,7 @@ export default function NicheDetailPage() {
                   })}
                 </ul>
               )}
+              <MetaAdsDetailsTable entries={interestMetaReady} />
               <div className="d-flex justify-content-end">
                 <button
                   type="button"
@@ -1281,6 +1371,7 @@ export default function NicheDetailPage() {
                   })}
                 </ul>
               )}
+              <MetaAdsDetailsTable entries={roleMetaReady} />
               <div className="d-flex justify-content-end">
                 <button
                   type="button"
@@ -1399,6 +1490,7 @@ export default function NicheDetailPage() {
                   })}
                 </ul>
               )}
+              <MetaAdsDetailsTable entries={behaviorMetaReady} />
               <div className="d-flex justify-content-end">
                 <button
                   type="button"

@@ -141,6 +141,7 @@ public class TargetingBackendClient {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record MetaAdsUpdatePayload(
         @JsonProperty("metaId") String metaId,
+        @JsonProperty("metaKey") String metaKey,
         @JsonProperty("metaAudienceSizeLowerBound") Long metaAudienceSizeLowerBound,
         @JsonProperty("metaAudienceSizeUpperBound") Long metaAudienceSizeUpperBound
     ) {}

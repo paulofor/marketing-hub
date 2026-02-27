@@ -79,6 +79,21 @@ class FlowControllerTest {
     }
 
     @Test
+    void simpleFlowIsServedFromCatalogWithoutDatabaseRoundtrip() throws Exception {
+        mockMvc.perform(get("/api/flows/formulario-simples-personal-trainer"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slug").value("formulario-simples-personal-trainer"))
+                .andExpect(jsonPath("$.name").value("Formulário simples para personal trainer"))
+                .andExpect(jsonPath("$.questions", hasSize(6)))
+                .andExpect(jsonPath("$.questions[0].title").value("Nome"))
+                .andExpect(jsonPath("$.questions[2].type").value("SINGLE_CHOICE"))
+                .andExpect(jsonPath("$.questions[2].options", hasSize(3)));
+
+        assertThat(flowAccessRepository.findAll()).isEmpty();
+    }
+
+
+    @Test
     void getFlowRegistersVisitorCookieOnAccess() throws Exception {
         mockMvc.perform(put("/api/flows/diagnostico")
                         .contentType(MediaType.APPLICATION_JSON)

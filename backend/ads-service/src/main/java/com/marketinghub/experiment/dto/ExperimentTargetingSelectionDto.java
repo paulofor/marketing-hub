@@ -8,6 +8,7 @@ public record ExperimentTargetingSelectionDto(
         Long id,
         Long experimentId,
         TargetingCandidateType candidateType,
-        String term
+        String term,
+        Long targetingElementId
 ) {
 }

@@ -23,6 +23,8 @@ export interface TargetingElement {
   lastReviewedBy?: string | null;
   metaId?: string | null;
   metaKey?: string | null;
+  metaAudienceSizeLowerBound?: number | null;
+  metaAudienceSizeUpperBound?: number | null;
   confidence?: number | null;
   createdAt?: string | null;
   updatedAt?: string | null;

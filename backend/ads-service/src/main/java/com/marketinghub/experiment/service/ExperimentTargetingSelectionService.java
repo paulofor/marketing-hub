@@ -8,13 +8,17 @@ import com.marketinghub.experiment.dto.SaveExperimentTargetingSelectionsRequest;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.experiment.repository.ExperimentTargetingSelectionRepository;
 import com.marketinghub.targeting.TargetingCandidate;
+import com.marketinghub.targeting.TargetingCandidateType;
 import com.marketinghub.targeting.TargetingCandidateStatus;
+import com.marketinghub.targeting.TargetingElement;
+import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.TargetingRequest;
 import com.marketinghub.targeting.TargetingRequestOrigin;
 import com.marketinghub.targeting.TargetingRequestStatus;
 import com.marketinghub.targeting.dto.TargetingRequestDto;
 import com.marketinghub.targeting.mapper.TargetingRequestMapper;
 import com.marketinghub.targeting.mapper.TargetingResolutionSummaryMapper;
+import com.marketinghub.targeting.repository.TargetingElementRepository;
 import com.marketinghub.targeting.repository.TargetingCandidateRepository;
 import com.marketinghub.targeting.repository.TargetingRequestRepository;
 import com.marketinghub.targeting.service.TargetingResolutionJobService;
@@ -24,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 @Service
 public class ExperimentTargetingSelectionService {
@@ -32,6 +37,7 @@ public class ExperimentTargetingSelectionService {
     private final ExperimentTargetingSelectionRepository repository;
     private final TargetingRequestRepository targetingRequestRepository;
     private final TargetingCandidateRepository targetingCandidateRepository;
+    private final TargetingElementRepository targetingElementRepository;
     private final TargetingResolutionJobService targetingResolutionJobService;
     private final TargetingRequestMapper targetingRequestMapper;
     private final TargetingResolutionSummaryMapper targetingResolutionSummaryMapper;
@@ -41,6 +47,7 @@ public class ExperimentTargetingSelectionService {
             ExperimentTargetingSelectionRepository repository,
             TargetingRequestRepository targetingRequestRepository,
             TargetingCandidateRepository targetingCandidateRepository,
+            TargetingElementRepository targetingElementRepository,
             TargetingResolutionJobService targetingResolutionJobService,
             TargetingRequestMapper targetingRequestMapper,
             TargetingResolutionSummaryMapper targetingResolutionSummaryMapper) {
@@ -48,9 +55,42 @@ public class ExperimentTargetingSelectionService {
         this.repository = repository;
         this.targetingRequestRepository = targetingRequestRepository;
         this.targetingCandidateRepository = targetingCandidateRepository;
+        this.targetingElementRepository = targetingElementRepository;
         this.targetingResolutionJobService = targetingResolutionJobService;
         this.targetingRequestMapper = targetingRequestMapper;
         this.targetingResolutionSummaryMapper = targetingResolutionSummaryMapper;
+    }
+
+    private TargetingElement resolveTargetingElement(Long targetingElementId,
+                                                     Experiment experiment,
+                                                     TargetingCandidateType candidateType) {
+        if (targetingElementId == null) {
+            return null;
+        }
+        TargetingElement element = targetingElementRepository.findById(targetingElementId)
+                .orElseThrow(() -> new IllegalArgumentException("Elemento de segmentação não encontrado"));
+        if (element.getNiche() == null || element.getNiche().getId() == null
+                || experiment.getNiche() == null || experiment.getNiche().getId() == null
+                || !Objects.equals(element.getNiche().getId(), experiment.getNiche().getId())) {
+            throw new IllegalArgumentException("Elemento de segmentação não pertence ao mesmo nicho do experimento");
+        }
+        TargetingElementType expectedType = mapCandidateType(candidateType);
+        if (element.getType() != expectedType) {
+            throw new IllegalArgumentException("Tipo do elemento não corresponde ao candidato informado");
+        }
+        if (experiment.getHypothesisRef() != null && element.getHypothesis() != null
+                && !Objects.equals(experiment.getHypothesisRef().getId(), element.getHypothesis().getId())) {
+            throw new IllegalArgumentException("Elemento vinculado a outra hipótese");
+        }
+        return element;
+    }
+
+    private TargetingElementType mapCandidateType(TargetingCandidateType candidateType) {
+        return switch (candidateType) {
+            case INTEREST -> TargetingElementType.INTEREST;
+            case BEHAVIOR -> TargetingElementType.BEHAVIOR;
+            case WORK_POSITION -> TargetingElementType.JOB_TITLE;
+        };
     }
 
     @Transactional(readOnly = true)
@@ -61,6 +101,7 @@ public class ExperimentTargetingSelectionService {
                         .experimentId(item.getExperiment().getId())
                         .candidateType(item.getCandidateType())
                         .term(item.getTerm())
+                        .targetingElementId(item.getTargetingElement() != null ? item.getTargetingElement().getId() : null)
                         .build())
                 .toList();
     }
@@ -75,10 +116,13 @@ public class ExperimentTargetingSelectionService {
                 if (item.getCandidateType() == null || item.getTerm() == null || item.getTerm().isBlank()) {
                     continue;
                 }
+                TargetingElement linkedElement = resolveTargetingElement(item.getTargetingElementId(), experiment, item.getCandidateType());
+                String normalizedTerm = linkedElement != null ? linkedElement.getTerm() : item.getTerm().trim();
                 items.add(ExperimentTargetingSelection.builder()
                         .experiment(experiment)
                         .candidateType(item.getCandidateType())
-                        .term(item.getTerm().trim())
+                        .term(normalizedTerm)
+                        .targetingElement(linkedElement)
                         .build());
             }
         }
@@ -88,6 +132,7 @@ public class ExperimentTargetingSelectionService {
                         .experimentId(item.getExperiment().getId())
                         .candidateType(item.getCandidateType())
                         .term(item.getTerm())
+                        .targetingElementId(item.getTargetingElement() != null ? item.getTargetingElement().getId() : null)
                         .build())
                 .toList();
     }

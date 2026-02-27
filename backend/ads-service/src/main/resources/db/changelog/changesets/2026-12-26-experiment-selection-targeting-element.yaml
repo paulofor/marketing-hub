@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-12-26-link-experiment-targeting-selection-to-element
+      author: ai
+      preConditions:
+        onFail: MARK_RAN
+        and:
+          - dbms:
+              type: mysql
+          - not:
+              columnExists:
+                tableName: experiment_targeting_selection
+                columnName: targeting_element_id
+          - tableExists:
+              tableName: targeting_element
+      changes:
+        - addColumn:
+            dbms: mysql
+            tableName: experiment_targeting_selection
+            columns:
+              - column:
+                  name: targeting_element_id
+                  type: BIGINT
+        - addForeignKeyConstraint:
+            dbms: mysql
+            baseTableName: experiment_targeting_selection
+            baseColumnNames: targeting_element_id
+            referencedTableName: targeting_element
+            referencedColumnNames: id
+            constraintName: fk_experiment_targeting_selection_element
+            onDelete: SET NULL
+        - createIndex:
+            dbms: mysql
+            tableName: experiment_targeting_selection
+            indexName: idx_exp_targeting_selection_element
+            columns:
+              - column:
+                  name: targeting_element_id

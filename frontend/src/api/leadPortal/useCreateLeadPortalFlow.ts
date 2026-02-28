@@ -29,6 +29,7 @@ export interface CreateLeadPortalFlowRequest {
   experimentId?: number | string | null;
   marketNicheId: number | string;
   model?: string;
+  simpleFormStyleId?: number | string | null;
   questions: CreateLeadPortalFlowQuestionRequest[];
 }
 

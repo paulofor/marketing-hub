@@ -113,7 +113,7 @@ class FlowSubmissionControllerTest {
                                 FlowQuestionType.IMAGE_UPLOAD,
                                 true,
                                 "", null,
-                                List.of())));
+                                List.of())), null);
 
         flowService.save(flow);
     }
@@ -233,7 +233,7 @@ class FlowSubmissionControllerTest {
                                 true,
                                 "",
                                 null,
-                                List.of())));
+                                List.of())), null);
 
         flowService.save(flowWithNullType);
 

@@ -15,5 +15,6 @@ public class CreateLeadPortalFlowRequest {
     private Long marketNicheId;
     private Long experimentId;
     private String model;
+    private Long simpleFormStyleId;
     private List<LeadPortalFlowQuestionRequest> questions;
 }

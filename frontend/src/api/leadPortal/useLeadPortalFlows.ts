@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
+import type { LeadPortalSimpleFormStyle } from "./useLeadPortalSimpleFormStyles";
+
 export interface LeadPortalFlowQuestion {
   id: number;
   title: string;
@@ -23,6 +25,7 @@ export interface LeadPortalFlow {
   model?: string | null;
   prompt?: string | null;
   approved: boolean;
+  simpleFormStyle?: LeadPortalSimpleFormStyle | null;
   approvedAt?: string | null;
   createdAt: string;
   updatedAt: string;

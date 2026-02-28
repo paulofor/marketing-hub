@@ -164,6 +164,11 @@ const NAV_SECTIONS: NavSection[] = [
         icon: Package,
       },
       {
+        to: "/lead-portal/simple-form-styles",
+        label: "Estilos do formulário simples",
+        icon: Sparkles,
+      },
+      {
         to: "/facebook-campaigns/ready",
         label: "Experimentos prontos",
         icon: ClipboardCheck,

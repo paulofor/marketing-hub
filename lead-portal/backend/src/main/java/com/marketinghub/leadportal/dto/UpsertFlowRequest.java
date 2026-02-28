@@ -1,5 +1,6 @@
 package com.marketinghub.leadportal.dto;
 
+import com.marketinghub.leadportal.model.SimpleFormStyleDefinition;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -16,6 +17,8 @@ public class UpsertFlowRequest {
     private String model;
 
     private String prompt;
+
+    private SimpleFormStylePayload simpleFormStyle;
 
     @NotEmpty(message = "Ao menos uma pergunta é obrigatória")
     @Valid
@@ -59,5 +62,44 @@ public class UpsertFlowRequest {
 
     public void setQuestions(List<FlowQuestionRequest> questions) {
         this.questions = questions;
+    }
+
+    public SimpleFormStylePayload getSimpleFormStyle() {
+        return simpleFormStyle;
+    }
+
+    public void setSimpleFormStyle(SimpleFormStylePayload simpleFormStyle) {
+        this.simpleFormStyle = simpleFormStyle;
+    }
+
+    public static class SimpleFormStylePayload {
+        private String slug;
+        private String name;
+        @Valid
+        private SimpleFormStyleDefinition definition;
+
+        public String getSlug() {
+            return slug;
+        }
+
+        public void setSlug(String slug) {
+            this.slug = slug;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public SimpleFormStyleDefinition getDefinition() {
+            return definition;
+        }
+
+        public void setDefinition(SimpleFormStyleDefinition definition) {
+            this.definition = definition;
+        }
     }
 }

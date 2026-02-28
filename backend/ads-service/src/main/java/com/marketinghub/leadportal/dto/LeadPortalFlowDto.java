@@ -5,6 +5,7 @@ import lombok.Data;
 import java.time.Instant;
 import java.util.List;
 
+
 /**
  * DTO summarizing a lead portal flow with its questions.
  */
@@ -20,6 +21,7 @@ public class LeadPortalFlowDto {
     private Long marketNicheId;
     private Long experimentId;
     private java.math.BigDecimal costUsd;
+    private LeadPortalSimpleFormStyleDto simpleFormStyle;
     private boolean approved;
     private Instant approvedAt;
     private Instant createdAt;

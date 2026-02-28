@@ -337,6 +337,7 @@ worker to build ad sets with the correct amount in cents for the Graph API.
 - `model` VARCHAR(128)
 - `prompt` LONGTEXT
 - `experiment_id` BIGINT → FK `experiment.id`
+- `simple_form_style_id` BIGINT → FK `lead_portal_simple_form_style.id`
 - `approved` TINYINT(1) DEFAULT 0
 - `approved_at` TIMESTAMP
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -349,6 +350,33 @@ armazenam o histórico de geração realizado pelo Worker IA, enquanto
 `experiment_id` associa o fluxo ao experimento que solicitou sua geração e
 `approved/approved_at` registram quando o fluxo foi validado para uso em
 campanhas.
+
+### lead_portal_simple_form_style
+
+- `id` BIGINT AUTO_INCREMENT PRIMARY KEY
+- `name` VARCHAR(150) NOT NULL
+- `slug` VARCHAR(120) NOT NULL UNIQUE
+- `description` VARCHAR(500)
+- `text_model` VARCHAR(128)
+- `text_prompt` LONGTEXT
+- `text_parameters` LONGTEXT
+- `image_model` VARCHAR(128)
+- `image_prompt` LONGTEXT
+- `image_negative_prompt` LONGTEXT
+- `image_parameters` LONGTEXT
+- `image_batch_size` INT
+- `image_aspect_ratio` VARCHAR(32)
+- `preview_image_url` VARCHAR(512)
+- `definition` LONGTEXT
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+Catálogo de estilos visuais aplicados ao formulário simples do Lead Portal. O campo
+`definition` guarda o JSON com as cores, gradientes e tokens de layout que serão
+expostos para os usuários, enquanto os blocos `text_*` e `image_*` registram os
+prompts e parâmetros usados para gerar o estilo (copy e imagens decorativas) em
+lote pelos modelos de IA.
+
 
 ### lead_portal_flow_question
 

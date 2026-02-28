@@ -165,7 +165,7 @@ class FlowControllerTest {
 
     @Test
     void getFlowWithoutQuestionsReturnsEmptyList() throws Exception {
-        Flow flow = new Flow("sem-perguntas", "Sem perguntas", "Descrição", null, null, null);
+        Flow flow = new Flow("sem-perguntas", "Sem perguntas", "Descrição", null, null, null, null);
         flowService.save(flow);
 
         mockMvc.perform(get("/api/flows/sem-perguntas"))

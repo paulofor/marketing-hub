@@ -63,6 +63,12 @@ public class LeadPortalFlow {
     private List<LeadPortalFlowQuestion> questions = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "simple_form_style_id")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private LeadPortalSimpleFormStyle simpleFormStyle;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "market_niche_id")
     @ToString.Exclude
     @EqualsAndHashCode.Exclude

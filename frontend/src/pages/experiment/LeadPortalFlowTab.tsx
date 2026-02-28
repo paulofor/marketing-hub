@@ -212,6 +212,12 @@ export default function LeadPortalFlowTab({
                         )}
                       </h5>
                       <p className="text-muted small mb-0">Slug: {flow.slug}</p>
+                      {flow.simpleFormStyle ? (
+                        <p className="text-muted small mt-1 mb-0">
+                          Estilo visual: <strong>{flow.simpleFormStyle.name}</strong>
+                          {flow.simpleFormStyle.slug ? ` (${flow.simpleFormStyle.slug})` : ""}
+                        </p>
+                      ) : null}
                       {flow.publicUrl ? (
                         <p className="text-muted small mt-2 mb-0">
                           URL pública:{" "}

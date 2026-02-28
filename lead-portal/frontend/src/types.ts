@@ -44,11 +44,42 @@ export interface FlowQuestion {
   options: string[];
 }
 
+export interface LeadPortalSimpleFormStyleDefinition {
+  backgroundColor?: string | null;
+  backgroundGradient?: string | null;
+  backgroundPatternUrl?: string | null;
+  cardBackground?: string | null;
+  cardBorderColor?: string | null;
+  cardShadow?: string | null;
+  headingColor?: string | null;
+  textColor?: string | null;
+  mutedTextColor?: string | null;
+  primaryColor?: string | null;
+  accentColor?: string | null;
+  buttonBackground?: string | null;
+  buttonTextColor?: string | null;
+  buttonShadow?: string | null;
+  buttonBorderRadius?: string | null;
+  highlightBackground?: string | null;
+  inputBackground?: string | null;
+  inputBorderColor?: string | null;
+  heroLayout?: "image-left" | "image-right" | "stacked" | null;
+  heroImageUrl?: string | null;
+  heroImageBlendColor?: string | null;
+}
+
+export interface LeadPortalSimpleFormStyle {
+  slug: string;
+  name?: string | null;
+  definition?: LeadPortalSimpleFormStyleDefinition | null;
+}
+
 export interface LeadPortalFlow {
   slug: string;
   name: string;
   description?: string | null;
   questions: FlowQuestion[];
+  simpleFormStyle?: LeadPortalSimpleFormStyle | null;
 }
 
 export interface FlowSubmissionPayload {

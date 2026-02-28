@@ -3,6 +3,8 @@ package com.marketinghub.leadportal.catalog;
 import com.marketinghub.leadportal.model.Flow;
 import com.marketinghub.leadportal.model.FlowQuestion;
 import com.marketinghub.leadportal.model.FlowQuestionType;
+import com.marketinghub.leadportal.model.SimpleFormStyle;
+import com.marketinghub.leadportal.model.SimpleFormStyleDefinition;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -70,7 +72,37 @@ public class SimpleFlowCatalog {
                                 "outras_aulas",
                                 FlowQuestionType.TEXTAREA,
                                 false),
-                        question("Email", "email", FlowQuestionType.TEXT, true)));
+                        question("Email", "email", FlowQuestionType.TEXT, true)),
+                defaultStyle());
+    }
+
+    private SimpleFormStyle defaultStyle() {
+        SimpleFormStyleDefinition definition = new SimpleFormStyleDefinition(
+                "#f5f6ff",
+                "linear-gradient(135deg, #eef2ff 0%, #fdf2f8 100%)",
+                null,
+                "#ffffff",
+                "rgba(99,102,241,0.08)",
+                "0 25px 70px rgba(15,23,42,0.12)",
+                "#0f172a",
+                "#1f2937",
+                "#6b7280",
+                "#6366f1",
+                "#ec4899",
+                "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                "#ffffff",
+                "0 10px 24px rgba(99,102,241,0.35)",
+                "999px",
+                "rgba(99,102,241,0.08)",
+                "#ffffff",
+                "#e5e7eb",
+                "image-right",
+                null,
+                "rgba(255,255,255,0.65)");
+        return new SimpleFormStyle(
+                "formulario-simples-default",
+                "Gradiente padrão lead portal",
+                definition);
     }
 
     private FlowQuestion question(String title, String dataKey, FlowQuestionType type, boolean required) {

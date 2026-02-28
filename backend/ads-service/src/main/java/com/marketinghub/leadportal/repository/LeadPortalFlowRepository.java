@@ -12,16 +12,16 @@ import java.util.Optional;
  */
 public interface LeadPortalFlowRepository extends JpaRepository<LeadPortalFlow, Long> {
     @Override
-    @EntityGraph(attributePaths = {"questions", "experiment", "marketNiche"})
+    @EntityGraph(attributePaths = {"questions", "experiment", "marketNiche", "simpleFormStyle"})
     List<LeadPortalFlow> findAll();
 
-    @EntityGraph(attributePaths = {"questions", "experiment", "marketNiche"})
+    @EntityGraph(attributePaths = {"questions", "experiment", "marketNiche", "simpleFormStyle"})
     List<LeadPortalFlow> findAllByOrderByNameAsc();
 
-    @EntityGraph(attributePaths = {"questions", "experiment", "marketNiche"})
+    @EntityGraph(attributePaths = {"questions", "experiment", "marketNiche", "simpleFormStyle"})
     List<LeadPortalFlow> findAllByExperimentIdOrderByCreatedAtDesc(Long experimentId);
 
-    @EntityGraph(attributePaths = {"questions", "experiment", "marketNiche"})
+    @EntityGraph(attributePaths = {"questions", "experiment", "marketNiche", "simpleFormStyle"})
     List<LeadPortalFlow> findAllByMarketNicheIdOrderByCreatedAtDesc(Long marketNicheId);
 
     Optional<LeadPortalFlow> findBySlug(String slug);

@@ -3,24 +3,32 @@ package com.marketinghub.leadportal.dto;
 import com.marketinghub.leadportal.model.Flow;
 import com.marketinghub.leadportal.model.FlowQuestion;
 import com.marketinghub.leadportal.model.FlowQuestionType;
+import com.marketinghub.leadportal.model.SimpleFormStyleDefinition;
 import java.util.List;
 
 public record FlowResponse(
         String slug,
         String name,
         String description,
-        List<QuestionResponse> questions) {
+        List<QuestionResponse> questions,
+        SimpleFormStyleResponse simpleFormStyle) {
 
     public static FlowResponse from(Flow flow) {
         List<QuestionResponse> questions = flow.questions() == null
                 ? List.of()
                 : flow.questions().stream().map(QuestionResponse::from).toList();
 
+        SimpleFormStyleResponse style = flow.simpleFormStyle() == null ? null :
+                new SimpleFormStyleResponse(
+                        flow.simpleFormStyle().slug(),
+                        flow.simpleFormStyle().name(),
+                        flow.simpleFormStyle().definition());
         return new FlowResponse(
                 flow.slug(),
                 flow.name(),
                 flow.description(),
-                questions);
+                questions,
+                style);
     }
 
     public record QuestionResponse(
@@ -42,5 +50,11 @@ public record FlowResponse(
                     question.placeholder(),
                     question.options());
         }
+    }
+
+    public record SimpleFormStyleResponse(
+            String slug,
+            String name,
+            SimpleFormStyleDefinition definition) {
     }
 }

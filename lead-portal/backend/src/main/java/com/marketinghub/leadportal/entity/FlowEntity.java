@@ -2,6 +2,9 @@ package com.marketinghub.leadportal.entity;
 
 import com.marketinghub.leadportal.model.Flow;
 import com.marketinghub.leadportal.model.FlowQuestion;
+import com.marketinghub.leadportal.model.SimpleFormStyle;
+import com.marketinghub.leadportal.model.SimpleFormStyleDefinition;
+import com.marketinghub.leadportal.entity.converter.SimpleFormStyleDefinitionConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -31,6 +34,16 @@ public class FlowEntity {
     @Column(columnDefinition = "LONGTEXT")
     @Convert(converter = FlowQuestionListConverter.class)
     private List<FlowQuestion> questions;
+
+    @Column(name = "simple_form_style_slug", length = 120)
+    private String simpleFormStyleSlug;
+
+    @Column(name = "simple_form_style_name", length = 150)
+    private String simpleFormStyleName;
+
+    @Column(name = "simple_form_style_definition", columnDefinition = "LONGTEXT")
+    @Convert(converter = SimpleFormStyleDefinitionConverter.class)
+    private SimpleFormStyleDefinition simpleFormStyleDefinition;
 
     @Column(name = "access_count", nullable = false, columnDefinition = "bigint default 0")
     private long accessCount = 0L;
@@ -83,6 +96,30 @@ public class FlowEntity {
         this.questions = questions;
     }
 
+    public String getSimpleFormStyleSlug() {
+        return simpleFormStyleSlug;
+    }
+
+    public void setSimpleFormStyleSlug(String simpleFormStyleSlug) {
+        this.simpleFormStyleSlug = simpleFormStyleSlug;
+    }
+
+    public String getSimpleFormStyleName() {
+        return simpleFormStyleName;
+    }
+
+    public void setSimpleFormStyleName(String simpleFormStyleName) {
+        this.simpleFormStyleName = simpleFormStyleName;
+    }
+
+    public SimpleFormStyleDefinition getSimpleFormStyleDefinition() {
+        return simpleFormStyleDefinition;
+    }
+
+    public void setSimpleFormStyleDefinition(SimpleFormStyleDefinition simpleFormStyleDefinition) {
+        this.simpleFormStyleDefinition = simpleFormStyleDefinition;
+    }
+
     public long getAccessCount() {
         return accessCount;
     }
@@ -99,10 +136,23 @@ public class FlowEntity {
         entity.setModel(flow.model());
         entity.setPrompt(flow.prompt());
         entity.setQuestions(flow.questions());
+        if (flow.simpleFormStyle() != null) {
+            entity.setSimpleFormStyleSlug(flow.simpleFormStyle().slug());
+            entity.setSimpleFormStyleName(flow.simpleFormStyle().name());
+            entity.setSimpleFormStyleDefinition(flow.simpleFormStyle().definition());
+        } else {
+            entity.setSimpleFormStyleSlug(null);
+            entity.setSimpleFormStyleName(null);
+            entity.setSimpleFormStyleDefinition(null);
+        }
         return entity;
     }
 
     public Flow toModel() {
-        return new Flow(slug, name, description, model, prompt, questions);
+        SimpleFormStyle style = null;
+        if (simpleFormStyleSlug != null || simpleFormStyleName != null || simpleFormStyleDefinition != null) {
+            style = new SimpleFormStyle(simpleFormStyleSlug, simpleFormStyleName, simpleFormStyleDefinition);
+        }
+        return new Flow(slug, name, description, model, prompt, questions, style);
     }
 }

@@ -52,5 +52,6 @@ Consulte também o [Diagrama de Navegação do Frontend](./frontend-navigation.m
 | `/prompt-entities` | Objetos de Prompt | PromptEntity, PromptEntityDescription | PromptEntityDescription |
 | `/prompt-entities/new` | Nova Entidade de Prompt | - | PromptEntity |
 | `/prompt-entities/:entityName/attributes` | Atributos da Entidade de Prompt | PromptAttribute | PromptAttribute |
+| `/lead-portal/simple-form-styles` | Estilos do formulário simples | LeadPortalSimpleFormStyle | LeadPortalSimpleFormStyle |
 | `*` | Início | - | - |
 

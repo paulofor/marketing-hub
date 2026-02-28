@@ -11,5 +11,6 @@ public record Flow(
         String description,
         String model,
         String prompt,
-        List<FlowQuestion> questions) {
+        List<FlowQuestion> questions,
+        SimpleFormStyle simpleFormStyle) {
 }

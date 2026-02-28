@@ -496,3 +496,7 @@ databaseChangeLog:
       file: changesets/2026-12-26-experiment-selection-targeting-element.yaml
       relativeToChangelogFile: true
 
+  - include:
+      file: V2035_03_10__lead_portal_simple_form_styles.sql
+      relativeToChangelogFile: true
+

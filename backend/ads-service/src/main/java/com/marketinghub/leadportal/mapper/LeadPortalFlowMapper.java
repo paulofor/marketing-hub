@@ -2,6 +2,8 @@ package com.marketinghub.leadportal.mapper;
 
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.LeadPortalFlowQuestion;
+import com.marketinghub.leadportal.LeadPortalSimpleFormStyle;
+import com.marketinghub.leadportal.dto.LeadPortalSimpleFormStyleDto;
 import com.marketinghub.leadportal.dto.LeadPortalFlowDto;
 import com.marketinghub.leadportal.dto.LeadPortalFlowQuestionDto;
 import org.mapstruct.Mapper;
@@ -18,4 +20,6 @@ public interface LeadPortalFlowMapper {
     LeadPortalFlowDto toDto(LeadPortalFlow flow);
 
     LeadPortalFlowQuestionDto toDto(LeadPortalFlowQuestion question);
+
+    LeadPortalSimpleFormStyleDto toDto(LeadPortalSimpleFormStyle style);
 }

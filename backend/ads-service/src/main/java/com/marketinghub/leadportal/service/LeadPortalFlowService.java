@@ -2,6 +2,7 @@ package com.marketinghub.leadportal.service;
 
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.LeadPortalFlowQuestion;
+import com.marketinghub.leadportal.LeadPortalSimpleFormStyle;
 import com.marketinghub.leadportal.LeadPortalQuestionType;
 import com.marketinghub.leadportal.dto.CreateLeadPortalFlowRequest;
 import com.marketinghub.leadportal.dto.LeadPortalFlowQuestionRequest;
@@ -9,6 +10,7 @@ import com.marketinghub.leadportal.dto.UpdateLeadPortalFlowRequest;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
+import com.marketinghub.leadportal.repository.LeadPortalSimpleFormStyleRepository;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.experiment.Experiment;
@@ -36,15 +38,18 @@ public class LeadPortalFlowService {
     private final LeadPortalFlowPublisher flowPublisher;
     private final ExperimentRepository experimentRepository;
     private final MarketNicheRepository marketNicheRepository;
+    private final LeadPortalSimpleFormStyleRepository simpleFormStyleRepository;
 
     public LeadPortalFlowService(LeadPortalFlowRepository repository,
                                  LeadPortalFlowPublisher flowPublisher,
                                  ExperimentRepository experimentRepository,
-                                 MarketNicheRepository marketNicheRepository) {
+                                 MarketNicheRepository marketNicheRepository,
+                                 LeadPortalSimpleFormStyleRepository simpleFormStyleRepository) {
         this.repository = repository;
         this.flowPublisher = flowPublisher;
         this.experimentRepository = experimentRepository;
         this.marketNicheRepository = marketNicheRepository;
+        this.simpleFormStyleRepository = simpleFormStyleRepository;
     }
 
     public List<LeadPortalFlow> listAll() {
@@ -101,6 +106,7 @@ public class LeadPortalFlowService {
                 .model(trimToNull(request.getModel()))
                 .marketNiche(marketNiche)
                 .experiment(experiment)
+                .simpleFormStyle(resolveSimpleFormStyle(request.getSimpleFormStyleId()))
                 .build();
         flow.getQuestions().addAll(buildQuestions(flow, request.getQuestions()));
         return repository.save(flow);
@@ -122,6 +128,12 @@ public class LeadPortalFlowService {
         }
         if (request.getMarketNicheId() != null) {
             flow.setMarketNiche(attachMarketNiche(request.getMarketNicheId()));
+        }
+        if (request.getModel() != null) {
+            flow.setModel(trimToNull(request.getModel()));
+        }
+        if (request.getSimpleFormStyleId() != null) {
+            flow.setSimpleFormStyle(resolveSimpleFormStyle(request.getSimpleFormStyleId()));
         }
         if (request.getQuestions() != null) {
             flow.getQuestions().clear();
@@ -234,6 +246,15 @@ public class LeadPortalFlowService {
         return marketNicheRepository.findById(marketNicheId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "market niche not found: " + marketNicheId));
+    }
+
+    private LeadPortalSimpleFormStyle resolveSimpleFormStyle(Long styleId) {
+        if (styleId == null) {
+            return null;
+        }
+        return simpleFormStyleRepository.findById(styleId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "simple form style not found: " + styleId));
     }
 
     private String normalizeName(String name) {

@@ -5,6 +5,7 @@ import com.marketinghub.leadportal.dto.UpsertFlowRequest;
 import com.marketinghub.leadportal.model.Flow;
 import com.marketinghub.leadportal.model.FlowQuestion;
 import com.marketinghub.leadportal.model.FlowAccessMetadata;
+import com.marketinghub.leadportal.model.SimpleFormStyle;
 import com.marketinghub.leadportal.service.FlowService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -42,7 +43,8 @@ public class FlowController {
                 request.getDescription(),
                 request.getModel(),
                 request.getPrompt(),
-                request.getQuestions().stream().map(this::toQuestion).toList());
+                request.getQuestions().stream().map(this::toQuestion).toList(),
+                mapStyle(request.getSimpleFormStyle()));
         return FlowResponse.from(flowService.save(flow));
     }
 
@@ -56,6 +58,13 @@ public class FlowController {
     public ResponseEntity<Void> deleteFlow(@PathVariable("slug") String slug) {
         flowService.delete(slug);
         return ResponseEntity.noContent().build();
+    }
+
+    private SimpleFormStyle mapStyle(UpsertFlowRequest.SimpleFormStylePayload payload) {
+        if (payload == null) {
+            return null;
+        }
+        return new SimpleFormStyle(payload.getSlug(), payload.getName(), payload.getDefinition());
     }
 
     private FlowQuestion toQuestion(com.marketinghub.leadportal.dto.FlowQuestionRequest request) {

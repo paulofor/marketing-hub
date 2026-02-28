@@ -1,9 +1,10 @@
 import axios from "axios";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   type CreateLeadPortalFlowQuestionRequest,
   useCreateLeadPortalFlow,
 } from "../../api/leadPortal/useCreateLeadPortalFlow";
+import { useLeadPortalSimpleFormStyles } from "../../api/leadPortal/useLeadPortalSimpleFormStyles";
 
 interface SimpleLeadPortalFormCardProps {
   marketNicheId?: number;
@@ -20,8 +21,11 @@ export default function SimpleLeadPortalFormCard({
   onCreated,
 }: SimpleLeadPortalFormCardProps) {
   const createFlow = useCreateLeadPortalFlow();
+  const { data: simpleFormStyles, isLoading: isLoadingStyles } =
+    useLeadPortalSimpleFormStyles();
   const [isVisible, setIsVisible] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
+  const [selectedStyleId, setSelectedStyleId] = useState<number | null>(null);
   const [newFlowName, setNewFlowName] = useState(
     "Formulário simples para personal trainer",
   );
@@ -43,6 +47,15 @@ export default function SimpleLeadPortalFormCard({
   const [otherOptionsTitle, setOtherOptionsTitle] = useState(
     "Se nenhuma opção anterior representar seu cenário, descreva aqui",
   );
+
+  useEffect(() => {
+    if (!simpleFormStyles || simpleFormStyles.length === 0) {
+      return;
+    }
+    if (selectedStyleId == null) {
+      setSelectedStyleId(simpleFormStyles[0].id);
+    }
+  }, [simpleFormStyles, selectedStyleId]);
 
   const manualQuestions = useMemo(
     () =>
@@ -109,6 +122,14 @@ export default function SimpleLeadPortalFormCard({
       return;
     }
 
+    if (!selectedStyleId) {
+      setFeedback({
+        variant: "error",
+        message: "Selecione um estilo visual para o formulário simples.",
+      });
+      return;
+    }
+
     try {
       await createFlow.mutateAsync({
         name: newFlowName,
@@ -116,6 +137,7 @@ export default function SimpleLeadPortalFormCard({
         description: newFlowDescription,
         model: "manual",
         marketNicheId,
+        simpleFormStyleId: selectedStyleId ?? undefined,
         questions: manualQuestions.map((question) => ({
           ...question,
           options:
@@ -155,7 +177,13 @@ export default function SimpleLeadPortalFormCard({
             type="button"
             className="btn btn-outline-primary btn-sm"
             onClick={() => setIsVisible((value) => !value)}
-            disabled={!marketNicheId || createFlow.isPending}
+            disabled={
+              !marketNicheId ||
+              createFlow.isPending ||
+              isLoadingStyles ||
+              !simpleFormStyles ||
+              simpleFormStyles.length === 0
+            }
           >
             {isVisible ? "Fechar formulário" : "Novo formulário simples"}
           </button>
@@ -197,6 +225,38 @@ export default function SimpleLeadPortalFormCard({
                   onChange={(event) => setNewFlowDescription(event.target.value)}
                 />
               </div>
+            </div>
+
+            <div className="mt-3">
+              <label className="form-label">Estilo visual do formulário *</label>
+              {isLoadingStyles ? (
+                <p className="text-muted small mb-0">Carregando estilos...</p>
+              ) : simpleFormStyles && simpleFormStyles.length > 0 ? (
+                <select
+                  className="form-select"
+                  value={selectedStyleId ?? ""}
+                  onChange={(event) =>
+                    setSelectedStyleId(
+                      event.target.value ? Number(event.target.value) : null,
+                    )
+                  }
+                >
+                  {simpleFormStyles.map((style) => (
+                    <option key={style.id} value={style.id}>
+                      {style.name} ({style.slug})
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-danger small mb-0">
+                  Cadastre um estilo em "Campanhas &gt; Estilos do formulário simples"
+                  antes de gerar novos fluxos.
+                </p>
+              )}
+              <p className="form-text">
+                Cada estilo define cores, gradientes e imagens decorativas que serão
+                usadas na página pública do formulário.
+              </p>
             </div>
 
             <div className="border rounded p-3 bg-light">

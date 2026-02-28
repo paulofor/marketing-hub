@@ -2,7 +2,9 @@ package com.marketinghub.leadportal.integration;
 
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.LeadPortalFlowQuestion;
+import com.marketinghub.leadportal.LeadPortalSimpleFormStyle;
 import com.marketinghub.leadportal.LeadPortalQuestionType;
+import com.marketinghub.leadportal.LeadPortalSimpleFormStyleDefinition;
 
 import java.util.List;
 import java.util.Objects;
@@ -16,9 +18,16 @@ public record LeadPortalFlowPublicationRequest(
         String description,
         String model,
         String prompt,
-        List<Question> questions) {
+        List<Question> questions,
+        SimpleFormStylePayload simpleFormStyle) {
 
     public static LeadPortalFlowPublicationRequest from(LeadPortalFlow flow) {
+        LeadPortalSimpleFormStyle style = flow.getSimpleFormStyle();
+        SimpleFormStylePayload stylePayload = style == null ? null : new SimpleFormStylePayload(
+                style.getSlug(),
+                style.getName(),
+                style.getDefinition(),
+                style.getPreviewImageUrl());
         return new LeadPortalFlowPublicationRequest(
                 flow.getSlug(),
                 flow.getName(),
@@ -27,7 +36,8 @@ public record LeadPortalFlowPublicationRequest(
                 flow.getPrompt(),
                 flow.getQuestions().stream()
                         .map(LeadPortalFlowPublicationRequest::toQuestion)
-                        .toList());
+                        .toList(),
+                stylePayload);
     }
 
     private static Question toQuestion(LeadPortalFlowQuestion question) {
@@ -49,5 +59,12 @@ public record LeadPortalFlowPublicationRequest(
             String description,
             String placeholder,
             List<String> options) {
+    }
+
+    public record SimpleFormStylePayload(
+            String slug,
+            String name,
+            LeadPortalSimpleFormStyleDefinition definition,
+            String previewImageUrl) {
     }
 }

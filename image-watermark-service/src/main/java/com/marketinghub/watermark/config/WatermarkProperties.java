@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class WatermarkProperties {
 
     /** Texto aplicado sobre a imagem. */
-    private String text = "TESTE";
+    private String text = "PRODUTIVIDADE 360";
 
     /** Opacidade aplicada no texto da marca d'água (0.0 - 1.0). */
     private double opacity = 0.28;

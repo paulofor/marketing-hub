@@ -36,11 +36,11 @@ class WatermarkRendererTest {
 
         originalBytes = toPng(originalImage);
 
-        assertThat(properties.getText()).isEqualTo("TESTE");
+        assertThat(properties.getText()).isEqualTo("PRODUTIVIDADE 360");
     }
 
     @Test
-    void shouldApplyTesteWatermarkAndModifyImage() throws Exception {
+    void shouldApplyProdutividade360WatermarkAndModifyImage() throws Exception {
         try {
             byte[] watermarkedBytes = renderer.applyWatermark(originalBytes).bytes();
 

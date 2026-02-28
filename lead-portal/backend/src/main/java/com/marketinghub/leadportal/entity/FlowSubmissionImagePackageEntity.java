@@ -58,8 +58,8 @@ public class FlowSubmissionImagePackageEntity {
     @Column(name = "image_total_price_usd")
     private BigDecimal imageTotalPriceUsd;
 
-    @Column(name = "image_currency", length = 10)
-    private String imageCurrency;
+    @Column(name = "image_currency", length = 10, nullable = false)
+    private String imageCurrency = "USD";
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private Instant createdAt;
@@ -160,7 +160,11 @@ public class FlowSubmissionImagePackageEntity {
     }
 
     public void setImageCurrency(String imageCurrency) {
-        this.imageCurrency = imageCurrency;
+        if (imageCurrency == null || imageCurrency.isBlank()) {
+            this.imageCurrency = "USD";
+        } else {
+            this.imageCurrency = imageCurrency;
+        }
     }
 
     public Instant getCreatedAt() {

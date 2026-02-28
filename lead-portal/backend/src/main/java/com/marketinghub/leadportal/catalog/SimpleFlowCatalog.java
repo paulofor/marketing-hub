@@ -58,7 +58,7 @@ public class SimpleFlowCatalog {
                         singleChoiceQuestion(
                                 "Forma de contato",
                                 "forma_contato",
-                                true,
+                                false,
                                 List.of("Telefone", "WhatsApp", "Instagram")),
                         multipleChoiceQuestion(
                                 "Tipo de aulas que presta",

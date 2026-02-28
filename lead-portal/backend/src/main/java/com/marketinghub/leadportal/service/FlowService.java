@@ -61,6 +61,7 @@ public class FlowService {
         return simpleFlowCatalog.find(slug)
                 .map(flow -> {
                     recordAccessMetric(slug);
+                    registerAccess(slug, accessMetadata);
                     return flow;
                 })
                 .orElseGet(() -> fetchAndTrackPersistedFlow(slug, accessMetadata));
@@ -106,6 +107,7 @@ public class FlowService {
         access.setUserAgent(metadata.userAgent());
         access.setReferer(metadata.referer());
         access.setVisitorId(metadata.visitorId());
+        access.setCampaignCode(metadata.campaignCode());
 
         accessRepository.save(access);
     }

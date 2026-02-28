@@ -89,7 +89,10 @@ class FlowControllerTest {
                 .andExpect(jsonPath("$.questions[2].type").value("SINGLE_CHOICE"))
                 .andExpect(jsonPath("$.questions[2].options", hasSize(3)));
 
-        assertThat(flowAccessRepository.findAll()).isEmpty();
+        assertThat(flowAccessRepository.findAll())
+                .singleElement()
+                .extracting(FlowAccessEntity::getFlowSlug)
+                .isEqualTo("formulario-simples-personal-trainer");
     }
 
 
@@ -110,6 +113,23 @@ class FlowControllerTest {
                 .extracting(FlowAccessEntity::getVisitorId)
                 .isEqualTo("visitor-123");
     }
+
+    @Test
+    void getFlowCapturesCampaignCodeFromQueryParameter() throws Exception {
+        mockMvc.perform(put("/api/flows/diagnostico")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(buildRequest())))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/flows/diagnostico").param("campaign", "campanha-01"))
+                .andExpect(status().isOk());
+
+        assertThat(flowAccessRepository.findAll())
+                .singleElement()
+                .extracting(FlowAccessEntity::getCampaignCode)
+                .isEqualTo("campanha-01");
+    }
+
 
     @Test
     void flowAccessesAreExposedAsPrometheusMetrics() throws Exception {

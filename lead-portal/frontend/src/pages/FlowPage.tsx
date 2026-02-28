@@ -2,9 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { fetchLeadPortalFlow } from "../api";
 import FlowForm from "../components/FlowForm";
+import { useCampaignCode } from "../hooks/useCampaignCode";
 
 export default function FlowPage() {
   const { slug } = useParams<{ slug: string }>();
+  const campaignCode = useCampaignCode();
 
   const {
     data: flow,
@@ -12,12 +14,12 @@ export default function FlowPage() {
     isError,
     error
   } = useQuery({
-    queryKey: ["lead-portal-flow", slug],
+    queryKey: ["lead-portal-flow", slug, campaignCode ?? null],
     queryFn: async () => {
       if (!slug) {
         throw new Error("Fluxo não informado");
       }
-      return fetchLeadPortalFlow(slug);
+      return fetchLeadPortalFlow(slug, { campaignCode });
     },
     enabled: Boolean(slug)
   });
@@ -46,7 +48,7 @@ export default function FlowPage() {
         {flow.description ? <p>{flow.description}</p> : null}
       </header>
 
-      <FlowForm flow={flow} />
+      <FlowForm flow={flow} campaignCode={campaignCode} />
     </div>
   );
 }

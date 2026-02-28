@@ -1419,6 +1419,22 @@ public class FacebookCampaignService {
         return base + path;
     }
 
+    private String appendCampaignTrackingParameter(String baseUrl, Experiment experiment) {
+        if (!StringUtils.hasText(baseUrl) || experiment == null) {
+            return baseUrl;
+        }
+        try {
+            return UriComponentsBuilder.fromHttpUrl(baseUrl)
+                    .replaceQueryParam("campaign")
+                    .queryParam("campaign", "exp-" + experiment.id())
+                    .build(true)
+                    .toUriString();
+        } catch (IllegalArgumentException ex) {
+            LOGGER.warn("Failed to append campaign parameter to lead portal URL {}: {}", baseUrl, ex.getMessage());
+            return baseUrl;
+        }
+    }
+
     private String resolveDestinationUrl(
         Experiment experiment,
         Creative creative,
@@ -1436,13 +1452,14 @@ public class FacebookCampaignService {
         Experiment.LeadPortalFlow leadPortalFlow = experiment.leadPortalFlow();
         if (leadPortalFlow != null) {
             if (StringUtils.hasText(leadPortalFlow.publicUrl())) {
+                String destinationUrl = appendCampaignTrackingParameter(leadPortalFlow.publicUrl(), experiment);
                 LOGGER.info(
                     "Using lead portal flow public URL as destination for experiment {}: flowId={}, url={}",
                     experiment.id(),
                     leadPortalFlow.id(),
-                    leadPortalFlow.publicUrl()
+                    destinationUrl
                 );
-                return leadPortalFlow.publicUrl();
+                return destinationUrl;
             } else {
                 LOGGER.warn(
                     "Lead portal flow {} selected for experiment {} but it has no public URL; falling back to creative destination",

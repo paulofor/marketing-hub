@@ -168,6 +168,35 @@ class FlowSubmissionControllerTest {
                     assertThat(pkg.getStatus()).isEqualTo("RECENT");
                 });
     }
+    @Test
+    void submissionSavesCampaignCodeWhenProvided() throws Exception {
+        Map<String, Object> payload = Map.of(
+                "name", "Cliente",
+                "email", "cliente@example.com",
+                "imageKey", "referencia",
+                "campaignCode", "meta-campanha-42",
+                "answers",
+                Map.of(
+                        "nome", "Cliente",
+                        "email", "cliente@example.com",
+                        "objetivo", "Vender todos os dias"));
+
+        MockMultipartFile payloadPart = new MockMultipartFile(
+                "payload", "payload", MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsBytes(payload));
+        MockMultipartFile imagePart = new MockMultipartFile(
+                "image", "referencia.png", MediaType.IMAGE_PNG_VALUE, "conteudo".getBytes());
+
+        mockMvc.perform(multipart("/api/flows/planejamento-acao-21-dias/submissions")
+                        .file(payloadPart)
+                        .file(imagePart))
+                .andExpect(status().isCreated());
+
+        assertThat(submissionRepository.findAll())
+                .first()
+                .extracting(entity -> entity.getCampaignCode())
+                .isEqualTo("meta-campanha-42");
+    }
+
 
     @Test
     void missingRequiredImageReturnsBadRequest() throws Exception {

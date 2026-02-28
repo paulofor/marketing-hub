@@ -3,6 +3,7 @@ package com.marketinghub.leadportal.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.util.Collections;
 import java.util.Map;
 
@@ -19,6 +20,9 @@ public class FlowSubmissionRequest {
     private Map<String, Object> answers;
 
     private String imageKey;
+
+    @Size(max = 190, message = "Campanha deve ter no máximo 190 caracteres")
+    private String campaignCode;
 
     public String getName() {
         return name;
@@ -50,5 +54,13 @@ public class FlowSubmissionRequest {
 
     public void setImageKey(String imageKey) {
         this.imageKey = imageKey;
+    }
+
+    public String getCampaignCode() {
+        return campaignCode;
+    }
+
+    public void setCampaignCode(String campaignCode) {
+        this.campaignCode = campaignCode;
     }
 }

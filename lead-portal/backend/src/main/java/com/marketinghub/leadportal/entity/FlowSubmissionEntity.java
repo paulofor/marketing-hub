@@ -46,6 +46,9 @@ public class FlowSubmissionEntity {
     @Column(name = "content_type")
     private String contentType;
 
+    @Column(name = "campaign_code", length = 190)
+    private String campaignCode;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -129,6 +132,14 @@ public class FlowSubmissionEntity {
         this.createdAt = createdAt;
     }
 
+    public String getCampaignCode() {
+        return campaignCode;
+    }
+
+    public void setCampaignCode(String campaignCode) {
+        this.campaignCode = campaignCode;
+    }
+
     public FlowSubmission toModel() {
         return new FlowSubmission(
                 id,
@@ -140,7 +151,8 @@ public class FlowSubmissionEntity {
                 storedFileName,
                 originalFileName,
                 contentType,
-                createdAt);
+                createdAt,
+                campaignCode);
     }
 
     public static FlowSubmissionEntity fromModel(FlowSubmission submission) {
@@ -154,6 +166,7 @@ public class FlowSubmissionEntity {
         entity.setStoredFileName(submission.storedFileName());
         entity.setOriginalFileName(submission.originalFileName());
         entity.setContentType(submission.contentType());
+        entity.setCampaignCode(submission.campaignCode());
         entity.setCreatedAt(submission.createdAt());
         return entity;
     }

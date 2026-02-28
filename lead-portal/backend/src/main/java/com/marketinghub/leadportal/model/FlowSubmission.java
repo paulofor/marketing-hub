@@ -14,4 +14,5 @@ public record FlowSubmission(
         String storedFileName,
         String originalFileName,
         String contentType,
-        Instant createdAt) {}
+        Instant createdAt,
+        String campaignCode) {}

@@ -56,6 +56,7 @@ export interface FlowSubmissionPayload {
   email: string;
   answers: Record<string, string | string[]>;
   imageKey?: string;
+  campaignCode?: string | null;
 }
 
 export interface FlowSubmissionResponse {

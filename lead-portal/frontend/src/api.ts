@@ -107,8 +107,18 @@ export async function fetchImageMaterialCase(submissionId: string): Promise<Imag
   return (await response.json()) as ImageMaterialCase;
 }
 
-export async function fetchLeadPortalFlow(slug: string): Promise<LeadPortalFlow> {
-  const response = await fetch(buildUrl(`/flows/${encodeURIComponent(slug)}`));
+export async function fetchLeadPortalFlow(
+  slug: string,
+  options?: { campaignCode?: string | null }
+): Promise<LeadPortalFlow> {
+  const params = new URLSearchParams();
+  if (options?.campaignCode && options.campaignCode.trim()) {
+    params.set("campaign", options.campaignCode.trim());
+  }
+  const query = params.toString();
+  const response = await fetch(
+    buildUrl(`/flows/${encodeURIComponent(slug)}${query ? `?${query}` : ""}`)
+  );
   if (!response.ok) {
     const message = await extractError(response);
     throw new Error(message);
@@ -123,7 +133,15 @@ export async function submitFlowSubmission(
   image?: File | null
 ): Promise<FlowSubmissionResponse> {
   const formData = new FormData();
-  formData.append("payload", new Blob([JSON.stringify(payload)], { type: "application/json" }));
+  const trimmedCampaignCode = payload.campaignCode?.trim();
+  const payloadForRequest = {
+    ...payload,
+    campaignCode: trimmedCampaignCode && trimmedCampaignCode.length > 0 ? trimmedCampaignCode : undefined
+  };
+  formData.append(
+    "payload",
+    new Blob([JSON.stringify(payloadForRequest)], { type: "application/json" })
+  );
   if (image) {
     formData.append("image", image);
   }

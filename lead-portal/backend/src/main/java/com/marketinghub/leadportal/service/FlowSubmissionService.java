@@ -79,7 +79,8 @@ public class FlowSubmissionService {
                 storedFileName,
                 originalFileName,
                 contentType,
-                Instant.now());
+                Instant.now(),
+                normalizeCampaignCode(request.getCampaignCode()));
 
         repository.save(com.marketinghub.leadportal.entity.FlowSubmissionEntity.fromModel(submission));
         registerImagePackage(flow, submission, hasImage);
@@ -181,6 +182,14 @@ public class FlowSubmissionService {
 
         FlowSubmissionImagePackageEntity savedPackage = imagePackageRepository.save(imagePackage);
         statusHistoryService.recordStatusChange(savedPackage.getId(), FlowSubmissionImagePackageEntity.Status.RECENT, null);
+    }
+
+    private String normalizeCampaignCode(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.length() > 190 ? trimmed.substring(0, 190) : trimmed;
     }
 
     private Map<String, Object> sanitizeAnswers(Flow flow, FlowSubmissionRequest request) {

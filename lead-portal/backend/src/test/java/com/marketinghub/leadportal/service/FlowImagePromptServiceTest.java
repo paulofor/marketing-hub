@@ -44,7 +44,8 @@ class FlowImagePromptServiceTest {
                 null,
                 null,
                 null,
-                Instant.now());
+                Instant.now(),
+                null);
 
         Optional<FlowImagePrompt> result = service.buildPrompt(flow, submission);
         assertTrue(result.isPresent());

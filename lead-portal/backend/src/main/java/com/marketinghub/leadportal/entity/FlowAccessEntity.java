@@ -32,6 +32,9 @@ public class FlowAccessEntity {
     @Column(name = "visitor_id", length = 128)
     private String visitorId;
 
+    @Column(name = "campaign_code", length = 190)
+    private String campaignCode;
+
     @CreationTimestamp
     @Column(name = "accessed_at", updatable = false)
     private Instant accessedAt;
@@ -78,6 +81,14 @@ public class FlowAccessEntity {
 
     public void setVisitorId(String visitorId) {
         this.visitorId = visitorId;
+    }
+
+    public String getCampaignCode() {
+        return campaignCode;
+    }
+
+    public void setCampaignCode(String campaignCode) {
+        this.campaignCode = campaignCode;
     }
 
     public Instant getAccessedAt() {

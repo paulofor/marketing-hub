@@ -11,9 +11,10 @@ type AnswerValue = string | string[] | File | null;
 
 interface FlowFormProps {
   flow: LeadPortalFlow;
+  campaignCode?: string | null;
 }
 
-export default function FlowForm({ flow }: FlowFormProps) {
+export default function FlowForm({ flow, campaignCode }: FlowFormProps) {
   const {
     questions: displayQuestions,
     contactEmailKey,
@@ -146,6 +147,7 @@ export default function FlowForm({ flow }: FlowFormProps) {
           email: typeof emailAnswer === "string" ? emailAnswer.trim() : "",
           answers: preparedAnswers,
           imageKey: imageQuestion?.dataKey,
+          campaignCode: campaignCode ?? undefined,
         },
         imageFile,
       );

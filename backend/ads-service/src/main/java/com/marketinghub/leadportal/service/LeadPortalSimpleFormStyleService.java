@@ -1,12 +1,14 @@
 package com.marketinghub.leadportal.service;
 
 import com.marketinghub.leadportal.LeadPortalSimpleFormStyle;
+import com.marketinghub.leadportal.LeadPortalSimpleFormStyleDefinition;
 import com.marketinghub.leadportal.dto.CreateLeadPortalSimpleFormStyleRequest;
+import com.marketinghub.leadportal.dto.LeadPortalSimpleFormStyleGenerationResultRequest;
 import com.marketinghub.leadportal.dto.UpdateLeadPortalSimpleFormStyleRequest;
 import com.marketinghub.leadportal.repository.LeadPortalSimpleFormStyleRepository;
-import com.marketinghub.openai.service.OpenAiPricingService;
 import java.util.List;
 import java.util.Objects;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -17,16 +19,14 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class LeadPortalSimpleFormStyleService {
 
-    private final LeadPortalSimpleFormStyleRepository repository;
-    private final LeadPortalSimpleFormStyleGenerator generator;
-    private final OpenAiPricingService pricingService;
+    public static final String GENERATION_STATUS_PENDING = "PENDING";
+    public static final String GENERATION_STATUS_COMPLETED = "COMPLETED";
+    public static final String GENERATION_STATUS_FAILED = "FAILED";
 
-    public LeadPortalSimpleFormStyleService(LeadPortalSimpleFormStyleRepository repository,
-                                            LeadPortalSimpleFormStyleGenerator generator,
-                                            OpenAiPricingService pricingService) {
+    private final LeadPortalSimpleFormStyleRepository repository;
+
+    public LeadPortalSimpleFormStyleService(LeadPortalSimpleFormStyleRepository repository) {
         this.repository = repository;
-        this.generator = generator;
-        this.pricingService = pricingService;
     }
 
     public List<LeadPortalSimpleFormStyle> listAll() {
@@ -37,6 +37,13 @@ public class LeadPortalSimpleFormStyleService {
         return repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "lead portal simple form style not found: " + id));
+    }
+
+    public List<LeadPortalSimpleFormStyle> listPendingForGeneration(int limit) {
+        int safeLimit = Math.max(1, limit);
+        return repository.findByGenerationStatusOrderByUpdatedAtAscIdAsc(
+                GENERATION_STATUS_PENDING,
+                PageRequest.of(0, safeLimit));
     }
 
     @Transactional
@@ -50,11 +57,14 @@ public class LeadPortalSimpleFormStyleService {
                 .slug(slug)
                 .description(trimToNull(request.getDescription()))
                 .previewImageUrl(trimToNull(request.getPreviewImageUrl()))
+                .textModel(requireModel(request.getTextModel()))
+                .textPrompt(requirePrompt(request.getTextPrompt()))
+                .generationStatus(GENERATION_STATUS_PENDING)
+                .generationError(null)
+                .definition(null)
+                .generationCostUsd(null)
+                .textParameters(null)
                 .build();
-
-        applyGeneration(style,
-                trimToNull(request.getTextModel()),
-                trimToNull(request.getTextPrompt()));
 
         return repository.save(style);
     }
@@ -81,51 +91,108 @@ public class LeadPortalSimpleFormStyleService {
         String currentPrompt = style.getTextPrompt();
         String nextModel = request.getTextModel() != null ? trimToNull(request.getTextModel()) : currentModel;
         String nextPrompt = request.getTextPrompt() != null ? trimToNull(request.getTextPrompt()) : currentPrompt;
+
         boolean modelChanged = request.getTextModel() != null && !Objects.equals(nextModel, currentModel);
         boolean promptChanged = request.getTextPrompt() != null && !Objects.equals(nextPrompt, currentPrompt);
         boolean shouldRegenerate = Boolean.TRUE.equals(request.getRegenerate()) || modelChanged || promptChanged;
 
+        if (request.getTextModel() != null) {
+            style.setTextModel(requireModel(nextModel));
+        }
+        if (request.getTextPrompt() != null) {
+            style.setTextPrompt(requirePrompt(nextPrompt));
+        }
+
         if (shouldRegenerate) {
-            applyGeneration(style, nextModel, nextPrompt);
+            style.setGenerationStatus(GENERATION_STATUS_PENDING);
+            style.setGenerationError(null);
+            style.setDefinition(null);
+            style.setGenerationCostUsd(null);
+            style.setTextParameters(null);
         }
 
         return repository.save(style);
     }
 
-    private void applyGeneration(LeadPortalSimpleFormStyle style, String model, String prompt) {
-        if (!StringUtils.hasText(model) || !StringUtils.hasText(prompt)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Informe o modelo e o prompt para gerar o estilo.");
+    @Transactional
+    public LeadPortalSimpleFormStyle saveGenerationResult(Long id, LeadPortalSimpleFormStyleGenerationResultRequest request) {
+        LeadPortalSimpleFormStyle style = get(id);
+
+        String status = normalizeStatus(request.getStatus());
+        style.setGenerationStatus(status);
+        style.setGenerationError(trimToNull(request.getGenerationError()));
+
+        if (GENERATION_STATUS_COMPLETED.equals(status)) {
+            if (request.getDefinition() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "definition é obrigatória quando status for COMPLETED.");
+            }
+            style.setDefinition(sanitizeDefinition(request.getDefinition()));
+            style.setTextParameters(trimToNull(request.getTextParameters()));
+            style.setGenerationCostUsd(request.getGenerationCostUsd());
+            style.setGenerationError(null);
+        } else {
+            style.setDefinition(null);
+            style.setGenerationCostUsd(null);
+            style.setTextParameters(trimToNull(request.getTextParameters()));
+            if (!GENERATION_STATUS_FAILED.equals(status)) {
+                style.setGenerationError(null);
+            }
         }
-        try {
-            LeadPortalSimpleFormStyleGenerator.Generation generation = generator.generate(
-                    new LeadPortalSimpleFormStyleGenerator.GenerationCommand(
-                            model,
-                            prompt,
-                            style.getName(),
-                            style.getDescription()));
-            style.setDefinition(generation.definition());
-            style.setTextModel(model);
-            style.setTextPrompt(prompt);
-            style.setTextParameters(buildAuditTrail(generation));
-            style.setGenerationCostUsd(pricingService.estimateBatchCost(model, generation.usage()));
-        } catch (LeadPortalStyleGenerationException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, ex.getMessage(), ex);
-        }
+
+        return repository.save(style);
     }
 
-    private String buildAuditTrail(LeadPortalSimpleFormStyleGenerator.Generation generation) {
-        StringBuilder sb = new StringBuilder();
-        if (StringUtils.hasText(generation.renderedPrompt())) {
-            sb.append("PROMPT:\n").append(generation.renderedPrompt());
+    private LeadPortalSimpleFormStyleDefinition sanitizeDefinition(LeadPortalSimpleFormStyleDefinition definition) {
+        String heroLayout = normalizeHeroLayout(definition.heroLayout());
+        return new LeadPortalSimpleFormStyleDefinition(
+                trimToNull(definition.backgroundColor()),
+                trimToNull(definition.backgroundGradient()),
+                trimToNull(definition.backgroundPatternUrl()),
+                trimToNull(definition.cardBackground()),
+                trimToNull(definition.cardBorderColor()),
+                trimToNull(definition.cardShadow()),
+                trimToNull(definition.headingColor()),
+                trimToNull(definition.textColor()),
+                trimToNull(definition.mutedTextColor()),
+                trimToNull(definition.primaryColor()),
+                trimToNull(definition.accentColor()),
+                trimToNull(definition.buttonBackground()),
+                trimToNull(definition.buttonTextColor()),
+                trimToNull(definition.buttonShadow()),
+                trimToNull(definition.buttonBorderRadius()),
+                trimToNull(definition.highlightBackground()),
+                trimToNull(definition.inputBackground()),
+                trimToNull(definition.inputBorderColor()),
+                heroLayout,
+                trimToNull(definition.heroImageUrl()),
+                trimToNull(definition.heroImageBlendColor()));
+    }
+
+    private String normalizeHeroLayout(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "image-right";
         }
-        if (StringUtils.hasText(generation.rawResponse())) {
-            if (sb.length() > 0) {
-                sb.append("\n\n");
-            }
-            sb.append("RAW_RESPONSE:\n").append(generation.rawResponse());
+        String normalized = value.trim().toLowerCase();
+        return switch (normalized) {
+            case "image-left", "image-right", "stacked" -> normalized;
+            default -> "image-right";
+        };
+    }
+
+    private String normalizeStatus(String status) {
+        if (!StringUtils.hasText(status)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "status é obrigatório. Valores válidos: PENDING, COMPLETED, FAILED.");
         }
-        return sb.length() == 0 ? null : sb.toString();
+        String normalized = status.trim().toUpperCase();
+        if (!GENERATION_STATUS_PENDING.equals(normalized)
+                && !GENERATION_STATUS_COMPLETED.equals(normalized)
+                && !GENERATION_STATUS_FAILED.equals(normalized)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "status inválido. Valores válidos: PENDING, COMPLETED, FAILED.");
+        }
+        return normalized;
     }
 
     private void ensureUniqueSlug(String slug, Long id) {
@@ -149,6 +216,22 @@ public class LeadPortalSimpleFormStyleService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Slug é obrigatório");
         }
         return slug.trim();
+    }
+
+    private String requireModel(String model) {
+        if (!StringUtils.hasText(model)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Informe o modelo para gerar o estilo.");
+        }
+        return model.trim();
+    }
+
+    private String requirePrompt(String prompt) {
+        if (!StringUtils.hasText(prompt)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Informe o prompt para gerar o estilo.");
+        }
+        return prompt.trim();
     }
 
     private String trimToNull(String value) {

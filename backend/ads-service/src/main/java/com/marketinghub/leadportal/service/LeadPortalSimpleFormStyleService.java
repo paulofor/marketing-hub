@@ -1,10 +1,12 @@
 package com.marketinghub.leadportal.service;
 
 import com.marketinghub.leadportal.LeadPortalSimpleFormStyle;
-import com.marketinghub.leadportal.LeadPortalSimpleFormStyleDefinition;
 import com.marketinghub.leadportal.dto.CreateLeadPortalSimpleFormStyleRequest;
 import com.marketinghub.leadportal.dto.UpdateLeadPortalSimpleFormStyleRequest;
 import com.marketinghub.leadportal.repository.LeadPortalSimpleFormStyleRepository;
+import com.marketinghub.openai.service.OpenAiPricingService;
+import java.util.List;
+import java.util.Objects;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -12,16 +14,19 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-import java.util.Objects;
-
 @Service
 public class LeadPortalSimpleFormStyleService {
 
     private final LeadPortalSimpleFormStyleRepository repository;
+    private final LeadPortalSimpleFormStyleGenerator generator;
+    private final OpenAiPricingService pricingService;
 
-    public LeadPortalSimpleFormStyleService(LeadPortalSimpleFormStyleRepository repository) {
+    public LeadPortalSimpleFormStyleService(LeadPortalSimpleFormStyleRepository repository,
+                                            LeadPortalSimpleFormStyleGenerator generator,
+                                            OpenAiPricingService pricingService) {
         this.repository = repository;
+        this.generator = generator;
+        this.pricingService = pricingService;
     }
 
     public List<LeadPortalSimpleFormStyle> listAll() {
@@ -39,24 +44,18 @@ public class LeadPortalSimpleFormStyleService {
         String name = normalizeName(request.getName());
         String slug = normalizeSlug(request.getSlug());
         ensureUniqueSlug(slug, null);
-        LeadPortalSimpleFormStyleDefinition definition = requireDefinition(request.getDefinition());
 
         LeadPortalSimpleFormStyle style = LeadPortalSimpleFormStyle.builder()
                 .name(name)
                 .slug(slug)
                 .description(trimToNull(request.getDescription()))
-                .textModel(trimToNull(request.getTextModel()))
-                .textPrompt(trimToNull(request.getTextPrompt()))
-                .textParameters(trimToNull(request.getTextParameters()))
-                .imageModel(trimToNull(request.getImageModel()))
-                .imagePrompt(trimToNull(request.getImagePrompt()))
-                .imageNegativePrompt(trimToNull(request.getImageNegativePrompt()))
-                .imageParameters(trimToNull(request.getImageParameters()))
-                .imageBatchSize(request.getImageBatchSize())
-                .imageAspectRatio(trimToNull(request.getImageAspectRatio()))
                 .previewImageUrl(trimToNull(request.getPreviewImageUrl()))
-                .definition(definition)
                 .build();
+
+        applyGeneration(style,
+                trimToNull(request.getTextModel()),
+                trimToNull(request.getTextPrompt()));
+
         return repository.save(style);
     }
 
@@ -74,76 +73,85 @@ public class LeadPortalSimpleFormStyleService {
         if (request.getDescription() != null) {
             style.setDescription(trimToNull(request.getDescription()));
         }
-        if (request.getTextModel() != null) {
-            style.setTextModel(trimToNull(request.getTextModel()));
-        }
-        if (request.getTextPrompt() != null) {
-            style.setTextPrompt(trimToNull(request.getTextPrompt()));
-        }
-        if (request.getTextParameters() != null) {
-            style.setTextParameters(trimToNull(request.getTextParameters()));
-        }
-        if (request.getImageModel() != null) {
-            style.setImageModel(trimToNull(request.getImageModel()));
-        }
-        if (request.getImagePrompt() != null) {
-            style.setImagePrompt(trimToNull(request.getImagePrompt()));
-        }
-        if (request.getImageNegativePrompt() != null) {
-            style.setImageNegativePrompt(trimToNull(request.getImageNegativePrompt()));
-        }
-        if (request.getImageParameters() != null) {
-            style.setImageParameters(trimToNull(request.getImageParameters()));
-        }
-        if (request.getImageBatchSize() != null) {
-            style.setImageBatchSize(request.getImageBatchSize());
-        }
-        if (request.getImageAspectRatio() != null) {
-            style.setImageAspectRatio(trimToNull(request.getImageAspectRatio()));
-        }
         if (request.getPreviewImageUrl() != null) {
             style.setPreviewImageUrl(trimToNull(request.getPreviewImageUrl()));
         }
-        if (request.getDefinition() != null) {
-            style.setDefinition(requireDefinition(request.getDefinition()));
+
+        String currentModel = style.getTextModel();
+        String currentPrompt = style.getTextPrompt();
+        String nextModel = request.getTextModel() != null ? trimToNull(request.getTextModel()) : currentModel;
+        String nextPrompt = request.getTextPrompt() != null ? trimToNull(request.getTextPrompt()) : currentPrompt;
+        boolean modelChanged = request.getTextModel() != null && !Objects.equals(nextModel, currentModel);
+        boolean promptChanged = request.getTextPrompt() != null && !Objects.equals(nextPrompt, currentPrompt);
+        boolean shouldRegenerate = Boolean.TRUE.equals(request.getRegenerate()) || modelChanged || promptChanged;
+
+        if (shouldRegenerate) {
+            applyGeneration(style, nextModel, nextPrompt);
         }
+
         return repository.save(style);
     }
 
-    private void ensureUniqueSlug(String slug, Long currentId) {
+    private void applyGeneration(LeadPortalSimpleFormStyle style, String model, String prompt) {
+        if (!StringUtils.hasText(model) || !StringUtils.hasText(prompt)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Informe o modelo e o prompt para gerar o estilo.");
+        }
+        try {
+            LeadPortalSimpleFormStyleGenerator.Generation generation = generator.generate(
+                    new LeadPortalSimpleFormStyleGenerator.GenerationCommand(
+                            model,
+                            prompt,
+                            style.getName(),
+                            style.getDescription()));
+            style.setDefinition(generation.definition());
+            style.setTextModel(model);
+            style.setTextPrompt(prompt);
+            style.setTextParameters(buildAuditTrail(generation));
+            style.setGenerationCostUsd(pricingService.estimateBatchCost(model, generation.usage()));
+        } catch (LeadPortalStyleGenerationException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, ex.getMessage(), ex);
+        }
+    }
+
+    private String buildAuditTrail(LeadPortalSimpleFormStyleGenerator.Generation generation) {
+        StringBuilder sb = new StringBuilder();
+        if (StringUtils.hasText(generation.renderedPrompt())) {
+            sb.append("PROMPT:\n").append(generation.renderedPrompt());
+        }
+        if (StringUtils.hasText(generation.rawResponse())) {
+            if (sb.length() > 0) {
+                sb.append("\n\n");
+            }
+            sb.append("RAW_RESPONSE:\n").append(generation.rawResponse());
+        }
+        return sb.length() == 0 ? null : sb.toString();
+    }
+
+    private void ensureUniqueSlug(String slug, Long id) {
         repository.findBySlug(slug)
-                .filter(existing -> !Objects.equals(existing.getId(), currentId))
+                .filter(existing -> id == null || !Objects.equals(existing.getId(), id))
                 .ifPresent(existing -> {
-                    throw new ResponseStatusException(HttpStatus.CONFLICT,
-                            "slug already in use: " + slug);
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "Já existe um estilo com o slug informado.");
                 });
     }
 
     private String normalizeName(String name) {
         if (!StringUtils.hasText(name)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name is required");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nome é obrigatório");
         }
         return name.trim();
     }
 
     private String normalizeSlug(String slug) {
         if (!StringUtils.hasText(slug)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "slug is required");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Slug é obrigatório");
         }
         return slug.trim();
     }
 
     private String trimToNull(String value) {
-        if (!StringUtils.hasText(value)) {
-            return null;
-        }
-        return value.trim();
-    }
-
-    private LeadPortalSimpleFormStyleDefinition requireDefinition(LeadPortalSimpleFormStyleDefinition definition) {
-        if (definition == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "definition is required");
-        }
-        return definition;
+        return StringUtils.hasText(value) ? value.trim() : null;
     }
 }

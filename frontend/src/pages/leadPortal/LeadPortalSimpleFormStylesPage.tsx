@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   type LeadPortalSimpleFormStyle,
   type LeadPortalSimpleFormStyleDefinition,
@@ -7,6 +7,7 @@ import {
   useLeadPortalSimpleFormStyles,
   useUpdateLeadPortalSimpleFormStyle,
 } from "../../api/leadPortal/useLeadPortalSimpleFormStyles";
+import { type OpenAiModel, useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
 import "./LeadPortalSimpleFormStylesPage.css";
 
 interface FeedbackState {
@@ -20,15 +21,8 @@ interface StyleFormState {
   description: string;
   textModel: string;
   textPrompt: string;
-  textParameters: string;
-  imageModel: string;
-  imagePrompt: string;
-  imageNegativePrompt: string;
-  imageParameters: string;
-  imageBatchSize: number | "";
-  imageAspectRatio: string;
   previewImageUrl: string;
-  definition: LeadPortalSimpleFormStyleDefinition;
+  forceRegenerate: boolean;
 }
 
 const DEFAULT_DEFINITION: LeadPortalSimpleFormStyleDefinition = {
@@ -57,18 +51,17 @@ const EMPTY_STATE: StyleFormState = {
   name: "",
   slug: "",
   description: "",
-  textModel: "gpt-4o-mini",
+  textModel: "",
   textPrompt: "",
-  textParameters: "",
-  imageModel: "gpt-image-1",
-  imagePrompt: "",
-  imageNegativePrompt: "",
-  imageParameters: "",
-  imageBatchSize: 6,
-  imageAspectRatio: "1:1",
   previewImageUrl: "",
-  definition: { ...DEFAULT_DEFINITION },
+  forceRegenerate: false,
 };
+
+const usdFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+});
 
 function toSlug(value: string) {
   return value
@@ -87,72 +80,67 @@ function mapStyleToState(style: LeadPortalSimpleFormStyle): StyleFormState {
     description: style.description ?? "",
     textModel: style.textModel ?? "",
     textPrompt: style.textPrompt ?? "",
-    textParameters: style.textParameters ?? "",
-    imageModel: style.imageModel ?? "",
-    imagePrompt: style.imagePrompt ?? "",
-    imageNegativePrompt: style.imageNegativePrompt ?? "",
-    imageParameters: style.imageParameters ?? "",
-    imageBatchSize: style.imageBatchSize ?? "",
-    imageAspectRatio: style.imageAspectRatio ?? "",
     previewImageUrl: style.previewImageUrl ?? "",
-    definition: {
-      ...DEFAULT_DEFINITION,
-      ...(style.definition ?? {}),
-    },
+    forceRegenerate: false,
   };
 }
 
-function buildPayload(state: StyleFormState): UpsertLeadPortalSimpleFormStylePayload {
-  return {
+function buildPayload(
+  state: StyleFormState,
+  editingStyle: LeadPortalSimpleFormStyle | null,
+): UpsertLeadPortalSimpleFormStylePayload {
+  const normalizedModel = state.textModel.trim();
+  const normalizedPrompt = state.textPrompt.trim();
+  const payload: UpsertLeadPortalSimpleFormStylePayload = {
     name: state.name.trim(),
     slug: toSlug(state.slug || state.name),
     description: state.description.trim() || undefined,
-    textModel: state.textModel.trim() || undefined,
-    textPrompt: state.textPrompt.trim() || undefined,
-    textParameters: state.textParameters.trim() || undefined,
-    imageModel: state.imageModel.trim() || undefined,
-    imagePrompt: state.imagePrompt.trim() || undefined,
-    imageNegativePrompt: state.imageNegativePrompt.trim() || undefined,
-    imageParameters: state.imageParameters.trim() || undefined,
-    imageBatchSize:
-      typeof state.imageBatchSize === "number" ? state.imageBatchSize : undefined,
-    imageAspectRatio: state.imageAspectRatio.trim() || undefined,
+    textModel: normalizedModel,
+    textPrompt: normalizedPrompt,
     previewImageUrl: state.previewImageUrl.trim() || undefined,
-    definition: state.definition,
   };
+
+  if (editingStyle) {
+    const hasModelChanged = normalizedModel !== (editingStyle.textModel ?? "");
+    const hasPromptChanged = normalizedPrompt !== (editingStyle.textPrompt ?? "");
+    const shouldForce = state.forceRegenerate || hasModelChanged || hasPromptChanged;
+    payload.regenerate = shouldForce || undefined;
+  }
+
+  return payload;
 }
 
 export default function LeadPortalSimpleFormStylesPage() {
   const { data, isLoading, isError, error } = useLeadPortalSimpleFormStyles();
   const createStyle = useCreateLeadPortalSimpleFormStyle();
   const updateStyle = useUpdateLeadPortalSimpleFormStyle();
+  const {
+    data: models,
+    isLoading: isLoadingModels,
+    isError: isModelsError,
+  } = useOpenAiModels();
 
   const [formState, setFormState] = useState<StyleFormState>({ ...EMPTY_STATE });
-  const [editingStyle, setEditingStyle] = useState<LeadPortalSimpleFormStyle | null>(
-    null,
-  );
+  const [editingStyle, setEditingStyle] = useState<LeadPortalSimpleFormStyle | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
 
   const isSubmitting = createStyle.isPending || updateStyle.isPending;
   const styles = useMemo(() => data ?? [], [data]);
+  const availableModels = useMemo(() => models ?? [], [models]);
 
-  const handleInputChange = (field: keyof StyleFormState, value: string | number | "") => {
+  useEffect(() => {
+    if (!editingStyle && !formState.textModel && availableModels.length > 0) {
+      setFormState((current) => ({
+        ...current,
+        textModel: availableModels[0].code,
+      }));
+    }
+  }, [availableModels, editingStyle, formState.textModel]);
+
+  const handleInputChange = (field: keyof StyleFormState, value: string | boolean) => {
     setFormState((current) => ({
       ...current,
       [field]: value,
-    }));
-  };
-
-  const handleDefinitionChange = (
-    field: keyof LeadPortalSimpleFormStyleDefinition,
-    value: string,
-  ) => {
-    setFormState((current) => ({
-      ...current,
-      definition: {
-        ...current.definition,
-        [field]: value,
-      },
     }));
   };
 
@@ -164,7 +152,10 @@ export default function LeadPortalSimpleFormStylesPage() {
 
   const handleReset = () => {
     setEditingStyle(null);
-    setFormState({ ...EMPTY_STATE });
+    setFormState((current) => ({
+      ...EMPTY_STATE,
+      textModel: availableModels[0]?.code ?? "",
+    }));
     setFeedback(null);
   };
 
@@ -173,6 +164,7 @@ export default function LeadPortalSimpleFormStylesPage() {
     if (isSubmitting) {
       return;
     }
+
     if (!formState.name.trim()) {
       setFeedback({ variant: "error", message: "Informe o nome do estilo." });
       return;
@@ -181,19 +173,29 @@ export default function LeadPortalSimpleFormStylesPage() {
       setFeedback({ variant: "error", message: "Defina um slug válido." });
       return;
     }
+    if (!formState.textModel.trim()) {
+      setFeedback({ variant: "error", message: "Escolha um modelo do catálogo." });
+      return;
+    }
+    if (!formState.textPrompt.trim()) {
+      setFeedback({ variant: "error", message: "Descreva o prompt criativo." });
+      return;
+    }
 
-    const payload = buildPayload(formState);
+    const payload = buildPayload(formState, editingStyle);
     try {
       if (editingStyle) {
         await updateStyle.mutateAsync({ id: editingStyle.id, payload });
         setFeedback({ variant: "success", message: "Estilo atualizado com sucesso." });
       } else {
         await createStyle.mutateAsync(payload);
-        setFeedback({ variant: "success", message: "Estilo criado com sucesso." });
+        setFeedback({ variant: "success", message: "Estilo gerado com sucesso." });
+        setFormState((current) => ({
+          ...EMPTY_STATE,
+          textModel: current.textModel || availableModels[0]?.code || "",
+        }));
       }
-      if (!editingStyle) {
-        setFormState({ ...EMPTY_STATE });
-      }
+      setFormState((current) => ({ ...current, forceRegenerate: false }));
     } catch (err) {
       const message =
         axiosErrorMessage(err) ??
@@ -208,8 +210,8 @@ export default function LeadPortalSimpleFormStylesPage() {
         <div>
           <h1 className="h3 mb-1">Estilos do formulário simples</h1>
           <p className="text-muted mb-0">
-            Configure variações visuais para os formulários simples do Lead Portal e reutilize-as em
-            experimentos e testes A/B.
+            Agora basta escolher o modelo de linguagem e descrever o mood desejado. O portal gera
+            automaticamente cores, gradientes e estrutura visual para cada fluxo simples.
           </p>
         </div>
         <button type="button" className="btn btn-outline-secondary" onClick={handleReset}>
@@ -222,8 +224,17 @@ export default function LeadPortalSimpleFormStylesPage() {
           <div className="card shadow-sm">
             <div className="card-body">
               <h5 className="card-title mb-3">
-                {editingStyle ? "Editar estilo" : "Novo estilo"}
+                {editingStyle ? "Editar estilo" : "Gerar novo estilo"}
               </h5>
+              <p className="small text-muted">
+                O prompt informado será combinado com instruções internas para montar paleta, botões, hero e
+                demais tokens de design do formulário. O custo da geração será registrado automaticamente.
+              </p>
+              {isModelsError ? (
+                <div className="alert alert-warning">
+                  Não foi possível carregar os modelos cadastrados. Você ainda pode digitar o código manualmente.
+                </div>
+              ) : null}
               {feedback ? (
                 <div
                   className={`alert alert-${feedback.variant === "success" ? "success" : "danger"} py-2`}
@@ -261,206 +272,56 @@ export default function LeadPortalSimpleFormStylesPage() {
                     onChange={(event) => handleInputChange("description", event.target.value)}
                   />
                 </div>
-
-                <div className="style-definition-grid">
-                  <div>
-                    <label className="form-label">Background principal</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={formState.definition.backgroundGradient || ""}
-                      onChange={(event) =>
-                        handleDefinitionChange("backgroundGradient", event.target.value)
-                      }
-                    />
-                    <div className="form-text">Aceita cores hex ou gradientes CSS.</div>
-                  </div>
-                  <div>
-                    <label className="form-label">Cor do cartão</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={formState.definition.cardBackground || ""}
-                      onChange={(event) =>
-                        handleDefinitionChange("cardBackground", event.target.value)
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Cor do texto</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={formState.definition.textColor || ""}
-                      onChange={(event) =>
-                        handleDefinitionChange("textColor", event.target.value)
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Texto auxiliar</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={formState.definition.mutedTextColor || ""}
-                      onChange={(event) =>
-                        handleDefinitionChange("mutedTextColor", event.target.value)
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Cor principal</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={formState.definition.primaryColor || ""}
-                      onChange={(event) =>
-                        handleDefinitionChange("primaryColor", event.target.value)
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Cor de destaque</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={formState.definition.accentColor || ""}
-                      onChange={(event) =>
-                        handleDefinitionChange("accentColor", event.target.value)
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Botão (fundo)</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={formState.definition.buttonBackground || ""}
-                      onChange={(event) =>
-                        handleDefinitionChange("buttonBackground", event.target.value)
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Botão (texto)</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={formState.definition.buttonTextColor || ""}
-                      onChange={(event) =>
-                        handleDefinitionChange("buttonTextColor", event.target.value)
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Imagem destaque (URL)</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={formState.definition.heroImageUrl || ""}
-                      onChange={(event) =>
-                        handleDefinitionChange("heroImageUrl", event.target.value)
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Layout do hero</label>
-                    <select
-                      className="form-select"
-                      value={formState.definition.heroLayout ?? "image-right"}
-                      onChange={(event) =>
-                        handleDefinitionChange(
-                          "heroLayout",
-                          event.target.value as "image-left" | "image-right" | "stacked",
-                        )
-                      }
-                    >
-                      <option value="image-right">Imagem à direita</option>
-                      <option value="image-left">Imagem à esquerda</option>
-                      <option value="stacked">Empilhado</option>
-                    </select>
-                  </div>
-                </div>
-
                 <div>
-                  <label className="form-label">Prompt textual</label>
+                  <label className="form-label">Modelo OpenAI *</label>
+                  <select
+                    className="form-select"
+                    value={formState.textModel}
+                    onChange={(event) => handleInputChange("textModel", event.target.value)}
+                    disabled={isLoadingModels}
+                  >
+                    <option value="">Selecione...</option>
+                    {availableModels.map((model: OpenAiModel) => (
+                      <option key={model.id} value={model.code}>
+                        {model.name} ({model.code})
+                      </option>
+                    ))}
+                  </select>
+                  <div className="form-text">Gerencie os modelos em Configurações &gt; Modelos OpenAI.</div>
+                </div>
+                <div>
+                  <label className="form-label">Prompt criativo *</label>
                   <textarea
                     className="form-control"
-                    rows={3}
+                    rows={5}
                     value={formState.textPrompt}
                     onChange={(event) => handleInputChange("textPrompt", event.target.value)}
+                    placeholder="Ex.: Visual futurista com neon lilás, botões pill e destaque para depoimentos."
                   />
                 </div>
-                <div>
-                  <label className="form-label">Prompt de imagens</label>
-                  <textarea
-                    className="form-control"
-                    rows={3}
-                    value={formState.imagePrompt}
-                    onChange={(event) => handleInputChange("imagePrompt", event.target.value)}
-                  />
-                </div>
-                <div className="row g-3">
-                  <div className="col-6">
-                    <label className="form-label">Modelo de texto</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={formState.textModel}
-                      onChange={(event) => handleInputChange("textModel", event.target.value)}
-                    />
-                  </div>
-                  <div className="col-6">
-                    <label className="form-label">Modelo de imagem</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={formState.imageModel}
-                      onChange={(event) => handleInputChange("imageModel", event.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="row g-3">
-                  <div className="col-6">
-                    <label className="form-label">Batch de imagens</label>
-                    <input
-                      type="number"
-                      min={1}
-                      className="form-control"
-                      value={formState.imageBatchSize}
-                      onChange={(event) =>
-                        handleInputChange(
-                          "imageBatchSize",
-                          event.target.value ? Number(event.target.value) : "",
-                        )
-                      }
-                    />
-                  </div>
-                  <div className="col-6">
-                    <label className="form-label">Aspect ratio</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={formState.imageAspectRatio}
-                      onChange={(event) =>
-                        handleInputChange("imageAspectRatio", event.target.value)
-                      }
-                    />
-                  </div>
-                </div>
-
                 <div>
                   <label className="form-label">Imagem de prévia (URL)</label>
                   <input
                     type="text"
                     className="form-control"
                     value={formState.previewImageUrl}
-                    onChange={(event) =>
-                      handleInputChange("previewImageUrl", event.target.value)
-                    }
+                    onChange={(event) => handleInputChange("previewImageUrl", event.target.value)}
                   />
                 </div>
+                {editingStyle ? (
+                  <div className="form-check">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id="forceRegenerate"
+                      checked={formState.forceRegenerate}
+                      onChange={(event) => handleInputChange("forceRegenerate", event.target.checked)}
+                    />
+                    <label className="form-check-label" htmlFor="forceRegenerate">
+                      Gerar uma nova variação agora
+                    </label>
+                  </div>
+                ) : null}
 
                 <button
                   type="submit"
@@ -468,10 +329,10 @@ export default function LeadPortalSimpleFormStylesPage() {
                   disabled={isSubmitting}
                 >
                   {isSubmitting
-                    ? "Salvando estilo..."
+                    ? "Gerando estilo..."
                     : editingStyle
                       ? "Atualizar estilo"
-                      : "Criar estilo"}
+                      : "Gerar estilo"}
                 </button>
               </form>
             </div>
@@ -487,45 +348,82 @@ export default function LeadPortalSimpleFormStylesPage() {
             </div>
           ) : styles.length === 0 ? (
             <div className="alert alert-info">
-              Nenhum estilo cadastrado. Use o formulário ao lado para criar o primeiro.
+              Nenhum estilo cadastrado. Use o formulário ao lado para gerar o primeiro.
             </div>
           ) : (
             <div className="row g-3">
-              {styles.map((style) => (
-                <div className="col-md-6" key={style.id}>
-                  <div className="card h-100 shadow-sm">
-                    <div
-                      className="lead-portal-style-preview"
-                      style={{
-                        background:
-                          style.definition?.backgroundGradient ||
-                          style.definition?.backgroundColor ||
-                          DEFAULT_DEFINITION.backgroundGradient ||
-                          "#eef2ff",
-                      }}
-                    >
-                      <div className="lead-portal-style-preview__overlay" />
-                      <div className="lead-portal-style-preview__content">
-                        <p className="lead-portal-style-preview__label">{style.slug}</p>
-                        <h6>{style.name}</h6>
-                        <p>
-                          {style.definition?.textColor ?? DEFAULT_DEFINITION.textColor}
+              {styles.map((style) => {
+                const definition = {
+                  ...DEFAULT_DEFINITION,
+                  ...(style.definition ?? {}),
+                };
+                const previewBackground =
+                  definition.backgroundGradient ??
+                  definition.backgroundColor ??
+                  DEFAULT_DEFINITION.backgroundGradient ??
+                  "#eef2ff";
+                const cost = style.generationCostUsd ?? null;
+                return (
+                  <div className="col-md-6" key={style.id}>
+                    <div className="card h-100 shadow-sm">
+                      <div
+                        className="lead-portal-style-preview"
+                        style={{ background: previewBackground }}
+                      >
+                        <div className="lead-portal-style-preview__overlay" />
+                        <div className="lead-portal-style-preview__content">
+                          <p className="lead-portal-style-preview__label">{style.slug}</p>
+                          <h6>{style.name}</h6>
+                          <p>{definition.textColor}</p>
+                        </div>
+                      </div>
+                      <div className="card-body d-flex flex-column gap-2">
+                        <div className="d-flex justify-content-between small text-muted">
+                          <span>{style.textModel ?? "Modelo não informado"}</span>
+                          <span>
+                            {cost ? `Custo ${usdFormatter.format(cost)}` : "Custo não registrado"}
+                          </span>
+                        </div>
+                        <p className="mb-0 text-muted small">
+                          Última atualização: {new Date(style.updatedAt).toLocaleString("pt-BR")}
                         </p>
+                        {style.textPrompt ? (
+                          <div className="bg-light rounded p-2 small">
+                            <strong>Prompt:</strong>
+                            <br />
+                            {style.textPrompt}
+                          </div>
+                        ) : null}
+                        <div className="style-definition-grid small text-muted">
+                          <div>
+                            <span className="d-block fw-semibold">Primária</span>
+                            <span>{definition.primaryColor}</span>
+                          </div>
+                          <div>
+                            <span className="d-block fw-semibold">Acento</span>
+                            <span>{definition.accentColor}</span>
+                          </div>
+                          <div>
+                            <span className="d-block fw-semibold">Botão</span>
+                            <span>{definition.buttonBackground}</span>
+                          </div>
+                          <div>
+                            <span className="d-block fw-semibold">Hero</span>
+                            <span>{definition.heroLayout}</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn btn-outline-primary btn-sm mt-2"
+                          onClick={() => handleEdit(style)}
+                        >
+                          Editar estilo
+                        </button>
                       </div>
                     </div>
-                    <div className="card-body d-flex flex-column gap-2">
-                      <p className="mb-0 text-muted small">Última atualização: {new Date(style.updatedAt).toLocaleString("pt-BR")}</p>
-                      <button
-                        type="button"
-                        className="btn btn-outline-primary btn-sm mt-auto"
-                        onClick={() => handleEdit(style)}
-                      >
-                        Editar estilo
-                      </button>
-                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -535,11 +433,16 @@ export default function LeadPortalSimpleFormStylesPage() {
 }
 
 function axiosErrorMessage(error: unknown) {
-  if (typeof error !== "object" || error === null) {
+  if (!error || typeof error !== "object") {
     return null;
   }
-  const maybeAxiosError = error as { response?: { data?: { message?: string; error?: string } } };
-  return (
-    maybeAxiosError.response?.data?.message ?? maybeAxiosError.response?.data?.error ?? null
-  );
+  if (!("response" in error) || typeof error.response !== "object" || !error.response) {
+    return null;
+  }
+  const response = error.response as { data?: unknown };
+  if (!response.data || typeof response.data !== "object") {
+    return null;
+  }
+  const data = response.data as { message?: string };
+  return data.message ?? null;
 }

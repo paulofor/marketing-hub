@@ -33,14 +33,9 @@ export interface LeadPortalSimpleFormStyle {
   textModel?: string | null;
   textPrompt?: string | null;
   textParameters?: string | null;
-  imageModel?: string | null;
-  imagePrompt?: string | null;
-  imageNegativePrompt?: string | null;
-  imageParameters?: string | null;
-  imageBatchSize?: number | null;
-  imageAspectRatio?: string | null;
   previewImageUrl?: string | null;
   definition?: LeadPortalSimpleFormStyleDefinition | null;
+  generationCostUsd?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -49,17 +44,10 @@ export interface UpsertLeadPortalSimpleFormStylePayload {
   name: string;
   slug: string;
   description?: string | null;
-  textModel?: string | null;
-  textPrompt?: string | null;
-  textParameters?: string | null;
-  imageModel?: string | null;
-  imagePrompt?: string | null;
-  imageNegativePrompt?: string | null;
-  imageParameters?: string | null;
-  imageBatchSize?: number | null;
-  imageAspectRatio?: string | null;
+  textModel: string;
+  textPrompt: string;
   previewImageUrl?: string | null;
-  definition: LeadPortalSimpleFormStyleDefinition;
+  regenerate?: boolean;
 }
 
 export function useLeadPortalSimpleFormStyles() {

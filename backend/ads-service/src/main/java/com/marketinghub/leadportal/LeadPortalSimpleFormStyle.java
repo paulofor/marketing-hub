@@ -19,6 +19,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import java.math.BigDecimal;
 
 /**
  * Visual style applied to lead portal simple forms.
@@ -78,6 +79,9 @@ public class LeadPortalSimpleFormStyle {
     @Column(name = "definition", columnDefinition = "LONGTEXT")
     @Convert(converter = LeadPortalSimpleFormStyleDefinitionConverter.class)
     private LeadPortalSimpleFormStyleDefinition definition;
+
+    @Column(name = "generation_cost_usd", precision = 10, scale = 4)
+    private BigDecimal generationCostUsd;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

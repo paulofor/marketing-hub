@@ -63,6 +63,7 @@ public class LeadPortalSimpleFormStyleController {
         dto.setImageAspectRatio(style.getImageAspectRatio());
         dto.setPreviewImageUrl(style.getPreviewImageUrl());
         dto.setDefinition(style.getDefinition());
+        dto.setGenerationCostUsd(style.getGenerationCostUsd());
         dto.setCreatedAt(style.getCreatedAt());
         dto.setUpdatedAt(style.getUpdatedAt());
         return dto;

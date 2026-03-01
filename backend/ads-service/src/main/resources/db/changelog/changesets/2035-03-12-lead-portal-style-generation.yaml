@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2035-03-12-add-style-generation-cost
+      author: ai
+      preConditions:
+        onFail: MARK_RAN
+        and:
+          - dbms:
+              type: mysql
+          - not:
+              columnExists:
+                tableName: lead_portal_simple_form_style
+                columnName: generation_cost_usd
+      changes:
+        - addColumn:
+            tableName: lead_portal_simple_form_style
+            columns:
+              - column:
+                  name: generation_cost_usd
+                  type: DECIMAL(10,4)
+                  remarks: Custo em USD calculado para gerar o estilo

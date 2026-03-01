@@ -83,6 +83,13 @@ public class LeadPortalSimpleFormStyle {
     @Column(name = "generation_cost_usd", precision = 10, scale = 4)
     private BigDecimal generationCostUsd;
 
+    @Column(name = "generation_status", nullable = false, length = 32)
+    @Builder.Default
+    private String generationStatus = "PENDING";
+
+    @Column(name = "generation_error", columnDefinition = "LONGTEXT")
+    private String generationError;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;

@@ -1,49 +1,40 @@
 package com.marketinghub.leadportal.web;
 
 import com.marketinghub.leadportal.LeadPortalSimpleFormStyle;
-import com.marketinghub.leadportal.dto.CreateLeadPortalSimpleFormStyleRequest;
 import com.marketinghub.leadportal.dto.LeadPortalSimpleFormStyleDto;
-import com.marketinghub.leadportal.dto.UpdateLeadPortalSimpleFormStyleRequest;
+import com.marketinghub.leadportal.dto.LeadPortalSimpleFormStyleGenerationResultRequest;
 import com.marketinghub.leadportal.service.LeadPortalSimpleFormStyleService;
-import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/lead-portal/simple-form-styles")
-public class LeadPortalSimpleFormStyleController {
+@RequestMapping("/api/internal/lead-portal/simple-form-styles")
+public class LeadPortalSimpleFormStyleInternalController {
 
     private final LeadPortalSimpleFormStyleService service;
 
-    public LeadPortalSimpleFormStyleController(LeadPortalSimpleFormStyleService service) {
+    public LeadPortalSimpleFormStyleInternalController(LeadPortalSimpleFormStyleService service) {
         this.service = service;
     }
 
-    @GetMapping
-    public List<LeadPortalSimpleFormStyleDto> list() {
-        return service.listAll().stream().map(this::toDto).toList();
+    @GetMapping("/pending")
+    public List<LeadPortalSimpleFormStyleDto> listPending(
+            @RequestParam(value = "limit", defaultValue = "10") Integer limit) {
+        int safeLimit = limit != null ? limit : 10;
+        return service.listPendingForGeneration(safeLimit).stream().map(this::toDto).toList();
     }
 
-    @GetMapping("/{id}")
-    public LeadPortalSimpleFormStyleDto get(@PathVariable Long id) {
-        return toDto(service.get(id));
-    }
-
-    @PostMapping
-    public LeadPortalSimpleFormStyleDto create(@Valid @RequestBody CreateLeadPortalSimpleFormStyleRequest request) {
-        return toDto(service.create(request));
-    }
-
-    @PutMapping("/{id}")
-    public LeadPortalSimpleFormStyleDto update(@PathVariable Long id,
-                                               @Valid @RequestBody UpdateLeadPortalSimpleFormStyleRequest request) {
-        return toDto(service.update(id, request));
+    @PatchMapping("/{id}/generation")
+    public LeadPortalSimpleFormStyleDto saveGeneration(
+            @PathVariable Long id,
+            @RequestBody LeadPortalSimpleFormStyleGenerationResultRequest request) {
+        return toDto(service.saveGenerationResult(id, request));
     }
 
     private LeadPortalSimpleFormStyleDto toDto(LeadPortalSimpleFormStyle style) {

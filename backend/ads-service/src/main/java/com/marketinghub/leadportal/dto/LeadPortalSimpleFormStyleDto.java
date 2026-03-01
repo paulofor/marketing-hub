@@ -23,6 +23,8 @@ public class LeadPortalSimpleFormStyleDto {
     private String previewImageUrl;
     private LeadPortalSimpleFormStyleDefinition definition;
     private BigDecimal generationCostUsd;
+    private String generationStatus;
+    private String generationError;
     private Instant createdAt;
     private Instant updatedAt;
 }

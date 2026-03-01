@@ -497,6 +497,6 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
   - include:
-      file: V2035_03_10__lead_portal_simple_form_styles.sql
+      file: V2035_03_10__lead_portal_simple_form_styles_mysql5.sql
       relativeToChangelogFile: true
 

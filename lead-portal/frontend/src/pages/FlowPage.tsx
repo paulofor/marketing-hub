@@ -59,9 +59,47 @@ export default function FlowPage() {
           <div className="flow-hero-copy">
             <p className="flow-eyebrow">{flow.simpleFormStyle?.name ?? "Lead Portal"}</p>
             <h1>{flow.name}</h1>
+            <p className="flow-subtitle">
+              Transforme ideias em posts prontos para publicar em poucos minutos.
+            </p>
             {flow.description ? <p>{flow.description}</p> : null}
+            <div className="flow-promise-box">
+              <strong>Nossa promessa:</strong> você recebe uma linha editorial visual clara,
+              com linguagem alinhada ao seu público e foco em gerar mais conversas no direct.
+            </div>
           </div>
           {heroImageUrl ? <div className="flow-hero-media" style={heroMediaStyle} /> : null}
+        </section>
+
+        <section className="flow-proof-section" aria-label="Exemplos de posts">
+          <div className="flow-section-header">
+            <p className="flow-section-kicker">Exemplos reais</p>
+            <h2>Posts criados para outros clientes</h2>
+            <p>
+              Veja alguns estilos de criativos entregues em nichos diferentes. O objetivo é te
+              mostrar qualidade visual, consistência da mensagem e potencial de engajamento.
+            </p>
+          </div>
+          <div className="flow-proof-grid">
+            {SAMPLE_POSTS.map((post) => (
+              <article key={post.title} className="flow-proof-card">
+                <div className="flow-proof-image" style={{ background: post.background }}>
+                  <span>{post.badge}</span>
+                </div>
+                <h3>{post.title}</h3>
+                <p>{post.description}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="flow-confidence-section" aria-label="Detalhes de confiança">
+          <h2>Por que você pode confiar neste processo</h2>
+          <ul>
+            <li>Diagnóstico rápido para entender posicionamento, oferta e tom de voz.</li>
+            <li>Criação guiada por IA com revisão estratégica para manter clareza comercial.</li>
+            <li>Entrega estruturada com ideias prontas para feed, stories e campanhas.</li>
+          </ul>
         </section>
 
         <FlowForm flow={flow} campaignCode={campaignCode} />
@@ -69,6 +107,27 @@ export default function FlowPage() {
     </div>
   );
 }
+
+const SAMPLE_POSTS = [
+  {
+    title: "Clínica de estética",
+    description: "Carrossel educativo com CTA para avaliação e foco em autoridade local.",
+    badge: "Antes e depois",
+    background: "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)",
+  },
+  {
+    title: "Consultoria fitness",
+    description: "Post de prova social com linguagem direta para aumentar leads no WhatsApp.",
+    badge: "Resultados",
+    background: "linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)",
+  },
+  {
+    title: "Restaurante premium",
+    description: "Criativo promocional para menu da semana com foco em reserva antecipada.",
+    badge: "Oferta da semana",
+    background: "linear-gradient(135deg, #10b981 0%, #0f766e 100%)",
+  },
+] as const;
 
 function buildStyleVariables(definition: LeadPortalSimpleFormStyleDefinition | null) {
   const vars: Record<string, string> = {};

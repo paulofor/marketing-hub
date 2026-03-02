@@ -768,6 +768,22 @@ form.flow-form {
   color: var(--flow-muted-text-color, var(--flow-muted-text-color, #4b5563));
 }
 
+.flow-subtitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.flow-promise-box {
+  margin-top: 1rem;
+  background: rgba(15, 23, 42, 0.06);
+  border-left: 4px solid var(--flow-accent-color, #ec4899);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  line-height: 1.5;
+  color: var(--flow-text-color, #1f2937);
+}
+
 .flow-hero-media {
   flex: 1;
   min-height: 200px;
@@ -786,4 +802,95 @@ form.flow-form {
   border-radius: 999px;
   padding: 0.25rem 0.75rem;
   display: inline-flex;
+}
+
+.flow-proof-section,
+.flow-confidence-section {
+  background: rgba(255, 255, 255, 0.86);
+  border-radius: 24px;
+  padding: 1.5rem;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.1);
+}
+
+.flow-section-header h2,
+.flow-confidence-section h2 {
+  margin: 0.35rem 0 0.75rem;
+  color: var(--flow-heading-color, #0f172a);
+}
+
+.flow-section-header p {
+  margin: 0;
+  color: var(--flow-muted-text-color, #4b5563);
+}
+
+.flow-section-kicker {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+  color: var(--flow-accent-color, #ec4899);
+  font-weight: 700;
+}
+
+.flow-proof-grid {
+  margin-top: 1.25rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.flow-proof-card {
+  border: 1px solid var(--flow-card-border, rgba(99, 102, 241, 0.12));
+  border-radius: 16px;
+  padding: 0.85rem;
+  background: #fff;
+}
+
+.flow-proof-card h3 {
+  margin: 0.75rem 0 0.35rem;
+  font-size: 1rem;
+  color: var(--flow-heading-color, #0f172a);
+}
+
+.flow-proof-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--flow-muted-text-color, #4b5563);
+}
+
+.flow-proof-image {
+  border-radius: 12px;
+  min-height: 120px;
+  display: flex;
+  align-items: flex-end;
+  padding: 0.75rem;
+}
+
+.flow-proof-image span {
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(2px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+}
+
+.flow-confidence-section ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.65rem;
+  color: var(--flow-text-color, #1f2937);
+}
+
+@media (max-width: 720px) {
+  .flow-proof-section,
+  .flow-confidence-section {
+    padding: 1.1rem;
+    border-radius: 18px;
+  }
 }

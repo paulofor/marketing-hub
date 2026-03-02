@@ -2,7 +2,6 @@ package com.marketinghub.leadportal.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -11,9 +10,6 @@ import com.marketinghub.leadportal.LeadPortalSimpleFormStyleDefinition;
 import com.marketinghub.leadportal.dto.CreateLeadPortalSimpleFormStyleRequest;
 import com.marketinghub.leadportal.dto.UpdateLeadPortalSimpleFormStyleRequest;
 import com.marketinghub.leadportal.repository.LeadPortalSimpleFormStyleRepository;
-import com.marketinghub.openai.OpenAiResponse;
-import com.marketinghub.openai.service.OpenAiPricingService;
-import java.math.BigDecimal;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,17 +24,10 @@ class LeadPortalSimpleFormStyleServiceTest {
     @Mock
     private LeadPortalSimpleFormStyleRepository repository;
 
-    @Mock
-    private LeadPortalSimpleFormStyleGenerator generator;
-
-    @Mock
-    private OpenAiPricingService pricingService;
-
     @InjectMocks
     private LeadPortalSimpleFormStyleService service;
 
     private LeadPortalSimpleFormStyleDefinition definition;
-    private LeadPortalSimpleFormStyleGenerator.Generation generation;
 
     @BeforeEach
     void setUp() {
@@ -46,11 +35,6 @@ class LeadPortalSimpleFormStyleServiceTest {
                 "#000000", null, null, null, null, null, null, null, null,
                 null, null, null, null, null, null, null, null, null,
                 "image-right", null, null);
-        OpenAiResponse.OpenAiUsage usage = new OpenAiResponse.OpenAiUsage(100, 50, null, null, null);
-        generation = new LeadPortalSimpleFormStyleGenerator.Generation(definition, usage, "rendered", "raw");
-        lenient().when(generator.generate(org.mockito.ArgumentMatchers.any())).thenReturn(generation);
-        lenient().when(pricingService.estimateBatchCost(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any()))
-                .thenReturn(new BigDecimal("1.2345"));
         lenient().when(repository.findBySlug(org.mockito.ArgumentMatchers.anyString())).thenReturn(Optional.empty());
         when(repository.save(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
@@ -65,10 +49,11 @@ class LeadPortalSimpleFormStyleServiceTest {
 
         LeadPortalSimpleFormStyle created = service.create(request);
 
-        assertThat(created.getDefinition()).isEqualTo(definition);
+        assertThat(created.getDefinition()).isNull();
         assertThat(created.getTextModel()).isEqualTo("gpt-4o-mini");
         assertThat(created.getTextPrompt()).isEqualTo("Use neon contrast");
-        assertThat(created.getGenerationCostUsd()).isEqualByComparingTo("1.2345");
+        assertThat(created.getGenerationStatus()).isEqualTo(LeadPortalSimpleFormStyleService.GENERATION_STATUS_PENDING);
+        assertThat(created.getGenerationCostUsd()).isNull();
         verify(repository).save(created);
     }
 
@@ -90,7 +75,7 @@ class LeadPortalSimpleFormStyleServiceTest {
         LeadPortalSimpleFormStyle updated = service.update(10L, request);
 
         assertThat(updated.getPreviewImageUrl()).isEqualTo("https://example.com/preview.png");
-        verify(generator, never()).generate(org.mockito.ArgumentMatchers.any());
+        assertThat(updated.getGenerationStatus()).isNull();
     }
 
     @Test
@@ -111,7 +96,7 @@ class LeadPortalSimpleFormStyleServiceTest {
         LeadPortalSimpleFormStyle updated = service.update(11L, request);
 
         assertThat(updated.getTextPrompt()).isEqualTo("Nova direção criativa");
-        assertThat(updated.getDefinition()).isEqualTo(definition);
-        verify(generator).generate(org.mockito.ArgumentMatchers.any());
+        assertThat(updated.getDefinition()).isNull();
+        assertThat(updated.getGenerationStatus()).isEqualTo(LeadPortalSimpleFormStyleService.GENERATION_STATUS_PENDING);
     }
 }

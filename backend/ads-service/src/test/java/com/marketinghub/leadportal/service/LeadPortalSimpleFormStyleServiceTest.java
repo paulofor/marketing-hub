@@ -65,6 +65,7 @@ class LeadPortalSimpleFormStyleServiceTest {
                 .slug("atual")
                 .textModel("gpt-4o-mini")
                 .textPrompt("Original")
+                .generationStatus(LeadPortalSimpleFormStyleService.GENERATION_STATUS_COMPLETED)
                 .definition(definition)
                 .build();
         when(repository.findById(10L)).thenReturn(Optional.of(existing));
@@ -75,7 +76,8 @@ class LeadPortalSimpleFormStyleServiceTest {
         LeadPortalSimpleFormStyle updated = service.update(10L, request);
 
         assertThat(updated.getPreviewImageUrl()).isEqualTo("https://example.com/preview.png");
-        assertThat(updated.getGenerationStatus()).isNull();
+        assertThat(updated.getGenerationStatus()).isEqualTo(LeadPortalSimpleFormStyleService.GENERATION_STATUS_COMPLETED);
+        assertThat(updated.getDefinition()).isEqualTo(definition);
     }
 
     @Test

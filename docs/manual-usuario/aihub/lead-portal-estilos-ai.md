@@ -31,6 +31,25 @@ Sempre que o estilo for regenerado:
 - O campo `generationCostUsd` exibido no cartão será atualizado com o custo calculado.
 - O histórico (prompt renderizado + resposta bruta) fica disponível em `textParameters` para auditoria.
 
+## Como conectar o estilo em um formulário de experimento
+
+Essa funcionalidade **já está implementada** no fluxo de criação de formulário simples dentro de Experimentos/Nicho.
+
+1. Depois de gerar (ou editar) o estilo no AI Hub, acesse a tela do nicho onde você cria formulários simples.
+2. No card **Criar formulário simples (sem imagem)**, localize o campo **Estilo visual do formulário**.
+3. Selecione o estilo desejado pelo nome.
+4. Conclua a criação do formulário normalmente.
+
+O sistema envia o `simpleFormStyleId` junto da criação do fluxo. Na publicação, o Lead Portal aplica automaticamente as cores, botões e hero definidos no estilo selecionado.
+
+> Se o seletor estiver vazio, primeiro cadastre ao menos um estilo em **Campanhas → Estilos do formulário simples**.
+
+## Onde validar se o estilo foi aplicado
+
+1. Abra o fluxo criado na lista de Experimentos (aba Lead Portal).
+2. Acesse a **URL pública** do formulário.
+3. Confira se o tema visual (background, botão e hero) corresponde ao estilo escolhido.
+
 ## Boas práticas de prompt
 
 - Cite referências de cor usando hex ou descrições claras ("verde esmeralda", "degradê sunset").

@@ -10,7 +10,10 @@ import { TargetingElementCard } from "../../components/TargetingElementCard";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import { useChatDialog } from "../../api/chatDialog/useChatDialog";
 import { useForm } from "react-hook-form";
-import type { TargetingElement, TargetingElementType } from "../../api/targeting/types";
+import type {
+  TargetingElement,
+  TargetingElementType,
+} from "../../api/targeting/types";
 import { TargetingGenerationForm } from "../../components/TargetingGenerationForm";
 import { TargetingRequestForm } from "../../components/TargetingRequestForm";
 import { TargetingRequestStatusPanel } from "../../components/TargetingRequestStatusPanel";
@@ -24,6 +27,7 @@ import { useDeliverablesByNiche } from "../../api/deliverable/useDeliverablesByN
 import { useLeadPortalFlows } from "../../api/leadPortal/useLeadPortalFlows";
 import { useCreateDeliverable } from "../../api/deliverable/useCreateDeliverable";
 import SimpleLeadPortalFormCard from "../../components/leadPortal/SimpleLeadPortalFormCard";
+import SimpleLeadPortalFormWithImagesCard from "../../components/leadPortal/SimpleLeadPortalFormWithImagesCard";
 import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
 import { useDifferentiatedTechnologies } from "../../api/differentiatedTechnology/useDifferentiatedTechnologies";
 import { useInformationSourcesByNiche } from "../../api/informationSource/useInformationSourcesByNiche";
@@ -51,11 +55,19 @@ import "./NicheDetailPage.css";
 
 type MetaAdsStatus = "PENDING" | "READY";
 
-function resolveMetaAdsStatus(element?: { metaId?: string | null; metaAudienceSizeLowerBound?: number | null; metaAudienceSizeUpperBound?: number | null; } | null): MetaAdsStatus {
+function resolveMetaAdsStatus(
+  element?: {
+    metaId?: string | null;
+    metaAudienceSizeLowerBound?: number | null;
+    metaAudienceSizeUpperBound?: number | null;
+  } | null,
+): MetaAdsStatus {
   if (!element) return "PENDING";
-  const hasMetaId = typeof element.metaId === "string" && element.metaId.trim() !== "";
-  const hasAudienceData = typeof element.metaAudienceSizeLowerBound === "number"
-    || typeof element.metaAudienceSizeUpperBound === "number";
+  const hasMetaId =
+    typeof element.metaId === "string" && element.metaId.trim() !== "";
+  const hasAudienceData =
+    typeof element.metaAudienceSizeLowerBound === "number" ||
+    typeof element.metaAudienceSizeUpperBound === "number";
   if (hasMetaId && hasAudienceData) {
     return "READY";
   }
@@ -80,7 +92,6 @@ function formatMetaAudienceRange(lower?: number | null, upper?: number | null) {
   return "—";
 }
 
-
 function renderMetaAdsSummary(element?: TargetingElement | null) {
   if (!element || resolveMetaAdsStatus(element) !== "READY") {
     return null;
@@ -91,14 +102,15 @@ function renderMetaAdsSummary(element?: TargetingElement | null) {
   );
   return (
     <div className="text-body-secondary small mt-1">
-      <span>Meta ID: <code>{element.metaId}</code></span>
+      <span>
+        Meta ID: <code>{element.metaId}</code>
+      </span>
       {rangeLabel !== "—" ? (
         <span className="d-block">Alcance estimado: {rangeLabel} pessoas</span>
       ) : null}
     </div>
   );
 }
-
 
 type MetaReadyEntry = { term: string; element: TargetingElement };
 
@@ -202,7 +214,8 @@ export default function NicheDetailPage() {
   const { data: detailedDescriptions } = useNicheDetailedDescriptions(nicheId);
   const requestHypotheses = useRequestHypotheses(id);
   const requestDetailedDescriptions = useRequestDetailedDescriptions(id);
-  const updateDetailedDescriptionStatus = useUpdateNicheDetailedDescriptionStatus();
+  const updateDetailedDescriptionStatus =
+    useUpdateNicheDetailedDescriptionStatus();
   const { data: openAiModels, isLoading: isLoadingModels } = useOpenAiModels();
   const {
     data: differentiatedTechnologies,
@@ -214,17 +227,23 @@ export default function NicheDetailPage() {
   const [interestInput, setInterestInput] = useState("");
   const [roleInput, setRoleInput] = useState("");
   const [behaviorInput, setBehaviorInput] = useState("");
-  const [editingInterestIndex, setEditingInterestIndex] = useState<number | null>(
-    null,
-  );
+  const [editingInterestIndex, setEditingInterestIndex] = useState<
+    number | null
+  >(null);
   const [editingRoleIndex, setEditingRoleIndex] = useState<number | null>(null);
-  const [editingBehaviorIndex, setEditingBehaviorIndex] = useState<number | null>(null);
-  const [updatingDescriptionId, setUpdatingDescriptionId] = useState<number | null>(null);
-  const [detailedDescriptionFeedback, setDetailedDescriptionFeedback] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
-  const [isManualHypothesisFormVisible, setManualHypothesisFormVisible] = useState(false);
+  const [editingBehaviorIndex, setEditingBehaviorIndex] = useState<
+    number | null
+  >(null);
+  const [updatingDescriptionId, setUpdatingDescriptionId] = useState<
+    number | null
+  >(null);
+  const [detailedDescriptionFeedback, setDetailedDescriptionFeedback] =
+    useState<{
+      type: "success" | "error";
+      message: string;
+    } | null>(null);
+  const [isManualHypothesisFormVisible, setManualHypothesisFormVisible] =
+    useState(false);
   const {
     register: registerHypothesisRequest,
     handleSubmit: handleSubmitHypothesisRequest,
@@ -291,7 +310,13 @@ export default function NicheDetailPage() {
     setInterestItems(parseList(data?.interestList ?? data?.interests));
     setRoleItems(parseList(data?.roleList ?? data?.demographicFilters));
     setBehaviorItems(parseList(data?.behaviorList));
-  }, [data?.behaviorList, data?.demographicFilters, data?.interestList, data?.interests, data?.roleList]);
+  }, [
+    data?.behaviorList,
+    data?.demographicFilters,
+    data?.interestList,
+    data?.interests,
+    data?.roleList,
+  ]);
 
   useEffect(() => {
     const defaultModel = data?.hypothesisModel ?? openAiModels?.[0]?.code ?? "";
@@ -299,9 +324,14 @@ export default function NicheDetailPage() {
   }, [data?.hypothesisModel, openAiModels, setHypothesisRequestValue]);
 
   useEffect(() => {
-    const defaultDescriptionModel = data?.detailedDescriptionModel ?? openAiModels?.[0]?.code ?? "";
+    const defaultDescriptionModel =
+      data?.detailedDescriptionModel ?? openAiModels?.[0]?.code ?? "";
     setDescriptionRequestValue("model", defaultDescriptionModel);
-  }, [data?.detailedDescriptionModel, openAiModels, setDescriptionRequestValue]);
+  }, [
+    data?.detailedDescriptionModel,
+    openAiModels,
+    setDescriptionRequestValue,
+  ]);
 
   useEffect(() => {
     setHypothesisRequestValue(
@@ -309,7 +339,6 @@ export default function NicheDetailPage() {
       data?.differentiatedTechnologyId ?? undefined,
     );
   }, [data?.differentiatedTechnologyId, setHypothesisRequestValue]);
-
 
   const scrollToSection = useCallback((sectionId: string) => {
     if (typeof document === "undefined") return;
@@ -330,16 +359,19 @@ export default function NicheDetailPage() {
         return bDate - aDate;
       })
     : [];
-  const targetingList = Array.isArray(targetingElements) ? targetingElements : [];
+  const targetingList = Array.isArray(targetingElements)
+    ? targetingElements
+    : [];
 
   const findManualElement = useCallback(
     (type: TargetingElementType, term: string) => {
       const normalizedTerm = term.trim().toLocaleLowerCase("pt-BR");
       return targetingList.find(
         (element) =>
-          element.type === type
-          && (element.source === "MANUAL" || !element.source)
-          && (element.term ?? "").trim().toLocaleLowerCase("pt-BR") === normalizedTerm,
+          element.type === type &&
+          (element.source === "MANUAL" || !element.source) &&
+          (element.term ?? "").trim().toLocaleLowerCase("pt-BR") ===
+            normalizedTerm,
       );
     },
     [targetingList],
@@ -377,7 +409,10 @@ export default function NicheDetailPage() {
 
   const onRequestMetaAdsReprocess = useCallback(
     (elementId: number) => {
-      requestMetaAdsReprocess.mutate({ id: elementId, nicheId: normalizedNicheId });
+      requestMetaAdsReprocess.mutate({
+        id: elementId,
+        nicheId: normalizedNicheId,
+      });
     },
     [normalizedNicheId, requestMetaAdsReprocess],
   );
@@ -416,7 +451,8 @@ export default function NicheDetailPage() {
     {
       type: "INTEREST",
       title: "Interesses",
-      description: "Segmentos para preencher o campo de interesses salvos no Meta Ads.",
+      description:
+        "Segmentos para preencher o campo de interesses salvos no Meta Ads.",
       requested: data?.interestsToGenerate,
       model: data?.interestModel,
       anchor: "niche-interests",
@@ -424,7 +460,8 @@ export default function NicheDetailPage() {
     {
       type: "JOB_TITLE",
       title: "Cargos",
-      description: "Funções profissionais priorizadas ao configurar a persona no Ads Manager.",
+      description:
+        "Funções profissionais priorizadas ao configurar a persona no Ads Manager.",
       requested: data?.jobTitlesToGenerate,
       model: data?.jobTitleModel,
       anchor: "niche-job-titles",
@@ -432,7 +469,8 @@ export default function NicheDetailPage() {
     {
       type: "BEHAVIOR",
       title: "Comportamentos",
-      description: "Ações e hábitos monitorados pelo Meta para refinar a entrega.",
+      description:
+        "Ações e hábitos monitorados pelo Meta para refinar a entrega.",
       requested: data?.behaviorsToGenerate,
       model: data?.behaviorModel,
       anchor: "niche-behaviors",
@@ -448,12 +486,19 @@ export default function NicheDetailPage() {
 
   useEffect(() => {
     const selectedId = data?.hypothesisDetailedDescriptionId ?? undefined;
-    if (selectedId && activeDetailedDescriptions.some((desc) => desc.id === selectedId)) {
+    if (
+      selectedId &&
+      activeDetailedDescriptions.some((desc) => desc.id === selectedId)
+    ) {
       setHypothesisRequestValue("detailedDescriptionId", selectedId);
     } else {
       setHypothesisRequestValue("detailedDescriptionId", undefined);
     }
-  }, [activeDetailedDescriptions, data?.hypothesisDetailedDescriptionId, setHypothesisRequestValue]);
+  }, [
+    activeDetailedDescriptions,
+    data?.hypothesisDetailedDescriptionId,
+    setHypothesisRequestValue,
+  ]);
 
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
@@ -600,7 +645,10 @@ export default function NicheDetailPage() {
     requestDetailedDescriptions.isPending || (isFetching && !isLoading)
       ? "Atualizando descrições..."
       : `Solicitadas ao Worker: ${data.detailedDescriptionsToGenerate ?? 0}`;
-  const pendingDetailedDescriptions = Math.max(0, data.detailedDescriptionsToGenerate ?? 0);
+  const pendingDetailedDescriptions = Math.max(
+    0,
+    data.detailedDescriptionsToGenerate ?? 0,
+  );
   const formatUsd = (value?: number | string | null) => {
     if (value === undefined || value === null) return undefined;
     const num = typeof value === "string" ? Number(value) : value;
@@ -612,9 +660,7 @@ export default function NicheDetailPage() {
       maximumFractionDigits: 4,
     });
   };
-  const handleInterestSubmit = (
-    event: React.FormEvent<HTMLFormElement>,
-  ) => {
+  const handleInterestSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const value = interestInput.trim();
     if (!value) return;
@@ -675,7 +721,9 @@ export default function NicheDetailPage() {
     setEditingBehaviorIndex(index);
   };
   const onRemoveInterest = (index: number) => {
-    setInterestItems((prev) => prev.filter((_, itemIndex) => itemIndex !== index));
+    setInterestItems((prev) =>
+      prev.filter((_, itemIndex) => itemIndex !== index),
+    );
     if (editingInterestIndex === index) {
       setEditingInterestIndex(null);
       setInterestInput("");
@@ -689,27 +737,51 @@ export default function NicheDetailPage() {
     }
   };
   const onRemoveBehavior = (index: number) => {
-    setBehaviorItems((prev) => prev.filter((_, itemIndex) => itemIndex !== index));
+    setBehaviorItems((prev) =>
+      prev.filter((_, itemIndex) => itemIndex !== index),
+    );
     if (editingBehaviorIndex === index) {
       setEditingBehaviorIndex(null);
       setBehaviorInput("");
     }
   };
   const onSaveInterests = () => {
-    updateNiche.mutate({ ...data, interestList: interestItems, roleList: roleItems, behaviorList: behaviorItems });
+    updateNiche.mutate({
+      ...data,
+      interestList: interestItems,
+      roleList: roleItems,
+      behaviorList: behaviorItems,
+    });
   };
   const onSaveRoles = () => {
-    updateNiche.mutate({ ...data, interestList: interestItems, roleList: roleItems, behaviorList: behaviorItems });
+    updateNiche.mutate({
+      ...data,
+      interestList: interestItems,
+      roleList: roleItems,
+      behaviorList: behaviorItems,
+    });
   };
   const onSaveBehaviors = () => {
-    updateNiche.mutate({ ...data, interestList: interestItems, roleList: roleItems, behaviorList: behaviorItems });
+    updateNiche.mutate({
+      ...data,
+      interestList: interestItems,
+      roleList: roleItems,
+      behaviorList: behaviorItems,
+    });
   };
   const onRequestHypotheses = handleSubmitHypothesisRequest(
-    async ({ quantity, model, differentiatedTechnologyId, detailedDescriptionId }) => {
+    async ({
+      quantity,
+      model,
+      differentiatedTechnologyId,
+      detailedDescriptionId,
+    }) => {
       if (!quantity || quantity <= 0) return;
       const selectedModel = model?.trim();
       const normalizedTechnologyId =
-        differentiatedTechnologyId === 0 ? undefined : differentiatedTechnologyId;
+        differentiatedTechnologyId === 0
+          ? undefined
+          : differentiatedTechnologyId;
       const normalizedDescriptionId =
         detailedDescriptionId === 0 ? undefined : detailedDescriptionId;
       try {
@@ -738,7 +810,9 @@ export default function NicheDetailPage() {
     async ({ quantity, model }) => {
       if (!quantity || quantity <= 0) return;
       const selectedModel =
-        model?.trim() || data?.detailedDescriptionModel || openAiModels?.[0]?.code;
+        model?.trim() ||
+        data?.detailedDescriptionModel ||
+        openAiModels?.[0]?.code;
       try {
         await requestDetailedDescriptions.mutateAsync({
           quantity,
@@ -793,7 +867,13 @@ export default function NicheDetailPage() {
           model: values.model,
           prompt: values.prompt,
         });
-        resetDeliverable({ title: "", description: "", content: "", model: "", prompt: "" });
+        resetDeliverable({
+          title: "",
+          description: "",
+          content: "",
+          model: "",
+          prompt: "",
+        });
       } catch (error) {
         console.error("Failed to create deliverable", error);
         alert("Não foi possível salvar o entregável. Tente novamente.");
@@ -814,7 +894,9 @@ export default function NicheDetailPage() {
         resetInformationSource({ name: "", url: "" });
       } catch (error) {
         console.error("Failed to create information source", error);
-        alert("Não foi possível salvar a fonte de informação. Tente novamente.");
+        alert(
+          "Não foi possível salvar a fonte de informação. Tente novamente.",
+        );
       }
     },
     (errors) => {
@@ -835,11 +917,15 @@ export default function NicheDetailPage() {
           <div className="niche-detail__totals" aria-label="Totais do nicho">
             <div className="niche-detail__total">
               <span className="niche-detail__total-label">Custo total</span>
-              <span className="niche-detail__total-value">{totalCostLabel}</span>
+              <span className="niche-detail__total-value">
+                {totalCostLabel}
+              </span>
             </div>
             <div className="niche-detail__total">
               <span className="niche-detail__total-label">Receita total</span>
-              <span className="niche-detail__total-value">{totalRevenueLabel}</span>
+              <span className="niche-detail__total-value">
+                {totalRevenueLabel}
+              </span>
             </div>
           </div>
         </div>
@@ -890,7 +976,9 @@ export default function NicheDetailPage() {
                 <span className="niche-detail__stat-value">{stat.value}</span>
                 <span className="niche-detail__stat-label">{stat.label}</span>
                 {stat.helper ? (
-                  <span className="niche-detail__stat-helper">{stat.helper}</span>
+                  <span className="niche-detail__stat-helper">
+                    {stat.helper}
+                  </span>
                 ) : null}
               </div>
             </li>
@@ -903,17 +991,16 @@ export default function NicheDetailPage() {
             <article key={card.label} className="niche-detail__card">
               <h3 className="niche-detail__card-title">{card.label}</h3>
               <div className="niche-detail__card-content">
-                {card.value === null || card.value === undefined || card.value === ""
-                  ? (
-                      <span className="niche-detail__card-empty">-</span>
-                    )
-                  : typeof card.value === "string" || typeof card.value === "number"
-                    ? (
-                        <span className="niche-detail__card-text">{card.value}</span>
-                      )
-                    : (
-                        card.value
-                      )}
+                {card.value === null ||
+                card.value === undefined ||
+                card.value === "" ? (
+                  <span className="niche-detail__card-empty">-</span>
+                ) : typeof card.value === "string" ||
+                  typeof card.value === "number" ? (
+                  <span className="niche-detail__card-text">{card.value}</span>
+                ) : (
+                  card.value
+                )}
               </div>
             </article>
           ))}
@@ -936,22 +1023,32 @@ export default function NicheDetailPage() {
               Gere descrições completas com dores, desejos e necessidades do
               público do nicho.
             </p>
-            <p className="niche-section__status">{detailedDescriptionStatusLabel}</p>
-            <div className="niche-section__status-hints" role="status" aria-live="polite">
+            <p className="niche-section__status">
+              {detailedDescriptionStatusLabel}
+            </p>
+            <div
+              className="niche-section__status-hints"
+              role="status"
+              aria-live="polite"
+            >
               {requestDetailedDescriptions.isPending ? (
                 <span className="badge text-bg-info-subtle text-info-emphasis">
                   Enviando solicitação para o batch...
                 </span>
               ) : pendingDetailedDescriptions > 0 ? (
                 <span className="badge text-bg-warning-subtle text-warning-emphasis">
-                  {pendingDetailedDescriptions} item(ns) aguardando processamento no Worker IA.
+                  {pendingDetailedDescriptions} item(ns) aguardando
+                  processamento no Worker IA.
                 </span>
               ) : (
                 <span className="badge text-bg-success-subtle text-success-emphasis">
                   Sem itens pendentes no batch.
                 </span>
               )}
-              <Link to="/ai/pending-requests" className="niche-section__status-link">
+              <Link
+                to="/ai/pending-requests"
+                className="niche-section__status-link"
+              >
                 Ver fila completa do Worker IA
               </Link>
             </div>
@@ -985,7 +1082,9 @@ export default function NicheDetailPage() {
               className="form-control"
               title="Quantidade de descrições detalhadas que o Worker IA irá gerar"
               disabled={requestDetailedDescriptions.isPending}
-              {...registerDescriptionRequest("quantity", { valueAsNumber: true })}
+              {...registerDescriptionRequest("quantity", {
+                valueAsNumber: true,
+              })}
             />
             <label
               htmlFor="detailed-description-model"
@@ -997,7 +1096,9 @@ export default function NicheDetailPage() {
               id="detailed-description-model"
               className="form-select"
               title="Modelo do OpenAI que o Worker IA irá usar"
-              disabled={requestDetailedDescriptions.isPending || isLoadingModels}
+              disabled={
+                requestDetailedDescriptions.isPending || isLoadingModels
+              }
               {...registerDescriptionRequest("model")}
             >
               <option value="">Selecione um modelo</option>
@@ -1032,7 +1133,10 @@ export default function NicheDetailPage() {
         ) : (
           <div className="niche-section__grid">
             {detailedDescriptionList.map((description, index) => (
-              <article key={description.id} className="card niche-section__card">
+              <article
+                key={description.id}
+                className="card niche-section__card"
+              >
                 <div className="card-body">
                   <div className="d-flex justify-content-between align-items-start gap-2">
                     <h3 className="card-title h5 mb-2">
@@ -1143,12 +1247,16 @@ export default function NicheDetailPage() {
                     </div>
                   ) : null}
                   <div className="d-flex gap-3 flex-wrap text-body-secondary small mt-2">
-                    {description.costUsd !== undefined && description.costUsd !== null ? (
-                      <span>Custo estimado: {formatUsd(description.costUsd)}</span>
+                    {description.costUsd !== undefined &&
+                    description.costUsd !== null ? (
+                      <span>
+                        Custo estimado: {formatUsd(description.costUsd)}
+                      </span>
                     ) : null}
                     {description.inputTokens || description.outputTokens ? (
                       <span>
-                        Tokens: in {description.inputTokens ?? "-"} / out {description.outputTokens ?? "-"}
+                        Tokens: in {description.inputTokens ?? "-"} / out{" "}
+                        {description.outputTokens ?? "-"}
                       </span>
                     ) : null}
                   </div>
@@ -1168,7 +1276,8 @@ export default function NicheDetailPage() {
               Segmentações sugeridas
             </h2>
             <p className="niche-section__subtitle">
-              Listas de interesses, cargos e comportamentos indicados para anunciar neste nicho.
+              Listas de interesses, cargos e comportamentos indicados para
+              anunciar neste nicho.
             </p>
           </div>
         </div>
@@ -1221,26 +1330,40 @@ export default function NicheDetailPage() {
                   {interestItems.map((item, index) => {
                     const manualElement = findManualElement("INTEREST", item);
                     const metaAdsStatus = resolveMetaAdsStatus(manualElement);
-                    const isReprocessLoading = requestMetaAdsReprocess.isPending
-                      && requestMetaAdsReprocess.variables?.id === manualElement?.id;
+                    const isReprocessLoading =
+                      requestMetaAdsReprocess.isPending &&
+                      requestMetaAdsReprocess.variables?.id ===
+                        manualElement?.id;
                     return (
                       <li key={`${item}-${index}`} className="niche-list__item">
                         <span>{item}</span>
                         {renderMetaAdsSummary(manualElement)}
-                        <span className={`badge rounded-pill ${metaAdsStatus === "READY" ? "text-bg-success-subtle border border-success-subtle" : "text-bg-warning-subtle text-dark border border-warning-subtle"}`}>
-                          {metaAdsStatus === "READY" ? "Meta Ads pronto" : "Pendente Meta Ads"}
+                        <span
+                          className={`badge rounded-pill ${metaAdsStatus === "READY" ? "text-bg-success-subtle border border-success-subtle" : "text-bg-warning-subtle text-dark border border-warning-subtle"}`}
+                        >
+                          {metaAdsStatus === "READY"
+                            ? "Meta Ads pronto"
+                            : "Pendente Meta Ads"}
                         </span>
                         <div className="niche-list__actions">
                           {manualElement ? (
                             <button
                               type="button"
                               className="btn btn-outline-secondary btn-sm niche-list__action"
-                              onClick={() => onRequestMetaAdsReprocess(manualElement.id)}
-                              disabled={updateNiche.isPending || isReprocessLoading}
+                              onClick={() =>
+                                onRequestMetaAdsReprocess(manualElement.id)
+                              }
+                              disabled={
+                                updateNiche.isPending || isReprocessLoading
+                              }
                               title="Solicitar novo processamento"
                             >
                               {isReprocessLoading ? (
-                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                                <span
+                                  className="spinner-border spinner-border-sm"
+                                  role="status"
+                                  aria-hidden="true"
+                                />
                               ) : (
                                 <RotateCcw size={16} />
                               )}
@@ -1250,7 +1373,9 @@ export default function NicheDetailPage() {
                             type="button"
                             className="btn btn-light btn-sm niche-list__action"
                             onClick={() => onEditInterest(index)}
-                            disabled={updateNiche.isPending || isReprocessLoading}
+                            disabled={
+                              updateNiche.isPending || isReprocessLoading
+                            }
                             title="Editar interesse"
                           >
                             <Pencil size={16} />
@@ -1259,7 +1384,9 @@ export default function NicheDetailPage() {
                             type="button"
                             className="btn btn-outline-danger btn-sm niche-list__action"
                             onClick={() => onRemoveInterest(index)}
-                            disabled={updateNiche.isPending || isReprocessLoading}
+                            disabled={
+                              updateNiche.isPending || isReprocessLoading
+                            }
                             title="Remover interesse"
                           >
                             <Trash2 size={16} />
@@ -1340,26 +1467,40 @@ export default function NicheDetailPage() {
                   {roleItems.map((item, index) => {
                     const manualElement = findManualElement("JOB_TITLE", item);
                     const metaAdsStatus = resolveMetaAdsStatus(manualElement);
-                    const isReprocessLoading = requestMetaAdsReprocess.isPending
-                      && requestMetaAdsReprocess.variables?.id === manualElement?.id;
+                    const isReprocessLoading =
+                      requestMetaAdsReprocess.isPending &&
+                      requestMetaAdsReprocess.variables?.id ===
+                        manualElement?.id;
                     return (
                       <li key={`${item}-${index}`} className="niche-list__item">
                         <span>{item}</span>
                         {renderMetaAdsSummary(manualElement)}
-                        <span className={`badge rounded-pill ${metaAdsStatus === "READY" ? "text-bg-success-subtle border border-success-subtle" : "text-bg-warning-subtle text-dark border border-warning-subtle"}`}>
-                          {metaAdsStatus === "READY" ? "Meta Ads pronto" : "Pendente Meta Ads"}
+                        <span
+                          className={`badge rounded-pill ${metaAdsStatus === "READY" ? "text-bg-success-subtle border border-success-subtle" : "text-bg-warning-subtle text-dark border border-warning-subtle"}`}
+                        >
+                          {metaAdsStatus === "READY"
+                            ? "Meta Ads pronto"
+                            : "Pendente Meta Ads"}
                         </span>
                         <div className="niche-list__actions">
                           {manualElement ? (
                             <button
                               type="button"
                               className="btn btn-outline-secondary btn-sm niche-list__action"
-                              onClick={() => onRequestMetaAdsReprocess(manualElement.id)}
-                              disabled={updateNiche.isPending || isReprocessLoading}
+                              onClick={() =>
+                                onRequestMetaAdsReprocess(manualElement.id)
+                              }
+                              disabled={
+                                updateNiche.isPending || isReprocessLoading
+                              }
                               title="Solicitar novo processamento"
                             >
                               {isReprocessLoading ? (
-                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                                <span
+                                  className="spinner-border spinner-border-sm"
+                                  role="status"
+                                  aria-hidden="true"
+                                />
                               ) : (
                                 <RotateCcw size={16} />
                               )}
@@ -1369,7 +1510,9 @@ export default function NicheDetailPage() {
                             type="button"
                             className="btn btn-light btn-sm niche-list__action"
                             onClick={() => onEditRole(index)}
-                            disabled={updateNiche.isPending || isReprocessLoading}
+                            disabled={
+                              updateNiche.isPending || isReprocessLoading
+                            }
                             title="Editar cargo"
                           >
                             <Pencil size={16} />
@@ -1378,7 +1521,9 @@ export default function NicheDetailPage() {
                             type="button"
                             className="btn btn-outline-danger btn-sm niche-list__action"
                             onClick={() => onRemoveRole(index)}
-                            disabled={updateNiche.isPending || isReprocessLoading}
+                            disabled={
+                              updateNiche.isPending || isReprocessLoading
+                            }
                             title="Remover cargo"
                           >
                             <Trash2 size={16} />
@@ -1412,125 +1557,138 @@ export default function NicheDetailPage() {
             </div>
           </article>
         </div>
-          <article className="card niche-section__card niche-list-card">
-            <div className="card-body">
-              <div className="niche-list-card__head">
-                <h3 className="niche-list-card__title">Comportamentos</h3>
-                <span className="badge text-bg-light text-dark">
-                  {behaviorItems.length} itens
-                </span>
-              </div>
-              <form className="niche-list-form" onSubmit={handleBehaviorSubmit}>
-                <div className="form-floating flex-grow-1">
-                  <input
-                    id="niche-behavior-input"
-                    type="text"
-                    className="form-control"
-                    placeholder="Novo comportamento"
-                    required
-                    value={behaviorInput}
-                    onChange={(event) => setBehaviorInput(event.target.value)}
-                    disabled={updateNiche.isPending}
-                  />
-                  <label htmlFor="niche-behavior-input">Comportamento *</label>
-                </div>
-                <button
-                  type="submit"
-                  className="btn btn-primary btn-sm"
-                  disabled={!behaviorInput.trim() || updateNiche.isPending}
-                >
-                  {editingBehaviorIndex !== null ? (
-                    <Check size={16} />
-                  ) : (
-                    <Plus size={16} />
-                  )}
-                  <span>
-                    {editingBehaviorIndex !== null
-                      ? "Atualizar comportamento"
-                      : "Adicionar comportamento"}
-                  </span>
-                </button>
-              </form>
-              {behaviorItems.length === 0 ? (
-                <p className="niche-section__empty niche-list-card__empty">
-                  Nenhum comportamento cadastrado.
-                </p>
-              ) : (
-                <ul className="niche-list">
-                  {behaviorItems.map((item, index) => {
-                    const manualElement = findManualElement("BEHAVIOR", item);
-                    const metaAdsStatus = resolveMetaAdsStatus(manualElement);
-                    const isReprocessLoading = requestMetaAdsReprocess.isPending
-                      && requestMetaAdsReprocess.variables?.id === manualElement?.id;
-                    return (
-                      <li key={`${item}-${index}`} className="niche-list__item">
-                        <span>{item}</span>
-                        {renderMetaAdsSummary(manualElement)}
-                        <span className={`badge rounded-pill ${metaAdsStatus === "READY" ? "text-bg-success-subtle border border-success-subtle" : "text-bg-warning-subtle text-dark border border-warning-subtle"}`}>
-                          {metaAdsStatus === "READY" ? "Meta Ads pronto" : "Pendente Meta Ads"}
-                        </span>
-                        <div className="niche-list__actions">
-                          {manualElement ? (
-                            <button
-                              type="button"
-                              className="btn btn-outline-secondary btn-sm niche-list__action"
-                              onClick={() => onRequestMetaAdsReprocess(manualElement.id)}
-                              disabled={updateNiche.isPending || isReprocessLoading}
-                              title="Solicitar novo processamento"
-                            >
-                              {isReprocessLoading ? (
-                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
-                              ) : (
-                                <RotateCcw size={16} />
-                              )}
-                            </button>
-                          ) : null}
-                          <button
-                            type="button"
-                            className="btn btn-light btn-sm niche-list__action"
-                            onClick={() => onEditBehavior(index)}
-                            disabled={updateNiche.isPending || isReprocessLoading}
-                            title="Editar comportamento"
-                          >
-                            <Pencil size={16} />
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-outline-danger btn-sm niche-list__action"
-                            onClick={() => onRemoveBehavior(index)}
-                            disabled={updateNiche.isPending || isReprocessLoading}
-                            title="Remover comportamento"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-              <MetaAdsDetailsTable entries={behaviorMetaReady} />
-              <div className="d-flex justify-content-end">
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  onClick={onSaveBehaviors}
-                  disabled={updateNiche.isPending}
-                >
-                  {updateNiche.isPending ? (
-                    <span
-                      className="spinner-border spinner-border-sm"
-                      role="status"
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <Check size={16} />
-                  )}
-                  <span>Salvar comportamentos</span>
-                </button>
-              </div>
+        <article className="card niche-section__card niche-list-card">
+          <div className="card-body">
+            <div className="niche-list-card__head">
+              <h3 className="niche-list-card__title">Comportamentos</h3>
+              <span className="badge text-bg-light text-dark">
+                {behaviorItems.length} itens
+              </span>
             </div>
-          </article>
+            <form className="niche-list-form" onSubmit={handleBehaviorSubmit}>
+              <div className="form-floating flex-grow-1">
+                <input
+                  id="niche-behavior-input"
+                  type="text"
+                  className="form-control"
+                  placeholder="Novo comportamento"
+                  required
+                  value={behaviorInput}
+                  onChange={(event) => setBehaviorInput(event.target.value)}
+                  disabled={updateNiche.isPending}
+                />
+                <label htmlFor="niche-behavior-input">Comportamento *</label>
+              </div>
+              <button
+                type="submit"
+                className="btn btn-primary btn-sm"
+                disabled={!behaviorInput.trim() || updateNiche.isPending}
+              >
+                {editingBehaviorIndex !== null ? (
+                  <Check size={16} />
+                ) : (
+                  <Plus size={16} />
+                )}
+                <span>
+                  {editingBehaviorIndex !== null
+                    ? "Atualizar comportamento"
+                    : "Adicionar comportamento"}
+                </span>
+              </button>
+            </form>
+            {behaviorItems.length === 0 ? (
+              <p className="niche-section__empty niche-list-card__empty">
+                Nenhum comportamento cadastrado.
+              </p>
+            ) : (
+              <ul className="niche-list">
+                {behaviorItems.map((item, index) => {
+                  const manualElement = findManualElement("BEHAVIOR", item);
+                  const metaAdsStatus = resolveMetaAdsStatus(manualElement);
+                  const isReprocessLoading =
+                    requestMetaAdsReprocess.isPending &&
+                    requestMetaAdsReprocess.variables?.id === manualElement?.id;
+                  return (
+                    <li key={`${item}-${index}`} className="niche-list__item">
+                      <span>{item}</span>
+                      {renderMetaAdsSummary(manualElement)}
+                      <span
+                        className={`badge rounded-pill ${metaAdsStatus === "READY" ? "text-bg-success-subtle border border-success-subtle" : "text-bg-warning-subtle text-dark border border-warning-subtle"}`}
+                      >
+                        {metaAdsStatus === "READY"
+                          ? "Meta Ads pronto"
+                          : "Pendente Meta Ads"}
+                      </span>
+                      <div className="niche-list__actions">
+                        {manualElement ? (
+                          <button
+                            type="button"
+                            className="btn btn-outline-secondary btn-sm niche-list__action"
+                            onClick={() =>
+                              onRequestMetaAdsReprocess(manualElement.id)
+                            }
+                            disabled={
+                              updateNiche.isPending || isReprocessLoading
+                            }
+                            title="Solicitar novo processamento"
+                          >
+                            {isReprocessLoading ? (
+                              <span
+                                className="spinner-border spinner-border-sm"
+                                role="status"
+                                aria-hidden="true"
+                              />
+                            ) : (
+                              <RotateCcw size={16} />
+                            )}
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="btn btn-light btn-sm niche-list__action"
+                          onClick={() => onEditBehavior(index)}
+                          disabled={updateNiche.isPending || isReprocessLoading}
+                          title="Editar comportamento"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-outline-danger btn-sm niche-list__action"
+                          onClick={() => onRemoveBehavior(index)}
+                          disabled={updateNiche.isPending || isReprocessLoading}
+                          title="Remover comportamento"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <MetaAdsDetailsTable entries={behaviorMetaReady} />
+            <div className="d-flex justify-content-end">
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={onSaveBehaviors}
+                disabled={updateNiche.isPending}
+              >
+                {updateNiche.isPending ? (
+                  <span
+                    className="spinner-border spinner-border-sm"
+                    role="status"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Check size={16} />
+                )}
+                <span>Salvar comportamentos</span>
+              </button>
+            </div>
+          </div>
+        </article>
       </section>
       <section
         className="niche-section"
@@ -1647,7 +1805,10 @@ export default function NicheDetailPage() {
             {deliverableList.length} item(s)
           </span>
         </div>
-        <form className="niche-deliverables__form" onSubmit={onCreateDeliverable}>
+        <form
+          className="niche-deliverables__form"
+          onSubmit={onCreateDeliverable}
+        >
           <div className="row g-3">
             <div className="col-md-4">
               <label htmlFor="deliverable-title" className="form-label">
@@ -1735,14 +1896,21 @@ export default function NicheDetailPage() {
           </div>
         </form>
         {deliverableList.length === 0 ? (
-          <p className="niche-section__empty">Nenhum entregável cadastrado ainda.</p>
+          <p className="niche-section__empty">
+            Nenhum entregável cadastrado ainda.
+          </p>
         ) : (
           <div className="niche-section__grid niche-deliverables__grid">
             {deliverableList.map((deliverable) => (
-              <article key={deliverable.id} className="card niche-section__card">
+              <article
+                key={deliverable.id}
+                className="card niche-section__card"
+              >
                 <div className="card-body niche-deliverable-card__body">
                   <div className="niche-deliverable-card__head">
-                    <h3 className="niche-deliverable-card__title">{deliverable.title}</h3>
+                    <h3 className="niche-deliverable-card__title">
+                      {deliverable.title}
+                    </h3>
                     {deliverable.model ? (
                       <span className="badge text-bg-light text-dark">
                         {deliverable.model}
@@ -1776,19 +1944,27 @@ export default function NicheDetailPage() {
           </div>
         )}
       </section>
-      <section className="niche-section" aria-labelledby="niche-lead-portal-flows">
+      <section
+        className="niche-section"
+        aria-labelledby="niche-lead-portal-flows"
+      >
         <div className="niche-section__header">
           <div>
             <h2 className="niche-section__title" id="niche-lead-portal-flows">
               Formulários simples do nicho
             </h2>
             <p className="niche-section__subtitle">
-              Cadastre formulários sem imagem uma vez e reutilize em todos os experimentos relacionados.
+              Cadastre formulários sem imagem uma vez e reutilize em todos os
+              experimentos relacionados.
             </p>
           </div>
         </div>
         <div className="niche-section__body d-flex flex-column gap-3">
           <SimpleLeadPortalFormCard
+            marketNicheId={normalizedNicheId}
+            onCreated={refetchLeadPortalFlows}
+          />
+          <SimpleLeadPortalFormWithImagesCard
             marketNicheId={normalizedNicheId}
             onCreated={refetchLeadPortalFlows}
           />
@@ -1823,14 +1999,20 @@ export default function NicheDetailPage() {
                             {flow.approved ? "Aprovado" : "Pendente"}
                           </span>
                         </div>
-                        <p className="text-muted small mb-1">Slug: {flow.slug}</p>
+                        <p className="text-muted small mb-1">
+                          Slug: {flow.slug}
+                        </p>
                         <p className="text-muted small mb-1">
                           Atualizado em {formatDateTime(flow.updatedAt)}
                         </p>
                         {flow.publicUrl ? (
                           <p className="text-muted small mb-1">
                             URL pública:{" "}
-                            <a href={flow.publicUrl} target="_blank" rel="noopener noreferrer">
+                            <a
+                              href={flow.publicUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
                               {flow.publicUrl}
                             </a>
                           </p>
@@ -1903,7 +2085,9 @@ export default function NicheDetailPage() {
                     defaultModel={config.model ?? openAiModels?.[0]?.code}
                     requestedTotal={config.requested}
                     isLoadingModels={isLoadingModels}
-                    isFetchingStatus={isFetchingTargeting || (isFetching && !isLoading)}
+                    isFetchingStatus={
+                      isFetchingTargeting || (isFetching && !isLoading)
+                    }
                     ctaLabel={`Gerar ${config.title.toLowerCase()}`}
                     className="mt-auto"
                   />
@@ -1913,12 +2097,17 @@ export default function NicheDetailPage() {
           </div>
 
           {targetingConfigs.map((config) => (
-            <div key={`${config.type}-board`} id={config.anchor} className="mb-5">
+            <div
+              key={`${config.type}-board`}
+              id={config.anchor}
+              className="mb-5"
+            >
               <div className="d-flex align-items-center justify-content-between mb-3">
                 <div>
                   <h3 className="h5 mb-1">{config.title}</h3>
                   <p className="text-body-secondary small mb-0">
-                    {targetingByType[config.type].length} elementos cadastrados para o nicho.
+                    {targetingByType[config.type].length} elementos cadastrados
+                    para o nicho.
                   </p>
                 </div>
                 <button
@@ -1931,7 +2120,8 @@ export default function NicheDetailPage() {
               </div>
               {targetingByType[config.type].length === 0 ? (
                 <p className="niche-section__empty">
-                  Nenhum elemento de {config.title.toLowerCase()} foi gerado ainda.
+                  Nenhum elemento de {config.title.toLowerCase()} foi gerado
+                  ainda.
                 </p>
               ) : (
                 <div className="row row-cols-1 row-cols-md-2 g-4">
@@ -1947,7 +2137,6 @@ export default function NicheDetailPage() {
         </div>
       </section>
       <section className="niche-section" aria-labelledby="niche-hypotheses">
-
         <div className="niche-section__header">
           <div>
             <h2 className="niche-section__title" id="niche-hypotheses">
@@ -2062,7 +2251,9 @@ export default function NicheDetailPage() {
               <select
                 id="hypothesis-detailed-description"
                 className={`form-select ${
-                  hypothesisRequestErrors.detailedDescriptionId ? "is-invalid" : ""
+                  hypothesisRequestErrors.detailedDescriptionId
+                    ? "is-invalid"
+                    : ""
                 }`}
                 title="Descrição detalhada ativa para orientar as hipóteses geradas pelo Worker IA"
                 disabled={requestHypotheses.isPending}
@@ -2118,7 +2309,11 @@ export default function NicheDetailPage() {
             aria-expanded={isManualHypothesisFormVisible}
             aria-controls="niche-manual-hypothesis-form"
           >
-            {isManualHypothesisFormVisible ? <Minus size={16} /> : <Plus size={16} />}
+            {isManualHypothesisFormVisible ? (
+              <Minus size={16} />
+            ) : (
+              <Plus size={16} />
+            )}
             <span>
               {isManualHypothesisFormVisible
                 ? "Fechar formulário manual"
@@ -2161,17 +2356,23 @@ export default function NicheDetailPage() {
                 <div key={h.id} className="card h-100 niche-section__card">
                   <div className="card-body niche-hypothesis-card__body">
                     <div className="niche-hypothesis-card__head">
-                      <h3 className="niche-hypothesis-card__title">{h.title}</h3>
+                      <h3 className="niche-hypothesis-card__title">
+                        {h.title}
+                      </h3>
                       <div className="d-flex flex-column align-items-end gap-1">
                         <span className="niche-hypothesis-card__counter">
                           {experimentLabel}
                         </span>
                         <div className="d-flex gap-2 flex-wrap justify-content-end">
                           {h.model && (
-                            <span className="badge bg-light text-dark">Modelo: {h.model}</span>
+                            <span className="badge bg-light text-dark">
+                              Modelo: {h.model}
+                            </span>
                           )}
                           {costLabel && (
-                            <span className="badge bg-light text-dark">Custo: {costLabel}</span>
+                            <span className="badge bg-light text-dark">
+                              Custo: {costLabel}
+                            </span>
                           )}
                         </div>
                       </div>

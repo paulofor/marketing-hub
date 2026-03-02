@@ -5,6 +5,7 @@ import {
   useCreateLeadPortalFlow,
 } from "../../api/leadPortal/useCreateLeadPortalFlow";
 import { useLeadPortalSimpleFormStyles } from "../../api/leadPortal/useLeadPortalSimpleFormStyles";
+import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 
 interface SimpleLeadPortalFormCardProps {
   marketNicheId?: number;
@@ -90,6 +91,15 @@ export default function SimpleLeadPortalFormCard({
   const [bulletItem3, setBulletItem3] = useState(
     "Acompanhamento e ajustes semanais",
   );
+  const [card1ImageUrl, setCard1ImageUrl] = useState("");
+  const [card2ImageUrl, setCard2ImageUrl] = useState("");
+  const [card3ImageUrl, setCard3ImageUrl] = useState("");
+  const [card1OverlayText, setCard1OverlayText] = useState("");
+  const [card2OverlayText, setCard2OverlayText] = useState("");
+  const [card3OverlayText, setCard3OverlayText] = useState("");
+  const [uploadingCardImage, setUploadingCardImage] = useState<1 | 2 | 3 | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!simpleFormStyles || simpleFormStyles.length === 0) {
@@ -122,6 +132,12 @@ export default function SimpleLeadPortalFormCard({
         bulletItem1,
         bulletItem2,
         bulletItem3,
+        card1ImageUrl,
+        card2ImageUrl,
+        card3ImageUrl,
+        card1OverlayText,
+        card2OverlayText,
+        card3OverlayText,
       }),
     [
       workQuestionTitle,
@@ -143,6 +159,12 @@ export default function SimpleLeadPortalFormCard({
       bulletItem1,
       bulletItem2,
       bulletItem3,
+      card1ImageUrl,
+      card2ImageUrl,
+      card3ImageUrl,
+      card1OverlayText,
+      card2OverlayText,
+      card3OverlayText,
     ],
   );
 
@@ -184,12 +206,15 @@ export default function SimpleLeadPortalFormCard({
       !bulletSectionTitle.trim() ||
       !bulletItem1.trim() ||
       !bulletItem2.trim() ||
-      !bulletItem3.trim()
+      !bulletItem3.trim() ||
+      !card1ImageUrl.trim() ||
+      !card2ImageUrl.trim() ||
+      !card3ImageUrl.trim()
     ) {
       setFeedback({
         variant: "error",
         message:
-          "Preencha os títulos variáveis do template antes de criar o formulário.",
+          "Preencha os títulos variáveis e faça o upload das 3 imagens dos subcards antes de criar o formulário.",
       });
       return;
     }
@@ -246,6 +271,80 @@ export default function SimpleLeadPortalFormCard({
           "Não foi possível criar o fluxo simples.")
         : "Não foi possível criar o fluxo simples.";
       setFeedback({ variant: "error", message });
+    }
+  };
+
+  const readImageDimensions = (
+    file: File,
+  ): Promise<{ width: number; height: number }> =>
+    new Promise((resolve, reject) => {
+      const image = new Image();
+      const objectUrl = URL.createObjectURL(file);
+
+      image.onload = () => {
+        resolve({ width: image.width, height: image.height });
+        URL.revokeObjectURL(objectUrl);
+      };
+
+      image.onerror = () => {
+        reject(new Error("Não foi possível ler o arquivo de imagem."));
+        URL.revokeObjectURL(objectUrl);
+      };
+
+      image.src = objectUrl;
+    });
+
+  const uploadSubcardImage = async (index: 1 | 2 | 3, file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setFeedback({
+        variant: "error",
+        message: "Selecione um arquivo de imagem válido para o subcard.",
+      });
+      return;
+    }
+
+    try {
+      const { width } = await readImageDimensions(file);
+      if (width < 600) {
+        setFeedback({
+          variant: "error",
+          message:
+            "A imagem precisa ter pelo menos 600px de largura para manter a qualidade dos subcards.",
+        });
+        return;
+      }
+
+      setUploadingCardImage(index);
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("prompt", `lead-portal-subcard-${index}`);
+      formData.append("model", "manual");
+
+      const response = await fetch("/api/assets", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Falha ao enviar imagem");
+      }
+
+      const imageUrl = await response.text();
+      if (index === 1) setCard1ImageUrl(imageUrl);
+      if (index === 2) setCard2ImageUrl(imageUrl);
+      if (index === 3) setCard3ImageUrl(imageUrl);
+
+      setFeedback({
+        variant: "success",
+        message: `Imagem ${index} enviada com sucesso.`,
+      });
+    } catch {
+      setFeedback({
+        variant: "error",
+        message: `Não foi possível enviar a imagem ${index}. Tente novamente.`,
+      });
+    } finally {
+      setUploadingCardImage(null);
     }
   };
 
@@ -408,6 +507,115 @@ export default function SimpleLeadPortalFormCard({
                   />
                 </div>
               </div>
+            </div>
+
+            <div className="border rounded p-3 bg-light">
+              <h6 className="mb-3">Configuração de imagens dos subcards</h6>
+              <div className="row g-3">
+                <div className="col-md-6">
+                  <label className="form-label">Imagem do subcard 1 *</label>
+                  <input
+                    type="file"
+                    className="form-control"
+                    accept="image/*"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (!file) return;
+                      void uploadSubcardImage(1, file);
+                    }}
+                    disabled={uploadingCardImage != null}
+                  />
+                  {card1ImageUrl ? (
+                    <img
+                      src={resolveAssetUrl(card1ImageUrl)}
+                      alt="Prévia da imagem do subcard 1"
+                      className="img-fluid rounded border mt-2"
+                      style={{ maxHeight: 120, objectFit: "cover" }}
+                    />
+                  ) : null}
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Texto 1 (opcional)</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={card1OverlayText}
+                    onChange={(event) => setCard1OverlayText(event.target.value)}
+                  />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Imagem do subcard 2 *</label>
+                  <input
+                    type="file"
+                    className="form-control"
+                    accept="image/*"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (!file) return;
+                      void uploadSubcardImage(2, file);
+                    }}
+                    disabled={uploadingCardImage != null}
+                  />
+                  {card2ImageUrl ? (
+                    <img
+                      src={resolveAssetUrl(card2ImageUrl)}
+                      alt="Prévia da imagem do subcard 2"
+                      className="img-fluid rounded border mt-2"
+                      style={{ maxHeight: 120, objectFit: "cover" }}
+                    />
+                  ) : null}
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Texto 2 (opcional)</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={card2OverlayText}
+                    onChange={(event) => setCard2OverlayText(event.target.value)}
+                  />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Imagem do subcard 3 *</label>
+                  <input
+                    type="file"
+                    className="form-control"
+                    accept="image/*"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (!file) return;
+                      void uploadSubcardImage(3, file);
+                    }}
+                    disabled={uploadingCardImage != null}
+                  />
+                  {card3ImageUrl ? (
+                    <img
+                      src={resolveAssetUrl(card3ImageUrl)}
+                      alt="Prévia da imagem do subcard 3"
+                      className="img-fluid rounded border mt-2"
+                      style={{ maxHeight: 120, objectFit: "cover" }}
+                    />
+                  ) : null}
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Texto 3 (opcional)</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={card3OverlayText}
+                    onChange={(event) => setCard3OverlayText(event.target.value)}
+                  />
+                </div>
+              </div>
+              {uploadingCardImage ? (
+                <p className="form-text mb-0 mt-2">
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    role="status"
+                    aria-hidden="true"
+                  />
+                  Enviando imagem {uploadingCardImage}...
+                </p>
+              ) : null}
             </div>
 
             <div className="border rounded p-3 bg-light">
@@ -578,9 +786,20 @@ export default function SimpleLeadPortalFormCard({
                 type="button"
                 className="btn btn-primary"
                 onClick={handleCreateSimpleFlow}
-                disabled={createFlow.isPending}
+                disabled={createFlow.isPending || uploadingCardImage != null}
               >
-                {createFlow.isPending ? "Criando..." : "Criar formulário"}
+                {createFlow.isPending ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      role="status"
+                      aria-hidden="true"
+                    />
+                    Criando...
+                  </>
+                ) : (
+                  "Criar formulário"
+                )}
               </button>
             </div>
           </div>
@@ -619,6 +838,12 @@ interface SimpleFlowTemplateConfig {
   bulletItem1: string;
   bulletItem2: string;
   bulletItem3: string;
+  card1ImageUrl: string;
+  card2ImageUrl: string;
+  card3ImageUrl: string;
+  card1OverlayText: string;
+  card2OverlayText: string;
+  card3OverlayText: string;
 }
 
 function createSimpleFormTemplateQuestions({
@@ -641,6 +866,12 @@ function createSimpleFormTemplateQuestions({
   bulletItem1,
   bulletItem2,
   bulletItem3,
+  card1ImageUrl,
+  card2ImageUrl,
+  card3ImageUrl,
+  card1OverlayText,
+  card2OverlayText,
+  card3OverlayText,
 }: SimpleFlowTemplateConfig): CreateLeadPortalFlowQuestionRequest[] {
   const parsedOptions = optionsQuestionValues
     .split("\n")
@@ -693,6 +924,22 @@ function createSimpleFormTemplateQuestions({
       required: true,
     },
     {
+      title: card1ImageUrl.trim(),
+      dataKey: "exemplo_real_card_1_imagem_url",
+      type: "TEXT",
+      required: true,
+    },
+    ...(card1OverlayText.trim()
+      ? [
+          {
+            title: card1OverlayText.trim(),
+            dataKey: "exemplo_real_card_1_texto_sobreposto",
+            type: "TEXT" as const,
+            required: false,
+          },
+        ]
+      : []),
+    {
       title:
         realExampleCard1Subtitle.trim() ||
         "Rotina simples para sair do sedentarismo em 30 dias.",
@@ -707,6 +954,22 @@ function createSimpleFormTemplateQuestions({
       required: true,
     },
     {
+      title: card2ImageUrl.trim(),
+      dataKey: "exemplo_real_card_2_imagem_url",
+      type: "TEXT",
+      required: true,
+    },
+    ...(card2OverlayText.trim()
+      ? [
+          {
+            title: card2OverlayText.trim(),
+            dataKey: "exemplo_real_card_2_texto_sobreposto",
+            type: "TEXT" as const,
+            required: false,
+          },
+        ]
+      : []),
+    {
       title:
         realExampleCard2Subtitle.trim() ||
         "Ajustes de técnica e progressão para treinar com segurança.",
@@ -720,6 +983,22 @@ function createSimpleFormTemplateQuestions({
       type: "TEXT",
       required: true,
     },
+    {
+      title: card3ImageUrl.trim(),
+      dataKey: "exemplo_real_card_3_imagem_url",
+      type: "TEXT",
+      required: true,
+    },
+    ...(card3OverlayText.trim()
+      ? [
+          {
+            title: card3OverlayText.trim(),
+            dataKey: "exemplo_real_card_3_texto_sobreposto",
+            type: "TEXT" as const,
+            required: false,
+          },
+        ]
+      : []),
     {
       title:
         realExampleCard3Subtitle.trim() ||

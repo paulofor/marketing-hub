@@ -27,7 +27,6 @@ import { useDeliverablesByNiche } from "../../api/deliverable/useDeliverablesByN
 import { useLeadPortalFlows } from "../../api/leadPortal/useLeadPortalFlows";
 import { useCreateDeliverable } from "../../api/deliverable/useCreateDeliverable";
 import SimpleLeadPortalFormCard from "../../components/leadPortal/SimpleLeadPortalFormCard";
-import SimpleLeadPortalFormWithImagesCard from "../../components/leadPortal/SimpleLeadPortalFormWithImagesCard";
 import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
 import { useDifferentiatedTechnologies } from "../../api/differentiatedTechnology/useDifferentiatedTechnologies";
 import { useInformationSourcesByNiche } from "../../api/informationSource/useInformationSourcesByNiche";
@@ -1961,10 +1960,6 @@ export default function NicheDetailPage() {
         </div>
         <div className="niche-section__body d-flex flex-column gap-3">
           <SimpleLeadPortalFormCard
-            marketNicheId={normalizedNicheId}
-            onCreated={refetchLeadPortalFlows}
-          />
-          <SimpleLeadPortalFormWithImagesCard
             marketNicheId={normalizedNicheId}
             onCreated={refetchLeadPortalFlows}
           />

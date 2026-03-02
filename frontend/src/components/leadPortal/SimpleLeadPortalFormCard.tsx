@@ -47,6 +47,45 @@ export default function SimpleLeadPortalFormCard({
   const [otherOptionsTitle, setOtherOptionsTitle] = useState(
     "Se nenhuma opção anterior representar seu cenário, descreva aqui",
   );
+  const [headerTitleQuestion, setHeaderTitleQuestion] = useState(
+    "Título do cabeçalho",
+  );
+  const [headerSubtitleQuestion, setHeaderSubtitleQuestion] = useState(
+    "Subtítulo do cabeçalho",
+  );
+  const [headerPromiseQuestion, setHeaderPromiseQuestion] = useState(
+    "Promessa principal do cabeçalho",
+  );
+  const [realExamplesTitleQuestion, setRealExamplesTitleQuestion] = useState(
+    "Título da seção de exemplos reais",
+  );
+  const [realExamplesSubtitleQuestion, setRealExamplesSubtitleQuestion] = useState(
+    "Subtítulo da seção de exemplos reais",
+  );
+  const [exampleCardOneTitleQuestion, setExampleCardOneTitleQuestion] = useState(
+    "Título do subcard 1 da seção de exemplos reais",
+  );
+  const [exampleCardOneSubtitleQuestion, setExampleCardOneSubtitleQuestion] = useState(
+    "Subtítulo do subcard 1 da seção de exemplos reais",
+  );
+  const [exampleCardTwoTitleQuestion, setExampleCardTwoTitleQuestion] = useState(
+    "Título do subcard 2 da seção de exemplos reais",
+  );
+  const [exampleCardTwoSubtitleQuestion, setExampleCardTwoSubtitleQuestion] = useState(
+    "Subtítulo do subcard 2 da seção de exemplos reais",
+  );
+  const [exampleCardThreeTitleQuestion, setExampleCardThreeTitleQuestion] = useState(
+    "Título do subcard 3 da seção de exemplos reais",
+  );
+  const [exampleCardThreeSubtitleQuestion, setExampleCardThreeSubtitleQuestion] = useState(
+    "Subtítulo do subcard 3 da seção de exemplos reais",
+  );
+  const [bulletsSectionTitleQuestion, setBulletsSectionTitleQuestion] = useState(
+    "Título da seção de bullets",
+  );
+  const [bulletsItemsQuestion, setBulletsItemsQuestion] = useState(
+    "Itens da seção de bullets (um por linha)",
+  );
 
   useEffect(() => {
     if (!simpleFormStyles || simpleFormStyles.length === 0) {
@@ -64,12 +103,38 @@ export default function SimpleLeadPortalFormCard({
         optionsQuestionTitle,
         optionsQuestionValues,
         otherOptionsTitle,
+        headerTitleQuestion,
+        headerSubtitleQuestion,
+        headerPromiseQuestion,
+        realExamplesTitleQuestion,
+        realExamplesSubtitleQuestion,
+        exampleCardOneTitleQuestion,
+        exampleCardOneSubtitleQuestion,
+        exampleCardTwoTitleQuestion,
+        exampleCardTwoSubtitleQuestion,
+        exampleCardThreeTitleQuestion,
+        exampleCardThreeSubtitleQuestion,
+        bulletsSectionTitleQuestion,
+        bulletsItemsQuestion,
       }),
     [
       workQuestionTitle,
       optionsQuestionTitle,
       optionsQuestionValues,
       otherOptionsTitle,
+      headerTitleQuestion,
+      headerSubtitleQuestion,
+      headerPromiseQuestion,
+      realExamplesTitleQuestion,
+      realExamplesSubtitleQuestion,
+      exampleCardOneTitleQuestion,
+      exampleCardOneSubtitleQuestion,
+      exampleCardTwoTitleQuestion,
+      exampleCardTwoSubtitleQuestion,
+      exampleCardThreeTitleQuestion,
+      exampleCardThreeSubtitleQuestion,
+      bulletsSectionTitleQuestion,
+      bulletsItemsQuestion,
     ],
   );
 
@@ -99,7 +164,20 @@ export default function SimpleLeadPortalFormCard({
     if (
       !workQuestionTitle.trim() ||
       !optionsQuestionTitle.trim() ||
-      !otherOptionsTitle.trim()
+      !otherOptionsTitle.trim() ||
+      !headerTitleQuestion.trim() ||
+      !headerSubtitleQuestion.trim() ||
+      !headerPromiseQuestion.trim() ||
+      !realExamplesTitleQuestion.trim() ||
+      !realExamplesSubtitleQuestion.trim() ||
+      !exampleCardOneTitleQuestion.trim() ||
+      !exampleCardOneSubtitleQuestion.trim() ||
+      !exampleCardTwoTitleQuestion.trim() ||
+      !exampleCardTwoSubtitleQuestion.trim() ||
+      !exampleCardThreeTitleQuestion.trim() ||
+      !exampleCardThreeSubtitleQuestion.trim() ||
+      !bulletsSectionTitleQuestion.trim() ||
+      !bulletsItemsQuestion.trim()
     ) {
       setFeedback({
         variant: "error",
@@ -310,6 +388,141 @@ export default function SimpleLeadPortalFormCard({
                     }
                   />
                 </div>
+                <div className="col-12">
+                  <label className="form-label">Cabeçalho: título *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={headerTitleQuestion}
+                    onChange={(event) => setHeaderTitleQuestion(event.target.value)}
+                  />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">Cabeçalho: subtítulo *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={headerSubtitleQuestion}
+                    onChange={(event) => setHeaderSubtitleQuestion(event.target.value)}
+                  />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">Cabeçalho: promessa *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={headerPromiseQuestion}
+                    onChange={(event) => setHeaderPromiseQuestion(event.target.value)}
+                  />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">Exemplos reais: título *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={realExamplesTitleQuestion}
+                    onChange={(event) =>
+                      setRealExamplesTitleQuestion(event.target.value)
+                    }
+                  />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">Exemplos reais: subtítulo *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={realExamplesSubtitleQuestion}
+                    onChange={(event) =>
+                      setRealExamplesSubtitleQuestion(event.target.value)
+                    }
+                  />
+                </div>
+                <div className="col-12 col-lg-6">
+                  <label className="form-label">Subcard 1: título *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={exampleCardOneTitleQuestion}
+                    onChange={(event) =>
+                      setExampleCardOneTitleQuestion(event.target.value)
+                    }
+                  />
+                </div>
+                <div className="col-12 col-lg-6">
+                  <label className="form-label">Subcard 1: subtítulo *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={exampleCardOneSubtitleQuestion}
+                    onChange={(event) =>
+                      setExampleCardOneSubtitleQuestion(event.target.value)
+                    }
+                  />
+                </div>
+                <div className="col-12 col-lg-6">
+                  <label className="form-label">Subcard 2: título *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={exampleCardTwoTitleQuestion}
+                    onChange={(event) =>
+                      setExampleCardTwoTitleQuestion(event.target.value)
+                    }
+                  />
+                </div>
+                <div className="col-12 col-lg-6">
+                  <label className="form-label">Subcard 2: subtítulo *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={exampleCardTwoSubtitleQuestion}
+                    onChange={(event) =>
+                      setExampleCardTwoSubtitleQuestion(event.target.value)
+                    }
+                  />
+                </div>
+                <div className="col-12 col-lg-6">
+                  <label className="form-label">Subcard 3: título *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={exampleCardThreeTitleQuestion}
+                    onChange={(event) =>
+                      setExampleCardThreeTitleQuestion(event.target.value)
+                    }
+                  />
+                </div>
+                <div className="col-12 col-lg-6">
+                  <label className="form-label">Subcard 3: subtítulo *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={exampleCardThreeSubtitleQuestion}
+                    onChange={(event) =>
+                      setExampleCardThreeSubtitleQuestion(event.target.value)
+                    }
+                  />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">Bullets: título *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={bulletsSectionTitleQuestion}
+                    onChange={(event) =>
+                      setBulletsSectionTitleQuestion(event.target.value)
+                    }
+                  />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">Bullets: itens (um por linha) *</label>
+                  <textarea
+                    className="form-control"
+                    rows={4}
+                    value={bulletsItemsQuestion}
+                    onChange={(event) => setBulletsItemsQuestion(event.target.value)}
+                  />
+                </div>
               </div>
             </div>
 
@@ -344,6 +557,19 @@ interface SimpleFlowTemplateConfig {
   optionsQuestionTitle: string;
   optionsQuestionValues: string;
   otherOptionsTitle: string;
+  headerTitleQuestion: string;
+  headerSubtitleQuestion: string;
+  headerPromiseQuestion: string;
+  realExamplesTitleQuestion: string;
+  realExamplesSubtitleQuestion: string;
+  exampleCardOneTitleQuestion: string;
+  exampleCardOneSubtitleQuestion: string;
+  exampleCardTwoTitleQuestion: string;
+  exampleCardTwoSubtitleQuestion: string;
+  exampleCardThreeTitleQuestion: string;
+  exampleCardThreeSubtitleQuestion: string;
+  bulletsSectionTitleQuestion: string;
+  bulletsItemsQuestion: string;
 }
 
 function createSimpleFormTemplateQuestions({
@@ -351,10 +577,27 @@ function createSimpleFormTemplateQuestions({
   optionsQuestionTitle,
   optionsQuestionValues,
   otherOptionsTitle,
+  headerTitleQuestion,
+  headerSubtitleQuestion,
+  headerPromiseQuestion,
+  realExamplesTitleQuestion,
+  realExamplesSubtitleQuestion,
+  exampleCardOneTitleQuestion,
+  exampleCardOneSubtitleQuestion,
+  exampleCardTwoTitleQuestion,
+  exampleCardTwoSubtitleQuestion,
+  exampleCardThreeTitleQuestion,
+  exampleCardThreeSubtitleQuestion,
+  bulletsSectionTitleQuestion,
+  bulletsItemsQuestion,
 }: SimpleFlowTemplateConfig): CreateLeadPortalFlowQuestionRequest[] {
   const parsedOptions = optionsQuestionValues
     .split("\n")
     .map((option) => option.trim())
+    .filter(Boolean);
+  const parsedBulletItems = bulletsItemsQuestion
+    .split("\n")
+    .map((item) => item.trim())
     .filter(Boolean);
 
   return [
@@ -423,6 +666,101 @@ function createSimpleFormTemplateQuestions({
       dataKey: "outras_opcoes",
       type: "TEXTAREA",
       required: false,
+    },
+    {
+      title: headerTitleQuestion.trim() || "Título do cabeçalho",
+      dataKey: "cabecalho_titulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title: headerSubtitleQuestion.trim() || "Subtítulo do cabeçalho",
+      dataKey: "cabecalho_subtitulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title: headerPromiseQuestion.trim() || "Promessa principal do cabeçalho",
+      dataKey: "cabecalho_promessa",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title:
+        realExamplesTitleQuestion.trim() ||
+        "Título da seção de exemplos reais",
+      dataKey: "exemplos_reais_titulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title:
+        realExamplesSubtitleQuestion.trim() ||
+        "Subtítulo da seção de exemplos reais",
+      dataKey: "exemplos_reais_subtitulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title:
+        exampleCardOneTitleQuestion.trim() ||
+        "Título do subcard 1 da seção de exemplos reais",
+      dataKey: "exemplos_reais_subcard_1_titulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title:
+        exampleCardOneSubtitleQuestion.trim() ||
+        "Subtítulo do subcard 1 da seção de exemplos reais",
+      dataKey: "exemplos_reais_subcard_1_subtitulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title:
+        exampleCardTwoTitleQuestion.trim() ||
+        "Título do subcard 2 da seção de exemplos reais",
+      dataKey: "exemplos_reais_subcard_2_titulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title:
+        exampleCardTwoSubtitleQuestion.trim() ||
+        "Subtítulo do subcard 2 da seção de exemplos reais",
+      dataKey: "exemplos_reais_subcard_2_subtitulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title:
+        exampleCardThreeTitleQuestion.trim() ||
+        "Título do subcard 3 da seção de exemplos reais",
+      dataKey: "exemplos_reais_subcard_3_titulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title:
+        exampleCardThreeSubtitleQuestion.trim() ||
+        "Subtítulo do subcard 3 da seção de exemplos reais",
+      dataKey: "exemplos_reais_subcard_3_subtitulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title: bulletsSectionTitleQuestion.trim() || "Título da seção de bullets",
+      dataKey: "bullets_titulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title: bulletsItemsQuestion.trim() || "Itens da seção de bullets",
+      dataKey: "bullets_itens",
+      type: "MULTIPLE_CHOICE",
+      required: true,
+      options: parsedBulletItems.length > 0 ? parsedBulletItems : ["Item 1"],
     },
   ];
 }

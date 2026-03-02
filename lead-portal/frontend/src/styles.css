@@ -252,6 +252,14 @@ form.flow-form {
   padding: 0;
 }
 
+.flow-form-card {
+  background: var(--flow-card-background, #ffffff);
+  border: 1px solid var(--flow-card-border, rgba(99, 102, 241, 0.08));
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: var(--flow-card-shadow, 0 15px 40px rgba(15, 23, 42, 0.12));
+}
+
 .flow-question-list {
   list-style: none;
   padding: 0;
@@ -262,11 +270,7 @@ form.flow-form {
 }
 
 .flow-question-item {
-  background: var(--flow-card-background, #ffffff);
-  border: 1px solid var(--flow-card-border, rgba(99, 102, 241, 0.08));
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: var(--flow-card-shadow, 0 15px 40px rgba(15, 23, 42, 0.12));
+  padding: 0;
 }
 
 .flow-question-label {
@@ -861,22 +865,6 @@ form.flow-form {
 .flow-proof-image {
   border-radius: 12px;
   min-height: 120px;
-  display: flex;
-  align-items: flex-end;
-  padding: 0.75rem;
-}
-
-.flow-proof-image span {
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(2px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  color: #fff;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 700;
-  border-radius: 999px;
-  padding: 0.25rem 0.65rem;
 }
 
 .flow-confidence-section ul {
@@ -894,3 +882,12 @@ form.flow-form {
     border-radius: 18px;
   }
 }
+
+
+@media (max-width: 720px) {
+  .flow-form-card {
+    padding: 1.1rem;
+    border-radius: 18px;
+  }
+}
+

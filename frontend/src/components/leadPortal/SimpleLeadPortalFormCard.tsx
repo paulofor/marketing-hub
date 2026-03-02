@@ -47,6 +47,49 @@ export default function SimpleLeadPortalFormCard({
   const [otherOptionsTitle, setOtherOptionsTitle] = useState(
     "Se nenhuma opção anterior representar seu cenário, descreva aqui",
   );
+  const [headerTitle, setHeaderTitle] = useState(
+    "Transforme o seu treino com acompanhamento personalizado",
+  );
+  const [headerSubtitle, setHeaderSubtitle] = useState(
+    "Responda em menos de 2 minutos e receba recomendações sob medida.",
+  );
+  const [headerPromise, setHeaderPromise] = useState(
+    "Plano prático para destravar resultados nas próximas semanas.",
+  );
+  const [realExamplesTitle, setRealExamplesTitle] = useState(
+    "Exemplos reais de evolução",
+  );
+  const [realExamplesSubtitle, setRealExamplesSubtitle] = useState(
+    "Veja como alunas com rotina parecida conseguiram evoluir.",
+  );
+  const [realExampleCard1Title, setRealExampleCard1Title] = useState(
+    "Mais energia no dia a dia",
+  );
+  const [realExampleCard1Subtitle, setRealExampleCard1Subtitle] = useState(
+    "Rotina simples para sair do sedentarismo em 30 dias.",
+  );
+  const [realExampleCard2Title, setRealExampleCard2Title] =
+    useState("Treino sem dor");
+  const [realExampleCard2Subtitle, setRealExampleCard2Subtitle] = useState(
+    "Ajustes de técnica e progressão para treinar com segurança.",
+  );
+  const [realExampleCard3Title, setRealExampleCard3Title] = useState(
+    "Resultado sustentável",
+  );
+  const [realExampleCard3Subtitle, setRealExampleCard3Subtitle] = useState(
+    "Estratégia para manter constância mesmo com agenda corrida.",
+  );
+  const [bulletSectionTitle, setBulletSectionTitle] =
+    useState("O que você recebe");
+  const [bulletItem1, setBulletItem1] = useState(
+    "Diagnóstico inicial personalizado",
+  );
+  const [bulletItem2, setBulletItem2] = useState(
+    "Plano com foco no seu objetivo",
+  );
+  const [bulletItem3, setBulletItem3] = useState(
+    "Acompanhamento e ajustes semanais",
+  );
 
   useEffect(() => {
     if (!simpleFormStyles || simpleFormStyles.length === 0) {
@@ -64,12 +107,42 @@ export default function SimpleLeadPortalFormCard({
         optionsQuestionTitle,
         optionsQuestionValues,
         otherOptionsTitle,
+        headerTitle,
+        headerSubtitle,
+        headerPromise,
+        realExamplesTitle,
+        realExamplesSubtitle,
+        realExampleCard1Title,
+        realExampleCard1Subtitle,
+        realExampleCard2Title,
+        realExampleCard2Subtitle,
+        realExampleCard3Title,
+        realExampleCard3Subtitle,
+        bulletSectionTitle,
+        bulletItem1,
+        bulletItem2,
+        bulletItem3,
       }),
     [
       workQuestionTitle,
       optionsQuestionTitle,
       optionsQuestionValues,
       otherOptionsTitle,
+      headerTitle,
+      headerSubtitle,
+      headerPromise,
+      realExamplesTitle,
+      realExamplesSubtitle,
+      realExampleCard1Title,
+      realExampleCard1Subtitle,
+      realExampleCard2Title,
+      realExampleCard2Subtitle,
+      realExampleCard3Title,
+      realExampleCard3Subtitle,
+      bulletSectionTitle,
+      bulletItem1,
+      bulletItem2,
+      bulletItem3,
     ],
   );
 
@@ -79,10 +152,7 @@ export default function SimpleLeadPortalFormCard({
       setNewFlowSlug("");
       return;
     }
-    if (
-      !newFlowSlug ||
-      newFlowSlug === "formulario-simples-personal-trainer"
-    ) {
+    if (!newFlowSlug || newFlowSlug === "formulario-simples-personal-trainer") {
       setNewFlowSlug(toSlug(value));
     }
   };
@@ -99,7 +169,22 @@ export default function SimpleLeadPortalFormCard({
     if (
       !workQuestionTitle.trim() ||
       !optionsQuestionTitle.trim() ||
-      !otherOptionsTitle.trim()
+      !otherOptionsTitle.trim() ||
+      !headerTitle.trim() ||
+      !headerSubtitle.trim() ||
+      !headerPromise.trim() ||
+      !realExamplesTitle.trim() ||
+      !realExamplesSubtitle.trim() ||
+      !realExampleCard1Title.trim() ||
+      !realExampleCard1Subtitle.trim() ||
+      !realExampleCard2Title.trim() ||
+      !realExampleCard2Subtitle.trim() ||
+      !realExampleCard3Title.trim() ||
+      !realExampleCard3Subtitle.trim() ||
+      !bulletSectionTitle.trim() ||
+      !bulletItem1.trim() ||
+      !bulletItem2.trim() ||
+      !bulletItem3.trim()
     ) {
       setFeedback({
         variant: "error",
@@ -117,7 +202,8 @@ export default function SimpleLeadPortalFormCard({
     ) {
       setFeedback({
         variant: "error",
-        message: "Informe ao menos uma opção para a pergunta de múltipla escolha.",
+        message:
+          "Informe ao menos uma opção para a pergunta de múltipla escolha.",
       });
       return;
     }
@@ -156,7 +242,8 @@ export default function SimpleLeadPortalFormCard({
       onCreated?.();
     } catch (error) {
       const message = axios.isAxiosError(error)
-        ? error.response?.data?.message ?? "Não foi possível criar o fluxo simples."
+        ? (error.response?.data?.message ??
+          "Não foi possível criar o fluxo simples.")
         : "Não foi possível criar o fluxo simples.";
       setFeedback({ variant: "error", message });
     }
@@ -213,7 +300,9 @@ export default function SimpleLeadPortalFormCard({
                   type="text"
                   className="form-control"
                   value={newFlowSlug}
-                  onChange={(event) => setNewFlowSlug(toSlug(event.target.value))}
+                  onChange={(event) =>
+                    setNewFlowSlug(toSlug(event.target.value))
+                  }
                 />
               </div>
               <div className="col-12">
@@ -222,13 +311,17 @@ export default function SimpleLeadPortalFormCard({
                   className="form-control"
                   rows={2}
                   value={newFlowDescription}
-                  onChange={(event) => setNewFlowDescription(event.target.value)}
+                  onChange={(event) =>
+                    setNewFlowDescription(event.target.value)
+                  }
                 />
               </div>
             </div>
 
             <div className="mt-3">
-              <label className="form-label">Estilo visual do formulário *</label>
+              <label className="form-label">
+                Estilo visual do formulário *
+              </label>
               {isLoadingStyles ? (
                 <p className="text-muted small mb-0">Carregando estilos...</p>
               ) : simpleFormStyles && simpleFormStyles.length > 0 ? (
@@ -249,13 +342,13 @@ export default function SimpleLeadPortalFormCard({
                 </select>
               ) : (
                 <p className="text-danger small mb-0">
-                  Cadastre um estilo em "Campanhas &gt; Estilos do formulário simples"
-                  antes de gerar novos fluxos.
+                  Cadastre um estilo em "Campanhas &gt; Estilos do formulário
+                  simples" antes de gerar novos fluxos.
                 </p>
               )}
               <p className="form-text">
-                Cada estilo define cores, gradientes e imagens decorativas que serão
-                usadas na página pública do formulário.
+                Cada estilo define cores, gradientes e imagens decorativas que
+                serão usadas na página pública do formulário.
               </p>
             </div>
 
@@ -270,11 +363,15 @@ export default function SimpleLeadPortalFormCard({
                     type="text"
                     className="form-control"
                     value={workQuestionTitle}
-                    onChange={(event) => setWorkQuestionTitle(event.target.value)}
+                    onChange={(event) =>
+                      setWorkQuestionTitle(event.target.value)
+                    }
                   />
                 </div>
                 <div className="col-12">
-                  <label className="form-label">Pergunta 5 (lista de opções) *</label>
+                  <label className="form-label">
+                    Pergunta 5 (lista de opções) *
+                  </label>
                   <input
                     type="text"
                     className="form-control"
@@ -313,6 +410,169 @@ export default function SimpleLeadPortalFormCard({
               </div>
             </div>
 
+            <div className="border rounded p-3 bg-light">
+              <h6 className="mb-3">Textos variáveis da landing</h6>
+              <div className="row g-3">
+                <div className="col-12">
+                  <label className="form-label">Cabeçalho - título *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={headerTitle}
+                    onChange={(event) => setHeaderTitle(event.target.value)}
+                  />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">Cabeçalho - subtítulo *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={headerSubtitle}
+                    onChange={(event) => setHeaderSubtitle(event.target.value)}
+                  />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">Cabeçalho - promessa *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={headerPromise}
+                    onChange={(event) => setHeaderPromise(event.target.value)}
+                  />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">
+                    Exemplos reais - título *
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={realExamplesTitle}
+                    onChange={(event) =>
+                      setRealExamplesTitle(event.target.value)
+                    }
+                  />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">
+                    Exemplos reais - subtítulo *
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={realExamplesSubtitle}
+                    onChange={(event) =>
+                      setRealExamplesSubtitle(event.target.value)
+                    }
+                  />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Subcard 1 - título *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={realExampleCard1Title}
+                    onChange={(event) =>
+                      setRealExampleCard1Title(event.target.value)
+                    }
+                  />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Subcard 1 - subtítulo *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={realExampleCard1Subtitle}
+                    onChange={(event) =>
+                      setRealExampleCard1Subtitle(event.target.value)
+                    }
+                  />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Subcard 2 - título *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={realExampleCard2Title}
+                    onChange={(event) =>
+                      setRealExampleCard2Title(event.target.value)
+                    }
+                  />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Subcard 2 - subtítulo *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={realExampleCard2Subtitle}
+                    onChange={(event) =>
+                      setRealExampleCard2Subtitle(event.target.value)
+                    }
+                  />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Subcard 3 - título *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={realExampleCard3Title}
+                    onChange={(event) =>
+                      setRealExampleCard3Title(event.target.value)
+                    }
+                  />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Subcard 3 - subtítulo *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={realExampleCard3Subtitle}
+                    onChange={(event) =>
+                      setRealExampleCard3Subtitle(event.target.value)
+                    }
+                  />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">Bullets - título *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={bulletSectionTitle}
+                    onChange={(event) =>
+                      setBulletSectionTitle(event.target.value)
+                    }
+                  />
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label">Bullet 1 *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={bulletItem1}
+                    onChange={(event) => setBulletItem1(event.target.value)}
+                  />
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label">Bullet 2 *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={bulletItem2}
+                    onChange={(event) => setBulletItem2(event.target.value)}
+                  />
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label">Bullet 3 *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={bulletItem3}
+                    onChange={(event) => setBulletItem3(event.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="d-flex justify-content-end">
               <button
                 type="button"
@@ -344,6 +604,21 @@ interface SimpleFlowTemplateConfig {
   optionsQuestionTitle: string;
   optionsQuestionValues: string;
   otherOptionsTitle: string;
+  headerTitle: string;
+  headerSubtitle: string;
+  headerPromise: string;
+  realExamplesTitle: string;
+  realExamplesSubtitle: string;
+  realExampleCard1Title: string;
+  realExampleCard1Subtitle: string;
+  realExampleCard2Title: string;
+  realExampleCard2Subtitle: string;
+  realExampleCard3Title: string;
+  realExampleCard3Subtitle: string;
+  bulletSectionTitle: string;
+  bulletItem1: string;
+  bulletItem2: string;
+  bulletItem3: string;
 }
 
 function createSimpleFormTemplateQuestions({
@@ -351,6 +626,21 @@ function createSimpleFormTemplateQuestions({
   optionsQuestionTitle,
   optionsQuestionValues,
   otherOptionsTitle,
+  headerTitle,
+  headerSubtitle,
+  headerPromise,
+  realExamplesTitle,
+  realExamplesSubtitle,
+  realExampleCard1Title,
+  realExampleCard1Subtitle,
+  realExampleCard2Title,
+  realExampleCard2Subtitle,
+  realExampleCard3Title,
+  realExampleCard3Subtitle,
+  bulletSectionTitle,
+  bulletItem1,
+  bulletItem2,
+  bulletItem3,
 }: SimpleFlowTemplateConfig): CreateLeadPortalFlowQuestionRequest[] {
   const parsedOptions = optionsQuestionValues
     .split("\n")
@@ -358,6 +648,110 @@ function createSimpleFormTemplateQuestions({
     .filter(Boolean);
 
   return [
+    {
+      title:
+        headerTitle.trim() ||
+        "Transforme o seu treino com acompanhamento personalizado",
+      dataKey: "cabecalho_titulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title:
+        headerSubtitle.trim() ||
+        "Responda em menos de 2 minutos e receba recomendações sob medida.",
+      dataKey: "cabecalho_subtitulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title:
+        headerPromise.trim() ||
+        "Plano prático para destravar resultados nas próximas semanas.",
+      dataKey: "cabecalho_promessa",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title: realExamplesTitle.trim() || "Exemplos reais de evolução",
+      dataKey: "exemplos_reais_titulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title:
+        realExamplesSubtitle.trim() ||
+        "Veja como alunas com rotina parecida conseguiram evoluir.",
+      dataKey: "exemplos_reais_subtitulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title: realExampleCard1Title.trim() || "Mais energia no dia a dia",
+      dataKey: "exemplo_real_card_1_titulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title:
+        realExampleCard1Subtitle.trim() ||
+        "Rotina simples para sair do sedentarismo em 30 dias.",
+      dataKey: "exemplo_real_card_1_subtitulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title: realExampleCard2Title.trim() || "Treino sem dor",
+      dataKey: "exemplo_real_card_2_titulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title:
+        realExampleCard2Subtitle.trim() ||
+        "Ajustes de técnica e progressão para treinar com segurança.",
+      dataKey: "exemplo_real_card_2_subtitulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title: realExampleCard3Title.trim() || "Resultado sustentável",
+      dataKey: "exemplo_real_card_3_titulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title:
+        realExampleCard3Subtitle.trim() ||
+        "Estratégia para manter constância mesmo com agenda corrida.",
+      dataKey: "exemplo_real_card_3_subtitulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title: bulletSectionTitle.trim() || "O que você recebe",
+      dataKey: "bullets_titulo",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title: bulletItem1.trim() || "Diagnóstico inicial personalizado",
+      dataKey: "bullet_item_1",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title: bulletItem2.trim() || "Plano com foco no seu objetivo",
+      dataKey: "bullet_item_2",
+      type: "TEXT",
+      required: true,
+    },
+    {
+      title: bulletItem3.trim() || "Acompanhamento e ajustes semanais",
+      dataKey: "bullet_item_3",
+      type: "TEXT",
+      required: true,
+    },
     {
       title: "Nome",
       dataKey: "nome",

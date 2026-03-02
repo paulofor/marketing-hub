@@ -212,24 +212,26 @@ export default function FlowForm({ flow, campaignCode }: FlowFormProps) {
     <form className="flow-form" onSubmit={handleSubmit} noValidate>
       {submitError ? <div className="error-banner">{submitError}</div> : null}
 
-      <ol className="flow-question-list">
-        {visibleQuestions.map((question, index) => (
-          <li key={question.dataKey} className="flow-question-item">
-            <QuestionField
-              index={index + 1}
-              question={question}
-              value={answers[question.dataKey]}
-              error={errors[question.dataKey]}
-              onChange={updateAnswer}
-              onToggleOption={handleOptionToggle}
-            />
-          </li>
-        ))}
-      </ol>
+      <div className="flow-form-card">
+        <ol className="flow-question-list">
+          {visibleQuestions.map((question, index) => (
+            <li key={question.dataKey} className="flow-question-item">
+              <QuestionField
+                index={index + 1}
+                question={question}
+                value={answers[question.dataKey]}
+                error={errors[question.dataKey]}
+                onChange={updateAnswer}
+                onToggleOption={handleOptionToggle}
+              />
+            </li>
+          ))}
+        </ol>
 
-      <button type="submit" className="submit-button" disabled={isSubmitting}>
-        {isSubmitting ? "Enviando respostas..." : "Enviar respostas"}
-      </button>
+        <button type="submit" className="submit-button" disabled={isSubmitting}>
+          {isSubmitting ? "Enviando respostas..." : "Enviar respostas"}
+        </button>
+      </div>
     </form>
   );
 }

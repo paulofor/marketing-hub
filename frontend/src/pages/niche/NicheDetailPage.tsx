@@ -25,6 +25,7 @@ import { useUpdateNicheDetailedDescriptionStatus } from "../../api/niche/useUpda
 import { useExperimentsByNiche } from "../../api/experiment/useExperimentsByNiche";
 import { useDeliverablesByNiche } from "../../api/deliverable/useDeliverablesByNiche";
 import { useLeadPortalFlows } from "../../api/leadPortal/useLeadPortalFlows";
+import type { LeadPortalFlow } from "../../api/leadPortal/useLeadPortalFlows";
 import { useCreateDeliverable } from "../../api/deliverable/useCreateDeliverable";
 import SimpleLeadPortalFormCard from "../../components/leadPortal/SimpleLeadPortalFormCard";
 import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
@@ -210,6 +211,7 @@ export default function NicheDetailPage() {
   const leadPortalFlowList = Array.isArray(nicheLeadPortalFlows)
     ? nicheLeadPortalFlows
     : [];
+  const [flowBeingEdited, setFlowBeingEdited] = useState<LeadPortalFlow | null>(null);
   const { data: detailedDescriptions } = useNicheDetailedDescriptions(nicheId);
   const requestHypotheses = useRequestHypotheses(id);
   const requestDetailedDescriptions = useRequestDetailedDescriptions(id);
@@ -1962,6 +1964,8 @@ export default function NicheDetailPage() {
           <SimpleLeadPortalFormCard
             marketNicheId={normalizedNicheId}
             onCreated={refetchLeadPortalFlows}
+            editingFlow={flowBeingEdited}
+            onEditFinished={() => setFlowBeingEdited(null)}
           />
           <div className="card border-0 shadow-sm">
             <div className="card-body d-flex flex-column gap-3">
@@ -1993,6 +1997,9 @@ export default function NicheDetailPage() {
                           >
                             {flow.approved ? "Aprovado" : "Pendente"}
                           </span>
+                          {flowBeingEdited?.id === flow.id ? (
+                            <span className="badge text-bg-warning">Em edição</span>
+                          ) : null}
                         </div>
                         <p className="text-muted small mb-1">
                           Slug: {flow.slug}
@@ -2015,6 +2022,24 @@ export default function NicheDetailPage() {
                         <p className="text-muted small mb-0">
                           {flow.questions.length} pergunta(s)
                         </p>
+                        {flow.experimentId ? (
+                          <p className="text-muted small mt-2 mb-0">
+                            Vinculado ao experimento #{flow.experimentId}
+                          </p>
+                        ) : (
+                          <div className="mt-2 d-flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              className="btn btn-outline-primary btn-sm"
+                              onClick={() => setFlowBeingEdited(flow)}
+                              disabled={flowBeingEdited?.id === flow.id}
+                            >
+                              {flowBeingEdited?.id === flow.id
+                                ? "Formulário em edição"
+                                : "Editar formulário"}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </article>
                   ))}

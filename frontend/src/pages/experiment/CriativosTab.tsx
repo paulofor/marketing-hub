@@ -14,6 +14,7 @@ import { useAllFacebookPages } from "../../api/useAllFacebookPages";
 import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 import InstagramAdPreview from "../../components/InstagramAdPreview";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
+import { parseAssetUploadResponse } from "../../utils/parseAssetUploadResponse";
 import { FACEBOOK_CALL_TO_ACTIONS } from "../../constants/facebookCallToActions";
 import {
   AlertTriangle,
@@ -365,7 +366,7 @@ export default function CriativosTab({ experimentId }: Props) {
         if (!res.ok) {
           throw new Error("Upload failed");
         }
-        const url = await res.text();
+        const url = await parseAssetUploadResponse(res);
         setForm((prev) => ({ ...prev, imageUrl: url }));
         setFeedback({
           variant: "success",

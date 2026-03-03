@@ -6,6 +6,7 @@ import {
 } from "../../api/leadPortal/useCreateLeadPortalFlow";
 import { useLeadPortalSimpleFormStyles } from "../../api/leadPortal/useLeadPortalSimpleFormStyles";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
+import { parseAssetUploadResponse } from "../../utils/parseAssetUploadResponse";
 
 interface SimpleLeadPortalFormCardProps {
   marketNicheId?: number;
@@ -329,7 +330,7 @@ export default function SimpleLeadPortalFormCard({
         throw new Error("Falha ao enviar imagem");
       }
 
-      const imageUrl = await response.text();
+      const imageUrl = await parseAssetUploadResponse(response);
       if (index === 1) setCard1ImageUrl(imageUrl);
       if (index === 2) setCard2ImageUrl(imageUrl);
       if (index === 3) setCard3ImageUrl(imageUrl);

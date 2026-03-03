@@ -22,6 +22,11 @@ export default function FlowPage() {
     enabled: Boolean(slug),
   });
 
+  const metadata = useMemo(
+    () => extractSimpleFormMetadata(flow?.questions ?? []),
+    [flow?.questions],
+  );
+
   if (!slug) {
     return <p className="flow-message">Fluxo não informado.</p>;
   }
@@ -45,7 +50,6 @@ export default function FlowPage() {
   const heroBlend = definition?.heroImageBlendColor ?? null;
   const styleVars = buildStyleVariables(definition);
 
-  const metadata = useMemo(() => extractSimpleFormMetadata(flow.questions), [flow.questions]);
   const formQuestions = metadata.formQuestions.length > 0 ? metadata.formQuestions : flow.questions;
   const flowForForm = formQuestions === flow.questions ? flow : { ...flow, questions: formQuestions };
 

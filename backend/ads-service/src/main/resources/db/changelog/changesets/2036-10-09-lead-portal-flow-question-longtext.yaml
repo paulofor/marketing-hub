@@ -1,0 +1,102 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2036-10-09-lead-portal-question-longtext
+      author: ai
+      preConditions:
+        onFail: MARK_RAN
+        and:
+          - dbms:
+              type: mysql
+          - not:
+              sqlCheck:
+                expectedResult: "0"
+                sql: |
+                  SELECT COUNT(*)
+                    FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                     AND table_name = 'lead_portal_flow_question'
+                     AND column_name IN ('title','description','placeholder')
+                     AND data_type <> 'longtext'
+      changes:
+        - modifyDataType:
+            dbms: mysql
+            tableName: lead_portal_flow_question
+            columnName: title
+            newDataType: LONGTEXT
+        - modifyDataType:
+            dbms: mysql
+            tableName: lead_portal_flow_question
+            columnName: description
+            newDataType: LONGTEXT
+        - modifyDataType:
+            dbms: mysql
+            tableName: lead_portal_flow_question
+            columnName: placeholder
+            newDataType: LONGTEXT
+
+  - changeSet:
+      id: 2036-10-09-lead-portal-question-option-longtext
+      author: ai
+      preConditions:
+        onFail: MARK_RAN
+        and:
+          - dbms:
+              type: mysql
+          - not:
+              sqlCheck:
+                expectedResult: "0"
+                sql: |
+                  SELECT COUNT(*)
+                    FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                     AND table_name = 'lead_portal_flow_question_option'
+                     AND column_name = 'option_value'
+                     AND data_type <> 'longtext'
+      changes:
+        - modifyDataType:
+            dbms: mysql
+            tableName: lead_portal_flow_question_option
+            columnName: option_value
+            newDataType: LONGTEXT
+
+  - changeSet:
+      id: 2036-10-09-lead-portal-question-datakey-constraint
+      author: ai
+      preConditions:
+        onFail: MARK_RAN
+        and:
+          - dbms:
+              type: mysql
+          - uniqueConstraintExists:
+              tableName: lead_portal_flow_question
+              constraintName: uq_lead_portal_question_key
+      changes:
+        - dropUniqueConstraint:
+            dbms: mysql
+            tableName: lead_portal_flow_question
+            constraintName: uq_lead_portal_question_key
+
+  - changeSet:
+      id: 2036-10-09-lead-portal-question-datakey-longtext
+      author: ai
+      preConditions:
+        onFail: MARK_RAN
+        and:
+          - dbms:
+              type: mysql
+          - not:
+              sqlCheck:
+                expectedResult: "0"
+                sql: |
+                  SELECT COUNT(*)
+                    FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                     AND table_name = 'lead_portal_flow_question'
+                     AND column_name = 'data_key'
+                     AND data_type <> 'longtext'
+      changes:
+        - modifyDataType:
+            dbms: mysql
+            tableName: lead_portal_flow_question
+            columnName: data_key
+            newDataType: LONGTEXT

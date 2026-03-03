@@ -512,3 +512,7 @@ databaseChangeLog:
   - include:
       file: V2036_03_03__lead_portal_flow_question_longtext_mysql5.sql
       relativeToChangelogFile: true
+
+  - include:
+      file: V2036_03_03__lead_portal_flow_description_longtext_mysql5.sql
+      relativeToChangelogFile: true

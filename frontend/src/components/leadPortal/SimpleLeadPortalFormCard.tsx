@@ -1,16 +1,47 @@
 import axios from "axios";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   type CreateLeadPortalFlowQuestionRequest,
   useCreateLeadPortalFlow,
 } from "../../api/leadPortal/useCreateLeadPortalFlow";
+import type { LeadPortalFlow } from "../../api/leadPortal/useLeadPortalFlows";
+import { useUpdateLeadPortalFlow } from "../../api/leadPortal/useUpdateLeadPortalFlow";
 import { useLeadPortalSimpleFormStyles } from "../../api/leadPortal/useLeadPortalSimpleFormStyles";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import { parseAssetUploadResponse } from "../../utils/parseAssetUploadResponse";
 
+const SIMPLE_FORM_DEFAULTS = {
+  flowName: "Formulário simples para personal trainer",
+  slug: "formulario-simples-personal-trainer",
+  description:
+    "Fluxo simples para coleta inicial de informações sem necessidade de envio de imagens.",
+  workQuestionTitle: "Trabalha em alguma academia ou studio? Qual nome?",
+  optionsQuestionTitle: "Tipo de aulas que presta",
+  optionsQuestionValues: "Musculação\nYoga\nPilates",
+  otherOptionsTitle: "Se nenhuma opção anterior representar seu cenário, descreva aqui",
+  headerTitle: "Transforme o seu treino com acompanhamento personalizado",
+  headerSubtitle: "Responda em menos de 2 minutos e receba recomendações sob medida.",
+  headerPromise: "Plano prático para destravar resultados nas próximas semanas.",
+  realExamplesTitle: "Exemplos reais de evolução",
+  realExamplesSubtitle: "Veja como alunas com rotina parecida conseguiram evoluir.",
+  realExampleCard1Title: "Mais energia no dia a dia",
+  realExampleCard1Subtitle: "Rotina simples para sair do sedentarismo em 30 dias.",
+  realExampleCard2Title: "Treino sem dor",
+  realExampleCard2Subtitle: "Ajustes de técnica e progressão para treinar com segurança.",
+  realExampleCard3Title: "Resultado sustentável",
+  realExampleCard3Subtitle:
+    "Estratégia para manter constância mesmo com agenda corrida.",
+  bulletSectionTitle: "O que você recebe",
+  bulletItem1: "Diagnóstico inicial personalizado",
+  bulletItem2: "Plano com foco no seu objetivo",
+  bulletItem3: "Acompanhamento e ajustes semanais",
+};
+
 interface SimpleLeadPortalFormCardProps {
   marketNicheId?: number;
   onCreated?: () => void;
+  editingFlow?: LeadPortalFlow | null;
+  onEditFinished?: () => void;
 }
 
 type FeedbackState = {
@@ -21,76 +52,82 @@ type FeedbackState = {
 export default function SimpleLeadPortalFormCard({
   marketNicheId,
   onCreated,
+  editingFlow,
+  onEditFinished,
 }: SimpleLeadPortalFormCardProps) {
   const createFlow = useCreateLeadPortalFlow();
+  const updateFlow = useUpdateLeadPortalFlow();
   const { data: simpleFormStyles, isLoading: isLoadingStyles } =
     useLeadPortalSimpleFormStyles();
+  const isEditing = Boolean(editingFlow);
   const [isVisible, setIsVisible] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [selectedStyleId, setSelectedStyleId] = useState<number | null>(null);
   const [newFlowName, setNewFlowName] = useState(
-    "Formulário simples para personal trainer",
+    SIMPLE_FORM_DEFAULTS.flowName,
   );
   const [newFlowSlug, setNewFlowSlug] = useState(
-    "formulario-simples-personal-trainer",
+    SIMPLE_FORM_DEFAULTS.slug,
   );
   const [newFlowDescription, setNewFlowDescription] = useState(
-    "Fluxo simples para coleta inicial de informações sem necessidade de envio de imagens.",
+    SIMPLE_FORM_DEFAULTS.description,
   );
   const [workQuestionTitle, setWorkQuestionTitle] = useState(
-    "Trabalha em alguma academia ou studio? Qual nome?",
+    SIMPLE_FORM_DEFAULTS.workQuestionTitle,
   );
   const [optionsQuestionTitle, setOptionsQuestionTitle] = useState(
-    "Tipo de aulas que presta",
+    SIMPLE_FORM_DEFAULTS.optionsQuestionTitle,
   );
   const [optionsQuestionValues, setOptionsQuestionValues] = useState(
-    "Musculação\nYoga\nPilates",
+    SIMPLE_FORM_DEFAULTS.optionsQuestionValues,
   );
   const [otherOptionsTitle, setOtherOptionsTitle] = useState(
-    "Se nenhuma opção anterior representar seu cenário, descreva aqui",
+    SIMPLE_FORM_DEFAULTS.otherOptionsTitle,
   );
   const [headerTitle, setHeaderTitle] = useState(
-    "Transforme o seu treino com acompanhamento personalizado",
+    SIMPLE_FORM_DEFAULTS.headerTitle,
   );
   const [headerSubtitle, setHeaderSubtitle] = useState(
-    "Responda em menos de 2 minutos e receba recomendações sob medida.",
+    SIMPLE_FORM_DEFAULTS.headerSubtitle,
   );
   const [headerPromise, setHeaderPromise] = useState(
-    "Plano prático para destravar resultados nas próximas semanas.",
+    SIMPLE_FORM_DEFAULTS.headerPromise,
   );
   const [realExamplesTitle, setRealExamplesTitle] = useState(
-    "Exemplos reais de evolução",
+    SIMPLE_FORM_DEFAULTS.realExamplesTitle,
   );
   const [realExamplesSubtitle, setRealExamplesSubtitle] = useState(
-    "Veja como alunas com rotina parecida conseguiram evoluir.",
+    SIMPLE_FORM_DEFAULTS.realExamplesSubtitle,
   );
   const [realExampleCard1Title, setRealExampleCard1Title] = useState(
-    "Mais energia no dia a dia",
+    SIMPLE_FORM_DEFAULTS.realExampleCard1Title,
   );
   const [realExampleCard1Subtitle, setRealExampleCard1Subtitle] = useState(
-    "Rotina simples para sair do sedentarismo em 30 dias.",
+    SIMPLE_FORM_DEFAULTS.realExampleCard1Subtitle,
   );
-  const [realExampleCard2Title, setRealExampleCard2Title] =
-    useState("Treino sem dor");
+  const [realExampleCard2Title, setRealExampleCard2Title] = useState(
+    SIMPLE_FORM_DEFAULTS.realExampleCard2Title,
+  );
   const [realExampleCard2Subtitle, setRealExampleCard2Subtitle] = useState(
-    "Ajustes de técnica e progressão para treinar com segurança.",
+    SIMPLE_FORM_DEFAULTS.realExampleCard2Subtitle,
   );
   const [realExampleCard3Title, setRealExampleCard3Title] = useState(
-    "Resultado sustentável",
+    SIMPLE_FORM_DEFAULTS.realExampleCard3Title,
   );
   const [realExampleCard3Subtitle, setRealExampleCard3Subtitle] = useState(
-    "Estratégia para manter constância mesmo com agenda corrida.",
+    SIMPLE_FORM_DEFAULTS.realExampleCard3Subtitle,
   );
-  const [bulletSectionTitle, setBulletSectionTitle] =
-    useState("O que você recebe");
+  const [bulletSectionTitle, setBulletSectionTitle] = useState(
+    SIMPLE_FORM_DEFAULTS.bulletSectionTitle,
+  );
   const [bulletItem1, setBulletItem1] = useState(
-    "Diagnóstico inicial personalizado",
+    SIMPLE_FORM_DEFAULTS.bulletItem1,
   );
   const [bulletItem2, setBulletItem2] = useState(
-    "Plano com foco no seu objetivo",
+    SIMPLE_FORM_DEFAULTS.bulletItem2,
   );
   const [bulletItem3, setBulletItem3] = useState(
-    "Acompanhamento e ajustes semanais",
+    SIMPLE_FORM_DEFAULTS.bulletItem3,
   );
   const [card1ImageUrl, setCard1ImageUrl] = useState("");
   const [card2ImageUrl, setCard2ImageUrl] = useState("");
@@ -101,6 +138,146 @@ export default function SimpleLeadPortalFormCard({
   const [uploadingCardImage, setUploadingCardImage] = useState<1 | 2 | 3 | null>(
     null,
   );
+
+  const resetFormState = useCallback(() => {
+    setNewFlowName(SIMPLE_FORM_DEFAULTS.flowName);
+    setNewFlowSlug(SIMPLE_FORM_DEFAULTS.slug);
+    setNewFlowDescription(SIMPLE_FORM_DEFAULTS.description);
+    setWorkQuestionTitle(SIMPLE_FORM_DEFAULTS.workQuestionTitle);
+    setOptionsQuestionTitle(SIMPLE_FORM_DEFAULTS.optionsQuestionTitle);
+    setOptionsQuestionValues(SIMPLE_FORM_DEFAULTS.optionsQuestionValues);
+    setOtherOptionsTitle(SIMPLE_FORM_DEFAULTS.otherOptionsTitle);
+    setHeaderTitle(SIMPLE_FORM_DEFAULTS.headerTitle);
+    setHeaderSubtitle(SIMPLE_FORM_DEFAULTS.headerSubtitle);
+    setHeaderPromise(SIMPLE_FORM_DEFAULTS.headerPromise);
+    setRealExamplesTitle(SIMPLE_FORM_DEFAULTS.realExamplesTitle);
+    setRealExamplesSubtitle(SIMPLE_FORM_DEFAULTS.realExamplesSubtitle);
+    setRealExampleCard1Title(SIMPLE_FORM_DEFAULTS.realExampleCard1Title);
+    setRealExampleCard1Subtitle(SIMPLE_FORM_DEFAULTS.realExampleCard1Subtitle);
+    setRealExampleCard2Title(SIMPLE_FORM_DEFAULTS.realExampleCard2Title);
+    setRealExampleCard2Subtitle(SIMPLE_FORM_DEFAULTS.realExampleCard2Subtitle);
+    setRealExampleCard3Title(SIMPLE_FORM_DEFAULTS.realExampleCard3Title);
+    setRealExampleCard3Subtitle(SIMPLE_FORM_DEFAULTS.realExampleCard3Subtitle);
+    setBulletSectionTitle(SIMPLE_FORM_DEFAULTS.bulletSectionTitle);
+    setBulletItem1(SIMPLE_FORM_DEFAULTS.bulletItem1);
+    setBulletItem2(SIMPLE_FORM_DEFAULTS.bulletItem2);
+    setBulletItem3(SIMPLE_FORM_DEFAULTS.bulletItem3);
+    setCard1ImageUrl("");
+    setCard2ImageUrl("");
+    setCard3ImageUrl("");
+    setCard1OverlayText("");
+    setCard2OverlayText("");
+    setCard3OverlayText("");
+    if (simpleFormStyles && simpleFormStyles.length > 0) {
+      setSelectedStyleId(simpleFormStyles[0].id);
+    } else {
+      setSelectedStyleId(null);
+    }
+  }, [simpleFormStyles]);
+
+  const hydrateFromFlow = useCallback((flow: LeadPortalFlow) => {
+    setNewFlowName(flow.name);
+    setNewFlowSlug(flow.slug);
+    setNewFlowDescription(flow.description ?? SIMPLE_FORM_DEFAULTS.description);
+    setSelectedStyleId(flow.simpleFormStyle?.id ?? null);
+    const questionMap = new Map(
+      flow.questions.map((question) => [question.dataKey, question]),
+    );
+    const readValue = (key: string, fallback: string) => {
+      const value = questionMap.get(key)?.title?.trim();
+      return value && value.length > 0 ? value : fallback;
+    };
+    const readOptional = (key: string) => questionMap.get(key)?.title?.trim() ?? "";
+
+    setWorkQuestionTitle(
+      readValue("local_trabalho", SIMPLE_FORM_DEFAULTS.workQuestionTitle),
+    );
+    const listQuestion = questionMap.get("lista_opcoes");
+    setOptionsQuestionTitle(
+      readValue("lista_opcoes", SIMPLE_FORM_DEFAULTS.optionsQuestionTitle),
+    );
+    setOptionsQuestionValues(
+      listQuestion && listQuestion.options?.length
+        ? listQuestion.options.join("\n")
+        : SIMPLE_FORM_DEFAULTS.optionsQuestionValues,
+    );
+    setOtherOptionsTitle(
+      readValue("outras_opcoes", SIMPLE_FORM_DEFAULTS.otherOptionsTitle),
+    );
+    setHeaderTitle(readValue("cabecalho_titulo", SIMPLE_FORM_DEFAULTS.headerTitle));
+    setHeaderSubtitle(
+      readValue("cabecalho_subtitulo", SIMPLE_FORM_DEFAULTS.headerSubtitle),
+    );
+    setHeaderPromise(readValue("cabecalho_promessa", SIMPLE_FORM_DEFAULTS.headerPromise));
+    setRealExamplesTitle(
+      readValue("exemplos_reais_titulo", SIMPLE_FORM_DEFAULTS.realExamplesTitle),
+    );
+    setRealExamplesSubtitle(
+      readValue(
+        "exemplos_reais_subtitulo",
+        SIMPLE_FORM_DEFAULTS.realExamplesSubtitle,
+      ),
+    );
+    setRealExampleCard1Title(
+      readValue(
+        "exemplo_real_card_1_titulo",
+        SIMPLE_FORM_DEFAULTS.realExampleCard1Title,
+      ),
+    );
+    setRealExampleCard1Subtitle(
+      readValue(
+        "exemplo_real_card_1_subtitulo",
+        SIMPLE_FORM_DEFAULTS.realExampleCard1Subtitle,
+      ),
+    );
+    setRealExampleCard2Title(
+      readValue(
+        "exemplo_real_card_2_titulo",
+        SIMPLE_FORM_DEFAULTS.realExampleCard2Title,
+      ),
+    );
+    setRealExampleCard2Subtitle(
+      readValue(
+        "exemplo_real_card_2_subtitulo",
+        SIMPLE_FORM_DEFAULTS.realExampleCard2Subtitle,
+      ),
+    );
+    setRealExampleCard3Title(
+      readValue(
+        "exemplo_real_card_3_titulo",
+        SIMPLE_FORM_DEFAULTS.realExampleCard3Title,
+      ),
+    );
+    setRealExampleCard3Subtitle(
+      readValue(
+        "exemplo_real_card_3_subtitulo",
+        SIMPLE_FORM_DEFAULTS.realExampleCard3Subtitle,
+      ),
+    );
+    setBulletSectionTitle(
+      readValue("bullets_titulo", SIMPLE_FORM_DEFAULTS.bulletSectionTitle),
+    );
+    setBulletItem1(readValue("bullet_item_1", SIMPLE_FORM_DEFAULTS.bulletItem1));
+    setBulletItem2(readValue("bullet_item_2", SIMPLE_FORM_DEFAULTS.bulletItem2));
+    setBulletItem3(readValue("bullet_item_3", SIMPLE_FORM_DEFAULTS.bulletItem3));
+    setCard1ImageUrl(readOptional("exemplo_real_card_1_imagem_url"));
+    setCard2ImageUrl(readOptional("exemplo_real_card_2_imagem_url"));
+    setCard3ImageUrl(readOptional("exemplo_real_card_3_imagem_url"));
+    setCard1OverlayText(readOptional("exemplo_real_card_1_texto_sobreposto"));
+    setCard2OverlayText(readOptional("exemplo_real_card_2_texto_sobreposto"));
+    setCard3OverlayText(readOptional("exemplo_real_card_3_texto_sobreposto"));
+  }, []);
+
+  useEffect(() => {
+    if (editingFlow) {
+      setFeedback(null);
+      hydrateFromFlow(editingFlow);
+      setIsVisible(true);
+      return;
+    }
+    resetFormState();
+    setIsVisible(false);
+  }, [editingFlow, hydrateFromFlow, resetFormState]);
 
   useEffect(() => {
     if (!simpleFormStyles || simpleFormStyles.length === 0) {
@@ -169,6 +346,8 @@ export default function SimpleLeadPortalFormCard({
     ],
   );
 
+  const isSaving = createFlow.isPending || updateFlow.isPending;
+
   const handleFlowNameChange = (value: string) => {
     setNewFlowName(value);
     if (!value) {
@@ -180,7 +359,18 @@ export default function SimpleLeadPortalFormCard({
     }
   };
 
-  const handleCreateSimpleFlow = async () => {
+  const handleToggleFormVisibility = () => {
+    if (isEditing) {
+      onEditFinished?.();
+      return;
+    }
+    setIsVisible((value) => !value);
+  };
+
+  const handleSaveSimpleFlow = async () => {
+    if (isSaving) {
+      return;
+    }
     if (!marketNicheId) {
       setFeedback({
         variant: "error",
@@ -242,38 +432,48 @@ export default function SimpleLeadPortalFormCard({
       return;
     }
 
-    try {
-      await createFlow.mutateAsync({
-        name: newFlowName,
-        slug: newFlowSlug,
-        description: newFlowDescription,
-        model: "manual",
-        marketNicheId,
-        simpleFormStyleId: selectedStyleId ?? undefined,
-        questions: manualQuestions.map((question) => ({
-          ...question,
-          options:
-            question.type === "SINGLE_CHOICE" ||
-            question.type === "MULTIPLE_CHOICE"
-              ? (question.options ?? [])
-              : undefined,
-        })),
-      });
+    const payload = {
+      name: newFlowName,
+      slug: newFlowSlug,
+      description: newFlowDescription?.trim() || undefined,
+      model: "manual",
+      marketNicheId,
+      simpleFormStyleId: selectedStyleId ?? undefined,
+      questions: manualQuestions.map((question) => ({
+        ...question,
+        options:
+          question.type === "SINGLE_CHOICE" || question.type === "MULTIPLE_CHOICE"
+            ? (question.options ?? [])
+            : undefined,
+      })),
+    };
 
-      setFeedback({
-        variant: "success",
-        message: "Fluxo simples criado com sucesso.",
-      });
-      setIsVisible(false);
+    try {
+      if (isEditing && editingFlow) {
+        await updateFlow.mutateAsync({ id: editingFlow.id, payload });
+        setFeedback({
+          variant: "success",
+          message: "Formulário atualizado com sucesso.",
+        });
+        onEditFinished?.();
+      } else {
+        await createFlow.mutateAsync(payload);
+        setFeedback({
+          variant: "success",
+          message: "Fluxo simples criado com sucesso.",
+        });
+      }
       onCreated?.();
+      resetFormState();
+      setIsVisible(false);
     } catch (error) {
       const message = axios.isAxiosError(error)
-        ? (error.response?.data?.message ??
-          "Não foi possível criar o fluxo simples.")
-        : "Não foi possível criar o fluxo simples.";
+        ? error.response?.data?.message ?? "Não foi possível salvar o fluxo simples."
+        : "Não foi possível salvar o fluxo simples.";
       setFeedback({ variant: "error", message });
     }
   };
+
 
   const readImageDimensions = (
     file: File,
@@ -354,35 +554,45 @@ export default function SimpleLeadPortalFormCard({
       <div className="card-body d-flex flex-column gap-3">
         <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
           <div>
-            <h5 className="mb-1">Criar formulário simples (sem imagem)</h5>
+            <h5 className="mb-1">
+              {isEditing ? "Editar formulário simples" : "Criar formulário simples (sem imagem)"}
+            </h5>
             <p className="text-muted small mb-0">
               Monte um fluxo manual para o portal com perguntas diretas, como
               nome, contato e tipo de aula.
             </p>
+            {isEditing && editingFlow ? (
+              <p className="text-warning small mb-0">
+                Editando o formulário <strong>{editingFlow.name}</strong>. Salve as alterações
+                ou cancele para voltar ao modo de criação.
+              </p>
+            ) : null}
           </div>
           <button
             type="button"
             className="btn btn-outline-primary btn-sm"
-            onClick={() => setIsVisible((value) => !value)}
+            onClick={handleToggleFormVisibility}
             disabled={
-              !marketNicheId ||
-              createFlow.isPending ||
+              isSaving ||
               isLoadingStyles ||
-              !simpleFormStyles ||
-              simpleFormStyles.length === 0
+              (!isEditing && (!marketNicheId || !simpleFormStyles || simpleFormStyles.length === 0))
             }
           >
-            {isVisible ? "Fechar formulário" : "Novo formulário simples"}
+            {isEditing
+              ? "Cancelar edição"
+              : isVisible
+                ? "Fechar formulário"
+                : "Novo formulário simples"}
           </button>
         </div>
 
-        {!marketNicheId ? (
+        {!marketNicheId && !isEditing ? (
           <p className="text-muted small mb-0">
             Selecione um nicho válido para habilitar o formulário manual.
           </p>
         ) : null}
 
-        {isVisible && marketNicheId ? (
+        {isVisible && (marketNicheId || isEditing) ? (
           <div className="d-flex flex-column gap-3">
             <div className="row g-3">
               <div className="col-md-6">
@@ -786,18 +996,20 @@ export default function SimpleLeadPortalFormCard({
               <button
                 type="button"
                 className="btn btn-primary"
-                onClick={handleCreateSimpleFlow}
-                disabled={createFlow.isPending || uploadingCardImage != null}
+                onClick={handleSaveSimpleFlow}
+                disabled={isSaving || uploadingCardImage != null}
               >
-                {createFlow.isPending ? (
+                {isSaving ? (
                   <>
                     <span
                       className="spinner-border spinner-border-sm me-2"
                       role="status"
                       aria-hidden="true"
                     />
-                    Criando...
+                    Salvando...
                   </>
+                ) : isEditing ? (
+                  "Salvar alterações"
                 ) : (
                   "Criar formulário"
                 )}

@@ -1,10 +1,11 @@
-import type { CSSProperties } from "react";
+import { useMemo, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { fetchLeadPortalFlow } from "../api";
 import FlowForm from "../components/FlowForm";
+import { resolveAssetUrl } from "../utils/resolveAssetUrl";
 import { useCampaignCode } from "../hooks/useCampaignCode";
-import type { LeadPortalSimpleFormStyleDefinition } from "../types";
+import type { FlowQuestion, LeadPortalSimpleFormStyleDefinition } from "../types";
 
 export default function FlowPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -43,9 +44,36 @@ export default function FlowPage() {
   const heroImageUrl = definition?.heroImageUrl ?? null;
   const heroBlend = definition?.heroImageBlendColor ?? null;
   const styleVars = buildStyleVariables(definition);
-  const headerContent = SIMPLE_FORM_CONTENT.header;
-  const proofContent = SIMPLE_FORM_CONTENT.proof;
-  const bulletsContent = SIMPLE_FORM_CONTENT.bullets;
+
+  const metadata = useMemo(() => extractSimpleFormMetadata(flow.questions), [flow.questions]);
+  const formQuestions = metadata.formQuestions.length > 0 ? metadata.formQuestions : flow.questions;
+  const flowForForm = formQuestions === flow.questions ? flow : { ...flow, questions: formQuestions };
+
+  const defaultHeader = SIMPLE_FORM_CONTENT.header;
+  const defaultProof = SIMPLE_FORM_CONTENT.proof;
+  const defaultBullets = SIMPLE_FORM_CONTENT.bullets;
+
+  const heroContent = {
+    title: metadata.hero.title ?? flow.name,
+    subtitle: metadata.hero.subtitle ?? defaultHeader.subtitle,
+    detail: flow.description ?? defaultHeader.detail,
+    promise: metadata.hero.promise ?? defaultHeader.promiseText,
+  };
+
+  const proofContent = {
+    kicker: defaultProof.kicker,
+    title: metadata.proof.title ?? defaultProof.title,
+    subtitle: metadata.proof.subtitle ?? defaultProof.subtitle,
+    cards: (metadata.proof.cards.length > 0 ? metadata.proof.cards : defaultProof.cards).map((card) => ({
+      ...card,
+      imageUrl: card.imageUrl ? resolveAssetUrl(card.imageUrl) : null,
+    })),
+  };
+
+  const bulletsContent = {
+    title: metadata.bullets.title ?? defaultBullets.title,
+    items: metadata.bullets.items.length > 0 ? metadata.bullets.items : defaultBullets.items,
+  };
 
   const heroMediaStyle: CSSProperties | undefined = heroImageUrl
     ? {
@@ -61,11 +89,11 @@ export default function FlowPage() {
         <section className="flow-hero">
           <div className="flow-hero-copy">
             <p className="flow-eyebrow">{flow.simpleFormStyle?.name ?? "Lead Portal"}</p>
-            <h1>{flow.name}</h1>
-            <p className="flow-subtitle">{headerContent.subtitle}</p>
-            <p>{flow.description ?? headerContent.detail}</p>
+            <h1>{heroContent.title}</h1>
+            <p className="flow-subtitle">{heroContent.subtitle}</p>
+            <p>{heroContent.detail}</p>
             <div className="flow-promise-box">
-              <strong>{headerContent.promiseLabel}:</strong> {headerContent.promiseText}
+              <strong>{defaultHeader.promiseLabel}:</strong> {heroContent.promise}
             </div>
           </div>
           {heroImageUrl ? <div className="flow-hero-media" style={heroMediaStyle} /> : null}
@@ -78,13 +106,27 @@ export default function FlowPage() {
             <p>{proofContent.subtitle}</p>
           </div>
           <div className="flow-proof-grid">
-            {proofContent.cards.map((post) => (
-              <article key={post.title} className="flow-proof-card">
-                <div className="flow-proof-image" style={{ background: post.background }} />
-                <h3>{post.title}</h3>
-                <p>{post.description}</p>
-              </article>
-            ))}
+            {proofContent.cards.map((post) => {
+              const mediaStyle = post.imageUrl
+                ? { backgroundImage: `url(${post.imageUrl})` }
+                : post.background
+                  ? { background: post.background }
+                  : undefined;
+              return (
+                <article key={post.title} className="flow-proof-card">
+                  <div
+                    className={`flow-proof-image ${post.imageUrl ? "flow-proof-image--media" : ""}`}
+                    style={mediaStyle}
+                  >
+                    {post.overlayText ? (
+                      <span className="flow-proof-image__overlay">{post.overlayText}</span>
+                    ) : null}
+                  </div>
+                  <h3>{post.title}</h3>
+                  <p>{post.description}</p>
+                </article>
+              );
+            })}
           </div>
         </section>
 
@@ -97,7 +139,7 @@ export default function FlowPage() {
           </ul>
         </section>
 
-        <FlowForm flow={flow} campaignCode={campaignCode} />
+        <FlowForm flow={flowForForm} campaignCode={campaignCode} />
       </div>
     </div>
   );
@@ -203,4 +245,88 @@ function buildStyleVariables(definition: LeadPortalSimpleFormStyleDefinition | n
     vars["--flow-input-border"] = definition.inputBorderColor;
   }
   return vars;
+}
+
+interface SimpleFormMetadata {
+  hero: { title: string | null; subtitle: string | null; promise: string | null };
+  proof: { title: string | null; subtitle: string | null; cards: ProofCard[] };
+  bullets: { title: string | null; items: string[] };
+  formQuestions: FlowQuestion[];
+}
+
+interface ProofCard {
+  title: string;
+  description: string;
+  background?: string | null;
+  imageUrl?: string | null;
+  overlayText?: string | null;
+}
+
+function extractSimpleFormMetadata(questions: FlowQuestion[]): SimpleFormMetadata {
+  if (!questions || questions.length === 0) {
+    return {
+      hero: { title: null, subtitle: null, promise: null },
+      proof: { title: null, subtitle: null, cards: [] },
+      bullets: { title: null, items: [] },
+      formQuestions: [],
+    };
+  }
+
+  const metadataKeys = new Set<string>();
+  const questionMap = new Map<string, FlowQuestion>(
+    questions.map((question) => [question.dataKey, question]),
+  );
+
+  const readValue = (key: string) => {
+    const question = questionMap.get(key);
+    if (question) {
+      metadataKeys.add(key);
+      return question.title?.trim() ?? null;
+    }
+    return null;
+  };
+
+  const hero = {
+    title: readValue("cabecalho_titulo"),
+    subtitle: readValue("cabecalho_subtitulo"),
+    promise: readValue("cabecalho_promessa"),
+  };
+
+  const proofTitle = readValue("exemplos_reais_titulo");
+  const proofSubtitle = readValue("exemplos_reais_subtitulo");
+
+  const cards: ProofCard[] = [];
+  [1, 2, 3].forEach((index) => {
+    const title = readValue(`exemplo_real_card_${index}_titulo`);
+    const description = readValue(`exemplo_real_card_${index}_subtitulo`);
+    const imageUrl = readValue(`exemplo_real_card_${index}_imagem_url`);
+    const overlayText = readValue(`exemplo_real_card_${index}_texto_sobreposto`);
+    if (title || description || imageUrl) {
+      cards.push({
+        title: title ?? `Exemplo ${index}`,
+        description: description ?? "",
+        imageUrl,
+        overlayText,
+      });
+    }
+  });
+
+  const bullets = {
+    title: readValue("bullets_titulo"),
+    items: ["bullet_item_1", "bullet_item_2", "bullet_item_3"]
+      .map((key) => readValue(key))
+      .filter((value): value is string => Boolean(value && value.length > 0)),
+  };
+
+  const metadataPresent = metadataKeys.size > 0;
+  const formQuestions = metadataPresent
+    ? questions.filter((question) => !metadataKeys.has(question.dataKey))
+    : questions;
+
+  return {
+    hero,
+    proof: { title: proofTitle, subtitle: proofSubtitle, cards },
+    bullets,
+    formQuestions,
+  };
 }

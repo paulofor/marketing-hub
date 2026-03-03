@@ -20,6 +20,7 @@ export interface LeadPortalFlow {
   name: string;
   slug: string;
   marketNicheId?: number | null;
+  experimentId?: number | null;
   publicUrl?: string | null;
   description?: string | null;
   model?: string | null;

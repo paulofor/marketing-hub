@@ -863,8 +863,27 @@ form.flow-form {
 }
 
 .flow-proof-image {
+  position: relative;
   border-radius: 12px;
   min-height: 120px;
+  background-size: cover;
+  background-position: center;
+}
+
+.flow-proof-image--media {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.flow-proof-image__overlay {
+  position: absolute;
+  left: 0.75rem;
+  bottom: 0.75rem;
+  background: rgba(15, 23, 42, 0.75);
+  color: #fff;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
 }
 
 .flow-confidence-section ul {

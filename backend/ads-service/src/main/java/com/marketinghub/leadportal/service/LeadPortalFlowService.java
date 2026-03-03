@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
 @Service
 public class LeadPortalFlowService {
     private static final Pattern SLUG_PATTERN = Pattern.compile("^[a-z0-9]+(?:-[a-z0-9]+)*$");
-    private static final Pattern DATA_KEY_PATTERN = Pattern.compile("^[a-z][a-z0-9_-]*$");
+    private static final Pattern DATA_KEY_PATTERN = Pattern.compile("^[A-Za-z][A-Za-z0-9_-]*$");
 
     private final LeadPortalFlowRepository repository;
     private final LeadPortalFlowPublisher flowPublisher;
@@ -283,10 +283,10 @@ public class LeadPortalFlowService {
         if (!StringUtils.hasText(dataKey)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "dataKey is required");
         }
-        String normalized = dataKey.trim().toLowerCase(Locale.ROOT);
+        String normalized = dataKey.trim();
         if (!DATA_KEY_PATTERN.matcher(normalized).matches()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "dataKey must start with a letter and contain only lowercase letters, numbers, hyphen or underscore");
+                    "dataKey must start with a letter and contain only letters, numbers, hyphen or underscore");
         }
         return normalized;
     }

@@ -28,10 +28,10 @@ public class LeadPortalFlowQuestion {
     @EqualsAndHashCode.Exclude
     private LeadPortalFlow flow;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String title;
 
-    @Column(name = "data_key", nullable = false, length = 120)
+    @Column(name = "data_key", nullable = false, columnDefinition = "LONGTEXT")
     private String dataKey;
 
     @Enumerated(EnumType.STRING)
@@ -41,10 +41,10 @@ public class LeadPortalFlowQuestion {
     @Column(nullable = false)
     private boolean required;
 
-    @Column(length = 500)
+    @Column(columnDefinition = "LONGTEXT")
     private String description;
 
-    @Column(length = 255)
+    @Column(columnDefinition = "LONGTEXT")
     private String placeholder;
 
     @Column(name = "position_index", nullable = false)
@@ -54,7 +54,7 @@ public class LeadPortalFlowQuestion {
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "lead_portal_flow_question_option", joinColumns = @JoinColumn(name = "question_id"))
     @OrderColumn(name = "option_order")
-    @Column(name = "option_value", length = 255)
+    @Column(name = "option_value", columnDefinition = "LONGTEXT")
     @JdbcTypeCode(SqlTypes.VARCHAR)
     private List<String> options = new ArrayList<>();
 }

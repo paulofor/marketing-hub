@@ -110,6 +110,37 @@ class LeadPortalFlowControllerTest {
         assertThat(saved.getExperiment()).isNotNull();
     }
 
+
+    @Test
+    void createFlowSupportsLongTextFields() throws Exception {
+        Experiment experiment = createExperiment();
+        String longText = "A".repeat(1200);
+
+        CreateLeadPortalFlowRequest request = new CreateLeadPortalFlowRequest();
+        request.setName("Fluxo Longo");
+        request.setSlug("fluxo-longo");
+        request.setDescription(longText);
+        request.setMarketNicheId(experiment.getNiche().getId());
+        request.setExperimentId(experiment.getId());
+        request.setQuestions(List.of(
+                buildQuestion(longText, longText, LeadPortalQuestionType.TEXTAREA, true, List.of(longText))
+        ));
+        request.getQuestions().get(0).setDescription(longText);
+        request.getQuestions().get(0).setPlaceholder(longText);
+
+        mockMvc.perform(post("/api/lead-portal-flows")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.questions[0].title").value(longText))
+                .andExpect(jsonPath("$.questions[0].dataKey").value(longText))
+                .andExpect(jsonPath("$.questions[0].description").value(longText))
+                .andExpect(jsonPath("$.questions[0].placeholder").value(longText));
+
+        LeadPortalFlow saved = repository.findBySlug("fluxo-longo").orElseThrow();
+        assertThat(saved.getQuestions().get(0).getOptions()).containsExactly(longText);
+    }
+
     @Test
     void duplicateSlugReturnsConflict() throws Exception {
         Experiment experiment = createExperiment();

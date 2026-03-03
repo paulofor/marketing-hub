@@ -34,7 +34,7 @@ public class LeadPortalFlow {
     @Column(nullable = false, length = 120)
     private String slug;
 
-    @Column(length = 500)
+    @Column(columnDefinition = "LONGTEXT")
     private String description;
 
     @Column(length = 128)

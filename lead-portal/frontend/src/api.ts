@@ -27,7 +27,7 @@ function resolveApiBaseUrl(): string {
   return `${normalizedBase}/api`;
 }
 
-const API_BASE_URL = resolveApiBaseUrl();
+export const API_BASE_URL = resolveApiBaseUrl();
 
 function buildUrl(path: string): string {
   const base = API_BASE_URL;

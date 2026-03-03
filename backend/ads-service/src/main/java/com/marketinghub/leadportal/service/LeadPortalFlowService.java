@@ -217,10 +217,6 @@ public class LeadPortalFlowService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "options are required for question type " + type);
         }
-        if (!expectsOptions && !cleaned.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "options are not supported for question type " + type);
-        }
         return new ArrayList<>(cleaned);
     }
 

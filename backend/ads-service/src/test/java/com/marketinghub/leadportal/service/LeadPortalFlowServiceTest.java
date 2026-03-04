@@ -1,19 +1,25 @@
 package com.marketinghub.leadportal.service;
 
 import com.marketinghub.leadportal.LeadPortalFlow;
+import com.marketinghub.leadportal.LeadPortalQuestionType;
+import com.marketinghub.leadportal.dto.LeadPortalFlowQuestionRequest;
+import com.marketinghub.leadportal.dto.UpdateLeadPortalFlowRequest;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.leadportal.repository.LeadPortalSimpleFormStyleRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,6 +43,9 @@ class LeadPortalFlowServiceTest {
     @Mock
     private MarketNicheRepository marketNicheRepository;
 
+    @Mock
+    private LeadPortalSimpleFormStyleRepository simpleFormStyleRepository;
+
     @InjectMocks
     private LeadPortalFlowService service;
 
@@ -48,10 +57,31 @@ class LeadPortalFlowServiceTest {
                 .id(1L)
                 .name("Fluxo")
                 .slug("fluxo")
-                .questions(List.of())
+                .questions(new ArrayList<>())
                 .build();
         when(repository.findById(1L)).thenReturn(Optional.of(flow));
         when(repository.save(any(LeadPortalFlow.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    }
+
+
+
+    @Test
+    void updateFlushesRemovedQuestionsBeforeAddingReplacementQuestions() {
+        LeadPortalFlowQuestionRequest questionRequest = new LeadPortalFlowQuestionRequest();
+        questionRequest.setTitle("Nome");
+        questionRequest.setDataKey("nome");
+        questionRequest.setType(LeadPortalQuestionType.TEXT);
+        questionRequest.setRequired(true);
+        questionRequest.setOptions(List.of());
+
+        UpdateLeadPortalFlowRequest request = new UpdateLeadPortalFlowRequest();
+        request.setQuestions(List.of(questionRequest));
+
+        service.update(1L, request);
+
+        InOrder inOrder = inOrder(repository);
+        inOrder.verify(repository).flush();
+        inOrder.verify(repository).save(flow);
     }
 
     @Test

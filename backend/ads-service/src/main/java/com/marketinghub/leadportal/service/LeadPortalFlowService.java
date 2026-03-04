@@ -137,6 +137,7 @@ public class LeadPortalFlowService {
         }
         if (request.getQuestions() != null) {
             flow.getQuestions().clear();
+            repository.flush();
             flow.getQuestions().addAll(buildQuestions(flow, request.getQuestions()));
         }
         return repository.save(flow);

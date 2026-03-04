@@ -32,8 +32,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -186,6 +189,71 @@ class LeadPortalFlowControllerTest {
         LeadPortalFlow updated = repository.findById(flow.getId()).orElseThrow();
         assertThat(updated.isApproved()).isTrue();
         assertThat(updated.getApprovedAt()).isNotNull();
+    }
+
+    @Test
+    void updateApprovedFlowPublishesChanges() throws Exception {
+        Experiment experiment = createExperiment();
+        LeadPortalFlow flow = repository.save(LeadPortalFlow.builder()
+                .name("Fluxo existente")
+                .slug("fluxo-publicado")
+                .approved(true)
+                .marketNiche(experiment.getNiche())
+                .experiment(experiment)
+                .build());
+
+        CreateLeadPortalFlowRequest request = new CreateLeadPortalFlowRequest();
+        request.setName("Fluxo Atualizado");
+        request.setSlug("fluxo-publicado");
+        request.setMarketNicheId(experiment.getNiche().getId());
+        request.setExperimentId(experiment.getId());
+        request.setQuestions(List.of(
+                buildQuestion("Novo título", "nome", LeadPortalQuestionType.TEXT, true, List.of())
+        ));
+
+        mockMvc.perform(put("/api/lead-portal-flows/" + flow.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Fluxo Atualizado"));
+
+        verify(flowPublisher).publish(org.mockito.ArgumentMatchers.argThat(updatedFlow ->
+                updatedFlow.getId().equals(flow.getId()) &&
+                        "Fluxo Atualizado".equals(updatedFlow.getName()) &&
+                        "fluxo-publicado".equals(updatedFlow.getSlug())));
+        verify(flowPublisher, never()).remove("fluxo-publicado");
+    }
+
+    @Test
+    void updateApprovedFlowWithSlugChangeRemovesOldSlugAndPublishesNewOne() throws Exception {
+        Experiment experiment = createExperiment();
+        LeadPortalFlow flow = repository.save(LeadPortalFlow.builder()
+                .name("Fluxo existente")
+                .slug("fluxo-antigo")
+                .approved(true)
+                .marketNiche(experiment.getNiche())
+                .experiment(experiment)
+                .build());
+
+        CreateLeadPortalFlowRequest request = new CreateLeadPortalFlowRequest();
+        request.setName("Fluxo existente");
+        request.setSlug("fluxo-novo");
+        request.setMarketNicheId(experiment.getNiche().getId());
+        request.setExperimentId(experiment.getId());
+        request.setQuestions(List.of(
+                buildQuestion("Nome", "nome", LeadPortalQuestionType.TEXT, true, List.of())
+        ));
+
+        mockMvc.perform(put("/api/lead-portal-flows/" + flow.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slug").value("fluxo-novo"));
+
+        verify(flowPublisher).remove("fluxo-antigo");
+        verify(flowPublisher).publish(org.mockito.ArgumentMatchers.argThat(updatedFlow ->
+                updatedFlow.getId().equals(flow.getId()) &&
+                        "fluxo-novo".equals(updatedFlow.getSlug())));
     }
 
     private Experiment createExperiment() {

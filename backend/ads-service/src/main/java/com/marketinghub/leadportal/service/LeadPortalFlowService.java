@@ -115,6 +115,8 @@ public class LeadPortalFlowService {
     @Transactional
     public LeadPortalFlow update(Long id, UpdateLeadPortalFlowRequest request) {
         LeadPortalFlow flow = get(id);
+        String previousSlug = flow.getSlug();
+        boolean wasApproved = flow.isApproved();
         if (request.getName() != null) {
             flow.setName(normalizeName(request.getName()));
         }
@@ -140,7 +142,23 @@ public class LeadPortalFlowService {
             repository.flush();
             flow.getQuestions().addAll(buildQuestions(flow, request.getQuestions()));
         }
-        return repository.save(flow);
+        LeadPortalFlow saved = repository.save(flow);
+        if (wasApproved) {
+            syncPublishedFlowAfterUpdate(saved, previousSlug);
+        }
+        return saved;
+    }
+
+    private void syncPublishedFlowAfterUpdate(LeadPortalFlow flow, String previousSlug) {
+        try {
+            if (StringUtils.hasText(previousSlug) && !Objects.equals(previousSlug, flow.getSlug())) {
+                flowPublisher.remove(previousSlug);
+            }
+            flowPublisher.publish(flow);
+        } catch (LeadPortalPublicationException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "failed to synchronise lead portal flow", ex);
+        }
     }
 
     @Transactional

@@ -25,6 +25,17 @@ function buildAssetsBaseUrl(): string {
 }
 
 const normalizedAssetsBaseUrl = buildAssetsBaseUrl().replace(/\/+$/, "");
+const assetsBaseOrigin = new URL(normalizedAssetsBaseUrl, window.location.origin).origin;
+
+function normalizeAssetPath(path: string): string {
+  if (path.startsWith("/api/uploads/")) {
+    return path.replace(/^\/api\//, "/");
+  }
+  if (path.startsWith("api/uploads/")) {
+    return path.replace(/^api\//, "");
+  }
+  return path;
+}
 
 export function resolveAssetUrl(path?: string | null): string {
   if (!path) {
@@ -36,9 +47,14 @@ export function resolveAssetUrl(path?: string | null): string {
   if (ABSOLUTE_URL_PATTERN.test(path)) {
     return path;
   }
-  const normalizedPath = path.replace(/^\/+/, "");
+  const normalizedPath = normalizeAssetPath(path).replace(/^\/+/, "");
   if (!normalizedPath) {
     return "";
   }
+
+  if (path.startsWith("/")) {
+    return `${assetsBaseOrigin}/${normalizedPath}`;
+  }
+
   return `${normalizedAssetsBaseUrl}/${normalizedPath}`;
 }

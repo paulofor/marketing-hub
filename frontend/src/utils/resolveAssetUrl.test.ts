@@ -14,4 +14,11 @@ describe("resolveAssetUrl", () => {
       "http://localhost:8000/uploads/imagem.png",
     );
   });
+
+
+  it("normaliza URLs absolutas legadas com /api/uploads para o caminho estático", () => {
+    expect(resolveAssetUrl("http://191.252.92.222:8000/api/uploads/imagem.png")).toBe(
+      "http://191.252.92.222:8000/uploads/imagem.png",
+    );
+  });
 });

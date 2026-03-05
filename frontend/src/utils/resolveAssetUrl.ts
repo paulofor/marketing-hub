@@ -28,6 +28,16 @@ const normalizedAssetsBaseUrl = buildAssetsBaseUrl().replace(/\/+$/, "");
 const assetsBaseOrigin = new URL(normalizedAssetsBaseUrl, window.location.origin).origin;
 
 function normalizeAssetPath(path: string): string {
+  if (ABSOLUTE_URL_PATTERN.test(path)) {
+    try {
+      const parsed = new URL(path);
+      if (parsed.pathname.startsWith("/api/uploads/")) {
+        return `${parsed.origin}${parsed.pathname.replace(/^\/api\//, "/")}${parsed.search}${parsed.hash}`;
+      }
+    } catch {
+      return path;
+    }
+  }
   if (path.startsWith("/api/uploads/")) {
     return path.replace(/^\/api\//, "/");
   }
@@ -44,17 +54,18 @@ export function resolveAssetUrl(path?: string | null): string {
   if (path.startsWith("data:")) {
     return path;
   }
-  if (ABSOLUTE_URL_PATTERN.test(path)) {
-    return path;
+  const normalizedPath = normalizeAssetPath(path);
+  if (ABSOLUTE_URL_PATTERN.test(normalizedPath)) {
+    return normalizedPath;
   }
-  const normalizedPath = normalizeAssetPath(path).replace(/^\/+/, "");
-  if (!normalizedPath) {
+  const sanitizedPath = normalizedPath.replace(/^\/+/, "");
+  if (!sanitizedPath) {
     return "";
   }
 
   if (path.startsWith("/")) {
-    return `${assetsBaseOrigin}/${normalizedPath}`;
+    return `${assetsBaseOrigin}/${sanitizedPath}`;
   }
 
-  return `${normalizedAssetsBaseUrl}/${normalizedPath}`;
+  return `${normalizedAssetsBaseUrl}/${sanitizedPath}`;
 }

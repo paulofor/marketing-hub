@@ -26,6 +26,29 @@ function resolveAssetsBaseUrl(): string {
 
 const ASSETS_BASE_URL = resolveAssetsBaseUrl();
 
+function normalizeAssetPath(path: string): string {
+  if (ABSOLUTE_URL_PATTERN.test(path)) {
+    try {
+      const parsed = new URL(path);
+      if (parsed.pathname.startsWith("/api/uploads/")) {
+        return `${parsed.origin}${parsed.pathname.replace(/^\/api\//, "/")}${parsed.search}${parsed.hash}`;
+      }
+    } catch {
+      return path;
+    }
+  }
+
+  if (path.startsWith("/api/uploads/")) {
+    return path.replace(/^\/api\//, "/");
+  }
+
+  if (path.startsWith("api/uploads/")) {
+    return path.replace(/^api\//, "");
+  }
+
+  return path;
+}
+
 export function resolveAssetUrl(path?: string | null): string {
   if (!path) {
     return "";
@@ -33,12 +56,13 @@ export function resolveAssetUrl(path?: string | null): string {
   if (path.startsWith("data:")) {
     return path;
   }
-  if (ABSOLUTE_URL_PATTERN.test(path)) {
-    return path;
+  const normalizedPath = normalizeAssetPath(path);
+  if (ABSOLUTE_URL_PATTERN.test(normalizedPath)) {
+    return normalizedPath;
   }
-  const normalizedPath = path.replace(/^\/+/, "");
-  if (!normalizedPath) {
+  const sanitizedPath = normalizedPath.replace(/^\/+/, "");
+  if (!sanitizedPath) {
     return "";
   }
-  return `${ASSETS_BASE_URL}/${normalizedPath}`;
+  return `${ASSETS_BASE_URL}/${sanitizedPath}`;
 }

@@ -55,6 +55,7 @@ export default function SimpleLeadPortalFormCard({
   editingFlow,
   onEditFinished,
 }: SimpleLeadPortalFormCardProps) {
+  const logPrefix = "[SimpleLeadPortalFormCard]";
   const createFlow = useCreateLeadPortalFlow();
   const updateFlow = useUpdateLeadPortalFlow();
   const { data: simpleFormStyles, isLoading: isLoadingStyles } =
@@ -368,10 +369,21 @@ export default function SimpleLeadPortalFormCard({
   };
 
   const handleSaveSimpleFlow = async () => {
+    console.info(`${logPrefix} Save requested`, {
+      isEditing,
+      marketNicheId,
+      selectedStyleId,
+      hasCard1Image: Boolean(card1ImageUrl.trim()),
+      hasCard2Image: Boolean(card2ImageUrl.trim()),
+      hasCard3Image: Boolean(card3ImageUrl.trim()),
+    });
+
     if (isSaving) {
+      console.info(`${logPrefix} Save aborted because a save is already pending`);
       return;
     }
     if (!marketNicheId) {
+      console.warn(`${logPrefix} Save blocked: invalid niche id`);
       setFeedback({
         variant: "error",
         message: "Selecione um nicho válido antes de criar o formulário.",
@@ -402,6 +414,9 @@ export default function SimpleLeadPortalFormCard({
       !card2ImageUrl.trim() ||
       !card3ImageUrl.trim()
     ) {
+      console.warn(
+        `${logPrefix} Save blocked: missing required field(s) or subcard image URL(s)`,
+      );
       setFeedback({
         variant: "error",
         message:
@@ -416,6 +431,7 @@ export default function SimpleLeadPortalFormCard({
         .map((option) => option.trim())
         .filter(Boolean).length === 0
     ) {
+      console.warn(`${logPrefix} Save blocked: options list is empty`);
       setFeedback({
         variant: "error",
         message:
@@ -425,6 +441,7 @@ export default function SimpleLeadPortalFormCard({
     }
 
     if (!selectedStyleId) {
+      console.warn(`${logPrefix} Save blocked: no simple form style selected`);
       setFeedback({
         variant: "error",
         message: "Selecione um estilo visual para o formulário simples.",
@@ -449,8 +466,20 @@ export default function SimpleLeadPortalFormCard({
     };
 
     try {
+      console.info(`${logPrefix} Sending flow payload`, {
+        name: payload.name,
+        slug: payload.slug,
+        model: payload.model,
+        marketNicheId: payload.marketNicheId,
+        simpleFormStyleId: payload.simpleFormStyleId,
+        questionCount: payload.questions.length,
+      });
+
       if (isEditing && editingFlow) {
         await updateFlow.mutateAsync({ id: editingFlow.id, payload });
+        console.info(`${logPrefix} Flow updated successfully`, {
+          flowId: editingFlow.id,
+        });
         setFeedback({
           variant: "success",
           message: "Formulário atualizado com sucesso.",
@@ -458,6 +487,9 @@ export default function SimpleLeadPortalFormCard({
         onEditFinished?.();
       } else {
         await createFlow.mutateAsync(payload);
+        console.info(`${logPrefix} Flow created successfully`, {
+          slug: payload.slug,
+        });
         setFeedback({
           variant: "success",
           message: "Fluxo simples criado com sucesso.",
@@ -467,6 +499,7 @@ export default function SimpleLeadPortalFormCard({
       resetFormState();
       setIsVisible(false);
     } catch (error) {
+      console.error(`${logPrefix} Failed to save flow`, error);
       const message = axios.isAxiosError(error)
         ? error.response?.data?.message ?? "Não foi possível salvar o fluxo simples."
         : "Não foi possível salvar o fluxo simples.";
@@ -496,7 +529,18 @@ export default function SimpleLeadPortalFormCard({
     });
 
   const uploadSubcardImage = async (index: 1 | 2 | 3, file: File) => {
+    console.info(`${logPrefix} Upload requested`, {
+      index,
+      fileName: file.name,
+      type: file.type,
+      size: file.size,
+    });
+
     if (!file.type.startsWith("image/")) {
+      console.warn(`${logPrefix} Upload blocked: invalid file type`, {
+        index,
+        type: file.type,
+      });
       setFeedback({
         variant: "error",
         message: "Selecione um arquivo de imagem válido para o subcard.",
@@ -506,7 +550,12 @@ export default function SimpleLeadPortalFormCard({
 
     try {
       const { width } = await readImageDimensions(file);
+      console.info(`${logPrefix} Image dimensions loaded`, { index, width });
       if (width < 600) {
+        console.warn(`${logPrefix} Upload blocked: image width below minimum`, {
+          index,
+          width,
+        });
         setFeedback({
           variant: "error",
           message:
@@ -526,11 +575,21 @@ export default function SimpleLeadPortalFormCard({
         body: formData,
       });
 
+      console.info(`${logPrefix} Upload response received`, {
+        index,
+        ok: response.ok,
+        status: response.status,
+      });
+
       if (!response.ok) {
         throw new Error("Falha ao enviar imagem");
       }
 
       const imageUrl = await parseAssetUploadResponse(response);
+      console.info(`${logPrefix} Upload parsed image URL`, {
+        index,
+        imageUrl,
+      });
       if (index === 1) setCard1ImageUrl(imageUrl);
       if (index === 2) setCard2ImageUrl(imageUrl);
       if (index === 3) setCard3ImageUrl(imageUrl);
@@ -539,7 +598,11 @@ export default function SimpleLeadPortalFormCard({
         variant: "success",
         message: `Imagem ${index} enviada com sucesso.`,
       });
-    } catch {
+    } catch (error) {
+      console.error(`${logPrefix} Upload failed`, {
+        index,
+        error,
+      });
       setFeedback({
         variant: "error",
         message: `Não foi possível enviar a imagem ${index}. Tente novamente.`,

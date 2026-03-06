@@ -15,6 +15,7 @@ import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 import InstagramAdPreview from "../../components/InstagramAdPreview";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import { parseAssetUploadResponse } from "../../utils/parseAssetUploadResponse";
+import { buildApiUrl } from "../../utils/buildApiUrl";
 import { FACEBOOK_CALL_TO_ACTIONS } from "../../constants/facebookCallToActions";
 import {
   AlertTriangle,
@@ -46,6 +47,8 @@ interface CreativeForm {
 }
 
 const ICON_SIZE = 16;
+const ASSET_UPLOAD_URL = buildApiUrl("/api/assets");
+
 
 type FeedbackVariant = "success" | "warning" | "error";
 
@@ -362,7 +365,7 @@ export default function CriativosTab({ experimentId }: Props) {
       const fd = new FormData();
       fd.append("file", file);
       try {
-        const res = await fetch("/api/assets", { method: "POST", body: fd });
+        const res = await fetch(ASSET_UPLOAD_URL, { method: "POST", body: fd });
         if (!res.ok) {
           throw new Error("Upload failed");
         }

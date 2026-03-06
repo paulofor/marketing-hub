@@ -9,6 +9,7 @@ import { useUpdateLeadPortalFlow } from "../../api/leadPortal/useUpdateLeadPorta
 import { useLeadPortalSimpleFormStyles } from "../../api/leadPortal/useLeadPortalSimpleFormStyles";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import { parseAssetUploadResponse } from "../../utils/parseAssetUploadResponse";
+import { buildApiUrl } from "../../utils/buildApiUrl";
 
 const SIMPLE_FORM_DEFAULTS = {
   flowName: "Formulário simples para personal trainer",
@@ -36,6 +37,8 @@ const SIMPLE_FORM_DEFAULTS = {
   bulletItem2: "Plano com foco no seu objetivo",
   bulletItem3: "Acompanhamento e ajustes semanais",
 };
+
+const ASSET_UPLOAD_URL = buildApiUrl("/api/assets");
 
 interface SimpleLeadPortalFormCardProps {
   marketNicheId?: number;
@@ -570,7 +573,7 @@ export default function SimpleLeadPortalFormCard({
       formData.append("prompt", `lead-portal-subcard-${index}`);
       formData.append("model", "manual");
 
-      const response = await fetch("/api/assets", {
+      const response = await fetch(ASSET_UPLOAD_URL, {
         method: "POST",
         body: formData,
       });

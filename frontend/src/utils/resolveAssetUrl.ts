@@ -31,7 +31,28 @@ const assetsBasePathname = assetsBaseUrl.pathname.replace(/\/+$/, "");
 const assetsBasePathPrefix = assetsBasePathname === "/" ? "" : assetsBasePathname;
 
 function normalizeAssetPath(path: string): string {
-  return path;
+  const normalized = path.trim();
+
+  if (!normalized) {
+    return "";
+  }
+
+  const lowerPath = normalized.toLowerCase();
+  if (lowerPath.startsWith("<!doctype") || lowerPath.startsWith("<html")) {
+    return "";
+  }
+
+  if (ABSOLUTE_URL_PATTERN.test(normalized)) {
+    try {
+      const absoluteUrl = new URL(normalized);
+      absoluteUrl.pathname = absoluteUrl.pathname.replace(/^\/api\/uploads\//, "/uploads/");
+      return absoluteUrl.toString();
+    } catch {
+      return normalized;
+    }
+  }
+
+  return normalized.replace(/^\/?api\/uploads\//, "/uploads/");
 }
 
 export function resolveAssetUrl(path?: string | null): string {

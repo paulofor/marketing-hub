@@ -15,6 +15,9 @@ describe("resolveAssetUrl", () => {
     );
   });
 
+  it("ignora conteúdo HTML inválido para não renderizar src quebrado", () => {
+    expect(resolveAssetUrl("<!doctype html><html></html>")).toBe("");
+  });
 
   it("normaliza URLs absolutas legadas com /api/uploads para o caminho estático", () => {
     expect(resolveAssetUrl("http://191.252.92.222:8000/api/uploads/imagem.png")).toBe(

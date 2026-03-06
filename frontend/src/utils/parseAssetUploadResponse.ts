@@ -6,6 +6,11 @@ export async function parseAssetUploadResponse(response: Response): Promise<stri
     return "";
   }
 
+  const lowerBody = trimmedBody.toLowerCase();
+  if (lowerBody.startsWith("<!doctype") || lowerBody.startsWith("<html")) {
+    return "";
+  }
+
   try {
     const parsed = JSON.parse(trimmedBody);
     if (typeof parsed === "string") {

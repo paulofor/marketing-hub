@@ -9,7 +9,9 @@ COPY index.html ./
 COPY src ./src
 RUN npm ci
 ARG VITE_API_URL=/api
+ARG VITE_ASSETS_BASE_URL=
 ENV VITE_API_URL=${VITE_API_URL}
+ENV VITE_ASSETS_BASE_URL=${VITE_ASSETS_BASE_URL}
 RUN npm run build
 
 FROM nginx:1.25-alpine

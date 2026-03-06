@@ -33,6 +33,7 @@ O ambiente dockerizado levanta três serviços:
 ### Variáveis úteis
 
 - `VITE_API_URL`: pode ser ajustada no `docker-compose.yml` caso deseje que o frontend consuma a API em outro caminho.
+- `VITE_ASSETS_BASE_URL`: define o host base utilizado para resolver caminhos relativos como `/uploads/...`. Utilize-o quando os arquivos de mídia estiverem hospedados em outro domínio/porta; no compose é possível setar esse valor via `LEAD_PORTAL_ASSETS_BASE_URL`.
 - `SPRING_PROFILES_ACTIVE`: defina no serviço `backend` se precisar ativar perfis específicos do Spring.
 
 ### Resolução de 502 Bad Gateway

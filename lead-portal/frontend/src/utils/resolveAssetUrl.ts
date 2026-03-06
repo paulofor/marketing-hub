@@ -6,22 +6,50 @@ function stripTrailingSlash(url: string): string {
   return url.replace(/\/+$/, "");
 }
 
+function getRuntimeOrigin(): string {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin;
+  }
+  if (typeof globalThis !== "undefined" && typeof globalThis.location === "object") {
+    const location = globalThis.location as { origin?: string };
+    if (location?.origin) {
+      return location.origin;
+    }
+  }
+  return "";
+}
+
+function toAbsoluteBaseUrl(value: string): string {
+  if (!value) {
+    return "";
+  }
+  if (ABSOLUTE_URL_PATTERN.test(value)) {
+    return stripTrailingSlash(value);
+  }
+  const origin = getRuntimeOrigin();
+  if (!origin) {
+    return stripTrailingSlash(value.startsWith("/") ? value : `/${value}`);
+  }
+  if (value.startsWith("/")) {
+    return stripTrailingSlash(`${origin}${value}`);
+  }
+  return stripTrailingSlash(`${origin}/${value}`);
+}
+
 function resolveAssetsBaseUrl(): string {
   const configured = import.meta.env.VITE_ASSETS_BASE_URL?.trim();
   if (configured) {
-    if (ABSOLUTE_URL_PATTERN.test(configured)) {
-      return stripTrailingSlash(configured);
-    }
-    if (configured.startsWith("/")) {
-      return stripTrailingSlash(`${window.location.origin}${configured}`);
-    }
-    return stripTrailingSlash(`${window.location.origin}/${configured}`);
+    return toAbsoluteBaseUrl(configured);
   }
 
-  if (API_BASE_URL.endsWith("/api")) {
-    return stripTrailingSlash(API_BASE_URL.slice(0, -4));
+  const apiBase = toAbsoluteBaseUrl(API_BASE_URL);
+  if (!apiBase) {
+    return "";
   }
-  return stripTrailingSlash(API_BASE_URL);
+  if (apiBase.endsWith("/api")) {
+    return stripTrailingSlash(apiBase.slice(0, -4));
+  }
+  return stripTrailingSlash(apiBase);
 }
 
 const ASSETS_BASE_URL = resolveAssetsBaseUrl();

@@ -8267,3 +8267,17 @@
 2026-02-23T15:56:22.358Z  INFO 4404 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
 2026-02-23T15:56:22.359Z  INFO 4404 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : marketingHubPool - Shutdown initiated...
 2026-02-23T15:56:22.359Z  INFO 4404 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : marketingHubPool - Shutdown completed.
+2026-03-06T21:44:41.952Z  INFO 6008 --- [main] c.m.c.web.CreativeControllerCorsTest     : Starting CreativeControllerCorsTest using Java 21.0.10 with PID 6008 (started by root in /root/ai-hub/src/ai-hub-76cca203-4cda-4b78-ba71-f9aac2ac54c3-oBm8oj/repo/backend/ads-service)
+2026-03-06T21:44:41.953Z  INFO 6008 --- [main] c.m.c.web.CreativeControllerCorsTest     : No active profile set, falling back to 1 default profile: "default"
+2026-03-06T21:44:43.649Z  WARN 6008 --- [main] o.s.b.a.f.FreeMarkerAutoConfiguration    : Cannot find template location(s): [classpath:/templates/] (please add some templates, check your FreeMarker configuration, or set spring.freemarker.check-template-location=false)
+2026-03-06T21:44:43.667Z  INFO 6008 --- [main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-03-06T21:44:43.668Z  INFO 6008 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-03-06T21:44:43.669Z  INFO 6008 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-03-06T21:44:43.739Z  INFO 6008 --- [main] c.m.c.web.CreativeControllerCorsTest     : Started CreativeControllerCorsTest in 2.027 seconds (process running for 2.683)
+2026-03-06T21:46:01.478Z  INFO 6237 --- [main] c.m.c.web.CreativeControllerCorsTest     : Starting CreativeControllerCorsTest using Java 21.0.10 with PID 6237 (started by root in /root/ai-hub/src/ai-hub-76cca203-4cda-4b78-ba71-f9aac2ac54c3-oBm8oj/repo/backend/ads-service)
+2026-03-06T21:46:01.479Z  INFO 6237 --- [main] c.m.c.web.CreativeControllerCorsTest     : No active profile set, falling back to 1 default profile: "default"
+2026-03-06T21:46:03.102Z  WARN 6237 --- [main] o.s.b.a.f.FreeMarkerAutoConfiguration    : Cannot find template location(s): [classpath:/templates/] (please add some templates, check your FreeMarker configuration, or set spring.freemarker.check-template-location=false)
+2026-03-06T21:46:03.118Z  INFO 6237 --- [main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-03-06T21:46:03.118Z  INFO 6237 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-03-06T21:46:03.119Z  INFO 6237 --- [main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-03-06T21:46:03.173Z  INFO 6237 --- [main] c.m.c.web.CreativeControllerCorsTest     : Started CreativeControllerCorsTest in 1.913 seconds (process running for 2.534)

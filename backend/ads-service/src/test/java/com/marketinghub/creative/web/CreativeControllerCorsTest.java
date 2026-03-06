@@ -52,6 +52,22 @@ class CreativeControllerCorsTest {
     }
 
     @Test
+    void uploadLargeImageStillHonorsCorsHeaders() throws Exception {
+        when(creativeService.uploadImage(any(), any(), any())).thenReturn("/uploads/large.png");
+
+        byte[] largePayload = new byte[4 * 1024 * 1024];
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "large.png", "image/png", largePayload);
+
+        mockMvc.perform(multipart("/api/assets")
+                        .file(file)
+                        .param("prompt", "large-image")
+                        .header(HttpHeaders.ORIGIN, REQUEST_ORIGIN))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, REQUEST_ORIGIN));
+    }
+
+    @Test
     void preflightRequestIncludesCorsMetadata() throws Exception {
         mockMvc.perform(options("/api/assets")
                         .header(HttpHeaders.ORIGIN, REQUEST_ORIGIN)

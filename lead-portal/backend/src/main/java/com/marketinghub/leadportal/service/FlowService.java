@@ -6,8 +6,10 @@ import com.marketinghub.leadportal.entity.FlowEntity;
 import com.marketinghub.leadportal.exception.FlowNotFoundException;
 import com.marketinghub.leadportal.model.Flow;
 import com.marketinghub.leadportal.model.FlowAccessMetadata;
+import com.marketinghub.leadportal.model.SimpleFormStyle;
 import com.marketinghub.leadportal.repository.FlowAccessRepository;
 import com.marketinghub.leadportal.repository.FlowRepository;
+import com.marketinghub.leadportal.style.SimpleFormStyleDefaults;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import org.springframework.stereotype.Service;
@@ -21,18 +23,21 @@ public class FlowService {
     private final MeterRegistry meterRegistry;
     private final SimpleFlowCatalog simpleFlowCatalog;
     private final FlowAssetService flowAssetService;
+    private final SimpleFormStyleDefaults simpleFormStyleDefaults;
 
     public FlowService(
             FlowRepository repository,
             FlowAccessRepository accessRepository,
             MeterRegistry meterRegistry,
             SimpleFlowCatalog simpleFlowCatalog,
-            FlowAssetService flowAssetService) {
+            FlowAssetService flowAssetService,
+            SimpleFormStyleDefaults simpleFormStyleDefaults) {
         this.repository = repository;
         this.accessRepository = accessRepository;
         this.meterRegistry = meterRegistry;
         this.simpleFlowCatalog = simpleFlowCatalog;
         this.flowAssetService = flowAssetService;
+        this.simpleFormStyleDefaults = simpleFormStyleDefaults;
     }
 
     @Transactional
@@ -42,32 +47,36 @@ public class FlowService {
                     "Fluxos simples são gerenciados automaticamente e não podem ser editados.");
         }
 
-        Flow processedFlow = flowAssetService.optimizeAssets(flow);
+        Flow flowWithDefaults = applyStyleDefaults(flow);
+        Flow processedFlow = flowAssetService.optimizeAssets(flowWithDefaults);
+        Flow flowToPersist = processedFlow != null ? processedFlow : flowWithDefaults;
 
-        FlowEntity entityToSave = FlowEntity.fromModel(processedFlow);
+        FlowEntity entityToSave = FlowEntity.fromModel(flowToPersist);
         repository
                 .findById(flow.slug())
                 .ifPresent(existing -> entityToSave.setAccessCount(existing.getAccessCount()));
 
         FlowEntity saved = repository.save(entityToSave);
-        return saved.toModel();
+        return applyStyleDefaults(saved.toModel());
     }
 
     @Transactional(readOnly = true)
     public Flow get(String slug) {
-        return simpleFlowCatalog.find(slug).orElseGet(() -> repository
+        Flow flow = simpleFlowCatalog.find(slug).orElseGet(() -> repository
                 .findById(slug)
                 .map(FlowEntity::toModel)
                 .orElseThrow(() -> new FlowNotFoundException(slug)));
+        return applyStyleDefaults(flow);
     }
 
     @Transactional
     public Flow getAndTrackAccess(String slug, FlowAccessMetadata accessMetadata) {
         return simpleFlowCatalog.find(slug)
                 .map(flow -> {
+                    Flow preparedFlow = applyStyleDefaults(flow);
                     recordAccessMetric(slug);
                     registerAccess(slug, accessMetadata);
-                    return flow;
+                    return preparedFlow;
                 })
                 .orElseGet(() -> fetchAndTrackPersistedFlow(slug, accessMetadata));
     }
@@ -86,7 +95,10 @@ public class FlowService {
 
     @Transactional(readOnly = true)
     public Collection<Flow> list() {
-        return repository.findAll().stream().map(FlowEntity::toModel).toList();
+        return repository.findAll().stream()
+                .map(FlowEntity::toModel)
+                .map(this::applyStyleDefaults)
+                .toList();
     }
 
     private Flow fetchAndTrackPersistedFlow(String slug, FlowAccessMetadata accessMetadata) {
@@ -94,23 +106,45 @@ public class FlowService {
                 .findById(slug)
                 .orElseThrow(() -> new FlowNotFoundException(slug));
 
-        Flow originalFlow = entity.toModel();
+        Flow originalFlow = applyStyleDefaults(entity.toModel());
         Flow optimizedFlow = flowAssetService.optimizeAssets(originalFlow);
 
-        if (optimizedFlow != null && !optimizedFlow.equals(originalFlow)) {
-            FlowEntity updatedEntity = FlowEntity.fromModel(optimizedFlow);
-            updatedEntity.setAccessCount(entity.getAccessCount());
-            repository.save(updatedEntity);
-            originalFlow = optimizedFlow;
-        } else if (optimizedFlow != null) {
-            originalFlow = optimizedFlow;
+        Flow flowToReturn = originalFlow;
+        if (optimizedFlow != null) {
+            Flow optimizedWithDefaults = applyStyleDefaults(optimizedFlow);
+            if (!optimizedWithDefaults.equals(originalFlow)) {
+                FlowEntity updatedEntity = FlowEntity.fromModel(optimizedWithDefaults);
+                updatedEntity.setAccessCount(entity.getAccessCount());
+                repository.save(updatedEntity);
+            }
+            flowToReturn = optimizedWithDefaults;
         }
 
         repository.incrementAccessCount(slug);
         recordAccessMetric(slug);
         registerAccess(slug, accessMetadata);
 
-        return originalFlow;
+        return flowToReturn;
+    }
+
+    private Flow applyStyleDefaults(Flow flow) {
+        if (flow == null) {
+            return null;
+        }
+
+        SimpleFormStyle enrichedStyle = simpleFormStyleDefaults.applyDefaults(flow.simpleFormStyle());
+        if (enrichedStyle == null || enrichedStyle.equals(flow.simpleFormStyle())) {
+            return flow;
+        }
+
+        return new Flow(
+                flow.slug(),
+                flow.name(),
+                flow.description(),
+                flow.model(),
+                flow.prompt(),
+                flow.questions(),
+                enrichedStyle);
     }
 
     private void registerAccess(String slug, FlowAccessMetadata metadata) {

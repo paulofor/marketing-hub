@@ -126,8 +126,10 @@ export default function FlowPage() {
                       <span className="flow-proof-image__overlay">{post.overlayText}</span>
                     ) : null}
                   </div>
-                  <h3>{post.title}</h3>
-                  <p>{post.description}</p>
+                  <div className="flow-proof-card__copy">
+                    <h3>{post.title}</h3>
+                    <p>{post.description}</p>
+                  </div>
                 </article>
               );
             })}

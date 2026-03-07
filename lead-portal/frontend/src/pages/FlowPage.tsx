@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { fetchLeadPortalFlow } from "../api";
@@ -46,8 +46,6 @@ export default function FlowPage() {
 
   const definition = flow.simpleFormStyle?.definition ?? null;
   const heroLayout = definition?.heroLayout ?? "image-right";
-  const heroImageUrl = definition?.heroImageUrl ?? null;
-  const heroBlend = definition?.heroImageBlendColor ?? null;
   const styleVars = buildStyleVariables(definition);
 
   const formQuestions = metadata.formQuestions.length > 0 ? metadata.formQuestions : flow.questions;
@@ -79,14 +77,6 @@ export default function FlowPage() {
     items: metadata.bullets.items.length > 0 ? metadata.bullets.items : defaultBullets.items,
   };
 
-  const heroMediaStyle: CSSProperties | undefined = heroImageUrl
-    ? {
-        backgroundImage: heroBlend
-          ? `linear-gradient(${heroBlend}, ${heroBlend}), url(${heroImageUrl})`
-          : `url(${heroImageUrl})`,
-      }
-    : undefined;
-
   return (
     <div className="flow-page" style={styleVars} data-hero-layout={heroLayout}>
       <div className="flow-container">
@@ -100,7 +90,6 @@ export default function FlowPage() {
               <strong>{defaultHeader.promiseLabel}:</strong> {heroContent.promise}
             </div>
           </div>
-          {heroImageUrl ? <div className="flow-hero-media" style={heroMediaStyle} /> : null}
         </section>
 
         <section className="flow-proof-section" aria-label="Exemplos de posts">

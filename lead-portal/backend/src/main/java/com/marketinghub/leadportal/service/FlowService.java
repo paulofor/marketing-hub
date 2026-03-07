@@ -94,11 +94,23 @@ public class FlowService {
                 .findById(slug)
                 .orElseThrow(() -> new FlowNotFoundException(slug));
 
+        Flow originalFlow = entity.toModel();
+        Flow optimizedFlow = flowAssetService.optimizeAssets(originalFlow);
+
+        if (optimizedFlow != null && !optimizedFlow.equals(originalFlow)) {
+            FlowEntity updatedEntity = FlowEntity.fromModel(optimizedFlow);
+            updatedEntity.setAccessCount(entity.getAccessCount());
+            repository.save(updatedEntity);
+            originalFlow = optimizedFlow;
+        } else if (optimizedFlow != null) {
+            originalFlow = optimizedFlow;
+        }
+
         repository.incrementAccessCount(slug);
         recordAccessMetric(slug);
         registerAccess(slug, accessMetadata);
 
-        return entity.toModel();
+        return originalFlow;
     }
 
     private void registerAccess(String slug, FlowAccessMetadata metadata) {

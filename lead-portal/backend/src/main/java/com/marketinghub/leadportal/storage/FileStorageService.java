@@ -44,38 +44,60 @@ public class FileStorageService {
     }
 
     public String store(MultipartFile file, String identifier) {
-        String filename = StringUtils.cleanPath(file.getOriginalFilename());
-        if (filename.isEmpty()) {
-            filename = "upload";
-        }
-        String storedFileName = identifier + "-" + filename;
         try {
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket(properties.getBucket())
-                    .key(storedFileName)
-                    .contentType(file.getContentType())
-                    .build();
-
-            log.info(
-                    "Sending file '{}' (contentType={}, size={} bytes) to Cloudflare bucket '{}'",
-                    storedFileName,
+            return storeInternal(
+                    identifier,
+                    file.getOriginalFilename(),
                     file.getContentType(),
                     file.getSize(),
-                    properties.getBucket());
-
-            PutObjectResponse response = s3Client.putObject(
-                    putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
-
-            log.info(
-                    "File '{}' stored successfully in bucket '{}' (etag={})",
-                    storedFileName,
-                    properties.getBucket(),
-                    response.eTag());
-            return storedFileName;
+                    RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
         } catch (SdkException | IOException ex) {
+            String storedFileName = buildStoredFileName(identifier, cleanFileName(file.getOriginalFilename()));
             log.error("Failed to store file '{}' in bucket '{}'", storedFileName, properties.getBucket(), ex);
             throw new StorageException("Failed to store file", ex);
         }
+    }
+
+    public String store(byte[] content, String identifier, String originalFilename, String contentType) {
+        try {
+            return storeInternal(
+                    identifier,
+                    originalFilename,
+                    contentType,
+                    content.length,
+                    RequestBody.fromBytes(content));
+        } catch (SdkException ex) {
+            String storedFileName = buildStoredFileName(identifier, cleanFileName(originalFilename));
+            log.error("Failed to store file '{}' in bucket '{}'", storedFileName, properties.getBucket(), ex);
+            throw new StorageException("Failed to store file", ex);
+        }
+    }
+
+    private String storeInternal(
+            String identifier, String originalFilename, String contentType, long size, RequestBody requestBody) {
+        String filename = cleanFileName(originalFilename);
+        String storedFileName = buildStoredFileName(identifier, filename);
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(properties.getBucket())
+                .key(storedFileName)
+                .contentType(contentType)
+                .build();
+
+        log.info(
+                "Sending file '{}' (contentType={}, size={} bytes) to Cloudflare bucket '{}'",
+                storedFileName,
+                contentType,
+                size,
+                properties.getBucket());
+
+        PutObjectResponse response = s3Client.putObject(putObjectRequest, requestBody);
+
+        log.info(
+                "File '{}' stored successfully in bucket '{}' (etag={})",
+                storedFileName,
+                properties.getBucket(),
+                response.eTag());
+        return storedFileName;
     }
 
     public Resource loadAsResource(String storedFileName) {
@@ -105,6 +127,16 @@ public class FileStorageService {
                 ? publicBaseUrl.substring(0, publicBaseUrl.length() - 1)
                 : publicBaseUrl;
         return Optional.of(normalizedBase + "/" + storedFileName);
+    }
+
+    private String cleanFileName(String originalFilename) {
+        String filename = StringUtils.cleanPath(originalFilename != null ? originalFilename : "upload");
+        return filename.isEmpty() ? "upload" : filename;
+    }
+
+    private String buildStoredFileName(String identifier, String filename) {
+        String prefix = isBlank(identifier) ? "file" : identifier;
+        return prefix + "-" + filename;
     }
 
     private boolean isBlank(String value) {

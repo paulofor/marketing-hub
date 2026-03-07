@@ -111,17 +111,21 @@ export default function FlowPage() {
           </div>
           <div className="flow-proof-grid">
             {proofContent.cards.map((post) => {
-              const mediaStyle = post.imageUrl
-                ? { backgroundImage: `url(${post.imageUrl})` }
-                : post.background
-                  ? { background: post.background }
-                  : undefined;
+              const mediaStyle = !post.imageUrl && post.background ? { background: post.background } : undefined;
               return (
                 <article key={post.title} className="flow-proof-card">
                   <div
                     className={`flow-proof-image ${post.imageUrl ? "flow-proof-image--media" : ""}`}
                     style={mediaStyle}
                   >
+                    {post.imageUrl ? (
+                      <img
+                        src={post.imageUrl}
+                        alt={post.title}
+                        className="flow-proof-image__media"
+                        loading="lazy"
+                      />
+                    ) : null}
                     {post.overlayText ? (
                       <span className="flow-proof-image__overlay">{post.overlayText}</span>
                     ) : null}

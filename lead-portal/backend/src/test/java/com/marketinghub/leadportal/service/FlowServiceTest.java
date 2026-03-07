@@ -15,6 +15,7 @@ import com.marketinghub.leadportal.model.FlowQuestion;
 import com.marketinghub.leadportal.model.FlowQuestionType;
 import com.marketinghub.leadportal.repository.FlowAccessRepository;
 import com.marketinghub.leadportal.repository.FlowRepository;
+import com.marketinghub.leadportal.style.SimpleFormStyleDefaults;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Optional;
@@ -45,12 +46,14 @@ class FlowServiceTest {
     @BeforeEach
     void setUp() {
         SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        SimpleFormStyleDefaults simpleFormStyleDefaults = new SimpleFormStyleDefaults();
         flowService = new FlowService(
                 flowRepository,
                 flowAccessRepository,
                 meterRegistry,
                 simpleFlowCatalog,
-                flowAssetService);
+                flowAssetService,
+                simpleFormStyleDefaults);
         when(simpleFlowCatalog.find(anyString())).thenReturn(Optional.empty());
     }
 

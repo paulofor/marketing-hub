@@ -756,12 +756,12 @@ form.flow-form {
 .flow-page[data-hero-layout="image-left"] .flow-hero,
 .flow-page[data-hero-layout="image-right"] .flow-hero {
   flex-direction: row;
-  align-items: center;
-  gap: 2rem;
+  align-items: stretch;
+  gap: 2.5rem;
 }
 
 .flow-hero-copy {
-  flex: 1;
+  flex: 0.95;
 }
 
 .flow-hero-copy h1 {
@@ -789,12 +789,46 @@ form.flow-form {
 }
 
 .flow-hero-media {
-  flex: 1;
-  min-height: 200px;
-  border-radius: 20px;
+  flex: 1.15;
+  min-height: 260px;
+  border-radius: 24px;
+  position: relative;
+  overflow: hidden;
   background-size: cover;
   background-position: center;
-  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+  background-repeat: no-repeat;
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.22);
+}
+
+@media (min-width: 768px) {
+  .flow-hero-media {
+    min-height: 340px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .flow-hero-copy {
+    flex: 0.85;
+  }
+
+  .flow-hero-media {
+    flex: 1.25;
+    min-height: 420px;
+  }
+}
+
+@media (max-width: 767px) {
+  .flow-page[data-hero-layout="image-left"] .flow-hero,
+  .flow-page[data-hero-layout="image-right"] .flow-hero {
+    flex-direction: column;
+    gap: 1.75rem;
+  }
+
+  .flow-hero-media {
+    order: -1;
+    width: 100%;
+    min-height: 280px;
+  }
 }
 
 .flow-eyebrow {

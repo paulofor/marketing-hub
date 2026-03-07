@@ -35,7 +35,8 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_URL: /api
+        VITE_API_URL: ${LEAD_PORTAL_API_URL:-/api}
+        VITE_ASSETS_BASE_URL: ${LEAD_PORTAL_ASSETS_BASE_URL:-}
     image: lead-portal-frontend
     restart: unless-stopped
     expose:

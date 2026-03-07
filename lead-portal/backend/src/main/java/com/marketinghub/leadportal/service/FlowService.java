@@ -20,16 +20,19 @@ public class FlowService {
     private final FlowAccessRepository accessRepository;
     private final MeterRegistry meterRegistry;
     private final SimpleFlowCatalog simpleFlowCatalog;
+    private final FlowAssetService flowAssetService;
 
     public FlowService(
             FlowRepository repository,
             FlowAccessRepository accessRepository,
             MeterRegistry meterRegistry,
-            SimpleFlowCatalog simpleFlowCatalog) {
+            SimpleFlowCatalog simpleFlowCatalog,
+            FlowAssetService flowAssetService) {
         this.repository = repository;
         this.accessRepository = accessRepository;
         this.meterRegistry = meterRegistry;
         this.simpleFlowCatalog = simpleFlowCatalog;
+        this.flowAssetService = flowAssetService;
     }
 
     @Transactional
@@ -39,7 +42,9 @@ public class FlowService {
                     "Fluxos simples são gerenciados automaticamente e não podem ser editados.");
         }
 
-        FlowEntity entityToSave = FlowEntity.fromModel(flow);
+        Flow processedFlow = flowAssetService.optimizeAssets(flow);
+
+        FlowEntity entityToSave = FlowEntity.fromModel(processedFlow);
         repository
                 .findById(flow.slug())
                 .ifPresent(existing -> entityToSave.setAccessCount(existing.getAccessCount()));

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { fetchLeadPortalFlow } from "../api";
@@ -10,6 +10,11 @@ import type { FlowQuestion, LeadPortalSimpleFormStyleDefinition } from "../types
 export default function FlowPage() {
   const { slug } = useParams<{ slug: string }>();
   const campaignCode = useCampaignCode();
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+
+  useEffect(() => {
+    setHasSubmitted(false);
+  }, [slug]);
 
   const { data: flow, isLoading, isError, error } = useQuery({
     queryKey: ["lead-portal-flow", slug, campaignCode ?? null],
@@ -80,65 +85,73 @@ export default function FlowPage() {
   return (
     <div className="flow-page" style={styleVars} data-hero-layout={heroLayout}>
       <div className="flow-container">
-        <section className="flow-hero">
-          <div className="flow-hero-copy">
-            <p className="flow-eyebrow">{flow.simpleFormStyle?.name ?? "Lead Portal"}</p>
-            <h1>{heroContent.title}</h1>
-            <p className="flow-subtitle">{heroContent.subtitle}</p>
-            <p>{heroContent.detail}</p>
-            <div className="flow-promise-box">
-              <strong>{defaultHeader.promiseLabel}:</strong> {heroContent.promise}
-            </div>
-          </div>
-        </section>
+        {!hasSubmitted ? (
+          <>
+            <section className="flow-hero">
+              <div className="flow-hero-copy">
+                <p className="flow-eyebrow">{flow.simpleFormStyle?.name ?? "Lead Portal"}</p>
+                <h1>{heroContent.title}</h1>
+                <p className="flow-subtitle">{heroContent.subtitle}</p>
+                <p>{heroContent.detail}</p>
+                <div className="flow-promise-box">
+                  <strong>{defaultHeader.promiseLabel}:</strong> {heroContent.promise}
+                </div>
+              </div>
+            </section>
 
-        <section className="flow-proof-section" aria-label="Exemplos de posts">
-          <div className="flow-section-header">
-            <p className="flow-section-kicker">{proofContent.kicker}</p>
-            <h2>{proofContent.title}</h2>
-            <p>{proofContent.subtitle}</p>
-          </div>
-          <div className="flow-proof-grid">
-            {proofContent.cards.map((post) => {
-              const mediaStyle = !post.imageUrl && post.background ? { background: post.background } : undefined;
-              return (
-                <article key={post.title} className="flow-proof-card">
-                  <div
-                    className={`flow-proof-image ${post.imageUrl ? "flow-proof-image--media" : ""}`}
-                    style={mediaStyle}
-                  >
-                    {post.imageUrl ? (
-                      <img
-                        src={post.imageUrl}
-                        alt={post.title}
-                        className="flow-proof-image__media"
-                        loading="lazy"
-                      />
-                    ) : null}
-                    {post.overlayText ? (
-                      <span className="flow-proof-image__overlay">{post.overlayText}</span>
-                    ) : null}
-                  </div>
-                  <div className="flow-proof-card__copy">
-                    <h3>{post.title}</h3>
-                    <p>{post.description}</p>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
+            <section className="flow-proof-section" aria-label="Exemplos de posts">
+              <div className="flow-section-header">
+                <p className="flow-section-kicker">{proofContent.kicker}</p>
+                <h2>{proofContent.title}</h2>
+                <p>{proofContent.subtitle}</p>
+              </div>
+              <div className="flow-proof-grid">
+                {proofContent.cards.map((post) => {
+                  const mediaStyle = !post.imageUrl && post.background ? { background: post.background } : undefined;
+                  return (
+                    <article key={post.title} className="flow-proof-card">
+                      <div
+                        className={`flow-proof-image ${post.imageUrl ? "flow-proof-image--media" : ""}`}
+                        style={mediaStyle}
+                      >
+                        {post.imageUrl ? (
+                          <img
+                            src={post.imageUrl}
+                            alt={post.title}
+                            className="flow-proof-image__media"
+                            loading="lazy"
+                          />
+                        ) : null}
+                        {post.overlayText ? (
+                          <span className="flow-proof-image__overlay">{post.overlayText}</span>
+                        ) : null}
+                      </div>
+                      <div className="flow-proof-card__copy">
+                        <h3>{post.title}</h3>
+                        <p>{post.description}</p>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
 
-        <section className="flow-confidence-section" aria-label="Detalhes de confiança">
-          <h2>{bulletsContent.title}</h2>
-          <ul>
-            {bulletsContent.items.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </section>
+            <section className="flow-confidence-section" aria-label="Detalhes de confiança">
+              <h2>{bulletsContent.title}</h2>
+              <ul>
+                {bulletsContent.items.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </section>
+          </>
+        ) : null}
 
-        <FlowForm flow={flowForForm} campaignCode={campaignCode} />
+        <FlowForm
+          flow={flowForForm}
+          campaignCode={campaignCode}
+          onSubmitted={() => setHasSubmitted(true)}
+        />
       </div>
     </div>
   );

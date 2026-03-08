@@ -132,4 +132,32 @@ class LeadPortalImageProcessingServiceTest {
         verify(packageClient, never()).markFailed(anyLong(), anyString());
         verify(packageClient).submitResults(anyLong(), any(), anyString(), anyString());
     }
+
+    @Test
+    void generatesFromPromptWhenPackageHasNoBaseImage() {
+        LeadPortalImagePackageClient.ImagePackage promptOnlyPackage = new LeadPortalImagePackageClient.ImagePackage(
+                2L,
+                UUID.fromString("123e4567-e89b-12d3-a456-426614174001"),
+                null,
+                1,
+                0,
+                "gpt-image-1",
+                "prompt sem imagem base",
+                "treatment",
+                1L,
+                2L);
+
+        when(packageClient.listRecentPackages()).thenReturn(List.of(promptOnlyPackage));
+        when(imageClient.generateFromPrompt(anyString(), any(ImageGenerationPlan.class)))
+                .thenReturn(new CreativeImageOptimizer.OptimizedImage(new byte[] {9}, "jpg"));
+        when(storageClient.upload(any(), anyString(), any()))
+                .thenReturn(new LeadPortalStorageClient.StoredImage("object-key", "public-url", "jpg"));
+
+        service.process();
+
+        verify(storageClient, never()).download(anyString());
+        verify(imageClient, never()).generateFromBase(any(), anyString(), any(ImageGenerationPlan.class));
+        verify(imageClient).generateFromPrompt(anyString(), any(ImageGenerationPlan.class));
+        verify(packageClient).submitResults(anyLong(), any(), anyString(), anyString());
+    }
 }

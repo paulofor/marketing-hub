@@ -37,7 +37,10 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info,metrics,prometheus,loggers,logfile
+      base-path: /ops-email-gateway-7xk9
+      path-mapping:
+        logfile: email-service-audit-log
   endpoint:
     health:
       show-details: when_authorized
@@ -85,6 +88,8 @@ email:
     base-url: ${EMAIL_TRACKING_BASE_URL:http://191.252.120.96:8086/api/v1/tracking/pixel}
 
 logging:
+  file:
+    name: ${LOGGING_FILE_NAME:logs/email-service-audit.log}
   level:
     com.marketinghub.emailservice: INFO
 

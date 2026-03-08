@@ -109,11 +109,18 @@ registrar os envios.
 | `EMAIL_SERVICE_FROM_ADDRESS` | Remetente padrão | `imagens@oportunidadebrasil.shop` |
 | `EMAIL_SERVICE_DRY_RUN` | Se `true`, não envia o e-mail e apenas registra log | `false` |
 | `EMAIL_TRACKING_BASE_URL` | Base URL pública para gerar o pixel de rastreamento | `""` (rastreamento desativado) |
+| `LOGGING_FILE_NAME` | Caminho do arquivo exposto pelo actuator `/ops-email-gateway-7xk9/email-service-audit-log` | `logs/email-service-audit.log` |
 | `LEAD_PORTAL_DISPATCH_ENABLED` | Habilita o polling de pacotes do Lead Portal | `true` |
 | `LEAD_PORTAL_DISPATCH_BATCH_SIZE` | Quantos pacotes buscar por ciclo | `3` |
 | `LEAD_PORTAL_DISPATCH_INITIAL_DELAY` | Delay inicial do poll (ms) | `20000` |
 | `LEAD_PORTAL_DISPATCH_POLL_INTERVAL` | Intervalo entre polls (ms) | `60000` |
 | `LEAD_PORTAL_DISPATCH_READ_TIMEOUT` | Timeout de leitura da exportação do Lead Portal (ms) | `180000` |
+
+### Exposição pública do log de auditoria
+
+- O Spring Boot Actuator expõe o arquivo configurado em `LOGGING_FILE_NAME` via `GET /ops-email-gateway-7xk9/email-service-audit-log`, conforme documentado em <https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html#actuator.endpoints.logfile>
+- O diretório `logs/` é criado automaticamente pelo Spring quando `logging.file.name` aponta para `logs/email-service-audit.log`. Monte esse diretório como volume no container caso precise coletar o arquivo via host.
+- Se quiser alterar o nome ou o caminho do arquivo basta sobrescrever `LOGGING_FILE_NAME` na implantação.
 
 ### Configuração SMTP (Hostinger)
 

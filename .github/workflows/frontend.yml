@@ -9,10 +9,6 @@ on:
   pull_request:
     paths: ['frontend/**']
 
-env:
-  FRONTEND_DIR: /opt/marketinghub/frontend
-  VPS_IP: 191.252.92.222
-
 permissions:
   contents: read
   actions: write
@@ -110,26 +106,3 @@ jobs:
           npm ci
           npm run build:debug
           npx vite preview --port 5000 --host & sleep 5
-
-  deploy:
-    needs: build
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: frontend-build
-          path: dist
-      - name: Add SSH key
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-      - name: Add VPS to known_hosts
-        run: |
-          # força IPv4, porta 22, coleta RSA/ECDSA/ED25519 e falha se não receber nada
-          ssh-keyscan -4 -p 22 -t rsa,ecdsa,ed25519 -H ${VPS_IP} \
-                >> ~/.ssh/known_hosts
-      - name: Deploy static files
-        run: |
-          rsync -az --delete dist/ marketinghub@${VPS_IP}:${FRONTEND_DIR}/
-          ssh marketinghub@${VPS_IP} "sudo -n systemctl restart marketinghub-frontend.service"

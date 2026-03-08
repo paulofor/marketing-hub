@@ -9,9 +9,6 @@ permissions:
   contents: read
   packages: write
 
-env:
-  APP_DIR: /opt/marketinghub/app           # caminho no servidor
-  VPS_IP: 191.252.92.222              # ← IP fixo do servidor
 
 jobs:
 # ─────────────────────────────────────────
@@ -131,27 +128,3 @@ jobs:
       - name: Build AI Worker
         run: cd ../../ai-worker && mvn -s settings.xml package
 
-      - name: Adicionar chave SSH ao agente
-        if: github.ref == 'refs/heads/main'
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Adicionar VPS ao known_hosts
-        if: github.ref == 'refs/heads/main'
-        run: ssh-keyscan -H ${VPS_IP} >> ~/.ssh/known_hosts
-
-      - name: Teste SSH (debug)
-        if: github.ref == 'refs/heads/main'
-        run: |
-          ssh -o StrictHostKeyChecking=no \
-              -o BatchMode=yes -vvv \
-              marketinghub@${VPS_IP} echo ok
-
-
-      - name: Sincronizar JAR e reiniciar serviço
-        if: github.ref == 'refs/heads/main'
-        run: |
-          JAR=target/app.jar
-          rsync -az --delete "$JAR" marketinghub@${VPS_IP}:${APP_DIR}/
-          ssh marketinghub@${VPS_IP} "sudo -n systemctl restart marketinghub-backend.service"

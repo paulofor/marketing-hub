@@ -12,9 +12,14 @@ type AnswerValue = string | string[] | File | null;
 interface FlowFormProps {
   flow: LeadPortalFlow;
   campaignCode?: string | null;
+  onSubmitted?: (result: FlowSubmissionResponse) => void;
 }
 
-export default function FlowForm({ flow, campaignCode }: FlowFormProps) {
+export default function FlowForm({
+  flow,
+  campaignCode,
+  onSubmitted,
+}: FlowFormProps) {
   const {
     questions: displayQuestions,
     contactEmailKey,
@@ -152,6 +157,7 @@ export default function FlowForm({ flow, campaignCode }: FlowFormProps) {
         imageFile,
       );
       setSubmissionResult(response);
+      onSubmitted?.(response);
     } catch (error) {
       const message =
         error instanceof Error

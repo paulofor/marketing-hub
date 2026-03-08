@@ -115,7 +115,13 @@ public class LeadPortalImageProcessingService {
     }
 
     private void handlePackage(LeadPortalImagePackageClient.ImagePackage imagePackage) {
-        byte[] originalBytes = storageClient.download(imagePackage.storedFileName());
+        byte[] originalBytes = null;
+        boolean hasBaseImage = StringUtils.hasText(imagePackage.storedFileName());
+        if (hasBaseImage) {
+            originalBytes = storageClient.download(imagePackage.storedFileName());
+        } else {
+            log.info("Lead-portal package {} has no base image; generating from prompt only", imagePackage.id());
+        }
         int imagesToGenerate = resolveImagesToGenerate(imagePackage);
         String prompt = buildPrompt(imagePackage);
 
@@ -127,7 +133,7 @@ public class LeadPortalImageProcessingService {
         List<LeadPortalImagePackageClient.GeneratedImage> generated = new ArrayList<>();
         for (int index = 0; index < imagesToGenerate; index++) {
             CreativeImageOptimizer.OptimizedImage optimized =
-                    generateWithRetry(originalBytes, prompt, plan, imagePackage.id(), index);
+                    generateWithRetry(originalBytes, prompt, plan, imagePackage.id(), index, hasBaseImage);
             String filename = buildFilename(imagePackage.submissionId(), index, optimized.extension());
             LeadPortalStorageClient.StoredImage stored = storageClient.upload(
                     optimized.content(),
@@ -148,10 +154,18 @@ public class LeadPortalImageProcessingService {
     }
 
     private CreativeImageOptimizer.OptimizedImage generateWithRetry(
-            byte[] originalBytes, String prompt, ImageGenerationPlan plan, long packageId, int imageIndex) {
+            byte[] originalBytes,
+            String prompt,
+            ImageGenerationPlan plan,
+            long packageId,
+            int imageIndex,
+            boolean hasBaseImage) {
         for (int attempt = 1; attempt <= MAX_IMAGE_ATTEMPTS; attempt++) {
             try {
-                return imageClient.generateFromBase(originalBytes, prompt, plan);
+                if (hasBaseImage) {
+                    return imageClient.generateFromBase(originalBytes, prompt, plan);
+                }
+                return imageClient.generateFromPrompt(prompt, plan);
             } catch (RuntimeException ex) {
                 if (!isTransientError(ex) || attempt == MAX_IMAGE_ATTEMPTS) {
                     throw ex;

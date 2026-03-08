@@ -12,7 +12,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import javax.imageio.ImageIO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,6 +107,47 @@ public class LeadPortalOpenAiImageClient {
 
         byte[] decoded = Base64.getDecoder().decode(base64);
         return imageOptimizer.optimize(decoded);
+    }
+
+    public CreativeImageOptimizer.OptimizedImage generateFromPrompt(String prompt, ImageGenerationPlan plan) {
+        if (!enabled) {
+            throw new IllegalStateException("OpenAI API key is not configured");
+        }
+
+        log.info("Requesting lead-portal image generation from prompt only");
+
+        ImageResponse response = webClient.post()
+                .uri("/images/generations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(buildGenerationPayload(prompt, plan))
+                .exchangeToMono(this::readResponse)
+                .block(REQUEST_TIMEOUT);
+
+        if (response == null || response.data == null || response.data.isEmpty()) {
+            throw new IllegalStateException("OpenAI image API did not return a payload");
+        }
+
+        String base64 = response.data.get(0).base64;
+        if (base64 == null || base64.isBlank()) {
+            throw new IllegalStateException("OpenAI image API returned an empty payload");
+        }
+
+        byte[] decoded = Base64.getDecoder().decode(base64);
+        return imageOptimizer.optimize(decoded);
+    }
+
+    private Map<String, Object> buildGenerationPayload(String prompt, ImageGenerationPlan plan) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        String selectedModel = plan != null && plan.apiModel() != null ? plan.apiModel() : defaultModel;
+        payload.put("model", selectedModel);
+        payload.put("response_format", "b64_json");
+        if (prompt != null && !prompt.isBlank()) {
+            payload.put("prompt", prompt);
+        }
+        if (plan != null && plan.sizeLabel() != null) {
+            payload.put("size", plan.sizeLabel());
+        }
+        return payload;
     }
 
     private byte[] normalizeBaseImage(byte[] baseImage) {

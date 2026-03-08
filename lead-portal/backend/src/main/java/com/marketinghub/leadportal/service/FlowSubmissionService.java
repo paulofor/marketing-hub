@@ -16,6 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,28 @@ import org.springframework.web.multipart.MultipartFile;
 public class FlowSubmissionService {
 
     private static final Logger log = LoggerFactory.getLogger(FlowSubmissionService.class);
+    private static final Set<String> SIMPLE_FORM_METADATA_KEYS = Set.of(
+            "cabecalho_titulo",
+            "cabecalho_subtitulo",
+            "cabecalho_promessa",
+            "exemplos_reais_titulo",
+            "exemplos_reais_subtitulo",
+            "exemplo_real_card_1_titulo",
+            "exemplo_real_card_1_imagem_url",
+            "exemplo_real_card_1_texto_sobreposto",
+            "exemplo_real_card_1_subtitulo",
+            "exemplo_real_card_2_titulo",
+            "exemplo_real_card_2_imagem_url",
+            "exemplo_real_card_2_texto_sobreposto",
+            "exemplo_real_card_2_subtitulo",
+            "exemplo_real_card_3_titulo",
+            "exemplo_real_card_3_imagem_url",
+            "exemplo_real_card_3_texto_sobreposto",
+            "exemplo_real_card_3_subtitulo",
+            "bullets_titulo",
+            "bullet_item_1",
+            "bullet_item_2",
+            "bullet_item_3");
 
     private final FlowService flowService;
     private final FlowSubmissionRepository repository;
@@ -115,6 +138,10 @@ public class FlowSubmissionService {
                 continue;
             }
 
+            if (isSimpleFormMetadataQuestion(question)) {
+                continue;
+            }
+
             if (questionType == FlowQuestionType.IMAGE_UPLOAD) {
                 if (question.required()
                         && (request.getImageKey() == null
@@ -148,6 +175,13 @@ public class FlowSubmissionService {
                 throw new IllegalArgumentException("O campo de imagem enviado não pertence a este fluxo.");
             }
         }
+    }
+
+    private boolean isSimpleFormMetadataQuestion(FlowQuestion question) {
+        if (question == null || question.dataKey() == null) {
+            return false;
+        }
+        return SIMPLE_FORM_METADATA_KEYS.contains(question.dataKey());
     }
 
     private void registerImagePackage(Flow flow, FlowSubmission submission, boolean hasImage) {

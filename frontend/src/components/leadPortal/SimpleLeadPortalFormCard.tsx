@@ -1164,7 +1164,7 @@ function createSimpleFormTemplateQuestions({
         "Transforme o seu treino com acompanhamento personalizado",
       dataKey: "cabecalho_titulo",
       type: "TEXT",
-      required: true,
+      required: false,
     },
     {
       title:
@@ -1172,7 +1172,7 @@ function createSimpleFormTemplateQuestions({
         "Responda em menos de 2 minutos e receba recomendações sob medida.",
       dataKey: "cabecalho_subtitulo",
       type: "TEXT",
-      required: true,
+      required: false,
     },
     {
       title:
@@ -1180,13 +1180,13 @@ function createSimpleFormTemplateQuestions({
         "Plano prático para destravar resultados nas próximas semanas.",
       dataKey: "cabecalho_promessa",
       type: "TEXT",
-      required: true,
+      required: false,
     },
     {
       title: realExamplesTitle.trim() || "Exemplos reais de evolução",
       dataKey: "exemplos_reais_titulo",
       type: "TEXT",
-      required: true,
+      required: false,
     },
     {
       title:
@@ -1194,19 +1194,19 @@ function createSimpleFormTemplateQuestions({
         "Veja como alunas com rotina parecida conseguiram evoluir.",
       dataKey: "exemplos_reais_subtitulo",
       type: "TEXT",
-      required: true,
+      required: false,
     },
     {
       title: realExampleCard1Title.trim() || "Mais energia no dia a dia",
       dataKey: "exemplo_real_card_1_titulo",
       type: "TEXT",
-      required: true,
+      required: false,
     },
     {
       title: card1ImageUrl.trim(),
       dataKey: "exemplo_real_card_1_imagem_url",
       type: "TEXT",
-      required: true,
+      required: false,
     },
     ...(card1OverlayText.trim()
       ? [
@@ -1224,19 +1224,19 @@ function createSimpleFormTemplateQuestions({
         "Rotina simples para sair do sedentarismo em 30 dias.",
       dataKey: "exemplo_real_card_1_subtitulo",
       type: "TEXT",
-      required: true,
+      required: false,
     },
     {
       title: realExampleCard2Title.trim() || "Treino sem dor",
       dataKey: "exemplo_real_card_2_titulo",
       type: "TEXT",
-      required: true,
+      required: false,
     },
     {
       title: card2ImageUrl.trim(),
       dataKey: "exemplo_real_card_2_imagem_url",
       type: "TEXT",
-      required: true,
+      required: false,
     },
     ...(card2OverlayText.trim()
       ? [
@@ -1254,19 +1254,19 @@ function createSimpleFormTemplateQuestions({
         "Ajustes de técnica e progressão para treinar com segurança.",
       dataKey: "exemplo_real_card_2_subtitulo",
       type: "TEXT",
-      required: true,
+      required: false,
     },
     {
       title: realExampleCard3Title.trim() || "Resultado sustentável",
       dataKey: "exemplo_real_card_3_titulo",
       type: "TEXT",
-      required: true,
+      required: false,
     },
     {
       title: card3ImageUrl.trim(),
       dataKey: "exemplo_real_card_3_imagem_url",
       type: "TEXT",
-      required: true,
+      required: false,
     },
     ...(card3OverlayText.trim()
       ? [
@@ -1284,31 +1284,31 @@ function createSimpleFormTemplateQuestions({
         "Estratégia para manter constância mesmo com agenda corrida.",
       dataKey: "exemplo_real_card_3_subtitulo",
       type: "TEXT",
-      required: true,
+      required: false,
     },
     {
       title: bulletSectionTitle.trim() || "O que você recebe",
       dataKey: "bullets_titulo",
       type: "TEXT",
-      required: true,
+      required: false,
     },
     {
       title: bulletItem1.trim() || "Diagnóstico inicial personalizado",
       dataKey: "bullet_item_1",
       type: "TEXT",
-      required: true,
+      required: false,
     },
     {
       title: bulletItem2.trim() || "Plano com foco no seu objetivo",
       dataKey: "bullet_item_2",
       type: "TEXT",
-      required: true,
+      required: false,
     },
     {
       title: bulletItem3.trim() || "Acompanhamento e ajustes semanais",
       dataKey: "bullet_item_3",
       type: "TEXT",
-      required: true,
+      required: false,
     },
     {
       title: "Nome",

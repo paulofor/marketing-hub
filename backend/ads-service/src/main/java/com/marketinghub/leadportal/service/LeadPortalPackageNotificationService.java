@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -46,12 +45,8 @@ public class LeadPortalPackageNotificationService {
 
     private final JdbcTemplate jdbcTemplate;
     private final FileStorageService fileStorageService;
-    private final LeadPortalEmailSender emailSender;
     private final LeadPortalImagePackageStatusHistoryService statusHistoryService;
     private final LeadPortalPaymentsClient paymentsClient;
-
-    @Value("${lead-portal.notifications.enabled:false}")
-    private boolean notificationsEnabled;
 
     @Value("${lead-portal.notifications.max-attempts:5}")
     private int maxAttempts;
@@ -68,40 +63,17 @@ public class LeadPortalPackageNotificationService {
     public LeadPortalPackageNotificationService(
             JdbcTemplate jdbcTemplate,
             FileStorageService fileStorageService,
-            LeadPortalEmailSender emailSender,
             LeadPortalImagePackageStatusHistoryService statusHistoryService,
             LeadPortalPaymentsClient paymentsClient) {
         this.jdbcTemplate = jdbcTemplate;
         this.fileStorageService = fileStorageService;
-        this.emailSender = emailSender;
         this.statusHistoryService = statusHistoryService;
         this.paymentsClient = paymentsClient;
     }
 
     @PostConstruct
     void logConfiguration() {
-        log.info("Lead portal notification service enabled: {} (maxAttempts={}, batchSize={})",
-                notificationsEnabled, maxAttempts, batchSize);
-    }
-
-    @Scheduled(initialDelayString = "${lead-portal.notifications.initial-delay:20000}",
-            fixedDelayString = "${lead-portal.notifications.poll-interval:60000}")
-    public void dispatchReadyPackages() {
-        if (!notificationsEnabled) {
-            return;
-        }
-        List<PendingPackage> packages = findPendingPackages(batchSize);
-        for (PendingPackage pending : packages) {
-            if (!lockPackage(pending.packageId())) {
-                continue;
-            }
-            try {
-                processPackage(pending);
-            } catch (Exception ex) {
-                log.error("Failed to dispatch lead portal package {}", pending.packageId(), ex);
-                recordFailure(pending.packageId(), ex.getMessage());
-            }
-        }
+        log.info("Lead portal package export ready (maxAttempts={}, batchSize={})", maxAttempts, batchSize);
     }
 
     public java.util.List<LeadPortalImagePackageExportItem> exportReadyPackages(int limit) {
@@ -275,27 +247,6 @@ public class LeadPortalPackageNotificationService {
                 rs.getString("payment_currency"),
                 rs.getString("payment_statement_descriptor")
         );
-    }
-
-    private void processPackage(PendingPackage pending) throws IOException {
-        if (!StringUtils.hasText(pending.zipObjectKey())) {
-            throw new IllegalStateException("ZIP ausente para o pacote " + pending.packageId());
-        }
-        int imageCount = pending.imageCount() > 0 ? pending.imageCount() : countWatermarkedAssets(pending.packageId());
-        byte[] zipBytes = loadObjectBytes(pending.zipObjectKey());
-
-        PaymentInfo paymentInfo = ensurePaymentInfo(pending);
-        EmailContent content = buildEmailContent(pending, imageCount, paymentInfo);
-        emailSender.sendEmail(
-                pending.submissionEmail(),
-                content.subject(),
-                content.plain(),
-                content.html(),
-                zipBytes,
-                content.attachmentName());
-
-        markAsNotified(pending.packageId(), pending.status());
-        log.info("Dispatched lead portal package {} to {} (zip: {}, {} bytes)", pending.packageId(), pending.submissionEmail(), pending.zipObjectKey(), pending.zipSizeBytes());
     }
 
     private int countWatermarkedAssets(long packageId) {

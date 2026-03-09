@@ -1,6 +1,7 @@
 package com.marketinghub.worker.successproduct;
 
 import com.marketinghub.successproduct.SuccessProduct;
+import com.marketinghub.config.PoolDiagnosticsLogger;
 import com.marketinghub.worker.WorkerSuccessProductRepository;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
@@ -43,6 +44,9 @@ class SuccessProductNicheHypothesisServiceTest {
 
     @MockBean
     AiWorkerGenerationService aiWorkerGenerationService;
+
+    @MockBean
+    PoolDiagnosticsLogger poolDiagnosticsLogger;
 
     @Autowired
     MarketNicheRepository marketNicheRepository;

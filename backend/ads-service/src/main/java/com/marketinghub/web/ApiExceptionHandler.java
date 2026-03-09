@@ -4,11 +4,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.apache.catalina.connector.ClientAbortException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MultipartException;
@@ -44,6 +46,31 @@ public class ApiExceptionHandler {
             message = "O upload do arquivo foi interrompido antes do envio completo. Verifique sua conexão e tente novamente.";
         }
         return buildResponse(HttpStatus.BAD_REQUEST, message, request);
+    }
+
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public ResponseEntity<Void> handleAsyncRequestNotUsableException(
+        AsyncRequestNotUsableException exception,
+        HttpServletRequest request
+    ) {
+        LOGGER.warn(
+            "Conexão encerrada durante resposta assíncrona. metodo={}, uri={}, query={}, remoteAddr={}, forwardedFor={}, userAgent={}, asyncStarted={}, reason={}",
+            request.getMethod(),
+            request.getRequestURI(),
+            request.getQueryString(),
+            request.getRemoteAddr(),
+            request.getHeader("X-Forwarded-For"),
+            request.getHeader("User-Agent"),
+            request.isAsyncStarted(),
+            exception.getMessage()
+        );
+
+        Throwable rootCause = exception.getMostSpecificCause();
+        if (rootCause instanceof ClientAbortException) {
+            LOGGER.debug("Detalhes do abort de cliente para {} {}", request.getMethod(), request.getRequestURI(), rootCause);
+        }
+
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
     private ResponseEntity<Map<String, Object>> buildResponse(

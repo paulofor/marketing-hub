@@ -2,6 +2,7 @@ package com.marketinghub.worker.niche;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
+import com.marketinghub.config.PoolDiagnosticsLogger;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.niche.MarketNiche;
@@ -65,6 +66,9 @@ class NicheHypothesisServiceTest {
 
     @MockBean
     AiWorkerGenerationService aiWorkerGenerationService;
+
+    @MockBean
+    PoolDiagnosticsLogger poolDiagnosticsLogger;
 
     @Autowired
     MarketNicheRepository nicheRepository;

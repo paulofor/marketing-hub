@@ -25,7 +25,7 @@ public class ExperimentFollowUpResolver {
     private final String apiPrefix;
 
     public ExperimentFollowUpResolver(WebClient.Builder builder,
-                                      @Value("${backend.base-url:http://191.252.92.222:8000}") String backendBaseUrl,
+                                      @Value("${backend.base-url:http://191.252.181.168:8000}") String backendBaseUrl,
                                       @Value("${backend.api-prefix:/api}") String apiPrefix) {
         this.webClient = builder.build();
         this.backendBaseUrl = backendBaseUrl;

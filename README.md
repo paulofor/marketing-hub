@@ -44,11 +44,11 @@ echo "VITE_API_URL=http://localhost:8000" > frontend/.env
 # deploy para o VPS agora é feito automaticamente pelo workflow
 # `.github/workflows/deploy-containers.yml`, que constrói as imagens
 # Docker do backend e do frontend e aplica o `deploy/docker-compose.yml`
-# em 191.252.92.222 usando o script `deploy/bin/apply.sh` via SSH.
+# em 191.252.181.168 usando o script `deploy/bin/apply.sh` via SSH.
 # Para uma reexecução manual (por exemplo, em casos de rollback),
 # gere as imagens localmente com `docker build`, copie os arquivos
 # `.tar` e este diretório `deploy/` para o servidor e execute:
-#   ssh marketinghub@191.252.92.222 \
+#   ssh marketinghub@191.252.181.168 \
 #     "IMAGE_TAG=$(git rev-parse HEAD) BACKEND_TAR=/tmp/backend-image.tar \
 #        FRONTEND_TAR=/tmp/frontend-image.tar \
 #        /bin/bash /opt/marketinghub/containers/bin/apply.sh"
@@ -57,7 +57,7 @@ echo "VITE_API_URL=http://localhost:8000" > frontend/.env
 ## Deploy automatizado em containers
 
 - O diretório `deploy/` contém o `docker-compose.yml`, variáveis padrão e o script `bin/apply.sh` responsável por subir os containers `marketinghub-backend` (porta 8000) e `marketinghub-frontend` (porta 5173).
-- O workflow `.github/workflows/deploy-containers.yml` monta as imagens Docker, copia `deploy/` para `/opt/marketinghub/containers` no VPS 191.252.92.222 e chama o script automaticamente após cada push no branch `main`.
+- O workflow `.github/workflows/deploy-containers.yml` monta as imagens Docker, copia `deploy/` para `/opt/marketinghub/containers` no VPS 191.252.181.168 e chama o script automaticamente após cada push no branch `main`.
 - As pastas `deploy/volumes/backend/uploads` e `deploy/volumes/backend/logs` são montadas no container para preservar arquivos enviados e logs mesmo após reinícios.
 - Em emergências é possível reaproveitar o mesmo script manualmente, desde que os arquivos `backend-image.tar` e `frontend-image.tar` sejam carregados em `/tmp` no servidor e a variável `IMAGE_TAG` aponte para a tag desejada.
 

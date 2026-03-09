@@ -46,7 +46,7 @@ management:
       show-details: when_authorized
 clients:
   marketing-hub:
-    base-url: ${MARKETING_HUB_BASE_URL:http://191.252.92.222:8000}
+    base-url: ${MARKETING_HUB_BASE_URL:http://191.252.181.168:8000}
     templates-path: ${MARKETING_HUB_TEMPLATES_PATH:/api/v1/email-templates}
     lead-portal-packages-base-path: ${MARKETING_HUB_LEAD_PORTAL_PACKAGES_BASE_PATH:/api/internal/lead-portal/image-packages}
     auth-token: ${MARKETING_HUB_AUTH_TOKEN:}

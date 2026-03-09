@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  VPS_IP: 191.252.92.222
+  VPS_IP: 191.252.181.168
   VPS_USER: root
   DEPLOY_DIR: /opt/marketinghub/containers
   BACKEND_IMAGE: marketinghub-backend

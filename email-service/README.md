@@ -96,7 +96,7 @@ registrar os envios.
 | `SPRING_MAIL_SMTP_AUTH` | Habilitar autenticação | `true` |
 | `SPRING_MAIL_SMTP_STARTTLS_ENABLE` | Habilitar STARTTLS | `false` |
 | `SPRING_MAIL_SMTP_SSL_ENABLE` | Habilitar SSL/TLS (porta 465) | `true` |
-| `MARKETING_HUB_BASE_URL` | Base URL do backend Marketing Hub | `http://191.252.92.222:8000` |
+| `MARKETING_HUB_BASE_URL` | Base URL do backend Marketing Hub | `http://191.252.181.168:8000` |
 | `MARKETING_HUB_CONNECT_TIMEOUT` | Timeout de conexão com o backend (ms) | `2000` |
 | `MARKETING_HUB_READ_TIMEOUT` | Timeout de leitura do backend (ms) | `60000` |
 | `MARKETING_HUB_TEMPLATES_PATH` | Caminho do endpoint de templates | `/api/v1/email-templates` |

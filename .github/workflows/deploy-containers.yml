@@ -10,7 +10,7 @@ concurrency:
 
 env:
   VPS_IP: 191.252.92.222
-  VPS_USER: marketinghub
+  VPS_USER: root
   DEPLOY_DIR: /opt/marketinghub/containers
   BACKEND_IMAGE: marketinghub-backend
   FRONTEND_IMAGE: marketinghub-frontend

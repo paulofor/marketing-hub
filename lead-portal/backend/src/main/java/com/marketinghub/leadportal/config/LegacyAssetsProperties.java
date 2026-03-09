@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 public class LegacyAssetsProperties {
 
     /** Base URL where legacy uploads are publicly available. */
-    private String baseUrl = "http://191.252.92.222:8000";
+    private String baseUrl = "http://191.252.181.168:8000";
 
     /** Path prefix used by legacy uploads. */
     private String uploadPathPrefix = "/uploads/";

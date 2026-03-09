@@ -11,7 +11,7 @@ services:
     image: marketinghub/facebook-ads-worker:latest
     restart: unless-stopped
     environment:
-      BACKEND_BASE_URL: ${BACKEND_BASE_URL:-http://191.252.92.222:8000}
+      BACKEND_BASE_URL: ${BACKEND_BASE_URL:-http://191.252.181.168:8000}
       DB_HOST: ${DB_HOST:-d555d.vps-kinghost.net}
       DB_PORT: ${DB_PORT:-3306}
       DB_NAME: ${DB_NAME:-marketinghubdb}

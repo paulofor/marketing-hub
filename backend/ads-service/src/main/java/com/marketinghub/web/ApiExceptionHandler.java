@@ -34,7 +34,7 @@ public class ApiExceptionHandler {
         MultipartException exception,
         HttpServletRequest request
     ) {
-        Throwable rootCause = exception.getMostSpecificCause();
+        Throwable rootCause = getMostSpecificCause(exception);
         String rootMessage = rootCause != null ? rootCause.getMessage() : exception.getMessage();
         if (rootMessage == null) {
             rootMessage = "";
@@ -65,7 +65,7 @@ public class ApiExceptionHandler {
             exception.getMessage()
         );
 
-        Throwable rootCause = exception.getMostSpecificCause();
+        Throwable rootCause = getMostSpecificCause(exception);
         if (rootCause instanceof ClientAbortException) {
             LOGGER.debug("Detalhes do abort de cliente para {} {}", request.getMethod(), request.getRequestURI(), rootCause);
         }
@@ -88,5 +88,13 @@ public class ApiExceptionHandler {
         body.put("message", message);
         body.put("path", request.getRequestURI());
         return ResponseEntity.status(statusCode).body(body);
+    }
+
+    private Throwable getMostSpecificCause(Throwable throwable) {
+        Throwable root = throwable;
+        while (root != null && root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+        return root;
     }
 }

@@ -36,6 +36,6 @@ EXPOSE 8000
 VOLUME ["/app/uploads", "/app/logs"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-  CMD curl -fsS http://127.0.0.1:8000/actuator/health || exit 1
+  CMD curl -fsS http://127.0.0.1:8000/ops-mh-observability-v2/health || exit 1
 
 ENTRYPOINT ["/bin/sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]

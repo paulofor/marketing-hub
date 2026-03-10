@@ -2,6 +2,7 @@ package com.marketinghub.emailservice.leadportal.integration;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import javax.net.ssl.SSLHandshakeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -71,9 +72,32 @@ public class LeadPortalPaymentsClient {
             log.error("Falha HTTP ao solicitar checkout para o pacote {}: {}", packageId, ex.getResponseBodyAsString(), ex);
             throw new IllegalStateException("Falha ao solicitar link de pagamento: " + ex.getStatusText(), ex);
         } catch (RestClientException ex) {
+            if (hasTlsCertificateError(ex)) {
+                log.error("Erro TLS/certificado ao solicitar checkout para o pacote {}. "
+                                + "Valide o certificado de '{}' ou configure a URL da integração para um endpoint confiável.",
+                        packageId,
+                        properties.getBaseUrl(),
+                        ex);
+                throw new IllegalStateException("Erro SSL ao solicitar link de pagamento. "
+                        + "O certificado do serviço de pagamentos não é confiável para esta JVM.", ex);
+            }
             log.error("Erro ao solicitar checkout para o pacote {}", packageId, ex);
             throw new IllegalStateException("Erro ao solicitar link de pagamento", ex);
         }
+    }
+
+    static boolean hasTlsCertificateError(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof SSLHandshakeException
+                    || current instanceof java.security.cert.CertificateException
+                    || current instanceof java.security.cert.CertPathBuilderException
+                    || (current.getMessage() != null && current.getMessage().contains("PKIX path building failed"))) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private HttpHeaders buildHeaders() {

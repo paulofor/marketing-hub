@@ -5,20 +5,20 @@ spring:
   application:
     name: lead-portal-payments-service
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&serverTimezone=UTC}
-    username: ${SPRING_DATASOURCE_USERNAME:marketing_hub_user}
-    password: ${SPRING_DATASOURCE_PASSWORD:${MYSQL_PASS:Ab9!rG4wX8_tMq2Bz7#HpK5V}}
-    driver-class-name: ${SPRING_DATASOURCE_DRIVER:com.mysql.cj.jdbc.Driver}
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:lead_portal_payments;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.h2.Driver}
   jpa:
     hibernate:
       ddl-auto: none
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
+        dialect: ${SPRING_JPA_HIBERNATE_DIALECT:org.hibernate.dialect.H2Dialect}
   sql:
     init:
       mode: always
-      schema-locations: classpath:schema.sql,classpath:db/changelog/lead-portal-purchase-add-checkout-expires.sql
+      schema-locations: ${SPRING_SQL_INIT_SCHEMA_LOCATIONS:classpath:schema-h2.sql}
 
 management:
   endpoints:
@@ -53,3 +53,20 @@ delivery:
   max-attempts: ${DELIVERY_MAX_ATTEMPTS:5}
   initial-delay: ${DELIVERY_INITIAL_DELAY:20000}
   fixed-delay: ${DELIVERY_FIXED_DELAY:60000}
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&serverTimezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:marketing_hub_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:${MYSQL_PASS:Ab9!rG4wX8_tMq2Bz7#HpK5V}}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER:com.mysql.cj.jdbc.Driver}
+  jpa:
+    properties:
+      hibernate:
+        dialect: ${SPRING_JPA_HIBERNATE_DIALECT:org.hibernate.dialect.MySQLDialect}
+  sql:
+    init:
+      schema-locations: ${SPRING_SQL_INIT_SCHEMA_LOCATIONS:classpath:schema.sql,classpath:db/changelog/lead-portal-purchase-add-checkout-expires.sql}

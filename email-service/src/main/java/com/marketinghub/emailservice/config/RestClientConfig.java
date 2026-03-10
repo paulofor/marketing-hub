@@ -18,16 +18,6 @@ public class RestClientConfig {
     }
 
     @Bean
-    public RestClient leadPortalRestClient(MarketingHubClientProperties marketingHubProperties,
-                                           LeadPortalDispatchProperties leadPortalDispatchProperties) {
-        return marketingHubRestClientBuilder(marketingHubProperties)
-                .requestFactory(requestFactory(
-                        marketingHubProperties.connectTimeoutDuration(),
-                        leadPortalDispatchProperties.readTimeoutDuration()))
-                .build();
-    }
-
-    @Bean
     public RestClient cloudflareRestClient(CloudflareClientProperties properties) {
         return RestClient.builder()
                 .requestFactory(requestFactory(properties.connectTimeoutDuration(), properties.readTimeoutDuration()))

@@ -24,7 +24,9 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: health,info,prometheus,loggers
+      path-mapping:
+        loggers: runtime-logs
 
 mercado-pago:
   access-token: ${MERCADO_PAGO_ACCESS_TOKEN:APP_USR-6371948622467215-020511-5317ef62bbd997d52c2979a29f2c8419-133771061}

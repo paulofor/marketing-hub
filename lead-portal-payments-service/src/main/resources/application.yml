@@ -24,9 +24,14 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus,loggers
+        include: health,info,prometheus,loggers,logfile
       path-mapping:
-        loggers: runtime-logs
+        loggers: runtime-loggers
+        logfile: runtime-logs
+
+logging:
+  file:
+    name: ${LOGGING_FILE_NAME:logs/lead-portal-payments-service.log}
 
 mercado-pago:
   access-token: ${MERCADO_PAGO_ACCESS_TOKEN:APP_USR-6371948622467215-020511-5317ef62bbd997d52c2979a29f2c8419-133771061}

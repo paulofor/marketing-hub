@@ -14,7 +14,7 @@ public record LeadPortalImagePackageExportDto(
         String submissionName,
         String submissionEmail,
         FlowSubmissionImagePackageStatus status,
-        long experimentId,
+        Long experimentId,
         String experimentName,
         SampleEmail sampleEmail,
         EmailContent emailContent,

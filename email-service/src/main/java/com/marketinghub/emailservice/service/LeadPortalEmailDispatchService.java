@@ -1,18 +1,16 @@
 package com.marketinghub.emailservice.service;
 
-import com.marketinghub.emailservice.config.EmailServiceProperties;
 import com.marketinghub.emailservice.config.LeadPortalDispatchProperties;
 import com.marketinghub.emailservice.config.LeadPortalPaymentLinkProperties;
+import com.marketinghub.emailservice.leadportal.service.LeadPortalImagePackageExportItem;
+import com.marketinghub.emailservice.leadportal.service.LeadPortalPackageNotificationService;
 import com.marketinghub.emailservice.model.EmailLog;
-import com.marketinghub.emailservice.service.client.LeadPortalImagePackageClient;
-import com.marketinghub.emailservice.service.client.LeadPortalImagePackageExportResponse;
 import com.marketinghub.emailservice.service.client.RemoteAsset;
 import com.marketinghub.emailservice.settings.EmailSmtpConfigurationService;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.NumberFormat;
-import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 import org.slf4j.Logger;
@@ -30,26 +28,23 @@ public class LeadPortalEmailDispatchService {
     private static final Logger log = LoggerFactory.getLogger(LeadPortalEmailDispatchService.class);
     private static final MediaType ZIP_MEDIA_TYPE = MediaType.parseMediaType("application/zip");
 
-    private final LeadPortalImagePackageClient leadPortalImagePackageClient;
+    private final LeadPortalPackageNotificationService leadPortalPackageNotificationService;
     private final EmailSenderService emailSenderService;
-    private final EmailServiceProperties emailServiceProperties;
     private final LeadPortalDispatchProperties dispatchProperties;
     private final EmailLogService emailLogService;
     private final TrackingPixelService trackingPixelService;
     private final LeadPortalPaymentLinkProperties paymentLinkProperties;
     private final EmailSmtpConfigurationService smtpConfigurationService;
 
-    public LeadPortalEmailDispatchService(LeadPortalImagePackageClient leadPortalImagePackageClient,
+    public LeadPortalEmailDispatchService(LeadPortalPackageNotificationService leadPortalPackageNotificationService,
                                           EmailSenderService emailSenderService,
-                                          EmailServiceProperties emailServiceProperties,
                                           LeadPortalDispatchProperties dispatchProperties,
                                           EmailLogService emailLogService,
                                           TrackingPixelService trackingPixelService,
                                           LeadPortalPaymentLinkProperties paymentLinkProperties,
                                           EmailSmtpConfigurationService smtpConfigurationService) {
-        this.leadPortalImagePackageClient = leadPortalImagePackageClient;
+        this.leadPortalPackageNotificationService = leadPortalPackageNotificationService;
         this.emailSenderService = emailSenderService;
-        this.emailServiceProperties = emailServiceProperties;
         this.dispatchProperties = dispatchProperties;
         this.emailLogService = emailLogService;
         this.trackingPixelService = trackingPixelService;
@@ -63,19 +58,21 @@ public class LeadPortalEmailDispatchService {
         if (!dispatchProperties.enabled()) {
             return;
         }
-        List<LeadPortalImagePackageExportResponse> packages = leadPortalImagePackageClient.fetchPackages(dispatchProperties.batchSize());
+        List<LeadPortalImagePackageExportItem> packages =
+                leadPortalPackageNotificationService.exportReadyPackages(dispatchProperties.batchSize());
         if (packages.isEmpty()) {
             return;
         }
-        for (LeadPortalImagePackageExportResponse item : packages) {
+        for (LeadPortalImagePackageExportItem item : packages) {
             try {
                 sendEmail(item);
-                leadPortalImagePackageClient.acknowledge(item.packageId(), true, null);
+                leadPortalPackageNotificationService.acknowledgePackage(item.packageId(), true, null);
                 log.info("Pacote {} enviado para {}", item.packageId(), item.submissionEmail());
             } catch (Exception ex) {
                 log.error("Falha ao enviar pacote {} para {}", item.packageId(), item.submissionEmail(), ex);
                 try {
-                    leadPortalImagePackageClient.acknowledge(item.packageId(), false, resolveRootCauseMessage(ex));
+                    leadPortalPackageNotificationService.acknowledgePackage(
+                            item.packageId(), false, resolveRootCauseMessage(ex));
                 } catch (Exception ackEx) {
                     log.error("Falha ao registrar a falha do pacote {}", item.packageId(), ackEx);
                 }
@@ -83,28 +80,34 @@ public class LeadPortalEmailDispatchService {
         }
     }
 
-    private void sendEmail(LeadPortalImagePackageExportResponse item) {
+    private void sendEmail(LeadPortalImagePackageExportItem item) {
         if (!StringUtils.hasText(item.submissionEmail())) {
             throw new IllegalArgumentException("Destinatário vazio para o pacote " + item.packageId());
         }
-        LeadPortalImagePackageExportResponse.EmailContent emailContent = item.emailContent();
-        if (emailContent == null) {
+        if (!StringUtils.hasText(item.emailSubject())) {
             throw new IllegalStateException("Conteúdo de e-mail ausente para o pacote " + item.packageId());
         }
-        byte[] attachmentBytes = decodeAttachment(item.attachment());
+        byte[] attachmentBytes = item.zipBytes();
+        if (attachmentBytes == null) {
+            attachmentBytes = new byte[0];
+        }
         if (attachmentBytes.length == 0) {
             throw new IllegalStateException("Arquivo compactado vazio para o pacote " + item.packageId());
         }
-        String attachmentName = item.attachment() != null && StringUtils.hasText(item.attachment().fileName())
-                ? item.attachment().fileName()
+        String attachmentName = StringUtils.hasText(item.attachmentName())
+                ? item.attachmentName()
                 : "imagens-watermark-" + item.packageId() + ".zip";
 
         EmailLog emailLog = emailLogService.createPendingLog(
                 item.submissionEmail(),
-                emailContent.subject(),
+                item.emailSubject(),
                 "lead-portal-package-" + item.packageId());
 
-        PaymentBodies paymentBodies = enrichWithPaymentLink(emailContent, item.paymentInfo(), item.packageId());
+        PaymentBodies paymentBodies = enrichWithPaymentLink(
+                item.emailHtmlBody(),
+                item.emailPlainBody(),
+                item.paymentInfo(),
+                item.packageId());
         String trackingPixelUrl = trackingPixelService.buildTrackingPixelUrl(emailLog.getRequestId());
         String htmlBody = trackingPixelService.appendTrackingPixel(paymentBodies.htmlBody(), trackingPixelUrl);
 
@@ -119,7 +122,7 @@ public class LeadPortalEmailDispatchService {
                 List.of(item.submissionEmail()),
                 List.of(),
                 List.of(),
-                emailContent.subject(),
+                item.emailSubject(),
                 htmlBody,
                 paymentBodies.plainBody(),
                 List.of(attachment)
@@ -129,7 +132,7 @@ public class LeadPortalEmailDispatchService {
         log.info("Enviando pacote {} para {} com assunto '{}' (arquivo='{}', tamanho={} bytes, purchaseId={})",
                 item.packageId(),
                 item.submissionEmail(),
-                emailContent.subject(),
+                item.emailSubject(),
                 attachmentName,
                 attachmentBytes.length,
                 purchaseId);
@@ -143,11 +146,12 @@ public class LeadPortalEmailDispatchService {
         }
     }
 
-    private PaymentBodies enrichWithPaymentLink(LeadPortalImagePackageExportResponse.EmailContent emailContent,
-                                                LeadPortalImagePackageExportResponse.PaymentInfo paymentInfo,
+    private PaymentBodies enrichWithPaymentLink(String htmlBody,
+                                                String plainBody,
+                                                LeadPortalImagePackageExportItem.PaymentInfo paymentInfo,
                                                 long packageId) {
-        String html = emailContent.htmlBody() != null ? emailContent.htmlBody() : "";
-        String plain = emailContent.plainBody() != null ? emailContent.plainBody() : "";
+        String html = htmlBody != null ? htmlBody : "";
+        String plain = plainBody != null ? plainBody : "";
         if (paymentInfo == null || !StringUtils.hasText(paymentInfo.checkoutUrl())) {
             return new PaymentBodies(html, plain);
         }
@@ -158,7 +162,7 @@ public class LeadPortalEmailDispatchService {
         return new PaymentBodies(normalizedHtml, normalizedPlain);
     }
 
-    private String resolvePaymentUrl(long packageId, LeadPortalImagePackageExportResponse.PaymentInfo paymentInfo) {
+    private String resolvePaymentUrl(long packageId, LeadPortalImagePackageExportItem.PaymentInfo paymentInfo) {
         String directUrl = paymentInfo.checkoutUrl();
         String entrypoint = paymentLinkProperties.getEntrypointBaseUrl();
         if (!StringUtils.hasText(entrypoint)) {
@@ -200,7 +204,7 @@ public class LeadPortalEmailDispatchService {
         }
     }
 
-    private String buildHtmlPaymentBlock(LeadPortalImagePackageExportResponse.PaymentInfo paymentInfo, String paymentUrl) {
+    private String buildHtmlPaymentBlock(LeadPortalImagePackageExportItem.PaymentInfo paymentInfo, String paymentUrl) {
         String descriptor = StringUtils.hasText(paymentInfo.statementDescriptor())
                 ? paymentInfo.statementDescriptor()
                 : "Mercado Pago";
@@ -228,7 +232,7 @@ public class LeadPortalEmailDispatchService {
                 .append("</div>")
                 .toString();
     }
-    private String buildPlainPaymentBlock(String plainBody, LeadPortalImagePackageExportResponse.PaymentInfo paymentInfo, String paymentUrl) {
+    private String buildPlainPaymentBlock(String plainBody, LeadPortalImagePackageExportItem.PaymentInfo paymentInfo, String paymentUrl) {
         StringBuilder builder = new StringBuilder();
         if (StringUtils.hasText(plainBody)) {
             builder.append(plainBody.trim()).append("\n\n");
@@ -259,14 +263,6 @@ public class LeadPortalEmailDispatchService {
     }
 
     private record PaymentBodies(String htmlBody, String plainBody) {
-    }
-
-
-    private byte[] decodeAttachment(LeadPortalImagePackageExportResponse.Attachment attachment) {
-        if (attachment == null || !StringUtils.hasText(attachment.base64Content())) {
-            return new byte[0];
-        }
-        return Base64.getDecoder().decode(attachment.base64Content());
     }
 
     private String resolveRootCauseMessage(Throwable throwable) {

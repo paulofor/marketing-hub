@@ -11,7 +11,6 @@ import org.springframework.validation.annotation.Validated;
 public record MarketingHubClientProperties(
         @NotBlank String baseUrl,
         @NotBlank String templatesPath,
-        @NotBlank String leadPortalPackagesBasePath,
         String authToken,
         @Positive long connectTimeout,
         @Positive long readTimeout

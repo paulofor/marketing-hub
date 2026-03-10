@@ -48,7 +48,6 @@ clients:
   marketing-hub:
     base-url: ${MARKETING_HUB_BASE_URL:http://191.252.181.168:8000}
     templates-path: ${MARKETING_HUB_TEMPLATES_PATH:/api/v1/email-templates}
-    lead-portal-packages-base-path: ${MARKETING_HUB_LEAD_PORTAL_PACKAGES_BASE_PATH:/api/internal/lead-portal/image-packages}
     auth-token: ${MARKETING_HUB_AUTH_TOKEN:}
     connect-timeout: ${MARKETING_HUB_CONNECT_TIMEOUT:2000}
     # A exportação de pacotes pode levar vários segundos para gerar o ZIP + Base64;
@@ -63,6 +62,19 @@ clients:
     connect-timeout: ${CLOUDFLARE_CONNECT_TIMEOUT:2000}
     read-timeout: ${CLOUDFLARE_READ_TIMEOUT:5000}
 lead-portal:
+  notifications:
+    max-attempts: ${LEAD_PORTAL_NOTIFICATIONS_MAX_ATTEMPTS:5}
+    batch-size: ${LEAD_PORTAL_NOTIFICATIONS_BATCH_SIZE:3}
+    lock-seconds: ${LEAD_PORTAL_NOTIFICATIONS_LOCK_SECONDS:300}
+    tracking-base-url: ${LEAD_PORTAL_NOTIFICATIONS_TRACKING_BASE_URL:}
+  storage:
+    bucket: ${LEAD_PORTAL_STORAGE_BUCKET:leadportal}
+    endpoint: ${LEAD_PORTAL_STORAGE_ENDPOINT:https://95b059f4f73518a658d07a19438f38c9.r2.cloudflarestorage.com}
+    public-base-url: ${LEAD_PORTAL_STORAGE_PUBLIC_BASE_URL:https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev}
+    access-key-id: ${LEAD_PORTAL_STORAGE_ACCESS_KEY_ID:fafc943bd27d2a1c55c84f80778994a0}
+    secret-access-key: ${LEAD_PORTAL_STORAGE_SECRET_ACCESS_KEY:4ee618dd20bb752711ee0242469a70fadb9bdc0c921ded7e1177eeb681ddfc54}
+    region: ${LEAD_PORTAL_STORAGE_REGION:auto}
+    max-download-bytes: ${LEAD_PORTAL_STORAGE_MAX_DOWNLOAD_BYTES:26214400}
   dispatch:
     enabled: ${LEAD_PORTAL_DISPATCH_ENABLED:true}
     batch-size: ${LEAD_PORTAL_DISPATCH_BATCH_SIZE:3}
@@ -79,6 +91,14 @@ lead-portal:
     button-color: ${LEAD_PORTAL_PAYMENT_BUTTON_COLOR:#00a650}
     button-text: ${LEAD_PORTAL_PAYMENT_BUTTON_TEXT:Quero liberar as imagens originais}
     plain-text-intro: ${LEAD_PORTAL_PAYMENT_PLAIN_INTRO:Finalize o pagamento e libere as imagens originais:}
+integrations:
+  lead-portal-payments:
+    enabled: ${LEAD_PORTAL_PAYMENTS_ENABLED:true}
+    base-url: ${LEAD_PORTAL_PAYMENTS_BASE_URL:https://pagamentopalf.site}
+    auth-token: ${LEAD_PORTAL_PAYMENTS_AUTH_TOKEN:}
+    connect-timeout: ${LEAD_PORTAL_PAYMENTS_CONNECT_TIMEOUT:PT2S}
+    read-timeout: ${LEAD_PORTAL_PAYMENTS_READ_TIMEOUT:PT5S}
+
 email-service:
   default-from-address: ${EMAIL_SERVICE_FROM_ADDRESS:imagens@oportunidadebrasil.shop}
   dry-run: ${EMAIL_SERVICE_DRY_RUN:false}

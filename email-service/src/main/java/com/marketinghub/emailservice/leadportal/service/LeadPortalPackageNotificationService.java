@@ -173,7 +173,7 @@ public class LeadPortalPackageNotificationService {
                     sub.name AS submission_name,
                     sub.email AS submission_email,
                     exp.id AS experiment_id,
-                    exp.name AS experiment_name,
+                    COALESCE(exp.name, flow.name, flow.slug) AS experiment_name,
                     sample.subject AS sample_subject,
                     sample.preview_text AS sample_preview,
                     sample.body AS sample_body,
@@ -190,10 +190,9 @@ public class LeadPortalPackageNotificationService {
                 FROM flow_submission_image_package pack
                 JOIN flow_submissions sub ON sub.id = pack.submission_id
                 JOIN lead_portal_flow flow ON flow.slug = sub.flow_slug
-                JOIN experiment exp ON exp.lead_portal_flow_id = flow.id
-                JOIN experiment_sample_email sample ON sample.id = exp.selected_sample_email_id
-                WHERE exp.selected_sample_email_id IS NOT NULL
-                  AND sub.email IS NOT NULL AND sub.email <> ''
+                LEFT JOIN experiment exp ON exp.lead_portal_flow_id = flow.id
+                LEFT JOIN experiment_sample_email sample ON sample.id = exp.selected_sample_email_id
+                WHERE sub.email IS NOT NULL AND sub.email <> ''
                   AND pack.notified_at IS NULL
                   AND pack.zip_object_key IS NOT NULL
                   AND pack.zip_generated_at IS NOT NULL
@@ -227,7 +226,7 @@ public class LeadPortalPackageNotificationService {
                 toInstant(rs.getTimestamp("notification_last_attempt")),
                 rs.getString("submission_name"),
                 rs.getString("submission_email"),
-                rs.getLong("experiment_id"),
+                (Long) rs.getObject("experiment_id"),
                 rs.getString("experiment_name"),
                 rs.getString("sample_subject"),
                 rs.getString("sample_preview"),
@@ -271,7 +270,7 @@ public class LeadPortalPackageNotificationService {
     }
 
     private EmailContent buildEmailContent(PendingPackage pending, int imageCount, PaymentInfo paymentInfo) {
-        String subject = pending.sampleSubject();
+        String subject = resolveEmailSubject(pending, imageCount);
         String normalizedTrackingBase = normalizeTrackingBaseUrl(trackingBaseUrl);
         String trackingViewUrl = null;
         String trackingPixelUrl = null;
@@ -327,7 +326,7 @@ public class LeadPortalPackageNotificationService {
         html.append("<p class=\"meta\" style=\"font-size:12px;color:#555\">")
                 .append("Pacote ").append(pending.packageId())
                 .append(" · Experimento ")
-                .append(HtmlUtils.htmlEscape(pending.experimentName()))
+                .append(HtmlUtils.htmlEscape(resolveExperimentLabel(pending)))
                 .append("</p>");
         if (StringUtils.hasText(trackingPixelUrl)) {
             html.append("<img src=\"")
@@ -339,6 +338,32 @@ public class LeadPortalPackageNotificationService {
         return new EmailContent(subject, plain.toString(), html.toString(), attachmentName);
     }
 
+    private String resolveEmailSubject(PendingPackage pending, int imageCount) {
+        if (StringUtils.hasText(pending.sampleSubject())) {
+            return pending.sampleSubject().trim();
+        }
+        String experimentLabel = resolveExperimentLabel(pending);
+        boolean singleImage = imageCount == 1;
+        String readySnippet = singleImage
+                ? "sua imagem com marca d'água está pronta"
+                : imageCount + " imagens com marca d'água estão prontas";
+        if (StringUtils.hasText(pending.submissionName())) {
+            return pending.submissionName().trim() + ", " + readySnippet;
+        }
+        if (StringUtils.hasText(experimentLabel)) {
+            return "Prévia " + experimentLabel + ": " + readySnippet;
+        }
+        return singleImage
+                ? "Sua imagem com marca d'água está pronta"
+                : "Suas " + imageCount + " imagens com marca d'água estão prontas";
+    }
+
+    private String resolveExperimentLabel(PendingPackage pending) {
+        if (StringUtils.hasText(pending.experimentName())) {
+            return pending.experimentName().trim();
+        }
+        return "Lead Portal";
+    }
 
     private PaymentInfo ensurePaymentInfo(PendingPackage pending) {
         if (isPaymentLinkValid(pending.paymentCheckoutUrl(), pending.paymentCheckoutExpiresAt())) {
@@ -624,7 +649,7 @@ public class LeadPortalPackageNotificationService {
             Instant lastAttempt,
             String submissionName,
             String submissionEmail,
-            long experimentId,
+            Long experimentId,
             String experimentName,
             String sampleSubject,
             String samplePreview,

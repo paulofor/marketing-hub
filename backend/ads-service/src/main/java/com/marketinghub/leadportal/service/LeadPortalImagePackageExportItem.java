@@ -13,7 +13,7 @@ public record LeadPortalImagePackageExportItem(
         String submissionName,
         String submissionEmail,
         FlowSubmissionImagePackageStatus status,
-        long experimentId,
+        Long experimentId,
         String experimentName,
         String sampleSubject,
         String samplePreview,

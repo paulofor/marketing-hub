@@ -40,6 +40,11 @@ Microserviço responsável por acompanhar pagamentos via Mercado Pago, registrar
 | `DELIVERY_INITIAL_DELAY` | Delay inicial do scheduler (ms) | `20000` |
 | `DELIVERY_FIXED_DELAY` | Intervalo entre ciclos (ms) | `60000` |
 
+## Perfis de execução
+
+- **default**: utilizado automaticamente quando nenhum profile é informado. Usa o banco H2 em memória (`jdbc:h2:mem:lead_portal_payments;MODE=MySQL`) e carrega o schema simplificado (`schema-h2.sql`), o que permite subir o serviço sem depender de um MySQL externo.
+- **prod**: replica a configuração anterior baseada em MySQL, incluindo a execução de `schema.sql` e do patch incremental em `db/changelog/lead-portal-purchase-add-checkout-expires.sql`. Esse profile já é habilitado no `docker-compose` e pode ser acionado manualmente com `SPRING_PROFILES_ACTIVE=prod` quando você precisar validar contra um banco MySQL real.
+
 ## Endpoints
 
 - `POST /api/v1/payments/checkout`: cria a preferência no Mercado Pago e registra a compra. Body mínimo:

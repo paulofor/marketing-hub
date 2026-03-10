@@ -63,10 +63,18 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:marketing_hub_user}
     password: ${SPRING_DATASOURCE_PASSWORD:${MYSQL_PASS:Ab9!rG4wX8_tMq2Bz7#HpK5V}}
     driver-class-name: ${SPRING_DATASOURCE_DRIVER:com.mysql.cj.jdbc.Driver}
+
+    hikari:
+      connection-timeout: ${SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT:30000}
+      validation-timeout: ${SPRING_DATASOURCE_HIKARI_VALIDATION_TIMEOUT:5000}
+      idle-timeout: ${SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT:540000}
+      max-lifetime: ${SPRING_DATASOURCE_HIKARI_MAX_LIFETIME:840000}
+      keepalive-time: ${SPRING_DATASOURCE_HIKARI_KEEPALIVE_TIME:300000}
   jpa:
+    open-in-view: ${SPRING_JPA_OPEN_IN_VIEW:false}
     properties:
       hibernate:
-        dialect: ${SPRING_JPA_HIBERNATE_DIALECT:org.hibernate.dialect.MySQLDialect}
+        dialect: ${SPRING_JPA_HIBERNATE_DIALECT:org.hibernate.community.dialect.MySQL57Dialect}
   sql:
     init:
       schema-locations: ${SPRING_SQL_INIT_SCHEMA_LOCATIONS:classpath:schema.sql,classpath:db/changelog/lead-portal-purchase-add-checkout-expires.sql}

@@ -127,6 +127,47 @@ interaction_journey_element
 
 ---
 
+## Diagrama visual (Mermaid)
+
+```mermaid
+erDiagram
+    interaction_journey {
+        BIGINT id PK
+        VARCHAR name
+        LONGTEXT description
+        DATETIME created_at
+        DATETIME updated_at
+    }
+
+    interaction_journey_step {
+        BIGINT id PK
+        BIGINT journey_id FK
+        INT order_index
+        VARCHAR title
+        LONGTEXT description
+    }
+
+    interaction_journey_element {
+        BIGINT id PK
+        BIGINT step_id FK
+        BIGINT parent_id FK
+        INT order_index
+        VARCHAR label
+        VARCHAR type
+        LONGTEXT notes
+        INT min_quantity
+        INT max_quantity
+    }
+
+    interaction_journey ||--o{ interaction_journey_step : "journey_id (ON DELETE CASCADE)"
+    interaction_journey_step ||--o{ interaction_journey_element : "step_id (ON DELETE CASCADE)"
+    interaction_journey_element ||--o{ interaction_journey_element : "parent_id (ON DELETE CASCADE)"
+```
+
+> Caso o seu visualizador de Markdown não renderize Mermaid, use o diagrama textual acima como referência para o mesmo modelo.
+
+---
+
 ## Regras de uso recomendadas
 
 1. Tratar `order_index` como fonte da ordem de apresentação em passos e elementos.

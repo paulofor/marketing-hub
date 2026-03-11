@@ -97,19 +97,23 @@ export default function FlowPage() {
                   <strong>{defaultHeader.promiseLabel}:</strong> {heroContent.promise}
                 </div>
               </div>
+              <div className="flow-proof-cta">
+                <strong>Gostou do estilo?</strong> Preencha o formulário abaixo para receber uma versão personalizada para o seu negócio.
+              </div>
             </section>
 
-            <section className="flow-proof-section" aria-label="Exemplos de posts">
+            <section className="flow-proof-section flow-proof-section--spotlight" aria-label="Exemplos de posts">
               <div className="flow-section-header">
                 <p className="flow-section-kicker">{proofContent.kicker}</p>
                 <h2>{proofContent.title}</h2>
                 <p>{proofContent.subtitle}</p>
               </div>
               <div className="flow-proof-grid">
-                {proofContent.cards.map((post) => {
+                {proofContent.cards.map((post, index) => {
                   const mediaStyle = !post.imageUrl && post.background ? { background: post.background } : undefined;
                   return (
                     <article key={post.title} className="flow-proof-card">
+                      <span className="flow-proof-card__badge">Exemplo {index + 1}</span>
                       <div
                         className={`flow-proof-image ${post.imageUrl ? "flow-proof-image--media" : ""}`}
                         style={mediaStyle}

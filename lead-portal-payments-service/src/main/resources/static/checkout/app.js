@@ -144,7 +144,9 @@ function hydrate(payload) {
   payButton.disabled = false;
 
   if (isReturnFlow) {
-    applyReturnStatus();
+    if (!applyPurchaseStatus(payload.status)) {
+      applyReturnStatus();
+    }
   } else {
     heroMessage.textContent =
       "Revise as informações do pacote e, quando estiver pronto, siga para o Mercado Pago.";
@@ -162,6 +164,63 @@ function hydrate(payload) {
         window.location.href = checkoutUrl;
       }, 4000);
     }
+  }
+}
+
+function normalizePurchaseStatus(status) {
+  if (!status) {
+    return "";
+  }
+  return status.toString().trim().toUpperCase();
+}
+
+function applyPurchaseStatus(status) {
+  const normalized = normalizePurchaseStatus(status);
+  switch (normalized) {
+    case "DELIVERED":
+      setStatus(
+        "success",
+        "Imagens enviadas com sucesso!",
+        "O pagamento foi confirmado e o pacote já foi entregue no seu e-mail. Caso não o encontre, verifique a caixa de spam ou promoções."
+      );
+      heroMessage.textContent = "Tudo pronto! Verifique o seu e-mail para baixar as imagens originais.";
+      return true;
+    case "DELIVERING":
+      setStatus(
+        "success",
+        "Pagamento aprovado!",
+        "Estamos preparando o download e você receberá as imagens originais em instantes no seu e-mail."
+      );
+      heroMessage.textContent = "Estamos finalizando a entrega das imagens para o seu e-mail.";
+      return true;
+    case "APPROVED":
+      setStatus(
+        "success",
+        "Pagamento aprovado!",
+        "Recebemos a confirmação do Mercado Pago e já iniciamos o envio das imagens originais para o seu e-mail."
+      );
+      heroMessage.textContent = "Tudo certo! Agora é só aguardar a entrega no seu e-mail.";
+      return true;
+    case "PENDING_PAYMENT":
+    case "PREFERENCE_CREATED":
+      setStatus(
+        "warning",
+        "Pagamento em processamento",
+        "Ainda estamos aguardando a confirmação do Mercado Pago. Assim que tivermos uma resposta, enviaremos as instruções para o seu e-mail."
+      );
+      heroMessage.textContent = "Estamos aguardando a confirmação do Mercado Pago.";
+      return true;
+    case "FAILED":
+    case "CANCELED":
+      setStatus(
+        "error",
+        "Pagamento não concluído",
+        "Nossa validação interna não conseguiu confirmar o pagamento. Você pode tentar novamente clicando no botão abaixo."
+      );
+      heroMessage.textContent = "Identificamos uma falha na etapa de pagamento.";
+      return true;
+    default:
+      return false;
   }
 }
 

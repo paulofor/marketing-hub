@@ -94,11 +94,35 @@ public class EmailSenderService {
 
             addAttachments(helper, message.attachments());
 
-            mailSender.send(mimeMessage);
-            log.info("E-mail enviado com sucesso para {} (configuração: {})", String.join(",", message.to()), mailConfigDescription);
+            String smtpServerResponse = sendAndCaptureSmtpResponse(mailSender, mimeMessage);
+            log.info("E-mail enviado com sucesso para {} (configuração: {}, resposta SMTP: {})",
+                    String.join(",", message.to()),
+                    mailConfigDescription,
+                    smtpServerResponse);
         } catch (Exception ex) {
             log.error("Erro ao enviar e-mail para {}. Configuração SMTP: {}", formatList(message.to()), mailConfigDescription, ex);
             throw new EmailSendingException("Falha ao enviar e-mail (" + mailConfigDescription + ")", ex);
+        }
+    }
+
+    private String sendAndCaptureSmtpResponse(JavaMailSender mailSender, MimeMessage mimeMessage) throws Exception {
+        if (!(mailSender instanceof JavaMailSenderImpl impl)) {
+            mailSender.send(mimeMessage);
+            return "não disponível para " + mailSender.getClass().getSimpleName();
+        }
+
+        mimeMessage.saveChanges();
+        String protocol = impl.getProtocol() != null ? impl.getProtocol() : "smtp";
+
+        try (var transport = impl.getSession().getTransport(protocol)) {
+            transport.connect(impl.getHost(), impl.getPort(), impl.getUsername(), impl.getPassword());
+            transport.sendMessage(mimeMessage, mimeMessage.getAllRecipients());
+
+            String response = resolveLastServerResponse(transport);
+            if (response != null && !response.isBlank()) {
+                return response.replaceAll("\\s+", " ").trim();
+            }
+            return "transport=" + transport.getClass().getSimpleName() + " (resposta SMTP indisponível)";
         }
     }
 
@@ -142,6 +166,17 @@ public class EmailSenderService {
             }
         }
         return total;
+    }
+
+    private String resolveLastServerResponse(Object transport) {
+        try {
+            var method = transport.getClass().getMethod("getLastServerResponse");
+            Object value = method.invoke(transport);
+            return value instanceof String response ? response : null;
+        } catch (Exception ex) {
+            log.debug("Transport {} não expõe getLastServerResponse", transport.getClass().getName(), ex);
+            return null;
+        }
     }
 
     private String describeMailConfiguration(JavaMailSender sender, String label) {

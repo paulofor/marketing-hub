@@ -12,7 +12,7 @@ public class LeadPortalPaymentsIntegrationProperties {
     private String baseUrl = "https://pagamentopalf.site";
     private String authToken;
     private Duration connectTimeout = Duration.ofSeconds(2);
-    private Duration readTimeout = Duration.ofSeconds(5);
+    private Duration readTimeout = Duration.ofMinutes(3);
 
     public boolean isEnabled() {
         return enabled;

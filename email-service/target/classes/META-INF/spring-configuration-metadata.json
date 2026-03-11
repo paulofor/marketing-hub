@@ -21,6 +21,11 @@
       "sourceType": "com.marketinghub.emailservice.config.EmailTrackingProperties"
     },
     {
+      "name": "integrations.lead-portal-payments",
+      "type": "com.marketinghub.emailservice.leadportal.integration.LeadPortalPaymentsIntegrationProperties",
+      "sourceType": "com.marketinghub.emailservice.leadportal.integration.LeadPortalPaymentsIntegrationProperties"
+    },
+    {
       "name": "lead-portal.dispatch",
       "type": "com.marketinghub.emailservice.config.LeadPortalDispatchProperties",
       "sourceType": "com.marketinghub.emailservice.config.LeadPortalDispatchProperties"
@@ -29,6 +34,11 @@
       "name": "lead-portal.payment-link",
       "type": "com.marketinghub.emailservice.config.LeadPortalPaymentLinkProperties",
       "sourceType": "com.marketinghub.emailservice.config.LeadPortalPaymentLinkProperties"
+    },
+    {
+      "name": "lead-portal.storage",
+      "type": "com.marketinghub.emailservice.storage.StorageProperties",
+      "sourceType": "com.marketinghub.emailservice.storage.StorageProperties"
     },
     {
       "name": "premium-delivery.email",
@@ -97,11 +107,6 @@
       "defaultValue": 0
     },
     {
-      "name": "clients.marketing-hub.lead-portal-packages-base-path",
-      "type": "java.lang.String",
-      "sourceType": "com.marketinghub.emailservice.config.MarketingHubClientProperties"
-    },
-    {
       "name": "clients.marketing-hub.read-timeout",
       "type": "java.lang.Long",
       "sourceType": "com.marketinghub.emailservice.config.MarketingHubClientProperties",
@@ -127,6 +132,35 @@
       "name": "email.tracking.base-url",
       "type": "java.lang.String",
       "sourceType": "com.marketinghub.emailservice.config.EmailTrackingProperties"
+    },
+    {
+      "name": "integrations.lead-portal-payments.auth-token",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.emailservice.leadportal.integration.LeadPortalPaymentsIntegrationProperties"
+    },
+    {
+      "name": "integrations.lead-portal-payments.base-url",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.emailservice.leadportal.integration.LeadPortalPaymentsIntegrationProperties",
+      "defaultValue": "https:\/\/pagamentopalf.site"
+    },
+    {
+      "name": "integrations.lead-portal-payments.connect-timeout",
+      "type": "java.time.Duration",
+      "sourceType": "com.marketinghub.emailservice.leadportal.integration.LeadPortalPaymentsIntegrationProperties",
+      "defaultValue": "2s"
+    },
+    {
+      "name": "integrations.lead-portal-payments.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.marketinghub.emailservice.leadportal.integration.LeadPortalPaymentsIntegrationProperties",
+      "defaultValue": true
+    },
+    {
+      "name": "integrations.lead-portal-payments.read-timeout",
+      "type": "java.time.Duration",
+      "sourceType": "com.marketinghub.emailservice.leadportal.integration.LeadPortalPaymentsIntegrationProperties",
+      "defaultValue": "3m"
     },
     {
       "name": "lead-portal.dispatch.batch-size",
@@ -179,7 +213,7 @@
       "name": "lead-portal.payment-link.entrypoint-base-url",
       "type": "java.lang.String",
       "sourceType": "com.marketinghub.emailservice.config.LeadPortalPaymentLinkProperties",
-      "defaultValue": "https:\/\/pagamentopalf.online\/checkout"
+      "defaultValue": "https:\/\/pagamentopalf.site\/checkout"
     },
     {
       "name": "lead-portal.payment-link.package-id-query-param",
@@ -204,6 +238,55 @@
       "type": "java.lang.Boolean",
       "sourceType": "com.marketinghub.emailservice.config.LeadPortalPaymentLinkProperties",
       "defaultValue": true
+    },
+    {
+      "name": "lead-portal.storage.access-key-id",
+      "type": "java.lang.String",
+      "description": "Access key ID for the R2 bucket.",
+      "sourceType": "com.marketinghub.emailservice.storage.StorageProperties",
+      "defaultValue": ""
+    },
+    {
+      "name": "lead-portal.storage.bucket",
+      "type": "java.lang.String",
+      "description": "Cloudflare R2 bucket name.",
+      "sourceType": "com.marketinghub.emailservice.storage.StorageProperties",
+      "defaultValue": ""
+    },
+    {
+      "name": "lead-portal.storage.endpoint",
+      "type": "java.lang.String",
+      "description": "R2 endpoint (e.g. https:\/\/<account-id>.r2.cloudflarestorage.com).",
+      "sourceType": "com.marketinghub.emailservice.storage.StorageProperties",
+      "defaultValue": ""
+    },
+    {
+      "name": "lead-portal.storage.max-download-bytes",
+      "type": "java.lang.Long",
+      "description": "Maximum allowed size (in bytes) when downloading objects.",
+      "sourceType": "com.marketinghub.emailservice.storage.StorageProperties",
+      "defaultValue": 0
+    },
+    {
+      "name": "lead-portal.storage.public-base-url",
+      "type": "java.lang.String",
+      "description": "Optional public base URL for serving files.",
+      "sourceType": "com.marketinghub.emailservice.storage.StorageProperties",
+      "defaultValue": ""
+    },
+    {
+      "name": "lead-portal.storage.region",
+      "type": "java.lang.String",
+      "description": "Region understood by the S3 client.",
+      "sourceType": "com.marketinghub.emailservice.storage.StorageProperties",
+      "defaultValue": "auto"
+    },
+    {
+      "name": "lead-portal.storage.secret-access-key",
+      "type": "java.lang.String",
+      "description": "Secret access key for the R2 bucket.",
+      "sourceType": "com.marketinghub.emailservice.storage.StorageProperties",
+      "defaultValue": ""
     },
     {
       "name": "premium-delivery.email.batch-size",

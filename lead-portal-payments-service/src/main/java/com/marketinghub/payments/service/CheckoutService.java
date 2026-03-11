@@ -196,10 +196,46 @@ public class CheckoutService {
     }
 
     private String resolveCurrency(LeadPortalPackageSummary imagePackage) {
-        String currency = StringUtils.hasText(imagePackage.currency())
-                ? imagePackage.currency()
-                : paymentProperties.getDefaultCurrency();
+        String requestedCurrency = normalizeCurrency(imagePackage.currency());
+        String defaultCurrency = normalizeCurrency(paymentProperties.getDefaultCurrency());
+
+        if (requestedCurrency == null) {
+            return ensureFallbackCurrency(defaultCurrency);
+        }
+        if (isSupportedCurrency(requestedCurrency)) {
+            return requestedCurrency;
+        }
+
+        String fallback = ensureFallbackCurrency(defaultCurrency);
+        log.warn("Moeda {} do pacote {} não é suportada pela conta do Mercado Pago. Aplicando {}",
+                requestedCurrency, imagePackage.packageId(), fallback);
+        return fallback;
+    }
+
+    private String normalizeCurrency(String currency) {
         return StringUtils.hasText(currency) ? currency.trim().toUpperCase(Locale.ROOT) : null;
+    }
+
+    private String ensureFallbackCurrency(String fallbackCurrency) {
+        String normalized = normalizeCurrency(fallbackCurrency);
+        if (!StringUtils.hasText(normalized)) {
+            throw new IllegalStateException("Moeda padrão dos pagamentos não configurada");
+        }
+        return normalized;
+    }
+
+    private boolean isSupportedCurrency(String currency) {
+        List<String> supported = paymentProperties.getSupportedCurrencies();
+        if (supported == null || supported.isEmpty()) {
+            return true;
+        }
+        for (String value : supported) {
+            String normalized = normalizeCurrency(value);
+            if (currency.equals(normalized)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private MercadoPagoPreferenceRequest buildPreferenceRequest(LeadPortalPackageSummary imagePackage,

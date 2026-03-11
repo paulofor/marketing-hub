@@ -46,6 +46,7 @@ payments:
   default-amount: ${PAYMENTS_DEFAULT_AMOUNT:49.90}
   default-currency: ${PAYMENTS_DEFAULT_CURRENCY:BRL}
   checkout-ttl: ${PAYMENTS_CHECKOUT_TTL:PT72H}
+  supported-currencies: ${PAYMENTS_SUPPORTED_CURRENCIES:BRL}
 
 delivery:
   enabled: ${DELIVERY_ENABLED:true}

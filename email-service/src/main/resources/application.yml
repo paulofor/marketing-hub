@@ -97,7 +97,9 @@ integrations:
     base-url: ${LEAD_PORTAL_PAYMENTS_BASE_URL:https://pagamentopalf.site}
     auth-token: ${LEAD_PORTAL_PAYMENTS_AUTH_TOKEN:}
     connect-timeout: ${LEAD_PORTAL_PAYMENTS_CONNECT_TIMEOUT:PT2S}
-    read-timeout: ${LEAD_PORTAL_PAYMENTS_READ_TIMEOUT:PT5S}
+    # A criação de preferências no Mercado Pago pode levar quase dois minutos; aumentamos o timeout
+    # para evitar reprocessamentos e falhas na etapa de disparo de e-mails.
+    read-timeout: ${LEAD_PORTAL_PAYMENTS_READ_TIMEOUT:PT3M}
 
 email-service:
   default-from-address: ${EMAIL_SERVICE_FROM_ADDRESS:imagens@oportunidadebrasil.shop}

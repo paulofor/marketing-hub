@@ -23,6 +23,7 @@ import com.marketinghub.payments.model.PurchaseStatus;
 import com.marketinghub.payments.repository.LeadPortalPurchaseRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -372,6 +373,45 @@ class CheckoutServiceTest {
         assertThat(sentRequest.payer().email()).isEqualTo(summary.submissionEmail());
         assertThat(sentRequest.payer().name()).isEqualTo(summary.submissionName());
     }
+
+    @Test
+    void shouldFallbackToDefaultCurrencyWhenPackageIsNotSupported() {
+        CreateCheckoutRequest request = new CreateCheckoutRequest();
+        request.setPackageId(8L);
+
+        LeadPortalPackageSummary summary = new LeadPortalPackageSummary(
+                8L,
+                UUID.randomUUID(),
+                "Submission",
+                "submission@example.com",
+                FlowSubmissionImagePackageStatus.COMPLETED,
+                "prompt",
+                "model",
+                new BigDecimal("10"),
+                "usd",
+                Instant.now());
+
+        paymentProperties.setDefaultCurrency("BRL");
+        paymentProperties.setSupportedCurrencies(List.of("BRL"));
+
+        MercadoPagoPreferenceResponse mpResponse = new MercadoPagoPreferenceResponse(
+                "pref-usd",
+                "https://mercadopago.com/checkout/usd");
+
+        ArgumentCaptor<com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceRequest> requestCaptor =
+                ArgumentCaptor.forClass(com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceRequest.class);
+
+        when(packageGateway.loadPackage(8L)).thenReturn(summary);
+        when(purchaseRepository.findTopByPackageIdOrderByCreatedAtDesc(8L)).thenReturn(Optional.empty());
+        when(mercadoPagoClient.createPreference(requestCaptor.capture())).thenReturn(mpResponse);
+        when(purchaseRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        checkoutService.createCheckout(request);
+
+        com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceRequest sentRequest = requestCaptor.getValue();
+        assertThat(sentRequest.items().get(0).currencyId()).isEqualTo("BRL");
+    }
+
 
     @Test
     void shouldUpdatePurchaseFromSnakeCaseMetadataWhenPaymentApproved() {

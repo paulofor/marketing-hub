@@ -243,7 +243,12 @@ export default function FlowForm({
 }
 
 function enhanceQuestions(questions: FlowQuestion[]) {
-  const normalized = [...questions];
+  const normalized = questions.map((question) => {
+    if (isWorkplaceQuestion(question)) {
+      return { ...question, required: false };
+    }
+    return question;
+  });
 
   const emailIndex = normalized.findIndex(
     (question) => question.type === "EMAIL",
@@ -306,6 +311,11 @@ function isNameQuestion(question: FlowQuestion) {
     title.includes("nome") ||
     title.includes("name")
   );
+}
+
+function isWorkplaceQuestion(question: FlowQuestion) {
+  const key = question.dataKey.toLowerCase();
+  return key === "local_trabalho" || key === "academia_ou_studio";
 }
 
 interface ContactFollowUpConfig {
@@ -425,12 +435,16 @@ function InputByType({
   onChange,
   onToggleOption,
 }: InputByTypeProps) {
+  const isPhoneField = isPhoneLikeQuestion(question);
   const commonProps = {
     name: question.dataKey,
     required: question.required,
     placeholder: question.placeholder ?? undefined,
     onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      onChange(question, event.target.value),
+      onChange(
+        question,
+        normalizeInputValue(question, event.target.value, isPhoneField),
+      ),
   };
 
   switch (question.type) {
@@ -511,6 +525,45 @@ function InputByType({
     default:
       return <p>Tipo de pergunta não suportado.</p>;
   }
+}
+
+function normalizeInputValue(
+  question: FlowQuestion,
+  value: string,
+  isPhoneField: boolean,
+) {
+  if (question.type === "EMAIL") {
+    return value.replace(/\s+/g, "").toLowerCase();
+  }
+
+  if (isPhoneField) {
+    return formatPhoneNumber(value);
+  }
+
+  return value;
+}
+
+function isPhoneLikeQuestion(question: FlowQuestion) {
+  if (question.type === "PHONE") {
+    return true;
+  }
+
+  const key = question.dataKey.toLowerCase();
+  return key.includes("telefone") || key.includes("whatsapp") || key.includes("phone");
+}
+
+function formatPhoneNumber(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 2) {
+    return digits;
+  }
+  if (digits.length <= 6) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  }
+  if (digits.length <= 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 }
 
 function mapInputType(type: FlowQuestionType) {

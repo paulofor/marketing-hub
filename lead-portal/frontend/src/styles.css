@@ -589,7 +589,7 @@ form.flow-form {
 
 .case-overview {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
 }
 
@@ -734,7 +734,7 @@ form.flow-form {
 }
 
 .flow-container {
-  width: min(100%, 680px);
+  width: min(100%, 920px);
   margin: 0 auto;
   padding: 2rem 1.25rem 3rem;
   display: flex;
@@ -873,8 +873,15 @@ form.flow-form {
 .flow-proof-grid {
   margin-top: 1.75rem;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.5rem;
+}
+
+
+@media (min-width: 1024px) {
+  .flow-proof-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .flow-proof-card {
@@ -961,6 +968,13 @@ form.flow-form {
   display: grid;
   gap: 0.65rem;
   color: var(--flow-text-color, #1f2937);
+}
+
+
+@media (max-width: 720px) {
+  .flow-proof-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {

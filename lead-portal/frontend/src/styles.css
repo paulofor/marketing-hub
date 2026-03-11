@@ -876,18 +876,20 @@ form.flow-form {
   font-weight: 700;
 }
 
-.flow-proof-grid {
+.flow-proof-card--featured {
+  margin-top: 1.75rem;
+}
+
+.flow-proof-image--featured {
+  min-height: clamp(320px, 55vw, 560px);
+  aspect-ratio: 16 / 9;
+}
+
+.flow-proof-secondary-grid {
   margin-top: 1.75rem;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.5rem;
-}
-
-
-@media (min-width: 900px) {
-  .flow-proof-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 
 .flow-proof-card {
@@ -1002,7 +1004,7 @@ form.flow-form {
 
 
 @media (max-width: 720px) {
-  .flow-proof-grid {
+  .flow-proof-secondary-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -1022,4 +1024,3 @@ form.flow-form {
     border-radius: 18px;
   }
 }
-

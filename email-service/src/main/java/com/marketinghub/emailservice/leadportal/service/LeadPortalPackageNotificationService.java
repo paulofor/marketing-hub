@@ -43,6 +43,12 @@ public class LeadPortalPackageNotificationService {
             .withLocale(new Locale("pt", "BR"))
             .withZone(ZoneId.systemDefault());
 
+    // Copy fixa do produto
+    private static final String PRODUCT_OWNER = "Produtividade 360";
+    private static final BigDecimal DEFAULT_PRODUCT_PRICE = new BigDecimal("127.00");
+    private static final String DEFAULT_PRODUCT_CURRENCY = "BRL";
+    private static final String DEFAULT_PRODUCT_DESCRIPTION = "pacote com 10 imagens para posts em redes sociais";
+
     private final JdbcTemplate jdbcTemplate;
     private final FileStorageService fileStorageService;
     private final LeadPortalImagePackageStatusHistoryService statusHistoryService;
@@ -278,51 +284,72 @@ public class LeadPortalPackageNotificationService {
             trackingViewUrl = buildTrackingUrl(normalizedTrackingBase, pending.packageId(), "previews", pending.submissionId());
             trackingPixelUrl = buildTrackingUrl(normalizedTrackingBase, pending.packageId(), "open.gif", pending.submissionId());
         }
+        String formattedDefaultPrice = formatCurrency(DEFAULT_PRODUCT_PRICE, DEFAULT_PRODUCT_CURRENCY);
+
         StringBuilder plain = new StringBuilder();
-        if (StringUtils.hasText(pending.samplePreview())) {
-            plain.append(pending.samplePreview()).append("\n\n");
+        plain.append("Suas amostras com marca d'água estão anexas. Se quiser liberar os arquivos originais, é só concluir o pagamento.")
+                .append("\n\n");
+
+        plain.append("Olá");
+        if (StringUtils.hasText(pending.submissionName())) {
+            plain.append(" ").append(pending.submissionName().trim());
         }
-        if (StringUtils.hasText(pending.sampleBody())) {
-            plain.append(pending.sampleBody().trim()).append("\n\n");
-        }
-        plain.append("Anexamos ").append(imageCount).append(" imagem(ns) com marca d'água geradas para este lead.\n");
-        if (StringUtils.hasText(pending.sampleCallToAction())) {
-            plain.append("CTA sugerido: ").append(pending.sampleCallToAction().trim()).append("\n");
-        }
+        plain.append(",\n\n");
+
+        plain.append("Anexei ")
+                .append(imageCount)
+                .append(" imagem(ns) com marca d'água para você avaliar.\n");
+
+        plain.append("Para liberar o pacote completo (")
+                .append(DEFAULT_PRODUCT_DESCRIPTION)
+                .append("), o valor é ")
+                .append(formattedDefaultPrice)
+                .append(".\n");
+
         if (trackingViewUrl != null) {
-            plain.append("Acesse as prévias online: ").append(trackingViewUrl).append("\n");
+            plain.append("Ver prévias online: ").append(trackingViewUrl).append("\n");
         }
-        plain.append("\nID do pacote: ").append(pending.packageId());
+
+        appendPaymentCallToAction(plain, null, paymentInfo, "Liberar pacote completo");
+
+        plain.append("Atenciosamente,\n")
+                .append(PRODUCT_OWNER)
+                .append("\n\n");
+
+        plain.append("ID do pacote: ").append(pending.packageId());
         if (pending.sampleUpdatedAt() != null) {
             plain.append("\nE-mail atualizado em: ").append(HUMAN_DATE.format(pending.sampleUpdatedAt()));
         }
-
         StringBuilder html = new StringBuilder();
-        if (StringUtils.hasText(pending.samplePreview())) {
-            html.append("<p><em>").append(HtmlUtils.htmlEscape(pending.samplePreview().trim())).append("</em></p>");
-        }
-        if (StringUtils.hasText(pending.sampleBody())) {
-            String[] paragraphs = pending.sampleBody().split("\\n{2,}");
-            for (String paragraph : paragraphs) {
-                html.append("<p>").append(HtmlUtils.htmlEscape(paragraph.trim()).replace("\n", "<br/>"))
-                        .append("</p>");
-            }
-        }
-        html.append("<p><strong>").append(imageCount)
-                .append(" imagem(ns) com marca d'água estão anexadas a este e-mail.</strong></p>");
-        if (StringUtils.hasText(pending.sampleCallToAction())) {
-            html.append("<p><strong>CTA sugerido:</strong> ")
-                    .append(HtmlUtils.htmlEscape(pending.sampleCallToAction().trim()))
-                    .append("</p>");
-        }
+        html.append("<p><strong>Suas amostras com marca d'água estão anexas.</strong> ")
+                .append("Se quiser liberar os arquivos originais, é só concluir o pagamento.</p>");
 
-        appendPaymentCallToAction(plain, html, paymentInfo, pending.sampleCallToAction());
+        html.append("<p>Olá");
+        if (StringUtils.hasText(pending.submissionName())) {
+            html.append(" ").append(HtmlUtils.htmlEscape(pending.submissionName().trim()));
+        }
+        html.append(",</p>");
+
+        html.append("<p>Anexei <strong>")
+                .append(imageCount)
+                .append(" imagem(ns)</strong> com marca d'água para você avaliar.</p>");
+
+        html.append("<p>Para liberar o pacote completo (<strong>")
+                .append(HtmlUtils.htmlEscape(DEFAULT_PRODUCT_DESCRIPTION))
+                .append("</strong>), o valor é <strong>")
+                .append(HtmlUtils.htmlEscape(formattedDefaultPrice))
+                .append("</strong>.</p>");
+
+        appendPaymentCallToAction(null, html, paymentInfo, "Liberar pacote completo");
 
         if (StringUtils.hasText(trackingViewUrl)) {
             html.append("<p><strong>Visualizar online:</strong> <a href=\"")
                     .append(HtmlUtils.htmlEscape(trackingViewUrl))
                     .append("\" target=\"_blank\" rel=\"noopener\">Abrir prévias</a></p>");
         }
+        html.append("<p style=\"margin-top:24px\">Atenciosamente,<br/>")
+                .append(HtmlUtils.htmlEscape(PRODUCT_OWNER))
+                .append("</p>");
         html.append("<p class=\"meta\" style=\"font-size:12px;color:#555\">")
                 .append("Pacote ").append(pending.packageId())
                 .append(" · Experimento ")
@@ -334,28 +361,20 @@ public class LeadPortalPackageNotificationService {
                     .append("\" alt=\"\" width=\"1\" height=\"1\" style=\"display:none;\" />");
         }
 
-        String attachmentName = "imagens-watermark-" + pending.packageId() + ".zip";
+        String attachmentName = "amostras-com-marca-dagua-" + pending.packageId() + ".zip";
         return new EmailContent(subject, plain.toString(), html.toString(), attachmentName);
     }
 
     private String resolveEmailSubject(PendingPackage pending, int imageCount) {
-        if (StringUtils.hasText(pending.sampleSubject())) {
-            return pending.sampleSubject().trim();
+        // Assunto objetivo e transacional (reduz sinais de e-mail promocional)
+        String name = StringUtils.hasText(pending.submissionName()) ? pending.submissionName().trim() : null;
+        String formattedPrice = formatCurrency(DEFAULT_PRODUCT_PRICE, DEFAULT_PRODUCT_CURRENCY);
+
+        String base = "Amostras anexas: " + imageCount + " imagens com marca d'água";
+        if (StringUtils.hasText(name)) {
+            base = name + " — " + base;
         }
-        String experimentLabel = resolveExperimentLabel(pending);
-        boolean singleImage = imageCount == 1;
-        String readySnippet = singleImage
-                ? "sua imagem com marca d'água está pronta"
-                : imageCount + " imagens com marca d'água estão prontas";
-        if (StringUtils.hasText(pending.submissionName())) {
-            return pending.submissionName().trim() + ", " + readySnippet;
-        }
-        if (StringUtils.hasText(experimentLabel)) {
-            return "Prévia " + experimentLabel + ": " + readySnippet;
-        }
-        return singleImage
-                ? "Sua imagem com marca d'água está pronta"
-                : "Suas " + imageCount + " imagens com marca d'água estão prontas";
+        return base + " (libere o pacote completo por " + formattedPrice + ")";
     }
 
     private String resolveExperimentLabel(PendingPackage pending) {
@@ -425,37 +444,44 @@ public class LeadPortalPackageNotificationService {
             return;
         }
         String paymentUrl = paymentInfo.checkoutUrl().trim();
-        String formattedAmount = formatCurrency(paymentInfo.amount(), paymentInfo.currency());
+
+        BigDecimal amount = paymentInfo.amount() != null ? paymentInfo.amount() : DEFAULT_PRODUCT_PRICE;
+        String currency = StringUtils.hasText(paymentInfo.currency()) ? paymentInfo.currency() : DEFAULT_PRODUCT_CURRENCY;
+        String formattedAmount = formatCurrency(amount, currency);
         String descriptor = StringUtils.hasText(paymentInfo.statementDescriptor())
                 ? paymentInfo.statementDescriptor()
                 : "Mercado Pago";
 
-        plain.append("Finalize o pagamento e libere as imagens originais:\n")
-                .append(paymentUrl)
-                .append("\n");
-        if (formattedAmount != null) {
-            plain.append("Valor: ").append(formattedAmount).append("\n");
+        if (plain != null) {
+            plain.append("\nLink para pagamento (liberar originais):\n")
+                    .append(paymentUrl)
+                    .append("\n");
+            if (formattedAmount != null) {
+                plain.append("Valor: ").append(formattedAmount).append("\n");
+            }
+            plain.append("Cobrança via ").append(descriptor).append("\n\n");
         }
-        plain.append("Processado por ").append(descriptor).append("\n\n");
 
         String ctaLabel = StringUtils.hasText(suggestedCta)
                 ? suggestedCta.trim()
-                : "Quero liberar as imagens originais";
+                : "Liberar arquivos originais";
         if (formattedAmount != null) {
             ctaLabel = ctaLabel + " — " + formattedAmount;
         }
 
-        html.append("<div style=\"margin:24px 0;padding:16px 20px;border:1px solid #e3e3e3;border-radius:8px;background:#f8f8f8;\">")
-                .append("<p><strong>Finalize o pagamento para liberar os arquivos originais.</strong></p>")
-                .append("<p>Processado por ")
+        if (html != null) {
+            html.append("<div style=\"margin:24px 0;padding:16px 20px;border:1px solid #e3e3e3;border-radius:8px;background:#f8f8f8;\">")
+                .append("<p><strong>Conclua o pagamento para liberar os arquivos originais.</strong></p>")
+                .append("<p>Cobrança via ")
                 .append(HtmlUtils.htmlEscape(descriptor))
                 .append("</p>")
                 .append("<p style=\"text-align:center;\"><a href=\"")
                 .append(HtmlUtils.htmlEscape(paymentUrl))
-                .append("\" target=\"_blank\" rel=\"noopener\" style=\"display:inline-block;padding:14px 28px;background:#00a650;color:#fff;font-weight:600;border-radius:6px;text-decoration:none;\">")
+                .append("\" target=\"_blank\" rel=\"noopener\" style=\"display:inline-block;padding:14px 28px;background:#111;color:#fff;font-weight:600;border-radius:6px;text-decoration:none;\">")
                 .append(HtmlUtils.htmlEscape(ctaLabel))
                 .append("</a></p>")
                 .append("</div>");
+        }
     }
     private String formatCurrency(BigDecimal amount, String currency) {
         if (amount == null) {

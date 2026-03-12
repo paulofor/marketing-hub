@@ -216,6 +216,27 @@ class FlowSubmissionControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+
+    @Test
+    void simplePersonalTrainerSubmissionAllowsMissingOptionalWorkplaceField() throws Exception {
+        Map<String, Object> payload = Map.of(
+                "name", "Cliente",
+                "email", "cliente@example.com",
+                "answers",
+                Map.of(
+                        "nome", "Cliente",
+                        "email", "cliente@example.com",
+                        "forma_contato", "WhatsApp",
+                        "tipo_aulas", List.of("Musculação")));
+
+        MockMultipartFile payloadPart = new MockMultipartFile(
+                "payload", "payload", MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsBytes(payload));
+
+        mockMvc.perform(multipart("/api/flows/formulario-simples-personal-trainer/submissions").file(payloadPart))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.flowSlug").value("formulario-simples-personal-trainer"));
+    }
+
     @Test
     void submissionIgnoresQuestionsWithoutType() throws Exception {
         Flow flowWithNullType = new Flow(

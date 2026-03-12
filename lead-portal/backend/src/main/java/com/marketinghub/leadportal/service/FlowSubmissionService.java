@@ -51,6 +51,7 @@ public class FlowSubmissionService {
             "bullet_item_1",
             "bullet_item_2",
             "bullet_item_3");
+    private static final Set<String> OPTIONAL_SIMPLE_FORM_KEYS = Set.of("local_trabalho", "academia_ou_studio");
 
     private final FlowService flowService;
     private final FlowSubmissionRepository repository;
@@ -162,7 +163,8 @@ public class FlowSubmissionService {
             }
 
             String stringValue = value == null ? "" : value.toString().trim();
-            boolean shouldRequire = question.required() || questionType == FlowQuestionType.EMAIL;
+            boolean shouldRequire = (question.required() || questionType == FlowQuestionType.EMAIL)
+                    && !isOptionalSimpleFormField(question);
             if (shouldRequire && stringValue.isEmpty()) {
                 throw new IllegalArgumentException("Preencha o campo " + question.title());
             }
@@ -182,6 +184,13 @@ public class FlowSubmissionService {
             return false;
         }
         return SIMPLE_FORM_METADATA_KEYS.contains(question.dataKey());
+    }
+
+    private boolean isOptionalSimpleFormField(FlowQuestion question) {
+        if (question == null || question.dataKey() == null) {
+            return false;
+        }
+        return OPTIONAL_SIMPLE_FORM_KEYS.contains(question.dataKey());
     }
 
     private void registerImagePackage(Flow flow, FlowSubmission submission, boolean hasImage) {

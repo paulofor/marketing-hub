@@ -21,10 +21,12 @@ WATERMARK_STORAGE_REGION=auto
 Parâmetros adicionais:
 
 - `WATERMARK_TEXT`: texto da marca d'água (default `PRODUTIVIDADE 360`).
-- `WATERMARK_OPACITY`: opacidade do texto (default `0.18`).
+- `WATERMARK_OPACITY`: opacidade do texto (default `0.28`, limitado automaticamente entre `0.2` e `0.95`).
 - `WATERMARK_OUTPUT_PREFIX`: diretório dentro do bucket (default `watermarks`).
 - `WATERMARK_SPACING_FACTOR`: fator multiplicador do espaçamento entre repetições do texto (default `0.85`). Valores menores deixam o texto mais denso.
 - `WATERMARK_SCHEDULER_DELAY`: intervalo entre verificações (ms, default `60000`).
+
+A marca d'água é renderizada com texto branco e sombra escura deslocada, repetida em um padrão diagonal denso para garantir contraste mesmo em cenas claras. Diminua `WATERMARK_SPACING_FACTOR` ou aumente `WATERMARK_OPACITY` caso precise de uma sobreposição ainda mais agressiva.
 
 ## Execução local
 

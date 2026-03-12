@@ -63,7 +63,6 @@ export default function FlowPage() {
   const heroContent = {
     title: metadata.hero.title ?? flow.name,
     subtitle: metadata.hero.subtitle ?? defaultHeader.subtitle,
-    detail: flow.description ?? defaultHeader.detail,
     promise: metadata.hero.promise ?? defaultHeader.promiseText,
   };
 
@@ -91,16 +90,24 @@ export default function FlowPage() {
           <>
             <section className="flow-hero">
               <div className="flow-hero-copy">
-                <p className="flow-eyebrow">{flow.simpleFormStyle?.name ?? "Lead Portal"}</p>
                 <h1>{heroContent.title}</h1>
                 <p className="flow-subtitle">{heroContent.subtitle}</p>
-                <p>{heroContent.detail}</p>
+                <div
+                  className={`flow-proof-cta ${featuredProofCard?.imageUrl ? "flow-proof-cta--with-image" : ""}`}
+                  style={
+                    featuredProofCard?.imageUrl
+                      ? { backgroundImage: `url(${featuredProofCard.imageUrl})` }
+                      : undefined
+                  }
+                >
+                  <span>
+                    <strong>Gostou do estilo?</strong> Preencha o formulário abaixo para receber uma versão
+                    personalizada para o seu negócio.
+                  </span>
+                </div>
                 <div className="flow-promise-box">
                   <strong>{defaultHeader.promiseLabel}:</strong> {heroContent.promise}
                 </div>
-              </div>
-              <div className="flow-proof-cta">
-                <strong>Gostou do estilo?</strong> Preencha o formulário abaixo para receber uma versão personalizada para o seu negócio.
               </div>
             </section>
 
@@ -193,8 +200,6 @@ export default function FlowPage() {
 const SIMPLE_FORM_CONTENT = {
   header: {
     subtitle: "Transforme ideias em posts prontos para publicar em poucos minutos.",
-    detail:
-      "Fluxo simples para coleta inicial de informações sem necessidade de envio de imagens.",
     promiseLabel: "Nossa promessa",
     promiseText:
       "você recebe uma linha editorial visual clara, com linguagem alinhada ao seu público e foco em gerar mais conversas no direct.",

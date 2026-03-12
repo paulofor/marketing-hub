@@ -978,6 +978,32 @@ form.flow-form {
   color: var(--flow-text-color, #1f2937);
 }
 
+.flow-proof-cta--with-image {
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-color: rgba(15, 23, 42, 0.24);
+  min-height: 140px;
+  display: flex;
+  align-items: flex-end;
+  color: #ffffff;
+}
+
+.flow-proof-cta--with-image::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.18) 0%, rgba(15, 23, 42, 0.76) 100%);
+}
+
+.flow-proof-cta--with-image > span {
+  position: relative;
+  z-index: 1;
+  line-height: 1.45;
+}
+
 .flow-proof-image__overlay {
   position: absolute;
   left: 0.75rem;

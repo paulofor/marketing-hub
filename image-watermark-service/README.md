@@ -26,7 +26,7 @@ Parâmetros adicionais:
 - `WATERMARK_SPACING_FACTOR`: fator multiplicador do espaçamento entre repetições do texto (default `0.85`). Valores menores deixam o texto mais denso.
 - `WATERMARK_SCHEDULER_DELAY`: intervalo entre verificações (ms, default `60000`).
 
-A marca d'água é renderizada com texto branco e sombra escura deslocada, repetida em um padrão diagonal denso para garantir contraste mesmo em cenas claras. Diminua `WATERMARK_SPACING_FACTOR` ou aumente `WATERMARK_OPACITY` caso precise de uma sobreposição ainda mais agressiva.
+A marca d'água é renderizada em duas camadas diagonais (cruzadas), com contorno escuro + texto branco para manter legibilidade da amostra e aumentar a proteção contra reutilização como original. Diminua `WATERMARK_SPACING_FACTOR` ou aumente `WATERMARK_OPACITY` caso precise de uma sobreposição ainda mais agressiva.
 
 ## Execução local
 

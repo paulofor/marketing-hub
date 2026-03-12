@@ -61,8 +61,8 @@ class WatermarkRendererTest {
             }
 
             assertThat(anyDifference)
-                .as("A imagem deve apresentar diferenças visíveis após a aplicação da marca d'água")
-                .isTrue();
+                    .as("A imagem deve apresentar diferenças visíveis após a aplicação da marca d'água")
+                    .isTrue();
         } catch (RuntimeException ex) {
             String message = ex.getMessage();
             if (message != null && message.contains("Fontconfig head is null")) {
@@ -70,6 +70,47 @@ class WatermarkRendererTest {
             }
             throw ex;
         }
+    }
+
+    @Test
+    void shouldIncreaseContrastOnLightAndDarkAreas() throws Exception {
+        BufferedImage contrastImage = new BufferedImage(600, 400, BufferedImage.TYPE_INT_RGB);
+        Graphics2D graphics = contrastImage.createGraphics();
+        graphics.setPaint(Color.WHITE);
+        graphics.fillRect(0, 0, contrastImage.getWidth(), contrastImage.getHeight() / 2);
+        graphics.setPaint(Color.BLACK);
+        graphics.fillRect(0, contrastImage.getHeight() / 2, contrastImage.getWidth(), contrastImage.getHeight() / 2);
+        graphics.dispose();
+
+        byte[] bytes = renderer.applyWatermark(toPng(contrastImage)).bytes();
+        BufferedImage watermarked = ImageIO.read(new ByteArrayInputStream(bytes));
+
+        int half = watermarked.getHeight() / 2;
+        boolean topHasDarkPixel = false;
+        boolean bottomHasLightPixel = false;
+
+        outer:
+        for (int x = 0; x < watermarked.getWidth(); x++) {
+            for (int y = 0; y < watermarked.getHeight(); y++) {
+                Color color = new Color(watermarked.getRGB(x, y), true);
+                if (!topHasDarkPixel && y < half && (color.getRed() < 240 || color.getGreen() < 240 || color.getBlue() < 240)) {
+                    topHasDarkPixel = true;
+                }
+                if (!bottomHasLightPixel && y >= half && (color.getRed() > 15 || color.getGreen() > 15 || color.getBlue() > 15)) {
+                    bottomHasLightPixel = true;
+                }
+                if (topHasDarkPixel && bottomHasLightPixel) {
+                    break outer;
+                }
+            }
+        }
+
+        assertThat(topHasDarkPixel)
+                .as("A metade clara deve receber pixels escurecidos pela sombra da marca d'água")
+                .isTrue();
+        assertThat(bottomHasLightPixel)
+                .as("A metade escura deve receber pixels iluminados pela marca d'água")
+                .isTrue();
     }
 
     private static byte[] toPng(BufferedImage image) throws Exception {

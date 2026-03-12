@@ -61,40 +61,60 @@ public class WatermarkRenderer {
         BufferedImage watermarked = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 
         Graphics2D graphics = watermarked.createGraphics();
-        graphics.drawImage(original, 0, 0, null);
-        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        try {
+            graphics.drawImage(original, 0, 0, null);
+            graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-        float opacity = (float) Math.max(0.05, Math.min(properties.getOpacity(), 0.6));
-        graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacity));
-        graphics.setColor(new Color(255, 255, 255));
+            float textOpacity = (float) clamp(properties.getOpacity(), 0.2, 0.95);
+            float shadowOpacity = Math.min(textOpacity + 0.25f, 0.98f);
 
-        int fontSize = Math.max(Math.max(width, height) / 7, 48);
-        Font font = fallbackFont.deriveFont(Font.BOLD, fontSize);
-        graphics.setFont(font);
-        FontMetrics metrics = graphics.getFontMetrics(font);
+            int fontSize = Math.max(Math.max(width, height) / 6, 56);
+            Font font = fallbackFont.deriveFont(Font.BOLD, (float) fontSize);
+            FontMetrics metrics = graphics.getFontMetrics(font);
 
-        double angle = Math.toRadians(-28);
-        graphics.rotate(angle, width / 2.0, height / 2.0);
+            double angle = Math.toRadians(-28);
+            graphics.rotate(angle, width / 2.0, height / 2.0);
 
-        String text = properties.getText();
-        int textWidth = metrics.stringWidth(text);
-        int textHeight = metrics.getHeight();
+            Graphics2D shadowGraphics = (Graphics2D) graphics.create();
+            Graphics2D textGraphics = (Graphics2D) graphics.create();
+            try {
+                shadowGraphics.setFont(font);
+                textGraphics.setFont(font);
 
-        double spacingFactor = properties.getSpacingFactor();
-        spacingFactor = Math.max(0.2, Math.min(spacingFactor, 3.0));
+                shadowGraphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, shadowOpacity));
+                shadowGraphics.setColor(Color.BLACK);
 
-        int baseDimension = Math.max(textWidth, textHeight);
-        int minimumStep = Math.max((int) (fontSize * 0.6), 16);
-        int step = (int) Math.max(baseDimension * spacingFactor, minimumStep);
+                textGraphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, textOpacity));
+                textGraphics.setColor(new Color(255, 255, 255));
 
-        for (int x = -width * 2; x < width * 2; x += step) {
-            for (int y = -height * 2; y < height * 2; y += step) {
-                graphics.drawString(text, x, y);
+                String text = properties.getText();
+                int textWidth = metrics.stringWidth(text);
+                int textHeight = metrics.getHeight();
+
+                double spacingFactor = clamp(properties.getSpacingFactor(), 0.2, 3.0);
+
+                int baseDimension = Math.max(textWidth, textHeight);
+                int minimumStep = Math.max((int) (fontSize * 0.45), 12);
+                int configuredStep = (int) Math.max(baseDimension * spacingFactor, minimumStep);
+                int diagonal = (int) Math.ceil(Math.hypot(width, height));
+                int maxStep = Math.max(minimumStep, diagonal / 3);
+                int step = Math.min(configuredStep, maxStep);
+
+                int shadowOffset = Math.max(2, fontSize / 18);
+                for (int x = -diagonal; x <= diagonal * 2; x += step) {
+                    for (int y = -diagonal; y <= diagonal * 2; y += step) {
+                        shadowGraphics.drawString(text, x + shadowOffset, y + shadowOffset);
+                        textGraphics.drawString(text, x, y);
+                    }
+                }
+            } finally {
+                shadowGraphics.dispose();
+                textGraphics.dispose();
             }
+        } finally {
+            graphics.dispose();
         }
-
-        graphics.dispose();
 
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             ImageIO.write(watermarked, "png", outputStream);
@@ -163,5 +183,9 @@ public class WatermarkRenderer {
                     && optimizedContentType != null
                     && optimizedExtension != null;
         }
+    }
+
+    private static double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
     }
 }

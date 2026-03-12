@@ -73,6 +73,27 @@ class WatermarkRendererTest {
     }
 
     @Test
+    void shouldCoverMeaningfulAreaToDiscourageOriginalReuse() throws Exception {
+        byte[] watermarkedBytes = renderer.applyWatermark(originalBytes).bytes();
+        BufferedImage watermarkedImage = ImageIO.read(new ByteArrayInputStream(watermarkedBytes));
+
+        int changedPixels = 0;
+        int totalPixels = originalImage.getWidth() * originalImage.getHeight();
+        for (int x = 0; x < originalImage.getWidth(); x++) {
+            for (int y = 0; y < originalImage.getHeight(); y++) {
+                if (originalImage.getRGB(x, y) != watermarkedImage.getRGB(x, y)) {
+                    changedPixels++;
+                }
+            }
+        }
+
+        double changedRatio = changedPixels / (double) totalPixels;
+        assertThat(changedRatio)
+                .as("A marca d'água deve ocupar uma área relevante para evitar reutilização indevida")
+                .isGreaterThan(0.18);
+    }
+
+    @Test
     void shouldIncreaseContrastOnLightAndDarkAreas() throws Exception {
         BufferedImage contrastImage = new BufferedImage(600, 400, BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = contrastImage.createGraphics();

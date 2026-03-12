@@ -8,6 +8,7 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -66,52 +67,17 @@ public class WatermarkRenderer {
             graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-            float textOpacity = (float) clamp(properties.getOpacity(), 0.2, 0.95);
-            float shadowOpacity = Math.min(textOpacity + 0.25f, 0.98f);
+            float textOpacity = (float) clamp(properties.getOpacity(), 0.25, 0.95);
+            float shadowOpacity = Math.min(textOpacity + 0.3f, 0.98f);
 
-            int fontSize = Math.max(Math.max(width, height) / 6, 56);
+            int fontSize = Math.max(Math.max(width, height) / 5, 64);
             Font font = fallbackFont.deriveFont(Font.BOLD, (float) fontSize);
-            FontMetrics metrics = graphics.getFontMetrics(font);
+            String text = resolveWatermarkText();
 
-            double angle = Math.toRadians(-28);
-            graphics.rotate(angle, width / 2.0, height / 2.0);
-
-            Graphics2D shadowGraphics = (Graphics2D) graphics.create();
-            Graphics2D textGraphics = (Graphics2D) graphics.create();
-            try {
-                shadowGraphics.setFont(font);
-                textGraphics.setFont(font);
-
-                shadowGraphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, shadowOpacity));
-                shadowGraphics.setColor(Color.BLACK);
-
-                textGraphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, textOpacity));
-                textGraphics.setColor(new Color(255, 255, 255));
-
-                String text = properties.getText();
-                int textWidth = metrics.stringWidth(text);
-                int textHeight = metrics.getHeight();
-
-                double spacingFactor = clamp(properties.getSpacingFactor(), 0.2, 3.0);
-
-                int baseDimension = Math.max(textWidth, textHeight);
-                int minimumStep = Math.max((int) (fontSize * 0.45), 12);
-                int configuredStep = (int) Math.max(baseDimension * spacingFactor, minimumStep);
-                int diagonal = (int) Math.ceil(Math.hypot(width, height));
-                int maxStep = Math.max(minimumStep, diagonal / 3);
-                int step = Math.min(configuredStep, maxStep);
-
-                int shadowOffset = Math.max(2, fontSize / 18);
-                for (int x = -diagonal; x <= diagonal * 2; x += step) {
-                    for (int y = -diagonal; y <= diagonal * 2; y += step) {
-                        shadowGraphics.drawString(text, x + shadowOffset, y + shadowOffset);
-                        textGraphics.drawString(text, x, y);
-                    }
-                }
-            } finally {
-                shadowGraphics.dispose();
-                textGraphics.dispose();
-            }
+            WatermarkGrid grid = createGridMetrics(graphics, font, text, width, height);
+            drawWatermarkLayer(graphics, font, text, grid, width, height, -28, textOpacity, shadowOpacity, 0);
+            drawWatermarkLayer(graphics, font, text, grid, width, height, 28, textOpacity * 0.82f, shadowOpacity * 0.75f,
+                    grid.step / 2.0);
         } finally {
             graphics.dispose();
         }
@@ -130,6 +96,90 @@ public class WatermarkRenderer {
             throw new IllegalStateException("Falha ao serializar imagem com marca d'água", ex);
         }
     }
+
+    private void drawWatermarkLayer(
+            Graphics2D baseGraphics,
+            Font font,
+            String text,
+            WatermarkGrid grid,
+            int width,
+            int height,
+            int angleDegrees,
+            float textOpacity,
+            float shadowOpacity,
+            double phaseShift) {
+        Graphics2D layerGraphics = (Graphics2D) baseGraphics.create();
+        try {
+            layerGraphics.setFont(font);
+            layerGraphics.rotate(Math.toRadians(angleDegrees), width / 2.0, height / 2.0);
+            layerGraphics.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
+            int outlineOffset = Math.max(2, grid.fontSize / 20);
+            int shadowOffset = Math.max(3, grid.fontSize / 14);
+
+            for (double x = -grid.diagonal + phaseShift; x <= grid.diagonal * 2.0; x += grid.step) {
+                for (double y = -grid.diagonal + phaseShift; y <= grid.diagonal * 2.0; y += grid.step) {
+                    Point2D point = new Point2D.Double(x, y);
+                    drawOutlinedText(layerGraphics, text, point, textOpacity, shadowOpacity, outlineOffset, shadowOffset);
+                }
+            }
+        } finally {
+            layerGraphics.dispose();
+        }
+    }
+
+    private void drawOutlinedText(
+            Graphics2D graphics,
+            String text,
+            Point2D point,
+            float textOpacity,
+            float shadowOpacity,
+            int outlineOffset,
+            int shadowOffset) {
+        float x = (float) point.getX();
+        float y = (float) point.getY();
+
+        graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, shadowOpacity));
+        graphics.setColor(Color.BLACK);
+        graphics.drawString(text, x + shadowOffset, y + shadowOffset);
+
+        graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, shadowOpacity * 0.75f));
+        graphics.setColor(Color.BLACK);
+        graphics.drawString(text, x - outlineOffset, y);
+        graphics.drawString(text, x + outlineOffset, y);
+        graphics.drawString(text, x, y - outlineOffset);
+        graphics.drawString(text, x, y + outlineOffset);
+
+        graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, textOpacity));
+        graphics.setColor(Color.WHITE);
+        graphics.drawString(text, x, y);
+    }
+
+    private WatermarkGrid createGridMetrics(Graphics2D graphics, Font font, String text, int width, int height) {
+        FontMetrics metrics = graphics.getFontMetrics(font);
+        int textWidth = metrics.stringWidth(text);
+        int textHeight = metrics.getHeight();
+        int diagonal = (int) Math.ceil(Math.hypot(width, height));
+        double spacingFactor = clamp(properties.getSpacingFactor(), 0.2, 3.0);
+
+        int baseDimension = Math.max(textWidth, textHeight);
+        int minimumStep = Math.max((int) (font.getSize2D() * 0.42), 14);
+        int configuredStep = (int) Math.max(baseDimension * spacingFactor, minimumStep);
+        int maxStep = Math.max(minimumStep, diagonal / 4);
+        int step = Math.min(configuredStep, maxStep);
+
+        return new WatermarkGrid(diagonal, step, font.getSize());
+    }
+
+    private String resolveWatermarkText() {
+        String rawText = properties.getText();
+        if (rawText == null || rawText.isBlank()) {
+            return "PRODUTIVIDADE 360";
+        }
+        return rawText.trim();
+    }
+
+    private record WatermarkGrid(int diagonal, int step, int fontSize) {}
 
     private byte[] renderOptimizedCopy(BufferedImage watermarked) {
         if (!properties.isGenerateOptimizedCopy()) {

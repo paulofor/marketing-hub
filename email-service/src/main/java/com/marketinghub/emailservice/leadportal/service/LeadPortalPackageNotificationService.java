@@ -18,6 +18,9 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Comparator;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
@@ -48,6 +51,18 @@ public class LeadPortalPackageNotificationService {
     private static final BigDecimal DEFAULT_PRODUCT_PRICE = new BigDecimal("127.00");
     private static final String DEFAULT_PRODUCT_CURRENCY = "BRL";
     private static final String DEFAULT_PRODUCT_DESCRIPTION = "pacote com 10 imagens para posts em redes sociais";
+    private static final String DEFAULT_EMAIL_PREHEADER = "Suas amostras com marca d'água estão prontas. Veja a prévia e libere o pacote completo com 10 imagens premium.";
+    private static final int INLINE_PREVIEW_LIMIT = 3;
+    private static final String[] INLINE_PREVIEW_CAPTIONS = {
+            "Visual premium para destacar seu posicionamento.",
+            "Artes pensadas para valorizar sua imagem nas redes.",
+            "Uma prévia real da qualidade do pacote completo."
+    };
+    private static final PreviewCardStyle[] PREVIEW_CARD_STYLES = {
+            new PreviewCardStyle("#f6f2ff", "#eadffd"),
+            new PreviewCardStyle("#fff5ef", "#ffe1d1"),
+            new PreviewCardStyle("#f3f6fb", "#dde5f3")
+    };
 
     private final JdbcTemplate jdbcTemplate;
     private final FileStorageService fileStorageService;

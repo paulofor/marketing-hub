@@ -76,7 +76,7 @@ export default function FlowPage() {
     })),
   };
 
-  const [featuredProofCard, ...secondaryProofCards] = proofContent.cards;
+  const [featuredProofCard, ...proofCardsWithoutFeatured] = proofContent.cards;
 
   const bulletsContent = {
     title: metadata.bullets.title ?? defaultBullets.title,
@@ -92,15 +92,16 @@ export default function FlowPage() {
               <div className="flow-hero-copy">
                 <h1>{heroContent.title}</h1>
                 <p className="flow-subtitle">{heroContent.subtitle}</p>
-                <div
-                  className={`flow-proof-cta ${featuredProofCard?.imageUrl ? "flow-proof-cta--with-image" : ""}`}
-                  style={
-                    featuredProofCard?.imageUrl
-                      ? { backgroundImage: `url(${featuredProofCard.imageUrl})` }
-                      : undefined
-                  }
-                >
-                  <span>
+                <div className={`flow-proof-cta ${featuredProofCard?.imageUrl ? "flow-proof-cta--with-image" : ""}`}>
+                  {featuredProofCard?.imageUrl ? (
+                    <img
+                      src={featuredProofCard.imageUrl}
+                      alt={featuredProofCard.title}
+                      className="flow-proof-cta__media"
+                      loading="lazy"
+                    />
+                  ) : null}
+                  <span className="flow-proof-cta__text">
                     <strong>Gostou do estilo?</strong> Preencha o formulário abaixo para receber uma versão
                     personalizada para o seu negócio.
                   </span>
@@ -117,39 +118,9 @@ export default function FlowPage() {
                 <h2>{proofContent.title}</h2>
                 <p>{proofContent.subtitle}</p>
               </div>
-              {featuredProofCard ? (
-                <article className="flow-proof-card flow-proof-card--featured">
-                  <span className="flow-proof-card__badge">Exemplo 1</span>
-                  <div
-                    className={`flow-proof-image flow-proof-image--featured ${featuredProofCard.imageUrl ? "flow-proof-image--media" : ""}`}
-                    style={
-                      !featuredProofCard.imageUrl && featuredProofCard.background
-                        ? { background: featuredProofCard.background }
-                        : undefined
-                    }
-                  >
-                    {featuredProofCard.imageUrl ? (
-                      <img
-                        src={featuredProofCard.imageUrl}
-                        alt={featuredProofCard.title}
-                        className="flow-proof-image__media"
-                        loading="lazy"
-                      />
-                    ) : null}
-                    {featuredProofCard.overlayText ? (
-                      <span className="flow-proof-image__overlay">{featuredProofCard.overlayText}</span>
-                    ) : null}
-                  </div>
-                  <div className="flow-proof-card__copy">
-                    <h3>{featuredProofCard.title}</h3>
-                    <p>{featuredProofCard.description}</p>
-                  </div>
-                </article>
-              ) : null}
-
-              {secondaryProofCards.length > 0 ? (
+              {proofCardsWithoutFeatured.length > 0 ? (
                 <div className="flow-proof-secondary-grid">
-                  {secondaryProofCards.map((post, index) => {
+                  {proofCardsWithoutFeatured.map((post, index) => {
                     const mediaStyle = !post.imageUrl && post.background ? { background: post.background } : undefined;
                     return (
                       <article key={post.title} className="flow-proof-card">

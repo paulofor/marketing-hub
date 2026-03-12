@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Amostra Grátis | Artes Premium para Personal Trainers</title>
+  <style>
+    :root {
+      --bg: #f3f4fa;
+      --card: #ffffff;
+      --text: #1d2233;
+      --muted: #6a7082;
+      --line: #e6dff3;
+      --primary: #7c4dff;
+      --primary-2: #ff7a30;
+      --dark: #0b1020;
+      --success: #edf8ef;
+      --shadow: 0 18px 45px rgba(31, 25, 61, 0.12);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(255, 122, 48, 0.12), transparent 24%),
+        radial-gradient(circle at bottom left, rgba(124, 77, 255, 0.1), transparent 22%),
+        var(--bg);
+      line-height: 1.45;
+    }
+
+    .page {
+      width: min(100%, 460px);
+      margin: 0 auto;
+      padding: 22px 14px 44px;
+      position: relative;
+    }
+
+    .section {
+      background: var(--card);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      padding: 20px 18px;
+      margin-bottom: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: #6c6f80;
+      margin-bottom: 8px;
+    }
+
+    h1, h2, h3, p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 5vw, 2.35rem);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin-bottom: 12px;
+    }
+
+    h2 {
+      font-size: 1.9rem;
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+
+    h3 {
+      font-size: 1.14rem;
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+
+    .lead {
+      font-size: 1rem;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    .stack-sm > * + * {
+      margin-top: 10px;
+    }
+
+    .stack-md > * + * {
+      margin-top: 14px;
+    }
+
+    .hero-card,
+    .example-visual {
+      position: relative;
+      border-radius: 22px;
+      overflow: hidden;
+      min-height: 290px;
+      display: flex;
+      align-items: flex-end;
+      padding: 18px;
+      color: #fff;
+      isolation: isolate;
+    }
+
+    .hero-card {
+      background:
+        linear-gradient(180deg, rgba(9, 12, 26, 0.05) 0%, rgba(9, 12, 26, 0.75) 70%, rgba(9, 12, 26, 0.88) 100%),
+        linear-gradient(125deg, #10172b 10%, #4f2a7e 42%, #ff7a30 100%);
+      min-height: 350px;
+      margin-top: 8px;
+    }
+
+    .hero-card::before,
+    .example-visual::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(255,255,255,0.18), transparent 22%),
+        radial-gradient(circle at 75% 15%, rgba(255,255,255,0.14), transparent 20%),
+        radial-gradient(circle at 80% 75%, rgba(255,255,255,0.10), transparent 24%);
+      z-index: -1;
+    }
+
+    .badge-line {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.16);
+      padding: 8px 12px;
+      border-radius: 999px;
+      color: rgba(255,255,255,0.88);
+      backdrop-filter: blur(8px);
+      margin-bottom: 14px;
+    }
+
+    .art-name {
+      font-weight: 900;
+      line-height: 0.9;
+      letter-spacing: -0.05em;
+      font-size: clamp(2rem, 10vw, 3.3rem);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      max-width: 220px;
+    }
+
+    .art-name span {
+      color: #ff9b4b;
+      display: block;
+    }
+
+    .art-sub {
+      font-weight: 700;
+      font-style: italic;
+      color: #ffcf9f;
+      margin-bottom: 12px;
+    }
+
+    .floating-note {
+      margin-top: 16px;
+      max-width: 285px;
+      padding: 12px 14px;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 16px;
+      color: #eef2ff;
+      font-size: 0.94rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .promise {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      background: #f4f5f9;
+      border-radius: 16px;
+      padding: 14px;
+      margin-top: 14px;
+      color: #555d70;
+      font-size: 0.98rem;
+    }
+
+    .promise::before {
+      content: "";
+      width: 4px;
+      min-width: 4px;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(180deg, var(--primary), var(--primary-2));
+    }
+
+    .btn,
+    button[type="submit"] {
+      appearance: none;
+      border: 0;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 54px;
+      border-radius: 999px;
+      padding: 0 22px;
+      font-size: 1rem;
+      font-weight: 800;
+      color: #fff;
+      text-decoration: none;
+      background: linear-gradient(90deg, var(--primary), var(--primary-2));
+      box-shadow: 0 12px 30px rgba(124, 77, 255, 0.28);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .btn:hover,
+    button[type="submit"]:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 34px rgba(124, 77, 255, 0.32);
+    }
+
+    .microcopy {
+      text-align: center;
+      color: #7b8091;
+      font-size: 0.88rem;
+      margin-top: 10px;
+    }
+
+    .example-card + .example-card {
+      margin-top: 18px;
+    }
+
+    .example-visual {
+      min-height: 240px;
+      margin-bottom: 14px;
+      background:
+        linear-gradient(180deg, rgba(9, 12, 26, 0.08) 0%, rgba(9, 12, 26, 0.7) 70%, rgba(9, 12, 26, 0.9) 100%),
+        linear-gradient(130deg, #0b1020 10%, #29184a 40%, #ff8d36 100%);
+    }
+
+    .example-visual.alt-2 {
+      background:
+        linear-gradient(180deg, rgba(9, 12, 26, 0.08) 0%, rgba(9, 12, 26, 0.7) 70%, rgba(9, 12, 26, 0.9) 100%),
+        linear-gradient(130deg, #081018 0%, #40214e 35%, #ff7a30 100%);
+    }
+
+    .example-visual .small-tag {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.16);
+      color: rgba(255,255,255,0.92);
+      font-size: 0.72rem;
+      font-weight: 800;
+      border-radius: 999px;
+      padding: 7px 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .visual-title {
+      font-size: clamp(1.8rem, 8vw, 2.7rem);
+      font-weight: 900;
+      letter-spacing: -0.05em;
+      line-height: 0.9;
+      text-transform: uppercase;
+      max-width: 260px;
+    }
+
+    .visual-title span {
+      color: #ffb35d;
+      display: block;
+      font-size: 0.58em;
+      letter-spacing: 0.02em;
+      margin-top: 6px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .testimonial {
+      margin-top: 14px;
+      padding: 14px 14px 12px;
+      background: linear-gradient(180deg, #faf7ff 0%, #fff 100%);
+      border: 1px solid #eadcf7;
+      border-radius: 16px;
+    }
+
+    .testimonial p {
+      color: #40475a;
+      font-size: 0.95rem;
+      line-height: 1.55;
+    }
+
+    .testimonial p::before {
+      content: "“";
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #7c4dff;
+      margin-right: 2px;
+    }
+
+    .testimonial-author {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 0.86rem;
+      font-weight: 800;
+      color: #6a4bb0;
+    }
+
+    ul.clean {
+      padding-left: 20px;
+      margin: 0;
+      color: #41495d;
+    }
+
+    ul.clean li + li {
+      margin-top: 10px;
+    }
+
+    .form-wrap {
+      border: 1.5px solid #efcde2;
+      border-radius: 24px;
+      padding: 18px 14px 16px;
+      background: linear-gradient(180deg, #fffdfd 0%, #fff 100%);
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: inline-block;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: #4b3f6b;
+    }
+
+    .required {
+      color: #ff5d7b;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1.6px solid #d7c6f0;
+      border-radius: 12px;
+      min-height: 50px;
+      padding: 12px 14px;
+      font: inherit;
+      color: var(--text);
+      background: #fff;
+      outline: none;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    textarea {
+      min-height: 118px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(124, 77, 255, 0.12);
+    }
+
+    .choice-group {
+      display: grid;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .choice {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 500;
+      color: #3d4559;
+    }
+
+    .choice input {
+      width: 18px;
+      min-height: 18px;
+      margin: 0;
+      box-shadow: none;
+    }
+
+    .privacy {
+      margin-top: 12px;
+      color: #7b8091;
+      font-size: 0.86rem;
+      text-align: center;
+    }
+
+    .sticky-mobile {
+      position: sticky;
+      bottom: 14px;
+      z-index: 10;
+      margin-top: -4px;
+    }
+
+    .highlight {
+      color: #21283d;
+      font-weight: 800;
+    }
+
+    @media (min-width: 760px) {
+      .page {
+        width: min(100%, 920px);
+        padding: 32px 20px 60px;
+      }
+
+      .section.hero {
+        padding: 26px;
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 24px;
+        align-items: center;
+      }
+
+      .examples-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+
+      .example-card + .example-card {
+        margin-top: 0;
+      }
+
+      .benefits-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        align-items: start;
+      }
+
+      .sticky-mobile {
+        position: static;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="section hero">
+      <div class="hero-grid">
+        <div class="stack-md">
+          <div>
+            <span class="eyebrow">Amostra grátis para profissionais de educação física</span>
+            <h1>Receba uma amostra premium personalizada para divulgar seu trabalho com imagem de alto valor</h1>
+            <p class="lead">Preencha seus dados e receba por e-mail uma arte criada para valorizar seu posicionamento nas redes sociais e ajudar você a atrair novos alunos.</p>
+          </div>
+
+          <div class="stack-sm">
+            <a class="btn" href="#formulario">Quero receber minha amostra grátis</a>
+            <p class="microcopy">Leva menos de 2 minutos para preencher.</p>
+          </div>
+        </div>
+
+        <div>
+          <div class="hero-card" aria-label="Prévia de arte premium para personal trainer">
+            <div>
+              <div class="badge-line">Visual premium • Feito para vender seu serviço</div>
+              <div class="art-name">Ana Beatriz <span>Lima</span></div>
+              <p class="art-sub">Personal Trainer</p>
+              <div class="floating-note">Gostou do estilo? Receba uma versão personalizada para mostrar como a sua marca pode se destacar nas redes sociais.</div>
+            </div>
+          </div>
+
+          <div class="promise">
+            <p><span class="highlight">Nossa promessa:</span> uma amostra visual forte o suficiente para você sentir na prática como sua comunicação pode parecer mais profissional, valiosa e desejada.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <span class="eyebrow">Exemplos reais</span>
+      <h2>Veja como outros profissionais elevaram a percepção do próprio serviço</h2>
+      <p class="lead">Essas artes foram pensadas para chamar atenção no feed, transmitir autoridade e valorizar a imagem de quem vive de atrair e reter alunos.</p>
+
+      <div class="examples-grid">
+        <article class="example-card">
+          <div class="example-visual" aria-label="Exemplo de arte para personal trainer">
+            <span class="small-tag">Exemplo 01</span>
+            <div class="visual-title">Lucas Moraes <span>Resultado de verdade</span></div>
+          </div>
+          <h3>Mais impacto para atrair alunos</h3>
+          <p class="muted">Uma apresentação visual que chama atenção rápido e transmite força profissional logo no primeiro olhar.</p>
+          <div class="testimonial">
+            <p>Gostei bastante das artes. Meu perfil ficou mais profissional e mais organizado.</p>
+            <span class="testimonial-author">Lucas Moraes • Personal Trainer</span>
+          </div>
+        </article>
+
+        <article class="example-card">
+          <div class="example-visual alt-2" aria-label="Exemplo de arte para personal trainer">
+            <span class="small-tag">Exemplo 02</span>
+            <div class="visual-title">Mariana Cardoso <span>Posicionamento premium</span></div>
+          </div>
+          <h3>Imagem mais premium nas redes</h3>
+          <p class="muted">Artes criadas para valorizar especialidade, rotina e autoridade, ajudando você a ser percebido como referência.</p>
+          <div class="testimonial">
+            <p>Meu Instagram ficou bem mais bonito depois das artes. Era exatamente a imagem que eu queria passar.</p>
+            <span class="testimonial-author">Mariana Cardoso • Personal Trainer</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section benefits-grid">
+      <div>
+        <h2>O que você recebe</h2>
+        <ul class="clean">
+          <li>1 arte personalizada com visual premium</li>
+          <li>Um conceito visual pensado para valorizar sua imagem profissional</li>
+          <li>Uma prévia real da qualidade do pacote completo com 10 imagens</li>
+        </ul>
+      </div>
+
+      <div class="section" style="margin:0; box-shadow:none; padding:0; background:transparent;">
+        <div class="promise" style="margin-top:0;">
+          <p><span class="highlight">Importante:</span> esta página já está pronta para captar leads. Depois você só precisa integrar o formulário com sua ferramenta de e-mail ou WhatsApp.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="formulario">
+      <div class="stack-sm" style="margin-bottom: 14px;">
+        <span class="eyebrow">Receba sua amostra</span>
+        <h2>Preencha abaixo e receba sua amostra grátis</h2>
+        <p class="lead">Informe seus dados para receber uma arte de demonstração por e-mail. Se fizer sentido para você, depois apresentamos o pacote completo.</p>
+      </div>
+
+      <form class="form-wrap" action="#" method="post">
+        <div class="field">
+          <label for="nome">1. Nome <span class="required">*</span></label>
+          <input id="nome" name="nome" type="text" placeholder="Seu nome" required />
+        </div>
+
+        <div class="field">
+          <label for="email">2. E-mail <span class="required">*</span></label>
+          <input id="email" name="email" type="email" placeholder="voce@email.com" required />
+        </div>
+
+        <div class="field">
+          <label for="local">3. Trabalha em alguma academia ou studio? Qual nome?</label>
+          <input id="local" name="local" type="text" placeholder="Ex.: Studio Move / Academia X" />
+        </div>
+
+        <div class="field">
+          <label>4. Forma de contato <span class="required">*</span></label>
+          <div class="choice-group">
+            <label class="choice"><input type="radio" name="contato" value="instagram" required /> Instagram</label>
+            <label class="choice"><input type="radio" name="contato" value="whatsapp" /> WhatsApp</label>
+            <label class="choice"><input type="radio" name="contato" value="telefone" /> Telefone</label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>5. Tipo de aulas que presta <span class="required">*</span></label>
+          <div class="choice-group">
+            <label class="choice"><input type="checkbox" name="aulas" value="musculacao" /> Musculação</label>
+            <label class="choice"><input type="checkbox" name="aulas" value="yoga" /> Yoga</label>
+            <label class="choice"><input type="checkbox" name="aulas" value="pilates" /> Pilates</label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="cenario">6. Se nenhuma opção anterior representar seu cenário, descreva aqui</label>
+          <textarea id="cenario" name="cenario" placeholder="Conte rapidamente seu nicho, especialidade ou objetivo."></textarea>
+        </div>
+
+        <div class="sticky-mobile">
+          <button type="submit">Receber minha amostra grátis</button>
+        </div>
+        <p class="privacy">Ao enviar, você concorda em receber sua amostra no e-mail informado e um contato comercial posterior sobre o pacote completo.</p>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

@@ -5,9 +5,6 @@ const statusIcon = document.getElementById("statusIcon");
 const statusTitle = document.getElementById("statusTitle");
 const statusDescription = document.getElementById("statusDescription");
 const detailsCard = document.getElementById("detailsCard");
-const warningCard = document.getElementById("warningCard");
-const warningMessage = document.getElementById("warningMessage");
-const retryButton = document.getElementById("retryButton");
 const packageIdEl = document.getElementById("packageId");
 const purchaseIdEl = document.getElementById("purchaseId");
 const amountEl = document.getElementById("amount");
@@ -31,10 +28,6 @@ const isReturnFlow = Boolean(
 );
 let checkoutUrl;
 let redirectTimer;
-
-retryButton?.addEventListener("click", () => {
-  window.location.reload();
-});
 
 payButton?.addEventListener("click", () => {
   if (checkoutUrl) {
@@ -94,17 +87,15 @@ function formatDate(date) {
   }).format(parsed);
 }
 
-function showWarning(message, type = "error") {
-  warningCard.hidden = false;
-  warningMessage.textContent = message;
+function showWarning(message, type = "warning") {
   detailsCard.hidden = true;
-  setStatus(type === "error" ? "error" : "warning", "Não conseguimos carregar o checkout", message);
+  setStatus(type === "error" ? "error" : "warning", "Estamos finalizando seu pedido", message);
 }
 
 async function loadCheckout() {
   if (!packageId) {
-    showWarning("O identificador do pacote (packageId) é obrigatório.");
-    heroMessage.textContent = "Repare se o link recebido possui o parâmetro packageId.";
+    showWarning("Estamos preparando seu pedido. Em alguns instantes, você receberá a confirmação por e-mail.", "warning");
+    heroMessage.textContent = "Verifique sua caixa de entrada e, se usar Gmail, confira também a aba Promoções.";
     return;
   }
 
@@ -118,18 +109,17 @@ async function loadCheckout() {
     hydrate(payload);
   } catch (err) {
     console.error("Falha ao buscar checkout", err);
-    showWarning("Não foi possível recuperar o link de pagamento. Tente novamente em instantes.");
+    showWarning("Seu pagamento está em análise final. Assim que concluirmos, enviaremos o produto para o seu e-mail.", "warning");
   }
 }
 
 function hydrate(payload) {
   checkoutUrl = payload.checkoutUrl;
   if (!checkoutUrl) {
-    showWarning("Este pacote ainda não possui um link de pagamento ativo.");
+    showWarning("Seu pedido está sendo preparado para entrega por e-mail.", "warning");
     return;
   }
 
-  warningCard.hidden = true;
   detailsCard.hidden = false;
 
   packageIdEl.textContent = payload.packageId ?? packageId;
@@ -180,44 +170,44 @@ function applyPurchaseStatus(status) {
     case "DELIVERED":
       setStatus(
         "success",
-        "Imagens enviadas com sucesso!",
-        "O pagamento foi confirmado e o pacote já foi entregue no seu e-mail. Caso não o encontre, verifique a caixa de spam ou promoções."
+        "Seu produto já foi enviado!",
+        "Pagamento aprovado e entrega concluída. Procure agora o e-mail com suas imagens originais. Se usar Gmail, verifique também a aba Promoções."
       );
-      heroMessage.textContent = "Tudo pronto! Verifique o seu e-mail para baixar as imagens originais.";
+      heroMessage.textContent = "Parabéns pela compra! Seu produto já está no e-mail.";
       return true;
     case "DELIVERING":
       setStatus(
         "success",
         "Pagamento aprovado!",
-        "Estamos preparando o download e você receberá as imagens originais em instantes no seu e-mail."
+        "Ótima compra! Já estamos organizando o envio das imagens originais para o seu e-mail."
       );
-      heroMessage.textContent = "Estamos finalizando a entrega das imagens para o seu e-mail.";
+      heroMessage.textContent = "Tudo certo por aqui: em instantes, seu produto chega no e-mail.";
       return true;
     case "APPROVED":
       setStatus(
         "success",
-        "Pagamento aprovado!",
-        "Recebemos a confirmação do Mercado Pago e já iniciamos o envio das imagens originais para o seu e-mail."
+        "Pagamento aprovado com sucesso!",
+        "Excelente escolha! Recebemos a confirmação e seu produto já está na fila de envio para o e-mail."
       );
-      heroMessage.textContent = "Tudo certo! Agora é só aguardar a entrega no seu e-mail.";
+      heroMessage.textContent = "Agora é só acompanhar o e-mail — incluindo a aba Promoções no Gmail.";
       return true;
     case "PENDING_PAYMENT":
     case "PREFERENCE_CREATED":
       setStatus(
         "warning",
-        "Pagamento em processamento",
-        "Ainda estamos aguardando a confirmação do Mercado Pago. Assim que tivermos uma resposta, enviaremos as instruções para o seu e-mail."
+        "Estamos finalizando seu pedido",
+        "Seu pagamento está em processamento final. Assim que confirmado, você receberá o produto por e-mail."
       );
-      heroMessage.textContent = "Estamos aguardando a confirmação do Mercado Pago.";
+      heroMessage.textContent = "Fique tranquilo: vamos avisar no e-mail assim que a entrega for concluída.";
       return true;
     case "FAILED":
     case "CANCELED":
       setStatus(
-        "error",
-        "Pagamento não concluído",
-        "Nossa validação interna não conseguiu confirmar o pagamento. Você pode tentar novamente clicando no botão abaixo."
+        "warning",
+        "Estamos validando seu pagamento",
+        "Recebemos seu pedido e estamos concluindo a validação. Em breve você receberá uma atualização por e-mail."
       );
-      heroMessage.textContent = "Identificamos uma falha na etapa de pagamento.";
+      heroMessage.textContent = "Estamos cuidando dos últimos detalhes para liberar seu produto.";
       return true;
     default:
       return false;
@@ -229,37 +219,37 @@ function applyReturnStatus() {
     case "approved":
       setStatus(
         "success",
-        "Pagamento confirmado!",
-        "Recebemos a confirmação do Mercado Pago. Você receberá as imagens originais no seu e-mail em alguns instantes."
+        "Pagamento aprovado com sucesso!",
+        "Excelente compra! Em instantes você receberá as imagens originais no e-mail. Se usar Gmail, confira também a aba Promoções."
       );
-      heroMessage.textContent = "Tudo certo! Agora é só aguardar a entrega no seu e-mail.";
+      heroMessage.textContent = "Parabéns pela compra! Seu produto está a caminho do seu e-mail.";
       break;
     case "pending":
     case "in_process":
       setStatus(
         "warning",
-        "Pagamento em processamento",
-        "Assim que o Mercado Pago confirmar o pagamento, enviaremos as instruções para o seu e-mail."
+        "Estamos finalizando seu pedido",
+        "Seu pagamento está em processamento e o envio será feito por e-mail assim que a confirmação for concluída."
       );
-      heroMessage.textContent = "Estamos aguardando a confirmação do Mercado Pago.";
+      heroMessage.textContent = "Falta pouco! Acompanhe sua caixa de entrada.";
       break;
     case "rejected":
     case "failure":
     case "cancelled":
       setStatus(
-        "error",
-        "Pagamento não concluído",
-        "O Mercado Pago informou que a tentativa não foi finalizada. Você pode tentar novamente clicando no botão abaixo."
+        "warning",
+        "Estamos validando seu pagamento",
+        "Recebemos sua tentativa e estamos verificando as informações. Em breve você receberá um e-mail com a atualização."
       );
-      heroMessage.textContent = "Identificamos uma falha na etapa de pagamento.";
+      heroMessage.textContent = "Estamos concluindo a validação para liberar seu produto.";
       break;
     default:
       setStatus(
         "warning",
-        "Estamos validando o status do seu pagamento",
-        "Caso a confirmação não ocorra em alguns minutos, tente novamente ou entre em contato com o nosso time."
+        "Estamos finalizando seu pedido",
+        "Em breve você receberá um e-mail com a confirmação e as instruções de acesso ao produto."
       );
-      heroMessage.textContent = "Ainda não recebemos o status final do Mercado Pago.";
+      heroMessage.textContent = "Obrigado pela compra! Estamos preparando tudo para você.";
   }
 }
 

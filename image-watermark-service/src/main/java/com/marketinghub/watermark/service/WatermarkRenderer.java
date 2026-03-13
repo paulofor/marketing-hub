@@ -7,6 +7,7 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Component;
 public class WatermarkRenderer {
 
     private static final Logger log = LoggerFactory.getLogger(WatermarkRenderer.class);
+    private static final int SAMPLE_DIMENSION = 364;
 
     private final WatermarkProperties properties;
     private Font fallbackFont;
@@ -84,14 +86,14 @@ public class WatermarkRenderer {
 
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             ImageIO.write(watermarked, "png", outputStream);
-            byte[] optimizedBytes = renderOptimizedCopy(watermarked);
+            SampleImage sampleImage = renderSampleThumbnail(original);
             return new WatermarkedImage(
                     outputStream.toByteArray(),
                     "image/png",
                     "png",
-                    optimizedBytes,
-                    optimizedBytes != null ? "image/jpeg" : null,
-                    optimizedBytes != null ? "jpg" : null);
+                    sampleImage != null ? sampleImage.bytes() : null,
+                    sampleImage != null ? sampleImage.contentType() : null,
+                    sampleImage != null ? sampleImage.extension() : null);
         } catch (IOException ex) {
             throw new IllegalStateException("Falha ao serializar imagem com marca d'água", ex);
         }
@@ -181,22 +183,31 @@ public class WatermarkRenderer {
 
     private record WatermarkGrid(int diagonal, int step, int fontSize) {}
 
-    private byte[] renderOptimizedCopy(BufferedImage watermarked) {
+    private SampleImage renderSampleThumbnail(BufferedImage original) {
         if (!properties.isGenerateOptimizedCopy()) {
             return null;
         }
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            BufferedImage rgbImage = new BufferedImage(
-                    watermarked.getWidth(), watermarked.getHeight(), BufferedImage.TYPE_INT_RGB);
-            Graphics2D graphics = rgbImage.createGraphics();
-            graphics.setColor(Color.WHITE);
-            graphics.fillRect(0, 0, rgbImage.getWidth(), rgbImage.getHeight());
-            graphics.drawImage(watermarked, 0, 0, null);
-            graphics.dispose();
+            BufferedImage canvas = new BufferedImage(SAMPLE_DIMENSION, SAMPLE_DIMENSION, BufferedImage.TYPE_INT_RGB);
+            Graphics2D graphics = canvas.createGraphics();
+            try {
+                graphics.setColor(Color.WHITE);
+                graphics.fillRect(0, 0, SAMPLE_DIMENSION, SAMPLE_DIMENSION);
+
+                double scale = SAMPLE_DIMENSION / (double) Math.max(original.getWidth(), original.getHeight());
+                int scaledWidth = Math.max(1, (int) Math.round(original.getWidth() * scale));
+                int scaledHeight = Math.max(1, (int) Math.round(original.getHeight() * scale));
+                Image scaledImage = original.getScaledInstance(scaledWidth, scaledHeight, Image.SCALE_SMOOTH);
+                int offsetX = (SAMPLE_DIMENSION - scaledWidth) / 2;
+                int offsetY = (SAMPLE_DIMENSION - scaledHeight) / 2;
+                graphics.drawImage(scaledImage, offsetX, offsetY, null);
+            } finally {
+                graphics.dispose();
+            }
 
             Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpg");
             if (!writers.hasNext()) {
-                log.warn("Nenhum writer JPEG disponível para gerar cópia otimizada");
+                log.warn("Nenhum writer JPEG disponível para gerar miniatura da amostra");
                 return null;
             }
             ImageWriter writer = writers.next();
@@ -208,13 +219,13 @@ public class WatermarkRenderer {
             }
             try (ImageOutputStream imageOutputStream = ImageIO.createImageOutputStream(outputStream)) {
                 writer.setOutput(imageOutputStream);
-                writer.write(null, new IIOImage(rgbImage, null, null), params);
+                writer.write(null, new IIOImage(canvas, null, null), params);
             } finally {
                 writer.dispose();
             }
-            return outputStream.toByteArray();
+            return new SampleImage(outputStream.toByteArray(), "image/jpeg", "jpg");
         } catch (IOException ex) {
-            log.warn("Falha ao gerar versão otimizada da imagem com marca d'água", ex);
+            log.warn("Falha ao gerar miniatura 364x364 para amostra", ex);
             return null;
         }
     }
@@ -234,6 +245,8 @@ public class WatermarkRenderer {
                     && optimizedExtension != null;
         }
     }
+
+    private record SampleImage(byte[] bytes, String contentType, String extension) {}
 
     private static double clamp(double value, double min, double max) {
         return Math.max(min, Math.min(max, value));

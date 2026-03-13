@@ -94,6 +94,43 @@ class WatermarkRendererTest {
     }
 
     @Test
+    void shouldGenerateSquareThumbnailSampleFromOriginalImage() throws Exception {
+        WatermarkRenderer.WatermarkedImage result = renderer.applyWatermark(originalBytes);
+
+        assertThat(result.optimizedBytes())
+                .as("A miniatura precisa ser gerada")
+                .isNotNull();
+        assertThat(result.optimizedContentType()).isEqualTo("image/jpeg");
+        assertThat(result.optimizedExtension()).isEqualTo("jpg");
+
+        BufferedImage sample = ImageIO.read(new ByteArrayInputStream(result.optimizedBytes()));
+        assertThat(sample).isNotNull();
+        assertThat(sample.getWidth()).isEqualTo(364);
+        assertThat(sample.getHeight()).isEqualTo(364);
+
+        int darkPixels = 0;
+        int lightPixels = 0;
+        for (int x = 0; x < sample.getWidth(); x++) {
+            for (int y = 0; y < sample.getHeight(); y++) {
+                Color color = new Color(sample.getRGB(x, y));
+                if (color.getRed() < 15 && color.getGreen() < 15 && color.getBlue() < 15) {
+                    darkPixels++;
+                }
+                if (color.getRed() > 240 && color.getGreen() > 240 && color.getBlue() > 240) {
+                    lightPixels++;
+                }
+            }
+        }
+
+        assertThat(darkPixels)
+                .as("A miniatura deve preservar pixels da imagem original")
+                .isGreaterThan(0);
+        assertThat(lightPixels)
+                .as("As faixas laterais/brancas indicam centralização dentro dos 364px")
+                .isGreaterThan(0);
+    }
+
+    @Test
     void shouldIncreaseContrastOnLightAndDarkAreas() throws Exception {
         BufferedImage contrastImage = new BufferedImage(600, 400, BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = contrastImage.createGraphics();

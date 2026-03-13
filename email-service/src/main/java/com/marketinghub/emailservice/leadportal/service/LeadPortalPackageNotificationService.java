@@ -5,6 +5,7 @@ import com.marketinghub.emailservice.leadportal.integration.LeadPortalPaymentsCl
 import com.marketinghub.emailservice.leadportal.integration.LeadPortalPaymentsClient.PaymentCheckoutResponse;
 import com.marketinghub.emailservice.storage.FileStorageService;
 import com.marketinghub.emailservice.storage.StorageException;
+import com.marketinghub.emailservice.leadportal.email.LeadPortalEmailTemplatePlaceholder;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,6 +21,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
@@ -66,6 +69,7 @@ public class LeadPortalPackageNotificationService {
     private final JdbcTemplate jdbcTemplate;
     private final FileStorageService fileStorageService;
     private final LeadPortalImagePackageStatusHistoryService statusHistoryService;
+    private final LeadPortalEmailTemplateService emailTemplateService;
     private final LeadPortalPaymentsClient paymentsClient;
 
     @Value("${lead-portal.notifications.max-attempts:5}")
@@ -84,10 +88,12 @@ public class LeadPortalPackageNotificationService {
             JdbcTemplate jdbcTemplate,
             FileStorageService fileStorageService,
             LeadPortalImagePackageStatusHistoryService statusHistoryService,
+            LeadPortalEmailTemplateService emailTemplateService,
             LeadPortalPaymentsClient paymentsClient) {
         this.jdbcTemplate = jdbcTemplate;
         this.fileStorageService = fileStorageService;
         this.statusHistoryService = statusHistoryService;
+        this.emailTemplateService = emailTemplateService;
         this.paymentsClient = paymentsClient;
     }
 
@@ -336,18 +342,147 @@ public class LeadPortalPackageNotificationService {
         }
     }
 
+
     private EmailContent buildEmailContent(PendingPackage pending,
                                            int imageCount,
                                            PaymentInfo paymentInfo,
                                            List<InlinePreview> inlinePreviews) {
         String subject = resolveEmailSubject(pending, imageCount);
-        String normalizedTrackingBase = normalizeTrackingBaseUrl(trackingBaseUrl);
-        String trackingViewUrl = null;
-        String trackingPixelUrl = null;
-        if (StringUtils.hasText(normalizedTrackingBase)) {
-            trackingViewUrl = buildTrackingUrl(normalizedTrackingBase, pending.packageId(), "previews", pending.submissionId());
-            trackingPixelUrl = buildTrackingUrl(normalizedTrackingBase, pending.packageId(), "open.gif", pending.submissionId());
+        TrackingLinks trackingLinks = buildTrackingLinks(pending);
+        List<String> previewUrls = extractPreviewUrls(inlinePreviews);
+
+        Optional<LeadPortalEmailTemplateService.LeadPortalEmailTemplate> template = emailTemplateService.findTemplate();
+        if (template.isPresent() && StringUtils.hasText(template.get().html())) {
+            EmailContent customContent = buildCustomEmailContent(
+                    pending,
+                    subject,
+                    paymentInfo,
+                    previewUrls,
+                    template.get().html(),
+                    trackingLinks);
+            if (customContent != null) {
+                return customContent;
+            }
         }
+
+        return buildDefaultEmailContent(
+                pending,
+                subject,
+                imageCount,
+                paymentInfo,
+                inlinePreviews,
+                trackingLinks);
+    }
+
+    private List<String> extractPreviewUrls(List<InlinePreview> inlinePreviews) {
+        if (inlinePreviews == null || inlinePreviews.isEmpty()) {
+            return List.of();
+        }
+        return inlinePreviews.stream()
+                .map(InlinePreview::url)
+                .filter(StringUtils::hasText)
+                .limit(INLINE_PREVIEW_LIMIT)
+                .map(String::trim)
+                .collect(Collectors.toList());
+    }
+
+    private TrackingLinks buildTrackingLinks(PendingPackage pending) {
+        String normalizedTrackingBase = normalizeTrackingBaseUrl(trackingBaseUrl);
+        if (!StringUtils.hasText(normalizedTrackingBase)) {
+            return new TrackingLinks(null, null);
+        }
+        String trackingViewUrl = buildTrackingUrl(normalizedTrackingBase, pending.packageId(), "previews", pending.submissionId());
+        String trackingPixelUrl = buildTrackingUrl(normalizedTrackingBase, pending.packageId(), "open.gif", pending.submissionId());
+        return new TrackingLinks(trackingViewUrl, trackingPixelUrl);
+    }
+
+    private EmailContent buildCustomEmailContent(PendingPackage pending,
+                                                 String subject,
+                                                 PaymentInfo paymentInfo,
+                                                 List<String> previewUrls,
+                                                 String templateHtml,
+                                                 TrackingLinks trackingLinks) {
+        if (!StringUtils.hasText(templateHtml)) {
+            return null;
+        }
+        Map<LeadPortalEmailTemplatePlaceholder, String> replacements =
+                new EnumMap<>(LeadPortalEmailTemplatePlaceholder.class);
+        replacements.put(LeadPortalEmailTemplatePlaceholder.LEAD_NAME, pending.submissionName());
+        replacements.put(LeadPortalEmailTemplatePlaceholder.PAYMENT_LINK, paymentInfo != null ? paymentInfo.checkoutUrl() : null);
+        replacements.put(LeadPortalEmailTemplatePlaceholder.PREVIEW_IMAGE_1, previewUrls.size() > 0 ? previewUrls.get(0) : null);
+        replacements.put(LeadPortalEmailTemplatePlaceholder.PREVIEW_IMAGE_2, previewUrls.size() > 1 ? previewUrls.get(1) : null);
+        replacements.put(LeadPortalEmailTemplatePlaceholder.PREVIEW_IMAGE_3, previewUrls.size() > 2 ? previewUrls.get(2) : null);
+
+        String processedHtml = applyTemplateReplacements(templateHtml, replacements);
+        if (!StringUtils.hasText(processedHtml)) {
+            return null;
+        }
+        StringBuilder htmlBuilder = new StringBuilder(processedHtml.trim());
+        appendTrackingMetadata(htmlBuilder, pending, trackingLinks);
+        String htmlContent = htmlBuilder.toString();
+        String plainContent = htmlToPlainText(htmlContent);
+        String attachmentName = "amostras-com-marca-dagua-" + pending.packageId() + ".zip";
+        return new EmailContent(subject, plainContent, htmlContent, attachmentName);
+    }
+
+    private void appendTrackingMetadata(StringBuilder html, PendingPackage pending, TrackingLinks trackingLinks) {
+        if (trackingLinks != null && StringUtils.hasText(trackingLinks.viewUrl())) {
+            html.append("<p><strong>Visualizar online:</strong> <a href=\"")
+                    .append(HtmlUtils.htmlEscape(trackingLinks.viewUrl()))
+                    .append("\" target=\"_blank\" rel=\"noopener\">Abrir prévias</a></p>");
+        }
+        html.append("<p class=\"meta\" style=\"font-size:12px;color:#555\">")
+                .append("Pacote " ).append(pending.packageId())
+                .append(" · Experimento ")
+                .append(HtmlUtils.htmlEscape(resolveExperimentLabel(pending)))
+                .append("</p>");
+        if (trackingLinks != null && StringUtils.hasText(trackingLinks.pixelUrl())) {
+            html.append("<img src=\"")
+                    .append(HtmlUtils.htmlEscape(trackingLinks.pixelUrl()))
+                    .append("\" alt=\"\" width=\"1\" height=\"1\" style=\"display:none;\" />");
+        }
+    }
+
+    private String applyTemplateReplacements(String template,
+                                             Map<LeadPortalEmailTemplatePlaceholder, String> replacements) {
+        String result = template;
+        for (LeadPortalEmailTemplatePlaceholder placeholder : LeadPortalEmailTemplatePlaceholder.values()) {
+            String sanitized = sanitizeTemplateValue(replacements.get(placeholder));
+            result = result.replace(placeholder.token(), sanitized);
+        }
+        return result;
+    }
+
+    private String sanitizeTemplateValue(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        return HtmlUtils.htmlEscape(value.trim());
+    }
+
+    private String htmlToPlainText(String html) {
+        if (!StringUtils.hasText(html)) {
+            return "";
+        }
+        String normalized = html
+                .replaceAll("(?i)<br\\s*/?>", "\\n")
+                .replaceAll("(?i)</p>", "\\n\\n")
+                .replaceAll("(?i)</div>", "\\n");
+        String withoutTags = normalized.replaceAll("<[^>]+>", "");
+        String unescaped = HtmlUtils.htmlUnescape(withoutTags);
+        return unescaped.replaceAll("\\r", "")
+                .replaceAll("\\n{3,}", "\\n\\n")
+                .trim();
+    }
+
+    private EmailContent buildDefaultEmailContent(PendingPackage pending,
+                                                  String subject,
+                                                  int imageCount,
+                                                  PaymentInfo paymentInfo,
+                                                  List<InlinePreview> inlinePreviews,
+                                                  TrackingLinks trackingLinks) {
+        String trackingViewUrl = trackingLinks != null ? trackingLinks.viewUrl() : null;
+        String trackingPixelUrl = trackingLinks != null ? trackingLinks.pixelUrl() : null;
         String recipientName = StringUtils.hasText(pending.submissionName())
                 ? pending.submissionName().trim()
                 : null;
@@ -747,6 +882,9 @@ public class LeadPortalPackageNotificationService {
         } catch (IllegalArgumentException ignored) {
             return amount.toPlainString() + (StringUtils.hasText(currency) ? " " + currency : "");
         }
+    }
+
+    private record TrackingLinks(String viewUrl, String pixelUrl) {
     }
 
     private record InlinePreview(String url) {

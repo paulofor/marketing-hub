@@ -18,7 +18,6 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Comparator;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.Locale;
@@ -121,7 +120,8 @@ public class LeadPortalPackageNotificationService {
         int imageCount = pending.imageCount() > 0 ? pending.imageCount() : countWatermarkedAssets(pending.packageId());
         byte[] zipBytes = loadObjectBytes(pending.zipObjectKey());
         PaymentInfo paymentInfo = ensurePaymentInfo(pending);
-        EmailContent content = buildEmailContent(pending, imageCount, paymentInfo);
+        List<InlinePreview> inlinePreviews = fetchInlinePreviews(pending.packageId());
+        EmailContent content = buildEmailContent(pending, imageCount, paymentInfo, inlinePreviews);
         return new LeadPortalImagePackageExportItem(
                 pending.packageId(),
                 pending.submissionId(),
@@ -277,6 +277,52 @@ public class LeadPortalPackageNotificationService {
         return count != null ? count : 0;
     }
 
+    private List<InlinePreview> fetchInlinePreviews(long packageId) {
+        String sql = """
+                SELECT
+                    item.position_index,
+                    wm_opt_asset.external_id AS watermark_optimized_external_id,
+                    wm_opt_asset.url AS watermark_optimized_url,
+                    wm_asset.external_id AS watermark_external_id,
+                    wm_asset.url AS watermark_url
+                FROM flow_submission_image_item item
+                JOIN flow_submission_image_watermark wm ON wm.item_id = item.id
+                LEFT JOIN asset wm_asset ON wm_asset.id = wm.asset_id
+                LEFT JOIN asset wm_opt_asset ON wm_opt_asset.id = wm.optimized_asset_id
+                WHERE item.package_id = ?
+                ORDER BY item.position_index ASC, item.id ASC
+                LIMIT ?
+                """;
+        List<InlinePreview> previews = jdbcTemplate.query(sql, (rs, rowNum) -> {
+            String storedFileName = firstNonBlank(
+                    rs.getString("watermark_optimized_external_id"),
+                    rs.getString("watermark_optimized_url"),
+                    rs.getString("watermark_external_id"),
+                    rs.getString("watermark_url"));
+            String resolvedUrl = firstNonBlank(
+                    fileStorageService.resolvePublicUrl(storedFileName).orElse(null),
+                    rs.getString("watermark_optimized_url"),
+                    rs.getString("watermark_url"));
+            if (!StringUtils.hasText(resolvedUrl)) {
+                return null;
+            }
+            return new InlinePreview(resolvedUrl.trim());
+        }, packageId, INLINE_PREVIEW_LIMIT);
+        return previews.stream().filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value.trim();
+            }
+        }
+        return null;
+    }
+
     private byte[] loadObjectBytes(String storedFileName) throws IOException {
         if (!StringUtils.hasText(storedFileName)) {
             throw new IOException("Nome do arquivo do bucket não informado");
@@ -290,7 +336,10 @@ public class LeadPortalPackageNotificationService {
         }
     }
 
-    private EmailContent buildEmailContent(PendingPackage pending, int imageCount, PaymentInfo paymentInfo) {
+    private EmailContent buildEmailContent(PendingPackage pending,
+                                           int imageCount,
+                                           PaymentInfo paymentInfo,
+                                           List<InlinePreview> inlinePreviews) {
         String subject = resolveEmailSubject(pending, imageCount);
         String normalizedTrackingBase = normalizeTrackingBaseUrl(trackingBaseUrl);
         String trackingViewUrl = null;
@@ -299,30 +348,57 @@ public class LeadPortalPackageNotificationService {
             trackingViewUrl = buildTrackingUrl(normalizedTrackingBase, pending.packageId(), "previews", pending.submissionId());
             trackingPixelUrl = buildTrackingUrl(normalizedTrackingBase, pending.packageId(), "open.gif", pending.submissionId());
         }
-        String formattedDefaultPrice = formatCurrency(DEFAULT_PRODUCT_PRICE, DEFAULT_PRODUCT_CURRENCY);
+        String recipientName = StringUtils.hasText(pending.submissionName())
+                ? pending.submissionName().trim()
+                : null;
+
+        BigDecimal resolvedAmount = paymentInfo != null && paymentInfo.amount() != null
+                ? paymentInfo.amount()
+                : DEFAULT_PRODUCT_PRICE;
+        String resolvedCurrency = paymentInfo != null && StringUtils.hasText(paymentInfo.currency())
+                ? paymentInfo.currency()
+                : DEFAULT_PRODUCT_CURRENCY;
+        String formattedPrice = formatCurrency(resolvedAmount, resolvedCurrency);
+        String ctaLabel = StringUtils.hasText(formattedPrice)
+                ? "Liberar pacote completo por " + formattedPrice
+                : "Liberar pacote completo";
+
+        String paymentUrl = paymentInfo != null ? paymentInfo.checkoutUrl() : null;
+        String descriptor = paymentInfo != null && StringUtils.hasText(paymentInfo.statementDescriptor())
+                ? paymentInfo.statementDescriptor()
+                : "Mercado Pago";
 
         StringBuilder plain = new StringBuilder();
-        plain.append("Suas amostras com marca d'água estão anexas. Se quiser liberar os arquivos originais, é só concluir o pagamento.")
-                .append("\n\n");
-
+        plain.append(DEFAULT_EMAIL_PREHEADER).append("\n\n");
         plain.append("Olá");
-        if (StringUtils.hasText(pending.submissionName())) {
-            plain.append(" ").append(pending.submissionName().trim());
+        if (StringUtils.hasText(recipientName)) {
+            plain.append(" ").append(recipientName);
         }
         plain.append(",\n\n");
-
-        plain.append("Anexei ")
+        plain.append("Suas amostras estão prontas! Anexei ")
                 .append(imageCount)
                 .append(" imagem(ns) com marca d'água para você avaliar.\n");
-
+        if (inlinePreviews != null && !inlinePreviews.isEmpty()) {
+            plain.append("Algumas prévias rápidas:\n");
+            for (int i = 0; i < inlinePreviews.size(); i++) {
+                InlinePreview preview = inlinePreviews.get(i);
+                plain.append("- Arte ")
+                        .append(i + 1)
+                        .append(": ")
+                        .append(preview.url())
+                        .append("\n");
+            }
+            plain.append("\n");
+        }
         plain.append("Para liberar o pacote completo (")
                 .append(DEFAULT_PRODUCT_DESCRIPTION)
                 .append("), o valor é ")
-                .append(formattedDefaultPrice)
+                .append(formattedPrice != null ? formattedPrice : "R$ 127,00")
                 .append(".\n");
-
-        if (trackingViewUrl != null) {
-            plain.append("Ver prévias online: ").append(trackingViewUrl).append("\n");
+        if (StringUtils.hasText(trackingViewUrl)) {
+            plain.append("Ver prévias online: ")
+                    .append(trackingViewUrl)
+                    .append("\n");
         }
 
         appendPaymentCallToAction(plain, null, paymentInfo, "Liberar pacote completo");
@@ -330,54 +406,216 @@ public class LeadPortalPackageNotificationService {
         plain.append("Atenciosamente,\n")
                 .append(PRODUCT_OWNER)
                 .append("\n\n");
-
         plain.append("ID do pacote: ").append(pending.packageId());
         if (pending.sampleUpdatedAt() != null) {
             plain.append("\nE-mail atualizado em: ").append(HUMAN_DATE.format(pending.sampleUpdatedAt()));
         }
+
+        String escapedName = StringUtils.hasText(recipientName) ? HtmlUtils.htmlEscape(recipientName) : null;
+        String escapedExperiment = HtmlUtils.htmlEscape(resolveExperimentLabel(pending));
+        String escapedPaymentUrl = StringUtils.hasText(paymentUrl) ? HtmlUtils.htmlEscape(paymentUrl) : null;
+        String escapedFormattedPrice = StringUtils.hasText(formattedPrice)
+                ? HtmlUtils.htmlEscape(formattedPrice)
+                : null;
+        String previewCards = buildInlinePreviewCards(inlinePreviews);
+        String viewOnlineLink = StringUtils.hasText(trackingViewUrl)
+                ? "Se não visualizar corretamente, <a href=\"" + HtmlUtils.htmlEscape(trackingViewUrl)
+                + "\" target=\"_blank\" rel=\"noopener\" style=\"color:#7c8397;\">abra este e-mail no navegador</a>."
+                : "Se não visualizar corretamente, abra este e-mail no navegador.";
+
         StringBuilder html = new StringBuilder();
-        html.append("<p><strong>Suas amostras com marca d'água estão anexas.</strong> ")
-                .append("Se quiser liberar os arquivos originais, é só concluir o pagamento.</p>");
-
-        html.append("<p>Olá");
-        if (StringUtils.hasText(pending.submissionName())) {
-            html.append(" ").append(HtmlUtils.htmlEscape(pending.submissionName().trim()));
-        }
-        html.append(",</p>");
-
-        html.append("<p>Anexei <strong>")
-                .append(imageCount)
-                .append(" imagem(ns)</strong> com marca d'água para você avaliar.</p>");
-
-        html.append("<p>Para liberar o pacote completo (<strong>")
-                .append(HtmlUtils.htmlEscape(DEFAULT_PRODUCT_DESCRIPTION))
-                .append("</strong>), o valor é <strong>")
-                .append(HtmlUtils.htmlEscape(formattedDefaultPrice))
-                .append("</strong>.</p>");
-
-        appendPaymentCallToAction(null, html, paymentInfo, "Liberar pacote completo");
-
-        if (StringUtils.hasText(trackingViewUrl)) {
-            html.append("<p><strong>Visualizar online:</strong> <a href=\"")
-                    .append(HtmlUtils.htmlEscape(trackingViewUrl))
-                    .append("\" target=\"_blank\" rel=\"noopener\">Abrir prévias</a></p>");
-        }
-        html.append("<p style=\"margin-top:24px\">Atenciosamente,<br/>")
+        html.append("<!DOCTYPE html><html lang=\"pt-BR\" xmlns=\"http://www.w3.org/1999/xhtml\">")
+                .append("<head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />")
+                .append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />")
+                .append("<meta name=\"x-apple-disable-message-reformatting\" />")
+                .append("<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\" />")
+                .append("<title>Suas amostras estão prontas</title>")
+                .append("<style>")
+                .append("body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }")
+                .append("table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }")
+                .append("img { -ms-interpolation-mode: bicubic; }")
+                .append("img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; display: block; }")
+                .append("table { border-collapse: collapse !important; }")
+                .append("body { margin: 0 !important; padding: 0 !important; width: 100% !important; height: 100% !important; background-color: #eef1f8; }")
+                .append(".preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; overflow: hidden; mso-hide: all; }")
+                .append("@media screen and (max-width: 620px) { .wrapper { width: 100% !important; } .mobile-padding { padding-left: 20px !important; padding-right: 20px !important; } .mobile-stack, .mobile-stack td { display: block !important; width: 100% !important; } .mobile-center { text-align: center !important; } .fluid-img { width: 100% !important; max-width: 100% !important; } .button-cell a { display: block !important; } .spacer-mobile { height: 12px !important; } .headline { font-size: 28px !important; line-height: 34px !important; } .subheadline { font-size: 16px !important; line-height: 24px !important; } }")
+                .append("</style></head>")
+                .append("<body style=\"margin:0; padding:0; background-color:#eef1f8;\">")
+                .append("<div class=\"preheader\">")
+                .append(HtmlUtils.htmlEscape(DEFAULT_EMAIL_PREHEADER))
+                .append("</div>")
+                .append("<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" role=\"presentation\" style=\"background-color:#eef1f8;\">")
+                .append("<tr><td align=\"center\" style=\"padding: 24px 12px;\">")
+                .append("<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"600\" class=\"wrapper\" role=\"presentation\" style=\"width:600px; max-width:600px;\">")
+                .append("<tr><td align=\"center\" style=\"padding-bottom:16px; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:18px; color:#7c8397;\">")
+                .append(viewOnlineLink)
+                .append("</td></tr>")
+                .append("<tr><td style=\"background:linear-gradient(135deg, #171b31 0%, #4a2ea8 55%, #ff7a30 100%); border-radius:28px 28px 0 0; padding:28px 32px 20px 32px;\" class=\"mobile-padding\">")
+                .append("<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" role=\"presentation\">")
+                .append("<tr><td align=\"left\" class=\"mobile-center\" style=\"font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:20px; color:#ffffff; font-weight:bold; letter-spacing:0.08em; text-transform:uppercase;\">")
                 .append(HtmlUtils.htmlEscape(PRODUCT_OWNER))
-                .append("</p>");
-        html.append("<p class=\"meta\" style=\"font-size:12px;color:#555\">")
+                .append("</td></tr>")
+                .append("<tr><td style=\"height:18px; line-height:18px; font-size:0;\">&nbsp;</td></tr>")
+                .append("<tr><td class=\"headline mobile-center\" style=\"font-family:Arial, Helvetica, sans-serif; font-size:34px; line-height:40px; color:#ffffff; font-weight:bold; letter-spacing:-0.02em;\">")
+                .append("Suas amostras estão prontas")
+                .append("</td></tr>")
+                .append("<tr><td style=\"height:12px; line-height:12px; font-size:0;\">&nbsp;</td></tr>")
+                .append("<tr><td class=\"subheadline mobile-center\" style=\"font-family:Arial, Helvetica, sans-serif; font-size:18px; line-height:28px; color:#eef1ff;\">")
+                .append("Olá")
+                .append(escapedName != null ? ", <strong>" + escapedName + "</strong>. " : ", ")
+                .append("Preparamos suas artes com marca d’água para mostrar como o seu perfil pode ficar mais profissional, organizado e valioso nas redes sociais.")
+                .append("</td></tr>")
+                .append("<tr><td style=\"height:22px; line-height:22px; font-size:0;\">&nbsp;</td></tr>")
+                .append("<tr><td align=\"left\" class=\"mobile-center button-cell\">")
+                .append("<table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" role=\"presentation\" style=\"border-collapse:separate;\"><tr><td align=\"center\" bgcolor=\"#ff7a30\" style=\"border-radius:999px;\">");
+
+        if (escapedPaymentUrl != null) {
+            html.append("<a href=\"")
+                    .append(escapedPaymentUrl)
+                    .append("\" target=\"_blank\" style=\"font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:16px; font-weight:bold; color:#ffffff; text-decoration:none; padding:16px 28px; display:inline-block; border-radius:999px;\">")
+                    .append(HtmlUtils.htmlEscape(ctaLabel))
+                    .append("</a>");
+        } else {
+            html.append("<span style=\"font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:16px; font-weight:bold; color:#ffffff; text-decoration:none; padding:16px 28px; display:inline-block; border-radius:999px;\">")
+                    .append(HtmlUtils.htmlEscape(ctaLabel))
+                    .append("</span>");
+        }
+
+        html.append("</td></tr></table>")
+                .append("</td></tr>")
+                .append("<tr><td style=\"height:12px; line-height:12px; font-size:0;\">&nbsp;</td></tr>")
+                .append("<tr><td class=\"mobile-center\" style=\"font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:20px; color:#f7ddcf;\">")
+                .append("Pagamento simples e liberação após a confirmação.")
+                .append("</td></tr>")
+                .append("</table></td></tr>")
+
+                .append("<tr><td style=\"background-color:#ffffff; padding:26px 32px 8px 32px;\" class=\"mobile-padding\">")
+                .append("<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" role=\"presentation\">")
+                .append("<tr><td style=\"font-family:Arial, Helvetica, sans-serif; font-size:22px; line-height:30px; color:#1f2433; font-weight:bold;\">")
+                .append("Veja a prévia do seu material")
+                .append("</td></tr>")
+                .append("<tr><td style=\"height:10px; line-height:10px; font-size:0;\">&nbsp;</td></tr>")
+                .append("<tr><td style=\"font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:24px; color:#5d667d;\">")
+                .append("Anexamos <strong>")
+                .append(imageCount)
+                .append(" imagem(ns) com marca d’água</strong> para você avaliar o estilo, a qualidade e a personalização.")
+                .append("</td></tr></table></td></tr>");
+
+        if (previewCards != null && !previewCards.isBlank()) {
+            html.append("<tr><td style=\"background-color:#ffffff; padding:10px 24px 8px 24px;\" class=\"mobile-padding\">")
+                    .append("<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" role=\"presentation\">")
+                    .append(previewCards)
+                    .append("</table></td></tr>");
+        }
+
+        html.append("<tr><td style=\"background-color:#ffffff; padding:16px 32px 8px 32px;\" class=\"mobile-padding\">")
+                .append("<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" role=\"presentation\" style=\"background:linear-gradient(180deg, #faf7ff 0%, #ffffff 100%); border:1px solid #eadffd; border-radius:20px;\">")
+                .append("<tr><td style=\"padding:22px 22px 20px 22px;\">")
+                .append("<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" role=\"presentation\">")
+                .append("<tr><td style=\"font-family:Arial, Helvetica, sans-serif; font-size:20px; line-height:28px; color:#1f2433; font-weight:bold;\">")
+                .append("O que você libera ao concluir o pagamento")
+                .append("</td></tr>")
+                .append("<tr><td style=\"height:12px; line-height:12px; font-size:0;\">&nbsp;</td></tr>")
+                .append("<tr><td style=\"font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:26px; color:#525a71;\">")
+                .append("• 10 imagens premium personalizadas<br />• Arquivos prontos para postar<br />• Versões sem marca d’água<br />• Visual pensado para valorizar seu serviço")
+                .append("</td></tr></table></td></tr></table></td></tr>")
+
+                .append("<tr><td style=\"background-color:#ffffff; padding:18px 32px 8px 32px;\" class=\"mobile-padding\">")
+                .append("<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" role=\"presentation\" style=\"border:1px solid #dde5f3; border-radius:16px;\">")
+                .append("<tr><td style=\"padding:18px 18px 12px 18px;\" class=\"mobile-center\">")
+                .append("<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" role=\"presentation\">")
+                .append("<tr><td style=\"font-family:Arial, Helvetica, sans-serif; font-size:18px; line-height:26px; color:#1f2433; font-weight:bold;\" class=\"mobile-center\">")
+                .append("Pagamento seguro e liberação rápida")
+                .append("</td></tr>")
+                .append("<tr><td style=\"height:10px; line-height:10px; font-size:0;\">&nbsp;</td></tr>")
+                .append("<tr><td style=\"font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:24px; color:#5d667d;\" class=\"mobile-center\">")
+                .append("Conclua o pagamento para liberar os arquivos originais. Cobrança via ")
+                .append(HtmlUtils.htmlEscape(descriptor))
+                .append(escapedFormattedPrice != null ? " (" + escapedFormattedPrice + ")" : "")
+                .append(".")
+                .append("</td></tr>")
+                .append("<tr><td style=\"height:16px; line-height:16px; font-size:0;\">&nbsp;</td></tr>")
+                .append("<tr><td class=\"mobile-center\">")
+                .append("<table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" role=\"presentation\" style=\"border-collapse:separate;\"><tr><td align=\"center\" bgcolor=\"#171b31\" style=\"border-radius:12px;\">");
+
+        if (escapedPaymentUrl != null) {
+            html.append("<a href=\"")
+                    .append(escapedPaymentUrl)
+                    .append("\" target=\"_blank\" style=\"font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:16px; font-weight:bold; color:#ffffff; text-decoration:none; padding:14px 28px; display:inline-block; border-radius:12px;\">")
+                    .append(HtmlUtils.htmlEscape(ctaLabel))
+                    .append("</a>");
+        } else {
+            html.append("<span style=\"font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:16px; font-weight:bold; color:#ffffff; text-decoration:none; padding:14px 28px; display:inline-block; border-radius:12px;\">")
+                    .append(HtmlUtils.htmlEscape(ctaLabel))
+                    .append("</span>");
+        }
+
+        html.append("</td></tr></table>")
+                .append("</td></tr>")
+                .append("</table></td></tr>")
+
+                .append("<tr><td style=\"background-color:#ffffff; padding:20px 32px 26px 32px; border-radius:0 0 28px 28px;\" class=\"mobile-padding\">")
+                .append("<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" role=\"presentation\">")
+                .append("<tr><td style=\"font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:22px; color:#5d667d;\">")
+                .append("<strong>Em caso de dúvidas</strong>, responda este e-mail para falar com nossa equipe.")
+                .append("</td></tr>")
+                .append("<tr><td style=\"height:12px; line-height:12px; font-size:0;\">&nbsp;</td></tr>")
+                .append("<tr><td style=\"font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:18px; color:#7c8397;\">")
                 .append("Pacote ").append(pending.packageId())
-                .append(" · Experimento ")
-                .append(HtmlUtils.htmlEscape(resolveExperimentLabel(pending)))
-                .append("</p>");
+                .append(" · Experimento ").append(escapedExperiment)
+                .append(pending.sampleUpdatedAt() != null
+                        ? " · E-mail atualizado em " + HtmlUtils.htmlEscape(HUMAN_DATE.format(pending.sampleUpdatedAt()))
+                        : "")
+                .append("</td></tr>")
+                .append("</table></td></tr>")
+                .append("</table></td></tr></table>");
+
         if (StringUtils.hasText(trackingPixelUrl)) {
             html.append("<img src=\"")
                     .append(HtmlUtils.htmlEscape(trackingPixelUrl))
                     .append("\" alt=\"\" width=\"1\" height=\"1\" style=\"display:none;\" />");
         }
+        html.append("</body></html>");
 
         String attachmentName = "amostras-com-marca-dagua-" + pending.packageId() + ".zip";
         return new EmailContent(subject, plain.toString(), html.toString(), attachmentName);
+    }
+
+    private String buildInlinePreviewCards(List<InlinePreview> inlinePreviews) {
+        if (inlinePreviews == null || inlinePreviews.isEmpty()) {
+            return "";
+        }
+        StringBuilder cards = new StringBuilder();
+        int renderedCards = 0;
+        cards.append("<tr class=\"mobile-stack\">");
+        for (int i = 0; i < inlinePreviews.size(); i++) {
+            InlinePreview preview = inlinePreviews.get(i);
+            if (!StringUtils.hasText(preview.url())) {
+                continue;
+            }
+            PreviewCardStyle style = PREVIEW_CARD_STYLES[i % PREVIEW_CARD_STYLES.length];
+            String caption = INLINE_PREVIEW_CAPTIONS[i % INLINE_PREVIEW_CAPTIONS.length];
+            cards.append("<td width=\"33.33%\" style=\"padding:8px; vertical-align:top;\">")
+                    .append("<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" role=\"presentation\" style=\"background-color:")
+                    .append(style.backgroundColor())
+                    .append("; border:1px solid ")
+                    .append(style.borderColor())
+                    .append("; border-radius:18px; overflow:hidden;\">")
+                    .append("<tr><td><img src=\\\"")
+                    .append(HtmlUtils.htmlEscape(preview.url()))
+                    .append("\\\" alt=\\\"Prévia da arte ")
+                    .append(i + 1)
+                    .append(" com marca d'água\\\" width=\\\"160\\\" class=\\\"fluid-img\\\" style=\\\"width:100%; max-width:160px; border-radius:18px 18px 0 0;\\\" /></td></tr>")
+                    .append("<tr><td style=\\\"padding:12px 12px 14px 12px; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:19px; color:#51586f;\\\">")
+                    .append(HtmlUtils.htmlEscape(caption))
+                    .append("</td></tr></table></td>");
+            renderedCards++;
+        }
+        if (renderedCards == 0) {
+            return "";
+        }
+        cards.append("</tr>");
+        return cards.toString();
     }
 
     private String resolveEmailSubject(PendingPackage pending, int imageCount) {
@@ -509,6 +747,12 @@ public class LeadPortalPackageNotificationService {
         } catch (IllegalArgumentException ignored) {
             return amount.toPlainString() + (StringUtils.hasText(currency) ? " " + currency : "");
         }
+    }
+
+    private record InlinePreview(String url) {
+    }
+
+    private record PreviewCardStyle(String backgroundColor, String borderColor) {
     }
 
     private record PaymentInfo(

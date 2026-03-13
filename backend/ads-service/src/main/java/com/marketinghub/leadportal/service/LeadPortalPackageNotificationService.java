@@ -1,6 +1,7 @@
 package com.marketinghub.leadportal.service;
 
 import com.marketinghub.leadportal.FlowSubmissionImagePackageStatus;
+import com.marketinghub.leadportal.email.LeadPortalEmailTemplatePlaceholder;
 import com.marketinghub.leadportal.integration.LeadPortalPaymentsClient;
 import com.marketinghub.leadportal.integration.LeadPortalPaymentsClient.PaymentCheckoutResponse;
 import com.marketinghub.storage.FileStorageService;
@@ -17,8 +18,10 @@ import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -43,9 +46,12 @@ public class LeadPortalPackageNotificationService {
             .withLocale(new Locale("pt", "BR"))
             .withZone(ZoneId.systemDefault());
 
+    private static final int MAX_PREVIEW_IMAGES = 3;
+
     private final JdbcTemplate jdbcTemplate;
     private final FileStorageService fileStorageService;
     private final LeadPortalImagePackageStatusHistoryService statusHistoryService;
+    private final LeadPortalEmailTemplateService emailTemplateService;
     private final LeadPortalPaymentsClient paymentsClient;
 
     @Value("${lead-portal.notifications.max-attempts:5}")
@@ -64,10 +70,12 @@ public class LeadPortalPackageNotificationService {
             JdbcTemplate jdbcTemplate,
             FileStorageService fileStorageService,
             LeadPortalImagePackageStatusHistoryService statusHistoryService,
+            LeadPortalEmailTemplateService emailTemplateService,
             LeadPortalPaymentsClient paymentsClient) {
         this.jdbcTemplate = jdbcTemplate;
         this.fileStorageService = fileStorageService;
         this.statusHistoryService = statusHistoryService;
+        this.emailTemplateService = emailTemplateService;
         this.paymentsClient = paymentsClient;
     }
 
@@ -270,14 +278,61 @@ public class LeadPortalPackageNotificationService {
     }
 
     private EmailContent buildEmailContent(PendingPackage pending, int imageCount, PaymentInfo paymentInfo) {
-        String subject = resolveEmailSubject(pending, imageCount);
-        String normalizedTrackingBase = normalizeTrackingBaseUrl(trackingBaseUrl);
-        String trackingViewUrl = null;
-        String trackingPixelUrl = null;
-        if (StringUtils.hasText(normalizedTrackingBase)) {
-            trackingViewUrl = buildTrackingUrl(normalizedTrackingBase, pending.packageId(), "previews", pending.submissionId());
-            trackingPixelUrl = buildTrackingUrl(normalizedTrackingBase, pending.packageId(), "open.gif", pending.submissionId());
+        TrackingLinks trackingLinks = buildTrackingLinks(pending);
+        Optional<LeadPortalEmailTemplateService.LeadPortalEmailTemplate> template = emailTemplateService.findTemplate();
+        if (template.isPresent() && StringUtils.hasText(template.get().html())) {
+            List<String> previewUrls = loadPreviewImageUrls(pending.packageId(), MAX_PREVIEW_IMAGES);
+            EmailContent customContent = buildCustomEmailContent(
+                    pending,
+                    imageCount,
+                    paymentInfo,
+                    template.get().html(),
+                    previewUrls,
+                    trackingLinks);
+            if (customContent != null) {
+                return customContent;
+            }
         }
+        return buildDefaultEmailContent(pending, imageCount, paymentInfo, trackingLinks);
+    }
+
+    private EmailContent buildCustomEmailContent(
+            PendingPackage pending,
+            int imageCount,
+            PaymentInfo paymentInfo,
+            String templateHtml,
+            List<String> previewUrls,
+            TrackingLinks trackingLinks) {
+        if (!StringUtils.hasText(templateHtml)) {
+            return null;
+        }
+        Map<LeadPortalEmailTemplatePlaceholder, String> replacements = new EnumMap<>(LeadPortalEmailTemplatePlaceholder.class);
+        replacements.put(LeadPortalEmailTemplatePlaceholder.LEAD_NAME, pending.submissionName());
+        replacements.put(LeadPortalEmailTemplatePlaceholder.PAYMENT_LINK, paymentInfo != null ? paymentInfo.checkoutUrl() : null);
+        replacements.put(LeadPortalEmailTemplatePlaceholder.PREVIEW_IMAGE_1, previewUrls.size() > 0 ? previewUrls.get(0) : null);
+        replacements.put(LeadPortalEmailTemplatePlaceholder.PREVIEW_IMAGE_2, previewUrls.size() > 1 ? previewUrls.get(1) : null);
+        replacements.put(LeadPortalEmailTemplatePlaceholder.PREVIEW_IMAGE_3, previewUrls.size() > 2 ? previewUrls.get(2) : null);
+
+        String processedHtml = applyTemplateReplacements(templateHtml, replacements);
+        if (!StringUtils.hasText(processedHtml)) {
+            return null;
+        }
+        StringBuilder htmlBuilder = new StringBuilder(processedHtml.trim());
+        appendTrackingMetadata(htmlBuilder, pending, trackingLinks);
+        String htmlContent = htmlBuilder.toString();
+        String plainContent = htmlToPlainText(htmlContent);
+        String subject = resolveEmailSubject(pending, imageCount);
+        String attachmentName = "imagens-watermark-" + pending.packageId() + ".zip";
+        return new EmailContent(subject, plainContent, htmlContent, attachmentName);
+    }
+
+    private EmailContent buildDefaultEmailContent(
+            PendingPackage pending,
+            int imageCount,
+            PaymentInfo paymentInfo,
+            TrackingLinks trackingLinks) {
+        String subject = resolveEmailSubject(pending, imageCount);
+        String trackingViewUrl = trackingLinks != null ? trackingLinks.viewUrl() : null;
         StringBuilder plain = new StringBuilder();
         if (StringUtils.hasText(pending.samplePreview())) {
             plain.append(pending.samplePreview()).append("\n\n");
@@ -304,7 +359,8 @@ public class LeadPortalPackageNotificationService {
         if (StringUtils.hasText(pending.sampleBody())) {
             String[] paragraphs = pending.sampleBody().split("\\n{2,}");
             for (String paragraph : paragraphs) {
-                html.append("<p>").append(HtmlUtils.htmlEscape(paragraph.trim()).replace("\n", "<br/>"))
+                html.append("<p>")
+                        .append(HtmlUtils.htmlEscape(paragraph.trim()).replace("\n", "<br/>"))
                         .append("</p>");
             }
         }
@@ -317,10 +373,26 @@ public class LeadPortalPackageNotificationService {
         }
 
         appendPaymentCallToAction(plain, html, paymentInfo, pending.sampleCallToAction());
+        appendTrackingMetadata(html, pending, trackingLinks);
 
-        if (StringUtils.hasText(trackingViewUrl)) {
+        String attachmentName = "imagens-watermark-" + pending.packageId() + ".zip";
+        return new EmailContent(subject, plain.toString(), html.toString(), attachmentName);
+    }
+
+    private TrackingLinks buildTrackingLinks(PendingPackage pending) {
+        String normalizedTrackingBase = normalizeTrackingBaseUrl(trackingBaseUrl);
+        if (!StringUtils.hasText(normalizedTrackingBase)) {
+            return new TrackingLinks(null, null);
+        }
+        String trackingViewUrl = buildTrackingUrl(normalizedTrackingBase, pending.packageId(), "previews", pending.submissionId());
+        String trackingPixelUrl = buildTrackingUrl(normalizedTrackingBase, pending.packageId(), "open.gif", pending.submissionId());
+        return new TrackingLinks(trackingViewUrl, trackingPixelUrl);
+    }
+
+    private void appendTrackingMetadata(StringBuilder html, PendingPackage pending, TrackingLinks trackingLinks) {
+        if (trackingLinks != null && StringUtils.hasText(trackingLinks.viewUrl())) {
             html.append("<p><strong>Visualizar online:</strong> <a href=\"")
-                    .append(HtmlUtils.htmlEscape(trackingViewUrl))
+                    .append(HtmlUtils.htmlEscape(trackingLinks.viewUrl()))
                     .append("\" target=\"_blank\" rel=\"noopener\">Abrir prévias</a></p>");
         }
         html.append("<p class=\"meta\" style=\"font-size:12px;color:#555\">")
@@ -328,14 +400,91 @@ public class LeadPortalPackageNotificationService {
                 .append(" · Experimento ")
                 .append(HtmlUtils.htmlEscape(resolveExperimentLabel(pending)))
                 .append("</p>");
-        if (StringUtils.hasText(trackingPixelUrl)) {
+        if (trackingLinks != null && StringUtils.hasText(trackingLinks.pixelUrl())) {
             html.append("<img src=\"")
-                    .append(HtmlUtils.htmlEscape(trackingPixelUrl))
+                    .append(HtmlUtils.htmlEscape(trackingLinks.pixelUrl()))
                     .append("\" alt=\"\" width=\"1\" height=\"1\" style=\"display:none;\" />");
         }
+    }
 
-        String attachmentName = "imagens-watermark-" + pending.packageId() + ".zip";
-        return new EmailContent(subject, plain.toString(), html.toString(), attachmentName);
+    private String applyTemplateReplacements(String template, Map<LeadPortalEmailTemplatePlaceholder, String> replacements) {
+        String result = template;
+        for (LeadPortalEmailTemplatePlaceholder placeholder : LeadPortalEmailTemplatePlaceholder.values()) {
+            String sanitized = sanitizeTemplateValue(replacements.get(placeholder));
+            result = result.replace(placeholder.token(), sanitized);
+        }
+        return result;
+    }
+
+    private String sanitizeTemplateValue(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        return HtmlUtils.htmlEscape(value.trim());
+    }
+
+    private String htmlToPlainText(String html) {
+        if (!StringUtils.hasText(html)) {
+            return "";
+        }
+        String normalized = html
+                .replaceAll("(?i)<br\s*/?>", "\n")
+                .replaceAll("(?i)</p>", "\n\n")
+                .replaceAll("(?i)</div>", "\n");
+        String withoutTags = normalized.replaceAll("<[^>]+>", "");
+        String unescaped = HtmlUtils.htmlUnescape(withoutTags);
+        return unescaped.replaceAll("\r", "")
+                .replaceAll("\n{3,}", "\n\n")
+                .trim();
+    }
+
+    private List<String> loadPreviewImageUrls(long packageId, int limit) {
+        if (limit <= 0) {
+            return List.of();
+        }
+        String sql = """
+                SELECT
+                    wm.id,
+                    base.external_id AS asset_external_id,
+                    base.url AS asset_url,
+                    opt.external_id AS optimized_external_id,
+                    opt.url AS optimized_url,
+                    item.position_index
+                FROM flow_submission_image_watermark wm
+                JOIN flow_submission_image_item item ON item.id = wm.item_id
+                LEFT JOIN asset base ON base.id = wm.asset_id
+                LEFT JOIN asset opt ON opt.id = wm.optimized_asset_id
+                WHERE item.package_id = ?
+                ORDER BY item.position_index ASC, wm.id ASC
+                LIMIT ?
+                """;
+        List<String> urls = jdbcTemplate.query(sql, (rs, rowNum) -> {
+            String storedFileName = firstNonBlank(
+                    rs.getString("optimized_external_id"),
+                    rs.getString("optimized_url"),
+                    rs.getString("asset_external_id"),
+                    rs.getString("asset_url"));
+            return firstNonBlank(
+                    fileStorageService.resolvePublicUrl(storedFileName).orElse(null),
+                    rs.getString("optimized_url"),
+                    rs.getString("asset_url"));
+        }, packageId, limit);
+        return urls.stream()
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .toList();
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value;
+            }
+        }
+        return null;
     }
 
     private String resolveEmailSubject(PendingPackage pending, int imageCount) {
@@ -639,6 +788,9 @@ public class LeadPortalPackageNotificationService {
             return reason.substring(0, 500);
         }
         return reason;
+    }
+
+    private record TrackingLinks(String viewUrl, String pixelUrl) {
     }
 
     private record PendingPackage(

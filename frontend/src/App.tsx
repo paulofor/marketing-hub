@@ -94,6 +94,7 @@ import LeadPortalImagesPage from "./pages/leadPortal/LeadPortalImagesPage";
 import LeadPortalImagePackageDetailPage from "./pages/leadPortal/LeadPortalImagePackageDetailPage";
 import LeadPortalSimpleFormStylesPage from "./pages/leadPortal/LeadPortalSimpleFormStylesPage";
 import LeadPortalFormResponsesPage from "./pages/leadPortal/LeadPortalFormResponsesPage";
+import LeadPortalEmailTemplatePage from "./pages/leadPortal/LeadPortalEmailTemplatePage";
 import PaymentsDashboardPage from "./pages/payments/PaymentsDashboardPage";
 import PaymentDetailPage from "./pages/payments/PaymentDetailPage";
 import PromptListPage from "./pages/promptTemplate/PromptListPage";
@@ -271,6 +272,10 @@ export default function App() {
               <Route
                 path="/lead-portal/simple-form-styles"
                 element={<LeadPortalSimpleFormStylesPage />}
+              />
+              <Route
+                path="/lead-portal/email-template"
+                element={<LeadPortalEmailTemplatePage />}
               />
               <Route path="/payments" element={<PaymentsDashboardPage />} />
               <Route path="/payments/:id" element={<PaymentDetailPage />} />

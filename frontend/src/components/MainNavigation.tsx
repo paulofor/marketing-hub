@@ -169,6 +169,11 @@ const NAV_SECTIONS: NavSection[] = [
         icon: Sparkles,
       },
       {
+        to: "/lead-portal/email-template",
+        label: "Template do e-mail do lead",
+        icon: Mail,
+      },
+      {
         to: "/facebook-campaigns/ready",
         label: "Experimentos prontos",
         icon: ClipboardCheck,

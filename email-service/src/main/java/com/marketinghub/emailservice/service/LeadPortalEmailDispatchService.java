@@ -146,19 +146,31 @@ public class LeadPortalEmailDispatchService {
         }
     }
 
-    private PaymentBodies enrichWithPaymentLink(String htmlBody,
-                                                String plainBody,
-                                                LeadPortalImagePackageExportItem.PaymentInfo paymentInfo,
-                                                long packageId) {
+    PaymentBodies enrichWithPaymentLink(String htmlBody,
+                                       String plainBody,
+                                       LeadPortalImagePackageExportItem.PaymentInfo paymentInfo,
+                                       long packageId) {
         String html = htmlBody != null ? htmlBody : "";
         String plain = plainBody != null ? plainBody : "";
         if (paymentInfo == null || !StringUtils.hasText(paymentInfo.checkoutUrl())) {
             return new PaymentBodies(html, plain);
         }
+
+        String directPaymentUrl = paymentInfo.checkoutUrl().trim();
         String paymentUrl = resolvePaymentUrl(packageId, paymentInfo);
+        if (StringUtils.hasText(paymentUrl)) {
+            paymentUrl = paymentUrl.trim();
+        } else {
+            paymentUrl = directPaymentUrl;
+        }
+
         validatePaymentUrl(paymentUrl);
-        String normalizedHtml = html.contains(paymentUrl) ? html : html + buildHtmlPaymentBlock(paymentInfo, paymentUrl);
-        String normalizedPlain = plain.contains(paymentUrl) ? plain : buildPlainPaymentBlock(plain, paymentInfo, paymentUrl);
+
+        boolean htmlHasLink = containsPaymentLink(html, paymentUrl, directPaymentUrl);
+        boolean plainHasLink = containsPaymentLink(plain, paymentUrl, directPaymentUrl);
+
+        String normalizedHtml = htmlHasLink ? html : html + buildHtmlPaymentBlock(paymentInfo, paymentUrl);
+        String normalizedPlain = plainHasLink ? plain : buildPlainPaymentBlock(plain, paymentInfo, paymentUrl);
         return new PaymentBodies(normalizedHtml, normalizedPlain);
     }
 
@@ -249,6 +261,23 @@ public class LeadPortalEmailDispatchService {
         builder.append("\nPagamento processado por ").append(descriptor).append("\n");
         return builder.toString();
     }
+    private boolean containsPaymentLink(String content, String... candidates) {
+        if (!StringUtils.hasText(content)) {
+            return false;
+        }
+        String unescaped = HtmlUtils.htmlUnescape(content);
+        for (String candidate : candidates) {
+            if (!StringUtils.hasText(candidate)) {
+                continue;
+            }
+            String trimmed = candidate.trim();
+            String escaped = HtmlUtils.htmlEscape(trimmed);
+            if (content.contains(trimmed) || content.contains(escaped) || unescaped.contains(trimmed)) {
+                return true;
+            }
+        }
+        return false;
+    }
     private String formatAmount(BigDecimal amount, String currency) {
         if (amount == null) {
             return null;
@@ -262,7 +291,7 @@ public class LeadPortalEmailDispatchService {
         }
     }
 
-    private record PaymentBodies(String htmlBody, String plainBody) {
+    static record PaymentBodies(String htmlBody, String plainBody) {
     }
 
     private String resolveRootCauseMessage(Throwable throwable) {

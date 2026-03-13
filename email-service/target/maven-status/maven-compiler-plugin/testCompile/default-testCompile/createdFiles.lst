@@ -1,2 +1,3 @@
 com/marketinghub/emailservice/service/TemplateRenderingServiceTest.class
+com/marketinghub/emailservice/service/LeadPortalEmailDispatchServiceTest.class
 com/marketinghub/emailservice/leadportal/integration/LeadPortalPaymentsClientTest.class

@@ -601,12 +601,12 @@ public class LeadPortalPackageNotificationService {
                     .append("; border:1px solid ")
                     .append(style.borderColor())
                     .append("; border-radius:18px; overflow:hidden;\">")
-                    .append("<tr><td><img src=\\\"")
+                    .append("<tr><td><img src=\"")
                     .append(HtmlUtils.htmlEscape(preview.url()))
-                    .append("\\\" alt=\\\"Prévia da arte ")
+                    .append("\" alt=\"Prévia da arte ")
                     .append(i + 1)
-                    .append(" com marca d'água\\\" width=\\\"160\\\" class=\\\"fluid-img\\\" style=\\\"width:100%; max-width:160px; border-radius:18px 18px 0 0;\\\" /></td></tr>")
-                    .append("<tr><td style=\\\"padding:12px 12px 14px 12px; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:19px; color:#51586f;\\\">")
+                    .append(" com marca d'água\" width=\"160\" class=\"fluid-img\" style=\"width:100%; max-width:160px; border-radius:18px 18px 0 0;\" /></td></tr>")
+                    .append("<tr><td style=\"padding:12px 12px 14px 12px; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:19px; color:#51586f;\">")
                     .append(HtmlUtils.htmlEscape(caption))
                     .append("</td></tr></table></td>");
             renderedCards++;

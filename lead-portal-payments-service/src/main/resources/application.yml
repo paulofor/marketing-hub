@@ -77,6 +77,8 @@ spring:
     properties:
       hibernate:
         dialect: ${SPRING_JPA_HIBERNATE_DIALECT:org.hibernate.community.dialect.MySQL57Dialect}
+        temp:
+          use_jdbc_metadata_defaults: ${SPRING_JPA_USE_JDBC_METADATA_DEFAULTS:false}
   sql:
     init:
       mode: ${SPRING_SQL_INIT_MODE:never}

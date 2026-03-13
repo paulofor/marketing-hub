@@ -1,2 +1,3 @@
+com/marketinghub/payments/service/RuntimeLogServiceTest.class
 com/marketinghub/payments/service/CheckoutServiceTest.class
 com/marketinghub/payments/controller/MercadoPagoWebhookControllerTest.class

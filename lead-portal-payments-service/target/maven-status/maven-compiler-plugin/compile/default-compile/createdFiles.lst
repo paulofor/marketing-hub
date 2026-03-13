@@ -3,6 +3,7 @@ com/marketinghub/payments/service/DeliveryScheduler.class
 com/marketinghub/payments/dto/MercadoPagoWebhookPayload.class
 com/marketinghub/payments/config/PaymentProperties.class
 com/marketinghub/payments/config/RestClientConfig.class
+com/marketinghub/payments/service/RuntimeLogService.class
 com/marketinghub/payments/integration/mercadopago/MercadoPagoClient$1.class
 com/marketinghub/payments/integration/mercadopago/MercadoPagoPreferenceRequest$Payer.class
 com/marketinghub/payments/dto/MercadoPagoWebhookPayload$Data.class
@@ -14,6 +15,7 @@ com/marketinghub/payments/config/DeliveryProperties.class
 com/marketinghub/payments/integration/mercadopago/MercadoPagoPaymentDetails.class
 com/marketinghub/payments/dto/LeadPortalPackageSummary.class
 com/marketinghub/payments/service/CheckoutService.class
+com/marketinghub/payments/service/RuntimeLogService$RuntimeLogTail.class
 com/marketinghub/payments/dto/CreateCheckoutResponse.class
 com/marketinghub/payments/dto/OriginalAsset.class
 com/marketinghub/payments/integration/mercadopago/MercadoPagoPreferenceRequest$Item.class
@@ -33,6 +35,7 @@ com/marketinghub/payments/dto/CreateCheckoutRequest.class
 com/marketinghub/payments/model/MercadoPagoWebhookLog.class
 com/marketinghub/payments/controller/CheckoutPageController.class
 com/marketinghub/payments/model/WebhookProcessingStatus.class
+com/marketinghub/payments/controller/RuntimeLogController.class
 com/marketinghub/payments/controller/MercadoPagoWebhookController.class
 com/marketinghub/payments/model/FlowSubmissionImagePackageStatus.class
 com/marketinghub/payments/controller/HealthController.class

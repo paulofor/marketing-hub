@@ -1,2 +1,3 @@
-/root/ai-hub/src/ai-hub-505772df-7ec7-4cae-8c18-c505ba5c1d89-0ak3ja/repo/email-service/src/test/java/com/marketinghub/emailservice/service/TemplateRenderingServiceTest.java
-/root/ai-hub/src/ai-hub-505772df-7ec7-4cae-8c18-c505ba5c1d89-0ak3ja/repo/email-service/src/test/java/com/marketinghub/emailservice/leadportal/integration/LeadPortalPaymentsClientTest.java
+/root/ai-hub/src/ai-hub-b030380f-cc2f-4a1b-9a3c-e968e9fa2189-VEtyti/repo/email-service/src/test/java/com/marketinghub/emailservice/service/LeadPortalEmailDispatchServiceTest.java
+/root/ai-hub/src/ai-hub-b030380f-cc2f-4a1b-9a3c-e968e9fa2189-VEtyti/repo/email-service/src/test/java/com/marketinghub/emailservice/service/TemplateRenderingServiceTest.java
+/root/ai-hub/src/ai-hub-b030380f-cc2f-4a1b-9a3c-e968e9fa2189-VEtyti/repo/email-service/src/test/java/com/marketinghub/emailservice/leadportal/integration/LeadPortalPaymentsClientTest.java

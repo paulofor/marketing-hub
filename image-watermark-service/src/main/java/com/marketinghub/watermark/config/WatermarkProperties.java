@@ -24,10 +24,10 @@ public class WatermarkProperties {
     private double spacingFactor = 0.85;
 
 
-    /** Gera uma versão otimizada em JPEG para visualização e entrega. */
+    /** Gera uma versão de amostra em miniatura (364x364) em JPEG para visualização. */
     private boolean generateOptimizedCopy = true;
 
-    /** Qualidade JPEG usada na otimização (0.0 - 1.0). */
+    /** Qualidade JPEG usada na miniatura (0.0 - 1.0). */
     private double optimizedJpegQuality = 0.82;
 
     public String getText() {

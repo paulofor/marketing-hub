@@ -2,6 +2,8 @@
 
 Microserviço responsável por gerar versões com marca d'água das imagens produzidas pelo Lead Portal. O serviço monitora pacotes com status `WATERMARK_PENDING`, aplica a marca d'água nas variações geradas, grava os arquivos tratados no mesmo bucket R2 do projeto e atualiza o pacote para `COMPLETED`.
 
+Além da cópia principal com marca d'água, também é produzida uma miniatura quadrada (364x364) em JPEG da imagem original, reutilizando o campo `optimizedAsset` para servir como amostra pública sem necessidade de processamento adicional em outros módulos.
+
 ## Configuração
 
 As credenciais de banco de dados e do bucket são fornecidas via variáveis de ambiente:

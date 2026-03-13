@@ -196,9 +196,9 @@ export default function LeadPortalEmailTemplatePage() {
                   Recomendações rápidas:
                 </p>
                 <ul className="mb-0 ps-3">
-                  <li>Use o token {{link_pagamento}} dentro de um botão ou link para apontar para o checkout do Mercado Pago.</li>
-                  <li>Mostre até três imagens com &lt;img src="{{imagem_previa_X}}" /&gt; para destacar as prévias com marca d'água.</li>
-                  <li>Comece o texto com uma saudação personalizada usando {{nome_cliente}}.</li>
+                  <li>Use o token {"{{link_pagamento}}"} dentro de um botão ou link para apontar para o checkout do Mercado Pago.</li>
+                  <li>Mostre até três imagens com {"<img src=\"{{imagem_previa_X}}\" />"} para destacar as prévias com marca d'água.</li>
+                  <li>Comece o texto com uma saudação personalizada usando {"{{nome_cliente}}"}.</li>
                 </ul>
               </div>
 

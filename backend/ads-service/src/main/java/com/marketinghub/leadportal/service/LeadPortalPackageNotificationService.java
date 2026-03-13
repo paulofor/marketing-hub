@@ -14,7 +14,6 @@ import java.nio.ByteBuffer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -372,7 +371,6 @@ public class LeadPortalPackageNotificationService {
                     .append("</p>");
         }
 
-        appendPaymentCallToAction(plain, html, paymentInfo, pending.sampleCallToAction());
         appendTrackingMetadata(html, pending, trackingLinks);
 
         String attachmentName = "imagens-watermark-" + pending.packageId() + ".zip";
@@ -564,59 +562,6 @@ public class LeadPortalPackageNotificationService {
                 checkout.statementDescriptor(),
                 Timestamp.from(Instant.now()),
                 packageId);
-    }
-
-    private void appendPaymentCallToAction(StringBuilder plain,
-                                           StringBuilder html,
-                                           PaymentInfo paymentInfo,
-                                           String suggestedCta) {
-        if (paymentInfo == null || !StringUtils.hasText(paymentInfo.checkoutUrl())) {
-            return;
-        }
-        String paymentUrl = paymentInfo.checkoutUrl().trim();
-        String formattedAmount = formatCurrency(paymentInfo.amount(), paymentInfo.currency());
-        String descriptor = StringUtils.hasText(paymentInfo.statementDescriptor())
-                ? paymentInfo.statementDescriptor()
-                : "Mercado Pago";
-
-        plain.append("Finalize o pagamento e libere as imagens originais:\n")
-                .append(paymentUrl)
-                .append("\n");
-        if (formattedAmount != null) {
-            plain.append("Valor: ").append(formattedAmount).append("\n");
-        }
-        plain.append("Processado por ").append(descriptor).append("\n\n");
-
-        String ctaLabel = StringUtils.hasText(suggestedCta)
-                ? suggestedCta.trim()
-                : "Quero liberar as imagens originais";
-        if (formattedAmount != null) {
-            ctaLabel = ctaLabel + " — " + formattedAmount;
-        }
-
-        html.append("<div style=\"margin:24px 0;padding:16px 20px;border:1px solid #e3e3e3;border-radius:8px;background:#f8f8f8;\">")
-                .append("<p><strong>Finalize o pagamento para liberar os arquivos originais.</strong></p>")
-                .append("<p>Processado por ")
-                .append(HtmlUtils.htmlEscape(descriptor))
-                .append("</p>")
-                .append("<p style=\"text-align:center;\"><a href=\"")
-                .append(HtmlUtils.htmlEscape(paymentUrl))
-                .append("\" target=\"_blank\" rel=\"noopener\" style=\"display:inline-block;padding:14px 28px;background:#00a650;color:#fff;font-weight:600;border-radius:6px;text-decoration:none;\">")
-                .append(HtmlUtils.htmlEscape(ctaLabel))
-                .append("</a></p>")
-                .append("</div>");
-    }
-    private String formatCurrency(BigDecimal amount, String currency) {
-        if (amount == null) {
-            return null;
-        }
-        Locale locale = "BRL".equalsIgnoreCase(currency) ? new Locale("pt", "BR") : Locale.US;
-        NumberFormat formatter = NumberFormat.getCurrencyInstance(locale);
-        try {
-            return formatter.format(amount);
-        } catch (IllegalArgumentException ignored) {
-            return amount.toPlainString() + (StringUtils.hasText(currency) ? " " + currency : "");
-        }
     }
 
     private record PaymentInfo(

@@ -14,7 +14,7 @@ Microserviço responsável por acompanhar pagamentos via Mercado Pago, registrar
 
 | Variável | Descrição | Default |
 | --- | --- | --- |
-| `SPRING_DATASOURCE_URL` | JDBC do MySQL (ou H2 em dev) | `jdbc:h2:mem:payments` |
+| `SPRING_DATASOURCE_URL` | JDBC do MySQL (ou H2 em dev) | `jdbc:h2:mem:payments` (default) / `jdbc:mysql://...&allowPublicKeyRetrieval=true&connectTimeout=60000&socketTimeout=60000` (prod) |
 | `SPRING_DATASOURCE_USERNAME` | Usuário do banco | `sa` |
 | `SPRING_DATASOURCE_PASSWORD` | Senha do banco | `""` |
 | `MERCADO_PAGO_ACCESS_TOKEN` | Token de acesso do Mercado Pago | **obrigatório** |
@@ -39,6 +39,7 @@ Microserviço responsável por acompanhar pagamentos via Mercado Pago, registrar
 | `DELIVERY_BATCH_SIZE` | Quantidade de compras processadas por ciclo | `3` |
 | `DELIVERY_INITIAL_DELAY` | Delay inicial do scheduler (ms) | `20000` |
 | `DELIVERY_FIXED_DELAY` | Intervalo entre ciclos (ms) | `60000` |
+| `SPRING_SQL_INIT_MODE` | Controla execução automática de scripts SQL no startup (`never` recomendado para base produtiva já provisionada) | `never` no profile `prod` |
 
 ## Perfis de execução
 

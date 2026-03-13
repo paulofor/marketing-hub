@@ -12,7 +12,7 @@ services:
       MERCADO_PAGO_SUCCESS_URL: ${MERCADO_PAGO_SUCCESS_URL:-}
       MERCADO_PAGO_FAILURE_URL: ${MERCADO_PAGO_FAILURE_URL:-}
       MERCADO_PAGO_PENDING_URL: ${MERCADO_PAGO_PENDING_URL:-}
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&serverTimezone=UTC}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&connectTimeout=60000&socketTimeout=60000&tcpKeepAlive=true}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-marketing_hub_user}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-${MYSQL_PASS:-Ab9!rG4wX8_tMq2Bz7#HpK5V}}
       SPRING_DATASOURCE_DRIVER: ${SPRING_DATASOURCE_DRIVER:-com.mysql.cj.jdbc.Driver}

@@ -40,6 +40,7 @@ Microserviço responsável por acompanhar pagamentos via Mercado Pago, registrar
 | `DELIVERY_INITIAL_DELAY` | Delay inicial do scheduler (ms) | `20000` |
 | `DELIVERY_FIXED_DELAY` | Intervalo entre ciclos (ms) | `60000` |
 | `SPRING_SQL_INIT_MODE` | Controla execução automática de scripts SQL no startup (`never` recomendado para base produtiva já provisionada) | `never` no profile `prod` |
+| `SPRING_JPA_USE_JDBC_METADATA_DEFAULTS` | Define se o Hibernate deve consultar o `DatabaseMetaData` para detectar o dialeto automaticamente (mantenha `false` para evitar dependência do schema `information_schema` em produção) | `false` no profile `prod` |
 
 ## Perfis de execução
 

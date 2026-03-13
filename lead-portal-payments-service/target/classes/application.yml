@@ -5,40 +5,48 @@ spring:
   application:
     name: lead-portal-payments-service
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&serverTimezone=UTC}
-    username: ${SPRING_DATASOURCE_USERNAME:marketing_hub_user}
-    password: ${SPRING_DATASOURCE_PASSWORD:${MYSQL_PASS:Ab9!rG4wX8_tMq2Bz7#HpK5V}}
-    driver-class-name: ${SPRING_DATASOURCE_DRIVER:com.mysql.cj.jdbc.Driver}
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:lead_portal_payments;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.h2.Driver}
   jpa:
     hibernate:
       ddl-auto: none
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
+        dialect: ${SPRING_JPA_HIBERNATE_DIALECT:org.hibernate.dialect.H2Dialect}
   sql:
     init:
       mode: always
-      schema-locations: classpath:schema.sql,classpath:db/changelog/lead-portal-purchase-add-checkout-expires.sql
+      schema-locations: ${SPRING_SQL_INIT_SCHEMA_LOCATIONS:classpath:schema-h2.sql}
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: health,info,prometheus,loggers,logfile
+      path-mapping:
+        loggers: runtime-loggers
+        logfile: runtime-logs
+
+logging:
+  file:
+    name: ${LOGGING_FILE_NAME:logs/lead-portal-payments-service.log}
 
 mercado-pago:
   access-token: ${MERCADO_PAGO_ACCESS_TOKEN:APP_USR-6371948622467215-020511-5317ef62bbd997d52c2979a29f2c8419-133771061}
   base-url: ${MERCADO_PAGO_BASE_URL:https://api.mercadopago.com}
-  notification-url: ${MERCADO_PAGO_NOTIFICATION_URL:https://pagamentopalf.online/api/v1/mercadopago/webhook}
-  success-url: ${MERCADO_PAGO_SUCCESS_URL:https://pagamentopalf.online/checkout}
-  failure-url: ${MERCADO_PAGO_FAILURE_URL:https://pagamentopalf.online/checkout}
-  pending-url: ${MERCADO_PAGO_PENDING_URL:https://pagamentopalf.online/checkout}
+  notification-url: ${MERCADO_PAGO_NOTIFICATION_URL:https://pagamentopalf.site/api/v1/mercadopago/webhook}
+  success-url: ${MERCADO_PAGO_SUCCESS_URL:https://pagamentopalf.site/checkout}
+  failure-url: ${MERCADO_PAGO_FAILURE_URL:https://pagamentopalf.site/checkout}
+  pending-url: ${MERCADO_PAGO_PENDING_URL:https://pagamentopalf.site/checkout}
   statement-descriptor: ${MERCADO_PAGO_STATEMENT_DESCRIPTOR:MarketingHub}
 
 payments:
   default-amount: ${PAYMENTS_DEFAULT_AMOUNT:49.90}
   default-currency: ${PAYMENTS_DEFAULT_CURRENCY:BRL}
   checkout-ttl: ${PAYMENTS_CHECKOUT_TTL:PT72H}
+  supported-currencies: ${PAYMENTS_SUPPORTED_CURRENCIES:BRL}
 
 delivery:
   enabled: ${DELIVERY_ENABLED:true}
@@ -46,3 +54,32 @@ delivery:
   max-attempts: ${DELIVERY_MAX_ATTEMPTS:5}
   initial-delay: ${DELIVERY_INITIAL_DELAY:20000}
   fixed-delay: ${DELIVERY_FIXED_DELAY:60000}
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&connectTimeout=60000&socketTimeout=60000&tcpKeepAlive=true}
+    username: ${SPRING_DATASOURCE_USERNAME:marketing_hub_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:${MYSQL_PASS:Ab9!rG4wX8_tMq2Bz7#HpK5V}}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER:com.mysql.cj.jdbc.Driver}
+
+    hikari:
+      initialization-fail-timeout: ${SPRING_DATASOURCE_HIKARI_INITIALIZATION_FAIL_TIMEOUT:-1}
+      connection-timeout: ${SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT:30000}
+      validation-timeout: ${SPRING_DATASOURCE_HIKARI_VALIDATION_TIMEOUT:5000}
+      idle-timeout: ${SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT:540000}
+      max-lifetime: ${SPRING_DATASOURCE_HIKARI_MAX_LIFETIME:840000}
+      keepalive-time: ${SPRING_DATASOURCE_HIKARI_KEEPALIVE_TIME:300000}
+  jpa:
+    open-in-view: ${SPRING_JPA_OPEN_IN_VIEW:false}
+    properties:
+      hibernate:
+        dialect: ${SPRING_JPA_HIBERNATE_DIALECT:org.hibernate.community.dialect.MySQL57Dialect}
+        temp:
+          use_jdbc_metadata_defaults: ${SPRING_JPA_USE_JDBC_METADATA_DEFAULTS:false}
+  sql:
+    init:
+      mode: ${SPRING_SQL_INIT_MODE:never}
+      schema-locations: ${SPRING_SQL_INIT_SCHEMA_LOCATIONS:classpath:schema.sql,classpath:db/changelog/lead-portal-purchase-add-checkout-expires.sql}

@@ -49,6 +49,15 @@ public class LeadPortalImagePackageStatusHistoryService {
         jdbcTemplate.update(INSERT_SQL, packageId, status.name(), normalizedReason, Timestamp.from(effectiveInstant));
     }
 
+    public boolean hasProcessingAttempt(long packageId) {
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM flow_submission_image_package_status_history WHERE package_id = ? AND status = ?",
+                Integer.class,
+                packageId,
+                FlowSubmissionImagePackageStatus.PROCESSING.name());
+        return count != null && count > 0;
+    }
+
     public List<StatusHistoryEntry> listHistory(long packageId) {
         return jdbcTemplate.query(SELECT_SQL, (rs, rowNum) -> mapRow(rs), packageId);
     }

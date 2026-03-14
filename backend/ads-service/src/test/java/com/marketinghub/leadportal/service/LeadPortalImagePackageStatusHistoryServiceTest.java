@@ -62,4 +62,16 @@ class LeadPortalImagePackageStatusHistoryServiceTest {
                 .extracting(LeadPortalImagePackageStatusHistoryService.StatusHistoryEntry::occurredAt)
                 .containsExactly(receivedAt, processingAt, failedAt);
     }
+
+    @Test
+    void hasProcessingAttemptDetectsEntries() {
+        long packageId = 120L;
+
+        assertThat(statusHistoryService.hasProcessingAttempt(packageId)).isFalse();
+
+        statusHistoryService.recordStatusChange(
+                packageId, FlowSubmissionImagePackageStatus.PROCESSING, null, Instant.parse("2024-05-10T10:15:30Z"));
+
+        assertThat(statusHistoryService.hasProcessingAttempt(packageId)).isTrue();
+    }
 }

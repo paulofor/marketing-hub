@@ -347,11 +347,11 @@ public class LeadPortalPackageNotificationService {
                                            int imageCount,
                                            PaymentInfo paymentInfo,
                                            List<InlinePreview> inlinePreviews) {
-        String subject = resolveEmailSubject(pending, imageCount);
         TrackingLinks trackingLinks = buildTrackingLinks(pending);
         List<String> previewUrls = extractPreviewUrls(inlinePreviews);
 
         Optional<LeadPortalEmailTemplateService.LeadPortalEmailTemplate> template = emailTemplateService.findTemplate();
+        String subject = resolveEmailSubject(pending, imageCount, template.map(LeadPortalEmailTemplateService.LeadPortalEmailTemplate::subject).orElse(null));
         if (template.isPresent() && StringUtils.hasText(template.get().html())) {
             EmailContent customContent = buildCustomEmailContent(
                     pending,
@@ -753,7 +753,11 @@ public class LeadPortalPackageNotificationService {
         return cards.toString();
     }
 
-    private String resolveEmailSubject(PendingPackage pending, int imageCount) {
+    private String resolveEmailSubject(PendingPackage pending, int imageCount, String templateSubject) {
+        if (StringUtils.hasText(templateSubject)) {
+            return templateSubject.trim();
+        }
+
         // Assunto objetivo e transacional (reduz sinais de e-mail promocional)
         String name = StringUtils.hasText(pending.submissionName()) ? pending.submissionName().trim() : null;
         String formattedPrice = formatCurrency(DEFAULT_PRODUCT_PRICE, DEFAULT_PRODUCT_CURRENCY);

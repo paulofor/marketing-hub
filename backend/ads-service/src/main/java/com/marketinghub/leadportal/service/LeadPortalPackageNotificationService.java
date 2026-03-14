@@ -279,40 +279,55 @@ public class LeadPortalPackageNotificationService {
     private EmailContent buildEmailContent(PendingPackage pending, int imageCount, PaymentInfo paymentInfo) {
         TrackingLinks trackingLinks = buildTrackingLinks(pending);
         Optional<LeadPortalEmailTemplateService.LeadPortalEmailTemplate> template = emailTemplateService.findTemplate();
-        if (template.isPresent() && StringUtils.hasText(template.get().html())) {
+        boolean hasCustomHtml = template.map(value -> StringUtils.hasText(value.html())).orElse(false);
+        boolean hasCustomSubject = template.map(value -> StringUtils.hasText(value.subject())).orElse(false);
+
+        Map<LeadPortalEmailTemplatePlaceholder, String> replacements = null;
+        if (template.isPresent() && (hasCustomHtml || hasCustomSubject)) {
             List<String> previewUrls = loadPreviewImageUrls(pending.packageId(), MAX_PREVIEW_IMAGES);
+            replacements = buildTemplateReplacements(pending, paymentInfo, previewUrls);
+        }
+
+        if (hasCustomHtml && replacements != null) {
             EmailContent customContent = buildCustomEmailContent(
                     pending,
                     imageCount,
-                    paymentInfo,
+                    template.get().subject(),
                     template.get().html(),
-                    previewUrls,
+                    replacements,
                     trackingLinks);
             if (customContent != null) {
                 return customContent;
             }
         }
-        return buildDefaultEmailContent(pending, imageCount, paymentInfo, trackingLinks);
+
+        EmailContent fallback = buildDefaultEmailContent(pending, imageCount, paymentInfo, trackingLinks);
+        if (hasCustomSubject && replacements != null) {
+            String resolvedSubject = resolveCustomSubject(
+                    template.get().subject(),
+                    replacements,
+                    pending,
+                    imageCount);
+            fallback = new EmailContent(
+                    resolvedSubject,
+                    fallback.plain(),
+                    fallback.html(),
+                    fallback.attachmentName());
+        }
+        return fallback;
     }
 
     private EmailContent buildCustomEmailContent(
             PendingPackage pending,
             int imageCount,
-            PaymentInfo paymentInfo,
+            String subjectTemplate,
             String templateHtml,
-            List<String> previewUrls,
+            Map<LeadPortalEmailTemplatePlaceholder, String> replacements,
             TrackingLinks trackingLinks) {
-        if (!StringUtils.hasText(templateHtml)) {
+        if (!StringUtils.hasText(templateHtml) || replacements == null) {
             return null;
         }
-        Map<LeadPortalEmailTemplatePlaceholder, String> replacements = new EnumMap<>(LeadPortalEmailTemplatePlaceholder.class);
-        replacements.put(LeadPortalEmailTemplatePlaceholder.LEAD_NAME, pending.submissionName());
-        replacements.put(LeadPortalEmailTemplatePlaceholder.PAYMENT_LINK, paymentInfo != null ? paymentInfo.checkoutUrl() : null);
-        replacements.put(LeadPortalEmailTemplatePlaceholder.PREVIEW_IMAGE_1, previewUrls.size() > 0 ? previewUrls.get(0) : null);
-        replacements.put(LeadPortalEmailTemplatePlaceholder.PREVIEW_IMAGE_2, previewUrls.size() > 1 ? previewUrls.get(1) : null);
-        replacements.put(LeadPortalEmailTemplatePlaceholder.PREVIEW_IMAGE_3, previewUrls.size() > 2 ? previewUrls.get(2) : null);
-
-        String processedHtml = applyTemplateReplacements(templateHtml, replacements);
+        String processedHtml = applyTemplateReplacements(templateHtml, replacements, true);
         if (!StringUtils.hasText(processedHtml)) {
             return null;
         }
@@ -320,9 +335,23 @@ public class LeadPortalPackageNotificationService {
         appendTrackingMetadata(htmlBuilder, pending, trackingLinks);
         String htmlContent = htmlBuilder.toString();
         String plainContent = htmlToPlainText(htmlContent);
-        String subject = resolveEmailSubject(pending, imageCount);
+        String subject = resolveCustomSubject(subjectTemplate, replacements, pending, imageCount);
         String attachmentName = "imagens-watermark-" + pending.packageId() + ".zip";
         return new EmailContent(subject, plainContent, htmlContent, attachmentName);
+    }
+
+    private Map<LeadPortalEmailTemplatePlaceholder, String> buildTemplateReplacements(
+            PendingPackage pending,
+            PaymentInfo paymentInfo,
+            List<String> previewUrls) {
+        List<String> safePreviewUrls = previewUrls != null ? previewUrls : List.of();
+        Map<LeadPortalEmailTemplatePlaceholder, String> replacements = new EnumMap<>(LeadPortalEmailTemplatePlaceholder.class);
+        replacements.put(LeadPortalEmailTemplatePlaceholder.LEAD_NAME, pending.submissionName());
+        replacements.put(LeadPortalEmailTemplatePlaceholder.PAYMENT_LINK, paymentInfo != null ? paymentInfo.checkoutUrl() : null);
+        replacements.put(LeadPortalEmailTemplatePlaceholder.PREVIEW_IMAGE_1, safePreviewUrls.size() > 0 ? safePreviewUrls.get(0) : null);
+        replacements.put(LeadPortalEmailTemplatePlaceholder.PREVIEW_IMAGE_2, safePreviewUrls.size() > 1 ? safePreviewUrls.get(1) : null);
+        replacements.put(LeadPortalEmailTemplatePlaceholder.PREVIEW_IMAGE_3, safePreviewUrls.size() > 2 ? safePreviewUrls.get(2) : null);
+        return replacements;
     }
 
     private EmailContent buildDefaultEmailContent(
@@ -405,20 +434,36 @@ public class LeadPortalPackageNotificationService {
         }
     }
 
-    private String applyTemplateReplacements(String template, Map<LeadPortalEmailTemplatePlaceholder, String> replacements) {
+    private String applyTemplateReplacements(
+            String template,
+            Map<LeadPortalEmailTemplatePlaceholder, String> replacements,
+            boolean escapeForHtml) {
+        if (template == null) {
+            return "";
+        }
         String result = template;
         for (LeadPortalEmailTemplatePlaceholder placeholder : LeadPortalEmailTemplatePlaceholder.values()) {
-            String sanitized = sanitizeTemplateValue(replacements.get(placeholder));
+            String rawValue = replacements != null ? replacements.get(placeholder) : null;
+            String sanitized = escapeForHtml
+                    ? sanitizeTemplateValueForHtml(rawValue)
+                    : sanitizeTemplateValueForPlainText(rawValue);
             result = result.replace(placeholder.token(), sanitized);
         }
         return result;
     }
 
-    private String sanitizeTemplateValue(String value) {
+    private String sanitizeTemplateValueForHtml(String value) {
         if (!StringUtils.hasText(value)) {
             return "";
         }
         return HtmlUtils.htmlEscape(value.trim());
+    }
+
+    private String sanitizeTemplateValueForPlainText(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        return value.replaceAll("[\\r\\n]+", " ").trim();
     }
 
     private String htmlToPlainText(String html) {
@@ -483,6 +528,22 @@ public class LeadPortalPackageNotificationService {
             }
         }
         return null;
+    }
+
+    private String resolveCustomSubject(
+            String subjectTemplate,
+            Map<LeadPortalEmailTemplatePlaceholder, String> replacements,
+            PendingPackage pending,
+            int imageCount) {
+        if (!StringUtils.hasText(subjectTemplate) || replacements == null) {
+            return resolveEmailSubject(pending, imageCount);
+        }
+        String processed = applyTemplateReplacements(subjectTemplate, replacements, false);
+        String normalized = processed.replaceAll("\\s{2,}", " ").trim();
+        if (!StringUtils.hasText(normalized)) {
+            return resolveEmailSubject(pending, imageCount);
+        }
+        return normalized;
     }
 
     private String resolveEmailSubject(PendingPackage pending, int imageCount) {

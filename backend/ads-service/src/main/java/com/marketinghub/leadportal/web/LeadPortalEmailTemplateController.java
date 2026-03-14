@@ -30,13 +30,15 @@ public class LeadPortalEmailTemplateController {
 
     @PutMapping
     public LeadPortalEmailTemplateDto saveTemplate(@RequestBody(required = false) UpdateLeadPortalEmailTemplateRequest request) {
+        String subject = request != null ? request.subject() : null;
         String html = request != null ? request.html() : null;
-        LeadPortalEmailTemplate saved = templateService.saveTemplate(html);
+        LeadPortalEmailTemplate saved = templateService.saveTemplate(subject, html);
         return toDto(saved);
     }
 
     private LeadPortalEmailTemplateDto toDto(LeadPortalEmailTemplate template) {
         return new LeadPortalEmailTemplateDto(
+                template != null ? template.subject() : null,
                 template != null ? template.html() : null,
                 template != null ? template.updatedAt() : null,
                 buildPlaceholderDtos());

@@ -7,7 +7,9 @@ import com.marketinghub.settings.dto.GeneralSettingDto;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -24,24 +26,43 @@ public class LeadPortalEmailTemplateService {
     }
 
     public Optional<LeadPortalEmailTemplate> findTemplate() {
-        return generalSettingService.findByName(GeneralSettingKeys.LEAD_PORTAL_EMAIL_TEMPLATE_HTML)
-                .map(this::toTemplate);
+        Optional<GeneralSettingDto> htmlSetting = generalSettingService
+                .findByName(GeneralSettingKeys.LEAD_PORTAL_EMAIL_TEMPLATE_HTML);
+        Optional<GeneralSettingDto> subjectSetting = generalSettingService
+                .findByName(GeneralSettingKeys.LEAD_PORTAL_EMAIL_TEMPLATE_SUBJECT);
+        if (htmlSetting.isEmpty() && subjectSetting.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(toTemplate(subjectSetting.orElse(null), htmlSetting.orElse(null)));
     }
 
-    public LeadPortalEmailTemplate saveTemplate(String html) {
-        String sanitized = sanitizeHtml(html);
-        GeneralSettingDto saved = generalSettingService.upsert(
+    public LeadPortalEmailTemplate saveTemplate(String subject, String html) {
+        String sanitizedHtml = sanitizeHtml(html);
+        String sanitizedSubject = sanitizeSubject(subject);
+        GeneralSettingDto savedSubject = generalSettingService.upsert(
+                GeneralSettingKeys.LEAD_PORTAL_EMAIL_TEMPLATE_SUBJECT,
+                sanitizedSubject);
+        GeneralSettingDto savedHtml = generalSettingService.upsert(
                 GeneralSettingKeys.LEAD_PORTAL_EMAIL_TEMPLATE_HTML,
-                sanitized);
-        return toTemplate(saved);
+                sanitizedHtml);
+        return toTemplate(savedSubject, savedHtml);
     }
 
     public List<LeadPortalEmailTemplatePlaceholder> getPlaceholders() {
         return Arrays.asList(LeadPortalEmailTemplatePlaceholder.values());
     }
 
-    private LeadPortalEmailTemplate toTemplate(GeneralSettingDto dto) {
-        return new LeadPortalEmailTemplate(dto.value(), dto.updatedAt());
+    private LeadPortalEmailTemplate toTemplate(GeneralSettingDto subjectDto, GeneralSettingDto htmlDto) {
+        Instant updatedAt = Stream.of(subjectDto, htmlDto)
+                .filter(Objects::nonNull)
+                .map(GeneralSettingDto::updatedAt)
+                .filter(Objects::nonNull)
+                .max(Instant::compareTo)
+                .orElse(null);
+        return new LeadPortalEmailTemplate(
+                subjectDto != null ? subjectDto.value() : null,
+                htmlDto != null ? htmlDto.value() : null,
+                updatedAt);
     }
 
     private String sanitizeHtml(String html) {
@@ -51,6 +72,14 @@ public class LeadPortalEmailTemplateService {
         return html.trim();
     }
 
-    public record LeadPortalEmailTemplate(String html, Instant updatedAt) {
+    private String sanitizeSubject(String subject) {
+        if (!StringUtils.hasText(subject)) {
+            return null;
+        }
+        String normalized = subject.replaceAll("[\\r\\n]+", " ").trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    public record LeadPortalEmailTemplate(String subject, String html, Instant updatedAt) {
     }
 }

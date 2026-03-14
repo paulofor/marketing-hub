@@ -51,12 +51,17 @@ function formatDate(value?: string | null) {
   });
 }
 
+type ActiveField = "subject" | "html";
+
 export default function LeadPortalEmailTemplatePage() {
+  const subjectInputRef = useRef<HTMLInputElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const { data, isLoading, isError, error } = useLeadPortalEmailTemplate();
   const updateTemplate = useUpdateLeadPortalEmailTemplate();
+  const [subject, setSubject] = useState<string>("");
   const [html, setHtml] = useState<string>("");
   const [isDirty, setIsDirty] = useState(false);
+  const [activeField, setActiveField] = useState<ActiveField>("html");
 
   const placeholders = useMemo(() => {
     if (data && data.placeholders && data.placeholders.length > 0) {
@@ -67,6 +72,7 @@ export default function LeadPortalEmailTemplatePage() {
 
   useEffect(() => {
     if (!isDirty && data) {
+      setSubject(data.subject ?? "");
       setHtml(data.html ?? "");
     }
   }, [data, isDirty]);
@@ -74,7 +80,10 @@ export default function LeadPortalEmailTemplatePage() {
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     try {
-      const payload = html.trim().length > 0 ? html : null;
+      const payload = {
+        subject: subject.trim().length > 0 ? subject : null,
+        html: html.trim().length > 0 ? html : null,
+      };
       await updateTemplate.mutateAsync(payload);
       toast.success("Template salvo com sucesso.");
       setIsDirty(false);
@@ -85,16 +94,42 @@ export default function LeadPortalEmailTemplatePage() {
   };
 
   const handleReset = () => {
+    setSubject(data?.subject ?? "");
     setHtml(data?.html ?? "");
     setIsDirty(false);
   };
 
   const handleInsertToken = (token: string) => {
+    if (activeField === "subject") {
+      const input = subjectInputRef.current;
+      const currentValue = subject;
+      if (!input) {
+        setSubject(currentValue + token);
+        setIsDirty(true);
+        return;
+      }
+      const start = input.selectionStart ?? currentValue.length;
+      const end = input.selectionEnd ?? currentValue.length;
+      const newValue = currentValue.slice(0, start) + token + currentValue.slice(end);
+      setSubject(newValue);
+      setIsDirty(true);
+      requestAnimationFrame(() => {
+        input.selectionStart = input.selectionEnd = start + token.length;
+        input.focus();
+      });
+      return;
+    }
+
     const textarea = textareaRef.current;
-    if (!textarea) return;
-    const start = textarea.selectionStart ?? html.length;
-    const end = textarea.selectionEnd ?? html.length;
-    const newValue = html.slice(0, start) + token + html.slice(end);
+    const currentValue = html;
+    if (!textarea) {
+      setHtml(currentValue + token);
+      setIsDirty(true);
+      return;
+    }
+    const start = textarea.selectionStart ?? currentValue.length;
+    const end = textarea.selectionEnd ?? currentValue.length;
+    const newValue = currentValue.slice(0, start) + token + currentValue.slice(end);
     setHtml(newValue);
     setIsDirty(true);
     requestAnimationFrame(() => {
@@ -143,7 +178,7 @@ export default function LeadPortalEmailTemplatePage() {
             <div className="card-body">
               <h2 className="h5">Variáveis disponíveis</h2>
               <p className="text-muted">
-                Os tokens abaixo serão substituídos automaticamente quando o e-mail for gerado. Clique para inserir no editor.
+                Os tokens abaixo serão substituídos automaticamente quando o e-mail for gerado. Clique para inserir no campo selecionado (assunto ou HTML).
               </p>
               <div className="d-flex flex-column gap-3">
                 {placeholders.map((placeholder) => (
@@ -171,6 +206,28 @@ export default function LeadPortalEmailTemplatePage() {
           <form className="card h-100" onSubmit={handleSubmit}>
             <div className="card-body d-flex flex-column">
               <div className="mb-3">
+                <label htmlFor="lead-portal-email-subject" className="form-label fw-semibold">
+                  Assunto do e-mail
+                </label>
+                <input
+                  id="lead-portal-email-subject"
+                  ref={subjectInputRef}
+                  type="text"
+                  className="form-control"
+                  value={subject}
+                  onFocus={() => setActiveField("subject")}
+                  onChange={(event) => {
+                    setSubject(event.target.value);
+                    setIsDirty(true);
+                  }}
+                  placeholder="{{nome_cliente}}, suas imagens com marca d'água estão prontas"
+                />
+                <div className="form-text">
+                  Utilize as variáveis para personalizar a linha de assunto. O token será inserido no campo que estiver selecionado.
+                </div>
+              </div>
+
+              <div className="mb-3">
                 <label htmlFor="lead-portal-email-template" className="form-label fw-semibold">
                   HTML do e-mail
                 </label>
@@ -180,6 +237,7 @@ export default function LeadPortalEmailTemplatePage() {
                   className="form-control font-monospace"
                   rows={18}
                   value={html}
+                  onFocus={() => setActiveField("html")}
                   onChange={(event) => {
                     setHtml(event.target.value);
                     setIsDirty(true);

@@ -206,9 +206,19 @@ public class LeadPortalImagePackageWorkerService {
     public void submitResults(long packageId, LeadPortalWorkerImageResultRequest request) {
         PackageSnapshot snapshot = findPackage(packageId)
                 .orElseThrow(() -> notFound(packageId));
+
+        boolean recoveredAfterTimeout = shouldAcceptLateResults(packageId, snapshot.status());
+        FlowSubmissionImagePackageStatus expectedStatus = FlowSubmissionImagePackageStatus.PROCESSING;
         if (snapshot.status() != FlowSubmissionImagePackageStatus.PROCESSING) {
-            throw conflict("Pacote %d precisa estar em PROCESSING para receber resultados (status atual: %s)"
-                    .formatted(packageId, snapshot.status()));
+            if (recoveredAfterTimeout) {
+                expectedStatus = FlowSubmissionImagePackageStatus.RECEIVED;
+                log.warn(
+                        "Accepting late results for lead-portal image package {} after automatic recovery",
+                        packageId);
+            } else {
+                throw conflict("Pacote %d precisa estar em PROCESSING para receber resultados (status atual: %s)"
+                        .formatted(packageId, snapshot.status()));
+            }
         }
         if (request.images().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "É necessário informar ao menos uma imagem gerada");
@@ -281,13 +291,20 @@ public class LeadPortalImagePackageWorkerService {
                 currency,
                 Timestamp.from(now),
                 packageId,
-                FlowSubmissionImagePackageStatus.PROCESSING.name());
+                expectedStatus.name());
         if (updated == 0) {
             throw conflict("Não foi possível concluir o pacote %d porque seu status mudou durante o processamento".formatted(packageId));
         } else {
             statusHistoryService.recordStatusChange(
                     packageId, FlowSubmissionImagePackageStatus.WATERMARK_PENDING, null, now);
         }
+    }
+
+    private boolean shouldAcceptLateResults(long packageId, FlowSubmissionImagePackageStatus currentStatus) {
+        if (currentStatus != FlowSubmissionImagePackageStatus.RECEIVED) {
+            return false;
+        }
+        return statusHistoryService.hasProcessingAttempt(packageId);
     }
 
     private List<Asset> saveAssets(LeadPortalWorkerImageResultRequest request, PackageSnapshot snapshot) {

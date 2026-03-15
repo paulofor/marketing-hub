@@ -369,6 +369,14 @@ export default function LeadPortalImagesPage() {
                         <p className="lead-portal-image-card__pipeline-text text-muted mb-0">
                           Prompt base: {submission.prompt}
                         </p>
+                        {submission.emailOpenedAt ? (
+                          <p
+                            className="lead-portal-image-card__pipeline-text text-success mb-0"
+                            aria-label="Registro de abertura do e-mail"
+                          >
+                            E-mail de amostra aberto em {formatDate(submission.emailOpenedAt)}
+                          </p>
+                        ) : null}
                         {submission.failureReason ? (
                           <p className="lead-portal-image-card__failure">
                             Falha: {submission.failureReason}

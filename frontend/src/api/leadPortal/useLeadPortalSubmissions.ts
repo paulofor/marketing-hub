@@ -38,6 +38,9 @@ export interface LeadPortalImagePackage {
   lifecycleStatus?: LeadPortalImagePackageLifecycleStatus | null;
   createdAt: string;
   updatedAt: string;
+  notifiedAt?: string | null;
+  emailOpenedAt?: string | null;
+  imagesViewedAt?: string | null;
   imageModelId?: number | null;
   imageModelName?: string | null;
   imageModelQualityId?: number | null;

@@ -5,7 +5,6 @@ import com.marketinghub.emailservice.config.LeadPortalPaymentLinkProperties;
 import com.marketinghub.emailservice.leadportal.service.LeadPortalImagePackageExportItem;
 import com.marketinghub.emailservice.leadportal.service.LeadPortalPackageNotificationService;
 import com.marketinghub.emailservice.model.EmailLog;
-import com.marketinghub.emailservice.service.client.RemoteAsset;
 import com.marketinghub.emailservice.settings.EmailSmtpConfigurationService;
 import java.math.BigDecimal;
 import java.net.URI;
@@ -15,7 +14,6 @@ import java.util.List;
 import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -26,7 +24,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class LeadPortalEmailDispatchService {
 
     private static final Logger log = LoggerFactory.getLogger(LeadPortalEmailDispatchService.class);
-    private static final MediaType ZIP_MEDIA_TYPE = MediaType.parseMediaType("application/zip");
 
     private final LeadPortalPackageNotificationService leadPortalPackageNotificationService;
     private final EmailSenderService emailSenderService;
@@ -87,17 +84,6 @@ public class LeadPortalEmailDispatchService {
         if (!StringUtils.hasText(item.emailSubject())) {
             throw new IllegalStateException("Conteúdo de e-mail ausente para o pacote " + item.packageId());
         }
-        byte[] attachmentBytes = item.zipBytes();
-        if (attachmentBytes == null) {
-            attachmentBytes = new byte[0];
-        }
-        if (attachmentBytes.length == 0) {
-            throw new IllegalStateException("Arquivo compactado vazio para o pacote " + item.packageId());
-        }
-        String attachmentName = StringUtils.hasText(item.attachmentName())
-                ? item.attachmentName()
-                : "imagens-watermark-" + item.packageId() + ".zip";
-
         EmailLog emailLog = emailLogService.createPendingLog(
                 item.submissionEmail(),
                 item.emailSubject(),
@@ -111,9 +97,6 @@ public class LeadPortalEmailDispatchService {
         String trackingPixelUrl = trackingPixelService.buildTrackingPixelUrl(emailLog.getRequestId());
         String htmlBody = trackingPixelService.appendTrackingPixel(paymentBodies.htmlBody(), trackingPixelUrl);
 
-        RemoteAsset asset = new RemoteAsset(attachmentName, ZIP_MEDIA_TYPE, attachmentBytes);
-        EmailAttachmentResource attachment = new EmailAttachmentResource(asset, false, null);
-
         String fromAddress = smtpConfigurationService.resolveFromAddress();
         String fromName = smtpConfigurationService.resolveFromName();
         EmailMessage message = new EmailMessage(
@@ -125,16 +108,14 @@ public class LeadPortalEmailDispatchService {
                 item.emailSubject(),
                 htmlBody,
                 paymentBodies.plainBody(),
-                List.of(attachment)
+                List.of()
         );
 
         Long purchaseId = item.paymentInfo() != null ? item.paymentInfo().purchaseId() : null;
-        log.info("Enviando pacote {} para {} com assunto '{}' (arquivo='{}', tamanho={} bytes, purchaseId={})",
+        log.info("Enviando pacote {} para {} com assunto '{}' (purchaseId={})",
                 item.packageId(),
                 item.submissionEmail(),
                 item.emailSubject(),
-                attachmentName,
-                attachmentBytes.length,
                 purchaseId);
 
         try {

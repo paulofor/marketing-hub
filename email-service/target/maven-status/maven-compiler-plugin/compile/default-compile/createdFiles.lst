@@ -35,6 +35,7 @@ com/marketinghub/emailservice/service/EmailLogService.class
 com/marketinghub/emailservice/service/PremiumDeliveryEmailDispatcher.class
 com/marketinghub/emailservice/leadportal/email/LeadPortalEmailTemplatePlaceholder.class
 com/marketinghub/emailservice/leadportal/service/LeadPortalImagePackageStatusHistoryService$StatusHistoryEntry.class
+com/marketinghub/emailservice/leadportal/service/LeadPortalEmailTemplateService$TemplateSetting.class
 com/marketinghub/emailservice/controller/EmailController.class
 com/marketinghub/emailservice/config/LeadPortalDispatchProperties.class
 com/marketinghub/emailservice/service/client/FlowSubmissionImagePackageStatus.class

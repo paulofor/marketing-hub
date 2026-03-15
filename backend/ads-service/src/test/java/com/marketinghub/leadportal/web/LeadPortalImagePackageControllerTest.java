@@ -50,6 +50,9 @@ class LeadPortalImagePackageControllerTest {
                 2,
                 Instant.parse("2024-01-01T10:00:00Z"),
                 Instant.parse("2024-01-01T10:05:00Z"),
+                Instant.parse("2024-01-01T10:03:00Z"),
+                Instant.parse("2024-01-01T10:04:00Z"),
+                null,
                 "Erro temporário",
                 null,
                 null,
@@ -97,6 +100,9 @@ class LeadPortalImagePackageControllerTest {
                 null,
                 Instant.parse("2024-01-01T10:00:00Z"),
                 Instant.parse("2024-01-01T10:05:00Z"),
+                Instant.parse("2024-01-01T10:04:00Z"),
+                Instant.parse("2024-01-01T10:06:00Z"),
+                Instant.parse("2024-01-01T10:07:00Z"),
                 List.of(
                         new LeadPortalImagePackageDetailDto.StatusHistoryEntry(
                                 FlowSubmissionImagePackageStatus.SAMPLE_EMAIL_OPENED,

@@ -120,11 +120,10 @@ export default function FlowPage() {
               </div>
               {proofCardsWithoutFeatured.length > 0 ? (
                 <div className="flow-proof-secondary-grid">
-                  {proofCardsWithoutFeatured.map((post, index) => {
+                  {proofCardsWithoutFeatured.map((post) => {
                     const mediaStyle = !post.imageUrl && post.background ? { background: post.background } : undefined;
                     return (
                       <article key={post.title} className="flow-proof-card">
-                        <span className="flow-proof-card__badge">Exemplo {index + 2}</span>
                         <div
                           className={`flow-proof-image ${post.imageUrl ? "flow-proof-image--media" : ""}`}
                           style={mediaStyle}
@@ -176,10 +175,10 @@ const SIMPLE_FORM_CONTENT = {
       "você recebe uma linha editorial visual clara, com linguagem alinhada ao seu público e foco em gerar mais conversas no direct.",
   },
   proof: {
-    kicker: "Exemplos reais",
-    title: "Posts criados para outros clientes",
+    kicker: "Exemplos Visuais",
+    title: "Veja exemplos do estilo visual que você pode receber",
     subtitle:
-      "Veja alguns estilos de criativos entregues em nichos diferentes. O objetivo é te mostrar qualidade visual, consistência da mensagem e potencial de engajamento.",
+      "Um material mais profissional ajuda seu perfil a chamar mais atenção, transmitir mais confiança e valorizar melhor o seu serviço logo no primeiro olhar.",
     cards: [
       {
         title: "Clínica de estética",

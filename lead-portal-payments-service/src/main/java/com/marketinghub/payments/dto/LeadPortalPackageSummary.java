@@ -15,6 +15,10 @@ public record LeadPortalPackageSummary(
         String model,
         BigDecimal totalPrice,
         String currency,
-        Instant createdAt
+        Instant createdAt,
+        Long flowId,
+        String flowSlug,
+        Long experimentId,
+        BigDecimal experimentUnitPriceBrl
 ) {
 }

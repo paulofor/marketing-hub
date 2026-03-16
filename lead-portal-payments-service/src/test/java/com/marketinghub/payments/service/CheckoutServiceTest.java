@@ -73,17 +73,12 @@ class CheckoutServiceTest {
         request.setBuyerEmail("buyer@example.com");
         request.setBuyerName("Buyer");
 
-        LeadPortalPackageSummary summary = new LeadPortalPackageSummary(
+        LeadPortalPackageSummary summary = buildSummary(
                 1L,
-                UUID.randomUUID(),
-                "Submission",
-                "submission@example.com",
                 FlowSubmissionImagePackageStatus.COMPLETED,
-                "prompt",
-                "model",
                 BigDecimal.TEN,
                 "BRL",
-                Instant.now());
+                null);
 
         MercadoPagoPreferenceResponse mpResponse = new MercadoPagoPreferenceResponse(
                 "pref-123",
@@ -105,17 +100,12 @@ class CheckoutServiceTest {
         CreateCheckoutRequest request = new CreateCheckoutRequest();
         request.setPackageId(2L);
 
-        LeadPortalPackageSummary summary = new LeadPortalPackageSummary(
+        LeadPortalPackageSummary summary = buildSummary(
                 2L,
-                UUID.randomUUID(),
-                "Submission",
-                "submission@example.com",
                 FlowSubmissionImagePackageStatus.COMPLETED,
-                "prompt",
-                "model",
                 BigDecimal.TEN,
                 "BRL",
-                Instant.now());
+                null);
 
         when(packageGateway.loadPackage(2L)).thenReturn(summary);
         when(purchaseRepository.findTopByPackageIdOrderByCreatedAtDesc(2L)).thenReturn(Optional.empty());
@@ -132,17 +122,12 @@ class CheckoutServiceTest {
         CreateCheckoutRequest request = new CreateCheckoutRequest();
         request.setPackageId(3L);
 
-        LeadPortalPackageSummary summary = new LeadPortalPackageSummary(
+        LeadPortalPackageSummary summary = buildSummary(
                 3L,
-                UUID.randomUUID(),
-                "Submission",
-                "submission@example.com",
                 FlowSubmissionImagePackageStatus.COMPLETED,
-                "prompt",
-                "model",
                 BigDecimal.TEN,
                 "BRL",
-                Instant.now());
+                null);
 
         LeadPortalPurchase previousPurchase = new LeadPortalPurchase();
         previousPurchase.setPackageId(3L);
@@ -176,17 +161,12 @@ class CheckoutServiceTest {
         CreateCheckoutRequest request = new CreateCheckoutRequest();
         request.setPackageId(3L);
 
-        LeadPortalPackageSummary summary = new LeadPortalPackageSummary(
+        LeadPortalPackageSummary summary = buildSummary(
                 3L,
-                UUID.randomUUID(),
-                "Submission",
-                "submission@example.com",
                 FlowSubmissionImagePackageStatus.COMPLETED,
-                "prompt",
-                "model",
                 BigDecimal.TEN,
                 "BRL",
-                Instant.now());
+                null);
 
         LeadPortalPurchase previousPurchase = new LeadPortalPurchase();
         previousPurchase.setPackageId(3L);
@@ -222,17 +202,12 @@ class CheckoutServiceTest {
         CreateCheckoutRequest request = new CreateCheckoutRequest();
         request.setPackageId(4L);
 
-        LeadPortalPackageSummary summary = new LeadPortalPackageSummary(
+        LeadPortalPackageSummary summary = buildSummary(
                 4L,
-                UUID.randomUUID(),
-                "Submission",
-                "submission@example.com",
                 FlowSubmissionImagePackageStatus.COMPLETED,
-                "prompt",
-                "model",
                 BigDecimal.TEN,
                 "BRL",
-                Instant.now());
+                null);
 
         LeadPortalPurchase previousPurchase = new LeadPortalPurchase();
         previousPurchase.setPackageId(4L);
@@ -267,17 +242,12 @@ class CheckoutServiceTest {
         CreateCheckoutRequest request = new CreateCheckoutRequest();
         request.setPackageId(5L);
 
-        LeadPortalPackageSummary summary = new LeadPortalPackageSummary(
+        LeadPortalPackageSummary summary = buildSummary(
                 5L,
-                UUID.randomUUID(),
-                "Submission",
-                "submission@example.com",
                 FlowSubmissionImagePackageStatus.PROCESSING,
-                "prompt",
-                "model",
                 BigDecimal.TEN,
                 "BRL",
-                Instant.now());
+                null);
 
         when(packageGateway.loadPackage(5L)).thenReturn(summary);
 
@@ -296,17 +266,12 @@ class CheckoutServiceTest {
         request.setBuyerEmail("buyer@example.com");
         request.setBuyerName("Buyer");
 
-        LeadPortalPackageSummary summary = new LeadPortalPackageSummary(
+        LeadPortalPackageSummary summary = buildSummary(
                 6L,
-                UUID.randomUUID(),
-                "Submission",
-                "submission@example.com",
                 FlowSubmissionImagePackageStatus.COMPLETED,
-                "prompt",
-                "model",
                 new BigDecimal("10"),
                 "brl",
-                Instant.now());
+                null);
 
         MercadoPagoPreferenceResponse mpResponse = new MercadoPagoPreferenceResponse(
                 "pref-amount",
@@ -341,17 +306,12 @@ class CheckoutServiceTest {
         CreateCheckoutRequest request = new CreateCheckoutRequest();
         request.setPackageId(7L);
 
-        LeadPortalPackageSummary summary = new LeadPortalPackageSummary(
+        LeadPortalPackageSummary summary = buildSummary(
                 7L,
-                UUID.randomUUID(),
-                "Submission",
-                "submission@example.com",
                 FlowSubmissionImagePackageStatus.COMPLETED,
-                "prompt",
-                "model",
                 null,
                 null,
-                Instant.now());
+                null);
 
         MercadoPagoPreferenceResponse mpResponse = new MercadoPagoPreferenceResponse(
                 "pref-default",
@@ -379,17 +339,12 @@ class CheckoutServiceTest {
         CreateCheckoutRequest request = new CreateCheckoutRequest();
         request.setPackageId(8L);
 
-        LeadPortalPackageSummary summary = new LeadPortalPackageSummary(
+        LeadPortalPackageSummary summary = buildSummary(
                 8L,
-                UUID.randomUUID(),
-                "Submission",
-                "submission@example.com",
                 FlowSubmissionImagePackageStatus.COMPLETED,
-                "prompt",
-                "model",
                 new BigDecimal("10"),
                 "usd",
-                Instant.now());
+                null);
 
         paymentProperties.setDefaultCurrency("BRL");
         paymentProperties.setSupportedCurrencies(List.of("BRL"));
@@ -409,6 +364,39 @@ class CheckoutServiceTest {
         checkoutService.createCheckout(request);
 
         com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceRequest sentRequest = requestCaptor.getValue();
+        assertThat(sentRequest.items().get(0).currencyId()).isEqualTo("BRL");
+    }
+
+
+    @Test
+    void shouldUseExperimentPriceWhenPackageHasNoAmount() {
+        CreateCheckoutRequest request = new CreateCheckoutRequest();
+        request.setPackageId(9L);
+
+        BigDecimal experimentPrice = new BigDecimal("29.90");
+        LeadPortalPackageSummary summary = buildSummary(
+                9L,
+                FlowSubmissionImagePackageStatus.COMPLETED,
+                null,
+                "usd",
+                experimentPrice);
+
+        MercadoPagoPreferenceResponse mpResponse = new MercadoPagoPreferenceResponse(
+                "pref-experiment",
+                "https://mercadopago.com/checkout/experiment");
+
+        ArgumentCaptor<com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceRequest> requestCaptor =
+                ArgumentCaptor.forClass(com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceRequest.class);
+
+        when(packageGateway.loadPackage(9L)).thenReturn(summary);
+        when(purchaseRepository.findTopByPackageIdOrderByCreatedAtDesc(9L)).thenReturn(Optional.empty());
+        when(mercadoPagoClient.createPreference(requestCaptor.capture())).thenReturn(mpResponse);
+        when(purchaseRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        checkoutService.createCheckout(request);
+
+        com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceRequest sentRequest = requestCaptor.getValue();
+        assertThat(sentRequest.items().get(0).unitPrice()).isEqualByComparingTo(experimentPrice);
         assertThat(sentRequest.items().get(0).currencyId()).isEqualTo("BRL");
     }
 
@@ -497,5 +485,28 @@ class CheckoutServiceTest {
         assertThat(purchase.getSubmissionId()).isEqualTo("sub-002");
         assertThat(purchase.getBuyerEmail()).isEqualTo("payer@example.com");
         assertThat(purchase.getStatus()).isEqualTo(PurchaseStatus.PENDING_PAYMENT);
+    }
+
+    private LeadPortalPackageSummary buildSummary(long packageId,
+                                                   FlowSubmissionImagePackageStatus status,
+                                                   BigDecimal totalPrice,
+                                                   String currency,
+                                                   BigDecimal experimentAmount) {
+        Long experimentId = experimentAmount != null ? 999L : null;
+        return new LeadPortalPackageSummary(
+                packageId,
+                UUID.randomUUID(),
+                "Submission",
+                "submission@example.com",
+                status,
+                "prompt",
+                "model",
+                totalPrice,
+                currency,
+                Instant.now(),
+                10L,
+                "flow-slug",
+                experimentId,
+                experimentAmount);
     }
 }

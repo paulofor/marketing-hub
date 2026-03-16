@@ -15,6 +15,7 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import javax.imageio.ImageIO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,17 +97,7 @@ public class LeadPortalOpenAiImageClient {
                 .exchangeToMono(this::readResponse)
                 .block(REQUEST_TIMEOUT);
 
-        if (response == null || response.data == null || response.data.isEmpty()) {
-            throw new IllegalStateException("OpenAI image API did not return a payload");
-        }
-
-        String base64 = response.data.get(0).base64;
-        if (base64 == null || base64.isBlank()) {
-            throw new IllegalStateException("OpenAI image API returned an empty payload");
-        }
-
-        byte[] decoded = Base64.getDecoder().decode(base64);
-        return imageOptimizer.optimize(decoded);
+        return toOptimizedImage(response);
     }
 
     public CreativeImageOptimizer.OptimizedImage generateFromPrompt(String prompt, ImageGenerationPlan plan) {
@@ -123,24 +114,16 @@ public class LeadPortalOpenAiImageClient {
                 .exchangeToMono(this::readResponse)
                 .block(REQUEST_TIMEOUT);
 
-        if (response == null || response.data == null || response.data.isEmpty()) {
-            throw new IllegalStateException("OpenAI image API did not return a payload");
-        }
-
-        String base64 = response.data.get(0).base64;
-        if (base64 == null || base64.isBlank()) {
-            throw new IllegalStateException("OpenAI image API returned an empty payload");
-        }
-
-        byte[] decoded = Base64.getDecoder().decode(base64);
-        return imageOptimizer.optimize(decoded);
+        return toOptimizedImage(response);
     }
 
     private Map<String, Object> buildGenerationPayload(String prompt, ImageGenerationPlan plan) {
         Map<String, Object> payload = new LinkedHashMap<>();
         String selectedModel = plan != null && plan.apiModel() != null ? plan.apiModel() : defaultModel;
         payload.put("model", selectedModel);
-        payload.put("response_format", "b64_json");
+        if (supportsResponseFormat(selectedModel)) {
+            payload.put("response_format", "b64_json");
+        }
         if (prompt != null && !prompt.isBlank()) {
             payload.put("prompt", prompt);
         }
@@ -194,9 +177,11 @@ public class LeadPortalOpenAiImageClient {
         LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         String selectedModel = plan != null && plan.apiModel() != null ? plan.apiModel() : defaultModel;
         body.add("model", selectedModel);
-        // We need the binary payload because the downstream optimizer expects it.
-        // By default OpenAI returns URLs, so we explicitly request the base64 variant.
-        body.add("response_format", "b64_json");
+        if (supportsResponseFormat(selectedModel)) {
+            // We need the binary payload because the downstream optimizer expects it.
+            // By default OpenAI returns URLs, so we explicitly request the base64 variant.
+            body.add("response_format", "b64_json");
+        }
         if (prompt != null && !prompt.isBlank()) {
             body.add("prompt", prompt);
         }
@@ -235,6 +220,56 @@ public class LeadPortalOpenAiImageClient {
                 .map(parsed -> ensureSuccess(parsed, response));
     }
 
+
+    private CreativeImageOptimizer.OptimizedImage toOptimizedImage(ImageResponse response) {
+        byte[] imageBytes = extractImagePayload(response);
+        return imageOptimizer.optimize(imageBytes);
+    }
+
+    private byte[] extractImagePayload(ImageResponse response) {
+        if (response == null || response.data == null || response.data.isEmpty()) {
+            String errorMessage = response != null && response.error != null ? response.error.message : null;
+            if (errorMessage != null && !errorMessage.isBlank()) {
+                throw new IllegalStateException("OpenAI image API returned error: " + errorMessage);
+            }
+            throw new IllegalStateException("OpenAI image API did not return a payload");
+        }
+        ImageData data = response.data.get(0);
+        if (data.base64 != null && !data.base64.isBlank()) {
+            try {
+                return Base64.getDecoder().decode(data.base64);
+            } catch (IllegalArgumentException ex) {
+                throw new IllegalStateException("OpenAI image API returned invalid base64 payload", ex);
+            }
+        }
+        if (data.url != null && !data.url.isBlank()) {
+            return downloadFromUrl(data.url);
+        }
+        throw new IllegalStateException("OpenAI image API did not return a payload");
+    }
+
+    private byte[] downloadFromUrl(String url) {
+        byte[] content = webClient.get()
+                .uri(url)
+                .accept(MediaType.APPLICATION_OCTET_STREAM)
+                .exchangeToMono(response -> {
+                    if (response.statusCode().isError()) {
+                        return response.bodyToMono(String.class)
+                                .defaultIfEmpty("")
+                                .flatMap(body -> Mono.error(new ImageGenerationException(
+                                        response.statusCode(),
+                                        "Failed to download generated image from URL: " + url
+                                                + (body.isBlank() ? "" : " (" + body + ")"))));
+                    }
+                    return response.bodyToMono(byte[].class);
+                })
+                .block(REQUEST_TIMEOUT);
+        if (content == null || content.length == 0) {
+            throw new IllegalStateException("OpenAI image API returned an empty URL payload");
+        }
+        return content;
+    }
+
     private byte[] toByteArray(DataBuffer dataBuffer) {
         try {
             byte[] chunk = new byte[dataBuffer.readableByteCount()];
@@ -264,11 +299,24 @@ public class LeadPortalOpenAiImageClient {
         return parsed;
     }
 
+
+    private boolean supportsResponseFormat(String selectedModel) {
+        if (selectedModel == null || selectedModel.isBlank()) {
+            return true;
+        }
+        return !selectedModel.toLowerCase(Locale.ROOT).startsWith("gpt-image-");
+    }
+
     public static class ImageGenerationException extends RuntimeException {
         private final HttpStatusCode status;
 
         public ImageGenerationException(HttpStatusCode status, String message) {
             super(message);
+            this.status = status;
+        }
+
+        public ImageGenerationException(HttpStatusCode status, String message, Throwable cause) {
+            super(message, cause);
             this.status = status;
         }
 
@@ -279,7 +327,7 @@ public class LeadPortalOpenAiImageClient {
 
     private record ImageResponse(List<ImageData> data, ApiError error) {}
 
-    private record ImageData(@JsonProperty("b64_json") String base64) {}
+    private record ImageData(@JsonProperty("b64_json") String base64, String url) {}
 
     private record ApiError(String message, String type, String param, String code) {}
 }

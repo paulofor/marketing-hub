@@ -7,13 +7,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.creative.CreativeImageOptimizer;
 import com.marketinghub.worker.imagegeneration.ImageGenerationPlan;
 import com.marketinghub.worker.imagegeneration.ImageOrientation;
-import java.nio.charset.StandardCharsets;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.imageio.ImageIO;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -27,6 +30,7 @@ import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.ExchangeFunction;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 class LeadPortalOpenAiImageClientTest {
@@ -85,8 +89,14 @@ class LeadPortalOpenAiImageClientTest {
     }
 
     private static byte[] samplePng() {
-        return Base64.getDecoder().decode(
-                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4XgXBAQ0AAADBoPTp1X0CAAAAAElFTkSuQmCC");
+        BufferedImage image = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
+        image.setRGB(0, 0, 0xFFFFFF);
+        try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            ImageIO.write(image, "png", output);
+            return output.toByteArray();
+        } catch (IOException ex) {
+            throw new RuntimeException("Failed to create PNG sample image", ex);
+        }
     }
 
 
@@ -132,12 +142,10 @@ class LeadPortalOpenAiImageClientTest {
             }
             if (downloadUrl != null && url.equals(downloadUrl)) {
                 downloaded.set(true);
-                String body = downloadBytes == null
-                        ? ""
-                        : new String(downloadBytes, StandardCharsets.UTF_8);
+                byte[] body = downloadBytes == null ? new byte[0] : downloadBytes;
                 return Mono.just(ClientResponse.create(HttpStatus.OK)
-                        .header(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN_VALUE)
-                        .body(body)
+                        .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
+                        .body(Flux.just(new org.springframework.core.io.buffer.DefaultDataBufferFactory().wrap(body)))
                         .build());
             }
             return Mono.error(new IllegalStateException("Unexpected request: " + url));

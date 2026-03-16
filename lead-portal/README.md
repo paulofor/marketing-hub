@@ -35,6 +35,16 @@ O ambiente dockerizado levanta três serviços:
 - `VITE_API_URL`: pode ser ajustada no `docker-compose.yml` caso deseje que o frontend consuma a API em outro caminho.
 - `VITE_ASSETS_BASE_URL`: define o host base utilizado para resolver caminhos relativos como `/uploads/...`. Utilize-o quando os arquivos de mídia estiverem hospedados em outro domínio/porta; no compose é possível setar esse valor via `LEAD_PORTAL_ASSETS_BASE_URL`.
 - `SPRING_PROFILES_ACTIVE`: defina no serviço `backend` se precisar ativar perfis específicos do Spring.
+- `LOGGING_FILE_NAME`: caminho completo do arquivo de log consumido pelo `/actuator/logfile` (padrão `logs/lead-portal-backend.log`).
+- `SPRING_DATASOURCE_HIKARI_MAX_LIFETIME`: valor em milissegundos usado pelo pool Hikari para reciclar conexões antes do timeout imposto pelo provedor do MySQL (padrão 55000ms).
+- `SPRING_DATASOURCE_HIKARI_KEEPALIVE_TIME`: intervalo em milissegundos para os keep-alives automáticos do pool (padrão 45000ms).
+
+### Observabilidade e logs
+
+- `GET /api/actuator/logfile`: retorna o conteúdo do arquivo configurado em `LOGGING_FILE_NAME`, permitindo baixar os logs recentes sem acessar o host.
+- `GET /api/actuator/loggers`: lista (e permite ajustar via `POST`) os níveis de log das classes gerenciadas pelo Spring Boot.
+
+Certifique-se de que o caminho informado em `LOGGING_FILE_NAME` pertença a um volume persistente (por exemplo, `/app/data/logs/lead-portal-backend.log` no Docker) para que o conteúdo sobreviva a recriações do container.
 
 ### Resolução de 502 Bad Gateway
 

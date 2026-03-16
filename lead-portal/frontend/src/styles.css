@@ -392,6 +392,14 @@ form.flow-form {
   line-height: 1.6;
 }
 
+.gmail-tip {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
 .flow-footer details {
   background: rgba(99, 102, 241, 0.08);
   padding: 1rem;

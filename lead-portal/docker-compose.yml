@@ -16,6 +16,7 @@ services:
       LEAD_PORTAL_STORAGE_SECRET_ACCESS_KEY: 4ee618dd20bb752711ee0242469a70fadb9bdc0c921ded7e1177eeb681ddfc54
       LEAD_PORTAL_STORAGE_REGION: auto
       LEAD_PORTAL_STORAGE_PUBLIC_BASE_URL: https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev
+      LOGGING_FILE_NAME: /app/data/logs/lead-portal-backend.log
     expose:
       - "8080"
     healthcheck:

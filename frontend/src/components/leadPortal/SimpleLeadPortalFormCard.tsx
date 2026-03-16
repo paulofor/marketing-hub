@@ -23,8 +23,9 @@ const SIMPLE_FORM_DEFAULTS = {
   headerTitle: "Transforme o seu treino com acompanhamento personalizado",
   headerSubtitle: "Responda em menos de 2 minutos e receba recomendações sob medida.",
   headerPromise: "Plano prático para destravar resultados nas próximas semanas.",
-  realExamplesTitle: "Exemplos reais de evolução",
-  realExamplesSubtitle: "Veja como alunas com rotina parecida conseguiram evoluir.",
+  realExamplesTitle: "Veja exemplos do estilo visual que você pode receber",
+  realExamplesSubtitle:
+    "Um material mais profissional ajuda seu perfil a chamar mais atenção, transmitir mais confiança e valorizar melhor o seu serviço logo no primeiro olhar.",
   realExampleCard1Title: "Mais energia no dia a dia",
   realExampleCard1Subtitle: "Rotina simples para sair do sedentarismo em 30 dias.",
   realExampleCard2Title: "Treino sem dor",
@@ -1183,7 +1184,8 @@ function createSimpleFormTemplateQuestions({
       required: false,
     },
     {
-      title: realExamplesTitle.trim() || "Exemplos reais de evolução",
+      title:
+        realExamplesTitle.trim() || "Veja exemplos do estilo visual que você pode receber",
       dataKey: "exemplos_reais_titulo",
       type: "TEXT",
       required: false,
@@ -1191,7 +1193,7 @@ function createSimpleFormTemplateQuestions({
     {
       title:
         realExamplesSubtitle.trim() ||
-        "Veja como alunas com rotina parecida conseguiram evoluir.",
+        "Um material mais profissional ajuda seu perfil a chamar mais atenção, transmitir mais confiança e valorizar melhor o seu serviço logo no primeiro olhar.",
       dataKey: "exemplos_reais_subtitulo",
       type: "TEXT",
       required: false,

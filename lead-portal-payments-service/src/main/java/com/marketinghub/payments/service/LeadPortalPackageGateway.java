@@ -46,9 +46,16 @@ public class LeadPortalPackageGateway {
                     pack.image_currency,
                     pack.created_at,
                     sub.name AS submission_name,
-                    sub.email AS submission_email
+                    sub.email AS submission_email,
+                    flow.id AS flow_id,
+                    flow.slug AS flow_slug,
+                    COALESCE(exp.unit_price_brl, flow_exp.unit_price_brl) AS experiment_unit_price_brl,
+                    COALESCE(exp.id, flow_exp.id) AS experiment_id
                 FROM flow_submission_image_package pack
                 JOIN flow_submissions sub ON sub.id = pack.submission_id
+                LEFT JOIN lead_portal_flow flow ON flow.slug = sub.flow_slug
+                LEFT JOIN experiment exp ON exp.lead_portal_flow_id = flow.id
+                LEFT JOIN experiment flow_exp ON flow.experiment_id = flow_exp.id
                 WHERE pack.id = ?
                 """;
         try {
@@ -77,6 +84,10 @@ public class LeadPortalPackageGateway {
         BigDecimal totalPrice = rs.getBigDecimal("image_total_price_usd");
         String currency = rs.getString("image_currency");
         Instant createdAt = toInstant(rs.getTimestamp("created_at"));
+        Long flowId = getLong(rs, "flow_id");
+        String flowSlug = rs.getString("flow_slug");
+        Long experimentId = getLong(rs, "experiment_id");
+        BigDecimal experimentUnitPrice = rs.getBigDecimal("experiment_unit_price_brl");
         return new LeadPortalPackageSummary(
                 id,
                 submissionId,
@@ -87,7 +98,11 @@ public class LeadPortalPackageGateway {
                 rs.getString("model"),
                 totalPrice,
                 currency,
-                createdAt);
+                createdAt,
+                flowId,
+                flowSlug,
+                experimentId,
+                experimentUnitPrice);
     }
 
     private OriginalAsset mapAsset(ResultSet rs) throws SQLException {
@@ -123,6 +138,11 @@ public class LeadPortalPackageGateway {
         } catch (IllegalArgumentException ex) {
             return Optional.empty();
         }
+    }
+
+    private Long getLong(ResultSet rs, String columnLabel) throws SQLException {
+        long value = rs.getLong(columnLabel);
+        return rs.wasNull() ? null : value;
     }
 
     private FlowSubmissionImagePackageStatus parseStatus(String value) {

@@ -188,14 +188,22 @@ public class CheckoutService {
 
     private BigDecimal resolveAmount(LeadPortalPackageSummary imagePackage) {
         BigDecimal amount = imagePackage.totalPrice();
-        if (amount == null) {
-            BigDecimal defaultAmount = paymentProperties.getDefaultAmount();
-            return defaultAmount != null ? defaultAmount.setScale(2, RoundingMode.HALF_UP) : null;
+        if (amount != null) {
+            return amount.setScale(2, RoundingMode.HALF_UP);
         }
-        return amount.setScale(2, RoundingMode.HALF_UP);
+        BigDecimal experimentAmount = imagePackage.experimentUnitPriceBrl();
+        if (experimentAmount != null) {
+            return experimentAmount.setScale(2, RoundingMode.HALF_UP);
+        }
+        BigDecimal defaultAmount = paymentProperties.getDefaultAmount();
+        return defaultAmount != null ? defaultAmount.setScale(2, RoundingMode.HALF_UP) : null;
     }
 
     private String resolveCurrency(LeadPortalPackageSummary imagePackage) {
+        if (imagePackage.totalPrice() == null && imagePackage.experimentUnitPriceBrl() != null) {
+            return "BRL";
+        }
+
         String requestedCurrency = normalizeCurrency(imagePackage.currency());
         String defaultCurrency = normalizeCurrency(paymentProperties.getDefaultCurrency());
 

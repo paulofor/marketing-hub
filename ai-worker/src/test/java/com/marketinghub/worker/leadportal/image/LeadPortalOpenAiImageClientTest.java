@@ -39,7 +39,7 @@ class LeadPortalOpenAiImageClientTest {
         AtomicBoolean downloaded = new AtomicBoolean(false);
         String downloadUrl = "https://example.com/generated.png";
         String generationResponse = "{\"data\":[{\"url\":\"" + downloadUrl + "\"}]}";
-        byte[] downloadBytes = "image-payload".getBytes(StandardCharsets.UTF_8);
+        byte[] downloadBytes = samplePng();
         ExchangeFunction exchange = new StubExchangeFunction(
                 capturedPayload, generationResponse, downloadUrl, downloadBytes, downloaded);
         WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);
@@ -64,7 +64,7 @@ class LeadPortalOpenAiImageClientTest {
     @Test
     void includesResponseFormatForNonGptModels() throws Exception {
         AtomicReference<Map<String, Object>> capturedPayload = new AtomicReference<>();
-        String base64 = Base64.getEncoder().encodeToString("payload".getBytes(StandardCharsets.UTF_8));
+        String base64 = Base64.getEncoder().encodeToString(samplePng());
         String generationResponse = "{\"data\":[{\"b64_json\":\"" + base64 + "\"}]}";
         ExchangeFunction exchange = new StubExchangeFunction(
                 capturedPayload, generationResponse, null, null, new AtomicBoolean(false));
@@ -83,6 +83,12 @@ class LeadPortalOpenAiImageClientTest {
         assertThat(result.extension()).isEqualTo("jpg");
         assertThat(result.content()).isNotEmpty();
     }
+
+    private static byte[] samplePng() {
+        return Base64.getDecoder().decode(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4XgXBAQ0AAADBoPTp1X0CAAAAAElFTkSuQmCC");
+    }
+
 
     private static class StubExchangeFunction implements ExchangeFunction {
         private final AtomicReference<Map<String, Object>> capturedPayload;

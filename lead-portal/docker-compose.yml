@@ -20,7 +20,7 @@ services:
     expose:
       - "8080"
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/api/ops-lp-observability-v2/health"]
       interval: 30s
       timeout: 5s
       retries: 5

@@ -103,11 +103,11 @@ export default function FlowPage() {
                   ) : null}
                   <span className="flow-proof-cta__text">
                     <strong>Gostou do estilo?</strong> Preencha o formulário abaixo para receber uma versão
-                    personalizada para o seu negócio.
+                    personalizada para você.
                   </span>
                 </div>
                 <div className="flow-promise-box">
-                  <strong>{defaultHeader.promiseLabel}:</strong> {heroContent.promise}
+                  {heroContent.promise}
                 </div>
               </div>
             </section>
@@ -170,7 +170,6 @@ export default function FlowPage() {
 const SIMPLE_FORM_CONTENT = {
   header: {
     subtitle: "Transforme ideias em posts prontos para publicar em poucos minutos.",
-    promiseLabel: "Nossa promessa",
     promiseText:
       "você recebe uma linha editorial visual clara, com linguagem alinhada ao seu público e foco em gerar mais conversas no direct.",
   },

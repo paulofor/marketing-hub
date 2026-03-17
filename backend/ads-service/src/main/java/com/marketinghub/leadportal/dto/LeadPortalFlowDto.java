@@ -18,6 +18,9 @@ public class LeadPortalFlowDto {
     private String description;
     private String model;
     private String prompt;
+    private String imagePromptModel;
+    private String imagePromptTemplate;
+    private Integer imagePromptBatchSize;
     private Long marketNicheId;
     private Long experimentId;
     private java.math.BigDecimal costUsd;

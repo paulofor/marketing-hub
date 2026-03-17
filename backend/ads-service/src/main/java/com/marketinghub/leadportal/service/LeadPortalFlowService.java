@@ -7,6 +7,7 @@ import com.marketinghub.leadportal.LeadPortalQuestionType;
 import com.marketinghub.leadportal.dto.CreateLeadPortalFlowRequest;
 import com.marketinghub.leadportal.dto.LeadPortalFlowQuestionRequest;
 import com.marketinghub.leadportal.dto.UpdateLeadPortalFlowRequest;
+import com.marketinghub.leadportal.dto.UpdateLeadPortalImagePromptRequest;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
@@ -104,6 +105,9 @@ public class LeadPortalFlowService {
                 .slug(slug)
                 .description(trimToNull(request.getDescription()))
                 .model(trimToNull(request.getModel()))
+                .imagePromptModel(trimToNull(request.getImagePromptModel()))
+                .imagePromptTemplate(trimToNull(request.getImagePromptTemplate()))
+                .imagePromptBatchSize(normalizeBatchSize(request.getImagePromptBatchSize()))
                 .marketNiche(marketNiche)
                 .experiment(experiment)
                 .simpleFormStyle(resolveSimpleFormStyle(request.getSimpleFormStyleId()))
@@ -134,6 +138,15 @@ public class LeadPortalFlowService {
         if (request.getModel() != null) {
             flow.setModel(trimToNull(request.getModel()));
         }
+        if (request.getImagePromptModel() != null) {
+            flow.setImagePromptModel(trimToNull(request.getImagePromptModel()));
+        }
+        if (request.getImagePromptTemplate() != null) {
+            flow.setImagePromptTemplate(trimToNull(request.getImagePromptTemplate()));
+        }
+        if (request.getImagePromptBatchSize() != null) {
+            flow.setImagePromptBatchSize(normalizeBatchSize(request.getImagePromptBatchSize()));
+        }
         if (request.getSimpleFormStyleId() != null) {
             flow.setSimpleFormStyle(resolveSimpleFormStyle(request.getSimpleFormStyleId()));
         }
@@ -145,6 +158,25 @@ public class LeadPortalFlowService {
         LeadPortalFlow saved = repository.save(flow);
         if (wasApproved) {
             syncPublishedFlowAfterUpdate(saved, previousSlug);
+        }
+        return saved;
+    }
+
+    @Transactional
+    public LeadPortalFlow updateImagePrompt(Long id, UpdateLeadPortalImagePromptRequest request) {
+        LeadPortalFlow flow = get(id);
+        if (request.getImagePromptModel() != null) {
+            flow.setImagePromptModel(trimToNull(request.getImagePromptModel()));
+        }
+        if (request.getImagePromptTemplate() != null) {
+            flow.setImagePromptTemplate(trimToNull(request.getImagePromptTemplate()));
+        }
+        if (request.getImagePromptBatchSize() != null) {
+            flow.setImagePromptBatchSize(normalizeBatchSize(request.getImagePromptBatchSize()));
+        }
+        LeadPortalFlow saved = repository.save(flow);
+        if (saved.isApproved()) {
+            syncPublishedFlowAfterUpdate(saved, saved.getSlug());
         }
         return saved;
     }
@@ -308,6 +340,16 @@ public class LeadPortalFlowService {
                     "dataKey must start with a letter and contain only letters, numbers, hyphen or underscore");
         }
         return normalized;
+    }
+
+    private Integer normalizeBatchSize(Integer value) {
+        if (value == null) {
+            return null;
+        }
+        if (value <= 0) {
+            return null;
+        }
+        return Math.min(value, 20);
     }
 
     private String trimToNull(String value) {

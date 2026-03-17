@@ -92,7 +92,7 @@ class FlowAssetServiceTest {
                 null,
                 List.of());
 
-        Flow flow = new Flow("fluxo-01", "Fluxo", null, null, null, List.of(proofQuestion), style);
+        Flow flow = new Flow("fluxo-01", "Fluxo", null, null, null, null, null, null, List.of(proofQuestion), style);
 
         byte[] imageBytes = createImageBytes(2000, 800);
         when(legacyAssetClient.fetch("http://legacy.example.com/uploads/hero.png"))
@@ -145,7 +145,7 @@ class FlowAssetServiceTest {
                 "https://cdn.example.com/existing-hero.jpg",
                 null);
         SimpleFormStyle style = new SimpleFormStyle("style-02", "Estilo", definition);
-        Flow flow = new Flow("fluxo-02", "Fluxo", null, null, null, List.of(), style);
+        Flow flow = new Flow("fluxo-02", "Fluxo", null, null, null, null, null, null, List.of(), style);
 
         Flow optimized = flowAssetService.optimizeAssets(flow);
 

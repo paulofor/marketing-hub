@@ -61,6 +61,9 @@ public class FlowAssetService {
                 flow.description(),
                 flow.model(),
                 flow.prompt(),
+                flow.imagePromptModel(),
+                flow.imagePromptTemplate(),
+                flow.imageBatchSize(),
                 optimizedQuestions,
                 optimizedStyle);
     }

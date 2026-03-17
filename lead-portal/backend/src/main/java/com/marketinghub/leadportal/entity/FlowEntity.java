@@ -31,6 +31,15 @@ public class FlowEntity {
     @Column(columnDefinition = "TEXT")
     private String prompt;
 
+    @Column(name = "image_prompt_model", length = 128)
+    private String imagePromptModel;
+
+    @Column(name = "image_prompt_template", columnDefinition = "LONGTEXT")
+    private String imagePromptTemplate;
+
+    @Column(name = "image_batch_size")
+    private Integer imageBatchSize;
+
     @Column(columnDefinition = "LONGTEXT")
     @Convert(converter = FlowQuestionListConverter.class)
     private List<FlowQuestion> questions;
@@ -88,6 +97,30 @@ public class FlowEntity {
         this.prompt = prompt;
     }
 
+    public String getImagePromptModel() {
+        return imagePromptModel;
+    }
+
+    public void setImagePromptModel(String imagePromptModel) {
+        this.imagePromptModel = imagePromptModel;
+    }
+
+    public String getImagePromptTemplate() {
+        return imagePromptTemplate;
+    }
+
+    public void setImagePromptTemplate(String imagePromptTemplate) {
+        this.imagePromptTemplate = imagePromptTemplate;
+    }
+
+    public Integer getImageBatchSize() {
+        return imageBatchSize;
+    }
+
+    public void setImageBatchSize(Integer imageBatchSize) {
+        this.imageBatchSize = imageBatchSize;
+    }
+
     public List<FlowQuestion> getQuestions() {
         return questions;
     }
@@ -135,6 +168,9 @@ public class FlowEntity {
         entity.setDescription(flow.description());
         entity.setModel(flow.model());
         entity.setPrompt(flow.prompt());
+        entity.setImagePromptModel(flow.imagePromptModel());
+        entity.setImagePromptTemplate(flow.imagePromptTemplate());
+        entity.setImageBatchSize(flow.imageBatchSize());
         entity.setQuestions(flow.questions());
         if (flow.simpleFormStyle() != null) {
             entity.setSimpleFormStyleSlug(flow.simpleFormStyle().slug());
@@ -153,6 +189,6 @@ public class FlowEntity {
         if (simpleFormStyleSlug != null || simpleFormStyleName != null || simpleFormStyleDefinition != null) {
             style = new SimpleFormStyle(simpleFormStyleSlug, simpleFormStyleName, simpleFormStyleDefinition);
         }
-        return new Flow(slug, name, description, model, prompt, questions, style);
+        return new Flow(slug, name, description, model, prompt, imagePromptModel, imagePromptTemplate, imageBatchSize, questions, style);
     }
 }

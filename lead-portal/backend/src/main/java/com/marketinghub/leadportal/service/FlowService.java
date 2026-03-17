@@ -143,6 +143,9 @@ public class FlowService {
                 flow.description(),
                 flow.model(),
                 flow.prompt(),
+                flow.imagePromptModel(),
+                flow.imagePromptTemplate(),
+                flow.imageBatchSize(),
                 flow.questions(),
                 enrichedStyle);
     }

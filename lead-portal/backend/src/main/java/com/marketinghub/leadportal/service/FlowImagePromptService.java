@@ -10,6 +10,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -19,6 +21,19 @@ public class FlowImagePromptService {
 
     private static final int DEFAULT_BATCH_SIZE = 6;
     private static final String DEFAULT_IMAGE_MODEL = "gpt-image-1";
+    private static final String DEFAULT_TEMPLATE = String.join("\n",
+            "Gere materiais de divulgação premium em português para {{profissional}}, um(a) {{atividade}} que atua em {{local}}.",
+            "Requisitos obrigatórios:",
+            "1. Visual bonito, atraente e com atmosfera profissional, destacando o universo de {{atividade}}.",
+            "2. Valorize os serviços principais ({{servicos}}) com chamadas claras, pensadas para redes sociais.",
+            "3. Mostre formas de contato visíveis adicionando {{contato}} no design.",
+            "4. Use cores vivas, iluminação moderna e elementos que façam referência ao ambiente de estúdio ou atendimento personalizado.",
+            "5. Entregue um pacote em lote (batch) com pelo menos {{batch_size}} variações quadradas (1:1), prontas para feed e fáceis de adaptar para stories.",
+            "",
+            "Dados coletados no formulário. Use-os para definir copy, cenário, elementos visuais e público-alvo:",
+            "{{dados_json}}",
+            "");
+    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{\\{\\s*([a-zA-Z0-9_.-]+)\\s*\\}\\}");
 
     private final SimpleImageBriefingMapper briefingMapper;
     private final ObjectMapper objectMapper;
@@ -46,40 +61,17 @@ public class FlowImagePromptService {
     }
 
     private FlowImagePrompt buildSimpleFormPrompt(Flow flow, SimpleImageBriefing briefing) {
-        String services = String.join(", ", briefing.resolvedServices());
-        String location = Optional.ofNullable(briefing.resolvedLocation()).orElse("sua região");
-        String contact = briefing.contactSummary();
-        String professional = Optional.ofNullable(briefing.professionalName()).orElse("Profissional");
-        String activityType = Optional.ofNullable(briefing.activityType()).orElse("profissional");
-        String studio = Optional.ofNullable(briefing.studioName()).orElse("estúdio ou atendimento personalizado");
-
-        String dataBlock = serializeBriefing(briefing);
-
-        String prompt = ("""
-                Gere materiais de divulgação premium em português para %s, um(a) %s que atua em %s.
-                Requisitos obrigatórios:
-                1. Visual bonito, atraente e com atmosfera profissional, destacando o universo de %s.
-                2. Valorize os serviços principais (%s) com chamadas claras, pensadas para redes sociais.
-                3. Mostre formas de contato visíveis adicionando %s no design.
-                4. Use cores vivas, iluminação moderna e elementos que façam referência ao ambiente de %s.
-                5. Entregue um pacote em lote (batch) com pelo menos %d variações quadradas (1:1), prontas para feed e fáceis de adaptar para stories.
-
-                Dados coletados no formulário. Use-os para definir copy, cenário, elementos visuais e público-alvo:
-                %s
-                """)
-                .formatted(
-                        professional,
-                        activityType,
-                        location,
-                        activityType,
-                        services,
-                        contact,
-                        studio,
-                        DEFAULT_BATCH_SIZE,
-                        dataBlock);
-
-        String model = StringUtils.hasText(flow.model()) ? flow.model() : DEFAULT_IMAGE_MODEL;
-        return new FlowImagePrompt(prompt, model, DEFAULT_BATCH_SIZE, 0);
+        int batchSize = resolveBatchSize(flow.imageBatchSize());
+        String template = StringUtils.hasText(flow.imagePromptTemplate()) ? flow.imagePromptTemplate() : DEFAULT_TEMPLATE;
+        String prompt = renderTemplate(template, briefing, batchSize);
+        if (!StringUtils.hasText(prompt)) {
+            prompt = renderTemplate(DEFAULT_TEMPLATE, briefing, batchSize);
+        }
+        if (!StringUtils.hasText(prompt)) {
+            prompt = buildFallbackPrompt(briefing, batchSize);
+        }
+        String model = StringUtils.hasText(flow.imagePromptModel()) ? flow.imagePromptModel() : DEFAULT_IMAGE_MODEL;
+        return new FlowImagePrompt(prompt, model, batchSize, 0);
     }
 
     private String serializeBriefing(SimpleImageBriefing briefing) {
@@ -98,5 +90,131 @@ public class FlowImagePromptService {
                     .map(entry -> entry.getKey() + ": " + entry.getValue())
                     .collect(Collectors.joining("\n"));
         }
+    }
+
+    private int resolveBatchSize(Integer requested) {
+        if (requested == null || requested <= 0) {
+            return DEFAULT_BATCH_SIZE;
+        }
+        return Math.min(requested, 20);
+    }
+
+    private String renderTemplate(String template, SimpleImageBriefing briefing, int batchSize) {
+        if (!StringUtils.hasText(template)) {
+            return null;
+        }
+        Map<String, String> variables = buildTemplateVariables(briefing, batchSize);
+        Matcher matcher = PLACEHOLDER_PATTERN.matcher(template);
+        StringBuffer buffer = new StringBuffer();
+        while (matcher.find()) {
+            String key = matcher.group(1);
+            String replacement = variables.getOrDefault(key, "");
+            matcher.appendReplacement(buffer, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(buffer);
+        return buffer.toString().trim();
+    }
+
+    private Map<String, String> buildTemplateVariables(SimpleImageBriefing briefing, int batchSize) {
+        Map<String, String> variables = new LinkedHashMap<>();
+        variables.put("slug", safeOrDefault(briefing.flowSlug(), ""));
+        variables.put("atividade", safeOrDefault(briefing.activityType(), "profissional"));
+        variables.put("profissional", safeOrDefault(briefing.professionalName(), "Profissional"));
+        variables.put("studio", safeOrDefault(briefing.studioName(), "estúdio ou atendimento personalizado"));
+        variables.put("local", safeOrDefault(briefing.resolvedLocation(), "sua região"));
+        variables.put("contato", safeOrDefault(briefing.contactSummary(), "Contato não informado"));
+        variables.put("email", safeOrDefault(briefing.email(), ""));
+        variables.put("servicos", joinList(briefing.resolvedServices(), ", "));
+        variables.put("servicos_lista", joinList(briefing.resolvedServices(), "\n"));
+        variables.put("dados_json", serializeBriefing(briefing));
+        variables.put("batch_size", Integer.toString(batchSize));
+        flattenAnswers("respostas", briefing.answers(), variables);
+        flattenAnswers("answers", briefing.answers(), variables);
+        return variables;
+    }
+
+    private void flattenAnswers(String prefix, Map<String, Object> answers, Map<String, String> target) {
+        if (answers == null || answers.isEmpty()) {
+            return;
+        }
+        answers.forEach((key, value) -> addFlattenedValue(prefix + "." + key, value, target));
+    }
+
+    private void addFlattenedValue(String path, Object value, Map<String, String> target) {
+        if (value == null) {
+            return;
+        }
+        if (value instanceof Map<?, ?> map) {
+            Map<String, Object> nested = new LinkedHashMap<>();
+            map.forEach((k, v) -> nested.put(String.valueOf(k), v));
+            nested.forEach((k, v) -> addFlattenedValue(path + "." + k, v, target));
+            return;
+        }
+        if (value instanceof List<?> list) {
+            String joined = joinList(list, ", ");
+            if (StringUtils.hasText(joined)) {
+                target.put(path, joined);
+            }
+            return;
+        }
+        String textValue = stringifyValue(value);
+        if (StringUtils.hasText(textValue)) {
+            target.put(path, textValue);
+        }
+    }
+
+    private String stringifyValue(Object value) {
+        if (value == null) {
+            return "";
+        }
+        return value.toString().trim();
+    }
+
+    private String joinList(List<?> values, String separator) {
+        if (values == null || values.isEmpty()) {
+            return "";
+        }
+        return values.stream()
+                .map(this::stringifyValue)
+                .filter(StringUtils::hasText)
+                .collect(Collectors.joining(separator));
+    }
+
+    private String safeOrDefault(String value, String fallback) {
+        return StringUtils.hasText(value) ? value.trim() : fallback;
+    }
+
+    private String buildFallbackPrompt(SimpleImageBriefing briefing, int batchSize) {
+        String services = joinList(briefing.resolvedServices(), ", ");
+        String location = safeOrDefault(briefing.resolvedLocation(), "sua região");
+        String contact = safeOrDefault(briefing.contactSummary(), "Contato não informado");
+        String professional = safeOrDefault(briefing.professionalName(), "Profissional");
+        String activityType = safeOrDefault(briefing.activityType(), "profissional");
+        String studio = safeOrDefault(briefing.studioName(), "estúdio ou atendimento personalizado");
+        String dataBlock = serializeBriefing(briefing);
+
+        String fallbackTemplate = String.join("\n",
+                "Gere materiais de divulgação premium em português para %s, um(a) %s que atua em %s.",
+                "Requisitos obrigatórios:",
+                "1. Visual bonito, atraente e com atmosfera profissional, destacando o universo de %s.",
+                "2. Valorize os serviços principais (%s) com chamadas claras, pensadas para redes sociais.",
+                "3. Mostre formas de contato visíveis adicionando %s no design.",
+                "4. Use cores vivas, iluminação moderna e elementos que façam referência ao ambiente de %s.",
+                "5. Entregue um pacote em lote (batch) com pelo menos %d variações quadradas (1:1), prontas para feed e fáceis de adaptar para stories.",
+                "",
+                "Dados coletados no formulário. Use-os para definir copy, cenário, elementos visuais e público-alvo:",
+                "%s",
+                "");
+
+        return fallbackTemplate.formatted(
+                professional,
+                activityType,
+                location,
+                activityType,
+                services,
+                contact,
+                studio,
+                batchSize,
+                dataBlock);
     }
 }

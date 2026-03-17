@@ -18,6 +18,12 @@ public class UpsertFlowRequest {
 
     private String prompt;
 
+    private String imagePromptModel;
+
+    private String imagePromptTemplate;
+
+    private Integer imageBatchSize;
+
     private SimpleFormStylePayload simpleFormStyle;
 
     @NotEmpty(message = "Ao menos uma pergunta é obrigatória")
@@ -54,6 +60,30 @@ public class UpsertFlowRequest {
 
     public void setPrompt(String prompt) {
         this.prompt = prompt;
+    }
+
+    public String getImagePromptModel() {
+        return imagePromptModel;
+    }
+
+    public void setImagePromptModel(String imagePromptModel) {
+        this.imagePromptModel = imagePromptModel;
+    }
+
+    public String getImagePromptTemplate() {
+        return imagePromptTemplate;
+    }
+
+    public void setImagePromptTemplate(String imagePromptTemplate) {
+        this.imagePromptTemplate = imagePromptTemplate;
+    }
+
+    public Integer getImageBatchSize() {
+        return imageBatchSize;
+    }
+
+    public void setImageBatchSize(Integer imageBatchSize) {
+        this.imageBatchSize = imageBatchSize;
     }
 
     public List<FlowQuestionRequest> getQuestions() {

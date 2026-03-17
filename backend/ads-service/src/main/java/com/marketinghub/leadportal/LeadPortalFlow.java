@@ -44,6 +44,15 @@ public class LeadPortalFlow {
     @Column(columnDefinition = "LONGTEXT")
     private String prompt;
 
+    @Column(name = "image_prompt_model", length = 128)
+    private String imagePromptModel;
+
+    @Column(name = "image_prompt_template", columnDefinition = "LONGTEXT")
+    private String imagePromptTemplate;
+
+    @Column(name = "image_prompt_batch_size")
+    private Integer imagePromptBatchSize;
+
     /** Custo estimado em USD para gerar este fluxo. */
     @Column(name = "cost_usd", precision = 10, scale = 4)
     private BigDecimal costUsd;

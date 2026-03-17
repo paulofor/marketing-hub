@@ -15,6 +15,9 @@ public class UpdateLeadPortalFlowRequest {
     private Long marketNicheId;
     private Long experimentId;
     private String model;
+    private String imagePromptModel;
+    private String imagePromptTemplate;
+    private Integer imagePromptBatchSize;
     private Long simpleFormStyleId;
     private List<LeadPortalFlowQuestionRequest> questions;
 }

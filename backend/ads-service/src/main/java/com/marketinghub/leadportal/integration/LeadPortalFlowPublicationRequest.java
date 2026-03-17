@@ -18,6 +18,9 @@ public record LeadPortalFlowPublicationRequest(
         String description,
         String model,
         String prompt,
+        String imagePromptModel,
+        String imagePromptTemplate,
+        Integer imagePromptBatchSize,
         List<Question> questions,
         SimpleFormStylePayload simpleFormStyle) {
 
@@ -34,6 +37,9 @@ public record LeadPortalFlowPublicationRequest(
                 flow.getDescription(),
                 flow.getModel(),
                 flow.getPrompt(),
+                flow.getImagePromptModel(),
+                flow.getImagePromptTemplate(),
+                flow.getImagePromptBatchSize(),
                 flow.getQuestions().stream()
                         .map(LeadPortalFlowPublicationRequest::toQuestion)
                         .toList(),

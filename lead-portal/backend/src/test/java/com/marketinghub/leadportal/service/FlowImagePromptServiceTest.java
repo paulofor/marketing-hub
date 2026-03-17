@@ -25,7 +25,11 @@ class FlowImagePromptServiceTest {
                 null,
                 null,
                 null,
-                List.of(), null);
+                null,
+                null,
+                null,
+                List.of(),
+                null);
 
         Map<String, Object> answers = Map.of(
                 "nome", "Ana",

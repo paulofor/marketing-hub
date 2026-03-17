@@ -43,6 +43,9 @@ public class FlowController {
                 request.getDescription(),
                 request.getModel(),
                 request.getPrompt(),
+                request.getImagePromptModel(),
+                request.getImagePromptTemplate(),
+                request.getImageBatchSize(),
                 request.getQuestions().stream().map(this::toQuestion).toList(),
                 mapStyle(request.getSimpleFormStyle()));
         return FlowResponse.from(flowService.save(flow));

@@ -1,7 +1,6 @@
 package com.marketinghub.worker.leadportal.image;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -19,12 +18,13 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.BeforeEach;
-import org.springframework.http.HttpStatusCode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatusCode;
 import software.amazon.awssdk.core.exception.SdkClientException;
 
 @ExtendWith(MockitoExtension.class)
@@ -131,6 +131,37 @@ class LeadPortalImageProcessingServiceTest {
         verify(packageClient, never()).markRetry(anyLong(), anyString());
         verify(packageClient, never()).markFailed(anyLong(), anyString());
         verify(packageClient).submitResults(anyLong(), any(), anyString(), anyString());
+    }
+
+    @Test
+    void supportsPromptLimitUpToThreeThousandCharacters() {
+        String longPrompt = "a".repeat(2500);
+        LeadPortalImagePackageClient.ImagePackage promptOnlyPackage = new LeadPortalImagePackageClient.ImagePackage(
+                3L,
+                UUID.fromString("123e4567-e89b-12d3-a456-426614174002"),
+                null,
+                1,
+                0,
+                "gpt-image-1",
+                longPrompt,
+                "treatment",
+                1L,
+                2L);
+
+        when(packageClient.listRecentPackages()).thenReturn(List.of(promptOnlyPackage));
+        when(imageClient.generateFromPrompt(anyString(), any(ImageGenerationPlan.class)))
+                .thenReturn(new CreativeImageOptimizer.OptimizedImage(new byte[] {9}, "jpg"));
+        when(storageClient.upload(any(), anyString(), any()))
+                .thenReturn(new LeadPortalStorageClient.StoredImage("object-key", "public-url", "jpg"));
+
+        service.process();
+
+        ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
+        verify(imageClient).generateFromPrompt(promptCaptor.capture(), any(ImageGenerationPlan.class));
+        String generatedPrompt = promptCaptor.getValue();
+        assertThat(generatedPrompt.length()).isLessThanOrEqualTo(3000);
+        assertThat(generatedPrompt.length()).isGreaterThan(1000);
+        assertThat(generatedPrompt).contains(longPrompt);
     }
 
     @Test

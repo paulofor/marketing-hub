@@ -7,6 +7,23 @@ type PricingTable = Record<string, Record<string, Partial<Record<ResolutionKey, 
 type Orientation = "SQUARE" | "PORTRAIT" | "LANDSCAPE";
 
 const IMAGE_GENERATION_PRICING_USD: PricingTable = {
+  "GPT IMAGE 1.5": {
+    LOW: {
+      "1024x1024": 0.01,
+      "1024x1536": 0.015,
+      "1536x1024": 0.015,
+    },
+    MEDIUM: {
+      "1024x1024": 0.04,
+      "1024x1536": 0.06,
+      "1536x1024": 0.06,
+    },
+    HIGH: {
+      "1024x1024": 0.17,
+      "1024x1536": 0.255,
+      "1536x1024": 0.255,
+    },
+  },
   "GPT IMAGE 1": {
     LOW: {
       "1024x1024": 0.011,
@@ -63,6 +80,11 @@ const IMAGE_GENERATION_PRICING_USD: PricingTable = {
 };
 
 const DEFAULT_RESOLUTION_BY_ORIENTATION: Record<string, Partial<Record<Orientation, ResolutionKey>>> = {
+  "GPT IMAGE 1.5": {
+    SQUARE: "1024x1024",
+    PORTRAIT: "1024x1536",
+    LANDSCAPE: "1536x1024",
+  },
   "GPT IMAGE 1": {
     SQUARE: "1024x1024",
     PORTRAIT: "1024x1536",
@@ -84,6 +106,11 @@ const DEFAULT_RESOLUTION_BY_ORIENTATION: Record<string, Partial<Record<Orientati
 };
 
 const MODEL_ALIASES: Record<string, string> = {
+  "GPT IMAGE 1.5": "GPT IMAGE 1.5",
+  "GPT-IMAGE-1.5": "GPT IMAGE 1.5",
+  "GPT_IMAGE_1_5": "GPT IMAGE 1.5",
+  "GPTIMAGE1.5": "GPT IMAGE 1.5",
+  "GPT IMAGE 1 5": "GPT IMAGE 1.5",
   "GPT IMAGE 1": "GPT IMAGE 1",
   "GPT-IMAGE-1": "GPT IMAGE 1",
   "GPT_IMAGE_1": "GPT IMAGE 1",

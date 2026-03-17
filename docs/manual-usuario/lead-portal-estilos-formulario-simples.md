@@ -53,7 +53,7 @@ Esses campos não mudam o CSS diretamente, mas documentam as referências criati
 | --- | --- |
 | **Prompt textual** | Briefing aplicado aos modelos de texto (`textModel`).
 | **Prompt de imagens** | Diretriz visual aplicada ao modelo de imagem (`imageModel`).
-| **Modelo de texto / Modelo de imagem** | Nome do modelo (ex.: `gpt-4o-mini`, `gpt-image-1`).
+| **Modelo de texto / Modelo de imagem** | Nome do modelo (ex.: `gpt-4o-mini`, `gpt-image-1.5`).
 | **Batch de imagens** | Quantidade padrão de variações que o worker deve solicitar (validado para ser > 0).
 | **Aspect ratio** | Segue o padrão `1:1`, `3:4`, etc., para os renders.
 | **Imagem de prévia (URL)** | URL usada em integrações externas que consomem o payload de publicação (fica disponível em `simpleFormStyle.previewImageUrl`).

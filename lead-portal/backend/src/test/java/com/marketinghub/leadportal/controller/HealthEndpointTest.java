@@ -24,7 +24,7 @@ class HealthEndpointTest {
     void actuatorHealthEndpointShouldReturnUpStatus() {
         ResponseEntity<Map<String, Object>> response =
                 restTemplate.exchange(
-                        "/actuator/health",
+                        "/api/ops-lp-observability-v2/health",
                         HttpMethod.GET,
                         null,
                         new ParameterizedTypeReference<Map<String, Object>>() {});

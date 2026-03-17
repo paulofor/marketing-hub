@@ -34,6 +34,18 @@ public class ExperimentFunnelService {
     private final LeadRepository leadRepository;
     private final JdbcTemplate jdbcTemplate;
 
+    private static final String FLOW_SCOPE_CONDITION = """
+            (
+                f.experiment_id = ?
+                OR EXISTS (
+                    SELECT 1
+                    FROM experiment e
+                    WHERE e.id = ?
+                      AND e.lead_portal_flow_id = f.id
+                )
+            )
+            """;
+
     public List<ExperimentFunnelStageDto> summarize(Long experimentId) {
         Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
         Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages = bootstrapStages();
@@ -129,8 +141,8 @@ public class ExperimentFunnelService {
                                MAX(fa.accessed_at) AS last_event
                         FROM flow_access fa
                         JOIN lead_portal_flow f ON f.slug = fa.flow_slug
-                        WHERE f.experiment_id = ?
-                        """, experimentId),
+                        WHERE %s
+                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId),
                 "Acessos registrados no Lead Portal (flow_access por slug do experimento)");
 
         mergeMetric(stages, ExperimentFunnelStage.ENVIO_FORM,
@@ -151,9 +163,9 @@ public class ExperimentFunnelService {
                         FROM flow_submission_image_package p
                         JOIN flow_submissions s ON s.id = p.submission_id
                         JOIN lead_portal_flow f ON f.slug = s.flow_slug
-                        WHERE f.experiment_id = ?
+                        WHERE %s
                           AND p.email_opened_at IS NOT NULL
-                        """, experimentId),
+                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId),
                 "Aberturas de e-mail de amostra (flow_submission_image_package.email_opened_at)");
 
         mergeMetric(stages, ExperimentFunnelStage.ACESSO_CHECKOUT,
@@ -164,8 +176,8 @@ public class ExperimentFunnelService {
                         FROM lead_portal_purchase p
                         JOIN flow_submissions s ON s.id = p.submission_id
                         JOIN lead_portal_flow f ON f.slug = s.flow_slug
-                        WHERE f.experiment_id = ?
-                        """, experimentId),
+                        WHERE %s
+                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId),
                 "Checkouts gerados no Mercado Pago (lead_portal_purchase)");
 
         mergeMetric(stages, ExperimentFunnelStage.COMPRA,
@@ -176,9 +188,9 @@ public class ExperimentFunnelService {
                         FROM lead_portal_purchase p
                         JOIN flow_submissions s ON s.id = p.submission_id
                         JOIN lead_portal_flow f ON f.slug = s.flow_slug
-                        WHERE f.experiment_id = ?
+                        WHERE %s
                           AND (p.payment_approved_at IS NOT NULL OR p.mp_status = 'approved')
-                        """, experimentId),
+                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId),
                 "Pagamentos aprovados (lead_portal_purchase)");
 
         mergeMetric(stages, ExperimentFunnelStage.ABERTURA_EMAIL_COMPRA,
@@ -190,10 +202,10 @@ public class ExperimentFunnelService {
                         JOIN flow_submissions s ON s.id = d.submission_id
                         JOIN lead_portal_flow f ON f.slug = s.flow_slug
                         LEFT JOIN email_log el ON el.request_id = d.email_request_id
-                        WHERE f.experiment_id = ?
+                        WHERE %s
                           AND d.email_request_id IS NOT NULL
                           AND el.opened_at IS NOT NULL
-                        """, experimentId),
+                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId),
                 "Abertura do e-mail de entrega (lead_portal_premium_delivery -> email_log)");
 
         mergeMetric(stages, ExperimentFunnelStage.DOWNLOAD_MATERIAL_PAGO,
@@ -204,10 +216,10 @@ public class ExperimentFunnelService {
                         FROM flow_submission_image_package p
                         JOIN flow_submissions s ON s.id = p.submission_id
                         JOIN lead_portal_flow f ON f.slug = s.flow_slug
-                        WHERE f.experiment_id = ?
+                        WHERE %s
                           AND p.payment_purchase_id IS NOT NULL
                           AND p.images_viewed_at IS NOT NULL
-                        """, experimentId),
+                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId),
                 "Downloads/visualizações do material pago (flow_submission_image_package.images_viewed_at)");
     }
 

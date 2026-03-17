@@ -287,3 +287,39 @@ erDiagram
 - `experiment_targeting_selection` registra as escolhas feitas na aba de segmentação do experimento.
 - O disparo do fluxo simples cria uma `targeting_request` interna para resolver os códigos da Meta Ads.
 - `targeting_request` agora possui `experiment_id` (FK) para rastrear execuções por experimento e permitir expor status/erros operacionais diretamente na UI.
+
+## Funil de vendas do experimento
+
+Para cada experimento passamos a acompanhar um funil operacional padronizado de
+nove etapas. As etapas são mantidas em `ExperimentFunnelStage` (código) e os
+logs ficam em `experiment_funnel_event`:
+
+- `VISUALIZACAO_ANUNCIO`
+- `ACESSO_FORM_LEAD`
+- `VISUALIZACAO_FORM`
+- `ENVIO_FORM`
+- `ABERTURA_EMAIL_AMOSTRA`
+- `ACESSO_CHECKOUT`
+- `COMPRA`
+- `ABERTURA_EMAIL_COMPRA`
+- `DOWNLOAD_MATERIAL_PAGO`
+
+A tabela `experiment_funnel_event` guarda eventos manuais/forçados com as
+colunas: `id`, `experiment_id` (FK), `lead_id` (FK opcional), `stage`, `source`,
+`payload` e `occurred_at`.
+
+Além dos eventos explícitos, o backend consolida fontes automáticas por etapa:
+
+- Impressões e cliques: `experiment_campaign_metric`.
+- Visualização de formulário: `flow_access` associado ao `lead_portal_flow.slug`.
+- Envio de formulário: `lead_portal_submission` (campo `experiment_id`).
+- Abertura do e-mail de amostra e download pago: `flow_submission_image_package`
+  (campos `email_opened_at` e `images_viewed_at` com `payment_purchase_id`).
+- Checkout e compra: `lead_portal_purchase` (com filtro
+  `payment_approved_at`/`mp_status`).
+- Abertura do e-mail de compra: `lead_portal_premium_delivery` associado a
+  `email_log.opened_at`.
+
+O endpoint `/api/experiments/{id}/funnel` retorna o agregado por etapa
+(`autoCount`, `manualCount`, `totalCount`, `uniqueCount` e `lastEventAt`) usado
+na aba **Funil de vendas** da UI.

@@ -33,6 +33,7 @@ import type { JourneyAssignment, JourneyStep } from "../../api/journey/types";
 import DeliverablesTab from "./DeliverablesTab";
 import LeadPortalFlowTab from "./LeadPortalFlowTab";
 import TargetingTab from "./TargetingTab";
+import ExperimentFunnelTab from "./ExperimentFunnelTab";
 import { useExperimentAdSetWorkflow } from "../../api/experiment/useExperimentAdSetWorkflow";
 
 type ChecklistItem = {
@@ -977,6 +978,9 @@ export default function ExperimentDetailPage() {
           <Tabs.Trigger value="overview" className="nav-link">
             Overview
           </Tabs.Trigger>
+          <Tabs.Trigger value="funnel" className="nav-link">
+            Funil de vendas
+          </Tabs.Trigger>
           <Tabs.Trigger value="targeting" className="nav-link">
             Segmentação
           </Tabs.Trigger>
@@ -1070,6 +1074,9 @@ export default function ExperimentDetailPage() {
               </div>
             </div>
           </div>
+        </Tabs.Content>
+        <Tabs.Content value="funnel" asChild>
+          <ExperimentFunnelTab experimentId={expId} />
         </Tabs.Content>
         <Tabs.Content value="targeting" asChild>
           <TargetingTab

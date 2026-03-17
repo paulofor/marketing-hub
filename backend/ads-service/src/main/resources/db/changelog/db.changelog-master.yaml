@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2025-10-30-experiment-funnel-events.yaml
+      relativeToChangelogFile: true
+  - include:
       file: 2025-02-12-fix-journey-step-stimulus-type.sql
       relativeToChangelogFile: true
   - include:

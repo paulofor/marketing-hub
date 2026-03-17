@@ -1,0 +1,66 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2025-10-30-experiment-funnel-events
+      author: assistant
+      preConditions:
+        onFail: MARK_RAN
+        dbms:
+          type: mysql
+        not:
+          tableExists:
+            tableName: experiment_funnel_event
+      changes:
+        - createTable:
+            tableName: experiment_funnel_event
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT AUTO_INCREMENT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_experiment_funnel_event
+                    nullable: false
+              - column:
+                  name: experiment_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_experiment_funnel_event_experiment
+                    references: experiment(id)
+              - column:
+                  name: lead_id
+                  type: BINARY(16)
+                  constraints:
+                    nullable: true
+                    foreignKeyName: fk_experiment_funnel_event_lead
+                    references: lead(id)
+              - column:
+                  name: stage
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source
+                  type: VARCHAR(50)
+                  defaultValue: manual
+              - column:
+                  name: payload
+                  type: LONGTEXT
+              - column:
+                  name: occurred_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+        - createIndex:
+            tableName: experiment_funnel_event
+            indexName: idx_funnel_event_experiment_stage
+            columns:
+              - column:
+                  name: experiment_id
+              - column:
+                  name: stage
+        - createIndex:
+            tableName: experiment_funnel_event
+            indexName: idx_funnel_event_lead
+            columns:
+              - column:
+                  name: lead_id

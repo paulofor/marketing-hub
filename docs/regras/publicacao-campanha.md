@@ -56,3 +56,12 @@ há configuração faltante antes de liberar a campanha.
 
 Quando todos os bloqueios estão prontos, o cartão sinaliza **Pronto** e o worker
 pode publicar as campanhas para o experimento.
+
+## Monitoramento do funil por experimento
+
+Cada experimento agora possui uma aba **Funil de vendas** que expõe, em nove
+etapas, o avanço desde a visualização do anúncio até o download do material
+pago. Os números consolidados vêm das tabelas operacionais (impressões e cliques
+em `experiment_campaign_metric`, engajamentos do Lead Portal e eventos de
+checkout/pagamento). Consultar essa aba ajuda a validar se o experimento está
+entregando tráfego antes de disparar a publicação ou ajustes adicionais.

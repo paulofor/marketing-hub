@@ -25,6 +25,9 @@ export interface LeadPortalFlow {
   description?: string | null;
   model?: string | null;
   prompt?: string | null;
+  imagePromptModel?: string | null;
+  imagePromptTemplate?: string | null;
+  imagePromptBatchSize?: number | null;
   approved: boolean;
   simpleFormStyle?: LeadPortalSimpleFormStyle | null;
   approvedAt?: string | null;

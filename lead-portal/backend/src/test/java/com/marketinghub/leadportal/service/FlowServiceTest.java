@@ -88,6 +88,9 @@ class FlowServiceTest {
                 entity.getDescription(),
                 entity.getModel(),
                 entity.getPrompt(),
+                entity.getImagePromptModel(),
+                entity.getImagePromptTemplate(),
+                entity.getImageBatchSize(),
                 List.of(optimizedQuestion),
                 null);
 

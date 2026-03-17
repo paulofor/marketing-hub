@@ -11,6 +11,9 @@ public record Flow(
         String description,
         String model,
         String prompt,
+        String imagePromptModel,
+        String imagePromptTemplate,
+        Integer imageBatchSize,
         List<FlowQuestion> questions,
         SimpleFormStyle simpleFormStyle) {
 }

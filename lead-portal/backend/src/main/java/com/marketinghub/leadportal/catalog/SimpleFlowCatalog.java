@@ -50,6 +50,9 @@ public class SimpleFlowCatalog {
                 "Fluxo simples para coleta inicial de informações sem necessidade de envio de imagens.",
                 "manual",
                 null,
+                null,
+                null,
+                null,
                 List.of(
                         question("Nome", "nome", FlowQuestionType.TEXT, true),
                         question(

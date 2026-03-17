@@ -85,6 +85,9 @@ class FlowSubmissionControllerTest {
                 "Coleta de dados para planejamento",
                 null,
                 null,
+                null,
+                null,
+                null,
                 List.of(
                         new FlowQuestion(
                                 "Qual é o seu nome?",
@@ -243,6 +246,9 @@ class FlowSubmissionControllerTest {
                 "fluxo-sem-tipo",
                 "Fluxo com pergunta sem tipo",
                 "",
+                null,
+                null,
+                null,
                 null,
                 null,
                 List.of(

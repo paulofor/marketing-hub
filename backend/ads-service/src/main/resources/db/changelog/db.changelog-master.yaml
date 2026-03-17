@@ -519,3 +519,6 @@ databaseChangeLog:
   - include:
       file: V2030_12_20__lead_portal_image_prompt_template.sql
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2030-09-17-add-gpt-image-1-5.yaml
+      relativeToChangelogFile: true

@@ -18,7 +18,7 @@ Esta tela permite personalizar o texto usado pelo worker de IA para criar os pac
 
 | Campo | Descrição |
 | --- | --- |
-| **Modelo de imagem** | Código do modelo informado ao worker. Seleciona da mesma tabela de modelos usada nos experimentos (ex.: `gpt-image-1`). Se deixar em branco, usamos o padrão configurado globalmente. |
+| **Modelo de imagem** | Código do modelo informado ao worker. Seleciona da mesma tabela de modelos usada nos experimentos (ex.: `gpt-image-1.5`). Se deixar em branco, usamos o padrão configurado globalmente. |
 | **Tamanho do lote** | Número de imagens geradas por submissão. Mantemos o processamento em batch (1 a 20 imagens) para reduzir custo por unidade. |
 | **Template do prompt** | Texto enviado ao worker. Aceita placeholders para inserir dados do formulário automaticamente. |
 

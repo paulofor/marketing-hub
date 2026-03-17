@@ -3,8 +3,8 @@ databaseChangeLog:
       id: 2030-09-17-add-gpt-image-1-5
       author: ai-hub
       preConditions:
-        onFail: MARK_RAN
-        onError: MARK_RAN
+        - onFail: MARK_RAN
+        - onError: MARK_RAN
         - dbms:
             type: mysql
       changes:

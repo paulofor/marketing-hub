@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2036-11-20-experiment-creative-prompts
+      author: repo
+      preConditions:
+        onFail: MARK_RAN
+        and:
+          - dbms:
+              type: mysql
+          - sqlCheck:
+              expectedResult: 0
+              sql: |
+                SELECT COUNT(*)
+                FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'experiment'
+                  AND COLUMN_NAME IN ('creative_text_prompt', 'creative_image_prompt');
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment
+                  ADD COLUMN creative_text_prompt LONGTEXT NULL AFTER creative_approved,
+                  ADD COLUMN creative_image_prompt LONGTEXT NULL AFTER creative_text_prompt;

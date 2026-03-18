@@ -354,7 +354,7 @@ public class CreativeChatGptClient {
                 if (hasText(h.getUniqueMechanism())) sb.append("Mecanismo único: ").append(h.getUniqueMechanism()).append("\n");
                 if (hasText(h.getEntrega())) sb.append("Entrega: ").append(h.getEntrega()).append("\n");
                 if (hasText(h.getSuccessRule())) sb.append("Regra de sucesso: ").append(h.getSuccessRule()).append("\n");
-                if (hasText(h.getOfferType())) sb.append("Tipo de oferta: ").append(h.getOfferType()).append("\n");
+                if (h.getOfferType() != null) sb.append("Tipo de oferta: ").append(h.getOfferType()).append("\n");
                 if (h.getPrice() != null) sb.append("Preço: ").append(h.getPrice()).append("\n");
             }
         }
@@ -384,7 +384,7 @@ public class CreativeChatGptClient {
         placeholders.put("uniqueMechanism", h != null ? safe(h.getUniqueMechanism()) : "");
         placeholders.put("entrega", h != null ? safe(h.getEntrega()) : "");
         placeholders.put("successRule", h != null ? safe(h.getSuccessRule()) : "");
-        placeholders.put("offerType", h != null ? safe(h.getOfferType()) : "");
+        placeholders.put("offerType", h != null && h.getOfferType() != null ? h.getOfferType().name() : "");
         placeholders.put("price", h != null && h.getPrice() != null ? h.getPrice().toPlainString() : "");
         return placeholders;
     }

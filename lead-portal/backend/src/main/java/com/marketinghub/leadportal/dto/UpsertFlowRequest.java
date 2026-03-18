@@ -14,6 +14,8 @@ public class UpsertFlowRequest {
 
     private String description;
 
+    private String customFormHtml;
+
     private String model;
 
     private String prompt;
@@ -44,6 +46,14 @@ public class UpsertFlowRequest {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getCustomFormHtml() {
+        return customFormHtml;
+    }
+
+    public void setCustomFormHtml(String customFormHtml) {
+        this.customFormHtml = customFormHtml;
     }
 
     public String getModel() {

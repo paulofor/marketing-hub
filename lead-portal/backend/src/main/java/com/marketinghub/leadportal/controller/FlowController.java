@@ -41,6 +41,7 @@ public class FlowController {
                 slug,
                 request.getName(),
                 request.getDescription(),
+                request.getCustomFormHtml(),
                 request.getModel(),
                 request.getPrompt(),
                 request.getImagePromptModel(),

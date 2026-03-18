@@ -7,6 +7,7 @@ export interface UpdateLeadPortalFlowRequest {
   name?: string;
   slug?: string;
   description?: string | null;
+  customFormHtml?: string | null;
   marketNicheId?: number | string | null;
   model?: string | null;
   simpleFormStyleId?: number | string | null;

@@ -48,6 +48,7 @@ public class SimpleFlowCatalog {
                 PERSONAL_TRAINER_SLUG,
                 "Formulário simples para personal trainer",
                 "Fluxo simples para coleta inicial de informações sem necessidade de envio de imagens.",
+                null,
                 "manual",
                 null,
                 null,

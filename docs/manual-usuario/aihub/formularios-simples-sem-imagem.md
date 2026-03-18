@@ -33,6 +33,23 @@ Este guia mostra como criar, atualizar e validar os formulários simples do Lead
 
 > ⚠️ Formulários já vinculados a experimentos exibem a mensagem "Vinculado ao experimento #ID" e não podem ser editados (evita inconsistências em campanhas em andamento).
 
+## HTML personalizado da página
+
+- No cartão de criação há um campo opcional chamado *HTML personalizado*. Cole nele o layout completo que deseja publicar para o fluxo.
+- Utilize o token `{{lead_portal_form}}` para indicar exatamente onde o formulário padrão deve aparecer. Sem ele, o componente será renderizado após o HTML informado.
+- A página aceita qualquer token no formato `{{dataKey}}`, usando os mesmos identificadores exibidos nas perguntas (ex.: `{{cabecalho_titulo}}`, `{{bullet_item_1}}`).
+
+### Tokens principais
+
+| Token | Descrição |
+| --- | --- |
+| `{{lead_portal_form}}` | Injeta o formulário padrão no ponto escolhido. |
+| `{{form_endpoint}}` | URL absoluta do POST `/api/flows/:slug/submissions`. |
+| `{{exemplo_real_card_1_imagem_url}}`, `{{exemplo_real_card_2_imagem_url}}`, `{{exemplo_real_card_3_imagem_url}}` | URLs finais das imagens enviadas nos subcards. |
+| `{{flow_name}}` e `{{flow_slug}}` | Identificadores básicos do fluxo para exibir no HTML. |
+
+> 💡 O Lead Portal também injeta os valores de todas as perguntas (`dataKey`). Isso permite reaproveitar textos como `{{cabecalho_subtitulo}}` ou `{{bullet_item_2}}` mesmo utilizando o layout manual.
+
 ## Como as imagens aparecem para o lead
 
 - A página pública agora lê os campos internos `exemplo_real_card_*` e renderiza os mesmos PNG enviados no construtor.

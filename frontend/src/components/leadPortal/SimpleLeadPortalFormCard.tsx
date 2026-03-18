@@ -140,6 +140,7 @@ export default function SimpleLeadPortalFormCard({
   const [card1OverlayText, setCard1OverlayText] = useState("");
   const [card2OverlayText, setCard2OverlayText] = useState("");
   const [card3OverlayText, setCard3OverlayText] = useState("");
+  const [customFormHtml, setCustomFormHtml] = useState("");
   const [uploadingCardImage, setUploadingCardImage] = useState<1 | 2 | 3 | null>(
     null,
   );
@@ -173,6 +174,7 @@ export default function SimpleLeadPortalFormCard({
     setCard1OverlayText("");
     setCard2OverlayText("");
     setCard3OverlayText("");
+    setCustomFormHtml("");
     if (simpleFormStyles && simpleFormStyles.length > 0) {
       setSelectedStyleId(simpleFormStyles[0].id);
     } else {
@@ -184,6 +186,7 @@ export default function SimpleLeadPortalFormCard({
     setNewFlowName(flow.name);
     setNewFlowSlug(flow.slug);
     setNewFlowDescription(flow.description ?? SIMPLE_FORM_DEFAULTS.description);
+    setCustomFormHtml(flow.customFormHtml?.trim() ?? "");
     setSelectedStyleId(flow.simpleFormStyle?.id ?? null);
     const questionMap = new Map(
       flow.questions.map((question) => [question.dataKey, question]),
@@ -457,6 +460,7 @@ export default function SimpleLeadPortalFormCard({
       name: newFlowName,
       slug: newFlowSlug,
       description: newFlowDescription?.trim() || undefined,
+      customFormHtml: customFormHtml.trim().length > 0 ? customFormHtml : undefined,
       model: "manual",
       marketNicheId,
       simpleFormStyleId: selectedStyleId ?? undefined,
@@ -727,6 +731,48 @@ export default function SimpleLeadPortalFormCard({
                 Cada estilo define cores, gradientes e imagens decorativas que
                 serão usadas na página pública do formulário.
               </p>
+            </div>
+
+            <div className="border rounded-3 p-3 bg-body-tertiary">
+              <div className="d-flex flex-column gap-2">
+                <div>
+                  <h6 className="mb-1">HTML personalizado da página (opcional)</h6>
+                  <p className="text-muted small mb-0">
+                    Cole um layout completo para substituir o cabeçalho padrão. Use <code>{`{{lead_portal_form}}`}</code> para
+                    indicar onde o formulário simples deve aparecer.
+                  </p>
+                </div>
+                <textarea
+                  className="form-control"
+                  rows={10}
+                  value={customFormHtml}
+                  onChange={(event) => setCustomFormHtml(event.target.value)}
+                  placeholder="<section>...</section>"
+                />
+                <div className="text-muted small">
+                  <p className="mb-1">Tokens suportados:</p>
+                  <ul className="ps-3 mb-1">
+                    <li>
+                      <code>{`{{lead_portal_form}}`}</code> – injeta o formulário padrão no ponto escolhido.
+                    </li>
+                    <li>
+                      <code>{`{{form_endpoint}}`}</code> – URL absoluta do POST <code>/api/flows/:slug/submissions</code>.
+                    </li>
+                    <li>
+                      <code>{`{{exemplo_real_card_1_imagem_url}}`}</code>,
+                      <code className="ms-1">{`{{exemplo_real_card_2_imagem_url}}`}</code>,
+                      <code className="ms-1">{`{{exemplo_real_card_3_imagem_url}}`}</code> – URLs finais das imagens dos subcards.
+                    </li>
+                    <li>
+                      <code>{`{{flow_name}}`}</code>, <code>{`{{flow_slug}}`}</code> e qualquer <code>dataKey</code> das perguntas
+                      (ex.: <code>{`{{cabecalho_titulo}}`}</code>, <code>{`{{bullet_item_1}}`}</code>).
+                    </li>
+                  </ul>
+                  <p className="mb-0">
+                    Se nenhum token <code>{`{{lead_portal_form}}`}</code> for encontrado, o formulário será exibido no final da página.
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="border rounded p-3 bg-light">

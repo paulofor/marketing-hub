@@ -78,6 +78,7 @@ export interface LeadPortalFlow {
   slug: string;
   name: string;
   description?: string | null;
+  customFormHtml?: string | null;
   questions: FlowQuestion[];
   simpleFormStyle?: LeadPortalSimpleFormStyle | null;
 }

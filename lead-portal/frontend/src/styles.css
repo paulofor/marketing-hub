@@ -1089,3 +1089,12 @@ form.flow-form {
     border-radius: 18px;
   }
 }
+
+.flow-page--custom .flow-custom-template {
+  width: 100%;
+}
+
+.flow-page--custom .flow-custom-template img {
+  max-width: 100%;
+  height: auto;
+}

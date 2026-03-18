@@ -86,6 +86,7 @@ class FlowServiceTest {
                 entity.getSlug(),
                 entity.getName(),
                 entity.getDescription(),
+                null,
                 entity.getModel(),
                 entity.getPrompt(),
                 entity.getImagePromptModel(),

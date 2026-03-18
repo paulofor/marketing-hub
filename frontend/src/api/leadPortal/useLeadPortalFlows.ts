@@ -23,6 +23,7 @@ export interface LeadPortalFlow {
   experimentId?: number | null;
   publicUrl?: string | null;
   description?: string | null;
+  customFormHtml?: string | null;
   model?: string | null;
   prompt?: string | null;
   imagePromptModel?: string | null;

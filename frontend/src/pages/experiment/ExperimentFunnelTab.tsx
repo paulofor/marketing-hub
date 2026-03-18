@@ -290,7 +290,7 @@ export default function ExperimentFunnelTab({
           <ul className="mb-0 small ps-3">
             <li>1) Impressões do anúncio.</li>
             <li>2) Cliques que levaram ao formulário do experimento.</li>
-            <li>3) Visualizações do formulário (flow_access).</li>
+            <li>3) Renderizações completas do formulário (evento lead-portal-render-complete).</li>
             <li>4) Envios de formulário (lead_portal_submission).</li>
             <li>5) Abertura do e-mail de amostra.</li>
             <li>6) Acessos ao checkout no Mercado Pago.</li>

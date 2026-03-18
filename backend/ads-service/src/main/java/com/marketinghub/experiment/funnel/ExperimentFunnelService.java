@@ -78,6 +78,29 @@ public class ExperimentFunnelService {
         eventRepository.save(event);
     }
 
+    @Transactional
+    public void registerFormRenderCompleted(String flowSlug, String visitorId) {
+        if (flowSlug == null || flowSlug.isBlank()) {
+            throw new IllegalArgumentException("Slug do fluxo é obrigatório");
+        }
+        Experiment experiment = experimentRepository.findFirstByLeadPortalFlowSlug(flowSlug.trim())
+                .orElseThrow(() -> new IllegalArgumentException("Fluxo não vinculado a experimento"));
+
+        String sanitizedVisitorId = visitorId == null ? null : visitorId.trim();
+        String payload = sanitizedVisitorId == null || sanitizedVisitorId.isBlank()
+                ? null
+                : "visitorId=" + sanitizedVisitorId;
+
+        ExperimentFunnelEvent event = ExperimentFunnelEvent.builder()
+                .experiment(experiment)
+                .stage(ExperimentFunnelStage.VISUALIZACAO_FORM)
+                .source(ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE)
+                .payload(payload)
+                .occurredAt(Instant.now())
+                .build();
+        eventRepository.save(event);
+    }
+
     private Lead resolveLead(UUID leadId) {
         if (leadId == null) {
             return null;
@@ -101,7 +124,9 @@ public class ExperimentFunnelService {
     }
 
     private void applyManualEvents(Long experimentId, Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages) {
-        for (StageAggregation agg : eventRepository.aggregateByExperiment(experimentId)) {
+        for (StageAggregation agg : eventRepository.aggregateByExperiment(
+                experimentId,
+                ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE)) {
             ExperimentFunnelStageDto dto = stages.get(agg.getStage());
             if (dto == null) {
                 continue;
@@ -137,13 +162,14 @@ public class ExperimentFunnelService {
         mergeMetric(stages, ExperimentFunnelStage.VISUALIZACAO_FORM,
                 fetchSingleMetric("""
                         SELECT COUNT(*) AS total,
-                               COUNT(DISTINCT fa.visitor_id) AS unique_count,
-                               MAX(fa.accessed_at) AS last_event
-                        FROM flow_access fa
-                        JOIN lead_portal_flow f ON f.slug = fa.flow_slug
-                        WHERE %s
-                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId),
-                "Acessos registrados no Lead Portal (flow_access por slug do experimento)");
+                               NULL AS unique_count,
+                               MAX(occurred_at) AS last_event
+                        FROM experiment_funnel_event
+                        WHERE experiment_id = ?
+                          AND stage = 'VISUALIZACAO_FORM'
+                          AND source = ?
+                        """, experimentId, ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE),
+                "Renderização completa registrada pelo Lead Portal (evento lead-portal-render-complete)");
 
         mergeMetric(stages, ExperimentFunnelStage.ENVIO_FORM,
                 fetchSingleMetric("""

@@ -25,6 +25,9 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
     boolean existsByNicheAndName(MarketNiche niche, String name);
     List<Experiment> findByStatus(ExperimentStatus status);
     List<Experiment> findByStatusAndPlatform(ExperimentStatus status, ExperimentPlatform platform);
+
+    Optional<Experiment> findFirstByLeadPortalFlowSlug(String slug);
+
     @Query("""
             select distinct e from Experiment e
             join fetch e.niche n

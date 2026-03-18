@@ -738,8 +738,8 @@ export default function SimpleLeadPortalFormCard({
                 <div>
                   <h6 className="mb-1">HTML personalizado da página (opcional)</h6>
                   <p className="text-muted small mb-0">
-                    Cole um layout completo para substituir o cabeçalho padrão. Use <code>{`{{lead_portal_form}}`}</code> para
-                    indicar onde o formulário simples deve aparecer.
+                    Cole um layout completo para substituir toda a página pública. O conteúdo será exibido em um iframe dedicado e não receberá a
+                    formatação padrão do fluxo simples.
                   </p>
                 </div>
                 <textarea
@@ -750,26 +750,23 @@ export default function SimpleLeadPortalFormCard({
                   placeholder="<section>...</section>"
                 />
                 <div className="text-muted small">
-                  <p className="mb-1">Tokens suportados:</p>
+                  <p className="mb-1">Observações importantes:</p>
                   <ul className="ps-3 mb-1">
                     <li>
-                      <code>{`{{lead_portal_form}}`}</code> – injeta o formulário padrão no ponto escolhido.
+                      O HTML é renderizado em um iframe próprio, sem o cabeçalho ou as seções padrão do fluxo simples.
                     </li>
                     <li>
-                      <code>{`{{form_endpoint}}`}</code> – URL absoluta do POST <code>/api/flows/:slug/submissions</code>.
+                      Não injetamos mais o formulário automático. Inclua o seu próprio <code>&lt;form&gt;</code> enviando um POST multipart para <code>{`{{url}}`}</code>.
                     </li>
                     <li>
-                      <code>{`{{exemplo_real_card_1_imagem_url}}`}</code>,
-                      <code className="ms-1">{`{{exemplo_real_card_2_imagem_url}}`}</code>,
-                      <code className="ms-1">{`{{exemplo_real_card_3_imagem_url}}`}</code> – URLs finais das imagens dos subcards.
+                      Variáveis disponíveis: <code>{`{{imagem1}}`}</code>, <code>{`{{imagem2}}`}</code>, <code>{`{{imagem3}}`}</code> e <code>{`{{url}}`}</code> (endpoint de submissão).
                     </li>
                     <li>
-                      <code>{`{{flow_name}}`}</code>, <code>{`{{flow_slug}}`}</code> e qualquer <code>dataKey</code> das perguntas
-                      (ex.: <code>{`{{cabecalho_titulo}}`}</code>, <code>{`{{bullet_item_1}}`}</code>).
+                      As imagens usam os mesmos arquivos configurados nos subcards deste formulário.
                     </li>
                   </ul>
                   <p className="mb-0">
-                    Se nenhum token <code>{`{{lead_portal_form}}`}</code> for encontrado, o formulário será exibido no final da página.
+                    O evento de renderização do experimento continua sendo disparado automaticamente pelo portal.
                   </p>
                 </div>
               </div>

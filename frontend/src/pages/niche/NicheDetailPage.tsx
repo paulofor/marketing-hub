@@ -1997,6 +1997,9 @@ export default function NicheDetailPage() {
                           >
                             {flow.approved ? "Aprovado" : "Pendente"}
                           </span>
+                          {flow.customFormHtml ? (
+                            <span className="badge text-bg-info">HTML personalizado</span>
+                          ) : null}
                           {flowBeingEdited?.id === flow.id ? (
                             <span className="badge text-bg-warning">Em edição</span>
                           ) : null}
@@ -2022,6 +2025,13 @@ export default function NicheDetailPage() {
                         <p className="text-muted small mb-0">
                           {flow.questions.length} pergunta(s)
                         </p>
+                        {flow.customFormHtml ? (
+                          <details className="mt-2">
+                            <summary>Ver HTML personalizado</summary>
+                            <pre className="bg-body-tertiary rounded-3 p-3 small overflow-auto">{flow.customFormHtml}</pre>
+                          </details>
+                        ) : null}
+
                         {flow.experimentId ? (
                           <p className="text-muted small mt-2 mb-0">
                             Vinculado ao experimento #{flow.experimentId}

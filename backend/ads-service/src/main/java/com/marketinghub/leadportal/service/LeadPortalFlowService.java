@@ -104,6 +104,7 @@ public class LeadPortalFlowService {
                 .name(name)
                 .slug(slug)
                 .description(trimToNull(request.getDescription()))
+                .customFormHtml(trimToNull(request.getCustomFormHtml()))
                 .model(trimToNull(request.getModel()))
                 .imagePromptModel(trimToNull(request.getImagePromptModel()))
                 .imagePromptTemplate(trimToNull(request.getImagePromptTemplate()))
@@ -131,6 +132,9 @@ public class LeadPortalFlowService {
         }
         if (request.getDescription() != null) {
             flow.setDescription(trimToNull(request.getDescription()));
+        }
+        if (request.getCustomFormHtml() != null) {
+            flow.setCustomFormHtml(trimToNull(request.getCustomFormHtml()));
         }
         if (request.getMarketNicheId() != null) {
             flow.setMarketNiche(attachMarketNiche(request.getMarketNicheId()));

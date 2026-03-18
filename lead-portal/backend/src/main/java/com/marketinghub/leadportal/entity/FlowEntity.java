@@ -26,6 +26,9 @@ public class FlowEntity {
     @Column(length = 500)
     private String description;
 
+    @Column(name = "custom_form_html", columnDefinition = "LONGTEXT")
+    private String customFormHtml;
+
     private String model;
 
     @Column(columnDefinition = "TEXT")
@@ -87,6 +90,14 @@ public class FlowEntity {
 
     public void setModel(String model) {
         this.model = model;
+    }
+
+    public String getCustomFormHtml() {
+        return customFormHtml;
+    }
+
+    public void setCustomFormHtml(String customFormHtml) {
+        this.customFormHtml = customFormHtml;
     }
 
     public String getPrompt() {
@@ -166,6 +177,7 @@ public class FlowEntity {
         entity.setSlug(flow.slug());
         entity.setName(flow.name());
         entity.setDescription(flow.description());
+        entity.setCustomFormHtml(flow.customFormHtml());
         entity.setModel(flow.model());
         entity.setPrompt(flow.prompt());
         entity.setImagePromptModel(flow.imagePromptModel());
@@ -189,6 +201,6 @@ public class FlowEntity {
         if (simpleFormStyleSlug != null || simpleFormStyleName != null || simpleFormStyleDefinition != null) {
             style = new SimpleFormStyle(simpleFormStyleSlug, simpleFormStyleName, simpleFormStyleDefinition);
         }
-        return new Flow(slug, name, description, model, prompt, imagePromptModel, imagePromptTemplate, imageBatchSize, questions, style);
+        return new Flow(slug, name, description, customFormHtml, model, prompt, imagePromptModel, imagePromptTemplate, imageBatchSize, questions, style);
     }
 }

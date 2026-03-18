@@ -10,6 +10,7 @@ public record FlowResponse(
         String slug,
         String name,
         String description,
+        String customFormHtml,
         List<QuestionResponse> questions,
         SimpleFormStyleResponse simpleFormStyle) {
 
@@ -27,6 +28,7 @@ public record FlowResponse(
                 flow.slug(),
                 flow.name(),
                 flow.description(),
+                flow.customFormHtml(),
                 questions,
                 style);
     }

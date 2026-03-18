@@ -59,6 +59,7 @@ public class FlowAssetService {
                 flow.slug(),
                 flow.name(),
                 flow.description(),
+                flow.customFormHtml(),
                 flow.model(),
                 flow.prompt(),
                 flow.imagePromptModel(),

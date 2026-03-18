@@ -16,6 +16,7 @@ public class LeadPortalFlowDto {
     private String slug;
     private String publicUrl;
     private String description;
+    private String customFormHtml;
     private String model;
     private String prompt;
     private String imagePromptModel;

@@ -528,3 +528,6 @@ databaseChangeLog:
   - include:
       file: V2036_11_20__experiment_creative_prompts.yaml
       relativeToChangelogFile: true
+  - include:
+      file: V2036_12_22__lead_portal_flow_custom_form_html.sql
+      relativeToChangelogFile: true

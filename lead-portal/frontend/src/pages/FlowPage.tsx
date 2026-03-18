@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { createPortal } from "react-dom";
 import { useParams } from "react-router-dom";
-import { fetchLeadPortalFlow, registerFlowRenderComplete } from "../api";
+import { API_BASE_URL, fetchLeadPortalFlow, registerFlowRenderComplete } from "../api";
 import FlowForm from "../components/FlowForm";
 import { resolveAssetUrl } from "../utils/resolveAssetUrl";
 import { getVisitorIdCookie } from "../utils/visitorCookie";
 import { useCampaignCode } from "../hooks/useCampaignCode";
-import type { FlowQuestion, LeadPortalSimpleFormStyleDefinition } from "../types";
+import type { FlowQuestion, LeadPortalFlow, LeadPortalSimpleFormStyleDefinition } from "../types";
 
 export default function FlowPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -80,7 +81,19 @@ export default function FlowPage() {
   const styleVars = buildStyleVariables(definition);
 
   const formQuestions = metadata.formQuestions.length > 0 ? metadata.formQuestions : flow.questions;
-  const flowForForm = formQuestions === flow.questions ? flow : { ...flow, questions: formQuestions };
+  const hasCustomTemplate = Boolean(flow.customFormHtml && flow.customFormHtml.trim().length > 0);
+
+  if (hasCustomTemplate) {
+    return (
+      <CustomFlowTemplate
+        flow={flow}
+        flowForForm={flowForForm}
+        campaignCode={campaignCode}
+        hasSubmitted={hasSubmitted}
+        onFormSubmitted={() => setHasSubmitted(true)}
+      />
+    );
+  }
 
   const defaultHeader = SIMPLE_FORM_CONTENT.header;
   const defaultProof = SIMPLE_FORM_CONTENT.proof;
@@ -191,6 +204,127 @@ export default function FlowPage() {
       </div>
     </div>
   );
+}
+
+interface CustomFlowTemplateProps {
+  flow: LeadPortalFlow;
+  flowForForm: LeadPortalFlow;
+  campaignCode?: string | null;
+  hasSubmitted: boolean;
+  onFormSubmitted: () => void;
+}
+
+const FORM_SLOT_SELECTOR = "[data-lead-portal-form-slot]";
+const FORM_SLOT_HTML = '<div data-lead-portal-form-slot=\"default\"></div>';
+const TOKEN_REGEX = /\{\{\s*([a-zA-Z0-9_-]+)\s*\}\}/g;
+const FORM_SLOT_TOKEN_REGEX = /\{\{\s*lead_portal_form\s*\}\}/gi;
+
+function CustomFlowTemplate({
+  flow,
+  flowForForm,
+  campaignCode,
+  hasSubmitted,
+  onFormSubmitted,
+}: CustomFlowTemplateProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [formSlot, setFormSlot] = useState<HTMLElement | null>(null);
+  const styleVars = useMemo(() => buildStyleVariables(flow.simpleFormStyle?.definition ?? null), [flow.simpleFormStyle]);
+  const templateVariables = useMemo(() => buildTemplateVariables(flow), [flow]);
+  const processedHtml = useMemo(
+    () => renderTemplateWithTokens(flow.customFormHtml ?? "", templateVariables),
+    [flow.customFormHtml, templateVariables],
+  );
+
+  useEffect(() => {
+    if (!containerRef.current) {
+      setFormSlot(null);
+      return;
+    }
+    const slot = containerRef.current.querySelector<HTMLElement>(FORM_SLOT_SELECTOR);
+    setFormSlot(slot ?? null);
+  }, [processedHtml]);
+
+  const handleSubmitted = () => {
+    onFormSubmitted();
+  };
+
+  return (
+    <div className="flow-page flow-page--custom" style={styleVars} data-form-state={hasSubmitted ? "submitted" : "idle"}>
+      <div className="flow-container">
+        <div
+          ref={containerRef}
+          className="flow-custom-template"
+          dangerouslySetInnerHTML={{ __html: processedHtml }}
+        />
+        {formSlot ? (
+          createPortal(
+            <FlowForm flow={flowForForm} campaignCode={campaignCode} onSubmitted={handleSubmitted} />,
+            formSlot,
+          )
+        ) : (
+          <FlowForm flow={flowForForm} campaignCode={campaignCode} onSubmitted={handleSubmitted} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function buildTemplateVariables(flow: LeadPortalFlow) {
+  const variables = new Map<string, string>();
+  if (!flow) {
+    return variables;
+  }
+  const setValue = (key: string, value: string | null | undefined) => {
+    const normalized = value ?? "";
+    variables.set(key, normalized);
+    variables.set(key.toLowerCase(), normalized);
+  };
+  setValue("flow_name", flow.name);
+  setValue("flow_slug", flow.slug);
+  setValue("form_endpoint", `${API_BASE_URL}/flows/${encodeURIComponent(flow.slug)}/submissions`);
+  flow.questions.forEach((question) => {
+    if (!question.dataKey) {
+      return;
+    }
+    let storedValue = question.title ?? "";
+    if (/imagem_url$/i.test(question.dataKey) && storedValue) {
+      storedValue = resolveAssetUrl(storedValue);
+    }
+    setValue(question.dataKey, storedValue);
+  });
+  return variables;
+}
+
+function renderTemplateWithTokens(template: string, variables: Map<string, string>) {
+  const trimmed = template?.trim();
+  if (!trimmed) {
+    return "";
+  }
+  let processed = trimmed.replace(FORM_SLOT_TOKEN_REGEX, FORM_SLOT_HTML);
+  processed = processed.replace(TOKEN_REGEX, (match, rawKey) => {
+    const lookupKey = typeof rawKey === "string" ? rawKey.trim() : "";
+    if (!lookupKey) {
+      return match;
+    }
+    if (lookupKey.toLowerCase() === "lead_portal_form") {
+      return FORM_SLOT_HTML;
+    }
+    const value = variables.get(lookupKey) ?? variables.get(lookupKey.toLowerCase());
+    if (value === undefined) {
+      return match;
+    }
+    return escapeHtml(value);
+  });
+  return processed;
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 const SIMPLE_FORM_CONTENT = {

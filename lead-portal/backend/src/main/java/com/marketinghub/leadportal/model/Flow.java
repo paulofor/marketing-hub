@@ -9,6 +9,7 @@ public record Flow(
         String slug,
         String name,
         String description,
+        String customFormHtml,
         String model,
         String prompt,
         String imagePromptModel,

@@ -28,6 +28,8 @@ export interface UpdateExperiment {
   facebookInstantFormId?: number | null;
   instagramAccountId?: number | null;
   followUpActionUrl?: string | null;
+  creativeTextPrompt?: string | null;
+  creativeImagePrompt?: string | null;
   leadPortalFlowId?: number | null;
   imageModelId?: number | null;
   imageModelQualityId?: number | null;

@@ -10,6 +10,7 @@ import { useEmotionalTriggers } from "../../api/emotionalTrigger/useEmotionalTri
 import { useUpdateCreativeLabels } from "../../api/creative/useUpdateCreativeLabels";
 import { useExperiment } from "../../api/experiment/useExperiment";
 import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
+import type { UpdateExperiment } from "../../api/experiment/useUpdateExperiment";
 import { useAllFacebookPages } from "../../api/useAllFacebookPages";
 import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 import InstagramAdPreview from "../../components/InstagramAdPreview";
@@ -85,6 +86,7 @@ export default function CriativosTab({ experimentId }: Props) {
   const creatives = Array.isArray(data) ? data : [];
   const { data: experiment } = useExperiment(experimentId);
   const updateExperimentMutation = useUpdateExperiment(experimentId);
+  const updatePromptsMutation = useUpdateExperiment(experimentId);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Creative | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
@@ -118,6 +120,8 @@ export default function CriativosTab({ experimentId }: Props) {
   const [processingCreativeId, setProcessingCreativeId] = useState<number | null>(
     null,
   );
+  const [textPrompt, setTextPrompt] = useState("");
+  const [imagePrompt, setImagePrompt] = useState("");
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
     useAllFacebookPages();
   const { data: instagramAccounts, isLoading: isLoadingInstagramAccounts } =
@@ -153,15 +157,50 @@ export default function CriativosTab({ experimentId }: Props) {
     );
   }, [experiment?.instagramAccount?.id]);
 
-  const handleSavePageId = async () => {
-    if (!experiment) return;
+  useEffect(() => {
+    setTextPrompt(experiment?.creativeTextPrompt ?? "");
+  }, [experiment?.creativeTextPrompt]);
+
+  useEffect(() => {
+    setImagePrompt(experiment?.creativeImagePrompt ?? "");
+  }, [experiment?.creativeImagePrompt]);
+
+  const buildBaseExperimentUpdate = (): UpdateExperiment => {
+    if (!experiment) {
+      throw new Error("experiment-unavailable");
+    }
     const kpiTargetValue = experiment.kpiTarget ?? experiment.kpiTargetCpl;
     if (kpiTargetValue == null || !experiment.metricPresetId) {
+      throw new Error("missing-metrics");
+    }
+    return {
+      name: experiment.name,
+      hypothesis: experiment.hypothesis,
+      kpiTarget: Number(kpiTargetValue),
+      metricPresetId: experiment.metricPresetId,
+      sampleSize: experiment.sampleSize ?? undefined,
+      mde: experiment.mdePercent ?? undefined,
+      startDate: experiment.startDate ?? undefined,
+      endDate: experiment.endDate ?? undefined,
+      creativesToGenerate: experiment.creativesToGenerate ?? undefined,
+    };
+  };
+
+  const handleSavePageId = async () => {
+    if (!experiment) {
+      return;
+    }
+    let basePayload: UpdateExperiment;
+    try {
+      basePayload = buildBaseExperimentUpdate();
+    } catch (error) {
       setFeedback({
         variant: "error",
         title: "Não foi possível salvar a página",
         description:
-          "Defina a meta de KPI e o preset de métricas antes de configurar a página do experimento.",
+          error instanceof Error && error.message === "missing-metrics"
+            ? "Defina a meta de KPI e o preset de métricas antes de configurar a página do experimento."
+            : "Tente novamente em instantes.",
       });
       return;
     }
@@ -195,15 +234,7 @@ export default function CriativosTab({ experimentId }: Props) {
     }
     try {
       await updateExperimentMutation.mutateAsync({
-        name: experiment.name,
-        hypothesis: experiment.hypothesis,
-        kpiTarget: Number(kpiTargetValue),
-        metricPresetId: experiment.metricPresetId,
-        sampleSize: experiment.sampleSize ?? undefined,
-        mde: experiment.mdePercent ?? undefined,
-        startDate: experiment.startDate ?? undefined,
-        endDate: experiment.endDate ?? undefined,
-        creativesToGenerate: experiment.creativesToGenerate ?? undefined,
+        ...basePayload,
         facebookPageId: parsedPageId,
         instagramAccountId: Number(experimentInstagramAccountId),
       });
@@ -242,7 +273,56 @@ export default function CriativosTab({ experimentId }: Props) {
     }
   };
 
+  const handleResetPrompts = () => {
+    setTextPrompt("");
+    setImagePrompt("");
+  };
+
+  const handleSavePrompts = async () => {
+    if (!experiment) {
+      return;
+    }
+    let basePayload: UpdateExperiment;
+    try {
+      basePayload = buildBaseExperimentUpdate();
+    } catch (error) {
+      setFeedback({
+        variant: "error",
+        title: "Não foi possível salvar os prompts",
+        description:
+          error instanceof Error && error.message === "missing-metrics"
+            ? "Defina a meta de KPI e o preset de métricas antes de personalizar os prompts."
+            : "Tente novamente em instantes.",
+      });
+      return;
+    }
+    const trimmedText = textPrompt.trim();
+    const trimmedImage = imagePrompt.trim();
+    try {
+      await updatePromptsMutation.mutateAsync({
+        ...basePayload,
+        creativeTextPrompt: trimmedText.length > 0 ? trimmedText : null,
+        creativeImagePrompt: trimmedImage.length > 0 ? trimmedImage : null,
+      });
+      const restoredToDefault = trimmedText.length === 0 && trimmedImage.length === 0;
+      setFeedback({
+        variant: "success",
+        title: "Prompts atualizados",
+        description: restoredToDefault
+          ? "Voltamos a usar os prompts padrão do worker."
+          : "Os próximos criativos seguirão as instruções personalizadas.",
+      });
+    } catch {
+      setFeedback({
+        variant: "error",
+        title: "Não foi possível salvar os prompts",
+        description: "Tente novamente em instantes.",
+      });
+    }
+  };
+
   const isSavingPageId = updateExperimentMutation.isPending;
+  const isSavingPrompts = updatePromptsMutation.isPending;
 
   const fillFormFromCreative = (c: Creative) => {
     setForm({
@@ -667,6 +747,71 @@ export default function CriativosTab({ experimentId }: Props) {
           em branco para usar a página padrão configurada no worker.
         </div>
       </div>
+      <section className="card mb-4">
+        <div className="card-body">
+          <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+            <div>
+              <h2 className="h6 mb-1">Prompts personalizados</h2>
+              <p className="text-muted mb-0">Defina o tom das cópias e das imagens geradas pelo worker. Campos vazios restauram o comportamento padrão.</p>
+            </div>
+            <div className="d-flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn btn-outline-secondary btn-sm"
+                onClick={handleResetPrompts}
+                disabled={isSavingPrompts}
+              >
+                Limpar campos
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm d-flex align-items-center gap-2"
+                onClick={handleSavePrompts}
+                disabled={isSavingPrompts}
+              >
+                {isSavingPrompts ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm"
+                      role="status"
+                      aria-hidden
+                    />
+                    <span>Salvando...</span>
+                  </>
+                ) : (
+                  <span>Salvar prompts</span>
+                )}
+              </button>
+            </div>
+          </div>
+          <div className="row g-3">
+            <div className="col-12 col-lg-6">
+              <label className="form-label" htmlFor="creative-text-prompt">Prompt dos textos</label>
+              <textarea
+                id="creative-text-prompt"
+                className="form-control"
+                rows={8}
+                value={textPrompt}
+                onChange={(event) => setTextPrompt(event.target.value)}
+                placeholder="Explique como a IA deve escrever os anúncios"
+              />
+              <div className="form-text">Inclua contexto, persona, prova social ou call-to-actions desejados. Exemplos de variáveis: <code>{`{{quantity}}`}</code>, <code>{`{{hypothesisTitle}}`}</code>, <code>{`{{persona}}`}</code>, <code>{`{{problem}}`}</code>, <code>{`{{promise}}`}</code>.</div>
+            </div>
+            <div className="col-12 col-lg-6">
+              <label className="form-label" htmlFor="creative-image-prompt">Prompt das imagens</label>
+              <textarea
+                id="creative-image-prompt"
+                className="form-control"
+                rows={8}
+                value={imagePrompt}
+                onChange={(event) => setImagePrompt(event.target.value)}
+                placeholder="Descreva o visual desejado para os criativos"
+              />
+              <div className="form-text">Você pode usar <code>{`{{headline}}`}</code>, <code>{`{{primaryText}}`}</code>, <code>{`{{experimentName}}`}</code> e os mesmos campos da hipótese para alinhar as ilustrações.</div>
+            </div>
+          </div>
+        </div>
+      </section>
       <CreativeLibraryBanner
         experimentId={experimentId}
         requestedCreatives={solicitedCreatives}

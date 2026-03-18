@@ -76,6 +76,13 @@ public class UpdateExperimentRequest {
     private Long imageModelQualityId;
     @JsonIgnore
     private boolean imageModelQualityIdPresent;
+    private String creativeTextPrompt;
+    @JsonIgnore
+    private boolean creativeTextPromptPresent;
+    private String creativeImagePrompt;
+    @JsonIgnore
+    private boolean creativeImagePromptPresent;
+
 
     @JsonSetter(value = "facebookPageId", nulls = Nulls.SET)
     public void setFacebookPageId(Long facebookPageId) {
@@ -164,6 +171,18 @@ public class UpdateExperimentRequest {
     public void setImageModelQualityId(Long imageModelQualityId) {
         this.imageModelQualityId = imageModelQualityId;
         this.imageModelQualityIdPresent = true;
+    }
+
+    @JsonSetter(value = "creativeTextPrompt", nulls = Nulls.SET)
+    public void setCreativeTextPrompt(String creativeTextPrompt) {
+        this.creativeTextPrompt = creativeTextPrompt;
+        this.creativeTextPromptPresent = true;
+    }
+
+    @JsonSetter(value = "creativeImagePrompt", nulls = Nulls.SET)
+    public void setCreativeImagePrompt(String creativeImagePrompt) {
+        this.creativeImagePrompt = creativeImagePrompt;
+        this.creativeImagePromptPresent = true;
     }
 
 }

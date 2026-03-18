@@ -29,6 +29,8 @@ export interface CreateExperiment {
   instagramAccountId: number;
   imageModelId?: number;
   imageModelQualityId?: number;
+  creativeTextPrompt?: string;
+  creativeImagePrompt?: string;
 }
 
 export function useCreateExperiment() {

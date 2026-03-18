@@ -146,6 +146,12 @@ public class Experiment {
     @Column(nullable = false)
     private boolean creativeApproved;
 
+    @Column(name = "creative_text_prompt", columnDefinition = "LONGTEXT")
+    private String creativeTextPrompt;
+
+    @Column(name = "creative_image_prompt", columnDefinition = "LONGTEXT")
+    private String creativeImagePrompt;
+
     /** Quantidade de criativos a serem gerados pelo worker. */
     @Column(name = "creatives_to_generate")
     private Integer creativesToGenerate;

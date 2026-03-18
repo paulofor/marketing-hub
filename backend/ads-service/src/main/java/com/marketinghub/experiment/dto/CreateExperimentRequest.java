@@ -49,4 +49,6 @@ public class CreateExperimentRequest {
     private Long leadPortalFlowId;
     private Long imageModelId;
     private Long imageModelQualityId;
+    private String creativeTextPrompt;
+    private String creativeImagePrompt;
 }

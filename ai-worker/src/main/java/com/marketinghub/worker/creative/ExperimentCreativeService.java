@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -125,6 +126,9 @@ public class ExperimentCreativeService {
     }
 
     private static String buildImagePrompt(Experiment experiment, CreateCreativeRequest request) {
+        if (experiment != null && hasText(experiment.getCreativeImagePrompt())) {
+            return applyImagePromptTemplate(experiment, request);
+        }
         List<String> parts = new ArrayList<>();
         parts.add("Crie uma imagem envolvente para um anúncio de Facebook e Instagram que desperte interesse e desejo.");
         if (hasText(request.getHeadline())) {
@@ -167,6 +171,40 @@ public class ExperimentCreativeService {
             }
         }
         return String.join(" ", parts);
+    }
+
+    private static String applyImagePromptTemplate(Experiment experiment, CreateCreativeRequest request) {
+        Map<String, String> placeholders = new LinkedHashMap<>();
+        placeholders.put("headline", safe(request.getHeadline()));
+        placeholders.put("primaryText", safe(request.getPrimaryText()));
+        placeholders.put("experimentName", experiment != null ? safe(experiment.getName()) : "");
+        placeholders.put("experimentId", experiment != null && experiment.getId() != null ? String.valueOf(experiment.getId()) : "");
+        Hypothesis hypothesis = experiment != null ? experiment.getHypothesisRef() : null;
+        placeholders.put("hypothesisId", hypothesis != null && hypothesis.getId() != null ? hypothesis.getId().toString() : "");
+        placeholders.put("hypothesisTitle", hypothesis != null ? safe(hypothesis.getTitle()) : "");
+        placeholders.put("persona", hypothesis != null ? safe(hypothesis.getPersona()) : "");
+        placeholders.put("problem", hypothesis != null ? safe(hypothesis.getProblem()) : "");
+        placeholders.put("promise", hypothesis != null ? safe(hypothesis.getPromise()) : "");
+        placeholders.put("mechanism", hypothesis != null ? safe(hypothesis.getMechanism()) : "");
+        placeholders.put("uniqueMechanism", hypothesis != null ? safe(hypothesis.getUniqueMechanism()) : "");
+        placeholders.put("entrega", hypothesis != null ? safe(hypothesis.getEntrega()) : "");
+        return replacePlaceholders(experiment.getCreativeImagePrompt(), placeholders);
+    }
+
+    private static String replacePlaceholders(String template, Map<String, String> placeholders) {
+        if (template == null) {
+            return null;
+        }
+        String result = template;
+        for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+            String token = "{{" + entry.getKey() + "}}";
+            result = result.replace(token, entry.getValue());
+        }
+        return result;
+    }
+
+    private static String safe(String value) {
+        return value == null ? "" : value;
     }
 
     private static boolean hasText(String value) {

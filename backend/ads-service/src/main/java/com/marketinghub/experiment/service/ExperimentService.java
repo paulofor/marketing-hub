@@ -291,6 +291,8 @@ public class ExperimentService {
                 .imageGenerationModel(imageSelection.model())
                 .imageGenerationQuality(imageSelection.quality())
                 .followUpActionUrl(followUpActionUrl)
+                .creativeTextPrompt(normalizePrompt(request.getCreativeTextPrompt()))
+                .creativeImagePrompt(normalizePrompt(request.getCreativeImagePrompt()))
                 .build();
         return repository.save(exp);
     }
@@ -361,6 +363,8 @@ public class ExperimentService {
                 .imagesPerPackage(original.getImagesPerPackage())
                 .openImagesPerPackage(original.getOpenImagesPerPackage())
                 .compressedImagesPerPackage(original.getCompressedImagesPerPackage())
+                .creativeTextPrompt(original.getCreativeTextPrompt())
+                .creativeImagePrompt(original.getCreativeImagePrompt())
                 .facebookPage(original.getFacebookPage())
                 .instagramAccount(original.getInstagramAccount())
                 .facebookInstantForm(original.getFacebookInstantForm())
@@ -509,6 +513,12 @@ public class ExperimentService {
         if (request.isLeadPortalFlowModelPresent()) {
             exp.setLeadPortalFlowModel(request.getLeadPortalFlowModel());
         }
+        if (request.isCreativeTextPromptPresent()) {
+            exp.setCreativeTextPrompt(normalizePrompt(request.getCreativeTextPrompt()));
+        }
+        if (request.isCreativeImagePromptPresent()) {
+            exp.setCreativeImagePrompt(normalizePrompt(request.getCreativeImagePrompt()));
+        }
         if (request.isJourneyTemplateIdPresent()) {
             if (request.getJourneyTemplateId() == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "journeyTemplateId required");
@@ -635,6 +645,13 @@ public class ExperimentService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "unitPrice must be greater than zero");
         }
         return unitPrice.setScale(2, java.math.RoundingMode.HALF_UP);
+    }
+
+    private String normalizePrompt(String prompt) {
+        if (!StringUtils.hasText(prompt)) {
+            return null;
+        }
+        return prompt.trim();
     }
 
     private int normalizeImagesPerPackage(Integer imagesPerPackage) {

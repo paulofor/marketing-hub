@@ -23,6 +23,8 @@ public class ExperimentDto {
     private FacebookInstantFormDto facebookInstantForm;
     private String followUpActionUrl;
     private String leadPortalFlowModel;
+    private String creativeTextPrompt;
+    private String creativeImagePrompt;
     private InstagramAccountDto instagramAccount;
     private String facebookPixelId;
     private String facebookPixelCode;

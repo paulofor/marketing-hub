@@ -49,6 +49,9 @@ export interface Experiment {
   facebookPixelCode?: string | null;
   facebookPixelCreatedAt?: string | null;
   followUpActionUrl?: string | null;
+  leadPortalFlowModel?: string | null;
+  creativeTextPrompt?: string | null;
+  creativeImagePrompt?: string | null;
   instagramAccount?: InstagramAccountSummary | null;
   /**
    * KPI alvo em CPL. Mantém `kpiTarget` para compatibilidade com APIs

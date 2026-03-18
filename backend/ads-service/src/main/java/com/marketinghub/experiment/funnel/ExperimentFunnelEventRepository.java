@@ -12,6 +12,8 @@ import java.util.List;
  */
 public interface ExperimentFunnelEventRepository extends JpaRepository<ExperimentFunnelEvent, Long> {
 
+    String RENDER_COMPLETE_SOURCE = "lead-portal-render-complete";
+
     @Query("""
             select e.stage as stage,
                    count(e.id) as total,
@@ -19,9 +21,11 @@ public interface ExperimentFunnelEventRepository extends JpaRepository<Experimen
                    max(e.occurredAt) as lastEvent
             from ExperimentFunnelEvent e
             where e.experiment.id = :experimentId
+              and (e.source is null or e.source <> :excludedSource)
             group by e.stage
             """)
-    List<StageAggregation> aggregateByExperiment(@Param("experimentId") Long experimentId);
+    List<StageAggregation> aggregateByExperiment(@Param("experimentId") Long experimentId,
+                                                 @Param("excludedSource") String excludedSource);
 
     interface StageAggregation {
         ExperimentFunnelStage getStage();

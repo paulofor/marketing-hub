@@ -147,9 +147,6 @@ public class CreativeService {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File must not be empty");
         }
-        if (!StringUtils.hasText(prompt)) {
-            throw new IllegalArgumentException("Prompt must not be blank");
-        }
         Path dir = Path.of("uploads");
         Files.createDirectories(dir);
         String extension = StringUtils.getFilenameExtension(file.getOriginalFilename());
@@ -163,7 +160,7 @@ public class CreativeService {
                 .status(AssetStatus.READY)
                 .url(relativeUrl)
                 .model(StringUtils.hasText(model) ? model : null)
-                .prompt(prompt)
+                .prompt(StringUtils.hasText(prompt) ? prompt : null)
                 .build();
         assetRepository.save(asset);
         return relativeUrl;

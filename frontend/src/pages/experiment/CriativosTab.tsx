@@ -23,6 +23,7 @@ import {
   CheckCircle2,
   Edit3,
   Eye,
+  Plus,
   Trash2,
   X,
   XCircle,
@@ -46,6 +47,19 @@ interface CreativeForm {
   instagramUserId: string;
   status: string;
 }
+
+const createEmptyForm = (): CreativeForm => ({
+  format: "LINK",
+  headline: "",
+  primaryText: "",
+  description: "",
+  cta: "LEARN_MORE",
+  destinationUrl: "",
+  leadGenFormId: "",
+  imageUrl: "",
+  instagramUserId: "",
+  status: "DRAFT",
+});
 
 const ICON_SIZE = 16;
 const ASSET_UPLOAD_URL = buildApiUrl("/api/assets");
@@ -90,18 +104,7 @@ export default function CriativosTab({ experimentId }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Creative | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
-  const [form, setForm] = useState<CreativeForm>({
-    format: "LINK",
-    headline: "",
-    primaryText: "",
-    description: "",
-    cta: "LEARN_MORE",
-    destinationUrl: "",
-    leadGenFormId: "",
-    imageUrl: "",
-    instagramUserId: "",
-    status: "DRAFT",
-  });
+  const [form, setForm] = useState<CreativeForm>(() => createEmptyForm());
   const [experimentPageId, setExperimentPageId] = useState("");
   const [experimentInstagramAccountId, setExperimentInstagramAccountId] =
     useState("");
@@ -112,6 +115,24 @@ export default function CriativosTab({ experimentId }: Props) {
   const [selectedAngle, setSelectedAngle] = useState<string>("");
   const [selectedProof, setSelectedProof] = useState<string>("");
   const [selectedTrigger, setSelectedTrigger] = useState<string>("");
+  const resetManualLabels = () => {
+    setSelectedAngle("");
+    setSelectedProof("");
+    setSelectedTrigger("");
+  };
+  const resetFormState = () => {
+    setForm(createEmptyForm());
+  };
+  const openManualCreation = () => {
+    setEditing(null);
+    resetFormState();
+    resetManualLabels();
+    setShowForm(true);
+  };
+  const closeForm = () => {
+    setShowForm(false);
+    setEditing(null);
+  };
   const patchLabels = useUpdateCreativeLabels(experimentId);
   const create = useCreateCreative(experimentId);
   const update = useUpdateCreative(experimentId);
@@ -130,6 +151,15 @@ export default function CriativosTab({ experimentId }: Props) {
     !isLoadingInstagramAccounts &&
     Array.isArray(instagramAccounts) &&
     instagramAccounts.length === 0;
+
+  const renderManualButtonContent = () => (
+    <>
+      <Plus size={ICON_SIZE} />
+      <span>Adicionar anúncio manual</span>
+    </>
+  );
+
+  const isSavingCreative = create.isPending || update.isPending;
 
   useEffect(() => {
     if (!feedback) return;
@@ -360,22 +390,37 @@ export default function CriativosTab({ experimentId }: Props) {
       instagramUserId: form.instagramUserId,
       status: form.status,
     };
-    if (editing) {
-      await update.mutateAsync({ id: editing.id, ...payload });
-    } else {
-      const created = await create.mutateAsync(payload);
-      await patchLabels.mutateAsync({
-        id: created.id,
-        labels: {
-          angleId: selectedAngle ? Number(selectedAngle) : undefined,
-          visualProofId: selectedProof ? Number(selectedProof) : undefined,
-          emotionalTriggerId: selectedTrigger
-            ? Number(selectedTrigger)
-            : undefined,
-        },
+    const isEditing = Boolean(editing);
+    try {
+      if (isEditing && editing) {
+        await update.mutateAsync({ id: editing.id, ...payload });
+      } else {
+        const created = await create.mutateAsync(payload);
+        if (selectedAngle || selectedProof || selectedTrigger) {
+          await patchLabels.mutateAsync({
+            id: created.id,
+            labels: {
+              angleId: selectedAngle ? Number(selectedAngle) : undefined,
+              visualProofId: selectedProof ? Number(selectedProof) : undefined,
+              emotionalTriggerId: selectedTrigger
+                ? Number(selectedTrigger)
+                : undefined,
+            },
+          });
+        }
+      }
+      closeForm();
+      if (!isEditing) {
+        resetFormState();
+        resetManualLabels();
+      }
+    } catch {
+      setFeedback({
+        variant: "error",
+        title: "Não foi possível salvar o criativo",
+        description: "Tente novamente em instantes.",
       });
     }
-    setShowForm(false);
   };
 
   const startPreview = (c: Creative) => {
@@ -429,6 +474,7 @@ export default function CriativosTab({ experimentId }: Props) {
   const upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const input = e.target;
     const img = new Image();
     const objectUrl = URL.createObjectURL(file);
     img.onload = async () => {
@@ -440,10 +486,14 @@ export default function CriativosTab({ experimentId }: Props) {
             "Use arquivos com pelo menos 600px de largura para manter a qualidade dos criativos.",
         });
         URL.revokeObjectURL(objectUrl);
+        input.value = "";
         return;
       }
       const fd = new FormData();
       fd.append("file", file);
+      const promptPayload =
+        imagePrompt.trim() || form.primaryText || form.headline || "Manual upload";
+      fd.append("prompt", promptPayload);
       try {
         const res = await fetch(ASSET_UPLOAD_URL, { method: "POST", body: fd });
         if (!res.ok) {
@@ -464,6 +514,7 @@ export default function CriativosTab({ experimentId }: Props) {
         });
       } finally {
         URL.revokeObjectURL(objectUrl);
+        input.value = "";
       }
     };
     img.onerror = () => {
@@ -473,6 +524,7 @@ export default function CriativosTab({ experimentId }: Props) {
         description: "Selecione outro arquivo ou tente novamente.",
       });
       URL.revokeObjectURL(objectUrl);
+      input.value = "";
     };
     img.src = objectUrl;
   };
@@ -819,6 +871,20 @@ export default function CriativosTab({ experimentId }: Props) {
         onRequestError={handleCreativeRequestError}
       />
 
+      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mt-4">
+        <div>
+          <h3 className="h6 fw-semibold mb-1">Cadastro manual de anúncios</h3>
+          <p className="text-muted small mb-0">Envie textos e imagens prontos para complementar os testes do experimento.</p>
+        </div>
+        <button
+          type="button"
+          className="btn btn-primary d-flex align-items-center gap-2"
+          onClick={openManualCreation}
+        >
+          {renderManualButtonContent()}
+        </button>
+      </div>
+
       {isLoading ? (
         <div className="d-flex justify-content-center py-5">
           <div className="spinner-border text-primary" role="status">
@@ -831,10 +897,17 @@ export default function CriativosTab({ experimentId }: Props) {
             🎨
           </div>
           <h3 className="h6 fw-semibold mb-1">Nenhum criativo cadastrado</h3>
-          <p className="text-muted mb-0">
+          <p className="text-muted mb-2">
             Gere sugestões com IA para começar a testar variações e construa seu
             acervo criativo com os resultados aprovados.
           </p>
+          <button
+            type="button"
+            className="btn btn-primary d-inline-flex align-items-center gap-2"
+            onClick={openManualCreation}
+          >
+            {renderManualButtonContent()}
+          </button>
         </div>
       ) : creativeSections.length === 0 ? (
         <div className="creative-grid">
@@ -876,7 +949,7 @@ export default function CriativosTab({ experimentId }: Props) {
                 <button
                   type="button"
                   className="btn-close"
-                  onClick={() => setShowForm(false)}
+                  onClick={closeForm}
                 />
               </div>
               <div className="modal-body">
@@ -979,6 +1052,7 @@ export default function CriativosTab({ experimentId }: Props) {
                       value={selectedAngle}
                       onChange={(e) => setSelectedAngle(e.target.value)}
                     >
+                      <option value="">Selecione um ângulo</option>
                       {Array.isArray(angles) &&
                         angles.map((a) => (
                           <option key={a.id} value={a.id}>
@@ -991,6 +1065,7 @@ export default function CriativosTab({ experimentId }: Props) {
                       value={selectedProof}
                       onChange={(e) => setSelectedProof(e.target.value)}
                     >
+                      <option value="">Selecione uma prova visual</option>
                       {Array.isArray(proofs) &&
                         proofs.map((p) => (
                           <option key={p.id} value={p.id}>
@@ -1003,6 +1078,7 @@ export default function CriativosTab({ experimentId }: Props) {
                       value={selectedTrigger}
                       onChange={(e) => setSelectedTrigger(e.target.value)}
                     >
+                      <option value="">Selecione um gatilho emocional</option>
                       {Array.isArray(triggers) &&
                         triggers.map((t) => (
                           <option key={t.id} value={t.id}>
@@ -1025,13 +1101,14 @@ export default function CriativosTab({ experimentId }: Props) {
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  onClick={() => setShowForm(false)}
+                  onClick={closeForm}
                 >
                   Cancelar
                 </button>
                 <button
                   type="button"
-                  className="btn btn-primary"
+                  className="btn btn-primary d-inline-flex align-items-center gap-2"
+                  disabled={isSavingCreative}
                   onClick={handleFormSubmit(
                     async () => {
                       await submit();
@@ -1041,7 +1118,18 @@ export default function CriativosTab({ experimentId }: Props) {
                     },
                   )}
                 >
-                  Salvar
+                  {isSavingCreative ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm"
+                        role="status"
+                        aria-hidden
+                      />
+                      <span>Salvando...</span>
+                    </>
+                  ) : (
+                    <span>Salvar</span>
+                  )}
                 </button>
               </div>
             </div>

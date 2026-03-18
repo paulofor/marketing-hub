@@ -56,7 +56,7 @@ public class CreativeController {
 
     @PostMapping("/api/assets")
     public String upload(@RequestParam("file") MultipartFile file,
-                         @RequestParam("prompt") String prompt,
+                         @RequestParam(value = "prompt", required = false) String prompt,
                          @RequestParam(value = "model", required = false) String model) throws IOException {
         return service.uploadImage(file, model, prompt);
     }

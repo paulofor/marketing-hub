@@ -34,6 +34,7 @@ O ambiente dockerizado levanta três serviços:
 
 - `VITE_API_URL`: pode ser ajustada no `docker-compose.yml` caso deseje que o frontend consuma a API em outro caminho.
 - `VITE_ASSETS_BASE_URL`: define o host base utilizado para resolver caminhos relativos como `/uploads/...`. Utilize-o quando os arquivos de mídia estiverem hospedados em outro domínio/porta; no compose é possível setar esse valor via `LEAD_PORTAL_ASSETS_BASE_URL`.
+- `LEAD_PORTAL_FUNNEL_TRACKING_URL`: URL base (ex.: `https://seu-backend:8000/api/public/lead-portal`) usada pelo backend para reenviar o evento `lead-portal-render-complete` ao Marketing Hub. Caso não seja definida, o valor padrão `http://191.252.181.168:8000/api/public/lead-portal` é utilizado.
 - `SPRING_PROFILES_ACTIVE`: defina no serviço `backend` se precisar ativar perfis específicos do Spring.
 - `LOGGING_FILE_NAME`: caminho completo do arquivo de log consumido pelo `/actuator/logfile` (padrão `logs/lead-portal-backend.log`).
 - `SPRING_DATASOURCE_HIKARI_MAX_LIFETIME`: valor em milissegundos usado pelo pool Hikari para reciclar conexões antes do timeout imposto pelo provedor do MySQL (padrão 55000ms).

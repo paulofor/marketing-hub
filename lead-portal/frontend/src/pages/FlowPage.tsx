@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { fetchLeadPortalFlow } from "../api";
+import { fetchLeadPortalFlow, registerFlowRenderComplete } from "../api";
 import FlowForm from "../components/FlowForm";
 import { resolveAssetUrl } from "../utils/resolveAssetUrl";
+import { getVisitorIdCookie } from "../utils/visitorCookie";
 import { useCampaignCode } from "../hooks/useCampaignCode";
 import type { FlowQuestion, LeadPortalSimpleFormStyleDefinition } from "../types";
 
@@ -11,9 +12,11 @@ export default function FlowPage() {
   const { slug } = useParams<{ slug: string }>();
   const campaignCode = useCampaignCode();
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [hasTrackedRenderComplete, setHasTrackedRenderComplete] = useState(false);
 
   useEffect(() => {
     setHasSubmitted(false);
+    setHasTrackedRenderComplete(false);
   }, [slug]);
 
   const { data: flow, isLoading, isError, error } = useQuery({
@@ -27,10 +30,33 @@ export default function FlowPage() {
     enabled: Boolean(slug),
   });
 
+  const resolvedFlowSlug = flow?.slug ?? null;
+
   const metadata = useMemo(
     () => extractSimpleFormMetadata(flow?.questions ?? []),
     [flow?.questions],
   );
+
+  useEffect(() => {
+    if (!resolvedFlowSlug || isLoading || isError || hasTrackedRenderComplete) {
+      return;
+    }
+    let cancelled = false;
+
+    registerFlowRenderComplete(resolvedFlowSlug, getVisitorIdCookie())
+      .then(() => {
+        if (!cancelled) {
+          setHasTrackedRenderComplete(true);
+        }
+      })
+      .catch((trackError) => {
+        console.warn("Falha ao registrar render-complete do fluxo", trackError);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [resolvedFlowSlug, isLoading, isError, hasTrackedRenderComplete]);
 
   if (!slug) {
     return <p className="flow-message">Fluxo não informado.</p>;

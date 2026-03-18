@@ -145,7 +145,7 @@ public class CreativeChatGptClient {
         } catch (Exception e) {
             log.error("Failed to parse ChatGPT response: {}", content, e);
             try {
-                String unescaped = content.replace("\"", """);
+                String unescaped = content.replace("\\\"", "\"");
                 return parseWithCost(unescaped, totalCostUsd);
             } catch (Exception ex) {
                 log.error("Failed to parse unescaped ChatGPT response: {}", content, ex);

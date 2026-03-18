@@ -70,7 +70,7 @@ export default function FlowPage() {
   }
 
   if (isLoading) {
-    return <p className="flow-message">Carregando quiz...</p>;
+    return <p className="flow-message">Estamos preparando um quiz sob medida pra você ✨</p>;
   }
 
   if (isError || !flow) {

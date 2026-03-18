@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { createPortal } from "react-dom";
 import { useParams } from "react-router-dom";
 import { API_BASE_URL, fetchLeadPortalFlow, registerFlowRenderComplete } from "../api";
 import FlowForm from "../components/FlowForm";
@@ -90,15 +89,17 @@ export default function FlowPage() {
         };
   const hasCustomTemplate = Boolean(flow.customFormHtml && flow.customFormHtml.trim().length > 0);
 
+  const customTemplateVariables = useMemo(() => {
+    if (!hasCustomTemplate || !flow) {
+      return null;
+    }
+    return buildCustomHtmlTemplateVariables(flow, metadata);
+  }, [hasCustomTemplate, flow, metadata]);
+
   if (hasCustomTemplate) {
+    const templateVariables = customTemplateVariables ?? new Map<string, string>();
     return (
-      <CustomFlowTemplate
-        flow={flow}
-        flowForForm={flowForForm}
-        campaignCode={campaignCode}
-        hasSubmitted={hasSubmitted}
-        onFormSubmitted={() => setHasSubmitted(true)}
-      />
+      <CustomFlowTemplate html={flow.customFormHtml ?? ""} variables={templateVariables} />
     );
   }
 
@@ -214,69 +215,99 @@ export default function FlowPage() {
 }
 
 interface CustomFlowTemplateProps {
-  flow: LeadPortalFlow;
-  flowForForm: LeadPortalFlow;
-  campaignCode?: string | null;
-  hasSubmitted: boolean;
-  onFormSubmitted: () => void;
+  html: string;
+  variables: Map<string, string>;
 }
 
-const FORM_SLOT_SELECTOR = "[data-lead-portal-form-slot]";
-const FORM_SLOT_HTML = '<div data-lead-portal-form-slot="default"></div>';
 const TOKEN_REGEX = /\{\{\s*([a-zA-Z0-9_-]+)\s*\}\}/g;
-const FORM_SLOT_TOKEN_REGEX = /\{\{\s*lead_portal_form\s*\}\}/gi;
 
-function CustomFlowTemplate({
-  flow,
-  flowForForm,
-  campaignCode,
-  hasSubmitted,
-  onFormSubmitted,
-}: CustomFlowTemplateProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [formSlot, setFormSlot] = useState<HTMLElement | null>(null);
-  const styleVars = useMemo(() => buildStyleVariables(flow.simpleFormStyle?.definition ?? null), [flow.simpleFormStyle]);
-  const templateVariables = useMemo(() => buildTemplateVariables(flow), [flow]);
+function CustomFlowTemplate({ html, variables }: CustomFlowTemplateProps) {
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const processedHtml = useMemo(
-    () => renderTemplateWithTokens(flow.customFormHtml ?? "", templateVariables),
-    [flow.customFormHtml, templateVariables],
+    () => renderTemplateWithTokens(html ?? "", variables),
+    [html, variables],
   );
 
   useEffect(() => {
-    if (!containerRef.current) {
-      setFormSlot(null);
+    const iframe = iframeRef.current;
+    if (!iframe) {
       return;
     }
-    const slot = containerRef.current.querySelector<HTMLElement>(FORM_SLOT_SELECTOR);
-    setFormSlot(slot ?? null);
+
+    const cleanupObserver = () => {
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+        resizeObserverRef.current = null;
+      }
+    };
+
+    const updateHeight = () => {
+      const doc = iframe.contentDocument;
+      if (!doc) {
+        return;
+      }
+      const { body, documentElement } = doc;
+      if (!body || !documentElement) {
+        return;
+      }
+      const height = Math.max(
+        body.scrollHeight,
+        body.offsetHeight,
+        documentElement.scrollHeight,
+        documentElement.offsetHeight,
+        documentElement.clientHeight,
+      );
+      iframe.style.height = `${height}px`;
+    };
+
+    const handleLoad = () => {
+      cleanupObserver();
+      updateHeight();
+      const doc = iframe.contentDocument;
+      if (!doc || typeof ResizeObserver === "undefined") {
+        return;
+      }
+      const observer = new ResizeObserver(() => {
+        updateHeight();
+      });
+      if (doc.body) {
+        observer.observe(doc.body);
+      }
+      if (doc.documentElement) {
+        observer.observe(doc.documentElement);
+      }
+      resizeObserverRef.current = observer;
+    };
+
+    iframe.addEventListener("load", handleLoad);
+    return () => {
+      iframe.removeEventListener("load", handleLoad);
+      cleanupObserver();
+    };
   }, [processedHtml]);
 
-  const handleSubmitted = () => {
-    onFormSubmitted();
-  };
+  if (!processedHtml) {
+    return (
+      <div className="flow-custom-template flow-custom-template--empty">
+        <p className="flow-message">Nenhum HTML personalizado configurado.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="flow-page flow-page--custom" style={styleVars} data-form-state={hasSubmitted ? "submitted" : "idle"}>
-      <div className="flow-container">
-        <div
-          ref={containerRef}
-          className="flow-custom-template"
-          dangerouslySetInnerHTML={{ __html: processedHtml }}
-        />
-        {formSlot ? (
-          createPortal(
-            <FlowForm flow={flowForForm} campaignCode={campaignCode} onSubmitted={handleSubmitted} />,
-            formSlot,
-          )
-        ) : (
-          <FlowForm flow={flowForForm} campaignCode={campaignCode} onSubmitted={handleSubmitted} />
-        )}
-      </div>
+    <div className="flow-custom-template-wrapper">
+      <iframe
+        ref={iframeRef}
+        className="flow-custom-template-frame"
+        srcDoc={processedHtml}
+        title="Conteúdo personalizado do fluxo"
+      />
     </div>
   );
 }
 
-function buildTemplateVariables(flow: LeadPortalFlow) {
+function buildCustomHtmlTemplateVariables(flow: LeadPortalFlow, metadata: SimpleFormMetadata) {
   const variables = new Map<string, string>();
   if (!flow) {
     return variables;
@@ -286,19 +317,13 @@ function buildTemplateVariables(flow: LeadPortalFlow) {
     variables.set(key, normalized);
     variables.set(key.toLowerCase(), normalized);
   };
-  setValue("flow_name", flow.name);
-  setValue("flow_slug", flow.slug);
-  setValue("form_endpoint", `${API_BASE_URL}/flows/${encodeURIComponent(flow.slug)}/submissions`);
-  flow.questions.forEach((question) => {
-    if (!question.dataKey) {
-      return;
-    }
-    let storedValue = question.title ?? "";
-    if (/imagem_url$/i.test(question.dataKey) && storedValue) {
-      storedValue = resolveAssetUrl(storedValue);
-    }
-    setValue(question.dataKey, storedValue);
+  const proofCards = metadata?.proof?.cards ?? [];
+  [0, 1, 2].forEach((index) => {
+    const image = proofCards[index]?.imageUrl;
+    const resolved = image ? resolveAssetUrl(image) : "";
+    setValue(`imagem${index + 1}`, resolved);
   });
+  setValue("url", `${API_BASE_URL}/flows/${encodeURIComponent(flow.slug)}/submissions`);
   return variables;
 }
 
@@ -307,14 +332,10 @@ function renderTemplateWithTokens(template: string, variables: Map<string, strin
   if (!trimmed) {
     return "";
   }
-  let processed = trimmed.replace(FORM_SLOT_TOKEN_REGEX, FORM_SLOT_HTML);
-  processed = processed.replace(TOKEN_REGEX, (match, rawKey) => {
+  return trimmed.replace(TOKEN_REGEX, (match, rawKey) => {
     const lookupKey = typeof rawKey === "string" ? rawKey.trim() : "";
     if (!lookupKey) {
       return match;
-    }
-    if (lookupKey.toLowerCase() === "lead_portal_form") {
-      return FORM_SLOT_HTML;
     }
     const value = variables.get(lookupKey) ?? variables.get(lookupKey.toLowerCase());
     if (value === undefined) {
@@ -322,7 +343,6 @@ function renderTemplateWithTokens(template: string, variables: Map<string, strin
     }
     return escapeHtml(value);
   });
-  return processed;
 }
 
 function escapeHtml(value: string) {

@@ -1098,3 +1098,21 @@ form.flow-form {
   max-width: 100%;
   height: auto;
 }
+
+.flow-custom-template-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  background: transparent;
+}
+
+.flow-custom-template-frame {
+  width: 100%;
+  border: none;
+  display: block;
+  min-height: 100vh;
+  background: transparent;
+}
+
+.flow-custom-template--empty {
+  padding: 2rem 1rem;
+}

@@ -35,20 +35,19 @@ Este guia mostra como criar, atualizar e validar os formulários simples do Lead
 
 ## HTML personalizado da página
 
-- No cartão de criação há um campo opcional chamado *HTML personalizado*. Cole nele o layout completo que deseja publicar para o fluxo.
-- Utilize o token `{{lead_portal_form}}` para indicar exatamente onde o formulário padrão deve aparecer. Sem ele, o componente será renderizado após o HTML informado.
-- A página aceita qualquer token no formato `{{dataKey}}`, usando os mesmos identificadores exibidos nas perguntas (ex.: `{{cabecalho_titulo}}`, `{{bullet_item_1}}`).
+- O campo opcional permite substituir toda a landing page pública. O HTML informado é renderizado em um iframe dedicado, sem aplicar os blocos ou estilos padrão do fluxo simples.
+- É necessário incluir o seu próprio `<form>` e enviar um POST `multipart/form-data` para `{{url}}`, usando o mesmo formato do portal (campo `payload` em JSON e, se necessário, o arquivo `image`).
+- As únicas variáveis disponibilizadas pelo portal são as três imagens configuradas nos subcards e a URL de submissão.
+- O evento de renderização utilizado no funil do experimento continua sendo disparado automaticamente pelo portal.
 
 ### Tokens principais
 
 | Token | Descrição |
 | --- | --- |
-| `{{lead_portal_form}}` | Injeta o formulário padrão no ponto escolhido. |
-| `{{form_endpoint}}` | URL absoluta do POST `/api/flows/:slug/submissions`. |
-| `{{exemplo_real_card_1_imagem_url}}`, `{{exemplo_real_card_2_imagem_url}}`, `{{exemplo_real_card_3_imagem_url}}` | URLs finais das imagens enviadas nos subcards. |
-| `{{flow_name}}` e `{{flow_slug}}` | Identificadores básicos do fluxo para exibir no HTML. |
-
-> 💡 O Lead Portal também injeta os valores de todas as perguntas (`dataKey`). Isso permite reaproveitar textos como `{{cabecalho_subtitulo}}` ou `{{bullet_item_2}}` mesmo utilizando o layout manual.
+| `{{imagem1}}` | URL absoluta da primeira imagem configurada nos subcards. |
+| `{{imagem2}}` | URL absoluta da segunda imagem configurada nos subcards. |
+| `{{imagem3}}` | URL absoluta da terceira imagem configurada nos subcards. |
+| `{{url}}` | URL absoluta do POST `/api/flows/:slug/submissions` para ser utilizada no seu formulário. |
 
 ## Como as imagens aparecem para o lead
 

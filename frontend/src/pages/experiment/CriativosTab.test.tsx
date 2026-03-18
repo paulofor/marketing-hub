@@ -26,11 +26,34 @@ describe("CriativosTab", () => {
         <CriativosTab experimentId="1" />
       </QueryClientProvider>,
     );
-    expect(await screen.findByText("Solicitados: 3")).toBeTruthy();
+    const requestedBadges = await screen.findAllByText("Solicitados: 3");
+    expect(requestedBadges.length).toBeGreaterThan(0);
     screen.getByText("Gerar criativos").click();
     expect(
       await screen.findByLabelText("Quantidade de criativos"),
     ).toBeTruthy();
+  });
+
+  it("opens manual creation modal", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.endsWith("/experiments/1/creatives")) {
+        return Promise.resolve({ data: [] });
+      }
+      if (url.endsWith("/experiments/1")) {
+        return Promise.resolve({ data: { creativesToGenerate: 0 } });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <CriativosTab experimentId="1" />
+      </QueryClientProvider>,
+    );
+    await screen.findAllByText("Solicitados: 0");
+    const manualButtons = screen.getAllByText("Adicionar anúncio manual");
+    manualButtons[0].click();
+    await screen.findByText(/Novo Criativo/i);
   });
 
   it("shows preview", async () => {
@@ -59,7 +82,7 @@ describe("CriativosTab", () => {
         <CriativosTab experimentId="1" />
       </QueryClientProvider>,
     );
-    await screen.findByText("Solicitados: 0");
+    await screen.findAllByText("Solicitados: 0");
     (await screen.findByLabelText("Preview")).click();
     await screen.findByText("Patrocinado");
   });

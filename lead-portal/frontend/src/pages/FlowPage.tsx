@@ -81,6 +81,13 @@ export default function FlowPage() {
   const styleVars = buildStyleVariables(definition);
 
   const formQuestions = metadata.formQuestions.length > 0 ? metadata.formQuestions : flow.questions;
+  const flowForForm =
+    formQuestions === flow.questions
+      ? flow
+      : {
+          ...flow,
+          questions: formQuestions,
+        };
   const hasCustomTemplate = Boolean(flow.customFormHtml && flow.customFormHtml.trim().length > 0);
 
   if (hasCustomTemplate) {
@@ -215,7 +222,7 @@ interface CustomFlowTemplateProps {
 }
 
 const FORM_SLOT_SELECTOR = "[data-lead-portal-form-slot]";
-const FORM_SLOT_HTML = '<div data-lead-portal-form-slot=\"default\"></div>';
+const FORM_SLOT_HTML = '<div data-lead-portal-form-slot="default"></div>';
 const TOKEN_REGEX = /\{\{\s*([a-zA-Z0-9_-]+)\s*\}\}/g;
 const FORM_SLOT_TOKEN_REGEX = /\{\{\s*lead_portal_form\s*\}\}/gi;
 

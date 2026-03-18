@@ -29,3 +29,7 @@ export function ensureVisitorIdCookie(): string {
   persistCookie(VISITOR_COOKIE_NAME, visitorId, COOKIE_MAX_AGE_DAYS);
   return visitorId;
 }
+
+export function getVisitorIdCookie(): string | undefined {
+  return getCookieValue(VISITOR_COOKIE_NAME);
+}

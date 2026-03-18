@@ -159,6 +159,29 @@ export async function submitFlowSubmission(
   return (await response.json()) as FlowSubmissionResponse;
 }
 
+export async function registerFlowRenderComplete(
+  slug: string,
+  visitorId?: string | null
+): Promise<void> {
+  const normalizedSlug = slug?.trim();
+  if (!normalizedSlug) {
+    throw new Error("Slug do fluxo é obrigatório");
+  }
+  const payload = visitorId && visitorId.trim().length > 0 ? { visitorId: visitorId.trim() } : {};
+  const response = await fetch(
+    buildUrl(`/flows/${encodeURIComponent(normalizedSlug)}/render-complete`),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    }
+  );
+  if (!response.ok) {
+    const message = await extractError(response);
+    throw new Error(message);
+  }
+}
+
 async function extractError(response: Response): Promise<string> {
   try {
     const body = await response.json();

@@ -36,6 +36,13 @@ export default function FlowPage() {
     () => extractSimpleFormMetadata(flow?.questions ?? []),
     [flow?.questions],
   );
+  const hasCustomTemplate = Boolean(flow?.customFormHtml && flow.customFormHtml.trim().length > 0);
+  const customTemplateVariables = useMemo(() => {
+    if (!hasCustomTemplate || !flow) {
+      return null;
+    }
+    return buildCustomHtmlTemplateVariables(flow, metadata);
+  }, [hasCustomTemplate, flow, metadata]);
 
   useEffect(() => {
     if (!resolvedFlowSlug || isLoading || isError || hasTrackedRenderComplete) {
@@ -87,15 +94,6 @@ export default function FlowPage() {
           ...flow,
           questions: formQuestions,
         };
-  const hasCustomTemplate = Boolean(flow.customFormHtml && flow.customFormHtml.trim().length > 0);
-
-  const customTemplateVariables = useMemo(() => {
-    if (!hasCustomTemplate || !flow) {
-      return null;
-    }
-    return buildCustomHtmlTemplateVariables(flow, metadata);
-  }, [hasCustomTemplate, flow, metadata]);
-
   if (hasCustomTemplate) {
     const templateVariables = customTemplateVariables ?? new Map<string, string>();
     return (

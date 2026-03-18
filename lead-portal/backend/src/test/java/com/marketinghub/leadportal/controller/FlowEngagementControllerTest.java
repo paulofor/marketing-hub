@@ -4,7 +4,6 @@ import com.marketinghub.leadportal.service.ExperimentFunnelTrackingClient;
 import com.marketinghub.leadportal.service.ExperimentFunnelTrackingClient.TrackingResult;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -17,9 +16,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(FlowEngagementController.class)
 class FlowEngagementControllerTest {
-
-    @SpringBootApplication
-    static class TestConfig {}
 
     @Autowired
     private MockMvc mockMvc;

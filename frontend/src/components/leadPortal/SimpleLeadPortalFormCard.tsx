@@ -166,6 +166,7 @@ export default function SimpleLeadPortalFormCard({
   const [card2OverlayText, setCard2OverlayText] = useState("");
   const [card3OverlayText, setCard3OverlayText] = useState("");
   const [customFormHtml, setCustomFormHtml] = useState("");
+  const [isCopyingCustomHtml, setIsCopyingCustomHtml] = useState(false);
   const [uploadingCardImage, setUploadingCardImage] = useState<1 | 2 | 3 | null>(
     null,
   );
@@ -302,6 +303,49 @@ export default function SimpleLeadPortalFormCard({
     setCard2OverlayText(readOptional("exemplo_real_card_2_texto_sobreposto"));
     setCard3OverlayText(readOptional("exemplo_real_card_3_texto_sobreposto"));
   }, []);
+
+  const handleCopyCustomHtml = useCallback(async () => {
+    if (!customFormHtml.trim()) {
+      setFeedback({
+        variant: "error",
+        message: "Preencha o HTML personalizado antes de copiar.",
+      });
+      return;
+    }
+
+    setIsCopyingCustomHtml(true);
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(customFormHtml);
+      } else if (typeof document !== "undefined") {
+        const hiddenTextArea = document.createElement("textarea");
+        hiddenTextArea.value = customFormHtml;
+        hiddenTextArea.style.position = "fixed";
+        hiddenTextArea.style.opacity = "0";
+        document.body.appendChild(hiddenTextArea);
+        hiddenTextArea.focus();
+        hiddenTextArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(hiddenTextArea);
+      } else {
+        throw new Error("Clipboard API indisponível");
+      }
+
+      setFeedback({
+        variant: "success",
+        message: "HTML copiado para a área de transferência.",
+      });
+    } catch (error) {
+      console.error("[SimpleLeadPortalFormCard] failed to copy HTML", error);
+      setFeedback({
+        variant: "error",
+        message:
+          "Não foi possível copiar automaticamente. Copie manualmente com Ctrl + C.",
+      });
+    } finally {
+      setIsCopyingCustomHtml(false);
+    }
+  }, [customFormHtml]);
 
   useEffect(() => {
     if (editingFlow) {
@@ -776,6 +820,26 @@ export default function SimpleLeadPortalFormCard({
                   onChange={(event) => setCustomFormHtml(event.target.value)}
                   placeholder="<section>...</section>"
                 />
+                <div className="d-flex justify-content-end">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary btn-sm"
+                    onClick={handleCopyCustomHtml}
+                    disabled={isCopyingCustomHtml || !customFormHtml.trim()}
+                  >
+                    {isCopyingCustomHtml ? (
+                      <>
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          aria-hidden="true"
+                        />
+                        Copiando...
+                      </>
+                    ) : (
+                      "Copiar HTML"
+                    )}
+                  </button>
+                </div>
                 <div className="text-muted small">
                   <p className="mb-1">Observações importantes:</p>
                   <ul className="ps-3 mb-1">

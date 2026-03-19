@@ -73,6 +73,7 @@ Dados coletados no formulário. Use-os para definir copy, cenário, elementos vi
     private List<LeadPortalImagePromptPlaceholderDto> placeholderCatalog() {
         return List.of(
                 new LeadPortalImagePromptPlaceholderDto("{{profissional}}", "Nome informado no formulário.", "Pablito"),
+                new LeadPortalImagePromptPlaceholderDto("{{nome}}", "Alias direto para o campo de nome do formulário.", "Pablito"),
                 new LeadPortalImagePromptPlaceholderDto("{{atividade}}", "Profissão derivada do slug do fluxo simples.", "personal trainer"),
                 new LeadPortalImagePromptPlaceholderDto("{{studio}}", "Nome do estúdio ou empresa.", "Studio Pablito"),
                 new LeadPortalImagePromptPlaceholderDto("{{local}}", "Cidade/bairro onde o profissional atende.", "Niterói - RJ"),
@@ -80,7 +81,9 @@ Dados coletados no formulário. Use-os para definir copy, cenário, elementos vi
                 new LeadPortalImagePromptPlaceholderDto("{{servicos}}", "Lista resumida dos serviços principais.", "Treinos funcionais, HIIT"),
                 new LeadPortalImagePromptPlaceholderDto("{{batch_size}}", "Quantidade final de imagens que será solicitada ao worker.", String.valueOf(DEFAULT_BATCH_SIZE)),
                 new LeadPortalImagePromptPlaceholderDto("{{dados_json}}", "Bloco JSON com todas as respostas saneadas.", "{\\n  \"atividade\": \"personal trainer\"... }"),
-                new LeadPortalImagePromptPlaceholderDto("{{respostas.whatsapp}}", "Qualquer resposta individual usando o prefixo respostas.", "(21) 99290-2732")
+                new LeadPortalImagePromptPlaceholderDto("{{respostas.whatsapp}}", "Qualquer resposta individual usando o prefixo respostas.", "(21) 99290-2732"),
+                new LeadPortalImagePromptPlaceholderDto("{{resposta.instagram}}", "Respostas enviadas com o prefixo resposta.", "@meuteste"),
+                new LeadPortalImagePromptPlaceholderDto("{{resposta.especialidade}}", "Outro exemplo de campo personalizado com prefixo resposta.", "Alongamento")
         );
     }
 }

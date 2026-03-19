@@ -72,7 +72,7 @@ export default function FlowPage() {
   if (isLoading) {
     return (
       <p className="flow-message">
-        Preparando seu pacote exclusivo de imagens gratuitas para você impressionar seus futuros clientes...
+        Preparando uma oferta especial para você...
       </p>
     );
   }

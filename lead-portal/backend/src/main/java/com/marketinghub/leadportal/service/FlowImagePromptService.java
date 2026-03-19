@@ -120,6 +120,7 @@ public class FlowImagePromptService {
         variables.put("slug", safeOrDefault(briefing.flowSlug(), ""));
         variables.put("atividade", safeOrDefault(briefing.activityType(), "profissional"));
         variables.put("profissional", safeOrDefault(briefing.professionalName(), "Profissional"));
+        variables.put("nome", safeOrDefault(briefing.professionalName(), "Profissional"));
         variables.put("studio", safeOrDefault(briefing.studioName(), "estúdio ou atendimento personalizado"));
         variables.put("local", safeOrDefault(briefing.resolvedLocation(), "sua região"));
         variables.put("contato", safeOrDefault(briefing.contactSummary(), "Contato não informado"));
@@ -128,9 +129,44 @@ public class FlowImagePromptService {
         variables.put("servicos_lista", joinList(briefing.resolvedServices(), "\n"));
         variables.put("dados_json", serializeBriefing(briefing));
         variables.put("batch_size", Integer.toString(batchSize));
+        addAnswerAliases(briefing.answers(), variables);
         flattenAnswers("respostas", briefing.answers(), variables);
         flattenAnswers("answers", briefing.answers(), variables);
         return variables;
+    }
+
+    private void addAnswerAliases(Map<String, Object> answers, Map<String, String> target) {
+        if (answers == null || answers.isEmpty()) {
+            return;
+        }
+        answers.forEach((key, value) -> addAliasValue(key, value, target));
+    }
+
+    private void addAliasValue(String key, Object value, Map<String, String> target) {
+        if (!StringUtils.hasText(key) || value == null || target.containsKey(key)) {
+            return;
+        }
+        if (value instanceof Map<?, ?> map) {
+            map.forEach((nestedKey, nestedValue) -> {
+                if (nestedKey == null) {
+                    return;
+                }
+                String nestedPath = key + "." + nestedKey;
+                addAliasValue(nestedPath, nestedValue, target);
+            });
+            return;
+        }
+        if (value instanceof List<?> list) {
+            String joined = joinList(list, ", ");
+            if (StringUtils.hasText(joined)) {
+                target.put(key, joined);
+            }
+            return;
+        }
+        String textValue = stringifyValue(value);
+        if (StringUtils.hasText(textValue)) {
+            target.put(key, textValue);
+        }
     }
 
     private void flattenAnswers(String prefix, Map<String, Object> answers, Map<String, String> target) {

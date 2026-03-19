@@ -63,4 +63,46 @@ class FlowImagePromptServiceTest {
         assertTrue(promptText.contains("Studio Movimento"));
         assertTrue(promptText.contains("lote"));
     }
+
+    @Test
+    void shouldExposeDirectAnswerPlaceholders() {
+        Flow flow = new Flow(
+                "formulario-simples-personal-trainer",
+                "Formulário simples",
+                null,
+                null,
+                null,
+                null,
+                null,
+                "Cliente: {{nome}} | Insta: {{resposta.instagram}} | Especialidade: {{resposta.especialidade}}",
+                null,
+                List.of(),
+                null);
+
+        Map<String, Object> answers = Map.of(
+                "nome", "Paulo",
+                "email", "paulo@example.com",
+                "resposta.instagram", "@meuteste",
+                "resposta.especialidade", "Alongamento");
+
+        FlowSubmission submission = new FlowSubmission(
+                UUID.randomUUID(),
+                flow.slug(),
+                "Paulo",
+                "paulo@example.com",
+                answers,
+                null,
+                null,
+                null,
+                null,
+                Instant.now(),
+                null);
+
+        FlowImagePrompt prompt = service.buildPrompt(flow, submission).orElseThrow();
+        String promptText = prompt.prompt();
+        assertTrue(promptText.contains("Cliente: Paulo"));
+        assertTrue(promptText.contains("Insta: @meuteste"));
+        assertTrue(promptText.contains("Especialidade: Alongamento"));
+    }
+
 }

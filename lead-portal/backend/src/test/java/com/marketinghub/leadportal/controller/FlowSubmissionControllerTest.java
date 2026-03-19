@@ -312,4 +312,46 @@ class FlowSubmissionControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.flowSlug").value("fluxo-sem-tipo"));
     }
+
+    @Test
+    void customTemplateFlowsSkipQuestionValidation() throws Exception {
+        Flow customTemplateFlow = new Flow(
+                "fluxo-custom-html",
+                "Fluxo com HTML personalizado",
+                "",
+                "<html></html>",
+                null,
+                null,
+                null,
+                null,
+                null,
+                List.of(
+                        new FlowQuestion(
+                                "Forma de contato",
+                                "forma_contato",
+                                FlowQuestionType.SINGLE_CHOICE,
+                                true,
+                                "",
+                                null,
+                                List.of("Instagram", "WhatsApp")),
+                        new FlowQuestion(
+                                "Especialidades",
+                                "lista_opcoes",
+                                FlowQuestionType.MULTIPLE_CHOICE,
+                                true,
+                                "",
+                                null,
+                                List.of("Musculação", "Cardio"))),
+                null);
+
+        flowService.save(customTemplateFlow);
+
+        mockMvc.perform(multipart("/api/flows/fluxo-custom-html/submissions")
+                        .param("nome", "Cliente Custom")
+                        .param("email", "cliente.custom@example.com")
+                        .param("instagram", "@cliente"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.flowSlug").value("fluxo-custom-html"));
+    }
 }
+

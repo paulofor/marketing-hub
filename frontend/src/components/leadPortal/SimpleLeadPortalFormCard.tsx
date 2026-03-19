@@ -65,6 +65,10 @@ export default function SimpleLeadPortalFormCard({
   const { data: simpleFormStyles, isLoading: isLoadingStyles } =
     useLeadPortalSimpleFormStyles();
   const isEditing = Boolean(editingFlow);
+  const isEditingCustomHtmlFlow = useMemo(
+    () => isEditing && Boolean(editingFlow?.customFormHtml?.trim()),
+    [editingFlow?.customFormHtml, isEditing],
+  );
   const [isVisible, setIsVisible] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [selectedStyleId, setSelectedStyleId] = useState<number | null>(null);
@@ -772,63 +776,65 @@ export default function SimpleLeadPortalFormCard({
               </div>
             </div>
 
-            <div className="border rounded p-3 bg-light">
-              <h6 className="mb-3">Template padrão do formulário</h6>
-              <div className="row g-3">
-                <div className="col-12">
-                  <label className="form-label">
-                    Pergunta 3 (local de trabalho) *
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={workQuestionTitle}
-                    onChange={(event) =>
-                      setWorkQuestionTitle(event.target.value)
-                    }
-                  />
-                </div>
-                <div className="col-12">
-                  <label className="form-label">
-                    Pergunta 5 (lista de opções) *
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={optionsQuestionTitle}
-                    onChange={(event) =>
-                      setOptionsQuestionTitle(event.target.value)
-                    }
-                  />
-                </div>
-                <div className="col-12">
-                  <label className="form-label">
-                    Opções da pergunta 5 (uma por linha) *
-                  </label>
-                  <textarea
-                    className="form-control"
-                    rows={4}
-                    value={optionsQuestionValues}
-                    onChange={(event) =>
-                      setOptionsQuestionValues(event.target.value)
-                    }
-                  />
-                </div>
-                <div className="col-12">
-                  <label className="form-label">
-                    Pergunta 6 (campo livre) *
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={otherOptionsTitle}
-                    onChange={(event) =>
-                      setOtherOptionsTitle(event.target.value)
-                    }
-                  />
+            {!isEditingCustomHtmlFlow ? (
+              <div className="border rounded p-3 bg-light">
+                <h6 className="mb-3">Template padrão do formulário</h6>
+                <div className="row g-3">
+                  <div className="col-12">
+                    <label className="form-label">
+                      Pergunta 3 (local de trabalho) *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={workQuestionTitle}
+                      onChange={(event) =>
+                        setWorkQuestionTitle(event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label">
+                      Pergunta 5 (lista de opções) *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={optionsQuestionTitle}
+                      onChange={(event) =>
+                        setOptionsQuestionTitle(event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label">
+                      Opções da pergunta 5 (uma por linha) *
+                    </label>
+                    <textarea
+                      className="form-control"
+                      rows={4}
+                      value={optionsQuestionValues}
+                      onChange={(event) =>
+                        setOptionsQuestionValues(event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label">
+                      Pergunta 6 (campo livre) *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={otherOptionsTitle}
+                      onChange={(event) =>
+                        setOtherOptionsTitle(event.target.value)
+                      }
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : null}
 
             <div className="border rounded p-3 bg-light">
               <h6 className="mb-3">Configuração de imagens dos subcards</h6>
@@ -939,9 +945,10 @@ export default function SimpleLeadPortalFormCard({
               ) : null}
             </div>
 
-            <div className="border rounded p-3 bg-light">
-              <h6 className="mb-3">Textos variáveis da landing</h6>
-              <div className="row g-3">
+            {!isEditingCustomHtmlFlow ? (
+              <div className="border rounded p-3 bg-light">
+                <h6 className="mb-3">Textos variáveis da landing</h6>
+                <div className="row g-3">
                 <div className="col-12">
                   <label className="form-label">Cabeçalho - título *</label>
                   <input
@@ -1099,8 +1106,9 @@ export default function SimpleLeadPortalFormCard({
                     onChange={(event) => setBulletItem3(event.target.value)}
                   />
                 </div>
+                </div>
               </div>
-            </div>
+            ) : null}
 
             <div className="d-flex justify-content-end">
               <button

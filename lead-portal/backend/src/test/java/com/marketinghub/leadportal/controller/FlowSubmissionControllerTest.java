@@ -172,6 +172,37 @@ class FlowSubmissionControllerTest {
                     assertThat(pkg.getStatus()).isEqualTo("RECENT");
                 });
     }
+
+    @Test
+    void acceptsMultipartWithoutPayloadAndPersistsCustomFields() throws Exception {
+        MockMultipartFile imagePart = new MockMultipartFile(
+                "image", "referencia.png", MediaType.IMAGE_PNG_VALUE, "conteudo".getBytes());
+
+        mockMvc.perform(multipart("/api/flows/planejamento-acao-21-dias/submissions")
+                        .file(imagePart)
+                        .param("nome", "Cliente HTML")
+                        .param("email", "clientehtml@example.com")
+                        .param("objetivo", "Gerar autoridade")
+                        .param("imageKey", "referencia")
+                        .param("campo_extra", "valor livre")
+                        .param("preferencias", "Yoga", "Pilates"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.flowSlug").value("planejamento-acao-21-dias"));
+
+        assertThat(submissionRepository.findAll())
+                .hasSize(1)
+                .first()
+                .satisfies(entity -> {
+                    assertThat(entity.getName()).isEqualTo("Cliente HTML");
+                    assertThat(entity.getEmail()).isEqualTo("clientehtml@example.com");
+                    assertThat(entity.getAnswers()).containsEntry("campo_extra", "valor livre");
+                    Object preferences = entity.getAnswers().get("preferencias");
+                    assertThat(preferences).isInstanceOf(List.class);
+                    @SuppressWarnings("unchecked")
+                    List<String> prefList = (List<String>) preferences;
+                    assertThat(prefList).containsExactly("Yoga", "Pilates");
+                });
+    }
     @Test
     void submissionSavesCampaignCodeWhenProvided() throws Exception {
         Map<String, Object> payload = Map.of(

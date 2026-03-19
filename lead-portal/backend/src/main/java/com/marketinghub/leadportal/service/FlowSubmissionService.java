@@ -12,6 +12,9 @@ import com.marketinghub.leadportal.repository.FlowSubmissionImagePackageReposito
 import com.marketinghub.leadportal.storage.FileStorageService;
 import com.marketinghub.leadportal.entity.FlowSubmissionImagePackageEntity;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -238,41 +241,80 @@ public class FlowSubmissionService {
     private Map<String, Object> sanitizeAnswers(Flow flow, FlowSubmissionRequest request) {
         Map<String, Object> sanitized = new LinkedHashMap<>();
 
+        Map<String, FlowQuestion> questionIndex = new LinkedHashMap<>();
         List<FlowQuestion> questions = flow.questions() == null ? List.of() : flow.questions();
         for (FlowQuestion question : questions) {
+            if (question == null || question.dataKey() == null) {
+                continue;
+            }
+            questionIndex.putIfAbsent(question.dataKey(), question);
+        }
+
+        request.getAnswers().forEach((key, raw) -> {
+            if (key == null) {
+                return;
+            }
+            FlowQuestion question = questionIndex.get(key);
+            if (question == null || question.type() == null) {
+                Object generic = sanitizeGenericAnswer(raw);
+                if (generic != null) {
+                    sanitized.put(key, generic);
+                }
+                return;
+            }
+
             FlowQuestionType questionType = question.type();
-            if (questionType == null) {
-                log.warn(
-                        "Flow '{}' has question '{}' without type; ignoring answer",
-                        flow.slug(),
-                        question.dataKey());
-                continue;
-            }
-
             if (questionType == FlowQuestionType.IMAGE_UPLOAD) {
-                continue;
+                return;
             }
-            Object raw = request.getAnswers().get(question.dataKey());
-            if (raw == null) {
-                continue;
-            }
-
             if (questionType == FlowQuestionType.MULTIPLE_CHOICE) {
-                List<?> rawList = raw instanceof List<?> list ? list : List.of(raw);
-                List<String> filtered = rawList.stream()
-                        .map(Object::toString)
-                        .map(String::trim)
-                        .filter(value -> !value.isEmpty())
-                        .toList();
-                sanitized.put(question.dataKey(), filtered);
+                List<String> filtered = sanitizeAsList(raw);
+                if (!filtered.isEmpty()) {
+                    sanitized.put(key, filtered);
+                }
             } else {
-                String cleaned = raw.toString().trim();
-                if (!cleaned.isEmpty()) {
-                    sanitized.put(question.dataKey(), cleaned);
+                String cleaned = sanitizeText(raw);
+                if (cleaned != null) {
+                    sanitized.put(key, cleaned);
                 }
             }
-        }
+        });
 
         return sanitized;
     }
+
+    private Object sanitizeGenericAnswer(Object raw) {
+        if (raw instanceof Object[] array) {
+            List<String> values = sanitizeAsList(Arrays.asList(array));
+            return values.isEmpty() ? null : values;
+        }
+        if (raw instanceof Collection<?>) {
+            List<String> values = sanitizeAsList(raw);
+            return values.isEmpty() ? null : values;
+        }
+        return sanitizeText(raw);
+    }
+
+    private List<String> sanitizeAsList(Object raw) {
+        Collection<?> source;
+        if (raw instanceof Collection<?> collection) {
+            source = collection;
+        } else {
+            source = Collections.singletonList(raw);
+        }
+
+        return source.stream()
+                .map(this::sanitizeText)
+                .filter(value -> value != null && !value.isEmpty())
+                .toList();
+    }
+
+    private String sanitizeText(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        String cleaned = raw.toString().trim();
+        return cleaned.isEmpty() ? null : cleaned;
+    }
+
 }

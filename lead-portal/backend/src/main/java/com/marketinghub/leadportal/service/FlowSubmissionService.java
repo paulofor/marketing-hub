@@ -132,6 +132,14 @@ public class FlowSubmissionService {
     private void validateRequiredQuestions(Flow flow, FlowSubmissionRequest request, MultipartFile imageFile) {
         List<FlowQuestion> questions = flow.questions() == null ? List.of() : flow.questions();
         boolean hasImage = imageFile != null && !imageFile.isEmpty();
+
+        enforceImageRequirements(questions, request, hasImage);
+
+        if (hasCustomTemplate(flow)) {
+            validateImageKeyBelongsToFlow(request, questions);
+            return;
+        }
+
         for (FlowQuestion question : questions) {
             FlowQuestionType questionType = question.type();
             if (questionType == null) {
@@ -147,12 +155,6 @@ public class FlowSubmissionService {
             }
 
             if (questionType == FlowQuestionType.IMAGE_UPLOAD) {
-                if (question.required()
-                        && (request.getImageKey() == null
-                                || !question.dataKey().equals(request.getImageKey())
-                                || !hasImage)) {
-                    throw new IllegalArgumentException("Envie uma imagem para continuar.");
-                }
                 continue;
             }
 
@@ -173,13 +175,38 @@ public class FlowSubmissionService {
             }
         }
 
-        if (request.getImageKey() != null) {
-            boolean matchesFlowQuestion = questions.stream()
-                    .anyMatch(q -> q.dataKey().equals(request.getImageKey()) && q.type() == FlowQuestionType.IMAGE_UPLOAD);
-            if (!matchesFlowQuestion) {
-                throw new IllegalArgumentException("O campo de imagem enviado não pertence a este fluxo.");
+        validateImageKeyBelongsToFlow(request, questions);
+    }
+
+    private void enforceImageRequirements(List<FlowQuestion> questions, FlowSubmissionRequest request, boolean hasImage) {
+        if (questions == null || questions.isEmpty()) {
+            return;
+        }
+        for (FlowQuestion question : questions) {
+            if (question == null || question.type() != FlowQuestionType.IMAGE_UPLOAD || !question.required()) {
+                continue;
+            }
+            boolean matchesDataKey = question.dataKey() != null && question.dataKey().equals(request.getImageKey());
+            if (!matchesDataKey || !hasImage) {
+                throw new IllegalArgumentException("Envie uma imagem para continuar.");
             }
         }
+    }
+
+    private void validateImageKeyBelongsToFlow(FlowSubmissionRequest request, List<FlowQuestion> questions) {
+        if (request.getImageKey() == null || questions == null) {
+            return;
+        }
+        boolean matchesFlowQuestion = questions.stream()
+                .filter(question -> question != null && question.dataKey() != null)
+                .anyMatch(q -> q.dataKey().equals(request.getImageKey()) && q.type() == FlowQuestionType.IMAGE_UPLOAD);
+        if (!matchesFlowQuestion) {
+            throw new IllegalArgumentException("O campo de imagem enviado não pertence a este fluxo.");
+        }
+    }
+
+    private boolean hasCustomTemplate(Flow flow) {
+        return flow != null && StringUtils.hasText(flow.customFormHtml());
     }
 
     private boolean isSimpleFormMetadataQuestion(FlowQuestion question) {

@@ -53,6 +53,27 @@ type FeedbackState = {
   message: string;
 };
 
+const ASSET_URL_VALUE_PATTERN = /^(?:https?:\/\/|\/|uploads\/|api\/uploads\/)/i;
+
+function readQuestionAssetValue(question?: LeadPortalFlow["questions"][number]): string {
+  if (!question) {
+    return "";
+  }
+
+  const titleValue = question.title?.trim() ?? "";
+  const descriptionValue = question.description?.trim() ?? "";
+
+  if (titleValue && ASSET_URL_VALUE_PATTERN.test(titleValue)) {
+    return titleValue;
+  }
+
+  if (descriptionValue && ASSET_URL_VALUE_PATTERN.test(descriptionValue)) {
+    return descriptionValue;
+  }
+
+  return titleValue;
+}
+
 export default function SimpleLeadPortalFormCard({
   marketNicheId,
   onCreated,
@@ -200,6 +221,8 @@ export default function SimpleLeadPortalFormCard({
       return value && value.length > 0 ? value : fallback;
     };
     const readOptional = (key: string) => questionMap.get(key)?.title?.trim() ?? "";
+    const readAssetValue = (key: string) =>
+      readQuestionAssetValue(questionMap.get(key));
 
     setWorkQuestionTitle(
       readValue("local_trabalho", SIMPLE_FORM_DEFAULTS.workQuestionTitle),
@@ -272,9 +295,9 @@ export default function SimpleLeadPortalFormCard({
     setBulletItem1(readValue("bullet_item_1", SIMPLE_FORM_DEFAULTS.bulletItem1));
     setBulletItem2(readValue("bullet_item_2", SIMPLE_FORM_DEFAULTS.bulletItem2));
     setBulletItem3(readValue("bullet_item_3", SIMPLE_FORM_DEFAULTS.bulletItem3));
-    setCard1ImageUrl(readOptional("exemplo_real_card_1_imagem_url"));
-    setCard2ImageUrl(readOptional("exemplo_real_card_2_imagem_url"));
-    setCard3ImageUrl(readOptional("exemplo_real_card_3_imagem_url"));
+    setCard1ImageUrl(readAssetValue("exemplo_real_card_1_imagem_url"));
+    setCard2ImageUrl(readAssetValue("exemplo_real_card_2_imagem_url"));
+    setCard3ImageUrl(readAssetValue("exemplo_real_card_3_imagem_url"));
     setCard1OverlayText(readOptional("exemplo_real_card_1_texto_sobreposto"));
     setCard2OverlayText(readOptional("exemplo_real_card_2_texto_sobreposto"));
     setCard3OverlayText(readOptional("exemplo_real_card_3_texto_sobreposto"));

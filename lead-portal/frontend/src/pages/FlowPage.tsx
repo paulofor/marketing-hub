@@ -319,12 +319,31 @@ function buildCustomHtmlTemplateVariables(flow: LeadPortalFlow, metadata: Simple
     variables.set(key, normalized);
     variables.set(key.toLowerCase(), normalized);
   };
+  const shouldResolveAsAssetUrl = (key: string) => {
+    const normalizedKey = key.toLowerCase();
+    return normalizedKey.includes("imagem_url") || normalizedKey.includes("image_url");
+  };
+  flow.questions.forEach((question) => {
+    const dataKey = question.dataKey?.trim();
+    if (!dataKey) {
+      return;
+    }
+    const value = shouldResolveAsAssetUrl(dataKey)
+      ? resolveAssetUrl(question.title ?? "")
+      : question.title ?? "";
+    setValue(dataKey, value);
+  });
   const proofCards = metadata?.proof?.cards ?? [];
   [0, 1, 2].forEach((index) => {
-    const image = proofCards[index]?.imageUrl;
-    const resolved = image ? resolveAssetUrl(image) : "";
+    const dataKey = `exemplo_real_card_${index + 1}_imagem_url`;
+    const storedValue = variables.get(dataKey) ?? variables.get(dataKey.toLowerCase()) ?? "";
+    const fallbackValue = resolveAssetUrl(proofCards[index]?.imageUrl ?? "");
+    const resolved = storedValue && storedValue.trim().length > 0 ? storedValue : fallbackValue;
     setValue(`imagem${index + 1}`, resolved);
   });
+  setValue("flow_slug", flow.slug);
+  setValue("flow_name", flow.name);
+  setValue("flow_description", flow.description ?? "");
   setValue("url", `${API_BASE_URL}/flows/${encodeURIComponent(flow.slug)}/submissions`);
   return variables;
 }

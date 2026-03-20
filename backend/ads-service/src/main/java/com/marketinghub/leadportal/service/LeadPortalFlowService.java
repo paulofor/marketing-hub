@@ -120,6 +120,7 @@ public class LeadPortalFlowService {
     @Transactional
     public LeadPortalFlow update(Long id, UpdateLeadPortalFlowRequest request) {
         LeadPortalFlow flow = get(id);
+        boolean managedByExperiment = flow.getExperiment() != null;
         String previousSlug = flow.getSlug();
         boolean wasApproved = flow.isApproved();
         if (request.getName() != null) {
@@ -143,12 +144,20 @@ public class LeadPortalFlowService {
             flow.setModel(trimToNull(request.getModel()));
         }
         if (request.getImagePromptModel() != null) {
+            if (managedByExperiment) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "imagePromptModel is managed by the experiment");
+            }
             flow.setImagePromptModel(trimToNull(request.getImagePromptModel()));
         }
         if (request.getImagePromptTemplate() != null) {
             flow.setImagePromptTemplate(trimToNull(request.getImagePromptTemplate()));
         }
         if (request.getImagePromptBatchSize() != null) {
+            if (managedByExperiment) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "imagePromptBatchSize is managed by the experiment");
+            }
             flow.setImagePromptBatchSize(normalizeBatchSize(request.getImagePromptBatchSize()));
         }
         if (request.getSimpleFormStyleId() != null) {

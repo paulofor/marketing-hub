@@ -1,5 +1,6 @@
 package com.marketinghub.leadportal.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.marketinghub.leadportal.model.SimpleFormStyleDefinition;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -24,6 +25,7 @@ public class UpsertFlowRequest {
 
     private String imagePromptTemplate;
 
+    @JsonProperty("imagePromptBatchSize")
     private Integer imageBatchSize;
 
     private SimpleFormStylePayload simpleFormStyle;

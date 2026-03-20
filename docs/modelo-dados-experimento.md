@@ -258,6 +258,10 @@ erDiagram
    - `creative` guarda peças geradas (com `model` e `prompt`).
    - `creative_variant` representa variações de assets/títulos/descrições.
 
+4. **Lead Portal e geração de imagens**
+   - `lead_portal_flow` replica o modelo (`image_prompt_model`) e o tamanho do lote (`image_prompt_batch_size`) definidos no experimento vinculado.
+   - Ao atualizar `experiment.image_generation_model` ou `experiment.images_per_package`, os valores são sincronizados e publicados automaticamente para o Lead Portal, garantindo que os pacotes usem exatamente o modelo e a quantidade configurados no experimento.
+
 4. **Campanha (Meta Ads)**
    - `facebook_ads_campaign` referencia diretamente o experimento.
    - Cada campanha possui `facebook_ads_ad_set` e depois `facebook_ads_ad`.

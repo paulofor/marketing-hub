@@ -332,7 +332,7 @@ public class LeadPortalPackageNotificationService {
             return null;
         }
         StringBuilder htmlBuilder = new StringBuilder(processedHtml.trim());
-        appendTrackingMetadata(htmlBuilder, pending, trackingLinks);
+        appendTrackingMetadata(htmlBuilder, trackingLinks);
         String htmlContent = htmlBuilder.toString();
         String plainContent = htmlToPlainText(htmlContent);
         String subject = resolveCustomSubject(subjectTemplate, replacements, pending, imageCount);
@@ -400,7 +400,7 @@ public class LeadPortalPackageNotificationService {
                     .append("</p>");
         }
 
-        appendTrackingMetadata(html, pending, trackingLinks);
+        appendTrackingMetadata(html, trackingLinks);
 
         String attachmentName = "imagens-watermark-" + pending.packageId() + ".zip";
         return new EmailContent(subject, plain.toString(), html.toString(), attachmentName);
@@ -416,17 +416,7 @@ public class LeadPortalPackageNotificationService {
         return new TrackingLinks(trackingViewUrl, trackingPixelUrl);
     }
 
-    private void appendTrackingMetadata(StringBuilder html, PendingPackage pending, TrackingLinks trackingLinks) {
-        if (trackingLinks != null && StringUtils.hasText(trackingLinks.viewUrl())) {
-            html.append("<p><strong>Visualizar online:</strong> <a href=\"")
-                    .append(HtmlUtils.htmlEscape(trackingLinks.viewUrl()))
-                    .append("\" target=\"_blank\" rel=\"noopener\">Abrir prévias</a></p>");
-        }
-        html.append("<p class=\"meta\" style=\"font-size:12px;color:#555\">")
-                .append("Pacote ").append(pending.packageId())
-                .append(" · Experimento ")
-                .append(HtmlUtils.htmlEscape(resolveExperimentLabel(pending)))
-                .append("</p>");
+    private void appendTrackingMetadata(StringBuilder html, TrackingLinks trackingLinks) {
         if (trackingLinks != null && StringUtils.hasText(trackingLinks.pixelUrl())) {
             html.append("<img src=\"")
                     .append(HtmlUtils.htmlEscape(trackingLinks.pixelUrl()))

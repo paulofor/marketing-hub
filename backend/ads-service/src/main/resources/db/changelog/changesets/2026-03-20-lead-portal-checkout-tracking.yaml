@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-03-20-lead-portal-checkout-tracking
+      author: assistant
+      preConditions:
+        onFail: MARK_RAN
+        dbms:
+          type: mysql
+        not:
+          columnExists:
+            tableName: lead_portal_purchase
+            columnName: checkout_accessed_at
+      changes:
+        - addColumn:
+            tableName: lead_portal_purchase
+            columns:
+              - column:
+                  name: checkout_accessed_at
+                  type: TIMESTAMP NULL
+                  remarks: Momento em que o lead acessou o checkout (rastreamento público).
+        - createIndex:
+            tableName: lead_portal_purchase
+            indexName: idx_lead_portal_purchase_checkout_accessed_at
+            columns:
+              - column:
+                  name: checkout_accessed_at

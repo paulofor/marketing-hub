@@ -315,8 +315,9 @@ Além dos eventos explícitos, o backend consolida fontes automáticas por etapa
 - Envio de formulário: `lead_portal_submission` (campo `experiment_id`).
 - Abertura do e-mail de amostra e download pago: `flow_submission_image_package`
   (campos `email_opened_at` e `images_viewed_at` com `payment_purchase_id`).
-- Checkout e compra: `lead_portal_purchase` (com filtro
-  `payment_approved_at`/`mp_status`).
+- Checkout: `lead_portal_purchase.checkout_accessed_at`, atualizado pelo endpoint público
+  `/api/public/lead-portal/purchases/{id}/checkout` antes do redirecionamento ao entrypoint de pagamento.
+- Compra: `lead_portal_purchase` (com filtro `payment_approved_at`/`mp_status`).
 - Abertura do e-mail de compra: `lead_portal_premium_delivery` associado a
   `email_log.opened_at`.
 

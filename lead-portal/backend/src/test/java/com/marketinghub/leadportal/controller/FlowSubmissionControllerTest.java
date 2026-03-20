@@ -15,6 +15,8 @@ import com.marketinghub.leadportal.model.FlowQuestionType;
 import com.marketinghub.leadportal.repository.FlowSubmissionImagePackageRepository;
 import com.marketinghub.leadportal.repository.FlowSubmissionRepository;
 import com.marketinghub.leadportal.service.FlowService;
+import com.marketinghub.leadportal.service.ExperimentFunnelTrackingClient;
+import com.marketinghub.leadportal.service.ExperimentFunnelTrackingClient.TrackingResult;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -62,6 +64,9 @@ class FlowSubmissionControllerTest {
     @MockBean
     private S3Client s3Client;
 
+    @MockBean
+    private ExperimentFunnelTrackingClient trackingClient;
+
     @BeforeEach
     void setup() {
         Mockito.lenient()
@@ -72,6 +77,10 @@ class FlowSubmissionControllerTest {
                 .when(s3Client.getObjectAsBytes(Mockito.any(GetObjectRequest.class)))
                 .thenAnswer(invocation ->
                         ResponseBytes.fromByteArray(GetObjectResponse.builder().build(), "conteudo".getBytes()));
+
+        Mockito.lenient()
+                .when(trackingClient.registerSubmission(Mockito.anyString(), Mockito.any(), Mockito.any()))
+                .thenReturn(TrackingResult.FORWARDED);
 
         imagePackageRepository.deleteAll();
         submissionRepository.deleteAll();

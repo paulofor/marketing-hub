@@ -7,6 +7,7 @@ import com.marketinghub.experiment.funnel.ExperimentFunnelEventRepository.StageA
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.model.Lead;
 import com.marketinghub.repository.LeadRepository;
+import com.marketinghub.leadportal.dto.RegisterLeadPortalSubmissionRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -97,6 +98,31 @@ public class ExperimentFunnelService {
                 .source(ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE)
                 .payload(payload)
                 .occurredAt(Instant.now())
+                .build();
+        eventRepository.save(event);
+    }
+
+    @Transactional
+    public void registerFormSubmission(String flowSlug, RegisterLeadPortalSubmissionRequest request) {
+        if (flowSlug == null || flowSlug.isBlank()) {
+            throw new IllegalArgumentException("Slug do fluxo é obrigatório");
+        }
+        if (request == null || request.submissionId() == null || request.submissionId().isBlank()) {
+            throw new IllegalArgumentException("ID da submissão é obrigatório");
+        }
+
+        Experiment experiment = experimentRepository.findFirstByLeadPortalFlowSlug(flowSlug.trim())
+                .orElseThrow(() -> new IllegalArgumentException("Fluxo não vinculado a experimento"));
+
+        String payload = "submissionId=" + request.submissionId().trim();
+        Instant occurredAt = Optional.ofNullable(request.submittedAt()).orElse(Instant.now());
+
+        ExperimentFunnelEvent event = ExperimentFunnelEvent.builder()
+                .experiment(experiment)
+                .stage(ExperimentFunnelStage.ENVIO_FORM)
+                .source(ExperimentFunnelEventRepository.SUBMISSION_SOURCE)
+                .payload(payload)
+                .occurredAt(occurredAt)
                 .build();
         eventRepository.save(event);
     }

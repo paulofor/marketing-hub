@@ -13,6 +13,7 @@ import java.util.List;
 public interface ExperimentFunnelEventRepository extends JpaRepository<ExperimentFunnelEvent, Long> {
 
     String RENDER_COMPLETE_SOURCE = "lead-portal-render-complete";
+    String SUBMISSION_SOURCE = "lead_portal_submission";
 
     @Query("""
             select e.stage as stage,

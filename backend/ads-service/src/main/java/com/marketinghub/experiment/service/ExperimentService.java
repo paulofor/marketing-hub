@@ -13,6 +13,8 @@ import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.journey.repository.JourneyTemplateRepository;
 import com.marketinghub.leadportal.LeadPortalFlow;
+import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
+import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
@@ -22,6 +24,7 @@ import com.marketinghub.imagegeneration.repository.ImageGenerationModelRepositor
 import com.marketinghub.imagegeneration.repository.ImageGenerationQualityRepository;
 import com.marketinghub.sampleemail.SampleEmail;
 import jakarta.persistence.EntityManager;
+import java.util.Objects;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -44,6 +47,7 @@ public class ExperimentService {
     private final InstagramAccountRepository instagramAccountRepository;
     private final FacebookInstantFormRepository facebookInstantFormRepository;
     private final LeadPortalFlowRepository leadPortalFlowRepository;
+    private final LeadPortalFlowPublisher leadPortalFlowPublisher;
     private final ImageGenerationModelRepository imageGenerationModelRepository;
     private final ImageGenerationQualityRepository imageGenerationQualityRepository;
     private final com.marketinghub.sampleemail.repository.SampleEmailRepository sampleEmailRepository;
@@ -57,6 +61,7 @@ public class ExperimentService {
                              InstagramAccountRepository instagramAccountRepository,
                              FacebookInstantFormRepository facebookInstantFormRepository,
                              LeadPortalFlowRepository leadPortalFlowRepository,
+                             LeadPortalFlowPublisher leadPortalFlowPublisher,
                              ImageGenerationModelRepository imageGenerationModelRepository,
                              ImageGenerationQualityRepository imageGenerationQualityRepository,
                              com.marketinghub.sampleemail.repository.SampleEmailRepository sampleEmailRepository) {
@@ -70,6 +75,7 @@ public class ExperimentService {
         this.instagramAccountRepository = instagramAccountRepository;
         this.facebookInstantFormRepository = facebookInstantFormRepository;
         this.leadPortalFlowRepository = leadPortalFlowRepository;
+        this.leadPortalFlowPublisher = leadPortalFlowPublisher;
         this.imageGenerationModelRepository = imageGenerationModelRepository;
         this.imageGenerationQualityRepository = imageGenerationQualityRepository;
         this.sampleEmailRepository = sampleEmailRepository;
@@ -294,7 +300,9 @@ public class ExperimentService {
                 .creativeTextPrompt(normalizePrompt(request.getCreativeTextPrompt()))
                 .creativeImagePrompt(normalizePrompt(request.getCreativeImagePrompt()))
                 .build();
-        return repository.save(exp);
+        Experiment savedExperiment = repository.save(exp);
+        synchronizeLeadPortalFlow(savedExperiment);
+        return savedExperiment;
     }
 
     @Transactional
@@ -551,6 +559,7 @@ public class ExperimentService {
             exp.setImageGenerationModel(selection.model());
             exp.setImageGenerationQuality(selection.quality());
         }
+        synchronizeLeadPortalFlow(exp);
         return exp;
     }
 
@@ -635,6 +644,57 @@ public class ExperimentService {
         Experiment exp = repository.findById(id).orElseThrow();
         exp.setLeadPortalFlowsToGenerate(quantity);
         return exp;
+    }
+
+
+    private void synchronizeLeadPortalFlow(Experiment experiment) {
+        LeadPortalFlow flowRef = experiment.getLeadPortalFlow();
+        if (flowRef == null || flowRef.getId() == null) {
+            return;
+        }
+        LeadPortalFlow flow = leadPortalFlowRepository.findById(flowRef.getId()).orElse(null);
+        if (flow == null) {
+            return;
+        }
+        String desiredModel = resolveImagePromptModel(experiment);
+        Integer desiredBatchSize = experiment.getImagesPerPackage();
+        boolean changed = false;
+        if (!Objects.equals(flow.getImagePromptModel(), desiredModel)) {
+            flow.setImagePromptModel(desiredModel);
+            changed = true;
+        }
+        if (!Objects.equals(flow.getImagePromptBatchSize(), desiredBatchSize)) {
+            flow.setImagePromptBatchSize(desiredBatchSize);
+            changed = true;
+        }
+        if (changed) {
+            LeadPortalFlow savedFlow = leadPortalFlowRepository.save(flow);
+            publishFlowIfNeeded(savedFlow);
+        }
+    }
+
+    private String resolveImagePromptModel(Experiment experiment) {
+        ImageGenerationModel model = experiment.getImageGenerationModel();
+        if (model != null && StringUtils.hasText(model.getApiModel())) {
+            return model.getApiModel();
+        }
+        ImageGenerationQuality quality = experiment.getImageGenerationQuality();
+        if (quality != null && quality.getModel() != null && StringUtils.hasText(quality.getModel().getApiModel())) {
+            return quality.getModel().getApiModel();
+        }
+        return null;
+    }
+
+    private void publishFlowIfNeeded(LeadPortalFlow flow) {
+        if (!flow.isApproved()) {
+            return;
+        }
+        try {
+            leadPortalFlowPublisher.publish(flow);
+        } catch (LeadPortalPublicationException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "failed to synchronise lead portal flow", ex);
+        }
     }
 
     private java.math.BigDecimal normalizeUnitPrice(java.math.BigDecimal unitPrice) {

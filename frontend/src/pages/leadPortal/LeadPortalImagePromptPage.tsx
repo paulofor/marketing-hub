@@ -4,14 +4,15 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { useLeadPortalFlows } from "../../api/leadPortal/useLeadPortalFlows";
 import { useLeadPortalImagePromptMetadata } from "../../api/leadPortal/useLeadPortalImagePromptMetadata";
-import { useUpdateLeadPortalImagePrompt } from "../../api/leadPortal/useUpdateLeadPortalImagePrompt";
-import { useImageGenerationModels } from "../../api/ai/useImageGenerationModels";
+import {
+  useUpdateLeadPortalImagePrompt,
+  type UpdateLeadPortalImagePromptPayload,
+} from "../../api/leadPortal/useUpdateLeadPortalImagePrompt";
 
 import "./LeadPortalImagePromptPage.css";
 
 interface FormState {
   template: string;
-  model: string;
   batchSize: number | null;
 }
 
@@ -24,7 +25,6 @@ export default function LeadPortalImagePromptPage() {
   const { data: flows, isLoading, isError, error } = useLeadPortalFlows();
   const { data: metadata, isLoading: isLoadingMetadata } =
     useLeadPortalImagePromptMetadata();
-  const { data: imageModels } = useImageGenerationModels();
   const updatePrompt = useUpdateLeadPortalImagePrompt();
   const queryClient = useQueryClient();
 
@@ -32,7 +32,6 @@ export default function LeadPortalImagePromptPage() {
   const [selectedFlowId, setSelectedFlowId] = useState<number | null>(null);
   const [formState, setFormState] = useState<FormState>({
     template: "",
-    model: "",
     batchSize: null,
   });
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
@@ -53,12 +52,15 @@ export default function LeadPortalImagePromptPage() {
     [flowList, selectedFlowId],
   );
 
+  const isExperimentManaged = Boolean(selectedFlow?.experimentId);
+  const resolvedModel =
+    selectedFlow?.imagePromptModel ?? metadata?.defaultModel ?? "";
+
   useEffect(() => {
     if (!metadata) return;
     if (!selectedFlow) {
       setFormState({
         template: metadata.defaultTemplate,
-        model: metadata.defaultModel,
         batchSize: metadata.defaultBatchSize,
       });
     }
@@ -69,7 +71,6 @@ export default function LeadPortalImagePromptPage() {
     setFormState({
       template:
         selectedFlow.imagePromptTemplate ?? metadata.defaultTemplate ?? "",
-      model: selectedFlow.imagePromptModel ?? metadata.defaultModel ?? "",
       batchSize:
         selectedFlow.imagePromptBatchSize ?? metadata.defaultBatchSize ?? null,
     });
@@ -92,16 +93,20 @@ export default function LeadPortalImagePromptPage() {
 
     setFeedback(null);
     try {
+      const trimmedTemplate = formState.template.trim();
+      const normalizedBatch =
+        formState.batchSize && formState.batchSize > 0
+          ? formState.batchSize
+          : null;
+      const payload: UpdateLeadPortalImagePromptPayload = {
+        imagePromptTemplate: trimmedTemplate || null,
+      };
+      if (!isExperimentManaged) {
+        payload.imagePromptBatchSize = normalizedBatch;
+      }
       await updatePrompt.mutateAsync({
         id: selectedFlow.id,
-        payload: {
-          imagePromptModel: formState.model.trim() || null,
-          imagePromptTemplate: formState.template.trim() || null,
-          imagePromptBatchSize:
-            formState.batchSize && formState.batchSize > 0
-              ? formState.batchSize
-              : null,
-        },
+        payload,
       });
       await queryClient.invalidateQueries({ queryKey: ["lead-portal-flows"] });
       setFeedback({
@@ -128,16 +133,9 @@ export default function LeadPortalImagePromptPage() {
     if (!metadata) return;
     setFormState({
       template: metadata.defaultTemplate,
-      model: metadata.defaultModel,
       batchSize: metadata.defaultBatchSize,
     });
   };
-
-  const modelOptions = useMemo(() => imageModels ?? [], [imageModels]);
-  const modelValue = formState.model || "";
-  const modelExists = modelOptions.some(
-    (model) => model.apiModel === modelValue,
-  );
 
   return (
     <div className="lp-image-prompt-page">
@@ -145,9 +143,8 @@ export default function LeadPortalImagePromptPage() {
         <div>
           <h1>Prompt de geração de imagens</h1>
           <p>
-            Personalize o texto enviado ao worker de IA, escolha o modelo de
-            imagem e defina o tamanho do lote para cada fluxo simples publicado
-            no Lead Portal.
+            Personalize o texto enviado ao worker de IA e acompanhe o modelo e
+            o tamanho do lote definidos em cada fluxo publicado no Lead Portal.
           </p>
         </div>
         <div className="lp-image-prompt-search">
@@ -220,28 +217,22 @@ export default function LeadPortalImagePromptPage() {
                   </div>
                 ) : null}
 
-                <label className="lp-field">
+                <div className="lp-field">
                   <span>Modelo de imagem</span>
-                  <select
-                    value={modelValue}
-                    onChange={(event) =>
-                      setFormState((current) => ({
-                        ...current,
-                        model: event.target.value,
-                      }))
-                    }
-                  >
-                    <option value="">Usar padrão ({metadata?.defaultModel})</option>
-                    {modelOptions.map((model) => (
-                      <option key={model.id} value={model.apiModel}>
-                        {model.name} ({model.apiModel})
-                      </option>
-                    ))}
-                    {!modelExists && modelValue ? (
-                      <option value={modelValue}>{modelValue}</option>
-                    ) : null}
-                  </select>
-                </label>
+                  <div className="lp-readonly-value">
+                    <strong>
+                      {resolvedModel || metadata?.defaultModel || "gpt-image-1"}
+                    </strong>
+                    {isExperimentManaged ? (
+                      <span className="lp-badge">Controlado pelo experimento</span>
+                    ) : (
+                      <small>
+                        Defina o modelo diretamente na tela do experimento.
+                        Fluxos sem experimento usam o padrão informado acima.
+                      </small>
+                    )}
+                  </div>
+                </div>
 
                 <label className="lp-field">
                   <span>Tamanho do lote</span>
@@ -258,11 +249,16 @@ export default function LeadPortalImagePromptPage() {
                       }));
                     }}
                     placeholder={`${metadata?.defaultBatchSize ?? 6}`}
+                    disabled={isExperimentManaged}
                   />
-                  <small>
-                    Mantemos o modo batch para reduzir custo. Valores entre 1 e
-                    20 imagens.
-                  </small>
+                  {isExperimentManaged ? (
+                    <small>O experimento controla o número de variações.</small>
+                  ) : (
+                    <small>
+                      Mantemos o modo batch para reduzir custo. Valores entre 1 e
+                      20 imagens.
+                    </small>
+                  )}
                 </label>
 
                 <label className="lp-field">
@@ -298,7 +294,7 @@ export default function LeadPortalImagePromptPage() {
                     onClick={handleRestoreDefaults}
                     disabled={!metadata}
                   >
-                    Restaurar modelo e lote padrão
+                    Restaurar lote padrão
                   </button>
                   <button
                     type="submit"

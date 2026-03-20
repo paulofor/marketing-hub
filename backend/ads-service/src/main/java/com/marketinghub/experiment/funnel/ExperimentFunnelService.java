@@ -224,13 +224,14 @@ public class ExperimentFunnelService {
                 fetchSingleMetric("""
                         SELECT COUNT(*) AS total,
                                COUNT(DISTINCT p.submission_id) AS unique_count,
-                               MAX(p.created_at) AS last_event
+                               MAX(p.checkout_accessed_at) AS last_event
                         FROM lead_portal_purchase p
                         JOIN flow_submissions s ON s.id = p.submission_id
                         JOIN lead_portal_flow f ON f.slug = s.flow_slug
                         WHERE %s
+                          AND p.checkout_accessed_at IS NOT NULL
                         """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId),
-                "Checkouts gerados no Mercado Pago (lead_portal_purchase)");
+                "Acessos ao checkout registrados via tracking público (lead_portal_purchase.checkout_accessed_at)");
 
         mergeMetric(stages, ExperimentFunnelStage.COMPRA,
                 fetchSingleMetric("""

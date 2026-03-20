@@ -71,6 +71,7 @@ public class LeadPortalPackageNotificationService {
     private final LeadPortalImagePackageStatusHistoryService statusHistoryService;
     private final LeadPortalEmailTemplateService emailTemplateService;
     private final LeadPortalPaymentsClient paymentsClient;
+    private final LeadPortalTrackingLinkService trackingLinkService;
 
     @Value("${lead-portal.notifications.max-attempts:5}")
     private int maxAttempts;
@@ -81,20 +82,19 @@ public class LeadPortalPackageNotificationService {
     @Value("${lead-portal.notifications.lock-seconds:300}")
     private int lockSeconds;
 
-    @Value("${lead-portal.notifications.tracking-base-url:}")
-    private String trackingBaseUrl;
-
     public LeadPortalPackageNotificationService(
             JdbcTemplate jdbcTemplate,
             FileStorageService fileStorageService,
             LeadPortalImagePackageStatusHistoryService statusHistoryService,
             LeadPortalEmailTemplateService emailTemplateService,
-            LeadPortalPaymentsClient paymentsClient) {
+            LeadPortalPaymentsClient paymentsClient,
+            LeadPortalTrackingLinkService trackingLinkService) {
         this.jdbcTemplate = jdbcTemplate;
         this.fileStorageService = fileStorageService;
         this.statusHistoryService = statusHistoryService;
         this.emailTemplateService = emailTemplateService;
         this.paymentsClient = paymentsClient;
+        this.trackingLinkService = trackingLinkService;
     }
 
     @PostConstruct
@@ -387,12 +387,8 @@ public class LeadPortalPackageNotificationService {
     }
 
     private TrackingLinks buildTrackingLinks(PendingPackage pending) {
-        String normalizedTrackingBase = normalizeTrackingBaseUrl(trackingBaseUrl);
-        if (!StringUtils.hasText(normalizedTrackingBase)) {
-            return new TrackingLinks(null, null);
-        }
-        String trackingViewUrl = buildTrackingUrl(normalizedTrackingBase, pending.packageId(), "previews", pending.submissionId());
-        String trackingPixelUrl = buildTrackingUrl(normalizedTrackingBase, pending.packageId(), "open.gif", pending.submissionId());
+        String trackingViewUrl = trackingLinkService.buildPreviewUrl(pending.packageId(), pending.submissionId()).orElse(null);
+        String trackingPixelUrl = trackingLinkService.buildPixelUrl(pending.packageId(), pending.submissionId()).orElse(null);
         return new TrackingLinks(trackingViewUrl, trackingPixelUrl);
     }
 
@@ -896,29 +892,6 @@ public class LeadPortalPackageNotificationService {
             String statementDescriptor) {
     }
 
-
-    private String normalizeTrackingBaseUrl(String rawBaseUrl) {
-        if (!StringUtils.hasText(rawBaseUrl)) {
-            return null;
-        }
-        String trimmed = rawBaseUrl.trim();
-        if (trimmed.endsWith("/")) {
-            return trimmed.substring(0, trimmed.length() - 1);
-        }
-        return trimmed;
-    }
-
-    private String buildTrackingUrl(String baseUrl, long packageId, String suffix, String submissionId) {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(baseUrl)
-                .path("/api/public/lead-portal/image-packages/")
-                .path(String.valueOf(packageId))
-                .path("/")
-                .path(suffix);
-        if (StringUtils.hasText(submissionId)) {
-            builder.queryParam("sid", submissionId);
-        }
-        return builder.toUriString();
-    }
 
     private void markAsNotified(long packageId, FlowSubmissionImagePackageStatus currentStatus) {
         FlowSubmissionImagePackageStatus nextStatus = currentStatus == FlowSubmissionImagePackageStatus.COMPLETED

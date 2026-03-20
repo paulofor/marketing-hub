@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-03-20-lead-portal-checkout-tracking.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2025-10-30-experiment-funnel-events.yaml
       relativeToChangelogFile: true
   - include:

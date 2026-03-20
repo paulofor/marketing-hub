@@ -4,6 +4,7 @@ import com.marketinghub.emailservice.config.LeadPortalDispatchProperties;
 import com.marketinghub.emailservice.config.LeadPortalPaymentLinkProperties;
 import com.marketinghub.emailservice.leadportal.service.LeadPortalImagePackageExportItem;
 import com.marketinghub.emailservice.leadportal.service.LeadPortalPackageNotificationService;
+import com.marketinghub.emailservice.leadportal.service.LeadPortalTrackingLinkService;
 import com.marketinghub.emailservice.model.EmailLog;
 import com.marketinghub.emailservice.settings.EmailSmtpConfigurationService;
 import java.math.BigDecimal;
@@ -31,6 +32,7 @@ public class LeadPortalEmailDispatchService {
     private final EmailLogService emailLogService;
     private final TrackingPixelService trackingPixelService;
     private final LeadPortalPaymentLinkProperties paymentLinkProperties;
+    private final LeadPortalTrackingLinkService trackingLinkService;
     private final EmailSmtpConfigurationService smtpConfigurationService;
 
     public LeadPortalEmailDispatchService(LeadPortalPackageNotificationService leadPortalPackageNotificationService,
@@ -39,6 +41,7 @@ public class LeadPortalEmailDispatchService {
                                           EmailLogService emailLogService,
                                           TrackingPixelService trackingPixelService,
                                           LeadPortalPaymentLinkProperties paymentLinkProperties,
+                                          LeadPortalTrackingLinkService trackingLinkService,
                                           EmailSmtpConfigurationService smtpConfigurationService) {
         this.leadPortalPackageNotificationService = leadPortalPackageNotificationService;
         this.emailSenderService = emailSenderService;
@@ -46,6 +49,7 @@ public class LeadPortalEmailDispatchService {
         this.emailLogService = emailLogService;
         this.trackingPixelService = trackingPixelService;
         this.paymentLinkProperties = paymentLinkProperties;
+        this.trackingLinkService = trackingLinkService;
         this.smtpConfigurationService = smtpConfigurationService;
     }
 
@@ -92,8 +96,7 @@ public class LeadPortalEmailDispatchService {
         PaymentBodies paymentBodies = enrichWithPaymentLink(
                 item.emailHtmlBody(),
                 item.emailPlainBody(),
-                item.paymentInfo(),
-                item.packageId());
+                item);
         String trackingPixelUrl = trackingPixelService.buildTrackingPixelUrl(emailLog.getRequestId());
         String htmlBody = trackingPixelService.appendTrackingPixel(paymentBodies.htmlBody(), trackingPixelUrl);
 
@@ -129,29 +132,37 @@ public class LeadPortalEmailDispatchService {
 
     PaymentBodies enrichWithPaymentLink(String htmlBody,
                                        String plainBody,
-                                       LeadPortalImagePackageExportItem.PaymentInfo paymentInfo,
-                                       long packageId) {
+                                       LeadPortalImagePackageExportItem item) {
         String html = htmlBody != null ? htmlBody : "";
         String plain = plainBody != null ? plainBody : "";
+        LeadPortalImagePackageExportItem.PaymentInfo paymentInfo = item.paymentInfo();
         if (paymentInfo == null || !StringUtils.hasText(paymentInfo.checkoutUrl())) {
             return new PaymentBodies(html, plain);
         }
 
         String directPaymentUrl = paymentInfo.checkoutUrl().trim();
-        String paymentUrl = resolvePaymentUrl(packageId, paymentInfo);
-        if (StringUtils.hasText(paymentUrl)) {
-            paymentUrl = paymentUrl.trim();
+        String entrypointUrl = resolvePaymentUrl(item.packageId(), paymentInfo);
+        if (StringUtils.hasText(entrypointUrl)) {
+            entrypointUrl = entrypointUrl.trim();
         } else {
-            paymentUrl = directPaymentUrl;
+            entrypointUrl = directPaymentUrl;
         }
 
-        validatePaymentUrl(paymentUrl);
+        String trackedCheckoutUrl = trackingLinkService.buildCheckoutTrackingUrl(paymentInfo.purchaseId(), item.submissionId())
+                .map(String::trim)
+                .orElse(null);
+        String effectivePaymentUrl = StringUtils.hasText(trackedCheckoutUrl) ? trackedCheckoutUrl : entrypointUrl;
 
-        boolean htmlHasLink = containsPaymentLink(html, paymentUrl, directPaymentUrl);
-        boolean plainHasLink = containsPaymentLink(plain, paymentUrl, directPaymentUrl);
+        validatePaymentUrl(effectivePaymentUrl);
 
-        String normalizedHtml = htmlHasLink ? html : html + buildHtmlPaymentBlock(paymentInfo, paymentUrl);
-        String normalizedPlain = plainHasLink ? plain : buildPlainPaymentBlock(plain, paymentInfo, paymentUrl);
+        String updatedHtml = replacePaymentLinks(html, effectivePaymentUrl, entrypointUrl, directPaymentUrl);
+        String updatedPlain = replacePaymentLinks(plain, effectivePaymentUrl, entrypointUrl, directPaymentUrl);
+
+        boolean htmlHasLink = containsPaymentLink(updatedHtml, effectivePaymentUrl);
+        boolean plainHasLink = containsPaymentLink(updatedPlain, effectivePaymentUrl);
+
+        String normalizedHtml = htmlHasLink ? updatedHtml : updatedHtml + buildHtmlPaymentBlock(paymentInfo, effectivePaymentUrl);
+        String normalizedPlain = plainHasLink ? updatedPlain : buildPlainPaymentBlock(updatedPlain, paymentInfo, effectivePaymentUrl);
         return new PaymentBodies(normalizedHtml, normalizedPlain);
     }
 
@@ -178,7 +189,7 @@ public class LeadPortalEmailDispatchService {
     }
 
     private void validatePaymentUrl(String checkoutUrl) {
-        if (!paymentLinkProperties.isValidateHost()) {
+        if (!paymentLinkProperties.isValidateHost() || !StringUtils.hasText(checkoutUrl)) {
             return;
         }
         try {
@@ -190,7 +201,12 @@ public class LeadPortalEmailDispatchService {
             boolean allowed = paymentLinkProperties.getAllowedHosts().stream()
                     .anyMatch(allowedHost -> host.equalsIgnoreCase(allowedHost));
             if (!allowed) {
-                throw new IllegalArgumentException("Host do link de pagamento não autorizado: " + host);
+                boolean isTrackingHost = trackingLinkService.trackingHost()
+                        .map(trackingHost -> trackingHost.equalsIgnoreCase(host))
+                        .orElse(false);
+                if (!isTrackingHost) {
+                    throw new IllegalArgumentException("Host do link de pagamento não autorizado: " + host);
+                }
             }
         } catch (URISyntaxException ex) {
             throw new IllegalArgumentException("URL de pagamento inválida", ex);
@@ -242,6 +258,27 @@ public class LeadPortalEmailDispatchService {
         builder.append("\nPagamento processado por ").append(descriptor).append("\n");
         return builder.toString();
     }
+    private String replacePaymentLinks(String content, String finalUrl, String... candidates) {
+        if (!StringUtils.hasText(content) || !StringUtils.hasText(finalUrl)) {
+            return content;
+        }
+        String result = content;
+        String trimmedFinalUrl = finalUrl.trim();
+        String escapedFinal = HtmlUtils.htmlEscape(trimmedFinalUrl);
+        for (String candidate : candidates) {
+            if (!StringUtils.hasText(candidate)) {
+                continue;
+            }
+            String trimmed = candidate.trim();
+            String escapedCandidate = HtmlUtils.htmlEscape(trimmed);
+            result = result.replace(trimmed, trimmedFinalUrl);
+            if (!trimmed.equals(escapedCandidate)) {
+                result = result.replace(escapedCandidate, escapedFinal);
+            }
+        }
+        return result;
+    }
+
     private boolean containsPaymentLink(String content, String... candidates) {
         if (!StringUtils.hasText(content)) {
             return false;

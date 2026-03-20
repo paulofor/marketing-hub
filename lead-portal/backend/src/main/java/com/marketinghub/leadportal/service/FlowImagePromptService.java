@@ -44,9 +44,11 @@ public class FlowImagePromptService {
     }
 
     public Optional<FlowImagePrompt> buildPrompt(Flow flow, FlowSubmission submission) {
-        Optional<SimpleImageBriefing> simpleBriefing = briefingMapper.map(flow.slug(), submission);
-        if (simpleBriefing.isPresent()) {
-            return simpleBriefing.map(briefing -> buildSimpleFormPrompt(flow, briefing));
+        if (!hasReferenceImage(submission)) {
+            Optional<SimpleImageBriefing> simpleBriefing = briefingMapper.map(flow.slug(), submission);
+            if (simpleBriefing.isPresent()) {
+                return simpleBriefing.map(briefing -> buildSimpleFormPrompt(flow, briefing));
+            }
         }
 
         if (!StringUtils.hasText(flow.prompt()) && !StringUtils.hasText(flow.model())) {
@@ -72,6 +74,14 @@ public class FlowImagePromptService {
         }
         String model = StringUtils.hasText(flow.imagePromptModel()) ? flow.imagePromptModel() : DEFAULT_IMAGE_MODEL;
         return new FlowImagePrompt(prompt, model, batchSize, 0);
+    }
+
+    private boolean hasReferenceImage(FlowSubmission submission) {
+        if (submission == null) {
+            return false;
+        }
+        return StringUtils.hasText(submission.storedFileName())
+                || StringUtils.hasText(submission.originalFileName());
     }
 
     private String serializeBriefing(SimpleImageBriefing briefing) {

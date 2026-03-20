@@ -16,10 +16,11 @@ public class SimpleImageBriefingMapper {
     private static final String SIMPLE_FORM_PREFIX = "formulario-simples-";
 
     public Optional<SimpleImageBriefing> map(String flowSlug, FlowSubmission submission) {
-        if (!StringUtils.hasText(flowSlug) || !flowSlug.startsWith(SIMPLE_FORM_PREFIX) || submission == null) {
+        if (submission == null) {
             return Optional.empty();
         }
 
+        String normalizedSlug = StringUtils.hasText(flowSlug) ? flowSlug : submission.flowSlug();
         Map<String, Object> answers = submission.answers() == null ? Map.of() : submission.answers();
         Map<String, Object> normalizedAnswers = new LinkedHashMap<>(answers);
 
@@ -51,10 +52,10 @@ public class SimpleImageBriefingMapper {
                 valueAsString(answers.get("email")),
                 submission.email());
 
-        String activityType = resolveActivityType(flowSlug);
+        String activityType = resolveActivityType(normalizedSlug, normalizedAnswers);
 
         return Optional.of(new SimpleImageBriefing(
-                flowSlug,
+                normalizedSlug,
                 activityType,
                 professionalName,
                 submission.email(),
@@ -67,8 +68,23 @@ public class SimpleImageBriefingMapper {
                 normalizedAnswers));
     }
 
-    private static String resolveActivityType(String slug) {
-        String normalized = slug.substring(SIMPLE_FORM_PREFIX.length());
+    private static String resolveActivityType(String slug, Map<String, Object> answers) {
+        String derived = firstNonBlank(
+                valueAsString(answers.get("atividade")),
+                valueAsString(answers.get("profissao")),
+                valueAsString(answers.get("especialidade")),
+                valueAsString(answers.get("resposta.especialidade")),
+                valueAsString(answers.get("respostas.especialidade")));
+        if (StringUtils.hasText(derived)) {
+            return derived;
+        }
+        if (!StringUtils.hasText(slug)) {
+            return "profissional";
+        }
+        String normalized = slug;
+        if (slug.startsWith(SIMPLE_FORM_PREFIX)) {
+            normalized = slug.substring(SIMPLE_FORM_PREFIX.length());
+        }
         normalized = normalized.replace('-', ' ').trim();
         if (!StringUtils.hasText(normalized)) {
             return "profissional";

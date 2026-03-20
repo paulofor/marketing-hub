@@ -62,6 +62,7 @@ public class FlowSubmissionService {
     private final FileStorageService fileStorageService;
     private final FlowSubmissionImagePackageStatusHistoryService statusHistoryService;
     private final FlowImagePromptService imagePromptService;
+    private final ExperimentFunnelTrackingClient trackingClient;
 
     public FlowSubmissionService(
             FlowService flowService,
@@ -69,13 +70,15 @@ public class FlowSubmissionService {
             FlowSubmissionImagePackageRepository imagePackageRepository,
             FileStorageService fileStorageService,
             FlowSubmissionImagePackageStatusHistoryService statusHistoryService,
-            FlowImagePromptService imagePromptService) {
+            FlowImagePromptService imagePromptService,
+            ExperimentFunnelTrackingClient trackingClient) {
         this.flowService = flowService;
         this.repository = repository;
         this.imagePackageRepository = imagePackageRepository;
         this.fileStorageService = fileStorageService;
         this.statusHistoryService = statusHistoryService;
         this.imagePromptService = imagePromptService;
+        this.trackingClient = trackingClient;
     }
 
     public FlowSubmission create(String slug, FlowSubmissionRequest request, MultipartFile imageFile) {
@@ -111,6 +114,7 @@ public class FlowSubmissionService {
 
         repository.save(com.marketinghub.leadportal.entity.FlowSubmissionEntity.fromModel(submission));
         registerImagePackage(flow, submission, hasImage);
+        notifyExperimentFunnel(flow, submission);
         return submission;
     }
 
@@ -221,6 +225,24 @@ public class FlowSubmissionService {
             return false;
         }
         return OPTIONAL_SIMPLE_FORM_KEYS.contains(question.dataKey());
+    }
+
+    private void notifyExperimentFunnel(Flow flow, FlowSubmission submission) {
+        if (trackingClient == null || flow == null || submission == null) {
+            return;
+        }
+        try {
+            ExperimentFunnelTrackingClient.TrackingResult result = trackingClient.registerSubmission(
+                    flow.slug(), submission.id(), submission.createdAt());
+            if (result == ExperimentFunnelTrackingClient.TrackingResult.FAILED) {
+                log.warn("Falha ao reenviar submission {} do fluxo {} para o Marketing Hub",
+                        submission.id(), flow.slug());
+            } else if (result == ExperimentFunnelTrackingClient.TrackingResult.FORWARDED) {
+                log.debug("Submission {} do fluxo {} encaminhada ao Marketing Hub", submission.id(), flow.slug());
+            }
+        } catch (RuntimeException ex) {
+            log.warn("Erro ao reenviar submission {} do fluxo {} ao Marketing Hub", submission.id(), flow.slug(), ex);
+        }
     }
 
     private void registerImagePackage(Flow flow, FlowSubmission submission, boolean hasImage) {

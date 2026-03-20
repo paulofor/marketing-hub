@@ -9,6 +9,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -43,4 +45,15 @@ class LeadPortalFlowEngagementControllerTest {
 
         verify(experimentFunnelService).registerFormRenderCompleted("flow-slug", null);
     }
+
+    @Test
+    void registerSubmissionForwardsPayload() throws Exception {
+        mockMvc.perform(post("/api/public/lead-portal/flows/flow-slug/submission")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"submissionId\":\"abc-123\",\"submittedAt\":\"2024-05-01T12:34:56Z\"}"))
+                .andExpect(status().isOk());
+
+        verify(experimentFunnelService).registerFormSubmission(eq("flow-slug"), any());
+    }
+
 }

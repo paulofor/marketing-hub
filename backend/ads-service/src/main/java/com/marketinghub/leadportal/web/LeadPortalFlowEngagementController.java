@@ -2,6 +2,8 @@ package com.marketinghub.leadportal.web;
 
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
 import com.marketinghub.leadportal.dto.RegisterLeadPortalRenderCompleteRequest;
+import com.marketinghub.leadportal.dto.RegisterLeadPortalSubmissionRequest;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,4 +29,11 @@ public class LeadPortalFlowEngagementController {
         String visitorId = request == null ? null : request.visitorId();
         experimentFunnelService.registerFormRenderCompleted(slug, visitorId);
     }
+
+    @PostMapping("/{slug}/submission")
+    public void registerSubmission(@PathVariable String slug,
+                                   @RequestBody @Valid RegisterLeadPortalSubmissionRequest request) {
+        experimentFunnelService.registerFormSubmission(slug, request);
+    }
+
 }

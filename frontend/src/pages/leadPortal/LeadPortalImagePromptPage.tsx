@@ -305,7 +305,18 @@ export default function LeadPortalImagePromptPage() {
                     className="primary"
                     disabled={updatePrompt.isPending}
                   >
-                    Salvar alterações
+                    {updatePrompt.isPending ? (
+                      <>
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          role="status"
+                          aria-hidden="true"
+                        />
+                        Salvando...
+                      </>
+                    ) : (
+                      "Salvar alterações"
+                    )}
                   </button>
                 </div>
               </form>

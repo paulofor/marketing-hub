@@ -442,7 +442,8 @@ public class ExperimentLeadPortalFlowChatGptClient {
         } catch (Exception ex) {
             log.error("Falha ao interpretar resposta de fluxos do portal: {}", content, ex);
             try {
-                String normalized = content.replace("\\\"", "\"");
+                String escapedQuote = Character.toString('\\') + '"';
+                String normalized = content.replace(escapedQuote, "\"");
                 FlowPlan[] array = objectMapper.readValue(normalized, FlowPlan[].class);
                 List<FlowPlan> plans = new ArrayList<>();
                 for (FlowPlan plan : array) {

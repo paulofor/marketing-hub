@@ -9,8 +9,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.marketinghub.WebConfig;
+import com.marketinghub.creative.dto.AssetUploadResponse;
 import com.marketinghub.creative.mapper.CreativeMapper;
 import com.marketinghub.creative.service.CreativeService;
+import com.marketinghub.storage.AssetUploadCategory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -37,7 +39,12 @@ class CreativeControllerCorsTest {
 
     @Test
     void uploadImageRespondsWithCorsHeaders() throws Exception {
-        when(creativeService.uploadImage(any(), any(), any())).thenReturn("/uploads/mock.png");
+        AssetUploadResponse mockResponse = new AssetUploadResponse(
+                "https://cdn.test/mock.png",
+                "experiments/creatives/mock.png",
+                AssetUploadCategory.EXPERIMENT_CREATIVE);
+        when(creativeService.uploadImage(any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(mockResponse);
 
         MockMultipartFile file = new MockMultipartFile(
                 "file", "image.png", "image/png", "dummy".getBytes());
@@ -53,7 +60,12 @@ class CreativeControllerCorsTest {
 
     @Test
     void uploadLargeImageStillHonorsCorsHeaders() throws Exception {
-        when(creativeService.uploadImage(any(), any(), any())).thenReturn("/uploads/large.png");
+        AssetUploadResponse largeResponse = new AssetUploadResponse(
+                "https://cdn.test/large.png",
+                "experiments/creatives/large.png",
+                AssetUploadCategory.EXPERIMENT_CREATIVE);
+        when(creativeService.uploadImage(any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(largeResponse);
 
         byte[] largePayload = new byte[4 * 1024 * 1024];
         MockMultipartFile file = new MockMultipartFile(

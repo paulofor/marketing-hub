@@ -10,6 +10,7 @@ import { useLeadPortalSimpleFormStyles } from "../../api/leadPortal/useLeadPorta
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import { parseAssetUploadResponse } from "../../utils/parseAssetUploadResponse";
 import { buildApiUrl } from "../../utils/buildApiUrl";
+import { ASSET_UPLOAD_CATEGORY } from "../../constants/assetUploadCategory";
 
 const SIMPLE_FORM_DEFAULTS = {
   flowName: "Formulário simples para personal trainer",
@@ -648,6 +649,14 @@ export default function SimpleLeadPortalFormCard({
       formData.append("file", file);
       formData.append("prompt", `lead-portal-subcard-${index}`);
       formData.append("model", "manual");
+      formData.append("category", ASSET_UPLOAD_CATEGORY.LEAD_PORTAL_FORM);
+      const resolvedFlowSlug = editingFlow?.slug?.trim() || newFlowSlug.trim();
+      if (resolvedFlowSlug) {
+        formData.append("flowSlug", resolvedFlowSlug);
+      }
+      if (editingFlow?.id) {
+        formData.append("flowId", String(editingFlow.id));
+      }
 
       const response = await fetch(ASSET_UPLOAD_URL, {
         method: "POST",

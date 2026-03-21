@@ -9,5 +9,6 @@ public enum MediaProvider {
     ELEVENLABS,
     RUNWAY,
     OPENAI,
-    WATERMARKER
+    WATERMARKER,
+    USER_UPLOAD
 }

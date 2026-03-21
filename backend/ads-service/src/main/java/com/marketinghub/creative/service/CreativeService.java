@@ -1,8 +1,10 @@
 package com.marketinghub.creative.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.creative.*;
+import com.marketinghub.creative.dto.AssetUploadResponse;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.creative.repository.CreativeRepository;
 import com.marketinghub.creative.label.repository.AngleRepository;
@@ -16,6 +18,10 @@ import com.marketinghub.media.AssetType;
 import com.marketinghub.media.MediaProvider;
 import com.marketinghub.media.repository.AssetRepository;
 import com.marketinghub.cost.CostAttributionService;
+import com.marketinghub.storage.AssetStorageService;
+import com.marketinghub.storage.AssetUploadCategory;
+import com.marketinghub.storage.AssetUploadContext;
+import com.marketinghub.storage.StorageException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,9 +36,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Service layer for creatives.
@@ -40,7 +46,6 @@ import java.time.Duration;
 @Service
 @RequiredArgsConstructor
 public class CreativeService {
-    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final CreativeRepository repository;
     private final ExperimentRepository experimentRepository;
@@ -50,6 +55,8 @@ public class CreativeService {
     private final AssetRepository assetRepository;
     private final HttpClient httpClient;
     private final CostAttributionService costAttributionService;
+    private final AssetStorageService assetStorageService;
+    private final ObjectMapper objectMapper;
 
     /**
      * Creates and stores a creative.
@@ -141,29 +148,63 @@ public class CreativeService {
     }
 
     /**
-     * Saves the uploaded image and returns a public URL.
+     * Saves the uploaded image and returns storage metadata.
      */
-    public String uploadImage(MultipartFile file, String model, String prompt) throws IOException {
+    public AssetUploadResponse uploadImage(MultipartFile file,
+                                                                         String model,
+                                                                         String prompt,
+                                                                         AssetUploadCategory category,
+                                                                         Long experimentId,
+                                                                         Long flowId,
+                                                                         String flowSlug) throws IOException {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File must not be empty");
         }
-        Path dir = Path.of("uploads");
-        Files.createDirectories(dir);
-        String extension = StringUtils.getFilenameExtension(file.getOriginalFilename());
-        String suffix = extension != null && !extension.isBlank() ? "." + extension : ".bin";
-        Path path = Files.createTempFile(dir, "img-", suffix);
-        file.transferTo(path);
-        String relativeUrl = "/uploads/" + path.getFileName();
+        AssetUploadCategory resolvedCategory = category != null ? category : AssetUploadCategory.GENERIC;
+        AssetUploadContext context = new AssetUploadContext(resolvedCategory, experimentId, flowId, flowSlug);
+        AssetStorageService.StoredObject storedObject = assetStorageService.store(file, context);
+        String cleanedModel = StringUtils.hasText(model) ? model.trim() : null;
+        String cleanedPrompt = StringUtils.hasText(prompt) ? prompt.trim() : null;
         Asset asset = Asset.builder()
                 .type(AssetType.IMAGE)
-                .provider(MediaProvider.OPENAI)
+                .provider(MediaProvider.USER_UPLOAD)
                 .status(AssetStatus.READY)
-                .url(relativeUrl)
-                .model(StringUtils.hasText(model) ? model : null)
-                .prompt(StringUtils.hasText(prompt) ? prompt : null)
+                .url(storedObject.publicUrl())
+                .externalId(storedObject.storedFileName())
+                .model(cleanedModel)
+                .prompt(cleanedPrompt)
+                .payload(buildAssetPayload(storedObject, resolvedCategory, experimentId, flowId, flowSlug))
                 .build();
         assetRepository.save(asset);
-        return relativeUrl;
+        return new AssetUploadResponse(storedObject.publicUrl(),
+                storedObject.storedFileName(),
+                resolvedCategory);
+    }
+
+    private String buildAssetPayload(AssetStorageService.StoredObject storedObject,
+                                            AssetUploadCategory category,
+                                            Long experimentId,
+                                            Long flowId,
+                                            String flowSlug) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("category", category.name());
+        payload.put("stored_file_name", storedObject.storedFileName());
+        payload.put("public_url", storedObject.publicUrl());
+        payload.put("storage_medium", storedObject.storedInBucket() ? "CLOUDFLARE_R2" : "LOCAL_FS");
+        if (experimentId != null) {
+            payload.put("experiment_id", experimentId);
+        }
+        if (flowId != null) {
+            payload.put("flow_id", flowId);
+        }
+        if (StringUtils.hasText(flowSlug)) {
+            payload.put("flow_slug", flowSlug.trim());
+        }
+        try {
+            return objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException ex) {
+            throw new StorageException("Failed to serialize asset metadata", ex);
+        }
     }
 
     /**
@@ -185,7 +226,7 @@ public class CreativeService {
                 .GET()
                 .build();
         HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        JsonNode node = MAPPER.readTree(resp.body());
+        JsonNode node = objectMapper.readTree(resp.body());
         if (node.has("data") && node.get("data").isArray() && node.get("data").size() > 0) {
             return node.get("data").get(0).get("body").asText();
         }

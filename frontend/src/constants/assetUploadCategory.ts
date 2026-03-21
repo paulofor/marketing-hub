@@ -1,0 +1,7 @@
+export const ASSET_UPLOAD_CATEGORY = {
+  EXPERIMENT_CREATIVE: "EXPERIMENT_CREATIVE",
+  LEAD_PORTAL_FORM: "LEAD_PORTAL_FORM",
+  GENERIC: "GENERIC",
+} as const;
+
+export type AssetUploadCategory = (typeof ASSET_UPLOAD_CATEGORY)[keyof typeof ASSET_UPLOAD_CATEGORY];

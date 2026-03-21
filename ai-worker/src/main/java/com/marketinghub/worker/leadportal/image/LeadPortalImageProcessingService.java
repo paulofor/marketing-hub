@@ -244,6 +244,19 @@ public class LeadPortalImageProcessingService {
         }
 
         for (PackageBatchContext context : packageContexts.values()) {
+            boolean needsSequentialFallback =
+                    context.failed() || context.generated().size() < context.expectedImages();
+            if (needsSequentialFallback) {
+                try {
+                    completePromptOnlySequentially(context);
+                } catch (Exception ex) {
+                    log.error(
+                            "Failed to complete prompt-only package {} via sequential fallback",
+                            context.imagePackage().id(),
+                            ex);
+                    context.fail(resolveFailureReason(ex));
+                }
+            }
             if (context.failed() || context.generated().size() < context.expectedImages()) {
                 String reason = context.failureReason();
                 if (!StringUtils.hasText(reason)) {
@@ -260,11 +273,72 @@ public class LeadPortalImageProcessingService {
 
     private void handleBatchFailure(List<LeadPortalImagePackageClient.ImagePackage> packages, Throwable throwable) {
         String reason = resolveFailureReason(throwable);
+        log.warn(
+                "Lead-portal prompt-only batch falhou com motivo '{}'; executando fallback sequencial para {} pacote(s)",
+                reason,
+                packages != null ? packages.size() : 0,
+                throwable);
+        processPromptOnlySequentially(packages);
+    }
+
+    private void processPromptOnlySequentially(List<LeadPortalImagePackageClient.ImagePackage> packages) {
+        if (packages == null || packages.isEmpty()) {
+            return;
+        }
         for (LeadPortalImagePackageClient.ImagePackage imagePackage : packages) {
-            if (!handleTransientFailure(imagePackage.id(), throwable)) {
-                packageClient.markFailed(imagePackage.id(), reason);
+            try {
+                handlePackage(imagePackage);
+            } catch (LeadPortalWorkerException ex) {
+                if (!handleTransientFailure(imagePackage.id(), ex)) {
+                    packageClient.markFailed(imagePackage.id(), resolveFailureReason(ex));
+                }
+            } catch (Exception ex) {
+                if (!handleTransientFailure(imagePackage.id(), ex)) {
+                    packageClient.markFailed(imagePackage.id(), resolveFailureReason(ex));
+                }
             }
         }
+    }
+
+    private void completePromptOnlySequentially(PackageBatchContext context) {
+        int missing = context.expectedImages() - context.generated().size();
+        if (missing <= 0) {
+            context.clearFailure();
+            return;
+        }
+        LeadPortalImagePackageClient.ImagePackage imagePackage = context.imagePackage();
+        log.warn(
+                "OpenAI batch retornou apenas {} de {} imagens para o pacote {}; gerando {} restante(s) sequencialmente",
+                context.generated().size(),
+                context.expectedImages(),
+                imagePackage.id(),
+                missing);
+        int nextIndex = context.generated().size();
+        while (context.generated().size() < context.expectedImages()) {
+            CreativeImageOptimizer.OptimizedImage optimized = generateWithRetry(
+                    null,
+                    context.prompt(),
+                    context.plan(),
+                    imagePackage.id(),
+                    nextIndex,
+                    false);
+            String filename = buildFilename(imagePackage.submissionId(), nextIndex, optimized.extension());
+            LeadPortalStorageClient.StoredImage stored = storageClient.upload(
+                    optimized.content(),
+                    filename,
+                    MediaType.parseMediaType("image/" + optimized.extension()));
+            context.addGenerated(new LeadPortalImagePackageClient.GeneratedImage(
+                    stored.objectKey(),
+                    stored.publicUrl(),
+                    context.resolvedModel(),
+                    context.prompt(),
+                    "openai",
+                    context.width(),
+                    context.height(),
+                    context.orientationName()));
+            nextIndex++;
+        }
+        context.clearFailure();
     }
 
     private boolean hasBaseImage(LeadPortalImagePackageClient.ImagePackage imagePackage) {
@@ -558,6 +632,7 @@ public class LeadPortalImageProcessingService {
     private static final class PackageBatchContext {
         private final LeadPortalImagePackageClient.ImagePackage imagePackage;
         private final String prompt;
+        private final ImageGenerationPlan plan;
         private final Integer width;
         private final Integer height;
         private final String orientationName;
@@ -576,6 +651,7 @@ public class LeadPortalImageProcessingService {
                 int expectedImages) {
             this.imagePackage = imagePackage;
             this.prompt = prompt;
+            this.plan = plan;
             this.width = plan != null ? plan.width() : null;
             this.height = plan != null ? plan.height() : null;
             this.orientationName = orientation != null ? orientation.name() : null;
@@ -610,6 +686,10 @@ public class LeadPortalImageProcessingService {
             return prompt;
         }
 
+        ImageGenerationPlan plan() {
+            return plan;
+        }
+
         Integer width() {
             return width;
         }
@@ -632,6 +712,11 @@ public class LeadPortalImageProcessingService {
 
         List<LeadPortalImagePackageClient.GeneratedImage> generated() {
             return generated;
+        }
+
+        void clearFailure() {
+            this.failed = false;
+            this.failureReason = null;
         }
     }
 

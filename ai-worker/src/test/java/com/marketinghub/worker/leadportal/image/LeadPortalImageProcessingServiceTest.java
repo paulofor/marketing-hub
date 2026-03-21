@@ -221,7 +221,8 @@ class LeadPortalImageProcessingServiceTest {
 
         service.process();
 
-        verify(packageClient).markRetry(eq(promptOnlyPackage.id()), contains("OpenAI batch retornou apenas"));
+        verify(packageClient)
+                .markRetry(eq(promptOnlyPackage.id()), contains("OpenAI batch não retornou o item package-5-image-1"));
         verify(packageClient, never()).submitResults(anyLong(), any(), anyString(), anyString());
     }
 

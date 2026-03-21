@@ -559,6 +559,25 @@ FACEBOOK_ADS_WORKER_LOG_FILE=/var/log/facebook-ads-worker/worker.log \
 docker compose up -d
 ```
 
+### Endpoint público para tail de logs
+
+Quando for necessário acessar logs remotamente, é possível habilitar o endpoint:
+
+- `GET /public/runtime-logs/tail?lines=200`
+- Respostas:
+  - `200` com as últimas linhas
+  - `404` quando endpoint está desabilitado ou arquivo indisponível
+
+Variáveis de ambiente:
+
+- `RUNTIME_LOGS_PUBLIC_ENABLED=true`
+
+Exemplo:
+
+```bash
+curl "http://<host>:8082/public/runtime-logs/tail?lines=300"
+```
+
 ## Notas de teste (FacebookCampaignServiceTest)
 
 - O fluxo atual consulta primeiro o playbook (`/api/experiments/{id}/adset-playbook`) e só então faz fallback para `/api/adsets?experimentId={id}` quando necessário.

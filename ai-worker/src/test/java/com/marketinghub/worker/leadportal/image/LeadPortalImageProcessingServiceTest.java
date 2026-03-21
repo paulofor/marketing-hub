@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -195,6 +197,56 @@ class LeadPortalImageProcessingServiceTest {
         verify(imageClient, never()).generateFromBase(any(), anyString(), any(ImageGenerationPlan.class));
         verify(imageClient).generatePromptBatch(any());
         verify(packageClient).submitResults(anyLong(), any(), anyString(), anyString());
+    }
+
+    @Test
+    void retriesPromptOnlyPackageWhenBatchReturnsPartialResults() {
+        LeadPortalImagePackageClient.ImagePackage promptOnlyPackage = new LeadPortalImagePackageClient.ImagePackage(
+                5L,
+                UUID.fromString("123e4567-e89b-12d3-a456-426614174005"),
+                null,
+                2,
+                0,
+                "gpt-image-1",
+                "prompt sequencial",
+                "treatment",
+                1L,
+                2L);
+
+        when(packageClient.listRecentPackages()).thenReturn(List.of(promptOnlyPackage));
+        when(imageClient.generatePromptBatch(any()))
+                .thenReturn(successfulBatch(promptOnlyPackage.id(), 1));
+        when(storageClient.upload(any(), anyString(), any()))
+                .thenReturn(new LeadPortalStorageClient.StoredImage("object-key", "public-url", "jpg"));
+
+        service.process();
+
+        verify(packageClient).markRetry(eq(promptOnlyPackage.id()), contains("OpenAI batch retornou apenas"));
+        verify(packageClient, never()).submitResults(anyLong(), any(), anyString(), anyString());
+    }
+
+    @Test
+    void retriesPromptOnlyPackageWhenBatchRequestFails() {
+        LeadPortalImagePackageClient.ImagePackage promptOnlyPackage = new LeadPortalImagePackageClient.ImagePackage(
+                6L,
+                UUID.fromString("123e4567-e89b-12d3-a456-426614174006"),
+                null,
+                1,
+                0,
+                "gpt-image-1",
+                "prompt com erro",
+                "treatment",
+                1L,
+                2L);
+
+        when(packageClient.listRecentPackages()).thenReturn(List.of(promptOnlyPackage));
+        when(imageClient.generatePromptBatch(any())).thenThrow(new RuntimeException("OpenAI indisponível"));
+
+        service.process();
+
+        verify(packageClient).markRetry(eq(promptOnlyPackage.id()), contains("OpenAI indisponível"));
+        verify(packageClient, never()).submitResults(anyLong(), any(), anyString(), anyString());
+        verify(packageClient, never()).markFailed(eq(promptOnlyPackage.id()), anyString());
     }
 
     private Map<String, LeadPortalOpenAiImageClient.BatchGenerationResult> successfulBatch(long packageId, int totalImages) {

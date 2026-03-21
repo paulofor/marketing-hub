@@ -244,101 +244,55 @@ public class LeadPortalImageProcessingService {
         }
 
         for (PackageBatchContext context : packageContexts.values()) {
-            boolean needsSequentialFallback =
-                    context.failed() || context.generated().size() < context.expectedImages();
-            if (needsSequentialFallback) {
-                try {
-                    completePromptOnlySequentially(context);
-                } catch (Exception ex) {
-                    log.error(
-                            "Failed to complete prompt-only package {} via sequential fallback",
-                            context.imagePackage().id(),
-                            ex);
-                    context.fail(resolveFailureReason(ex));
-                }
-            }
-            if (context.failed() || context.generated().size() < context.expectedImages()) {
-                String reason = context.failureReason();
-                if (!StringUtils.hasText(reason)) {
-                    reason = "OpenAI batch retornou apenas %d de %d imagens".formatted(
-                            context.generated().size(), context.expectedImages());
-                }
-                packageClient.markFailed(context.imagePackage().id(), reason);
-            } else {
+            boolean completed = !context.failed() && context.generated().size() >= context.expectedImages();
+            if (completed) {
                 packageClient.submitResults(
                         context.imagePackage().id(), context.generated(), context.resolvedModel(), context.prompt());
+                continue;
             }
+
+            String reason = context.failureReason();
+            if (!StringUtils.hasText(reason)) {
+                reason = "OpenAI batch retornou apenas %d de %d imagens".formatted(
+                        context.generated().size(), context.expectedImages());
+            }
+            requestPromptBatchRetry(context.imagePackage().id(), reason);
         }
     }
 
     private void handleBatchFailure(List<LeadPortalImagePackageClient.ImagePackage> packages, Throwable throwable) {
         String reason = resolveFailureReason(throwable);
         log.warn(
-                "Lead-portal prompt-only batch falhou com motivo '{}'; executando fallback sequencial para {} pacote(s)",
+                "Lead-portal prompt-only batch falhou com motivo '{}'; reagendando {} pacote(s) para retry",
                 reason,
                 packages != null ? packages.size() : 0,
                 throwable);
-        processPromptOnlySequentially(packages);
-    }
-
-    private void processPromptOnlySequentially(List<LeadPortalImagePackageClient.ImagePackage> packages) {
         if (packages == null || packages.isEmpty()) {
             return;
         }
         for (LeadPortalImagePackageClient.ImagePackage imagePackage : packages) {
-            try {
-                handlePackage(imagePackage);
-            } catch (LeadPortalWorkerException ex) {
-                if (!handleTransientFailure(imagePackage.id(), ex)) {
-                    packageClient.markFailed(imagePackage.id(), resolveFailureReason(ex));
-                }
-            } catch (Exception ex) {
-                if (!handleTransientFailure(imagePackage.id(), ex)) {
-                    packageClient.markFailed(imagePackage.id(), resolveFailureReason(ex));
-                }
-            }
+            requestPromptBatchRetry(imagePackage.id(), reason);
         }
     }
 
-    private void completePromptOnlySequentially(PackageBatchContext context) {
-        int missing = context.expectedImages() - context.generated().size();
-        if (missing <= 0) {
-            context.clearFailure();
-            return;
+    private void requestPromptBatchRetry(long packageId, String reason) {
+        try {
+            packageClient.markRetry(packageId, reason);
+            log.info(
+                    "Scheduled retry for lead-portal prompt-only package {} after batch issue: {}",
+                    packageId,
+                    reason);
+        } catch (LeadPortalWorkerException retryEx) {
+            log.warn(
+                    "Backend rejected retry for lead-portal prompt-only package {}: {}. Marking as failed.",
+                    packageId,
+                    retryEx.getMessage());
+            packageClient.markFailed(packageId, reason);
+        } catch (Exception retryEx) {
+            log.warn(
+                    "Failed to request retry for lead-portal prompt-only package {}", packageId, retryEx);
+            packageClient.markFailed(packageId, reason);
         }
-        LeadPortalImagePackageClient.ImagePackage imagePackage = context.imagePackage();
-        log.warn(
-                "OpenAI batch retornou apenas {} de {} imagens para o pacote {}; gerando {} restante(s) sequencialmente",
-                context.generated().size(),
-                context.expectedImages(),
-                imagePackage.id(),
-                missing);
-        int nextIndex = context.generated().size();
-        while (context.generated().size() < context.expectedImages()) {
-            CreativeImageOptimizer.OptimizedImage optimized = generateWithRetry(
-                    null,
-                    context.prompt(),
-                    context.plan(),
-                    imagePackage.id(),
-                    nextIndex,
-                    false);
-            String filename = buildFilename(imagePackage.submissionId(), nextIndex, optimized.extension());
-            LeadPortalStorageClient.StoredImage stored = storageClient.upload(
-                    optimized.content(),
-                    filename,
-                    MediaType.parseMediaType("image/" + optimized.extension()));
-            context.addGenerated(new LeadPortalImagePackageClient.GeneratedImage(
-                    stored.objectKey(),
-                    stored.publicUrl(),
-                    context.resolvedModel(),
-                    context.prompt(),
-                    "openai",
-                    context.width(),
-                    context.height(),
-                    context.orientationName()));
-            nextIndex++;
-        }
-        context.clearFailure();
     }
 
     private boolean hasBaseImage(LeadPortalImagePackageClient.ImagePackage imagePackage) {

@@ -15,6 +15,9 @@ import com.marketinghub.media.Asset;
 import com.marketinghub.media.AssetStatus;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.media.repository.AssetRepository;
+import com.marketinghub.storage.AssetStorageService;
+import com.marketinghub.storage.AssetUploadCategory;
+import com.marketinghub.creative.dto.AssetUploadResponse;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,6 +67,9 @@ class CreativeServiceTest {
     @MockBean
     HttpClient httpClient;
 
+    @MockBean
+    AssetStorageService assetStorageService;
+
     @BeforeEach
     void setup() {
         assetRepository.deleteAll();
@@ -73,17 +79,32 @@ class CreativeServiceTest {
     void uploadImageReturnsPath() throws Exception {
         MultipartFile file = new org.springframework.mock.web.MockMultipartFile(
                 "file", "test.png", "image/png", new byte[]{1,2});
-        assetRepository.deleteAll();
+        AssetStorageService.StoredObject stored = new AssetStorageService.StoredObject(
+                "experiments/exp-1/test.png",
+                "https://cdn.test/assets/test.png",
+                file.getSize(),
+                "image/png",
+                true);
+        when(assetStorageService.store(any(), any())).thenReturn(stored);
 
-        String url = service.uploadImage(file, "dall-e-3", "prompt text");
+        AssetUploadResponse response = service.uploadImage(
+                file,
+                "dall-e-3",
+                "prompt text",
+                AssetUploadCategory.EXPERIMENT_CREATIVE,
+                1L,
+                null,
+                "slug-test");
 
-        assertThat(url).contains("/uploads/");
+        assertThat(response.url()).isEqualTo("https://cdn.test/assets/test.png");
         Asset saved = assetRepository.findAll().stream().findFirst().orElseThrow();
-        assertThat(saved.getUrl()).isEqualTo(url);
+        assertThat(saved.getUrl()).isEqualTo("https://cdn.test/assets/test.png");
+        assertThat(saved.getExternalId()).isEqualTo("experiments/exp-1/test.png");
         assertThat(saved.getType()).isEqualTo(AssetType.IMAGE);
         assertThat(saved.getStatus()).isEqualTo(AssetStatus.READY);
         assertThat(saved.getModel()).isEqualTo("dall-e-3");
         assertThat(saved.getPrompt()).isEqualTo("prompt text");
+        assertThat(saved.getPayload()).contains("EXPERIMENT_CREATIVE");
     }
 
     @Test

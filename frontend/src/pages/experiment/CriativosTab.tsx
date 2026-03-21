@@ -13,6 +13,7 @@ import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
 import type { UpdateExperiment } from "../../api/experiment/useUpdateExperiment";
 import { useAllFacebookPages } from "../../api/useAllFacebookPages";
 import { useInstagramAccounts } from "../../api/useInstagramAccounts";
+import { ASSET_UPLOAD_CATEGORY } from "../../constants/assetUploadCategory";
 import InstagramAdPreview from "../../components/InstagramAdPreview";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import { parseAssetUploadResponse } from "../../utils/parseAssetUploadResponse";
@@ -491,6 +492,11 @@ export default function CriativosTab({ experimentId }: Props) {
       }
       const fd = new FormData();
       fd.append("file", file);
+      fd.append("category", ASSET_UPLOAD_CATEGORY.EXPERIMENT_CREATIVE);
+      const normalizedExperimentId = experimentId.trim();
+      if (normalizedExperimentId) {
+        fd.append("experimentId", normalizedExperimentId);
+      }
       const promptPayload =
         imagePrompt.trim() || form.primaryText || form.headline || "Manual upload";
       fd.append("prompt", promptPayload);

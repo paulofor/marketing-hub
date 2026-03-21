@@ -1,14 +1,20 @@
 package com.marketinghub.creative.web;
 
+import com.marketinghub.creative.dto.AssetUploadResponse;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.creative.dto.CreativeDto;
 import com.marketinghub.creative.mapper.CreativeMapper;
 import com.marketinghub.creative.service.CreativeService;
 import com.marketinghub.creative.dto.UpdateCreativeLabelsRequest;
+import com.marketinghub.storage.AssetUploadCategory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 import java.util.stream.StreamSupport;
 
@@ -55,10 +61,21 @@ public class CreativeController {
     }
 
     @PostMapping("/api/assets")
-    public String upload(@RequestParam("file") MultipartFile file,
-                         @RequestParam(value = "prompt", required = false) String prompt,
-                         @RequestParam(value = "model", required = false) String model) throws IOException {
-        return service.uploadImage(file, model, prompt);
+    public ResponseEntity<AssetUploadResponse> upload(@RequestParam("file") MultipartFile file,
+                                                      @RequestParam(value = "prompt", required = false) String prompt,
+                                                      @RequestParam(value = "model", required = false) String model,
+                                                      @RequestParam(value = "category", required = false) String category,
+                                                      @RequestParam(value = "experimentId", required = false) Long experimentId,
+                                                      @RequestParam(value = "flowId", required = false) Long flowId,
+                                                      @RequestParam(value = "flowSlug", required = false) String flowSlug) throws IOException {
+        AssetUploadCategory uploadCategory = AssetUploadCategory.fromKey(category);
+        AssetUploadResponse response = service.uploadImage(file, model, prompt, uploadCategory, experimentId, flowId, flowSlug);
+        HttpHeaders headers = new HttpHeaders();
+        if (StringUtils.hasText(response.url())) {
+            headers.setLocation(URI.create(response.url()));
+            headers.set(HttpHeaders.CONTENT_LOCATION, response.url());
+        }
+        return ResponseEntity.ok().headers(headers).body(response);
     }
 
     @GetMapping("/api/creatives/{id}/preview")

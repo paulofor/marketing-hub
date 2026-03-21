@@ -12,8 +12,13 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
@@ -60,22 +65,25 @@ public class LeadPortalImageProcessingService {
         if (packages == null) {
             return List.of();
         }
+        List<LeadPortalImagePackageClient.ImagePackage> promptOnly = new ArrayList<>();
         for (LeadPortalImagePackageClient.ImagePackage imagePackage : packages) {
             boolean startedProcessing = false;
             try {
                 packageClient.markProcessing(imagePackage.id());
                 startedProcessing = true;
-                handlePackage(imagePackage);
+                if (hasBaseImage(imagePackage)) {
+                    handlePackage(imagePackage);
+                } else {
+                    promptOnly.add(imagePackage);
+                }
             } catch (LeadPortalWorkerException ex) {
                 if (!startedProcessing) {
                     HttpStatusCode status = ex.getStatus();
                     if (status != null && status.value() == 409) {
-                        log.info(
-                                "Skipping lead-portal image package {} because it was already claimed by another worker",
+                        log.info("Skipping lead-portal image package {} because it was already claimed by another worker",
                                 imagePackage.id());
                     } else {
-                        log.warn(
-                                "Backend refused to start processing for lead-portal image package {}: {}",
+                        log.warn("Backend refused to start processing for lead-portal image package {}: {}",
                                 imagePackage.id(),
                                 ex.getMessage());
                     }
@@ -92,6 +100,13 @@ public class LeadPortalImageProcessingService {
                         packageClient.markFailed(imagePackage.id(), resolveFailureReason(ex));
                     }
                 }
+            }
+        }
+        if (!promptOnly.isEmpty()) {
+            try {
+                handlePromptOnlyPackagesBatch(promptOnly);
+            } catch (Exception ex) {
+                handleBatchFailure(promptOnly, ex);
             }
         }
         return packages;
@@ -151,6 +166,123 @@ public class LeadPortalImageProcessingService {
         }
 
         packageClient.submitResults(imagePackage.id(), generated, resolvedModel, prompt);
+    }
+
+    private void handlePromptOnlyPackagesBatch(List<LeadPortalImagePackageClient.ImagePackage> packages) {
+        Map<Long, PackageBatchContext> packageContexts = new LinkedHashMap<>();
+        Map<String, BatchJobContext> jobContexts = new HashMap<>();
+        List<LeadPortalOpenAiImageClient.BatchPromptRequest> batchRequests = new ArrayList<>();
+
+        for (LeadPortalImagePackageClient.ImagePackage imagePackage : packages) {
+            int imagesToGenerate = Math.max(1, resolveImagesToGenerate(imagePackage));
+            ImageOrientation baseOrientation = planService.detectOrientation(null);
+            ImageGenerationPlan plan = planService.resolvePlan(imagePackage, baseOrientation);
+            ImageOrientation effectiveOrientation = plan != null && plan.orientation() != null ? plan.orientation() : baseOrientation;
+            String prompt = buildPrompt(imagePackage);
+            String resolvedModel = plan != null && plan.apiModel() != null ? plan.apiModel() : imageClient.getModel();
+
+            PackageBatchContext context = new PackageBatchContext(
+                    imagePackage, prompt, plan, effectiveOrientation, resolvedModel, imagesToGenerate);
+            packageContexts.put(imagePackage.id(), context);
+
+            for (int index = 0; index < imagesToGenerate; index++) {
+                String customId = buildBatchCustomId(imagePackage.id(), index);
+                batchRequests.add(new LeadPortalOpenAiImageClient.BatchPromptRequest(customId, prompt, plan));
+                jobContexts.put(customId, new BatchJobContext(context, index));
+            }
+        }
+
+        if (batchRequests.isEmpty()) {
+            for (LeadPortalImagePackageClient.ImagePackage imagePackage : packages) {
+                packageClient.markFailed(imagePackage.id(), "Nenhuma solicitação válida para batch");
+            }
+            return;
+        }
+
+        Map<String, LeadPortalOpenAiImageClient.BatchGenerationResult> results =
+                imageClient.generatePromptBatch(batchRequests);
+
+        Set<String> processed = new HashSet<>();
+        for (Map.Entry<String, LeadPortalOpenAiImageClient.BatchGenerationResult> entry : results.entrySet()) {
+            BatchJobContext jobContext = jobContexts.get(entry.getKey());
+            if (jobContext == null) {
+                continue;
+            }
+            processed.add(entry.getKey());
+            PackageBatchContext context = jobContext.packageContext();
+            LeadPortalOpenAiImageClient.BatchGenerationResult generationResult = entry.getValue();
+            if (generationResult == null || !generationResult.isSuccessful()) {
+                context.fail(determineBatchFailureReason(generationResult));
+                continue;
+            }
+            try {
+                CreativeImageOptimizer.OptimizedImage optimized = generationResult.image();
+                String filename = buildFilename(context.imagePackage().submissionId(), jobContext.imageIndex(), optimized.extension());
+                LeadPortalStorageClient.StoredImage stored = storageClient.upload(
+                        optimized.content(),
+                        filename,
+                        MediaType.parseMediaType("image/" + optimized.extension()));
+                context.addGenerated(new LeadPortalImagePackageClient.GeneratedImage(
+                        stored.objectKey(),
+                        stored.publicUrl(),
+                        context.resolvedModel(),
+                        context.prompt(),
+                        "openai",
+                        context.width(),
+                        context.height(),
+                        context.orientationName()));
+            } catch (Exception ex) {
+                context.fail(resolveFailureReason(ex));
+            }
+        }
+
+        for (Map.Entry<String, BatchJobContext> entry : jobContexts.entrySet()) {
+            if (!processed.contains(entry.getKey())) {
+                entry.getValue().packageContext().fail(
+                        "OpenAI batch não retornou o item " + entry.getKey());
+            }
+        }
+
+        for (PackageBatchContext context : packageContexts.values()) {
+            if (context.failed() || context.generated().size() < context.expectedImages()) {
+                String reason = context.failureReason();
+                if (!StringUtils.hasText(reason)) {
+                    reason = "OpenAI batch retornou apenas %d de %d imagens".formatted(
+                            context.generated().size(), context.expectedImages());
+                }
+                packageClient.markFailed(context.imagePackage().id(), reason);
+            } else {
+                packageClient.submitResults(
+                        context.imagePackage().id(), context.generated(), context.resolvedModel(), context.prompt());
+            }
+        }
+    }
+
+    private void handleBatchFailure(List<LeadPortalImagePackageClient.ImagePackage> packages, Throwable throwable) {
+        String reason = resolveFailureReason(throwable);
+        for (LeadPortalImagePackageClient.ImagePackage imagePackage : packages) {
+            if (!handleTransientFailure(imagePackage.id(), throwable)) {
+                packageClient.markFailed(imagePackage.id(), reason);
+            }
+        }
+    }
+
+    private boolean hasBaseImage(LeadPortalImagePackageClient.ImagePackage imagePackage) {
+        return imagePackage != null && StringUtils.hasText(imagePackage.storedFileName());
+    }
+
+    private String buildBatchCustomId(long packageId, int imageIndex) {
+        return "package-" + packageId + "-image-" + imageIndex;
+    }
+
+    private String determineBatchFailureReason(LeadPortalOpenAiImageClient.BatchGenerationResult result) {
+        if (result == null) {
+            return "OpenAI batch retornou resposta vazia";
+        }
+        if (StringUtils.hasText(result.errorMessage())) {
+            return result.errorMessage();
+        }
+        return "OpenAI batch retornou resposta vazia";
     }
 
     private CreativeImageOptimizer.OptimizedImage generateWithRetry(
@@ -403,6 +535,104 @@ public class LeadPortalImageProcessingService {
             return Integer.toHexString(Objects.hash(bytes));
         }
         return cleaned;
+    }
+
+    private static final class BatchJobContext {
+        private final PackageBatchContext packageContext;
+        private final int imageIndex;
+
+        BatchJobContext(PackageBatchContext packageContext, int imageIndex) {
+            this.packageContext = packageContext;
+            this.imageIndex = imageIndex;
+        }
+
+        PackageBatchContext packageContext() {
+            return packageContext;
+        }
+
+        int imageIndex() {
+            return imageIndex;
+        }
+    }
+
+    private static final class PackageBatchContext {
+        private final LeadPortalImagePackageClient.ImagePackage imagePackage;
+        private final String prompt;
+        private final Integer width;
+        private final Integer height;
+        private final String orientationName;
+        private final String resolvedModel;
+        private final int expectedImages;
+        private final List<LeadPortalImagePackageClient.GeneratedImage> generated = new ArrayList<>();
+        private boolean failed;
+        private String failureReason;
+
+        PackageBatchContext(
+                LeadPortalImagePackageClient.ImagePackage imagePackage,
+                String prompt,
+                ImageGenerationPlan plan,
+                ImageOrientation orientation,
+                String resolvedModel,
+                int expectedImages) {
+            this.imagePackage = imagePackage;
+            this.prompt = prompt;
+            this.width = plan != null ? plan.width() : null;
+            this.height = plan != null ? plan.height() : null;
+            this.orientationName = orientation != null ? orientation.name() : null;
+            this.resolvedModel = resolvedModel;
+            this.expectedImages = expectedImages;
+        }
+
+        void addGenerated(LeadPortalImagePackageClient.GeneratedImage image) {
+            this.generated.add(image);
+        }
+
+        void fail(String reason) {
+            this.failed = true;
+            if (StringUtils.hasText(reason)) {
+                this.failureReason = reason;
+            }
+        }
+
+        boolean failed() {
+            return failed;
+        }
+
+        String failureReason() {
+            return failureReason;
+        }
+
+        LeadPortalImagePackageClient.ImagePackage imagePackage() {
+            return imagePackage;
+        }
+
+        String prompt() {
+            return prompt;
+        }
+
+        Integer width() {
+            return width;
+        }
+
+        Integer height() {
+            return height;
+        }
+
+        String orientationName() {
+            return orientationName;
+        }
+
+        String resolvedModel() {
+            return resolvedModel;
+        }
+
+        int expectedImages() {
+            return expectedImages;
+        }
+
+        List<LeadPortalImagePackageClient.GeneratedImage> generated() {
+            return generated;
+        }
     }
 
     private String resolveFailureReason(Throwable throwable) {

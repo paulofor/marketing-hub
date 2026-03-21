@@ -14,7 +14,9 @@ import com.marketinghub.worker.creative.CreativeImageOptimizer;
 import com.marketinghub.worker.imagegeneration.ImageGenerationPlan;
 import com.marketinghub.worker.imagegeneration.ImageGenerationPlanService;
 import com.marketinghub.worker.imagegeneration.ImageOrientation;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.BeforeEach;
@@ -149,16 +151,19 @@ class LeadPortalImageProcessingServiceTest {
                 2L);
 
         when(packageClient.listRecentPackages()).thenReturn(List.of(promptOnlyPackage));
-        when(imageClient.generateFromPrompt(anyString(), any(ImageGenerationPlan.class)))
-                .thenReturn(new CreativeImageOptimizer.OptimizedImage(new byte[] {9}, "jpg"));
+        when(imageClient.generatePromptBatch(any()))
+                .thenReturn(successfulBatch(promptOnlyPackage.id(), 1));
         when(storageClient.upload(any(), anyString(), any()))
                 .thenReturn(new LeadPortalStorageClient.StoredImage("object-key", "public-url", "jpg"));
 
         service.process();
 
-        ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
-        verify(imageClient).generateFromPrompt(promptCaptor.capture(), any(ImageGenerationPlan.class));
-        String generatedPrompt = promptCaptor.getValue();
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<LeadPortalOpenAiImageClient.BatchPromptRequest>> batchCaptor =
+                ArgumentCaptor.forClass(List.class);
+        verify(imageClient).generatePromptBatch(batchCaptor.capture());
+        LeadPortalOpenAiImageClient.BatchPromptRequest batchRequest = batchCaptor.getValue().get(0);
+        String generatedPrompt = batchRequest.prompt();
         assertThat(generatedPrompt.length()).isLessThanOrEqualTo(3000);
         assertThat(generatedPrompt.length()).isGreaterThan(1000);
         assertThat(generatedPrompt).contains(longPrompt);
@@ -179,8 +184,8 @@ class LeadPortalImageProcessingServiceTest {
                 2L);
 
         when(packageClient.listRecentPackages()).thenReturn(List.of(promptOnlyPackage));
-        when(imageClient.generateFromPrompt(anyString(), any(ImageGenerationPlan.class)))
-                .thenReturn(new CreativeImageOptimizer.OptimizedImage(new byte[] {9}, "jpg"));
+        when(imageClient.generatePromptBatch(any()))
+                .thenReturn(successfulBatch(promptOnlyPackage.id(), 1));
         when(storageClient.upload(any(), anyString(), any()))
                 .thenReturn(new LeadPortalStorageClient.StoredImage("object-key", "public-url", "jpg"));
 
@@ -188,7 +193,22 @@ class LeadPortalImageProcessingServiceTest {
 
         verify(storageClient, never()).download(anyString());
         verify(imageClient, never()).generateFromBase(any(), anyString(), any(ImageGenerationPlan.class));
-        verify(imageClient).generateFromPrompt(anyString(), any(ImageGenerationPlan.class));
+        verify(imageClient).generatePromptBatch(any());
         verify(packageClient).submitResults(anyLong(), any(), anyString(), anyString());
     }
+
+    private Map<String, LeadPortalOpenAiImageClient.BatchGenerationResult> successfulBatch(long packageId, int totalImages) {
+        Map<String, LeadPortalOpenAiImageClient.BatchGenerationResult> results = new LinkedHashMap<>();
+        for (int index = 0; index < totalImages; index++) {
+            String customId = "package-" + packageId + "-image-" + index;
+            results.put(customId, new LeadPortalOpenAiImageClient.BatchGenerationResult(
+                    customId,
+                    new CreativeImageOptimizer.OptimizedImage(new byte[] {9}, "jpg"),
+                    200,
+                    null));
+        }
+        return results;
+    }
+
+
 }

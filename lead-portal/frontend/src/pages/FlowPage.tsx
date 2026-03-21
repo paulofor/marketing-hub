@@ -226,6 +226,7 @@ const TOKEN_REGEX = /\{\{\s*([a-zA-Z0-9_-]+)\s*\}\}/g;
 function CustomFlowTemplate({ html, variables }: CustomFlowTemplateProps) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const bridgeCleanupRef = useRef<(() => void) | null>(null);
   const processedHtml = useMemo(
     () => renderTemplateWithTokens(html ?? "", variables),
     [html, variables],
@@ -241,6 +242,13 @@ function CustomFlowTemplate({ html, variables }: CustomFlowTemplateProps) {
       if (resizeObserverRef.current) {
         resizeObserverRef.current.disconnect();
         resizeObserverRef.current = null;
+      }
+    };
+
+    const cleanupBridge = () => {
+      if (bridgeCleanupRef.current) {
+        bridgeCleanupRef.current();
+        bridgeCleanupRef.current = null;
       }
     };
 
@@ -265,9 +273,17 @@ function CustomFlowTemplate({ html, variables }: CustomFlowTemplateProps) {
 
     const handleLoad = () => {
       cleanupObserver();
+      cleanupBridge();
       updateHeight();
       const doc = iframe.contentDocument;
-      if (!doc || typeof ResizeObserver === "undefined") {
+      if (!doc) {
+        return;
+      }
+      const newBridgeCleanup = attachCustomTemplateBridge(iframe);
+      if (newBridgeCleanup) {
+        bridgeCleanupRef.current = newBridgeCleanup;
+      }
+      if (typeof ResizeObserver === "undefined") {
         return;
       }
       const observer = new ResizeObserver(() => {
@@ -286,6 +302,7 @@ function CustomFlowTemplate({ html, variables }: CustomFlowTemplateProps) {
     return () => {
       iframe.removeEventListener("load", handleLoad);
       cleanupObserver();
+      cleanupBridge();
     };
   }, [processedHtml]);
 
@@ -309,6 +326,112 @@ function CustomFlowTemplate({ html, variables }: CustomFlowTemplateProps) {
     </div>
   );
 }
+
+
+function attachCustomTemplateBridge(iframe: HTMLIFrameElement) {
+  const doc = iframe.contentDocument;
+  const win = iframe.contentWindow;
+  if (!doc || !win) {
+    return null;
+  }
+
+  const handleAnchorClick = (event: MouseEvent) => {
+    const target = event.target as Element | null;
+    const anchor = target?.closest?.('a[href^="#"]') as HTMLAnchorElement | null;
+    if (!anchor) {
+      return;
+    }
+    const href = anchor.getAttribute("href");
+    if (!href || href === "#") {
+      return;
+    }
+    const anchorTargetId = href.slice(1);
+    if (!anchorTargetId) {
+      return;
+    }
+    const anchorTarget = doc.getElementById(anchorTargetId);
+    if (!anchorTarget) {
+      return;
+    }
+    event.preventDefault();
+    const behaviorAttr = anchor.getAttribute("data-scroll-behavior");
+    const behavior: ScrollBehavior = behaviorAttr === "auto" ? "auto" : "smooth";
+    scrollParentToElement(iframe, anchorTarget, behavior);
+  };
+
+  doc.addEventListener("click", handleAnchorClick, true);
+
+  const originalScrollTo = win.scrollTo.bind(win);
+  win.scrollTo = (optionsOrX?: number | ScrollToOptions, maybeY?: number) => {
+    const { top, behavior } = normalizeScrollArguments(optionsOrX, maybeY);
+    scrollParentToDocumentOffset(iframe, top ?? 0, behavior);
+  };
+
+  const elementProto = win.Element?.prototype;
+  const originalScrollIntoView = elementProto?.scrollIntoView?.bind(elementProto);
+  if (elementProto && typeof elementProto.scrollIntoView === "function") {
+    elementProto.scrollIntoView = function scrollIntoViewOverride(arg?: boolean | ScrollIntoViewOptions) {
+      const behavior = normalizeBehavior(arg);
+      scrollParentToElement(iframe, this, behavior);
+    };
+  }
+
+  return () => {
+    doc.removeEventListener("click", handleAnchorClick, true);
+    win.scrollTo = originalScrollTo;
+    if (elementProto && originalScrollIntoView) {
+      elementProto.scrollIntoView = originalScrollIntoView;
+    }
+  };
+}
+
+function normalizeScrollArguments(optionsOrX?: number | ScrollToOptions, maybeY?: number) {
+  if (typeof optionsOrX === "object" && optionsOrX !== null) {
+    const behavior = optionsOrX.behavior === "smooth" ? "smooth" : "auto";
+    const top = typeof optionsOrX.top === "number" ? optionsOrX.top : 0;
+    return { top, behavior };
+  }
+  if (typeof optionsOrX === "number" && typeof maybeY === "number") {
+    return { top: maybeY, behavior: "auto" };
+  }
+  if (typeof optionsOrX === "number") {
+    return { top: optionsOrX, behavior: "auto" };
+  }
+  if (typeof maybeY === "number") {
+    return { top: maybeY, behavior: "auto" };
+  }
+  return { top: 0, behavior: "auto" };
+}
+
+function normalizeBehavior(arg?: boolean | ScrollIntoViewOptions): ScrollBehavior {
+  if (arg && typeof arg === "object" && arg.behavior === "smooth") {
+    return "smooth";
+  }
+  return "auto";
+}
+
+function scrollParentToElement(iframe: HTMLIFrameElement, element: Element, behavior: ScrollBehavior) {
+  const doc = iframe.contentDocument;
+  const win = iframe.contentWindow;
+  if (!doc || !win) {
+    return;
+  }
+  const rect = element.getBoundingClientRect();
+  const currentOffset = getDocumentScrollTop(win, doc);
+  scrollParentToDocumentOffset(iframe, rect.top + currentOffset, behavior);
+}
+
+function scrollParentToDocumentOffset(iframe: HTMLIFrameElement, offset: number, behavior: ScrollBehavior) {
+  const iframeRect = iframe.getBoundingClientRect();
+  const parentScrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+  const target = iframeRect.top + parentScrollTop + offset;
+  window.scrollTo({ top: target, behavior });
+}
+
+function getDocumentScrollTop(win: Window, doc: Document) {
+  return win.scrollY || doc.documentElement.scrollTop || doc.body.scrollTop || 0;
+}
+
 
 function buildCustomHtmlTemplateVariables(flow: LeadPortalFlow, metadata: SimpleFormMetadata) {
   const variables = new Map<string, string>();

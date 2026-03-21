@@ -447,7 +447,7 @@ public class LeadPortalOpenAiImageClient {
             return Map.of();
         }
         Map<String, BatchGenerationResult> results = new LinkedHashMap<>();
-        String[] lines = content.split(\"\n\");
+        String[] lines = content.split("\n");
         for (String line : lines) {
             if (line == null || line.isBlank()) {
                 continue;

@@ -304,6 +304,7 @@ function CustomFlowTemplate({ html, variables }: CustomFlowTemplateProps) {
         className="flow-custom-template-frame"
         srcDoc={processedHtml}
         title="Conteúdo personalizado do fluxo"
+        sandbox="allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-downloads allow-top-navigation-by-user-activation"
       />
     </div>
   );

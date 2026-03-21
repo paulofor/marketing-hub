@@ -8,6 +8,7 @@ import com.marketinghub.worker.creative.CreativeImageOptimizer;
 import com.marketinghub.worker.imagegeneration.ImageGenerationPlan;
 import com.marketinghub.worker.imagegeneration.ImageOrientation;
 import java.awt.image.BufferedImage;
+import java.time.Duration;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Base64;
@@ -49,7 +50,8 @@ class LeadPortalOpenAiImageClientTest {
         WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);
         CreativeImageOptimizer optimizer = new CreativeImageOptimizer(900_000, 1024);
         LeadPortalOpenAiImageClient client =
-                new LeadPortalOpenAiImageClient(builder, optimizer, "key", "http://openai", "gpt-image-1");
+                new LeadPortalOpenAiImageClient(builder, optimizer, "key", "http://openai", "gpt-image-1",
+                        Duration.ofMillis(500), Duration.ofMinutes(5));
 
         ImageGenerationPlan plan = new ImageGenerationPlan(
                 1L, 1L, "gpt-image-1", "standard", ImageOrientation.SQUARE, 1024, 1024, "1024x1024", null);
@@ -75,7 +77,8 @@ class LeadPortalOpenAiImageClientTest {
         WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);
         CreativeImageOptimizer optimizer = new CreativeImageOptimizer(900_000, 1024);
         LeadPortalOpenAiImageClient client =
-                new LeadPortalOpenAiImageClient(builder, optimizer, "key", "http://openai", "gpt-image-1");
+                new LeadPortalOpenAiImageClient(builder, optimizer, "key", "http://openai", "gpt-image-1",
+                        Duration.ofMillis(500), Duration.ofMinutes(5));
 
         ImageGenerationPlan plan = new ImageGenerationPlan(
                 1L, 1L, "dall-e-2", "standard", ImageOrientation.SQUARE, 1024, 1024, "1024x1024", null);

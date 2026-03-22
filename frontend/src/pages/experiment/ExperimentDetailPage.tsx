@@ -192,7 +192,6 @@ export default function ExperimentDetailPage() {
   };
 
   if (isLoading) return <p>Carregando...</p>;
- return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
   const preset = presets?.find((p) => p.id === data.metricPresetId);
   const resetPreviewSummary: ExperimentCampaignResetSummary =
@@ -204,7 +203,7 @@ export default function ExperimentDetailPage() {
     resetPreviewSummary.creatives;
   const hasItemsToReset = totalItemsToReset > 0;
   const previewErrorMessage = isResetPreviewError
-    ? resetPreviewError instanceof Error
+    ? resetPreviewError && resetPreviewError instanceof Error
       ? resetPreviewError.message
       : "Não foi possível carregar a prévia do reset."
     : null;
@@ -307,6 +306,14 @@ export default function ExperimentDetailPage() {
       actionLabel: hasCompleteTargeting ? undefined : "Ir para Segmentação",
     },
   ];
+
+  const isReadyForFacebook = blockingChecklist.every((c) => c.isMet);
+  const releaseInProgress = releaseExperiment.isPending;
+  const lastReleaseAt = data.facebookReleaseRequestedAt;
+  const lastReleaseLabel = lastReleaseAt ? formatDateTimeValue(lastReleaseAt) : null;
+  const canReleaseExperiment = isReadyForFacebook && data.platform === "FACEBOOK";
+  const releaseButtonDisabled =
+    releaseInProgress || !canReleaseExperiment || isLoadingReadiness;
 
   const configurationChecklist: ChecklistItem[] = [
     {
@@ -443,12 +450,6 @@ export default function ExperimentDetailPage() {
       items: operationalChecklist,
     },
   ].filter((group) => group.items.length > 0);
-  const isReadyForFacebook = blockingChecklist.every((c) => c.isMet);
-  const releaseInProgress = releaseExperiment.isPending;
-  const lastReleaseAt = data.facebookReleaseRequestedAt;
-  const lastReleaseLabel = lastReleaseAt ? formatDateTimeValue(lastReleaseAt) : null;
-  const canReleaseExperiment = isReadyForFacebook && data.platform === "FACEBOOK";
-  const releaseButtonDisabled = releaseInProgress || !canReleaseExperiment || isLoadingReadiness;
   const diagnosticsVariant: Record<string, string> = {
     ERROR: "danger",
     WARNING: "warning",

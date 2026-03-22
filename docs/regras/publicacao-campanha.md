@@ -64,6 +64,7 @@ pode publicar as campanhas para o experimento.
 2. A ação marca o status como `PLANNED`, preenche `facebook_release_requested_at` e zera o funil (eventos antes da liberação deixam de ser contabilizados).
 3. O worker só consome `/api/facebook-campaigns/experiments-ready` para experimentos com status Planejado **e** liberação registrada; mudar o status manualmente não libera o job.
 4. Sempre que for necessário reiniciar a operação (por exemplo, depois de um reset de campanhas), basta clicar novamente no botão para gerar um novo carimbo de liberação e limpar o funil de testes.
+5. O campo `facebook_release_requested_at` agora permanece preenchido mesmo após o experimento mudar para RUNNING/PAUSED, garantindo que o funil continue filtrando os eventos coletados antes da última liberação. Ele só é atualizado quando o botão é acionado novamente.
 
 ## Monitoramento do funil por experimento
 

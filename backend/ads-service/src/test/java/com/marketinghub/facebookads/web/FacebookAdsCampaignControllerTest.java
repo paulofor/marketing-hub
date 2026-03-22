@@ -45,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.times;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -298,4 +299,110 @@ class FacebookAdsCampaignControllerTest {
         assertThat(savedAd.getAdSet().getId()).isEqualTo("adset123");
         assertThat(savedAd.getCreative().getId()).isEqualTo("creative123");
     }
+
+    @Test
+    void createCampaignPersistsMultipleAds() throws Exception {
+        var experiment = Experiment.builder()
+                .id(55L)
+                .name("Exp Multi")
+                .build();
+        when(experimentService.get(55L)).thenReturn(experiment);
+
+        var experimentAdSet = AdSet.builder()
+                .id(202L)
+                .experiment(experiment)
+                .targetingJson("{}")
+                .build();
+        when(experimentAdSetRepository.findById(202L)).thenReturn(Optional.of(experimentAdSet));
+
+        FacebookAccount account = new FacebookAccount();
+        account.setId(88L);
+        when(facebookAccountRepository.findById(88L)).thenReturn(Optional.of(account));
+
+        when(campaignRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(adSetRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(adCreativeRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(adRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        String payload = """
+            {
+              "id": "cmp-multi",
+              "adAccountId": "act_888",
+              "name": "Exp Multi",
+              "objective": "OUTCOME_TRAFFIC",
+              "budgetMode": "CAMPAIGN",
+              "experimentId": 55,
+              "facebookAccountId": 88,
+              "adSet": {
+                "id": "adset-multi",
+                "name": "Exp Multi - Ad Set",
+                "billingEvent": "IMPRESSIONS",
+                "optimizationGoal": "LINK_CLICKS",
+                "bidStrategy": "LOWEST_COST_WITHOUT_CAP",
+                "bidAmount": "1500",
+                "dailyBudget": "6000",
+                "targetCountry": "BR",
+                "destinationType": "WEBSITE",
+                "pageId": "33333",
+                "targetingJson": "{}",
+                "experimentAdSetId": 202
+              },
+              "adCreatives": [
+                {
+                  "id": "creativeA",
+                  "pageId": "33333",
+                  "instagramActorId": "IG-222",
+                  "websiteUrl": "https://example.com/a",
+                  "message": "Mensagem A",
+                  "callToActionType": "LEARN_MORE",
+                  "headline": "Headline A",
+                  "description": "Desc A"
+                },
+                {
+                  "id": "creativeB",
+                  "pageId": "33333",
+                  "instagramActorId": "IG-222",
+                  "websiteUrl": "https://example.com/b",
+                  "message": "Mensagem B",
+                  "callToActionType": "SIGN_UP",
+                  "headline": "Headline B",
+                  "description": "Desc B"
+                }
+              ],
+              "ads": [
+                {
+                  "id": "adA",
+                  "name": "Exp Multi - Ad 1",
+                  "adSetId": "adset-multi",
+                  "creativeId": "creativeA"
+                },
+                {
+                  "id": "adB",
+                  "name": "Exp Multi - Ad 2",
+                  "adSetId": "adset-multi",
+                  "creativeId": "creativeB"
+                }
+              ]
+            }
+            """;
+
+        mockMvc.perform(post("/api/facebook-campaigns")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isCreated());
+
+        ArgumentCaptor<FacebookAdsAdCreative> creativeCaptor = ArgumentCaptor.forClass(FacebookAdsAdCreative.class);
+        verify(adCreativeRepository, times(2)).save(creativeCaptor.capture());
+        assertThat(creativeCaptor.getAllValues())
+                .extracting(FacebookAdsAdCreative::getId)
+                .containsExactly("creativeA", "creativeB");
+
+        ArgumentCaptor<FacebookAdsAd> adCaptor = ArgumentCaptor.forClass(FacebookAdsAd.class);
+        verify(adRepository, times(2)).save(adCaptor.capture());
+        assertThat(adCaptor.getAllValues())
+                .extracting(ad -> ad.getCreative().getId())
+                .containsExactly("creativeA", "creativeB");
+    }
+
+
 }

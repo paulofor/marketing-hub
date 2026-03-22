@@ -203,16 +203,27 @@ public class FacebookCampaignService {
     private void processExperiment(Experiment exp, FacebookWorkerConfiguration config) {
         String campaignId = null;
         String adSetId = null;
-        String adId = null;
+        List<String> createdAdIds = new ArrayList<>();
         boolean publishReported = false;
         try {
-            Creative creative = resolveCreative(exp.id());
-            if (creative == null) {
+            List<Creative> creatives = resolveCreatives(exp.id());
+            if (creatives.isEmpty()) {
                 LOGGER.warn("Skipping experiment {} because no creative is available or could be fetched", exp.id());
                 return;
             }
 
+            List<Creative> readyCreatives = creatives.stream()
+                .filter(c -> c.status() != null && "READY".equalsIgnoreCase(c.status()))
+                .toList();
+            List<Creative> selectedCreatives = readyCreatives.isEmpty()
+                ? List.of(creatives.get(0))
+                : readyCreatives;
+
             Experiment.InstagramAccount instagramAccount = exp.instagramAccount();
+            String fallbackInstagramActorId = coalesce(
+                instagramAccount != null ? instagramAccount.code() : null,
+                config.defaultInstagramActorId()
+            );
 
             String resolvedPageId = resolvePageId(config, exp);
             if (!StringUtils.hasText(resolvedPageId)) {
@@ -231,8 +242,10 @@ public class FacebookCampaignService {
                 }
             }
 
-            String resolvedWebsiteUrl = resolveDestinationUrl(exp, creative, config, instantFormDestination);
-            String resolvedLeadGenFormId = resolveLeadGenFormId(exp, creative, config, instantFormDestination);
+            final InstantFormDestination resolvedInstantFormDestination = instantFormDestination;
+            Creative primaryCreative = selectedCreatives.get(0);
+            String resolvedWebsiteUrl = resolveDestinationUrl(exp, primaryCreative, config, instantFormDestination);
+            String resolvedLeadGenFormId = resolveLeadGenFormId(exp, primaryCreative, config, instantFormDestination);
             boolean hasWebsiteDestination = StringUtils.hasText(resolvedWebsiteUrl);
             boolean hasLeadFormDestination = StringUtils.hasText(resolvedLeadGenFormId);
             if (!hasWebsiteDestination && !hasLeadFormDestination) {
@@ -246,16 +259,52 @@ public class FacebookCampaignService {
                 return;
             }
 
-            String resolvedMessage = StringUtils.hasText(creative.primaryText())
-                ? creative.primaryText()
-                : formatCreativeMessage(exp.name(), config);
-            String resolvedCallToAction = coalesce(creative.cta(), config.defaultCallToActionType());
-            String resolvedInstagramActorId = coalesce(
-                creative.instagramUserId(),
-                instagramAccount != null ? instagramAccount.code() : null,
-                config.defaultInstagramActorId()
-            );
-            if (!StringUtils.hasText(resolvedInstagramActorId)) {
+            String defaultMessage = formatCreativeMessage(exp.name(), config);
+            List<CreativePublicationPayload> creativePayloads = selectedCreatives.stream()
+                .map(creative -> new CreativePublicationPayload(
+                    creative,
+                    resolveDestinationUrl(exp, creative, config, resolvedInstantFormDestination),
+                    resolveLeadGenFormId(exp, creative, config, resolvedInstantFormDestination),
+                    StringUtils.hasText(creative.primaryText()) ? creative.primaryText() : defaultMessage,
+                    coalesce(creative.cta(), config.defaultCallToActionType()),
+                    creative.headline(),
+                    creative.description(),
+                    resolveCreativeImageUrl(creative.imageUrl()),
+                    coalesce(creative.instagramUserId(), fallbackInstagramActorId)
+                ))
+                .filter(payload -> {
+                    if (hasLeadFormDestination && !StringUtils.hasText(payload.leadGenFormId())) {
+                        LOGGER.warn(
+                            "Skipping creative {} in experiment {} because it lacks a lead form while the campaign runs in lead generation mode",
+                            payload.creative().id(),
+                            exp.id()
+                        );
+                        return false;
+                    }
+                    if (!hasLeadFormDestination && !StringUtils.hasText(payload.websiteUrl())) {
+                        LOGGER.warn(
+                            "Skipping creative {} in experiment {} because it lacks a website destination",
+                            payload.creative().id(),
+                            exp.id()
+                        );
+                        return false;
+                    }
+                    return true;
+                })
+                .toList();
+
+            if (creativePayloads.isEmpty()) {
+                String reason = "no creatives match the destination requirements for the campaign";
+                LOGGER.warn(
+                    "Skipping experiment {} because {}",
+                    exp.id(),
+                    reason
+                );
+                markExperimentAsFailed(exp.id(), reason);
+                return;
+            }
+
+            if (!StringUtils.hasText(creativePayloads.get(0).instagramActorId())) {
                 LOGGER.warn(
                     "Experiment {} does not have an Instagram actor ID; proceeding without instagram_user_id",
                     exp.id()
@@ -328,32 +377,60 @@ public class FacebookCampaignService {
                 ExperimentFacebookApiLogContext.CAMPAIGN_AD_SET,
                 () -> facebookAdsService.createAdSet(config.adAccountId(), adSetRequest)
             );
-            String resolvedImageUrl = resolveCreativeImageUrl(creative.imageUrl());
-            AdCreativeCreation adCreativeCreation = createAdCreativeWithFallback(
-                config.adAccountId(),
-                exp,
-                resolvedPageId,
-                resolvedInstagramActorId,
-                resolvedWebsiteUrl,
-                resolvedLeadGenFormId,
-                resolvedMessage,
-                resolvedCallToAction,
-                creative.headline(),
-                creative.description(),
-                resolvedImageUrl
-            );
-            FacebookAdsService.AdCreativeRequest adCreativeRequest = adCreativeCreation.request();
-            String creativeId = adCreativeCreation.id();
-            FacebookAdsService.AdRequest adRequest = new FacebookAdsService.AdRequest(
-                exp.name() + " - Ad",
-                adSetId,
-                creativeId
-            );
-            adId = executeFacebookCallWithLogging(
-                exp.id(),
-                ExperimentFacebookApiLogContext.CAMPAIGN_AD,
-                () -> facebookAdsService.createAd(config.adAccountId(), adRequest)
-            );
+            List<CreateCampaignRequest.AdCreative> reportedAdCreatives = new ArrayList<>();
+            List<CreateCampaignRequest.Ad> reportedAds = new ArrayList<>();
+            int creativeIndex = 1;
+            for (CreativePublicationPayload payload : creativePayloads) {
+                AdCreativeCreation adCreativeCreation = createAdCreativeWithFallback(
+                    config.adAccountId(),
+                    exp,
+                    resolvedPageId,
+                    payload.instagramActorId(),
+                    payload.websiteUrl(),
+                    payload.leadGenFormId(),
+                    payload.message(),
+                    payload.callToAction(),
+                    payload.headline(),
+                    payload.description(),
+                    payload.imageUrl()
+                );
+                FacebookAdsService.AdCreativeRequest adCreativeRequest = adCreativeCreation.request();
+                String creativeId = adCreativeCreation.id();
+                String adName = creativePayloads.size() == 1
+                    ? exp.name() + " - Ad"
+                    : exp.name() + " - Ad " + creativeIndex;
+                FacebookAdsService.AdRequest adRequest = new FacebookAdsService.AdRequest(
+                    adName,
+                    adSetId,
+                    creativeId
+                );
+                String createdAdId = executeFacebookCallWithLogging(
+                    exp.id(),
+                    ExperimentFacebookApiLogContext.CAMPAIGN_AD,
+                    () -> facebookAdsService.createAd(config.adAccountId(), adRequest)
+                );
+                createdAdIds.add(createdAdId);
+                reportedAdCreatives.add(new CreateCampaignRequest.AdCreative(
+                    creativeId,
+                    adCreativeRequest.pageId(),
+                    adCreativeRequest.instagramActorId(),
+                    adCreativeRequest.websiteUrl(),
+                    adCreativeRequest.leadGenFormId(),
+                    adCreativeRequest.message(),
+                    adCreativeRequest.imageHash(),
+                    adCreativeRequest.imageUrl(),
+                    adCreativeRequest.callToActionType(),
+                    adCreativeRequest.headline(),
+                    adCreativeRequest.description()
+                ));
+                reportedAds.add(new CreateCampaignRequest.Ad(
+                    createdAdId,
+                    adRequest.name(),
+                    adRequest.adSetId(),
+                    adRequest.creativeId()
+                ));
+                creativeIndex++;
+            }
             CreateCampaignRequest req = new CreateCampaignRequest(
                 campaignId,
                 config.adAccountId(),
@@ -377,25 +454,10 @@ public class FacebookCampaignService {
                     resolvedTargeting.targetingJson(),
                     selectedAdSet != null ? selectedAdSet.id() : null
                 ),
-                new CreateCampaignRequest.AdCreative(
-                    creativeId,
-                    adCreativeRequest.pageId(),
-                    adCreativeRequest.instagramActorId(),
-                    adCreativeRequest.websiteUrl(),
-                    adCreativeRequest.leadGenFormId(),
-                    adCreativeRequest.message(),
-                    adCreativeRequest.imageHash(),
-                    adCreativeRequest.imageUrl(),
-                    adCreativeRequest.callToActionType(),
-                    adCreativeRequest.headline(),
-                    adCreativeRequest.description()
-                ),
-                new CreateCampaignRequest.Ad(
-                    adId,
-                    adRequest.name(),
-                    adRequest.adSetId(),
-                    adRequest.creativeId()
-                )
+                reportedAdCreatives.isEmpty() ? null : reportedAdCreatives.get(0),
+                reportedAds.isEmpty() ? null : reportedAds.get(0),
+                reportedAdCreatives,
+                reportedAds
             );
             String createCampaignUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns");
             LOGGER.info(
@@ -485,20 +547,25 @@ public class FacebookCampaignService {
             markExperimentAsFailed(exp.id(), ex.getMessage());
         } finally {
             if (!publishReported) {
-                cleanupFailedPublication(campaignId, adSetId, adId);
+                cleanupFailedPublication(campaignId, adSetId, createdAdIds);
             }
         }
     }
 
-    private void cleanupFailedPublication(String campaignId, String adSetId, String adId) {
+    private void cleanupFailedPublication(String campaignId, String adSetId, List<String> adIds) {
         if (!StringUtils.hasText(campaignId)) {
             return;
         }
-        if (StringUtils.hasText(adId)) {
-            try {
-                facebookAdsService.deleteAd(adId);
-            } catch (Exception cleanupEx) {
-                LOGGER.warn("Failed to delete Facebook ad {} during cleanup: {}", adId, cleanupEx.getMessage());
+        if (adIds != null) {
+            for (String adId : adIds) {
+                if (!StringUtils.hasText(adId)) {
+                    continue;
+                }
+                try {
+                    facebookAdsService.deleteAd(adId);
+                } catch (Exception cleanupEx) {
+                    LOGGER.warn("Failed to delete Facebook ad {} during cleanup: {}", adId, cleanupEx.getMessage());
+                }
             }
         }
         if (StringUtils.hasText(adSetId)) {
@@ -883,7 +950,9 @@ public class FacebookCampaignService {
         Long facebookAccountId,
         AdSet adSet,
         AdCreative adCreative,
-        Ad ad
+        Ad ad,
+        List<AdCreative> adCreatives,
+        List<Ad> ads
     ) {
         public record AdSet(
             String id,
@@ -923,7 +992,19 @@ public class FacebookCampaignService {
         ) {}
     }
 
-    private Creative resolveCreative(long experimentId) {
+    private record CreativePublicationPayload(
+        Creative creative,
+        String websiteUrl,
+        String leadGenFormId,
+        String message,
+        String callToAction,
+        String headline,
+        String description,
+        String imageUrl,
+        String instagramActorId
+    ) {}
+
+    private List<Creative> resolveCreatives(long experimentId) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/creatives");
         LOGGER.info(
             "Requesting creatives for experiment from backend: url==>{}, params={}",
@@ -942,17 +1023,14 @@ public class FacebookCampaignService {
                 url,
                 JsonLogFormatter.wrap(objectMapper, creatives)
             );
-            if (creatives == null || creatives.isEmpty()) {
-                return null;
+            if (creatives == null) {
+                return Collections.emptyList();
             }
-            return creatives.stream()
-                .filter(c -> c.status() != null && "READY".equalsIgnoreCase(c.status()))
-                .findFirst()
-                .orElse(creatives.get(0));
+            return creatives;
         } catch (Exception ex) {
             LOGGER.warn("Failed to fetch creatives for experiment {} from backend: url==>{}, message={}", experimentId, url, ex.getMessage());
             LOGGER.debug("Stacktrace while fetching creatives for experiment {}", experimentId, ex);
-            return null;
+            return Collections.emptyList();
         }
     }
 

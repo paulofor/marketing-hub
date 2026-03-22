@@ -2,8 +2,16 @@ import { useState, type FormEvent } from "react";
 import { useExperimentFunnel, type ExperimentFunnelStageSummary } from "../../api/experiment/useExperimentFunnel";
 import { useRegisterExperimentFunnelEvent } from "../../api/experiment/useRegisterExperimentFunnelEvent";
 
+const currencyFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+  minimumFractionDigits: 2,
+});
+
 interface ExperimentFunnelTabProps {
   experimentId: string;
+  totalSpend?: number | null;
+  spendLastSyncedAt?: string | null;
 }
 
 function formatDate(value?: string | null) {
@@ -18,9 +26,12 @@ function formatDate(value?: string | null) {
 
 export default function ExperimentFunnelTab({
   experimentId,
+  totalSpend,
+  spendLastSyncedAt,
 }: ExperimentFunnelTabProps) {
   const { data, isLoading, isError } = useExperimentFunnel(experimentId);
   const stages = (data ?? []).slice().sort((a, b) => a.order - b.order);
+  const normalizedTotalSpend = normalizeSpend(totalSpend);
   const fallbackStages: ExperimentFunnelStageSummary[] = [
     {
       stage: "VISUALIZACAO_ANUNCIO",
@@ -155,6 +166,27 @@ export default function ExperimentFunnelTab({
           </div>
         </div>
 
+        <div className="rounded-3 border p-3 bg-light mb-4">
+          <div className="text-uppercase text-muted small fw-semibold">
+            Total gasto na campanha
+          </div>
+          <div className="fs-3 fw-bold mt-1">
+            {formatCurrency(normalizedTotalSpend)}
+          </div>
+          <p className="text-muted small mb-0">
+            Consolidado a partir da Marketing API do Meta Ads.
+          </p>
+          {spendLastSyncedAt ? (
+            <p className="text-muted small mb-0">
+              Última sincronização: {formatDate(spendLastSyncedAt)}
+            </p>
+          ) : null}
+        </div>
+        <p className="text-muted small mb-4">
+          Cada custo por conversão abaixo divide o total gasto pela quantidade
+          de conversões registradas em cada etapa.
+        </p>
+
         {isLoading ? (
           <div className="text-muted">Carregando funil...</div>
         ) : isError ? (
@@ -175,9 +207,9 @@ export default function ExperimentFunnelTab({
                   <th>Automático</th>
                   <th>Manuais</th>
                   <th>Total</th>
+                  <th>Custo por conv.</th>
                   <th>Únicos</th>
                   <th>Último evento</th>
-                  <th>Fonte de dados</th>
                 </tr>
               </thead>
               <tbody>
@@ -193,11 +225,11 @@ export default function ExperimentFunnelTab({
                     <td>
                       <strong>{stage.totalCount}</strong>
                     </td>
+                    <td>
+                      {formatCostPerConversion(normalizedTotalSpend, stage.totalCount)}
+                    </td>
                     <td>{stage.uniqueCount ?? "—"}</td>
                     <td>{formatDate(stage.lastEventAt)}</td>
-                    <td className="text-muted small">
-                      {stage.source ?? "Eventos manuais registrados na aplicação"}
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -302,4 +334,37 @@ export default function ExperimentFunnelTab({
       </div>
     </div>
   );
+}
+
+function normalizeSpend(value?: number | null) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+  return parsed;
+}
+
+function formatCurrency(value?: number | null) {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return "—";
+  }
+  return currencyFormatter.format(value);
+}
+
+function calculateCostPerConversion(totalSpend: number | null, totalConversions?: number | null) {
+  if (totalSpend === null || totalSpend === undefined || Number.isNaN(totalSpend)) {
+    return null;
+  }
+  if (!totalConversions || totalConversions <= 0) {
+    return null;
+  }
+  return totalSpend / totalConversions;
+}
+
+function formatCostPerConversion(totalSpend: number | null, totalConversions?: number | null) {
+  const cost = calculateCostPerConversion(totalSpend, totalConversions);
+  return cost === null ? "—" : formatCurrency(cost);
 }

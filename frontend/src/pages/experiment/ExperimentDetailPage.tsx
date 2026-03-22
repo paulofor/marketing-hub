@@ -1118,7 +1118,11 @@ export default function ExperimentDetailPage() {
           </div>
         </Tabs.Content>
         <Tabs.Content value="funnel" asChild>
-          <ExperimentFunnelTab experimentId={expId} />
+          <ExperimentFunnelTab
+            experimentId={expId}
+            totalSpend={data?.campaignMetric?.spend}
+            spendLastSyncedAt={data?.campaignMetric?.lastSyncedAt}
+          />
         </Tabs.Content>
         <Tabs.Content value="targeting" asChild>
           <TargetingTab

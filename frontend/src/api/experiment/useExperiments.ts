@@ -36,6 +36,19 @@ export interface FacebookInstantFormSummary {
   approvedAt?: string | null;
 }
 
+export interface ExperimentCampaignMetric {
+  dateStart?: string | null;
+  dateStop?: string | null;
+  impressions?: number | null;
+  clicks?: number | null;
+  leads?: number | null;
+  spend?: number | null;
+  cpc?: number | null;
+  cpl?: number | null;
+  lastSyncedAt?: string | null;
+  lastSyncError?: string | null;
+}
+
 export interface Experiment {
   id: string;
   nicheId: number;
@@ -101,6 +114,7 @@ export interface Experiment {
   selectedSampleEmailCallToAction?: string | null;
   selectedSampleEmailModel?: string | null;
   selectedSampleEmailUpdatedAt?: string | null;
+  campaignMetric?: ExperimentCampaignMetric | null;
 }
 
 export function useExperiments() {

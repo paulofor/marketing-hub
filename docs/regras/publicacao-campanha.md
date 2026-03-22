@@ -57,6 +57,13 @@ há configuração faltante antes de liberar a campanha.
 Quando todos os bloqueios estão prontos, o cartão sinaliza **Pronto** e o worker
 pode publicar as campanhas para o experimento.
 
+## 4. Liberação para o Facebook Ads Worker
+
+1. Assim que os bloqueios forem resolvidos, o operador usa o botão **Liberar para o Facebook Ads Worker** na ficha do experimento.
+2. A ação marca o status como `PLANNED`, preenche `facebook_release_requested_at` e zera o funil (eventos antes da liberação deixam de ser contabilizados).
+3. O worker só consome `/api/facebook-campaigns/experiments-ready` para experimentos com status Planejado **e** liberação registrada; mudar o status manualmente não libera o job.
+4. Sempre que for necessário reiniciar a operação (por exemplo, depois de um reset de campanhas), basta clicar novamente no botão para gerar um novo carimbo de liberação e limpar o funil de testes.
+
 ## Monitoramento do funil por experimento
 
 Cada experimento agora possui uma aba **Funil de vendas** que expõe, em nove

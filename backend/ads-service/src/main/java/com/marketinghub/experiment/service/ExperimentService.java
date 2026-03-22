@@ -10,6 +10,7 @@ import com.marketinghub.experiment.*;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.journey.repository.JourneyTemplateRepository;
 import com.marketinghub.leadportal.LeadPortalFlow;
@@ -24,6 +25,7 @@ import com.marketinghub.imagegeneration.repository.ImageGenerationModelRepositor
 import com.marketinghub.imagegeneration.repository.ImageGenerationQualityRepository;
 import com.marketinghub.sampleemail.SampleEmail;
 import jakarta.persistence.EntityManager;
+import java.time.Instant;
 import java.util.Objects;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -51,6 +53,7 @@ public class ExperimentService {
     private final ImageGenerationModelRepository imageGenerationModelRepository;
     private final ImageGenerationQualityRepository imageGenerationQualityRepository;
     private final com.marketinghub.sampleemail.repository.SampleEmailRepository sampleEmailRepository;
+    private final ExperimentFunnelEventRepository experimentFunnelEventRepository;
 
     public ExperimentService(ExperimentRepository repository, MarketNicheRepository nicheRepository,
                              com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository,
@@ -64,7 +67,8 @@ public class ExperimentService {
                              LeadPortalFlowPublisher leadPortalFlowPublisher,
                              ImageGenerationModelRepository imageGenerationModelRepository,
                              ImageGenerationQualityRepository imageGenerationQualityRepository,
-                             com.marketinghub.sampleemail.repository.SampleEmailRepository sampleEmailRepository) {
+                             com.marketinghub.sampleemail.repository.SampleEmailRepository sampleEmailRepository,
+                             ExperimentFunnelEventRepository experimentFunnelEventRepository) {
         this.repository = repository;
         this.nicheRepository = nicheRepository;
         this.hypothesisRepository = hypothesisRepository;
@@ -79,6 +83,7 @@ public class ExperimentService {
         this.imageGenerationModelRepository = imageGenerationModelRepository;
         this.imageGenerationQualityRepository = imageGenerationQualityRepository;
         this.sampleEmailRepository = sampleEmailRepository;
+        this.experimentFunnelEventRepository = experimentFunnelEventRepository;
     }
 
     /**
@@ -331,7 +336,10 @@ public class ExperimentService {
     }
 
     public java.util.List<Experiment> listReadyForCampaign() {
-        return repository.findReadyForCampaign(ExperimentStatus.PLANNED, ExperimentPlatform.FACEBOOK);
+        return repository.findReadyForCampaign(ExperimentStatus.PLANNED, ExperimentPlatform.FACEBOOK)
+                .stream()
+                .filter(exp -> exp.getFacebookReleaseRequestedAt() != null)
+                .toList();
     }
 
     public java.util.List<Experiment> listReadyForPixel() {
@@ -415,6 +423,9 @@ public class ExperimentService {
             }
         }
         exp.setStatus(status);
+        if (status != ExperimentStatus.PLANNED) {
+            exp.setFacebookReleaseRequestedAt(null);
+        }
         return exp;
     }
 
@@ -644,6 +655,21 @@ public class ExperimentService {
         Experiment exp = repository.findById(id).orElseThrow();
         exp.setLeadPortalFlowsToGenerate(quantity);
         return exp;
+    }
+
+    /**
+     * Marks the experiment as released to the Facebook Ads Worker and resets the funnel.
+     */
+    @Transactional
+    public Experiment releaseForFacebook(Long id) {
+        Experiment experiment = repository.findById(id).orElseThrow();
+        if (experiment.getPlatform() != ExperimentPlatform.FACEBOOK) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Experiment platform must be Facebook");
+        }
+        experiment.setStatus(ExperimentStatus.PLANNED);
+        experiment.setFacebookReleaseRequestedAt(Instant.now());
+        experimentFunnelEventRepository.deleteByExperimentId(id);
+        return experiment;
     }
 
 

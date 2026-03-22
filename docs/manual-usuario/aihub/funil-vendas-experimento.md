@@ -54,3 +54,4 @@ O funil é recalculado automaticamente e os totais são atualizados na tabela.
 - Verifique os números das primeiras etapas (impressões/cliques) antes de
   liberar novas campanhas: eles indicam se há entrega de mídia suficiente para
   alimentar o restante do funil.
+- Ao clicar em **Liberar para o Facebook Ads Worker** na ficha do experimento, o sistema zera as etapas anteriores: use esse recurso somente quando terminar de testar, pois todo evento registrado antes da liberação deixa de ser contabilizado.

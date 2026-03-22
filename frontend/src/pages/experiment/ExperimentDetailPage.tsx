@@ -21,7 +21,6 @@ import { useFacebookConfigurationStatus } from "../../api/useFacebookConfigurati
 import { useJourneyTemplate } from "../../api/journey/useJourneyTemplate";
 import { useExperimentJourneyAssignments } from "../../api/experiment/useExperimentJourneyAssignments";
 import { useRebuildExperimentJourney } from "../../api/experiment/useRebuildExperimentJourney";
-import { useUpdateExperimentStatus } from "../../api/experiment/useUpdateExperimentStatus";
 import { useExperimentFacebookCampaigns } from "../../api/experiment/useExperimentFacebookCampaigns";
 import { useExperimentReadiness } from "../../api/experiment/useExperimentReadiness";
 import {
@@ -35,6 +34,7 @@ import LeadPortalFlowTab from "./LeadPortalFlowTab";
 import TargetingTab from "./TargetingTab";
 import ExperimentFunnelTab from "./ExperimentFunnelTab";
 import { useExperimentAdSetWorkflow } from "../../api/experiment/useExperimentAdSetWorkflow";
+import { useExperimentFacebookRelease } from "../../api/experiment/useExperimentFacebookRelease";
 
 type ChecklistItem = {
   id: string;
@@ -74,8 +74,6 @@ export default function ExperimentDetailPage() {
     data?.journeyTemplateId ?? undefined,
   );
   const rebuildJourney = useRebuildExperimentJourney(expId);
-  const updateExperimentStatus = useUpdateExperimentStatus(expId);
-  const isUpdatingStatus = updateExperimentStatus.isPending;
   const { data: adSetWorkflow, isLoading: isLoadingAdSetWorkflow } =
     useExperimentAdSetWorkflow(expId);
   const {
@@ -95,6 +93,7 @@ export default function ExperimentDetailPage() {
     refetch: refetchResetPreview,
   } = useExperimentCampaignResetPreview(expId);
   const resetCampaigns = useExperimentCampaignReset(expId);
+  const releaseExperiment = useExperimentFacebookRelease(expId);
   const hasCompleteTargeting = readinessSummary?.hasCompleteTargeting ?? false;
   useBreadcrumbs([
     {
@@ -179,8 +178,21 @@ export default function ExperimentDetailPage() {
       toast.error(message);
     }
   };
+  const handleFacebookRelease = async () => {
+    try {
+      await releaseExperiment.mutateAsync();
+      toast.success("Experimento liberado para o Facebook Ads Worker. Funil reiniciado.");
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? error.response?.data?.message ?? error.response?.data?.detail ??
+          "Não foi possível liberar o experimento para o Facebook."
+        : "Não foi possível liberar o experimento para o Facebook.";
+      toast.error(message);
+    }
+  };
 
   if (isLoading) return <p>Carregando...</p>;
+ return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
   const preset = presets?.find((p) => p.id === data.metricPresetId);
   const resetPreviewSummary: ExperimentCampaignResetSummary =
@@ -392,16 +404,20 @@ export default function ExperimentDetailPage() {
       isMet: data.status === "PLANNED",
       hint:
         data.status === "PLANNED"
-          ? "O worker poderá buscar este experimento quando os demais itens estiverem prontos."
-          : "Altere o status para Planejado na lista de experimentos para liberar o worker de Facebook.",
+          ? lastReleaseLabel
+            ? `Liberado para o worker em ${lastReleaseLabel}.`
+            : "Status Planejado. Use o botão acima para liberar novamente se precisar reiniciar o funil."
+          : "Use o botão de liberação para marcar como Planejado e disparar a publicação do worker.",
       action:
         data.status === "PLANNED"
           ? undefined
-          : () => updateExperimentStatus.mutate("PLANNED"),
+          : handleFacebookRelease,
       actionLabel:
-        data.status === "PLANNED" ? undefined : "Marcar como Planejado",
-      actionDisabled: isUpdatingStatus,
-      actionLoading: isUpdatingStatus,
+        data.status === "PLANNED" ? undefined : "Liberar agora",
+      actionDisabled:
+        data.status === "PLANNED" ? undefined : releaseButtonDisabled,
+      actionLoading:
+        data.status === "PLANNED" ? undefined : releaseInProgress,
     },
   ];
   const checklistGroups = [
@@ -428,6 +444,11 @@ export default function ExperimentDetailPage() {
     },
   ].filter((group) => group.items.length > 0);
   const isReadyForFacebook = blockingChecklist.every((c) => c.isMet);
+  const releaseInProgress = releaseExperiment.isPending;
+  const lastReleaseAt = data.facebookReleaseRequestedAt;
+  const lastReleaseLabel = lastReleaseAt ? formatDateTimeValue(lastReleaseAt) : null;
+  const canReleaseExperiment = isReadyForFacebook && data.platform === "FACEBOOK";
+  const releaseButtonDisabled = releaseInProgress || !canReleaseExperiment || isLoadingReadiness;
   const diagnosticsVariant: Record<string, string> = {
     ERROR: "danger",
     WARNING: "warning",
@@ -747,6 +768,26 @@ export default function ExperimentDetailPage() {
               ser publicado quando você liberar o status e demais automações.
             </div>
           )}
+          <div className="mt-3 d-flex flex-column flex-lg-row align-items-start gap-3">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleFacebookRelease}
+              disabled={releaseButtonDisabled}
+            >
+              {releaseInProgress ? "Liberando..." : "Liberar para Facebook Ads Worker"}
+            </button>
+            <div className="small text-body-secondary">
+              {isReadyForFacebook
+                ? "Ao liberar, o status muda para Planejado e o funil de vendas é zerado antes da publicação."
+                : "Resolva os bloqueios para habilitar a liberação automática."}
+              {lastReleaseLabel ? (
+                <div className="mt-1">
+                  Última liberação: <strong>{lastReleaseLabel}</strong>
+                </div>
+              ) : null}
+            </div>
+          </div>
           {checklistGroups.map((group, index) => (
             <div key={group.id} className={index === 0 ? "mt-3" : "mt-4"}>
               <h6 className="text-uppercase small text-muted mb-1">{group.title}</h6>

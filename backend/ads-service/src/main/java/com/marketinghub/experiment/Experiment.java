@@ -59,6 +59,9 @@ public class Experiment {
     @Column(name = "facebook_pixel_created_at")
     private Instant facebookPixelCreatedAt;
 
+    @Column(name = "facebook_release_requested_at")
+    private Instant facebookReleaseRequestedAt;
+
     @Column(name = "follow_up_action_url", length = 512)
     private String followUpActionUrl;
 

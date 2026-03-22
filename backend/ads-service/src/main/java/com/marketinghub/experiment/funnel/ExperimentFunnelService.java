@@ -50,9 +50,10 @@ public class ExperimentFunnelService {
     public List<ExperimentFunnelStageDto> summarize(Long experimentId) {
         Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
         Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages = bootstrapStages();
+        Instant baseline = experiment.getFacebookReleaseRequestedAt();
 
-        applyManualEvents(experiment.getId(), stages);
-        applyAutomaticMetrics(experiment.getId(), stages);
+        applyManualEvents(experiment.getId(), baseline, stages);
+        applyAutomaticMetrics(experiment.getId(), baseline, stages);
         fillDefaultSourceWhenMissing(stages);
 
         return stages.values().stream()
@@ -149,10 +150,11 @@ public class ExperimentFunnelService {
         return result;
     }
 
-    private void applyManualEvents(Long experimentId, Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages) {
+    private void applyManualEvents(Long experimentId, Instant baseline, Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages) {
         for (StageAggregation agg : eventRepository.aggregateByExperiment(
                 experimentId,
-                ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE)) {
+                ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE,
+                baseline)) {
             ExperimentFunnelStageDto dto = stages.get(agg.getStage());
             if (dto == null) {
                 continue;
@@ -164,7 +166,7 @@ public class ExperimentFunnelService {
         }
     }
 
-    private void applyAutomaticMetrics(Long experimentId, Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages) {
+    private void applyAutomaticMetrics(Long experimentId, Instant baseline, Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages) {
         mergeMetric(stages, ExperimentFunnelStage.VISUALIZACAO_ANUNCIO,
                 fetchSingleMetric("""
                         SELECT COALESCE(SUM(impressions), 0) AS total,
@@ -172,7 +174,8 @@ public class ExperimentFunnelService {
                                MAX(updated_at) AS last_event
                         FROM experiment_campaign_metric
                         WHERE experiment_id = ?
-                        """, experimentId),
+                          AND (? IS NULL OR updated_at >= ?)
+                        """, experimentId, baseline, baseline),
                 "Impressões vindas do Facebook Ads (experiment_campaign_metric)");
 
         mergeMetric(stages, ExperimentFunnelStage.ACESSO_FORM_LEAD,
@@ -182,7 +185,8 @@ public class ExperimentFunnelService {
                                MAX(updated_at) AS last_event
                         FROM experiment_campaign_metric
                         WHERE experiment_id = ?
-                        """, experimentId),
+                          AND (? IS NULL OR updated_at >= ?)
+                        """, experimentId, baseline, baseline),
                 "Cliques do anúncio para o formulário (experiment_campaign_metric)");
 
         mergeMetric(stages, ExperimentFunnelStage.VISUALIZACAO_FORM,
@@ -194,7 +198,8 @@ public class ExperimentFunnelService {
                         WHERE experiment_id = ?
                           AND stage = 'VISUALIZACAO_FORM'
                           AND source = ?
-                        """, experimentId, ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE),
+                          AND (? IS NULL OR occurred_at >= ?)
+                        """, experimentId, ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE, baseline, baseline),
                 "Renderização completa registrada pelo Lead Portal (evento lead-portal-render-complete)");
 
         mergeMetric(stages, ExperimentFunnelStage.ENVIO_FORM,
@@ -204,7 +209,8 @@ public class ExperimentFunnelService {
                                MAX(submitted_at) AS last_event
                         FROM lead_portal_submission
                         WHERE experiment_id = ?
-                        """, experimentId),
+                          AND (? IS NULL OR submitted_at >= ?)
+                        """, experimentId, baseline, baseline),
                 "Envios do formulário (lead_portal_submission)");
 
         mergeMetric(stages, ExperimentFunnelStage.ABERTURA_EMAIL_AMOSTRA,
@@ -217,7 +223,8 @@ public class ExperimentFunnelService {
                         JOIN lead_portal_flow f ON f.slug = s.flow_slug
                         WHERE %s
                           AND p.email_opened_at IS NOT NULL
-                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId),
+                          AND (? IS NULL OR p.email_opened_at >= ?)
+                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId, baseline, baseline),
                 "Aberturas de e-mail de amostra (flow_submission_image_package.email_opened_at)");
 
         mergeMetric(stages, ExperimentFunnelStage.ACESSO_CHECKOUT,
@@ -230,7 +237,8 @@ public class ExperimentFunnelService {
                         JOIN lead_portal_flow f ON f.slug = s.flow_slug
                         WHERE %s
                           AND p.checkout_accessed_at IS NOT NULL
-                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId),
+                          AND (? IS NULL OR p.checkout_accessed_at >= ?)
+                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId, baseline, baseline),
                 "Acessos ao checkout registrados via tracking público (lead_portal_purchase.checkout_accessed_at)");
 
         mergeMetric(stages, ExperimentFunnelStage.COMPRA,
@@ -243,7 +251,8 @@ public class ExperimentFunnelService {
                         JOIN lead_portal_flow f ON f.slug = s.flow_slug
                         WHERE %s
                           AND (p.payment_approved_at IS NOT NULL OR p.mp_status = 'approved')
-                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId),
+                          AND (? IS NULL OR COALESCE(p.payment_approved_at, p.updated_at) >= ?)
+                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId, baseline, baseline),
                 "Pagamentos aprovados (lead_portal_purchase)");
 
         mergeMetric(stages, ExperimentFunnelStage.ABERTURA_EMAIL_COMPRA,
@@ -258,7 +267,8 @@ public class ExperimentFunnelService {
                         WHERE %s
                           AND d.email_request_id IS NOT NULL
                           AND el.opened_at IS NOT NULL
-                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId),
+                          AND (? IS NULL OR el.opened_at >= ?)
+                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId, baseline, baseline),
                 "Abertura do e-mail de entrega (lead_portal_premium_delivery -> email_log)");
 
         mergeMetric(stages, ExperimentFunnelStage.DOWNLOAD_MATERIAL_PAGO,
@@ -272,7 +282,8 @@ public class ExperimentFunnelService {
                         WHERE %s
                           AND p.payment_purchase_id IS NOT NULL
                           AND p.images_viewed_at IS NOT NULL
-                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId),
+                          AND (? IS NULL OR p.images_viewed_at >= ?)
+                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId, baseline, baseline),
                 "Downloads/visualizações do material pago (flow_submission_image_package.images_viewed_at)");
     }
 

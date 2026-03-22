@@ -8,10 +8,14 @@ import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.journey.repository.JourneyTemplateRepository;
+import com.marketinghub.experiment.funnel.ExperimentFunnelEvent;
+import com.marketinghub.experiment.funnel.ExperimentFunnelEventRepository;
+import com.marketinghub.experiment.funnel.ExperimentFunnelStage;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.ads.InstagramAccountRepository;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -52,6 +56,8 @@ class ExperimentServiceTest {
     InstagramAccountRepository instagramAccountRepository;
     @Autowired
     com.marketinghub.leadportal.repository.LeadPortalFlowRepository leadPortalFlowRepository;
+    @Autowired
+    ExperimentFunnelEventRepository experimentFunnelEventRepository;
 
     private InstagramAccount createInstagramAccount() {
         return instagramAccountRepository.save(
@@ -307,6 +313,7 @@ class ExperimentServiceTest {
         var expApproved = service.create(req1);
         expApproved.setCreativeApproved(true);
         experimentRepository.save(expApproved);
+        service.releaseForFacebook(expApproved.getId());
 
         targetingElementRepository.save(com.marketinghub.targeting.TargetingElement.builder()
                 .niche(niche)
@@ -353,6 +360,95 @@ class ExperimentServiceTest {
 
         var result = service.listReadyForCampaign();
         assertThat(result).extracting(Experiment::getId).containsExactly(expApproved.getId());
+    }
+
+    @Test
+    void updateStatusClearsReleaseTimestampWhenLeavingPlanned() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Status").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("AS").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("HS")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("ExpStatus");
+        req.setHypothesis("H");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_150");
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+        req.setInstagramAccountId(createInstagramAccount().getId());
+        Experiment experiment = service.create(req);
+
+        Experiment released = service.releaseForFacebook(experiment.getId());
+        assertThat(released.getFacebookReleaseRequestedAt()).isNotNull();
+
+        Experiment paused = service.updateStatus(experiment.getId(), ExperimentStatus.PAUSED);
+        assertThat(paused.getFacebookReleaseRequestedAt()).isNull();
+    }
+
+    @Test
+    void releaseForFacebookResetsFunnelAndTimestamp() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Release").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("AR").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("HR")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("ExpRelease");
+        req.setHypothesis("H");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_150");
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+        req.setInstagramAccountId(createInstagramAccount().getId());
+        Experiment experiment = service.create(req);
+        experiment.setCreativeApproved(true);
+        experimentRepository.save(experiment);
+
+        experimentFunnelEventRepository.save(ExperimentFunnelEvent.builder()
+                .experiment(experiment)
+                .stage(ExperimentFunnelStage.ENVIO_FORM)
+                .source("manual")
+                .occurredAt(Instant.now().minusSeconds(60))
+                .build());
+
+        Experiment released = service.releaseForFacebook(experiment.getId());
+
+        assertThat(released.getStatus()).isEqualTo(ExperimentStatus.PLANNED);
+        assertThat(released.getFacebookReleaseRequestedAt()).isNotNull();
+        assertThat(experimentFunnelEventRepository.count()).isZero();
     }
 
     @Test

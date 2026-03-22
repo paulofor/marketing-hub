@@ -14,6 +14,7 @@ cinza do diagnóstico.
    - Pelo menos um criativo aprovado ou em produção no contexto do experimento.
    - Fonte de dados: tabela `creative` + flag `experiment.creative_approved`.
    - Ação recomendada: gerar/aprovar na aba _Criativos_.
+   - Quando houver múltiplos criativos com status **READY**, o worker publica todos no mesmo conjunto de anúncios para preservar as variações aprovadas.
 2. **Fluxo do Portal do Lead**
    - O experimento precisa ter um fluxo associado (`lead_portal_flow`).
    - Fonte de dados: `lead_portal_flow` vinculado ao experimento.

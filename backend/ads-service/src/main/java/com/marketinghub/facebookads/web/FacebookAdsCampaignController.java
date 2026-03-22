@@ -37,10 +37,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -164,19 +166,30 @@ public class FacebookAdsCampaignController {
             savedAdSet = adSetRepository.save(mapAdSet(req.adSet(), savedCampaign, experimentAdSet));
         }
 
-        FacebookAdsAdCreative savedCreative = null;
-        if (req.adCreative() != null) {
-            savedCreative = adCreativeRepository.save(mapAdCreative(req.adCreative()));
+        List<CreateCampaignRequest.AdCreative> creativeRequests = resolveAdCreativeRequests(req);
+        Map<String, FacebookAdsAdCreative> savedCreatives = new LinkedHashMap<>();
+        for (CreateCampaignRequest.AdCreative creativeRequest : creativeRequests) {
+            FacebookAdsAdCreative savedCreative = adCreativeRepository.save(mapAdCreative(creativeRequest));
+            savedCreatives.put(savedCreative.getId(), savedCreative);
         }
 
-        if (req.ad() != null) {
-            if (savedAdSet == null || savedCreative == null) {
+        List<CreateCampaignRequest.Ad> adRequests = resolveAdRequests(req);
+        if (!adRequests.isEmpty()) {
+            if (savedAdSet == null || savedCreatives.isEmpty()) {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
-                        "Ad set and ad creative must be provided when reporting an ad"
+                        "Ad set and ad creatives must be provided when reporting ads"
                 );
             }
-            adRepository.save(mapAd(req.ad(), savedAdSet, savedCreative));
+            for (CreateCampaignRequest.Ad adRequest : adRequests) {
+                FacebookAdsAdCreative creative = savedCreatives.get(adRequest.creativeId());
+                if (creative == null) {
+                    throw new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST,
+                            "Ad references unknown creative: " + adRequest.creativeId());
+                }
+                adRepository.save(mapAd(adRequest, savedAdSet, creative));
+            }
         }
     }
 
@@ -266,6 +279,32 @@ public class FacebookAdsCampaignController {
         ad.setAdSet(adSet);
         ad.setCreative(creative);
         return ad;
+    }
+
+    private List<CreateCampaignRequest.AdCreative> resolveAdCreativeRequests(CreateCampaignRequest req) {
+        List<CreateCampaignRequest.AdCreative> creatives = new ArrayList<>();
+        if (req.adCreative() != null) {
+            creatives.add(req.adCreative());
+        }
+        if (req.adCreatives() != null) {
+            req.adCreatives().stream()
+                    .filter(Objects::nonNull)
+                    .forEach(creatives::add);
+        }
+        return creatives;
+    }
+
+    private List<CreateCampaignRequest.Ad> resolveAdRequests(CreateCampaignRequest req) {
+        List<CreateCampaignRequest.Ad> ads = new ArrayList<>();
+        if (req.ad() != null) {
+            ads.add(req.ad());
+        }
+        if (req.ads() != null) {
+            req.ads().stream()
+                    .filter(Objects::nonNull)
+                    .forEach(ads::add);
+        }
+        return ads;
     }
 
     private String resolveBidStrategy(String bidStrategy) {
@@ -572,7 +611,9 @@ public class FacebookAdsCampaignController {
             Long facebookAccountId,
             AdSet adSet,
             AdCreative adCreative,
-            Ad ad) {
+            Ad ad,
+            List<AdCreative> adCreatives,
+            List<Ad> ads) {
 
         public record AdSet(
                 String id,

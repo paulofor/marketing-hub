@@ -48,6 +48,7 @@ export interface Experiment {
   facebookPixelId?: string | null;
   facebookPixelCode?: string | null;
   facebookPixelCreatedAt?: string | null;
+  facebookReleaseRequestedAt?: string | null;
   followUpActionUrl?: string | null;
   leadPortalFlowModel?: string | null;
   creativeTextPrompt?: string | null;

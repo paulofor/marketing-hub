@@ -29,6 +29,7 @@ public class ExperimentDto {
     private String facebookPixelId;
     private String facebookPixelCode;
     private Instant facebookPixelCreatedAt;
+    private Instant facebookReleaseRequestedAt;
     @JsonProperty("kpiTarget")
     private BigDecimal kpiTargetCpl;
     private BigDecimal stopLossCpl;

@@ -45,6 +45,7 @@ erDiagram
       VARCHAR status
       DATE start_date
       DATE end_date
+      DATETIME facebook_release_requested_at
     }
 
     TARGET_AUDIENCE {
@@ -276,6 +277,13 @@ erDiagram
 - `flow_access` guarda cada visita ao fluxo (data/hora, IP, visitor_id quando disponível) e permite contar quantas pessoas visualizaram o formulário do portal.
 - `lead_portal_submission` e `flow_submissions` concentram os envios efetivos; a aplicação consolida contatos únicos por experimento para saber quantos completaram o preenchimento.
 - Esses agregados são expostos via `LeadPortalMetricsService` e abastecem telas operacionais (por exemplo, `/facebook-campaigns`) com as métricas "Form visto" e "Form enviado".
+
+### Controle de liberação para o Facebook Ads Worker
+
+- O campo `experiment.facebook_release_requested_at` registra quando o operador clicou em **Liberar para o Facebook Ads Worker**.
+- Somente experimentos com `status = PLANNED` **e** essa coluna preenchida entram na fila `/api/facebook-campaigns/experiments-ready`.
+- A data registrada também serve como baseline do funil: eventos automáticos e manuais anteriores a este instante deixam de ser contabilizados, garantindo que os testes feitos antes da liberação não contaminem os números oficiais.
+
 
 ## Observações de implementação
 

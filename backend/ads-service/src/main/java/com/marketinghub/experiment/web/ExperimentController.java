@@ -118,4 +118,9 @@ public class ExperimentController {
         return mapper.toDto(service.requestLeadPortalFlows(id, quantity));
     }
 
+    @PostMapping("/{id}/facebook-release")
+    public ExperimentDto releaseForFacebook(@PathVariable Long id) {
+        return mapper.toDto(service.releaseForFacebook(id));
+    }
+
 }

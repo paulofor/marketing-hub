@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.funnel;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -23,10 +24,16 @@ public interface ExperimentFunnelEventRepository extends JpaRepository<Experimen
             from ExperimentFunnelEvent e
             where e.experiment.id = :experimentId
               and (e.source is null or e.source <> :excludedSource)
+              and (:baseline is null or e.occurredAt >= :baseline)
             group by e.stage
             """)
     List<StageAggregation> aggregateByExperiment(@Param("experimentId") Long experimentId,
-                                                 @Param("excludedSource") String excludedSource);
+                                                 @Param("excludedSource") String excludedSource,
+                                                 @Param("baseline") Instant baseline);
+
+    @Modifying
+    @Query("delete from ExperimentFunnelEvent e where e.experiment.id = :experimentId")
+    void deleteByExperimentId(@Param("experimentId") Long experimentId);
 
     interface StageAggregation {
         ExperimentFunnelStage getStage();

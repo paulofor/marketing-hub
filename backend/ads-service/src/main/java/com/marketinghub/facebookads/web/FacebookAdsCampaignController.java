@@ -95,6 +95,7 @@ public class FacebookAdsCampaignController {
                 .listByStatusAndPlatform(com.marketinghub.experiment.ExperimentStatus.PLANNED,
                         com.marketinghub.experiment.ExperimentPlatform.FACEBOOK)
                 .stream()
+                .filter(experiment -> experiment.getFacebookReleaseRequestedAt() != null)
                 .filter(experimentReadinessService::isReadyForCampaign)
                 .map(experiment -> toSummary(experiment, leadPortalMetrics.get(experiment.getId())))
                 .toList();

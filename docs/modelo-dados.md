@@ -246,6 +246,7 @@ experiment|facebook_instant_form_id|bigint(20)|YES|NULL|MUL|
 experiment|facebook_pixel_id|varchar(64)|YES|NULL||
 experiment|facebook_pixel_code|longtext|YES|NULL||
 experiment|facebook_pixel_created_at|timestamp|YES|NULL||
+experiment|facebook_release_requested_at|datetime|YES|NULL||
 experiment|instagram_account_id|bigint(20)|YES|NULL|MUL|
 experiment|follow_up_action_url|varchar(512)|YES|NULL||
 experiment|lead_portal_flow_id|bigint(20)|YES|NULL|MUL|
@@ -1220,6 +1221,7 @@ visual_proof|proof_type|varchar(255)|YES|NULL||
   - `facebook_pixel_id`: Chave de referência para o registro relacionado de **facebook_pixel**. (tipo `varchar(64)`; opcional).
   - `facebook_pixel_code`: Campo usado para armazenar informações de **facebook pixel code**. (tipo `longtext`; opcional).
   - `facebook_pixel_created_at`: Campo usado para armazenar informações de **facebook pixel created at**. (tipo `timestamp`; opcional).
+  - `facebook_release_requested_at`: Instante em que o operador liberou o experimento para o Facebook Ads Worker. (tipo `datetime`; opcional).
   - `instagram_account_id`: Chave de referência para o registro relacionado de **instagram_account**. (tipo `bigint(20)`; opcional; chave `MUL`).
   - `follow_up_action_url`: Campo usado para armazenar informações de **follow up ação url**. (tipo `varchar(512)`; opcional).
   - `lead_portal_flow_id`: Chave de referência para o registro relacionado de **lead_portal_flow**. (tipo `bigint(20)`; opcional; chave `MUL`).

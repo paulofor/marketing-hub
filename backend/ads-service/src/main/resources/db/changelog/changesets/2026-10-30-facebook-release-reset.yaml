@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-10-30-facebook-release-reset
+      author: assistant
+      preConditions:
+        onFail: MARK_RAN
+        dbms:
+          type: mysql
+        not:
+          columnExists:
+            tableName: experiment
+            columnName: facebook_release_requested_at
+      changes:
+        - addColumn:
+            tableName: experiment
+            columns:
+              - column:
+                  name: facebook_release_requested_at
+                  type: DATETIME
+                  remarks: "Momento em que o operador liberou o experimento para o Facebook Ads Worker"

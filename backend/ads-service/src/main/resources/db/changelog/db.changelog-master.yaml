@@ -64,6 +64,10 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
   - include:
+      file: changesets/2026-10-30-facebook-release-reset.yaml
+      relativeToChangelogFile: true
+
+  - include:
       file: V2025_08_06__create_chat_tables.sql
       relativeToChangelogFile: true
   - include:

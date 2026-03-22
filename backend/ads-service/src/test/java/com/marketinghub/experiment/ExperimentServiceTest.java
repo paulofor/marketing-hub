@@ -363,7 +363,7 @@ class ExperimentServiceTest {
     }
 
     @Test
-    void updateStatusClearsReleaseTimestampWhenLeavingPlanned() {
+    void updateStatusPreservesReleaseTimestampForBaseline() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Status").build());
         var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("AS").build());
         var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
@@ -397,9 +397,12 @@ class ExperimentServiceTest {
 
         Experiment released = service.releaseForFacebook(experiment.getId());
         assertThat(released.getFacebookReleaseRequestedAt()).isNotNull();
+        var releaseTimestamp = released.getFacebookReleaseRequestedAt();
 
         Experiment paused = service.updateStatus(experiment.getId(), ExperimentStatus.PAUSED);
-        assertThat(paused.getFacebookReleaseRequestedAt()).isNull();
+        assertThat(paused.getFacebookReleaseRequestedAt()).isNotNull();
+        assertThat(paused.getFacebookReleaseRequestedAt().toEpochMilli())
+                .isEqualTo(releaseTimestamp.toEpochMilli());
     }
 
     @Test

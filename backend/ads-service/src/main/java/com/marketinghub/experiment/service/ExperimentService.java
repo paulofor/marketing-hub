@@ -423,9 +423,6 @@ public class ExperimentService {
             }
         }
         exp.setStatus(status);
-        if (status != ExperimentStatus.PLANNED) {
-            exp.setFacebookReleaseRequestedAt(null);
-        }
         return exp;
     }
 

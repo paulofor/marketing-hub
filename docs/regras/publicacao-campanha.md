@@ -74,3 +74,9 @@ pago. Os números consolidados vêm das tabelas operacionais (impressões e cliq
 em `experiment_campaign_metric`, engajamentos do Lead Portal e eventos de
 checkout/pagamento). Consultar essa aba ajuda a validar se o experimento está
 entregando tráfego antes de disparar a publicação ou ajustes adicionais.
+
+Além disso, o cartão do funil destaca o **total gasto na campanha** sincronizado
+via Marketing API do Meta Ads e calcula automaticamente o **custo por conversão
+por etapa** dividindo esse valor total pela quantidade de eventos consolidados
+em cada linha. Isso facilita identificar gargalos (etapas caras) sem sair da
+própria tela do experimento.

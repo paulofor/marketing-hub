@@ -1,6 +1,9 @@
 import { useState, type FormEvent } from "react";
+import axios from "axios";
+import { toast } from "react-toastify";
 import { useExperimentFunnel, type ExperimentFunnelStageSummary } from "../../api/experiment/useExperimentFunnel";
 import { useRegisterExperimentFunnelEvent } from "../../api/experiment/useRegisterExperimentFunnelEvent";
+import { useResetExperimentFunnel } from "../../api/experiment/useResetExperimentFunnel";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -135,10 +138,12 @@ export default function ExperimentFunnelTab({
   ];
   const selectableStages = stages.length > 0 ? stages : fallbackStages;
   const registerEvent = useRegisterExperimentFunnelEvent(experimentId);
+  const resetFunnel = useResetExperimentFunnel(experimentId);
   const [form, setForm] = useState({
     stage: "VISUALIZACAO_ANUNCIO",
     leadId: "",
     source: "",
+    campaignCode: "",
     payload: "",
   });
 
@@ -148,8 +153,28 @@ export default function ExperimentFunnelTab({
       stage: form.stage as any,
       leadId: form.leadId ? form.leadId.trim() : undefined,
       source: form.source ? form.source.trim() : undefined,
+      campaignCode: form.campaignCode ? form.campaignCode.trim() : undefined,
       payload: form.payload ? form.payload.trim() : undefined,
     });
+  };
+
+  const handleReset = async () => {
+    if (resetFunnel.isPending) {
+      return;
+    }
+    if (!window.confirm("Deseja zerar as contagens do funil a partir de agora?")) {
+      return;
+    }
+    try {
+      await resetFunnel.mutateAsync();
+      toast.success("Funil reiniciado. Novos eventos passarão a ser contabilizados a partir deste momento.");
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? error.response?.data?.message ?? error.response?.data?.detail ??
+          "Não foi possível zerar o funil."
+        : "Não foi possível zerar o funil.";
+      toast.error(message);
+    }
   };
 
   return (
@@ -164,6 +189,18 @@ export default function ExperimentFunnelTab({
               leads no experimento.
             </p>
           </div>
+          <button
+            type="button"
+            className="btn btn-outline-danger btn-sm"
+            onClick={handleReset}
+            disabled={resetFunnel.isPending}
+          >
+            {resetFunnel.isPending ? (
+              <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+            ) : (
+              "Zerar contagens"
+            )}
+          </button>
         </div>
 
         <div className="rounded-3 border p-3 bg-light mb-4">
@@ -281,6 +318,22 @@ export default function ExperimentFunnelTab({
               value={form.source}
               onChange={(e) => setForm({ ...form, source: e.target.value })}
             />
+          </div>
+          <div className="col-12 col-lg-3">
+            <label className="form-label" htmlFor="funnel_campaign_code">
+              Código do anúncio (campaign)
+            </label>
+            <input
+              id="funnel_campaign_code"
+              type="text"
+              className="form-control"
+              placeholder="ex.: 123456789012345"
+              value={form.campaignCode}
+              onChange={(e) => setForm({ ...form, campaignCode: e.target.value })}
+            />
+            <div className="form-text">
+              Use o mesmo valor configurado nos parâmetros da URL/UTM do anúncio.
+            </div>
           </div>
           <div className="col-12 col-lg-3 d-flex align-items-end">
             <button

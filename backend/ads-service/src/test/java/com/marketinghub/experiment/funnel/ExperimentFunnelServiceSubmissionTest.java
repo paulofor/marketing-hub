@@ -45,7 +45,7 @@ class ExperimentFunnelServiceSubmissionTest {
 
         Instant submittedAt = Instant.parse("2024-05-01T12:34:56Z");
         RegisterLeadPortalSubmissionRequest request =
-                new RegisterLeadPortalSubmissionRequest("submission-123", submittedAt);
+                new RegisterLeadPortalSubmissionRequest("submission-123", submittedAt, "ad-xyz");
 
         service.registerFormSubmission("flow-slug", request);
 
@@ -58,11 +58,12 @@ class ExperimentFunnelServiceSubmissionTest {
         assertEquals(ExperimentFunnelEventRepository.SUBMISSION_SOURCE, saved.getSource());
         assertEquals("submissionId=submission-123", saved.getPayload());
         assertEquals(submittedAt, saved.getOccurredAt());
+        assertEquals("ad-xyz", saved.getCampaignCode());
     }
 
     @Test
     void registerFormSubmissionRequiresSubmissionId() {
-        RegisterLeadPortalSubmissionRequest request = new RegisterLeadPortalSubmissionRequest("   ", null);
+        RegisterLeadPortalSubmissionRequest request = new RegisterLeadPortalSubmissionRequest("   ", null, null);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> service.registerFormSubmission("flow-slug", request));

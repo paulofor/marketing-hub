@@ -233,7 +233,7 @@ public class FlowSubmissionService {
         }
         try {
             ExperimentFunnelTrackingClient.TrackingResult result = trackingClient.registerSubmission(
-                    flow.slug(), submission.id(), submission.createdAt());
+                    flow.slug(), submission.id(), submission.createdAt(), submission.campaignCode());
             if (result == ExperimentFunnelTrackingClient.TrackingResult.FAILED) {
                 log.warn("Falha ao reenviar submission {} do fluxo {} para o Marketing Hub",
                         submission.id(), flow.slug());

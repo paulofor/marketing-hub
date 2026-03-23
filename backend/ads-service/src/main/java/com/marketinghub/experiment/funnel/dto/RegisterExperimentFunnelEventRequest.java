@@ -12,6 +12,7 @@ public record RegisterExperimentFunnelEventRequest(
         ExperimentFunnelStage stage,
         UUID leadId,
         String source,
+        String campaignCode,
         String payload,
         Instant occurredAt
 ) {

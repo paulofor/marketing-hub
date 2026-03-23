@@ -80,3 +80,10 @@ via Marketing API do Meta Ads e calcula automaticamente o **custo por conversão
 por etapa** dividindo esse valor total pela quantidade de eventos consolidados
 em cada linha. Isso facilita identificar gargalos (etapas caras) sem sair da
 própria tela do experimento.
+
+
+### Novos controles do funil
+
+- Um botão **Zerar contagens** foi adicionado à aba Funil de vendas. Ele atualiza o campo `experiment.funnel_reset_at` e faz com que apenas eventos coletados após o reset sejam exibidos. Use-o quando o teste de anúncios ou tráfego interno poluir o funil sem precisar liberar novamente o worker.
+- Cada anúncio listado no cartão **Execução registrada** agora mostra a referência de rastreio (valor usado nos parâmetros `campaign`/`utm_campaign`) e uma tabela com as conversões atribuídas às etapas 3 a 9 do funil. Isso facilita entender rapidamente qual anúncio sustentou as próximas conversões sem sair da ficha do experimento.
+

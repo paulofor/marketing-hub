@@ -43,7 +43,7 @@ class ExperimentFunnelServiceRenderCompleteTest {
         when(experimentRepository.findFirstByLeadPortalFlowSlug("flow-slug"))
                 .thenReturn(Optional.of(experiment));
 
-        service.registerFormRenderCompleted("flow-slug", "visitor-123");
+        service.registerFormRenderCompleted("flow-slug", "visitor-123", "ad-123");
 
         ArgumentCaptor<ExperimentFunnelEvent> eventCaptor = ArgumentCaptor.forClass(ExperimentFunnelEvent.class);
         verify(eventRepository).save(eventCaptor.capture());
@@ -53,6 +53,7 @@ class ExperimentFunnelServiceRenderCompleteTest {
         assertEquals(ExperimentFunnelStage.VISUALIZACAO_FORM, saved.getStage());
         assertEquals(ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE, saved.getSource());
         assertEquals("visitorId=visitor-123", saved.getPayload());
+        assertEquals("ad-123", saved.getCampaignCode());
     }
 
     @Test
@@ -61,7 +62,7 @@ class ExperimentFunnelServiceRenderCompleteTest {
         when(experimentRepository.findFirstByLeadPortalFlowSlug("flow-slug"))
                 .thenReturn(Optional.of(experiment));
 
-        service.registerFormRenderCompleted("flow-slug", "   ");
+        service.registerFormRenderCompleted("flow-slug", "   ", "   ");
 
         ArgumentCaptor<ExperimentFunnelEvent> eventCaptor = ArgumentCaptor.forClass(ExperimentFunnelEvent.class);
         verify(eventRepository).save(eventCaptor.capture());
@@ -71,7 +72,7 @@ class ExperimentFunnelServiceRenderCompleteTest {
     @Test
     void registerFormRenderCompletedFailsWhenSlugIsMissing() {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> service.registerFormRenderCompleted("   ", "visitor-123"));
+                () -> service.registerFormRenderCompleted("   ", "visitor-123", null));
 
         assertEquals("Slug do fluxo é obrigatório", ex.getMessage());
     }

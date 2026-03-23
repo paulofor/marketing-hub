@@ -6,6 +6,7 @@ export interface RegisterExperimentFunnelEventPayload {
   stage: ExperimentFunnelStage;
   leadId?: string;
   source?: string;
+  campaignCode?: string;
   payload?: string;
   occurredAt?: string;
 }

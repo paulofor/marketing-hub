@@ -25,20 +25,20 @@ class FlowEngagementControllerTest {
 
     @Test
     void registerRenderCompleteAcceptsPayload() throws Exception {
-        when(trackingClient.registerRenderComplete("flow-slug", "visitor-123"))
+        when(trackingClient.registerRenderComplete("flow-slug", "visitor-123", "camp-1"))
                 .thenReturn(TrackingResult.FORWARDED);
 
         mockMvc.perform(post("/api/flows/flow-slug/render-complete")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"visitorId\":\"visitor-123\"}"))
+                        .content("{\"visitorId\":\"visitor-123\",\"campaignCode\":\"camp-1\"}"))
                 .andExpect(status().isAccepted());
 
-        verify(trackingClient).registerRenderComplete("flow-slug", "visitor-123");
+        verify(trackingClient).registerRenderComplete("flow-slug", "visitor-123", "camp-1");
     }
 
     @Test
     void registerRenderCompleteIgnoresMalformedPayload() throws Exception {
-        when(trackingClient.registerRenderComplete("flow-slug", null))
+        when(trackingClient.registerRenderComplete("flow-slug", null, null))
                 .thenReturn(TrackingResult.FORWARDED);
 
         mockMvc.perform(post("/api/flows/flow-slug/render-complete")
@@ -46,6 +46,6 @@ class FlowEngagementControllerTest {
                         .content("{\"visitorId\":\"visitor-123\""))
                 .andExpect(status().isAccepted());
 
-        verify(trackingClient).registerRenderComplete("flow-slug", null);
+        verify(trackingClient).registerRenderComplete("flow-slug", null, null);
     }
 }

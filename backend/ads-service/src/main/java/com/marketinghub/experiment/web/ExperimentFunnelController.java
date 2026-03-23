@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.web;
 
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
+import com.marketinghub.experiment.funnel.dto.ExperimentFunnelResetResponse;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
 import com.marketinghub.experiment.funnel.dto.RegisterExperimentFunnelEventRequest;
 import lombok.RequiredArgsConstructor;
@@ -27,5 +28,10 @@ public class ExperimentFunnelController {
     public void registerEvent(@PathVariable Long experimentId,
                               @RequestBody RegisterExperimentFunnelEventRequest request) {
         experimentFunnelService.registerEvent(experimentId, request);
+    }
+
+    @PostMapping("/reset")
+    public ExperimentFunnelResetResponse reset(@PathVariable Long experimentId) {
+        return new ExperimentFunnelResetResponse(experimentFunnelService.resetFunnel(experimentId));
     }
 }

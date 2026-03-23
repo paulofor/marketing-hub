@@ -47,10 +47,18 @@ describe("EditFunnelPage", () => {
     );
 
     const list = screen.getAllByRole("list")[0];
-    const items = await within(list).findAllByRole("button");
-    expect(within(items[0]).getByDisplayValue("DM")).toBeTruthy();
-    expect(within(items[0]).getByDisplayValue("OPEN")).toBeTruthy();
-    expect(within(items[1]).getByDisplayValue("EMAIL")).toBeTruthy();
-    expect(within(items[1]).getByDisplayValue("CLICK")).toBeTruthy();
+    const items = within(list).getAllByRole("listitem");
+    expect(
+      within(items[0]).getByLabelText(/Estímulo \*/i),
+    ).toHaveValue("DM");
+    expect(
+      within(items[0]).getByLabelText(/Ação esperada \*/i),
+    ).toHaveValue("OPEN");
+    expect(
+      within(items[1]).getByLabelText(/Estímulo \*/i),
+    ).toHaveValue("EMAIL");
+    expect(
+      within(items[1]).getByLabelText(/Ação esperada \*/i),
+    ).toHaveValue("CLICK");
   });
 });

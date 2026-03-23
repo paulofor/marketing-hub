@@ -894,11 +894,52 @@ export default function ExperimentDetailPage() {
                                 ))}
                               </ul>
                             ) : null}
-                            <div className="small text-muted mt-2">
-                              {adSet.ads.length
-                                ? `Anúncios: ${adSet.ads.map((ad) => ad.name).join(", ")}`
-                                : "Nenhum anúncio publicado neste conjunto."}
-                            </div>
+                            {adSet.ads.length ? (
+                              <div className="mt-3 d-flex flex-column gap-2">
+                                {adSet.ads.map((ad) => (
+                                  <div key={ad.id} className="border rounded-3 p-3 bg-white">
+                                    <div className="d-flex justify-content-between flex-wrap gap-2">
+                                      <div>
+                                        <div className="fw-semibold">{ad.name}</div>
+                                        <div className="text-muted small">ID: {ad.id}</div>
+                                        <div className="text-muted small">
+                                          Referência de rastreio: {ad.trackingCode ?? "—"}
+                                        </div>
+                                      </div>
+                                      <span className={`badge text-bg-${ad.status === "PAUSED" ? "secondary" : "success"}`}>{ad.status}</span>
+                                    </div>
+                                    {ad.funnelStages && ad.funnelStages.length ? (
+                                      <div className="table-responsive mt-3">
+                                        <table className="table table-sm align-middle mb-0">
+                                          <thead>
+                                            <tr>
+                                              <th>Etapa</th>
+                                              <th className="text-end">Conversões</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody>
+                                            {ad.funnelStages.map((stage) => (
+                                              <tr key={`${ad.id}-${stage.stage}`}>
+                                                <td>{stage.order}. {stage.label}</td>
+                                                <td className="text-end">{stage.totalCount}</td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    ) : (
+                                      <div className="text-muted small mt-2">
+                                        Nenhuma conversão atribuída a este anúncio ainda.
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="small text-muted mt-2">
+                                Nenhum anúncio publicado neste conjunto.
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>

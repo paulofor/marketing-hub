@@ -161,13 +161,20 @@ export async function submitFlowSubmission(
 
 export async function registerFlowRenderComplete(
   slug: string,
-  visitorId?: string | null
+  visitorId?: string | null,
+  campaignCode?: string | null
 ): Promise<void> {
   const normalizedSlug = slug?.trim();
   if (!normalizedSlug) {
     throw new Error("Slug do fluxo é obrigatório");
   }
-  const payload = visitorId && visitorId.trim().length > 0 ? { visitorId: visitorId.trim() } : {};
+  const payload: Record<string, string> = {};
+  if (visitorId && visitorId.trim().length > 0) {
+    payload.visitorId = visitorId.trim();
+  }
+  if (campaignCode && campaignCode.trim().length > 0) {
+    payload.campaignCode = campaignCode.trim();
+  }
   const response = await fetch(
     buildUrl(`/flows/${encodeURIComponent(normalizedSlug)}/render-complete`),
     {

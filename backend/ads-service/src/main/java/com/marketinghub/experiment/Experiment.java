@@ -62,6 +62,9 @@ public class Experiment {
     @Column(name = "facebook_release_requested_at")
     private Instant facebookReleaseRequestedAt;
 
+    @Column(name = "funnel_reset_at")
+    private Instant funnelResetAt;
+
     @Column(name = "follow_up_action_url", length = 512)
     private String followUpActionUrl;
 

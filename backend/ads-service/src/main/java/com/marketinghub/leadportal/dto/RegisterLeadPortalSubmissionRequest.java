@@ -8,4 +8,5 @@ import java.time.Instant;
  */
 public record RegisterLeadPortalSubmissionRequest(
         @NotBlank(message = "ID da submissão é obrigatório") String submissionId,
-        Instant submittedAt) {}
+        Instant submittedAt,
+        String campaignCode) {}

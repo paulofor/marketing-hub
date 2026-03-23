@@ -3,7 +3,6 @@ package com.marketinghub.leadportal.service;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -54,7 +53,7 @@ public class ExperimentFunnelTrackingClient {
                 .build();
     }
 
-    public TrackingResult registerRenderComplete(String slug, String visitorId) {
+    public TrackingResult registerRenderComplete(String slug, String visitorId, String campaignCode) {
         if (!StringUtils.hasText(slug)) {
             throw new IllegalArgumentException("O slug do fluxo é obrigatório");
         }
@@ -64,11 +63,11 @@ public class ExperimentFunnelTrackingClient {
                 .buildAndExpand(slug.trim())
                 .toUri();
 
-        HttpEntity<Map<String, String>> entity = buildRenderPayload(visitorId);
+        HttpEntity<Map<String, String>> entity = buildRenderPayload(visitorId, campaignCode);
         return sendTrackingRequest(endpoint, entity, "render-complete", slug);
     }
 
-    public TrackingResult registerSubmission(String slug, UUID submissionId, Instant submittedAt) {
+    public TrackingResult registerSubmission(String slug, UUID submissionId, Instant submittedAt, String campaignCode) {
         if (!StringUtils.hasText(slug)) {
             throw new IllegalArgumentException("O slug do fluxo é obrigatório");
         }
@@ -81,7 +80,7 @@ public class ExperimentFunnelTrackingClient {
                 .buildAndExpand(slug.trim())
                 .toUri();
 
-        HttpEntity<Map<String, Object>> entity = buildSubmissionPayload(submissionId, submittedAt);
+        HttpEntity<Map<String, Object>> entity = buildSubmissionPayload(submissionId, submittedAt, campaignCode);
         return sendTrackingRequest(endpoint, entity, "submission", slug);
     }
 
@@ -109,21 +108,29 @@ public class ExperimentFunnelTrackingClient {
         }
     }
 
-    private HttpEntity<Map<String, String>> buildRenderPayload(String visitorId) {
+    private HttpEntity<Map<String, String>> buildRenderPayload(String visitorId, String campaignCode) {
         String sanitizedVisitor = visitorId != null ? visitorId.trim() : null;
-        Map<String, String> body = StringUtils.hasText(sanitizedVisitor)
-                ? Map.of("visitorId", sanitizedVisitor)
-                : Collections.emptyMap();
+        String sanitizedCampaign = campaignCode != null ? campaignCode.trim() : null;
+        Map<String, String> body = new HashMap<>();
+        if (StringUtils.hasText(sanitizedVisitor)) {
+            body.put("visitorId", sanitizedVisitor);
+        }
+        if (StringUtils.hasText(sanitizedCampaign)) {
+            body.put("campaignCode", sanitizedCampaign);
+        }
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         return new HttpEntity<>(body, headers);
     }
 
-    private HttpEntity<Map<String, Object>> buildSubmissionPayload(UUID submissionId, Instant submittedAt) {
+    private HttpEntity<Map<String, Object>> buildSubmissionPayload(UUID submissionId, Instant submittedAt, String campaignCode) {
         Map<String, Object> body = new HashMap<>();
         body.put("submissionId", submissionId.toString());
         if (submittedAt != null) {
             body.put("submittedAt", submittedAt.toString());
+        }
+        if (campaignCode != null && !campaignCode.trim().isEmpty()) {
+            body.put("campaignCode", campaignCode.trim());
         }
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

@@ -50,7 +50,7 @@ export default function FlowPage() {
     }
     let cancelled = false;
 
-    registerFlowRenderComplete(resolvedFlowSlug, getVisitorIdCookie())
+    registerFlowRenderComplete(resolvedFlowSlug, getVisitorIdCookie(), campaignCode)
       .then(() => {
         if (!cancelled) {
           setHasTrackedRenderComplete(true);
@@ -63,7 +63,7 @@ export default function FlowPage() {
     return () => {
       cancelled = true;
     };
-  }, [resolvedFlowSlug, isLoading, isError, hasTrackedRenderComplete]);
+  }, [resolvedFlowSlug, isLoading, isError, hasTrackedRenderComplete, campaignCode]);
 
   if (!slug) {
     return <p className="flow-message">Fluxo não informado.</p>;

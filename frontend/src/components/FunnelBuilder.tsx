@@ -294,6 +294,7 @@ export default function FunnelBuilder({ funnel }: FunnelProps) {
                       ref={provided.innerRef}
                       {...provided.droppableProps}
                       className="d-grid gap-3"
+                      role="list"
                     >
                       {steps.length === 0 && (
                         <div
@@ -313,6 +314,7 @@ export default function FunnelBuilder({ funnel }: FunnelProps) {
                               ref={prov.innerRef}
                               {...prov.draggableProps}
                               className="card border-0 shadow-sm funnel-step-card"
+                              role="listitem"
                             >
                               <div className="card-body p-4">
                                 <div className="d-flex align-items-start justify-content-between gap-3 mb-3">

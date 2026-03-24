@@ -35,7 +35,7 @@ public class ExperimentFunnelService {
     private final LeadRepository leadRepository;
     private final JdbcTemplate jdbcTemplate;
 
-    private static final String FLOW_SCOPE_CONDITION = """
+    static final String FLOW_SCOPE_CONDITION = """
             (
                 f.experiment_id = ?
                 OR EXISTS (
@@ -46,11 +46,12 @@ public class ExperimentFunnelService {
                 )
             )
             """;
+    private static final int MAX_CAMPAIGN_CODE_LENGTH = 190;
 
     public List<ExperimentFunnelStageDto> summarize(Long experimentId) {
         Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
         Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages = bootstrapStages();
-        Instant baseline = experiment.getFacebookReleaseRequestedAt();
+        Instant baseline = resolveBaseline(experiment);
 
         applyManualEvents(experiment.getId(), baseline, stages);
         applyAutomaticMetrics(experiment.getId(), baseline, stages);
@@ -74,6 +75,7 @@ public class ExperimentFunnelService {
                 .lead(lead)
                 .stage(request.stage())
                 .source(Optional.ofNullable(request.source()).orElse("manual"))
+                .campaignCode(normalizeCampaignCode(request.campaignCode()))
                 .payload(request.payload())
                 .occurredAt(Optional.ofNullable(request.occurredAt()).orElse(Instant.now()))
                 .build();
@@ -81,7 +83,16 @@ public class ExperimentFunnelService {
     }
 
     @Transactional
-    public void registerFormRenderCompleted(String flowSlug, String visitorId) {
+    public Instant resetFunnel(Long experimentId) {
+        Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
+        Instant now = Instant.now();
+        experiment.setFunnelResetAt(now);
+        experimentRepository.save(experiment);
+        return now;
+    }
+
+    @Transactional
+    public void registerFormRenderCompleted(String flowSlug, String visitorId, String campaignCode) {
         if (flowSlug == null || flowSlug.isBlank()) {
             throw new IllegalArgumentException("Slug do fluxo é obrigatório");
         }
@@ -97,6 +108,7 @@ public class ExperimentFunnelService {
                 .experiment(experiment)
                 .stage(ExperimentFunnelStage.VISUALIZACAO_FORM)
                 .source(ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE)
+                .campaignCode(normalizeCampaignCode(campaignCode))
                 .payload(payload)
                 .occurredAt(Instant.now())
                 .build();
@@ -122,6 +134,7 @@ public class ExperimentFunnelService {
                 .experiment(experiment)
                 .stage(ExperimentFunnelStage.ENVIO_FORM)
                 .source(ExperimentFunnelEventRepository.SUBMISSION_SOURCE)
+                .campaignCode(normalizeCampaignCode(request.campaignCode()))
                 .payload(payload)
                 .occurredAt(occurredAt)
                 .build();
@@ -316,6 +329,26 @@ public class ExperimentFunnelService {
             Instant last = ts != null ? ts.toInstant() : null;
             return new AggregatedMetric(total, unique, last);
         }, args);
+    }
+
+    private Instant resolveBaseline(Experiment experiment) {
+        if (experiment == null) {
+            return null;
+        }
+        return max(experiment.getFacebookReleaseRequestedAt(), experiment.getFunnelResetAt());
+    }
+
+    private String normalizeCampaignCode(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        return trimmed.length() > MAX_CAMPAIGN_CODE_LENGTH
+                ? trimmed.substring(0, MAX_CAMPAIGN_CODE_LENGTH)
+                : trimmed;
     }
 
     private void fillDefaultSourceWhenMissing(Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages) {

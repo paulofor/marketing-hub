@@ -1,7 +1,10 @@
 package com.marketinghub.facebookads.service;
 
 import com.marketinghub.experiment.repository.ExperimentCampaignMetricRepository;
+import com.marketinghub.experiment.funnel.ExperimentFunnelAttributionService;
+import com.marketinghub.experiment.funnel.ExperimentFunnelStage;
 import com.marketinghub.facebookads.FacebookAdsAd;
+import com.marketinghub.facebookads.dto.ExperimentFacebookAdFunnelStageDto;
 import com.marketinghub.facebookads.FacebookAdsAdCreativeRepository;
 import com.marketinghub.facebookads.FacebookAdsAdRepository;
 import com.marketinghub.facebookads.FacebookAdsAdSet;
@@ -15,8 +18,10 @@ import com.marketinghub.facebookads.dto.ExperimentFacebookCampaignResetSummary;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -32,17 +37,20 @@ public class ExperimentFacebookCampaignService {
     private final FacebookAdsAdRepository adRepository;
     private final FacebookAdsAdCreativeRepository adCreativeRepository;
     private final ExperimentCampaignMetricRepository campaignMetricRepository;
+    private final ExperimentFunnelAttributionService funnelAttributionService;
 
     public ExperimentFacebookCampaignService(FacebookAdsCampaignRepository campaignRepository,
                                              FacebookAdsAdSetRepository adSetRepository,
                                              FacebookAdsAdRepository adRepository,
                                              FacebookAdsAdCreativeRepository adCreativeRepository,
-                                             ExperimentCampaignMetricRepository campaignMetricRepository) {
+                                             ExperimentCampaignMetricRepository campaignMetricRepository,
+                                             ExperimentFunnelAttributionService funnelAttributionService) {
         this.campaignRepository = campaignRepository;
         this.adSetRepository = adSetRepository;
         this.adRepository = adRepository;
         this.adCreativeRepository = adCreativeRepository;
         this.campaignMetricRepository = campaignMetricRepository;
+        this.funnelAttributionService = funnelAttributionService;
     }
 
     public List<ExperimentFacebookCampaignDto> listByExperiment(Long experimentId) {
@@ -54,9 +62,10 @@ public class ExperimentFacebookCampaignService {
             return List.of();
         }
         hydrateAdSets(campaigns);
+        Map<String, EnumMap<ExperimentFunnelStage, Long>> attribution = funnelAttributionService.aggregateByCampaignCode(experimentId);
         return campaigns.stream()
             .sorted(Comparator.comparing(FacebookAdsCampaign::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())))
-            .map(this::toDto)
+            .map(campaign -> toDto(campaign, attribution))
             .collect(Collectors.toList());
     }
 
@@ -143,8 +152,9 @@ public class ExperimentFacebookCampaignService {
         return new PendingArtifacts(pendingCampaigns, adSets, ads, creativeIds);
     }
 
-    private ExperimentFacebookCampaignDto toDto(FacebookAdsCampaign campaign) {
-        List<ExperimentFacebookAdSetDto> adSets = mapAdSets(campaign.getAdSets());
+    private ExperimentFacebookCampaignDto toDto(FacebookAdsCampaign campaign,
+                                                      Map<String, EnumMap<ExperimentFunnelStage, Long>> attribution) {
+        List<ExperimentFacebookAdSetDto> adSets = mapAdSets(campaign.getAdSets(), attribution);
         List<String> issues = new ArrayList<>();
         if (adSets.isEmpty()) {
             issues.add("Esta campanha foi criada, mas nenhum conjunto de anúncios foi registrado.");
@@ -163,22 +173,24 @@ public class ExperimentFacebookCampaignService {
         );
     }
 
-    private List<ExperimentFacebookAdSetDto> mapAdSets(List<FacebookAdsAdSet> adSets) {
+    private List<ExperimentFacebookAdSetDto> mapAdSets(List<FacebookAdsAdSet> adSets,
+                                                            Map<String, EnumMap<ExperimentFunnelStage, Long>> attribution) {
         if (CollectionUtils.isEmpty(adSets)) {
             return List.of();
         }
         return adSets.stream()
             .sorted(Comparator.comparing(FacebookAdsAdSet::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())))
-            .map(this::toAdSetDto)
+            .map(adSet -> toAdSetDto(adSet, attribution))
             .collect(Collectors.toList());
     }
 
-    private ExperimentFacebookAdSetDto toAdSetDto(FacebookAdsAdSet adSet) {
+    private ExperimentFacebookAdSetDto toAdSetDto(FacebookAdsAdSet adSet,
+                                                       Map<String, EnumMap<ExperimentFunnelStage, Long>> attribution) {
         List<String> issues = new ArrayList<>();
         if (adSet.getExperimentAdSet() == null) {
             issues.add("Conjunto não está vinculado à segmentação aprovada do experimento.");
         }
-        List<ExperimentFacebookAdDto> ads = mapAds(adSet.getAds());
+        List<ExperimentFacebookAdDto> ads = mapAds(adSet.getAds(), attribution);
         if (ads.isEmpty()) {
             issues.add("Nenhum anúncio foi publicado neste conjunto de anúncios.");
         }
@@ -194,23 +206,70 @@ public class ExperimentFacebookCampaignService {
         );
     }
 
-    private List<ExperimentFacebookAdDto> mapAds(List<FacebookAdsAd> ads) {
+    private List<ExperimentFacebookAdDto> mapAds(List<FacebookAdsAd> ads,
+                                                      Map<String, EnumMap<ExperimentFunnelStage, Long>> attribution) {
         if (CollectionUtils.isEmpty(ads)) {
             return List.of();
         }
         return ads.stream()
             .sorted(Comparator.comparing(FacebookAdsAd::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())))
-            .map(this::toAdDto)
+            .map(ad -> toAdDto(ad, attribution))
             .collect(Collectors.toList());
     }
 
-    private ExperimentFacebookAdDto toAdDto(FacebookAdsAd ad) {
+    private ExperimentFacebookAdDto toAdDto(FacebookAdsAd ad,
+                                               Map<String, EnumMap<ExperimentFunnelStage, Long>> attribution) {
+        String trackingCode = resolveTrackingCode(ad);
+        String normalizedCode = normalizeTrackingCode(trackingCode);
+        List<ExperimentFacebookAdFunnelStageDto> funnelStages = buildFunnelStages(normalizedCode, attribution);
         return new ExperimentFacebookAdDto(
             ad.getId(),
             ad.getName(),
             ad.getStatus(),
-            ad.getCreatedAt()
+            ad.getCreatedAt(),
+            trackingCode,
+            funnelStages
         );
+    }
+
+    private List<ExperimentFacebookAdFunnelStageDto> buildFunnelStages(String normalizedCode,
+                                                                         Map<String, EnumMap<ExperimentFunnelStage, Long>> attribution) {
+        if (normalizedCode == null || attribution == null) {
+            return List.of();
+        }
+        EnumMap<ExperimentFunnelStage, Long> totals = attribution.get(normalizedCode);
+        if (totals == null || totals.isEmpty()) {
+            return List.of();
+        }
+        return totals.entrySet().stream()
+                .sorted(Comparator.comparingInt(entry -> entry.getKey().getOrder()))
+                .map(entry -> new ExperimentFacebookAdFunnelStageDto(
+                        entry.getKey(),
+                        entry.getKey().getLabel(),
+                        entry.getKey().getOrder(),
+                        entry.getValue()))
+                .toList();
+    }
+
+    private String resolveTrackingCode(FacebookAdsAd ad) {
+        if (ad == null) {
+            return null;
+        }
+        if (ad.getExternalId() != null && !ad.getExternalId().trim().isEmpty()) {
+            return ad.getExternalId().trim();
+        }
+        return ad.getId();
+    }
+
+    private String normalizeTrackingCode(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        return trimmed.toLowerCase(Locale.ROOT);
     }
 
     private record PendingArtifacts(

@@ -281,6 +281,7 @@ erDiagram
 ### Controle de liberação para o Facebook Ads Worker
 
 - O campo `experiment.facebook_release_requested_at` registra quando o operador clicou em **Liberar para o Facebook Ads Worker**.
+- `experiment.funnel_reset_at` guarda o carimbo de data/hora do último reset manual realizado diretamente na aba Funil, garantindo que eventos anteriores fiquem ocultos nos resumos.
 - Somente experimentos com `status = PLANNED` **e** essa coluna preenchida entram na fila `/api/facebook-campaigns/experiments-ready`.
 - A data registrada também serve como baseline do funil: eventos automáticos e manuais anteriores a este instante deixam de ser contabilizados, garantindo que os testes feitos antes da liberação não contaminem os números oficiais.
 
@@ -318,7 +319,9 @@ logs ficam em `experiment_funnel_event`:
 
 A tabela `experiment_funnel_event` guarda eventos manuais/forçados com as
 colunas: `id`, `experiment_id` (FK), `lead_id` (FK opcional), `stage`, `source`,
-`payload` e `occurred_at`.
+`campaign_code`, `payload` e `occurred_at`.
+
+- O campo `campaign_code` recebe o valor enviado pelo Lead Portal via parâmetro `campaign`/`utm_campaign`, permitindo atribuir cada etapa às referências de anúncio exibidas na UI.
 
 Além dos eventos explícitos, o backend consolida fontes automáticas por etapa:
 

@@ -33,10 +33,13 @@ public class FlowEngagementController {
     public ResponseEntity<Void> registerRenderComplete(
             @PathVariable("slug") String slug,
             @RequestBody(required = false) String requestBody) {
-        String visitorId = extractVisitorId(requestBody);
-        log.info("Render-complete recebido. slug={}, visitorIdPresent={}", slug, visitorId != null && !visitorId.isBlank());
+        RegisterRenderCompleteRequest payload = parseRenderCompleteRequest(requestBody);
+        String visitorId = payload.visitorId();
+        String campaignCode = payload.campaignCode();
+        log.info("Render-complete recebido. slug={}, visitorIdPresent={}, campaignCodePresent={}",
+                slug, visitorId != null && !visitorId.isBlank(), campaignCode != null && !campaignCode.isBlank());
 
-        TrackingResult result = trackingClient.registerRenderComplete(slug, visitorId);
+        TrackingResult result = trackingClient.registerRenderComplete(slug, visitorId, campaignCode);
         return switch (result) {
             case FORWARDED -> ResponseEntity.accepted().build();
             case SKIPPED -> ResponseEntity.noContent().build();
@@ -44,17 +47,17 @@ public class FlowEngagementController {
         };
     }
 
-    private String extractVisitorId(String requestBody) {
+    private RegisterRenderCompleteRequest parseRenderCompleteRequest(String requestBody) {
         if (requestBody == null || requestBody.isBlank()) {
-            return null;
+            return new RegisterRenderCompleteRequest(null, null);
         }
 
         try {
             RegisterRenderCompleteRequest request = objectMapper.readValue(requestBody, RegisterRenderCompleteRequest.class);
-            return request.visitorId();
+            return request == null ? new RegisterRenderCompleteRequest(null, null) : request;
         } catch (JsonProcessingException ex) {
             log.warn("Payload inválido em render-complete. requestBody será ignorado.");
-            return null;
+            return new RegisterRenderCompleteRequest(null, null);
         }
     }
 }

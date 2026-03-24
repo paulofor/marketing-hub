@@ -1,12 +1,22 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
+import type { ReactElement } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import ExperimentFunnelTab from "./ExperimentFunnelTab";
 import { useExperimentFunnel } from "../../api/experiment/useExperimentFunnel";
 import { useRegisterExperimentFunnelEvent } from "../../api/experiment/useRegisterExperimentFunnelEvent";
+import { useResetExperimentFunnel } from "../../api/experiment/useResetExperimentFunnel";
 import "@testing-library/jest-dom/vitest";
 
 vi.mock("../../api/experiment/useExperimentFunnel");
 vi.mock("../../api/experiment/useRegisterExperimentFunnelEvent");
+vi.mock("../../api/experiment/useResetExperimentFunnel");
+
+const renderWithClient = (ui: ReactElement) => {
+  const client = new QueryClient();
+  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+};
+
 
 describe("ExperimentFunnelTab", () => {
   afterEach(() => cleanup());
@@ -46,10 +56,15 @@ describe("ExperimentFunnelTab", () => {
       isSuccess: false,
       isError: false,
     });
+    (useResetExperimentFunnel as unknown as Mock).mockReturnValue({
+      mutate: vi.fn(),
+      mutateAsync: vi.fn(),
+      isPending: false,
+    });
   });
 
   it("highlights the total spend", () => {
-    render(
+    renderWithClient(
       <ExperimentFunnelTab
         experimentId="42"
         totalSpend={123.45}
@@ -63,7 +78,7 @@ describe("ExperimentFunnelTab", () => {
   });
 
   it("shows the cost per conversion for each stage", () => {
-    render(
+    renderWithClient(
       <ExperimentFunnelTab experimentId="42" totalSpend={100} />,
     );
 

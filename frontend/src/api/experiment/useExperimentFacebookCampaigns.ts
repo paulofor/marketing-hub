@@ -1,11 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import type { ExperimentFunnelStage } from "./useExperimentFunnel";
+
+export interface ExperimentFacebookAdFunnelStageDto {
+  stage: ExperimentFunnelStage;
+  label: string;
+  order: number;
+  totalCount: number;
+}
 
 export interface ExperimentFacebookAdDto {
   id: string;
   name: string;
   status: string;
   createdAt?: string | null;
+  trackingCode?: string | null;
+  funnelStages: ExperimentFacebookAdFunnelStageDto[];
 }
 
 export interface ExperimentFacebookAdSetDto {

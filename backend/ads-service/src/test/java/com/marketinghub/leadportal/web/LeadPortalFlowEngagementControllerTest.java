@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -34,7 +35,7 @@ class LeadPortalFlowEngagementControllerTest {
                         .content("{\"visitorId\":\"visitor-123\"}"))
                 .andExpect(status().isOk());
 
-        verify(experimentFunnelService).registerFormRenderCompleted("flow-slug", "visitor-123");
+        verify(experimentFunnelService).registerFormRenderCompleted(eq("flow-slug"), eq("visitor-123"), isNull());
     }
 
     @Test
@@ -43,7 +44,7 @@ class LeadPortalFlowEngagementControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
-        verify(experimentFunnelService).registerFormRenderCompleted("flow-slug", null);
+        verify(experimentFunnelService).registerFormRenderCompleted(eq("flow-slug"), isNull(), isNull());
     }
 
     @Test

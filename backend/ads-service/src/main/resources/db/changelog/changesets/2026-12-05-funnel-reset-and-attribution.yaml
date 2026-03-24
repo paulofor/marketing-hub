@@ -1,0 +1,50 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-12-05-add-funnel-reset-at
+      author: assistant
+      preConditions:
+        onFail: MARK_RAN
+        dbms:
+          type: mysql
+        not:
+          columnExists:
+            tableName: experiment
+            columnName: funnel_reset_at
+      changes:
+        - addColumn:
+            tableName: experiment
+            columns:
+              - column:
+                  name: funnel_reset_at
+                  type: datetime(6)
+                  remarks: Marca o último reset manual do funil de vendas.
+
+  - changeSet:
+      id: 2026-12-05-add-campaign-code-to-funnel-events
+      author: assistant
+      preConditions:
+        onFail: MARK_RAN
+        dbms:
+          type: mysql
+        not:
+          columnExists:
+            tableName: experiment_funnel_event
+            columnName: campaign_code
+      changes:
+        - addColumn:
+            tableName: experiment_funnel_event
+            columns:
+              - column:
+                  name: campaign_code
+                  type: varchar(190)
+                  remarks: Código de rastreamento do anúncio/campanha usado para atribuição.
+        - createIndex:
+            tableName: experiment_funnel_event
+            indexName: idx_funnel_event_campaign_stage
+            columns:
+              - column:
+                  name: experiment_id
+              - column:
+                  name: campaign_code
+              - column:
+                  name: stage

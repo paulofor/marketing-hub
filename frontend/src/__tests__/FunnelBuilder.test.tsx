@@ -14,20 +14,20 @@ function setup(ui: React.ReactNode) {
 describe("FunnelBuilder", () => {
   it("renders labeled inputs", () => {
     setup(<FunnelBuilder />);
-    expect(screen.getByLabelText(/stimulus type/i)).toBeTruthy();
-    expect(screen.getByLabelText(/score increment/i)).toBeTruthy();
-    expect(screen.getByLabelText(/expected action/i)).toBeTruthy();
-    expect(screen.getByLabelText(/observation/i)).toBeTruthy();
+    expect(screen.getByLabelText(/estímulo/i)).toBeTruthy();
+    expect(screen.getByLabelText(/incremento de score/i)).toBeTruthy();
+    expect(screen.getByLabelText(/ação esperada/i)).toBeTruthy();
+    expect(screen.getByLabelText(/observações/i)).toBeTruthy();
   });
 
   it("adds step to list on submit", async () => {
     setup(<FunnelBuilder />);
     await userEvent.click(
-      screen.getAllByRole("button", { name: /add step/i })[0],
+      screen.getAllByRole("button", { name: /adicionar etapa/i })[0],
     );
     const list = screen.getAllByRole("list")[0];
-    const item = (await within(list).findAllByRole("button"))[0];
-    expect(within(item).getByDisplayValue("DM")).toBeTruthy();
-    expect(within(item).getByDisplayValue("OPEN")).toBeTruthy();
+    const item = within(list).getAllByRole("listitem")[0];
+    expect(within(item).getByLabelText(/Estímulo \*/i)).toHaveValue("DM");
+    expect(within(item).getByLabelText(/Ação esperada \*/i)).toHaveValue("OPEN");
   });
 });

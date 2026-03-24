@@ -36,6 +36,9 @@ public class ExperimentFunnelEvent {
     @Column(length = 50)
     private String source;
 
+    @Column(name = "campaign_code", length = 190)
+    private String campaignCode;
+
     @Lob
     @Column(columnDefinition = "LONGTEXT")
     private String payload;

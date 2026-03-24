@@ -3,12 +3,14 @@ package com.marketinghub.facebookads.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.experiment.AdSet;
+import com.marketinghub.experiment.funnel.ExperimentFunnelAttributionService;
 import com.marketinghub.experiment.repository.ExperimentCampaignMetricRepository;
 import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.facebookads.FacebookAdsAd;
@@ -25,10 +27,12 @@ import com.marketinghub.facebookads.dto.ExperimentFacebookCampaignResetSummary;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -43,17 +47,21 @@ class ExperimentFacebookCampaignServiceTest {
     private FacebookAdsAdCreativeRepository adCreativeRepository;
     @Mock
     private ExperimentCampaignMetricRepository campaignMetricRepository;
+    @Mock
+    private ExperimentFunnelAttributionService funnelAttributionService;
 
     private ExperimentFacebookCampaignService service;
 
     @BeforeEach
     void setUp() {
+        Mockito.lenient().when(funnelAttributionService.aggregateByCampaignCode(anyLong())).thenReturn(Map.of());
         service = new ExperimentFacebookCampaignService(
                 campaignRepository,
                 adSetRepository,
                 adRepository,
                 adCreativeRepository,
-                campaignMetricRepository);
+                campaignMetricRepository,
+                funnelAttributionService);
     }
 
     @Test

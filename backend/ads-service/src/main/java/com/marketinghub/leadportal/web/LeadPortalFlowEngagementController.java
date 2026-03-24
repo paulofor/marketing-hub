@@ -27,7 +27,8 @@ public class LeadPortalFlowEngagementController {
     public void registerRenderComplete(@PathVariable String slug,
                                        @RequestBody(required = false) RegisterLeadPortalRenderCompleteRequest request) {
         String visitorId = request == null ? null : request.visitorId();
-        experimentFunnelService.registerFormRenderCompleted(slug, visitorId);
+        String campaignCode = request == null ? null : request.campaignCode();
+        experimentFunnelService.registerFormRenderCompleted(slug, visitorId, campaignCode);
     }
 
     @PostMapping("/{slug}/submission")

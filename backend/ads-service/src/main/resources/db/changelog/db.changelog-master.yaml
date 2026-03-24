@@ -6,6 +6,9 @@ databaseChangeLog:
       file: changesets/2026-12-05-funnel-reset-and-attribution.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-12-20-experiment-report-request.yaml
+      relativeToChangelogFile: true
+  - include:
       file: V2030_09_01__sync_lead_portal_flow_image_settings.sql
       relativeToChangelogFile: true
   - include:

@@ -339,3 +339,29 @@ Além dos eventos explícitos, o backend consolida fontes automáticas por etapa
 O endpoint `/api/experiments/{id}/funnel` retorna o agregado por etapa
 (`autoCount`, `manualCount`, `totalCount`, `uniqueCount` e `lastEventAt`) usado
 na aba **Funil de vendas** da UI.
+
+## Relatórios objetivos de experimento
+
+### EXPERIMENT_REPORT_REQUEST
+
+Tabela responsável por registrar cada solicitação de relatório vinculada a um experimento.
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| id | BIGINT PK | Identificador da solicitação |
+| experiment_id | BIGINT FK | Referência para `EXPERIMENT` |
+| status | VARCHAR(32) | Fila de processamento (`PENDING`, `PROCESSING`, `READY`, `FAILED`) |
+| requested_at | DATETIME(6) | Momento em que a coleta foi disparada |
+| completed_at | DATETIME(6) | Momento em que a solicitação foi concluída (sucesso ou falha) |
+| requested_by | VARCHAR(191) | Identificação livre fornecida no front |
+| download_url | VARCHAR(512) | Link do relatório final disponibilizado por serviços externos |
+| payload_snapshot | LONGTEXT | JSON com o pacote consolidado de dados do experimento |
+| failure_reason | LONGTEXT | Descrição de erro quando `status = FAILED` |
+| created_at / updated_at | DATETIME(6) | Auditoria padrão |
+
+**Relacionamentos**
+
+- `EXPERIMENT (1) --- (N) EXPERIMENT_REPORT_REQUEST`: permite múltiplas solicitações históricas por experimento.
+- Índices compostos em `(experiment_id, requested_at)` e `(status, requested_at)` garantem listagens rápidas tanto no painel do usuário quanto para os workers que processam a fila.
+
+O `payload_snapshot` armazena o mesmo JSON exposto pelo endpoint `/api/experiments/{id}/report-material`, garantindo que serviços externos tenham acesso estável às informações utilizadas para montar o relatório objetivo.

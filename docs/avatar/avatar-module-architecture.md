@@ -1,12 +1,9 @@
 # Arquitetura Canônica do Módulo de Avatar
 
-**Documento:** `avatar-module-architecture.md`  
-**Versão:** `v1.0.0`  
-**Status:** Ativo (canônico)  
-**Derivado de:** `docs/avatar/deep-research-report (3).md`  
-**Última atualização:** 2026-03-24
-
----
+- **Versão:** v1.1.0
+- **Data de revisão:** 2026-03-24
+- **Autor:** Codex (GPT-5.3-Codex)
+- **Status:** approved
 
 ## 1) Objetivo (`v1.0.0`)
 

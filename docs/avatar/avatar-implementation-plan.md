@@ -1,5 +1,10 @@
 # Plano de Implementação — Avatar
 
+- **Versão:** v1.1.0
+- **Data de revisão:** 2026-03-24
+- **Autor:** Codex (GPT-5.3-Codex)
+- **Status:** approved
+
 ## 1) Objetivo
 
 Implementar a funcionalidade de **Avatar por tenant** com geração/ingestão de imagem, armazenamento no backend, orquestração via Worker IA e consumo no frontend com rollout progressivo e controle de custo.

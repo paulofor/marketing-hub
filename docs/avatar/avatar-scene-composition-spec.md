@@ -1,11 +1,9 @@
 # Avatar Scene Composition Spec
 
-**Documento:** `avatar-scene-composition-spec.md`  
-**Versão:** `v1.0.0`  
-**Status:** Ativo (canônico para composição de cena por `scene_mode`)  
-**Última atualização:** 2026-03-24
-
----
+- **Versão:** v1.1.0
+- **Data de revisão:** 2026-03-24
+- **Autor:** Codex (GPT-5.3-Codex)
+- **Status:** approved
 
 ## 1) Objetivo
 

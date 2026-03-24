@@ -46,7 +46,7 @@ export default function ExperimentReportPanel({
 
   const handleCreate = () => {
     if (!hasActiveRequest && !createRequest.isPending) {
-      createRequest.mutate();
+      createRequest.mutate(undefined);
     }
   };
 

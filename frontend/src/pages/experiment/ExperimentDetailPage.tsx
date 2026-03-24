@@ -33,6 +33,7 @@ import DeliverablesTab from "./DeliverablesTab";
 import LeadPortalFlowTab from "./LeadPortalFlowTab";
 import TargetingTab from "./TargetingTab";
 import ExperimentFunnelTab from "./ExperimentFunnelTab";
+import ExperimentReportPanel from "./ExperimentReportPanel";
 import { useExperimentAdSetWorkflow } from "../../api/experiment/useExperimentAdSetWorkflow";
 import { useExperimentFacebookRelease } from "../../api/experiment/useExperimentFacebookRelease";
 
@@ -1112,6 +1113,7 @@ export default function ExperimentDetailPage() {
                 </dl>
               </div>
             </div>
+            <ExperimentReportPanel experimentId={expId} />
             <div className="card">
               <div className="card-body">
                 <div className="d-flex justify-content-between align-items-start mb-2">

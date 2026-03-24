@@ -1,0 +1,19 @@
+server:
+  port: 8095
+
+video:
+  backend-base-url: http://backend:8000
+  jobs:
+    polling-enabled: false
+    poll-interval: PT30S
+    batch-size: 10
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true

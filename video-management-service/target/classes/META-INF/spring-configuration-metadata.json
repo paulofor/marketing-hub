@@ -1,0 +1,51 @@
+{
+  "groups": [
+    {
+      "name": "video",
+      "type": "com.marketinghub.videomanagement.config.VideoManagementProperties",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties"
+    },
+    {
+      "name": "video.jobs",
+      "type": "com.marketinghub.videomanagement.config.VideoManagementProperties$Jobs",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "video.auth-token",
+      "type": "java.lang.String",
+      "description": "Token opcional para autenticação mútua entre serviços.",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties"
+    },
+    {
+      "name": "video.backend-base-url",
+      "type": "java.lang.String",
+      "description": "Base URL do backend\/ads-service acessível a partir do container.",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties",
+      "defaultValue": "http:\/\/backend:8000"
+    },
+    {
+      "name": "video.jobs.batch-size",
+      "type": "java.lang.Integer",
+      "description": "Quantidade máxima de jobs buscados a cada ciclo.",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Jobs",
+      "defaultValue": 10
+    },
+    {
+      "name": "video.jobs.poll-interval",
+      "type": "java.time.Duration",
+      "description": "Intervalo entre execuções do poller.",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Jobs",
+      "defaultValue": "30s"
+    },
+    {
+      "name": "video.jobs.polling-enabled",
+      "type": "java.lang.Boolean",
+      "description": "Habilita ou desabilita o polling automático.",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Jobs",
+      "defaultValue": false
+    }
+  ],
+  "hints": []
+}

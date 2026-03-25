@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.util.EnumSet;
@@ -161,6 +162,10 @@ public class SalesVideoJobService {
         attachAsset(job::setAsset, request.getAssetId());
         attachAsset(job::setPosterAsset, request.getPosterAssetId());
         attachAsset(job::setVttAsset, request.getVttAssetId());
+        SalesVideoScript persistedScript = maybePersistScriptResult(job, request.getScriptResult());
+        if (persistedScript != null) {
+            job.setScript(persistedScript);
+        }
         jobRepository.save(job);
         maybeUpdateProfileStatus(job, finalStatus);
         registerEvent(job, SalesVideoJobEventType.COMPLETED, previous, finalStatus,
@@ -210,6 +215,38 @@ public class SalesVideoJobService {
                 job.getProviderName(),
                 request.getRequestedBy());
         return SalesVideoMapper.toDto(newJob);
+    }
+
+    private SalesVideoScript maybePersistScriptResult(SalesVideoJob job,
+                                                          GeneratedScriptResultPayload payload) {
+        if (job.getJobType() != SalesVideoJobType.SCRIPT || payload == null) {
+            return null;
+        }
+        if (!StringUtils.hasText(payload.getScriptText()) || job.getProfile() == null) {
+            return null;
+        }
+        int nextVersion = scriptRepository.findFirstByProfileIdOrderByVersionDesc(job.getProfile().getId())
+                .map(SalesVideoScript::getVersion)
+                .map(v -> v + 1)
+                .orElse(1);
+        SalesVideoScript script = SalesVideoScript.builder()
+                .profile(job.getProfile())
+                .version(nextVersion)
+                .scriptText(payload.getScriptText())
+                .hookText(payload.getHookText())
+                .ctaText(payload.getCtaText())
+                .captionText(payload.getCaptionText())
+                .storyboardJson(payload.getStoryboardJson())
+                .source(SalesVideoScriptSource.OPENAI)
+                .model(payload.getModel())
+                .prompt(payload.getPrompt())
+                .status(SalesVideoScriptStatus.READY_FOR_REVIEW)
+                .build();
+        SalesVideoScript saved = scriptRepository.save(script);
+        if (job.getProfile().getScripts() != null) {
+            job.getProfile().getScripts().add(saved);
+        }
+        return saved;
     }
 
     private void attachAsset(java.util.function.Consumer<Asset> setter, Long assetId) {

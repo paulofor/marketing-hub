@@ -46,6 +46,7 @@ public final class SalesVideoMapper {
         dto.setHookText(script.getHookText());
         dto.setCtaText(script.getCtaText());
         dto.setCaptionText(script.getCaptionText());
+        dto.setStoryboardJson(script.getStoryboardJson());
         dto.setSource(script.getSource());
         dto.setModel(script.getModel());
         dto.setPrompt(script.getPrompt());

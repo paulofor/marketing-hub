@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2037-01-10-sales-video-script-storyboard
+      author: assistant
+      preConditions:
+        onFail: MARK_RAN
+        dbms:
+          type: mysql
+        not:
+          columnExists:
+            tableName: sales_video_script
+            columnName: storyboard_json
+      changes:
+        - addColumn:
+            tableName: sales_video_script
+            columns:
+              - column:
+                  name: storyboard_json
+                  type: LONGTEXT
+                  remarks: JSON com o storyboard detalhado do script gerado pela IA.

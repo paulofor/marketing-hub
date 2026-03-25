@@ -16,4 +16,5 @@ public class JobCompletionRequest {
     private String metadataJson;
     private String message;
     private String detailsJson;
+    private GeneratedScriptResultPayload scriptResult;
 }

@@ -10,5 +10,6 @@ public enum MediaProvider {
     RUNWAY,
     OPENAI,
     WATERMARKER,
+    VIDEO_MODULE,
     USER_UPLOAD
 }

@@ -1,30 +1,45 @@
 package com.marketinghub.videomanagement.config;
 
-import lombok.Data;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
+import java.net.URI;
 import java.time.Duration;
 
-/**
- * Configurações externas do serviço de gerenciamento de vídeo.
- */
-@Data
+@Getter
+@Setter
+@Component("videoManagementProperties")
 @ConfigurationProperties(prefix = "video")
+@Validated
 public class VideoManagementProperties {
-    /** Base URL do backend/ads-service acessível a partir do container. */
-    private String backendBaseUrl = "http://backend:8000";
-    /** Token opcional para autenticação mútua entre serviços. */
+
+    @NotNull
+    private URI backendBaseUrl = URI.create("http://backend:8000");
+
     private String authToken;
 
+    /**
+     * Identificador usado para registrar claim e heartbeat junto ao backend.
+     */
+    private String workerId = "video-management-service";
+
+    @NotNull
     private Jobs jobs = new Jobs();
 
-    @Data
+    @Getter
+    @Setter
     public static class Jobs {
-        /** Habilita ou desabilita o polling automático. */
         private boolean pollingEnabled = false;
-        /** Intervalo entre execuções do poller. */
+
+        @NotNull
         private Duration pollInterval = Duration.ofSeconds(30);
-        /** Quantidade máxima de jobs buscados a cada ciclo. */
+
+        @Min(1)
         private int batchSize = 10;
     }
 }

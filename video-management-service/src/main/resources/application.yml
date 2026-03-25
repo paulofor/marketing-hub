@@ -3,6 +3,8 @@ server:
 
 video:
   backend-base-url: http://backend:8000
+  worker-id: vm-service-local
+  auth-token: ""
   jobs:
     polling-enabled: false
     poll-interval: PT30S

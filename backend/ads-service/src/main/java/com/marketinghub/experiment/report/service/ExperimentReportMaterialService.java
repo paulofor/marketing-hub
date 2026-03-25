@@ -19,6 +19,7 @@ import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.LeadPortalFlowQuestion;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
+import com.marketinghub.leadportal.support.LeadPortalPublicUrlResolver;
 import com.marketinghub.niche.MarketNiche;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +43,7 @@ public class ExperimentReportMaterialService {
     private final CreativeVariantRepository creativeVariantRepository;
     private final LandingPageRepository landingPageRepository;
     private final LeadPortalFlowRepository leadPortalFlowRepository;
+    private final LeadPortalPublicUrlResolver leadPortalPublicUrlResolver;
     private final ExperimentFunnelService experimentFunnelService;
     private final ObjectMapper objectMapper;
 
@@ -50,6 +52,7 @@ public class ExperimentReportMaterialService {
                                            CreativeVariantRepository creativeVariantRepository,
                                            LandingPageRepository landingPageRepository,
                                            LeadPortalFlowRepository leadPortalFlowRepository,
+                                           LeadPortalPublicUrlResolver leadPortalPublicUrlResolver,
                                            ExperimentFunnelService experimentFunnelService,
                                            ObjectMapper objectMapper) {
         this.experimentRepository = experimentRepository;
@@ -57,6 +60,7 @@ public class ExperimentReportMaterialService {
         this.creativeVariantRepository = creativeVariantRepository;
         this.landingPageRepository = landingPageRepository;
         this.leadPortalFlowRepository = leadPortalFlowRepository;
+        this.leadPortalPublicUrlResolver = leadPortalPublicUrlResolver;
         this.experimentFunnelService = experimentFunnelService;
         this.objectMapper = objectMapper;
     }
@@ -234,6 +238,7 @@ public class ExperimentReportMaterialService {
                         .description(flow.getDescription())
                         .model(flow.getModel())
                         .approved(flow.isApproved())
+                        .publicUrl(leadPortalPublicUrlResolver.resolve(flow))
                         .previewImageUrl(flow.getSimpleFormStyle() != null ? flow.getSimpleFormStyle().getPreviewImageUrl() : null)
                         .createdAt(flow.getCreatedAt())
                         .questions(mapLeadPortalQuestions(flow.getQuestions()))

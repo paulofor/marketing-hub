@@ -220,7 +220,7 @@ public class ExperimentReportRenderer {
         flows.forEach(flow -> {
             html.append("<div class='media-card'>");
             String flowName = StringUtils.hasText(flow.getName()) ? flow.getName() : "Formulário Lead Portal";
-            appendMediaPreviewImage(html, flow.getPreviewImageUrl(),
+            appendMediaPreviewImage(html, leadPortalPreviewImage(flow),
                     "Prévia do formulário " + flowName, "Sem imagem do formulário");
             html.append("<div class='media-card__body'>")
                     .append("<div class='media-card__meta'>Formulário</div>")
@@ -235,9 +235,24 @@ public class ExperimentReportRenderer {
                         .append(escape(flow.getSlug()))
                         .append("</div>");
             }
+            if (StringUtils.hasText(flow.getPublicUrl())) {
+                html.append("<div class='media-card__copy'>Página pública: ")
+                        .append(linkOrPlaceholder(flow.getPublicUrl()))
+                        .append("</div>");
+            }
             html.append("</div></div>");
         });
         html.append("</div></div>");
+    }
+
+    private String leadPortalPreviewImage(LeadPortalFlowSnapshot flow) {
+        if (flow == null) {
+            return null;
+        }
+        if (StringUtils.hasText(flow.getPublicUrl())) {
+            return buildLandingPageScreenshot(flow.getPublicUrl());
+        }
+        return flow.getPreviewImageUrl();
     }
 
     private void appendCreativeGallery(StringBuilder html, List<CreativeSnapshot> creatives) {

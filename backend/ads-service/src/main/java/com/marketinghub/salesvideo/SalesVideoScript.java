@@ -46,6 +46,10 @@ public class SalesVideoScript {
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String captionText;
 
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    private String storyboardJson;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     private SalesVideoScriptSource source;

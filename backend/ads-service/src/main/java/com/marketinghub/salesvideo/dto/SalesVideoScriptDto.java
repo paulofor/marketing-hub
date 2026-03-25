@@ -17,6 +17,7 @@ public class SalesVideoScriptDto {
     private String hookText;
     private String ctaText;
     private String captionText;
+    private String storyboardJson;
     private SalesVideoScriptSource source;
     private String model;
     private String prompt;

@@ -96,3 +96,21 @@ AI_WORKER_LOG_DIR=/var/log/marketinghub/ai-worker \
 AI_WORKER_LOG_FILE=/var/log/ai-worker/worker.log \
 docker compose up -d
 ```
+
+## Avatar Sales Video
+
+O worker agora consome jobs do módulo de Avatar Sales Video exclusivamente via APIs internas do backend. O ciclo é:
+
+1. `SalesVideoScriptJobScheduler` executa a cada ~45 segundos (pode ser alterado por `SALES_VIDEO_SCRIPT_FIXED_DELAY`).
+2. `SalesVideoScriptJobService` lista jobs `SCRIPT_PENDING`, faz o *claim*, monta o prompt com `SalesVideoPromptBuilder` e chama a OpenAI.
+3. O resultado estruturado (hook, script, CTA, legenda e storyboard em JSON) é enviado ao backend através do endpoint `/internal/ai/openai-jobs/{id}/complete`.
+4. Falhas técnicas ou indisponibilidade do provider são reportadas usando `/fail` para manter o backend como fonte de verdade.
+
+Variáveis relevantes:
+
+- `SALES_VIDEO_SCRIPT_ENABLED`: desliga o polling quando necessário.
+- `SALES_VIDEO_WORKER_ID`: identifica a instância do worker ao fazer *claim* dos jobs.
+- `SALES_VIDEO_SCRIPT_MAX_JOBS`: controla quantos jobs são buscados por batelada.
+- `SALES_VIDEO_SCRIPT_MAX_OUTPUT_TOKENS`: define o limite de tokens da resposta JSON da OpenAI.
+
+O cliente de OpenAI utiliza o endpoint oficial de Responses e o formato `json_schema` para garantir que o retorno seja sempre serializável. Isso reduz retrabalho manual no backend e mantém o processo totalmente automatizado.

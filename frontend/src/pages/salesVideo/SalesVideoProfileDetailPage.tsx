@@ -60,7 +60,7 @@ export default function SalesVideoProfileDetailPage() {
   const approveScript = useApproveSalesVideoScript(profileId);
   const requestRender = useRequestVideoRender(profileId);
 
-  const landingId = profile?.landingPageId;
+  const landingId = profile?.landingPageId ?? undefined;
   const { data: slots } = useLandingVideoSlots(landingId);
   const createSlot = useCreateLandingVideoSlot(landingId);
   const updateSlot = useUpdateLandingVideoSlot(landingId);

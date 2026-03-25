@@ -28,10 +28,21 @@ if [[ -f "${VIDEO_TAR}" ]]; then
   docker load -i "${VIDEO_TAR}"
 fi
 
+tag_image_if_exists() {
+  local source_image="$1"
+  local target_image="$2"
+
+  if docker image inspect "${source_image}" >/dev/null 2>&1; then
+    docker tag "${source_image}" "${target_image}"
+  else
+    echo "[apply.sh] Aviso: imagem ${source_image} não encontrada; mantendo ${target_image} como está." >&2
+  fi
+}
+
 if [[ "${IMAGE_TAG}" != "latest" ]]; then
-  docker tag "${BACKEND_IMAGE}:${IMAGE_TAG}" "${BACKEND_IMAGE}:latest"
-  docker tag "${FRONTEND_IMAGE}:${IMAGE_TAG}" "${FRONTEND_IMAGE}:latest"
-  docker tag "${VIDEO_IMAGE}:${IMAGE_TAG}" "${VIDEO_IMAGE}:latest"
+  tag_image_if_exists "${BACKEND_IMAGE}:${IMAGE_TAG}" "${BACKEND_IMAGE}:latest"
+  tag_image_if_exists "${FRONTEND_IMAGE}:${IMAGE_TAG}" "${FRONTEND_IMAGE}:latest"
+  tag_image_if_exists "${VIDEO_IMAGE}:${IMAGE_TAG}" "${VIDEO_IMAGE}:latest"
 fi
 
 # Stop old containers (ignore errors if they are not running yet)

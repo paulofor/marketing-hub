@@ -82,3 +82,14 @@ artefatos mais recentes do experimento.
 Com esses elementos, o usuário entende rapidamente o que será entregue no
 material e consegue acompanhar o andamento das solicitações sem sair do
 experimento.
+
+## Processamento automático (AI Worker)
+
+- O módulo **AI Worker** consulta `/api/experiment-report-requests?status=PENDING` a cada `experiment.report.fixed-delay`
+  (padrão: 60s) e assume as solicitações disponíveis.
+- Para cada item ele atualiza o status para `PROCESSING`, renderiza o material em HTML compacto (limite configurável
+  em `experiment.report.max-creatives`) e envia o arquivo para o bucket compartilhado (`lead-portal.storage.*`).
+- O link final (`download_url`) aponta para o arquivo público hospedado no mesmo bucket, organizado no prefixo
+  definido em `experiment.report.storage-prefix` (default: `reports/AAAA/MM/DD`).
+- Em caso de falha, o worker registra o motivo em `failure_reason` e mantém a solicitação pronta para reprocesso.
+- A flag `experiment.report.enabled` permite pausar o pipeline sem precisar desligar o serviço.

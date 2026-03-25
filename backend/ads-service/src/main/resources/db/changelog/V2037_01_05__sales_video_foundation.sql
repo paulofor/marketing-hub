@@ -1,3 +1,6 @@
+--liquibase formatted sql
+--changeset repo:2037-01-05-sales-video-foundation dbms:mysql splitStatements:true
+
 CREATE TABLE IF NOT EXISTS sales_video_profile (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     product_id BIGINT NOT NULL,

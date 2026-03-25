@@ -16,30 +16,99 @@ O módulo é composto por 5 tabelas principais:
 4. `sales_video_job_event` — trilha de auditoria e progresso dos jobs.
 5. `landing_video_slot` — publicação do vídeo em slots da landing page.
 
-## Diagrama lógico (alto nível)
+## Diagrama do modelo de dados
 
-```text
-product (1) ────────< sales_video_profile >──────── (0..1) landing_page
-                         | 1
-                         |───────< sales_video_script
-                         |
-                         |───────< sales_video_job >───────(0..1) asset [video]
-                         |                    |────────────(0..1) asset [poster]
-                         |                    |────────────(0..1) asset [vtt]
-                         | 1
-                         |───────< sales_video_job_event
+### ERD (entidade-relacionamento)
 
-landing_page (1) ───────< landing_video_slot >───────(1) sales_video_profile
-                                       |─────────────(1) asset [video]
-                                       |─────────────(0..1) asset [poster]
-                                       |─────────────(0..1) asset [vtt]
+```mermaid
+erDiagram
+    PRODUCT ||--o{ SALES_VIDEO_PROFILE : "possui"
+    LANDING_PAGE o|--o{ SALES_VIDEO_PROFILE : "contextualiza"
+    SALES_VIDEO_PROFILE ||--o{ SALES_VIDEO_SCRIPT : "versiona"
+    SALES_VIDEO_PROFILE ||--o{ SALES_VIDEO_JOB : "processa"
+    SALES_VIDEO_JOB ||--o{ SALES_VIDEO_JOB_EVENT : "audita"
+
+    LANDING_PAGE ||--o{ LANDING_VIDEO_SLOT : "publica em"
+    SALES_VIDEO_PROFILE ||--o{ LANDING_VIDEO_SLOT : "origina"
+
+    ASSET o|--o{ SALES_VIDEO_JOB : "video (asset_id)"
+    ASSET o|--o{ SALES_VIDEO_JOB : "poster (poster_asset_id)"
+    ASSET o|--o{ SALES_VIDEO_JOB : "vtt (vtt_asset_id)"
+    ASSET ||--o{ LANDING_VIDEO_SLOT : "video publicado"
+    ASSET o|--o{ LANDING_VIDEO_SLOT : "poster publicado"
+    ASSET o|--o{ LANDING_VIDEO_SLOT : "vtt publicado"
+
+    SALES_VIDEO_PROFILE {
+      bigint id PK
+      bigint product_id FK
+      bigint landing_page_id FK
+      varchar video_kind
+      varchar status
+    }
+    SALES_VIDEO_SCRIPT {
+      bigint id PK
+      bigint profile_id FK
+      int version
+      varchar source
+      varchar status
+      varchar model
+      longtext prompt
+    }
+    SALES_VIDEO_JOB {
+      bigint id PK
+      bigint profile_id FK
+      bigint script_id FK
+      varchar provider_family
+      varchar job_type
+      varchar status
+      int progress_percent
+      bigint asset_id FK
+      bigint poster_asset_id FK
+      bigint vtt_asset_id FK
+    }
+    SALES_VIDEO_JOB_EVENT {
+      bigint id PK
+      bigint job_id FK
+      varchar event_type
+      varchar old_status
+      varchar new_status
+      datetime created_at
+    }
+    LANDING_VIDEO_SLOT {
+      bigint id PK
+      bigint landing_page_id FK
+      bigint profile_id FK
+      varchar slot_name
+      bigint asset_id FK
+      bigint poster_asset_id FK
+      bigint vtt_asset_id FK
+      datetime published_at
+    }
 ```
+
+### Leitura rápida do fluxo
+
+1. Um `product` cria/possui um `sales_video_profile`, opcionalmente associado a uma `landing_page`.
+2. O perfil acumula versões editoriais em `sales_video_script`.
+3. O pipeline operacional gera execuções em `sales_video_job`, com rastreabilidade em `sales_video_job_event`.
+4. Após vídeo pronto, a publicação final na landing ocorre em `landing_video_slot`, apontando para os `asset` efetivos (vídeo/poster/vtt).
 
 ## Tabelas e colunas
 
 ### 1) `sales_video_profile`
 
 Representa o perfil de vídeo de venda vinculado a um produto.
+
+**Papel no domínio**
+- É a entidade raiz (agregado principal) do módulo de vídeo.
+- Centraliza contexto narrativo e operacional: tipo do vídeo, idioma, persona, duração alvo e estado canônico.
+- Serve como referência para scripts, jobs e publicação.
+
+**Quando criar**
+- Ao iniciar uma estratégia de vídeo para um produto e, opcionalmente, para uma landing específica.
+
+**Quando atualizar**
+- Mudanças de direção de conteúdo (persona, estilo, idioma, duração) e avanço de status do funil (ex.: `DRAFT` → `VIDEO_READY`).
 
 | Coluna | Tipo | Nulo | Descrição |
 |---|---|---|---|
@@ -67,6 +136,16 @@ Representa o perfil de vídeo de venda vinculado a um produto.
 
 Armazena versões de script por perfil.
 
+**Papel no domínio**
+- Guarda histórico editorial (versionado) do texto do vídeo.
+- Permite coexistência de versões manuais e geradas por IA (`source`), mantendo rastreabilidade (`model` e `prompt`).
+- Separa claramente o ciclo de revisão/aprovação do ciclo de renderização.
+
+**Regras importantes**
+- `version` é incremental por `profile_id`.
+- `uq_sales_video_script_profile_version` impede duplicidade da mesma versão no mesmo perfil.
+- Scripts gerados por IA devem preservar metadados de geração (`model`/`prompt`).
+
 | Coluna | Tipo | Nulo | Descrição |
 |---|---|---|---|
 | `id` | BIGINT (PK, AI) | Não | Identificador do script. |
@@ -93,6 +172,17 @@ Armazena versões de script por perfil.
 ### 3) `sales_video_job`
 
 Representa jobs executáveis no pipeline de vídeo.
+
+**Papel no domínio**
+- Orquestra o processamento assíncrono do módulo (gerar script, storyboard, render, publicar, retry).
+- Captura integração com providers externos (`provider_family`, `provider_name`, `provider_job_id`).
+- Mantém resultado técnico da execução, incluindo progresso, falhas e artefatos produzidos.
+
+**Leitura operacional**
+- `requested_at` marca entrada na fila.
+- `started_at`/`finished_at` delimitam janela de execução.
+- `expires_at` ajuda a proteger jobs “claimados” que ficaram órfãos.
+- `asset_id`, `poster_asset_id` e `vtt_asset_id` apontam para os artefatos finais.
 
 | Coluna | Tipo | Nulo | Descrição |
 |---|---|---|---|
@@ -130,6 +220,11 @@ Representa jobs executáveis no pipeline de vídeo.
 
 Auditoria das transições e eventos dos jobs.
 
+**Papel no domínio**
+- Fornece trilha cronológica detalhada do job.
+- Viabiliza observabilidade (monitoramento de progresso), depuração de erros e auditoria funcional.
+- Registra mudanças de status e mensagens técnicas sem poluir a tabela principal de jobs.
+
 | Coluna | Tipo | Nulo | Descrição |
 |---|---|---|---|
 | `id` | BIGINT (PK, AI) | Não | Identificador do evento. |
@@ -152,6 +247,14 @@ Auditoria das transições e eventos dos jobs.
 ### 5) `landing_video_slot`
 
 Define publicação/embedding do vídeo em posições de uma landing page.
+
+**Papel no domínio**
+- Materializa o estado “publicado” para consumo do frontend.
+- Controla comportamento do player por slot (`autoplay`, `muted`, `loop_video`, `controls_enabled`, `lazy_load`).
+- Desacopla “vídeo produzido” de “vídeo exibido”, permitindo republicação/ajustes sem perder histórico dos jobs.
+
+**Regra de unicidade**
+- `uq_landing_video_slot_landing_slot` garante apenas um registro por slot lógico em cada landing.
 
 | Coluna | Tipo | Nulo | Descrição |
 |---|---|---|---|
@@ -232,3 +335,4 @@ Define publicação/embedding do vídeo em posições de uma landing page.
 - Para registros gerados por IA no contexto de script, manter preenchimento de `model` e `prompt` quando houver geração automática.
 - A tabela `sales_video_script` possui versionamento por perfil para manter histórico editorial.
 - A tabela `sales_video_job_event` complementa observabilidade/auditoria do ciclo de vida de jobs.
+- A publicação em `landing_video_slot` representa um “snapshot de exibição”, podendo apontar para o resultado mais recente e estável do pipeline.

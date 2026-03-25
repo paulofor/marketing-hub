@@ -48,8 +48,8 @@ fi
 # Stop old containers (ignore errors if they are not running yet)
 docker compose down --remove-orphans || true
 
-# Start the updated stack
-docker compose up -d
+# Start only backend/frontend stack on app host
+docker compose up -d backend frontend
 
 docker image prune -f >/dev/null 2>&1 || true
 rm -f "${BACKEND_TAR}" "${FRONTEND_TAR}" "${VIDEO_TAR}" >/dev/null 2>&1 || true

@@ -114,6 +114,9 @@ public final class SalesVideoMapper {
         dto.setAssetId(slot.getAsset() != null ? slot.getAsset().getId() : null);
         dto.setPosterAssetId(slot.getPosterAsset() != null ? slot.getPosterAsset().getId() : null);
         dto.setVttAssetId(slot.getVttAsset() != null ? slot.getVttAsset().getId() : null);
+        dto.setAssetUrl(slot.getAsset() != null ? slot.getAsset().getUrl() : null);
+        dto.setPosterAssetUrl(slot.getPosterAsset() != null ? slot.getPosterAsset().getUrl() : null);
+        dto.setVttAssetUrl(slot.getVttAsset() != null ? slot.getVttAsset().getUrl() : null);
         dto.setAutoplay(slot.isAutoplay());
         dto.setMuted(slot.isMuted());
         dto.setLoopVideo(slot.isLoopVideo());

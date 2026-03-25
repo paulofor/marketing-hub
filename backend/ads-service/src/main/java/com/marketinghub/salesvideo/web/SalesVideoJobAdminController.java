@@ -21,6 +21,11 @@ public class SalesVideoJobAdminController {
         this.jobService = jobService;
     }
 
+    @GetMapping("/profiles/{profileId}/jobs")
+    public List<SalesVideoJobDto> listJobsByProfile(@PathVariable Long profileId) {
+        return jobService.listJobsByProfile(profileId);
+    }
+
     @GetMapping("/jobs/{jobId}")
     public SalesVideoJobDto getJob(@PathVariable Long jobId) {
         return jobService.getJob(jobId);

@@ -281,6 +281,10 @@ Define publicação/embedding do vídeo em posições de uma landing page.
 | `created_at` | DATETIME(6) | Não | Data de criação. |
 | `updated_at` | DATETIME(6) | Não | Data da última atualização. |
 
+**Preview administrativo**
+- Os DTOs expostos pelo backend incluem `asset_url`, `poster_asset_url` e `vtt_asset_url`, extraídos diretamente das entidades `asset`.
+- Essa projeção adicional permite que o frontend renderize previews na landing administrativa sem consultas extras ao catálogo de mídias.
+
 **Índice único**
 - `uq_landing_video_slot_landing_slot (landing_page_id, slot_name)`
 

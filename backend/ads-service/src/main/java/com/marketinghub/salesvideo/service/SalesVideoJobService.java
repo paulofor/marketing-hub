@@ -112,6 +112,18 @@ public class SalesVideoJobService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<SalesVideoJobDto> listJobsByProfile(Long profileId) {
+        if (!profileRepository.existsById(profileId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Perfil de vídeo não encontrado: " + profileId);
+        }
+        return jobRepository.findByProfileIdOrderByRequestedAtDesc(profileId)
+                .stream()
+                .map(SalesVideoMapper::toDto)
+                .toList();
+    }
+
     @Transactional
     public SalesVideoJobDto claimJob(Long jobId, JobClaimRequest request) {
         SalesVideoJob job = loadJob(jobId);

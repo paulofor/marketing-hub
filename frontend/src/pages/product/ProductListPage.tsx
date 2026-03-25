@@ -21,6 +21,7 @@ export default function ProductListPage() {
             <th>Avatar</th>
             <th>Instagram</th>
             <th>Custo IA</th>
+            <th>Vídeos</th>
           </tr>
         </thead>
         <tbody>
@@ -31,6 +32,11 @@ export default function ProductListPage() {
               <td>{p.avatar}</td>
               <td>{p.instagramAccountId}</td>
               <td>{p.aiCost}</td>
+              <td>
+                <Link className="btn btn-sm btn-outline-primary" to={`/products/${p.id}/sales-videos`}>
+                  Abrir
+                </Link>
+              </td>
             </tr>
           ))}
         </tbody>

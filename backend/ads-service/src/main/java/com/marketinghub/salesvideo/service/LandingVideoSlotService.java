@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Gerencia os slots de publicação de vídeo nas landing pages.
@@ -69,6 +70,18 @@ public class LandingVideoSlotService {
                 .build();
         LandingVideoSlot saved = slotRepository.save(slot);
         return SalesVideoMapper.toDto(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public List<LandingVideoSlotDto> list(Long landingId) {
+        if (!landingPageRepository.existsById(landingId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Landing page não encontrada: " + landingId);
+        }
+        return slotRepository.findByLandingPageId(landingId)
+                .stream()
+                .map(SalesVideoMapper::toDto)
+                .toList();
     }
 
     @Transactional

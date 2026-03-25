@@ -1,6 +1,6 @@
 # Deploy automatizado
 
-O diretório `deploy/` contém tudo que é necessário para subir o stack completo no host dedicado (`177.153.62.107`).
+O diretório `deploy/` contém os artefatos de deploy. Atualmente o módulo de vídeo roda em `177.153.62.107`, enquanto backend/frontend seguem em `191.252.181.168`.
 
 ## Passos recomendados
 
@@ -23,4 +23,31 @@ O diretório `deploy/` contém tudo que é necessário para subir o stack comple
 
 > **Importante:** por padrão o poller fica desativado até que o backend esteja totalmente pronto para entregar jobs reais. Basta exportar `VIDEO_JOBS_POLLING_ENABLED=true` antes de rodar `apply.sh` para habilitar.
 
-Assim garantimos que os três serviços principais (backend, frontend e video-management) possam ser atualizados de forma homogênea no servidor 177.153.62.107 sem etapas manuais extras.
+Esse fluxo completo (`apply.sh`) continua disponível quando for necessário atualizar o stack inteiro em um único host.
+
+## Deploy apenas do módulo de vídeo
+
+Quando for necessário atualizar **somente** o serviço `video-management` no host `177.153.62.107`, use o script abaixo.
+
+> Neste cenário, o `video-management` deve apontar para o backend remoto em `191.252.181.168` (porta `8000`).
+
+1. Gere a imagem do módulo de vídeo e exporte para tar:
+   ```bash
+   docker build -f video-management-service/Dockerfile -t marketinghub-video-management:latest .
+   docker save marketinghub-video-management:latest -o /tmp/video-management-image.tar
+   ```
+2. Copie apenas o tar e os arquivos de deploy para o servidor:
+   ```bash
+   scp /tmp/video-management-image.tar deploy/bin/apply-video-only.sh deploy/docker-compose.yml <usuario>@177.153.62.107:/tmp/
+   ```
+3. No servidor, mova os arquivos para o diretório de deploy e rode o apply específico:
+   ```bash
+   ssh <usuario>@177.153.62.107
+   sudo mkdir -p /opt/marketinghub/containers
+   sudo mv /tmp/docker-compose.yml /opt/marketinghub/containers/docker-compose.yml
+   sudo mv /tmp/apply-video-only.sh /opt/marketinghub/containers/apply-video-only.sh
+   sudo chmod +x /opt/marketinghub/containers/apply-video-only.sh
+   VIDEO_BACKEND_BASE_URL=http://191.252.181.168:8000 sudo /opt/marketinghub/containers/apply-video-only.sh
+   ```
+
+Esse fluxo atualiza só o container `marketinghub-video-management`, preservando `backend` e `frontend` em execução.

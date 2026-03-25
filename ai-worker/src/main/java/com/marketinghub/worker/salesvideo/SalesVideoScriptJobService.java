@@ -86,7 +86,7 @@ public class SalesVideoScriptJobService {
             completionRequest.setMessage("Script gerado automaticamente pela OpenAI");
             completionRequest.setMetadataJson(result.rawResponse());
             completionRequest.setDetailsJson(buildDetailsJson(result));
-            completionRequest.setScriptResult(result.payload());
+            attachScriptResult(completionRequest, result.payload());
             backendClient.completeJob(jobId, completionRequest);
             log.info("Job de script {} concluído (perfil {})", jobId, profile.getId());
         } catch (Exception ex) {
@@ -131,5 +131,33 @@ public class SalesVideoScriptJobService {
             return "INVALID_STATE";
         }
         return "UNEXPECTED_ERROR";
+    }
+
+    private void attachScriptResult(JobCompletionRequest completionRequest, Map<String, Object> payload) {
+        try {
+            var setter = JobCompletionRequest.class.getMethod("setScriptResult", Object.class);
+            setter.invoke(completionRequest, payload);
+            return;
+        } catch (NoSuchMethodException ignored) {
+            // Continua para tentativa com assinatura tipada do pacote ads-service.
+        } catch (Exception ex) {
+            log.warn("Não foi possível preencher scriptResult no completion request", ex);
+            return;
+        }
+        try {
+            var setter = JobCompletionRequest.class.getMethods();
+            for (var method : setter) {
+                if (!"setScriptResult".equals(method.getName()) || method.getParameterCount() != 1) {
+                    continue;
+                }
+                Class<?> parameterType = method.getParameterTypes()[0];
+                Object converted = objectMapper.convertValue(payload, parameterType);
+                method.invoke(completionRequest, converted);
+                return;
+            }
+            log.warn("Método setScriptResult não encontrado em JobCompletionRequest");
+        } catch (Exception ex) {
+            log.warn("Não foi possível preencher scriptResult no completion request", ex);
+        }
     }
 }

@@ -2,7 +2,6 @@ package com.marketinghub.worker.salesvideo;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.salesvideo.dto.GeneratedScriptResultPayload;
 import com.marketinghub.worker.openai.AiGenerationRecorder;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
@@ -108,14 +107,14 @@ public class SalesVideoOpenAiClient {
         } catch (Exception ex) {
             throw new SalesVideoOpenAiException("Falha ao interpretar JSON retornado pela OpenAI", ex);
         }
-        GeneratedScriptResultPayload payloadDto = new GeneratedScriptResultPayload();
-        payloadDto.setHookText(scriptResponse.hook());
-        payloadDto.setScriptText(scriptResponse.script());
-        payloadDto.setCtaText(scriptResponse.cta());
-        payloadDto.setCaptionText(scriptResponse.caption());
-        payloadDto.setStoryboardJson(serializeStoryboard(scriptResponse.storyboard()));
-        payloadDto.setPrompt(prompt);
-        payloadDto.setModel(model);
+        Map<String, Object> payloadDto = new LinkedHashMap<>();
+        payloadDto.put("hookText", scriptResponse.hook());
+        payloadDto.put("scriptText", scriptResponse.script());
+        payloadDto.put("ctaText", scriptResponse.cta());
+        payloadDto.put("captionText", scriptResponse.caption());
+        payloadDto.put("storyboardJson", serializeStoryboard(scriptResponse.storyboard()));
+        payloadDto.put("prompt", prompt);
+        payloadDto.put("model", model);
 
         generationRecorder.record(DOMAIN, String.valueOf(jobId), prompt, output, model, response.usage());
         return new GeneratedScriptResult(payloadDto, output, response.usage(), response.id());
@@ -157,7 +156,7 @@ public class SalesVideoOpenAiClient {
     }
 
     /** Resultado bruto da OpenAI pronto para ser enviado ao backend. */
-    public record GeneratedScriptResult(GeneratedScriptResultPayload payload,
+    public record GeneratedScriptResult(Map<String, Object> payload,
                                         String rawResponse,
                                         OpenAiResponse.OpenAiUsage usage,
                                         String responseId) {

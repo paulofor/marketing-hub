@@ -1,15 +1,15 @@
 # Deploy automatizado
 
-O diretório `deploy/` contém os artefatos de deploy. Atualmente o módulo de vídeo roda em `177.153.62.107`, enquanto backend/frontend seguem em `191.252.181.168`.
+O diretório `deploy/` contém os artefatos de deploy. Atualmente os deploys estão separados: backend/frontend em `191.252.181.168` e video-management em `177.153.62.107`.
 
 ## Passos recomendados
 
 1. Gere as imagens (backend, frontend e video-management) e exporte-as para `*.tar`.
 2. Copie os arquivos para o servidor (ex.: via `scp`).
-3. No host, execute `deploy/bin/apply.sh`. O script irá:
+3. No host de **backend/frontend** (`191.252.181.168`), execute `deploy/bin/apply.sh`. O script irá:
    - carregar os `tar` encontrados em `/tmp`;
    - atualizar as tags `latest` (quando `IMAGE_TAG` for fornecido);
-   - aplicar o `docker-compose.yml` com backend, frontend e o novo módulo de vídeo.
+   - aplicar apenas `backend` e `frontend` no `docker-compose.yml`.
 
 ### Variáveis relevantes
 
@@ -23,7 +23,7 @@ O diretório `deploy/` contém os artefatos de deploy. Atualmente o módulo de v
 
 > **Importante:** por padrão o poller fica desativado até que o backend esteja totalmente pronto para entregar jobs reais. Basta exportar `VIDEO_JOBS_POLLING_ENABLED=true` antes de rodar `apply.sh` para habilitar.
 
-Esse fluxo completo (`apply.sh`) continua disponível quando for necessário atualizar o stack inteiro em um único host.
+Esse fluxo (`apply.sh`) permanece para atualizar somente backend/frontend no host principal.
 
 ## Deploy apenas do módulo de vídeo
 

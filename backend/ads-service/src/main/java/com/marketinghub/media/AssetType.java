@@ -7,5 +7,6 @@ public enum AssetType {
     VIDEO,
     AUDIO,
     BROLL,
-    IMAGE
+    IMAGE,
+    CAPTION
 }

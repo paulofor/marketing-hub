@@ -86,6 +86,12 @@ erDiagram
     }
 ```
 
+### Assets auxiliares e armazenamento
+
+Os arquivos finais de vídeo, poster e legendas apontados pelos campos `asset_id`, `poster_asset_id` e `vtt_asset_id` do job/perfil são persistidos como registros da tabela `asset`.
+Para o módulo de vídeo foi criado o endpoint interno `/internal/video/assets`, que utiliza a categoria dedicada `SALES_VIDEO` e aceita os tipos `VIDEO`, `IMAGE` e `CAPTION`.
+Isso permite que serviços externos façam o upload via multipart e recebam o `asset_id` necessário para finalizar o job com `VIDEO_READY`.
+
 ### Leitura rápida do fluxo
 
 1. Um `product` cria/possui um `sales_video_profile`, opcionalmente associado a uma `landing_page`.

@@ -8,6 +8,7 @@ import java.util.Locale;
 public enum AssetUploadCategory {
     EXPERIMENT_CREATIVE("experiments/creatives"),
     LEAD_PORTAL_FORM("lead-portal/forms"),
+    SALES_VIDEO("sales-videos"),
     GENERIC("uploads");
 
     private final String rootFolder;

@@ -16,6 +16,9 @@ public class LandingVideoSlotDto {
     private Long assetId;
     private Long posterAssetId;
     private Long vttAssetId;
+    private String assetUrl;
+    private String posterAssetUrl;
+    private String vttAssetUrl;
     private boolean autoplay;
     private boolean muted;
     private boolean loopVideo;

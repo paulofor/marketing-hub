@@ -54,6 +54,7 @@ class ExperimentReportRendererTest {
                         .primaryText("Plano semanal de alta performance")
                         .cta("Quero conhecer")
                         .destinationUrl("https://marketinghub.test/exp/9")
+                        .imageUrl("https://cdn.test/creative.png")
                         .angles(List.of("Produtividade", "Bem-estar"))
                         .visualProofs(List.of("Coach certificado"))
                         .build()))
@@ -64,8 +65,10 @@ class ExperimentReportRendererTest {
                         .build()))
                 .leadPortalFlows(List.of(LeadPortalFlowSnapshot.builder()
                         .name("Lead corporativo")
+                        .slug("lead-corp")
                         .model("DELIGHT")
                         .approved(true)
+                        .previewImageUrl("https://cdn.test/flow.png")
                         .questions(List.of())
                         .build()))
                 .instantForm(InstantFormSnapshot.builder()
@@ -100,5 +103,16 @@ class ExperimentReportRendererTest {
                 .contains("Fitness corporativo")
                 .contains("Form teste")
                 .contains("Funil do experimento");
+
+        List<String> visualSnippets = List.of(
+                "Formul&aacute;rios do Lead Portal",
+                "https://cdn.test/creative.png",
+                "https://cdn.test/flow.png",
+                "microlink.io/?url=https%3A%2F%2Fmarketinghub.test%2Flanding&amp;screenshot=true"
+        );
+        List<String> missingSnippets = visualSnippets.stream()
+                .filter(fragment -> !html.contains(fragment))
+                .toList();
+        assertThat(missingSnippets).as("trechos não encontrados no HTML").isEmpty();
     }
 }

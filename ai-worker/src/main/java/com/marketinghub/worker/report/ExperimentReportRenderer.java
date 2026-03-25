@@ -21,6 +21,7 @@ import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.lang.reflect.Method;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -235,9 +236,10 @@ public class ExperimentReportRenderer {
                         .append(escape(flow.getSlug()))
                         .append("</div>");
             }
-            if (StringUtils.hasText(flow.getPublicUrl())) {
+            String publicUrl = resolveLeadPortalPublicUrl(flow);
+            if (StringUtils.hasText(publicUrl)) {
                 html.append("<div class='media-card__copy'>Página pública: ")
-                        .append(linkOrPlaceholder(flow.getPublicUrl()))
+                        .append(linkOrPlaceholder(publicUrl))
                         .append("</div>");
             }
             html.append("</div></div>");
@@ -249,10 +251,33 @@ public class ExperimentReportRenderer {
         if (flow == null) {
             return null;
         }
-        if (StringUtils.hasText(flow.getPublicUrl())) {
-            return buildLandingPageScreenshot(flow.getPublicUrl());
+        String publicUrl = resolveLeadPortalPublicUrl(flow);
+        if (StringUtils.hasText(publicUrl)) {
+            return buildLandingPageScreenshot(publicUrl);
         }
         return flow.getPreviewImageUrl();
+    }
+
+    private String resolveLeadPortalPublicUrl(LeadPortalFlowSnapshot flow) {
+        return invokeStringGetter(flow, "getPublicUrl", "getUrl", "getShareLink");
+    }
+
+    private String invokeStringGetter(Object target, String... methodNames) {
+        if (target == null || methodNames == null) {
+            return null;
+        }
+        for (String methodName : methodNames) {
+            try {
+                Method method = target.getClass().getMethod(methodName);
+                Object value = method.invoke(target);
+                if (value instanceof String text && StringUtils.hasText(text)) {
+                    return text;
+                }
+            } catch (ReflectiveOperationException ignored) {
+                // Compatible with multiple backend artifact versions that expose different getter names.
+            }
+        }
+        return null;
     }
 
     private void appendCreativeGallery(StringBuilder html, List<CreativeSnapshot> creatives) {

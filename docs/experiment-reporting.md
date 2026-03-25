@@ -37,7 +37,7 @@ Os dados enviados no snapshot seguem o contrato exposto em
 | `creatives` | `CREATIVE` + labels | Headline, copy, CTA, URL, imagem/vídeo e tags |
 | `creativeVariants` | `CREATIVE_VARIANT` | Assets alternativos e textos auxiliares |
 | `landingPages` | `LANDING_PAGE` | URLs, status e tipo das páginas do experimento |
-| `leadPortalFlows` | `LEAD_PORTAL_FLOW` + questões | Perguntas, opções e imagem preview do formulário |
+| `leadPortalFlows` | `LEAD_PORTAL_FLOW` + questões | Perguntas, opções, link público e screenshot do formulário |
 | `instantForm` | `FB_INSTANT_FORM` | Nome, status e links públicos |
 | `campaignMetric` | `EXPERIMENT_CAMPAIGN_METRIC` | Impressões, cliques, leads, spend, CPC/CPL |
 | `funnelStages` | `EXPERIMENT_FUNNEL_EVENT` | Totais por etapa (visualização, envio, compra etc.) |

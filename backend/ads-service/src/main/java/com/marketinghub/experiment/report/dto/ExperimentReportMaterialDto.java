@@ -143,6 +143,7 @@ public class ExperimentReportMaterialDto {
         private String description;
         private String model;
         private boolean approved;
+        private String publicUrl;
         private String previewImageUrl;
         private Instant createdAt;
         private List<LeadPortalQuestionSnapshot> questions;

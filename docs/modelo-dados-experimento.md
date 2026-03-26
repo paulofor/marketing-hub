@@ -30,6 +30,7 @@ erDiagram
       BIGINT market_niche_id FK
       VARCHAR title
       BOOLEAN approved
+      LONGTEXT framework_json -- snapshot do framework Dor→Oferta (v1)
     }
 
     EXPERIMENT {

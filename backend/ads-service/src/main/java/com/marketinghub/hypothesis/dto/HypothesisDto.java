@@ -24,6 +24,7 @@ public class HypothesisDto {
     private String successRule;
     private String prompt;
     private String model;
+    private HypothesisFrameworkDto framework;
     private OfferType offerType;
     private BigDecimal price;
     private BigDecimal kpiTargetCpl;

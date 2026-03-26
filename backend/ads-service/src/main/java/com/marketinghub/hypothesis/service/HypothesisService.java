@@ -8,6 +8,7 @@ import com.marketinghub.hypothesis.*;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.hypothesis.dto.UpdateHypothesisRequest;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.hypothesis.framework.HypothesisFrameworkMapperSupport;
 import com.marketinghub.prompt.PromptAttributeDescription;
 import com.marketinghub.prompt.repository.PromptAttributeDescriptionRepository;
 import com.marketinghub.cost.CostAttributionService;
@@ -32,6 +33,7 @@ public class HypothesisService {
     private final AngleRepository angleRepository;
     private final PromptAttributeDescriptionRepository descriptionRepository;
     private final EntityManager em;
+    private final HypothesisFrameworkMapperSupport frameworkMapperSupport;
     private final CurrencyConversionService currencyConversionService;
     private final CostAttributionService costAttributionService;
 
@@ -40,6 +42,7 @@ public class HypothesisService {
                              AngleRepository angleRepository,
                              PromptAttributeDescriptionRepository descriptionRepository,
                              EntityManager em,
+                             HypothesisFrameworkMapperSupport frameworkMapperSupport,
                              CurrencyConversionService currencyConversionService,
                              CostAttributionService costAttributionService) {
         this.repository = repository;
@@ -47,6 +50,7 @@ public class HypothesisService {
         this.angleRepository = angleRepository;
         this.descriptionRepository = descriptionRepository;
         this.em = em;
+        this.frameworkMapperSupport = frameworkMapperSupport;
         this.currencyConversionService = currencyConversionService;
         this.costAttributionService = costAttributionService;
     }
@@ -127,6 +131,7 @@ public class HypothesisService {
                 .price(req.getPrice())
                 .kpiTargetCpl(req.getKpiTargetCpl())
                 .build();
+        frameworkMapperSupport.applyPartial(h, req.getFramework());
         Hypothesis saved = repository.save(h);
         BigDecimal delta = resolveTotalCostDelta(req);
         if (delta != null) {
@@ -186,6 +191,7 @@ public class HypothesisService {
         h.setOfferType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()));
         h.setPrice(req.getPrice());
         h.setKpiTargetCpl(req.getKpiTargetCpl());
+        frameworkMapperSupport.applyPartial(h, req.getFramework());
         return h;
     }
 }

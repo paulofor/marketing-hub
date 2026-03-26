@@ -19,6 +19,7 @@ public class UpdateHypothesisRequest {
     private String offerType;
     private BigDecimal price;
     private BigDecimal kpiTargetCpl;
+    private HypothesisFrameworkDto framework;
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
@@ -65,4 +66,7 @@ public class UpdateHypothesisRequest {
 
     public BigDecimal getKpiTargetCpl() { return kpiTargetCpl; }
     public void setKpiTargetCpl(BigDecimal kpiTargetCpl) { this.kpiTargetCpl = kpiTargetCpl; }
+
+    public HypothesisFrameworkDto getFramework() { return framework; }
+    public void setFramework(HypothesisFrameworkDto framework) { this.framework = framework; }
 }

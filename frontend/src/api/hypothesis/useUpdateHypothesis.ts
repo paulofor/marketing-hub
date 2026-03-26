@@ -2,18 +2,34 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { Hypothesis } from "./useHypothesisBoard";
+import type { HypothesisFramework } from "./types";
+
+export interface UpdateHypothesisPayload {
+  id: string;
+  title: string;
+  promise?: string;
+  problem?: string;
+  persona?: string;
+  premiseAngleId?: number;
+  mechanism?: string;
+  uniqueMechanism?: string;
+  entrega?: string;
+  successRule?: string;
+  prompt?: string;
+  model?: string;
+  cost?: number | null;
+  expense?: number | null;
+  offerType?: string;
+  price?: number | null;
+  kpiTargetCpl?: number;
+  framework?: HypothesisFramework | null;
+}
 
 export function useUpdateHypothesis(nicheId?: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (h: Hypothesis) => {
-      const { id, ...body } = h;
-      console.log("useUpdateHypothesis mutationFn", id, body);
-      const { data } = await axios.put<Hypothesis>(
-        `/api/hypotheses/${id}`,
-        body,
-      );
-      console.log("backend responded", data);
+    mutationFn: async ({ id, ...body }: UpdateHypothesisPayload) => {
+      const { data } = await axios.put<Hypothesis>(`/api/hypotheses/${id}`, body);
       return data;
     },
     onSuccess: () => {

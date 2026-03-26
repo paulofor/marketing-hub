@@ -13,6 +13,7 @@ import java.time.Instant;
 public class SalesVideoScriptDto {
     private Long id;
     private Integer version;
+    private String createdBy;
     private String scriptText;
     private String hookText;
     private String ctaText;

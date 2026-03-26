@@ -36,6 +36,27 @@ public class SalesVideoJob {
     @ToString.Exclude
     private SalesVideoScript script;
 
+    @Builder.Default
+    @Column(name = "tenant_id", nullable = false, length = 64)
+    private String tenantId = "default";
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "retry_of_job_id")
+    @ToString.Exclude
+    private SalesVideoJob retryOfJob;
+
+    @Builder.Default
+    @Column(name = "retry_attempt", nullable = false)
+    private Integer retryAttempt = 1;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "retry_reason", length = 64)
+    private SalesVideoRetryReason retryReason;
+
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    private String retryNotes;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "provider_family", nullable = false, length = 32)
     private SalesVideoProviderFamily providerFamily;

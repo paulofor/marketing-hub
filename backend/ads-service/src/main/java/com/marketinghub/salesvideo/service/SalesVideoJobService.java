@@ -4,19 +4,20 @@ import com.marketinghub.media.Asset;
 import com.marketinghub.media.repository.AssetRepository;
 import com.marketinghub.salesvideo.*;
 import com.marketinghub.salesvideo.dto.*;
+import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
+import com.marketinghub.salesvideo.exception.VideoModuleException;
 import com.marketinghub.salesvideo.mapper.SalesVideoMapper;
 import com.marketinghub.salesvideo.repository.SalesVideoJobEventRepository;
 import com.marketinghub.salesvideo.repository.SalesVideoJobRepository;
 import com.marketinghub.salesvideo.repository.SalesVideoProfileRepository;
 import com.marketinghub.salesvideo.repository.SalesVideoScriptRepository;
+import com.marketinghub.salesvideo.tenant.TenantContextHolder;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.util.StringUtils;
 
 import java.time.Instant;
@@ -36,17 +37,20 @@ public class SalesVideoJobService {
     private final SalesVideoProfileRepository profileRepository;
     private final SalesVideoScriptRepository scriptRepository;
     private final AssetRepository assetRepository;
+    private final SalesVideoReprocessPolicy reprocessPolicy;
 
     public SalesVideoJobService(SalesVideoJobRepository jobRepository,
                                 SalesVideoJobEventRepository eventRepository,
                                 SalesVideoProfileRepository profileRepository,
                                 SalesVideoScriptRepository scriptRepository,
-                                AssetRepository assetRepository) {
+                                AssetRepository assetRepository,
+                                SalesVideoReprocessPolicy reprocessPolicy) {
         this.jobRepository = jobRepository;
         this.eventRepository = eventRepository;
         this.profileRepository = profileRepository;
         this.scriptRepository = scriptRepository;
         this.assetRepository = assetRepository;
+        this.reprocessPolicy = reprocessPolicy;
     }
 
     @Transactional
@@ -59,6 +63,7 @@ public class SalesVideoJobService {
         SalesVideoStatus initialStatus = initialStatus(jobType);
         SalesVideoJob job = SalesVideoJob.builder()
                 .profile(profile)
+                .tenantId(profile != null ? profile.getTenantId() : TenantContextHolder.currentTenant())
                 .script(script)
                 .jobType(jobType)
                 .providerFamily(providerFamily)
@@ -114,10 +119,7 @@ public class SalesVideoJobService {
 
     @Transactional(readOnly = true)
     public List<SalesVideoJobDto> listJobsByProfile(Long profileId) {
-        if (!profileRepository.existsById(profileId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Perfil de vídeo não encontrado: " + profileId);
-        }
+        ensureProfileAccessible(profileId);
         return jobRepository.findByProfileIdOrderByRequestedAtDesc(profileId)
                 .stream()
                 .map(SalesVideoMapper::toDto)
@@ -218,14 +220,24 @@ public class SalesVideoJobService {
     @Transactional
     public SalesVideoJobDto retry(Long jobId, RetrySalesVideoJobRequest request) {
         SalesVideoJob job = loadJob(jobId);
+        reprocessPolicy.ensureRetryAllowed(job, request.getReason());
         SalesVideoScript script = job.getScript() == null ? null
                 : scriptRepository.findById(job.getScript().getId()).orElse(null);
+        String requestedBy = TenantContextHolder.resolveUserEmail(request.getRequestedBy());
         SalesVideoJob newJob = createJob(job.getProfile(),
                 script,
                 job.getJobType(),
                 job.getProviderFamily(),
                 job.getProviderName(),
-                request.getRequestedBy());
+                requestedBy);
+        newJob.setRetryOfJob(job);
+        newJob.setRetryAttempt(job.getRetryAttempt() + 1);
+        newJob.setRetryReason(request.getReason());
+        newJob.setRetryNotes(request.getNotes());
+        jobRepository.save(newJob);
+        registerEvent(job, SalesVideoJobEventType.RETRIED, job.getStatus(), job.getStatus(),
+                "Reprocessamento solicitado por " + requestedBy + " (" + request.getReason().name() + ")",
+                request.getNotes());
         return SalesVideoMapper.toDto(newJob);
     }
 
@@ -241,9 +253,11 @@ public class SalesVideoJobService {
                 .map(SalesVideoScript::getVersion)
                 .map(v -> v + 1)
                 .orElse(1);
+        String createdBy = StringUtils.hasText(job.getRequestedBy()) ? job.getRequestedBy() : "system@marketinghub.io";
         SalesVideoScript script = SalesVideoScript.builder()
                 .profile(job.getProfile())
                 .version(nextVersion)
+                .createdBy(createdBy)
                 .scriptText(payload.getScriptText())
                 .hookText(payload.getHookText())
                 .ctaText(payload.getCtaText())
@@ -267,22 +281,31 @@ public class SalesVideoJobService {
             return;
         }
         Asset asset = assetRepository.findById(assetId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                .orElseThrow(() -> VideoModuleException.badRequest(VideoModuleErrorCode.ASSET_NOT_FOUND,
                         "Asset não encontrado: " + assetId));
         setter.accept(asset);
     }
 
     private SalesVideoJob loadJob(Long jobId) {
-        return jobRepository.findById(jobId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+        SalesVideoJob job = jobRepository.findById(jobId)
+                .orElseThrow(() -> VideoModuleException.notFound(VideoModuleErrorCode.JOB_NOT_FOUND,
                         "Job não encontrado: " + jobId));
+        TenantContextHolder.assertTenant(job.getTenantId());
+        return job;
     }
 
     private void ensureJobExists(Long jobId) {
         if (!jobRepository.existsById(jobId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+            throw VideoModuleException.notFound(VideoModuleErrorCode.JOB_NOT_FOUND,
                     "Job não encontrado: " + jobId);
         }
+    }
+
+    private void ensureProfileAccessible(Long profileId) {
+        SalesVideoProfile profile = profileRepository.findById(profileId)
+                .orElseThrow(() -> VideoModuleException.notFound(VideoModuleErrorCode.PROFILE_NOT_FOUND,
+                        "Perfil de vídeo não encontrado: " + profileId));
+        TenantContextHolder.assertTenant(profile.getTenantId());
     }
 
     private SalesVideoStatus initialStatus(SalesVideoJobType jobType) {

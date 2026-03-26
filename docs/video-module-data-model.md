@@ -99,6 +99,28 @@ Isso permite que serviços externos façam o upload via multipart e recebam o `a
 3. O pipeline operacional gera execuções em `sales_video_job`, com rastreabilidade em `sales_video_job_event`.
 4. Após vídeo pronto, a publicação final na landing ocorre em `landing_video_slot`, apontando para os `asset` efetivos (vídeo/poster/vtt).
 
+## Políticas operacionais
+
+### Reprocessamento
+
+- Cada `sales_video_job` carrega o campo `retry_attempt`, controlado pelo backend.
+- Os limites atuais são: script/storyboard (2), render/retry (3) e publish (1).
+- O endpoint `/api/sales-videos/jobs/{jobId}/retry` exige motivo (`retry_reason`) e notas opcionais.
+- Um scheduler (`SalesVideoAutoRetryScheduler`) monitora jobs `VIDEO_FAILED` há mais de 15 minutos e reprocessa automaticamente quando ainda há tentativas disponíveis, marcando o motivo como `AUTO_RECOVERY`.
+
+### Limpeza de assets
+
+- O scheduler `SalesVideoAssetCleanupScheduler` roda a cada hora, avaliando assets do provider `VIDEO_MODULE` com mais de 7 dias sem referência em `sales_video_job` ou `landing_video_slot`.
+- Assets órfãos são apagados tanto do banco quanto do storage R2/local via `AssetStorageService.deleteStoredObject`.
+- Parâmetros como ativação, retenção e batch size são configuráveis em `application.properties`.
+
+### Escopo por tenant
+
+- `sales_video_profile`, `sales_video_job` e `landing_video_slot` trazem `tenant_id`, replicado para scripts e histórico.
+- O backend exige o cabeçalho `X-Tenant-ID` (e `X-User-Email`) em todos os endpoints administrativos de vídeo; chamadas internas (`/internal/...`) operam no modo `system`.
+- O frontend persiste o contexto localmente e injeta os cabeçalhos automaticamente, exibindo o seletor no topo das páginas do módulo.
+
+
 ## Tabelas e colunas
 
 ### 1) `sales_video_profile`
@@ -121,6 +143,8 @@ Representa o perfil de vídeo de venda vinculado a um produto.
 | `id` | BIGINT (PK, AI) | Não | Identificador do perfil. |
 | `product_id` | BIGINT (FK) | Não | Produto dono do perfil (`product.id`). |
 | `landing_page_id` | BIGINT (FK) | Sim | Landing page associada (`landing_page.id`). |
+| `tenant_id` | VARCHAR(64) | Não | Identificador lógico do tenant dono do perfil. |
+| `created_by` | VARCHAR(255) | Sim | Usuário que criou o perfil. |
 | `video_kind` | VARCHAR(32) | Não | Tipo do vídeo (enum `SalesVideoKind`). |
 | `title` | VARCHAR(255) | Não | Título administrativo do perfil. |
 | `persona_name` | VARCHAR(255) | Sim | Persona usada na narrativa. |
@@ -157,6 +181,7 @@ Armazena versões de script por perfil.
 | `id` | BIGINT (PK, AI) | Não | Identificador do script. |
 | `profile_id` | BIGINT (FK) | Não | Perfil dono (`sales_video_profile.id`). |
 | `version` | INT | Não | Versão incremental por perfil. |
+| `created_by` | VARCHAR(255) | Sim | Usuário que gerou/aprovou a versão. |
 | `script_text` | LONGTEXT | Sim | Texto completo do script. |
 | `hook_text` | LONGTEXT | Sim | Gancho principal. |
 | `cta_text` | LONGTEXT | Sim | Chamada para ação. |
@@ -346,3 +371,26 @@ Define publicação/embedding do vídeo em posições de uma landing page.
 - A tabela `sales_video_script` possui versionamento por perfil para manter histórico editorial.
 - A tabela `sales_video_job_event` complementa observabilidade/auditoria do ciclo de vida de jobs.
 - A publicação em `landing_video_slot` representa um “snapshot de exibição”, podendo apontar para o resultado mais recente e estável do pipeline.
+
+### 6) `landing_video_slot_history`
+
+Registro imutável das alterações feitas nos slots publicados, permitindo auditoria de publicação/despublicação.
+
+| Coluna | Tipo | Nulo | Descrição |
+|---|---|---|---|
+| `id` | BIGINT (PK, AI) | Não | Identificador do evento. |
+| `slot_id` | BIGINT (FK) | Não | Slot auditado (`landing_video_slot.id`). |
+| `tenant_id` | VARCHAR(64) | Não | Tenant dono do slot. |
+| `profile_id` | BIGINT (FK) | Sim | Perfil associado no momento da alteração. |
+| `landing_page_id` | BIGINT (FK) | Sim | Landing correspondente. |
+| `slot_name` | VARCHAR(64) | Não | Nome do slot. |
+| `asset_id` | BIGINT (FK) | Sim | Vídeo usado na alteração. |
+| `poster_asset_id` | BIGINT (FK) | Sim | Poster associado. |
+| `vtt_asset_id` | BIGINT (FK) | Sim | Legendas associadas. |
+| `autoplay`/`muted`/`loop_video`/`controls_enabled`/`lazy_load` | BOOLEAN | Não | Configurações no momento do snapshot. |
+| `change_type` | VARCHAR(32) | Não | Tipo (`CREATED`, `UPDATED`, `PUBLISHED`, `UNPUBLISHED`). |
+| `changed_by` | VARCHAR(255) | Sim | Usuário que realizou a mudança. |
+| `changed_at` | DATETIME(6) | Não | Timestamp da mudança. |
+| `published_by` | VARCHAR(255) | Sim | Usuário que publicou, quando aplicável. |
+| `published_at` | DATETIME(6) | Sim | Data de publicação. |
+| `notes` | LONGTEXT | Sim | Observações complementares. |

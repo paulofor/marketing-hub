@@ -11,12 +11,18 @@ import { useSalesVideoJobEvents } from "../../api/salesVideo/useSalesVideoJobEve
 import { useLandingVideoSlots } from "../../api/salesVideo/useLandingVideoSlots";
 import { useCreateLandingVideoSlot } from "../../api/salesVideo/useCreateLandingVideoSlot";
 import { useUpdateLandingVideoSlot } from "../../api/salesVideo/useUpdateLandingVideoSlot";
+import { useSalesVideoScripts } from "../../api/salesVideo/useSalesVideoScripts";
+import { useLandingVideoSlotHistory } from "../../api/salesVideo/useLandingVideoSlotHistory";
+import { useRetrySalesVideoJob } from "../../api/salesVideo/useRetrySalesVideoJob";
 import {
   LandingVideoSlot,
   SalesVideoJob,
   SalesVideoProviderFamily,
+  SalesVideoRetryReason,
 } from "../../api/salesVideo/types";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
+import { TenantContextBanner } from "../../components/TenantContextBanner";
+import { useTenantContext } from "../../utils/tenantContext";
 
 const PROVIDER_FAMILIES: SalesVideoProviderFamily[] = ["EXTERNAL_VIDEO_MODULE", "OPENAI"];
 
@@ -26,20 +32,22 @@ export default function SalesVideoProfileDetailPage() {
   const { data: jobs } = useSalesVideoJobs(profileId);
   const [selectedJobId, setSelectedJobId] = useState<number | undefined>(undefined);
   const { data: jobEvents, isLoading: eventsLoading } = useSalesVideoJobEvents(selectedJobId);
+  const tenantContext = useTenantContext();
+  const { data: scriptHistory } = useSalesVideoScripts(profileId);
 
   const [scriptForm, setScriptForm] = useState({
     scriptText: "",
     hookText: "",
     ctaText: "",
     captionText: "",
-    approvedBy: "time@marketinghub.io",
+    approvedBy: tenantContext.userEmail,
   });
   const [scriptRequestForm, setScriptRequestForm] = useState({
-    requestedBy: "time@marketinghub.io",
+    requestedBy: tenantContext.userEmail,
     providerName: "openai-gpt-4o",
   });
   const [renderForm, setRenderForm] = useState({
-    requestedBy: "time@marketinghub.io",
+    requestedBy: tenantContext.userEmail,
     providerFamily: "EXTERNAL_VIDEO_MODULE" as SalesVideoProviderFamily,
     providerName: "video-management-service",
   });
@@ -53,7 +61,7 @@ export default function SalesVideoProfileDetailPage() {
     loopVideo: false,
     controlsEnabled: true,
     lazyLoad: true,
-    publishedBy: "",
+    publishedBy: tenantContext.userEmail,
   });
 
   const generateScript = useGenerateSalesVideoScript(profileId);
@@ -64,6 +72,22 @@ export default function SalesVideoProfileDetailPage() {
   const { data: slots } = useLandingVideoSlots(landingId);
   const createSlot = useCreateLandingVideoSlot(landingId);
   const updateSlot = useUpdateLandingVideoSlot(landingId);
+  const retryJob = useRetrySalesVideoJob();
+  const RETRY_REASONS: SalesVideoRetryReason[] = [
+    "MANUAL_INTERVENTION",
+    "PROVIDER_FAILURE",
+    "ASSET_EXPIRED",
+    "QUALITY_ASSURANCE",
+    "AUTO_RECOVERY",
+    "OTHER",
+  ];
+  const [retryReason, setRetryReason] = useState<SalesVideoRetryReason>("MANUAL_INTERVENTION");
+  const [retryNotes, setRetryNotes] = useState("");
+  const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null);
+  const { data: slotHistory, isLoading: slotHistoryLoading } = useLandingVideoSlotHistory({
+    landingId,
+    slotId: selectedSlotId ?? undefined,
+  });
 
   useEffect(() => {
     if (profile?.latestScript) {
@@ -78,10 +102,21 @@ export default function SalesVideoProfileDetailPage() {
   }, [profile?.latestScript?.id]);
 
   useEffect(() => {
+    setScriptRequestForm((prev) => ({ ...prev, requestedBy: tenantContext.userEmail }));
+    setRenderForm((prev) => ({ ...prev, requestedBy: tenantContext.userEmail }));
+    setScriptForm((prev) => ({ ...prev, approvedBy: tenantContext.userEmail }));
+    setSlotForm((prev) => ({ ...prev, publishedBy: tenantContext.userEmail }));
+  }, [tenantContext.userEmail]);
+
+  useEffect(() => {
     if (!selectedJobId && jobs && jobs.length > 0) {
       setSelectedJobId(jobs[0].id);
     }
   }, [jobs, selectedJobId]);
+
+  useEffect(() => {
+    setSelectedSlotId(null);
+  }, [landingId]);
 
   const readyJobsWithAsset = useMemo(() => {
     return (jobs ?? []).filter((job): job is SalesVideoJob & { assetId: number } => Boolean(job.assetId));
@@ -109,7 +144,7 @@ export default function SalesVideoProfileDetailPage() {
     event.preventDefault();
     try {
       await generateScript.mutateAsync({
-        requestedBy: scriptRequestForm.requestedBy.trim(),
+        requestedBy: tenantContext.userEmail,
         providerName: scriptRequestForm.providerName.trim() || undefined,
       });
       toast.success("Geração de script solicitada");
@@ -125,7 +160,7 @@ export default function SalesVideoProfileDetailPage() {
       toast.error("O script precisa de conteúdo");
       return;
     }
-    if (!scriptForm.approvedBy.trim()) {
+    if (!tenantContext.userEmail.trim()) {
       toast.error("Informe quem aprovou o script");
       return;
     }
@@ -135,7 +170,7 @@ export default function SalesVideoProfileDetailPage() {
         hookText: scriptForm.hookText,
         ctaText: scriptForm.ctaText,
         captionText: scriptForm.captionText,
-        approvedBy: scriptForm.approvedBy,
+        approvedBy: tenantContext.userEmail,
       });
       toast.success("Script aprovado");
     } catch (error) {
@@ -146,19 +181,41 @@ export default function SalesVideoProfileDetailPage() {
 
   const handleRenderRequestSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!renderForm.requestedBy.trim()) {
+    if (!tenantContext.userEmail.trim()) {
       toast.error("Informe quem está solicitando o render");
       return;
     }
     try {
       await requestRender.mutateAsync({
-        requestedBy: renderForm.requestedBy,
+        requestedBy: tenantContext.userEmail,
         providerFamily: renderForm.providerFamily,
         providerName: renderForm.providerName.trim() || undefined,
       });
       toast.success("Render solicitado");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Falha ao solicitar render";
+      toast.error(message);
+    }
+  };
+
+  const handleRetrySubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedJobId) {
+      toast.error("Selecione um job para reprocessar");
+      return;
+    }
+    try {
+      await retryJob.mutateAsync({
+        jobId: selectedJobId,
+        profileId: profile.id,
+        requestedBy: tenantContext.userEmail,
+        reason: retryReason,
+        notes: retryNotes.trim() || undefined,
+      });
+      toast.success("Reprocessamento solicitado");
+      setRetryNotes("");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Falha ao reprocessar job";
       toast.error(message);
     }
   };
@@ -195,9 +252,16 @@ export default function SalesVideoProfileDetailPage() {
         loopVideo: slotForm.loopVideo,
         controlsEnabled: slotForm.controlsEnabled,
         lazyLoad: slotForm.lazyLoad,
-        publishedBy: slotForm.publishedBy.trim() || undefined,
+        publishedBy: tenantContext.userEmail,
       });
       toast.success("Slot configurado com sucesso");
+      setSlotForm((prev) => ({
+        ...prev,
+        assetId: "",
+        posterAssetId: "",
+        vttAssetId: "",
+        publishedBy: tenantContext.userEmail,
+      }));
     } catch (error) {
       const message = error instanceof Error ? error.message : "Não foi possível salvar o slot";
       toast.error(message);
@@ -221,6 +285,7 @@ export default function SalesVideoProfileDetailPage() {
   return (
     <div>
       <PageTitle>Perfil de Vídeo #{profile.id}</PageTitle>
+      <TenantContextBanner className="mb-3" />
       <div className="mb-3">
         <Link to={`/products/${profile.productId}/sales-videos`} className="btn btn-link p-0">
           &larr; Voltar para os perfis do produto
@@ -408,6 +473,8 @@ export default function SalesVideoProfileDetailPage() {
                 <th>Tipo</th>
                 <th>Provider</th>
                 <th>Status</th>
+                <th>Tentativas</th>
+                <th>Último motivo</th>
                 <th>Progresso</th>
                 <th>Solicitado em</th>
               </tr>
@@ -424,6 +491,8 @@ export default function SalesVideoProfileDetailPage() {
                   <td>{job.jobType}</td>
                   <td>{job.providerName ?? job.providerFamily}</td>
                   <td>{job.status}</td>
+                  <td>{job.retryAttempt ?? 1}</td>
+                  <td>{job.retryReason ?? "—"}</td>
                   <td>{job.progressPercent ?? 0}%</td>
                   <td>{job.requestedAt ?? "—"}</td>
                 </tr>

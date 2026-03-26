@@ -11,11 +11,11 @@ import com.marketinghub.media.repository.AssetRepository;
 import com.marketinghub.storage.AssetStorageService;
 import com.marketinghub.storage.AssetUploadCategory;
 import com.marketinghub.storage.AssetUploadContext;
-import org.springframework.http.HttpStatus;
+import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
+import com.marketinghub.salesvideo.exception.VideoModuleException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -45,7 +45,7 @@ public class SalesVideoAssetService {
                        MediaProvider provider,
                        String metadataJson) throws IOException {
         if (file == null || file.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+            throw VideoModuleException.badRequest(VideoModuleErrorCode.BAD_REQUEST,
                     "Arquivo obrigatório para upload de asset");
         }
         AssetUploadContext context = new AssetUploadContext(AssetUploadCategory.SALES_VIDEO,
@@ -79,7 +79,8 @@ public class SalesVideoAssetService {
         try {
             return objectMapper.writeValueAsString(payload);
         } catch (JsonProcessingException ex) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+            throw new VideoModuleException(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR,
+                    VideoModuleErrorCode.INTERNAL_ERROR,
                     "Falha ao serializar metadata de asset", ex);
         }
     }
@@ -88,7 +89,8 @@ public class SalesVideoAssetService {
         try {
             return objectMapper.readValue(metadataJson, MAP_TYPE);
         } catch (JsonProcessingException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+            throw new VideoModuleException(org.springframework.http.HttpStatus.BAD_REQUEST,
+                    VideoModuleErrorCode.BAD_REQUEST,
                     "metadata inválido, use JSON", ex);
         }
     }

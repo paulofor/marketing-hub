@@ -205,4 +205,30 @@ public class AssetStorageService {
                                long sizeBytes,
                                String contentType,
                                boolean storedInBucket) {}
+
+    public void deleteStoredObject(String storedFileName, boolean storedInBucket) {
+        if (!StringUtils.hasText(storedFileName)) {
+            return;
+        }
+        if (storedInBucket && isCloudStorageReady()) {
+            try {
+                software.amazon.awssdk.services.s3.model.DeleteObjectRequest request =
+                        software.amazon.awssdk.services.s3.model.DeleteObjectRequest.builder()
+                                .bucket(properties.getBucket())
+                                .key(storedFileName)
+                                .build();
+                s3Client.deleteObject(request);
+            } catch (SdkException ex) {
+                throw new StorageException("Falha ao remover objeto do bucket", ex);
+            }
+        } else {
+            Path target = Path.of("uploads").resolve(storedFileName);
+            try {
+                Files.deleteIfExists(target);
+            } catch (IOException ex) {
+                throw new StorageException("Falha ao remover arquivo local", ex);
+            }
+        }
+    }
+
 }

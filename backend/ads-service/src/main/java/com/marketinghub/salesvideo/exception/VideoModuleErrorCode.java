@@ -1,0 +1,24 @@
+package com.marketinghub.salesvideo.exception;
+
+/**
+ * Códigos padronizados para erros do módulo de vídeo.
+ */
+public enum VideoModuleErrorCode {
+    TENANT_HEADER_REQUIRED,
+    TENANT_FORBIDDEN,
+    PROFILE_NOT_FOUND,
+    PROFILE_TENANT_MISMATCH,
+    PRODUCT_NOT_FOUND,
+    LANDING_NOT_FOUND,
+    SCRIPT_NOT_FOUND,
+    SCRIPT_APPROVAL_CONFLICT,
+    JOB_NOT_FOUND,
+    JOB_RETRY_POLICY_BLOCKED,
+    ASSET_NOT_FOUND,
+    SLOT_NOT_FOUND,
+    SLOT_CONFLICT,
+    SLOT_TENANT_MISMATCH,
+    SLOT_HISTORY_NOT_FOUND,
+    BAD_REQUEST,
+    INTERNAL_ERROR
+}

@@ -11,5 +11,6 @@ public enum SalesVideoJobEventType {
     STATUS_CHANGED,
     COMPLETED,
     FAILED,
-    EXPIRED
+    EXPIRED,
+    RETRIED
 }

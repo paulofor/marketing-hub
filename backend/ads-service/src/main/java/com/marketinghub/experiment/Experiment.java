@@ -148,6 +148,17 @@ public class Experiment {
     @Enumerated(EnumType.STRING)
     private ExperimentPlatform platform;
 
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "stage", length = 32, nullable = false)
+    private ExperimentStage stage = ExperimentStage.AD;
+
+    @Column(name = "primary_variable", length = 191)
+    private String primaryVariable;
+
+    @Column(name = "primary_metric", length = 191)
+    private String primaryMetric;
+
     /** Indica se o criativo está aprovado pelo usuário. */
     @Column(nullable = false)
     private boolean creativeApproved;

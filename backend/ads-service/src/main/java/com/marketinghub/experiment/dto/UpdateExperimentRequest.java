@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
+import com.marketinghub.experiment.ExperimentStage;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import lombok.Data;
@@ -15,6 +16,9 @@ import lombok.Data;
 public class UpdateExperimentRequest {
     private String name;
     private String hypothesis;
+    private ExperimentStage stage;
+    private String primaryVariable;
+    private String primaryMetric;
     @JsonProperty("kpiTarget")
     private BigDecimal kpiTargetCpl;
     private String metricPresetId;

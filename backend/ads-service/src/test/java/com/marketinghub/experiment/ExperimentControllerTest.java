@@ -61,6 +61,12 @@ class ExperimentControllerTest {
                         .build()).getId();
     }
 
+    private void applyStageDefaults(CreateExperimentRequest request) {
+        request.setStage(ExperimentStage.AD);
+        request.setPrimaryVariable("Ângulo de dor");
+        request.setPrimaryMetric("CTR de link (%)");
+    }
+
     @Test
     void postExperiment() throws Exception {
         MarketNiche niche = nicheRepo.save(MarketNiche.builder().name("Teste").build());
@@ -86,6 +92,7 @@ class ExperimentControllerTest {
                 .name("Lifecycle")
                 .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
         req.setName("Exp1");
         req.setHypothesisId(hyp.getId());
         req.setHypothesis("h");
@@ -128,6 +135,7 @@ class ExperimentControllerTest {
                 .name("Lifecycle")
                 .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
         req.setMetricPresetId("LEAN_150");

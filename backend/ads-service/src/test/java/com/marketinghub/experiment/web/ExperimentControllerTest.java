@@ -90,6 +90,18 @@ class ExperimentControllerTest {
                         .build()).getId();
     }
 
+    private void applyStageDefaults(CreateExperimentRequest request) {
+        request.setStage(com.marketinghub.experiment.ExperimentStage.AD);
+        request.setPrimaryVariable("Ângulo de dor");
+        request.setPrimaryMetric("CTR de link (%)");
+    }
+
+    private void applyStageDefaults(UpdateExperimentRequest request) {
+        request.setStage(com.marketinghub.experiment.ExperimentStage.AD);
+        request.setPrimaryVariable("Ângulo de dor");
+        request.setPrimaryMetric("CTR de link (%)");
+    }
+
     @BeforeEach
     void cleanDb() {
         repository.deleteAll();
@@ -129,6 +141,7 @@ class ExperimentControllerTest {
         JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
         var instagramAccount = fixtures.createAndSaveInstagramAccount();
         CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
         req.setName("Exp1");
         req.setHypothesisId(hyp.getId());
         req.setHypothesis("H1");
@@ -177,6 +190,7 @@ class ExperimentControllerTest {
                 .build());
         var instagramAccount = fixtures.createAndSaveInstagramAccount();
         CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
         req.setName("Exp1");
         req.setHypothesisId(hyp.getId());
         req.setHypothesis("H1");
@@ -200,6 +214,7 @@ class ExperimentControllerTest {
         exp.setJourneyTemplate(startTemplate);
         repository.save(exp);
         UpdateExperimentRequest req = new UpdateExperimentRequest();
+        applyStageDefaults(req);
         req.setName("Updated");
         req.setHypothesis("Hyp");
         req.setKpiTargetCpl(new BigDecimal("50"));

@@ -3,6 +3,7 @@ package com.marketinghub.experiment.dto;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
+import com.marketinghub.experiment.ExperimentStage;
 import java.time.LocalDate;
 import lombok.Data;
 
@@ -15,6 +16,9 @@ public class CreateExperimentRequest {
     private java.util.UUID hypothesisId;
     private String name;
     private String hypothesis;
+    private ExperimentStage stage;
+    private String primaryVariable;
+    private String primaryMetric;
     @JsonProperty("kpiTarget")
     @JsonAlias("kpiTargetCpl")
     private BigDecimal kpiTargetCpl;

@@ -15,6 +15,8 @@ export interface InstagramAccountSummary {
   name: string;
 }
 
+export type ExperimentStage = "AD" | "LANDING" | "SAMPLE" | "SALES";
+
 export interface FacebookInstantFormSummary {
   id: number;
   hypothesisId: string;
@@ -101,6 +103,9 @@ export interface Experiment {
   creativeApproved: boolean;
   status: string;
   platform: string;
+  stage: ExperimentStage;
+  primaryVariable?: string | null;
+  primaryMetric?: string | null;
   createdAt: string;
   updatedAt: string;
   journeyTemplateId?: number | null;

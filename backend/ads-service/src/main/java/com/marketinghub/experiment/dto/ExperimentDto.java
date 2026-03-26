@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.marketinghub.ads.dto.FacebookInstantFormDto;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.experiment.ExperimentStage;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -47,6 +48,9 @@ public class ExperimentDto {
     private LocalDate endDate;
     private ExperimentStatus status;
     private ExperimentPlatform platform;
+    private ExperimentStage stage;
+    private String primaryVariable;
+    private String primaryMetric;
     private boolean creativeApproved;
     private Instant createdAt;
     private Instant updatedAt;

@@ -4,6 +4,7 @@ import { useNiches } from "../../api/niche/useNiches";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { useMemo, useState } from "react";
+import { getExperimentStageLabel } from "./stageLabels";
 
 function parseDate(date?: string | null) {
   if (!date) return 0;
@@ -81,6 +82,8 @@ export default function ExperimentListPage() {
             <tr>
               <th>Nome</th>
               <th>Nicho</th>
+              <th>Etapa</th>
+              <th>Variável</th>
               <th>KPI alvo</th>
               <th>Status</th>
               <th>Início</th>
@@ -92,6 +95,8 @@ export default function ExperimentListPage() {
               <tr key={e.id}>
                 <td>{e.name}</td>
                 <td>{niches?.find((n) => n.id === e.nicheId)?.name}</td>
+                <td>{getExperimentStageLabel(e.stage)}</td>
+                <td>{e.primaryVariable || "—"}</td>
                 <td>{e.kpiTarget}</td>
                 <td>{e.status}</td>
                 <td>{e.startDate}</td>

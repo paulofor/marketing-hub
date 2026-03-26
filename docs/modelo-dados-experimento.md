@@ -44,6 +44,9 @@ erDiagram
       BIGINT journey_template_id FK
       DECIMAL daily_budget
       VARCHAR status
+      VARCHAR stage
+      VARCHAR primary_variable
+      VARCHAR primary_metric
       DATE start_date
       DATE end_date
       DATETIME facebook_release_requested_at
@@ -289,6 +292,11 @@ erDiagram
 
 ## Observações de implementação
 
+- Cada registro de `EXPERIMENT` guarda agora `stage`, `primary_variable` e `primary_metric`.
+  - `stage` representa a etapa do funil (AD, LANDING, SAMPLE ou SALES) e direciona o que está sendo testado.
+  - `primary_variable` descreve o ângulo/variável do experimento em linguagem natural.
+  - `primary_metric` registra qual indicador decide o sucesso da hipótese e deve ser tratado como texto legível (ex.: "CTR de link (%)").
+- O endpoint `/api/experiment-playbook` provê o playbook canônico por etapa com descrições e sugestões para preencher esses campos.
 - Registros gerados por processos do Worker IA devem manter `model` e `prompt`
   preenchidos nos objetos aplicáveis (ex.: público, criativo, ad set, fluxo).
 - O experimento funciona como eixo de rastreabilidade entre planejamento,

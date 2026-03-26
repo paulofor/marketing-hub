@@ -3,6 +3,9 @@ databaseChangeLog:
       file: V2037_01_05__sales_video_foundation.sql
       relativeToChangelogFile: true
   - include:
+      file: V2037_02_01__experiment_stage_metadata.sql
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2037-01-10-sales-video-script-storyboard.yaml
       relativeToChangelogFile: true
   - include:

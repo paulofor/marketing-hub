@@ -237,6 +237,11 @@ public class ExperimentService {
         if (request.getMetricPresetId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "metricPresetId required");
         }
+        if (request.getStage() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "stage required");
+        }
+        String normalizedPrimaryVariable = normalizePrimaryDescriptor(request.getPrimaryVariable(), "primaryVariable");
+        String normalizedPrimaryMetric = normalizePrimaryDescriptor(request.getPrimaryMetric(), "primaryMetric");
         if (request.getJourneyTemplateId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "journeyTemplateId required");
         }
@@ -284,6 +289,9 @@ public class ExperimentService {
                 .endDate(request.getEndDate())
                 .status(ExperimentStatus.PLANNED)
                 .platform(ExperimentPlatform.FACEBOOK)
+                .stage(request.getStage())
+                .primaryVariable(normalizedPrimaryVariable)
+                .primaryMetric(normalizedPrimaryMetric)
                 .creativesToGenerate(request.getCreativesToGenerate())
                 .instantFormsToGenerate(request.getInstantFormsToGenerate())
                 .emailsToGenerate(request.getEmailsToGenerate())
@@ -370,6 +378,9 @@ public class ExperimentService {
                 .endDate(original.getEndDate())
                 .status(ExperimentStatus.PLANNED)
                 .platform(original.getPlatform())
+                .stage(original.getStage())
+                .primaryVariable(original.getPrimaryVariable())
+                .primaryMetric(original.getPrimaryMetric())
                 .creativesToGenerate(original.getCreativesToGenerate())
                 .instantFormsToGenerate(original.getInstantFormsToGenerate())
                 .emailsToGenerate(original.getEmailsToGenerate())
@@ -453,11 +464,22 @@ public class ExperimentService {
         }
 
         MetricPreset preset = metricPresetService.get(request.getMetricPresetId());
+        ExperimentStage resolvedStage = request.getStage() != null ? request.getStage() : exp.getStage();
+        if (resolvedStage == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "stage required");
+        }
+        String normalizedPrimaryVariable = resolvePrimaryDescriptor(
+                request.getPrimaryVariable(), exp.getPrimaryVariable(), "primaryVariable");
+        String normalizedPrimaryMetric = resolvePrimaryDescriptor(
+                request.getPrimaryMetric(), exp.getPrimaryMetric(), "primaryMetric");
 
         exp.setName(request.getName());
         exp.setHypothesis(request.getHypothesis());
         exp.setKpiTargetCpl(request.getKpiTargetCpl());
         exp.setMetricPreset(preset);
+        exp.setStage(resolvedStage);
+        exp.setPrimaryVariable(normalizedPrimaryVariable);
+        exp.setPrimaryMetric(normalizedPrimaryMetric);
         if (request.isDailyBudgetPresent()) {
             if (request.getDailyBudget() != null && request.getDailyBudget().compareTo(java.math.BigDecimal.ZERO) <= 0) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "dailyBudget must be greater than zero");
@@ -728,6 +750,23 @@ public class ExperimentService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "unitPrice must be greater than zero");
         }
         return unitPrice.setScale(2, java.math.RoundingMode.HALF_UP);
+    }
+
+    private String normalizePrimaryDescriptor(String value, String fieldName) {
+        if (!StringUtils.hasText(value)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, fieldName + " required");
+        }
+        return value.trim();
+    }
+
+    private String resolvePrimaryDescriptor(String requestedValue, String currentValue, String fieldName) {
+        if (StringUtils.hasText(requestedValue)) {
+            return normalizePrimaryDescriptor(requestedValue, fieldName);
+        }
+        if (StringUtils.hasText(currentValue)) {
+            return normalizePrimaryDescriptor(currentValue, fieldName);
+        }
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, fieldName + " required");
     }
 
     private String normalizePrompt(String prompt) {

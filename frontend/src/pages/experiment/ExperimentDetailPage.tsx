@@ -3,12 +3,14 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useExperiment } from "../../api/experiment/useExperiment";
+import type { ExperimentStage } from "../../api/experiment/useExperiments";
 import { useExperimentDiagnostics } from "../../api/experiment/useExperimentDiagnostics";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
 import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
+import { getExperimentStageLabel } from "./stageLabels";
 import nicheIcon from "../../assets/icons/niche-icon.svg";
 import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
 import CriativosTab from "./CriativosTab";
@@ -508,6 +510,18 @@ export default function ExperimentDetailPage() {
           {hyp?.title || data.hypothesis}
         </Link>
       ),
+    },
+    {
+      label: "Etapa priorizada",
+      value: getExperimentStageLabel(data.stage as ExperimentStage),
+    },
+    {
+      label: "Variável principal",
+      value: data.primaryVariable || "—",
+    },
+    {
+      label: "Métrica principal",
+      value: data.primaryMetric || "—",
     },
     {
       label: "Página do Facebook",

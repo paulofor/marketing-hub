@@ -5,13 +5,42 @@ import { useImageGenerationModels } from "../../api/ai/useImageGenerationModels"
 import { useNiches } from "../../api/niche/useNiches";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
+import type { ExperimentStage } from "../../api/experiment/useExperiments";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
 import { useJourneyTemplates } from "../../api/journey/useJourneyTemplates";
+import { useExperimentPlaybook } from "../../api/experiment/useExperimentPlaybook";
 import { useAllFacebookPages } from "../../api/useAllFacebookPages";
 import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { getStatisticsDefaultsForBudget } from "./statisticsDefaults";
+import { experimentStageLabels } from "./stageLabels";
+
+type FormState = {
+  nicheId: string;
+  name: string;
+  hypothesisId: string;
+  hypothesis: string;
+  kpiTarget: string;
+  metricPresetId: string;
+  sampleSize: string;
+  mde: string;
+  dailyBudget: string;
+  unitPrice: string;
+  startDate: string;
+  endDate: string;
+  journeyTemplateId: string;
+  facebookPageId: string;
+  instagramAccountId: string;
+  imageModelId: string;
+  imageModelQualityId: string;
+  imagesPerPackage: string;
+  openImagesPerPackage: string;
+  compressedImagesPerPackage: string;
+  stage: ExperimentStage;
+  primaryVariable: string;
+  primaryMetric: string;
+};
 
 export default function NewExperimentPage() {
   const [params] = useSearchParams();
@@ -19,7 +48,7 @@ export default function NewExperimentPage() {
   const hypothesisIdParam = params.get("hypothesisId") ?? "";
   const create = useCreateExperiment();
   const { data: niches } = useNiches();
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<FormState>({
     nicheId: nicheIdParam,
     name: "",
     hypothesisId: hypothesisIdParam,
@@ -40,6 +69,9 @@ export default function NewExperimentPage() {
     imagesPerPackage: "20",
     openImagesPerPackage: "",
     compressedImagesPerPackage: "",
+    stage: "AD",
+    primaryVariable: "",
+    primaryMetric: "",
   });
   const [autoSampleSize, setAutoSampleSize] = useState(true);
   const [autoMde, setAutoMde] = useState(true);
@@ -54,6 +86,7 @@ export default function NewExperimentPage() {
   const { data: presets } = useMetricPresets();
   const { data: journeyTemplatePage } = useJourneyTemplates({ size: 200 });
   const { data: imageModels } = useImageGenerationModels();
+  const { data: playbook } = useExperimentPlaybook();
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
     useAllFacebookPages();
   const { data: instagramAccounts, isLoading: isLoadingInstagramAccounts } =
@@ -64,6 +97,22 @@ export default function NewExperimentPage() {
     instagramAccounts.length === 0;
   const showNicheSelect = nicheIdParam === "";
   const showHypSelect = hypothesisIdParam === "";
+  const stageEntries = playbook ?? [];
+  const stageSelectOptions =
+    stageEntries.length > 0
+      ? stageEntries.map((entry) => ({ value: entry.stage, label: entry.title }))
+      : (Object.entries(experimentStageLabels) as [ExperimentStage, string][]).map(([value, label]) => ({
+          value,
+          label,
+        }));
+  const selectedStageEntry = stageEntries.find((entry) => entry.stage === form.stage);
+
+  const metricSuggestions = selectedStageEntry
+    ? [
+        selectedStageEntry.defaultPrimaryMetric,
+        ...(selectedStageEntry.guardrailMetrics ?? []),
+      ].filter((metric): metric is string => Boolean(metric))
+    : [];
 
   const selectedJourneyTemplateId = form.journeyTemplateId
     ? Number(form.journeyTemplateId)
@@ -122,6 +171,18 @@ export default function NewExperimentPage() {
     ? `${usdFormatter.format(preferredImagePrice.unitPriceUsd)} por imagem`
     : undefined;
 
+  const handleApplyVariableSuggestion = (label: string, metric?: string | null) => {
+    setForm((prev) => ({
+      ...prev,
+      primaryVariable: label,
+      primaryMetric: metric ?? prev.primaryMetric,
+    }));
+  };
+
+  const handleApplyMetricSuggestion = (metric: string) => {
+    setForm((prev) => ({ ...prev, primaryMetric: metric }));
+  };
+
   useEffect(() => {
     if (selectedHypothesis?.title) {
       setForm((f) => ({ ...f, hypothesis: selectedHypothesis.title }));
@@ -158,6 +219,28 @@ export default function NewExperimentPage() {
     });
   }, [autoSampleSize, autoMde, form.dailyBudget]);
 
+  useEffect(() => {
+    if (!selectedStageEntry) {
+      return;
+    }
+    setForm((prev) => {
+      if (prev.stage !== selectedStageEntry.stage) {
+        return prev;
+      }
+      let changed = false;
+      const next: FormState = { ...prev };
+      if (!prev.primaryVariable.trim() && selectedStageEntry.variables.length > 0) {
+        next.primaryVariable = selectedStageEntry.variables[0].label;
+        changed = true;
+      }
+      if (!prev.primaryMetric.trim() && selectedStageEntry.defaultPrimaryMetric) {
+        next.primaryMetric = selectedStageEntry.defaultPrimaryMetric;
+        changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [selectedStageEntry]);
+
   const submit = async () => {
     try {
       if (noInstagramAccounts) {
@@ -172,6 +255,14 @@ export default function NewExperimentPage() {
       }
       if (!form.journeyTemplateId) {
         alert("Selecione um template de jornada");
+        return;
+      }
+      if (!form.primaryVariable.trim()) {
+        alert("Defina a variável principal que será testada");
+        return;
+      }
+      if (!form.primaryMetric.trim()) {
+        alert("Informe a métrica principal do experimento");
         return;
       }
       const parsedDailyBudget = Number(form.dailyBudget);
@@ -213,6 +304,9 @@ export default function NewExperimentPage() {
         hypothesisId: form.hypothesisId || undefined,
         name: form.name,
         hypothesis: form.hypothesis,
+        stage: form.stage as ExperimentStage,
+        primaryVariable: form.primaryVariable.trim(),
+        primaryMetric: form.primaryMetric.trim(),
         kpiTarget: Number(form.kpiTarget),
         metricPresetId: form.metricPresetId,
         sampleSize: form.sampleSize ? Number(form.sampleSize) : undefined,
@@ -263,6 +357,9 @@ export default function NewExperimentPage() {
         imagesPerPackage: "20",
         openImagesPerPackage: "",
         compressedImagesPerPackage: "",
+        stage: "AD",
+        primaryVariable: "",
+        primaryMetric: "",
       });
       setAutoSampleSize(true);
       setAutoMde(true);
@@ -338,6 +435,108 @@ export default function NewExperimentPage() {
       {form.hypothesis && (
         <h2 className="h5 mb-2">{form.hypothesis}</h2>
       )}
+      <label className="form-label" htmlFor="stageSelect">
+        Etapa do experimento <span className="text-danger">*</span>
+      </label>
+      <select
+        id="stageSelect"
+        className="form-select mb-2"
+        value={form.stage}
+        onChange={(e) => {
+          const nextStage = e.target.value as ExperimentStage;
+          setForm((prev) => ({
+            ...prev,
+            stage: nextStage,
+            primaryVariable: "",
+            primaryMetric: "",
+          }));
+        }}
+      >
+        {stageSelectOptions.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <div className="form-text mb-3">
+        {selectedStageEntry?.description ??
+          "Escolha qual etapa do funil este experimento prioriza."}
+      </div>
+      <label className="form-label" htmlFor="primaryVariable">
+        Variável principal <span className="text-danger">*</span>
+      </label>
+      <input
+        id="primaryVariable"
+        className="form-control mb-2"
+        placeholder="Ex.: Dor vs Resultado"
+        value={form.primaryVariable}
+        onChange={(e) =>
+          setForm((prev) => ({ ...prev, primaryVariable: e.target.value }))
+        }
+      />
+      {selectedStageEntry?.variables?.length ? (
+        <div className="d-flex flex-wrap gap-2 mb-3">
+          {selectedStageEntry.variables.map((variable) => (
+            <button
+              type="button"
+              key={variable.id}
+              className="btn btn-outline-secondary btn-sm"
+              onClick={() =>
+                handleApplyVariableSuggestion(
+                  variable.label,
+                  variable.suggestedPrimaryMetric,
+                )
+              }
+            >
+              {variable.label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="form-text mb-3">
+          Registre o que está sendo comparado neste experimento.
+        </div>
+      )}
+      <label className="form-label" htmlFor="primaryMetric">
+        Métrica principal <span className="text-danger">*</span>
+      </label>
+      <input
+        id="primaryMetric"
+        className="form-control mb-2"
+        placeholder="Ex.: CTR de link (%)"
+        value={form.primaryMetric}
+        onChange={(e) =>
+          setForm((prev) => ({ ...prev, primaryMetric: e.target.value }))
+        }
+      />
+      {selectedStageEntry ? (
+        <div className="form-text">
+          Sugestão do playbook: <strong>{selectedStageEntry.defaultPrimaryMetric}</strong>
+        </div>
+      ) : (
+        <div className="form-text">
+          Descreva qual indicador decidirá se a variável funcionou.
+        </div>
+      )}
+      {selectedStageEntry?.guardrailMetrics?.length ? (
+        <div className="text-muted small mb-2">
+          Guardrails: {selectedStageEntry.guardrailMetrics.join(" · " )}
+        </div>
+      ) : null}
+      {metricSuggestions.length > 0 ? (
+        <div className="d-flex flex-wrap gap-2 mb-3">
+          {metricSuggestions.map((metric) => (
+            <button
+              type="button"
+              key={metric}
+              className="btn btn-outline-secondary btn-sm"
+              onClick={() => handleApplyMetricSuggestion(metric)}
+            >
+              {metric}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <input
         className="form-control mb-2"
         placeholder="Nome"

@@ -85,6 +85,18 @@ class ExperimentServiceTest {
                         .build()).getId();
     }
 
+    private void applyStageDefaults(CreateExperimentRequest request) {
+        request.setStage(ExperimentStage.AD);
+        request.setPrimaryVariable("Ângulo de dor");
+        request.setPrimaryMetric("CTR de link (%)");
+    }
+
+    private void applyStageDefaults(UpdateExperimentRequest request) {
+        request.setStage(ExperimentStage.AD);
+        request.setPrimaryVariable("Ângulo de dor");
+        request.setPrimaryMetric("CTR de link (%)");
+    }
+
     @Test
     void createNewExperimentWithExistingNiche() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
@@ -107,6 +119,7 @@ class ExperimentServiceTest {
                 .defaultMdePp(new BigDecimal("12"))
                 .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
         req.setMarketNicheId(niche.getId());
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
@@ -147,6 +160,7 @@ class ExperimentServiceTest {
                 .defaultMdePp(new BigDecimal("12"))
                 .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
         req.setMarketNicheId(niche.getId());
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
@@ -185,6 +199,7 @@ class ExperimentServiceTest {
                 .defaultMdePp(new BigDecimal("12"))
                 .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
         req.setMarketNicheId(niche.getId());
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
@@ -223,6 +238,7 @@ class ExperimentServiceTest {
                 .defaultMdePp(new BigDecimal("12"))
                 .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
         req.setMarketNicheId(niche.getId());
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
@@ -263,6 +279,7 @@ class ExperimentServiceTest {
                 .defaultMdePp(new BigDecimal("12"))
                 .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
         req.setMarketNicheId(niche2.getId());
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
@@ -301,6 +318,7 @@ class ExperimentServiceTest {
                 .build());
 
         CreateExperimentRequest req1 = new CreateExperimentRequest();
+        applyStageDefaults(req1);
         req1.setMarketNicheId(niche.getId());
         req1.setHypothesisId(hyp.getId());
         req1.setName("ExpA");
@@ -346,6 +364,7 @@ class ExperimentServiceTest {
                 .build());
 
         CreateExperimentRequest req2 = new CreateExperimentRequest();
+        applyStageDefaults(req2);
         req2.setMarketNicheId(niche.getId());
         req2.setHypothesisId(hyp.getId());
         req2.setName("ExpB");
@@ -384,6 +403,7 @@ class ExperimentServiceTest {
                 .defaultMdePp(new BigDecimal("12"))
                 .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
         req.setMarketNicheId(niche.getId());
         req.setHypothesisId(hyp.getId());
         req.setName("ExpStatus");
@@ -427,6 +447,7 @@ class ExperimentServiceTest {
                 .defaultMdePp(new BigDecimal("12"))
                 .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
         req.setMarketNicheId(niche.getId());
         req.setHypothesisId(hyp.getId());
         req.setName("ExpRelease");
@@ -476,6 +497,7 @@ class ExperimentServiceTest {
                 .defaultMdePp(new BigDecimal("12"))
                 .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
         req.setMarketNicheId(niche.getId());
         req.setHypothesisId(hyp.getId());
         req.setName("ExpRun");
@@ -519,6 +541,7 @@ class ExperimentServiceTest {
                 .build());
         JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
         CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
         req.setMarketNicheId(niche.getId());
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
@@ -557,6 +580,7 @@ class ExperimentServiceTest {
                 .defaultMdePp(new BigDecimal("12"))
                 .build());
         CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
         req.setMarketNicheId(niche.getId());
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
@@ -595,6 +619,7 @@ class ExperimentServiceTest {
         JourneyTemplate first = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
         JourneyTemplate second = journeyTemplateRepository.save(JourneyTemplate.builder().name("Retarget").build());
         CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
         req.setMarketNicheId(niche.getId());
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
@@ -607,6 +632,7 @@ class ExperimentServiceTest {
         Experiment exp = service.create(req);
 
         UpdateExperimentRequest updateReq = new UpdateExperimentRequest();
+        applyStageDefaults(updateReq);
         updateReq.setName("Exp1");
         updateReq.setHypothesis("Teste");
         updateReq.setKpiTargetCpl(new BigDecimal("45"));
@@ -642,6 +668,7 @@ class ExperimentServiceTest {
                 .build());
         JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
         CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
         req.setMarketNicheId(niche.getId());
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
@@ -654,6 +681,7 @@ class ExperimentServiceTest {
         Experiment exp = service.create(req);
 
         UpdateExperimentRequest updateReq = new UpdateExperimentRequest();
+        applyStageDefaults(updateReq);
         updateReq.setName("Exp1");
         updateReq.setHypothesis("Teste");
         updateReq.setKpiTargetCpl(new BigDecimal("45"));
@@ -689,6 +717,7 @@ class ExperimentServiceTest {
                 .build());
         JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
         CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
         req.setMarketNicheId(niche.getId());
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
@@ -700,6 +729,7 @@ class ExperimentServiceTest {
         Experiment exp = service.create(req);
 
         UpdateExperimentRequest updateReq = new UpdateExperimentRequest();
+        applyStageDefaults(updateReq);
         updateReq.setName("Exp1");
         updateReq.setHypothesis("Teste");
         updateReq.setKpiTargetCpl(new BigDecimal("45"));
@@ -736,6 +766,7 @@ class ExperimentServiceTest {
         Long secondFlow = createLeadPortalFlow(niche);
         JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
         CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
         req.setMarketNicheId(niche.getId());
         req.setHypothesisId(hyp.getId());
         req.setName("Exp1");
@@ -748,6 +779,7 @@ class ExperimentServiceTest {
         Experiment exp = service.create(req);
 
         UpdateExperimentRequest updateReq = new UpdateExperimentRequest();
+        applyStageDefaults(updateReq);
         updateReq.setName("Exp1");
         updateReq.setHypothesis("Teste");
         updateReq.setKpiTargetCpl(new BigDecimal("45"));

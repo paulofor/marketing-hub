@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import type { HypothesisFramework } from "./types";
 
 export interface Hypothesis {
   id: string;
@@ -14,6 +15,7 @@ export interface Hypothesis {
   successRule?: string;
   prompt?: string;
   model?: string;
+  framework?: HypothesisFramework | null;
   premiseAngleId?: number;
   offerType?: string;
   price?: number;

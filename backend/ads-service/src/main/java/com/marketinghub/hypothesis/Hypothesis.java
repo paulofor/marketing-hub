@@ -73,6 +73,11 @@ public class Hypothesis {
     @Column(columnDefinition = "LONGTEXT")
     private String prompt;
 
+    /** Snapshot em JSON do framework Dor → Resultado → Mecanismo → Prova → Oferta. */
+    @Lob
+    @Column(name = "framework_json", columnDefinition = "LONGTEXT")
+    private String frameworkJson;
+
     /** Modelo de IA responsável pela geração desta hipótese. */
     @Column(length = 191)
     private String model;

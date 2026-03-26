@@ -1,86 +1,74 @@
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import PageTitle from "../../components/PageTitle";
 import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
 import { useAngles } from "../../api/angle/useAngles";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
-import { useUpdateHypothesis } from "../../api/hypothesis/useUpdateHypothesis";
-import type { Hypothesis } from "../../api/hypothesis/useHypothesisBoard";
-
-const schema = z
-  .object({
-    title: z.string().min(8).max(120),
-    promise: z.string().min(1).max(140),
-    problem: z.string().min(1),
-    persona: z.string().min(1),
-    mechanism: z.string().optional(),
-    uniqueMechanism: z.string().optional(),
-    entrega: z.string().optional(),
-    successRule: z.string().min(1),
-    premiseAngleId: z.string().optional(),
-    offerType: z.enum(["LEAD", "TRIPWIRE"]),
-    price: z
-      .preprocess(
-        (v) => (v === "" || v === undefined ? undefined : Number(v)),
-        z.number(),
-      )
-      .optional(),
-    kpiTargetCpl: z.preprocess(Number, z.number()),
-  })
-  .superRefine((val, ctx) => {
-    if (val.offerType === "TRIPWIRE" && val.price === undefined) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Preço obrigatório",
-        path: ["price"],
-      });
-    }
-  });
-
-type FormData = z.infer<typeof schema>;
+import {
+  useUpdateHypothesis,
+  type UpdateHypothesisPayload,
+} from "../../api/hypothesis/useUpdateHypothesis";
+import { HypothesisFrameworkTabsForm } from "../../components/HypothesisFrameworkTabsForm";
+import {
+  hypothesisFormSchema,
+  type HypothesisFormValues,
+} from "./formTypes";
+import { EMPTY_FRAMEWORK, normalizeFramework } from "../../api/hypothesis/types";
 
 export default function EditHypothesisPage() {
   const { nicheId, hypothesisId } = useParams();
   const navigate = useNavigate();
-  const { data, isLoading } = useHypothesis(nicheId, hypothesisId);
+  const { data, isLoading, refetch } = useHypothesis(nicheId, hypothesisId);
   const { data: angles } = useAngles();
   const update = useUpdateHypothesis(nicheId);
-  const {
-    register,
-    handleSubmit,
-    watch,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<FormData>({ resolver: zodResolver(schema) });
 
-  useEffect(() => {
-    if (data) {
-      reset({
-        title: data.title,
-        promise: data.promise || "",
-        problem: data.problem || "",
-        persona: data.persona || "",
-        mechanism: data.mechanism || "",
-        uniqueMechanism: data.uniqueMechanism || "",
-        entrega: data.entrega || "",
-        successRule: data.successRule || "",
-        premiseAngleId: String(data.premiseAngleId ?? ""),
-        offerType: (data.offerType as "LEAD" | "TRIPWIRE") || "LEAD",
-        price: data.price,
-        kpiTargetCpl: data.kpiTargetCpl,
-      });
-    }
-  }, [data, reset]);
+  const form = useForm<HypothesisFormValues>({
+    resolver: zodResolver(hypothesisFormSchema),
+    defaultValues: {
+      title: "",
+      promise: "",
+      problem: "",
+      persona: "",
+      mechanism: "",
+      uniqueMechanism: "",
+      entrega: "",
+      successRule: "",
+      premiseAngleId: "",
+      offerType: "LEAD",
+      price: undefined,
+      kpiTargetCpl: 1,
+      framework: EMPTY_FRAMEWORK,
+    },
+  });
 
+  const { register, handleSubmit, watch, reset, formState } = form;
   const offerType = watch("offerType");
 
-  const onSubmit = async (values: FormData) => {
-    if (!data) return; // já garantiu load
-    const body: Hypothesis = {
-      ...data, // marketNicheId, status, createdAt, etc.
+  useEffect(() => {
+    if (!data) return;
+    reset({
+      title: data.title ?? "",
+      promise: data.promise ?? "",
+      problem: data.problem ?? "",
+      persona: data.persona ?? "",
+      mechanism: data.mechanism ?? "",
+      uniqueMechanism: data.uniqueMechanism ?? "",
+      entrega: data.entrega ?? "",
+      successRule: data.successRule ?? "",
+      premiseAngleId: data.premiseAngleId ? String(data.premiseAngleId) : "",
+      offerType: (data.offerType as "LEAD" | "TRIPWIRE") || "LEAD",
+      price: data.price ?? undefined,
+      kpiTargetCpl: data.kpiTargetCpl ?? 1,
+      framework: normalizeFramework(data.framework),
+    });
+  }, [data, reset]);
+
+  const onSubmit = async (values: HypothesisFormValues) => {
+    if (!data || !hypothesisId) return;
+    const payload: UpdateHypothesisPayload = {
+      id: hypothesisId,
       title: values.title,
       promise: values.promise,
       problem: values.problem,
@@ -93,11 +81,12 @@ export default function EditHypothesisPage() {
         ? Number(values.premiseAngleId)
         : undefined,
       offerType: values.offerType,
-      kpiTargetCpl: values.kpiTargetCpl,
-      ...(values.offerType === "TRIPWIRE" && { price: values.price }),
+      price: values.offerType === "TRIPWIRE" ? values.price ?? null : null,
+      kpiTargetCpl: values.kpiTargetCpl ?? null,
+      framework: values.framework,
     };
-
-    await update.mutateAsync(body);
+    await update.mutateAsync(payload);
+    await refetch();
     navigate(-1);
   };
 
@@ -106,246 +95,211 @@ export default function EditHypothesisPage() {
     return <p>Edição permitida apenas para hipóteses em Backlog.</p>;
 
   return (
-    <div style={{ maxWidth: 480 }}>
+    <div className="hypothesis-edit-page">
       <PageTitle icon={hypothesisIcon}>Editar Hipótese</PageTitle>
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        <label className="form-label" htmlFor="title">
-          Título
-        </label>
-        <input
-          id="title"
-          {...register("title")}
-          className={`form-control mb-2 ${errors.title ? "is-invalid" : ""}`}
-          aria-describedby="title-error"
-        />
-        {errors.title && (
-          <div id="title-error" className="invalid-feedback d-block">
-            {errors.title.message}
-          </div>
-        )}
-
-        <label className="form-label" htmlFor="promise">
-          Promessa
-        </label>
-        <input
-          id="promise"
-          {...register("promise")}
-          className={`form-control mb-2 ${errors.promise ? "is-invalid" : ""}`}
-          aria-describedby="promise-error"
-        />
-        {errors.promise && (
-          <div id="promise-error" className="invalid-feedback d-block">
-            {errors.promise.message}
-          </div>
-        )}
-
-        <label className="form-label" htmlFor="problem">
-          Problema
-        </label>
-        <input
-          id="problem"
-          {...register("problem")}
-          className={`form-control mb-2 ${errors.problem ? "is-invalid" : ""}`}
-          aria-describedby="problem-error"
-        />
-        {errors.problem && (
-          <div id="problem-error" className="invalid-feedback d-block">
-            {errors.problem.message}
-          </div>
-        )}
-
-        <label className="form-label" htmlFor="persona">
-          Persona
-        </label>
-        <input
-        id="persona"
-        {...register("persona")}
-          className={`form-control mb-2 ${errors.persona ? "is-invalid" : ""}`}
-          aria-describedby="persona-error"
-        />
-        {errors.persona && (
-          <div id="persona-error" className="invalid-feedback d-block">
-            {errors.persona.message}
-          </div>
-        )}
-
-        <label className="form-label" htmlFor="mechanism">
-          Mecanismo
-        </label>
-        <textarea
-          id="mechanism"
-          rows={2}
-          {...register("mechanism")}
-          className={`form-control mb-2 ${errors.mechanism ? "is-invalid" : ""}`}
-          aria-describedby="mechanism-error"
-        />
-        {errors.mechanism && (
-          <div id="mechanism-error" className="invalid-feedback d-block">
-            {errors.mechanism.message}
-          </div>
-        )}
-
-        <label className="form-label" htmlFor="uniqueMechanism">
-          Mecanismo único
-        </label>
-        <textarea
-          id="uniqueMechanism"
-          rows={2}
-          {...register("uniqueMechanism")}
-          className={`form-control mb-2 ${errors.uniqueMechanism ? "is-invalid" : ""}`}
-          aria-describedby="uniqueMechanism-error"
-        />
-        {errors.uniqueMechanism && (
-          <div id="uniqueMechanism-error" className="invalid-feedback d-block">
-            {errors.uniqueMechanism.message}
-          </div>
-        )}
-
-        <label className="form-label" htmlFor="entrega">
-          Entrega
-        </label>
-        <textarea
-          id="entrega"
-          rows={2}
-          {...register("entrega")}
-          className={`form-control mb-2 ${errors.entrega ? "is-invalid" : ""}`}
-          aria-describedby="entrega-error"
-        />
-        {errors.entrega && (
-          <div id="entrega-error" className="invalid-feedback d-block">
-            {errors.entrega.message}
-          </div>
-        )}
-
-        <label className="form-label" htmlFor="successRule">
-          Regra de sucesso
-        </label>
-        <textarea
-          id="successRule"
-          rows={2}
-          {...register("successRule")}
-          className={`form-control mb-2 ${errors.successRule ? "is-invalid" : ""}`}
-          aria-describedby="rule-error"
-        />
-        {errors.successRule && (
-          <div id="rule-error" className="invalid-feedback d-block">
-            {errors.successRule.message}
-          </div>
-        )}
-
-        <label className="form-label" htmlFor="angle">
-          Ângulo
-        </label>
-        <select
-          id="angle"
-          {...register("premiseAngleId")}
-          className={`form-select mb-2 ${errors.premiseAngleId ? "is-invalid" : ""}`}
-          aria-describedby="angle-error"
-        >
-          <option value="">Selecione Angle</option>
-          {Array.isArray(angles) &&
-            angles.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
-        </select>
-        {errors.premiseAngleId && (
-          <div id="angle-error" className="invalid-feedback d-block">
-            {errors.premiseAngleId.message}
-          </div>
-        )}
-
-        <div className="mb-2">
-          <div className="form-check">
-            <input
-              className="form-check-input"
-              type="radio"
-              id="offer-lead"
-              value="LEAD"
-              {...register("offerType")}
-            />
-            <label className="form-check-label" htmlFor="offer-lead">
-              Lead Magnet
-            </label>
-          </div>
-          <div className="form-check">
-            <input
-              className="form-check-input"
-              type="radio"
-              id="offer-trip"
-              value="TRIPWIRE"
-              {...register("offerType")}
-            />
-            <label className="form-check-label" htmlFor="offer-trip">
-              Tripwire
-            </label>
-          </div>
-          {errors.offerType && (
-            <div id="offer-error" className="invalid-feedback d-block">
-              {errors.offerType.message}
+      <FormProvider {...form}>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className="row g-3">
+            <div className="col-md-6">
+              <label className="form-label" htmlFor="title">
+                Título
+              </label>
+              <input
+                id="title"
+                {...register("title")}
+                className={`form-control ${formState.errors.title ? "is-invalid" : ""}`}
+              />
+              {formState.errors.title && (
+                <div className="invalid-feedback d-block">
+                  {formState.errors.title.message}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+            <div className="col-md-6">
+              <label className="form-label" htmlFor="persona">
+                Persona
+              </label>
+              <input
+                id="persona"
+                {...register("persona")}
+                className={`form-control ${formState.errors.persona ? "is-invalid" : ""}`}
+              />
+              {formState.errors.persona && (
+                <div className="invalid-feedback d-block">
+                  {formState.errors.persona.message}
+                </div>
+              )}
+            </div>
+            <div className="col-md-6">
+              <label className="form-label" htmlFor="promise">
+                Promessa
+              </label>
+              <input
+                id="promise"
+                {...register("promise")}
+                className={`form-control ${formState.errors.promise ? "is-invalid" : ""}`}
+              />
+              {formState.errors.promise && (
+                <div className="invalid-feedback d-block">
+                  {formState.errors.promise.message}
+                </div>
+              )}
+            </div>
+            <div className="col-md-6">
+              <label className="form-label" htmlFor="problem">
+                Problema
+              </label>
+              <input
+                id="problem"
+                {...register("problem")}
+                className={`form-control ${formState.errors.problem ? "is-invalid" : ""}`}
+              />
+              {formState.errors.problem && (
+                <div className="invalid-feedback d-block">
+                  {formState.errors.problem.message}
+                </div>
+              )}
+            </div>
+            <div className="col-md-6">
+              <label className="form-label" htmlFor="mechanism">
+                Mecanismo
+              </label>
+              <textarea
+                id="mechanism"
+                rows={2}
+                {...register("mechanism")}
+                className="form-control"
+              />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label" htmlFor="uniqueMechanism">
+                Mecanismo único
+              </label>
+              <textarea
+                id="uniqueMechanism"
+                rows={2}
+                {...register("uniqueMechanism")}
+                className="form-control"
+              />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label" htmlFor="entrega">
+                Prova / entrega
+              </label>
+              <textarea
+                id="entrega"
+                rows={2}
+                {...register("entrega")}
+                className="form-control"
+              />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label" htmlFor="successRule">
+                Regra de sucesso
+              </label>
+              <textarea
+                id="successRule"
+                rows={2}
+                {...register("successRule")}
+                className={`form-control ${formState.errors.successRule ? "is-invalid" : ""}`}
+              />
+              {formState.errors.successRule && (
+                <div className="invalid-feedback d-block">
+                  {formState.errors.successRule.message}
+                </div>
+              )}
+            </div>
+            <div className="col-md-6">
+              <label className="form-label" htmlFor="premiseAngleId">
+                Ângulo
+              </label>
+              <select
+                id="premiseAngleId"
+                className="form-select"
+                {...register("premiseAngleId")}
+              >
+                <option value="">Selecione...</option>
+                {(angles ?? []).map((angle) => (
+                  <option key={angle.id} value={angle.id}>
+                    {angle.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-md-3">
+              <label className="form-label" htmlFor="offerType">
+                Tipo de oferta
+              </label>
+              <select
+                id="offerType"
+                className="form-select"
+                {...register("offerType")}
+              >
+                <option value="LEAD">Lead</option>
+                <option value="TRIPWIRE">Tripwire</option>
+              </select>
+            </div>
+            <div className="col-md-3">
+              <label className="form-label" htmlFor="price">
+                Preço
+              </label>
+              <input
+                type="number"
+                id="price"
+                step="0.01"
+                disabled={offerType !== "TRIPWIRE"}
+                className={`form-control ${formState.errors.price ? "is-invalid" : ""}`}
+                {...register("price")}
+              />
+              {formState.errors.price && (
+                <div className="invalid-feedback d-block">
+                  {formState.errors.price.message}
+                </div>
+              )}
+            </div>
+            <div className="col-md-3">
+              <label className="form-label" htmlFor="kpiTargetCpl">
+                KPI alvo (CPL)
+              </label>
+              <input
+                type="number"
+                id="kpiTargetCpl"
+                className={`form-control ${formState.errors.kpiTargetCpl ? "is-invalid" : ""}`}
+                {...register("kpiTargetCpl")}
+              />
+              {formState.errors.kpiTargetCpl && (
+                <div className="invalid-feedback d-block">
+                  {formState.errors.kpiTargetCpl.message}
+                </div>
+              )}
+            </div>
+          </div>
 
-        {offerType === "TRIPWIRE" && (
-          <div>
-            <label className="form-label" htmlFor="price">
-              Preço
-            </label>
-            <input
-              type="number"
-              id="price"
-              {...register("price", { valueAsNumber: true })}
-              className={`form-control mb-2 ${errors.price ? "is-invalid" : ""}`}
-              aria-describedby="price-error"
+          <div className="mt-4">
+            <HypothesisFrameworkTabsForm
+              hypothesisId={hypothesisId}
+              nicheId={nicheId}
             />
-            {errors.price && (
-              <div id="price-error" className="invalid-feedback d-block">
-                {errors.price.message}
-              </div>
-            )}
           </div>
-        )}
 
-        <label className="form-label" htmlFor="kpiTargetCpl">
-          KPI alvo (CPL em R$)
-        </label>
-        <input
-          type="number"
-          step="0.01"
-          id="kpiTargetCpl"
-          {...register("kpiTargetCpl", { valueAsNumber: true })}
-          className={`form-control mb-2 ${errors.kpiTargetCpl ? "is-invalid" : ""}`}
-          aria-describedby="kpi-error"
-        />
-        {errors.kpiTargetCpl && (
-          <div id="kpi-error" className="invalid-feedback d-block">
-            {errors.kpiTargetCpl.message}
+          <div className="d-flex gap-2 mt-4">
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={formState.isSubmitting}
+            >
+              {formState.isSubmitting ? "Salvando..." : "Salvar alterações"}
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
+              onClick={() => navigate(-1)}
+            >
+              Cancelar
+            </button>
           </div>
-        )}
-
-        <div className="mt-3 d-flex justify-content-end">
-          <button
-            type="button"
-            className="btn btn-outline-secondary me-2"
-            onClick={() => navigate(-1)}
-            disabled={isSubmitting}
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={isSubmitting}
-            onClick={handleSubmit(onSubmit, (errors) => {
-              console.log("Validation errors", errors);
-            })}
-          >
-            Salvar
-          </button>
-        </div>
-      </form>
+        </form>
+      </FormProvider>
     </div>
   );
 }

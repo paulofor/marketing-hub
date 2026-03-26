@@ -14,6 +14,8 @@ import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.facebookads.dto.ExperimentReadyForAdSetDto;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.mapper.HypothesisMapper;
+import com.marketinghub.hypothesis.framework.HypothesisFrameworkMapperSupport;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.mapper.MarketNicheMapper;
 import com.marketinghub.targeting.TargetingElement;
@@ -45,6 +47,7 @@ class FacebookAdSetExperimentServiceTest {
         injectFacebookInstantFormMapper(experimentMapper);
         MarketNicheMapper marketNicheMapper = Mappers.getMapper(MarketNicheMapper.class);
         HypothesisMapper hypothesisMapper = Mappers.getMapper(HypothesisMapper.class);
+        injectFrameworkMapper(hypothesisMapper);
         TargetingElementMapper targetingElementMapper = Mappers.getMapper(TargetingElementMapper.class);
         service = new FacebookAdSetExperimentService(
                 experimentRepository,
@@ -53,6 +56,28 @@ class FacebookAdSetExperimentServiceTest {
                 marketNicheMapper,
                 hypothesisMapper,
                 targetingElementMapper);
+    }
+
+    private void injectFrameworkMapper(HypothesisMapper hypothesisMapper) {
+        HypothesisFrameworkMapperSupport support = new HypothesisFrameworkMapperSupport(new ObjectMapper());
+        try {
+            hypothesisMapper
+                    .getClass()
+                    .getMethod("setHypothesisFrameworkMapperSupport", HypothesisFrameworkMapperSupport.class)
+                    .invoke(hypothesisMapper, support);
+            return;
+        } catch (NoSuchMethodException ignored) {
+            // fallback to field injection
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Não foi possível configurar HypothesisFrameworkMapperSupport no HypothesisMapper", e);
+        }
+        try {
+            var field = hypothesisMapper.getClass().getDeclaredField("hypothesisFrameworkMapperSupport");
+            field.setAccessible(true);
+            field.set(hypothesisMapper, support);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Não foi possível configurar HypothesisFrameworkMapperSupport no HypothesisMapper", e);
+        }
     }
 
     private void injectFacebookInstantFormMapper(ExperimentMapper experimentMapper) {

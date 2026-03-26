@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2025-11-05-hypothesis-framework-rename
+      author: marketinghub
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: hypothesis
+            columnName: hypothesiscol
+      changes:
+        - renameColumn:
+            tableName: hypothesis
+            oldColumnName: hypothesiscol
+            newColumnName: framework_json
+            columnDataType: VARCHAR(45)
+  - changeSet:
+      id: 2025-11-05-hypothesis-framework-longtext
+      author: marketinghub
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: hypothesis
+            columnName: framework_json
+      changes:
+        - modifyDataType:
+            tableName: hypothesis
+            columnName: framework_json
+            newDataType: LONGTEXT

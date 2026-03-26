@@ -1,9 +1,8 @@
 package com.marketinghub.hypothesis.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import java.math.BigDecimal;
 import java.util.List;
-
-import com.fasterxml.jackson.annotation.JsonAlias;
 
 public class CreateHypothesisRequest {
     private Long marketNicheId;
@@ -27,6 +26,7 @@ public class CreateHypothesisRequest {
     private BigDecimal price;
     private BigDecimal kpiTargetCpl;
     private List<Long> promptAttributeDescriptionIds;
+    private HypothesisFrameworkDto framework;
 
     public Long getMarketNicheId() { return marketNicheId; }
     public void setMarketNicheId(Long marketNicheId) { this.marketNicheId = marketNicheId; }
@@ -68,4 +68,7 @@ public class CreateHypothesisRequest {
 
     public List<Long> getPromptAttributeDescriptionIds() { return promptAttributeDescriptionIds; }
     public void setPromptAttributeDescriptionIds(List<Long> promptAttributeDescriptionIds) { this.promptAttributeDescriptionIds = promptAttributeDescriptionIds; }
+
+    public HypothesisFrameworkDto getFramework() { return framework; }
+    public void setFramework(HypothesisFrameworkDto framework) { this.framework = framework; }
 }

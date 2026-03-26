@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { Hypothesis } from "./useHypothesisBoard";
+import type { HypothesisFramework } from "./types";
 
 export interface CreateHypothesis {
   marketNicheId: number;
@@ -22,6 +23,7 @@ export interface CreateHypothesis {
   costUsd?: number;
   cost?: number;
   expense?: number;
+  framework?: HypothesisFramework | null;
 }
 
 export function useCreateHypothesis() {

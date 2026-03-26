@@ -15,6 +15,7 @@ import { TargetingGenerationForm } from "../../components/TargetingGenerationFor
 import { TargetingRequestForm } from "../../components/TargetingRequestForm";
 import { TargetingRequestStatusPanel } from "../../components/TargetingRequestStatusPanel";
 import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
+import { HypothesisFrameworkTabsView } from "../../components/HypothesisFrameworkTabsView";
 
 export default function HypothesisDetailPage() {
   const { nicheId, hypothesisId } = useParams();
@@ -25,7 +26,7 @@ export default function HypothesisDetailPage() {
     [normalizedNicheId, hypothesisId],
   );
   const { data: niche, isFetching: isFetchingNiche } = useNiche(nicheNumericId);
-  const { data, isLoading } = useHypothesis(nicheId, hypothesisId);
+  const { data, isLoading, refetch } = useHypothesis(nicheId, hypothesisId);
   const { data: experiments } = useExperimentsByHypothesis(
     nicheId,
     hypothesisId,
@@ -437,6 +438,17 @@ ${data.entrega ?? ""}
           )}
         </div>
       </div>
+
+      {hypothesisId && (
+        <div className="mb-4">
+          <HypothesisFrameworkTabsView
+            hypothesisId={hypothesisId}
+            nicheId={nicheId}
+            framework={data.framework}
+            onRefresh={refetch}
+          />
+        </div>
+      )}
 
       <div className="card mb-4">
         <div className="card-header">

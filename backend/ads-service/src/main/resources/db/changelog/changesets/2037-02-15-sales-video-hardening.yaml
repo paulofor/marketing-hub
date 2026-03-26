@@ -3,8 +3,8 @@ databaseChangeLog:
       id: sales-video-hardening-001
       author: marketinghub-ai
       preConditions:
-        onFail: MARK_RAN
-        onError: HALT
+        - onFail: MARK_RAN
+        - onError: HALT
         - dbms:
             type: mysql
       changes:
@@ -21,8 +21,8 @@ databaseChangeLog:
       id: sales-video-hardening-002
       author: marketinghub-ai
       preConditions:
-        onFail: MARK_RAN
-        onError: HALT
+        - onFail: MARK_RAN
+        - onError: HALT
         - dbms:
             type: mysql
       changes:
@@ -37,8 +37,8 @@ databaseChangeLog:
       id: sales-video-hardening-003
       author: marketinghub-ai
       preConditions:
-        onFail: MARK_RAN
-        onError: HALT
+        - onFail: MARK_RAN
+        - onError: HALT
         - dbms:
             type: mysql
       changes:
@@ -60,8 +60,8 @@ databaseChangeLog:
       id: sales-video-hardening-004
       author: marketinghub-ai
       preConditions:
-        onFail: MARK_RAN
-        onError: HALT
+        - onFail: MARK_RAN
+        - onError: HALT
         - dbms:
             type: mysql
       changes:
@@ -77,8 +77,8 @@ databaseChangeLog:
       id: sales-video-hardening-005
       author: marketinghub-ai
       preConditions:
-        onFail: MARK_RAN
-        onError: HALT
+        - onFail: MARK_RAN
+        - onError: HALT
         - dbms:
             type: mysql
       changes:
@@ -125,8 +125,8 @@ databaseChangeLog:
       id: sales-video-hardening-006
       author: marketinghub-ai
       preConditions:
-        onFail: MARK_RAN
-        onError: HALT
+        - onFail: MARK_RAN
+        - onError: HALT
         - dbms:
             type: mysql
       changes:

@@ -30,6 +30,9 @@ public class SalesVideoScript {
     @Column(nullable = false)
     private Integer version;
 
+    @Column(name = "created_by")
+    private String createdBy;
+
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String scriptText;

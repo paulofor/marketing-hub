@@ -15,8 +15,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.marketinghub.salesvideo.exception.VideoModuleException;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.io.IOException;
@@ -86,14 +86,14 @@ class SalesVideoAssetServiceTest {
                 true);
         given(storageService.store(eq(file), any(AssetUploadContext.class))).willReturn(storedObject);
 
-        assertThrows(ResponseStatusException.class, () ->
+        assertThrows(VideoModuleException.class, () ->
                 service.store(file, AssetType.VIDEO, MediaProvider.OPENAI, "not-json"));
     }
 
     @Test
     void shouldRejectEmptyFile() {
         MultipartFile emptyFile = new MockMultipartFile("file", new byte[0]);
-        assertThrows(ResponseStatusException.class, () ->
+        assertThrows(VideoModuleException.class, () ->
                 service.store(emptyFile, AssetType.VIDEO, MediaProvider.OPENAI, null));
     }
 }

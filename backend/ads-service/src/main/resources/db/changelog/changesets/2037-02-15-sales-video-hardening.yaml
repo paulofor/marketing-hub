@@ -1,0 +1,142 @@
+databaseChangeLog:
+  - changeSet:
+      id: sales-video-hardening-001
+      author: marketinghub-ai
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE sales_video_profile
+                  ADD COLUMN tenant_id VARCHAR(64) NOT NULL DEFAULT 'default' AFTER product_id,
+                  ADD COLUMN created_by VARCHAR(255) NULL AFTER landing_page_id;
+              CREATE INDEX idx_sales_video_profile_tenant ON sales_video_profile (tenant_id);
+  - changeSet:
+      id: sales-video-hardening-002
+      author: marketinghub-ai
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE sales_video_script
+                  ADD COLUMN created_by VARCHAR(255) NULL AFTER version;
+  - changeSet:
+      id: sales-video-hardening-003
+      author: marketinghub-ai
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE sales_video_job
+                  ADD COLUMN tenant_id VARCHAR(64) NOT NULL DEFAULT 'default' AFTER script_id,
+                  ADD COLUMN retry_of_job_id BIGINT NULL AFTER tenant_id,
+                  ADD COLUMN retry_attempt INT NOT NULL DEFAULT 1 AFTER retry_of_job_id,
+                  ADD COLUMN retry_reason VARCHAR(64) NULL AFTER retry_attempt,
+                  ADD COLUMN retry_notes LONGTEXT NULL AFTER retry_reason,
+                  ADD CONSTRAINT fk_sales_video_job_retry_of FOREIGN KEY (retry_of_job_id)
+                      REFERENCES sales_video_job (id);
+              CREATE INDEX idx_sales_video_job_tenant_status ON sales_video_job (tenant_id, status);
+  - changeSet:
+      id: sales-video-hardening-004
+      author: marketinghub-ai
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE landing_video_slot
+                  ADD COLUMN tenant_id VARCHAR(64) NOT NULL DEFAULT 'default' AFTER landing_page_id;
+              CREATE INDEX idx_landing_video_slot_tenant ON landing_video_slot (tenant_id);
+  - changeSet:
+      id: sales-video-hardening-005
+      author: marketinghub-ai
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE landing_video_slot_history (
+                  id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                  slot_id BIGINT NOT NULL,
+                  tenant_id VARCHAR(64) NOT NULL,
+                  profile_id BIGINT NULL,
+                  landing_page_id BIGINT NULL,
+                  slot_name VARCHAR(64) NOT NULL,
+                  asset_id BIGINT NULL,
+                  poster_asset_id BIGINT NULL,
+                  vtt_asset_id BIGINT NULL,
+                  autoplay TINYINT(1) NOT NULL DEFAULT 1,
+                  muted TINYINT(1) NOT NULL DEFAULT 1,
+                  loop_video TINYINT(1) NOT NULL DEFAULT 0,
+                  controls_enabled TINYINT(1) NOT NULL DEFAULT 1,
+                  lazy_load TINYINT(1) NOT NULL DEFAULT 1,
+                  change_type VARCHAR(32) NOT NULL,
+                  changed_by VARCHAR(255) NULL,
+                  changed_at DATETIME(6) NOT NULL,
+                  published_by VARCHAR(255) NULL,
+                  published_at DATETIME(6) NULL,
+                  notes LONGTEXT NULL,
+                  CONSTRAINT fk_slot_history_slot FOREIGN KEY (slot_id)
+                      REFERENCES landing_video_slot (id) ON DELETE CASCADE,
+                  CONSTRAINT fk_slot_history_profile FOREIGN KEY (profile_id)
+                      REFERENCES sales_video_profile (id),
+                  CONSTRAINT fk_slot_history_asset FOREIGN KEY (asset_id)
+                      REFERENCES asset (id),
+                  CONSTRAINT fk_slot_history_poster FOREIGN KEY (poster_asset_id)
+                      REFERENCES asset (id),
+                  CONSTRAINT fk_slot_history_vtt FOREIGN KEY (vtt_asset_id)
+                      REFERENCES asset (id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+              CREATE INDEX idx_slot_history_slot ON landing_video_slot_history (slot_id);
+              CREATE INDEX idx_slot_history_tenant_changed ON landing_video_slot_history (tenant_id, changed_at);
+  - changeSet:
+      id: sales-video-hardening-006
+      author: marketinghub-ai
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE sales_video_profile SET tenant_id = COALESCE(tenant_id, 'default');
+              UPDATE sales_video_profile SET created_by = COALESCE(created_by, 'system@marketinghub.io');
+              UPDATE sales_video_script SET created_by = COALESCE(created_by, 'system@marketinghub.io');
+              UPDATE sales_video_job SET tenant_id = COALESCE(tenant_id, 'default'), retry_attempt = COALESCE(retry_attempt, 1);
+              UPDATE landing_video_slot SET tenant_id = COALESCE(tenant_id, 'default');

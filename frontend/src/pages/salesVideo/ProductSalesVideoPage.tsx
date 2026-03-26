@@ -6,6 +6,7 @@ import { useProduct } from "../../api/product/useProduct";
 import { useSalesVideoProfiles } from "../../api/salesVideo/useSalesVideoProfiles";
 import { useCreateSalesVideoProfile } from "../../api/salesVideo/useCreateSalesVideoProfile";
 import { SalesVideoKind } from "../../api/salesVideo/types";
+import { TenantContextBanner } from "../../components/TenantContextBanner";
 
 const VIDEO_KIND_OPTIONS: SalesVideoKind[] = ["HERO", "OBJECTION", "PROOF"];
 
@@ -96,6 +97,7 @@ export default function ProductSalesVideoPage() {
   return (
     <div>
       <PageTitle>Vídeos do Produto #{productId}</PageTitle>
+      <TenantContextBanner className="mb-3" />
       <div className="mb-3 d-flex gap-2 align-items-center">
         <Link to="/products" className="btn btn-link p-0">
           &larr; Voltar para produtos

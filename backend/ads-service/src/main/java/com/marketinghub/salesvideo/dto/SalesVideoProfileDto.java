@@ -14,6 +14,8 @@ public class SalesVideoProfileDto {
     private Long id;
     private Long productId;
     private Long landingPageId;
+    private String tenantId;
+    private String createdBy;
     private SalesVideoKind videoKind;
     private String title;
     private String personaName;

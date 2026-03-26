@@ -13,12 +13,20 @@ export type SalesVideoStatus =
   | "ARCHIVED";
 export type SalesVideoProviderFamily = "OPENAI" | "EXTERNAL_VIDEO_MODULE";
 export type SalesVideoJobType = "SCRIPT" | "STORYBOARD" | "RENDER" | "PUBLISH" | "RETRY";
+export type SalesVideoRetryReason =
+  | "MANUAL_INTERVENTION"
+  | "PROVIDER_FAILURE"
+  | "ASSET_EXPIRED"
+  | "QUALITY_ASSURANCE"
+  | "AUTO_RECOVERY"
+  | "OTHER";
 export type SalesVideoScriptStatus = "DRAFT" | "READY_FOR_REVIEW" | "APPROVED" | "ARCHIVED";
 export type SalesVideoScriptSource = "MANUAL" | "OPENAI";
 
 export interface SalesVideoScript {
   id: number;
   version: number;
+  createdBy?: string | null;
   scriptText?: string | null;
   hookText?: string | null;
   ctaText?: string | null;
@@ -37,11 +45,16 @@ export interface SalesVideoJob {
   id: number;
   profileId: number;
   scriptId?: number | null;
+  tenantId?: string | null;
   providerFamily: SalesVideoProviderFamily;
   providerName?: string | null;
   providerJobId?: string | null;
   jobType: SalesVideoJobType;
   status: SalesVideoStatus;
+  retryAttempt?: number | null;
+  retryReason?: SalesVideoRetryReason | null;
+  retryOfJobId?: number | null;
+  retryNotes?: string | null;
   progressPercent?: number | null;
   failureCode?: string | null;
   failureDetail?: string | null;
@@ -62,6 +75,8 @@ export interface SalesVideoProfile {
   id: number;
   productId: number;
   landingPageId?: number | null;
+  tenantId?: string | null;
+  createdBy?: string | null;
   videoKind: SalesVideoKind;
   title: string;
   personaName?: string | null;
@@ -90,6 +105,7 @@ export interface LandingVideoSlot {
   id: number;
   landingPageId: number;
   profileId: number;
+  tenantId?: string | null;
   slotName: string;
   assetId: number;
   posterAssetId?: number | null;
@@ -164,4 +180,27 @@ export interface UpdateLandingVideoSlotPayload {
   controlsEnabled?: boolean;
   lazyLoad?: boolean;
   publishedBy?: string;
+}
+
+export interface LandingVideoSlotHistory {
+  id: number;
+  slotId: number;
+  profileId?: number | null;
+  landingPageId?: number | null;
+  tenantId?: string | null;
+  slotName: string;
+  assetId?: number | null;
+  posterAssetId?: number | null;
+  vttAssetId?: number | null;
+  autoplay: boolean;
+  muted: boolean;
+  loopVideo: boolean;
+  controlsEnabled: boolean;
+  lazyLoad: boolean;
+  changeType: string;
+  changedBy?: string | null;
+  changedAt?: string | null;
+  publishedBy?: string | null;
+  publishedAt?: string | null;
+  notes?: string | null;
 }

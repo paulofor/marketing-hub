@@ -2,6 +2,7 @@ package com.marketinghub.salesvideo.dto;
 
 import com.marketinghub.salesvideo.SalesVideoJobType;
 import com.marketinghub.salesvideo.SalesVideoProviderFamily;
+import com.marketinghub.salesvideo.SalesVideoRetryReason;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import lombok.Data;
 
@@ -15,11 +16,16 @@ public class SalesVideoJobDto {
     private Long id;
     private Long profileId;
     private Long scriptId;
+    private String tenantId;
     private SalesVideoProviderFamily providerFamily;
     private String providerName;
     private String providerJobId;
     private SalesVideoJobType jobType;
     private SalesVideoStatus status;
+    private Integer retryAttempt;
+    private SalesVideoRetryReason retryReason;
+    private Long retryOfJobId;
+    private String retryNotes;
     private Integer progressPercent;
     private String failureCode;
     private String failureDetail;

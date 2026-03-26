@@ -8,15 +8,19 @@ import com.marketinghub.salesvideo.LandingVideoSlot;
 import com.marketinghub.salesvideo.SalesVideoProfile;
 import com.marketinghub.salesvideo.dto.LandingVideoSlotDto;
 import com.marketinghub.salesvideo.repository.LandingVideoSlotRepository;
+import com.marketinghub.salesvideo.repository.LandingVideoSlotHistoryRepository;
 import com.marketinghub.salesvideo.repository.SalesVideoProfileRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.server.ResponseStatusException;
+import com.marketinghub.salesvideo.exception.VideoModuleException;
+import com.marketinghub.salesvideo.tenant.TenantContext;
+import com.marketinghub.salesvideo.tenant.TenantContextHolder;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -37,6 +41,9 @@ class LandingVideoSlotServiceTest {
     @Mock
     private AssetRepository assetRepository;
 
+    @Mock
+    private LandingVideoSlotHistoryRepository historyRepository;
+
     private LandingVideoSlotService service;
 
     @BeforeEach
@@ -44,15 +51,17 @@ class LandingVideoSlotServiceTest {
         service = new LandingVideoSlotService(slotRepository,
                 landingPageRepository,
                 profileRepository,
-                assetRepository);
+                assetRepository,
+                historyRepository);
     }
 
     @Test
     void shouldListSlotsForLanding() {
         long landingId = 7L;
-        given(landingPageRepository.existsById(landingId)).willReturn(true);
         LandingPage landingPage = LandingPage.builder().id(landingId).build();
-        SalesVideoProfile profile = SalesVideoProfile.builder().id(15L).build();
+        given(landingPageRepository.findById(landingId)).willReturn(Optional.of(landingPage));
+        TenantContextHolder.set(new TenantContext("tenant-test", "tester@local", false));
+        SalesVideoProfile profile = SalesVideoProfile.builder().id(15L).tenantId("tenant-test").build();
         Asset videoAsset = Asset.builder().id(88L).url("https://cdn.test/video.mp4").build();
         LandingVideoSlot slot = LandingVideoSlot.builder()
                 .id(3L)
@@ -66,21 +75,30 @@ class LandingVideoSlotServiceTest {
                 .controlsEnabled(true)
                 .lazyLoad(true)
                 .build();
-        given(slotRepository.findByLandingPageId(landingId)).willReturn(List.of(slot));
+        given(slotRepository.findByLandingPageIdAndTenantId(landingId, "tenant-test")).willReturn(List.of(slot));
 
-        List<LandingVideoSlotDto> result = service.list(landingId);
+        try {
+            List<LandingVideoSlotDto> result = service.list(landingId);
 
-        assertThat(result).hasSize(1);
-        LandingVideoSlotDto dto = result.get(0);
-        assertThat(dto.getSlotName()).isEqualTo("hero");
-        assertThat(dto.getAssetUrl()).contains("video.mp4");
+            assertThat(result).hasSize(1);
+            LandingVideoSlotDto dto = result.get(0);
+            assertThat(dto.getSlotName()).isEqualTo("hero");
+            assertThat(dto.getAssetUrl()).contains("video.mp4");
+        } finally {
+            TenantContextHolder.clear();
+        }
     }
 
     @Test
     void shouldFailWhenLandingDoesNotExist() {
         long landingId = 999L;
-        given(landingPageRepository.existsById(landingId)).willReturn(false);
+        given(landingPageRepository.findById(landingId)).willReturn(Optional.empty());
+        TenantContextHolder.set(new TenantContext("tenant-test", "tester@local", false));
 
-        assertThrows(ResponseStatusException.class, () -> service.list(landingId));
+        try {
+            assertThrows(VideoModuleException.class, () -> service.list(landingId));
+        } finally {
+            TenantContextHolder.clear();
+        }
     }
 }

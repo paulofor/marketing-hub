@@ -2,6 +2,7 @@ package com.marketinghub.salesvideo.web;
 
 import com.marketinghub.salesvideo.dto.CreateLandingVideoSlotRequest;
 import com.marketinghub.salesvideo.dto.LandingVideoSlotDto;
+import com.marketinghub.salesvideo.dto.LandingVideoSlotHistoryDto;
 import com.marketinghub.salesvideo.dto.UpdateLandingVideoSlotRequest;
 import com.marketinghub.salesvideo.service.LandingVideoSlotService;
 import jakarta.validation.Valid;
@@ -38,4 +39,11 @@ public class LandingVideoSlotController {
                                       @RequestBody UpdateLandingVideoSlotRequest request) {
         return slotService.update(landingId, slotId, request);
     }
+
+    @GetMapping("/{slotId}/history")
+    public List<LandingVideoSlotHistoryDto> history(@PathVariable Long landingId,
+                                                    @PathVariable Long slotId) {
+        return slotService.history(landingId, slotId);
+    }
+
 }

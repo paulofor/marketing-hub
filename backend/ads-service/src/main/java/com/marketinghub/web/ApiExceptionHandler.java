@@ -1,5 +1,6 @@
 package com.marketinghub.web;
 
+import com.marketinghub.salesvideo.exception.VideoModuleException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
@@ -21,12 +22,21 @@ public class ApiExceptionHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
+    @ExceptionHandler(VideoModuleException.class)
+    public ResponseEntity<Map<String, Object>> handleVideoModuleException(
+        VideoModuleException exception,
+        HttpServletRequest request
+    ) {
+        return buildResponse(exception.getStatus(), exception.getMessage(), request,
+            exception.getErrorCode().name());
+    }
+
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Map<String, Object>> handleResponseStatusException(
         ResponseStatusException exception,
         HttpServletRequest request
     ) {
-        return buildResponse(exception.getStatusCode(), exception.getReason(), request);
+        return buildResponse(exception.getStatusCode(), exception.getReason(), request, null);
     }
 
     @ExceptionHandler(MultipartException.class)
@@ -45,7 +55,7 @@ public class ApiExceptionHandler {
         if (rootMessage.contains("Stream ended unexpectedly")) {
             message = "O upload do arquivo foi interrompido antes do envio completo. Verifique sua conexão e tente novamente.";
         }
-        return buildResponse(HttpStatus.BAD_REQUEST, message, request);
+        return buildResponse(HttpStatus.BAD_REQUEST, message, request, null);
     }
 
     @ExceptionHandler(AsyncRequestNotUsableException.class)
@@ -76,7 +86,8 @@ public class ApiExceptionHandler {
     private ResponseEntity<Map<String, Object>> buildResponse(
         HttpStatusCode statusCode,
         String message,
-        HttpServletRequest request
+        HttpServletRequest request,
+        String errorCode
     ) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", OffsetDateTime.now());
@@ -87,6 +98,9 @@ public class ApiExceptionHandler {
         body.put("error", error);
         body.put("message", message);
         body.put("path", request.getRequestURI());
+        if (errorCode != null) {
+            body.put("errorCode", errorCode);
+        }
         return ResponseEntity.status(statusCode).body(body);
     }
 

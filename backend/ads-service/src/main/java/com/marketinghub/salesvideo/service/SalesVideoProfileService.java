@@ -6,14 +6,15 @@ import com.marketinghub.product.Product;
 import com.marketinghub.product.repository.ProductRepository;
 import com.marketinghub.salesvideo.*;
 import com.marketinghub.salesvideo.dto.*;
+import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
+import com.marketinghub.salesvideo.exception.VideoModuleException;
 import com.marketinghub.salesvideo.mapper.SalesVideoMapper;
+import com.marketinghub.salesvideo.tenant.TenantContextHolder;
 import com.marketinghub.salesvideo.repository.SalesVideoJobRepository;
 import com.marketinghub.salesvideo.repository.SalesVideoProfileRepository;
 import com.marketinghub.salesvideo.repository.SalesVideoScriptRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
@@ -48,17 +49,21 @@ public class SalesVideoProfileService {
     @Transactional
     public SalesVideoProfileDto createProfile(Long productId, CreateSalesVideoProfileRequest request) {
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                .orElseThrow(() -> VideoModuleException.notFound(VideoModuleErrorCode.PRODUCT_NOT_FOUND,
                         "Produto não encontrado: " + productId));
         LandingPage landingPage = null;
         if (request.getLandingPageId() != null) {
             landingPage = landingPageRepository.findById(request.getLandingPageId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    .orElseThrow(() -> VideoModuleException.badRequest(VideoModuleErrorCode.LANDING_NOT_FOUND,
                             "Landing page não encontrada: " + request.getLandingPageId()));
         }
+        String tenantId = TenantContextHolder.requireTenant();
+        String createdBy = TenantContextHolder.resolveUserEmail(null);
         SalesVideoProfile profile = SalesVideoProfile.builder()
                 .product(product)
                 .landingPage(landingPage)
+                .tenantId(tenantId)
+                .createdBy(createdBy)
                 .videoKind(request.getVideoKind())
                 .title(request.getTitle())
                 .personaName(request.getPersonaName())
@@ -74,7 +79,8 @@ public class SalesVideoProfileService {
 
     @Transactional(readOnly = true)
     public List<SalesVideoProfileDto> listProfiles(Long productId) {
-        return profileRepository.findByProductIdOrderByCreatedAtDesc(productId)
+        String tenantId = TenantContextHolder.requireTenant();
+        return profileRepository.findByProductIdAndTenantIdOrderByCreatedAtDesc(productId, tenantId)
                 .stream()
                 .map(this::toDto)
                 .toList();
@@ -89,12 +95,13 @@ public class SalesVideoProfileService {
     public SalesVideoJobDto requestScriptGeneration(Long profileId, GenerateSalesVideoScriptRequest request) {
         SalesVideoProfile profile = loadProfile(profileId);
         profile.setStatus(SalesVideoStatus.SCRIPT_PENDING);
+        String requestedBy = TenantContextHolder.resolveUserEmail(request.getRequestedBy());
         SalesVideoJob job = jobService.createJob(profile,
                 null,
                 SalesVideoJobType.SCRIPT,
                 SalesVideoProviderFamily.OPENAI,
                 request.getProviderName(),
-                request.getRequestedBy());
+                requestedBy);
         profileRepository.save(profile);
         return SalesVideoMapper.toDto(job);
     }
@@ -106,16 +113,18 @@ public class SalesVideoProfileService {
                 .map(SalesVideoScript::getVersion)
                 .map(v -> v + 1)
                 .orElse(1);
+        String approvedBy = TenantContextHolder.resolveUserEmail(request.getApprovedBy());
         SalesVideoScript script = SalesVideoScript.builder()
                 .profile(profile)
                 .version(nextVersion)
+                .createdBy(approvedBy)
                 .scriptText(request.getScriptText())
                 .hookText(request.getHookText())
                 .ctaText(request.getCtaText())
                 .captionText(request.getCaptionText())
                 .source(SalesVideoScriptSource.MANUAL)
                 .status(SalesVideoScriptStatus.APPROVED)
-                .approvedBy(request.getApprovedBy())
+                .approvedBy(approvedBy)
                 .approvedAt(Instant.now())
                 .build();
         SalesVideoScript saved = scriptRepository.save(script);
@@ -130,25 +139,37 @@ public class SalesVideoProfileService {
         SalesVideoProfile profile = loadProfile(profileId);
         SalesVideoScript script = scriptRepository
                 .findFirstByProfileIdAndStatusOrderByVersionDesc(profileId, SalesVideoScriptStatus.APPROVED)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                .orElseThrow(() -> VideoModuleException.badRequest(VideoModuleErrorCode.SCRIPT_NOT_FOUND,
                         "É necessário ter um script aprovado antes da renderização"));
         SalesVideoProviderFamily family = Optional.ofNullable(request.getProviderFamily())
                 .orElse(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
+        String requestedBy = TenantContextHolder.resolveUserEmail(request.getRequestedBy());
         SalesVideoJob job = jobService.createJob(profile,
                 script,
                 SalesVideoJobType.RENDER,
                 family,
                 request.getProviderName(),
-                request.getRequestedBy());
+                requestedBy);
         profile.setStatus(SalesVideoStatus.VIDEO_REQUESTED);
         profileRepository.save(profile);
         return SalesVideoMapper.toDto(job);
     }
 
+    @Transactional(readOnly = true)
+    public List<SalesVideoScriptDto> listScripts(Long profileId) {
+        SalesVideoProfile profile = loadProfile(profileId);
+        return scriptRepository.findByProfileIdOrderByVersionDesc(profile.getId())
+                .stream()
+                .map(SalesVideoMapper::toDto)
+                .toList();
+    }
+
     private SalesVideoProfile loadProfile(Long profileId) {
-        return profileRepository.findById(profileId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+        SalesVideoProfile profile = profileRepository.findById(profileId)
+                .orElseThrow(() -> VideoModuleException.notFound(VideoModuleErrorCode.PROFILE_NOT_FOUND,
                         "Perfil de vídeo não encontrado: " + profileId));
+        TenantContextHolder.assertTenant(profile.getTenantId());
+        return profile;
     }
 
     private SalesVideoProfileDto toDto(SalesVideoProfile profile) {

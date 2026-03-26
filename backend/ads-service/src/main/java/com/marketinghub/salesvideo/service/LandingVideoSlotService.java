@@ -4,18 +4,21 @@ import com.marketinghub.experiment.LandingPage;
 import com.marketinghub.experiment.repository.LandingPageRepository;
 import com.marketinghub.media.Asset;
 import com.marketinghub.media.repository.AssetRepository;
-import com.marketinghub.salesvideo.LandingVideoSlot;
-import com.marketinghub.salesvideo.SalesVideoProfile;
+import com.marketinghub.salesvideo.*;
 import com.marketinghub.salesvideo.dto.CreateLandingVideoSlotRequest;
 import com.marketinghub.salesvideo.dto.LandingVideoSlotDto;
+import com.marketinghub.salesvideo.dto.LandingVideoSlotHistoryDto;
 import com.marketinghub.salesvideo.dto.UpdateLandingVideoSlotRequest;
+import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
+import com.marketinghub.salesvideo.exception.VideoModuleException;
 import com.marketinghub.salesvideo.mapper.SalesVideoMapper;
+import com.marketinghub.salesvideo.repository.LandingVideoSlotHistoryRepository;
 import com.marketinghub.salesvideo.repository.LandingVideoSlotRepository;
 import com.marketinghub.salesvideo.repository.SalesVideoProfileRepository;
-import org.springframework.http.HttpStatus;
+import com.marketinghub.salesvideo.tenant.TenantContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.util.List;
@@ -29,56 +32,67 @@ public class LandingVideoSlotService {
     private final LandingPageRepository landingPageRepository;
     private final SalesVideoProfileRepository profileRepository;
     private final AssetRepository assetRepository;
+    private final LandingVideoSlotHistoryRepository historyRepository;
 
     public LandingVideoSlotService(LandingVideoSlotRepository slotRepository,
                                    LandingPageRepository landingPageRepository,
                                    SalesVideoProfileRepository profileRepository,
-                                   AssetRepository assetRepository) {
+                                   AssetRepository assetRepository,
+                                   LandingVideoSlotHistoryRepository historyRepository) {
         this.slotRepository = slotRepository;
         this.landingPageRepository = landingPageRepository;
         this.profileRepository = profileRepository;
         this.assetRepository = assetRepository;
+        this.historyRepository = historyRepository;
     }
 
     @Transactional
     public LandingVideoSlotDto create(Long landingId, CreateLandingVideoSlotRequest request) {
         LandingPage landingPage = landingPageRepository.findById(landingId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                .orElseThrow(() -> VideoModuleException.notFound(VideoModuleErrorCode.LANDING_NOT_FOUND,
                         "Landing page não encontrada: " + landingId));
-        SalesVideoProfile profile = profileRepository.findById(request.getProfileId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Perfil não encontrado: " + request.getProfileId()));
+        SalesVideoProfile profile = loadProfile(request.getProfileId());
+        TenantContextHolder.assertTenant(profile.getTenantId());
         slotRepository.findByLandingPageIdAndSlotName(landingId, request.getSlotName())
                 .ifPresent(existing -> {
-                    throw new ResponseStatusException(HttpStatus.CONFLICT,
-                            "Slot já configurado para esta landing: " + request.getSlotName());
+                    throw VideoModuleException.conflict(VideoModuleErrorCode.SLOT_CONFLICT,
+                            "Já existe um slot com esse nome na landing");
                 });
+        Asset asset = loadAsset(request.getAssetId());
+        Asset poster = loadOptionalAsset(request.getPosterAssetId());
+        Asset vtt = loadOptionalAsset(request.getVttAssetId());
+        String publishedBy = resolveActor(request.getPublishedBy());
         LandingVideoSlot slot = LandingVideoSlot.builder()
                 .landingPage(landingPage)
                 .profile(profile)
+                .tenantId(profile.getTenantId())
                 .slotName(request.getSlotName())
-                .asset(loadAsset(request.getAssetId()))
-                .posterAsset(loadOptionalAsset(request.getPosterAssetId()))
-                .vttAsset(loadOptionalAsset(request.getVttAssetId()))
+                .asset(asset)
+                .posterAsset(poster)
+                .vttAsset(vtt)
                 .autoplay(request.isAutoplay())
                 .muted(request.isMuted())
                 .loopVideo(request.isLoopVideo())
                 .controlsEnabled(request.isControlsEnabled())
                 .lazyLoad(request.isLazyLoad())
-                .publishedBy(request.getPublishedBy())
-                .publishedAt(request.getPublishedBy() != null ? Instant.now() : null)
+                .publishedBy(StringUtils.hasText(publishedBy) ? publishedBy : null)
+                .publishedAt(StringUtils.hasText(publishedBy) ? Instant.now() : null)
                 .build();
         LandingVideoSlot saved = slotRepository.save(slot);
+        recordHistory(saved,
+                StringUtils.hasText(publishedBy) ? LandingVideoSlotChangeType.PUBLISHED : LandingVideoSlotChangeType.CREATED,
+                null,
+                publishedBy);
         return SalesVideoMapper.toDto(saved);
     }
 
     @Transactional(readOnly = true)
     public List<LandingVideoSlotDto> list(Long landingId) {
-        if (!landingPageRepository.existsById(landingId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Landing page não encontrada: " + landingId);
-        }
-        return slotRepository.findByLandingPageId(landingId)
+        LandingPage landingPage = landingPageRepository.findById(landingId)
+                .orElseThrow(() -> VideoModuleException.notFound(VideoModuleErrorCode.LANDING_NOT_FOUND,
+                        "Landing page não encontrada: " + landingId));
+        String tenantId = TenantContextHolder.requireTenant();
+        return slotRepository.findByLandingPageIdAndTenantId(landingPage.getId(), tenantId)
                 .stream()
                 .map(SalesVideoMapper::toDto)
                 .toList();
@@ -87,24 +101,24 @@ public class LandingVideoSlotService {
     @Transactional
     public LandingVideoSlotDto update(Long landingId, Long slotId, UpdateLandingVideoSlotRequest request) {
         LandingVideoSlot slot = slotRepository.findById(slotId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                .orElseThrow(() -> VideoModuleException.notFound(VideoModuleErrorCode.SLOT_NOT_FOUND,
                         "Slot não encontrado: " + slotId));
-        if (!slot.getLandingPage().getId().equals(landingId)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Slot não pertence à landing solicitada");
-        }
-        if (request.getProfileId() != null) {
-            SalesVideoProfile profile = profileRepository.findById(request.getProfileId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                            "Perfil não encontrado: " + request.getProfileId()));
+        ensureSameLanding(slot, landingId);
+        TenantContextHolder.assertTenant(slot.getTenantId());
+
+        if (request.getProfileId() != null && (slot.getProfile() == null
+                || !slot.getProfile().getId().equals(request.getProfileId()))) {
+            SalesVideoProfile profile = loadProfile(request.getProfileId());
+            TenantContextHolder.assertTenant(profile.getTenantId());
             slot.setProfile(profile);
+            slot.setTenantId(profile.getTenantId());
         }
-        if (request.getSlotName() != null) {
+        if (StringUtils.hasText(request.getSlotName()) && !request.getSlotName().equals(slot.getSlotName())) {
             slotRepository.findByLandingPageIdAndSlotName(landingId, request.getSlotName())
                     .filter(existing -> !existing.getId().equals(slot.getId()))
                     .ifPresent(existing -> {
-                        throw new ResponseStatusException(HttpStatus.CONFLICT,
-                                "Outro slot já usa este nome na mesma landing");
+                        throw VideoModuleException.conflict(VideoModuleErrorCode.SLOT_CONFLICT,
+                                "Já existe um slot com esse nome");
                     });
             slot.setSlotName(request.getSlotName());
         }
@@ -132,17 +146,50 @@ public class LandingVideoSlotService {
         if (request.getLazyLoad() != null) {
             slot.setLazyLoad(request.getLazyLoad());
         }
+
+        LandingVideoSlotChangeType changeType = LandingVideoSlotChangeType.UPDATED;
+        String actor = resolveActor(null);
         if (request.getPublishedBy() != null) {
-            slot.setPublishedBy(request.getPublishedBy());
-            slot.setPublishedAt(Instant.now());
+            if (StringUtils.hasText(request.getPublishedBy())) {
+                String publishedBy = resolveActor(request.getPublishedBy());
+                slot.setPublishedBy(publishedBy);
+                slot.setPublishedAt(Instant.now());
+                changeType = LandingVideoSlotChangeType.PUBLISHED;
+                actor = publishedBy;
+            } else {
+                slot.setPublishedBy(null);
+                slot.setPublishedAt(null);
+                changeType = LandingVideoSlotChangeType.UNPUBLISHED;
+            }
         }
+
         LandingVideoSlot saved = slotRepository.save(slot);
+        recordHistory(saved, changeType, null, actor);
         return SalesVideoMapper.toDto(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public List<LandingVideoSlotHistoryDto> history(Long landingId, Long slotId) {
+        LandingVideoSlot slot = slotRepository.findById(slotId)
+                .orElseThrow(() -> VideoModuleException.notFound(VideoModuleErrorCode.SLOT_NOT_FOUND,
+                        "Slot não encontrado: " + slotId));
+        ensureSameLanding(slot, landingId);
+        TenantContextHolder.assertTenant(slot.getTenantId());
+        return historyRepository.findBySlotIdOrderByChangedAtDesc(slotId)
+                .stream()
+                .map(SalesVideoMapper::toDto)
+                .toList();
+    }
+
+    private SalesVideoProfile loadProfile(Long profileId) {
+        return profileRepository.findById(profileId)
+                .orElseThrow(() -> VideoModuleException.notFound(VideoModuleErrorCode.PROFILE_NOT_FOUND,
+                        "Perfil não encontrado: " + profileId));
     }
 
     private Asset loadAsset(Long id) {
         return assetRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                .orElseThrow(() -> VideoModuleException.badRequest(VideoModuleErrorCode.ASSET_NOT_FOUND,
                         "Asset não encontrado: " + id));
     }
 
@@ -151,5 +198,43 @@ public class LandingVideoSlotService {
             return null;
         }
         return loadAsset(id);
+    }
+
+    private void ensureSameLanding(LandingVideoSlot slot, Long landingId) {
+        if (!slot.getLandingPage().getId().equals(landingId)) {
+            throw VideoModuleException.badRequest(VideoModuleErrorCode.SLOT_TENANT_MISMATCH,
+                    "Slot não pertence à landing solicitada");
+        }
+    }
+
+    private void recordHistory(LandingVideoSlot slot,
+                               LandingVideoSlotChangeType changeType,
+                               String notes,
+                               String actor) {
+        LandingVideoSlotHistory history = LandingVideoSlotHistory.builder()
+                .slot(slot)
+                .tenantId(slot.getTenantId())
+                .profile(slot.getProfile())
+                .landingPage(slot.getLandingPage())
+                .slotName(slot.getSlotName())
+                .asset(slot.getAsset())
+                .posterAsset(slot.getPosterAsset())
+                .vttAsset(slot.getVttAsset())
+                .autoplay(slot.isAutoplay())
+                .muted(slot.isMuted())
+                .loopVideo(slot.isLoopVideo())
+                .controlsEnabled(slot.isControlsEnabled())
+                .lazyLoad(slot.isLazyLoad())
+                .changeType(changeType)
+                .changedBy(actor)
+                .publishedBy(slot.getPublishedBy())
+                .publishedAt(slot.getPublishedAt())
+                .notes(notes)
+                .build();
+        historyRepository.save(history);
+    }
+
+    private String resolveActor(String candidate) {
+        return TenantContextHolder.resolveUserEmail(candidate);
     }
 }

@@ -496,6 +496,14 @@ Entregas:
 - padronização final de erros;
 - documentação operacional completa.
 
+Notas da implementação recente:
+- O backend agora exige os cabeçalhos `X-Tenant-ID` e `X-User-Email` nos fluxos administrativos de vídeo, replicando esses dados para perfis, jobs e slots.
+- `landing_video_slot_history` guarda snapshots a cada publicação/alteração, permitindo auditoria no painel.
+- A política de reprocessamento limita tentativas por tipo de job e expõe botões de retry no frontend.
+- Um scheduler automático reabre jobs `VIDEO_FAILED` após 15 minutos quando há margem de tentativa.
+- Assets de vídeo órfãos são limpos via job agendado com retenção configurável.
+
+---
 Critério de pronto:
 - módulo pronto para uso contínuo com operação previsível.
 

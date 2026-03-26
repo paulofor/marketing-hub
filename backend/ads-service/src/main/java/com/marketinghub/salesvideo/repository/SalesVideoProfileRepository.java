@@ -11,5 +11,5 @@ import java.util.List;
  */
 public interface SalesVideoProfileRepository extends JpaRepository<SalesVideoProfile, Long> {
     @EntityGraph(attributePaths = {"product", "landingPage"})
-    List<SalesVideoProfile> findByProductIdOrderByCreatedAtDesc(Long productId);
+    List<SalesVideoProfile> findByProductIdAndTenantIdOrderByCreatedAtDesc(Long productId, String tenantId);
 }

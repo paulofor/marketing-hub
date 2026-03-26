@@ -30,10 +30,17 @@ public class SalesVideoProfile {
     @ToString.Exclude
     private Product product;
 
+    @Builder.Default
+    @Column(name = "tenant_id", nullable = false, length = 64)
+    private String tenantId = "default";
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "landing_page_id")
     @ToString.Exclude
     private LandingPage landingPage;
+
+    @Column(name = "created_by")
+    private String createdBy;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "video_kind", nullable = false, length = 32)

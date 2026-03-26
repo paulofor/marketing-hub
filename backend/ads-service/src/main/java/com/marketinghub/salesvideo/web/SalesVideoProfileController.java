@@ -35,6 +35,11 @@ public class SalesVideoProfileController {
         return profileService.getProfile(profileId);
     }
 
+    @GetMapping("/sales-videos/profiles/{profileId}/scripts")
+    public List<SalesVideoScriptDto> listScripts(@PathVariable Long profileId) {
+        return profileService.listScripts(profileId);
+    }
+
     @PostMapping("/sales-videos/profiles/{profileId}/generate-script")
     public SalesVideoJobDto requestScript(@PathVariable Long profileId,
                                           @Valid @RequestBody GenerateSalesVideoScriptRequest request) {

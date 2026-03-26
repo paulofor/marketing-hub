@@ -16,10 +16,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.server.ResponseStatusException;
+import com.marketinghub.salesvideo.exception.VideoModuleException;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -43,6 +44,9 @@ class SalesVideoJobServiceTest {
     @Mock
     private AssetRepository assetRepository;
 
+    @Mock
+    private SalesVideoReprocessPolicy reprocessPolicy;
+
     private SalesVideoJobService service;
 
     @BeforeEach
@@ -51,16 +55,17 @@ class SalesVideoJobServiceTest {
                 eventRepository,
                 profileRepository,
                 scriptRepository,
-                assetRepository);
+                assetRepository,
+                reprocessPolicy);
     }
 
     @Test
     void shouldListJobsByProfile() {
         long profileId = 10L;
-        given(profileRepository.existsById(profileId)).willReturn(true);
         SalesVideoProfile profile = SalesVideoProfile.builder()
                 .id(profileId)
                 .build();
+        given(profileRepository.findById(profileId)).willReturn(Optional.of(profile));
         SalesVideoJob job = SalesVideoJob.builder()
                 .id(55L)
                 .profile(profile)
@@ -85,8 +90,8 @@ class SalesVideoJobServiceTest {
     @Test
     void shouldRejectWhenProfileDoesNotExist() {
         long missingId = 404L;
-        given(profileRepository.existsById(missingId)).willReturn(false);
+        given(profileRepository.findById(missingId)).willReturn(Optional.empty());
 
-        assertThrows(ResponseStatusException.class, () -> service.listJobsByProfile(missingId));
+        assertThrows(VideoModuleException.class, () -> service.listJobsByProfile(missingId));
     }
 }

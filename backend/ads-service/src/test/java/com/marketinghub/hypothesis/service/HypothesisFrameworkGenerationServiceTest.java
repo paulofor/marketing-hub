@@ -95,6 +95,8 @@ class HypothesisFrameworkGenerationServiceTest {
         Map<String, Object> text = (Map<String, Object>) body.get("text");
         Map<String, Object> format = (Map<String, Object>) text.get("format");
         assertThat(format.get("type")).isEqualTo("json_schema");
+        assertThat(format.get("name")).isEqualTo("hypothesis_framework_pain");
+        assertThat(format.get("schema")).isInstanceOf(Map.class);
 
         Map<String, Object> jsonSchema = (Map<String, Object>) format.get("json_schema");
         assertThat(jsonSchema.get("name")).isEqualTo("hypothesis_framework_pain");

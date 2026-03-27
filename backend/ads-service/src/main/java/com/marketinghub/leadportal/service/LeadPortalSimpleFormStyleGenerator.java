@@ -76,12 +76,14 @@ public class LeadPortalSimpleFormStyleGenerator {
     }
 
     private Map<String, Object> buildJsonSchemaFormat(String name, Map<String, Object> schema) {
+        Map<String, Object> format = new LinkedHashMap<>();
+        format.put("type", "json_schema");
+        format.put("name", name);
+        format.put("schema", schema);
+
         Map<String, Object> jsonSchema = new LinkedHashMap<>();
         jsonSchema.put("name", name);
         jsonSchema.put("schema", schema);
-
-        Map<String, Object> format = new LinkedHashMap<>();
-        format.put("type", "json_schema");
         format.put("json_schema", jsonSchema);
         return format;
     }

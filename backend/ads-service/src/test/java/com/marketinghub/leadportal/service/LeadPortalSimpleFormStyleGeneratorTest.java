@@ -82,6 +82,8 @@ class LeadPortalSimpleFormStyleGeneratorTest {
         Map<String, Object> textConfig = (Map<String, Object>) body.get("text");
         Map<String, Object> format = (Map<String, Object>) textConfig.get("format");
         assertThat(format.get("type")).isEqualTo("json_schema");
+        assertThat(format.get("name")).isEqualTo("lead_portal_simple_form_style");
+        assertThat(format.get("schema")).isInstanceOf(Map.class);
 
         Map<String, Object> jsonSchema = (Map<String, Object>) format.get("json_schema");
         assertThat(jsonSchema.get("name")).isEqualTo("lead_portal_simple_form_style");

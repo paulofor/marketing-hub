@@ -17,11 +17,17 @@ public class HypothesisFrameworkGenerationScheduler {
 
     @Scheduled(cron = "0 */1 * * * *")
     public void run() {
-        log.info("HypothesisFrameworkGenerationScheduler started");
+        long startedAt = System.currentTimeMillis();
+        log.info("HypothesisFrameworkGenerationScheduler started (thread={})", Thread.currentThread().getName());
         try {
             service.processPending();
+            log.info("HypothesisFrameworkGenerationScheduler cycle completed successfully");
+        } catch (Exception ex) {
+            log.error("HypothesisFrameworkGenerationScheduler cycle failed", ex);
+            throw ex;
         } finally {
-            log.info("HypothesisFrameworkGenerationScheduler finished");
+            long elapsedMs = System.currentTimeMillis() - startedAt;
+            log.info("HypothesisFrameworkGenerationScheduler finished (elapsedMs={})", elapsedMs);
         }
     }
 }

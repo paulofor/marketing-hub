@@ -36,6 +36,7 @@ import LeadPortalFlowTab from "./LeadPortalFlowTab";
 import TargetingTab from "./TargetingTab";
 import ExperimentFunnelTab from "./ExperimentFunnelTab";
 import ExperimentReportPanel from "./ExperimentReportPanel";
+import ExperimentLearningPanel from "./ExperimentLearningPanel";
 import { useExperimentAdSetWorkflow } from "../../api/experiment/useExperimentAdSetWorkflow";
 import { useExperimentFacebookRelease } from "../../api/experiment/useExperimentFacebookRelease";
 
@@ -1127,6 +1128,7 @@ export default function ExperimentDetailPage() {
                 </dl>
               </div>
             </div>
+            <ExperimentLearningPanel experimentId={expId} />
             <ExperimentReportPanel experimentId={expId} />
             <div className="card">
               <div className="card-body">

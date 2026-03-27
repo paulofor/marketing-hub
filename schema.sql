@@ -977,3 +977,47 @@ CREATE TABLE experiment_campaign_metric (
   CONSTRAINT fk_experiment_campaign_metric_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id),
   CONSTRAINT fk_experiment_campaign_metric_campaign FOREIGN KEY (campaign_id) REFERENCES facebook_ads_campaign(id)
 );
+
+CREATE TABLE experiment_learning_request (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    experiment_id BIGINT NOT NULL,
+    status VARCHAR(32) NOT NULL,
+    requested_by VARCHAR(191),
+    payload_snapshot LONGTEXT,
+    result_payload LONGTEXT,
+    failure_reason LONGTEXT,
+    requested_at DATETIME(6) NOT NULL,
+    completed_at DATETIME(6),
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    CONSTRAINT fk_experiment_learning_request_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE INDEX idx_experiment_learning_request_experiment
+    ON experiment_learning_request (experiment_id, requested_at);
+
+CREATE TABLE experiment_learning (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    experiment_id BIGINT NOT NULL,
+    request_id BIGINT NOT NULL,
+    niche_id BIGINT NOT NULL,
+    hypothesis_id BINARY(16),
+    stage VARCHAR(32),
+    primary_metric VARCHAR(128),
+    metric_signal VARCHAR(255),
+    summary LONGTEXT,
+    what_worked LONGTEXT,
+    what_blocked LONGTEXT,
+    next_test LONGTEXT,
+    insights_json LONGTEXT,
+    suggestions_json LONGTEXT,
+    completed_at DATETIME(6),
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    CONSTRAINT fk_experiment_learning_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id) ON DELETE CASCADE,
+    CONSTRAINT fk_experiment_learning_request FOREIGN KEY (request_id) REFERENCES experiment_learning_request(id) ON DELETE CASCADE,
+    CONSTRAINT fk_experiment_learning_niche FOREIGN KEY (niche_id) REFERENCES market_niche(id),
+    CONSTRAINT fk_experiment_learning_hypothesis FOREIGN KEY (hypothesis_id) REFERENCES hypothesis(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE INDEX idx_experiment_learning_experiment ON experiment_learning (experiment_id, completed_at);
+CREATE INDEX idx_experiment_learning_niche ON experiment_learning (niche_id, completed_at);

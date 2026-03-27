@@ -5,12 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.OpenAiCostEstimator;
 import com.marketinghub.worker.openai.OpenAiResponse;
 import java.util.Map;
+import org.springframework.http.HttpStatusCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.reactive.function.client.WebClient;
 
 @Component
@@ -44,9 +46,16 @@ public class HypothesisFrameworkOpenAiClient {
         if (!enabled) {
             throw new IllegalStateException("OpenAI API key não configurada");
         }
+        Map<String, Object> payload = null;
         try {
-            Map<String, Object> payload = objectMapper.readValue(job.requestBodyJson(), new TypeReference<>() {
+            payload = objectMapper.readValue(job.requestBodyJson(), new TypeReference<>() {
             });
+            log.info("Enviando requisição para OpenAI [jobId={}, hypothesisId={}, section={}, model={}]",
+                    job.id(),
+                    job.hypothesisId(),
+                    job.section(),
+                    job.model());
+            log.debug("Payload OpenAI [jobId={}]: {}", job.id(), safeJson(payload));
             OpenAiResponse response = webClient.post()
                     .uri("/responses")
                     .bodyValue(payload)
@@ -71,8 +80,41 @@ public class HypothesisFrameworkOpenAiClient {
                     inputTokens,
                     outputTokens,
                     OpenAiCostEstimator.estimateUsd(job.model(), response.usage()));
+        } catch (WebClientResponseException ex) {
+            HttpStatusCode statusCode = ex.getStatusCode();
+            log.error("Falha HTTP ao chamar OpenAI [jobId={}, hypothesisId={}, section={}, model={}, status={}, responseBody={}]",
+                    job.id(),
+                    job.hypothesisId(),
+                    job.section(),
+                    job.model(),
+                    statusCode.value(),
+                    truncate(ex.getResponseBodyAsString()));
+            log.debug("Payload da requisição com erro [jobId={}]: {}", job.id(), safeJson(payload));
+            throw new IllegalStateException("Falha ao gerar seção " + job.section() + " para hipótese " + job.hypothesisId(), ex);
         } catch (Exception ex) {
             throw new IllegalStateException("Falha ao gerar seção " + job.section() + " para hipótese " + job.hypothesisId(), ex);
         }
+    }
+
+    private String safeJson(Object value) {
+        if (value == null) {
+            return "<null>";
+        }
+        try {
+            return truncate(objectMapper.writeValueAsString(value));
+        } catch (Exception ex) {
+            return "<erro ao serializar payload: " + ex.getMessage() + ">";
+        }
+    }
+
+    private String truncate(String text) {
+        if (!StringUtils.hasText(text)) {
+            return "<vazio>";
+        }
+        int maxLength = 3_000;
+        if (text.length() <= maxLength) {
+            return text;
+        }
+        return text.substring(0, maxLength) + "... [truncated]";
     }
 }

@@ -37,7 +37,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class HypothesisFrameworkGenerationService {
-    private static final String DEFAULT_MODEL = "chat-gpt-5.2";
+    private static final String DEFAULT_MODEL = "gpt-5.2";
     private static final String RESEARCH_DIRECTIVE = "Sempre que possível, pesquise em sites especializados do nicho"
             + " usando a ferramenta de web_search antes de responder. Use os achados para justificar cada campo do JSON"
             + " e cite as principais referências consultadas.";

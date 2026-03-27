@@ -37,7 +37,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class HypothesisFrameworkGenerationService {
-    private static final String DEFAULT_MODEL = "gpt-4o-mini";
+    private static final String DEFAULT_MODEL = "chat-gpt-5.2";
+    private static final String RESEARCH_DIRECTIVE = "Sempre que possível, pesquise em sites especializados do nicho"
+            + " usando a ferramenta de web_search antes de responder. Use os achados para justificar cada campo do JSON"
+            + " e cite as principais referências consultadas.";
 
     private final HypothesisRepository repository;
     private final HypothesisFrameworkGenerationJobRepository jobRepository;
@@ -259,17 +262,20 @@ public class HypothesisFrameworkGenerationService {
                 buildSchema(section)
         ));
         body.put("text", textConfig);
+        body.put("tools", List.of(Map.of("type", "web_search")));
         return body;
     }
 
     private Map<String, Object> jsonSchemaFormat(String name,
                                                  Map<String, Object> schema) {
+        Map<String, Object> format = new LinkedHashMap<>();
+        format.put("type", "json_schema");
+        format.put("name", name);
+        format.put("schema", schema);
+
         Map<String, Object> jsonSchema = new LinkedHashMap<>();
         jsonSchema.put("name", name);
         jsonSchema.put("schema", schema);
-
-        Map<String, Object> format = new LinkedHashMap<>();
-        format.put("type", "json_schema");
         format.put("json_schema", jsonSchema);
         return format;
     }
@@ -334,12 +340,17 @@ public class HypothesisFrameworkGenerationService {
     private String buildSystemPrompt(HypothesisFrameworkSection section) {
         return switch (section) {
             case PAIN -> "Você é um estrategista focado em mapear a dor de um nicho para campanhas de aquisição."
-                    + " Resuma as dores reais que travam o resultado, deixando explícitos impactos emocionais e financeiros.";
+                    + " Resuma as dores reais que travam o resultado, deixando explícitos impactos emocionais e financeiros. "
+                    + RESEARCH_DIRECTIVE;
             case RESULT -> "Você descreve transformações desejadas conectando resultado emocional e outcome de negócio."
-                    + " Foque em algo mensurável e desejado pelo decisor.";
-            case MECHANISM -> "Você traduz mecanismos de oferta em linguagem simples, conectando o que será entregue ao porquê funciona.";
-            case PROOF -> "Você define qual prova reduz ceticismo para a hipótese e como entregá-la durante o funil.";
-            case OFFER -> "Você empacota a oferta com entregáveis, promessa central, lógica de preço e CTA para conversão.";
+                    + " Foque em algo mensurável e desejado pelo decisor. "
+                    + RESEARCH_DIRECTIVE;
+            case MECHANISM -> "Você traduz mecanismos de oferta em linguagem simples, conectando o que será entregue ao porquê funciona. "
+                    + RESEARCH_DIRECTIVE;
+            case PROOF -> "Você define qual prova reduz ceticismo para a hipótese e como entregá-la durante o funil. "
+                    + RESEARCH_DIRECTIVE;
+            case OFFER -> "Você empacota a oferta com entregáveis, promessa central, lógica de preço e CTA para conversão. "
+                    + RESEARCH_DIRECTIVE;
         };
     }
 

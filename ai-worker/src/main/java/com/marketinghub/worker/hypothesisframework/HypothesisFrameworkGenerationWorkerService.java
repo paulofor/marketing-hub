@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 public class HypothesisFrameworkGenerationWorkerService {
@@ -44,7 +45,19 @@ public class HypothesisFrameworkGenerationWorkerService {
             }
             try {
                 log.info("Generating hypothesis framework for job {}", claimed.id());
+                log.info("OpenAI request payload [jobId={}, hypothesisId={}, section={}, model={}]: {}",
+                        claimed.id(),
+                        claimed.hypothesisId(),
+                        claimed.section(),
+                        claimed.model(),
+                        truncate(claimed.requestBodyJson()));
                 HypothesisFrameworkJobCompletionPayload payload = openAiClient.generate(claimed);
+                log.info("OpenAI response payload [jobId={}, hypothesisId={}, section={}, model={}]: {}",
+                        claimed.id(),
+                        claimed.hypothesisId(),
+                        claimed.section(),
+                        claimed.model(),
+                        truncate(payload != null ? payload.rawResponse() : null));
                 backendClient.complete(claimed.id(), payload);
                 log.info("Hypothesis framework job {} completed", claimed.id());
             } catch (Exception ex) {
@@ -64,5 +77,16 @@ public class HypothesisFrameworkGenerationWorkerService {
         } catch (Exception ignored) {
             return "hypothesis-framework-worker";
         }
+    }
+
+    private String truncate(String text) {
+        if (!StringUtils.hasText(text)) {
+            return "<vazio>";
+        }
+        int maxLength = 3_000;
+        if (text.length() <= maxLength) {
+            return text;
+        }
+        return text.substring(0, maxLength) + "... [truncated]";
     }
 }

@@ -253,14 +253,25 @@ public class HypothesisFrameworkGenerationService {
                 message("system", buildSystemPrompt(section)),
                 message("user", prompt)
         ));
-        body.put("response_format", Map.of(
-                "type", "json_schema",
-                "json_schema", Map.of(
-                        "name", "hypothesis_framework_" + section.path(),
-                        "schema", buildSchema(section)
-                )
+        Map<String, Object> textConfig = new LinkedHashMap<>();
+        textConfig.put("format", jsonSchemaFormat(
+                "hypothesis_framework_" + section.path(),
+                buildSchema(section)
         ));
+        body.put("text", textConfig);
         return body;
+    }
+
+    private Map<String, Object> jsonSchemaFormat(String name,
+                                                 Map<String, Object> schema) {
+        Map<String, Object> jsonSchema = new LinkedHashMap<>();
+        jsonSchema.put("name", name);
+        jsonSchema.put("schema", schema);
+
+        Map<String, Object> format = new LinkedHashMap<>();
+        format.put("type", "json_schema");
+        format.put("json_schema", jsonSchema);
+        return format;
     }
 
     private Map<String, Object> buildSchema(HypothesisFrameworkSection section) {

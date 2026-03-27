@@ -1,6 +1,7 @@
 import { Fragment, useState } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import { Loader2 } from "lucide-react";
+import axios from "axios";
 import type { HypothesisFramework } from "../api/hypothesis/types";
 import { normalizeFramework } from "../api/hypothesis/types";
 import type { HypothesisFrameworkSection } from "../api/hypothesis/types";
@@ -21,6 +22,67 @@ interface Props {
   onRefresh?: () => void;
 }
 
+type RequestUiStatus = "IDLE" | "PROCESSING" | "COMPLETED" | "FAILED";
+
+interface SectionRequestState {
+  status: RequestUiStatus;
+  requestedAt?: string;
+  completedAt?: string;
+  customInstructions?: string;
+  errorMessage?: string;
+}
+
+const STATUS_LABELS: Record<RequestUiStatus, string> = {
+  IDLE: "Sem solicitação",
+  PROCESSING: "Em processamento",
+  COMPLETED: "Concluída",
+  FAILED: "Com erro",
+};
+
+const STATUS_BADGES: Record<RequestUiStatus, string> = {
+  IDLE: "secondary",
+  PROCESSING: "warning",
+  COMPLETED: "success",
+  FAILED: "danger",
+};
+
+const SECTION_REQUEST_INITIAL_STATE: Record<
+  HypothesisFrameworkSection,
+  SectionRequestState
+> = {
+  pain: { status: "IDLE" },
+  result: { status: "IDLE" },
+  mechanism: { status: "IDLE" },
+  proof: { status: "IDLE" },
+  offer: { status: "IDLE" },
+};
+
+function formatDateTime(value?: string) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function getErrorMessage(error: unknown) {
+  if (axios.isAxiosError(error)) {
+    const responseMessage =
+      typeof error.response?.data?.message === "string"
+        ? error.response.data.message
+        : undefined;
+    return responseMessage ?? error.message ?? "Falha ao processar solicitação.";
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "Falha ao processar solicitação.";
+}
+
 export function HypothesisFrameworkTabsView({
   hypothesisId,
   nicheId,
@@ -39,16 +101,51 @@ export function HypothesisFrameworkTabsView({
   const [pendingSection, setPendingSection] = useState<
     HypothesisFrameworkSection | undefined
   >();
+  const [requestsBySection, setRequestsBySection] = useState<
+    Record<HypothesisFrameworkSection, SectionRequestState>
+  >(SECTION_REQUEST_INITIAL_STATE);
   const generate = useGenerateFrameworkSection(hypothesisId, nicheId);
 
   const handleGenerate = async (section: HypothesisFrameworkSection) => {
+    const requestedAt = new Date().toISOString();
+    const customInstructions = instructions[section]?.trim() ?? "";
+    setRequestsBySection((prev) => ({
+      ...prev,
+      [section]: {
+        status: "PROCESSING",
+        requestedAt,
+        completedAt: undefined,
+        customInstructions,
+        errorMessage: undefined,
+      },
+    }));
+
     try {
       setPendingSection(section);
       await generate.mutateAsync({
         section,
-        customInstructions: instructions[section],
+        customInstructions,
       });
+      setRequestsBySection((prev) => ({
+        ...prev,
+        [section]: {
+          ...prev[section],
+          status: "COMPLETED",
+          completedAt: new Date().toISOString(),
+          errorMessage: undefined,
+        },
+      }));
       onRefresh?.();
+    } catch (error) {
+      setRequestsBySection((prev) => ({
+        ...prev,
+        [section]: {
+          ...prev[section],
+          status: "FAILED",
+          completedAt: undefined,
+          errorMessage: getErrorMessage(error),
+        },
+      }));
     } finally {
       setPendingSection(undefined);
     }
@@ -144,7 +241,8 @@ export function HypothesisFrameworkTabsView({
                 <textarea
                   className="form-control"
                   rows={2}
-                  placeholder="Instruções extras (opcional)"
+                  placeholder="Instruções extras para a IA (opcional)"
+                  title="Escreva contexto adicional para guiar a IA nesta seção."
                   value={instructions[section.id]}
                   onChange={(event) =>
                     setInstructions((prev) => ({
@@ -171,6 +269,44 @@ export function HypothesisFrameworkTabsView({
             </Tabs.Content>
           ))}
         </Tabs.Root>
+
+        <div className="border rounded-3 p-3 mt-4">
+          <h4 className="h6 mb-2">Acompanhamento das solicitações IA</h4>
+          <p className="small text-muted mb-3">
+            Veja o que já foi solicitado, o que está em processamento e o que falhou em
+            cada etapa do framework.
+          </p>
+          <div className="d-flex flex-column gap-2">
+            {SECTIONS.map((section) => {
+              const request = requestsBySection[section.id];
+              return (
+                <div
+                  key={`request-status-${section.id}`}
+                  className="border rounded-2 p-2 d-flex flex-column gap-1"
+                >
+                  <div className="d-flex flex-wrap align-items-center gap-2">
+                    <strong>{section.label}</strong>
+                    <span className={`badge text-bg-${STATUS_BADGES[request.status]}`}>
+                      {STATUS_LABELS[request.status]}
+                    </span>
+                  </div>
+                  <small className="text-muted">
+                    Solicitado em: {formatDateTime(request.requestedAt)} · Concluído em:{" "}
+                    {formatDateTime(request.completedAt)}
+                  </small>
+                  {request.customInstructions ? (
+                    <small className="text-body-secondary">
+                      Instruções enviadas: {request.customInstructions}
+                    </small>
+                  ) : null}
+                  {request.errorMessage ? (
+                    <small className="text-danger">Erro: {request.errorMessage}</small>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
         <hr className="my-4" />
         <h4 className="h6">Checklist de aprovação</h4>

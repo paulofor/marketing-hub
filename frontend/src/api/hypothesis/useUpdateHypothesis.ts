@@ -22,6 +22,7 @@ export interface UpdateHypothesisPayload {
   offerType?: string;
   price?: number | null;
   kpiTargetCpl?: number;
+  offerPackageId?: number | null;
   framework?: HypothesisFramework | null;
 }
 

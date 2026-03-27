@@ -13,6 +13,10 @@ public class DeliverablePackageDto {
     private Long id;
     private Long experimentId;
     private String experimentName;
+    private java.util.UUID hypothesisId;
+    private String hypothesisTitle;
+    private Long nicheId;
+    private String nicheName;
     private String name;
     private String description;
     private String model;

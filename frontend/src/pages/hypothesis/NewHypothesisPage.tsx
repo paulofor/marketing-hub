@@ -35,6 +35,7 @@ export default function NewHypothesisPage() {
       offerType: "LEAD",
       price: undefined,
       kpiTargetCpl: 1,
+      offerPackageId: null,
       framework: EMPTY_FRAMEWORK,
     },
   });

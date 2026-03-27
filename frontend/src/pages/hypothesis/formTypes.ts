@@ -69,6 +69,9 @@ export const hypothesisFormSchema = z
       )
       .optional(),
     kpiTargetCpl: z.preprocess(Number, z.number()),
+    offerPackageId: z
+      .preprocess((val) => (val === "" || val === null || val === undefined ? null : Number(val)), z.number().nullable())
+      .optional(),
     framework: hypothesisFrameworkSchema,
   })
   .superRefine((val, ctx) => {

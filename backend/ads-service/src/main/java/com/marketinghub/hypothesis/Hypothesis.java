@@ -1,6 +1,7 @@
 package com.marketinghub.hypothesis;
 
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.deliverable.DeliverablePackage;
 import com.marketinghub.creative.label.Angle;
 import com.marketinghub.prompt.PromptAttributeDescription;
 import com.marketinghub.ads.FacebookInstantForm;
@@ -115,6 +116,11 @@ public class Hypothesis {
 
     @Column(precision = 6, scale = 2)
     private BigDecimal price;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "offer_package_id")
+    private DeliverablePackage offerPackage;
+
     @Column(precision = 7, scale = 2)
     private BigDecimal kpiTargetCpl;
 

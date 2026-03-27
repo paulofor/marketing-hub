@@ -248,6 +248,21 @@ erDiagram
     CREATIVE ||--o{ METRIC_SNAPSHOT : mede
 ```
 
+## Atualizações Fase 2 — Prova e Oferta Normalizadas
+
+### Provas catalogadas (`proof_artifact`)
+- Novo repositório central para provas com colunas `stage`, `status`, `custom_type`, `asset_plan`, `asset_url`, `message`, `delivery_notes`, `prompt` e `model`.
+- Ligações opcionais com `hypothesis`, `experiment`, `visual_proof` e `market_niche` permitem reaproveitar o mesmo ativo em diferentes hipóteses/experimentos.
+- Cada prova registrada pode ser aplicada diretamente no formulário do framework, reduzindo campos livres e mantendo rastreabilidade.
+
+### Oferta componível (`deliverable_package` ↔ `hypothesis`)
+- `deliverable_package` agora aceita `hypothesis_id`, permitindo criar pacotes aprovados antes ou fora de um experimento.
+- `hypothesis` ganhou o campo `offer_package_id`, apontando qual pacote oficial representa a oferta ativa daquela hipótese.
+- Durante o cadastro/edição o sistema valida se o pacote pertence ao mesmo nicho, evitando combinações incoerentes.
+
+## Escopo coberto
+
+
 ## Leitura rápida das relações
 
 1. **Base estratégica**

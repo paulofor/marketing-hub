@@ -1,6 +1,7 @@
 package com.marketinghub.deliverable;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.hypothesis.Hypothesis;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -21,20 +22,27 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "deliverable_package", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"experiment_id", "name"})
+        @UniqueConstraint(name = "uq_deliverable_package_experiment_name", columnNames = {"experiment_id", "name"}),
+        @UniqueConstraint(name = "uq_deliverable_package_hypothesis_name", columnNames = {"hypothesis_id", "name"})
 })
 public class DeliverablePackage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "experiment_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "experiment_id")
     @ToString.Exclude
     private Experiment experiment;
 
     @Column(nullable = false)
     private String name;
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hypothesis_id")
+    @ToString.Exclude
+    private Hypothesis hypothesis;
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)

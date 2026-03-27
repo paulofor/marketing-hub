@@ -19,6 +19,7 @@ public class UpdateHypothesisRequest {
     private String offerType;
     private BigDecimal price;
     private BigDecimal kpiTargetCpl;
+    private Long offerPackageId;
     private HypothesisFrameworkDto framework;
 
     public String getTitle() { return title; }
@@ -66,6 +67,9 @@ public class UpdateHypothesisRequest {
 
     public BigDecimal getKpiTargetCpl() { return kpiTargetCpl; }
     public void setKpiTargetCpl(BigDecimal kpiTargetCpl) { this.kpiTargetCpl = kpiTargetCpl; }
+
+    public Long getOfferPackageId() { return offerPackageId; }
+    public void setOfferPackageId(Long offerPackageId) { this.offerPackageId = offerPackageId; }
 
     public HypothesisFrameworkDto getFramework() { return framework; }
     public void setFramework(HypothesisFrameworkDto framework) { this.framework = framework; }

@@ -39,6 +39,7 @@ export default function EditHypothesisPage() {
       offerType: "LEAD",
       price: undefined,
       kpiTargetCpl: 1,
+      offerPackageId: null,
       framework: EMPTY_FRAMEWORK,
     },
   });
@@ -61,6 +62,7 @@ export default function EditHypothesisPage() {
       offerType: (data.offerType as "LEAD" | "TRIPWIRE") || "LEAD",
       price: data.price ?? undefined,
       kpiTargetCpl: data.kpiTargetCpl ?? 1,
+      offerPackageId: data.offerPackageId ?? null,
       framework: normalizeFramework(data.framework),
     });
   }, [data, reset]);
@@ -83,6 +85,7 @@ export default function EditHypothesisPage() {
       offerType: values.offerType,
       price: values.offerType === "TRIPWIRE" ? values.price ?? null : null,
       kpiTargetCpl: values.kpiTargetCpl ?? null,
+      offerPackageId: values.offerPackageId ?? null,
       framework: values.framework,
     };
     await update.mutateAsync(payload);

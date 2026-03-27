@@ -28,6 +28,8 @@ public class HypothesisDto {
     private OfferType offerType;
     private BigDecimal price;
     private BigDecimal kpiTargetCpl;
+    private Long offerPackageId;
+    private String offerPackageName;
     private BigDecimal costUsd;
     private BigDecimal cost;
     private BigDecimal totalCost;

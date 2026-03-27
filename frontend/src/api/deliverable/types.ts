@@ -13,8 +13,12 @@ export interface Deliverable {
 
 export interface DeliverablePackage {
   id: number;
-  experimentId: number;
-  experimentName: string;
+  experimentId?: number | null;
+  experimentName?: string | null;
+  hypothesisId?: string | null;
+  hypothesisTitle?: string | null;
+  nicheId?: number | null;
+  nicheName?: string | null;
   name: string;
   description?: string | null;
   model?: string | null;

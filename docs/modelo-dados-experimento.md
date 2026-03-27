@@ -389,3 +389,23 @@ Tabela responsável por registrar cada solicitação de relatório vinculada a u
 - Índices compostos em `(experiment_id, requested_at)` e `(status, requested_at)` garantem listagens rápidas tanto no painel do usuário quanto para os workers que processam a fila.
 
 O `payload_snapshot` armazena o mesmo JSON exposto pelo endpoint `/api/experiments/{id}/report-material`, garantindo que serviços externos tenham acesso estável às informações utilizadas para montar o relatório objetivo.
+
+## Aprendizado fechado do experimento
+
+Para sustentar a Fase 3 do framework, foram criadas duas novas tabelas vinculadas ao contexto do experimento:
+
+- **EXPERIMENT_LEARNING_REQUEST**: registra cada solicitação de aprendizado automático.
+  - `experiment_id` (FK) aponta para `EXPERIMENT` e garante cascata ao excluir.
+  - `status` usa os valores `PENDING`, `PROCESSING`, `READY`, `FAILED`.
+  - `payload_snapshot` guarda um snapshot JSON do experimento (mesmo material usado no relatório objetivo).
+  - `result_payload` mantém o JSON estruturado retornado pelo worker para auditoria.
+  - `failure_reason`, `requested_by`, `requested_at` e `completed_at` permitem rastreio operacional.
+
+- **EXPERIMENT_LEARNING**: armazena o aprendizado consolidado (o que funcionou, o que travou e o próximo teste).
+  - `experiment_id` e `request_id` (FK) preservam a ligação com a solicitação que originou o aprendizado.
+  - `niche_id` e `hypothesis_id` facilitam consultas por nicho/hipótese sem joins adicionais.
+  - `stage`, `primary_metric` e `metric_signal` sinalizam em qual etapa do funil o aprendizado se aplica.
+  - `what_worked`, `what_blocked`, `next_test` e `summary` mantêm os textos principais.
+  - `insights_json` e `suggestions_json` armazenam, em JSON, listas tipadas de insights (Dor/Resultado/Mecanismo/Prova/Oferta) e recomendações de backlog.
+
+Essas tabelas alimentam a nova API de "Banco de aprendizados" e o recomendador de backlog por nicho. Cada novo aprendizado nasce de uma `EXPERIMENT_LEARNING_REQUEST` consumida pelo AI Worker, garantindo rastreabilidade e versionamento dos insights.

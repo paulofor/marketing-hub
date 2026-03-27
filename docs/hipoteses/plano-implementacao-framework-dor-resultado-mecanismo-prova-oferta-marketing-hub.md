@@ -270,6 +270,14 @@ Tornar **Prova** e **Oferta** entidades de primeira classe, para reuso e compara
 
 - O sistema sugere próximos passos baseados em dados, não em memória do time.
 
+### Implementação da Fase 3 (versão operacional)
+
+- **Resumo automático do experimento**: novo endpoint `/api/experiments/{id}/learning-requests` cria solicitações e o AI Worker processa as pendências consumindo o mesmo snapshot utilizado no relatório objetivo. O resultado estruturado (o que funcionou, bloqueios e próximo teste) é registrado na tabela `experiment_learning`.
+- **Banco de aprendizados por nicho**: a API `/api/niches/{id}/learning/dictionary` consolida os insights por Dor/Resultado/Mecanismo/Prova/Oferta reaproveitando o campo `insights_json`. A tela do Nicho exibe o dicionário, data de atualização e fonte do experimento.
+- **Recomendador de backlog**: o campo `suggestions_json` guarda as recomendações retornadas pelo worker; o endpoint `/api/niches/{id}/learning/recommendations` ordena e limita as sugestões para abastecer o backlog diretamente na UI.
+- **Automação completa**: o AI Worker ganhou um scheduler (`experiment.learning.fixed-delay`) e um cliente dedicado para buscar/atualizar solicitações, eliminando passos manuais após o deploy.
+- **Experiência do usuário**: o detalhe do experimento passou a ter o painel "Aprendizado automatizado" (solicita leitura, acompanha status e exibe o resumo), enquanto o detalhe do nicho recebeu os blocos "Banco de aprendizados" e "Recomendações para o backlog".
+
 ---
 
 ## 6) Playbooks prontos para começar (baseado nos nichos atuais)

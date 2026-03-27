@@ -8,6 +8,8 @@ import PageTitle from "../../components/PageTitle";
 import nicheIcon from "../../assets/icons/niche-icon.svg";
 import { TargetingElementCard } from "../../components/TargetingElementCard";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
+import { NicheLearningDictionaryCard } from "./NicheLearningDictionaryCard";
+import { NicheBacklogRecommendationsCard } from "./NicheBacklogRecommendationsCard";
 import { useChatDialog } from "../../api/chatDialog/useChatDialog";
 import { useForm } from "react-hook-form";
 import type {
@@ -1007,6 +1009,8 @@ export default function NicheDetailPage() {
           ))}
         </div>
       </section>
+      <NicheLearningDictionaryCard nicheId={normalizedNicheId} />
+      <NicheBacklogRecommendationsCard nicheId={normalizedNicheId} />
       <section
         className="niche-section"
         aria-labelledby="niche-detailed-descriptions"

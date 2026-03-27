@@ -47,6 +47,9 @@ public class ExperimentReportMaterialDto {
         private String name;
         private String status;
         private String platform;
+        private String stage;
+        private String primaryVariable;
+        private String primaryMetric;
         private LocalDate startDate;
         private LocalDate endDate;
         private BigDecimal dailyBudget;

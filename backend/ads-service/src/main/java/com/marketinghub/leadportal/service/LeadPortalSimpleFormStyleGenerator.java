@@ -66,14 +66,24 @@ public class LeadPortalSimpleFormStyleGenerator {
         ));
         body.put("temperature", 0.85);
         body.put("max_output_tokens", 800);
-        body.put("response_format", Map.of(
-                "type", "json_schema",
-                "json_schema", Map.of(
-                        "name", "lead_portal_simple_form_style",
-                        "schema", responseSchema
-                )
+        Map<String, Object> textConfig = new LinkedHashMap<>();
+        textConfig.put("format", buildJsonSchemaFormat(
+                "lead_portal_simple_form_style",
+                responseSchema
         ));
+        body.put("text", textConfig);
         return body;
+    }
+
+    private Map<String, Object> buildJsonSchemaFormat(String name, Map<String, Object> schema) {
+        Map<String, Object> jsonSchema = new LinkedHashMap<>();
+        jsonSchema.put("name", name);
+        jsonSchema.put("schema", schema);
+
+        Map<String, Object> format = new LinkedHashMap<>();
+        format.put("type", "json_schema");
+        format.put("json_schema", jsonSchema);
+        return format;
     }
 
     private String buildUserPrompt(GenerationCommand command) {

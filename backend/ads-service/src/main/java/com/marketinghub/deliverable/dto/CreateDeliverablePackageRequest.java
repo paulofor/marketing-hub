@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Request payload to create deliverable packages for an experiment.
@@ -13,6 +14,7 @@ import java.util.List;
 public class CreateDeliverablePackageRequest {
     @JsonAlias({"experimentId"})
     private Long experimentId;
+    private UUID hypothesisId;
     private String name;
     private String description;
     private String model;

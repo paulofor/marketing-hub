@@ -6,6 +6,8 @@ import type { HypothesisFrameworkSection } from "../api/hypothesis/types";
 import { normalizeFramework } from "../api/hypothesis/types";
 import { useGenerateFrameworkSection } from "../api/hypothesis/useGenerateFrameworkSection";
 import type { HypothesisFormValues } from "../pages/hypothesis/formTypes";
+import { HypothesisProofLibrary } from "./HypothesisProofLibrary";
+import { HypothesisOfferPackageSelector } from "./HypothesisOfferPackageSelector";
 
 const SECTIONS: { id: HypothesisFrameworkSection; label: string }[] = [
   { id: "pain", label: "Dor" },
@@ -35,7 +37,7 @@ export function HypothesisFrameworkTabsForm({
   nicheId,
   readOnly = false,
 }: Props) {
-  const { register, setValue } = useFormContext<HypothesisFormValues>();
+  const { register, setValue, watch } = useFormContext<HypothesisFormValues>();
   const [tab, setTab] = useState<HypothesisFrameworkSection>("pain");
   const [instructions, setInstructions] = useState<Record<HypothesisFrameworkSection, string>>({
     pain: "",
@@ -44,6 +46,7 @@ export function HypothesisFrameworkTabsForm({
     proof: "",
     offer: "",
   });
+  const offerPackageId = watch("offerPackageId");
   const [pendingSection, setPendingSection] = useState<
     HypothesisFrameworkSection | undefined
   >();
@@ -306,6 +309,24 @@ export function HypothesisFrameworkTabsForm({
                 />
               </div>
             </div>
+            <HypothesisProofLibrary
+              hypothesisId={hypothesisId}
+              readOnly={readOnly}
+              onApply={(proof) => {
+                setValue("framework.proof.type", proof.typeLabel ?? "", { shouldDirty: true });
+                setValue(
+                  "framework.proof.asset",
+                  proof.assetPlan ?? proof.assetUrl ?? "",
+                  { shouldDirty: true },
+                );
+                setValue("framework.proof.message", proof.message ?? "", { shouldDirty: true });
+                setValue(
+                  "framework.proof.deliveryStage",
+                  proof.stage ?? "",
+                  { shouldDirty: true },
+                );
+              }}
+            />
             {!readOnly && renderAiActions("proof")}
           </Tabs.Content>
           <Tabs.Content value="offer">
@@ -362,6 +383,13 @@ export function HypothesisFrameworkTabsForm({
                 />
               </div>
             </div>
+            <HypothesisOfferPackageSelector
+              hypothesisId={hypothesisId}
+              nicheId={nicheId ? Number(nicheId) : undefined}
+              value={offerPackageId ?? null}
+              onChange={(id) => setValue("offerPackageId", id ?? null, { shouldDirty: true })}
+              readOnly={readOnly}
+            />
             {!readOnly && renderAiActions("offer")}
           </Tabs.Content>
         </Tabs.Root>

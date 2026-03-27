@@ -3,6 +3,8 @@ package com.marketinghub.hypothesis.service;
 import com.marketinghub.creative.label.Angle;
 import com.marketinghub.creative.label.repository.AngleRepository;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.deliverable.DeliverablePackage;
+import com.marketinghub.deliverable.repository.DeliverablePackageRepository;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.hypothesis.*;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
@@ -36,6 +38,7 @@ public class HypothesisService {
     private final HypothesisFrameworkMapperSupport frameworkMapperSupport;
     private final CurrencyConversionService currencyConversionService;
     private final CostAttributionService costAttributionService;
+    private final DeliverablePackageRepository deliverablePackageRepository;
 
     public HypothesisService(HypothesisRepository repository,
                              MarketNicheRepository nicheRepository,
@@ -44,7 +47,8 @@ public class HypothesisService {
                              EntityManager em,
                              HypothesisFrameworkMapperSupport frameworkMapperSupport,
                              CurrencyConversionService currencyConversionService,
-                             CostAttributionService costAttributionService) {
+                             CostAttributionService costAttributionService,
+                             DeliverablePackageRepository deliverablePackageRepository) {
         this.repository = repository;
         this.nicheRepository = nicheRepository;
         this.angleRepository = angleRepository;
@@ -53,6 +57,7 @@ public class HypothesisService {
         this.frameworkMapperSupport = frameworkMapperSupport;
         this.currencyConversionService = currencyConversionService;
         this.costAttributionService = costAttributionService;
+        this.deliverablePackageRepository = deliverablePackageRepository;
     }
 
     private MarketNiche attachNiche(Long id) {
@@ -105,6 +110,26 @@ public class HypothesisService {
         return set;
     }
 
+    private DeliverablePackage resolveOfferPackage(Long offerPackageId, MarketNiche niche) {
+        if (offerPackageId == null) {
+            return null;
+        }
+        DeliverablePackage pack = deliverablePackageRepository.findById(offerPackageId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Offer package not found: " + offerPackageId));
+        Long packNicheId = null;
+        if (pack.getExperiment() != null && pack.getExperiment().getNiche() != null) {
+            packNicheId = pack.getExperiment().getNiche().getId();
+        } else if (pack.getHypothesis() != null && pack.getHypothesis().getMarketNiche() != null) {
+            packNicheId = pack.getHypothesis().getMarketNiche().getId();
+        }
+        if (niche == null || niche.getId() == null || packNicheId == null || !packNicheId.equals(niche.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Offer package must belong to the same niche as the hypothesis");
+        }
+        return pack;
+    }
+
     @Transactional
     public Hypothesis create(CreateHypothesisRequest req) {
         validate(req);
@@ -131,6 +156,7 @@ public class HypothesisService {
                 .price(req.getPrice())
                 .kpiTargetCpl(req.getKpiTargetCpl())
                 .build();
+        h.setOfferPackage(resolveOfferPackage(req.getOfferPackageId(), h.getMarketNiche()));
         frameworkMapperSupport.applyPartial(h, req.getFramework());
         Hypothesis saved = repository.save(h);
         BigDecimal delta = resolveTotalCostDelta(req);
@@ -191,6 +217,7 @@ public class HypothesisService {
         h.setOfferType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()));
         h.setPrice(req.getPrice());
         h.setKpiTargetCpl(req.getKpiTargetCpl());
+        h.setOfferPackage(resolveOfferPackage(req.getOfferPackageId(), h.getMarketNiche()));
         frameworkMapperSupport.applyPartial(h, req.getFramework());
         return h;
     }

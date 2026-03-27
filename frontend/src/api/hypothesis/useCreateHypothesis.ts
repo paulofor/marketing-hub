@@ -20,6 +20,7 @@ export interface CreateHypothesis {
   offerType?: string;
   kpiTargetCpl?: number;
   price?: number;
+  offerPackageId?: number;
   costUsd?: number;
   cost?: number;
   expense?: number;

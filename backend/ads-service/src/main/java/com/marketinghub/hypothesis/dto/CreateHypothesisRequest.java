@@ -25,6 +25,7 @@ public class CreateHypothesisRequest {
     private String offerType;
     private BigDecimal price;
     private BigDecimal kpiTargetCpl;
+    private Long offerPackageId;
     private List<Long> promptAttributeDescriptionIds;
     private HypothesisFrameworkDto framework;
 
@@ -65,6 +66,9 @@ public class CreateHypothesisRequest {
     public void setPrice(BigDecimal price) { this.price = price; }
     public BigDecimal getKpiTargetCpl() { return kpiTargetCpl; }
     public void setKpiTargetCpl(BigDecimal kpiTargetCpl) { this.kpiTargetCpl = kpiTargetCpl; }
+
+    public Long getOfferPackageId() { return offerPackageId; }
+    public void setOfferPackageId(Long offerPackageId) { this.offerPackageId = offerPackageId; }
 
     public List<Long> getPromptAttributeDescriptionIds() { return promptAttributeDescriptionIds; }
     public void setPromptAttributeDescriptionIds(List<Long> promptAttributeDescriptionIds) { this.promptAttributeDescriptionIds = promptAttributeDescriptionIds; }

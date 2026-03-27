@@ -20,6 +20,8 @@ export interface Hypothesis {
   offerType?: string;
   price?: number;
   kpiTargetCpl?: number;
+  offerPackageId?: number | null;
+  offerPackageName?: string | null;
   costUsd?: number;
   cost?: number | null;
   expense?: number | null;

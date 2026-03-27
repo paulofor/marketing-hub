@@ -267,7 +267,9 @@ class NicheHypothesisServiceTest {
 
     @Test
     void removeFromQueueWhenPromptTemplateHasFormattingError() {
-        Prompt activePrompt = promptRepository.findByDomainAndActiveTrue(PromptDomains.NICHE_HYPOTHESIS).orElseThrow();
+        Prompt activePrompt = promptRepository
+                .findFirstByDomainAndActiveTrueOrderByUpdatedAtDesc(PromptDomains.NICHE_HYPOTHESIS)
+                .orElseThrow();
         activePrompt.setTemplate("""
                 Gere ${quantity} hipóteses.
                 <#if detailedDescription.title?has_content>Título: ${detailedDescription.title}</#if>

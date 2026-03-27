@@ -32,6 +32,7 @@ public class HypothesisFrameworkBackendClient {
     public List<HypothesisFrameworkJobDto> listPending(int limit) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/hypothesis-framework/jobs/pending");
         String uri = url + "?limit=" + Math.max(1, limit);
+        log.debug("Listing pending hypothesis framework jobs from {}", uri);
         List<HypothesisFrameworkJobDto> payload = webClient.get()
                 .uri(uri)
                 .exchangeToFlux(response -> handleListResponse(uri, response.statusCode(), response))
@@ -41,11 +42,14 @@ public class HypothesisFrameworkBackendClient {
                     return Mono.just(Collections.emptyList());
                 })
                 .block();
-        return payload != null ? payload : List.of();
+        List<HypothesisFrameworkJobDto> jobs = payload != null ? payload : List.of();
+        log.debug("Received {} pending hypothesis framework job(s) from backend", jobs.size());
+        return jobs;
     }
 
     public HypothesisFrameworkJobDto claim(UUID jobId, String workerId) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/hypothesis-framework/jobs/", jobId.toString(), "/claim");
+        log.debug("Claiming hypothesis framework job {} using workerId={} at {}", jobId, workerId, url);
         return webClient.post()
                 .uri(url)
                 .bodyValue(Collections.singletonMap("workerId", workerId))

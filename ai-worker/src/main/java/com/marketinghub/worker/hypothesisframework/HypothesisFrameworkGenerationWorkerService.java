@@ -25,18 +25,25 @@ public class HypothesisFrameworkGenerationWorkerService {
 
     public void processPending() {
         if (!openAiClient.isEnabled()) {
+            log.warn("Hypothesis framework generation skipped: OpenAI client is disabled");
             return;
         }
+        log.info("Hypothesis framework generation polling pending jobs (workerId={})", workerId);
         List<HypothesisFrameworkJobDto> pending = backendClient.listPending(20);
+        log.info("Hypothesis framework generation fetched {} pending job(s)", pending.size());
         if (pending.isEmpty()) {
+            log.debug("No pending hypothesis framework jobs found");
             return;
         }
         for (HypothesisFrameworkJobDto job : pending) {
+            log.info("Attempting to claim hypothesis framework job {} (experimentId={})", job.id(), job.experimentId());
             HypothesisFrameworkJobDto claimed = backendClient.claim(job.id(), workerId);
             if (claimed == null) {
+                log.info("Hypothesis framework job {} was not claimed (possibly claimed by another worker)", job.id());
                 continue;
             }
             try {
+                log.info("Generating hypothesis framework for job {}", claimed.id());
                 HypothesisFrameworkJobCompletionPayload payload = openAiClient.generate(claimed);
                 backendClient.complete(claimed.id(), payload);
                 log.info("Hypothesis framework job {} completed", claimed.id());

@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -106,6 +107,55 @@ class HypothesisFrameworkOpenAiClientTest {
         Map<String, Object> text = castMap(payload.get("text"));
         Map<String, Object> format = castMap(text.get("format"));
         assertThat(format).containsEntry("name", "already_set");
+    }
+
+    @Test
+    void addsMissingPropertiesToRequiredInJsonSchema() {
+        AtomicReference<Map<String, Object>> requestPayload = new AtomicReference<>();
+        HypothesisFrameworkOpenAiClient client = new HypothesisFrameworkOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(requestPayload)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        HypothesisFrameworkJobDto job = new HypothesisFrameworkJobDto(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                "PAIN",
+                "gpt-4o-mini",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-4o-mini",
+                          "input": [{"role": "user", "content": [{"type":"input_text","text":"Teste"}]}],
+                          "text": {
+                            "format": {
+                              "type": "json_schema",
+                              "schema": {
+                                "type": "object",
+                                "properties": {
+                                  "emotional": {"type": "string"},
+                                  "social": {"type": "string"},
+                                  "financial": {"type": "string"}
+                                },
+                                "required": ["emotional", "financial"],
+                                "additionalProperties": false
+                              }
+                            }
+                          }
+                        }
+                        """,
+                Instant.now());
+
+        client.generate(job);
+
+        Map<String, Object> payload = requestPayload.get();
+        Map<String, Object> text = castMap(payload.get("text"));
+        Map<String, Object> format = castMap(text.get("format"));
+        Map<String, Object> schema = castMap(format.get("schema"));
+        @SuppressWarnings("unchecked")
+        List<String> required = (List<String>) schema.get("required");
+        assertThat(required).containsExactlyInAnyOrderElementsOf(Set.of("emotional", "social", "financial"));
     }
 
     private ExchangeFunction capturePayloadExchange(AtomicReference<Map<String, Object>> capturedPayload) {

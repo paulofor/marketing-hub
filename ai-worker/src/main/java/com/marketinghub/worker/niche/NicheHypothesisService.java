@@ -6,6 +6,7 @@ import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.hypothesis.service.HypothesisService;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.worker.prompt.PromptTemplateException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -55,7 +56,16 @@ public class NicheHypothesisService {
                         niche.getHypothesisModel()))
                 .collect(Collectors.toList());
 
-        Map<Long, List<CreateHypothesisRequest>> generated = chatGptClient.generateHypothesesBatch(batchRequests);
+        Map<Long, List<CreateHypothesisRequest>> generated;
+        try {
+            generated = chatGptClient.generateHypothesesBatch(batchRequests);
+        } catch (Exception ex) {
+            if (hasPromptTemplateException(ex)) {
+                handlePromptTemplateFailure(niches, ex);
+                return result;
+            }
+            throw ex;
+        }
 
         for (MarketNiche niche : niches) {
             List<CreateHypothesisRequest> requests = generated.getOrDefault(niche.getId(), List.of());
@@ -91,6 +101,30 @@ public class NicheHypothesisService {
             result.put(niche.getId(), saved);
         }
         return result;
+    }
+
+    private void handlePromptTemplateFailure(List<MarketNiche> niches, Exception ex) {
+        String reason = ex.getMessage() != null ? ex.getMessage() : "Falha de template sem detalhe";
+        for (MarketNiche niche : niches) {
+            log.error("Falha de template ao gerar hipóteses do nicho {}. Removendo da fila. Motivo: {}",
+                    niche.getId(),
+                    reason,
+                    ex);
+            MarketNiche refreshedNiche = nicheRepository.findById(niche.getId()).orElseThrow();
+            refreshedNiche.setHypothesesToGenerate(0);
+            nicheRepository.save(refreshedNiche);
+        }
+    }
+
+    private boolean hasPromptTemplateException(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof PromptTemplateException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private static String resolveDefaultPersona(MarketNiche niche) {

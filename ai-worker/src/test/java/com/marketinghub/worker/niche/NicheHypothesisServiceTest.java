@@ -265,6 +265,30 @@ class NicheHypothesisServiceTest {
         assertThat(nicheRepository.findById(niche.getId()).orElseThrow().getHypothesesToGenerate()).isZero();
     }
 
+    @Test
+    void removeFromQueueWhenPromptTemplateHasFormattingError() {
+        Prompt activePrompt = promptRepository.findByDomainAndActiveTrue(PromptDomains.NICHE_HYPOTHESIS).orElseThrow();
+        activePrompt.setTemplate("""
+                Gere ${quantity} hipóteses.
+                <#if detailedDescription.title?has_content>Título: ${detailedDescription.title}</#if>
+                """);
+        promptRepository.save(activePrompt);
+
+        MarketNiche niche = MarketNiche.builder()
+                .name("Sem descrição detalhada")
+                .hypothesesToGenerate(1)
+                .build();
+        nicheRepository.save(niche);
+
+        int initialCount = mockWebServer.getRequestCount();
+        Map<Long, List<Hypothesis>> result = service.generate();
+
+        assertThat(result).isEmpty();
+        assertThat(hypothesisRepository.count()).isZero();
+        assertThat(mockWebServer.getRequestCount() - initialCount).isZero();
+        assertThat(nicheRepository.findById(niche.getId()).orElseThrow().getHypothesesToGenerate()).isZero();
+    }
+
     private void enqueueBatchResponse(Long nicheId, String content) {
         mockWebServer.enqueue(jsonResponse("{\"id\":\"file-1\"}"));
         mockWebServer.enqueue(jsonResponse("{\"id\":\"batch-1\",\"status\":\"validating\"}"));

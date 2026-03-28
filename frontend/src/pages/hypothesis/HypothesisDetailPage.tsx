@@ -20,7 +20,9 @@ import { HypothesisFrameworkTabsView } from "../../components/HypothesisFramewor
 export default function HypothesisDetailPage() {
   const { nicheId, hypothesisId } = useParams();
   const nicheNumericId = Number(nicheId);
-  const normalizedNicheId = Number.isFinite(nicheNumericId) ? nicheNumericId : undefined;
+  const normalizedNicheId = Number.isFinite(nicheNumericId)
+    ? nicheNumericId
+    : undefined;
   const targetingRequestFilters = useMemo(
     () => ({ limit: 6, nicheId: normalizedNicheId, hypothesisId }),
     [normalizedNicheId, hypothesisId],
@@ -44,7 +46,6 @@ export default function HypothesisDetailPage() {
     },
     { label: data?.title || "...", icon: hypothesisIcon },
   ]);
-
 
   const formatUsd = (value?: number | string | null) => {
     if (value === undefined || value === null) return undefined;
@@ -70,7 +71,9 @@ export default function HypothesisDetailPage() {
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
   const list = Array.isArray(experiments) ? experiments : [];
-  const targetingList = Array.isArray(targetingElements) ? targetingElements : [];
+  const targetingList = Array.isArray(targetingElements)
+    ? targetingElements
+    : [];
   const instantFormList = Array.isArray(instantForms) ? instantForms : [];
   const targetingByType: Record<TargetingElementType, typeof targetingList> = {
     INTEREST: targetingList.filter((element) => element.type === "INTEREST"),
@@ -87,7 +90,8 @@ export default function HypothesisDetailPage() {
     {
       type: "INTEREST",
       title: "Interesses",
-      description: "Segmentos prontos para usar como interesses salvos no Meta Ads.",
+      description:
+        "Segmentos prontos para usar como interesses salvos no Meta Ads.",
       requested: niche?.interestsToGenerate,
       model: niche?.interestModel,
     },
@@ -218,7 +222,8 @@ ${data.entrega ?? ""}
       <section className="mb-4">
         <h5 className="mb-2">Segmentação Meta Ads</h5>
         <p className="text-body-secondary">
-          Localização fixa: Brasil. Gere e aprove elementos separados por interesses, cargos e comportamentos para este nicho.
+          Localização fixa: Brasil. Gere e aprove elementos separados por
+          interesses, cargos e comportamentos para este nicho.
         </p>
         <TargetingRequestForm
           className="mb-3"
@@ -272,7 +277,10 @@ ${data.entrega ?? ""}
               </span>
             </div>
             {targetingByType[config.type].length === 0 ? (
-              <p className="text-muted">Nenhum elemento de {config.title.toLowerCase()} foi cadastrado ainda.</p>
+              <p className="text-muted">
+                Nenhum elemento de {config.title.toLowerCase()} foi cadastrado
+                ainda.
+              </p>
             ) : (
               <div className="row row-cols-1 row-cols-md-2 g-3">
                 {targetingByType[config.type].map((element) => (
@@ -280,7 +288,9 @@ ${data.entrega ?? ""}
                     <TargetingElementCard
                       element={element}
                       badgeLabel={
-                        element.hypothesisId === hypothesisId ? "Hipótese" : "Nicho"
+                        element.hypothesisId === hypothesisId
+                          ? "Hipótese"
+                          : "Nicho"
                       }
                     />
                   </div>
@@ -326,7 +336,8 @@ ${data.entrega ?? ""}
           <h5 className="mb-0">Instant Forms</h5>
           {instantFormList.length > 0 && (
             <span className="text-muted small">
-              {instantFormList.length} registro{instantFormList.length > 1 ? "s" : ""}
+              {instantFormList.length} registro
+              {instantFormList.length > 1 ? "s" : ""}
             </span>
           )}
         </div>
@@ -335,8 +346,9 @@ ${data.entrega ?? ""}
             <p>Carregando instant forms...</p>
           ) : instantFormList.length === 0 ? (
             <p className="text-muted">
-              Nenhum Instant Form vinculado a esta hipótese. Quando o worker IA gerar um formulário,
-              ele ficará disponível aqui para ser reutilizado em diferentes experimentos.
+              Nenhum Instant Form vinculado a esta hipótese. Quando o worker IA
+              gerar um formulário, ele ficará disponível aqui para ser
+              reutilizado em diferentes experimentos.
             </p>
           ) : (
             <div className="table-responsive">
@@ -356,14 +368,19 @@ ${data.entrega ?? ""}
                     <tr key={form.id}>
                       <td style={{ minWidth: 220 }}>
                         <div className="fw-semibold">{form.name}</div>
-                        <div className="text-muted small">ID Meta: {form.facebookFormId ?? "—"}</div>
+                        <div className="text-muted small">
+                          ID Meta: {form.facebookFormId ?? "—"}
+                        </div>
                         <div className="text-muted small">
                           Modelo: {form.model ? form.model : "—"}
                         </div>
                         {form.prompt && (
                           <details className="small mt-1">
                             <summary>Ver prompt</summary>
-                            <pre className="mb-0 text-break" style={{ whiteSpace: "pre-wrap" }}>
+                            <pre
+                              className="mb-0 text-break"
+                              style={{ whiteSpace: "pre-wrap" }}
+                            >
                               {form.prompt}
                             </pre>
                           </details>
@@ -371,12 +388,16 @@ ${data.entrega ?? ""}
                       </td>
                       <td style={{ minWidth: 180 }}>
                         <div>{form.facebookPageName}</div>
-                        <div className="text-muted small">{form.facebookPageExternalId}</div>
+                        <div className="text-muted small">
+                          {form.facebookPageExternalId}
+                        </div>
                       </td>
                       <td style={{ minWidth: 140 }}>
                         <div>{form.status ?? "—"}</div>
                         <div className="text-muted small">
-                          {form.locale ? `Idioma: ${form.locale}` : "Idioma não informado"}
+                          {form.locale
+                            ? `Idioma: ${form.locale}`
+                            : "Idioma não informado"}
                         </div>
                       </td>
                       <td>{form.leadsCount ?? "—"}</td>
@@ -410,7 +431,9 @@ ${data.entrega ?? ""}
                               </span>
                             </div>
                           ) : (
-                            <span className="text-muted small">Sem link de agradecimento</span>
+                            <span className="text-muted small">
+                              Sem link de agradecimento
+                            </span>
                           )}
                           {form.privacyPolicyUrl ? (
                             <div className="d-flex flex-column gap-1">
@@ -426,7 +449,9 @@ ${data.entrega ?? ""}
                               </span>
                             </div>
                           ) : (
-                            <span className="text-muted small">Sem política informada</span>
+                            <span className="text-muted small">
+                              Sem política informada
+                            </span>
                           )}
                         </div>
                       </td>
@@ -444,6 +469,7 @@ ${data.entrega ?? ""}
           <HypothesisFrameworkTabsView
             hypothesisId={hypothesisId}
             nicheId={nicheId}
+            nicheName={niche?.name}
             framework={data.framework}
             onRefresh={refetch}
           />

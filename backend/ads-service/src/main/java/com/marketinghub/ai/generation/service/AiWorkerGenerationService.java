@@ -42,9 +42,18 @@ public class AiWorkerGenerationService {
     }
 
     @Transactional(readOnly = true)
-    public Page<AiWorkerGeneration> list(String domain, Pageable pageable) {
-        if (StringUtils.hasText(domain)) {
-            return repository.findByDomainIgnoreCase(domain, pageable);
+    public Page<AiWorkerGeneration> list(String domain, String referenceId, Pageable pageable) {
+        boolean hasDomain = StringUtils.hasText(domain);
+        boolean hasReferenceId = StringUtils.hasText(referenceId);
+
+        if (hasDomain && hasReferenceId) {
+            return repository.findByDomainIgnoreCaseAndReferenceId(domain.trim(), referenceId.trim(), pageable);
+        }
+        if (hasDomain) {
+            return repository.findByDomainIgnoreCase(domain.trim(), pageable);
+        }
+        if (hasReferenceId) {
+            return repository.findByReferenceId(referenceId.trim(), pageable);
         }
         return repository.findAll(pageable);
     }

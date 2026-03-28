@@ -452,17 +452,11 @@ public class HypothesisFrameworkGenerationService {
             source = root.get("mechanism");
         }
 
-        HypothesisFrameworkDto.Mechanism mechanism = objectMapper.treeToValue(source, HypothesisFrameworkDto.Mechanism.class);
-        if (mechanism == null) {
-            mechanism = new HypothesisFrameworkDto.Mechanism();
-        }
-
-        if (!StringUtils.hasText(mechanism.getBelievability())) {
-            mechanism.setBelievability(firstText(source, "believable", "whyBelieve", "reasonToBelieve"));
-        }
-        if (!StringUtils.hasText(mechanism.getUnique())) {
-            mechanism.setUnique(firstText(source, "differential", "uniqueMechanism"));
-        }
+        HypothesisFrameworkDto.Mechanism mechanism = new HypothesisFrameworkDto.Mechanism();
+        mechanism.setCore(firstText(source, "core"));
+        mechanism.setVisible(firstText(source, "visible"));
+        mechanism.setUnique(firstText(source, "unique", "differential", "uniqueMechanism"));
+        mechanism.setBelievability(firstText(source, "believability", "believable", "whyBelieve", "reasonToBelieve"));
         return mechanism;
     }
 

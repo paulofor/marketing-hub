@@ -11,9 +11,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.HypothesisFrameworkGenerationJob;
+import com.marketinghub.hypothesis.HypothesisFrameworkGenerationJobStatus;
 import com.marketinghub.hypothesis.dto.HypothesisDto;
 import com.marketinghub.hypothesis.dto.HypothesisFrameworkDto;
 import com.marketinghub.hypothesis.dto.HypothesisFrameworkGenerationRequest;
+import com.marketinghub.hypothesis.dto.internal.HypothesisFrameworkGenerationJobCompletionRequest;
 import com.marketinghub.hypothesis.framework.HypothesisFrameworkMapperSupport;
 import com.marketinghub.hypothesis.framework.HypothesisFrameworkSection;
 import com.marketinghub.hypothesis.mapper.HypothesisMapper;
@@ -100,5 +102,40 @@ class HypothesisFrameworkGenerationServiceTest {
 
         Map<String, Object> jsonSchema = (Map<String, Object>) format.get("json_schema");
         assertThat(jsonSchema.get("name")).isEqualTo("hypothesis_framework_pain");
+    }
+
+    @Test
+    void completeJobParsesWrappedMechanismPayload() {
+        UUID jobId = UUID.randomUUID();
+        Hypothesis hypothesis = new Hypothesis();
+        hypothesis.setId(UUID.randomUUID());
+        HypothesisFrameworkGenerationJob job = HypothesisFrameworkGenerationJob.builder()
+                .id(jobId)
+                .hypothesis(hypothesis)
+                .section(HypothesisFrameworkSection.MECHANISM)
+                .status(HypothesisFrameworkGenerationJobStatus.PROCESSING)
+                .model("gpt-test")
+                .prompt("prompt")
+                .build();
+
+        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+        when(frameworkSupport.resolve(hypothesis)).thenReturn(new HypothesisFrameworkDto());
+
+        service.completeJob(jobId, new HypothesisFrameworkGenerationJobCompletionRequest(
+                "{\"mechanism\":{\"core\":\"Core\",\"differential\":\"Diff\",\"believable\":\"Proof\"}}",
+                "{}",
+                10,
+                20,
+                null
+        ));
+
+        ArgumentCaptor<HypothesisFrameworkDto> snapshotCaptor = ArgumentCaptor.forClass(HypothesisFrameworkDto.class);
+        ArgumentCaptor<HypothesisFrameworkDto> partialCaptor = ArgumentCaptor.forClass(HypothesisFrameworkDto.class);
+        verify(frameworkSupport).storeSnapshot(eq(hypothesis), snapshotCaptor.capture(), partialCaptor.capture());
+
+        assertThat(snapshotCaptor.getValue().getMechanism().getCore()).isEqualTo("Core");
+        assertThat(snapshotCaptor.getValue().getMechanism().getUnique()).isEqualTo("Diff");
+        assertThat(snapshotCaptor.getValue().getMechanism().getBelievability()).isEqualTo("Proof");
+        assertThat(partialCaptor.getValue().getMechanism().getCore()).isEqualTo("Core");
     }
 }

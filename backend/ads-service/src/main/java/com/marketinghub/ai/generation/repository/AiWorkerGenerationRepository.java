@@ -7,4 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AiWorkerGenerationRepository extends JpaRepository<AiWorkerGeneration, Long> {
     Page<AiWorkerGeneration> findByDomainIgnoreCase(String domain, Pageable pageable);
+
+    Page<AiWorkerGeneration> findByReferenceId(String referenceId, Pageable pageable);
+
+    Page<AiWorkerGeneration> findByDomainIgnoreCaseAndReferenceId(String domain, String referenceId, Pageable pageable);
 }

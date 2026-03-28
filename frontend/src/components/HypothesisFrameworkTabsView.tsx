@@ -2,6 +2,7 @@ import { Fragment, useState } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import { Loader2 } from "lucide-react";
 import axios from "axios";
+import { toast } from "react-toastify";
 import type { HypothesisFramework } from "../api/hypothesis/types";
 import { normalizeFramework } from "../api/hypothesis/types";
 import type { HypothesisFrameworkSection } from "../api/hypothesis/types";
@@ -18,6 +19,7 @@ const SECTIONS: { id: HypothesisFrameworkSection; label: string }[] = [
 interface Props {
   hypothesisId: string;
   nicheId?: string;
+  nicheName?: string;
   framework?: HypothesisFramework | null;
   onRefresh?: () => void;
 }
@@ -30,6 +32,19 @@ interface SectionRequestState {
   completedAt?: string;
   customInstructions?: string;
   errorMessage?: string;
+}
+
+interface AiGenerationRecord {
+  id: number;
+  domain: string;
+  model?: string;
+  prompt?: string;
+  rawResponse?: string;
+  createdAt?: string;
+}
+
+interface PageResponse<T> {
+  content: T[];
 }
 
 const STATUS_LABELS: Record<RequestUiStatus, string> = {
@@ -75,7 +90,9 @@ function getErrorMessage(error: unknown) {
       typeof error.response?.data?.message === "string"
         ? error.response.data.message
         : undefined;
-    return responseMessage ?? error.message ?? "Falha ao processar solicitação.";
+    return (
+      responseMessage ?? error.message ?? "Falha ao processar solicitação."
+    );
   }
   if (error instanceof Error) {
     return error.message;
@@ -86,12 +103,15 @@ function getErrorMessage(error: unknown) {
 export function HypothesisFrameworkTabsView({
   hypothesisId,
   nicheId,
+  nicheName,
   framework,
   onRefresh,
 }: Props) {
   const data = normalizeFramework(framework);
   const [tab, setTab] = useState<HypothesisFrameworkSection>("pain");
-  const [instructions, setInstructions] = useState<Record<HypothesisFrameworkSection, string>>({
+  const [instructions, setInstructions] = useState<
+    Record<HypothesisFrameworkSection, string>
+  >({
     pain: "",
     result: "",
     mechanism: "",
@@ -101,6 +121,7 @@ export function HypothesisFrameworkTabsView({
   const [pendingSection, setPendingSection] = useState<
     HypothesisFrameworkSection | undefined
   >();
+  const [isDownloadingReport, setIsDownloadingReport] = useState(false);
   const [requestsBySection, setRequestsBySection] = useState<
     Record<HypothesisFrameworkSection, SectionRequestState>
   >(SECTION_REQUEST_INITIAL_STATE);
@@ -151,7 +172,9 @@ export function HypothesisFrameworkTabsView({
     }
   };
 
-  const renderRows = (rows: Array<{ label: string; value?: string | null }>) => (
+  const renderRows = (
+    rows: Array<{ label: string; value?: string | null }>,
+  ) => (
     <dl className="row">
       {rows.map((row, index) => (
         <Fragment key={`${row.label}-${index}`}>
@@ -213,16 +236,143 @@ export function HypothesisFrameworkTabsView({
     }
   };
 
+  const getSectionFromDomain = (domain?: string) => {
+    const suffix = domain?.split(".").pop();
+    return (
+      SECTIONS.find((section) => section.id === suffix)?.label ??
+      domain ??
+      "Seção"
+    );
+  };
+
+  const handleDownloadReport = async () => {
+    try {
+      setIsDownloadingReport(true);
+      const { data: response } = await axios.get<
+        PageResponse<AiGenerationRecord>
+      >("/api/ai/generations", {
+        params: {
+          referenceId: hypothesisId,
+          size: 100,
+        },
+      });
+
+      const frameworkGenerations = (response.content ?? []).filter((item) =>
+        item.domain?.startsWith("hypothesis.framework."),
+      );
+
+      const reportLines = [
+        "# Relatório consolidado do framework Dor-Resultado-Oferta",
+        "",
+        `Nome do Nicho: ${nicheName ?? "Não informado"}`,
+        "",
+        "## Prompts e Respostas de cada geração de IA",
+        ...(frameworkGenerations.length === 0
+          ? [
+              "Nenhuma geração de IA do framework foi encontrada para esta hipótese.",
+            ]
+          : frameworkGenerations.flatMap((generation, index) => [
+              `### ${index + 1}. ${getSectionFromDomain(generation.domain)}`,
+              `- Data: ${formatDateTime(generation.createdAt)}`,
+              `- Modelo: ${generation.model ?? "Não informado"}`,
+              "",
+              "**Prompt**",
+              "```text",
+              generation.prompt?.trim() || "Sem prompt registrado.",
+              "```",
+              "",
+              "**Resposta**",
+              "```text",
+              generation.rawResponse?.trim() || "Sem resposta registrada.",
+              "```",
+              "",
+            ])),
+        "",
+        "## Descrição dos itens",
+        "",
+        "### Dor",
+        `- Superfície: ${data.pain.surface?.trim() || "-"}`,
+        `- Raiz: ${data.pain.root?.trim() || "-"}`,
+        `- Dor emocional: ${data.pain.emotional?.trim() || "-"}`,
+        `- Dor social: ${data.pain.social?.trim() || "-"}`,
+        `- Custo: ${data.pain.cost?.trim() || "-"}`,
+        "",
+        "### Resultado",
+        `- Resultado desejado: ${data.result.desiredResult?.trim() || "-"}`,
+        `- Identidade: ${data.result.desiredIdentity?.trim() || "-"}`,
+        `- Impacto de negócio: ${data.result.businessOutcome?.trim() || "-"}`,
+        `- Sinal de sucesso: ${data.result.successSignal?.trim() || "-"}`,
+        "",
+        "### Mecanismo",
+        `- Mecanismo central: ${data.mechanism.core?.trim() || "-"}`,
+        `- Mecanismo único: ${data.mechanism.unique?.trim() || "-"}`,
+        `- O que é visível: ${data.mechanism.visible?.trim() || "-"}`,
+        `- Por que acreditar: ${data.mechanism.believability?.trim() || "-"}`,
+        "",
+        "### Prova",
+        `- Tipo: ${data.proof.type?.trim() || "-"}`,
+        `- Ativo: ${data.proof.asset?.trim() || "-"}`,
+        `- Mensagem: ${data.proof.message?.trim() || "-"}`,
+        `- Estágio: ${data.proof.deliveryStage?.trim() || "-"}`,
+        "",
+        "### Oferta",
+        `- Nome: ${data.offer.name?.trim() || "-"}`,
+        `- Promessa: ${data.offer.corePromise?.trim() || "-"}`,
+        `- Entregáveis: ${data.offer.deliverables?.trim() || "-"}`,
+        `- Risco: ${data.offer.riskReversal?.trim() || "-"}`,
+        `- Narrativa de preço: ${data.offer.priceLogic?.trim() || "-"}`,
+        `- CTA: ${data.offer.cta?.trim() || "-"}`,
+      ];
+
+      const markdown = reportLines.join("\n");
+      const blob = new Blob([markdown], { type: "text/markdown" });
+      const url = URL.createObjectURL(blob);
+      const downloadLink = document.createElement("a");
+      downloadLink.href = url;
+      downloadLink.download = `relatorio-framework-${hypothesisId}.md`;
+      downloadLink.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsDownloadingReport(false);
+    }
+  };
+
   return (
     <div className="card">
-      <div className="card-header">
-        <h3 className="h6 mb-0">Framework Dor → Resultado → Oferta</h3>
-        <small className="text-muted">
-          Revise ou gere novamente cada seção antes de aprovar a hipótese.
-        </small>
+      <div className="card-header d-flex flex-column flex-lg-row gap-2 align-items-lg-center justify-content-lg-between">
+        <div>
+          <h3 className="h6 mb-0">Framework Dor → Resultado → Oferta</h3>
+          <small className="text-muted">
+            Revise ou gere novamente cada seção antes de aprovar a hipótese.
+          </small>
+        </div>
+        <button
+          type="button"
+          className="btn btn-outline-secondary btn-sm align-self-start align-self-lg-center"
+          onClick={handleDownloadReport}
+          disabled={isDownloadingReport}
+        >
+          {isDownloadingReport ? (
+            <span className="d-inline-flex align-items-center gap-1">
+              <span
+                className="spinner-border spinner-border-sm"
+                role="status"
+                aria-hidden="true"
+              />
+              Gerando relatório...
+            </span>
+          ) : (
+            "Baixar relatório consolidado"
+          )}
+        </button>
       </div>
       <div className="card-body">
-        <Tabs.Root value={tab} onValueChange={(value) => setTab(value as HypothesisFrameworkSection)}>
+        <Tabs.Root
+          value={tab}
+          onValueChange={(value) => setTab(value as HypothesisFrameworkSection)}
+        >
           <Tabs.List className="nav nav-tabs mb-3">
             {SECTIONS.map((section) => (
               <Tabs.Trigger
@@ -273,8 +423,8 @@ export function HypothesisFrameworkTabsView({
         <div className="border rounded-3 p-3 mt-4">
           <h4 className="h6 mb-2">Acompanhamento das solicitações IA</h4>
           <p className="small text-muted mb-3">
-            Veja o que já foi solicitado, o que está em processamento e o que falhou em
-            cada etapa do framework.
+            Veja o que já foi solicitado, o que está em processamento e o que
+            falhou em cada etapa do framework.
           </p>
           <div className="d-flex flex-column gap-2">
             {SECTIONS.map((section) => {
@@ -286,13 +436,15 @@ export function HypothesisFrameworkTabsView({
                 >
                   <div className="d-flex flex-wrap align-items-center gap-2">
                     <strong>{section.label}</strong>
-                    <span className={`badge text-bg-${STATUS_BADGES[request.status]}`}>
+                    <span
+                      className={`badge text-bg-${STATUS_BADGES[request.status]}`}
+                    >
                       {STATUS_LABELS[request.status]}
                     </span>
                   </div>
                   <small className="text-muted">
-                    Solicitado em: {formatDateTime(request.requestedAt)} · Concluído em:{" "}
-                    {formatDateTime(request.completedAt)}
+                    Solicitado em: {formatDateTime(request.requestedAt)} ·
+                    Concluído em: {formatDateTime(request.completedAt)}
                   </small>
                   {request.customInstructions ? (
                     <small className="text-body-secondary">
@@ -300,7 +452,9 @@ export function HypothesisFrameworkTabsView({
                     </small>
                   ) : null}
                   {request.errorMessage ? (
-                    <small className="text-danger">Erro: {request.errorMessage}</small>
+                    <small className="text-danger">
+                      Erro: {request.errorMessage}
+                    </small>
                   ) : null}
                 </div>
               );
@@ -312,15 +466,25 @@ export function HypothesisFrameworkTabsView({
         <h4 className="h6">Checklist de aprovação</h4>
         <dl className="row mb-0">
           <dt className="col-sm-4">Dor validada</dt>
-          <dd className="col-sm-8">{data.checklist.painReady ? "Sim" : "Não"}</dd>
+          <dd className="col-sm-8">
+            {data.checklist.painReady ? "Sim" : "Não"}
+          </dd>
           <dt className="col-sm-4">Resultado claro</dt>
-          <dd className="col-sm-8">{data.checklist.resultReady ? "Sim" : "Não"}</dd>
+          <dd className="col-sm-8">
+            {data.checklist.resultReady ? "Sim" : "Não"}
+          </dd>
           <dt className="col-sm-4">Mecanismo pronto</dt>
-          <dd className="col-sm-8">{data.checklist.mechanismReady ? "Sim" : "Não"}</dd>
+          <dd className="col-sm-8">
+            {data.checklist.mechanismReady ? "Sim" : "Não"}
+          </dd>
           <dt className="col-sm-4">Prova definida</dt>
-          <dd className="col-sm-8">{data.checklist.proofReady ? "Sim" : "Não"}</dd>
+          <dd className="col-sm-8">
+            {data.checklist.proofReady ? "Sim" : "Não"}
+          </dd>
           <dt className="col-sm-4">Oferta empacotada</dt>
-          <dd className="col-sm-8">{data.checklist.offerReady ? "Sim" : "Não"}</dd>
+          <dd className="col-sm-8">
+            {data.checklist.offerReady ? "Sim" : "Não"}
+          </dd>
           <dt className="col-sm-4">Liberado para experimento</dt>
           <dd className="col-sm-8">
             {data.checklist.approvedForExperiment ? "Sim" : "Não"}

@@ -27,7 +27,8 @@ public class AiWorkerGenerationController {
     @GetMapping
     public Page<AiWorkerGenerationDto> list(
             @RequestParam(value = "domain", required = false) String domain,
+            @RequestParam(value = "referenceId", required = false) String referenceId,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return service.list(domain, pageable).map(mapper::toDto);
+        return service.list(domain, referenceId, pageable).map(mapper::toDto);
     }
 }

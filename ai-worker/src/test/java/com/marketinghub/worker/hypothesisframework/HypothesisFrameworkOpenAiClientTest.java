@@ -171,7 +171,7 @@ class HypothesisFrameworkOpenAiClientTest {
             }
             return Mono.just(ClientResponse.create(HttpStatus.OK)
                     .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                    .body("{\"output\":[{\"content\":[{\"type\":\"output_text\",\"text\":\"ok\"}]}]}")
+                    .body("{\"output\":[{\"content\":[{\"type\":\"output_text\",\"text\":\"{\\\"result\\\":\\\"ok\\\"}\"}]}]}")
                     .build());
         };
     }

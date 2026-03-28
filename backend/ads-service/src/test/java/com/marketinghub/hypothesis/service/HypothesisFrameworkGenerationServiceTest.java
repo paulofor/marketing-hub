@@ -24,6 +24,7 @@ import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -78,8 +79,9 @@ class HypothesisFrameworkGenerationServiceTest {
         hypothesis.setTitle("Test");
 
         when(hypothesisRepository.findById(hypothesisId)).thenReturn(Optional.of(hypothesis));
-        when(jobRepository.existsByHypothesisIdAndSectionAndStatusIn(eq(hypothesisId), eq(HypothesisFrameworkSection.PAIN), any()))
-                .thenReturn(false);
+        when(jobRepository.findByHypothesisIdAndSectionAndStatusInOrderByCreatedAtDesc(
+                eq(hypothesisId), eq(HypothesisFrameworkSection.PAIN), any()))
+                .thenReturn(List.of());
         when(frameworkSupport.resolve(hypothesis)).thenReturn(new HypothesisFrameworkDto());
         when(mapper.toDto(hypothesis)).thenReturn(new HypothesisDto());
 

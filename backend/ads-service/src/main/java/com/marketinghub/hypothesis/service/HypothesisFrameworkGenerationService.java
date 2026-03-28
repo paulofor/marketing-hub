@@ -23,6 +23,7 @@ import com.marketinghub.openai.OpenAiCostEstimator;
 import com.marketinghub.openai.OpenAiResponse;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -40,6 +41,8 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class HypothesisFrameworkGenerationService {
     private static final String DEFAULT_MODEL = "gpt-5.2";
+    private static final Duration STALE_PENDING_TIMEOUT = Duration.ofMinutes(10);
+    private static final Duration STALE_PROCESSING_TIMEOUT = Duration.ofMinutes(20);
     private static final String RESEARCH_DIRECTIVE = "Sempre que possível, pesquise em sites especializados do nicho"
             + " usando a ferramenta de web_search antes de responder. Use os achados para justificar cada campo do JSON"
             + " e cite as principais referências consultadas.";
@@ -72,13 +75,42 @@ public class HypothesisFrameworkGenerationService {
         Hypothesis hypothesis = repository.findById(hypothesisId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Hipótese não encontrada"));
 
-        if (!jobRepository.existsByHypothesisIdAndSectionAndStatusIn(
+        List<HypothesisFrameworkGenerationJob> activeJobs = jobRepository.findByHypothesisIdAndSectionAndStatusInOrderByCreatedAtDesc(
                 hypothesisId,
                 section,
-                Set.of(HypothesisFrameworkGenerationJobStatus.PENDING, HypothesisFrameworkGenerationJobStatus.PROCESSING))) {
+                Set.of(HypothesisFrameworkGenerationJobStatus.PENDING, HypothesisFrameworkGenerationJobStatus.PROCESSING));
+        boolean hasActiveJob = markStaleJobsAsFailed(activeJobs);
+        if (!hasActiveJob) {
             enqueueJob(hypothesis, section, request);
         }
         return mapper.toDto(hypothesis);
+    }
+
+    private boolean markStaleJobsAsFailed(List<HypothesisFrameworkGenerationJob> activeJobs) {
+        Instant now = Instant.now();
+        boolean hasActiveJob = false;
+        for (HypothesisFrameworkGenerationJob activeJob : activeJobs) {
+            if (isStale(activeJob, now)) {
+                activeJob.setStatus(HypothesisFrameworkGenerationJobStatus.FAILED);
+                activeJob.setStage(HypothesisFrameworkGenerationJobStage.FAILED);
+                activeJob.setErrorMessage("Job anterior expirou aguardando processamento. Uma nova solicitação foi liberada.");
+                activeJob.setFinishedAt(now);
+                continue;
+            }
+            hasActiveJob = true;
+        }
+        return hasActiveJob;
+    }
+
+    private boolean isStale(HypothesisFrameworkGenerationJob job, Instant now) {
+        Duration timeout = job.getStatus() == HypothesisFrameworkGenerationJobStatus.PROCESSING
+                ? STALE_PROCESSING_TIMEOUT
+                : STALE_PENDING_TIMEOUT;
+        Instant reference = job.getStartedAt() != null ? job.getStartedAt() : job.getCreatedAt();
+        if (reference == null) {
+            return false;
+        }
+        return reference.plus(timeout).isBefore(now);
     }
 
     @Transactional(readOnly = true)

@@ -10,9 +10,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface HypothesisFrameworkGenerationJobRepository extends JpaRepository<HypothesisFrameworkGenerationJob, UUID> {
-    boolean existsByHypothesisIdAndSectionAndStatusIn(UUID hypothesisId,
-                                                      HypothesisFrameworkSection section,
-                                                      Collection<HypothesisFrameworkGenerationJobStatus> statuses);
+    List<HypothesisFrameworkGenerationJob> findByHypothesisIdAndSectionAndStatusInOrderByCreatedAtDesc(
+            UUID hypothesisId,
+            HypothesisFrameworkSection section,
+            Collection<HypothesisFrameworkGenerationJobStatus> statuses);
 
     List<HypothesisFrameworkGenerationJob> findByStatusOrderByCreatedAtAsc(HypothesisFrameworkGenerationJobStatus status,
                                                                            Pageable pageable);

@@ -43,6 +43,9 @@ public class HypothesisFrameworkGenerationService {
     private static final String DEFAULT_MODEL = "gpt-5.2";
     private static final Duration STALE_PENDING_TIMEOUT = Duration.ofMinutes(10);
     private static final Duration STALE_PROCESSING_TIMEOUT = Duration.ofMinutes(20);
+    private static final String FRAMEWORK_REFERENCE = "Respeite o documento \"Framework de Oferta e Mensagem para o Marketing Hub\""
+            + " (docs/hipoteses/framework-dor-resultado-mecanismo-prova-oferta-marketing-hub.md), que define a sequência"
+            + " Dor → Resultado → Mecanismo → Prova → Oferta e descreve como preencher cada campo.";
     private static final String RESEARCH_DIRECTIVE = "Sempre que possível, pesquise em sites especializados do nicho"
             + " usando a ferramenta de web_search antes de responder. Use os achados para justificar cada campo do JSON"
             + " e cite as principais referências consultadas.";
@@ -409,16 +412,16 @@ public class HypothesisFrameworkGenerationService {
         return switch (section) {
             case PAIN -> "Você é um estrategista focado em mapear a dor de um nicho para campanhas de aquisição."
                     + " Resuma as dores reais que travam o resultado, deixando explícitos impactos emocionais e financeiros. "
-                    + RESEARCH_DIRECTIVE;
+                    + FRAMEWORK_REFERENCE + " " + RESEARCH_DIRECTIVE;
             case RESULT -> "Você descreve transformações desejadas conectando resultado emocional e outcome de negócio."
                     + " Foque em algo mensurável e desejado pelo decisor. "
-                    + RESEARCH_DIRECTIVE;
+                    + FRAMEWORK_REFERENCE + " " + RESEARCH_DIRECTIVE;
             case MECHANISM -> "Você traduz mecanismos de oferta em linguagem simples, conectando o que será entregue ao porquê funciona. "
-                    + RESEARCH_DIRECTIVE;
+                    + FRAMEWORK_REFERENCE + " " + RESEARCH_DIRECTIVE;
             case PROOF -> "Você define qual prova reduz ceticismo para a hipótese e como entregá-la durante o funil. "
-                    + RESEARCH_DIRECTIVE;
+                    + FRAMEWORK_REFERENCE + " " + RESEARCH_DIRECTIVE;
             case OFFER -> "Você empacota a oferta com entregáveis, promessa central, lógica de preço e CTA para conversão. "
-                    + RESEARCH_DIRECTIVE;
+                    + FRAMEWORK_REFERENCE + " " + RESEARCH_DIRECTIVE;
         };
     }
 
@@ -434,6 +437,7 @@ public class HypothesisFrameworkGenerationService {
         builder.append("Persona: ").append(nonNull(hypothesis.getPersona())).append('\n');
         builder.append("Promessa atual: ").append(nonNull(hypothesis.getPromise())).append('\n');
         builder.append("Problema atual: ").append(nonNull(hypothesis.getProblem())).append('\n');
+        builder.append("Referência oficial do framework: ").append(FRAMEWORK_REFERENCE).append('\n');
         builder.append("Dados recentes da seção: ").append(sectionSnapshot(snapshot, section)).append('\n');
         builder.append("Formato esperado: JSON válido seguindo o schema informado. Não inclua comentários.");
         if (StringUtils.hasText(customInstructions)) {

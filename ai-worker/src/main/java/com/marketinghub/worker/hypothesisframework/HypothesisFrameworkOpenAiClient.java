@@ -61,7 +61,7 @@ public class HypothesisFrameworkOpenAiClient {
                     job.hypothesisId(),
                     job.section(),
                     job.model());
-            log.debug("Payload OpenAI [jobId={}]: {}", job.id(), safeJson(payload));
+            log.debug("Payload OpenAI [jobId={}]: {}", job.id(), toLogJson(payload));
             OpenAiResponse response = webClient.post()
                     .uri("/responses")
                     .bodyValue(payload)
@@ -82,7 +82,8 @@ public class HypothesisFrameworkOpenAiClient {
             Integer outputTokens = response.usage() != null ? response.usage().effectiveOutputTokens() : null;
             return new HypothesisFrameworkJobCompletionPayload(
                     content,
-                    content,
+                    safeJson(response),
+                    safeJson(payload),
                     inputTokens,
                     outputTokens,
                     OpenAiCostEstimator.estimateUsd(job.model(), response.usage()));
@@ -95,7 +96,7 @@ public class HypothesisFrameworkOpenAiClient {
                     job.model(),
                     statusCode.value(),
                     truncate(ex.getResponseBodyAsString()));
-            log.debug("Payload da requisição com erro [jobId={}]: {}", job.id(), safeJson(payload));
+            log.debug("Payload da requisição com erro [jobId={}]: {}", job.id(), toLogJson(payload));
             throw new IllegalStateException("Falha ao gerar seção " + job.section() + " para hipótese " + job.hypothesisId(), ex);
         } catch (Exception ex) {
             throw new IllegalStateException("Falha ao gerar seção " + job.section() + " para hipótese " + job.hypothesisId(), ex);
@@ -213,11 +214,20 @@ public class HypothesisFrameworkOpenAiClient {
     }
 
     private String safeJson(Object value) {
+        return serializeJson(value, false);
+    }
+
+    private String toLogJson(Object value) {
+        return serializeJson(value, true);
+    }
+
+    private String serializeJson(Object value, boolean shouldTruncate) {
         if (value == null) {
             return "<null>";
         }
         try {
-            return truncate(objectMapper.writeValueAsString(value));
+            String serialized = objectMapper.writeValueAsString(value);
+            return shouldTruncate ? truncate(serialized) : serialized;
         } catch (Exception ex) {
             return "<erro ao serializar payload: " + ex.getMessage() + ">";
         }

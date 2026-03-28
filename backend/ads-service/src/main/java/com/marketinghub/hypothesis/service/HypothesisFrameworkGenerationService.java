@@ -140,6 +140,9 @@ public class HypothesisFrameworkGenerationService {
                 .build());
 
         job.setStatus(HypothesisFrameworkGenerationJobStatus.COMPLETED);
+        if (StringUtils.hasText(request.requestBodyJson())) {
+            job.setRequestBodyJson(request.requestBodyJson().trim());
+        }
         job.setResponseContent(request.responseContent());
         job.setRawResponse(request.rawResponse());
         job.setInputTokens(request.inputTokens());

@@ -60,6 +60,7 @@ public class ExperimentLearningService {
                 .nextTest(payload != null ? payload.getNextTest() : null)
                 .insightsJson(codec.writeInsights(payload != null ? payload.getInsights() : null))
                 .suggestionsJson(codec.writeSuggestions(payload != null ? payload.getSuggestions() : null))
+                .openAiRequestPayloadJson(codec.writeObject(payload != null ? payload.getOpenAiRequestPayload() : null))
                 .completedAt(Instant.now())
                 .build();
         return repository.save(learning);

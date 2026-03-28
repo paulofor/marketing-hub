@@ -80,6 +80,10 @@ public class ExperimentLearning {
     @Column(name = "suggestions_json", columnDefinition = "LONGTEXT")
     private String suggestionsJson;
 
+    @Lob
+    @Column(name = "openai_request_payload_json", columnDefinition = "LONGTEXT")
+    private String openAiRequestPayloadJson;
+
     @Column(name = "completed_at")
     private Instant completedAt;
 

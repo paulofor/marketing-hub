@@ -43,6 +43,7 @@ export interface ExperimentLearning {
   createdAt?: string | null;
   insights: LearningInsight[];
   suggestions: LearningSuggestion[];
+  openAiRequestPayload?: Record<string, unknown> | null;
 }
 
 export function useExperimentLearnings(experimentId?: string) {

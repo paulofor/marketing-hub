@@ -2,6 +2,7 @@ package com.marketinghub.experiment.learning.dto;
 
 import com.marketinghub.experiment.ExperimentStage;
 import java.util.List;
+import java.util.Map;
 import lombok.Builder;
 import lombok.Data;
 
@@ -22,4 +23,5 @@ public class ExperimentLearningPayloadDto {
     private String nextTest;
     private List<LearningInsightDto> insights;
     private List<ExperimentLearningSuggestionDto> suggestions;
+    private Map<String, Object> openAiRequestPayload;
 }

@@ -12,6 +12,7 @@ public class ExperimentLearningProperties {
     private boolean enabled = true;
     private int maxRequestsPerRun = 5;
     private String model;
+    private Double temperature = 0.7;
 
     public boolean isEnabled() {
         return enabled;
@@ -35,5 +36,13 @@ public class ExperimentLearningProperties {
 
     public void setModel(String model) {
         this.model = model;
+    }
+
+    public Double getTemperature() {
+        return temperature;
+    }
+
+    public void setTemperature(Double temperature) {
+        this.temperature = temperature;
     }
 }

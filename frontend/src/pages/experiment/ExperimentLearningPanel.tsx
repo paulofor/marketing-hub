@@ -339,6 +339,26 @@ export default function ExperimentLearningPanel({
                   )}
                 </div>
               </div>
+              <div className="col-12">
+                <div className="border rounded-3 p-3">
+                  <strong>Payload bruto enviado para OpenAI</strong>
+                  {latestLearning.openAiRequestPayload &&
+                  Object.keys(latestLearning.openAiRequestPayload).length > 0 ? (
+                    <details className="mt-2">
+                      <summary className="small text-muted">
+                        Exibir JSON (system, temperature, model e demais campos)
+                      </summary>
+                      <pre className="bg-light border rounded-3 p-3 mt-2 mb-0 small overflow-auto">
+                        {JSON.stringify(latestLearning.openAiRequestPayload, null, 2)}
+                      </pre>
+                    </details>
+                  ) : (
+                    <p className="text-body-secondary mt-2 mb-0 small">
+                      Este aprendizado não possui payload bruto salvo.
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>

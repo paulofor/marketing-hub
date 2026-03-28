@@ -90,6 +90,20 @@ public class HypothesisFrameworkBackendClient {
                 .block();
     }
 
+    public void updateStage(UUID jobId, String stage) {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/hypothesis-framework/jobs/", jobId.toString(), "/stage");
+        webClient.post()
+                .uri(url)
+                .bodyValue(Collections.singletonMap("stage", stage))
+                .retrieve()
+                .bodyToMono(Void.class)
+                .onErrorResume(err -> {
+                    log.error("Failed to update stage for hypothesis framework job {} to {}", jobId, stage, err);
+                    return Mono.empty();
+                })
+                .block();
+    }
+
     private Flux<HypothesisFrameworkJobDto> handleListResponse(String uri,
                                                                HttpStatusCode status,
                                                                org.springframework.web.reactive.function.client.ClientResponse response) {

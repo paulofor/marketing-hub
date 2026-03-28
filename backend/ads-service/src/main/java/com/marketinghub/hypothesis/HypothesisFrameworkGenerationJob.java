@@ -45,6 +45,11 @@ public class HypothesisFrameworkGenerationJob {
     @Builder.Default
     private HypothesisFrameworkGenerationJobStatus status = HypothesisFrameworkGenerationJobStatus.PENDING;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "stage", nullable = false, length = 32)
+    @Builder.Default
+    private HypothesisFrameworkGenerationJobStage stage = HypothesisFrameworkGenerationJobStage.WAITING_AI_WORKER;
+
     @Column(length = 191)
     private String model;
 

@@ -7,6 +7,7 @@ import com.marketinghub.ai.generation.dto.AiWorkerGenerationRequest;
 import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.HypothesisFrameworkGenerationJob;
+import com.marketinghub.hypothesis.HypothesisFrameworkGenerationJobStage;
 import com.marketinghub.hypothesis.HypothesisFrameworkGenerationJobStatus;
 import com.marketinghub.hypothesis.dto.HypothesisDto;
 import com.marketinghub.hypothesis.dto.HypothesisFrameworkDto;
@@ -89,6 +90,16 @@ public class HypothesisFrameworkGenerationService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<HypothesisFrameworkGenerationJobDto> listJobs(UUID hypothesisId, int limit) {
+        return jobRepository.findByHypothesisIdOrderByCreatedAtDesc(
+                        hypothesisId,
+                        PageRequest.of(0, Math.max(1, Math.min(limit, 100))))
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
     @Transactional
     public HypothesisFrameworkGenerationJobDto claimJob(UUID jobId, String workerId) {
         HypothesisFrameworkGenerationJob job = jobRepository.findById(jobId)
@@ -97,9 +108,21 @@ public class HypothesisFrameworkGenerationService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Job não está pendente");
         }
         job.setStatus(HypothesisFrameworkGenerationJobStatus.PROCESSING);
+        job.setStage(HypothesisFrameworkGenerationJobStage.SENT_TO_OPENAI);
         job.setWorkerId(StringUtils.hasText(workerId) ? workerId.trim() : "unknown-worker");
         job.setStartedAt(Instant.now());
         return toDto(job);
+    }
+
+    @Transactional
+    public void updateJobStage(UUID jobId, HypothesisFrameworkGenerationJobStage stage) {
+        HypothesisFrameworkGenerationJob job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Job não encontrado"));
+        if (job.getStatus() == HypothesisFrameworkGenerationJobStatus.COMPLETED
+                || job.getStatus() == HypothesisFrameworkGenerationJobStatus.FAILED) {
+            return;
+        }
+        job.setStage(stage != null ? stage : job.getStage());
     }
 
     @Transactional
@@ -140,6 +163,7 @@ public class HypothesisFrameworkGenerationService {
                 .build());
 
         job.setStatus(HypothesisFrameworkGenerationJobStatus.COMPLETED);
+        job.setStage(HypothesisFrameworkGenerationJobStage.COMPLETED);
         if (StringUtils.hasText(request.requestBodyJson())) {
             job.setRequestBodyJson(request.requestBodyJson().trim());
         }
@@ -160,6 +184,7 @@ public class HypothesisFrameworkGenerationService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Job já finalizado");
         }
         job.setStatus(HypothesisFrameworkGenerationJobStatus.FAILED);
+        job.setStage(HypothesisFrameworkGenerationJobStage.FAILED);
         job.setErrorMessage(StringUtils.hasText(errorMessage) ? errorMessage.trim() : "Falha desconhecida");
         job.setFinishedAt(Instant.now());
     }
@@ -182,6 +207,7 @@ public class HypothesisFrameworkGenerationService {
                 .hypothesis(hypothesis)
                 .section(section)
                 .status(HypothesisFrameworkGenerationJobStatus.PENDING)
+                .stage(HypothesisFrameworkGenerationJobStage.WAITING_AI_WORKER)
                 .model(model)
                 .customInstructions(request.getCustomInstructions())
                 .prompt(userPrompt)
@@ -195,10 +221,16 @@ public class HypothesisFrameworkGenerationService {
                 .id(job.getId())
                 .hypothesisId(job.getHypothesis().getId())
                 .section(job.getSection())
+                .status(job.getStatus().name())
+                .stage(job.getStage().name())
+                .customInstructions(job.getCustomInstructions())
+                .errorMessage(job.getErrorMessage())
                 .model(job.getModel())
                 .prompt(job.getPrompt())
                 .requestBodyJson(job.getRequestBodyJson())
                 .createdAt(job.getCreatedAt())
+                .startedAt(job.getStartedAt())
+                .finishedAt(job.getFinishedAt())
                 .build();
     }
 

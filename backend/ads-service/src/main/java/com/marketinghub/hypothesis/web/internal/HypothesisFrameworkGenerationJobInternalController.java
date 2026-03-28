@@ -4,6 +4,7 @@ import com.marketinghub.hypothesis.dto.internal.HypothesisFrameworkGenerationJob
 import com.marketinghub.hypothesis.dto.internal.HypothesisFrameworkGenerationJobCompletionRequest;
 import com.marketinghub.hypothesis.dto.internal.HypothesisFrameworkGenerationJobDto;
 import com.marketinghub.hypothesis.dto.internal.HypothesisFrameworkGenerationJobFailureRequest;
+import com.marketinghub.hypothesis.dto.internal.HypothesisFrameworkGenerationJobStageUpdateRequest;
 import com.marketinghub.hypothesis.service.HypothesisFrameworkGenerationService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -46,5 +47,11 @@ public class HypothesisFrameworkGenerationJobInternalController {
     public void fail(@PathVariable UUID jobId,
                      @Valid @RequestBody HypothesisFrameworkGenerationJobFailureRequest request) {
         service.failJob(jobId, request.errorMessage());
+    }
+
+    @PostMapping("/{jobId}/stage")
+    public void updateStage(@PathVariable UUID jobId,
+                            @Valid @RequestBody HypothesisFrameworkGenerationJobStageUpdateRequest request) {
+        service.updateJobStage(jobId, request.stage());
     }
 }

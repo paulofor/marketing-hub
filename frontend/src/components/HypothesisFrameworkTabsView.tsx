@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import type { HypothesisFramework } from "../api/hypothesis/types";
 import { normalizeFramework } from "../api/hypothesis/types";
 import type { HypothesisFrameworkSection } from "../api/hypothesis/types";
+import { useFrameworkGenerationJobs } from "../api/hypothesis/useFrameworkGenerationJobs";
 import { useGenerateFrameworkSection } from "../api/hypothesis/useGenerateFrameworkSection";
 
 const SECTIONS: { id: HypothesisFrameworkSection; label: string }[] = [
@@ -32,6 +33,7 @@ interface SectionRequestState {
   completedAt?: string;
   customInstructions?: string;
   errorMessage?: string;
+  stageLabel?: string;
 }
 
 interface AiGenerationRecord {
@@ -59,6 +61,14 @@ const STATUS_BADGES: Record<RequestUiStatus, string> = {
   PROCESSING: "warning",
   COMPLETED: "success",
   FAILED: "danger",
+};
+
+const STAGE_LABELS: Record<string, string> = {
+  WAITING_AI_WORKER: "Aguardando AI Worker",
+  SENT_TO_OPENAI: "Enviada para OpenAI",
+  WAITING_OPENAI: "Aguardando resposta da OpenAI",
+  COMPLETED: "Finalizada",
+  FAILED: "Falhou",
 };
 
 const SECTION_REQUEST_INITIAL_STATE: Record<
@@ -125,7 +135,49 @@ export function HypothesisFrameworkTabsView({
   const [requestsBySection, setRequestsBySection] = useState<
     Record<HypothesisFrameworkSection, SectionRequestState>
   >(SECTION_REQUEST_INITIAL_STATE);
+  const jobsQuery = useFrameworkGenerationJobs(hypothesisId);
   const generate = useGenerateFrameworkSection(hypothesisId, nicheId);
+
+  const requestsFromBackend = (jobsQuery.data ?? []).reduce<
+    Record<HypothesisFrameworkSection, SectionRequestState>
+  >((acc, job) => {
+    if (acc[job.section]?.requestedAt) {
+      return acc;
+    }
+    const uiStatus: RequestUiStatus =
+      job.status === "COMPLETED"
+        ? "COMPLETED"
+        : job.status === "FAILED"
+          ? "FAILED"
+          : job.status === "PROCESSING"
+            ? "PROCESSING"
+            : "PROCESSING";
+    acc[job.section] = {
+      status: uiStatus,
+      requestedAt: job.createdAt,
+      completedAt: job.finishedAt,
+      customInstructions: job.customInstructions,
+      errorMessage: job.errorMessage,
+      stageLabel:
+        STAGE_LABELS[job.stage] ??
+        (job.stage ? job.stage.split("_").join(" ") : undefined),
+    };
+    return acc;
+  }, { ...SECTION_REQUEST_INITIAL_STATE });
+
+  const mergedRequestsBySection = SECTIONS.reduce<
+    Record<HypothesisFrameworkSection, SectionRequestState>
+  >((acc, section) => {
+    const localState = requestsBySection[section.id];
+    const backendState = requestsFromBackend[section.id];
+    acc[section.id] =
+      localState.status !== "IDLE" &&
+      localState.status !== "COMPLETED" &&
+      backendState.status === "IDLE"
+        ? localState
+        : backendState;
+    return acc;
+  }, { ...SECTION_REQUEST_INITIAL_STATE });
 
   const handleGenerate = async (section: HypothesisFrameworkSection) => {
     const requestedAt = new Date().toISOString();
@@ -426,9 +478,17 @@ export function HypothesisFrameworkTabsView({
             Veja o que já foi solicitado, o que está em processamento e o que
             falhou em cada etapa do framework.
           </p>
+          {jobsQuery.isLoading ? (
+            <p className="small text-muted mb-3">Carregando histórico salvo das solicitações...</p>
+          ) : null}
+          {jobsQuery.isError ? (
+            <p className="small text-danger mb-3">
+              Não foi possível carregar o histórico das solicitações salvas.
+            </p>
+          ) : null}
           <div className="d-flex flex-column gap-2">
             {SECTIONS.map((section) => {
-              const request = requestsBySection[section.id];
+              const request = mergedRequestsBySection[section.id];
               return (
                 <div
                   key={`request-status-${section.id}`}
@@ -446,6 +506,11 @@ export function HypothesisFrameworkTabsView({
                     Solicitado em: {formatDateTime(request.requestedAt)} ·
                     Concluído em: {formatDateTime(request.completedAt)}
                   </small>
+                  {request.stageLabel ? (
+                    <small className="text-body-secondary">
+                      Etapa atual: {request.stageLabel}
+                    </small>
+                  ) : null}
                   {request.customInstructions ? (
                     <small className="text-body-secondary">
                       Instruções enviadas: {request.customInstructions}

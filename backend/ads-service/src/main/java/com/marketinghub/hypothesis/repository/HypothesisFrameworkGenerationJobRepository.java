@@ -16,4 +16,6 @@ public interface HypothesisFrameworkGenerationJobRepository extends JpaRepositor
 
     List<HypothesisFrameworkGenerationJob> findByStatusOrderByCreatedAtAsc(HypothesisFrameworkGenerationJobStatus status,
                                                                            Pageable pageable);
+
+    List<HypothesisFrameworkGenerationJob> findByHypothesisIdOrderByCreatedAtDesc(UUID hypothesisId, Pageable pageable);
 }

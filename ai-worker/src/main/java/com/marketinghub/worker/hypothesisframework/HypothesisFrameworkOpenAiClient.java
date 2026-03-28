@@ -1,6 +1,7 @@
 package com.marketinghub.worker.hypothesisframework;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.OpenAiCostEstimator;
 import com.marketinghub.worker.openai.OpenAiResponse;
@@ -62,22 +63,8 @@ public class HypothesisFrameworkOpenAiClient {
                     job.section(),
                     job.model());
             log.debug("Payload OpenAI [jobId={}]: {}", job.id(), toLogJson(payload));
-            OpenAiResponse response = webClient.post()
-                    .uri("/responses")
-                    .bodyValue(payload)
-                    .retrieve()
-                    .bodyToMono(OpenAiResponse.class)
-                    .block();
-            if (response == null) {
-                throw new IllegalStateException("Resposta vazia da OpenAI");
-            }
-            if (response.hasError()) {
-                throw new IllegalStateException(response.errorMessage());
-            }
-            String content = response.firstText();
-            if (!StringUtils.hasText(content)) {
-                throw new IllegalStateException("Modelo não retornou conteúdo");
-            }
+            OpenAiResponse response = callOpenAi(payload);
+            String content = extractAndValidateJsonContent(response, job);
             Integer inputTokens = response.usage() != null ? response.usage().effectiveInputTokens() : null;
             Integer outputTokens = response.usage() != null ? response.usage().effectiveOutputTokens() : null;
             return new HypothesisFrameworkJobCompletionPayload(
@@ -101,6 +88,42 @@ public class HypothesisFrameworkOpenAiClient {
         } catch (Exception ex) {
             throw new IllegalStateException("Falha ao gerar seção " + job.section() + " para hipótese " + job.hypothesisId(), ex);
         }
+    }
+
+    private OpenAiResponse callOpenAi(Map<String, Object> payload) {
+        OpenAiResponse response = webClient.post()
+                .uri("/responses")
+                .bodyValue(payload)
+                .retrieve()
+                .bodyToMono(OpenAiResponse.class)
+                .block();
+        if (response == null) {
+            throw new IllegalStateException("Resposta vazia da OpenAI");
+        }
+        if (response.hasError()) {
+            throw new IllegalStateException(response.errorMessage());
+        }
+        return response;
+    }
+
+    private String extractAndValidateJsonContent(OpenAiResponse response, HypothesisFrameworkJobDto job) {
+        String content = response.firstText();
+        if (!StringUtils.hasText(content)) {
+            throw new IllegalStateException("Modelo não retornou conteúdo");
+        }
+        try {
+            JsonNode node = objectMapper.readTree(content);
+            if (node == null || !node.isObject()) {
+                throw new IllegalStateException("Modelo retornou conteúdo JSON inválido para seção " + job.section());
+            }
+        } catch (IllegalStateException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new IllegalStateException(
+                    "Modelo retornou JSON inválido para seção " + job.section() + ". Resposta recebida: " + truncate(content),
+                    ex);
+        }
+        return content;
     }
 
     @SuppressWarnings("unchecked")

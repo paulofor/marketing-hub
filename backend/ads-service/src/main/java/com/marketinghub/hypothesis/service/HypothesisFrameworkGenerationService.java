@@ -1,6 +1,7 @@
 package com.marketinghub.hypothesis.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ai.generation.dto.AiWorkerGenerationRequest;
 import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
@@ -223,7 +224,7 @@ public class HypothesisFrameworkGenerationService {
                     partial.setResult(generated);
                 }
                 case MECHANISM -> {
-                    HypothesisFrameworkDto.Mechanism generated = objectMapper.readValue(jsonContent, HypothesisFrameworkDto.Mechanism.class);
+                    HypothesisFrameworkDto.Mechanism generated = parseMechanism(jsonContent);
                     snapshot.setMechanism(generated);
                     partial.setMechanism(generated);
                 }
@@ -442,5 +443,39 @@ public class HypothesisFrameworkGenerationService {
 
     private String nonNull(String value) {
         return StringUtils.hasText(value) ? value.trim() : "-";
+    }
+
+    private HypothesisFrameworkDto.Mechanism parseMechanism(String jsonContent) throws JsonProcessingException {
+        JsonNode root = objectMapper.readTree(jsonContent);
+        JsonNode source = root;
+        if (root != null && root.has("mechanism") && root.get("mechanism").isObject()) {
+            source = root.get("mechanism");
+        }
+
+        HypothesisFrameworkDto.Mechanism mechanism = objectMapper.treeToValue(source, HypothesisFrameworkDto.Mechanism.class);
+        if (mechanism == null) {
+            mechanism = new HypothesisFrameworkDto.Mechanism();
+        }
+
+        if (!StringUtils.hasText(mechanism.getBelievability())) {
+            mechanism.setBelievability(firstText(source, "believable", "whyBelieve", "reasonToBelieve"));
+        }
+        if (!StringUtils.hasText(mechanism.getUnique())) {
+            mechanism.setUnique(firstText(source, "differential", "uniqueMechanism"));
+        }
+        return mechanism;
+    }
+
+    private String firstText(JsonNode node, String... fields) {
+        if (node == null) {
+            return null;
+        }
+        for (String field : fields) {
+            JsonNode value = node.get(field);
+            if (value != null && value.isTextual() && StringUtils.hasText(value.asText())) {
+                return value.asText().trim();
+            }
+        }
+        return null;
     }
 }

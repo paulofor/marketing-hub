@@ -8,6 +8,7 @@ import com.marketinghub.experiment.learning.dto.ExperimentLearningSuggestionDto;
 import com.marketinghub.experiment.learning.dto.LearningInsightDto;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -79,6 +80,29 @@ public class ExperimentLearningJsonCodec {
             return objectMapper.writeValueAsString(payload);
         } catch (JsonProcessingException ex) {
             throw new IllegalStateException("Falha ao serializar payload do aprendizado", ex);
+        }
+    }
+
+    public String writeObject(Map<String, Object> payload) {
+        if (payload == null || payload.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException ex) {
+            throw new IllegalStateException("Falha ao serializar payload de request do OpenAI", ex);
+        }
+    }
+
+    public Map<String, Object> readObject(String json) {
+        if (json == null || json.isBlank()) {
+            return Collections.emptyMap();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<>() {});
+        } catch (Exception ex) {
+            log.error("Falha ao desserializar payload de request do OpenAI", ex);
+            return Collections.emptyMap();
         }
     }
 }

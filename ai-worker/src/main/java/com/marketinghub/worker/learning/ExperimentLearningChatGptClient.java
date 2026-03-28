@@ -46,6 +46,7 @@ public class ExperimentLearningChatGptClient {
     private final AiGenerationRecorder generationRecorder;
     private final boolean enabled;
     private final String model;
+    private final Double temperature;
 
     public ExperimentLearningChatGptClient(WebClient.Builder builder,
                                            ObjectMapper objectMapper,
@@ -56,6 +57,7 @@ public class ExperimentLearningChatGptClient {
         this.objectMapper = objectMapper;
         this.generationRecorder = generationRecorder;
         this.model = properties.getModel();
+        this.temperature = properties.getTemperature();
         this.enabled = StringUtils.hasText(apiKey) && StringUtils.hasText(this.model);
         HttpClient httpClient = HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) CONNECT_TIMEOUT.toMillis())
@@ -84,6 +86,9 @@ public class ExperimentLearningChatGptClient {
         String prompt = buildPrompt(material);
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", model);
+        if (temperature != null) {
+            payload.put("temperature", temperature);
+        }
         payload.put("input", List.of(
                 OpenAiRequestUtils.message("system", systemPrompt()),
                 OpenAiRequestUtils.message("user", prompt)
@@ -106,6 +111,7 @@ public class ExperimentLearningChatGptClient {
             throw new BackendClientException("OpenAI não retornou texto com o JSON esperado");
         }
         ExperimentLearningPayloadDto dto = parsePayload(content);
+        dto.setOpenAiRequestPayload(payload);
         generationRecorder.record("EXPERIMENT_LEARNING",
                 requestId != null ? String.valueOf(requestId) : null,
                 prompt,

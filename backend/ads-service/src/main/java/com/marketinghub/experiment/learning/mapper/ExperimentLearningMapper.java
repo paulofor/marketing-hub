@@ -6,6 +6,7 @@ import com.marketinghub.experiment.learning.dto.ExperimentLearningSuggestionDto;
 import com.marketinghub.experiment.learning.dto.LearningInsightDto;
 import com.marketinghub.experiment.learning.service.ExperimentLearningJsonCodec;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
 
@@ -41,6 +42,7 @@ public class ExperimentLearningMapper {
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setInsights(safeInsights(entity));
         dto.setSuggestions(safeSuggestions(entity));
+        dto.setOpenAiRequestPayload(safeOpenAiRequestPayload(entity));
         return dto;
     }
 
@@ -50,6 +52,10 @@ public class ExperimentLearningMapper {
 
     public List<ExperimentLearningSuggestionDto> safeSuggestions(ExperimentLearning entity) {
         return codec.readSuggestions(entity.getSuggestionsJson());
+    }
+
+    public Map<String, Object> safeOpenAiRequestPayload(ExperimentLearning entity) {
+        return codec.readObject(entity.getOpenAiRequestPayloadJson());
     }
 
     private UUID resolveHypothesisId(ExperimentLearning entity) {

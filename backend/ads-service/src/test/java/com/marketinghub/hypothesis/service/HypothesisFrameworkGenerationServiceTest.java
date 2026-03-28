@@ -124,6 +124,7 @@ class HypothesisFrameworkGenerationServiceTest {
         service.completeJob(jobId, new HypothesisFrameworkGenerationJobCompletionRequest(
                 "{\"mechanism\":{\"core\":\"Core\",\"differential\":\"Diff\",\"believable\":\"Proof\"}}",
                 "{}",
+                "{\"model\":\"gpt-test\"}",
                 10,
                 20,
                 null
@@ -137,5 +138,6 @@ class HypothesisFrameworkGenerationServiceTest {
         assertThat(snapshotCaptor.getValue().getMechanism().getUnique()).isEqualTo("Diff");
         assertThat(snapshotCaptor.getValue().getMechanism().getBelievability()).isEqualTo("Proof");
         assertThat(partialCaptor.getValue().getMechanism().getCore()).isEqualTo("Core");
+        assertThat(job.getRequestBodyJson()).isEqualTo("{\"model\":\"gpt-test\"}");
     }
 }

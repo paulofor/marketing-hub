@@ -69,10 +69,6 @@ public class HypothesisFrameworkBackendClient {
                 .bodyValue(payload)
                 .retrieve()
                 .bodyToMono(Void.class)
-                .onErrorResume(err -> {
-                    log.error("Failed to complete hypothesis framework job {}", jobId, err);
-                    return Mono.empty();
-                })
                 .block();
     }
 
@@ -97,10 +93,6 @@ public class HypothesisFrameworkBackendClient {
                 .bodyValue(Collections.singletonMap("stage", stage))
                 .retrieve()
                 .bodyToMono(Void.class)
-                .onErrorResume(err -> {
-                    log.error("Failed to update stage for hypothesis framework job {} to {}", jobId, stage, err);
-                    return Mono.empty();
-                })
                 .block();
     }
 

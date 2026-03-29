@@ -202,6 +202,42 @@ class HypothesisFrameworkOpenAiClientTest {
         assertThat(content.get(0).get("text")).asString().contains("Prompt original");
     }
 
+    @Test
+    void prepareRequestPayloadForLogIncludesCommercialFrameworkInstructions() {
+        HypothesisFrameworkOpenAiClient client = new HypothesisFrameworkOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>())),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        HypothesisFrameworkJobDto job = new HypothesisFrameworkJobDto(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                "PAIN",
+                "gpt-4o-mini",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-4o-mini",
+                          "input": [{"role": "system", "content": "Prompt base"}],
+                          "text": {
+                            "format": {
+                              "type": "json_schema",
+                              "schema": {
+                                "type": "object"
+                              }
+                            }
+                          }
+                        }
+                        """,
+                Instant.now());
+
+        String preparedPayload = client.prepareRequestPayloadForLog(job);
+
+        assertThat(preparedPayload).contains("Você está preenchendo campos de um framework comercial para o Marketing Hub.");
+        assertThat(preparedPayload).contains("Prompt base");
+    }
+
     private ExchangeFunction capturePayloadExchange(AtomicReference<Map<String, Object>> capturedPayload) {
         return request -> {
             MockClientHttpRequest httpRequest = new MockClientHttpRequest(request.method(), request.url());

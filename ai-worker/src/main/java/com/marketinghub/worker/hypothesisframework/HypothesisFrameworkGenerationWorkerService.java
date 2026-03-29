@@ -51,7 +51,7 @@ public class HypothesisFrameworkGenerationWorkerService {
                         claimed.hypothesisId(),
                         claimed.section(),
                         claimed.model(),
-                        truncate(claimed.requestBodyJson()));
+                        openAiClient.prepareRequestPayloadForLog(claimed));
                 backendClient.updateStage(claimed.id(), "WAITING_OPENAI");
                 HypothesisFrameworkJobCompletionPayload payload = openAiClient.generate(claimed);
                 log.info("OpenAI response payload [jobId={}, hypothesisId={}, section={}, model={}]: {}",

@@ -471,6 +471,44 @@ public class HypothesisFrameworkGenerationService {
                     .append("JSON válido com as chaves:\n")
                     .append("desiredResult, desiredIdentity, businessOutcome, successSignal\n")
                     .append("Não inclua comentários.\n");
+        } else if (section == HypothesisFrameworkSection.MECHANISM) {
+            builder.append("Contexto do nicho: ")
+                    .append(niche)
+                    .append("\n\nDor consolidada da seção anterior:\n- Superfície: ")
+                    .append(nonNull(snapshot.getPain() != null ? snapshot.getPain().getSurface() : null))
+                    .append("\n- Raiz: ")
+                    .append(nonNull(snapshot.getPain() != null ? snapshot.getPain().getRoot() : null))
+                    .append("\n- Emocional: ")
+                    .append(nonNull(snapshot.getPain() != null ? snapshot.getPain().getEmotional() : null))
+                    .append("\n- Social: ")
+                    .append(nonNull(snapshot.getPain() != null ? snapshot.getPain().getSocial() : null))
+                    .append("\n- Custo: ")
+                    .append(nonNull(snapshot.getPain() != null ? snapshot.getPain().getCost() : null))
+                    .append("\n\nResultado consolidado da seção anterior:\n- Resultado desejado: ")
+                    .append(nonNull(snapshot.getResult() != null ? snapshot.getResult().getDesiredResult() : null))
+                    .append("\n- Identidade desejada: ")
+                    .append(nonNull(snapshot.getResult() != null ? snapshot.getResult().getDesiredIdentity() : null))
+                    .append("\n- Impacto no negócio: ")
+                    .append(nonNull(snapshot.getResult() != null ? snapshot.getResult().getBusinessOutcome() : null))
+                    .append("\n- Sinal de sucesso: ")
+                    .append(nonNull(snapshot.getResult() != null ? snapshot.getResult().getSuccessSignal() : null))
+                    .append("\n\nDados recentes da seção:\n")
+                    .append(formatMechanism(snapshot.getMechanism()))
+                    .append("\n\nPreencha os campos de MECANISMO com foco em clareza, plausibilidade e valor percebido.\n\n")
+                    .append("Regras obrigatórias desta seção:\n")
+                    .append("1. O mecanismo deve ser escrito como a ponte entre a DOR e o RESULTADO.\n")
+                    .append("2. O mecanismo central deve explicar, em linguagem simples, como a solução ajuda a sair da dor e chegar ao resultado.\n")
+                    .append("3. O mecanismo único deve mostrar o diferencial sem depender de jargão técnico.\n")
+                    .append("4. O campo visible deve mostrar o que o cliente consegue ver, receber, testar ou validar antes da compra.\n")
+                    .append("5. O campo believability deve responder por que a solução parece plausível para essa persona, sem exagero.\n")
+                    .append("6. Não transforme mecanismo em promessa.\n")
+                    .append("7. Não descreva entregáveis puros como se fossem mecanismo.\n")
+                    .append("8. Se houver dúvida entre um mecanismo “técnico” e um mecanismo “claro e comercial”, escolha o mais claro e comercial.\n")
+                    .append("9. O mecanismo deve ser compreensível por alguém do nicho, não por um especialista em tráfego.\n\n")
+                    .append("Formato esperado:\n")
+                    .append("JSON válido com as chaves:\n")
+                    .append("core, unique, visible, believability\n")
+                    .append("Não inclua comentários.\n");
         } else {
             builder.append("Contexto do nicho: ")
                     .append(niche)
@@ -480,8 +518,12 @@ public class HypothesisFrameworkGenerationService {
         builder.append("Persona: ").append(nonNull(hypothesis.getPersona())).append('\n');
         builder.append("Promessa atual: ").append(nonNull(hypothesis.getPromise())).append('\n');
         builder.append("Problema atual: ").append(nonNull(hypothesis.getProblem())).append('\n');
-        builder.append("Dados recentes da seção: ").append(sectionSnapshot(snapshot, section)).append('\n');
-        if (section != HypothesisFrameworkSection.PAIN && section != HypothesisFrameworkSection.RESULT) {
+        if (section != HypothesisFrameworkSection.MECHANISM) {
+            builder.append("Dados recentes da seção: ").append(sectionSnapshot(snapshot, section)).append('\n');
+        }
+        if (section != HypothesisFrameworkSection.PAIN
+                && section != HypothesisFrameworkSection.RESULT
+                && section != HypothesisFrameworkSection.MECHANISM) {
             builder.append("Formato esperado: JSON válido seguindo o schema informado. Não inclua comentários.");
         }
         if (StringUtils.hasText(customInstructions)) {

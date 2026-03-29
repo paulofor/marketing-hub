@@ -445,6 +445,32 @@ public class HypothesisFrameworkGenerationService {
                     .append("JSON válido com as chaves:\n")
                     .append("surface, root, emotional, social, cost\n")
                     .append("Não inclua comentários.\n");
+        } else if (section == HypothesisFrameworkSection.RESULT) {
+            builder.append("Contexto do nicho: ")
+                    .append(niche)
+                    .append("\n\nDor consolidada da seção anterior:\n- Superfície: ")
+                    .append(nonNull(snapshot.getPain() != null ? snapshot.getPain().getSurface() : null))
+                    .append("\n- Raiz: ")
+                    .append(nonNull(snapshot.getPain() != null ? snapshot.getPain().getRoot() : null))
+                    .append("\n- Emocional: ")
+                    .append(nonNull(snapshot.getPain() != null ? snapshot.getPain().getEmotional() : null))
+                    .append("\n- Social: ")
+                    .append(nonNull(snapshot.getPain() != null ? snapshot.getPain().getSocial() : null))
+                    .append("\n- Custo: ")
+                    .append(nonNull(snapshot.getPain() != null ? snapshot.getPain().getCost() : null))
+                    .append("\n\nPreencha os campos de RESULTADO com foco em transformação percebida.\n\n")
+                    .append("Regras obrigatórias:\n")
+                    .append("1. O resultado desejado deve ser a transformação da dor acima, não o mecanismo.\n")
+                    .append("2. O resultado principal deve expressar ganho final percebido.\n")
+                    .append("3. A identidade deve mostrar como a persona quer ser vista.\n")
+                    .append("4. O impacto de negócio deve traduzir o resultado em consequência prática.\n")
+                    .append("5. O sinal de sucesso deve ser objetivo e simples.\n")
+                    .append("6. Não transforme entregável ou ferramenta em resultado.\n")
+                    .append("7. Use linguagem compatível com a maturidade média da persona.\n\n")
+                    .append("Formato esperado:\n")
+                    .append("JSON válido com as chaves:\n")
+                    .append("desiredResult, desiredIdentity, businessOutcome, successSignal\n")
+                    .append("Não inclua comentários.\n");
         } else {
             builder.append("Contexto do nicho: ")
                     .append(niche)
@@ -455,7 +481,7 @@ public class HypothesisFrameworkGenerationService {
         builder.append("Promessa atual: ").append(nonNull(hypothesis.getPromise())).append('\n');
         builder.append("Problema atual: ").append(nonNull(hypothesis.getProblem())).append('\n');
         builder.append("Dados recentes da seção: ").append(sectionSnapshot(snapshot, section)).append('\n');
-        if (section != HypothesisFrameworkSection.PAIN) {
+        if (section != HypothesisFrameworkSection.PAIN && section != HypothesisFrameworkSection.RESULT) {
             builder.append("Formato esperado: JSON válido seguindo o schema informado. Não inclua comentários.");
         }
         if (StringUtils.hasText(customInstructions)) {

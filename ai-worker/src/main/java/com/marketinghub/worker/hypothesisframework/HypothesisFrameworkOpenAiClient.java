@@ -90,16 +90,24 @@ public class HypothesisFrameworkOpenAiClient {
         return enabled;
     }
 
+    public String prepareRequestPayloadForLog(HypothesisFrameworkJobDto job) {
+        if (job == null || !StringUtils.hasText(job.requestBodyJson())) {
+            return "<vazio>";
+        }
+        try {
+            return toLogJson(preparePayload(job));
+        } catch (Exception ex) {
+            return truncate(job.requestBodyJson());
+        }
+    }
+
     public HypothesisFrameworkJobCompletionPayload generate(HypothesisFrameworkJobDto job) {
         if (!enabled) {
             throw new IllegalStateException("OpenAI API key não configurada");
         }
         Map<String, Object> payload = null;
         try {
-            payload = objectMapper.readValue(job.requestBodyJson(), new TypeReference<>() {
-            });
-            prependFrameworkPromptPrefix(payload);
-            ensureJsonSchemaCompatibility(payload, job);
+            payload = preparePayload(job);
             log.info("Enviando requisição para OpenAI [jobId={}, hypothesisId={}, section={}, model={}]",
                     job.id(),
                     job.hypothesisId(),
@@ -131,6 +139,14 @@ public class HypothesisFrameworkOpenAiClient {
         } catch (Exception ex) {
             throw new IllegalStateException("Falha ao gerar seção " + job.section() + " para hipótese " + job.hypothesisId(), ex);
         }
+    }
+
+    private Map<String, Object> preparePayload(HypothesisFrameworkJobDto job) throws Exception {
+        Map<String, Object> payload = objectMapper.readValue(job.requestBodyJson(), new TypeReference<>() {
+        });
+        prependFrameworkPromptPrefix(payload);
+        ensureJsonSchemaCompatibility(payload, job);
+        return payload;
     }
 
     private OpenAiResponse callOpenAi(Map<String, Object> payload) {

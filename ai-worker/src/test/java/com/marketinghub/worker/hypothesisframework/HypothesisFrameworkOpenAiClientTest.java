@@ -158,6 +158,50 @@ class HypothesisFrameworkOpenAiClientTest {
         assertThat(required).containsExactlyInAnyOrderElementsOf(Set.of("emotional", "social", "financial"));
     }
 
+    @Test
+    void prependsCommercialFrameworkInstructionsToPromptText() {
+        AtomicReference<Map<String, Object>> requestPayload = new AtomicReference<>();
+        HypothesisFrameworkOpenAiClient client = new HypothesisFrameworkOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(requestPayload)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        HypothesisFrameworkJobDto job = new HypothesisFrameworkJobDto(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                "OFFER",
+                "gpt-4o-mini",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-4o-mini",
+                          "input": [{"role": "user", "content": [{"type":"input_text","text":"Prompt original"}]}],
+                          "text": {
+                            "format": {
+                              "type": "json_schema",
+                              "schema": {
+                                "type": "object"
+                              }
+                            }
+                          }
+                        }
+                        """,
+                Instant.now());
+
+        client.generate(job);
+
+        Map<String, Object> payload = requestPayload.get();
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> input = (List<Map<String, Object>>) payload.get("input");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> content = (List<Map<String, Object>>) input.get(0).get("content");
+        assertThat(content.get(0).get("text"))
+                .asString()
+                .startsWith("Você está preenchendo campos de um framework comercial para o Marketing Hub.");
+        assertThat(content.get(0).get("text")).asString().contains("Prompt original");
+    }
+
     private ExchangeFunction capturePayloadExchange(AtomicReference<Map<String, Object>> capturedPayload) {
         return request -> {
             MockClientHttpRequest httpRequest = new MockClientHttpRequest(request.method(), request.url());

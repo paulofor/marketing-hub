@@ -24,6 +24,48 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 @Component
 public class HypothesisFrameworkOpenAiClient {
     private static final Logger log = LoggerFactory.getLogger(HypothesisFrameworkOpenAiClient.class);
+    private static final String FRAMEWORK_PROMPT_PREFIX = """
+            Você está preenchendo campos de um framework comercial para o Marketing Hub.
+
+            Seu trabalho não é apenas “completar campos”.
+            Seu trabalho é produzir respostas úteis para vender melhor.
+
+            Regras obrigatórias:
+            1. Priorize sempre: DOR → RESULTADO → MECANISMO → PROVA → OFERTA.
+            2. Trate ferramenta, volume, automação, IA, peças, criativos e templates como MEIOS, não como mensagem principal.
+            3. Sempre escreva pensando na persona no nível de maturidade informado. Não sofistique demais o problema.
+            4. Se houver dúvida entre uma resposta “tecnicamente sofisticada” e uma resposta “mais clara e vendável”, escolha a mais clara e vendável.
+            5. O resultado deve ser expresso primeiro como transformação de negócio, percepção de valor, interesse, autoridade, captação ou previsibilidade — e só depois como mecanismo operacional.
+            6. Evite jargão técnico desnecessário, especialmente linguagem de mídia paga avançada, salvo se a persona for explicitamente madura nisso.
+            7. Não transforme mecanismo em promessa.
+            8. Não invente entregáveis, provas ou métricas complexas demais para a realidade operacional da persona.
+            9. Sempre reduza abstração: prefira linguagem que um decisor do nicho entenda em poucos segundos.
+            10. Quando citar fontes, priorize fontes oficiais, documentação primária e referências amplamente reconhecidas. Evite usar Reddit, fóruns e blogs frágeis como sustentação principal.
+            11. Se o campo estiver ligado à venda, escolha a opção com maior clareza comercial e menor atrito de entendimento.
+            12. Se houver conflito entre “soar inteligente” e “soar vendável”, escolha o vendável.
+
+            Nível de maturidade da persona:
+            - Este público é de massa dentro do nicho, não um subgrupo avançado.
+            - Assuma conhecimento baixo a moderado em marketing, tráfego pago e testes criativos.
+            - A persona entende sintomas do problema, mas não necessariamente entende a causa técnica.
+            - Portanto, descreva primeiro o problema como ela sente, e só depois explique a causa estrutural.
+            - Evite linguagem como: leilão, learning phase, fragmentação, creative grind, saturação algorítmica, salvo se isso aparecer apenas como tradução simples e curta.
+
+            Critérios de qualidade da resposta:
+            - A resposta precisa ser útil para venda.
+            - A resposta precisa ser compreensível para a persona.
+            - A resposta precisa diferenciar claramente:
+              - sintoma vs causa
+              - resultado vs mecanismo
+              - prova vs entregável
+            - A resposta não pode depender de jargão para parecer boa.
+            - A resposta deve soar como algo que pode ser usado por marketing, vendas e produto.
+            - Antes de finalizar, verifique:
+              1. Isso está claro para a persona?
+              2. Isso comunica transformação antes de ferramenta?
+              3. Isso está simples o suficiente para virar copy ou oferta?
+
+            """;
 
     private final ObjectMapper objectMapper;
     private final WebClient webClient;
@@ -56,6 +98,7 @@ public class HypothesisFrameworkOpenAiClient {
         try {
             payload = objectMapper.readValue(job.requestBodyJson(), new TypeReference<>() {
             });
+            prependFrameworkPromptPrefix(payload);
             ensureJsonSchemaCompatibility(payload, job);
             log.info("Enviando requisição para OpenAI [jobId={}, hypothesisId={}, section={}, model={}]",
                     job.id(),
@@ -124,6 +167,51 @@ public class HypothesisFrameworkOpenAiClient {
                     ex);
         }
         return content;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void prependFrameworkPromptPrefix(Map<String, Object> payload) {
+        if (payload == null) {
+            return;
+        }
+        Object inputNode = payload.get("input");
+        if (!(inputNode instanceof List<?> inputList)) {
+            return;
+        }
+        for (Object item : inputList) {
+            if (!(item instanceof Map<?, ?> messageRaw)) {
+                continue;
+            }
+            Map<String, Object> message = (Map<String, Object>) messageRaw;
+            Object contentNode = message.get("content");
+            if (contentNode instanceof String textContent) {
+                message.put("content", withFrameworkPrefix(textContent));
+                continue;
+            }
+            if (!(contentNode instanceof List<?> contentList)) {
+                continue;
+            }
+            for (Object contentItem : contentList) {
+                if (!(contentItem instanceof Map<?, ?> contentRaw)) {
+                    continue;
+                }
+                Map<String, Object> content = (Map<String, Object>) contentRaw;
+                Object textNode = content.get("text");
+                if (textNode instanceof String text) {
+                    content.put("text", withFrameworkPrefix(text));
+                }
+            }
+        }
+    }
+
+    private String withFrameworkPrefix(String text) {
+        if (!StringUtils.hasText(text)) {
+            return FRAMEWORK_PROMPT_PREFIX;
+        }
+        if (text.startsWith(FRAMEWORK_PROMPT_PREFIX)) {
+            return text;
+        }
+        return FRAMEWORK_PROMPT_PREFIX + text;
     }
 
     @SuppressWarnings("unchecked")

@@ -427,15 +427,37 @@ public class HypothesisFrameworkGenerationService {
                                    HypothesisFrameworkSection section,
                                    String customInstructions) {
         StringBuilder builder = new StringBuilder();
-        builder.append("Contexto do nicho: ")
-                .append(hypothesis.getMarketNiche() != null ? hypothesis.getMarketNiche().getName() : "N/A")
-                .append('\n');
+        String niche = hypothesis.getMarketNiche() != null ? hypothesis.getMarketNiche().getName() : "N/A";
+        if (section == HypothesisFrameworkSection.PAIN) {
+            builder.append("Contexto do nicho: ")
+                    .append(niche)
+                    .append("\n\nPreencha os campos de DOR com foco em clareza comercial.\n\n")
+                    .append("Regras obrigatórias desta seção:\n")
+                    .append("1. A dor de superfície deve ser escrita como a persona sentiria e falaria.\n")
+                    .append("2. A dor raiz deve explicar a causa real sem usar linguagem técnica demais.\n")
+                    .append("3. A dor emocional deve mostrar o peso psicológico do problema no dia a dia.\n")
+                    .append("4. A dor social deve mostrar impacto em imagem, autoridade ou comparação com outros profissionais.\n")
+                    .append("5. O custo deve mostrar perda de dinheiro, tempo, previsibilidade ou oportunidade.\n")
+                    .append("6. Não suba a sofisticação da dor além do que a persona média entenderia.\n")
+                    .append("7. Se houver duas versões possíveis, escolha a que fica mais fácil de usar em anúncio, landing page e venda.\n")
+                    .append("8. Evite transformar a dor raiz em uma aula de marketing.\n\n")
+                    .append("Formato esperado:\n")
+                    .append("JSON válido com as chaves:\n")
+                    .append("surface, root, emotional, social, cost\n")
+                    .append("Não inclua comentários.\n");
+        } else {
+            builder.append("Contexto do nicho: ")
+                    .append(niche)
+                    .append('\n');
+        }
         builder.append("Hipótese: ").append(nonNull(hypothesis.getTitle())).append('\n');
         builder.append("Persona: ").append(nonNull(hypothesis.getPersona())).append('\n');
         builder.append("Promessa atual: ").append(nonNull(hypothesis.getPromise())).append('\n');
         builder.append("Problema atual: ").append(nonNull(hypothesis.getProblem())).append('\n');
         builder.append("Dados recentes da seção: ").append(sectionSnapshot(snapshot, section)).append('\n');
-        builder.append("Formato esperado: JSON válido seguindo o schema informado. Não inclua comentários.");
+        if (section != HypothesisFrameworkSection.PAIN) {
+            builder.append("Formato esperado: JSON válido seguindo o schema informado. Não inclua comentários.");
+        }
         if (StringUtils.hasText(customInstructions)) {
             builder.append("\nInstruções extras do usuário: ").append(customInstructions.trim());
         }

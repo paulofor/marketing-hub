@@ -25,11 +25,17 @@ interface Props {
   onRefresh?: () => void;
 }
 
-type RequestUiStatus = "IDLE" | "PROCESSING" | "COMPLETED" | "FAILED" | "INVALIDATED";
+type RequestUiStatus =
+  | "IDLE"
+  | "PROCESSING"
+  | "COMPLETED"
+  | "FAILED"
+  | "INVALIDATED";
 
 interface SectionRequestState {
   status: RequestUiStatus;
   requestedAt?: string;
+  startedAt?: string;
   completedAt?: string;
   customInstructions?: string;
   errorMessage?: string;
@@ -96,7 +102,6 @@ function formatDateTime(value?: string) {
   });
 }
 
-
 function parseTimestamp(value?: string) {
   if (!value) return undefined;
   const parsed = Date.parse(value);
@@ -104,7 +109,41 @@ function parseTimestamp(value?: string) {
 }
 
 function getReferenceTimestamp(request: SectionRequestState) {
-  return parseTimestamp(request.completedAt) ?? parseTimestamp(request.requestedAt);
+  return (
+    parseTimestamp(request.completedAt) ?? parseTimestamp(request.requestedAt)
+  );
+}
+
+function getWorkerStatus(request: SectionRequestState) {
+  if (request.status === "FAILED") {
+    return {
+      label: "Worker IA retornou erro",
+      badge: "danger",
+    };
+  }
+
+  if (request.status === "COMPLETED") {
+    return {
+      label: "Worker IA concluiu com sucesso",
+      badge: "success",
+    };
+  }
+
+  if (
+    request.status === "PROCESSING" ||
+    request.startedAt ||
+    request.stageLabel
+  ) {
+    return {
+      label: "Worker IA em processamento",
+      badge: "warning",
+    };
+  }
+
+  return {
+    label: "Worker IA ainda não acionado",
+    badge: "secondary",
+  };
 }
 
 function getErrorMessage(error: unknown) {
@@ -153,45 +192,51 @@ export function HypothesisFrameworkTabsView({
 
   const requestsFromBackend = (jobsQuery.data ?? []).reduce<
     Record<HypothesisFrameworkSection, SectionRequestState>
-  >((acc, job) => {
-    if (acc[job.section]?.requestedAt) {
+  >(
+    (acc, job) => {
+      if (acc[job.section]?.requestedAt) {
+        return acc;
+      }
+      const uiStatus: RequestUiStatus =
+        job.status === "COMPLETED"
+          ? "COMPLETED"
+          : job.status === "FAILED"
+            ? "FAILED"
+            : job.status === "PROCESSING"
+              ? "PROCESSING"
+              : "PROCESSING";
+      acc[job.section] = {
+        status: uiStatus,
+        requestedAt: job.createdAt,
+        startedAt: job.startedAt,
+        completedAt: job.finishedAt,
+        customInstructions: job.customInstructions,
+        errorMessage: job.errorMessage,
+        stageLabel:
+          STAGE_LABELS[job.stage] ??
+          (job.stage ? job.stage.split("_").join(" ") : undefined),
+      };
       return acc;
-    }
-    const uiStatus: RequestUiStatus =
-      job.status === "COMPLETED"
-        ? "COMPLETED"
-        : job.status === "FAILED"
-          ? "FAILED"
-          : job.status === "PROCESSING"
-            ? "PROCESSING"
-            : "PROCESSING";
-    acc[job.section] = {
-      status: uiStatus,
-      requestedAt: job.createdAt,
-      completedAt: job.finishedAt,
-      customInstructions: job.customInstructions,
-      errorMessage: job.errorMessage,
-      stageLabel:
-        STAGE_LABELS[job.stage] ??
-        (job.stage ? job.stage.split("_").join(" ") : undefined),
-    };
-    return acc;
-  }, { ...SECTION_REQUEST_INITIAL_STATE });
+    },
+    { ...SECTION_REQUEST_INITIAL_STATE },
+  );
 
   const mergedRequestsBySection = SECTIONS.reduce<
     Record<HypothesisFrameworkSection, SectionRequestState>
-  >((acc, section) => {
-    const localState = requestsBySection[section.id];
-    const backendState = requestsFromBackend[section.id];
-    acc[section.id] =
-      localState.status !== "IDLE" &&
-      localState.status !== "COMPLETED" &&
-      backendState.status === "IDLE"
-        ? localState
-        : backendState;
-    return acc;
-  }, { ...SECTION_REQUEST_INITIAL_STATE });
-
+  >(
+    (acc, section) => {
+      const localState = requestsBySection[section.id];
+      const backendState = requestsFromBackend[section.id];
+      acc[section.id] =
+        localState.status !== "IDLE" &&
+        localState.status !== "COMPLETED" &&
+        backendState.status === "IDLE"
+          ? localState
+          : backendState;
+      return acc;
+    },
+    { ...SECTION_REQUEST_INITIAL_STATE },
+  );
 
   const invalidationBySection = useMemo(() => {
     const bySection: Partial<
@@ -201,8 +246,11 @@ export function HypothesisFrameworkTabsView({
       >
     > = {};
 
-    let latestDependency: { label: string; at?: string; timestamp: number } | null =
-      null;
+    let latestDependency: {
+      label: string;
+      at?: string;
+      timestamp: number;
+    } | null = null;
 
     SECTIONS.forEach((section, index) => {
       const currentRequest = mergedRequestsBySection[section.id];
@@ -212,7 +260,8 @@ export function HypothesisFrameworkTabsView({
         index > 0 &&
         latestDependency &&
         currentRequest.status !== "PROCESSING" &&
-        (currentTimestamp === undefined || currentTimestamp < latestDependency.timestamp)
+        (currentTimestamp === undefined ||
+          currentTimestamp < latestDependency.timestamp)
       ) {
         bySection[section.id] = {
           sourceSection: latestDependency.label,
@@ -222,7 +271,10 @@ export function HypothesisFrameworkTabsView({
       }
 
       if (currentTimestamp !== undefined) {
-        if (!latestDependency || currentTimestamp > latestDependency.timestamp) {
+        if (
+          !latestDependency ||
+          currentTimestamp > latestDependency.timestamp
+        ) {
           latestDependency = {
             label: section.label,
             at: currentRequest.completedAt ?? currentRequest.requestedAt,
@@ -243,6 +295,7 @@ export function HypothesisFrameworkTabsView({
       [section]: {
         status: "PROCESSING",
         requestedAt,
+        startedAt: undefined,
         completedAt: undefined,
         customInstructions,
         errorMessage: undefined,
@@ -532,10 +585,13 @@ export function HypothesisFrameworkTabsView({
           <h4 className="h6 mb-2">Acompanhamento das solicitações IA</h4>
           <p className="small text-muted mb-3">
             Veja o que já foi solicitado, o que está em processamento e quais
-            etapas precisam ser geradas novamente quando uma dependência anterior muda.
+            etapas precisam ser geradas novamente quando uma dependência
+            anterior muda.
           </p>
           {jobsQuery.isLoading ? (
-            <p className="small text-muted mb-3">Carregando histórico salvo das solicitações...</p>
+            <p className="small text-muted mb-3">
+              Carregando histórico salvo das solicitações...
+            </p>
           ) : null}
           {jobsQuery.isError ? (
             <p className="small text-danger mb-3">
@@ -552,6 +608,7 @@ export function HypothesisFrameworkTabsView({
                   : invalidation
                     ? "INVALIDATED"
                     : request.status;
+              const workerStatus = getWorkerStatus(request);
 
               return (
                 <div
@@ -570,6 +627,33 @@ export function HypothesisFrameworkTabsView({
                     Solicitado em: {formatDateTime(request.requestedAt)} ·
                     Concluído em: {formatDateTime(request.completedAt)}
                   </small>
+                  <div className="small d-flex flex-column gap-1">
+                    <div>
+                      <strong>1. Solicitação do usuário:</strong>{" "}
+                      {request.requestedAt
+                        ? `enviada em ${formatDateTime(request.requestedAt)}.`
+                        : "ainda não enviada."}
+                    </div>
+                    <div className="d-flex flex-wrap align-items-center gap-2">
+                      <strong>2. Atendimento do Worker IA:</strong>
+                      <span className={`badge text-bg-${workerStatus.badge}`}>
+                        {workerStatus.label}
+                      </span>
+                      <span>
+                        {request.startedAt
+                          ? `iniciado em ${formatDateTime(request.startedAt)}`
+                          : "sem início registrado"}
+                      </span>
+                    </div>
+                    <div>
+                      <strong>3. Conclusão:</strong>{" "}
+                      {request.completedAt
+                        ? `finalizada em ${formatDateTime(request.completedAt)}.`
+                        : request.status === "FAILED"
+                          ? "fluxo encerrado com erro."
+                          : "aguardando finalização."}
+                    </div>
+                  </div>
                   {request.stageLabel ? (
                     <small className="text-body-secondary">
                       Etapa atual: {request.stageLabel}
@@ -582,8 +666,9 @@ export function HypothesisFrameworkTabsView({
                   ) : null}
                   {invalidation ? (
                     <small className="text-warning-emphasis">
-                      Dependência alterada em {invalidation.sourceSection} ({formatDateTime(invalidation.sourceAt)}).
-                      Gere esta etapa novamente para sincronizar o framework.
+                      Dependência alterada em {invalidation.sourceSection} (
+                      {formatDateTime(invalidation.sourceAt)}). Gere esta etapa
+                      novamente para sincronizar o framework.
                     </small>
                   ) : null}
                   {request.errorMessage ? (

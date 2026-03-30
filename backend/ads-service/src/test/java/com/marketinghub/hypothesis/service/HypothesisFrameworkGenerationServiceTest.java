@@ -142,4 +142,37 @@ class HypothesisFrameworkGenerationServiceTest {
         assertThat(partialCaptor.getValue().getMechanism().getCore()).isEqualTo("Core");
         assertThat(job.getRequestBodyJson()).isEqualTo("{\"model\":\"gpt-test\"}");
     }
+
+    @Test
+    void completeJobParsesOfferPromptAliases() {
+        UUID jobId = UUID.randomUUID();
+        Hypothesis hypothesis = new Hypothesis();
+        hypothesis.setId(UUID.randomUUID());
+        HypothesisFrameworkGenerationJob job = HypothesisFrameworkGenerationJob.builder()
+                .id(jobId)
+                .hypothesis(hypothesis)
+                .section(HypothesisFrameworkSection.OFFER)
+                .status(HypothesisFrameworkGenerationJobStatus.PROCESSING)
+                .model("gpt-test")
+                .prompt("prompt")
+                .build();
+
+        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+        when(frameworkSupport.resolve(hypothesis)).thenReturn(new HypothesisFrameworkDto());
+
+        service.completeJob(jobId, new HypothesisFrameworkGenerationJobCompletionRequest(
+                "{\"name\":\"Oferta X\",\"promise\":\"Ganho claro\",\"deliverables\":\"A,B\",\"riskReversal\":\"Teste 7 dias\",\"priceNarrative\":\"Economiza tempo\",\"cta\":\"Quero agora\"}",
+                "{}",
+                "{\"model\":\"gpt-test\"}",
+                10,
+                20,
+                null
+        ));
+
+        ArgumentCaptor<HypothesisFrameworkDto> snapshotCaptor = ArgumentCaptor.forClass(HypothesisFrameworkDto.class);
+        verify(frameworkSupport).storeSnapshot(eq(hypothesis), snapshotCaptor.capture(), any(HypothesisFrameworkDto.class));
+
+        assertThat(snapshotCaptor.getValue().getOffer().getCorePromise()).isEqualTo("Ganho claro");
+        assertThat(snapshotCaptor.getValue().getOffer().getPriceLogic()).isEqualTo("Economiza tempo");
+    }
 }

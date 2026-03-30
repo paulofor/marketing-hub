@@ -377,14 +377,12 @@ public class HypothesisFrameworkGenerationService {
             ), List.of("type", "message"));
             case OFFER -> schema(Map.of(
                     "name", stringField("Nome curto da oferta"),
-                    "corePromise", stringField("Promessa principal"),
+                    "promise", stringField("Promessa principal"),
                     "deliverables", stringField("Principais entregáveis"),
                     "riskReversal", stringField("Como reduz risco/percepção de risco"),
-                    "priceLogic", stringField("Narrativa de preço/valor"),
-                    "cta", stringField("Chamada para ação final"),
-                    "priceAmount", Map.of("type", "number", "description", "Preço sugerido em BRL"),
-                    "offerType", stringField("Tipo de oferta (LEAD ou TRIPWIRE)")
-            ), List.of("corePromise", "deliverables"));
+                    "priceNarrative", stringField("Narrativa de preço/valor"),
+                    "cta", stringField("Chamada para ação final")
+            ), List.of("name", "promise", "deliverables", "riskReversal", "priceNarrative", "cta"));
         };
     }
 
@@ -557,6 +555,63 @@ public class HypothesisFrameworkGenerationService {
                     .append("JSON válido com as chaves:\n")
                     .append("type, asset, message, deliveryStage\n")
                     .append("Não inclua comentários.\n");
+        } else if (section == HypothesisFrameworkSection.OFFER) {
+            builder.append("Contexto do nicho: ")
+                    .append(niche)
+                    .append("\n\nDor consolidada da seção anterior:\n- Superfície: ")
+                    .append(nonNull(snapshot.getPain() != null ? snapshot.getPain().getSurface() : null))
+                    .append("\n- Raiz: ")
+                    .append(nonNull(snapshot.getPain() != null ? snapshot.getPain().getRoot() : null))
+                    .append("\n- Emocional: ")
+                    .append(nonNull(snapshot.getPain() != null ? snapshot.getPain().getEmotional() : null))
+                    .append("\n- Social: ")
+                    .append(nonNull(snapshot.getPain() != null ? snapshot.getPain().getSocial() : null))
+                    .append("\n- Custo: ")
+                    .append(nonNull(snapshot.getPain() != null ? snapshot.getPain().getCost() : null))
+                    .append("\n\nResultado consolidado da seção anterior:\n- Resultado desejado: ")
+                    .append(nonNull(snapshot.getResult() != null ? snapshot.getResult().getDesiredResult() : null))
+                    .append("\n- Identidade desejada: ")
+                    .append(nonNull(snapshot.getResult() != null ? snapshot.getResult().getDesiredIdentity() : null))
+                    .append("\n- Impacto no negócio: ")
+                    .append(nonNull(snapshot.getResult() != null ? snapshot.getResult().getBusinessOutcome() : null))
+                    .append("\n- Sinal de sucesso: ")
+                    .append(nonNull(snapshot.getResult() != null ? snapshot.getResult().getSuccessSignal() : null))
+                    .append("\n\nMecanismo consolidado da seção anterior:\n- Mecanismo central: ")
+                    .append(nonNull(snapshot.getMechanism() != null ? snapshot.getMechanism().getCore() : null))
+                    .append(" \n- Mecanismo único: ")
+                    .append(nonNull(snapshot.getMechanism() != null ? snapshot.getMechanism().getUnique() : null))
+                    .append(" \n- O que é visível: ")
+                    .append(nonNull(snapshot.getMechanism() != null ? snapshot.getMechanism().getVisible() : null))
+                    .append("  \n- Por que acreditar: ")
+                    .append(nonNull(snapshot.getMechanism() != null ? snapshot.getMechanism().getBelievability() : null))
+                    .append("\n\nProva consolidado da seção anterior:\n- Tipo: ")
+                    .append(nonNull(snapshot.getProof() != null ? snapshot.getProof().getType() : null))
+                    .append(" \n- Ativo: ")
+                    .append(nonNull(snapshot.getProof() != null ? snapshot.getProof().getAsset() : null))
+                    .append("  \n- Mensagem: ")
+                    .append(nonNull(snapshot.getProof() != null ? snapshot.getProof().getMessage() : null))
+                    .append("  \n- Estágio: ")
+                    .append(nonNull(snapshot.getProof() != null ? snapshot.getProof().getDeliveryStage() : null))
+                    .append("\n\nDados recentes da seção: ")
+                    .append(formatOffer(snapshot.getOffer()))
+                    .append("\n\nPreencha os campos de OFERTA com foco em fechamento comercial.\n\n")
+                    .append("Regras obrigatórias desta seção:\n")
+                    .append("1. A oferta deve empacotar a transformação, não apenas o volume de entregáveis.\n")
+                    .append("2. O nome deve ser simples, memorável e comercial.\n")
+                    .append("3. A promessa da oferta deve falar de resultado percebido antes do mecanismo.\n")
+                    .append("4. Os entregáveis devem ser claros e finitos.\n")
+                    .append("5. O risco reverso deve reduzir insegurança de compra.\n")
+                    .append("6. A narrativa de preço deve justificar valor com base em:\n")
+                    .append("   - economia de tempo\n")
+                    .append("   - personalização\n")
+                    .append("   - velocidade\n")
+                    .append("   - potencial comercial\n")
+                    .append("7. O CTA deve ser simples e direto.\n")
+                    .append("8. Se houver dúvida entre uma oferta “mais técnica” e uma “mais vendável”, escolha a mais vendável.\n\n")
+                    .append("Formato esperado:\n")
+                    .append("JSON válido com as chaves:\n")
+                    .append("name, promise, deliverables, riskReversal, priceNarrative, cta\n")
+                    .append("Não inclua comentários.\n");
         } else {
             builder.append("Contexto do nicho: ")
                     .append(niche)
@@ -638,13 +693,13 @@ public class HypothesisFrameworkGenerationService {
                 ? offer.getPriceAmount().setScale(2, RoundingMode.HALF_UP).toPlainString()
                 : "-";
         return String.format(Locale.ROOT,
-                "name=%s | promise=%s | deliverables=%s | risk=%s | price=%s | type=%s",
+                "name=%s | offer_promise=%s | deliverables=%s | risk=%s | price_logic=%s | cta=%s",
                 nonNull(offer.getName()),
                 nonNull(offer.getCorePromise()),
                 nonNull(offer.getDeliverables()),
                 nonNull(offer.getRiskReversal()),
-                price,
-                nonNull(offer.getOfferType()));
+                nonNull(offer.getPriceLogic() != null ? offer.getPriceLogic() : price),
+                nonNull(offer.getCta()));
     }
 
     private String nonNull(String value) {

@@ -1,6 +1,7 @@
 package com.marketinghub.hypothesis.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -78,9 +79,11 @@ public class HypothesisFrameworkDto {
     @Builder
     public static class Offer {
         private String name;
+        @JsonAlias("promise")
         private String corePromise;
         private String deliverables;
         private String riskReversal;
+        @JsonAlias("priceNarrative")
         private String priceLogic;
         private String cta;
         private BigDecimal priceAmount;

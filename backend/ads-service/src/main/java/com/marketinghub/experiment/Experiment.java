@@ -169,6 +169,21 @@ public class Experiment {
     @Column(name = "creative_image_prompt", columnDefinition = "LONGTEXT")
     private String creativeImagePrompt;
 
+    @Column(name = "campaign_angle", columnDefinition = "LONGTEXT")
+    private String campaignAngle;
+
+    @Column(name = "ad_copy", columnDefinition = "LONGTEXT")
+    private String adCopy;
+
+    @Column(name = "ad_image_briefing", columnDefinition = "LONGTEXT")
+    private String adImageBriefing;
+
+    @Column(name = "landing_page_copy", columnDefinition = "LONGTEXT")
+    private String landingPageCopy;
+
+    @Column(name = "landing_page_wireframe", columnDefinition = "LONGTEXT")
+    private String landingPageWireframe;
+
     /** Quantidade de criativos a serem gerados pelo worker. */
     @Column(name = "creatives_to_generate")
     private Integer creativesToGenerate;

@@ -1,5 +1,6 @@
 package com.marketinghub.worker.hypothesisframework;
 
+import com.fasterxml.jackson.core.io.JsonEOFException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -70,13 +71,17 @@ public class HypothesisFrameworkOpenAiClient {
     private final ObjectMapper objectMapper;
     private final WebClient webClient;
     private final boolean enabled;
+    private final int retryMinOutputTokens;
 
     public HypothesisFrameworkOpenAiClient(WebClient.Builder builder,
                                            ObjectMapper objectMapper,
                                            @Value("${openai.api-key:}") String apiKey,
-                                           @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl) {
+                                           @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
+                                           @Value("${openai.hypothesis-framework.retry-min-output-tokens:3500}")
+                                           int retryMinOutputTokens) {
         this.objectMapper = objectMapper;
         this.enabled = StringUtils.hasText(apiKey);
+        this.retryMinOutputTokens = retryMinOutputTokens;
         WebClient.Builder clientBuilder = builder.clone().baseUrl(baseUrl);
         if (enabled) {
             clientBuilder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.trim());
@@ -108,23 +113,7 @@ public class HypothesisFrameworkOpenAiClient {
         Map<String, Object> payload = null;
         try {
             payload = preparePayload(job);
-            log.info("Enviando requisição para OpenAI [jobId={}, hypothesisId={}, section={}, model={}]",
-                    job.id(),
-                    job.hypothesisId(),
-                    job.section(),
-                    job.model());
-            log.debug("Payload OpenAI [jobId={}]: {}", job.id(), toLogJson(payload));
-            OpenAiResponse response = callOpenAi(payload);
-            String content = extractAndValidateJsonContent(response, job);
-            Integer inputTokens = response.usage() != null ? response.usage().effectiveInputTokens() : null;
-            Integer outputTokens = response.usage() != null ? response.usage().effectiveOutputTokens() : null;
-            return new HypothesisFrameworkJobCompletionPayload(
-                    content,
-                    safeJson(response),
-                    safeJson(payload),
-                    inputTokens,
-                    outputTokens,
-                    OpenAiCostEstimator.estimateUsd(job.model(), response.usage()));
+            return generateWithRetry(job, payload);
         } catch (WebClientResponseException ex) {
             HttpStatusCode statusCode = ex.getStatusCode();
             log.error("Falha HTTP ao chamar OpenAI [jobId={}, hypothesisId={}, section={}, model={}, status={}, responseBody={}]",
@@ -139,6 +128,50 @@ public class HypothesisFrameworkOpenAiClient {
         } catch (Exception ex) {
             throw new IllegalStateException("Falha ao gerar seção " + job.section() + " para hipótese " + job.hypothesisId(), ex);
         }
+    }
+
+    private HypothesisFrameworkJobCompletionPayload generateWithRetry(HypothesisFrameworkJobDto job, Map<String, Object> payload)
+            throws Exception {
+        log.info("Enviando requisição para OpenAI [jobId={}, hypothesisId={}, section={}, model={}]",
+                job.id(),
+                job.hypothesisId(),
+                job.section(),
+                job.model());
+        log.debug("Payload OpenAI [jobId={}]: {}", job.id(), toLogJson(payload));
+        OpenAiResponse response = callOpenAi(payload);
+        try {
+            return buildCompletionPayload(job, payload, response);
+        } catch (InvalidJsonResponseException ex) {
+            if (!ex.shouldRetry()) {
+                throw ex;
+            }
+            Map<String, Object> retryPayload = copyPayload(payload);
+            int appliedMaxOutputTokens = increaseMaxOutputTokens(retryPayload);
+            log.warn(
+                    "Resposta possivelmente truncada para framework [jobId={}, hypothesisId={}, section={}]. Reenviando com max_output_tokens={}",
+                    job.id(),
+                    job.hypothesisId(),
+                    job.section(),
+                    appliedMaxOutputTokens);
+            OpenAiResponse retryResponse = callOpenAi(retryPayload);
+            return buildCompletionPayload(job, retryPayload, retryResponse);
+        }
+    }
+
+    private HypothesisFrameworkJobCompletionPayload buildCompletionPayload(
+            HypothesisFrameworkJobDto job,
+            Map<String, Object> payload,
+            OpenAiResponse response) {
+        String content = extractAndValidateJsonContent(response, job);
+        Integer inputTokens = response.usage() != null ? response.usage().effectiveInputTokens() : null;
+        Integer outputTokens = response.usage() != null ? response.usage().effectiveOutputTokens() : null;
+        return new HypothesisFrameworkJobCompletionPayload(
+                content,
+                safeJson(response),
+                safeJson(payload),
+                inputTokens,
+                outputTokens,
+                OpenAiCostEstimator.estimateUsd(job.model(), response.usage()));
     }
 
     private Map<String, Object> preparePayload(HypothesisFrameworkJobDto job) throws Exception {
@@ -178,11 +211,35 @@ public class HypothesisFrameworkOpenAiClient {
         } catch (IllegalStateException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new IllegalStateException(
+            throw new InvalidJsonResponseException(
                     "Modelo retornou JSON inválido para seção " + job.section() + ". Resposta recebida: " + truncate(content),
-                    ex);
+                    ex,
+                    shouldRetryForInvalidJson(response, ex, content));
         }
         return content;
+    }
+
+    private boolean shouldRetryForInvalidJson(OpenAiResponse response, Exception parseException, String content) {
+        if (parseException instanceof JsonEOFException) {
+            return true;
+        }
+        if (response != null && "incomplete".equalsIgnoreCase(response.status())) {
+            return true;
+        }
+        return content != null && content.length() >= 2_500;
+    }
+
+    private Map<String, Object> copyPayload(Map<String, Object> payload) throws Exception {
+        return objectMapper.readValue(objectMapper.writeValueAsString(payload), new TypeReference<>() {
+        });
+    }
+
+    private int increaseMaxOutputTokens(Map<String, Object> payload) {
+        Object currentValue = payload.get("max_output_tokens");
+        int current = currentValue instanceof Number number ? number.intValue() : 0;
+        int updated = Math.max(retryMinOutputTokens, current > 0 ? current * 2 : retryMinOutputTokens);
+        payload.put("max_output_tokens", updated);
+        return updated;
     }
 
     @SuppressWarnings("unchecked")
@@ -369,5 +426,18 @@ public class HypothesisFrameworkOpenAiClient {
             return text;
         }
         return text.substring(0, maxLength) + "... [truncated]";
+    }
+
+    private static class InvalidJsonResponseException extends IllegalStateException {
+        private final boolean shouldRetry;
+
+        private InvalidJsonResponseException(String message, Throwable cause, boolean shouldRetry) {
+            super(message, cause);
+            this.shouldRetry = shouldRetry;
+        }
+
+        private boolean shouldRetry() {
+            return shouldRetry;
+        }
     }
 }

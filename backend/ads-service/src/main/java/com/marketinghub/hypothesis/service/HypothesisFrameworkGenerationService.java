@@ -509,6 +509,54 @@ public class HypothesisFrameworkGenerationService {
                     .append("JSON válido com as chaves:\n")
                     .append("core, unique, visible, believability\n")
                     .append("Não inclua comentários.\n");
+        } else if (section == HypothesisFrameworkSection.PROOF) {
+            builder.append("Contexto do nicho: ")
+                    .append(niche)
+                    .append("\n\nDor consolidada da seção anterior:\n- Superfície: ")
+                    .append(nonNull(snapshot.getPain() != null ? snapshot.getPain().getSurface() : null))
+                    .append("\n- Raiz: ")
+                    .append(nonNull(snapshot.getPain() != null ? snapshot.getPain().getRoot() : null))
+                    .append("\n- Emocional: ")
+                    .append(nonNull(snapshot.getPain() != null ? snapshot.getPain().getEmotional() : null))
+                    .append("\n- Social: ")
+                    .append(nonNull(snapshot.getPain() != null ? snapshot.getPain().getSocial() : null))
+                    .append("\n- Custo: ")
+                    .append(nonNull(snapshot.getPain() != null ? snapshot.getPain().getCost() : null))
+                    .append("\n\nResultado consolidado da seção anterior:\n- Resultado desejado: ")
+                    .append(nonNull(snapshot.getResult() != null ? snapshot.getResult().getDesiredResult() : null))
+                    .append("\n- Identidade desejada: ")
+                    .append(nonNull(snapshot.getResult() != null ? snapshot.getResult().getDesiredIdentity() : null))
+                    .append("\n- Impacto no negócio: ")
+                    .append(nonNull(snapshot.getResult() != null ? snapshot.getResult().getBusinessOutcome() : null))
+                    .append("\n- Sinal de sucesso: ")
+                    .append(nonNull(snapshot.getResult() != null ? snapshot.getResult().getSuccessSignal() : null))
+                    .append("\n\nMecanismo consolidado da seção anterior:\n- Mecanismo central: ")
+                    .append(nonNull(snapshot.getMechanism() != null ? snapshot.getMechanism().getCore() : null))
+                    .append(" \n- Mecanismo único: ")
+                    .append(nonNull(snapshot.getMechanism() != null ? snapshot.getMechanism().getUnique() : null))
+                    .append(" \n- O que é visível: ")
+                    .append(nonNull(snapshot.getMechanism() != null ? snapshot.getMechanism().getVisible() : null))
+                    .append("  \n- Por que acreditar: ")
+                    .append(nonNull(snapshot.getMechanism() != null ? snapshot.getMechanism().getBelievability() : null))
+                    .append("\n\nDados recentes da seção: ")
+                    .append(formatProof(snapshot.getProof()))
+                    .append("\n\nPreencha os campos de PROVA com foco em redução de ceticismo e facilidade de implementação.\n\n")
+                    .append("Regras obrigatórias desta seção:\n")
+                    .append("1. A prova deve reduzir o medo de “isso é só template” ou “isso não vai servir para mim”.\n")
+                    .append("2. Prefira provas simples, visuais e fáceis de entregar.\n")
+                    .append("3. Não torne a prova mais complexa que a oferta.\n")
+                    .append("4. O tipo de prova deve ser claro e comercialmente utilizável.\n")
+                    .append("5. O ativo de prova deve ser realista para operação.\n")
+                    .append("6. A mensagem da prova deve conectar:\n")
+                    .append("   - personalização\n")
+                    .append("   - diferença percebida\n")
+                    .append("   - menor risco\n")
+                    .append("7. O estágio deve refletir onde essa prova melhor converte.\n")
+                    .append("8. Se houver duas opções, escolha a prova com menor atrito e maior clareza.\n\n")
+                    .append("Formato esperado:\n")
+                    .append("JSON válido com as chaves:\n")
+                    .append("type, asset, message, deliveryStage\n")
+                    .append("Não inclua comentários.\n");
         } else {
             builder.append("Contexto do nicho: ")
                     .append(niche)
@@ -518,7 +566,8 @@ public class HypothesisFrameworkGenerationService {
         builder.append("Persona: ").append(nonNull(hypothesis.getPersona())).append('\n');
         builder.append("Promessa atual: ").append(nonNull(hypothesis.getPromise())).append('\n');
         builder.append("Problema atual: ").append(nonNull(hypothesis.getProblem())).append('\n');
-        if (section != HypothesisFrameworkSection.MECHANISM) {
+        if (section != HypothesisFrameworkSection.MECHANISM
+                && section != HypothesisFrameworkSection.PROOF) {
             builder.append("Dados recentes da seção: ").append(sectionSnapshot(snapshot, section)).append('\n');
         }
         if (section != HypothesisFrameworkSection.PAIN

@@ -281,7 +281,7 @@ class HypothesisFrameworkOpenAiClientTest {
 
         HypothesisFrameworkJobCompletionPayload result = client.generate(job);
 
-        assertThat(result.contentJson()).isEqualTo("{\"result\":\"ok\"}");
+        assertThat(result.responseContent()).isEqualTo("{\"result\":\"ok\"}");
         assertThat(attempts.get()).isEqualTo(2);
         assertThat(firstPayload.get()).containsEntry("max_output_tokens", 800);
         assertThat(secondPayload.get()).containsEntry("max_output_tokens", 3500);

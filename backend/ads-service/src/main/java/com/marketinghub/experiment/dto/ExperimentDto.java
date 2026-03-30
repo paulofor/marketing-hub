@@ -26,6 +26,11 @@ public class ExperimentDto {
     private String leadPortalFlowModel;
     private String creativeTextPrompt;
     private String creativeImagePrompt;
+    private String campaignAngle;
+    private String adCopy;
+    private String adImageBriefing;
+    private String landingPageCopy;
+    private String landingPageWireframe;
     private InstagramAccountDto instagramAccount;
     private String facebookPixelId;
     private String facebookPixelCode;

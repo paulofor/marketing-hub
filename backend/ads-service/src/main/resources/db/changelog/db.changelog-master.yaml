@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: V2037_03_30__experiment_pipeline_generation_job_mysql5.sql
+      relativeToChangelogFile: true
+  - include:
       file: V2037_03_28__add_openai_request_payload_to_experiment_learning.sql
       relativeToChangelogFile: true
   - include:

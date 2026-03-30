@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
@@ -36,7 +37,8 @@ class HypothesisFrameworkOpenAiClientTest {
                 WebClient.builder().exchangeFunction(capturePayloadExchange(requestPayload)),
                 MAPPER,
                 "test-key",
-                "http://openai");
+                "http://openai",
+                3500);
 
         HypothesisFrameworkJobDto job = new HypothesisFrameworkJobDto(
                 UUID.randomUUID(),
@@ -76,7 +78,8 @@ class HypothesisFrameworkOpenAiClientTest {
                 WebClient.builder().exchangeFunction(capturePayloadExchange(requestPayload)),
                 MAPPER,
                 "test-key",
-                "http://openai");
+                "http://openai",
+                3500);
 
         HypothesisFrameworkJobDto job = new HypothesisFrameworkJobDto(
                 UUID.randomUUID(),
@@ -116,7 +119,8 @@ class HypothesisFrameworkOpenAiClientTest {
                 WebClient.builder().exchangeFunction(capturePayloadExchange(requestPayload)),
                 MAPPER,
                 "test-key",
-                "http://openai");
+                "http://openai",
+                3500);
 
         HypothesisFrameworkJobDto job = new HypothesisFrameworkJobDto(
                 UUID.randomUUID(),
@@ -165,7 +169,8 @@ class HypothesisFrameworkOpenAiClientTest {
                 WebClient.builder().exchangeFunction(capturePayloadExchange(requestPayload)),
                 MAPPER,
                 "test-key",
-                "http://openai");
+                "http://openai",
+                3500);
 
         HypothesisFrameworkJobDto job = new HypothesisFrameworkJobDto(
                 UUID.randomUUID(),
@@ -208,7 +213,8 @@ class HypothesisFrameworkOpenAiClientTest {
                 WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>())),
                 MAPPER,
                 "test-key",
-                "http://openai");
+                "http://openai",
+                3500);
 
         HypothesisFrameworkJobDto job = new HypothesisFrameworkJobDto(
                 UUID.randomUUID(),
@@ -238,6 +244,49 @@ class HypothesisFrameworkOpenAiClientTest {
         assertThat(preparedPayload).contains("Prompt base");
     }
 
+    @Test
+    void retriesWhenFirstOpenAiResponseContainsInvalidTruncatedJson() {
+        AtomicReference<Map<String, Object>> firstPayload = new AtomicReference<>();
+        AtomicReference<Map<String, Object>> secondPayload = new AtomicReference<>();
+        AtomicInteger attempts = new AtomicInteger();
+        HypothesisFrameworkOpenAiClient client = new HypothesisFrameworkOpenAiClient(
+                WebClient.builder().exchangeFunction(sequenceExchange(attempts, firstPayload, secondPayload)),
+                MAPPER,
+                "test-key",
+                "http://openai",
+                3500);
+
+        HypothesisFrameworkJobDto job = new HypothesisFrameworkJobDto(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                "OFFER",
+                "gpt-5.2",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "max_output_tokens": 800,
+                          "input": [{"role": "user", "content": [{"type":"input_text","text":"Teste"}]}],
+                          "text": {
+                            "format": {
+                              "type": "json_schema",
+                              "schema": {
+                                "type": "object"
+                              }
+                            }
+                          }
+                        }
+                        """,
+                Instant.now());
+
+        HypothesisFrameworkJobCompletionPayload result = client.generate(job);
+
+        assertThat(result.contentJson()).isEqualTo("{\"result\":\"ok\"}");
+        assertThat(attempts.get()).isEqualTo(2);
+        assertThat(firstPayload.get()).containsEntry("max_output_tokens", 800);
+        assertThat(secondPayload.get()).containsEntry("max_output_tokens", 3500);
+    }
+
     private ExchangeFunction capturePayloadExchange(AtomicReference<Map<String, Object>> capturedPayload) {
         return request -> {
             MockClientHttpRequest httpRequest = new MockClientHttpRequest(request.method(), request.url());
@@ -249,6 +298,37 @@ class HypothesisFrameworkOpenAiClientTest {
             } catch (Exception e) {
                 throw new IllegalStateException(e);
             }
+            return Mono.just(ClientResponse.create(HttpStatus.OK)
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .body("{\"output\":[{\"content\":[{\"type\":\"output_text\",\"text\":\"{\\\"result\\\":\\\"ok\\\"}\"}]}]}")
+                    .build());
+        };
+    }
+
+    private ExchangeFunction sequenceExchange(
+            AtomicInteger attempts,
+            AtomicReference<Map<String, Object>> firstPayload,
+            AtomicReference<Map<String, Object>> secondPayload) {
+        return request -> {
+            MockClientHttpRequest httpRequest = new MockClientHttpRequest(request.method(), request.url());
+            request.body().insert(httpRequest, BODY_INSERTER_CONTEXT).block();
+            String requestBody = httpRequest.getBodyAsString().block();
+            Map<String, Object> payload;
+            try {
+                payload = MAPPER.readValue(requestBody, new TypeReference<>() {
+                });
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+            int currentAttempt = attempts.incrementAndGet();
+            if (currentAttempt == 1) {
+                firstPayload.set(payload);
+                return Mono.just(ClientResponse.create(HttpStatus.OK)
+                        .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .body("{\"status\":\"incomplete\",\"output\":[{\"content\":[{\"type\":\"output_text\",\"text\":\"{\\\"result\\\":\\\"cortado\"}]}]}")
+                        .build());
+            }
+            secondPayload.set(payload);
             return Mono.just(ClientResponse.create(HttpStatus.OK)
                     .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .body("{\"output\":[{\"content\":[{\"type\":\"output_text\",\"text\":\"{\\\"result\\\":\\\"ok\\\"}\"}]}]}")

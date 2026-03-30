@@ -45,6 +45,27 @@ public class HypothesisFrameworkOpenAiClient {
             11. Se o campo estiver ligado à venda, escolha a opção com maior clareza comercial e menor atrito de entendimento.
             12. Se houver conflito entre “soar inteligente” e “soar vendável”, escolha o vendável.
 
+            Envelope real do produto:
+            - Este produto precisa ser altamente escalável e majoritariamente automatizado por IA.
+            - O produto pode gerar:
+              - imagens personalizadas
+              - kits de criativos
+              - copies
+              - e-books / guias / playbooks
+              - páginas / PDFs / materiais digitais
+              - amostras digitais automatizadas
+            - O produto NÃO pode gerar:
+              - consultoria 1:1
+              - diagnóstico manual feito por humano
+              - call estratégica
+              - acompanhamento recorrente humano
+              - revisão individual síncrona
+              - gestão de tráfego
+              - atendimento comercial humano sob medida
+              - implementação manual contínua
+            - Toda sugestão de mecanismo, prova e oferta deve caber neste envelope.
+            - Se houver dúvida, escolha sempre a opção mais automatizável, escalável e entregável por IA.
+
             Nível de maturidade da persona:
             - Este público é de massa dentro do nicho, não um subgrupo avançado.
             - Assuma conhecimento baixo a moderado em marketing, tráfego pago e testes criativos.

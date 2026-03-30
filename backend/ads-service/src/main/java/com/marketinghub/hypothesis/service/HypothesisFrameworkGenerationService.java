@@ -439,6 +439,8 @@ public class HypothesisFrameworkGenerationService {
                     .append("6. Não suba a sofisticação da dor além do que a persona média entenderia.\n")
                     .append("7. Se houver duas versões possíveis, escolha a que fica mais fácil de usar em anúncio, landing page e venda.\n")
                     .append("8. Evite transformar a dor raiz em uma aula de marketing.\n\n")
+                    .append("Regra adicional:\n")
+                    .append("Se a dor puder ser resolvida por diferentes tipos de solução, descreva-a de forma que também possa ser atacada por materiais digitais, comunicação e ativos gerados por IA.\n\n")
                     .append("Formato esperado:\n")
                     .append("JSON válido com as chaves:\n")
                     .append("surface, root, emotional, social, cost\n")

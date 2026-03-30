@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import { Loader2 } from "lucide-react";
 import axios from "axios";
@@ -25,7 +25,7 @@ interface Props {
   onRefresh?: () => void;
 }
 
-type RequestUiStatus = "IDLE" | "PROCESSING" | "COMPLETED" | "FAILED";
+type RequestUiStatus = "IDLE" | "PROCESSING" | "COMPLETED" | "FAILED" | "INVALIDATED";
 
 interface SectionRequestState {
   status: RequestUiStatus;
@@ -54,6 +54,7 @@ const STATUS_LABELS: Record<RequestUiStatus, string> = {
   PROCESSING: "Em processamento",
   COMPLETED: "Concluída",
   FAILED: "Com erro",
+  INVALIDATED: "Dependência alterada",
 };
 
 const STATUS_BADGES: Record<RequestUiStatus, string> = {
@@ -61,6 +62,7 @@ const STATUS_BADGES: Record<RequestUiStatus, string> = {
   PROCESSING: "warning",
   COMPLETED: "success",
   FAILED: "danger",
+  INVALIDATED: "dark",
 };
 
 const STAGE_LABELS: Record<string, string> = {
@@ -92,6 +94,17 @@ function formatDateTime(value?: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+
+function parseTimestamp(value?: string) {
+  if (!value) return undefined;
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+function getReferenceTimestamp(request: SectionRequestState) {
+  return parseTimestamp(request.completedAt) ?? parseTimestamp(request.requestedAt);
 }
 
 function getErrorMessage(error: unknown) {
@@ -178,6 +191,49 @@ export function HypothesisFrameworkTabsView({
         : backendState;
     return acc;
   }, { ...SECTION_REQUEST_INITIAL_STATE });
+
+
+  const invalidationBySection = useMemo(() => {
+    const bySection: Partial<
+      Record<
+        HypothesisFrameworkSection,
+        { sourceSection: string; sourceAt?: string; sourceTimestamp: number }
+      >
+    > = {};
+
+    let latestDependency: { label: string; at?: string; timestamp: number } | null =
+      null;
+
+    SECTIONS.forEach((section, index) => {
+      const currentRequest = mergedRequestsBySection[section.id];
+      const currentTimestamp = getReferenceTimestamp(currentRequest);
+
+      if (
+        index > 0 &&
+        latestDependency &&
+        currentRequest.status !== "PROCESSING" &&
+        (currentTimestamp === undefined || currentTimestamp < latestDependency.timestamp)
+      ) {
+        bySection[section.id] = {
+          sourceSection: latestDependency.label,
+          sourceAt: latestDependency.at,
+          sourceTimestamp: latestDependency.timestamp,
+        };
+      }
+
+      if (currentTimestamp !== undefined) {
+        if (!latestDependency || currentTimestamp > latestDependency.timestamp) {
+          latestDependency = {
+            label: section.label,
+            at: currentRequest.completedAt ?? currentRequest.requestedAt,
+            timestamp: currentTimestamp,
+          };
+        }
+      }
+    });
+
+    return bySection;
+  }, [mergedRequestsBySection]);
 
   const handleGenerate = async (section: HypothesisFrameworkSection) => {
     const requestedAt = new Date().toISOString();
@@ -475,8 +531,8 @@ export function HypothesisFrameworkTabsView({
         <div className="border rounded-3 p-3 mt-4">
           <h4 className="h6 mb-2">Acompanhamento das solicitações IA</h4>
           <p className="small text-muted mb-3">
-            Veja o que já foi solicitado, o que está em processamento e o que
-            falhou em cada etapa do framework.
+            Veja o que já foi solicitado, o que está em processamento e quais
+            etapas precisam ser geradas novamente quando uma dependência anterior muda.
           </p>
           {jobsQuery.isLoading ? (
             <p className="small text-muted mb-3">Carregando histórico salvo das solicitações...</p>
@@ -489,6 +545,14 @@ export function HypothesisFrameworkTabsView({
           <div className="d-flex flex-column gap-2">
             {SECTIONS.map((section) => {
               const request = mergedRequestsBySection[section.id];
+              const invalidation = invalidationBySection[section.id];
+              const displayStatus: RequestUiStatus =
+                request.status === "PROCESSING"
+                  ? "PROCESSING"
+                  : invalidation
+                    ? "INVALIDATED"
+                    : request.status;
+
               return (
                 <div
                   key={`request-status-${section.id}`}
@@ -497,9 +561,9 @@ export function HypothesisFrameworkTabsView({
                   <div className="d-flex flex-wrap align-items-center gap-2">
                     <strong>{section.label}</strong>
                     <span
-                      className={`badge text-bg-${STATUS_BADGES[request.status]}`}
+                      className={`badge text-bg-${STATUS_BADGES[displayStatus]}`}
                     >
-                      {STATUS_LABELS[request.status]}
+                      {STATUS_LABELS[displayStatus]}
                     </span>
                   </div>
                   <small className="text-muted">
@@ -514,6 +578,12 @@ export function HypothesisFrameworkTabsView({
                   {request.customInstructions ? (
                     <small className="text-body-secondary">
                       Instruções enviadas: {request.customInstructions}
+                    </small>
+                  ) : null}
+                  {invalidation ? (
+                    <small className="text-warning-emphasis">
+                      Dependência alterada em {invalidation.sourceSection} ({formatDateTime(invalidation.sourceAt)}).
+                      Gere esta etapa novamente para sincronizar o framework.
                     </small>
                   ) : null}
                   {request.errorMessage ? (

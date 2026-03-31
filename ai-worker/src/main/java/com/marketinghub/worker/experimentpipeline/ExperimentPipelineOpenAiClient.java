@@ -81,6 +81,50 @@ public class ExperimentPipelineOpenAiClient {
             tone,
             funnelStage
             """;
+    private static final String LANDING_COPY_PROMPT_SUFFIX = """
+            Contexto do nicho: {nicho}
+
+            Ângulo da campanha: {campaignAngle}
+            Dor principal: {primaryPain}
+            Promessa principal: {primaryPromise}
+            Mecanismo resumido: {mechanismSummary}
+            Prova resumida: {proofSummary}
+
+            Objetivo da landing:
+            Converter o clique em:
+            - preenchimento de briefing
+            - geração de amostra
+            - pedido de prévia
+
+            Regras:
+            1. A landing deve continuar exatamente a promessa do anúncio.
+            2. O hero deve deixar claro:
+               - para quem é
+               - qual transformação entrega
+               - qual próximo passo
+            3. O mecanismo deve ser explicado de forma simples.
+            4. A prova deve reduzir o medo de “isso é genérico” ou “isso não serve para mim”.
+            5. O CTA principal deve aparecer no topo e se repetir ao longo da página.
+            6. O texto deve ser escaneável.
+            7. Não usar linguagem de consultoria humana.
+            8. Toda a oferta deve caber no envelope do produto.
+            9. O formulário deve pedir apenas dados necessários para gerar a amostra.
+
+            Formato esperado:
+            JSON com:
+            heroTitle,
+            heroSubtitle,
+            heroBullets,
+            primaryCTA,
+            formIntro,
+            formFields,
+            benefitsSection,
+            howItWorksSection,
+            proofSection,
+            offerSection,
+            faqSection,
+            closingCTA
+            """;
 
     private final ObjectMapper objectMapper;
     private final WebClient webClient;
@@ -174,6 +218,9 @@ public class ExperimentPipelineOpenAiClient {
         if (isCampaignAngleSection(job) && !base.contains("campaignAngle,")) {
             return base + "\n\n" + CAMPAIGN_ANGLE_PROMPT_SUFFIX;
         }
+        if (isLandingCopySection(job) && !base.contains("heroTitle,")) {
+            return base + "\n\n" + LANDING_COPY_PROMPT_SUFFIX;
+        }
         return base;
     }
 
@@ -183,5 +230,16 @@ public class ExperimentPipelineOpenAiClient {
         }
         String normalized = job.section().trim().toLowerCase(Locale.ROOT);
         return "campaign-angle".equals(normalized) || "campaign_angle".equals(normalized);
+    }
+
+    private boolean isLandingCopySection(ExperimentPipelineJobDto job) {
+        if (job == null || !StringUtils.hasText(job.section())) {
+            return false;
+        }
+        String normalized = job.section().trim().toLowerCase(Locale.ROOT);
+        return "landing-page-copy".equals(normalized)
+                || "landing-page_copy".equals(normalized)
+                || "landing-copy".equals(normalized)
+                || "landing_copy".equals(normalized);
     }
 }

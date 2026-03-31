@@ -37,6 +37,7 @@ import TargetingTab from "./TargetingTab";
 import ExperimentFunnelTab from "./ExperimentFunnelTab";
 import ExperimentReportPanel from "./ExperimentReportPanel";
 import ExperimentLearningPanel from "./ExperimentLearningPanel";
+import ExperimentContentGenerationTab from "./ExperimentContentGenerationTab";
 import { useExperimentAdSetWorkflow } from "../../api/experiment/useExperimentAdSetWorkflow";
 import { useExperimentFacebookRelease } from "../../api/experiment/useExperimentFacebookRelease";
 
@@ -80,15 +81,11 @@ export default function ExperimentDetailPage() {
   const rebuildJourney = useRebuildExperimentJourney(expId);
   const { data: adSetWorkflow, isLoading: isLoadingAdSetWorkflow } =
     useExperimentAdSetWorkflow(expId);
-  const {
-    data: facebookCampaigns,
-    isLoading: isLoadingFacebookCampaigns,
-  } = useExperimentFacebookCampaigns(expId);
+  const { data: facebookCampaigns, isLoading: isLoadingFacebookCampaigns } =
+    useExperimentFacebookCampaigns(expId);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
-  const {
-    data: readinessSummary,
-    isLoading: isLoadingReadiness,
-  } = useExperimentReadiness(expId);
+  const { data: readinessSummary, isLoading: isLoadingReadiness } =
+    useExperimentReadiness(expId);
   const {
     data: resetPreviewData,
     isFetching: isFetchingResetPreview,
@@ -176,8 +173,9 @@ export default function ExperimentDetailPage() {
       setIsResetModalOpen(false);
     } catch (error) {
       const message = axios.isAxiosError(error)
-        ? error.response?.data?.message ?? error.response?.data?.detail ??
-          "Não foi possível resetar as campanhas pendentes."
+        ? (error.response?.data?.message ??
+          error.response?.data?.detail ??
+          "Não foi possível resetar as campanhas pendentes.")
         : "Não foi possível resetar as campanhas pendentes.";
       toast.error(message);
     }
@@ -185,11 +183,14 @@ export default function ExperimentDetailPage() {
   const handleFacebookRelease = async () => {
     try {
       await releaseExperiment.mutateAsync();
-      toast.success("Experimento liberado para o Facebook Ads Worker. Funil reiniciado.");
+      toast.success(
+        "Experimento liberado para o Facebook Ads Worker. Funil reiniciado.",
+      );
     } catch (error) {
       const message = axios.isAxiosError(error)
-        ? error.response?.data?.message ?? error.response?.data?.detail ??
-          "Não foi possível liberar o experimento para o Facebook."
+        ? (error.response?.data?.message ??
+          error.response?.data?.detail ??
+          "Não foi possível liberar o experimento para o Facebook.")
         : "Não foi possível liberar o experimento para o Facebook.";
       toast.error(message);
     }
@@ -212,7 +213,10 @@ export default function ExperimentDetailPage() {
       : "Não foi possível carregar a prévia do reset."
     : null;
   const confirmResetDisabled =
-    isFetchingResetPreview || !hasItemsToReset || Boolean(previewErrorMessage) || resetCampaigns.isPending;
+    isFetchingResetPreview ||
+    !hasItemsToReset ||
+    Boolean(previewErrorMessage) ||
+    resetCampaigns.isPending;
   const readinessIssues = readinessSummary?.issues ?? [];
   const hasReadinessIssues = readinessIssues.length > 0;
   const formatCurrency = (n?: number | null) =>
@@ -259,7 +263,8 @@ export default function ExperimentDetailPage() {
   const hasLeadPortalFlow =
     readinessSummary?.hasLeadPortalFlow ??
     Boolean(data.leadPortalFlowId ?? data.leadPortalFlowName);
-  const hasCreativesReady = readinessSummary?.hasCreatives ?? data.creativeApproved;
+  const hasCreativesReady =
+    readinessSummary?.hasCreatives ?? data.creativeApproved;
   const readinessCreativeCount = readinessSummary?.creativeCount ?? 0;
   const hasDailyBudget = data.dailyBudget != null && data.dailyBudget > 0;
   const leadPortalFlowLabel =
@@ -314,8 +319,11 @@ export default function ExperimentDetailPage() {
   const isReadyForFacebook = blockingChecklist.every((c) => c.isMet);
   const releaseInProgress = releaseExperiment.isPending;
   const lastReleaseAt = data.facebookReleaseRequestedAt;
-  const lastReleaseLabel = lastReleaseAt ? formatDateTimeValue(lastReleaseAt) : null;
-  const canReleaseExperiment = isReadyForFacebook && data.platform === "FACEBOOK";
+  const lastReleaseLabel = lastReleaseAt
+    ? formatDateTimeValue(lastReleaseAt)
+    : null;
+  const canReleaseExperiment =
+    isReadyForFacebook && data.platform === "FACEBOOK";
   const releaseButtonDisabled =
     releaseInProgress || !canReleaseExperiment || isLoadingReadiness;
 
@@ -334,8 +342,12 @@ export default function ExperimentDetailPage() {
           : hasFacebookWorkerAccount
             ? "Existe uma conta conectada, mas o worker precisa ser reautorizado. Abra Contas do Facebook."
             : "Nenhuma conta conectada. Acesse Contas do Facebook e conecte a conta do Meta Ads.",
-      action: isFacebookWorkerReady ? undefined : () => navigate("/accounts/facebook"),
-      actionLabel: isFacebookWorkerReady ? undefined : "Abrir Contas do Facebook",
+      action: isFacebookWorkerReady
+        ? undefined
+        : () => navigate("/accounts/facebook"),
+      actionLabel: isFacebookWorkerReady
+        ? undefined
+        : "Abrir Contas do Facebook",
     },
     {
       id: "experiment-page",
@@ -376,7 +388,9 @@ export default function ExperimentDetailPage() {
       hint: hasDailyBudget
         ? `Investimento diário de ${formatCurrency(data.dailyBudget)}.`
         : "Defina o orçamento diário para orientar o worker de mídia.",
-      action: hasDailyBudget ? undefined : () => navigate(`/experiments/${expId}/edit`),
+      action: hasDailyBudget
+        ? undefined
+        : () => navigate(`/experiments/${expId}/edit`),
       actionLabel: hasDailyBudget ? undefined : "Editar experimento",
     },
   ];
@@ -419,16 +433,11 @@ export default function ExperimentDetailPage() {
             ? `Liberado para o worker em ${lastReleaseLabel}.`
             : "Status Planejado. Use o botão acima para liberar novamente se precisar reiniciar o funil."
           : "Use o botão de liberação para marcar como Planejado e disparar a publicação do worker.",
-      action:
-        data.status === "PLANNED"
-          ? undefined
-          : handleFacebookRelease,
-      actionLabel:
-        data.status === "PLANNED" ? undefined : "Liberar agora",
+      action: data.status === "PLANNED" ? undefined : handleFacebookRelease,
+      actionLabel: data.status === "PLANNED" ? undefined : "Liberar agora",
       actionDisabled:
         data.status === "PLANNED" ? undefined : releaseButtonDisabled,
-      actionLoading:
-        data.status === "PLANNED" ? undefined : releaseInProgress,
+      actionLoading: data.status === "PLANNED" ? undefined : releaseInProgress,
     },
   ];
   const checklistGroups = [
@@ -729,7 +738,9 @@ export default function ExperimentDetailPage() {
                   <li key={`${artifact.type}-${artifact.id}`}>
                     <strong>{artifact.type}</strong> ·{" "}
                     {artifact.name || artifact.id} — ID interno: {artifact.id}
-                    {artifact.externalId ? ` · ID Meta: ${artifact.externalId}` : ""}
+                    {artifact.externalId
+                      ? ` · ID Meta: ${artifact.externalId}`
+                      : ""}
                   </li>
                 ))}
               </ul>
@@ -750,8 +761,8 @@ export default function ExperimentDetailPage() {
             </span>
           </div>
           <p className="card-text mt-2">
-            Checklist consolidado das regras de publicação. Ele reflete o documento
-            interno e o diagnóstico automático do worker.
+            Checklist consolidado das regras de publicação. Ele reflete o
+            documento interno e o diagnóstico automático do worker.
           </p>
           {isLoadingReadiness ? (
             <div
@@ -767,13 +778,17 @@ export default function ExperimentDetailPage() {
             </div>
           ) : hasReadinessIssues ? (
             <div className="alert alert-warning mt-3" role="alert">
-              <h6 className="alert-heading mb-2">Pendências antes da publicação</h6>
+              <h6 className="alert-heading mb-2">
+                Pendências antes da publicação
+              </h6>
               <ul className="mb-0 ps-3">
                 {readinessIssues.map((issue, index) => (
                   <li key={`${issue.type}-${index}`} className="mb-2">
                     <strong>{issue.title}</strong>: {issue.description}
                     {issue.recommendation ? (
-                      <div className="small text-body-secondary">{issue.recommendation}</div>
+                      <div className="small text-body-secondary">
+                        {issue.recommendation}
+                      </div>
                     ) : null}
                   </li>
                 ))}
@@ -781,8 +796,9 @@ export default function ExperimentDetailPage() {
             </div>
           ) : (
             <div className="alert alert-secondary mt-3" role="status">
-              Nenhuma inconsistência detectada pelo worker. Este experimento pode
-              ser publicado quando você liberar o status e demais automações.
+              Nenhuma inconsistência detectada pelo worker. Este experimento
+              pode ser publicado quando você liberar o status e demais
+              automações.
             </div>
           )}
           <div className="mt-3 d-flex flex-column flex-lg-row align-items-start gap-3">
@@ -792,7 +808,9 @@ export default function ExperimentDetailPage() {
               onClick={handleFacebookRelease}
               disabled={releaseButtonDisabled}
             >
-              {releaseInProgress ? "Liberando..." : "Liberar para Facebook Ads Worker"}
+              {releaseInProgress
+                ? "Liberando..."
+                : "Liberar para Facebook Ads Worker"}
             </button>
             <div className="small text-body-secondary">
               {isReadyForFacebook
@@ -807,7 +825,9 @@ export default function ExperimentDetailPage() {
           </div>
           {checklistGroups.map((group, index) => (
             <div key={group.id} className={index === 0 ? "mt-3" : "mt-4"}>
-              <h6 className="text-uppercase small text-muted mb-1">{group.title}</h6>
+              <h6 className="text-uppercase small text-muted mb-1">
+                {group.title}
+              </h6>
               {group.description ? (
                 <p className="text-muted small mb-2">{group.description}</p>
               ) : null}
@@ -835,7 +855,9 @@ export default function ExperimentDetailPage() {
                     <div className="flex-grow-1">
                       <div className="fw-semibold text-body">{check.title}</div>
                       {check.hint ? (
-                        <div className="text-muted small mt-1">{check.hint}</div>
+                        <div className="text-muted small mt-1">
+                          {check.hint}
+                        </div>
                       ) : null}
                       {!check.isMet && check.action && check.actionLabel ? (
                         <button
@@ -860,11 +882,17 @@ export default function ExperimentDetailPage() {
             </div>
           ))}
           <div className="mt-4">
-            <h6 className="text-uppercase small text-muted">Execução registrada</h6>
+            <h6 className="text-uppercase small text-muted">
+              Execução registrada
+            </h6>
             {isLoadingFacebookCampaigns ? (
-              <p className="text-muted small mb-0">Carregando campanhas publicadas...</p>
+              <p className="text-muted small mb-0">
+                Carregando campanhas publicadas...
+              </p>
             ) : !facebookCampaigns?.length ? (
-              <p className="text-muted small mb-0">Nenhuma publicação registrada para este experimento.</p>
+              <p className="text-muted small mb-0">
+                Nenhuma publicação registrada para este experimento.
+              </p>
             ) : (
               <div className="d-flex flex-column gap-3">
                 {facebookCampaigns.map((campaign) => (
@@ -873,13 +901,21 @@ export default function ExperimentDetailPage() {
                       <div>
                         <div className="fw-semibold">{campaign.name}</div>
                         <div className="text-muted small">
-                          Objetivo: {campaign.objective ?? "—"} · Criada em {formatDateTimeValue(campaign.createdAt)}
+                          Objetivo: {campaign.objective ?? "—"} · Criada em{" "}
+                          {formatDateTimeValue(campaign.createdAt)}
                         </div>
                       </div>
-                      <span className={`badge text-bg-${campaign.status === "PAUSED" ? "secondary" : "success"}`}>{campaign.status}</span>
+                      <span
+                        className={`badge text-bg-${campaign.status === "PAUSED" ? "secondary" : "success"}`}
+                      >
+                        {campaign.status}
+                      </span>
                     </div>
                     {campaign.issues?.length ? (
-                      <div className="alert alert-warning mt-3 mb-2" role="alert">
+                      <div
+                        className="alert alert-warning mt-3 mb-2"
+                        role="alert"
+                      >
                         <ul className="mb-0 ps-3">
                           {campaign.issues.map((issue) => (
                             <li key={`${campaign.id}-${issue}`}>{issue}</li>
@@ -890,7 +926,10 @@ export default function ExperimentDetailPage() {
                     {campaign.adSets.length ? (
                       <div className="d-flex flex-column gap-3 mt-3">
                         {campaign.adSets.map((adSet) => (
-                          <div key={adSet.id} className="border rounded-3 p-3 bg-body-tertiary">
+                          <div
+                            key={adSet.id}
+                            className="border rounded-3 p-3 bg-body-tertiary"
+                          >
                             <div className="d-flex justify-content-between flex-wrap gap-2">
                               <div>
                                 <div className="fw-semibold">{adSet.name}</div>
@@ -898,10 +937,15 @@ export default function ExperimentDetailPage() {
                                   {adSet.experimentAdSetId
                                     ? `Segmento aprovado #${adSet.experimentAdSetId}`
                                     : "Sem vínculo com segmento aprovado"}
-                                  · {adSet.ads.length} anúncio{adSet.ads.length === 1 ? "" : "s"}
+                                  · {adSet.ads.length} anúncio
+                                  {adSet.ads.length === 1 ? "" : "s"}
                                 </div>
                               </div>
-                              <span className={`badge text-bg-${adSet.experimentAdSetId ? "success" : "warning"}`}>{adSet.status}</span>
+                              <span
+                                className={`badge text-bg-${adSet.experimentAdSetId ? "success" : "warning"}`}
+                              >
+                                {adSet.status}
+                              </span>
                             </div>
                             {adSet.issues?.length ? (
                               <ul className="text-warning small mb-0 mt-2 ps-3">
@@ -913,31 +957,52 @@ export default function ExperimentDetailPage() {
                             {adSet.ads.length ? (
                               <div className="mt-3 d-flex flex-column gap-2">
                                 {adSet.ads.map((ad) => (
-                                  <div key={ad.id} className="border rounded-3 p-3 bg-white">
+                                  <div
+                                    key={ad.id}
+                                    className="border rounded-3 p-3 bg-white"
+                                  >
                                     <div className="d-flex justify-content-between flex-wrap gap-2">
                                       <div>
-                                        <div className="fw-semibold">{ad.name}</div>
-                                        <div className="text-muted small">ID: {ad.id}</div>
+                                        <div className="fw-semibold">
+                                          {ad.name}
+                                        </div>
                                         <div className="text-muted small">
-                                          Referência de rastreio: {ad.trackingCode ?? "—"}
+                                          ID: {ad.id}
+                                        </div>
+                                        <div className="text-muted small">
+                                          Referência de rastreio:{" "}
+                                          {ad.trackingCode ?? "—"}
                                         </div>
                                       </div>
-                                      <span className={`badge text-bg-${ad.status === "PAUSED" ? "secondary" : "success"}`}>{ad.status}</span>
+                                      <span
+                                        className={`badge text-bg-${ad.status === "PAUSED" ? "secondary" : "success"}`}
+                                      >
+                                        {ad.status}
+                                      </span>
                                     </div>
-                                    {ad.funnelStages && ad.funnelStages.length ? (
+                                    {ad.funnelStages &&
+                                    ad.funnelStages.length ? (
                                       <div className="table-responsive mt-3">
                                         <table className="table table-sm align-middle mb-0">
                                           <thead>
                                             <tr>
                                               <th>Etapa</th>
-                                              <th className="text-end">Conversões</th>
+                                              <th className="text-end">
+                                                Conversões
+                                              </th>
                                             </tr>
                                           </thead>
                                           <tbody>
                                             {ad.funnelStages.map((stage) => (
-                                              <tr key={`${ad.id}-${stage.stage}`}>
-                                                <td>{stage.order}. {stage.label}</td>
-                                                <td className="text-end">{stage.totalCount}</td>
+                                              <tr
+                                                key={`${ad.id}-${stage.stage}`}
+                                              >
+                                                <td>
+                                                  {stage.order}. {stage.label}
+                                                </td>
+                                                <td className="text-end">
+                                                  {stage.totalCount}
+                                                </td>
                                               </tr>
                                             ))}
                                           </tbody>
@@ -945,7 +1010,8 @@ export default function ExperimentDetailPage() {
                                       </div>
                                     ) : (
                                       <div className="text-muted small mt-2">
-                                        Nenhuma conversão atribuída a este anúncio ainda.
+                                        Nenhuma conversão atribuída a este
+                                        anúncio ainda.
                                       </div>
                                     )}
                                   </div>
@@ -960,7 +1026,9 @@ export default function ExperimentDetailPage() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-muted small mb-0 mt-3">Nenhum conjunto de anúncios registrado.</p>
+                      <p className="text-muted small mb-0 mt-3">
+                        Nenhum conjunto de anúncios registrado.
+                      </p>
                     )}
                   </div>
                 ))}
@@ -979,10 +1047,16 @@ export default function ExperimentDetailPage() {
               </p>
             </div>
             <div className="d-flex flex-wrap gap-2">
-              <Link to="adset-workflow" className="btn btn-outline-primary btn-sm">
+              <Link
+                to="adset-workflow"
+                className="btn btn-outline-primary btn-sm"
+              >
                 Ver playbook
               </Link>
-              <Link to="facebook-api-logs" className="btn btn-outline-secondary btn-sm">
+              <Link
+                to="facebook-api-logs"
+                className="btn btn-outline-secondary btn-sm"
+              >
                 Logs da Graph API
               </Link>
             </div>
@@ -992,15 +1066,24 @@ export default function ExperimentDetailPage() {
           ) : adSetWorkflow ? (
             <>
               <div className="d-flex flex-wrap gap-3 align-items-center mt-3">
-                <span className={`badge text-bg-${workflowStatusVariant[adSetWorkflow.status ?? "NOT_STARTED"] ?? "secondary"}`}>
+                <span
+                  className={`badge text-bg-${workflowStatusVariant[adSetWorkflow.status ?? "NOT_STARTED"] ?? "secondary"}`}
+                >
                   {workflowStatusLabel[adSetWorkflow.status ?? "NOT_STARTED"]}
                 </span>
                 <div className="small text-muted">
-                  Specs prontas: {adSetWorkflow.specs?.filter((spec) => spec.reachStatus?.toUpperCase() === "READY").length ?? 0} / {adSetWorkflow.specs?.length ?? 0}
+                  Specs prontas:{" "}
+                  {adSetWorkflow.specs?.filter(
+                    (spec) => spec.reachStatus?.toUpperCase() === "READY",
+                  ).length ?? 0}{" "}
+                  / {adSetWorkflow.specs?.length ?? 0}
                 </div>
                 <div className="small text-muted">
-                  Última atualização: {formatDateTimeValue(
-                    adSetWorkflow.updatedAt ?? adSetWorkflow.completedAt ?? adSetWorkflow.createdAt,
+                  Última atualização:{" "}
+                  {formatDateTimeValue(
+                    adSetWorkflow.updatedAt ??
+                      adSetWorkflow.completedAt ??
+                      adSetWorkflow.createdAt,
                   )}
                 </div>
               </div>
@@ -1012,7 +1095,8 @@ export default function ExperimentDetailPage() {
             </>
           ) : (
             <p className="text-muted small mt-3 mb-0">
-              Este experimento ainda não iniciou o playbook de públicos. Use o botão acima para configurar.
+              Este experimento ainda não iniciou o playbook de públicos. Use o
+              botão acima para configurar.
             </p>
           )}
         </div>
@@ -1104,6 +1188,9 @@ export default function ExperimentDetailPage() {
           </Tabs.Trigger>
           <Tabs.Trigger value="deliverables" className="nav-link">
             Entregáveis
+          </Tabs.Trigger>
+          <Tabs.Trigger value="content-structure" className="nav-link">
+            Estrutura de conteúdo
           </Tabs.Trigger>
         </Tabs.List>
         <Tabs.Content value="overview" asChild>
@@ -1226,9 +1313,17 @@ export default function ExperimentDetailPage() {
         <Tabs.Content value="deliverables" asChild>
           <DeliverablesTab experiment={data} nicheName={niche?.name} />
         </Tabs.Content>
+        <Tabs.Content value="content-structure" asChild>
+          <ExperimentContentGenerationTab hypothesis={hyp} />
+        </Tabs.Content>
       </Tabs.Root>
       {isResetModalOpen ? (
-        <div className="modal d-block" tabIndex={-1} role="dialog" aria-modal="true">
+        <div
+          className="modal d-block"
+          tabIndex={-1}
+          role="dialog"
+          aria-modal="true"
+        >
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
@@ -1243,8 +1338,10 @@ export default function ExperimentDetailPage() {
               </div>
               <div className="modal-body">
                 <p>
-                  Este reset apaga campanhas, conjuntos e anúncios que foram salvos apenas localmente e ainda não
-                  possuem ID do Meta. Utilize a ação quando quiser recomeçar a publicação do experimento do zero.
+                  Este reset apaga campanhas, conjuntos e anúncios que foram
+                  salvos apenas localmente e ainda não possuem ID do Meta.
+                  Utilize a ação quando quiser recomeçar a publicação do
+                  experimento do zero.
                 </p>
                 {previewErrorMessage ? (
                   <div className="alert alert-danger" role="alert">
@@ -1252,7 +1349,11 @@ export default function ExperimentDetailPage() {
                   </div>
                 ) : isFetchingResetPreview ? (
                   <div className="d-flex align-items-center gap-2">
-                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                    <span
+                      className="spinner-border spinner-border-sm"
+                      role="status"
+                      aria-hidden="true"
+                    />
                     <span>Calculando itens que serão removidos...</span>
                   </div>
                 ) : hasItemsToReset ? (
@@ -1260,29 +1361,39 @@ export default function ExperimentDetailPage() {
                     <tbody>
                       <tr>
                         <td>Campanhas locais sem ID do Meta</td>
-                        <td className="text-end fw-semibold">{resetPreviewSummary.campaigns}</td>
+                        <td className="text-end fw-semibold">
+                          {resetPreviewSummary.campaigns}
+                        </td>
                       </tr>
                       <tr>
                         <td>Conjuntos de anúncios</td>
-                        <td className="text-end fw-semibold">{resetPreviewSummary.adSets}</td>
+                        <td className="text-end fw-semibold">
+                          {resetPreviewSummary.adSets}
+                        </td>
                       </tr>
                       <tr>
                         <td>Anúncios</td>
-                        <td className="text-end fw-semibold">{resetPreviewSummary.ads}</td>
+                        <td className="text-end fw-semibold">
+                          {resetPreviewSummary.ads}
+                        </td>
                       </tr>
                       <tr>
                         <td>Criativos vinculados</td>
-                        <td className="text-end fw-semibold">{resetPreviewSummary.creatives}</td>
+                        <td className="text-end fw-semibold">
+                          {resetPreviewSummary.creatives}
+                        </td>
                       </tr>
                     </tbody>
                   </table>
                 ) : (
                   <p className="text-muted mb-0">
-                    Nenhuma campanha sem ID do Meta foi encontrada para este experimento.
+                    Nenhuma campanha sem ID do Meta foi encontrada para este
+                    experimento.
                   </p>
                 )}
                 <p className="text-muted small mt-3 mb-0">
-                  Somente ativos sem ID do Meta serão excluídos. Tudo que já foi publicado permanece intacto.
+                  Somente ativos sem ID do Meta serão excluídos. Tudo que já foi
+                  publicado permanece intacto.
                 </p>
               </div>
               <div className="modal-footer">

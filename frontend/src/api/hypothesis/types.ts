@@ -11,6 +11,7 @@ export interface HypothesisFrameworkPain {
   emotional?: string;
   social?: string;
   cost?: string;
+  summary?: string;
 }
 
 export interface HypothesisFrameworkResult {
@@ -18,6 +19,7 @@ export interface HypothesisFrameworkResult {
   desiredIdentity?: string;
   businessOutcome?: string;
   successSignal?: string;
+  summary?: string;
 }
 
 export interface HypothesisFrameworkMechanism {
@@ -25,6 +27,7 @@ export interface HypothesisFrameworkMechanism {
   unique?: string;
   visible?: string;
   believability?: string;
+  summary?: string;
 }
 
 export interface HypothesisFrameworkProof {
@@ -32,6 +35,7 @@ export interface HypothesisFrameworkProof {
   asset?: string;
   message?: string;
   deliveryStage?: string;
+  summary?: string;
 }
 
 export interface HypothesisFrameworkOffer {
@@ -43,6 +47,7 @@ export interface HypothesisFrameworkOffer {
   cta?: string;
   priceAmount?: number;
   offerType?: string;
+  summary?: string;
 }
 
 export interface HypothesisFrameworkChecklist {

@@ -119,6 +119,7 @@ public class HypothesisFrameworkMapperSupport {
         base.setEmotional(firstNonBlank(partial.getEmotional(), base.getEmotional()));
         base.setSocial(firstNonBlank(partial.getSocial(), base.getSocial()));
         base.setCost(firstNonBlank(partial.getCost(), base.getCost()));
+        base.setSummary(firstNonBlank(partial.getSummary(), base.getSummary()));
         return base;
     }
 
@@ -128,6 +129,7 @@ public class HypothesisFrameworkMapperSupport {
         base.setDesiredIdentity(firstNonBlank(partial.getDesiredIdentity(), base.getDesiredIdentity()));
         base.setBusinessOutcome(firstNonBlank(partial.getBusinessOutcome(), base.getBusinessOutcome()));
         base.setSuccessSignal(firstNonBlank(partial.getSuccessSignal(), base.getSuccessSignal()));
+        base.setSummary(firstNonBlank(partial.getSummary(), base.getSummary()));
         return base;
     }
 
@@ -137,6 +139,7 @@ public class HypothesisFrameworkMapperSupport {
         base.setUnique(firstNonBlank(partial.getUnique(), base.getUnique()));
         base.setVisible(firstNonBlank(partial.getVisible(), base.getVisible()));
         base.setBelievability(firstNonBlank(partial.getBelievability(), base.getBelievability()));
+        base.setSummary(firstNonBlank(partial.getSummary(), base.getSummary()));
         return base;
     }
 
@@ -146,6 +149,7 @@ public class HypothesisFrameworkMapperSupport {
         base.setAsset(firstNonBlank(partial.getAsset(), base.getAsset()));
         base.setMessage(firstNonBlank(partial.getMessage(), base.getMessage()));
         base.setDeliveryStage(firstNonBlank(partial.getDeliveryStage(), base.getDeliveryStage()));
+        base.setSummary(firstNonBlank(partial.getSummary(), base.getSummary()));
         return base;
     }
 
@@ -161,6 +165,7 @@ public class HypothesisFrameworkMapperSupport {
             base.setPriceAmount(partial.getPriceAmount());
         }
         base.setOfferType(firstNonBlank(partial.getOfferType(), base.getOfferType()));
+        base.setSummary(firstNonBlank(partial.getSummary(), base.getSummary()));
         return base;
     }
 
@@ -231,29 +236,34 @@ public class HypothesisFrameworkMapperSupport {
 
     private boolean hasPainContent(HypothesisFrameworkDto.Pain pain) {
         return pain != null && (hasText(pain.getSurface()) || hasText(pain.getRoot())
-                || hasText(pain.getEmotional()) || hasText(pain.getSocial()) || hasText(pain.getCost()));
+                || hasText(pain.getEmotional()) || hasText(pain.getSocial()) || hasText(pain.getCost())
+                || hasText(pain.getSummary()));
     }
 
     private boolean hasResultContent(HypothesisFrameworkDto.Result result) {
         return result != null && (hasText(result.getDesiredResult()) || hasText(result.getDesiredIdentity())
-                || hasText(result.getBusinessOutcome()) || hasText(result.getSuccessSignal()));
+                || hasText(result.getBusinessOutcome()) || hasText(result.getSuccessSignal())
+                || hasText(result.getSummary()));
     }
 
     private boolean hasMechanismContent(HypothesisFrameworkDto.Mechanism mechanism) {
         return mechanism != null && (hasText(mechanism.getCore()) || hasText(mechanism.getUnique())
-                || hasText(mechanism.getVisible()) || hasText(mechanism.getBelievability()));
+                || hasText(mechanism.getVisible()) || hasText(mechanism.getBelievability())
+                || hasText(mechanism.getSummary()));
     }
 
     private boolean hasProofContent(HypothesisFrameworkDto.Proof proof) {
         return proof != null && (hasText(proof.getType()) || hasText(proof.getAsset())
-                || hasText(proof.getMessage()) || hasText(proof.getDeliveryStage()));
+                || hasText(proof.getMessage()) || hasText(proof.getDeliveryStage())
+                || hasText(proof.getSummary()));
     }
 
     private boolean hasOfferContent(HypothesisFrameworkDto.Offer offer) {
         return offer != null && (hasText(offer.getName()) || hasText(offer.getCorePromise())
                 || hasText(offer.getDeliverables()) || hasText(offer.getRiskReversal())
                 || hasText(offer.getPriceLogic()) || hasText(offer.getCta())
-                || offer.getPriceAmount() != null || hasText(offer.getOfferType()));
+                || offer.getPriceAmount() != null || hasText(offer.getOfferType())
+                || hasText(offer.getSummary()));
     }
 
     private boolean hasText(String value) {

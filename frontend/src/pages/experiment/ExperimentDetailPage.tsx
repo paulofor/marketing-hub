@@ -1314,7 +1314,11 @@ export default function ExperimentDetailPage() {
           <DeliverablesTab experiment={data} nicheName={niche?.name} />
         </Tabs.Content>
         <Tabs.Content value="content-structure" asChild>
-          <ExperimentContentGenerationTab hypothesis={hyp} />
+          <ExperimentContentGenerationTab
+            experimentId={expId}
+            experimentName={data?.name}
+            hypothesis={hyp}
+          />
         </Tabs.Content>
       </Tabs.Root>
       {isResetModalOpen ? (

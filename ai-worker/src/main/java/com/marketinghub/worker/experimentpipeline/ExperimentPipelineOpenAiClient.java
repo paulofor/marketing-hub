@@ -125,6 +125,53 @@ public class ExperimentPipelineOpenAiClient {
             faqSection,
             closingCTA
             """;
+    private static final String LANDING_LAYOUT_PROMPT_SUFFIX = """
+            Contexto do nicho: {nicho}
+            Persona: {persona}
+            Promessa principal: {primaryPromise}
+            CTA principal: {cta}
+
+            Textos da landing já definidos:
+            - Hero: {heroTitle}
+            - Subtítulo: {heroSubtitle}
+            - Benefícios: {benefitsSection}
+            - Como funciona: {howItWorksSection}
+            - Prova: {proofSection}
+            - Oferta: {offerSection}
+            - FAQ: {faqSection}
+
+            Objetivo:
+            Criar o wireframe textual da landing page.
+
+            Regras:
+            1. A página deve ser mobile-first.
+            2. O hero e o formulário devem aparecer sem exigir muito scroll.
+            3. O layout deve seguir esta lógica:
+               - promessa
+               - credibilidade
+               - mecanismo simples
+               - prova
+               - CTA
+            4. Cada seção deve ter uma função clara.
+            5. O CTA principal deve reaparecer em pontos estratégicos.
+            6. O layout deve minimizar atrito e reforçar continuidade com o anúncio.
+            7. Não criar seções desnecessárias.
+
+            Formato esperado:
+            JSON com:
+            pageGoal,
+            sectionOrder [
+              {
+                "sectionName": "",
+                "objective": "",
+                "contentType": "",
+                "uiNotes": ""
+              }
+            ],
+            mobilePriorityNotes,
+            ctaPlacementNotes,
+            formPlacementNotes
+            """;
 
     private final ObjectMapper objectMapper;
     private final WebClient webClient;
@@ -221,6 +268,9 @@ public class ExperimentPipelineOpenAiClient {
         if (isLandingCopySection(job) && !base.contains("heroTitle,")) {
             return base + "\n\n" + LANDING_COPY_PROMPT_SUFFIX;
         }
+        if (isLandingLayoutSection(job) && !base.contains("pageGoal,")) {
+            return base + "\n\n" + LANDING_LAYOUT_PROMPT_SUFFIX;
+        }
         return base;
     }
 
@@ -241,5 +291,16 @@ public class ExperimentPipelineOpenAiClient {
                 || "landing-page_copy".equals(normalized)
                 || "landing-copy".equals(normalized)
                 || "landing_copy".equals(normalized);
+    }
+
+    private boolean isLandingLayoutSection(ExperimentPipelineJobDto job) {
+        if (job == null || !StringUtils.hasText(job.section())) {
+            return false;
+        }
+        String normalized = job.section().trim().toLowerCase(Locale.ROOT);
+        return "landing-page-wireframe".equals(normalized)
+                || "landing-page_wireframe".equals(normalized)
+                || "landing-layout".equals(normalized)
+                || "landing_layout".equals(normalized);
     }
 }

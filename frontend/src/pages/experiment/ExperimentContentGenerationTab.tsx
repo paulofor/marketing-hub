@@ -111,10 +111,59 @@ primaryTextVariants [
   }
 ]`;
 
+const LANDING_LAYOUT_PROMPT_TEMPLATE = `${COMMON_PIPELINE_PROMPT}
+
+Contexto do nicho: {nicho}
+Persona: {persona}
+Promessa principal: {primaryPromise}
+CTA principal: {cta}
+
+Textos da landing já definidos:
+- Hero: {heroTitle}
+- Subtítulo: {heroSubtitle}
+- Benefícios: {benefitsSection}
+- Como funciona: {howItWorksSection}
+- Prova: {proofSection}
+- Oferta: {offerSection}
+- FAQ: {faqSection}
+
+Objetivo:
+Criar o wireframe textual da landing page.
+
+Regras:
+1. A página deve ser mobile-first.
+2. O hero e o formulário devem aparecer sem exigir muito scroll.
+3. O layout deve seguir esta lógica:
+   - promessa
+   - credibilidade
+   - mecanismo simples
+   - prova
+   - CTA
+4. Cada seção deve ter uma função clara.
+5. O CTA principal deve reaparecer em pontos estratégicos.
+6. O layout deve minimizar atrito e reforçar continuidade com o anúncio.
+7. Não criar seções desnecessárias.
+
+Formato esperado:
+JSON com:
+pageGoal,
+sectionOrder [
+  {
+    "sectionName": "",
+    "objective": "",
+    "contentType": "",
+    "uiNotes": ""
+  }
+],
+mobilePriorityNotes,
+ctaPlacementNotes,
+formPlacementNotes`;
+
 const SECTION_PROMPT_DEFAULTS: Partial<
   Record<ContentGenerationSectionKey, string>
 > = {
   "ad-copy": AD_COPY_PROMPT_TEMPLATE,
+  "landing-layout": LANDING_LAYOUT_PROMPT_TEMPLATE,
 };
 
 interface ExperimentContentGenerationTabProps {

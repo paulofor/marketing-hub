@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import * as Tabs from "@radix-ui/react-tabs";
+import axios from "axios";
 import type { Hypothesis } from "../../api/hypothesis/useHypothesisBoard";
 
 type ContentGenerationSectionKey =
@@ -167,18 +168,104 @@ const SECTION_PROMPT_DEFAULTS: Partial<
 };
 
 interface ExperimentContentGenerationTabProps {
+  experimentId: string;
+  experimentName?: string;
   hypothesis?: Hypothesis;
 }
+
+interface AiGenerationRecord {
+  id: number;
+  domain: string;
+  model?: string;
+  prompt?: string;
+  rawResponse?: string;
+  createdAt?: string;
+}
+
+interface PageResponse<T> {
+  content: T[];
+}
+
+interface PipelineReportRecord extends AiGenerationRecord {
+  metadata: {
+    sectionKey: ContentGenerationSectionKey;
+    sectionLabel: string;
+    sectionOrder: number;
+  };
+}
+
+const REPORT_SECTION_ORDER: ContentGenerationSectionKey[] = [
+  "campaign-angle",
+  "ad-copy",
+  "image-prompt",
+  "landing-copy",
+  "landing-layout",
+];
+
+const REPORT_DOMAIN_ALIASES: Record<string, ContentGenerationSectionKey> = {
+  "campaign-angle": "campaign-angle",
+  "ad-copy": "ad-copy",
+  "ad-image-briefing": "image-prompt",
+  "image-prompt": "image-prompt",
+  "landing-page-copy": "landing-copy",
+  "landing-copy": "landing-copy",
+  "landing-page-wireframe": "landing-layout",
+  "landing-layout": "landing-layout",
+};
 
 function getFrameworkSummary(value?: string) {
   return value?.trim() || "Resumo ainda não preenchido na hipótese.";
 }
 
+function formatDateTime(value?: string) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function parseTimestamp(value?: string) {
+  if (!value) return undefined;
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+function getSectionMetadata(domain?: string) {
+  if (!domain?.startsWith("experiment.pipeline.")) {
+    return undefined;
+  }
+
+  const suffix = domain.replace("experiment.pipeline.", "");
+  const sectionKey = REPORT_DOMAIN_ALIASES[suffix];
+  if (!sectionKey) return undefined;
+
+  const sectionOrder = REPORT_SECTION_ORDER.indexOf(sectionKey);
+  if (sectionOrder < 0) return undefined;
+
+  const sectionLabel =
+    CONTENT_GENERATION_SECTIONS.find((section) => section.key === sectionKey)
+      ?.label ?? sectionKey;
+
+  return {
+    sectionKey,
+    sectionLabel,
+    sectionOrder,
+  };
+}
+
 export default function ExperimentContentGenerationTab({
+  experimentId,
+  experimentName,
   hypothesis,
 }: ExperimentContentGenerationTabProps) {
   const [activeSection, setActiveSection] =
     useState<ContentGenerationSectionKey>(CONTENT_GENERATION_SECTIONS[0].key);
+  const [isDownloadingReport, setIsDownloadingReport] = useState(false);
 
   const frameworkContext = useMemo(
     () => ({
@@ -204,8 +291,102 @@ export default function ExperimentContentGenerationTab({
     );
   };
 
+  const handleDownloadReport = async () => {
+    try {
+      setIsDownloadingReport(true);
+      const { data: response } = await axios.get<
+        PageResponse<AiGenerationRecord>
+      >("/api/ai/generations", {
+        params: {
+          referenceId: experimentId,
+          size: 100,
+        },
+      });
+
+      const pipelineGenerations: PipelineReportRecord[] = (response.content ?? [])
+        .map((item) => ({
+          ...item,
+          metadata: getSectionMetadata(item.domain),
+        }))
+        .filter((item): item is PipelineReportRecord => item.metadata != null)
+        .sort((a, b) => {
+          if (a.metadata.sectionOrder !== b.metadata.sectionOrder) {
+            return a.metadata.sectionOrder - b.metadata.sectionOrder;
+          }
+          return (
+            (parseTimestamp(a.createdAt) ?? Number.MAX_SAFE_INTEGER) -
+            (parseTimestamp(b.createdAt) ?? Number.MAX_SAFE_INTEGER)
+          );
+        });
+
+      const reportLines = [
+        "# Relatório consolidado do pipeline de conteúdo do experimento",
+        "",
+        `Experimento: ${experimentName?.trim() || `#${experimentId}`}`,
+        `Hipótese vinculada: ${hypothesis?.title?.trim() || "Não informada"}`,
+        "",
+        "## Prompts e resultados produzidos por seção",
+        ...(pipelineGenerations.length === 0
+          ? [
+              "Nenhuma geração de IA do pipeline de experimento foi encontrada para este experimento.",
+            ]
+          : pipelineGenerations.flatMap((generation, index) => [
+              `### ${index + 1}. ${generation.metadata.sectionLabel}`,
+              `- Data: ${formatDateTime(generation.createdAt)}`,
+              `- Modelo: ${generation.model ?? "Não informado"}`,
+              "",
+              "**Prompt**",
+              "```text",
+              generation.prompt?.trim() || "Sem prompt registrado.",
+              "```",
+              "",
+              "**Resultado**",
+              "```text",
+              generation.rawResponse?.trim() || "Sem resposta registrada.",
+              "```",
+              "",
+            ])),
+      ];
+
+      const markdown = reportLines.join("\n");
+      const blob = new Blob([markdown], { type: "text/markdown" });
+      const url = URL.createObjectURL(blob);
+      const downloadLink = document.createElement("a");
+      downloadLink.href = url;
+      downloadLink.download = `relatorio-pipeline-experimento-${experimentId}.md`;
+      downloadLink.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Não foi possível baixar o relatório consolidado agora.");
+    } finally {
+      setIsDownloadingReport(false);
+    }
+  };
+
   return (
     <div className="mt-3 d-flex flex-column gap-3">
+      <div className="d-flex justify-content-end">
+        <button
+          type="button"
+          className="btn btn-outline-secondary btn-sm"
+          onClick={handleDownloadReport}
+          disabled={isDownloadingReport}
+        >
+          {isDownloadingReport ? (
+            <span className="d-inline-flex align-items-center gap-1">
+              <span
+                className="spinner-border spinner-border-sm"
+                role="status"
+                aria-hidden="true"
+              />
+              Gerando relatório...
+            </span>
+          ) : (
+            "Baixar relatório consolidado"
+          )}
+        </button>
+      </div>
+
       <section className="card">
         <div className="card-body">
           <h5 className="card-title mb-1">Contexto do framework da hipótese</h5>

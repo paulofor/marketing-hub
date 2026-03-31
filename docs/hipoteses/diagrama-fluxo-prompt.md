@@ -1,4 +1,6 @@
+# Diagrama em Mermaid
 
+```mermaid
 flowchart TB
 
     subgraph Fluxo_Principal
@@ -37,3 +39,4 @@ flowchart TB
     M --> RM
     P --> RP
     O --> RO
+```

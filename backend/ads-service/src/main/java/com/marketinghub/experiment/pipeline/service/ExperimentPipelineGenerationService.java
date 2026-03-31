@@ -38,6 +38,24 @@ public class ExperimentPipelineGenerationService {
     private static final String DEFAULT_MODEL = "gpt-5.2";
     private static final Duration STALE_PENDING_TIMEOUT = Duration.ofMinutes(10);
     private static final Duration STALE_PROCESSING_TIMEOUT = Duration.ofMinutes(20);
+    private static final String COMMON_CAMPAIGN_ASSET_RULES = """
+            Você cria ativos de campanha para o Marketing Hub.
+
+            Regras globais:
+            1. O anúncio e a landing devem ter a mesma promessa central.
+            2. O CTA do anúncio deve combinar com a ação principal da landing.
+            3. O material precisa caber no envelope real do produto:
+               - pode entregar ativos digitais gerados por IA
+               - não pode prometer consultoria, call, gestão humana ou acompanhamento manual
+            4. Priorize clareza comercial:
+               DOR → RESULTADO → MECANISMO → PROVA → AÇÃO
+            5. Não transforme mecanismo em promessa principal.
+            6. Não use jargão técnico desnecessário.
+            7. O público é geral dentro do nicho, com baixa a moderada maturidade em marketing.
+            8. Sempre escreva pensando em alta escala e geração automatizada.
+            9. O anúncio deve ser rápido de entender.
+            10. A landing deve aprofundar a promessa e reduzir ceticismo.
+            """;
 
     private final ExperimentRepository experimentRepository;
     private final ExperimentPipelineGenerationJobRepository jobRepository;
@@ -266,6 +284,7 @@ public class ExperimentPipelineGenerationService {
         }
         sb.append("\nTarefa alvo: ").append(section.path()).append("\n");
         appendPreviousOutputs(sb, experiment, section);
+        appendSectionPrompt(sb, experiment, section);
         if (StringUtils.hasText(customInstructions)) {
             sb.append("\nInstruções extras do usuário:\n").append(customInstructions.trim()).append("\n");
         }
@@ -301,10 +320,86 @@ public class ExperimentPipelineGenerationService {
     }
 
     private String buildSystemPrompt(ExperimentPipelineSection section) {
-        return "Você é especialista em marketing direto e criação de ativos para performance. "
-                + "Escreva em português do Brasil, de forma clara e vendável. "
-                + "Seção atual: " + section.path() + ". "
-                + "Considere as dependências anteriores já geradas e mantenha consistência entre elas.";
+        return switch (section) {
+            case AD_COPY -> "Você é redator especialista em Meta Ads e copy de resposta direta. "
+                    + "Escreva em português do Brasil, com clareza comercial e sem jargões técnicos desnecessários. "
+                    + "Siga rigorosamente as regras e o formato solicitado no prompt do usuário.";
+            default -> "Você é especialista em marketing direto e criação de ativos para performance. "
+                    + "Escreva em português do Brasil, de forma clara e vendável. "
+                    + "Seção atual: " + section.path() + ". "
+                    + "Considere as dependências anteriores já geradas e mantenha consistência entre elas.";
+        };
+    }
+
+    private void appendSectionPrompt(StringBuilder sb,
+                                     Experiment experiment,
+                                     ExperimentPipelineSection section) {
+        if (section != ExperimentPipelineSection.AD_COPY) {
+            return;
+        }
+
+        String niche = experiment.getNiche() != null ? nonBlank(experiment.getNiche().getName()) : "";
+        String campaignAngle = nonBlank(experiment.getCampaignAngle());
+        String primaryPain = experiment.getHypothesisRef() != null
+                ? nonBlank(experiment.getHypothesisRef().getProblem())
+                : "";
+        String primaryPromise = experiment.getHypothesisRef() != null
+                ? nonBlank(experiment.getHypothesisRef().getPromise())
+                : "";
+        String mechanismSummary = experiment.getHypothesisRef() != null
+                ? nonBlank(experiment.getHypothesisRef().getMechanism())
+                : "";
+        String proofSummary = nonBlank(experiment.getHypothesis());
+
+        sb.append("\nDiretriz específica para texto do anúncio:\n");
+        sb.append(COMMON_CAMPAIGN_ASSET_RULES).append("\n");
+        sb.append("Contexto do nicho: ").append(niche).append("\n\n");
+        sb.append("Ângulo da campanha: ").append(campaignAngle).append("\n");
+        sb.append("Dor principal: ").append(primaryPain).append("\n");
+        sb.append("Promessa principal: ").append(primaryPromise).append("\n");
+        sb.append("Mecanismo resumido: ").append(mechanismSummary).append("\n");
+        sb.append("Prova resumida: ").append(proofSummary).append("\n\n");
+        sb.append("Objetivo do anúncio:\n");
+        sb.append("Gerar clique qualificado para a landing page.\n\n");
+        sb.append("Regras:\n");
+        sb.append("1. O texto do anúncio deve ser entendido em poucos segundos.\n");
+        sb.append("2. A primeira linha deve abrir com dor, consequência ou resultado desejado.\n");
+        sb.append("3. O mecanismo deve aparecer só depois do benefício principal.\n");
+        sb.append("4. O anúncio não pode parecer consultoria.\n");
+        sb.append("5. A promessa precisa ser compatível com ativos digitais gerados por IA.\n");
+        sb.append("6. Não usar jargão de tráfego pago.\n");
+        sb.append("7. Criar 3 variações:\n");
+        sb.append("   - V1 focada na dor\n");
+        sb.append("   - V2 focada no resultado\n");
+        sb.append("   - V3 focada na prova\n");
+        sb.append("8. O CTA deve combinar exatamente com a landing.\n");
+        sb.append("9. Entregar texto pensado para Meta Ads.\n\n");
+        sb.append("No campo content, entregue apenas o JSON abaixo sem texto adicional:\n");
+        sb.append("{\n");
+        sb.append("  \"primaryTextVariants\": [\n");
+        sb.append("    {\n");
+        sb.append("      \"label\": \"dor\",\n");
+        sb.append("      \"primaryText\": \"\",\n");
+        sb.append("      \"headline\": \"\",\n");
+        sb.append("      \"description\": \"\",\n");
+        sb.append("      \"ctaText\": \"\"\n");
+        sb.append("    },\n");
+        sb.append("    {\n");
+        sb.append("      \"label\": \"resultado\",\n");
+        sb.append("      \"primaryText\": \"\",\n");
+        sb.append("      \"headline\": \"\",\n");
+        sb.append("      \"description\": \"\",\n");
+        sb.append("      \"ctaText\": \"\"\n");
+        sb.append("    },\n");
+        sb.append("    {\n");
+        sb.append("      \"label\": \"prova\",\n");
+        sb.append("      \"primaryText\": \"\",\n");
+        sb.append("      \"headline\": \"\",\n");
+        sb.append("      \"description\": \"\",\n");
+        sb.append("      \"ctaText\": \"\"\n");
+        sb.append("    }\n");
+        sb.append("  ]\n");
+        sb.append("}\n");
     }
 
     private void appendPreviousOutputs(StringBuilder sb,

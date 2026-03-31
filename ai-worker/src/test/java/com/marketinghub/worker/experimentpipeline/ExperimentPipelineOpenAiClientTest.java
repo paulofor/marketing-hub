@@ -128,7 +128,7 @@ class ExperimentPipelineOpenAiClientTest {
     }
 
     @SuppressWarnings("unchecked")
-    private Mono<String> readBodyAsString(BodyInserter<?, ? super org.springframework.http.ReactiveHttpOutputMessage> bodyInserter) {
+    private <T extends org.springframework.http.ReactiveHttpOutputMessage> Mono<String> readBodyAsString(BodyInserter<?, ? super T> bodyInserter) {
         MockClientHttpRequest mockRequest = new MockClientHttpRequest(org.springframework.http.HttpMethod.POST, "http://localhost");
         BodyInserter.Context context = new BodyInserter.Context() {
             @Override
@@ -147,8 +147,8 @@ class ExperimentPipelineOpenAiClientTest {
             }
         };
 
-        return ((BodyInserter<Object, ? super org.springframework.http.ReactiveHttpOutputMessage>) bodyInserter)
-                .insert(mockRequest, context)
+        return ((BodyInserter<Object, T>) bodyInserter)
+                .insert((T) mockRequest, context)
                 .then(Mono.defer(() ->
                         mockRequest.getBodyAsString().defaultIfEmpty("")));
     }

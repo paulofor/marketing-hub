@@ -30,7 +30,7 @@ const CONTENT_GENERATION_SECTIONS: ContentGenerationSection[] = [
     label: "Texto do Anuncio",
     description:
       "Gere textos com foco em promessa, objeções e chamada para ação.",
-    defaultQuantity: 5,
+    defaultQuantity: 3,
   },
   {
     key: "image-prompt",
@@ -54,6 +54,68 @@ const CONTENT_GENERATION_SECTIONS: ContentGenerationSection[] = [
     defaultQuantity: 2,
   },
 ];
+
+const COMMON_PIPELINE_PROMPT = `Você cria ativos de campanha para o Marketing Hub.
+
+Regras globais:
+1. O anúncio e a landing devem ter a mesma promessa central.
+2. O CTA do anúncio deve combinar com a ação principal da landing.
+3. O material precisa caber no envelope real do produto:
+   - pode entregar ativos digitais gerados por IA
+   - não pode prometer consultoria, call, gestão humana ou acompanhamento manual
+4. Priorize clareza comercial:
+   DOR → RESULTADO → MECANISMO → PROVA → AÇÃO
+5. Não transforme mecanismo em promessa principal.
+6. Não use jargão técnico desnecessário.
+7. O público é geral dentro do nicho, com baixa a moderada maturidade em marketing.
+8. Sempre escreva pensando em alta escala e geração automatizada.
+9. O anúncio deve ser rápido de entender.
+10. A landing deve aprofundar a promessa e reduzir ceticismo.`;
+
+const AD_COPY_PROMPT_TEMPLATE = `${COMMON_PIPELINE_PROMPT}
+
+Contexto do nicho: {nicho}
+
+Ângulo da campanha: {campaignAngle}
+Dor principal: {primaryPain}
+Promessa principal: {primaryPromise}
+Mecanismo resumido: {mechanismSummary}
+Prova resumida: {proofSummary}
+
+Objetivo do anúncio:
+Gerar clique qualificado para a landing page.
+
+Regras:
+1. O texto do anúncio deve ser entendido em poucos segundos.
+2. A primeira linha deve abrir com dor, consequência ou resultado desejado.
+3. O mecanismo deve aparecer só depois do benefício principal.
+4. O anúncio não pode parecer consultoria.
+5. A promessa precisa ser compatível com ativos digitais gerados por IA.
+6. Não usar jargão de tráfego pago.
+7. Criar 3 variações:
+   - V1 focada na dor
+   - V2 focada no resultado
+   - V3 focada na prova
+8. O CTA deve combinar exatamente com a landing.
+9. Entregar texto pensado para Meta Ads.
+
+Formato esperado:
+JSON com:
+primaryTextVariants [
+  {
+    "label": "dor|resultado|prova",
+    "primaryText": "",
+    "headline": "",
+    "description": "",
+    "ctaText": ""
+  }
+]`;
+
+const SECTION_PROMPT_DEFAULTS: Partial<
+  Record<ContentGenerationSectionKey, string>
+> = {
+  "ad-copy": AD_COPY_PROMPT_TEMPLATE,
+};
 
 interface ExperimentContentGenerationTabProps {
   hypothesis?: Hypothesis;
@@ -186,6 +248,7 @@ export default function ExperimentContentGenerationTab({
                       className="form-control"
                       rows={4}
                       placeholder="Você enviará este prompt depois. A estrutura já está preparada para receber o texto."
+                      defaultValue={SECTION_PROMPT_DEFAULTS[section.key] ?? ""}
                       title="Campo que será enviado ao Worker IA com o contexto do framework da hipótese."
                     />
                     <div className="form-text">

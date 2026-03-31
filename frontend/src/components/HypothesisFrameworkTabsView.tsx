@@ -55,6 +55,23 @@ interface PageResponse<T> {
   content: T[];
 }
 
+interface FrameworkGenerationReportRecord extends AiGenerationRecord {
+  metadata: {
+    sectionId: HypothesisFrameworkSection;
+    sectionOrder: number;
+    generationTypeLabel: string;
+    generationOrder: number;
+  };
+}
+
+const REPORT_SECTION_ORDER: HypothesisFrameworkSection[] = [
+  "pain",
+  "result",
+  "mechanism",
+  "proof",
+  "offer",
+];
+
 const STATUS_LABELS: Record<RequestUiStatus, string> = {
   IDLE: "Sem solicitação",
   PROCESSING: "Em processamento",
@@ -160,6 +177,35 @@ function getErrorMessage(error: unknown) {
     return error.message;
   }
   return "Falha ao processar solicitação.";
+}
+
+function getGenerationReportMetadata(domain?: string) {
+  if (!domain?.startsWith("hypothesis.framework.")) {
+    return undefined;
+  }
+
+  const suffix = domain.replace("hypothesis.framework.", "");
+  const isSummary = suffix.endsWith(".summary");
+  const sectionId = (isSummary ? suffix.replace(".summary", "") : suffix) as
+    | HypothesisFrameworkSection
+    | string;
+
+  if (!REPORT_SECTION_ORDER.includes(sectionId as HypothesisFrameworkSection)) {
+    return undefined;
+  }
+
+  const sectionOrder = REPORT_SECTION_ORDER.indexOf(
+    sectionId as HypothesisFrameworkSection,
+  );
+
+  return {
+    sectionId: sectionId as HypothesisFrameworkSection,
+    sectionOrder,
+    generationTypeLabel: isSummary
+      ? "Geração de resumo"
+      : "Geração de subitens",
+    generationOrder: isSummary ? 1 : 0,
+  };
 }
 
 export function HypothesisFrameworkTabsView({
@@ -467,9 +513,30 @@ export function HypothesisFrameworkTabsView({
         },
       });
 
-      const frameworkGenerations = (response.content ?? []).filter((item) =>
-        item.domain?.startsWith("hypothesis.framework."),
-      );
+      const frameworkGenerations: FrameworkGenerationReportRecord[] = (
+        response.content ?? []
+      )
+        .map((item) => ({
+          ...item,
+          metadata: getGenerationReportMetadata(item.domain),
+        }))
+        .filter(
+          (
+            item,
+          ): item is FrameworkGenerationReportRecord => item.metadata != null,
+        )
+        .sort((a, b) => {
+          if (a.metadata.sectionOrder !== b.metadata.sectionOrder) {
+            return a.metadata.sectionOrder - b.metadata.sectionOrder;
+          }
+          if (a.metadata.generationOrder !== b.metadata.generationOrder) {
+            return a.metadata.generationOrder - b.metadata.generationOrder;
+          }
+          return (
+            (parseTimestamp(a.createdAt) ?? Number.MAX_SAFE_INTEGER) -
+            (parseTimestamp(b.createdAt) ?? Number.MAX_SAFE_INTEGER)
+          );
+        });
 
       const reportLines = [
         "# Relatório consolidado do framework Dor-Resultado-Oferta",
@@ -482,7 +549,7 @@ export function HypothesisFrameworkTabsView({
               "Nenhuma geração de IA do framework foi encontrada para esta hipótese.",
             ]
           : frameworkGenerations.flatMap((generation, index) => [
-              `### ${index + 1}. ${getSectionFromDomain(generation.domain)}`,
+              `### ${index + 1}. ${getSectionFromDomain(generation.domain)} — ${generation.metadata.generationTypeLabel}`,
               `- Data: ${formatDateTime(generation.createdAt)}`,
               `- Modelo: ${generation.model ?? "Não informado"}`,
               "",

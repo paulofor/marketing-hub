@@ -51,6 +51,7 @@ public class HypothesisFrameworkMapperSupport {
 
     public HypothesisFrameworkDto merge(HypothesisFrameworkDto base, HypothesisFrameworkDto partial) {
         HypothesisFrameworkDto working = clone(base);
+        ensureDefaults(working);
         if (partial == null) {
             return working;
         }
@@ -303,8 +304,12 @@ public class HypothesisFrameworkMapperSupport {
     }
 
     private HypothesisFrameworkDto clone(HypothesisFrameworkDto dto) {
+        if (dto == null) {
+            return new HypothesisFrameworkDto();
+        }
         try {
-            return mapper.readValue(mapper.writeValueAsString(dto), HypothesisFrameworkDto.class);
+            HypothesisFrameworkDto cloned = mapper.readValue(mapper.writeValueAsString(dto), HypothesisFrameworkDto.class);
+            return cloned != null ? cloned : new HypothesisFrameworkDto();
         } catch (JsonProcessingException e) {
             log.warn("Failed to clone hypothesis framework dto", e);
             return new HypothesisFrameworkDto();

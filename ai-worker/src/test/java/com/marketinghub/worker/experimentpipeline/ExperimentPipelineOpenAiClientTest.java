@@ -99,6 +99,44 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).doesNotContain("campaignAngle,");
     }
 
+    @Test
+    void prependsLandingCopyGuidanceForLandingCopySection() {
+        AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                11L,
+                "landing-page-copy",
+                "gpt-5.2",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "input": [
+                            {"role": "user", "content": "Prompt da landing"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        client.generate(job);
+
+        Map<String, Object> payload = payloadRef.get();
+        @SuppressWarnings("unchecked")
+        var input = (java.util.List<Map<String, Object>>) payload.get("input");
+        String userPrompt = String.valueOf(input.get(0).get("content"));
+        assertThat(userPrompt).startsWith("Você cria ativos de campanha para o Marketing Hub.");
+        assertThat(userPrompt).contains("Prompt da landing");
+        assertThat(userPrompt).contains("Objetivo da landing:");
+        assertThat(userPrompt).contains("heroTitle,");
+        assertThat(userPrompt).contains("closingCTA");
+    }
+
     private ExchangeFunction capturePayloadExchange(AtomicReference<Map<String, Object>> payloadRef) {
         return request ->
                 readBodyAsString(request.body())

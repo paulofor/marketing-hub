@@ -3,6 +3,7 @@ package com.marketinghub.hypothesis.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -68,6 +69,35 @@ class HypothesisFrameworkGenerationServiceTest {
                 generationService,
                 objectMapper
         );
+
+        lenient().when(frameworkSupport.merge(any(HypothesisFrameworkDto.class), any(HypothesisFrameworkDto.class)))
+                .thenAnswer(invocation -> {
+                    HypothesisFrameworkDto base = invocation.getArgument(0);
+                    HypothesisFrameworkDto partial = invocation.getArgument(1);
+                    HypothesisFrameworkDto merged = base != null ? base : new HypothesisFrameworkDto();
+                    if (partial == null) {
+                        return merged;
+                    }
+                    if (partial.getPain() != null) {
+                        merged.setPain(partial.getPain());
+                    }
+                    if (partial.getResult() != null) {
+                        merged.setResult(partial.getResult());
+                    }
+                    if (partial.getMechanism() != null) {
+                        merged.setMechanism(partial.getMechanism());
+                    }
+                    if (partial.getProof() != null) {
+                        merged.setProof(partial.getProof());
+                    }
+                    if (partial.getOffer() != null) {
+                        merged.setOffer(partial.getOffer());
+                    }
+                    if (partial.getChecklist() != null) {
+                        merged.setChecklist(partial.getChecklist());
+                    }
+                    return merged;
+                });
     }
 
     @Test

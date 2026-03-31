@@ -43,6 +43,31 @@ public class HypothesisFrameworkGenerationService {
     private static final String DEFAULT_MODEL = "gpt-5.2";
     private static final Duration STALE_PENDING_TIMEOUT = Duration.ofMinutes(10);
     private static final Duration STALE_PROCESSING_TIMEOUT = Duration.ofMinutes(20);
+    private static final String SUMMARY_PROMPT = """
+            Você está resumindo um framework comercial para uso em experimentos de anúncio e landing page.
+
+            Objetivo:
+            Transformar textos completos do framework em resumos operacionais curtos, claros e consistentes, que serão usados em prompts downstream.
+
+            Regras:
+            1. Preserve apenas o que é mais importante para a execução do experimento.
+            2. Remova detalhes redundantes, explicações longas e justificativas excessivas.
+            3. Mantenha foco em clareza comercial.
+            4. Não invente nada que não esteja no texto original.
+            5. Não troque o sentido estratégico do campo.
+            6. Escreva em linguagem simples e direta.
+            7. O resumo deve ser curto o suficiente para caber em prompts de anúncio e landing, mas forte o suficiente para manter o enquadramento correto.
+            8. Priorize transformação percebida, não ferramenta.
+            9. Não use jargão desnecessário.
+            10. Preserve restrições críticas do produto quando aparecerem.
+
+            Formato esperado:
+            JSON válido com as chaves:
+            item resumido
+
+            Critérios de tamanho:
+            - até 400 caracteres
+            """;
     private static final String RESEARCH_DIRECTIVE = "Sempre que possível, pesquise em sites especializados do nicho"
             + " usando a ferramenta de web_search antes de responder. Use os achados para justificar cada campo do JSON"
             + " e cite as principais referências consultadas.";
@@ -71,7 +96,8 @@ public class HypothesisFrameworkGenerationService {
     @Transactional
     public HypothesisDto generate(UUID hypothesisId,
                                   HypothesisFrameworkSection section,
-                                  HypothesisFrameworkGenerationRequest request) {
+                                  HypothesisFrameworkGenerationRequest request,
+                                  boolean summaryOnly) {
         Hypothesis hypothesis = repository.findById(hypothesisId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Hipótese não encontrada"));
 
@@ -81,7 +107,7 @@ public class HypothesisFrameworkGenerationService {
                 Set.of(HypothesisFrameworkGenerationJobStatus.PENDING, HypothesisFrameworkGenerationJobStatus.PROCESSING));
         boolean hasActiveJob = markStaleJobsAsFailed(activeJobs);
         if (!hasActiveJob) {
-            enqueueJob(hypothesis, section, request);
+            enqueueJob(hypothesis, section, request, summaryOnly);
         }
         return mapper.toDto(hypothesis);
     }
@@ -171,7 +197,8 @@ public class HypothesisFrameworkGenerationService {
 
         Hypothesis hypothesis = job.getHypothesis();
         HypothesisFrameworkDto snapshot = frameworkSupport.resolve(hypothesis);
-        applyGeneratedSection(hypothesis, snapshot, job.getSection(), request.responseContent());
+        boolean summaryOnly = isSummaryJob(job);
+        applyGeneratedSection(hypothesis, snapshot, job.getSection(), request.responseContent(), summaryOnly);
 
         OpenAiResponse.OpenAiUsage usage = new OpenAiResponse.OpenAiUsage(
                 request.inputTokens(),
@@ -184,7 +211,7 @@ public class HypothesisFrameworkGenerationService {
                 : OpenAiCostEstimator.estimateUsd(job.getModel(), usage);
 
         generationService.recordGeneration(AiWorkerGenerationRequest.builder()
-                .domain("hypothesis.framework." + job.getSection().path())
+                .domain("hypothesis.framework." + job.getSection().path() + (summaryOnly ? ".summary" : ""))
                 .referenceId(hypothesis.getId().toString())
                 .prompt(job.getPrompt())
                 .rawResponse(request.rawResponse())
@@ -223,11 +250,12 @@ public class HypothesisFrameworkGenerationService {
 
     private void enqueueJob(Hypothesis hypothesis,
                             HypothesisFrameworkSection section,
-                            HypothesisFrameworkGenerationRequest request) {
+                            HypothesisFrameworkGenerationRequest request,
+                            boolean summaryOnly) {
         HypothesisFrameworkDto snapshot = frameworkSupport.resolve(hypothesis);
         String model = StringUtils.hasText(request.getModel()) ? request.getModel().trim() : DEFAULT_MODEL;
-        String userPrompt = buildUserPrompt(hypothesis, snapshot, section, request.getCustomInstructions());
-        Map<String, Object> requestBody = buildRequestBody(model, userPrompt, section);
+        String userPrompt = buildUserPrompt(hypothesis, snapshot, section, request.getCustomInstructions(), summaryOnly);
+        Map<String, Object> requestBody = buildRequestBody(model, userPrompt, section, summaryOnly);
         String requestBodyJson;
         try {
             requestBodyJson = objectMapper.writeValueAsString(requestBody);
@@ -276,34 +304,72 @@ public class HypothesisFrameworkGenerationService {
     private void applyGeneratedSection(Hypothesis hypothesis,
                                        HypothesisFrameworkDto snapshot,
                                        HypothesisFrameworkSection section,
-                                       String jsonContent) {
+                                       String jsonContent,
+                                       boolean summaryOnly) {
         HypothesisFrameworkDto partial = new HypothesisFrameworkDto();
         try {
             switch (section) {
                 case PAIN -> {
-                    HypothesisFrameworkDto.Pain generated = objectMapper.readValue(jsonContent, HypothesisFrameworkDto.Pain.class);
-                    snapshot.setPain(generated);
-                    partial.setPain(generated);
+                    if (summaryOnly) {
+                        HypothesisFrameworkDto.Pain generated = new HypothesisFrameworkDto.Pain();
+                        generated.setSummary(parseSummaryValue(jsonContent));
+                        snapshot.setPain(frameworkSupport.merge(snapshot, HypothesisFrameworkDto.builder().pain(generated).build()).getPain());
+                        partial.setPain(generated);
+                    } else {
+                        HypothesisFrameworkDto.Pain generated = objectMapper.readValue(jsonContent, HypothesisFrameworkDto.Pain.class);
+                        snapshot.setPain(frameworkSupport.merge(snapshot, HypothesisFrameworkDto.builder().pain(generated).build()).getPain());
+                        partial.setPain(generated);
+                    }
                 }
                 case RESULT -> {
-                    HypothesisFrameworkDto.Result generated = objectMapper.readValue(jsonContent, HypothesisFrameworkDto.Result.class);
-                    snapshot.setResult(generated);
-                    partial.setResult(generated);
+                    if (summaryOnly) {
+                        HypothesisFrameworkDto.Result generated = new HypothesisFrameworkDto.Result();
+                        generated.setSummary(parseSummaryValue(jsonContent));
+                        snapshot.setResult(frameworkSupport.merge(snapshot, HypothesisFrameworkDto.builder().result(generated).build()).getResult());
+                        partial.setResult(generated);
+                    } else {
+                        HypothesisFrameworkDto.Result generated = objectMapper.readValue(jsonContent, HypothesisFrameworkDto.Result.class);
+                        snapshot.setResult(frameworkSupport.merge(snapshot, HypothesisFrameworkDto.builder().result(generated).build()).getResult());
+                        partial.setResult(generated);
+                    }
                 }
                 case MECHANISM -> {
-                    HypothesisFrameworkDto.Mechanism generated = parseMechanism(jsonContent);
-                    snapshot.setMechanism(generated);
-                    partial.setMechanism(generated);
+                    if (summaryOnly) {
+                        HypothesisFrameworkDto.Mechanism generated = new HypothesisFrameworkDto.Mechanism();
+                        generated.setSummary(parseSummaryValue(jsonContent));
+                        snapshot.setMechanism(frameworkSupport.merge(snapshot, HypothesisFrameworkDto.builder().mechanism(generated).build())
+                                .getMechanism());
+                        partial.setMechanism(generated);
+                    } else {
+                        HypothesisFrameworkDto.Mechanism generated = parseMechanism(jsonContent);
+                        snapshot.setMechanism(frameworkSupport.merge(snapshot, HypothesisFrameworkDto.builder().mechanism(generated).build())
+                                .getMechanism());
+                        partial.setMechanism(generated);
+                    }
                 }
                 case PROOF -> {
-                    HypothesisFrameworkDto.Proof generated = objectMapper.readValue(jsonContent, HypothesisFrameworkDto.Proof.class);
-                    snapshot.setProof(generated);
-                    partial.setProof(generated);
+                    if (summaryOnly) {
+                        HypothesisFrameworkDto.Proof generated = new HypothesisFrameworkDto.Proof();
+                        generated.setSummary(parseSummaryValue(jsonContent));
+                        snapshot.setProof(frameworkSupport.merge(snapshot, HypothesisFrameworkDto.builder().proof(generated).build()).getProof());
+                        partial.setProof(generated);
+                    } else {
+                        HypothesisFrameworkDto.Proof generated = objectMapper.readValue(jsonContent, HypothesisFrameworkDto.Proof.class);
+                        snapshot.setProof(frameworkSupport.merge(snapshot, HypothesisFrameworkDto.builder().proof(generated).build()).getProof());
+                        partial.setProof(generated);
+                    }
                 }
                 case OFFER -> {
-                    HypothesisFrameworkDto.Offer generated = objectMapper.readValue(jsonContent, HypothesisFrameworkDto.Offer.class);
-                    snapshot.setOffer(generated);
-                    partial.setOffer(generated);
+                    if (summaryOnly) {
+                        HypothesisFrameworkDto.Offer generated = new HypothesisFrameworkDto.Offer();
+                        generated.setSummary(parseSummaryValue(jsonContent));
+                        snapshot.setOffer(frameworkSupport.merge(snapshot, HypothesisFrameworkDto.builder().offer(generated).build()).getOffer());
+                        partial.setOffer(generated);
+                    } else {
+                        HypothesisFrameworkDto.Offer generated = objectMapper.readValue(jsonContent, HypothesisFrameworkDto.Offer.class);
+                        snapshot.setOffer(frameworkSupport.merge(snapshot, HypothesisFrameworkDto.builder().offer(generated).build()).getOffer());
+                        partial.setOffer(generated);
+                    }
                 }
                 default -> throw new IllegalStateException("Unsupported section: " + section);
             }
@@ -315,19 +381,20 @@ public class HypothesisFrameworkGenerationService {
 
     private Map<String, Object> buildRequestBody(String model,
                                                  String prompt,
-                                                 HypothesisFrameworkSection section) {
+                                                 HypothesisFrameworkSection section,
+                                                 boolean summaryOnly) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", model);
         body.put("temperature", 0.35);
         body.put("max_output_tokens", 900);
         body.put("input", List.of(
-                message("system", buildSystemPrompt(section)),
+                message("system", buildSystemPrompt(section, summaryOnly)),
                 message("user", prompt)
         ));
         Map<String, Object> textConfig = new LinkedHashMap<>();
         textConfig.put("format", jsonSchemaFormat(
-                "hypothesis_framework_" + section.path(),
-                buildSchema(section)
+                "hypothesis_framework_" + section.path() + (summaryOnly ? "_summary" : ""),
+                buildSchema(section, summaryOnly)
         ));
         body.put("text", textConfig);
         body.put("tools", List.of(Map.of("type", "web_search")));
@@ -348,7 +415,12 @@ public class HypothesisFrameworkGenerationService {
         return format;
     }
 
-    private Map<String, Object> buildSchema(HypothesisFrameworkSection section) {
+    private Map<String, Object> buildSchema(HypothesisFrameworkSection section, boolean summaryOnly) {
+        if (summaryOnly) {
+            return schema(Map.of(
+                    "item resumido", stringField("Resumo operacional final com no máximo 400 caracteres")
+            ), List.of("item resumido"));
+        }
         return switch (section) {
             case PAIN -> schema(Map.of(
                     "surface", stringField("Resumo da dor de superfície descrita pelo nicho"),
@@ -403,7 +475,10 @@ public class HypothesisFrameworkGenerationService {
         return Map.of("role", role, "content", content);
     }
 
-    private String buildSystemPrompt(HypothesisFrameworkSection section) {
+    private String buildSystemPrompt(HypothesisFrameworkSection section, boolean summaryOnly) {
+        if (summaryOnly) {
+            return "Você resume cada seção do framework comercial em formato operacional para uso em prompts downstream.";
+        }
         return switch (section) {
             case PAIN -> "Você é um estrategista focado em mapear a dor de um nicho para campanhas de aquisição."
                     + " Resuma as dores reais que travam o resultado, deixando explícitos impactos emocionais e financeiros. "
@@ -423,7 +498,11 @@ public class HypothesisFrameworkGenerationService {
     private String buildUserPrompt(Hypothesis hypothesis,
                                    HypothesisFrameworkDto snapshot,
                                    HypothesisFrameworkSection section,
-                                   String customInstructions) {
+                                   String customInstructions,
+                                   boolean summaryOnly) {
+        if (summaryOnly) {
+            return buildSummaryPrompt(hypothesis, snapshot, section, customInstructions);
+        }
         StringBuilder builder = new StringBuilder();
         String niche = hypothesis.getMarketNiche() != null ? hypothesis.getMarketNiche().getName() : "N/A";
         if (section == HypothesisFrameworkSection.PAIN) {
@@ -763,6 +842,24 @@ public class HypothesisFrameworkGenerationService {
         return builder.toString();
     }
 
+    private String buildSummaryPrompt(Hypothesis hypothesis,
+                                      HypothesisFrameworkDto snapshot,
+                                      HypothesisFrameworkSection section,
+                                      String customInstructions) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(SUMMARY_PROMPT).append("\n");
+        builder.append("Seção alvo: ").append(section.path()).append('\n');
+        builder.append("Nicho: ")
+                .append(hypothesis.getMarketNiche() != null ? hypothesis.getMarketNiche().getName() : "N/A")
+                .append('\n');
+        builder.append("Hipótese: ").append(nonNull(hypothesis.getTitle())).append('\n');
+        builder.append("Conteúdo completo da seção:\n").append(sectionSnapshot(snapshot, section)).append('\n');
+        if (StringUtils.hasText(customInstructions)) {
+            builder.append("\nInstruções extras do usuário:\n").append(customInstructions.trim()).append('\n');
+        }
+        return builder.toString();
+    }
+
     private String sectionSnapshot(HypothesisFrameworkDto snapshot, HypothesisFrameworkSection section) {
         return switch (section) {
             case PAIN -> formatPain(snapshot.getPain());
@@ -831,6 +928,16 @@ public class HypothesisFrameworkGenerationService {
 
     private String nonNull(String value) {
         return StringUtils.hasText(value) ? value.trim() : "-";
+    }
+
+    private boolean isSummaryJob(HypothesisFrameworkGenerationJob job) {
+        return StringUtils.hasText(job.getRequestBodyJson())
+                && job.getRequestBodyJson().contains("_summary");
+    }
+
+    private String parseSummaryValue(String jsonContent) throws JsonProcessingException {
+        JsonNode root = objectMapper.readTree(jsonContent);
+        return firstText(root, "item resumido", "itemResumido", "item_resumido", "resumo", "summary");
     }
 
     private HypothesisFrameworkDto.Mechanism parseMechanism(String jsonContent) throws JsonProcessingException {

@@ -38,6 +38,8 @@ public class HypothesisFrameworkDto {
         private String emotional;
         private String social;
         private String cost;
+        @JsonAlias({"summary", "resumo", "item resumido", "itemResumido"})
+        private String summary;
     }
 
     @Data
@@ -49,6 +51,8 @@ public class HypothesisFrameworkDto {
         private String desiredIdentity;
         private String businessOutcome;
         private String successSignal;
+        @JsonAlias({"summary", "resumo", "item resumido", "itemResumido"})
+        private String summary;
     }
 
     @Data
@@ -60,6 +64,8 @@ public class HypothesisFrameworkDto {
         private String unique;
         private String visible;
         private String believability;
+        @JsonAlias({"summary", "resumo", "item resumido", "itemResumido"})
+        private String summary;
     }
 
     @Data
@@ -71,6 +77,8 @@ public class HypothesisFrameworkDto {
         private String asset;
         private String message;
         private String deliveryStage;
+        @JsonAlias({"summary", "resumo", "item resumido", "itemResumido"})
+        private String summary;
     }
 
     @Data
@@ -88,6 +96,8 @@ public class HypothesisFrameworkDto {
         private String cta;
         private BigDecimal priceAmount;
         private String offerType;
+        @JsonAlias({"summary", "resumo", "item resumido", "itemResumido"})
+        private String summary;
     }
 
     @Data

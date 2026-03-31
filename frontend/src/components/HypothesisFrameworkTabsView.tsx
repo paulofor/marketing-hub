@@ -183,6 +183,9 @@ export function HypothesisFrameworkTabsView({
   const [pendingSection, setPendingSection] = useState<
     HypothesisFrameworkSection | undefined
   >();
+  const [pendingSummarySection, setPendingSummarySection] = useState<
+    HypothesisFrameworkSection | undefined
+  >();
   const [isDownloadingReport, setIsDownloadingReport] = useState(false);
   const [requestsBySection, setRequestsBySection] = useState<
     Record<HypothesisFrameworkSection, SectionRequestState>
@@ -307,6 +310,7 @@ export function HypothesisFrameworkTabsView({
       await generate.mutateAsync({
         section,
         customInstructions,
+        mode: "FULL",
       });
       setRequestsBySection((prev) => ({
         ...prev,
@@ -330,6 +334,51 @@ export function HypothesisFrameworkTabsView({
       }));
     } finally {
       setPendingSection(undefined);
+    }
+  };
+
+  const handleGenerateSummary = async (section: HypothesisFrameworkSection) => {
+    try {
+      setPendingSummarySection(section);
+      await generate.mutateAsync({
+        section,
+        mode: "SUMMARY",
+      });
+      onRefresh?.();
+    } finally {
+      setPendingSummarySection(undefined);
+    }
+  };
+
+  const getSummary = (section: HypothesisFrameworkSection) => {
+    switch (section) {
+      case "pain":
+        return data.pain.summary;
+      case "result":
+        return data.result.summary;
+      case "mechanism":
+        return data.mechanism.summary;
+      case "proof":
+        return data.proof.summary;
+      case "offer":
+      default:
+        return data.offer.summary;
+    }
+  };
+
+  const getSummaryLabel = (section: HypothesisFrameworkSection) => {
+    switch (section) {
+      case "pain":
+        return "Resumo da dor";
+      case "result":
+        return "Resumo do resultado";
+      case "mechanism":
+        return "Resumo do mecanismo";
+      case "proof":
+        return "Resumo da prova";
+      case "offer":
+      default:
+        return "Resumo da oferta";
     }
   };
 
@@ -548,6 +597,12 @@ export function HypothesisFrameworkTabsView({
           {SECTIONS.map((section) => (
             <Tabs.Content key={section.id} value={section.id}>
               {renderSection(section.id)}
+              <div className="border rounded-3 bg-light-subtle p-3 mt-3">
+                <div className="small text-muted text-uppercase fw-semibold mb-1">
+                  {getSummaryLabel(section.id)}
+                </div>
+                <div>{getSummary(section.id)?.trim() || "-"}</div>
+              </div>
               <div className="d-flex flex-column flex-md-row gap-2 mt-3">
                 <textarea
                   className="form-control"
@@ -567,6 +622,7 @@ export function HypothesisFrameworkTabsView({
                   className="btn btn-outline-primary align-self-start"
                   onClick={() => handleGenerate(section.id)}
                   disabled={generate.isPending}
+                  title="Gera os campos completos desta aba usando o Worker IA."
                 >
                   {pendingSection === section.id && generate.isPending ? (
                     <span className="d-inline-flex align-items-center gap-1">
@@ -574,6 +630,21 @@ export function HypothesisFrameworkTabsView({
                     </span>
                   ) : (
                     "Gerar com IA"
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary align-self-start"
+                  onClick={() => handleGenerateSummary(section.id)}
+                  disabled={generate.isPending}
+                  title="Gera somente o resumo operacional desta aba com o mesmo modelo do framework."
+                >
+                  {pendingSummarySection === section.id && generate.isPending ? (
+                    <span className="d-inline-flex align-items-center gap-1">
+                      <Loader2 className="icon icon-sm spin" /> Gerando resumo...
+                    </span>
+                  ) : (
+                    "Gerar resumo com IA"
                   )}
                 </button>
               </div>

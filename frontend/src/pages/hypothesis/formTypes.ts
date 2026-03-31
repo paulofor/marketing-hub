@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 const shortText = z.string().max(600).optional();
+const summaryText = z.string().max(400).optional();
 
 export const hypothesisFrameworkSchema = z.object({
   version: z.string().optional(),
@@ -10,24 +11,28 @@ export const hypothesisFrameworkSchema = z.object({
     emotional: shortText,
     social: shortText,
     cost: shortText,
+    summary: summaryText,
   }),
   result: z.object({
     desiredResult: shortText,
     desiredIdentity: shortText,
     businessOutcome: shortText,
     successSignal: shortText,
+    summary: summaryText,
   }),
   mechanism: z.object({
     core: shortText,
     unique: shortText,
     visible: shortText,
     believability: shortText,
+    summary: summaryText,
   }),
   proof: z.object({
     type: shortText,
     asset: shortText,
     message: shortText,
     deliveryStage: shortText,
+    summary: summaryText,
   }),
   offer: z.object({
     name: shortText,
@@ -36,6 +41,7 @@ export const hypothesisFrameworkSchema = z.object({
     riskReversal: shortText,
     priceLogic: shortText,
     cta: shortText,
+    summary: summaryText,
     priceAmount: z.number().optional(),
     offerType: z.string().optional(),
   }),

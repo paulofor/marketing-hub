@@ -188,6 +188,16 @@ export function HypothesisFrameworkTabsForm({
                   {...register("framework.pain.cost")}
                 />
               </div>
+              <div className="col-12">
+                <label className="form-label">Resumo da dor</label>
+                <textarea
+                  className="form-control"
+                  rows={2}
+                  maxLength={400}
+                  disabled={readOnly}
+                  {...register("framework.pain.summary")}
+                />
+              </div>
             </div>
             {!readOnly && renderAiActions("pain")}
           </Tabs.Content>
@@ -227,6 +237,16 @@ export function HypothesisFrameworkTabsForm({
                   rows={3}
                   disabled={readOnly}
                   {...register("framework.result.successSignal")}
+                />
+              </div>
+              <div className="col-12">
+                <label className="form-label">Resumo do resultado</label>
+                <textarea
+                  className="form-control"
+                  rows={2}
+                  maxLength={400}
+                  disabled={readOnly}
+                  {...register("framework.result.summary")}
                 />
               </div>
             </div>
@@ -270,6 +290,16 @@ export function HypothesisFrameworkTabsForm({
                   {...register("framework.mechanism.believability")}
                 />
               </div>
+              <div className="col-12">
+                <label className="form-label">Resumo do mecanismo</label>
+                <textarea
+                  className="form-control"
+                  rows={2}
+                  maxLength={400}
+                  disabled={readOnly}
+                  {...register("framework.mechanism.summary")}
+                />
+              </div>
             </div>
             {!readOnly && renderAiActions("mechanism")}
           </Tabs.Content>
@@ -306,6 +336,16 @@ export function HypothesisFrameworkTabsForm({
                   className="form-control"
                   disabled={readOnly}
                   {...register("framework.proof.deliveryStage")}
+                />
+              </div>
+              <div className="col-12">
+                <label className="form-label">Resumo da prova</label>
+                <textarea
+                  className="form-control"
+                  rows={2}
+                  maxLength={400}
+                  disabled={readOnly}
+                  {...register("framework.proof.summary")}
                 />
               </div>
             </div>
@@ -380,6 +420,16 @@ export function HypothesisFrameworkTabsForm({
                   className="form-control"
                   disabled={readOnly}
                   {...register("framework.offer.cta")}
+                />
+              </div>
+              <div className="col-12">
+                <label className="form-label">Resumo da oferta</label>
+                <textarea
+                  className="form-control"
+                  rows={2}
+                  maxLength={400}
+                  disabled={readOnly}
+                  {...register("framework.offer.summary")}
                 />
               </div>
             </div>

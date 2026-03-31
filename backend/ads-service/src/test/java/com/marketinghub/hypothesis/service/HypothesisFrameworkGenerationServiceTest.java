@@ -88,7 +88,7 @@ class HypothesisFrameworkGenerationServiceTest {
         HypothesisFrameworkGenerationRequest request = new HypothesisFrameworkGenerationRequest();
         request.setModel("gpt-test");
 
-        service.generate(hypothesisId, HypothesisFrameworkSection.PAIN, request);
+        service.generate(hypothesisId, HypothesisFrameworkSection.PAIN, request, false);
 
         verify(jobRepository).save(jobCaptor.capture());
         Map<String, Object> body = objectMapper.readValue(jobCaptor.getValue().getRequestBodyJson(), new TypeReference<>() {

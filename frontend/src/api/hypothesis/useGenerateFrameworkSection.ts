@@ -8,6 +8,7 @@ interface GeneratePayload {
   section: HypothesisFrameworkSection;
   customInstructions?: string;
   model?: string;
+  mode?: "FULL" | "SUMMARY";
 }
 
 export function useGenerateFrameworkSection(
@@ -16,12 +17,14 @@ export function useGenerateFrameworkSection(
 ) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ section, ...payload }: GeneratePayload) => {
+    mutationFn: async ({ section, mode = "FULL", ...payload }: GeneratePayload) => {
       if (!hypothesisId) {
         throw new Error("Hipótese ainda não foi criada");
       }
       const { data } = await axios.post<Hypothesis>(
-        `/api/hypotheses/${hypothesisId}/framework/${section}/generate`,
+        mode === "SUMMARY"
+          ? `/api/hypotheses/${hypothesisId}/framework/${section}/summary/generate`
+          : `/api/hypotheses/${hypothesisId}/framework/${section}/generate`,
         {
           customInstructions: payload.customInstructions,
           model: payload.model,

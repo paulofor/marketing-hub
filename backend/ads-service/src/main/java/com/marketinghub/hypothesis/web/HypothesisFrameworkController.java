@@ -37,7 +37,21 @@ public class HypothesisFrameworkController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
         }
         HypothesisFrameworkGenerationRequest payload = request != null ? request : new HypothesisFrameworkGenerationRequest();
-        return generationService.generate(id, parsed, payload);
+        return generationService.generate(id, parsed, payload, false);
+    }
+
+    @PostMapping("/{section}/summary/generate")
+    public HypothesisDto generateSummary(@PathVariable UUID id,
+                                         @PathVariable String section,
+                                         @RequestBody(required = false) HypothesisFrameworkGenerationRequest request) {
+        HypothesisFrameworkSection parsed;
+        try {
+            parsed = HypothesisFrameworkSection.fromPath(section);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
+        HypothesisFrameworkGenerationRequest payload = request != null ? request : new HypothesisFrameworkGenerationRequest();
+        return generationService.generate(id, parsed, payload, true);
     }
 
     @GetMapping("/jobs")

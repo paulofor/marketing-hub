@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import * as Tabs from "@radix-ui/react-tabs";
 import axios from "axios";
 import type { Hypothesis } from "../../api/hypothesis/useHypothesisBoard";
-import type { Experiment } from "../../api/experiment/useExperiments";
 
 type ContentGenerationSectionKey =
   | "campaign-angle"
@@ -180,11 +179,6 @@ interface ExperimentContentGenerationTabProps {
   experimentId: string;
   experimentName?: string;
   hypothesis?: Hypothesis;
-  experiment?: Pick<
-    Experiment,
-    "campaignAngle" | "adCopy" | "adImageBriefing" | "landingPageCopy" | "landingPageWireframe"
-  >;
-  onExperimentRefresh?: () => Promise<unknown> | void;
 }
 
 interface AiGenerationRecord {
@@ -209,19 +203,6 @@ interface CampaignAngleResponseFields {
   funnelStage: string;
   tone: string;
 }
-
-const CAMPAIGN_ANGLE_FIELD_LABELS: Array<{
-  key: keyof CampaignAngleResponseFields;
-  label: string;
-}> = [
-  { key: "primaryPromise", label: "Promessa principal" },
-  { key: "primaryPain", label: "Dor principal" },
-  { key: "mechanismSummary", label: "Mecanismo" },
-  { key: "proofUsed", label: "Prova" },
-  { key: "cta", label: "CTA" },
-  { key: "funnelStage", label: "Estágio do funil" },
-  { key: "tone", label: "Tom da mensagem" },
-];
 
 interface CampaignAngleGenerationRow extends AiGenerationRecord {
   fields?: CampaignAngleResponseFields;
@@ -413,8 +394,6 @@ export default function ExperimentContentGenerationTab({
   experimentId,
   experimentName,
   hypothesis,
-  experiment,
-  onExperimentRefresh,
 }: ExperimentContentGenerationTabProps) {
   const [activeSection, setActiveSection] =
     useState<ContentGenerationSectionKey>(CONTENT_GENERATION_SECTIONS[0].key);
@@ -430,12 +409,6 @@ export default function ExperimentContentGenerationTab({
       (acc, section) => ({ ...acc, [section.key]: false }),
       {} as Record<ContentGenerationSectionKey, boolean>,
     ),
-  );
-
-  const appliedCampaignAngleRaw = experiment?.campaignAngle?.trim();
-  const appliedCampaignAngleFields = useMemo(
-    () => extractCampaignAngleFields(appliedCampaignAngleRaw),
-    [appliedCampaignAngleRaw],
   );
 
   const frameworkContext = useMemo(
@@ -456,9 +429,8 @@ export default function ExperimentContentGenerationTab({
       (section) => section.key === activeSection,
     ) ?? CONTENT_GENERATION_SECTIONS[0];
 
-  const fetchCampaignAngleHistory = useCallback(
-    async (options?: { silent?: boolean }) => {
-      const silent = options?.silent ?? false;
+  useEffect(() => {
+    const loadCampaignAngles = async () => {
       try {
         setIsLoadingCampaignAngles(true);
         const { data: response } = await axios.get<PageResponse<AiGenerationRecord>>(
@@ -478,32 +450,20 @@ export default function ExperimentContentGenerationTab({
             fields: extractCampaignAngleFields(generation.rawResponse),
           }))
           .sort(
-            (a, b) =>
-              (parseTimestamp(b.createdAt) ?? Number.MIN_SAFE_INTEGER) -
-              (parseTimestamp(a.createdAt) ?? Number.MIN_SAFE_INTEGER),
+          (a, b) =>
+            (parseTimestamp(b.createdAt) ?? Number.MIN_SAFE_INTEGER) -
+            (parseTimestamp(a.createdAt) ?? Number.MIN_SAFE_INTEGER),
           );
         setCampaignAngleGenerations(orderedByLatest);
       } catch {
-        if (!silent) {
-          toast.error("Não foi possível carregar os ângulos da campanha agora.");
-        }
+        toast.error("Não foi possível carregar os ângulos da campanha agora.");
       } finally {
         setIsLoadingCampaignAngles(false);
       }
-    },
-    [experimentId],
-  );
+    };
 
-  const handleRefreshCampaignAngles = useCallback(async () => {
-    await fetchCampaignAngleHistory();
-    if (onExperimentRefresh) {
-      await onExperimentRefresh();
-    }
-  }, [fetchCampaignAngleHistory, onExperimentRefresh]);
-
-  useEffect(() => {
-    void fetchCampaignAngleHistory({ silent: true });
-  }, [fetchCampaignAngleHistory]);
+    void loadCampaignAngles();
+  }, [experimentId]);
 
   const handleRequest = async (sectionKey: ContentGenerationSectionKey) => {
     try {
@@ -607,18 +567,6 @@ export default function ExperimentContentGenerationTab({
     }
   };
 
-  const handleCopyToClipboard = useCallback(
-    async (value: string, successMessage: string) => {
-      try {
-        await navigator.clipboard.writeText(value);
-        toast.success(successMessage);
-      } catch {
-        toast.error("Não foi possível copiar o conteúdo agora.");
-      }
-    },
-    [],
-  );
-
   return (
     <div className="mt-3 d-flex flex-column gap-3">
       <div className="d-flex justify-content-end">
@@ -708,178 +656,68 @@ export default function ExperimentContentGenerationTab({
                 <div className="row g-3 mt-1">
                   <div className="col-12">
                     {section.key === "campaign-angle" ? (
-                      <div className="d-flex flex-column gap-3">
-                        <div className="border rounded p-3 bg-light-subtle">
-                          <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                            <div>
-                              <label className="form-label mb-1 d-block">
-                                Ângulo aplicado ao experimento
-                              </label>
-                              <p className="text-muted small mb-0">
-                                Resultado salvo no experimento após a conclusão do Worker IA.
-                              </p>
-                            </div>
-                            {appliedCampaignAngleRaw ? (
-                              <button
-                                type="button"
-                                className="btn btn-outline-secondary btn-sm"
-                                onClick={() =>
-                                  handleCopyToClipboard(
-                                    appliedCampaignAngleRaw,
-                                    "Ângulo copiado para a área de transferência.",
-                                  )
-                                }
-                              >
-                                Copiar JSON
-                              </button>
-                            ) : null}
+                      <>
+                        <label className="form-label mb-1">
+                          Ângulos da campanha obtidos do modelo
+                        </label>
+                        {isLoadingCampaignAngles ? (
+                          <div className="d-flex align-items-center gap-2 text-muted small">
+                            <span
+                              className="spinner-border spinner-border-sm"
+                              role="status"
+                              aria-hidden="true"
+                            />
+                            Carregando ângulos...
                           </div>
-                          <div className="mt-3">
-                            {appliedCampaignAngleFields ? (
-                              <>
-                                <CampaignAngleFieldGrid fields={appliedCampaignAngleFields} />
-                                <details className="mt-3">
-                                  <summary className="small text-decoration-underline">
-                                    Ver JSON completo
-                                  </summary>
-                                  <pre
-                                    className="small bg-white border rounded mt-2 p-3 overflow-auto"
-                                    style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-                                  >
-                                    {appliedCampaignAngleRaw ?? ""}
-                                  </pre>
-                                </details>
-                              </>
-                            ) : appliedCampaignAngleRaw ? (
-                              <pre
-                                className="small bg-white border rounded p-3 overflow-auto"
-                                style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-                              >
-                                {appliedCampaignAngleRaw ?? ""}
-                              </pre>
-                            ) : (
-                              <p className="text-muted small mb-0">
-                                Ainda não existe nenhum ângulo aplicado neste experimento.
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="border rounded p-3">
-                          <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                            <div>
-                              <label className="form-label mb-1 d-block">
-                                Histórico de gerações do Worker IA
-                              </label>
-                              <p className="text-muted small mb-0">
-                                Inclui o prompt enviado e a resposta fornecida pelo modelo.
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              className="btn btn-outline-secondary btn-sm"
-                              onClick={handleRefreshCampaignAngles}
-                              disabled={isLoadingCampaignAngles}
-                            >
-                              {isLoadingCampaignAngles ? (
-                                <span className="d-inline-flex align-items-center gap-1">
-                                  <span
-                                    className="spinner-border spinner-border-sm"
-                                    role="status"
-                                    aria-hidden="true"
-                                  />
-                                  Atualizando...
-                                </span>
-                              ) : (
-                                "Atualizar histórico"
-                              )}
-                            </button>
-                          </div>
-
-                          <div className="mt-3">
-                            {isLoadingCampaignAngles ? (
-                              <div className="d-flex align-items-center gap-2 text-muted small">
-                                <span
-                                  className="spinner-border spinner-border-sm"
-                                  role="status"
-                                  aria-hidden="true"
-                                />
-                                Carregando ângulos...
+                        ) : campaignAngleGenerations.length > 0 ? (
+                          <div className="d-flex flex-column gap-2">
+                            {campaignAngleGenerations.slice(0, 1).map((generation) => (
+                              <div key={generation.id} className="border rounded p-3 bg-light-subtle">
+                                <div className="d-flex flex-wrap gap-2 align-items-center small">
+                                  <span className="badge text-bg-light">
+                                    <strong>Promessa:</strong>{" "}
+                                    {generation.fields?.primaryPromise || "—"}
+                                  </span>
+                                  <span className="badge text-bg-light">
+                                    <strong>Dor:</strong> {generation.fields?.primaryPain || "—"}
+                                  </span>
+                                  <span className="badge text-bg-light">
+                                    <strong>Mecanismo:</strong>{" "}
+                                    {generation.fields?.mechanismSummary || "—"}
+                                  </span>
+                                  <span className="badge text-bg-light">
+                                    <strong>Prova:</strong> {generation.fields?.proofUsed || "—"}
+                                  </span>
+                                  <span className="badge text-bg-light">
+                                    <strong>CTA:</strong> {generation.fields?.cta || "—"}
+                                  </span>
+                                  <span className="badge text-bg-light">
+                                    <strong>Funil:</strong>{" "}
+                                    {generation.fields?.funnelStage || "—"}
+                                  </span>
+                                  <span className="badge text-bg-light">
+                                    <strong>Tom:</strong> {generation.fields?.tone || "—"}
+                                  </span>
+                                </div>
+                                <div className="d-flex flex-wrap gap-2 small text-muted mt-3">
+                                  <span>
+                                    <strong>Modelo:</strong>{" "}
+                                    {generation.model?.trim() || "Não informado"}
+                                  </span>
+                                  <span>
+                                    <strong>Data:</strong> {formatDateTime(generation.createdAt)}
+                                  </span>
+                                </div>
                               </div>
-                            ) : campaignAngleGenerations.length > 0 ? (
-                              <div className="d-flex flex-column gap-3">
-                                {campaignAngleGenerations.map((generation, index) => (
-                                  <article
-                                    key={generation.id}
-                                    className="border rounded p-3 bg-light-subtle"
-                                  >
-                                    <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2 small">
-                                      <div className="d-flex flex-column">
-                                        <span className="fw-semibold">
-                                          #{index + 1} • {generation.model?.trim() || "Modelo não informado"}
-                                        </span>
-                                        <span className="text-muted">
-                                          {formatDateTime(generation.createdAt)}
-                                        </span>
-                                      </div>
-                                      {generation.rawResponse?.trim() ? (
-                                        <button
-                                          type="button"
-                                          className="btn btn-outline-secondary btn-sm"
-                                          onClick={() =>
-                                            handleCopyToClipboard(
-                                              generation.rawResponse ?? "",
-                                              "Resposta copiada para a área de transferência.",
-                                            )
-                                          }
-                                        >
-                                          Copiar resposta
-                                        </button>
-                                      ) : null}
-                                    </div>
-
-                                    <CampaignAngleFieldGrid fields={generation.fields} />
-
-                                    <details className="mt-3" open={index === 0}>
-                                      <summary className="small text-decoration-underline">
-                                        Ver prompt e resposta completa
-                                      </summary>
-                                      <div className="mt-2 d-flex flex-column gap-3">
-                                        <div>
-                                          <span className="fw-semibold small d-block mb-1">
-                                            Prompt enviado
-                                          </span>
-                                          <pre
-                                            className="small bg-white border rounded p-3 overflow-auto"
-                                            style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-                                          >
-                                            {generation.prompt?.trim() || "Sem prompt registrado."}
-                                          </pre>
-                                        </div>
-                                        <div>
-                                          <span className="fw-semibold small d-block mb-1">
-                                            Resposta do modelo
-                                          </span>
-                                          <pre
-                                            className="small bg-white border rounded p-3 overflow-auto"
-                                            style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-                                          >
-                                            {generation.rawResponse?.trim() || "Sem resposta registrada."}
-                                          </pre>
-                                        </div>
-                                      </div>
-                                    </details>
-                                  </article>
-                                ))}
-                              </div>
-                            ) : (
-                              <p className="text-muted small mb-0">
-                                Nenhuma geração foi registrada até o momento.
-                              </p>
-                            )}
+                            ))}
                           </div>
-                        </div>
-                      </div>
+                        ) : (
+                          <p className="text-muted mb-0 small">
+                            Ainda não existem ângulos gerados para este
+                            experimento.
+                          </p>
+                        )}
+                      </>
                     ) : (
                       <>
                         <label className="form-label mb-1">
@@ -939,23 +777,6 @@ export default function ExperimentContentGenerationTab({
       <small className="text-muted">
         Aba atual: <strong>{currentSection.label}</strong>
       </small>
-    </div>
-  );
-}
-
-function CampaignAngleFieldGrid({
-  fields,
-}: {
-  fields?: CampaignAngleResponseFields;
-}) {
-  return (
-    <div className="row g-3">
-      {CAMPAIGN_ANGLE_FIELD_LABELS.map(({ key, label }) => (
-        <div key={`campaign-angle-field-${String(key)}`} className="col-md-6">
-          <small className="text-uppercase text-muted fw-semibold">{label}</small>
-          <p className="mb-0">{fields?.[key] || "—"}</p>
-        </div>
-      ))}
     </div>
   );
 }

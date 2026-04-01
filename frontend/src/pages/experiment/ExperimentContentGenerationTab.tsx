@@ -781,7 +781,7 @@ export default function ExperimentContentGenerationTab({
         },
       });
 
-      const pipelineGenerations: PipelineReportRecord[] = (response.content ?? [])
+      const sortedPipelineGenerations: PipelineReportRecord[] = (response.content ?? [])
         .map((item) => ({
           ...item,
           metadata: getSectionMetadata(item.domain),
@@ -796,6 +796,17 @@ export default function ExperimentContentGenerationTab({
             (parseTimestamp(b.createdAt) ?? Number.MAX_SAFE_INTEGER)
           );
         });
+      const campaignAngleGenerations = sortedPipelineGenerations.filter(
+        (generation) => generation.metadata.sectionKey === "campaign-angle",
+      );
+      const latestCampaignAngle =
+        campaignAngleGenerations[campaignAngleGenerations.length - 1];
+      const pipelineGenerations = sortedPipelineGenerations.filter((generation) => {
+        if (generation.metadata.sectionKey !== "campaign-angle") {
+          return true;
+        }
+        return generation.id === latestCampaignAngle?.id;
+      });
 
       const reportLines = [
         "# Relatório consolidado do pipeline de conteúdo do experimento",
@@ -1490,7 +1501,7 @@ function CampaignAngleSummaryPanel({
                 { label: "Dor principal", value: resolvedAngle?.primaryPain },
                 { label: "Resultado / Promessa", value: resolvedAngle?.primaryPromise },
                 { label: "Mecanismo", value: resolvedAngle?.mechanismSummary },
-                { label: "Prova", value: resolvedAngle?.proofUsed },
+                { label: "Prova", value: resolvedAngle?.proofSummary },
               ].map((block) => (
                 <div className="col-12 col-md-6 col-xl-3" key={block.label}>
                   <div className="border rounded p-3 h-100 bg-light-subtle">
@@ -1510,10 +1521,13 @@ function CampaignAngleSummaryPanel({
             <div className="row g-3 mt-1">
               {[
                 { label: "CTA recomendado", value: resolvedAngle?.cta },
+                { label: "Promessa single-minded", value: resolvedAngle?.singleMindedPromise },
+                { label: "CTA principal", value: resolvedAngle?.primaryCTA },
+                { label: "Linha de match landing", value: resolvedAngle?.landingMatchLine },
                 { label: "Estágio de funil", value: resolvedAngle?.funnelStage },
                 { label: "Tom sugerido", value: resolvedAngle?.tone },
               ].map((block) => (
-                <div className="col-12 col-md-4" key={block.label}>
+                <div className="col-12 col-md-6 col-xl-4" key={block.label}>
                   <div className="border rounded p-3 h-100 bg-light-subtle">
                     <p className="text-uppercase small fw-semibold text-muted mb-1">
                       {block.label}
@@ -1629,9 +1643,25 @@ function CampaignAngleHistoryList({ generations, isLoading }: CampaignAngleHisto
                     <strong>Mecanismo:</strong> {generation.fields.mechanismSummary}
                   </p>
                 ) : null}
-                {generation.fields?.proofUsed ? (
+                {generation.fields?.proofSummary ? (
                   <p className="small mb-0 text-muted">
-                    <strong>Prova:</strong> {generation.fields.proofUsed}
+                    <strong>Prova:</strong> {generation.fields.proofSummary}
+                  </p>
+                ) : null}
+                {generation.fields?.singleMindedPromise ? (
+                  <p className="small mb-0 text-muted">
+                    <strong>Promessa single-minded:</strong>{" "}
+                    {generation.fields.singleMindedPromise}
+                  </p>
+                ) : null}
+                {generation.fields?.primaryCTA ? (
+                  <p className="small mb-0 text-muted">
+                    <strong>CTA principal:</strong> {generation.fields.primaryCTA}
+                  </p>
+                ) : null}
+                {generation.fields?.landingMatchLine ? (
+                  <p className="small mb-0 text-muted">
+                    <strong>Match landing:</strong> {generation.fields.landingMatchLine}
                   </p>
                 ) : null}
               </div>

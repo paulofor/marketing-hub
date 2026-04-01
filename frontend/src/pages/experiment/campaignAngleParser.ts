@@ -2,8 +2,11 @@ export interface CampaignAngleSummary {
   primaryPromise?: string;
   primaryPain?: string;
   mechanismSummary?: string;
-  proofUsed?: string;
+  proofSummary?: string;
   cta?: string;
+  singleMindedPromise?: string;
+  primaryCTA?: string;
+  landingMatchLine?: string;
   funnelStage?: string;
   tone?: string;
 }
@@ -12,8 +15,11 @@ const TEXT_KEYS: (keyof CampaignAngleSummary)[] = [
   "primaryPromise",
   "primaryPain",
   "mechanismSummary",
-  "proofUsed",
+  "proofSummary",
   "cta",
+  "singleMindedPromise",
+  "primaryCTA",
+  "landingMatchLine",
   "funnelStage",
   "tone",
 ];
@@ -22,8 +28,11 @@ const SAFE_ALIASES: Record<keyof CampaignAngleSummary, string[]> = {
   primaryPromise: ["campaignAngle", "mainPromise", "promise", "primaryOutcome"],
   primaryPain: ["pain", "corePain"],
   mechanismSummary: ["mechanism", "mechanismExplained"],
-  proofUsed: ["proofSummary", "socialProof", "evidence"],
+  proofSummary: ["proofUsed", "socialProof", "evidence"],
   cta: ["callToAction", "ctaText"],
+  singleMindedPromise: ["singlePromise", "corePromise"],
+  primaryCTA: ["mainCTA", "ctaPrincipal"],
+  landingMatchLine: ["landingMessageBridge", "messageMatchLine"],
   funnelStage: ["funnelStageName", "funnel"],
   tone: ["toneOfVoice", "voice", "style"],
 };

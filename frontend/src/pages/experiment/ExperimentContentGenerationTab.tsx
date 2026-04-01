@@ -467,23 +467,27 @@ export default function ExperimentContentGenerationTab({
                     />
                   </div>
                   <div className="col-12">
-                    <label
-                      htmlFor={`prompt-${section.key}`}
-                      className="form-label"
-                    >
+                    <label className="form-label mb-1">
                       Prompt da geração <span className="text-danger">*</span>
                     </label>
-                    <textarea
-                      id={`prompt-${section.key}`}
-                      className="form-control"
-                      rows={4}
-                      placeholder="Você enviará este prompt depois. A estrutura já está preparada para receber o texto."
-                      defaultValue={SECTION_PROMPT_DEFAULTS[section.key] ?? ""}
-                      title="Campo que será enviado ao Worker IA com o contexto do framework da hipótese."
-                    />
-                    <div className="form-text">
-                      A solicitação incluirá automaticamente os resumos de Dor,
-                      Resultado e Oferta da hipótese vinculada.
+                    <div className="alert alert-secondary mb-0" role="status">
+                      <div className="fw-semibold">
+                        Prompt interno aplicado automaticamente.
+                      </div>
+                      <div className="small mt-1">
+                        Esta seção usa apenas instruções codificadas na
+                        aplicação e o contexto da hipótese vinculada.
+                      </div>
+                      {SECTION_PROMPT_DEFAULTS[section.key] ? (
+                        <details className="mt-2">
+                          <summary className="small">
+                            Ver referência do prompt interno desta seção
+                          </summary>
+                          <pre className="small mb-0 mt-2">
+                            {SECTION_PROMPT_DEFAULTS[section.key]}
+                          </pre>
+                        </details>
+                      ) : null}
                     </div>
                   </div>
                 </div>

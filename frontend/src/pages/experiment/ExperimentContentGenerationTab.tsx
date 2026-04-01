@@ -194,6 +194,20 @@ interface PageResponse<T> {
   content: T[];
 }
 
+interface CampaignAngleResponseFields {
+  primaryPromise: string;
+  primaryPain: string;
+  mechanismSummary: string;
+  proofUsed: string;
+  cta: string;
+  funnelStage: string;
+  tone: string;
+}
+
+interface CampaignAngleGenerationRow extends AiGenerationRecord {
+  fields?: CampaignAngleResponseFields;
+}
+
 interface PipelineReportRecord extends AiGenerationRecord {
   metadata: {
     sectionKey: ContentGenerationSectionKey;
@@ -243,6 +257,66 @@ function parseTimestamp(value?: string) {
   return Number.isNaN(parsed) ? undefined : parsed;
 }
 
+function extractCampaignAngleFields(
+  rawResponse?: string,
+): CampaignAngleResponseFields | undefined {
+  if (!rawResponse?.trim()) return undefined;
+
+  try {
+    const parsed = JSON.parse(rawResponse) as unknown;
+    if (!parsed || typeof parsed !== "object") return undefined;
+
+    const root = parsed as Record<string, unknown>;
+    const nestedContent =
+      typeof root.content === "string" ? root.content : undefined;
+    const payload =
+      nestedContent && nestedContent.trim().startsWith("{")
+        ? (JSON.parse(nestedContent) as Record<string, unknown>)
+        : root;
+
+    const primaryPromise =
+      typeof payload.primaryPromise === "string"
+        ? payload.primaryPromise.trim()
+        : "";
+    const primaryPain =
+      typeof payload.primaryPain === "string" ? payload.primaryPain.trim() : "";
+    const mechanismSummary =
+      typeof payload.mechanismSummary === "string"
+        ? payload.mechanismSummary.trim()
+        : "";
+    const proofUsed =
+      typeof payload.proofUsed === "string" ? payload.proofUsed.trim() : "";
+    const cta = typeof payload.cta === "string" ? payload.cta.trim() : "";
+    const funnelStage =
+      typeof payload.funnelStage === "string" ? payload.funnelStage.trim() : "";
+    const tone = typeof payload.tone === "string" ? payload.tone.trim() : "";
+
+    if (
+      !primaryPromise &&
+      !primaryPain &&
+      !mechanismSummary &&
+      !proofUsed &&
+      !cta &&
+      !funnelStage &&
+      !tone
+    ) {
+      return undefined;
+    }
+
+    return {
+      primaryPromise,
+      primaryPain,
+      mechanismSummary,
+      proofUsed,
+      cta,
+      funnelStage,
+      tone,
+    };
+  } catch {
+    return undefined;
+  }
+}
+
 function getSectionMetadata(domain?: string) {
   if (!domain?.startsWith("experiment.pipeline.")) {
     return undefined;
@@ -275,7 +349,7 @@ export default function ExperimentContentGenerationTab({
     useState<ContentGenerationSectionKey>(CONTENT_GENERATION_SECTIONS[0].key);
   const [isDownloadingReport, setIsDownloadingReport] = useState(false);
   const [campaignAngleGenerations, setCampaignAngleGenerations] = useState<
-    AiGenerationRecord[]
+    CampaignAngleGenerationRow[]
   >([]);
   const [isLoadingCampaignAngles, setIsLoadingCampaignAngles] = useState(false);
   const [isRequestingBySection, setIsRequestingBySection] = useState<
@@ -320,11 +394,16 @@ export default function ExperimentContentGenerationTab({
           },
         );
 
-        const orderedByLatest = [...(response.content ?? [])].sort(
+        const orderedByLatest = [...(response.content ?? [])]
+          .map((generation) => ({
+            ...generation,
+            fields: extractCampaignAngleFields(generation.rawResponse),
+          }))
+          .sort(
           (a, b) =>
             (parseTimestamp(b.createdAt) ?? Number.MIN_SAFE_INTEGER) -
             (parseTimestamp(a.createdAt) ?? Number.MIN_SAFE_INTEGER),
-        );
+          );
         setCampaignAngleGenerations(orderedByLatest);
       } catch {
         toast.error("Não foi possível carregar os ângulos da campanha agora.");
@@ -529,7 +608,7 @@ export default function ExperimentContentGenerationTab({
                     {section.key === "campaign-angle" ? (
                       <>
                         <label className="form-label mb-1">
-                          Ângulos da campanha obtidos do modelo no acesso
+                          Ângulos da campanha obtidos do modelo
                         </label>
                         {isLoadingCampaignAngles ? (
                           <div className="d-flex align-items-center gap-2 text-muted small">
@@ -542,6 +621,38 @@ export default function ExperimentContentGenerationTab({
                           </div>
                         ) : campaignAngleGenerations.length > 0 ? (
                           <div className="d-flex flex-column gap-2">
+                            <div className="table-responsive">
+                              <table className="table table-sm table-striped align-middle">
+                                <thead>
+                                  <tr>
+                                    <th>Promessa principal</th>
+                                    <th>Dor principal</th>
+                                    <th>Mecanismo resumido</th>
+                                    <th>Prova usada</th>
+                                    <th>CTA</th>
+                                    <th>Estágio do funil</th>
+                                    <th>Tom</th>
+                                    <th>Modelo</th>
+                                    <th>Data</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {campaignAngleGenerations.map((generation) => (
+                                    <tr key={generation.id}>
+                                      <td>{generation.fields?.primaryPromise || "—"}</td>
+                                      <td>{generation.fields?.primaryPain || "—"}</td>
+                                      <td>{generation.fields?.mechanismSummary || "—"}</td>
+                                      <td>{generation.fields?.proofUsed || "—"}</td>
+                                      <td>{generation.fields?.cta || "—"}</td>
+                                      <td>{generation.fields?.funnelStage || "—"}</td>
+                                      <td>{generation.fields?.tone || "—"}</td>
+                                      <td>{generation.model?.trim() || "Não informado"}</td>
+                                      <td>{formatDateTime(generation.createdAt)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
                             {campaignAngleGenerations.map((generation) => (
                               <div
                                 key={generation.id}

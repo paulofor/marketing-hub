@@ -72,14 +72,13 @@ public class ExperimentPipelineOpenAiClient {
 
             Formato esperado:
             JSON com:
-            campaignAngle,
-            primaryPain,
             primaryPromise,
+            primaryPain,
             mechanismSummary,
-            proofSummary,
+            proofUsed,
             cta,
-            tone,
-            funnelStage
+            funnelStage,
+            tone
             """;
     private static final String LANDING_COPY_PROMPT_SUFFIX = """
             Contexto do nicho: {nicho}
@@ -283,7 +282,7 @@ public class ExperimentPipelineOpenAiClient {
         String base = prompt != null && prompt.startsWith(PIPELINE_PROMPT_PREFIX)
                 ? prompt
                 : PIPELINE_PROMPT_PREFIX + (prompt != null ? prompt : "");
-        if (isCampaignAngleSection(job) && !base.contains("campaignAngle,")) {
+        if (isCampaignAngleSection(job) && !base.contains("proofUsed,")) {
             return base + "\n\n" + CAMPAIGN_ANGLE_PROMPT_SUFFIX;
         }
         if (isLandingCopySection(job) && !base.contains("heroTitle,")) {

@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import * as Tabs from "@radix-ui/react-tabs";
 import axios from "axios";
 import type { Hypothesis } from "../../api/hypothesis/useHypothesisBoard";
+import { CampaignAngleSummary, hasCampaignAngleContent, parseCampaignAnglePayload } from "./campaignAngleParser";
 
 type ContentGenerationSectionKey =
   | "campaign-angle"
@@ -179,6 +180,7 @@ interface ExperimentContentGenerationTabProps {
   experimentId: string;
   experimentName?: string;
   hypothesis?: Hypothesis;
+  campaignAngle?: string | null;
 }
 
 interface AiGenerationRecord {
@@ -194,18 +196,8 @@ interface PageResponse<T> {
   content: T[];
 }
 
-interface CampaignAngleResponseFields {
-  primaryPromise: string;
-  primaryPain: string;
-  mechanismSummary: string;
-  proofUsed: string;
-  cta: string;
-  funnelStage: string;
-  tone: string;
-}
-
 interface CampaignAngleGenerationRow extends AiGenerationRecord {
-  fields?: CampaignAngleResponseFields;
+  fields?: CampaignAngleSummary;
 }
 
 interface PipelineReportRecord extends AiGenerationRecord {
@@ -257,116 +249,6 @@ function parseTimestamp(value?: string) {
   return Number.isNaN(parsed) ? undefined : parsed;
 }
 
-function extractCampaignAngleFields(
-  rawResponse?: string,
-): CampaignAngleResponseFields | undefined {
-  if (!rawResponse?.trim()) return undefined;
-
-  const safeParseJson = (value: string): unknown => {
-    try {
-      return JSON.parse(value) as unknown;
-    } catch {
-      return undefined;
-    }
-  };
-
-  const pickText = (value: unknown): string | undefined => {
-    if (typeof value !== "string") return undefined;
-    const trimmed = value.trim();
-    return trimmed.length > 0 ? trimmed : undefined;
-  };
-
-  const parseEmbeddedJson = (text: string): Record<string, unknown> | undefined => {
-    const direct = safeParseJson(text);
-    if (direct && typeof direct === "object" && !Array.isArray(direct)) {
-      return direct as Record<string, unknown>;
-    }
-
-    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1]?.trim();
-    if (fenced) {
-      const parsedFence = safeParseJson(fenced);
-      if (parsedFence && typeof parsedFence === "object" && !Array.isArray(parsedFence)) {
-        return parsedFence as Record<string, unknown>;
-      }
-    }
-
-    const firstBrace = text.indexOf("{");
-    const lastBrace = text.lastIndexOf("}");
-    if (firstBrace >= 0 && lastBrace > firstBrace) {
-      const candidate = text.slice(firstBrace, lastBrace + 1);
-      const parsedCandidate = safeParseJson(candidate);
-      if (
-        parsedCandidate &&
-        typeof parsedCandidate === "object" &&
-        !Array.isArray(parsedCandidate)
-      ) {
-        return parsedCandidate as Record<string, unknown>;
-      }
-    }
-
-    return undefined;
-  };
-
-  const collectObjects = (value: unknown): Record<string, unknown>[] => {
-    if (value == null) return [];
-
-    if (Array.isArray(value)) {
-      return value.flatMap((item) => collectObjects(item));
-    }
-
-    if (typeof value !== "object") {
-      if (typeof value === "string") {
-        const embedded = parseEmbeddedJson(value);
-        return embedded ? [embedded] : [];
-      }
-      return [];
-    }
-
-    const asRecord = value as Record<string, unknown>;
-    const nestedFromStrings = Object.values(asRecord).flatMap((item) =>
-      typeof item === "string"
-        ? (parseEmbeddedJson(item) ? [parseEmbeddedJson(item)!] : [])
-        : [],
-    );
-
-    return [asRecord, ...Object.values(asRecord).flatMap((item) => collectObjects(item)), ...nestedFromStrings];
-  };
-
-  const parsedRoot = safeParseJson(rawResponse);
-  const candidates = collectObjects(parsedRoot ?? rawResponse);
-
-  for (const payload of candidates) {
-    const primaryPromise =
-      pickText(payload.primaryPromise) ??
-      pickText(payload.campaignAngle) ??
-      pickText(payload.mainPromise) ??
-      "";
-    const primaryPain = pickText(payload.primaryPain) ?? pickText(payload.pain) ?? "";
-    const mechanismSummary =
-      pickText(payload.mechanismSummary) ?? pickText(payload.mechanism) ?? "";
-    const proofUsed =
-      pickText(payload.proofUsed) ?? pickText(payload.proofSummary) ?? "";
-    const cta = pickText(payload.cta) ?? pickText(payload.callToAction) ?? "";
-    const funnelStage =
-      pickText(payload.funnelStage) ?? pickText(payload.funnelStageName) ?? "";
-    const tone = pickText(payload.tone) ?? pickText(payload.toneOfVoice) ?? "";
-
-    if (primaryPromise || primaryPain || mechanismSummary || proofUsed || cta || funnelStage || tone) {
-      return {
-        primaryPromise,
-        primaryPain,
-        mechanismSummary,
-        proofUsed,
-        cta,
-        funnelStage,
-        tone,
-      };
-    }
-  }
-
-  return undefined;
-}
-
 function getSectionMetadata(domain?: string) {
   if (!domain?.startsWith("experiment.pipeline.")) {
     return undefined;
@@ -394,6 +276,7 @@ export default function ExperimentContentGenerationTab({
   experimentId,
   experimentName,
   hypothesis,
+  campaignAngle,
 }: ExperimentContentGenerationTabProps) {
   const [activeSection, setActiveSection] =
     useState<ContentGenerationSectionKey>(CONTENT_GENERATION_SECTIONS[0].key);
@@ -424,6 +307,11 @@ export default function ExperimentContentGenerationTab({
     ],
   );
 
+  const persistedCampaignAngle = useMemo(
+    () => parseCampaignAnglePayload(campaignAngle),
+    [campaignAngle],
+  );
+
   const currentSection =
     CONTENT_GENERATION_SECTIONS.find(
       (section) => section.key === activeSection,
@@ -447,7 +335,7 @@ export default function ExperimentContentGenerationTab({
         const orderedByLatest = [...(response.content ?? [])]
           .map((generation) => ({
             ...generation,
-            fields: extractCampaignAngleFields(generation.rawResponse),
+            fields: parseCampaignAnglePayload(generation.rawResponse),
           }))
           .sort(
           (a, b) =>
@@ -657,66 +545,17 @@ export default function ExperimentContentGenerationTab({
                   <div className="col-12">
                     {section.key === "campaign-angle" ? (
                       <>
-                        <label className="form-label mb-1">
-                          Ângulos da campanha obtidos do modelo
-                        </label>
-                        {isLoadingCampaignAngles ? (
-                          <div className="d-flex align-items-center gap-2 text-muted small">
-                            <span
-                              className="spinner-border spinner-border-sm"
-                              role="status"
-                              aria-hidden="true"
-                            />
-                            Carregando ângulos...
-                          </div>
-                        ) : campaignAngleGenerations.length > 0 ? (
-                          <div className="d-flex flex-column gap-2">
-                            {campaignAngleGenerations.slice(0, 1).map((generation) => (
-                              <div key={generation.id} className="border rounded p-3 bg-light-subtle">
-                                <div className="d-flex flex-wrap gap-2 align-items-center small">
-                                  <span className="badge text-bg-light">
-                                    <strong>Promessa:</strong>{" "}
-                                    {generation.fields?.primaryPromise || "—"}
-                                  </span>
-                                  <span className="badge text-bg-light">
-                                    <strong>Dor:</strong> {generation.fields?.primaryPain || "—"}
-                                  </span>
-                                  <span className="badge text-bg-light">
-                                    <strong>Mecanismo:</strong>{" "}
-                                    {generation.fields?.mechanismSummary || "—"}
-                                  </span>
-                                  <span className="badge text-bg-light">
-                                    <strong>Prova:</strong> {generation.fields?.proofUsed || "—"}
-                                  </span>
-                                  <span className="badge text-bg-light">
-                                    <strong>CTA:</strong> {generation.fields?.cta || "—"}
-                                  </span>
-                                  <span className="badge text-bg-light">
-                                    <strong>Funil:</strong>{" "}
-                                    {generation.fields?.funnelStage || "—"}
-                                  </span>
-                                  <span className="badge text-bg-light">
-                                    <strong>Tom:</strong> {generation.fields?.tone || "—"}
-                                  </span>
-                                </div>
-                                <div className="d-flex flex-wrap gap-2 small text-muted mt-3">
-                                  <span>
-                                    <strong>Modelo:</strong>{" "}
-                                    {generation.model?.trim() || "Não informado"}
-                                  </span>
-                                  <span>
-                                    <strong>Data:</strong> {formatDateTime(generation.createdAt)}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-muted mb-0 small">
-                            Ainda não existem ângulos gerados para este
-                            experimento.
-                          </p>
-                        )}
+                        <CampaignAngleSummaryPanel
+                          isLoading={isLoadingCampaignAngles}
+                          savedAngle={persistedCampaignAngle}
+                          fallbackAngle={campaignAngleGenerations[0]?.fields}
+                          fallbackTimestamp={campaignAngleGenerations[0]?.createdAt}
+                          rawContent={campaignAngle}
+                        />
+                        <CampaignAngleHistoryList
+                          generations={campaignAngleGenerations}
+                          isLoading={isLoadingCampaignAngles}
+                        />
                       </>
                     ) : (
                       <>
@@ -777,6 +616,228 @@ export default function ExperimentContentGenerationTab({
       <small className="text-muted">
         Aba atual: <strong>{currentSection.label}</strong>
       </small>
+    </div>
+  );
+}
+
+
+interface CampaignAngleSummaryPanelProps {
+  isLoading: boolean;
+  savedAngle?: CampaignAngleSummary;
+  fallbackAngle?: CampaignAngleSummary;
+  fallbackTimestamp?: string;
+  rawContent?: string | null;
+}
+
+function CampaignAngleSummaryPanel({
+  isLoading,
+  savedAngle,
+  fallbackAngle,
+  fallbackTimestamp,
+  rawContent,
+}: CampaignAngleSummaryPanelProps) {
+  const resolvedAngle = savedAngle ?? fallbackAngle;
+  const hasData = hasCampaignAngleContent(resolvedAngle);
+  const badgeVariant = savedAngle
+    ? "success"
+    : fallbackAngle
+      ? "info"
+      : "secondary";
+  const badgeLabel = savedAngle
+    ? "Sincronizado com o experimento"
+    : fallbackAngle
+      ? "Última geração do Worker IA"
+      : "Aguardando geração";
+  const rawText = rawContent?.trim();
+
+  return (
+    <div className="card border-0 shadow-sm">
+      <div className="card-body">
+        <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
+          <div>
+            <p className="text-uppercase text-muted small fw-semibold mb-1">
+              Framework Dor → Resultado → Oferta
+            </p>
+            <h6 className="mb-1">Ângulo sintetizado</h6>
+            <p className="text-muted small mb-0">
+              Estrutura a promessa, dor, mecanismo e prova enviados pelo Worker IA.
+            </p>
+          </div>
+          <div className="text-end">
+            <span className={`badge text-bg-${badgeVariant}`}>{badgeLabel}</span>
+            {!savedAngle && fallbackTimestamp ? (
+              <p className="text-muted small mb-0 mt-1">
+                Última atualização: {formatDateTime(fallbackTimestamp)}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="d-flex align-items-center gap-2 text-muted mt-3">
+            <span
+              className="spinner-border spinner-border-sm"
+              role="status"
+              aria-hidden="true"
+            />
+            Carregando ângulo estruturado...
+          </div>
+        ) : hasData ? (
+          <>
+            <div className="row g-3 mt-3">
+              {[
+                { label: "Dor principal", value: resolvedAngle?.primaryPain },
+                { label: "Resultado / Promessa", value: resolvedAngle?.primaryPromise },
+                { label: "Mecanismo", value: resolvedAngle?.mechanismSummary },
+                { label: "Prova", value: resolvedAngle?.proofUsed },
+              ].map((block) => (
+                <div className="col-12 col-md-6 col-xl-3" key={block.label}>
+                  <div className="border rounded p-3 h-100 bg-light-subtle">
+                    <p className="text-uppercase small fw-semibold text-muted mb-1">
+                      {block.label}
+                    </p>
+                    <p className="mb-0">
+                      {block.value ?? (
+                        <span className="text-muted">Ainda não preenchido.</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="row g-3 mt-1">
+              {[
+                { label: "CTA recomendado", value: resolvedAngle?.cta },
+                { label: "Estágio de funil", value: resolvedAngle?.funnelStage },
+                { label: "Tom sugerido", value: resolvedAngle?.tone },
+              ].map((block) => (
+                <div className="col-12 col-md-4" key={block.label}>
+                  <div className="border rounded p-3 h-100 bg-light-subtle">
+                    <p className="text-uppercase small fw-semibold text-muted mb-1">
+                      {block.label}
+                    </p>
+                    <p className="mb-0">
+                      {block.value ?? (
+                        <span className="text-muted">Ainda não definido.</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="alert alert-info mt-3" role="status">
+            Nenhum ângulo disponível ainda. Solicite o Worker IA para preencher os blocos.
+          </div>
+        )}
+
+        {rawText && !hasData ? (
+          <details className="mt-3">
+            <summary className="small text-muted">Ver conteúdo bruto salvo</summary>
+            <pre className="bg-body-secondary rounded p-3 small mb-0">{rawText}</pre>
+          </details>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+interface CampaignAngleHistoryListProps {
+  generations: CampaignAngleGenerationRow[];
+  isLoading: boolean;
+}
+
+function CampaignAngleHistoryList({ generations, isLoading }: CampaignAngleHistoryListProps) {
+  return (
+    <div className="card border-0 shadow-sm mt-3">
+      <div className="card-body">
+        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <h6 className="card-title mb-1">Histórico das gerações</h6>
+            <p className="text-muted small mb-0">
+              Visualize tudo que o Worker IA já retornou para este experimento.
+            </p>
+          </div>
+          {generations.length > 0 ? (
+            <span className="badge text-bg-light">
+              {generations.length === 1
+                ? "1 geração"
+                : `${generations.length} gerações`}
+            </span>
+          ) : null}
+        </div>
+
+        {isLoading && generations.length === 0 ? (
+          <div className="d-flex align-items-center gap-2 text-muted mt-3">
+            <span
+              className="spinner-border spinner-border-sm"
+              role="status"
+              aria-hidden="true"
+            />
+            Carregando histórico...
+          </div>
+        ) : generations.length === 0 ? (
+          <p className="text-muted small mb-0 mt-3">
+            Assim que você solicitar o Worker IA o histórico aparecerá aqui.
+          </p>
+        ) : (
+          <div className="mt-3 d-flex flex-column gap-2">
+            {generations.map((generation) => (
+              <div key={generation.id} className="border rounded p-3 bg-body-tertiary">
+                <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                  <div>
+                    <p className="fw-semibold mb-1">
+                      {generation.fields?.primaryPromise ?? "Promessa não estruturada"}
+                    </p>
+                    <p className="text-muted small mb-0">
+                      {generation.fields?.primaryPain
+                        ? `Dor: ${generation.fields.primaryPain}`
+                        : "Dor principal não definida."}
+                    </p>
+                  </div>
+                  <div className="text-end">
+                    <span className="badge text-bg-light">
+                      {formatDateTime(generation.createdAt)}
+                    </span>
+                    {generation.model ? (
+                      <p className="text-muted small mb-0 mt-1">{generation.model}</p>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="mt-2 d-flex flex-wrap gap-2 small">
+                  {generation.fields?.funnelStage ? (
+                    <span className="badge bg-body-secondary text-dark">
+                      Funil: {generation.fields.funnelStage}
+                    </span>
+                  ) : null}
+                  {generation.fields?.cta ? (
+                    <span className="badge bg-body-secondary text-dark">
+                      CTA: {generation.fields.cta}
+                    </span>
+                  ) : null}
+                  {generation.fields?.tone ? (
+                    <span className="badge bg-body-secondary text-dark">
+                      Tom: {generation.fields.tone}
+                    </span>
+                  ) : null}
+                </div>
+                {generation.fields?.mechanismSummary ? (
+                  <p className="small mb-1 mt-2">
+                    <strong>Mecanismo:</strong> {generation.fields.mechanismSummary}
+                  </p>
+                ) : null}
+                {generation.fields?.proofUsed ? (
+                  <p className="small mb-0 text-muted">
+                    <strong>Prova:</strong> {generation.fields.proofUsed}
+                  </p>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

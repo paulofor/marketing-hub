@@ -67,6 +67,7 @@ export interface Experiment {
   followUpActionUrl?: string | null;
   leadPortalFlowModel?: string | null;
   creativeTextPrompt?: string | null;
+  campaignAngle?: string | null;
   creativeImagePrompt?: string | null;
   instagramAccount?: InstagramAccountSummary | null;
   /**

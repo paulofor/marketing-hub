@@ -148,6 +148,11 @@ public class ExperimentPipelineGenerationService {
         }
         Experiment experiment = job.getExperiment();
         applySectionContent(experiment, job.getSection(), request.responseContent());
+        if (job.getSection() == ExperimentPipelineSection.AD_COPY) {
+            generationService.deleteByDomainAndReferenceId(
+                    "experiment.pipeline." + job.getSection().path(),
+                    job.getExperiment().getId().toString());
+        }
 
         OpenAiResponse.OpenAiUsage usage = new OpenAiResponse.OpenAiUsage(
                 request.inputTokens(),
@@ -356,7 +361,9 @@ public class ExperimentPipelineGenerationService {
         String proofSummary = firstNonBlank(
                 campaignAngleFields.get("proofSummary"),
                 campaignAngleFields.get("proofUsed"),
-                nonBlank(experiment.getHypothesis()));
+                experiment.getHypothesisRef() != null
+                        ? nonBlank(experiment.getHypothesisRef().getEntrega())
+                        : "");
         String singleMindedPromise = campaignAngleFields.get("singleMindedPromise");
         String primaryCta = firstNonBlank(campaignAngleFields.get("primaryCTA"), campaignAngleFields.get("cta"));
         String landingMatchLine = campaignAngleFields.get("landingMatchLine");
@@ -377,7 +384,7 @@ public class ExperimentPipelineGenerationService {
         sb.append("Gerar clique qualificado para a landing page.\n\n");
         sb.append("Regras:\n");
         sb.append("1. O texto do anúncio deve ser entendido em poucos segundos.\n");
-        sb.append("2. A primeira linha deve abrir com dor, consequência ou resultado desejado.\n");
+        sb.append("2. A primeira linha deve abrir com dor, consequência, resultado ou prova.\n");
         sb.append("3. O mecanismo deve aparecer só depois do benefício principal.\n");
         sb.append("4. O anúncio não pode parecer consultoria.\n");
         sb.append("5. A promessa precisa ser compatível com ativos digitais gerados por IA.\n");
@@ -386,32 +393,72 @@ public class ExperimentPipelineGenerationService {
         sb.append("   - V1 focada na dor\n");
         sb.append("   - V2 focada no resultado\n");
         sb.append("   - V3 focada na prova\n");
-        sb.append("8. O CTA deve combinar exatamente com a landing.\n");
-        sb.append("9. Entregar texto pensado para Meta Ads.\n\n");
+        sb.append("8. Para cada variação, entregar 3 comprimentos de texto principal: curta, media e longa.\n");
+        sb.append("9. Definir openingHookType por variação com um valor entre: dor, consequência, resultado, prova.\n");
+        sb.append("10. Definir placementHint por variação com um valor entre: feed, stories/reels.\n");
+        sb.append("11. Aplicar trava de compliance em todas as variações:\n");
+        sb.append("    - sem garantia absoluta\n");
+        sb.append("    - sem promessa individual\n");
+        sb.append("    - sem linguagem de consultoria\n");
+        sb.append("12. O CTA deve combinar exatamente com a landing.\n");
+        sb.append("13. Entregar copy testável por placement e comprimento para Meta Ads.\n\n");
         sb.append("Entregue apenas o JSON abaixo sem texto adicional:\n");
         sb.append("{\n");
         sb.append("  \"adCopy\": {\n");
         sb.append("    \"primaryTextVariants\": [\n");
         sb.append("    {\n");
         sb.append("      \"label\": \"dor\",\n");
-        sb.append("      \"primaryText\": \"\",\n");
+        sb.append("      \"openingHookType\": \"dor\",\n");
+        sb.append("      \"placementHint\": \"feed\",\n");
+        sb.append("      \"lengthVariants\": {\n");
+        sb.append("        \"curta\": \"\",\n");
+        sb.append("        \"media\": \"\",\n");
+        sb.append("        \"longa\": \"\"\n");
+        sb.append("      },\n");
         sb.append("      \"headline\": \"\",\n");
         sb.append("      \"description\": \"\",\n");
-        sb.append("      \"ctaText\": \"\"\n");
+        sb.append("      \"ctaText\": \"\",\n");
+        sb.append("      \"compliance\": {\n");
+        sb.append("        \"semGarantiaAbsoluta\": true,\n");
+        sb.append("        \"semPromessaIndividual\": true,\n");
+        sb.append("        \"semLinguagemDeConsultoria\": true\n");
+        sb.append("      }\n");
         sb.append("    },\n");
         sb.append("    {\n");
         sb.append("      \"label\": \"resultado\",\n");
-        sb.append("      \"primaryText\": \"\",\n");
+        sb.append("      \"openingHookType\": \"resultado\",\n");
+        sb.append("      \"placementHint\": \"stories/reels\",\n");
+        sb.append("      \"lengthVariants\": {\n");
+        sb.append("        \"curta\": \"\",\n");
+        sb.append("        \"media\": \"\",\n");
+        sb.append("        \"longa\": \"\"\n");
+        sb.append("      },\n");
         sb.append("      \"headline\": \"\",\n");
         sb.append("      \"description\": \"\",\n");
-        sb.append("      \"ctaText\": \"\"\n");
+        sb.append("      \"ctaText\": \"\",\n");
+        sb.append("      \"compliance\": {\n");
+        sb.append("        \"semGarantiaAbsoluta\": true,\n");
+        sb.append("        \"semPromessaIndividual\": true,\n");
+        sb.append("        \"semLinguagemDeConsultoria\": true\n");
+        sb.append("      }\n");
         sb.append("    },\n");
         sb.append("    {\n");
         sb.append("      \"label\": \"prova\",\n");
-        sb.append("      \"primaryText\": \"\",\n");
+        sb.append("      \"openingHookType\": \"prova\",\n");
+        sb.append("      \"placementHint\": \"feed\",\n");
+        sb.append("      \"lengthVariants\": {\n");
+        sb.append("        \"curta\": \"\",\n");
+        sb.append("        \"media\": \"\",\n");
+        sb.append("        \"longa\": \"\"\n");
+        sb.append("      },\n");
         sb.append("      \"headline\": \"\",\n");
         sb.append("      \"description\": \"\",\n");
-        sb.append("      \"ctaText\": \"\"\n");
+        sb.append("      \"ctaText\": \"\",\n");
+        sb.append("      \"compliance\": {\n");
+        sb.append("        \"semGarantiaAbsoluta\": true,\n");
+        sb.append("        \"semPromessaIndividual\": true,\n");
+        sb.append("        \"semLinguagemDeConsultoria\": true\n");
+        sb.append("      }\n");
         sb.append("    }\n");
         sb.append("    ]\n");
         sb.append("  },\n");
@@ -576,12 +623,51 @@ public class ExperimentPipelineGenerationService {
                                             "additionalProperties", false,
                                             "properties", Map.of(
                                                     "label", Map.of("type", "string"),
+                                                    "openingHookType", Map.of(
+                                                            "type", "string",
+                                                            "enum", List.of("dor", "consequência", "resultado", "prova")
+                                                    ),
+                                                    "placementHint", Map.of(
+                                                            "type", "string",
+                                                            "enum", List.of("feed", "stories/reels")
+                                                    ),
+                                                    "lengthVariants", Map.of(
+                                                            "type", "object",
+                                                            "additionalProperties", false,
+                                                            "properties", Map.of(
+                                                                    "curta", Map.of("type", "string"),
+                                                                    "media", Map.of("type", "string"),
+                                                                    "longa", Map.of("type", "string")
+                                                            ),
+                                                            "required", List.of("curta", "media", "longa")
+                                                    ),
                                                     "primaryText", Map.of("type", "string"),
                                                     "headline", Map.of("type", "string"),
                                                     "description", Map.of("type", "string"),
-                                                    "ctaText", Map.of("type", "string")
+                                                    "ctaText", Map.of("type", "string"),
+                                                    "compliance", Map.of(
+                                                            "type", "object",
+                                                            "additionalProperties", false,
+                                                            "properties", Map.of(
+                                                                    "semGarantiaAbsoluta", Map.of("type", "boolean"),
+                                                                    "semPromessaIndividual", Map.of("type", "boolean"),
+                                                                    "semLinguagemDeConsultoria", Map.of("type", "boolean")
+                                                            ),
+                                                            "required", List.of(
+                                                                    "semGarantiaAbsoluta",
+                                                                    "semPromessaIndividual",
+                                                                    "semLinguagemDeConsultoria")
+                                                    )
                                             ),
-                                            "required", List.of("label", "primaryText", "headline", "description", "ctaText")
+                                            "required", List.of(
+                                                    "label",
+                                                    "openingHookType",
+                                                    "placementHint",
+                                                    "lengthVariants",
+                                                    "headline",
+                                                    "description",
+                                                    "ctaText",
+                                                    "compliance")
                                     )
                             )
                     ),

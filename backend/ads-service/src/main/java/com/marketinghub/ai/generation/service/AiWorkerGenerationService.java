@@ -57,4 +57,12 @@ public class AiWorkerGenerationService {
         }
         return repository.findAll(pageable);
     }
+
+    @Transactional
+    public void deleteByDomainAndReferenceId(String domain, String referenceId) {
+        if (!StringUtils.hasText(domain) || !StringUtils.hasText(referenceId)) {
+            return;
+        }
+        repository.deleteByDomainIgnoreCaseAndReferenceId(domain.trim(), referenceId.trim());
+    }
 }

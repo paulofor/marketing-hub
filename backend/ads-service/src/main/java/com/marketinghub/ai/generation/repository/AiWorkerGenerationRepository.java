@@ -11,4 +11,6 @@ public interface AiWorkerGenerationRepository extends JpaRepository<AiWorkerGene
     Page<AiWorkerGeneration> findByReferenceId(String referenceId, Pageable pageable);
 
     Page<AiWorkerGeneration> findByDomainIgnoreCaseAndReferenceId(String domain, String referenceId, Pageable pageable);
+
+    void deleteByDomainIgnoreCaseAndReferenceId(String domain, String referenceId);
 }

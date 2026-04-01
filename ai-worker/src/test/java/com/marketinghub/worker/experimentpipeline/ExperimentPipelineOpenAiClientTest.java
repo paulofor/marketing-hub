@@ -61,7 +61,10 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("Prompt original de angulo");
         assertThat(userPrompt).contains("Crie a base estratégica de uma campanha Meta Ads + landing page para este produto.");
         assertThat(userPrompt).contains("primaryPromise,");
-        assertThat(userPrompt).contains("proofUsed,");
+        assertThat(userPrompt).contains("proofSummary,");
+        assertThat(userPrompt).contains("singleMindedPromise,");
+        assertThat(userPrompt).contains("primaryCTA,");
+        assertThat(userPrompt).contains("landingMatchLine,");
     }
 
     @Test
@@ -97,7 +100,7 @@ class ExperimentPipelineOpenAiClientTest {
         String userPrompt = String.valueOf(input.get(0).get("content"));
         assertThat(userPrompt).startsWith("Você cria ativos de campanha para o Marketing Hub.");
         assertThat(userPrompt).contains("Prompt de anuncio");
-        assertThat(userPrompt).doesNotContain("proofUsed,");
+        assertThat(userPrompt).doesNotContain("proofSummary,");
     }
 
     @Test

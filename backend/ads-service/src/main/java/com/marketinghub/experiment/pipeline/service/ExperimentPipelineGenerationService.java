@@ -339,16 +339,27 @@ public class ExperimentPipelineGenerationService {
 
         String niche = experiment.getNiche() != null ? nonBlank(experiment.getNiche().getName()) : "";
         String campaignAngle = nonBlank(experiment.getCampaignAngle());
-        String primaryPain = experiment.getHypothesisRef() != null
-                ? nonBlank(experiment.getHypothesisRef().getProblem())
-                : "";
-        String primaryPromise = experiment.getHypothesisRef() != null
-                ? nonBlank(experiment.getHypothesisRef().getPromise())
-                : "";
-        String mechanismSummary = experiment.getHypothesisRef() != null
+        Map<String, String> campaignAngleFields = extractCampaignAngleFields(campaignAngle);
+        String primaryPain = firstNonBlank(
+                campaignAngleFields.get("primaryPain"),
+                experiment.getHypothesisRef() != null ? nonBlank(experiment.getHypothesisRef().getProblem()) : "");
+        String primaryPromise = firstNonBlank(
+                campaignAngleFields.get("primaryPromise"),
+                experiment.getHypothesisRef() != null
+                        ? nonBlank(experiment.getHypothesisRef().getPromise())
+                : "");
+        String mechanismSummary = firstNonBlank(
+                campaignAngleFields.get("mechanismSummary"),
+                experiment.getHypothesisRef() != null
                 ? nonBlank(experiment.getHypothesisRef().getMechanism())
-                : "";
-        String proofSummary = nonBlank(experiment.getHypothesis());
+                : "");
+        String proofSummary = firstNonBlank(
+                campaignAngleFields.get("proofSummary"),
+                campaignAngleFields.get("proofUsed"),
+                nonBlank(experiment.getHypothesis()));
+        String singleMindedPromise = campaignAngleFields.get("singleMindedPromise");
+        String primaryCta = firstNonBlank(campaignAngleFields.get("primaryCTA"), campaignAngleFields.get("cta"));
+        String landingMatchLine = campaignAngleFields.get("landingMatchLine");
 
         sb.append("\nDiretriz específica para texto do anúncio:\n");
         sb.append(COMMON_CAMPAIGN_ASSET_RULES).append("\n");
@@ -358,6 +369,10 @@ public class ExperimentPipelineGenerationService {
         sb.append("Promessa principal: ").append(primaryPromise).append("\n");
         sb.append("Mecanismo resumido: ").append(mechanismSummary).append("\n");
         sb.append("Prova resumida: ").append(proofSummary).append("\n\n");
+        appendIfPresent(sb, "Promessa single-minded", singleMindedPromise);
+        appendIfPresent(sb, "CTA principal", primaryCta);
+        appendIfPresent(sb, "Linha de match com landing", landingMatchLine);
+        sb.append("\n");
         sb.append("Objetivo do anúncio:\n");
         sb.append("Gerar clique qualificado para a landing page.\n\n");
         sb.append("Regras:\n");
@@ -472,6 +487,48 @@ public class ExperimentPipelineGenerationService {
         return StringUtils.hasText(value) ? value.trim() : "";
     }
 
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return "";
+        }
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value.trim();
+            }
+        }
+        return "";
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, String> extractCampaignAngleFields(String campaignAngle) {
+        if (!StringUtils.hasText(campaignAngle)) {
+            return Map.of();
+        }
+        try {
+            Map<String, Object> parsed = objectMapper.readValue(campaignAngle, Map.class);
+            if (parsed.get("campaignAngle") instanceof Map<?, ?> nestedCampaignAngle) {
+                Map<String, Object> nested = (Map<String, Object>) nestedCampaignAngle;
+                return toStringMap(nested);
+            }
+            return toStringMap(parsed);
+        } catch (JsonProcessingException ignored) {
+            return Map.of();
+        }
+    }
+
+    private Map<String, String> toStringMap(Map<String, Object> payload) {
+        if (payload == null || payload.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, String> values = new LinkedHashMap<>();
+        payload.forEach((key, value) -> {
+            if (value instanceof String text && StringUtils.hasText(text)) {
+                values.put(key, text.trim());
+            }
+        });
+        return values;
+    }
+
     private void appendIfPresent(StringBuilder sb, String label, String value) {
         if (StringUtils.hasText(value)) {
             sb.append(label).append(": ").append(value.trim()).append("\n");
@@ -481,7 +538,33 @@ public class ExperimentPipelineGenerationService {
     private Map<String, Object> sectionSchema(ExperimentPipelineSection section) {
         Map<String, Object> metadataSchema = experimentMetadataSchema();
         return switch (section) {
-            case CAMPAIGN_ANGLE -> schemaWithMetadata("campaignAngle", Map.of("type", "string"), metadataSchema);
+            case CAMPAIGN_ANGLE -> schemaWithMetadata("campaignAngle", Map.of(
+                    "type", "object",
+                    "additionalProperties", false,
+                    "properties", Map.of(
+                            "primaryPain", Map.of("type", "string"),
+                            "primaryPromise", Map.of("type", "string"),
+                            "mechanismSummary", Map.of("type", "string"),
+                            "proofSummary", Map.of("type", "string"),
+                            "cta", Map.of("type", "string"),
+                            "singleMindedPromise", Map.of("type", "string"),
+                            "primaryCTA", Map.of("type", "string"),
+                            "landingMatchLine", Map.of("type", "string"),
+                            "tone", Map.of("type", "string"),
+                            "funnelStage", Map.of("type", "string")
+                    ),
+                    "required", List.of(
+                            "primaryPain",
+                            "primaryPromise",
+                            "mechanismSummary",
+                            "proofSummary",
+                            "cta",
+                            "singleMindedPromise",
+                            "primaryCTA",
+                            "landingMatchLine",
+                            "tone",
+                            "funnelStage")
+            ), metadataSchema);
             case AD_COPY -> schemaWithMetadata("adCopy", Map.of(
                     "type", "object",
                     "additionalProperties", false,

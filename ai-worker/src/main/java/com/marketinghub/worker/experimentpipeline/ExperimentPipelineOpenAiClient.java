@@ -79,8 +79,11 @@ public class ExperimentPipelineOpenAiClient {
             primaryPromise,
             primaryPain,
             mechanismSummary,
-            proofUsed,
+            proofSummary,
             cta,
+            singleMindedPromise,
+            primaryCTA,
+            landingMatchLine,
             funnelStage,
             tone
             """;
@@ -321,7 +324,7 @@ public class ExperimentPipelineOpenAiClient {
         String base = prompt != null && prompt.startsWith(PIPELINE_PROMPT_PREFIX)
                 ? prompt
                 : PIPELINE_PROMPT_PREFIX + (prompt != null ? prompt : "");
-        if (isCampaignAngleSection(job) && !base.contains("proofUsed,")) {
+        if (isCampaignAngleSection(job) && !base.contains("proofSummary,")) {
             return base + "\n\n" + CAMPAIGN_ANGLE_PROMPT_SUFFIX;
         }
         if (isLandingCopySection(job) && !base.contains("heroTitle,")) {

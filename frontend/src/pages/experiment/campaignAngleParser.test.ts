@@ -10,8 +10,11 @@ describe("campaignAngleParser", () => {
       primaryPromise: "Promessa de escala",
       primaryPain: "Sem previsibilidade de novos alunos",
       mechanismSummary: "Playbook automatizado",
-      proofUsed: "Baseado em dados internos",
+      proofSummary: "Baseado em dados internos",
       cta: "Liberar o playbook",
+      singleMindedPromise: "Escalar aquisição sem equipe interna",
+      primaryCTA: "Receber prévia",
+      landingMatchLine: "Veja como escalar sem aumentar a operação.",
       funnelStage: "Topo",
       tone: "Direto",
     });
@@ -22,8 +25,11 @@ describe("campaignAngleParser", () => {
       primaryPromise: "Promessa de escala",
       primaryPain: "Sem previsibilidade de novos alunos",
       mechanismSummary: "Playbook automatizado",
-      proofUsed: "Baseado em dados internos",
+      proofSummary: "Baseado em dados internos",
       cta: "Liberar o playbook",
+      singleMindedPromise: "Escalar aquisição sem equipe interna",
+      primaryCTA: "Receber prévia",
+      landingMatchLine: "Veja como escalar sem aumentar a operação.",
       funnelStage: "Topo",
       tone: "Direto",
     });
@@ -39,6 +45,14 @@ describe("campaignAngleParser", () => {
       primaryPromise: "Promessa priorizada",
       primaryPain: "Sem diferenciação",
     });
+  });
+
+  it("normaliza alias legado proofUsed para proofSummary", () => {
+    const payload = JSON.stringify({
+      proofUsed: "Resultados validados em campanhas recentes",
+    });
+    const summary = parseCampaignAnglePayload(payload);
+    expect(summary?.proofSummary).toBe("Resultados validados em campanhas recentes");
   });
 
   it("retorna undefined quando não há texto estruturado", () => {

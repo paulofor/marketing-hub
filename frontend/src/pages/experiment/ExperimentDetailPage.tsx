@@ -57,7 +57,7 @@ export default function ExperimentDetailPage() {
   const { id } = useParams();
   const expId = id as string;
   const navigate = useNavigate();
-  const { data, isLoading, refetch: refetchExperiment } = useExperiment(expId);
+  const { data, isLoading } = useExperiment(expId);
   const {
     data: diagnostics,
     isLoading: isLoadingDiagnostics,
@@ -1318,8 +1318,6 @@ export default function ExperimentDetailPage() {
             experimentId={expId}
             experimentName={data?.name}
             hypothesis={hyp}
-            experiment={data}
-            onExperimentRefresh={refetchExperiment}
           />
         </Tabs.Content>
       </Tabs.Root>

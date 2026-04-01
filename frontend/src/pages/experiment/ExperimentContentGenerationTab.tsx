@@ -167,6 +167,14 @@ const SECTION_PROMPT_DEFAULTS: Partial<
   "landing-layout": LANDING_LAYOUT_PROMPT_TEMPLATE,
 };
 
+const SECTION_API_PATHS: Record<ContentGenerationSectionKey, string> = {
+  "campaign-angle": "campaign-angle",
+  "ad-copy": "ad-copy",
+  "image-prompt": "ad-image-briefing",
+  "landing-copy": "landing-page-copy",
+  "landing-layout": "landing-page-wireframe",
+};
+
 interface ExperimentContentGenerationTabProps {
   experimentId: string;
   experimentName?: string;
@@ -266,6 +274,14 @@ export default function ExperimentContentGenerationTab({
   const [activeSection, setActiveSection] =
     useState<ContentGenerationSectionKey>(CONTENT_GENERATION_SECTIONS[0].key);
   const [isDownloadingReport, setIsDownloadingReport] = useState(false);
+  const [isRequestingBySection, setIsRequestingBySection] = useState<
+    Record<ContentGenerationSectionKey, boolean>
+  >(() =>
+    CONTENT_GENERATION_SECTIONS.reduce(
+      (acc, section) => ({ ...acc, [section.key]: false }),
+      {} as Record<ContentGenerationSectionKey, boolean>,
+    ),
+  );
 
   const frameworkContext = useMemo(
     () => ({
@@ -285,10 +301,34 @@ export default function ExperimentContentGenerationTab({
       (section) => section.key === activeSection,
     ) ?? CONTENT_GENERATION_SECTIONS[0];
 
-  const handleRequest = () => {
-    toast.info(
-      "Estrutura criada. Assim que os prompts forem definidos, conectaremos esta solicitação ao Worker IA.",
-    );
+  const handleRequest = async (sectionKey: ContentGenerationSectionKey) => {
+    try {
+      setIsRequestingBySection((previous) => ({
+        ...previous,
+        [sectionKey]: true,
+      }));
+
+      const sectionPath = SECTION_API_PATHS[sectionKey];
+      await axios.post(
+        `/api/experiments/${experimentId}/pipeline/${sectionPath}/generate`,
+        {
+          customInstructions: "Quantidade sugerida: 1",
+        },
+      );
+
+      toast.success(
+        "Solicitação enviada ao backend com sucesso. O Worker IA poderá processar a fila em seguida.",
+      );
+    } catch {
+      toast.error(
+        "Não foi possível enviar a solicitação para o backend neste momento.",
+      );
+    } finally {
+      setIsRequestingBySection((previous) => ({
+        ...previous,
+        [sectionKey]: false,
+      }));
+    }
   };
 
   const handleDownloadReport = async () => {
@@ -450,22 +490,6 @@ export default function ExperimentContentGenerationTab({
                 </div>
 
                 <div className="row g-3 mt-1">
-                  <div className="col-md-4">
-                    <label
-                      htmlFor={`quantity-${section.key}`}
-                      className="form-label"
-                    >
-                      Quantidade sugerida <span className="text-danger">*</span>
-                    </label>
-                    <input
-                      id={`quantity-${section.key}`}
-                      className="form-control"
-                      type="number"
-                      min={1}
-                      defaultValue={section.defaultQuantity}
-                      title="Define quantas variações o Worker IA deve gerar nesta aba."
-                    />
-                  </div>
                   <div className="col-12">
                     <label className="form-label mb-1">
                       Prompt da geração <span className="text-danger">*</span>
@@ -496,9 +520,21 @@ export default function ExperimentContentGenerationTab({
                   <button
                     type="button"
                     className="btn btn-primary"
-                    onClick={handleRequest}
+                    onClick={() => handleRequest(section.key)}
+                    disabled={isRequestingBySection[section.key]}
                   >
-                    Solicitar geração por IA
+                    {isRequestingBySection[section.key] ? (
+                      <span className="d-inline-flex align-items-center gap-1">
+                        <span
+                          className="spinner-border spinner-border-sm"
+                          role="status"
+                          aria-hidden="true"
+                        />
+                        Enviando...
+                      </span>
+                    ) : (
+                      "Solicitar geração por IA"
+                    )}
                   </button>
                 </div>
               </div>

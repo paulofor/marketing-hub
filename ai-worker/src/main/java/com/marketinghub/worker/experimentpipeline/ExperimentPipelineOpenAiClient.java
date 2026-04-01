@@ -226,7 +226,7 @@ public class ExperimentPipelineOpenAiClient {
             }
             log.info("OpenAI content preview for job {}: {}", job.id(), truncateForLog(content, 1200));
             Map<String, Object> parsed = objectMapper.readValue(content, new TypeReference<>() {});
-            String sectionContent = parsed.get("content") != null ? String.valueOf(parsed.get("content")) : "";
+            String sectionContent = objectMapper.writeValueAsString(parsed);
             Integer inputTokens = response.usage() != null ? response.usage().effectiveInputTokens() : null;
             Integer outputTokens = response.usage() != null ? response.usage().effectiveOutputTokens() : null;
             return new ExperimentPipelineJobCompletionPayload(

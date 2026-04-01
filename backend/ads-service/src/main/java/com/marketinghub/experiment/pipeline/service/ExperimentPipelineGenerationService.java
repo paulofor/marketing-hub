@@ -274,21 +274,27 @@ public class ExperimentPipelineGenerationService {
                                    String customInstructions) {
         StringBuilder sb = new StringBuilder();
         sb.append("Experimento #").append(experiment.getId()).append("\n");
-        sb.append("Nome do experimento: ").append(nonBlank(experiment.getName())).append("\n");
-        sb.append("Hipótese resumida: ").append(nonBlank(experiment.getHypothesis())).append("\n");
+        appendIfPresent(sb, "Nome do experimento", experiment.getName());
+        appendIfPresent(sb, "Hipótese resumida", experiment.getHypothesis());
         if (experiment.getHypothesisRef() != null) {
-            sb.append("Título da hipótese: ").append(nonBlank(experiment.getHypothesisRef().getTitle())).append("\n");
-            sb.append("Persona: ").append(nonBlank(experiment.getHypothesisRef().getPersona())).append("\n");
-            sb.append("Problema: ").append(nonBlank(experiment.getHypothesisRef().getProblem())).append("\n");
-            sb.append("Promessa: ").append(nonBlank(experiment.getHypothesisRef().getPromise())).append("\n");
+            appendIfPresent(sb, "Título da hipótese", experiment.getHypothesisRef().getTitle());
+            appendIfPresent(sb, "Persona", experiment.getHypothesisRef().getPersona());
+            appendIfPresent(sb, "Problema", experiment.getHypothesisRef().getProblem());
+            appendIfPresent(sb, "Promessa", experiment.getHypothesisRef().getPromise());
         }
+        sb.append("Metadados obrigatórios do experimento:\n");
+        sb.append("- primary_variable: ").append(nonBlank(experiment.getPrimaryVariable())).append("\n");
+        sb.append("- variant_id: variant-").append(experiment.getId()).append("\n");
+        sb.append("- stage: ").append(experiment.getStage() != null ? experiment.getStage().name() : "").append("\n");
+        sb.append("- control_or_treatment: treatment\n");
+        sb.append("- asset_role: ").append(section.path()).append("\n");
         sb.append("\nTarefa alvo: ").append(section.path()).append("\n");
         appendPreviousOutputs(sb, experiment, section);
         appendSectionPrompt(sb, experiment, section);
         if (StringUtils.hasText(customInstructions)) {
             sb.append("\nInstruções extras do usuário:\n").append(customInstructions.trim()).append("\n");
         }
-        sb.append("\nResponda exclusivamente em JSON válido no formato {\"content\":\"...\"}.");
+        sb.append("\nResponda exclusivamente em JSON válido e siga estritamente o schema da seção.");
         return sb.toString();
     }
 
@@ -304,16 +310,9 @@ public class ExperimentPipelineGenerationService {
         body.put("text", Map.of(
                 "format", Map.of(
                         "type", "json_schema",
-                        "name", "experiment_pipeline_content",
+                        "name", "experiment_pipeline_" + section.path().replace("-", "_"),
                         "strict", true,
-                        "schema", Map.of(
-                                "type", "object",
-                                "additionalProperties", false,
-                                "properties", Map.of(
-                                        "content", Map.of("type", "string")
-                                ),
-                                "required", List.of("content")
-                        )
+                        "schema", sectionSchema(section)
                 )
         ));
         return body;
@@ -374,9 +373,10 @@ public class ExperimentPipelineGenerationService {
         sb.append("   - V3 focada na prova\n");
         sb.append("8. O CTA deve combinar exatamente com a landing.\n");
         sb.append("9. Entregar texto pensado para Meta Ads.\n\n");
-        sb.append("No campo content, entregue apenas o JSON abaixo sem texto adicional:\n");
+        sb.append("Entregue apenas o JSON abaixo sem texto adicional:\n");
         sb.append("{\n");
-        sb.append("  \"primaryTextVariants\": [\n");
+        sb.append("  \"adCopy\": {\n");
+        sb.append("    \"primaryTextVariants\": [\n");
         sb.append("    {\n");
         sb.append("      \"label\": \"dor\",\n");
         sb.append("      \"primaryText\": \"\",\n");
@@ -398,7 +398,15 @@ public class ExperimentPipelineGenerationService {
         sb.append("      \"description\": \"\",\n");
         sb.append("      \"ctaText\": \"\"\n");
         sb.append("    }\n");
-        sb.append("  ]\n");
+        sb.append("    ]\n");
+        sb.append("  },\n");
+        sb.append("  \"experimentMetadata\": {\n");
+        sb.append("    \"primary_variable\": \"\",\n");
+        sb.append("    \"variant_id\": \"\",\n");
+        sb.append("    \"stage\": \"\",\n");
+        sb.append("    \"control_or_treatment\": \"\",\n");
+        sb.append("    \"asset_role\": \"ad-copy\"\n");
+        sb.append("  }\n");
         sb.append("}\n");
     }
 
@@ -462,5 +470,72 @@ public class ExperimentPipelineGenerationService {
 
     private String nonBlank(String value) {
         return StringUtils.hasText(value) ? value.trim() : "";
+    }
+
+    private void appendIfPresent(StringBuilder sb, String label, String value) {
+        if (StringUtils.hasText(value)) {
+            sb.append(label).append(": ").append(value.trim()).append("\n");
+        }
+    }
+
+    private Map<String, Object> sectionSchema(ExperimentPipelineSection section) {
+        Map<String, Object> metadataSchema = experimentMetadataSchema();
+        return switch (section) {
+            case CAMPAIGN_ANGLE -> schemaWithMetadata("campaignAngle", Map.of("type", "string"), metadataSchema);
+            case AD_COPY -> schemaWithMetadata("adCopy", Map.of(
+                    "type", "object",
+                    "additionalProperties", false,
+                    "properties", Map.of(
+                            "primaryTextVariants", Map.of(
+                                    "type", "array",
+                                    "items", Map.of(
+                                            "type", "object",
+                                            "additionalProperties", false,
+                                            "properties", Map.of(
+                                                    "label", Map.of("type", "string"),
+                                                    "primaryText", Map.of("type", "string"),
+                                                    "headline", Map.of("type", "string"),
+                                                    "description", Map.of("type", "string"),
+                                                    "ctaText", Map.of("type", "string")
+                                            ),
+                                            "required", List.of("label", "primaryText", "headline", "description", "ctaText")
+                                    )
+                            )
+                    ),
+                    "required", List.of("primaryTextVariants")
+            ), metadataSchema);
+            case AD_IMAGE_BRIEFING -> schemaWithMetadata("adImageBriefing", Map.of("type", "string"), metadataSchema);
+            case LANDING_PAGE_COPY -> schemaWithMetadata("landingPageCopy", Map.of("type", "object"), metadataSchema);
+            case LANDING_PAGE_WIREFRAME -> schemaWithMetadata("landingPageWireframe", Map.of("type", "object"), metadataSchema);
+        };
+    }
+
+    private Map<String, Object> experimentMetadataSchema() {
+        return Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.of(
+                        "primary_variable", Map.of("type", "string"),
+                        "variant_id", Map.of("type", "string"),
+                        "stage", Map.of("type", "string"),
+                        "control_or_treatment", Map.of("type", "string"),
+                        "asset_role", Map.of("type", "string")
+                ),
+                "required", List.of("primary_variable", "variant_id", "stage", "control_or_treatment", "asset_role")
+        );
+    }
+
+    private Map<String, Object> schemaWithMetadata(String fieldName,
+                                                   Map<String, Object> fieldSchema,
+                                                   Map<String, Object> metadataSchema) {
+        return Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.of(
+                        fieldName, fieldSchema,
+                        "experimentMetadata", metadataSchema
+                ),
+                "required", List.of(fieldName, "experimentMetadata")
+        );
     }
 }

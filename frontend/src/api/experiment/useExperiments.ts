@@ -68,6 +68,11 @@ export interface Experiment {
   leadPortalFlowModel?: string | null;
   creativeTextPrompt?: string | null;
   creativeImagePrompt?: string | null;
+  campaignAngle?: string | null;
+  adCopy?: string | null;
+  adImageBriefing?: string | null;
+  landingPageCopy?: string | null;
+  landingPageWireframe?: string | null;
   instagramAccount?: InstagramAccountSummary | null;
   /**
    * KPI alvo em CPL. Mantém `kpiTarget` para compatibilidade com APIs

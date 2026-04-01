@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import * as Tabs from "@radix-ui/react-tabs";
 import axios from "axios";
@@ -274,6 +274,10 @@ export default function ExperimentContentGenerationTab({
   const [activeSection, setActiveSection] =
     useState<ContentGenerationSectionKey>(CONTENT_GENERATION_SECTIONS[0].key);
   const [isDownloadingReport, setIsDownloadingReport] = useState(false);
+  const [campaignAngleGenerations, setCampaignAngleGenerations] = useState<
+    AiGenerationRecord[]
+  >([]);
+  const [isLoadingCampaignAngles, setIsLoadingCampaignAngles] = useState(false);
   const [isRequestingBySection, setIsRequestingBySection] = useState<
     Record<ContentGenerationSectionKey, boolean>
   >(() =>
@@ -300,6 +304,37 @@ export default function ExperimentContentGenerationTab({
     CONTENT_GENERATION_SECTIONS.find(
       (section) => section.key === activeSection,
     ) ?? CONTENT_GENERATION_SECTIONS[0];
+
+  useEffect(() => {
+    const loadCampaignAngles = async () => {
+      try {
+        setIsLoadingCampaignAngles(true);
+        const { data: response } = await axios.get<PageResponse<AiGenerationRecord>>(
+          "/api/ai/generations",
+          {
+            params: {
+              referenceId: experimentId,
+              domain: "experiment.pipeline.campaign-angle",
+              size: 20,
+            },
+          },
+        );
+
+        const orderedByLatest = [...(response.content ?? [])].sort(
+          (a, b) =>
+            (parseTimestamp(b.createdAt) ?? Number.MIN_SAFE_INTEGER) -
+            (parseTimestamp(a.createdAt) ?? Number.MIN_SAFE_INTEGER),
+        );
+        setCampaignAngleGenerations(orderedByLatest);
+      } catch {
+        toast.error("Não foi possível carregar os ângulos da campanha agora.");
+      } finally {
+        setIsLoadingCampaignAngles(false);
+      }
+    };
+
+    void loadCampaignAngles();
+  }, [experimentId]);
 
   const handleRequest = async (sectionKey: ContentGenerationSectionKey) => {
     try {
@@ -491,28 +526,77 @@ export default function ExperimentContentGenerationTab({
 
                 <div className="row g-3 mt-1">
                   <div className="col-12">
-                    <label className="form-label mb-1">
-                      Prompt da geração <span className="text-danger">*</span>
-                    </label>
-                    <div className="alert alert-secondary mb-0" role="status">
-                      <div className="fw-semibold">
-                        Prompt interno aplicado automaticamente.
-                      </div>
-                      <div className="small mt-1">
-                        Esta seção usa apenas instruções codificadas na
-                        aplicação e o contexto da hipótese vinculada.
-                      </div>
-                      {SECTION_PROMPT_DEFAULTS[section.key] ? (
-                        <details className="mt-2">
-                          <summary className="small">
-                            Ver referência do prompt interno desta seção
-                          </summary>
-                          <pre className="small mb-0 mt-2">
-                            {SECTION_PROMPT_DEFAULTS[section.key]}
-                          </pre>
-                        </details>
-                      ) : null}
-                    </div>
+                    {section.key === "campaign-angle" ? (
+                      <>
+                        <label className="form-label mb-1">
+                          Ângulos da campanha obtidos do modelo no acesso
+                        </label>
+                        {isLoadingCampaignAngles ? (
+                          <div className="d-flex align-items-center gap-2 text-muted small">
+                            <span
+                              className="spinner-border spinner-border-sm"
+                              role="status"
+                              aria-hidden="true"
+                            />
+                            Carregando ângulos...
+                          </div>
+                        ) : campaignAngleGenerations.length > 0 ? (
+                          <div className="d-flex flex-column gap-2">
+                            {campaignAngleGenerations.map((generation) => (
+                              <div
+                                key={generation.id}
+                                className="border rounded p-3 bg-light-subtle"
+                              >
+                                <div className="d-flex flex-wrap gap-2 small text-muted mb-2">
+                                  <span>
+                                    <strong>Modelo:</strong>{" "}
+                                    {generation.model?.trim() || "Não informado"}
+                                  </span>
+                                  <span>
+                                    <strong>Data:</strong>{" "}
+                                    {formatDateTime(generation.createdAt)}
+                                  </span>
+                                </div>
+                                <pre className="small mb-0 text-wrap">
+                                  {generation.rawResponse?.trim() ||
+                                    "Sem conteúdo retornado pelo modelo."}
+                                </pre>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-muted mb-0 small">
+                            Ainda não existem ângulos gerados para este
+                            experimento.
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <label className="form-label mb-1">
+                          Prompt da geração <span className="text-danger">*</span>
+                        </label>
+                        <div className="alert alert-secondary mb-0" role="status">
+                          <div className="fw-semibold">
+                            Prompt interno aplicado automaticamente.
+                          </div>
+                          <div className="small mt-1">
+                            Esta seção usa apenas instruções codificadas na
+                            aplicação e o contexto da hipótese vinculada.
+                          </div>
+                          {SECTION_PROMPT_DEFAULTS[section.key] ? (
+                            <details className="mt-2">
+                              <summary className="small">
+                                Ver referência do prompt interno desta seção
+                              </summary>
+                              <pre className="small mb-0 mt-2">
+                                {SECTION_PROMPT_DEFAULTS[section.key]}
+                              </pre>
+                            </details>
+                          ) : null}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 

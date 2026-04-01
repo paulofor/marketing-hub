@@ -203,6 +203,10 @@ public class ExperimentPipelineOpenAiClient {
         try {
             Map<String, Object> payload = objectMapper.readValue(job.requestBodyJson(), new TypeReference<>() {});
             enrichPrompt(payload, job);
+            log.info("Sending experiment pipeline job {} to OpenAI (experimentId={}, section={}, model={})",
+                    job.id(), job.experimentId(), job.section(), job.model());
+            log.info("OpenAI payload preview for job {}: {}", job.id(),
+                    truncateForLog(objectMapper.writeValueAsString(payload), 1200));
             OpenAiResponse response = webClient.post()
                     .uri("/responses")
                     .bodyValue(payload)
@@ -212,10 +216,17 @@ public class ExperimentPipelineOpenAiClient {
             if (response == null || response.hasError()) {
                 throw new IllegalStateException(response != null ? response.errorMessage() : "Resposta vazia da OpenAI");
             }
+            log.info("Received OpenAI response for job {} (responseId={}, status={}, inputTokens={}, outputTokens={})",
+                    job.id(),
+                    response.id(),
+                    response.status(),
+                    response.usage() != null ? response.usage().effectiveInputTokens() : null,
+                    response.usage() != null ? response.usage().effectiveOutputTokens() : null);
             String content = response.firstText();
             if (!StringUtils.hasText(content)) {
                 throw new IllegalStateException("Resposta da OpenAI sem conteúdo JSON");
             }
+            log.info("OpenAI content preview for job {}: {}", job.id(), truncateForLog(content, 1200));
             Map<String, Object> parsed = objectMapper.readValue(content, new TypeReference<>() {});
             String sectionContent = parsed.get("content") != null ? String.valueOf(parsed.get("content")) : "";
             Integer inputTokens = response.usage() != null ? response.usage().effectiveInputTokens() : null;
@@ -230,6 +241,16 @@ public class ExperimentPipelineOpenAiClient {
         } catch (Exception ex) {
             throw new IllegalStateException("Falha ao gerar seção " + job.section() + " do experimento " + job.experimentId(), ex);
         }
+    }
+
+    private String truncateForLog(String text, int maxLength) {
+        if (!StringUtils.hasText(text) || maxLength <= 0) {
+            return "";
+        }
+        if (text.length() <= maxLength) {
+            return text;
+        }
+        return text.substring(0, maxLength) + "... [truncated]";
     }
 
     @SuppressWarnings("unchecked")

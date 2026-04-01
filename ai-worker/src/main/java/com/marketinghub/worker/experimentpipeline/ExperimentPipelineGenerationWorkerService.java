@@ -24,30 +24,40 @@ public class ExperimentPipelineGenerationWorkerService {
     }
 
     public void processPending() {
+        log.info("Experiment pipeline worker cycle started");
         if (!openAiClient.isEnabled()) {
             log.warn("Experiment pipeline generation skipped: OpenAI client is disabled");
             return;
         }
         List<ExperimentPipelineJobDto> pending = backendClient.listPending(20);
+        log.info("Experiment pipeline worker found {} pending job(s)", pending.size());
         if (pending.isEmpty()) {
             return;
         }
         for (ExperimentPipelineJobDto job : pending) {
+            log.info("Attempting to claim experiment pipeline job {} (experimentId={}, section={})",
+                    job.id(), job.experimentId(), job.section());
             ExperimentPipelineJobDto claimed = backendClient.claim(job.id(), workerId);
             if (claimed == null) {
+                log.info("Job {} could not be claimed by worker {}", job.id(), workerId);
                 continue;
             }
             try {
+                log.info("Job {} claimed by worker {}. Sending to OpenAI (section={})",
+                        claimed.id(), workerId, claimed.section());
                 backendClient.updateStage(claimed.id(), "SENT_TO_OPENAI");
                 backendClient.updateStage(claimed.id(), "WAITING_OPENAI");
                 ExperimentPipelineJobCompletionPayload payload = openAiClient.generate(claimed);
+                log.info("Job {} received OpenAI output; completing job in backend", claimed.id());
                 backendClient.complete(claimed.id(), payload);
+                log.info("Job {} completed successfully", claimed.id());
             } catch (Exception ex) {
                 String error = ex.getMessage() != null ? ex.getMessage() : "Falha desconhecida";
                 backendClient.fail(claimed.id(), error);
                 log.error("Experiment pipeline job {} failed", claimed.id(), ex);
             }
         }
+        log.info("Experiment pipeline worker cycle finished");
     }
 
     private String resolveWorkerId(String configuredWorkerId) {

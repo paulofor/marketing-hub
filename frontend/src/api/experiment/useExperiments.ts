@@ -68,6 +68,7 @@ export interface Experiment {
   leadPortalFlowModel?: string | null;
   creativeTextPrompt?: string | null;
   campaignAngle?: string | null;
+  adCopy?: string | null;
   creativeImagePrompt?: string | null;
   instagramAccount?: InstagramAccountSummary | null;
   /**

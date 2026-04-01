@@ -1319,6 +1319,7 @@ export default function ExperimentDetailPage() {
             experimentName={data?.name}
             hypothesis={hyp}
             campaignAngle={data?.campaignAngle}
+            adCopy={data?.adCopy}
           />
         </Tabs.Content>
       </Tabs.Root>

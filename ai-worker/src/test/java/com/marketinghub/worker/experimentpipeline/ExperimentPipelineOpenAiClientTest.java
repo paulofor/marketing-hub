@@ -137,7 +137,10 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).startsWith("Você cria ativos de campanha para o Marketing Hub.");
         assertThat(userPrompt).contains("Prompt da landing");
         assertThat(userPrompt).contains("Objetivo da landing:");
-        assertThat(userPrompt).contains("heroTitle,");
+        assertThat(userPrompt).contains("messageMatchSource,");
+        assertThat(userPrompt).contains("landingCurta {");
+        assertThat(userPrompt).contains("landingCompleta {");
+        assertThat(userPrompt).contains("objectionHandlingSection");
         assertThat(userPrompt).contains("closingCTA");
     }
 

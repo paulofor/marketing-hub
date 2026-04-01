@@ -211,6 +211,86 @@ primaryTextVariants [
   }
 ]`;
 
+const LANDING_COPY_PROMPT_TEMPLATE = `${COMMON_PIPELINE_PROMPT}
+
+Contexto do nicho: {nicho}
+
+Ângulo da campanha: {campaignAngle}
+Headline do anúncio clicado: {adHeadline}
+Dor principal: {primaryPain}
+Promessa principal: {primaryPromise}
+Mecanismo resumido: {mechanismSummary}
+Prova resumida: {proofSummary}
+
+Objetivo da landing:
+Converter o clique em:
+- preenchimento de briefing
+- geração de amostra
+- pedido de prévia
+
+Regras:
+1. A landing deve continuar exatamente a promessa do anúncio.
+2. Entregue dois modos de copy da landing:
+   - landingCurta: versão enxuta para leitura rápida
+   - landingCompleta: versão aprofundada para leitura detalhada
+3. Inclua messageMatchSource informando qual headline do anúncio esta landing está espelhando.
+4. Separe heroPromise de offerPromise, sem misturar proposta de valor com detalhes de oferta.
+5. O hero deve deixar claro:
+   - para quem é
+   - qual transformação entrega
+   - qual próximo passo
+6. O mecanismo deve ser explicado de forma simples.
+7. A prova deve reduzir o medo de “isso é genérico” ou “isso não serve para mim”.
+8. O CTA principal deve aparecer no topo e se repetir ao longo da página.
+9. O texto deve ser escaneável.
+10. Não usar linguagem de consultoria humana.
+11. Toda a oferta deve caber no envelope do produto.
+12. O formulário deve pedir apenas dados necessários para gerar a amostra.
+13. Crie bloco próprio formMicrocopy (headline, suporte e instruções curtas).
+14. Crie objectionHandlingSection cobrindo explicitamente:
+    - "não é consultoria"
+    - "é gerado por IA"
+    - "serve para meu caso?"
+15. Mantenha alinhamento total entre expectativa do clique e conteúdo entregue na landing.
+
+Formato esperado:
+JSON com:
+messageMatchSource,
+landingCurta {
+  heroPromise,
+  offerPromise,
+  heroTitle,
+  heroSubtitle,
+  heroBullets,
+  primaryCTA,
+  formMicrocopy,
+  formFields,
+  benefitsSection,
+  howItWorksSection,
+  proofSection,
+  offerSection,
+  objectionHandlingSection,
+  faqSection,
+  closingCTA
+},
+landingCompleta {
+  heroPromise,
+  offerPromise,
+  heroTitle,
+  heroSubtitle,
+  heroBullets,
+  primaryCTA,
+  formMicrocopy,
+  formFields,
+  benefitsSection,
+  howItWorksSection,
+  proofSection,
+  offerSection,
+  objectionHandlingSection,
+  faqSection,
+  closingCTA
+}`;
+
 const LANDING_LAYOUT_PROMPT_TEMPLATE = `${COMMON_PIPELINE_PROMPT}
 
 Contexto do nicho: {nicho}
@@ -263,6 +343,7 @@ const SECTION_PROMPT_DEFAULTS: Partial<
   Record<ContentGenerationSectionKey, string>
 > = {
   "ad-copy": AD_COPY_PROMPT_TEMPLATE,
+  "landing-copy": LANDING_COPY_PROMPT_TEMPLATE,
   "landing-layout": LANDING_LAYOUT_PROMPT_TEMPLATE,
 };
 

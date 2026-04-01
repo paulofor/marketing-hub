@@ -91,6 +91,7 @@ public class ExperimentPipelineOpenAiClient {
             Contexto do nicho: {nicho}
 
             Ângulo da campanha: {campaignAngle}
+            Headline do anúncio clicado: {adHeadline}
             Dor principal: {primaryPain}
             Promessa principal: {primaryPromise}
             Mecanismo resumido: {mechanismSummary}
@@ -104,32 +105,66 @@ public class ExperimentPipelineOpenAiClient {
 
             Regras:
             1. A landing deve continuar exatamente a promessa do anúncio.
-            2. O hero deve deixar claro:
+            2. Entregue dois modos de copy da landing:
+               - landingCurta: versão enxuta para leitura rápida
+               - landingCompleta: versão aprofundada para leitura detalhada
+            3. Inclua messageMatchSource informando qual headline do anúncio esta landing está espelhando.
+            4. Separe heroPromise de offerPromise, sem misturar proposta de valor com detalhes de oferta.
+            5. O hero deve deixar claro:
                - para quem é
                - qual transformação entrega
                - qual próximo passo
-            3. O mecanismo deve ser explicado de forma simples.
-            4. A prova deve reduzir o medo de “isso é genérico” ou “isso não serve para mim”.
-            5. O CTA principal deve aparecer no topo e se repetir ao longo da página.
-            6. O texto deve ser escaneável.
-            7. Não usar linguagem de consultoria humana.
-            8. Toda a oferta deve caber no envelope do produto.
-            9. O formulário deve pedir apenas dados necessários para gerar a amostra.
+            6. O mecanismo deve ser explicado de forma simples.
+            7. A prova deve reduzir o medo de “isso é genérico” ou “isso não serve para mim”.
+            8. O CTA principal deve aparecer no topo e se repetir ao longo da página.
+            9. O texto deve ser escaneável.
+            10. Não usar linguagem de consultoria humana.
+            11. Toda a oferta deve caber no envelope do produto.
+            12. O formulário deve pedir apenas dados necessários para gerar a amostra.
+            13. Crie bloco próprio formMicrocopy (headline, suporte e instruções curtas).
+            14. Crie objectionHandlingSection cobrindo explicitamente:
+                - "não é consultoria"
+                - "é gerado por IA"
+                - "serve para meu caso?"
+            15. Mantenha alinhamento total entre expectativa do clique e conteúdo entregue na landing.
 
             Formato esperado:
             JSON com:
-            heroTitle,
-            heroSubtitle,
-            heroBullets,
-            primaryCTA,
-            formIntro,
-            formFields,
-            benefitsSection,
-            howItWorksSection,
-            proofSection,
-            offerSection,
-            faqSection,
-            closingCTA
+            messageMatchSource,
+            landingCurta {
+              heroPromise,
+              offerPromise,
+              heroTitle,
+              heroSubtitle,
+              heroBullets,
+              primaryCTA,
+              formMicrocopy,
+              formFields,
+              benefitsSection,
+              howItWorksSection,
+              proofSection,
+              offerSection,
+              objectionHandlingSection,
+              faqSection,
+              closingCTA
+            },
+            landingCompleta {
+              heroPromise,
+              offerPromise,
+              heroTitle,
+              heroSubtitle,
+              heroBullets,
+              primaryCTA,
+              formMicrocopy,
+              formFields,
+              benefitsSection,
+              howItWorksSection,
+              proofSection,
+              offerSection,
+              objectionHandlingSection,
+              faqSection,
+              closingCTA
+            }
             """;
     private static final String LANDING_LAYOUT_PROMPT_SUFFIX = """
             Contexto do nicho: {nicho}
@@ -327,7 +362,7 @@ public class ExperimentPipelineOpenAiClient {
         if (isCampaignAngleSection(job) && !base.contains("proofSummary,")) {
             return base + "\n\n" + CAMPAIGN_ANGLE_PROMPT_SUFFIX;
         }
-        if (isLandingCopySection(job) && !base.contains("heroTitle,")) {
+        if (isLandingCopySection(job) && !base.contains("messageMatchSource,")) {
             return base + "\n\n" + LANDING_COPY_PROMPT_SUFFIX;
         }
         if (isLandingLayoutSection(job) && !base.contains("pageGoal,")) {

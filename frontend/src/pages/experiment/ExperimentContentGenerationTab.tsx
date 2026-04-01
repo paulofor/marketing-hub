@@ -262,59 +262,109 @@ function extractCampaignAngleFields(
 ): CampaignAngleResponseFields | undefined {
   if (!rawResponse?.trim()) return undefined;
 
-  try {
-    const parsed = JSON.parse(rawResponse) as unknown;
-    if (!parsed || typeof parsed !== "object") return undefined;
-
-    const root = parsed as Record<string, unknown>;
-    const nestedContent =
-      typeof root.content === "string" ? root.content : undefined;
-    const payload =
-      nestedContent && nestedContent.trim().startsWith("{")
-        ? (JSON.parse(nestedContent) as Record<string, unknown>)
-        : root;
-
-    const primaryPromise =
-      typeof payload.primaryPromise === "string"
-        ? payload.primaryPromise.trim()
-        : "";
-    const primaryPain =
-      typeof payload.primaryPain === "string" ? payload.primaryPain.trim() : "";
-    const mechanismSummary =
-      typeof payload.mechanismSummary === "string"
-        ? payload.mechanismSummary.trim()
-        : "";
-    const proofUsed =
-      typeof payload.proofUsed === "string" ? payload.proofUsed.trim() : "";
-    const cta = typeof payload.cta === "string" ? payload.cta.trim() : "";
-    const funnelStage =
-      typeof payload.funnelStage === "string" ? payload.funnelStage.trim() : "";
-    const tone = typeof payload.tone === "string" ? payload.tone.trim() : "";
-
-    if (
-      !primaryPromise &&
-      !primaryPain &&
-      !mechanismSummary &&
-      !proofUsed &&
-      !cta &&
-      !funnelStage &&
-      !tone
-    ) {
+  const safeParseJson = (value: string): unknown => {
+    try {
+      return JSON.parse(value) as unknown;
+    } catch {
       return undefined;
     }
+  };
 
-    return {
-      primaryPromise,
-      primaryPain,
-      mechanismSummary,
-      proofUsed,
-      cta,
-      funnelStage,
-      tone,
-    };
-  } catch {
+  const pickText = (value: unknown): string | undefined => {
+    if (typeof value !== "string") return undefined;
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  };
+
+  const parseEmbeddedJson = (text: string): Record<string, unknown> | undefined => {
+    const direct = safeParseJson(text);
+    if (direct && typeof direct === "object" && !Array.isArray(direct)) {
+      return direct as Record<string, unknown>;
+    }
+
+    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1]?.trim();
+    if (fenced) {
+      const parsedFence = safeParseJson(fenced);
+      if (parsedFence && typeof parsedFence === "object" && !Array.isArray(parsedFence)) {
+        return parsedFence as Record<string, unknown>;
+      }
+    }
+
+    const firstBrace = text.indexOf("{");
+    const lastBrace = text.lastIndexOf("}");
+    if (firstBrace >= 0 && lastBrace > firstBrace) {
+      const candidate = text.slice(firstBrace, lastBrace + 1);
+      const parsedCandidate = safeParseJson(candidate);
+      if (
+        parsedCandidate &&
+        typeof parsedCandidate === "object" &&
+        !Array.isArray(parsedCandidate)
+      ) {
+        return parsedCandidate as Record<string, unknown>;
+      }
+    }
+
     return undefined;
+  };
+
+  const collectObjects = (value: unknown): Record<string, unknown>[] => {
+    if (value == null) return [];
+
+    if (Array.isArray(value)) {
+      return value.flatMap((item) => collectObjects(item));
+    }
+
+    if (typeof value !== "object") {
+      if (typeof value === "string") {
+        const embedded = parseEmbeddedJson(value);
+        return embedded ? [embedded] : [];
+      }
+      return [];
+    }
+
+    const asRecord = value as Record<string, unknown>;
+    const nestedFromStrings = Object.values(asRecord).flatMap((item) =>
+      typeof item === "string"
+        ? (parseEmbeddedJson(item) ? [parseEmbeddedJson(item)!] : [])
+        : [],
+    );
+
+    return [asRecord, ...Object.values(asRecord).flatMap((item) => collectObjects(item)), ...nestedFromStrings];
+  };
+
+  const parsedRoot = safeParseJson(rawResponse);
+  const candidates = collectObjects(parsedRoot ?? rawResponse);
+
+  for (const payload of candidates) {
+    const primaryPromise =
+      pickText(payload.primaryPromise) ??
+      pickText(payload.campaignAngle) ??
+      pickText(payload.mainPromise) ??
+      "";
+    const primaryPain = pickText(payload.primaryPain) ?? pickText(payload.pain) ?? "";
+    const mechanismSummary =
+      pickText(payload.mechanismSummary) ?? pickText(payload.mechanism) ?? "";
+    const proofUsed =
+      pickText(payload.proofUsed) ?? pickText(payload.proofSummary) ?? "";
+    const cta = pickText(payload.cta) ?? pickText(payload.callToAction) ?? "";
+    const funnelStage =
+      pickText(payload.funnelStage) ?? pickText(payload.funnelStageName) ?? "";
+    const tone = pickText(payload.tone) ?? pickText(payload.toneOfVoice) ?? "";
+
+    if (primaryPromise || primaryPain || mechanismSummary || proofUsed || cta || funnelStage || tone) {
+      return {
+        primaryPromise,
+        primaryPain,
+        mechanismSummary,
+        proofUsed,
+        cta,
+        funnelStage,
+        tone,
+      };
+    }
   }
+
+  return undefined;
 }
 
 function getSectionMetadata(domain?: string) {
@@ -621,57 +671,43 @@ export default function ExperimentContentGenerationTab({
                           </div>
                         ) : campaignAngleGenerations.length > 0 ? (
                           <div className="d-flex flex-column gap-2">
-                            <div className="table-responsive">
-                              <table className="table table-sm table-striped align-middle">
-                                <thead>
-                                  <tr>
-                                    <th>Promessa principal</th>
-                                    <th>Dor principal</th>
-                                    <th>Mecanismo resumido</th>
-                                    <th>Prova usada</th>
-                                    <th>CTA</th>
-                                    <th>Estágio do funil</th>
-                                    <th>Tom</th>
-                                    <th>Modelo</th>
-                                    <th>Data</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {campaignAngleGenerations.map((generation) => (
-                                    <tr key={generation.id}>
-                                      <td>{generation.fields?.primaryPromise || "—"}</td>
-                                      <td>{generation.fields?.primaryPain || "—"}</td>
-                                      <td>{generation.fields?.mechanismSummary || "—"}</td>
-                                      <td>{generation.fields?.proofUsed || "—"}</td>
-                                      <td>{generation.fields?.cta || "—"}</td>
-                                      <td>{generation.fields?.funnelStage || "—"}</td>
-                                      <td>{generation.fields?.tone || "—"}</td>
-                                      <td>{generation.model?.trim() || "Não informado"}</td>
-                                      <td>{formatDateTime(generation.createdAt)}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                            {campaignAngleGenerations.map((generation) => (
-                              <div
-                                key={generation.id}
-                                className="border rounded p-3 bg-light-subtle"
-                              >
-                                <div className="d-flex flex-wrap gap-2 small text-muted mb-2">
+                            {campaignAngleGenerations.slice(0, 1).map((generation) => (
+                              <div key={generation.id} className="border rounded p-3 bg-light-subtle">
+                                <div className="d-flex flex-wrap gap-2 align-items-center small">
+                                  <span className="badge text-bg-light">
+                                    <strong>Promessa:</strong>{" "}
+                                    {generation.fields?.primaryPromise || "—"}
+                                  </span>
+                                  <span className="badge text-bg-light">
+                                    <strong>Dor:</strong> {generation.fields?.primaryPain || "—"}
+                                  </span>
+                                  <span className="badge text-bg-light">
+                                    <strong>Mecanismo:</strong>{" "}
+                                    {generation.fields?.mechanismSummary || "—"}
+                                  </span>
+                                  <span className="badge text-bg-light">
+                                    <strong>Prova:</strong> {generation.fields?.proofUsed || "—"}
+                                  </span>
+                                  <span className="badge text-bg-light">
+                                    <strong>CTA:</strong> {generation.fields?.cta || "—"}
+                                  </span>
+                                  <span className="badge text-bg-light">
+                                    <strong>Funil:</strong>{" "}
+                                    {generation.fields?.funnelStage || "—"}
+                                  </span>
+                                  <span className="badge text-bg-light">
+                                    <strong>Tom:</strong> {generation.fields?.tone || "—"}
+                                  </span>
+                                </div>
+                                <div className="d-flex flex-wrap gap-2 small text-muted mt-3">
                                   <span>
                                     <strong>Modelo:</strong>{" "}
                                     {generation.model?.trim() || "Não informado"}
                                   </span>
                                   <span>
-                                    <strong>Data:</strong>{" "}
-                                    {formatDateTime(generation.createdAt)}
+                                    <strong>Data:</strong> {formatDateTime(generation.createdAt)}
                                   </span>
                                 </div>
-                                <pre className="small mb-0 text-wrap">
-                                  {generation.rawResponse?.trim() ||
-                                    "Sem conteúdo retornado pelo modelo."}
-                                </pre>
                               </div>
                             ))}
                           </div>

@@ -11,13 +11,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @Component
 public class ExperimentPipelineOpenAiClient {
     private static final Logger log = LoggerFactory.getLogger(ExperimentPipelineOpenAiClient.class);
+    private static final int TRANSIENT_ERROR_MAX_ATTEMPTS = 3;
+    private static final long TRANSIENT_ERROR_RETRY_DELAY_MS = 1_500L;
     private static final String PIPELINE_PROMPT_PREFIX = """
             Você cria ativos de campanha para o Marketing Hub.
 
@@ -206,12 +210,7 @@ public class ExperimentPipelineOpenAiClient {
                     job.id(), job.experimentId(), job.section(), job.model());
             log.info("OpenAI payload preview for job {}: {}", job.id(),
                     truncateForLog(objectMapper.writeValueAsString(payload), 1200));
-            OpenAiResponse response = webClient.post()
-                    .uri("/responses")
-                    .bodyValue(payload)
-                    .retrieve()
-                    .bodyToMono(OpenAiResponse.class)
-                    .block();
+            OpenAiResponse response = requestWithTransientRetries(payload, job);
             if (response == null || response.hasError()) {
                 throw new IllegalStateException(response != null ? response.errorMessage() : "Resposta vazia da OpenAI");
             }
@@ -239,6 +238,46 @@ public class ExperimentPipelineOpenAiClient {
                     OpenAiCostEstimator.estimateUsd(job.model(), response.usage()));
         } catch (Exception ex) {
             throw new IllegalStateException("Falha ao gerar seção " + job.section() + " do experimento " + job.experimentId(), ex);
+        }
+    }
+
+    private OpenAiResponse requestWithTransientRetries(Map<String, Object> payload, ExperimentPipelineJobDto job) {
+        for (int attempt = 1; attempt <= TRANSIENT_ERROR_MAX_ATTEMPTS; attempt++) {
+            try {
+                return webClient.post()
+                        .uri("/responses")
+                        .bodyValue(payload)
+                        .retrieve()
+                        .bodyToMono(OpenAiResponse.class)
+                        .block();
+            } catch (WebClientResponseException ex) {
+                HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
+                boolean transientStatus = status == HttpStatus.BAD_GATEWAY
+                        || status == HttpStatus.SERVICE_UNAVAILABLE
+                        || status == HttpStatus.GATEWAY_TIMEOUT
+                        || status == HttpStatus.TOO_MANY_REQUESTS;
+                if (!transientStatus || attempt == TRANSIENT_ERROR_MAX_ATTEMPTS) {
+                    throw ex;
+                }
+                log.warn("OpenAI retornou status transitório {} para job {} (experimento={}, seção={}). Tentativa {}/{}",
+                        ex.getStatusCode().value(),
+                        job.id(),
+                        job.experimentId(),
+                        job.section(),
+                        attempt,
+                        TRANSIENT_ERROR_MAX_ATTEMPTS);
+                sleepBeforeRetry();
+            }
+        }
+        throw new IllegalStateException("Falha inesperada ao chamar OpenAI");
+    }
+
+    private void sleepBeforeRetry() {
+        try {
+            Thread.sleep(TRANSIENT_ERROR_RETRY_DELAY_MS);
+        } catch (InterruptedException interruptedException) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Thread interrompida durante retentativa para OpenAI", interruptedException);
         }
     }
 

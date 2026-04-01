@@ -5,7 +5,9 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @Service
 public class ExperimentPipelineGenerationWorkerService {
@@ -52,7 +54,7 @@ public class ExperimentPipelineGenerationWorkerService {
                 backendClient.complete(claimed.id(), payload);
                 log.info("Job {} completed successfully", claimed.id());
             } catch (Exception ex) {
-                String error = ex.getMessage() != null ? ex.getMessage() : "Falha desconhecida";
+                String error = buildFailureReason(ex);
                 backendClient.fail(claimed.id(), error);
                 log.error("Experiment pipeline job {} failed", claimed.id(), ex);
             }
@@ -69,5 +71,35 @@ public class ExperimentPipelineGenerationWorkerService {
         } catch (Exception ignored) {
             return "experiment-pipeline-worker";
         }
+    }
+
+    private String buildFailureReason(Exception ex) {
+        WebClientResponseException httpError = findHttpError(ex);
+        if (httpError != null) {
+            HttpStatus status = HttpStatus.resolve(httpError.getStatusCode().value());
+            if (status == HttpStatus.BAD_GATEWAY
+                    || status == HttpStatus.SERVICE_UNAVAILABLE
+                    || status == HttpStatus.GATEWAY_TIMEOUT
+                    || status == HttpStatus.TOO_MANY_REQUESTS) {
+                return "OpenAI indisponível temporariamente (" + httpError.getStatusCode().value()
+                        + "). Tente novamente em alguns minutos.";
+            }
+        }
+        String message = ex.getMessage();
+        if (message == null || message.isBlank()) {
+            return "Falha desconhecida";
+        }
+        return message.length() > 500 ? message.substring(0, 500) : message;
+    }
+
+    private WebClientResponseException findHttpError(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof WebClientResponseException responseException) {
+                return responseException;
+            }
+            current = current.getCause();
+        }
+        return null;
     }
 }

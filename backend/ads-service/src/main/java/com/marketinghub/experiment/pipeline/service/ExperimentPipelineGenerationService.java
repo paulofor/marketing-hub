@@ -148,7 +148,8 @@ public class ExperimentPipelineGenerationService {
         }
         Experiment experiment = job.getExperiment();
         applySectionContent(experiment, job.getSection(), request.responseContent());
-        if (job.getSection() == ExperimentPipelineSection.AD_COPY) {
+        if (job.getSection() == ExperimentPipelineSection.AD_COPY
+                || job.getSection() == ExperimentPipelineSection.AD_IMAGE_BRIEFING) {
             generationService.deleteByDomainAndReferenceId(
                     "experiment.pipeline." + job.getSection().path(),
                     job.getExperiment().getId().toString());
@@ -338,10 +339,6 @@ public class ExperimentPipelineGenerationService {
     private void appendSectionPrompt(StringBuilder sb,
                                      Experiment experiment,
                                      ExperimentPipelineSection section) {
-        if (section != ExperimentPipelineSection.AD_COPY) {
-            return;
-        }
-
         String niche = experiment.getNiche() != null ? nonBlank(experiment.getNiche().getName()) : "";
         String campaignAngle = nonBlank(experiment.getCampaignAngle());
         Map<String, String> campaignAngleFields = extractCampaignAngleFields(campaignAngle);
@@ -350,126 +347,149 @@ public class ExperimentPipelineGenerationService {
                 experiment.getHypothesisRef() != null ? nonBlank(experiment.getHypothesisRef().getProblem()) : "");
         String primaryPromise = firstNonBlank(
                 campaignAngleFields.get("primaryPromise"),
-                experiment.getHypothesisRef() != null
-                        ? nonBlank(experiment.getHypothesisRef().getPromise())
-                : "");
+                experiment.getHypothesisRef() != null ? nonBlank(experiment.getHypothesisRef().getPromise()) : "");
         String mechanismSummary = firstNonBlank(
                 campaignAngleFields.get("mechanismSummary"),
-                experiment.getHypothesisRef() != null
-                ? nonBlank(experiment.getHypothesisRef().getMechanism())
-                : "");
+                experiment.getHypothesisRef() != null ? nonBlank(experiment.getHypothesisRef().getMechanism()) : "");
         String proofSummary = firstNonBlank(
                 campaignAngleFields.get("proofSummary"),
                 campaignAngleFields.get("proofUsed"),
-                experiment.getHypothesisRef() != null
-                        ? nonBlank(experiment.getHypothesisRef().getEntrega())
-                        : "");
+                experiment.getHypothesisRef() != null ? nonBlank(experiment.getHypothesisRef().getEntrega()) : "");
         String singleMindedPromise = campaignAngleFields.get("singleMindedPromise");
         String primaryCta = firstNonBlank(campaignAngleFields.get("primaryCTA"), campaignAngleFields.get("cta"));
         String landingMatchLine = campaignAngleFields.get("landingMatchLine");
 
-        sb.append("\nDiretriz específica para texto do anúncio:\n");
-        sb.append(COMMON_CAMPAIGN_ASSET_RULES).append("\n");
-        sb.append("Contexto do nicho: ").append(niche).append("\n\n");
-        sb.append("Ângulo da campanha: ").append(campaignAngle).append("\n");
-        sb.append("Dor principal: ").append(primaryPain).append("\n");
-        sb.append("Promessa principal: ").append(primaryPromise).append("\n");
-        sb.append("Mecanismo resumido: ").append(mechanismSummary).append("\n");
-        sb.append("Prova resumida: ").append(proofSummary).append("\n\n");
-        appendIfPresent(sb, "Promessa single-minded", singleMindedPromise);
-        appendIfPresent(sb, "CTA principal", primaryCta);
-        appendIfPresent(sb, "Linha de match com landing", landingMatchLine);
-        sb.append("\n");
-        sb.append("Objetivo do anúncio:\n");
-        sb.append("Gerar clique qualificado para a landing page.\n\n");
-        sb.append("Regras:\n");
-        sb.append("1. O texto do anúncio deve ser entendido em poucos segundos.\n");
-        sb.append("2. A primeira linha deve abrir com dor, consequência, resultado ou prova.\n");
-        sb.append("3. O mecanismo deve aparecer só depois do benefício principal.\n");
-        sb.append("4. O anúncio não pode parecer consultoria.\n");
-        sb.append("5. A promessa precisa ser compatível com ativos digitais gerados por IA.\n");
-        sb.append("6. Não usar jargão de tráfego pago.\n");
-        sb.append("7. Criar 3 variações:\n");
-        sb.append("   - V1 focada na dor\n");
-        sb.append("   - V2 focada no resultado\n");
-        sb.append("   - V3 focada na prova\n");
-        sb.append("8. Para cada variação, entregar 3 comprimentos de texto principal: curta, media e longa.\n");
-        sb.append("9. Definir openingHookType por variação com um valor entre: dor, consequência, resultado, prova.\n");
-        sb.append("10. Definir placementHint por variação com um valor entre: feed, stories/reels.\n");
-        sb.append("11. Aplicar trava de compliance em todas as variações:\n");
-        sb.append("    - sem garantia absoluta\n");
-        sb.append("    - sem promessa individual\n");
-        sb.append("    - sem linguagem de consultoria\n");
-        sb.append("12. O CTA deve combinar exatamente com a landing.\n");
-        sb.append("13. Entregar copy testável por placement e comprimento para Meta Ads.\n\n");
-        sb.append("Entregue apenas o JSON abaixo sem texto adicional:\n");
-        sb.append("{\n");
-        sb.append("  \"adCopy\": {\n");
-        sb.append("    \"primaryTextVariants\": [\n");
-        sb.append("    {\n");
-        sb.append("      \"label\": \"dor\",\n");
-        sb.append("      \"openingHookType\": \"dor\",\n");
-        sb.append("      \"placementHint\": \"feed\",\n");
-        sb.append("      \"lengthVariants\": {\n");
-        sb.append("        \"curta\": \"\",\n");
-        sb.append("        \"media\": \"\",\n");
-        sb.append("        \"longa\": \"\"\n");
-        sb.append("      },\n");
-        sb.append("      \"headline\": \"\",\n");
-        sb.append("      \"description\": \"\",\n");
-        sb.append("      \"ctaText\": \"\",\n");
-        sb.append("      \"compliance\": {\n");
-        sb.append("        \"semGarantiaAbsoluta\": true,\n");
-        sb.append("        \"semPromessaIndividual\": true,\n");
-        sb.append("        \"semLinguagemDeConsultoria\": true\n");
-        sb.append("      }\n");
-        sb.append("    },\n");
-        sb.append("    {\n");
-        sb.append("      \"label\": \"resultado\",\n");
-        sb.append("      \"openingHookType\": \"resultado\",\n");
-        sb.append("      \"placementHint\": \"stories/reels\",\n");
-        sb.append("      \"lengthVariants\": {\n");
-        sb.append("        \"curta\": \"\",\n");
-        sb.append("        \"media\": \"\",\n");
-        sb.append("        \"longa\": \"\"\n");
-        sb.append("      },\n");
-        sb.append("      \"headline\": \"\",\n");
-        sb.append("      \"description\": \"\",\n");
-        sb.append("      \"ctaText\": \"\",\n");
-        sb.append("      \"compliance\": {\n");
-        sb.append("        \"semGarantiaAbsoluta\": true,\n");
-        sb.append("        \"semPromessaIndividual\": true,\n");
-        sb.append("        \"semLinguagemDeConsultoria\": true\n");
-        sb.append("      }\n");
-        sb.append("    },\n");
-        sb.append("    {\n");
-        sb.append("      \"label\": \"prova\",\n");
-        sb.append("      \"openingHookType\": \"prova\",\n");
-        sb.append("      \"placementHint\": \"feed\",\n");
-        sb.append("      \"lengthVariants\": {\n");
-        sb.append("        \"curta\": \"\",\n");
-        sb.append("        \"media\": \"\",\n");
-        sb.append("        \"longa\": \"\"\n");
-        sb.append("      },\n");
-        sb.append("      \"headline\": \"\",\n");
-        sb.append("      \"description\": \"\",\n");
-        sb.append("      \"ctaText\": \"\",\n");
-        sb.append("      \"compliance\": {\n");
-        sb.append("        \"semGarantiaAbsoluta\": true,\n");
-        sb.append("        \"semPromessaIndividual\": true,\n");
-        sb.append("        \"semLinguagemDeConsultoria\": true\n");
-        sb.append("      }\n");
-        sb.append("    }\n");
-        sb.append("    ]\n");
-        sb.append("  },\n");
-        sb.append("  \"experimentMetadata\": {\n");
-        sb.append("    \"primary_variable\": \"\",\n");
-        sb.append("    \"variant_id\": \"\",\n");
-        sb.append("    \"stage\": \"\",\n");
-        sb.append("    \"control_or_treatment\": \"\",\n");
-        sb.append("    \"asset_role\": \"ad-copy\"\n");
-        sb.append("  }\n");
-        sb.append("}\n");
+        if (section == ExperimentPipelineSection.AD_COPY) {
+            sb.append("\nDiretriz específica para texto do anúncio:\n");
+            sb.append(COMMON_CAMPAIGN_ASSET_RULES).append("\n");
+            sb.append("Contexto do nicho: ").append(niche).append("\n\n");
+            sb.append("Ângulo da campanha: ").append(campaignAngle).append("\n");
+            sb.append("Dor principal: ").append(primaryPain).append("\n");
+            sb.append("Promessa principal: ").append(primaryPromise).append("\n");
+            sb.append("Mecanismo resumido: ").append(mechanismSummary).append("\n");
+            sb.append("Prova resumida: ").append(proofSummary).append("\n\n");
+            appendIfPresent(sb, "Promessa single-minded", singleMindedPromise);
+            appendIfPresent(sb, "CTA principal", primaryCta);
+            appendIfPresent(sb, "Linha de match com landing", landingMatchLine);
+            sb.append("\n");
+            sb.append("Objetivo do anúncio:\n");
+            sb.append("Gerar clique qualificado para a landing page.\n\n");
+            sb.append("Regras:\n");
+            sb.append("1. O texto do anúncio deve ser entendido em poucos segundos.\n");
+            sb.append("2. A primeira linha deve abrir com dor, consequência, resultado ou prova.\n");
+            sb.append("3. O mecanismo deve aparecer só depois do benefício principal.\n");
+            sb.append("4. O anúncio não pode parecer consultoria.\n");
+            sb.append("5. A promessa precisa ser compatível com ativos digitais gerados por IA.\n");
+            sb.append("6. Não usar jargão de tráfego pago.\n");
+            sb.append("7. Criar 3 variações:\n");
+            sb.append("   - V1 focada na dor\n");
+            sb.append("   - V2 focada no resultado\n");
+            sb.append("   - V3 focada na prova\n");
+            sb.append("8. Para cada variação, entregar 3 comprimentos de texto principal: curta, media e longa.\n");
+            sb.append("9. Definir openingHookType por variação com um valor entre: dor, consequência, resultado, prova.\n");
+            sb.append("10. Definir placementHint por variação com um valor entre: feed, stories/reels.\n");
+            sb.append("11. Aplicar trava de compliance em todas as variações:\n");
+            sb.append("    - sem garantia absoluta\n");
+            sb.append("    - sem promessa individual\n");
+            sb.append("    - sem linguagem de consultoria\n");
+            sb.append("12. O CTA deve combinar exatamente com a landing.\n");
+            sb.append("13. Entregar copy testável por placement e comprimento para Meta Ads.\n\n");
+            sb.append("Entregue apenas o JSON abaixo sem texto adicional:\n");
+            sb.append("{\n");
+            sb.append("  \"adCopy\": {\n");
+            sb.append("    \"primaryTextVariants\": [\n");
+            sb.append("    {\n");
+            sb.append("      \"label\": \"dor\",\n");
+            sb.append("      \"openingHookType\": \"dor\",\n");
+            sb.append("      \"placementHint\": \"feed\",\n");
+            sb.append("      \"lengthVariants\": {\n");
+            sb.append("        \"curta\": \"\",\n");
+            sb.append("        \"media\": \"\",\n");
+            sb.append("        \"longa\": \"\"\n");
+            sb.append("      },\n");
+            sb.append("      \"headline\": \"\",\n");
+            sb.append("      \"description\": \"\",\n");
+            sb.append("      \"ctaText\": \"\",\n");
+            sb.append("      \"compliance\": {\n");
+            sb.append("        \"semGarantiaAbsoluta\": true,\n");
+            sb.append("        \"semPromessaIndividual\": true,\n");
+            sb.append("        \"semLinguagemDeConsultoria\": true\n");
+            sb.append("      }\n");
+            sb.append("    },\n");
+            sb.append("    {\n");
+            sb.append("      \"label\": \"resultado\",\n");
+            sb.append("      \"openingHookType\": \"resultado\",\n");
+            sb.append("      \"placementHint\": \"stories/reels\",\n");
+            sb.append("      \"lengthVariants\": {\n");
+            sb.append("        \"curta\": \"\",\n");
+            sb.append("        \"media\": \"\",\n");
+            sb.append("        \"longa\": \"\"\n");
+            sb.append("      },\n");
+            sb.append("      \"headline\": \"\",\n");
+            sb.append("      \"description\": \"\",\n");
+            sb.append("      \"ctaText\": \"\",\n");
+            sb.append("      \"compliance\": {\n");
+            sb.append("        \"semGarantiaAbsoluta\": true,\n");
+            sb.append("        \"semPromessaIndividual\": true,\n");
+            sb.append("        \"semLinguagemDeConsultoria\": true\n");
+            sb.append("      }\n");
+            sb.append("    },\n");
+            sb.append("    {\n");
+            sb.append("      \"label\": \"prova\",\n");
+            sb.append("      \"openingHookType\": \"prova\",\n");
+            sb.append("      \"placementHint\": \"feed\",\n");
+            sb.append("      \"lengthVariants\": {\n");
+            sb.append("        \"curta\": \"\",\n");
+            sb.append("        \"media\": \"\",\n");
+            sb.append("        \"longa\": \"\"\n");
+            sb.append("      },\n");
+            sb.append("      \"headline\": \"\",\n");
+            sb.append("      \"description\": \"\",\n");
+            sb.append("      \"ctaText\": \"\",\n");
+            sb.append("      \"compliance\": {\n");
+            sb.append("        \"semGarantiaAbsoluta\": true,\n");
+            sb.append("        \"semPromessaIndividual\": true,\n");
+            sb.append("        \"semLinguagemDeConsultoria\": true\n");
+            sb.append("      }\n");
+            sb.append("    }\n");
+            sb.append("    ]\n");
+            sb.append("  },\n");
+            sb.append("  \"experimentMetadata\": {\n");
+            sb.append("    \"primary_variable\": \"\",\n");
+            sb.append("    \"variant_id\": \"\",\n");
+            sb.append("    \"stage\": \"\",\n");
+            sb.append("    \"control_or_treatment\": \"\",\n");
+            sb.append("    \"asset_role\": \"ad-copy\"\n");
+            sb.append("  }\n");
+            sb.append("}\n");
+            return;
+        }
+
+        if (section == ExperimentPipelineSection.AD_IMAGE_BRIEFING) {
+            sb.append("\nDiretriz específica para prompt da imagem:\n");
+            sb.append(COMMON_CAMPAIGN_ASSET_RULES).append("\n");
+            sb.append("Contexto do nicho: ").append(niche).append("\n\n");
+            sb.append("Ângulo da campanha: ").append(campaignAngle).append("\n");
+            sb.append("Dor principal: ").append(primaryPain).append("\n");
+            sb.append("Promessa principal: ").append(primaryPromise).append("\n");
+            sb.append("Mecanismo resumido: ").append(mechanismSummary).append("\n");
+            sb.append("Prova resumida: ").append(proofSummary).append("\n\n");
+            appendIfPresent(sb, "Promessa single-minded", singleMindedPromise);
+            appendIfPresent(sb, "CTA principal", primaryCta);
+            appendIfPresent(sb, "Linha de match com landing", landingMatchLine);
+            sb.append("\n");
+            sb.append("Objetivo:\n");
+            sb.append("Gerar briefing visual testável por variável do experimento (não apenas imagem bonita).\n\n");
+            sb.append("Regras obrigatórias:\n");
+            sb.append("1. Gerar exatamente 3 briefings, um por variação do anúncio: dor, resultado e prova.\n");
+            sb.append("2. Em cada briefing, preencher visualAngle com: dor, resultado ou prova.\n");
+            sb.append("3. Em cada briefing, preencher mustMatchAdVariant com: dor, resultado ou prova.\n");
+            sb.append("4. Em cada briefing, definir assetType com um valor entre: estatico, carrossel, story-vertical.\n");
+            sb.append("5. Em cada briefing, definir imageTextMaxWords (inteiro de 3 a 12) para limitar texto sobreposto.\n");
+            sb.append("6. Garantir coerência entre criativo, copy da variação e promessa da landing pós-clique.\n");
+            sb.append("7. Preservar hierarchy visual, safe margins e notas de compliance por peça.\n");
+            sb.append("8. Evitar claims absolutos e qualquer linguagem de consultoria.\n\n");
+        }
     }
 
     private void appendPreviousOutputs(StringBuilder sb,
@@ -673,7 +693,58 @@ public class ExperimentPipelineGenerationService {
                     ),
                     "required", List.of("primaryTextVariants")
             ), metadataSchema);
-            case AD_IMAGE_BRIEFING -> schemaWithMetadata("adImageBriefing", Map.of("type", "string"), metadataSchema);
+            case AD_IMAGE_BRIEFING -> schemaWithMetadata("adImageBriefing", Map.of(
+                    "type", "object",
+                    "additionalProperties", false,
+                    "properties", Map.of(
+                            "briefings", Map.of(
+                                    "type", "array",
+                                    "minItems", 3,
+                                    "maxItems", 3,
+                                    "items", Map.of(
+                                            "type", "object",
+                                            "additionalProperties", false,
+                                            "properties", Map.of(
+                                                    "mustMatchAdVariant", Map.of(
+                                                            "type", "string",
+                                                            "enum", List.of("dor", "resultado", "prova")
+                                                    ),
+                                                    "visualAngle", Map.of(
+                                                            "type", "string",
+                                                            "enum", List.of("dor", "resultado", "prova")
+                                                    ),
+                                                    "assetType", Map.of(
+                                                            "type", "string",
+                                                            "enum", List.of("estatico", "carrossel", "story-vertical")
+                                                    ),
+                                                    "imageTextMaxWords", Map.of(
+                                                            "type", "integer",
+                                                            "minimum", 3,
+                                                            "maximum", 12
+                                                    ),
+                                                    "visualBriefing", Map.of("type", "string"),
+                                                    "hierarchy", Map.of("type", "string"),
+                                                    "formatByPlacement", Map.of("type", "string"),
+                                                    "safeMargins", Map.of("type", "string"),
+                                                    "complianceNotes", Map.of("type", "string"),
+                                                    "messageMatchNotes", Map.of("type", "string")
+                                            ),
+                                            "required", List.of(
+                                                    "mustMatchAdVariant",
+                                                    "visualAngle",
+                                                    "assetType",
+                                                    "imageTextMaxWords",
+                                                    "visualBriefing",
+                                                    "hierarchy",
+                                                    "formatByPlacement",
+                                                    "safeMargins",
+                                                    "complianceNotes",
+                                                    "messageMatchNotes")
+                                    )
+                            )
+                    ),
+                    "required", List.of("briefings")
+            ), metadataSchema);
             case LANDING_PAGE_COPY -> schemaWithMetadata("landingPageCopy", Map.of("type", "object"), metadataSchema);
             case LANDING_PAGE_WIREFRAME -> schemaWithMetadata("landingPageWireframe", Map.of("type", "object"), metadataSchema);
         };

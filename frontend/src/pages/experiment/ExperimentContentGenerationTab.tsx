@@ -206,6 +206,8 @@ interface AdCopyGenerationRow extends AiGenerationRecord {
   fields?: AdCopyContent;
 }
 
+type SimpleGenerationRow = AiGenerationRecord;
+
 interface PipelineReportRecord extends AiGenerationRecord {
   metadata: {
     sectionKey: ContentGenerationSectionKey;
@@ -296,6 +298,20 @@ export default function ExperimentContentGenerationTab({
     AdCopyGenerationRow[]
   >([]);
   const [isLoadingAdCopy, setIsLoadingAdCopy] = useState(false);
+  const [sectionGenerations, setSectionGenerations] = useState<
+    Record<"image-prompt" | "landing-copy" | "landing-layout", SimpleGenerationRow[]>
+  >({
+    "image-prompt": [],
+    "landing-copy": [],
+    "landing-layout": [],
+  });
+  const [isLoadingSectionGenerations, setIsLoadingSectionGenerations] = useState<
+    Record<"image-prompt" | "landing-copy" | "landing-layout", boolean>
+  >({
+    "image-prompt": false,
+    "landing-copy": false,
+    "landing-layout": false,
+  });
   const [isRequestingBySection, setIsRequestingBySection] = useState<
     Record<ContentGenerationSectionKey, boolean>
   >(() =>
@@ -364,6 +380,57 @@ export default function ExperimentContentGenerationTab({
     };
 
     void loadCampaignAngles();
+  }, [experimentId]);
+
+  useEffect(() => {
+    const sectionsToLoad: Array<"image-prompt" | "landing-copy" | "landing-layout"> = [
+      "image-prompt",
+      "landing-copy",
+      "landing-layout",
+    ];
+
+    const loadSection = async (
+      sectionKey: "image-prompt" | "landing-copy" | "landing-layout",
+    ) => {
+      try {
+        setIsLoadingSectionGenerations((previous) => ({
+          ...previous,
+          [sectionKey]: true,
+        }));
+        const { data: response } = await axios.get<PageResponse<AiGenerationRecord>>(
+          "/api/ai/generations",
+          {
+            params: {
+              referenceId: experimentId,
+              domain: `experiment.pipeline.${SECTION_API_PATHS[sectionKey]}`,
+              size: 20,
+            },
+          },
+        );
+
+        const orderedByLatest = [...(response.content ?? [])].sort(
+          (a, b) =>
+            (parseTimestamp(b.createdAt) ?? Number.MIN_SAFE_INTEGER) -
+            (parseTimestamp(a.createdAt) ?? Number.MIN_SAFE_INTEGER),
+        );
+
+        setSectionGenerations((previous) => ({
+          ...previous,
+          [sectionKey]: orderedByLatest,
+        }));
+      } catch {
+        toast.error(
+          `Não foi possível carregar as gerações da seção "${CONTENT_GENERATION_SECTIONS.find((section) => section.key === sectionKey)?.label ?? sectionKey}".`,
+        );
+      } finally {
+        setIsLoadingSectionGenerations((previous) => ({
+          ...previous,
+          [sectionKey]: false,
+        }));
+      }
+    };
+
+    void Promise.all(sectionsToLoad.map((sectionKey) => loadSection(sectionKey)));
   }, [experimentId]);
 
   useEffect(() => {
@@ -623,28 +690,15 @@ export default function ExperimentContentGenerationTab({
                       </>
                     ) : (
                       <>
-                        <label className="form-label mb-1">
-                          Prompt da geração <span className="text-danger">*</span>
-                        </label>
-                        <div className="alert alert-secondary mb-0" role="status">
-                          <div className="fw-semibold">
-                            Prompt interno aplicado automaticamente.
-                          </div>
-                          <div className="small mt-1">
-                            Esta seção usa apenas instruções codificadas na
-                            aplicação e o contexto da hipótese vinculada.
-                          </div>
-                          {SECTION_PROMPT_DEFAULTS[section.key] ? (
-                            <details className="mt-2">
-                              <summary className="small">
-                                Ver referência do prompt interno desta seção
-                              </summary>
-                              <pre className="small mb-0 mt-2">
-                                {SECTION_PROMPT_DEFAULTS[section.key]}
-                              </pre>
-                            </details>
-                          ) : null}
-                        </div>
+                        <GenericGenerationSummaryPanel
+                          section={section}
+                          isLoading={isLoadingSectionGenerations[section.key]}
+                          latestGeneration={sectionGenerations[section.key][0]}
+                        />
+                        <GenericGenerationHistoryList
+                          generations={sectionGenerations[section.key]}
+                          isLoading={isLoadingSectionGenerations[section.key]}
+                        />
                       </>
                     )}
                   </div>
@@ -680,6 +734,144 @@ export default function ExperimentContentGenerationTab({
       <small className="text-muted">
         Aba atual: <strong>{currentSection.label}</strong>
       </small>
+    </div>
+  );
+}
+
+interface GenericGenerationSummaryPanelProps {
+  section: ContentGenerationSection;
+  isLoading: boolean;
+  latestGeneration?: SimpleGenerationRow;
+}
+
+function GenericGenerationSummaryPanel({
+  section,
+  isLoading,
+  latestGeneration,
+}: GenericGenerationSummaryPanelProps) {
+  const hasData = Boolean(latestGeneration?.rawResponse?.trim());
+  const badgeVariant = hasData ? "info" : "secondary";
+  const badgeLabel = hasData ? "Última geração do Worker IA" : "Aguardando geração";
+  const defaultPrompt = SECTION_PROMPT_DEFAULTS[section.key];
+
+  return (
+    <div className="card border-0 shadow-sm">
+      <div className="card-body">
+        <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
+          <div>
+            <p className="text-uppercase text-muted small fw-semibold mb-1">
+              Saída estruturada do pipeline
+            </p>
+            <h6 className="mb-1">Conteúdo sintetizado</h6>
+            <p className="text-muted small mb-0">
+              Exibe a resposta mais recente gerada para esta etapa do pipeline.
+            </p>
+          </div>
+          <div className="text-end">
+            <span className={`badge text-bg-${badgeVariant}`}>{badgeLabel}</span>
+            {hasData && latestGeneration?.createdAt ? (
+              <p className="text-muted small mb-0 mt-1">
+                Última atualização: {formatDateTime(latestGeneration.createdAt)}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="d-flex align-items-center gap-2 text-muted mt-3">
+            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+            Carregando conteúdo estruturado...
+          </div>
+        ) : hasData ? (
+          <div className="border rounded p-3 mt-3 bg-light-subtle">
+            <pre className="small mb-0" style={{ whiteSpace: "pre-wrap" }}>
+              {latestGeneration?.rawResponse?.trim()}
+            </pre>
+          </div>
+        ) : (
+          <div className="alert alert-info mt-3 mb-0" role="status">
+            Nenhum conteúdo disponível ainda. Solicite o Worker IA para preencher esta seção.
+          </div>
+        )}
+
+        <details className="mt-3">
+          <summary className="small text-muted">
+            Ver referência do prompt interno desta seção
+          </summary>
+          <div className="alert alert-secondary mt-2 mb-0" role="status">
+            <div className="fw-semibold">Prompt interno aplicado automaticamente.</div>
+            <div className="small mt-1">
+              Esta seção usa instruções codificadas na aplicação e contexto da hipótese.
+            </div>
+            {defaultPrompt ? (
+              <pre className="small mb-0 mt-2" style={{ whiteSpace: "pre-wrap" }}>
+                {defaultPrompt}
+              </pre>
+            ) : (
+              <p className="small text-muted mb-0 mt-2">
+                Não há template explícito para esta seção no frontend.
+              </p>
+            )}
+          </div>
+        </details>
+      </div>
+    </div>
+  );
+}
+
+interface GenericGenerationHistoryListProps {
+  generations: SimpleGenerationRow[];
+  isLoading: boolean;
+}
+
+function GenericGenerationHistoryList({
+  generations,
+  isLoading,
+}: GenericGenerationHistoryListProps) {
+  return (
+    <div className="card border-0 shadow-sm mt-3">
+      <div className="card-body">
+        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <h6 className="card-title mb-1">Histórico das gerações</h6>
+            <p className="text-muted small mb-0">
+              Visualize as respostas retornadas para esta etapa do pipeline.
+            </p>
+          </div>
+          {generations.length > 0 ? (
+            <span className="badge text-bg-light">
+              {generations.length === 1 ? "1 geração" : `${generations.length} gerações`}
+            </span>
+          ) : null}
+        </div>
+
+        {isLoading && generations.length === 0 ? (
+          <div className="d-flex align-items-center gap-2 text-muted mt-3">
+            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+            Carregando histórico...
+          </div>
+        ) : generations.length === 0 ? (
+          <p className="text-muted small mb-0 mt-3">
+            Assim que você solicitar o Worker IA o histórico aparecerá aqui.
+          </p>
+        ) : (
+          <div className="mt-3 d-flex flex-column gap-2">
+            {generations.map((generation) => (
+              <div key={generation.id} className="border rounded p-3 bg-body-tertiary">
+                <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                  <p className="fw-semibold mb-1">{formatDateTime(generation.createdAt)}</p>
+                  {generation.model ? (
+                    <span className="badge text-bg-light">{generation.model}</span>
+                  ) : null}
+                </div>
+                <pre className="small mb-0 mt-2" style={{ whiteSpace: "pre-wrap" }}>
+                  {generation.rawResponse?.trim() || "Sem resposta registrada."}
+                </pre>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

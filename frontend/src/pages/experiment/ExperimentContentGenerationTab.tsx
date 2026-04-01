@@ -5,6 +5,7 @@ import axios from "axios";
 import type { Hypothesis } from "../../api/hypothesis/useHypothesisBoard";
 import { CampaignAngleSummary, hasCampaignAngleContent, parseCampaignAnglePayload } from "./campaignAngleParser";
 import { AdCopyContent, hasAdCopyContent, parseAdCopyPayload } from "./adCopyParser";
+import { useExperimentPipelineJobs } from "../../api/experiment/useExperimentPipelineJobs";
 
 type ContentGenerationSectionKey =
   | "campaign-angle"
@@ -57,6 +58,84 @@ const CONTENT_GENERATION_SECTIONS: ContentGenerationSection[] = [
     defaultQuantity: 2,
   },
 ];
+
+const SECTION_LABEL_BY_KEY: Record<ContentGenerationSectionKey, string> =
+  CONTENT_GENERATION_SECTIONS.reduce(
+    (acc, section) => ({ ...acc, [section.key]: section.label }),
+    {} as Record<ContentGenerationSectionKey, string>,
+  );
+
+type RequestUiStatus =
+  | "IDLE"
+  | "PROCESSING"
+  | "COMPLETED"
+  | "FAILED"
+  | "INVALIDATED";
+
+interface SectionRequestState {
+  status: RequestUiStatus;
+  requestedAt?: string;
+  startedAt?: string;
+  completedAt?: string;
+  customInstructions?: string;
+  errorMessage?: string;
+  stageLabel?: string;
+}
+
+interface SectionInvalidationState {
+  sourceSection: string;
+  sourceAt?: string;
+  sourceTimestamp: number;
+}
+
+const SECTION_REQUEST_INITIAL_STATE: Record<ContentGenerationSectionKey, SectionRequestState> =
+  CONTENT_GENERATION_SECTIONS.reduce(
+    (acc, section) => ({ ...acc, [section.key]: { status: "IDLE" } }),
+    {} as Record<ContentGenerationSectionKey, SectionRequestState>,
+  );
+
+const SECTION_DEFAULT_INSTRUCTIONS: Record<ContentGenerationSectionKey, string> =
+  CONTENT_GENERATION_SECTIONS.reduce(
+    (acc, section) => ({
+      ...acc,
+      [section.key]: `Quantidade sugerida: ${section.defaultQuantity}`,
+    }),
+    {} as Record<ContentGenerationSectionKey, string>,
+  );
+
+const JOB_SECTION_ALIASES: Record<string, ContentGenerationSectionKey> = {
+  CAMPAIGN_ANGLE: "campaign-angle",
+  AD_COPY: "ad-copy",
+  AD_IMAGE_BRIEFING: "image-prompt",
+  LANDING_PAGE_COPY: "landing-copy",
+  LANDING_PAGE_WIREFRAME: "landing-layout",
+};
+
+const STATUS_LABELS: Record<RequestUiStatus, string> = {
+  IDLE: "Sem solicitação",
+  PROCESSING: "Em processamento",
+  COMPLETED: "Concluída",
+  FAILED: "Com erro",
+  INVALIDATED: "Dependência alterada",
+};
+
+const STATUS_BADGES: Record<RequestUiStatus, string> = {
+  IDLE: "secondary",
+  PROCESSING: "warning",
+  COMPLETED: "success",
+  FAILED: "danger",
+  INVALIDATED: "dark",
+};
+
+const STAGE_LABELS: Record<string, string> = {
+  WAITING_AI_WORKER: "Aguardando AI Worker",
+  SENT_TO_OPENAI: "Enviada para OpenAI",
+  WAITING_OPENAI: "Aguardando resposta da OpenAI",
+  COMPLETED: "Finalizada",
+  FAILED: "Falhou",
+};
+
+
 
 const COMMON_PIPELINE_PROMPT = `Você cria ativos de campanha para o Marketing Hub.
 
@@ -279,6 +358,73 @@ function getSectionMetadata(domain?: string) {
     sectionOrder,
   };
 }
+function getSectionLabel(sectionKey: ContentGenerationSectionKey) {
+  return SECTION_LABEL_BY_KEY[sectionKey] ?? sectionKey;
+}
+
+function getDefaultInstructions(sectionKey: ContentGenerationSectionKey) {
+  return SECTION_DEFAULT_INSTRUCTIONS[sectionKey];
+}
+
+function normalizeJobSection(value?: string): ContentGenerationSectionKey | undefined {
+  if (!value) return undefined;
+  const direct = JOB_SECTION_ALIASES[value];
+  if (direct) return direct;
+  const upper = value.toUpperCase();
+  return JOB_SECTION_ALIASES[upper];
+}
+
+function getReferenceTimestamp(request: SectionRequestState) {
+  return (
+    parseTimestamp(request.completedAt) ?? parseTimestamp(request.requestedAt)
+  );
+}
+
+function getWorkerStatus(request: SectionRequestState) {
+  if (request.status === "FAILED") {
+    return {
+      label: "Worker IA retornou erro",
+      badge: "danger",
+    };
+  }
+
+  if (request.status === "COMPLETED") {
+    return {
+      label: "Worker IA concluiu com sucesso",
+      badge: "success",
+    };
+  }
+
+  if (request.status === "PROCESSING" || request.startedAt || request.stageLabel) {
+    return {
+      label: "Worker IA em processamento",
+      badge: "warning",
+    };
+  }
+
+  return {
+    label: "Worker IA ainda não acionado",
+    badge: "secondary",
+  };
+}
+
+function getErrorMessage(error: unknown) {
+  if (axios.isAxiosError(error)) {
+    const responseMessage =
+      typeof error.response?.data?.message === "string"
+        ? error.response.data.message
+        : undefined;
+    return (
+      responseMessage ?? error.message ?? "Falha ao processar solicitação."
+    );
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "Falha ao processar solicitação.";
+}
+
+
 
 export default function ExperimentContentGenerationTab({
   experimentId,
@@ -320,6 +466,105 @@ export default function ExperimentContentGenerationTab({
       {} as Record<ContentGenerationSectionKey, boolean>,
     ),
   );
+  const [instructions, setInstructions] = useState<
+    Record<ContentGenerationSectionKey, string>
+  >(() =>
+    CONTENT_GENERATION_SECTIONS.reduce(
+      (acc, section) => ({ ...acc, [section.key]: "" }),
+      {} as Record<ContentGenerationSectionKey, string>,
+    ),
+  );
+  const [requestsBySection, setRequestsBySection] = useState<
+    Record<ContentGenerationSectionKey, SectionRequestState>
+  >(() => ({ ...SECTION_REQUEST_INITIAL_STATE }));
+
+  const jobsQuery = useExperimentPipelineJobs(experimentId);
+
+  const requestsFromBackend = useMemo(
+    () =>
+      (jobsQuery.data ?? []).reduce<
+        Record<ContentGenerationSectionKey, SectionRequestState>
+      >((acc, job) => {
+        const sectionKey = normalizeJobSection(job.section);
+        if (!sectionKey) {
+          return acc;
+        }
+        if (acc[sectionKey]?.requestedAt) {
+          return acc;
+        }
+        const status: RequestUiStatus =
+          job.status === "COMPLETED"
+            ? "COMPLETED"
+            : job.status === "FAILED"
+              ? "FAILED"
+              : "PROCESSING";
+        const stageLabel =
+          STAGE_LABELS[job.stage] ??
+          (job.stage ? job.stage.split("_").join(" ") : undefined);
+        acc[sectionKey] = {
+          status,
+          requestedAt: job.createdAt,
+          startedAt: job.startedAt,
+          completedAt: job.finishedAt,
+          customInstructions: job.customInstructions,
+          errorMessage: job.errorMessage,
+          stageLabel,
+        };
+        return acc;
+      }, { ...SECTION_REQUEST_INITIAL_STATE }),
+    [jobsQuery.data],
+  );
+
+  const mergedRequestsBySection = useMemo(
+    () =>
+      CONTENT_GENERATION_SECTIONS.reduce<
+        Record<ContentGenerationSectionKey, SectionRequestState>
+      >((acc, section) => {
+        const backendState = requestsFromBackend[section.key];
+        const localState = requestsBySection[section.key];
+        acc[section.key] =
+          localState.status !== "IDLE" && backendState.status === "IDLE"
+            ? localState
+            : backendState;
+        return acc;
+      }, { ...SECTION_REQUEST_INITIAL_STATE }),
+    [requestsFromBackend, requestsBySection],
+  );
+
+  const invalidationBySection = useMemo(() => {
+    const bySection: Partial<
+      Record<ContentGenerationSectionKey, SectionInvalidationState>
+    > = {};
+    let latestDependency: SectionInvalidationState | null = null;
+
+    REPORT_SECTION_ORDER.forEach((sectionKey) => {
+      const currentRequest = mergedRequestsBySection[sectionKey];
+      const currentTimestamp = getReferenceTimestamp(currentRequest);
+
+      if (
+        latestDependency &&
+        currentRequest.status !== "PROCESSING" &&
+        (currentTimestamp === undefined ||
+          currentTimestamp < latestDependency.sourceTimestamp)
+      ) {
+        bySection[sectionKey] = latestDependency;
+      }
+
+      if (
+        currentTimestamp !== undefined &&
+        (!latestDependency ||
+          currentTimestamp > latestDependency.sourceTimestamp)
+      ) {
+        latestDependency = {
+          sourceSection: getSectionLabel(sectionKey),
+          sourceAt: currentRequest.completedAt ?? currentRequest.requestedAt,
+          sourceTimestamp: currentTimestamp,
+        };
+      }
+    });
+
+    return bySection;
+  }, [mergedRequestsBySection]);
 
   const frameworkContext = useMemo(
     () => ({
@@ -471,27 +716,51 @@ export default function ExperimentContentGenerationTab({
   }, [experimentId]);
 
   const handleRequest = async (sectionKey: ContentGenerationSectionKey) => {
-    try {
-      setIsRequestingBySection((previous) => ({
-        ...previous,
-        [sectionKey]: true,
-      }));
+    const requestedAt = new Date().toISOString();
+    const defaultInstructions = getDefaultInstructions(sectionKey);
+    const trimmedInstructions = instructions[sectionKey]?.trim();
+    const customInstructions = trimmedInstructions || defaultInstructions;
 
+    setIsRequestingBySection((previous) => ({
+      ...previous,
+      [sectionKey]: true,
+    }));
+    setRequestsBySection((previous) => ({
+      ...previous,
+      [sectionKey]: {
+        status: "PROCESSING",
+        requestedAt,
+        startedAt: undefined,
+        completedAt: undefined,
+        customInstructions,
+        errorMessage: undefined,
+        stageLabel: undefined,
+      },
+    }));
+
+    try {
       const sectionPath = SECTION_API_PATHS[sectionKey];
       await axios.post(
         `/api/experiments/${experimentId}/pipeline/${sectionPath}/generate`,
         {
-          customInstructions: "Quantidade sugerida: 1",
+          customInstructions,
         },
       );
 
       toast.success(
-        "Solicitação enviada ao backend com sucesso. O Worker IA poderá processar a fila em seguida.",
+        `Solicitação enviada para ${getSectionLabel(sectionKey)}. O Worker IA assumirá assim que possível.`,
       );
-    } catch {
-      toast.error(
-        "Não foi possível enviar a solicitação para o backend neste momento.",
-      );
+    } catch (error) {
+      const message = getErrorMessage(error);
+      setRequestsBySection((previous) => ({
+        ...previous,
+        [sectionKey]: {
+          ...previous[sectionKey],
+          status: "FAILED",
+          errorMessage: message,
+        },
+      }));
+      toast.error(message);
     } finally {
       setIsRequestingBySection((previous) => ({
         ...previous,
@@ -704,10 +973,22 @@ export default function ExperimentContentGenerationTab({
                   </div>
                 </div>
 
-                <div className="d-flex justify-content-end mt-4">
+                <div className="d-flex flex-column flex-lg-row gap-2 mt-4">
+                  <textarea
+                    className="form-control"
+                    rows={2}
+                    placeholder="Instruções extras para o Worker IA (opcional)"
+                    value={instructions[section.key]}
+                    onChange={(event) =>
+                      setInstructions((prev) => ({
+                        ...prev,
+                        [section.key]: event.target.value,
+                      }))
+                    }
+                  />
                   <button
                     type="button"
-                    className="btn btn-primary"
+                    className="btn btn-primary align-self-start"
                     onClick={() => handleRequest(section.key)}
                     disabled={isRequestingBySection[section.key]}
                   >
@@ -725,11 +1006,119 @@ export default function ExperimentContentGenerationTab({
                     )}
                   </button>
                 </div>
+                <small className="text-muted">
+                  Caso deixe em branco enviaremos: {getDefaultInstructions(section.key)}.
+                </small>
               </div>
             </section>
           </Tabs.Content>
         ))}
       </Tabs.Root>
+
+      <section className="card border-0 shadow-sm">
+        <div className="card-body">
+          <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+              <h5 className="card-title mb-1">Acompanhamento das solicitações IA</h5>
+              <p className="text-muted mb-0">
+                Monitoramos o status de cada etapa enviada ao Worker IA e avisamos quando uma dependência precisar ser refeita.
+              </p>
+            </div>
+            <span className="badge text-bg-light">Atualiza automaticamente</span>
+          </div>
+          {jobsQuery.isLoading ? (
+            <p className="small text-muted mt-3 mb-0">
+              Carregando histórico das solicitações...
+            </p>
+          ) : null}
+          {jobsQuery.isError ? (
+            <p className="small text-danger mt-3 mb-0">
+              Não foi possível carregar o histórico das solicitações salvas.
+            </p>
+          ) : null}
+          <div className="d-flex flex-column gap-2 mt-3">
+            {CONTENT_GENERATION_SECTIONS.map((section) => {
+              const request = mergedRequestsBySection[section.key];
+              const invalidation = invalidationBySection[section.key];
+              const displayStatus: RequestUiStatus =
+                request.status === "PROCESSING"
+                  ? "PROCESSING"
+                  : invalidation
+                    ? "INVALIDATED"
+                    : request.status;
+              const workerStatus = getWorkerStatus(request);
+
+              return (
+                <div
+                  key={`pipeline-request-${section.key}`}
+                  className="border rounded-2 p-2 d-flex flex-column gap-1"
+                >
+                  <div className="d-flex flex-wrap align-items-center gap-2">
+                    <strong>{section.label}</strong>
+                    <span
+                      className={`badge text-bg-${STATUS_BADGES[displayStatus]}`}
+                    >
+                      {STATUS_LABELS[displayStatus]}
+                    </span>
+                  </div>
+                  <small className="text-muted">
+                    Solicitado em: {formatDateTime(request.requestedAt)} · Concluído em:{' '}
+                    {formatDateTime(request.completedAt)}
+                  </small>
+                  <div className="small d-flex flex-column gap-1">
+                    <div>
+                      <strong>1. Solicitação do usuário:</strong>{' '}
+                      {request.requestedAt
+                        ? `enviada em ${formatDateTime(request.requestedAt)}.`
+                        : "ainda não enviada."}
+                    </div>
+                    <div className="d-flex flex-wrap align-items-center gap-2">
+                      <strong>2. Atendimento do Worker IA:</strong>
+                      <span className={`badge text-bg-${workerStatus.badge}`}>
+                        {workerStatus.label}
+                      </span>
+                      <span>
+                        {request.startedAt
+                          ? `iniciado em ${formatDateTime(request.startedAt)}`
+                          : "sem início registrado"}
+                      </span>
+                    </div>
+                    <div>
+                      <strong>3. Conclusão:</strong>{' '}
+                      {request.completedAt
+                        ? `finalizada em ${formatDateTime(request.completedAt)}.`
+                        : request.status === "FAILED"
+                          ? "fluxo encerrado com erro."
+                          : "aguardando finalização."}
+                    </div>
+                  </div>
+                  {request.stageLabel ? (
+                    <small className="text-body-secondary">
+                      Etapa atual: {request.stageLabel}
+                    </small>
+                  ) : null}
+                  {request.customInstructions ? (
+                    <small className="text-body-secondary">
+                      Instruções enviadas: {request.customInstructions}
+                    </small>
+                  ) : null}
+                  {invalidation ? (
+                    <small className="text-warning-emphasis">
+                      Dependência atualizada em {invalidation.sourceSection} ({' '}
+                      {formatDateTime(invalidation.sourceAt)}). Gere esta etapa novamente.
+                    </small>
+                  ) : null}
+                  {request.errorMessage ? (
+                    <small className="text-danger">
+                      Último erro: {request.errorMessage}
+                    </small>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
 
       <small className="text-muted">
         Aba atual: <strong>{currentSection.label}</strong>

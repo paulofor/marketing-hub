@@ -107,6 +107,13 @@ const SECTION_REQUEST_INITIAL_STATE: Record<
   offer: { status: "IDLE" },
 };
 
+function normalizeFrameworkSection(value?: string): HypothesisFrameworkSection | undefined {
+  if (!value) return undefined;
+  const normalized = value.toLowerCase() as HypothesisFrameworkSection;
+  return SECTIONS.find((section) => section.id === normalized)?.id;
+}
+
+
 function formatDateTime(value?: string) {
   if (!value) return "—";
   const date = new Date(value);
@@ -243,7 +250,8 @@ export function HypothesisFrameworkTabsView({
     Record<HypothesisFrameworkSection, SectionRequestState>
   >(
     (acc, job) => {
-      if (acc[job.section]?.requestedAt) {
+      const sectionId = normalizeFrameworkSection(job.section as string);
+      if (!sectionId || acc[sectionId]?.requestedAt) {
         return acc;
       }
       const uiStatus: RequestUiStatus =
@@ -254,7 +262,7 @@ export function HypothesisFrameworkTabsView({
             : job.status === "PROCESSING"
               ? "PROCESSING"
               : "PROCESSING";
-      acc[job.section] = {
+      acc[sectionId] = {
         status: uiStatus,
         requestedAt: job.createdAt,
         startedAt: job.startedAt,

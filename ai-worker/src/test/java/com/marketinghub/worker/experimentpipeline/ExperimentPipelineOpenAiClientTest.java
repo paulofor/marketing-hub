@@ -144,6 +144,47 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("closingCTA");
     }
 
+    @Test
+    void prependsLandingLayoutGuidanceForLandingLayoutSection() {
+        AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                12L,
+                "landing-page-wireframe",
+                "gpt-5.2",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "input": [
+                            {"role": "user", "content": "Prompt do wireframe"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        client.generate(job);
+
+        Map<String, Object> payload = payloadRef.get();
+        @SuppressWarnings("unchecked")
+        var input = (java.util.List<Map<String, Object>>) payload.get("input");
+        String userPrompt = String.valueOf(input.get(0).get("content"));
+        assertThat(userPrompt).startsWith("Você cria ativos de campanha para o Marketing Hub.");
+        assertThat(userPrompt).contains("Prompt do wireframe");
+        assertThat(userPrompt).contains("variantLayoutId");
+        assertThat(userPrompt).contains("form-first");
+        assertThat(userPrompt).contains("proof-first");
+        assertThat(userPrompt).contains("mobilePriorityScore");
+        assertThat(userPrompt).contains("dropOffRisk");
+        assertThat(userPrompt).contains("sectionDependsOn");
+    }
+
     private ExchangeFunction capturePayloadExchange(AtomicReference<Map<String, Object>> payloadRef) {
         return request ->
                 readBodyAsString(request.body())

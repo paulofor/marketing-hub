@@ -313,26 +313,38 @@ Criar o wireframe textual da landing page.
 Regras:
 1. A página deve ser mobile-first.
 2. O hero e o formulário devem aparecer sem exigir muito scroll.
-3. O layout deve seguir esta lógica:
-   - promessa
-   - credibilidade
-   - mecanismo simples
-   - prova
-   - CTA
-4. Cada seção deve ter uma função clara.
-5. O CTA principal deve reaparecer em pontos estratégicos.
-6. O layout deve minimizar atrito e reforçar continuidade com o anúncio.
-7. Não criar seções desnecessárias.
+3. O wireframe deve ser experimental, não apenas estrutural.
+4. Adicione variantLayoutId para cada proposta com um valor entre:
+   - form-first
+   - proof-first
+5. O layout base deve preservar:
+   - hero + formulário acima da dobra
+   - CTA recorrente
+   - FAQ e compliance no footer
+6. Cada seção deve ter uma função clara.
+7. Adicione mobilePriorityScore por seção (inteiro de 1 a 10) para priorização em telas pequenas.
+8. Adicione dropOffRisk por bloco com um valor entre: baixo, médio, alto.
+9. Adicione sectionDependsOn para amarrar cada bloco ao dado de campanha:
+   - hero ← primaryPromise
+   - prova ← proofSummary
+   - CTA ← primaryCTA
+10. O CTA principal deve reaparecer em pontos estratégicos.
+11. O layout deve minimizar atrito e reforçar continuidade com o anúncio.
+12. Não criar seções desnecessárias.
 
 Formato esperado:
 JSON com:
 pageGoal,
+variantLayoutId,
 sectionOrder [
   {
     "sectionName": "",
     "objective": "",
     "contentType": "",
-    "uiNotes": ""
+    "uiNotes": "",
+    "mobilePriorityScore": 0,
+    "dropOffRisk": "baixo|médio|alto",
+    "sectionDependsOn": ""
   }
 ],
 mobilePriorityNotes,

@@ -4,6 +4,7 @@ import * as Tabs from "@radix-ui/react-tabs";
 import axios from "axios";
 import type { Hypothesis } from "../../api/hypothesis/useHypothesisBoard";
 import { CampaignAngleSummary, hasCampaignAngleContent, parseCampaignAnglePayload } from "./campaignAngleParser";
+import { AdCopyContent, hasAdCopyContent, parseAdCopyPayload } from "./adCopyParser";
 
 type ContentGenerationSectionKey =
   | "campaign-angle"
@@ -181,6 +182,7 @@ interface ExperimentContentGenerationTabProps {
   experimentName?: string;
   hypothesis?: Hypothesis;
   campaignAngle?: string | null;
+  adCopy?: string | null;
 }
 
 interface AiGenerationRecord {
@@ -198,6 +200,10 @@ interface PageResponse<T> {
 
 interface CampaignAngleGenerationRow extends AiGenerationRecord {
   fields?: CampaignAngleSummary;
+}
+
+interface AdCopyGenerationRow extends AiGenerationRecord {
+  fields?: AdCopyContent;
 }
 
 interface PipelineReportRecord extends AiGenerationRecord {
@@ -277,6 +283,7 @@ export default function ExperimentContentGenerationTab({
   experimentName,
   hypothesis,
   campaignAngle,
+  adCopy,
 }: ExperimentContentGenerationTabProps) {
   const [activeSection, setActiveSection] =
     useState<ContentGenerationSectionKey>(CONTENT_GENERATION_SECTIONS[0].key);
@@ -285,6 +292,10 @@ export default function ExperimentContentGenerationTab({
     CampaignAngleGenerationRow[]
   >([]);
   const [isLoadingCampaignAngles, setIsLoadingCampaignAngles] = useState(false);
+  const [adCopyGenerations, setAdCopyGenerations] = useState<
+    AdCopyGenerationRow[]
+  >([]);
+  const [isLoadingAdCopy, setIsLoadingAdCopy] = useState(false);
   const [isRequestingBySection, setIsRequestingBySection] = useState<
     Record<ContentGenerationSectionKey, boolean>
   >(() =>
@@ -311,6 +322,8 @@ export default function ExperimentContentGenerationTab({
     () => parseCampaignAnglePayload(campaignAngle),
     [campaignAngle],
   );
+
+  const persistedAdCopy = useMemo(() => parseAdCopyPayload(adCopy), [adCopy]);
 
   const currentSection =
     CONTENT_GENERATION_SECTIONS.find(
@@ -351,6 +364,43 @@ export default function ExperimentContentGenerationTab({
     };
 
     void loadCampaignAngles();
+  }, [experimentId]);
+
+  useEffect(() => {
+    const loadAdCopy = async () => {
+      try {
+        setIsLoadingAdCopy(true);
+        const { data: response } = await axios.get<PageResponse<AiGenerationRecord>>(
+          "/api/ai/generations",
+          {
+            params: {
+              referenceId: experimentId,
+              domain: "experiment.pipeline.ad-copy",
+              size: 20,
+            },
+          },
+        );
+
+        const orderedByLatest = [...(response.content ?? [])]
+          .map((generation) => ({
+            ...generation,
+            fields: parseAdCopyPayload(generation.rawResponse),
+          }))
+          .sort(
+            (a, b) =>
+              (parseTimestamp(b.createdAt) ?? Number.MIN_SAFE_INTEGER) -
+              (parseTimestamp(a.createdAt) ?? Number.MIN_SAFE_INTEGER),
+          );
+
+        setAdCopyGenerations(orderedByLatest);
+      } catch {
+        toast.error("Não foi possível carregar os textos do anúncio agora.");
+      } finally {
+        setIsLoadingAdCopy(false);
+      }
+    };
+
+    void loadAdCopy();
   }, [experimentId]);
 
   const handleRequest = async (sectionKey: ContentGenerationSectionKey) => {
@@ -557,6 +607,20 @@ export default function ExperimentContentGenerationTab({
                           isLoading={isLoadingCampaignAngles}
                         />
                       </>
+                    ) : section.key === "ad-copy" ? (
+                      <>
+                        <AdCopySummaryPanel
+                          isLoading={isLoadingAdCopy}
+                          savedCopy={persistedAdCopy}
+                          fallbackCopy={adCopyGenerations[0]?.fields}
+                          fallbackTimestamp={adCopyGenerations[0]?.createdAt}
+                          rawContent={adCopy}
+                        />
+                        <AdCopyHistoryList
+                          generations={adCopyGenerations}
+                          isLoading={isLoadingAdCopy}
+                        />
+                      </>
                     ) : (
                       <>
                         <label className="form-label mb-1">
@@ -616,6 +680,162 @@ export default function ExperimentContentGenerationTab({
       <small className="text-muted">
         Aba atual: <strong>{currentSection.label}</strong>
       </small>
+    </div>
+  );
+}
+
+interface AdCopySummaryPanelProps {
+  isLoading: boolean;
+  savedCopy?: AdCopyContent;
+  fallbackCopy?: AdCopyContent;
+  fallbackTimestamp?: string;
+  rawContent?: string | null;
+}
+
+function AdCopySummaryPanel({
+  isLoading,
+  savedCopy,
+  fallbackCopy,
+  fallbackTimestamp,
+  rawContent,
+}: AdCopySummaryPanelProps) {
+  const resolvedCopy = savedCopy ?? fallbackCopy;
+  const hasData = hasAdCopyContent(resolvedCopy);
+  const badgeVariant = savedCopy
+    ? "success"
+    : fallbackCopy
+      ? "info"
+      : "secondary";
+  const badgeLabel = savedCopy
+    ? "Sincronizado com o experimento"
+    : fallbackCopy
+      ? "Última geração do Worker IA"
+      : "Aguardando geração";
+  const rawText = rawContent?.trim();
+
+  return (
+    <div className="card border-0 shadow-sm">
+      <div className="card-body">
+        <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
+          <div>
+            <p className="text-uppercase text-muted small fw-semibold mb-1">
+              Meta Ads • Dor / Resultado / Prova
+            </p>
+            <h6 className="mb-1">Textos sintetizados</h6>
+            <p className="text-muted small mb-0">
+              Exibe as variações retornadas pelo Worker IA para uso em anúncio.
+            </p>
+          </div>
+          <div className="text-end">
+            <span className={`badge text-bg-${badgeVariant}`}>{badgeLabel}</span>
+            {!savedCopy && fallbackTimestamp ? (
+              <p className="text-muted small mb-0 mt-1">
+                Última atualização: {formatDateTime(fallbackTimestamp)}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="d-flex align-items-center gap-2 text-muted mt-3">
+            <span
+              className="spinner-border spinner-border-sm"
+              role="status"
+              aria-hidden="true"
+            />
+            Carregando textos estruturados...
+          </div>
+        ) : hasData ? (
+          <div className="row g-3 mt-2">
+            {resolvedCopy?.primaryTextVariants?.map((variant, index) => (
+              <div className="col-12 col-xl-4" key={`${variant.label}-${index}`}>
+                <div className="border rounded p-3 h-100 bg-light-subtle">
+                  <p className="text-uppercase small fw-semibold text-muted mb-2">
+                    {variant.label || `V${index + 1}`}
+                  </p>
+                  <p className="small mb-2"><strong>Texto:</strong> {variant.primaryText || "—"}</p>
+                  <p className="small mb-2"><strong>Headline:</strong> {variant.headline || "—"}</p>
+                  <p className="small mb-2"><strong>Descrição:</strong> {variant.description || "—"}</p>
+                  <p className="small mb-0"><strong>CTA:</strong> {variant.ctaText || "—"}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="alert alert-info mt-3" role="status">
+            Nenhum texto do anúncio disponível ainda. Solicite o Worker IA para preencher os blocos.
+          </div>
+        )}
+
+        {rawText && !hasData ? (
+          <details className="mt-3">
+            <summary className="small text-muted">Ver conteúdo bruto salvo</summary>
+            <pre className="bg-body-secondary rounded p-3 small mb-0">{rawText}</pre>
+          </details>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+interface AdCopyHistoryListProps {
+  generations: AdCopyGenerationRow[];
+  isLoading: boolean;
+}
+
+function AdCopyHistoryList({ generations, isLoading }: AdCopyHistoryListProps) {
+  return (
+    <div className="card border-0 shadow-sm mt-3">
+      <div className="card-body">
+        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <h6 className="card-title mb-1">Histórico das gerações</h6>
+            <p className="text-muted small mb-0">
+              Visualize os textos do anúncio retornados para este experimento.
+            </p>
+          </div>
+          {generations.length > 0 ? (
+            <span className="badge text-bg-light">
+              {generations.length === 1 ? "1 geração" : `${generations.length} gerações`}
+            </span>
+          ) : null}
+        </div>
+
+        {isLoading && generations.length === 0 ? (
+          <div className="d-flex align-items-center gap-2 text-muted mt-3">
+            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+            Carregando histórico...
+          </div>
+        ) : generations.length === 0 ? (
+          <p className="text-muted small mb-0 mt-3">
+            Assim que você solicitar o Worker IA o histórico aparecerá aqui.
+          </p>
+        ) : (
+          <div className="mt-3 d-flex flex-column gap-2">
+            {generations.map((generation) => (
+              <div key={generation.id} className="border rounded p-3 bg-body-tertiary">
+                <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                  <p className="fw-semibold mb-1">{formatDateTime(generation.createdAt)}</p>
+                  {generation.model ? (
+                    <span className="badge text-bg-light">{generation.model}</span>
+                  ) : null}
+                </div>
+                <div className="mt-2 d-flex flex-column gap-2">
+                  {generation.fields?.primaryTextVariants?.map((variant, index) => (
+                    <div className="border rounded p-2 bg-white" key={`${generation.id}-${variant.label}-${index}`}>
+                      <p className="small fw-semibold mb-1">{variant.label || `V${index + 1}`}</p>
+                      <p className="small mb-1"><strong>Texto:</strong> {variant.primaryText || "—"}</p>
+                      <p className="small mb-1"><strong>Headline:</strong> {variant.headline || "—"}</p>
+                      <p className="small mb-1"><strong>Descrição:</strong> {variant.description || "—"}</p>
+                      <p className="small mb-0"><strong>CTA:</strong> {variant.ctaText || "—"}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

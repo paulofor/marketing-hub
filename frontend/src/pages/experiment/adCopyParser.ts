@@ -1,9 +1,21 @@
 export interface AdCopyVariant {
   label?: string;
+  openingHookType?: string;
+  placementHint?: string;
+  lengthVariants?: {
+    curta?: string;
+    media?: string;
+    longa?: string;
+  };
   primaryText?: string;
   headline?: string;
   description?: string;
   ctaText?: string;
+  compliance?: {
+    semGarantiaAbsoluta?: boolean;
+    semPromessaIndividual?: boolean;
+    semLinguagemDeConsultoria?: boolean;
+  };
 }
 
 export interface AdCopyContent {
@@ -95,10 +107,31 @@ function parseVariant(value: unknown): AdCopyVariant | undefined {
   const payload = value as Record<string, unknown>;
   const variant: AdCopyVariant = {
     label: pickText(payload.label) ?? pickText(payload.variant),
+    openingHookType: pickText(payload.openingHookType),
+    placementHint: pickText(payload.placementHint),
+    lengthVariants:
+      payload.lengthVariants && typeof payload.lengthVariants === "object"
+        ? {
+            curta: pickText((payload.lengthVariants as Record<string, unknown>).curta),
+            media: pickText((payload.lengthVariants as Record<string, unknown>).media),
+            longa: pickText((payload.lengthVariants as Record<string, unknown>).longa),
+          }
+        : undefined,
     primaryText: pickText(payload.primaryText) ?? pickText(payload.text),
     headline: pickText(payload.headline) ?? pickText(payload.title),
     description: pickText(payload.description) ?? pickText(payload.subtitle),
     ctaText: pickText(payload.ctaText) ?? pickText(payload.cta),
+    compliance:
+      payload.compliance && typeof payload.compliance === "object"
+        ? {
+            semGarantiaAbsoluta:
+              (payload.compliance as Record<string, unknown>).semGarantiaAbsoluta === true,
+            semPromessaIndividual:
+              (payload.compliance as Record<string, unknown>).semPromessaIndividual === true,
+            semLinguagemDeConsultoria:
+              (payload.compliance as Record<string, unknown>).semLinguagemDeConsultoria === true,
+          }
+        : undefined,
   };
 
   const hasAnyValue = Object.values(variant).some(

@@ -6,11 +6,10 @@ import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.creative.service.CreativeService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.CreativeGenerationMode;
 import com.marketinghub.experiment.repository.ExperimentRepository;
-import com.marketinghub.experiment.pipeline.ads.ExperimentPipelineAdExtractor;
-import com.marketinghub.experiment.pipeline.ads.PipelineAdCreativePlan;
 import com.marketinghub.hypothesis.Hypothesis;
+import com.marketinghub.worker.creative.pipeline.ExperimentPipelineAdExtractor;
+import com.marketinghub.worker.creative.pipeline.PipelineAdCreativePlan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -24,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.List;
 import java.util.Map;
+import java.lang.reflect.Method;
 
 /**
  * Service that loops through experiments with {@code creativesToGenerate > 0}
@@ -68,7 +68,7 @@ public class ExperimentCreativeService {
                 log.info("Skipping experiment {} because creativesToGenerate is {}", exp.getId(), qty);
                 continue;
             }
-            boolean pipelineMode = exp.getCreativeGenerationMode() == CreativeGenerationMode.PIPELINE_ADS;
+            boolean pipelineMode = isPipelineAdsMode(exp);
             log.info("Generating {} creatives for experiment {} ({})", qty, exp.getId(), pipelineMode ? "pipeline" : "default");
             try {
                 List<Creative> saved = pipelineMode
@@ -76,7 +76,7 @@ public class ExperimentCreativeService {
                         : generateWithChatGpt(exp, qty);
                 exp.setCreativesToGenerate(0);
                 if (pipelineMode) {
-                    exp.setCreativeGenerationMode(CreativeGenerationMode.DEFAULT);
+                    setCreativeGenerationMode(exp, "DEFAULT");
                 }
                 experimentRepository.save(exp);
                 result.put(exp.getId(), saved);
@@ -146,6 +146,49 @@ public class ExperimentCreativeService {
             log.warn("Pipeline mode did not persist creatives for experiment {}", experiment.getId());
         }
         return saved;
+    }
+
+    private boolean isPipelineAdsMode(Experiment experiment) {
+        String mode = readCreativeGenerationMode(experiment);
+        return "PIPELINE_ADS".equalsIgnoreCase(mode);
+    }
+
+    private String readCreativeGenerationMode(Experiment experiment) {
+        if (experiment == null) {
+            return null;
+        }
+        try {
+            Method getter = experiment.getClass().getMethod("getCreativeGenerationMode");
+            Object modeValue = getter.invoke(experiment);
+            return modeValue != null ? modeValue.toString() : null;
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    private void setCreativeGenerationMode(Experiment experiment, String modeName) {
+        if (experiment == null || !StringUtils.hasText(modeName)) {
+            return;
+        }
+        try {
+            Method getter = experiment.getClass().getMethod("getCreativeGenerationMode");
+            Object current = getter.invoke(experiment);
+            if (current == null) {
+                return;
+            }
+            Class<?> enumType = current.getClass();
+            if (!Enum.class.isAssignableFrom(enumType)) {
+                return;
+            }
+            @SuppressWarnings("unchecked")
+            Class<? extends Enum> typedEnum = (Class<? extends Enum>) enumType;
+            Enum<?> enumValue = Enum.valueOf(typedEnum, modeName);
+            Method setter = experiment.getClass().getMethod("setCreativeGenerationMode", enumType);
+            setter.invoke(experiment, enumValue);
+        } catch (Exception ex) {
+            log.debug("Unable to set creative generation mode to {} for experiment {}", modeName,
+                    experiment.getId(), ex);
+        }
     }
 
     private CreateCreativeRequest buildRequestFromPlan(Experiment experiment, PipelineAdCreativePlan plan) {

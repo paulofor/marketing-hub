@@ -466,6 +466,7 @@ class ExperimentPipelineOpenAiClientTest {
         Map<String, Object> landingPageCopy = (Map<String, Object>) properties.get("landingPageCopy");
         assertThat(landingPageCopy.get("additionalProperties")).isEqualTo(false);
         assertThat(landingPageCopy.get("required")).isEqualTo(java.util.List.of());
+        assertThat(landingPageCopy.get("properties")).isEqualTo(java.util.Map.of());
     }
 
     @Test

@@ -1,19 +1,27 @@
 package com.marketinghub.worker.creative;
 
 import com.marketinghub.creative.Creative;
+import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.creative.service.CreativeService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.CreativeGenerationMode;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.experiment.pipeline.ads.ExperimentPipelineAdExtractor;
+import com.marketinghub.experiment.pipeline.ads.PipelineAdCreativePlan;
 import com.marketinghub.hypothesis.Hypothesis;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +35,7 @@ public class ExperimentCreativeService {
     private final CreativeChatGptClient chatGptClient;
     private final CreativeImageClient imageClient;
     private final CreativeService creativeService;
+    private final ObjectMapper objectMapper;
     private static final Logger log = LoggerFactory.getLogger(ExperimentCreativeService.class);
     private static final int HEADLINE_MAX = 40;
     private static final int PRIMARY_TEXT_MAX = 125;
@@ -35,11 +44,13 @@ public class ExperimentCreativeService {
     public ExperimentCreativeService(ExperimentRepository experimentRepository,
                                      CreativeChatGptClient chatGptClient,
                                      CreativeImageClient imageClient,
-                                     CreativeService creativeService) {
+                                     CreativeService creativeService,
+                                     ObjectMapper objectMapper) {
         this.experimentRepository = experimentRepository;
         this.chatGptClient = chatGptClient;
         this.imageClient = imageClient;
         this.creativeService = creativeService;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -57,35 +68,16 @@ public class ExperimentCreativeService {
                 log.info("Skipping experiment {} because creativesToGenerate is {}", exp.getId(), qty);
                 continue;
             }
-            log.info("Generating {} creatives for experiment {}", qty, exp.getId());
+            boolean pipelineMode = exp.getCreativeGenerationMode() == CreativeGenerationMode.PIPELINE_ADS;
+            log.info("Generating {} creatives for experiment {} ({})", qty, exp.getId(), pipelineMode ? "pipeline" : "default");
             try {
-                CreativeChatGptClient.Generation generation = chatGptClient.generateCreatives(exp, qty);
-                List<CreateCreativeRequest> requests = generation.creatives();
-                log.info("ChatGPT returned {} creatives for experiment {}", requests.size(), exp.getId());
-                List<Creative> saved = new ArrayList<>();
-                for (CreateCreativeRequest req : requests) {
-                    if (req.getHeadline() == null || req.getHeadline().isBlank()) {
-                        log.error("Skipping creative without headline for experiment {}: {}", exp.getId(), req);
-                        continue;
-                    }
-                    req.setHeadline(truncate(req.getHeadline(), HEADLINE_MAX));
-                    String primary = limitHashtags(req.getPrimaryText(), MAX_HASHTAGS);
-                    if (primary != null && !primary.contains("#")) {
-                        primary = truncate(primary, PRIMARY_TEXT_MAX);
-                    }
-                    req.setPrimaryText(primary);
-                    try {
-                        String imagePrompt = buildImagePrompt(exp, req);
-                        String imageUrl = imageClient.generateImage(imagePrompt);
-                        req.setImageUrl(imageUrl);
-                    } catch (Exception e) {
-                        log.error("Failed to generate image for experiment {}: {}", exp.getId(), req.getHeadline(), e);
-                    }
-                    log.info("Saving creative for experiment {}: {}", exp.getId(), req);
-                    saved.add(creativeService.create(exp.getId(), req));
-                }
-                log.info("Resetting creativesToGenerate for experiment {} to 0", exp.getId());
+                List<Creative> saved = pipelineMode
+                        ? generateFromPipeline(exp, qty)
+                        : generateWithChatGpt(exp, qty);
                 exp.setCreativesToGenerate(0);
+                if (pipelineMode) {
+                    exp.setCreativeGenerationMode(CreativeGenerationMode.DEFAULT);
+                }
                 experimentRepository.save(exp);
                 result.put(exp.getId(), saved);
                 log.info("Finished experiment {} with {} creatives persisted", exp.getId(), saved.size());
@@ -94,6 +86,195 @@ public class ExperimentCreativeService {
             }
         }
         return result;
+    }
+
+    private List<Creative> generateWithChatGpt(Experiment experiment, int quantity) {
+        CreativeChatGptClient.Generation generation = chatGptClient.generateCreatives(experiment, quantity);
+        List<CreateCreativeRequest> requests = generation.creatives();
+        log.info("ChatGPT returned {} creatives for experiment {}", requests.size(), experiment.getId());
+        List<Creative> saved = new ArrayList<>();
+        for (CreateCreativeRequest req : requests) {
+            if (!StringUtils.hasText(req.getHeadline())) {
+                log.error("Skipping creative without headline for experiment {}: {}", experiment.getId(), req);
+                continue;
+            }
+            req.setHeadline(truncate(req.getHeadline(), HEADLINE_MAX));
+            String primary = limitHashtags(req.getPrimaryText(), MAX_HASHTAGS);
+            if (primary != null && !primary.contains("#")) {
+                primary = truncate(primary, PRIMARY_TEXT_MAX);
+            }
+            req.setPrimaryText(primary);
+            try {
+                String imagePrompt = buildImagePrompt(experiment, req);
+                String imageUrl = imageClient.generateImage(imagePrompt);
+                req.setImageUrl(imageUrl);
+            } catch (Exception e) {
+                log.error("Failed to generate image for experiment {}: {}", experiment.getId(), req.getHeadline(), e);
+            }
+            log.info("Saving creative for experiment {}: {}", experiment.getId(), req);
+            saved.add(creativeService.create(experiment.getId(), req));
+        }
+        return saved;
+    }
+
+    private List<Creative> generateFromPipeline(Experiment experiment, int quantity) {
+        ExperimentPipelineAdExtractor extractor = new ExperimentPipelineAdExtractor(objectMapper);
+        List<PipelineAdCreativePlan> plans = extractor.extract(experiment);
+        if (plans.isEmpty()) {
+            log.warn("No pipeline variants were found for experiment {}", experiment.getId());
+            return List.of();
+        }
+        int limit = Math.min(quantity, plans.size());
+        List<Creative> saved = new ArrayList<>();
+        for (int i = 0; i < limit; i++) {
+            PipelineAdCreativePlan plan = plans.get(i);
+            CreateCreativeRequest req = buildRequestFromPlan(experiment, plan);
+            if (req == null) {
+                continue;
+            }
+            try {
+                String imagePrompt = buildPipelineImagePrompt(experiment, plan, req);
+                String imageUrl = imageClient.generateImage(imagePrompt);
+                req.setImageUrl(imageUrl);
+            } catch (Exception e) {
+                log.error("Failed to generate pipeline image for experiment {} (variant {})", experiment.getId(), plan.variantKey(), e);
+            }
+            log.info("Saving pipeline creative for experiment {}: {}", experiment.getId(), req);
+            saved.add(creativeService.create(experiment.getId(), req));
+        }
+        if (saved.isEmpty()) {
+            log.warn("Pipeline mode did not persist creatives for experiment {}", experiment.getId());
+        }
+        return saved;
+    }
+
+    private CreateCreativeRequest buildRequestFromPlan(Experiment experiment, PipelineAdCreativePlan plan) {
+        if (plan == null) {
+            return null;
+        }
+        if (!StringUtils.hasText(plan.headline()) || !StringUtils.hasText(plan.primaryText())) {
+            log.warn("Skipping pipeline variant {} because it is missing headline or primary text", plan.variantKey());
+            return null;
+        }
+        CreateCreativeRequest req = new CreateCreativeRequest();
+        req.setFormat(StringUtils.hasText(plan.format()) ? plan.format() : "LINK");
+        req.setHeadline(truncate(plan.headline(), HEADLINE_MAX));
+        String primary = limitHashtags(plan.primaryText(), MAX_HASHTAGS);
+        if (primary != null && !primary.contains("#")) {
+            primary = truncate(primary, PRIMARY_TEXT_MAX);
+        }
+        req.setPrimaryText(primary);
+        req.setDescription(plan.description());
+        req.setCta(resolveCallToAction(plan.ctaText()));
+        req.setDestinationUrl(resolveDestinationUrl(experiment));
+        req.setLeadGenFormId(resolveLeadGenFormId(experiment));
+        req.setStatus(CreativeStatus.DRAFT);
+        return req;
+    }
+
+    private String resolveDestinationUrl(Experiment experiment) {
+        if (experiment == null) {
+            return null;
+        }
+        return StringUtils.hasText(experiment.getFollowUpActionUrl())
+                ? experiment.getFollowUpActionUrl().trim()
+                : null;
+    }
+
+    private String resolveLeadGenFormId(Experiment experiment) {
+        if (experiment == null || experiment.getFacebookInstantForm() == null) {
+            return null;
+        }
+        String formId = experiment.getFacebookInstantForm().getFormId();
+        return StringUtils.hasText(formId) ? formId.trim() : null;
+    }
+
+    private String resolveCallToAction(String suggestion) {
+        if (!StringUtils.hasText(suggestion)) {
+            return "LEARN_MORE";
+        }
+        String normalized = Normalizer.normalize(suggestion, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT);
+        if (normalized.contains("inscrev") || normalized.contains("cadastre") || normalized.contains("assine")) {
+            return "SIGN_UP";
+        }
+        if (normalized.contains("baixe") || normalized.contains("download")) {
+            return "DOWNLOAD";
+        }
+        if (normalized.contains("compre") || normalized.contains("comprar") || normalized.contains("loja")) {
+            return "SHOP_NOW";
+        }
+        if (normalized.contains("teste") || normalized.contains("experimente") || normalized.contains("demon")) {
+            return "TRY_DEMO";
+        }
+        if (normalized.contains("fale") || normalized.contains("contato") || normalized.contains("converse")) {
+            return "CONTACT_US";
+        }
+        return "LEARN_MORE";
+    }
+
+    private String buildPipelineImagePrompt(Experiment experiment,
+                                            PipelineAdCreativePlan plan,
+                                            CreateCreativeRequest request) {
+        List<String> parts = new ArrayList<>();
+        parts.add("Você é um diretor de arte criando criativos originais para anúncios do Meta Ads.");
+        if ("STORY".equalsIgnoreCase(plan.format())) {
+            parts.add("Formato vertical 1080x1920 (Stories/Reels) com foco no terço central e respeitando o CTA nativo.");
+        } else {
+            parts.add("Formato feed 1080x1350 com margens de 10% sem texto próximo às bordas.");
+        }
+        if (plan.imageBriefing() != null) {
+            if (StringUtils.hasText(plan.imageBriefing().visualBriefing())) {
+                parts.add("Briefing visual: " + plan.imageBriefing().visualBriefing());
+            }
+            if (StringUtils.hasText(plan.imageBriefing().hierarchy())) {
+                parts.add("Hierarquia sugerida: " + plan.imageBriefing().hierarchy());
+            }
+            if (StringUtils.hasText(plan.imageBriefing().safeMargins())) {
+                parts.add("Margens de segurança: " + plan.imageBriefing().safeMargins());
+            }
+            if (StringUtils.hasText(plan.imageBriefing().formatByPlacement())) {
+                parts.add("Adaptação desejada: " + plan.imageBriefing().formatByPlacement());
+            }
+            if (StringUtils.hasText(plan.imageBriefing().messageMatchNotes())) {
+                parts.add("Mensagem obrigatória: " + plan.imageBriefing().messageMatchNotes());
+            }
+            if (StringUtils.hasText(plan.imageBriefing().complianceNotes())) {
+                parts.add("Notas de compliance: " + plan.imageBriefing().complianceNotes());
+            }
+            if (plan.imageBriefing().supportingKeywords() != null && !plan.imageBriefing().supportingKeywords().isEmpty()) {
+                parts.add("Palavras-chave de apoio: " + String.join(", ", plan.imageBriefing().supportingKeywords()));
+            }
+            if (plan.imageBriefing().imageTextMaxWords() != null) {
+                parts.add("Limite máximo de " + plan.imageBriefing().imageTextMaxWords() + " palavras sobre a imagem.");
+            }
+        }
+        if (StringUtils.hasText(plan.variantKey())) {
+            parts.add("Ângulo da variação: " + plan.variantKey() + ".");
+        }
+        if (StringUtils.hasText(plan.headline())) {
+            parts.add("Headline de referência: \"" + plan.headline() + "\".");
+        }
+        if (StringUtils.hasText(plan.primaryText())) {
+            parts.add("Texto principal orientado para dor/promessa: " + plan.primaryText());
+        }
+        if (StringUtils.hasText(plan.description())) {
+            parts.add("Complemento/contexto: " + plan.description());
+        }
+        if (StringUtils.hasText(plan.ctaText())) {
+            parts.add("CTA textual visível: \"" + plan.ctaText() + "\".");
+        }
+        if (StringUtils.hasText(request.getDestinationUrl())) {
+            parts.add("Representar a ideia de destino digital (landing page) em vez de uma conversa humana.");
+        }
+        Hypothesis hypothesis = experiment.getHypothesisRef();
+        if (hypothesis != null && StringUtils.hasText(hypothesis.getPromise())) {
+            parts.add("Promessa central da hipótese: " + hypothesis.getPromise() + ".");
+        }
+        parts.add("Lembre-se de que o Worker AI usará o modelo gpt-imagem-1.5.");
+        parts.add("Não inclua logos das plataformas e evite rostos genéricos sem contexto.");
+        return String.join(" ", parts);
     }
 
     private static String truncate(String value, int max) {

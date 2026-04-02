@@ -12,6 +12,7 @@ cinza do diagnóstico.
 
 1. **Criativos aprovados**
    - Pelo menos um criativo aprovado ou em produção no contexto do experimento.
+   - Agora é possível gerar até três anúncios diretamente a partir do pipeline (Texto do Anúncio + Prompt da Imagem). O botão **Gerar anúncios do pipeline** usa o Worker AI/gpt-image-1.5 e já deixa os criativos sinalizados como `DRAFT` para revisão.
    - Fonte de dados: tabela `creative` + flag `experiment.creative_approved`.
    - Ação recomendada: gerar/aprovar na aba _Criativos_.
    - Quando houver múltiplos criativos com status **READY**, o worker publica todos no mesmo conjunto de anúncios para preservar as variações aprovadas.

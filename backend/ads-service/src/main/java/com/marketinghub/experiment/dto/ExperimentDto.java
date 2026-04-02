@@ -5,6 +5,7 @@ import com.marketinghub.ads.dto.FacebookInstantFormDto;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.ExperimentStage;
+import com.marketinghub.experiment.CreativeGenerationMode;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -54,6 +55,7 @@ public class ExperimentDto {
     private ExperimentStatus status;
     private ExperimentPlatform platform;
     private ExperimentStage stage;
+    private CreativeGenerationMode creativeGenerationMode;
     private String primaryVariable;
     private String primaryMetric;
     private boolean creativeApproved;

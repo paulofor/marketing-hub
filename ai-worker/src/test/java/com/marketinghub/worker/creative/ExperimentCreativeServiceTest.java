@@ -2,6 +2,8 @@ package com.marketinghub.worker.creative;
 
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
+import com.marketinghub.experiment.CreativeGenerationMode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.creative.service.CreativeService;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
@@ -34,7 +36,6 @@ class ExperimentCreativeServiceTest {
     CreativeImageClient imageClient;
     @Mock
     CreativeService creativeService;
-    @InjectMocks
     ExperimentCreativeService service;
 
     Experiment experiment;
@@ -52,6 +53,7 @@ class ExperimentCreativeServiceTest {
         h.setProblem("não conseguem manter um fluxo constante de clientes");
         h.setPromise("aumentar a base de clientes com campanhas digitais");
         experiment.setHypothesisRef(h);
+        service = new ExperimentCreativeService(experimentRepository, chatGptClient, imageClient, creativeService, new ObjectMapper());
     }
 
     @Test
@@ -123,4 +125,30 @@ class ExperimentCreativeServiceTest {
         long count = Arrays.stream(savedText.split("\\s+")).filter(p -> p.startsWith("#")).count();
         assertThat(count).isEqualTo(30);
     }
+
+    @Test
+    void pipelineModeGeneratesCreativesFromExistingContent() {
+        experiment.setCreativeGenerationMode(CreativeGenerationMode.PIPELINE_ADS);
+        experiment.setCreativesToGenerate(1);
+        experiment.setFollowUpActionUrl("https://destino.com");
+        experiment.setAdCopy("""
+                {"adCopy":{"primaryTextVariants":[{"label":"dor","primaryText":"Texto","headline":"Headline","description":"Descrição","ctaText":"Saiba mais"}]}}
+                """);
+        experiment.setAdImageBriefing("""
+                {"adImageBriefing":{"briefings":[{"mustMatchAdVariant":"dor","visualBriefing":"Use contraste simples","hierarchy":"1) promessa 2) CTA","safeMargins":"10%","assetType":"estatico"}]}}
+                """);
+        when(experimentRepository.findAllToGenerateCreatives()).thenReturn(List.of(experiment));
+        when(imageClient.generateImage(anyString())).thenReturn("img");
+        Creative savedCreative = new Creative();
+        when(creativeService.create(eq(1L), any(CreateCreativeRequest.class))).thenReturn(savedCreative);
+
+        Map<Long, List<Creative>> result = service.generate();
+
+        verify(chatGptClient, never()).generateCreatives(any(), anyInt());
+        verify(creativeService, times(1)).create(eq(1L), any(CreateCreativeRequest.class));
+        assertThat(result.get(1L)).containsExactly(savedCreative);
+        assertThat(experiment.getCreativesToGenerate()).isZero();
+        assertThat(experiment.getCreativeGenerationMode()).isEqualTo(CreativeGenerationMode.DEFAULT);
+    }
+
 }

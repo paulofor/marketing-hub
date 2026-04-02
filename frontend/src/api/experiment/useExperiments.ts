@@ -106,6 +106,7 @@ export interface Experiment {
   status: string;
   platform: string;
   stage: ExperimentStage;
+  creativeGenerationMode?: "DEFAULT" | "PIPELINE_ADS";
   primaryVariable?: string | null;
   primaryMetric?: string | null;
   createdAt: string;

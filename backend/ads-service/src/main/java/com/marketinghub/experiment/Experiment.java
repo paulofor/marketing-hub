@@ -153,6 +153,11 @@ public class Experiment {
     @Column(name = "stage", length = 32, nullable = false)
     private ExperimentStage stage = ExperimentStage.AD;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "creative_generation_mode", length = 32, nullable = false)
+    @Builder.Default
+    private CreativeGenerationMode creativeGenerationMode = CreativeGenerationMode.DEFAULT;
+
     @Column(name = "primary_variable", length = 191)
     private String primaryVariable;
 

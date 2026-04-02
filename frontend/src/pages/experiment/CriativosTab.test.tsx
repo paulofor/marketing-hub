@@ -1,3 +1,4 @@
+import "@testing-library/jest-dom/vitest";
 import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -86,4 +87,53 @@ describe("CriativosTab", () => {
     (await screen.findByLabelText("Preview")).click();
     await screen.findByText("Patrocinado");
   });
+  it("shows pipeline banner when data is available", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.endsWith("/experiments/1/creatives")) {
+        return Promise.resolve({ data: [] });
+      }
+      if (url.endsWith("/experiments/1")) {
+        return Promise.resolve({
+          data: {
+            creativesToGenerate: 0,
+            adCopy: '{"adCopy":{"primaryTextVariants":[{"label":"dor","primaryText":"Texto","headline":"Headline","description":"Descrição","ctaText":"Saiba mais"}]}}',
+            adImageBriefing: '{"adImageBriefing":{"briefings":[{"mustMatchAdVariant":"dor","visualBriefing":"Use contraste","assetType":"estatico"}]}}',
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <CriativosTab experimentId="1" />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText(/Anúncios do pipeline prontos/i)).toBeInTheDocument();
+  });
+
+  it("shows pipeline progress banner when worker is running", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.endsWith("/experiments/1/creatives")) {
+        return Promise.resolve({ data: [] });
+      }
+      if (url.endsWith("/experiments/1")) {
+        return Promise.resolve({
+          data: {
+            creativesToGenerate: 2,
+            creativeGenerationMode: "PIPELINE_ADS",
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <CriativosTab experimentId="1" />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText(/Worker AI em produção/i)).toBeInTheDocument();
+  });
+
 });

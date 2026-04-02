@@ -1003,6 +1003,7 @@ CREATE TABLE experiment_learning (
     niche_id BIGINT NOT NULL,
     hypothesis_id BINARY(16),
     stage VARCHAR(32),
+    creative_generation_mode VARCHAR(32) NOT NULL DEFAULT 'DEFAULT',
     primary_metric VARCHAR(128),
     metric_signal VARCHAR(255),
     summary LONGTEXT,

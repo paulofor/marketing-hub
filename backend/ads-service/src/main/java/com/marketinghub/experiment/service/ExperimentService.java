@@ -1,5 +1,6 @@
 package com.marketinghub.experiment.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.FacebookInstantForm;
 import com.marketinghub.ads.FacebookInstantFormRepository;
 import com.marketinghub.ads.FacebookPage;
@@ -9,6 +10,8 @@ import com.marketinghub.ads.InstagramAccountRepository;
 import com.marketinghub.experiment.*;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
+import com.marketinghub.experiment.pipeline.ads.ExperimentPipelineAdExtractor;
+import com.marketinghub.experiment.pipeline.ads.PipelineAdCreativePlan;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.journey.model.JourneyTemplate;
@@ -54,6 +57,7 @@ public class ExperimentService {
     private final ImageGenerationQualityRepository imageGenerationQualityRepository;
     private final com.marketinghub.sampleemail.repository.SampleEmailRepository sampleEmailRepository;
     private final ExperimentFunnelEventRepository experimentFunnelEventRepository;
+    private final ObjectMapper objectMapper;
 
     public ExperimentService(ExperimentRepository repository, MarketNicheRepository nicheRepository,
                              com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository,
@@ -68,7 +72,7 @@ public class ExperimentService {
                              ImageGenerationModelRepository imageGenerationModelRepository,
                              ImageGenerationQualityRepository imageGenerationQualityRepository,
                              com.marketinghub.sampleemail.repository.SampleEmailRepository sampleEmailRepository,
-                             ExperimentFunnelEventRepository experimentFunnelEventRepository) {
+                             ExperimentFunnelEventRepository experimentFunnelEventRepository, ObjectMapper objectMapper) {
         this.repository = repository;
         this.nicheRepository = nicheRepository;
         this.hypothesisRepository = hypothesisRepository;
@@ -84,6 +88,7 @@ public class ExperimentService {
         this.imageGenerationQualityRepository = imageGenerationQualityRepository;
         this.sampleEmailRepository = sampleEmailRepository;
         this.experimentFunnelEventRepository = experimentFunnelEventRepository;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -603,9 +608,51 @@ public class ExperimentService {
         return exp;
     }
 
+    @Transactional
+    public Experiment requestPipelineCreatives(Long id) {
+        Experiment exp = repository.findById(id).orElseThrow();
+        Integer pending = exp.getCreativesToGenerate();
+        if (pending != null && pending > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação de criativos pendente");
+        }
+        ensurePipelinePrerequisites(exp);
+        ExperimentPipelineAdExtractor extractor = new ExperimentPipelineAdExtractor(objectMapper);
+        java.util.List<PipelineAdCreativePlan> plans = extractor.extract(exp);
+        if (plans.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Nenhuma variação válida foi encontrada no pipeline de anúncio.");
+        }
+        int quantity = Math.min(3, plans.size());
+        exp.setCreativesToGenerate(quantity);
+        exp.setCreativeGenerationMode(CreativeGenerationMode.PIPELINE_ADS);
+        return exp;
+    }
+
     /**
      * Requests generation of new instant forms by setting the pending quantity.
      */
+    private void ensurePipelinePrerequisites(Experiment exp) {
+        if (!StringUtils.hasText(exp.getAdCopy()) || !StringUtils.hasText(exp.getAdImageBriefing())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Conclua as etapas de Texto do Anúncio e Prompt da Imagem antes de gerar anúncios do pipeline.");
+        }
+        if (!hasValidDestination(exp)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Defina uma URL de destino ou um Instant Form aprovado antes de gerar anúncios do pipeline.");
+        }
+    }
+
+    private boolean hasValidDestination(Experiment exp) {
+        if (StringUtils.hasText(exp.getFollowUpActionUrl())) {
+            return true;
+        }
+        FacebookInstantForm instantForm = exp.getFacebookInstantForm();
+        return instantForm != null && StringUtils.hasText(instantForm.getFormId());
+    }
+
     @Transactional
     public Experiment requestInstantForms(Long id, int quantity) {
         Experiment exp = repository.findById(id).orElseThrow();

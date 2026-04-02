@@ -87,6 +87,11 @@ public class ExperimentController {
         return mapper.toDto(service.requestCreatives(id, quantity));
     }
 
+    @PostMapping("/{id}/pipeline/ads")
+    public ExperimentDto requestPipelineAds(@PathVariable Long id) {
+        return mapper.toDto(service.requestPipelineCreatives(id));
+    }
+
     @PatchMapping("/{id}/instant-forms-to-generate")
     public ExperimentDto requestInstantForms(@PathVariable Long id, @RequestParam("quantity") int quantity) {
         return mapper.toDto(service.requestInstantForms(id, quantity));

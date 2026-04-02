@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Creative, useCreatives } from "../../api/creative/useCreatives";
 import { useCreateCreative } from "../../api/creative/useCreateCreative";
@@ -25,12 +25,16 @@ import {
   Edit3,
   Eye,
   Plus,
+  Sparkles,
   Trash2,
   X,
   XCircle,
 } from "lucide-react";
 import "./CriativosTab.css";
 import CreativeLibraryBanner from "./CreativeLibraryBanner";
+import { hasAdCopyContent, parseAdCopyPayload } from "./adCopyParser";
+import { hasImagePromptContent, parseImagePromptPayload } from "./imageBriefingParser";
+import { useRequestPipelineCreatives } from "../../api/experiment/useRequestPipelineCreatives";
 
 interface Props {
   experimentId: string;
@@ -100,6 +104,18 @@ export default function CriativosTab({ experimentId }: Props) {
   const { data, isLoading } = useCreatives(experimentId);
   const creatives = Array.isArray(data) ? data : [];
   const { data: experiment } = useExperiment(experimentId);
+  const pipelineRequest = useRequestPipelineCreatives(experimentId);
+  const adCopyContent = useMemo(() => parseAdCopyPayload(experiment?.adCopy ?? null), [experiment?.adCopy]);
+  const imageBriefingContent = useMemo(() => parseImagePromptPayload(experiment?.adImageBriefing ?? null), [experiment?.adImageBriefing]);
+  const pipelineHasAdCopy = hasAdCopyContent(adCopyContent);
+  const pipelineHasBriefing = hasImagePromptContent(imageBriefingContent);
+  const pipelineVariantCount = pipelineHasAdCopy ? adCopyContent.primaryTextVariants.length : 0;
+  const pipelineBriefingCount = pipelineHasBriefing ? imageBriefingContent.briefings.length : 0;
+  const pipelinePairs = Math.min(pipelineVariantCount, pipelineBriefingCount);
+  const pipelineAvailable = pipelinePairs > 0;
+  const pendingCreativeRequests = experiment?.creativesToGenerate ?? 0;
+  const pipelineInProgress = experiment?.creativeGenerationMode === "PIPELINE_ADS" && pendingCreativeRequests > 0;
+  const pipelineButtonDisabled = pipelineRequest.isPending || pipelineInProgress || pendingCreativeRequests > 0 || !pipelineAvailable;
   const updateExperimentMutation = useUpdateExperiment(experimentId);
   const updatePromptsMutation = useUpdateExperiment(experimentId);
   const [showForm, setShowForm] = useState(false);
@@ -536,7 +552,7 @@ export default function CriativosTab({ experimentId }: Props) {
   };
 
   const totalCreatives = creatives.length;
-  const solicitedCreatives = experiment?.creativesToGenerate ?? 0;
+  const solicitedCreatives = pendingCreativeRequests;
 
   const handleCreativeRequestSuccess = (qty: number) => {
     setFeedback({
@@ -552,6 +568,23 @@ export default function CriativosTab({ experimentId }: Props) {
       title: "Erro ao solicitar criativos",
       description: "Tente novamente em instantes.",
     });
+  };
+
+  const handlePipelineRequest = async () => {
+    try {
+      await pipelineRequest.mutateAsync();
+      setFeedback({
+        variant: "success",
+        title: "Solicitação enviada",
+        description: "Geraremos até 3 anúncios com o pipeline do experimento.",
+      });
+    } catch {
+      setFeedback({
+        variant: "error",
+        title: "Erro ao gerar anúncios do pipeline",
+        description: "Verifique se o pipeline está completo e tente novamente.",
+      });
+    }
   };
   const readyCreatives = creatives.filter((c) => c.status === "READY");
   const pendingCreatives = creatives.filter((c) => c.status !== "READY");
@@ -876,6 +909,42 @@ export default function CriativosTab({ experimentId }: Props) {
         onRequestSuccess={handleCreativeRequestSuccess}
         onRequestError={handleCreativeRequestError}
       />
+
+      {pipelineAvailable ? (
+        <div className="alert alert-primary d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mt-3">
+          <div>
+            <h4 className="h6 mb-1">Anúncios do pipeline prontos</h4>
+            <p className="mb-0 small text-muted">
+              Encontramos {pipelinePairs} {pipelinePairs === 1 ? "variação" : "variações"} com texto e briefing estruturados.
+              O Worker AI usará o modelo gpt-imagem-1.5 para gerar as imagens alinhadas ao experimento.
+            </p>
+          </div>
+          <div className="d-flex flex-column align-items-lg-end gap-2 w-100 w-lg-auto">
+            <button
+              type="button"
+              className="btn btn-outline-primary d-flex align-items-center justify-content-center gap-2"
+              onClick={handlePipelineRequest}
+              disabled={pipelineButtonDisabled}
+            >
+              {pipelineRequest.isPending ? (
+                <span className="spinner-border spinner-border-sm" role="status" />
+              ) : (
+                <Sparkles size={ICON_SIZE} />
+              )}
+              <span>{pipelineInProgress ? "Gerando anúncios..." : "Gerar anúncios do pipeline"}</span>
+            </button>
+            {pipelineInProgress && (
+              <span className="badge text-bg-info-subtle text-info-emphasis">
+                Worker AI processando imagens com gpt-imagem-1.5
+              </span>
+            )}
+          </div>
+        </div>
+      ) : pipelineInProgress ? (
+        <div className="alert alert-info mt-3">
+          <strong>Worker AI em produção.</strong> Estamos finalizando os anúncios solicitados com os ativos do pipeline.
+        </div>
+      ) : null}
 
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mt-4">
         <div>

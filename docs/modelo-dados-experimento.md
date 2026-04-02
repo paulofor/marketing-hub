@@ -45,6 +45,7 @@ erDiagram
       DECIMAL daily_budget
       VARCHAR status
       VARCHAR stage
+      VARCHAR creative_generation_mode
       VARCHAR primary_variable
       VARCHAR primary_metric
       DATE start_date

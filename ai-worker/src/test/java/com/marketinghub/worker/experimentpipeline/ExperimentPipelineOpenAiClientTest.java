@@ -414,7 +414,7 @@ class ExperimentPipelineOpenAiClientTest {
     }
 
     @Test
-    void keepsOpenObjectSchemasFlexibleWhenNoPropertiesExist() {
+    void forcesClosedObjectSchemasEvenWhenNoPropertiesExist() {
         AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
         ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
                 WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef)),
@@ -464,7 +464,7 @@ class ExperimentPipelineOpenAiClientTest {
         Map<String, Object> properties = (Map<String, Object>) schema.get("properties");
         @SuppressWarnings("unchecked")
         Map<String, Object> landingPageCopy = (Map<String, Object>) properties.get("landingPageCopy");
-        assertThat(landingPageCopy).doesNotContainKey("additionalProperties");
+        assertThat(landingPageCopy.get("additionalProperties")).isEqualTo(false);
         assertThat(landingPageCopy).doesNotContainKey("required");
     }
 

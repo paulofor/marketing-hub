@@ -185,6 +185,102 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("sectionDependsOn");
     }
 
+    @Test
+    void normalizesJsonSchemaRequiredForStrictResponsesApiCompatibility() {
+        AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                13L,
+                "ad-copy",
+                "gpt-5.2",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "input": [
+                            {"role": "user", "content": "Prompt de anuncio"}
+                          ],
+                          "text": {
+                            "format": {
+                              "type": "json_schema",
+                              "schema": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "adCopy": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "primaryText": {"type": "string"},
+                                      "headline": {"type": "string"}
+                                    },
+                                    "required": ["headline"]
+                                  }
+                                },
+                                "required": ["adCopy"]
+                              }
+                            }
+                          }
+                        }
+                        """,
+                Instant.now());
+
+        client.generate(job);
+
+        Map<String, Object> payload = payloadRef.get();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> text = (Map<String, Object>) payload.get("text");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> format = (Map<String, Object>) text.get("format");
+        assertThat(format.get("name")).isEqualTo("experiment_pipeline_ad_copy");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> schema = (Map<String, Object>) format.get("schema");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> properties = (Map<String, Object>) schema.get("properties");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> adCopy = (Map<String, Object>) properties.get("adCopy");
+        @SuppressWarnings("unchecked")
+        java.util.List<String> required = (java.util.List<String>) adCopy.get("required");
+        assertThat(required).contains("headline", "primaryText");
+    }
+
+    @Test
+    void enforcesGpt52ModelForEveryPipelineCall() {
+        AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                14L,
+                "ad-copy",
+                "gpt-4o-mini",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-4o-mini",
+                          "input": [
+                            {"role": "user", "content": "Prompt de anuncio"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        client.generate(job);
+
+        Map<String, Object> payload = payloadRef.get();
+        assertThat(payload.get("model")).isEqualTo("gpt-5.2");
+    }
+
     private ExchangeFunction capturePayloadExchange(AtomicReference<Map<String, Object>> payloadRef) {
         return request ->
                 readBodyAsString(request.body())

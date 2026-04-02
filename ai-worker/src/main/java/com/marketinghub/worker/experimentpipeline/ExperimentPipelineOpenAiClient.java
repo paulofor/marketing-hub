@@ -4,9 +4,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.OpenAiCostEstimator;
 import com.marketinghub.worker.openai.OpenAiResponse;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +23,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 @Component
 public class ExperimentPipelineOpenAiClient {
     private static final Logger log = LoggerFactory.getLogger(ExperimentPipelineOpenAiClient.class);
+    private static final String REQUIRED_TEXT_MODEL = "gpt-5.2";
     private static final int TRANSIENT_ERROR_MAX_ATTEMPTS = 3;
     private static final long TRANSIENT_ERROR_RETRY_DELAY_MS = 1_500L;
     private static final String PIPELINE_PROMPT_PREFIX = """
@@ -256,8 +260,10 @@ public class ExperimentPipelineOpenAiClient {
         try {
             Map<String, Object> payload = objectMapper.readValue(job.requestBodyJson(), new TypeReference<>() {});
             enrichPrompt(payload, job);
+            String effectiveModel = enforceRequiredModel(payload, job);
+            ensureJsonSchemaCompatibility(payload, job);
             log.info("Sending experiment pipeline job {} to OpenAI (experimentId={}, section={}, model={})",
-                    job.id(), job.experimentId(), job.section(), job.model());
+                    job.id(), job.experimentId(), job.section(), effectiveModel);
             log.info("OpenAI payload preview for job {}: {}", job.id(),
                     truncateForLog(objectMapper.writeValueAsString(payload), 1200));
             OpenAiResponse response = requestWithTransientRetries(payload, job);
@@ -285,10 +291,28 @@ public class ExperimentPipelineOpenAiClient {
                     objectMapper.writeValueAsString(payload),
                     inputTokens,
                     outputTokens,
-                    OpenAiCostEstimator.estimateUsd(job.model(), response.usage()));
+                    OpenAiCostEstimator.estimateUsd(effectiveModel, response.usage()));
         } catch (Exception ex) {
             throw new IllegalStateException("Falha ao gerar seção " + job.section() + " do experimento " + job.experimentId(), ex);
         }
+    }
+
+    private String enforceRequiredModel(Map<String, Object> payload, ExperimentPipelineJobDto job) {
+        if (payload == null) {
+            return REQUIRED_TEXT_MODEL;
+        }
+        String previousModel = payload.get("model") instanceof String value ? value : null;
+        if (!REQUIRED_TEXT_MODEL.equals(previousModel)) {
+            log.warn(
+                    "Forçando modelo OpenAI {} para pipeline (jobId={}, experimento={}, seção={}, modeloOriginal={})",
+                    REQUIRED_TEXT_MODEL,
+                    job != null ? job.id() : null,
+                    job != null ? job.experimentId() : null,
+                    job != null ? job.section() : null,
+                    previousModel);
+        }
+        payload.put("model", REQUIRED_TEXT_MODEL);
+        return REQUIRED_TEXT_MODEL;
     }
 
     private OpenAiResponse requestWithTransientRetries(Map<String, Object> payload, ExperimentPipelineJobDto job) {
@@ -307,6 +331,13 @@ public class ExperimentPipelineOpenAiClient {
                         || status == HttpStatus.GATEWAY_TIMEOUT
                         || status == HttpStatus.TOO_MANY_REQUESTS;
                 if (!transientStatus || attempt == TRANSIENT_ERROR_MAX_ATTEMPTS) {
+                    log.error(
+                            "OpenAI retornou erro não transitório para job {} (experimento={}, seção={}, status={}, responseBody={})",
+                            job.id(),
+                            job.experimentId(),
+                            job.section(),
+                            ex.getStatusCode().value(),
+                            truncateForLog(ex.getResponseBodyAsString(), 1200));
                     throw ex;
                 }
                 log.warn("OpenAI retornou status transitório {} para job {} (experimento={}, seção={}). Tentativa {}/{}",
@@ -381,6 +412,96 @@ public class ExperimentPipelineOpenAiClient {
             return base + "\n\n" + LANDING_LAYOUT_PROMPT_SUFFIX;
         }
         return base;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void ensureJsonSchemaCompatibility(Map<String, Object> payload, ExperimentPipelineJobDto job) {
+        if (payload == null) {
+            return;
+        }
+        Object textNode = payload.get("text");
+        if (!(textNode instanceof Map<?, ?> textMapRaw)) {
+            return;
+        }
+        Object formatNode = textMapRaw.get("format");
+        if (!(formatNode instanceof Map<?, ?> formatMapRaw)) {
+            return;
+        }
+        Map<String, Object> formatMap = (Map<String, Object>) formatMapRaw;
+        Object typeNode = formatMap.get("type");
+        if (!(typeNode instanceof String type) || !"json_schema".equals(type)) {
+            return;
+        }
+        ensureJsonSchemaName(formatMap, job);
+        Object schemaNode = formatMap.get("schema");
+        if (schemaNode instanceof Map<?, ?> schemaRaw) {
+            normalizeRequiredForObjectSchemas((Map<String, Object>) schemaRaw);
+        }
+    }
+
+    private void ensureJsonSchemaName(Map<String, Object> formatMap, ExperimentPipelineJobDto job) {
+        Object name = formatMap.get("name");
+        if (name instanceof String value && StringUtils.hasText(value)) {
+            return;
+        }
+        String section = job != null && StringUtils.hasText(job.section())
+                ? job.section().trim().toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "_")
+                : "response";
+        formatMap.put("name", "experiment_pipeline_" + section);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void normalizeRequiredForObjectSchemas(Map<String, Object> schema) {
+        if (schema == null) {
+            return;
+        }
+        if (isObjectSchema(schema)) {
+            Object propertiesNode = schema.get("properties");
+            if (propertiesNode instanceof Map<?, ?> propertiesRaw) {
+                Map<String, Object> properties = (Map<String, Object>) propertiesRaw;
+                mergeRequiredWithProperties(schema, properties.keySet());
+                for (Object propertySchema : properties.values()) {
+                    if (propertySchema instanceof Map<?, ?> nestedSchema) {
+                        normalizeRequiredForObjectSchemas((Map<String, Object>) nestedSchema);
+                    }
+                }
+            }
+        }
+        Object itemsNode = schema.get("items");
+        if (itemsNode instanceof Map<?, ?> itemSchema) {
+            normalizeRequiredForObjectSchemas((Map<String, Object>) itemSchema);
+        } else if (itemsNode instanceof List<?> itemsList) {
+            for (Object item : itemsList) {
+                if (item instanceof Map<?, ?> listItemSchema) {
+                    normalizeRequiredForObjectSchemas((Map<String, Object>) listItemSchema);
+                }
+            }
+        }
+    }
+
+    private boolean isObjectSchema(Map<String, Object> schema) {
+        Object typeNode = schema.get("type");
+        if (typeNode instanceof String type) {
+            return "object".equals(type);
+        }
+        if (typeNode instanceof List<?> types) {
+            return types.stream().anyMatch(candidate -> "object".equals(candidate));
+        }
+        return false;
+    }
+
+    private void mergeRequiredWithProperties(Map<String, Object> schema, Set<String> propertyNames) {
+        LinkedHashSet<String> merged = new LinkedHashSet<>();
+        Object requiredNode = schema.get("required");
+        if (requiredNode instanceof List<?> requiredList) {
+            for (Object value : requiredList) {
+                if (value instanceof String requiredName && StringUtils.hasText(requiredName)) {
+                    merged.add(requiredName);
+                }
+            }
+        }
+        merged.addAll(propertyNames);
+        schema.put("required", new ArrayList<>(merged));
     }
 
     private boolean isCampaignAngleSection(ExperimentPipelineJobDto job) {

@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import * as Tabs from "@radix-ui/react-tabs";
 import axios from "axios";
 import type { Hypothesis } from "../../api/hypothesis/useHypothesisBoard";
 import { CampaignAngleSummary, hasCampaignAngleContent, parseCampaignAnglePayload } from "./campaignAngleParser";
 import { AdCopyContent, hasAdCopyContent, parseAdCopyPayload } from "./adCopyParser";
+import { ImagePromptContent, hasImagePromptContent, parseImagePromptPayload } from "./imageBriefingParser";
+import { LandingCopyBlock, LandingCopyContent, LandingCopyFormField, LandingCopyVersion, hasLandingCopyContent, parseLandingCopyPayload } from "./landingCopyParser";
+import { LandingLayoutContent, hasLandingLayoutContent, parseLandingLayoutPayload } from "./landingLayoutParser";
 import { useExperimentPipelineJobs } from "../../api/experiment/useExperimentPipelineJobs";
 
 type ContentGenerationSectionKey =
@@ -1087,6 +1090,7 @@ export default function ExperimentContentGenerationTab({
                           latestGeneration={sectionGenerations[section.key][0]}
                         />
                         <GenericGenerationHistoryList
+                          section={section}
                           generations={sectionGenerations[section.key]}
                           isLoading={isLoadingSectionGenerations[section.key]}
                         />
@@ -1260,10 +1264,17 @@ function GenericGenerationSummaryPanel({
   isLoading,
   latestGeneration,
 }: GenericGenerationSummaryPanelProps) {
-  const hasData = Boolean(latestGeneration?.rawResponse?.trim());
+  const defaultPrompt = SECTION_PROMPT_DEFAULTS[section.key];
+  const parsedContent = useMemo(
+    () => parseSectionContent(section.key, latestGeneration?.rawResponse),
+    [latestGeneration?.rawResponse, section.key],
+  );
+
+  const { hasStructuredData, preview } = resolveStructuredPreview(section.key, parsedContent);
+  const fallbackRaw = latestGeneration?.rawResponse?.trim();
+  const hasData = hasStructuredData || Boolean(fallbackRaw);
   const badgeVariant = hasData ? "info" : "secondary";
   const badgeLabel = hasData ? "Última geração do Worker IA" : "Aguardando geração";
-  const defaultPrompt = SECTION_PROMPT_DEFAULTS[section.key];
 
   return (
     <div className="card border-0 shadow-sm">
@@ -1293,10 +1304,12 @@ function GenericGenerationSummaryPanel({
             <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
             Carregando conteúdo estruturado...
           </div>
-        ) : hasData ? (
+        ) : hasStructuredData && preview ? (
+          <div className="mt-3">{preview}</div>
+        ) : fallbackRaw ? (
           <div className="border rounded p-3 mt-3 bg-light-subtle">
             <pre className="small mb-0" style={{ whiteSpace: "pre-wrap" }}>
-              {latestGeneration?.rawResponse?.trim()}
+              {fallbackRaw}
             </pre>
           </div>
         ) : (
@@ -1331,11 +1344,13 @@ function GenericGenerationSummaryPanel({
 }
 
 interface GenericGenerationHistoryListProps {
+  section: ContentGenerationSection;
   generations: SimpleGenerationRow[];
   isLoading: boolean;
 }
 
 function GenericGenerationHistoryList({
+  section,
   generations,
   isLoading,
 }: GenericGenerationHistoryListProps) {
@@ -1367,22 +1382,377 @@ function GenericGenerationHistoryList({
           </p>
         ) : (
           <div className="mt-3 d-flex flex-column gap-2">
-            {generations.map((generation) => (
-              <div key={generation.id} className="border rounded p-3 bg-body-tertiary">
-                <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
-                  <p className="fw-semibold mb-1">{formatDateTime(generation.createdAt)}</p>
-                  {generation.model ? (
-                    <span className="badge text-bg-light">{generation.model}</span>
-                  ) : null}
+            {generations.map((generation) => {
+              const parsed = parseSectionContent(section.key, generation.rawResponse);
+              const summary = describeGenerationSummary(section.key, parsed);
+              return (
+                <div key={generation.id} className="border rounded p-3 bg-body-tertiary">
+                  <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                    <p className="fw-semibold mb-1">{formatDateTime(generation.createdAt)}</p>
+                    {generation.model ? (
+                      <span className="badge text-bg-light">{generation.model}</span>
+                    ) : null}
+                  </div>
+                  <p className="small text-muted mb-1 mt-2">{summary}</p>
+                  {generation.rawResponse ? (
+                    <details className="mt-1">
+                      <summary className="small text-muted">Ver JSON bruto</summary>
+                      <pre className="small mb-0 mt-2" style={{ whiteSpace: "pre-wrap" }}>
+                        {generation.rawResponse.trim()}
+                      </pre>
+                    </details>
+                  ) : (
+                    <p className="small text-muted mb-0">Sem resposta registrada.</p>
+                  )}
                 </div>
-                <pre className="small mb-0 mt-2" style={{ whiteSpace: "pre-wrap" }}>
-                  {generation.rawResponse?.trim() || "Sem resposta registrada."}
-                </pre>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+
+function parseSectionContent(
+  sectionKey: ContentGenerationSectionKey,
+  raw?: string | null,
+): ImagePromptContent | LandingCopyContent | LandingLayoutContent | undefined {
+  if (!raw) return undefined;
+  switch (sectionKey) {
+    case "image-prompt":
+      return parseImagePromptPayload(raw);
+    case "landing-copy":
+      return parseLandingCopyPayload(raw);
+    case "landing-layout":
+      return parseLandingLayoutPayload(raw);
+    default:
+      return undefined;
+  }
+}
+
+function resolveStructuredPreview(
+  sectionKey: ContentGenerationSectionKey,
+  parsed?: ImagePromptContent | LandingCopyContent | LandingLayoutContent,
+): { hasStructuredData: boolean; preview?: ReactNode } {
+  switch (sectionKey) {
+    case "image-prompt": {
+      const content = parsed as ImagePromptContent | undefined;
+      if (hasImagePromptContent(content)) {
+        return { hasStructuredData: true, preview: <ImagePromptPreview content={content} /> };
+      }
+      return { hasStructuredData: false };
+    }
+    case "landing-copy": {
+      const content = parsed as LandingCopyContent | undefined;
+      if (hasLandingCopyContent(content)) {
+        return { hasStructuredData: true, preview: <LandingCopyPreview content={content} /> };
+      }
+      return { hasStructuredData: false };
+    }
+    case "landing-layout": {
+      const content = parsed as LandingLayoutContent | undefined;
+      if (hasLandingLayoutContent(content)) {
+        return { hasStructuredData: true, preview: <LandingLayoutPreview content={content} /> };
+      }
+      return { hasStructuredData: false };
+    }
+    default:
+      return { hasStructuredData: false };
+  }
+}
+
+function describeGenerationSummary(
+  sectionKey: ContentGenerationSectionKey,
+  content?: ImagePromptContent | LandingCopyContent | LandingLayoutContent,
+): string {
+  switch (sectionKey) {
+    case "image-prompt": {
+      const typed = content as ImagePromptContent | undefined;
+      if (hasImagePromptContent(typed)) {
+        const total = typed.briefings.length;
+        return total === 1 ? "1 briefing visual estruturado." : `${total} briefings visuais estruturados.`;
+      }
+      return "Sem briefings estruturados nesta geração.";
+    }
+    case "landing-copy": {
+      const typed = content as LandingCopyContent | undefined;
+      if (hasLandingCopyContent(typed)) {
+        const blocks = [typed.landingCurta, typed.landingCompleta].filter(Boolean).length;
+        return blocks === 2
+          ? "Landing curta e completa atualizadas."
+          : "Uma versão de landing estruturada nesta geração.";
+      }
+      return "Landing sem conteúdo interpretável.";
+    }
+    case "landing-layout": {
+      const typed = content as LandingLayoutContent | undefined;
+      if (hasLandingLayoutContent(typed)) {
+        const total = typed.sectionOrder?.length ?? 0;
+        return total > 0
+          ? `${total} blocos desenhados no wireframe.`
+          : "Wireframe atualizado sem blocos detalhados.";
+      }
+      return "Wireframe ainda não estruturado.";
+    }
+    default:
+      return "Geração registrada.";
+  }
+}
+
+function ImagePromptPreview({ content }: { content: ImagePromptContent }) {
+  return (
+    <div className="row g-3">
+      {content.briefings.map((briefing, index) => (
+        <div className="col-12 col-xl-4" key={`briefing-${index}`}>
+          <div className="border rounded p-3 bg-light-subtle h-100">
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <span className="badge text-bg-primary">Briefing {index + 1}</span>
+              {briefing.assetType ? (
+                <span className="badge text-bg-light text-uppercase">{briefing.assetType}</span>
+              ) : null}
+            </div>
+            <p className="small mb-1">
+              <strong>Mensagem espelhada:</strong> {briefing.mustMatchAdVariant ?? "—"}
+            </p>
+            <p className="small mb-1">
+              <strong>Ângulo visual:</strong> {briefing.visualAngle ?? "—"}
+            </p>
+            <p className="small mb-1">
+              <strong>Briefing visual:</strong> {briefing.visualBriefing ?? "—"}
+            </p>
+            <p className="small mb-1">
+              <strong>Hierarquia:</strong> {briefing.hierarchy ?? "—"}
+            </p>
+            <p className="small mb-1">
+              <strong>Formato por placement:</strong> {briefing.formatByPlacement ?? "—"}
+            </p>
+            <p className="small mb-1">
+              <strong>Limite de palavras:</strong>{" "}
+              {briefing.imageTextMaxWords ? `${briefing.imageTextMaxWords} palavras` : "—"}
+            </p>
+            {briefing.supportingKeywords?.length ? (
+              <div className="small">
+                <strong>Palavras-chave:</strong>
+                <ul className="mb-0 mt-1">
+                  {briefing.supportingKeywords.map((keyword) => (
+                    <li key={keyword}>{keyword}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LandingCopyPreview({ content }: { content: LandingCopyContent }) {
+  return (
+    <div className="mt-3">
+      {content.messageMatchSource ? (
+        <div className="alert alert-warning py-2 mb-3">
+          <strong>Message match:</strong> Espelhar headline "{content.messageMatchSource}".
+        </div>
+      ) : null}
+      <div className="row g-3">
+        <div className="col-12 col-xl-6">
+          <LandingCopyVersionCard title="Landing curta" version={content.landingCurta} />
+        </div>
+        <div className="col-12 col-xl-6">
+          <LandingCopyVersionCard title="Landing completa" version={content.landingCompleta} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LandingCopyVersionCard({
+  title,
+  version,
+}: {
+  title: string;
+  version?: LandingCopyVersion;
+}) {
+  if (!version) {
+    return (
+      <div className="border rounded p-3 bg-body-tertiary h-100">
+        <p className="text-muted small mb-0">Versão ainda não disponível.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border rounded p-3 bg-body-tertiary h-100 d-flex flex-column gap-2">
+      <div>
+        <p className="text-uppercase small text-muted mb-1">{title}</p>
+        <p className="small mb-0">
+          <strong>Promessa:</strong> {version.heroPromise ?? version.offerPromise ?? "—"}
+        </p>
+      </div>
+      {version.heroTitle ? (
+        <div>
+          <p className="fw-semibold mb-1">{version.heroTitle}</p>
+          <p className="text-muted small mb-0">{version.heroSubtitle}</p>
+        </div>
+      ) : null}
+      {version.heroBullets?.length ? (
+        <ul className="small ps-3 mb-0">
+          {version.heroBullets.map((bullet, bulletIndex) => (
+            <li key={`${title}-bullet-${bulletIndex}`}>{bullet}</li>
+          ))}
+        </ul>
+      ) : null}
+      {version.primaryCTA ? (
+        <p className="small mb-0">
+          <strong>CTA principal:</strong> {version.primaryCTA}
+        </p>
+      ) : null}
+      {version.formMicrocopy ? (
+        <div className="small">
+          <p className="fw-semibold mb-1">Microcopy do formulário</p>
+          {version.formMicrocopy.headline && <p className="mb-0">{version.formMicrocopy.headline}</p>}
+          {version.formMicrocopy.support && (
+            <p className="text-muted mb-0">{version.formMicrocopy.support}</p>
+          )}
+          {version.formMicrocopy.instructions && (
+            <p className="text-muted mb-0">{version.formMicrocopy.instructions}</p>
+          )}
+        </div>
+      ) : null}
+      {version.formFields ? <LandingCopyFormFields fields={version.formFields} /> : null}
+      <LandingCopyBlockView label="Benefícios" block={version.benefitsSection} />
+      <LandingCopyBlockView label="Como funciona" block={version.howItWorksSection} />
+      <LandingCopyBlockView label="Prova" block={version.proofSection} />
+      <LandingCopyBlockView label="Oferta" block={version.offerSection} />
+      <LandingCopyBlockView
+        label="Tratativa de objeções"
+        block={version.objectionHandlingSection}
+      />
+      {version.faqSection?.length ? (
+        <div className="small">
+          <p className="fw-semibold mb-1">FAQ</p>
+          <ul className="mb-0 ps-3">
+            {version.faqSection.map((item, faqIndex) => (
+              <li key={`${title}-faq-${faqIndex}`}>
+                <strong>{item.question ?? "Pergunta"}</strong>
+                {item.answer ? <p className="mb-0">{item.answer}</p> : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {version.closingCTA ? (
+        <p className="small mb-0">
+          <strong>Fechamento:</strong> {version.closingCTA}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function LandingCopyFormFields({ fields }: { fields: LandingCopyFormField[] }) {
+  return (
+    <div className="small">
+      <p className="fw-semibold mb-1">Campos sugeridos</p>
+      <ul className="mb-0 ps-3">
+        {fields.map((field, index) => (
+          <li key={`field-${field.label ?? index}`}>
+            {field.label ?? "Campo"}
+            {field.required ? " (obrigatório)" : ""}
+            {field.placeholder ? ` — ${field.placeholder}` : ""}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function LandingCopyBlockView({
+  label,
+  block,
+}: {
+  label: string;
+  block?: LandingCopyBlock;
+}) {
+  if (!block) return null;
+  return (
+    <div className="small">
+      <p className="fw-semibold mb-1">{label}</p>
+      {block.title ? <p className="mb-0">{block.title}</p> : null}
+      {block.description ? <p className="text-muted mb-0">{block.description}</p> : null}
+      {block.bullets?.length ? (
+        <ul className="mb-0 ps-3">
+          {block.bullets.map((item, index) => (
+            <li key={`${label}-bullet-${index}`}>{item}</li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+function LandingLayoutPreview({ content }: { content: LandingLayoutContent }) {
+  return (
+    <div className="mt-3 d-flex flex-column gap-3">
+      <div className="row g-3">
+        <div className="col-12 col-lg-4">
+          <div className="border rounded p-3 bg-body-tertiary h-100">
+            <p className="text-uppercase small text-muted mb-1">Objetivo</p>
+            <p className="fw-semibold mb-1">{content.pageGoal ?? "—"}</p>
+            <p className="text-muted small mb-0">
+              Variante sugerida: {content.variantLayoutId ?? "—"}
+            </p>
+          </div>
+        </div>
+        <div className="col-12 col-lg-4">
+          <div className="border rounded p-3 bg-body-tertiary h-100">
+            <p className="text-uppercase small text-muted mb-1">CTA</p>
+            <p className="small mb-1">{content.ctaPlacementNotes ?? "Sem observações"}</p>
+            <p className="text-uppercase small text-muted mb-1">Formulário</p>
+            <p className="small mb-0">{content.formPlacementNotes ?? "Sem instruções"}</p>
+          </div>
+        </div>
+        <div className="col-12 col-lg-4">
+          <div className="border rounded p-3 bg-body-tertiary h-100">
+            <p className="text-uppercase small text-muted mb-1">Prioridade mobile</p>
+            <p className="small mb-0">{content.mobilePriorityNotes ?? "Sem notas"}</p>
+          </div>
+        </div>
+      </div>
+      {content.sectionOrder?.length ? (
+        <div className="d-flex flex-column gap-2">
+          {content.sectionOrder.map((section, index) => (
+            <div key={`${section.sectionName ?? index}`} className="border rounded p-3 bg-body-tertiary">
+              <div className="d-flex justify-content-between align-items-center gap-2">
+                <strong>{section.sectionName || `Bloco ${index + 1}`}</strong>
+                {section.mobilePriorityScore ? (
+                  <span className="badge text-bg-light">
+                    Prioridade {section.mobilePriorityScore}/10
+                  </span>
+                ) : null}
+              </div>
+              {section.objective ? (
+                <p className="small mb-1">{section.objective}</p>
+              ) : null}
+              {section.sectionDependsOn ? (
+                <p className="text-muted small mb-1">
+                  Depende de: {section.sectionDependsOn}
+                </p>
+              ) : null}
+              {section.dropOffRisk ? (
+                <span className="badge text-bg-warning text-uppercase me-auto">
+                  Risco de drop: {section.dropOffRisk}
+                </span>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-muted small mb-0">Nenhum bloco estrutural informado.</p>
+      )}
     </div>
   );
 }

@@ -419,35 +419,29 @@ public class ExperimentPipelineOpenAiClient {
         if (payload == null) {
             return;
         }
-        Object textNode = payload.get("text");
-        if (!(textNode instanceof Map<?, ?> textMapRaw)) {
+        JsonSchemaContext context = JsonSchemaContext.fromPayload(payload);
+        if (context == null) {
             return;
         }
-        Object formatNode = textMapRaw.get("format");
-        if (!(formatNode instanceof Map<?, ?> formatMapRaw)) {
-            return;
-        }
-        Map<String, Object> formatMap = (Map<String, Object>) formatMapRaw;
-        Object typeNode = formatMap.get("type");
-        if (!(typeNode instanceof String type) || !"json_schema".equals(type)) {
-            return;
-        }
-        ensureJsonSchemaName(formatMap, job);
-        Object schemaNode = formatMap.get("schema");
-        if (schemaNode instanceof Map<?, ?> schemaRaw) {
-            normalizeRequiredForObjectSchemas((Map<String, Object>) schemaRaw);
+        ensureJsonSchemaName(context.nameCarrier(), job);
+        Map<String, Object> schema = context.schema();
+        if (schema != null) {
+            normalizeRequiredForObjectSchemas(schema);
         }
     }
 
-    private void ensureJsonSchemaName(Map<String, Object> formatMap, ExperimentPipelineJobDto job) {
-        Object name = formatMap.get("name");
+    private void ensureJsonSchemaName(Map<String, Object> container, ExperimentPipelineJobDto job) {
+        if (container == null) {
+            return;
+        }
+        Object name = container.get("name");
         if (name instanceof String value && StringUtils.hasText(value)) {
             return;
         }
         String section = job != null && StringUtils.hasText(job.section())
                 ? job.section().trim().toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "_")
                 : "response";
-        formatMap.put("name", "experiment_pipeline_" + section);
+        container.put("name", "experiment_pipeline_" + section);
     }
 
     @SuppressWarnings("unchecked")
@@ -456,9 +450,9 @@ public class ExperimentPipelineOpenAiClient {
             return;
         }
         if (isObjectSchema(schema)) {
-            schema.put("additionalProperties", false);
             Object propertiesNode = schema.get("properties");
-            if (propertiesNode instanceof Map<?, ?> propertiesRaw) {
+            if (propertiesNode instanceof Map<?, ?> propertiesRaw && !((Map<?, ?>) propertiesNode).isEmpty()) {
+                schema.put("additionalProperties", false);
                 Map<String, Object> properties = (Map<String, Object>) propertiesRaw;
                 mergeRequiredWithProperties(schema, properties.keySet());
                 for (Object propertySchema : properties.values()) {
@@ -491,8 +485,80 @@ public class ExperimentPipelineOpenAiClient {
         return false;
     }
 
-    private void mergeRequiredWithProperties(Map<String, Object> schema, Set<String> propertyNames) {
-        schema.put("required", new ArrayList<>(new LinkedHashSet<>(propertyNames)));
+    private void mergeRequiredWithProperties(Map<String, Object> schema, Set<?> propertyNames) {
+        LinkedHashSet<String> normalized = new LinkedHashSet<>();
+        for (Object candidate : propertyNames) {
+            String value = normalizePropertyName(candidate);
+            if (StringUtils.hasText(value)) {
+                normalized.add(value);
+            }
+        }
+        schema.put("required", new ArrayList<>(normalized));
+    }
+
+    private String normalizePropertyName(Object candidate) {
+        if (candidate instanceof String text) {
+            return text;
+        }
+        return candidate != null ? String.valueOf(candidate) : null;
+    }
+
+    private static final class JsonSchemaContext {
+        private final Map<String, Object> nameCarrier;
+        private final Map<String, Object> schema;
+
+        private JsonSchemaContext(Map<String, Object> nameCarrier, Map<String, Object> schema) {
+            this.nameCarrier = nameCarrier;
+            this.schema = schema;
+        }
+
+        Map<String, Object> nameCarrier() {
+            return nameCarrier;
+        }
+
+        Map<String, Object> schema() {
+            return schema;
+        }
+
+        @SuppressWarnings("unchecked")
+        static JsonSchemaContext fromPayload(Map<String, Object> payload) {
+            if (payload == null) {
+                return null;
+            }
+            Map<String, Object> textMap = asMap(payload.get("text"));
+            Map<String, Object> formatMap = asMap(textMap != null ? textMap.get("format") : null);
+            if (isJsonSchemaFormat(formatMap) && formatMap.get("schema") instanceof Map<?, ?> schemaRaw) {
+                return new JsonSchemaContext(formatMap, (Map<String, Object>) schemaRaw);
+            }
+            Map<String, Object> responseFormat = asMap(payload.get("response_format"));
+            if (responseFormat == null) {
+                return null;
+            }
+            if (isJsonSchemaFormat(responseFormat) && responseFormat.get("schema") instanceof Map<?, ?> schemaRaw) {
+                return new JsonSchemaContext(responseFormat, (Map<String, Object>) schemaRaw);
+            }
+            Map<String, Object> nestedJsonSchema = asMap(responseFormat.get("json_schema"));
+            if (nestedJsonSchema != null && nestedJsonSchema.get("schema") instanceof Map<?, ?> schemaRawNested) {
+                return new JsonSchemaContext(nestedJsonSchema, (Map<String, Object>) schemaRawNested);
+            }
+            return null;
+        }
+
+        @SuppressWarnings("unchecked")
+        private static Map<String, Object> asMap(Object value) {
+            if (value instanceof Map<?, ?> map) {
+                return (Map<String, Object>) map;
+            }
+            return null;
+        }
+
+        private static boolean isJsonSchemaFormat(Map<String, Object> formatMap) {
+            if (formatMap == null) {
+                return false;
+            }
+            Object typeNode = formatMap.get("type");
+            return typeNode instanceof String type && "json_schema".equals(type);
+        }
     }
 
     private boolean isCampaignAngleSection(ExperimentPipelineJobDto job) {

@@ -452,7 +452,7 @@ public class ExperimentPipelineOpenAiClient {
         if (isObjectSchema(schema)) {
             schema.put("additionalProperties", false);
             Object propertiesNode = schema.get("properties");
-            if (propertiesNode instanceof Map<?, ?> propertiesRaw && !((Map<?, ?>) propertiesNode).isEmpty()) {
+            if (propertiesNode instanceof Map<?, ?> propertiesRaw) {
                 Map<String, Object> properties = (Map<String, Object>) propertiesRaw;
                 mergeRequiredWithProperties(schema, properties.keySet());
                 for (Object propertySchema : properties.values()) {
@@ -460,6 +460,8 @@ public class ExperimentPipelineOpenAiClient {
                         normalizeRequiredForObjectSchemas((Map<String, Object>) nestedSchema);
                     }
                 }
+            } else {
+                mergeRequiredWithProperties(schema, Set.of());
             }
         }
         Object itemsNode = schema.get("items");

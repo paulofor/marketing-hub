@@ -465,7 +465,7 @@ class ExperimentPipelineOpenAiClientTest {
         @SuppressWarnings("unchecked")
         Map<String, Object> landingPageCopy = (Map<String, Object>) properties.get("landingPageCopy");
         assertThat(landingPageCopy.get("additionalProperties")).isEqualTo(false);
-        assertThat(landingPageCopy).doesNotContainKey("required");
+        assertThat(landingPageCopy.get("required")).isEqualTo(java.util.List.of());
     }
 
     @Test

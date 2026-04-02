@@ -47,4 +47,41 @@ describe("landingCopyParser", () => {
     const parsed = parseLandingCopyPayload("{\"landing\":\"texto solto\"}");
     expect(parsed).toBeUndefined();
   });
+
+  it("extracts landing copy from wrapped worker response output_text", () => {
+    const raw = JSON.stringify({
+      output: [
+        {
+          type: "message",
+          content: [
+            {
+              type: "output_text",
+              text: JSON.stringify({
+                experimentMetadata: {
+                  stage: "AD",
+                },
+                landingPageCopy: {
+                  messageMatchSource: "Dor principal do nicho",
+                  landingCurta: {
+                    heroTitle: "Transforme seu funil",
+                    heroSubtitle: "Sem depender de consultoria",
+                    primaryCTA: "Gerar amostra",
+                    benefitsSection: {
+                      bullets: ["Mensagem alinhada", "Mais conversão"],
+                    },
+                  },
+                },
+              }),
+            },
+          ],
+        },
+      ],
+    });
+
+    const parsed = parseLandingCopyPayload(raw);
+    expect(hasLandingCopyContent(parsed)).toBe(true);
+    expect(parsed?.messageMatchSource).toBe("Dor principal do nicho");
+    expect(parsed?.landingCurta?.primaryCTA).toBe("Gerar amostra");
+    expect(parsed?.landingCurta?.benefitsSection?.bullets?.[0]).toBe("Mensagem alinhada");
+  });
 });

@@ -60,11 +60,28 @@ export interface LandingCopyContent {
 
 function resolveLandingPayload(candidate: JsonRecord): JsonRecord | undefined {
   if (
+    candidate.text &&
+    typeof candidate.text === "string" &&
+    candidate.type === "output_text"
+  ) {
+    const nested = extractObjectCandidates(candidate.text).find((entry) =>
+      hasLandingPayloadShape(entry),
+    );
+    if (nested) return resolveLandingPayload(nested);
+  }
+
+  if (
     candidate.landingPageCopy &&
     typeof candidate.landingPageCopy === "object" &&
     !Array.isArray(candidate.landingPageCopy)
   ) {
     return candidate.landingPageCopy as JsonRecord;
+  }
+  if (typeof candidate.landingPageCopy === "string") {
+    const nested = extractObjectCandidates(candidate.landingPageCopy).find((entry) =>
+      hasLandingPayloadShape(entry),
+    );
+    if (nested) return nested;
   }
   if (
     candidate.copy &&
@@ -73,7 +90,36 @@ function resolveLandingPayload(candidate: JsonRecord): JsonRecord | undefined {
   ) {
     return candidate.copy as JsonRecord;
   }
+  if (
+    candidate.treatment &&
+    typeof candidate.treatment === "object" &&
+    !Array.isArray(candidate.treatment)
+  ) {
+    const nested = resolveLandingPayload(candidate.treatment as JsonRecord);
+    if (nested) return nested;
+  }
+  if (
+    candidate.control &&
+    typeof candidate.control === "object" &&
+    !Array.isArray(candidate.control)
+  ) {
+    const nested = resolveLandingPayload(candidate.control as JsonRecord);
+    if (nested) return nested;
+  }
+  if (hasLandingPayloadShape(candidate)) {
+    return candidate;
+  }
   return candidate;
+}
+
+function hasLandingPayloadShape(candidate: JsonRecord): boolean {
+  return Boolean(
+    candidate.landingCurta ||
+      candidate.landingCompleta ||
+      candidate.landingLonga ||
+      candidate.shortVersion ||
+      candidate.longVersion,
+  );
 }
 
 function hasVersionContent(version?: LandingCopyVersion): boolean {
@@ -167,21 +213,23 @@ function parseVersion(value: unknown): LandingCopyVersion | undefined {
   if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
   const payload = value as JsonRecord;
   const version: LandingCopyVersion = {
-    heroPromise: pickText(payload.heroPromise),
-    offerPromise: pickText(payload.offerPromise),
-    heroTitle: pickText(payload.heroTitle),
-    heroSubtitle: pickText(payload.heroSubtitle),
-    heroBullets: toStringArray(payload.heroBullets),
-    primaryCTA: pickText(payload.primaryCTA ?? payload.cta),
-    formMicrocopy: parseFormMicrocopy(payload.formMicrocopy),
-    formFields: parseFormFields(payload.formFields),
-    benefitsSection: parseBlock(payload.benefitsSection),
-    howItWorksSection: parseBlock(payload.howItWorksSection),
-    proofSection: parseBlock(payload.proofSection),
-    offerSection: parseBlock(payload.offerSection),
-    objectionHandlingSection: parseBlock(payload.objectionHandlingSection),
-    faqSection: parseFaq(payload.faqSection),
-    closingCTA: pickText(payload.closingCTA),
+    heroPromise: pickText(payload.heroPromise ?? payload.promise),
+    offerPromise: pickText(payload.offerPromise ?? payload.offer),
+    heroTitle: pickText(payload.heroTitle ?? payload.headline),
+    heroSubtitle: pickText(payload.heroSubtitle ?? payload.subheadline),
+    heroBullets: toStringArray(payload.heroBullets ?? payload.bullets),
+    primaryCTA: pickText(payload.primaryCTA ?? payload.cta ?? payload.ctaPrincipal),
+    formMicrocopy: parseFormMicrocopy(payload.formMicrocopy ?? payload.form),
+    formFields: parseFormFields(payload.formFields ?? payload.fields),
+    benefitsSection: parseBlock(payload.benefitsSection ?? payload.benefits),
+    howItWorksSection: parseBlock(payload.howItWorksSection ?? payload.howItWorks),
+    proofSection: parseBlock(payload.proofSection ?? payload.proof),
+    offerSection: parseBlock(payload.offerSection ?? payload.offerDetails),
+    objectionHandlingSection: parseBlock(
+      payload.objectionHandlingSection ?? payload.objections,
+    ),
+    faqSection: parseFaq(payload.faqSection ?? payload.faq),
+    closingCTA: pickText(payload.closingCTA ?? payload.finalCTA),
   };
   return hasVersionContent(version) ? version : undefined;
 }
@@ -199,9 +247,9 @@ export function parseLandingCopyPayload(raw?: string | null): LandingCopyContent
     const scope = resolveLandingPayload(candidate);
     if (!scope) continue;
     const parsed: LandingCopyContent = {
-      messageMatchSource: pickText(scope.messageMatchSource),
-      landingCurta: parseVersion(scope.landingCurta),
-      landingCompleta: parseVersion(scope.landingCompleta ?? scope.landingLonga),
+      messageMatchSource: pickText(scope.messageMatchSource ?? scope.messageMatch ?? scope.headlineSource),
+      landingCurta: parseVersion(scope.landingCurta ?? scope.shortVersion),
+      landingCompleta: parseVersion(scope.landingCompleta ?? scope.landingLonga ?? scope.longVersion),
     };
     if (hasLandingCopyContent(parsed)) {
       return parsed;

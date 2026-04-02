@@ -92,143 +92,70 @@ public class ExperimentPipelineOpenAiClient {
             tone
             """;
     private static final String LANDING_COPY_PROMPT_SUFFIX = """
-            Contexto do nicho: {nicho}
-
-            Ângulo da campanha: {campaignAngle}
-            Headline do anúncio clicado: {adHeadline}
-            Dor principal: {primaryPain}
-            Promessa principal: {primaryPromise}
-            Mecanismo resumido: {mechanismSummary}
-            Prova resumida: {proofSummary}
-
             Objetivo da landing:
-            Converter o clique em:
-            - preenchimento de briefing
-            - geração de amostra
-            - pedido de prévia
+            Continuar exatamente a promessa do anúncio clicado e levar o usuário ao mesmo CTA declarado no anúncio.
+
+            Contexto mínimo disponível no prompt:
+            - Ângulo completo do experimento
+            - Headline do anúncio clicado
+            - CTA aprovado para o anúncio/landing
+            - landingMatchLine com a frase de continuidade
 
             Regras:
-            1. A landing deve continuar exatamente a promessa do anúncio.
-            2. Entregue dois modos de copy da landing:
-               - landingCurta: versão enxuta para leitura rápida
-               - landingCompleta: versão aprofundada para leitura detalhada
-            3. Inclua messageMatchSource informando qual headline do anúncio esta landing está espelhando.
-            4. Separe heroPromise de offerPromise, sem misturar proposta de valor com detalhes de oferta.
-            5. O hero deve deixar claro:
-               - para quem é
-               - qual transformação entrega
-               - qual próximo passo
-            6. O mecanismo deve ser explicado de forma simples.
-            7. A prova deve reduzir o medo de “isso é genérico” ou “isso não serve para mim”.
-            8. O CTA principal deve aparecer no topo e se repetir ao longo da página.
-            9. O texto deve ser escaneável.
-            10. Não usar linguagem de consultoria humana.
-            11. Toda a oferta deve caber no envelope do produto.
-            12. O formulário deve pedir apenas dados necessários para gerar a amostra.
-            13. Crie bloco próprio formMicrocopy (headline, suporte e instruções curtas).
-            14. Crie objectionHandlingSection cobrindo explicitamente:
-                - "não é consultoria"
-                - "é gerado por IA"
-                - "serve para meu caso?"
-            15. Mantenha alinhamento total entre expectativa do clique e conteúdo entregue na landing.
+            1. Repita a mesma promessa no hero (hero.headline + hero.promise) e em pageGoal.
+            2. messageMatchSource deve citar qual headline do anúncio está sendo espelhada e messageMatchNotes precisa explicar como cada seção mantém essa continuidade.
+            3. hero.ctaLabel, primaryCTA e todos os ctaBlocks devem usar exatamente o mesmo texto do CTA do anúncio.
+            4. bodySections precisa ter no mínimo quatro blocos cobrindo dor, mecanismo, prova e oferta; cada bloco deve preencher sectionType e sectionDependsOn (primaryPromise, mechanismSummary, proofSummary ou primaryCTA).
+            5. ctaBlocks deve mapear onde cada CTA aparece (hero, mid, final, sticky ou inline) especificando ctaVariant, matchAdCta e messageMatchNotes.
+            6. faq precisa trazer pelo menos três perguntas com objectionTag deixando claro qual objeção está sendo tratada.
+            7. consistencyChecks deve listar no mínimo CTA_MATCH, PROMISE_MATCH e GOOGLE_LANDING_BEST_PRACTICES com status PASS/WARN/FAIL e detalhes.
+            8. complianceNotes sempre reforça que a entrega é 100% digital (gerada por IA) e sem consultoria ou ligações.
+            9. Texto direto, escaneável e sem jargão de tráfego.
 
-            Formato esperado:
-            JSON com:
-            messageMatchSource,
-            landingCurta {
-              heroPromise,
-              offerPromise,
-              heroTitle,
-              heroSubtitle,
-              heroBullets,
-              primaryCTA,
-              formMicrocopy,
-              formFields,
-              benefitsSection,
-              howItWorksSection,
-              proofSection,
-              offerSection,
-              objectionHandlingSection,
-              faqSection,
-              closingCTA
-            },
-            landingCompleta {
-              heroPromise,
-              offerPromise,
-              heroTitle,
-              heroSubtitle,
-              heroBullets,
-              primaryCTA,
-              formMicrocopy,
-              formFields,
-              benefitsSection,
-              howItWorksSection,
-              proofSection,
-              offerSection,
-              objectionHandlingSection,
-              faqSection,
-              closingCTA
-            }
+            Formato obrigatório (JSON):
+            - pageGoal,
+            - messageMatchSource,
+            - messageMatchNotes
+            - primaryCTA
+            - hero { eyebrow, headline, subheadline, promise, supportingCopy, proofBadge, microcopy, ctaLabel, ctaUrl, ctaMatchNotes }
+            - bodySections[] com sectionId, sectionType, title, summary, bullets, copy, ctaSupport, sectionDependsOn, messageMatchNotes
+            - ctaBlocks[] com placement, ctaVariant, ctaLabel, ctaUrl, matchAdCta, ctaSupport, messageMatchNotes
+            - faq[] com question, answer, objectionTag
+            - consistencyChecks[] com check, status (PASS/WARN/FAIL), details
+            - complianceNotes
             """;
+
     private static final String LANDING_LAYOUT_PROMPT_SUFFIX = """
-            Contexto do nicho: {nicho}
-            Persona: {persona}
-            Promessa principal: {primaryPromise}
-            CTA principal: {cta}
-
-            Textos da landing já definidos:
-            - Hero: {heroTitle}
-            - Subtítulo: {heroSubtitle}
-            - Benefícios: {benefitsSection}
-            - Como funciona: {howItWorksSection}
-            - Prova: {proofSection}
-            - Oferta: {offerSection}
-            - FAQ: {faqSection}
-
             Objetivo:
-            Criar o wireframe textual da landing page.
+            Converter o copy aprovado em um wireframe textual, mobile-first e com message match obrigatório entre anúncio e landing.
+
+            Insumos garantidos:
+            - Promessa central (primaryPromise) + landingMatchLine
+            - CTA aprovado (primaryCTA)
+            - Hero/headline e seções principais já redigidas
 
             Regras:
-            1. A página deve ser mobile-first.
-            2. O hero e o formulário devem aparecer sem exigir muito scroll.
-            3. O wireframe deve ser experimental, não apenas estrutural.
-            4. Adicione variantLayoutId para cada proposta com um valor entre:
-               - form-first
-               - proof-first
-            5. O layout base deve preservar:
-               - hero + formulário acima da dobra
-               - CTA recorrente
-               - FAQ e compliance no footer
-            6. Cada seção deve ter uma função clara.
-            7. Adicione mobilePriorityScore por seção (inteiro de 1 a 10) para priorização em telas pequenas.
-            8. Adicione dropOffRisk por bloco com um valor entre: baixo, médio, alto.
-            9. Adicione sectionDependsOn para amarrar cada bloco ao dado de campanha:
-               - hero ← primaryPromise
-               - prova ← proofSummary
-               - CTA ← primaryCTA
-            10. O CTA principal deve reaparecer em pontos estratégicos.
-            11. O layout deve minimizar atrito e reforçar continuidade com o anúncio.
-            12. Não criar seções desnecessárias.
+            1. pageGoal precisa deixar explícito qual ação a página deve gerar.
+            2. variantLayoutId deve ser form-first, proof-first ou story-first.
+            3. sectionOrder deve mapear cada bloco com sectionId, sectionName, objective, contentType (hero, form, split, proof, timeline, faq, cta), copySource, uiNotes, messageMatchDependency e sectionDependsOn.
+            4. Cada bloco precisa informar mobilePriorityScore (1 a 10) e dropOffRisk (baixo, medio ou alto).
+            5. Se houver CTA no bloco, preencher ctaSlot com hasCta=true, ctaLabel, ctaVariant (hero, mid, final, sticky ou inline), matchAdCta e notes.
+            6. formPlacementNotes deve informar em quantos scrolls o formulário aparece e se há versão sticky.
+            7. ctaPlacementNotes garante repetição literal do CTA aprovado em posições estratégicas.
+            8. mobilePriorityNotes destaca o que aparece antes da rolagem.
+            9. consistencyChecks precisa incluir CTA_MATCH e EXPERIENCE_CONTINUITY com status PASS/WARN/FAIL e detalhes.
 
-            Formato esperado:
-            JSON com:
-            pageGoal,
-            variantLayoutId,
-            sectionOrder [
-              {
-                "sectionName": "",
-                "objective": "",
-                "contentType": "",
-                "uiNotes": "",
-                "mobilePriorityScore": 0,
-                "dropOffRisk": "baixo|médio|alto",
-                "sectionDependsOn": ""
-              }
-            ],
-            mobilePriorityNotes,
-            ctaPlacementNotes,
-            formPlacementNotes
+            Formato obrigatório (JSON):
+            - pageGoal,
+            - variantLayoutId
+            - messageMatchSummary
+            - sectionOrder[] conforme regras acima
+            - mobilePriorityNotes
+            - ctaPlacementNotes
+            - formPlacementNotes
+            - consistencyChecks[]
             """;
+
 
     private final ObjectMapper objectMapper;
     private final WebClient webClient;

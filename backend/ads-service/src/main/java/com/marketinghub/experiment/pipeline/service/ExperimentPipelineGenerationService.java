@@ -21,6 +21,7 @@ import com.marketinghub.openai.OpenAiResponse;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -284,7 +285,6 @@ public class ExperimentPipelineGenerationService {
         appendIfPresent(sb, "Hipótese resumida", experiment.getHypothesis());
         if (experiment.getHypothesisRef() != null) {
             appendIfPresent(sb, "Título da hipótese", experiment.getHypothesisRef().getTitle());
-            appendIfPresent(sb, "Persona", experiment.getHypothesisRef().getPersona());
             appendIfPresent(sb, "Problema", experiment.getHypothesisRef().getProblem());
             appendIfPresent(sb, "Promessa", experiment.getHypothesisRef().getPromise());
         }
@@ -358,6 +358,11 @@ public class ExperimentPipelineGenerationService {
         String singleMindedPromise = campaignAngleFields.get("singleMindedPromise");
         String primaryCta = firstNonBlank(campaignAngleFields.get("primaryCTA"), campaignAngleFields.get("cta"));
         String landingMatchLine = campaignAngleFields.get("landingMatchLine");
+        List<String> adHeadlines = extractAdCopyHeadlines(experiment.getAdCopy());
+        List<String> adCtas = extractAdCopyCtas(experiment.getAdCopy());
+        String primaryAdHeadline = !adHeadlines.isEmpty() ? adHeadlines.get(0) : firstNonBlank(singleMindedPromise, primaryPromise);
+        String primaryAdCta = !adCtas.isEmpty() ? adCtas.get(0) : primaryCta;
+        String landingCtaForInstructions = firstNonBlank(primaryAdCta, primaryCta, "CTA principal");
 
         if (section == ExperimentPipelineSection.AD_COPY) {
             sb.append("\nDiretriz específica para texto do anúncio:\n");
@@ -490,7 +495,63 @@ public class ExperimentPipelineGenerationService {
             sb.append("7. Preservar hierarchy visual, safe margins e notas de compliance por peça.\n");
             sb.append("8. Evitar claims absolutos e qualquer linguagem de consultoria.\n\n");
         }
-    }
+
+        if (section == ExperimentPipelineSection.LANDING_PAGE_COPY) {
+            sb.append("\nDiretriz específica para copy da landing:\n");
+            sb.append(COMMON_CAMPAIGN_ASSET_RULES).append("\n");
+            sb.append("Headline clicada no anúncio: " + primaryAdHeadline + "\n");
+            sb.append("CTA do anúncio: " + landingCtaForInstructions + "\n");
+            appendIfPresent(sb, "Linha de match com landing", landingMatchLine);
+            sb.append("\nObjetivo:\n");
+            sb.append("Transformar o clique qualificado em " + landingCtaForInstructions + " mantendo a mesma promessa e CTA do anúncio.\n\n");
+            sb.append("Regras:\n");
+            sb.append("1. messageMatchSource deve citar exatamente qual headline do anúncio está sendo espelhada.\n");
+            sb.append("2. hero.headline, hero.promise e pageGoal precisam repetir a single-minded promise sem variações criativas.\n");
+            sb.append("3. hero.ctaLabel, primaryCTA e todos os ctaBlocks devem usar exatamente o mesmo texto do CTA do anúncio.\n");
+            sb.append("4. bodySections deve cobrir pelo menos dor, mecanismo, prova e oferta com sectionType explícito.\n");
+            sb.append("5. Cada bodySections[i] precisa preencher sectionDependsOn (primaryPromise, mechanismSummary, proofSummary ou primaryCTA) e messageMatchNotes descrevendo o vínculo.\n");
+            sb.append("6. ctaBlocks deve repetir o CTA no hero, meio e final com placement entre hero, mid, final, sticky ou inline.\n");
+            sb.append("7. faq precisa ter no mínimo 3 perguntas com objectionTag descrevendo a objeção atendida.\n");
+            sb.append("8. consistencyChecks deve listar pelo menos CTA_MATCH, PROMISE_MATCH e GOOGLE_LANDING_BEST_PRACTICES indicando status PASS/WARN/FAIL.\n");
+            sb.append("9. messageMatchNotes e messageMatchSource devem garantir continuidade literal da promessa do anúncio.\n");
+            sb.append("10. complianceNotes precisa reforçar que a oferta é entregue por ativos digitais (sem consultoria ou call).\n\n");
+            sb.append("Formato obrigatório:\n");
+            sb.append("- Preencher hero com eyebrow, headline, subheadline, promise, supportingCopy, proofBadge, microcopy e CTA.\n");
+            sb.append("- Preencher messageMatchSource com a headline real do anúncio usada como referência: " + primaryAdHeadline + ".\n");
+            sb.append("- Preencher bodySections com sectionId único, sectionType, resumo, bullets e CTA de apoio quando existir.\n");
+            sb.append("- Preencher ctaBlocks com placement, ctaVariant, matchAdCta e messageMatchNotes descrevendo onde o CTA aparece na página.\n");
+            sb.append("- Preencher faq e consistencyChecks conforme regras acima.\n");
+            sb.append("- Em primaryCTA e ctaBlocks[].matchAdCta usar exatamente: " + landingCtaForInstructions + ".\n");
+            return;
+        }
+
+        if (section == ExperimentPipelineSection.LANDING_PAGE_WIREFRAME) {
+            sb.append("\nDiretriz específica para wireframe da landing:\n");
+            sb.append(COMMON_CAMPAIGN_ASSET_RULES).append("\n");
+            sb.append("Hero/headline atual: " + primaryAdHeadline + "\n");
+            sb.append("CTA obrigatório: " + landingCtaForInstructions + "\n");
+            appendIfPresent(sb, "Linha de match com landing", landingMatchLine);
+            sb.append("\nObjetivo:\n");
+            sb.append("Transformar o copy da landing em um wireframe testável, mobile-first e com message match obrigatório.\n\n");
+            sb.append("Regras:\n");
+            sb.append("1. pageGoal deve deixar explícito o resultado da página (ex.: gerar pedido da prévia).\n");
+            sb.append("2. variantLayoutId deve ser form-first, proof-first ou story-first.\n");
+            sb.append("3. sectionOrder precisa listar cada bloco com sectionId, sectionName, objective, contentType (hero, form, split, proof, timeline, faq, cta), copySource e uiNotes.\n");
+            sb.append("4. Cada sectionOrder[i] deve preencher mobilePriorityScore (1-10), dropOffRisk (baixo, medio ou alto) e sectionDependsOn amarrando com primaryPromise, mechanismSummary, proofSummary ou primaryCTA.\n");
+            sb.append("5. Se a seção tiver CTA, preencher ctaSlot com hasCta=true, ctaLabel, ctaVariant (hero, mid, final, sticky ou inline) e matchAdCta.\n");
+            sb.append("6. formPlacementNotes precisa informar quantos scrolls são necessários para ver o formulário e se existe versão sticky.\n");
+            sb.append("7. ctaPlacementNotes deve garantir repetição literal do CTA principal em toda a página.\n");
+            sb.append("8. consistencyChecks deve incluir CTA_MATCH e EXPERIENCE_CONTINUITY (status PASS/WARN/FAIL) descrevendo se o anúncio e a landing estão alinhados.\n");
+            sb.append("9. mobilePriorityNotes deve destacar o que precisa aparecer antes da rolagem.\n\n");
+            sb.append("Formato obrigatório:\n");
+            sb.append("- Preencher sectionOrder respeitando a ordem real da landing e referenciando sectionId de bodySections quando existir.\n");
+            sb.append("- Preencher ctaSlot dentro das seções com CTA.\n");
+            sb.append("- Preencher consistencyChecks e observações finais (mobilePriorityNotes, ctaPlacementNotes, formPlacementNotes).\n");
+            sb.append("- Reforçar message match usando primaryAdHeadline, landingMatchLine e " + landingCtaForInstructions + " como referência fixa.\n");
+            return;
+        }
+
+        }
 
     private void appendPreviousOutputs(StringBuilder sb,
                                        Experiment experiment,
@@ -594,6 +655,44 @@ public class ExperimentPipelineGenerationService {
             }
         });
         return values;
+    }
+
+    private List<String> extractAdCopyHeadlines(String adCopy) {
+        return extractAdCopyField(adCopy, "headline");
+    }
+
+    private List<String> extractAdCopyCtas(String adCopy) {
+        return extractAdCopyField(adCopy, "ctaText");
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> extractAdCopyField(String adCopy, String fieldName) {
+        if (!StringUtils.hasText(adCopy) || !StringUtils.hasText(fieldName)) {
+            return List.of();
+        }
+        try {
+            Map<String, Object> parsed = objectMapper.readValue(adCopy, Map.class);
+            Object adCopyNode = parsed.get("adCopy");
+            if (adCopyNode instanceof Map<?, ?> nested) {
+                parsed = (Map<String, Object>) nested;
+            }
+            Object variantsNode = parsed.get("primaryTextVariants");
+            if (!(variantsNode instanceof List<?> variants)) {
+                return List.of();
+            }
+            List<String> values = new ArrayList<>();
+            for (Object variantObj : variants) {
+                if (variantObj instanceof Map<?, ?> rawVariant) {
+                    Object value = ((Map<String, Object>) rawVariant).get(fieldName);
+                    if (value instanceof String text && StringUtils.hasText(text)) {
+                        values.add(text.trim());
+                    }
+                }
+            }
+            return values;
+        } catch (JsonProcessingException ignored) {
+            return List.of();
+        }
     }
 
     private void appendIfPresent(StringBuilder sb, String label, String value) {
@@ -745,9 +844,211 @@ public class ExperimentPipelineGenerationService {
                     ),
                     "required", List.of("briefings")
             ), metadataSchema);
-            case LANDING_PAGE_COPY -> schemaWithMetadata("landingPageCopy", Map.of("type", "object"), metadataSchema);
-            case LANDING_PAGE_WIREFRAME -> schemaWithMetadata("landingPageWireframe", Map.of("type", "object"), metadataSchema);
+            case LANDING_PAGE_COPY -> schemaWithMetadata("landingPageCopy", landingPageCopyFieldSchema(), metadataSchema);
+            case LANDING_PAGE_WIREFRAME -> schemaWithMetadata("landingPageWireframe", landingPageWireframeFieldSchema(), metadataSchema);
         };
+    }
+
+    private Map<String, Object> landingPageCopyFieldSchema() {
+        Map<String, Object> heroSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("eyebrow", stringSchema()),
+                        Map.entry("headline", stringSchema()),
+                        Map.entry("subheadline", stringSchema()),
+                        Map.entry("promise", stringSchema()),
+                        Map.entry("supportingCopy", stringSchema()),
+                        Map.entry("proofBadge", stringSchema()),
+                        Map.entry("microcopy", stringSchema()),
+                        Map.entry("ctaLabel", stringSchema()),
+                        Map.entry("ctaUrl", stringSchema()),
+                        Map.entry("ctaMatchNotes", stringSchema())
+                ),
+                "required", List.of("headline", "promise", "ctaLabel", "ctaMatchNotes")
+        );
+        Map<String, Object> bodySectionSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("sectionId", stringSchema()),
+                        Map.entry("sectionType", Map.of(
+                                "type", "string",
+                                "enum", List.of("hero", "pain", "mechanism", "proof", "offer", "cta", "faq", "bonus", "objection")
+                        )),
+                        Map.entry("title", stringSchema()),
+                        Map.entry("summary", stringSchema()),
+                        Map.entry("bullets", arrayOfStringsSchema(0)),
+                        Map.entry("copy", stringSchema()),
+                        Map.entry("ctaSupport", stringSchema()),
+                        Map.entry("sectionDependsOn", stringSchema()),
+                        Map.entry("messageMatchNotes", stringSchema())
+                ),
+                "required", List.of("sectionId", "sectionType", "title", "summary", "messageMatchNotes")
+        );
+        Map<String, Object> ctaBlockSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("placement", Map.of(
+                                "type", "string",
+                                "enum", List.of("hero", "mid", "final", "sticky", "inline")
+                        )),
+                        Map.entry("ctaVariant", Map.of(
+                                "type", "string",
+                                "enum", List.of("primary", "secondary", "ghost", "sticky")
+                        )),
+                        Map.entry("ctaLabel", stringSchema()),
+                        Map.entry("ctaUrl", stringSchema()),
+                        Map.entry("matchAdCta", stringSchema()),
+                        Map.entry("ctaSupport", stringSchema()),
+                        Map.entry("messageMatchNotes", stringSchema())
+                ),
+                "required", List.of("placement", "ctaVariant", "ctaLabel", "matchAdCta")
+        );
+        Map<String, Object> faqSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("question", stringSchema()),
+                        Map.entry("answer", stringSchema()),
+                        Map.entry("objectionTag", stringSchema())
+                ),
+                "required", List.of("question", "answer")
+        );
+        return Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("pageGoal", stringSchema()),
+                        Map.entry("messageMatchSource", stringSchema()),
+                        Map.entry("messageMatchNotes", stringSchema()),
+                        Map.entry("primaryCTA", stringSchema()),
+                        Map.entry("hero", heroSchema),
+                        Map.entry("bodySections", Map.of(
+                                "type", "array",
+                                "minItems", 4,
+                                "items", bodySectionSchema
+                        )),
+                        Map.entry("ctaBlocks", Map.of(
+                                "type", "array",
+                                "minItems", 2,
+                                "items", ctaBlockSchema
+                        )),
+                        Map.entry("faq", Map.of(
+                                "type", "array",
+                                "minItems", 3,
+                                "items", faqSchema
+                        )),
+                        Map.entry("consistencyChecks", Map.of(
+                                "type", "array",
+                                "minItems", 2,
+                                "items", consistencyCheckSchema()
+                        )),
+                        Map.entry("complianceNotes", stringSchema())
+                ),
+                "required", List.of("pageGoal", "messageMatchSource", "primaryCTA", "hero", "bodySections", "ctaBlocks", "consistencyChecks")
+        );
+    }
+
+    private Map<String, Object> landingPageWireframeFieldSchema() {
+        Map<String, Object> ctaSlotSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("hasCta", Map.of("type", "boolean")),
+                        Map.entry("ctaLabel", stringSchema()),
+                        Map.entry("ctaVariant", Map.of(
+                                "type", "string",
+                                "enum", List.of("hero", "mid", "final", "sticky", "inline")
+                        )),
+                        Map.entry("matchAdCta", stringSchema()),
+                        Map.entry("notes", stringSchema())
+                ),
+                "required", List.of("hasCta")
+        );
+        Map<String, Object> sectionSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("sectionId", stringSchema()),
+                        Map.entry("sectionName", stringSchema()),
+                        Map.entry("objective", stringSchema()),
+                        Map.entry("contentType", Map.of(
+                                "type", "string",
+                                "enum", List.of("hero", "form", "split", "proof", "timeline", "faq", "cta")
+                        )),
+                        Map.entry("copySource", stringSchema()),
+                        Map.entry("uiNotes", stringSchema()),
+                        Map.entry("messageMatchDependency", stringSchema()),
+                        Map.entry("sectionDependsOn", stringSchema()),
+                        Map.entry("mobilePriorityScore", integerSchema(1, 10)),
+                        Map.entry("dropOffRisk", Map.of("type", "string", "enum", List.of("baixo", "medio", "alto"))),
+                        Map.entry("ctaSlot", ctaSlotSchema)
+                ),
+                "required", List.of("sectionId", "sectionName", "objective", "contentType", "mobilePriorityScore", "dropOffRisk")
+        );
+        return Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("pageGoal", stringSchema()),
+                        Map.entry("variantLayoutId", Map.of(
+                                "type", "string",
+                                "enum", List.of("form-first", "proof-first", "story-first")
+                        )),
+                        Map.entry("messageMatchSummary", stringSchema()),
+                        Map.entry("sectionOrder", Map.of(
+                                "type", "array",
+                                "minItems", 4,
+                                "items", sectionSchema
+                        )),
+                        Map.entry("mobilePriorityNotes", stringSchema()),
+                        Map.entry("ctaPlacementNotes", stringSchema()),
+                        Map.entry("formPlacementNotes", stringSchema()),
+                        Map.entry("consistencyChecks", Map.of(
+                                "type", "array",
+                                "minItems", 2,
+                                "items", consistencyCheckSchema()
+                        ))
+                ),
+                "required", List.of("pageGoal", "variantLayoutId", "sectionOrder", "consistencyChecks")
+        );
+    }
+
+    private Map<String, Object> consistencyCheckSchema() {
+        return Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("check", stringSchema()),
+                        Map.entry("status", Map.of("type", "string", "enum", List.of("PASS", "WARN", "FAIL"))),
+                        Map.entry("details", stringSchema())
+                ),
+                "required", List.of("check", "status")
+        );
+    }
+
+    private Map<String, Object> stringSchema() {
+        return Map.of("type", "string");
+    }
+
+    private Map<String, Object> arrayOfStringsSchema(int minItems) {
+        Map<String, Object> schema = new LinkedHashMap<>();
+        schema.put("type", "array");
+        schema.put("items", stringSchema());
+        if (minItems > 0) {
+            schema.put("minItems", minItems);
+        }
+        return schema;
+    }
+
+    private Map<String, Object> integerSchema(int min, int max) {
+        Map<String, Object> schema = new LinkedHashMap<>();
+        schema.put("type", "integer");
+        schema.put("minimum", min);
+        schema.put("maximum", max);
+        return schema;
     }
 
     private Map<String, Object> experimentMetadataSchema() {

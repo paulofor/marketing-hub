@@ -137,12 +137,13 @@ class ExperimentPipelineOpenAiClientTest {
         String userPrompt = String.valueOf(input.get(0).get("content"));
         assertThat(userPrompt).startsWith("Você cria ativos de campanha para o Marketing Hub.");
         assertThat(userPrompt).contains("Prompt da landing");
-        assertThat(userPrompt).contains("Objetivo da landing:");
+        assertThat(userPrompt).contains("Continuar exatamente a promessa do anúncio clicado");
         assertThat(userPrompt).contains("messageMatchSource,");
-        assertThat(userPrompt).contains("landingCurta {");
-        assertThat(userPrompt).contains("landingCompleta {");
-        assertThat(userPrompt).contains("objectionHandlingSection");
-        assertThat(userPrompt).contains("closingCTA");
+        assertThat(userPrompt).contains("hero {");
+        assertThat(userPrompt).contains("bodySections[]");
+        assertThat(userPrompt).contains("ctaBlocks[]");
+        assertThat(userPrompt).contains("consistencyChecks[]");
+        assertThat(userPrompt).contains("complianceNotes");
     }
 
     @Test
@@ -184,6 +185,8 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("mobilePriorityScore");
         assertThat(userPrompt).contains("dropOffRisk");
         assertThat(userPrompt).contains("sectionDependsOn");
+        assertThat(userPrompt).contains("messageMatchSummary");
+        assertThat(userPrompt).contains("ctaSlot");
     }
 
     @Test

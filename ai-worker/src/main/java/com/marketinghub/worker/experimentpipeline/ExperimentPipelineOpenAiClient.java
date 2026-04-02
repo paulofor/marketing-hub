@@ -461,6 +461,7 @@ public class ExperimentPipelineOpenAiClient {
                     }
                 }
             } else {
+                schema.put("properties", Map.of());
                 mergeRequiredWithProperties(schema, Set.of());
             }
         }

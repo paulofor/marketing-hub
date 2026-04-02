@@ -450,9 +450,9 @@ public class ExperimentPipelineOpenAiClient {
             return;
         }
         if (isObjectSchema(schema)) {
+            schema.put("additionalProperties", false);
             Object propertiesNode = schema.get("properties");
             if (propertiesNode instanceof Map<?, ?> propertiesRaw && !((Map<?, ?>) propertiesNode).isEmpty()) {
-                schema.put("additionalProperties", false);
                 Map<String, Object> properties = (Map<String, Object>) propertiesRaw;
                 mergeRequiredWithProperties(schema, properties.keySet());
                 for (Object propertySchema : properties.values()) {

@@ -123,7 +123,7 @@ public class HypothesisFrameworkOpenAiClient {
         try {
             return toLogJson(preparePayload(job));
         } catch (Exception ex) {
-            return truncate(job.requestBodyJson());
+            return job.requestBodyJson();
         }
     }
 
@@ -419,20 +419,19 @@ public class HypothesisFrameworkOpenAiClient {
     }
 
     private String safeJson(Object value) {
-        return serializeJson(value, false);
+        return serializeJson(value);
     }
 
     private String toLogJson(Object value) {
-        return serializeJson(value, true);
+        return serializeJson(value);
     }
 
-    private String serializeJson(Object value, boolean shouldTruncate) {
+    private String serializeJson(Object value) {
         if (value == null) {
             return "<null>";
         }
         try {
-            String serialized = objectMapper.writeValueAsString(value);
-            return shouldTruncate ? truncate(serialized) : serialized;
+            return objectMapper.writeValueAsString(value);
         } catch (Exception ex) {
             return "<erro ao serializar payload: " + ex.getMessage() + ">";
         }
@@ -455,6 +454,8 @@ public class HypothesisFrameworkOpenAiClient {
                 + "... [truncated] ..."
                 + text.substring(text.length() - suffixLength);
     }
+
+
 
     private static class InvalidJsonResponseException extends IllegalStateException {
         private final boolean shouldRetry;

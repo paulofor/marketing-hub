@@ -264,8 +264,8 @@ public class ExperimentPipelineOpenAiClient {
             ensureJsonSchemaCompatibility(payload, job);
             log.info("Sending experiment pipeline job {} to OpenAI (experimentId={}, section={}, model={})",
                     job.id(), job.experimentId(), job.section(), effectiveModel);
-            log.info("OpenAI payload preview for job {}: {}", job.id(),
-                    truncateForLog(objectMapper.writeValueAsString(payload), 1200));
+            log.info("OpenAI payload completo para job {}: {}", job.id(),
+                    objectMapper.writeValueAsString(payload));
             OpenAiResponse response = requestWithTransientRetries(payload, job);
             if (response == null || response.hasError()) {
                 throw new IllegalStateException(response != null ? response.errorMessage() : "Resposta vazia da OpenAI");

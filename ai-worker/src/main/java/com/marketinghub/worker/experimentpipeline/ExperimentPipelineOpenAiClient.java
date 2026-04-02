@@ -492,17 +492,7 @@ public class ExperimentPipelineOpenAiClient {
     }
 
     private void mergeRequiredWithProperties(Map<String, Object> schema, Set<String> propertyNames) {
-        LinkedHashSet<String> merged = new LinkedHashSet<>();
-        Object requiredNode = schema.get("required");
-        if (requiredNode instanceof List<?> requiredList) {
-            for (Object value : requiredList) {
-                if (value instanceof String requiredName && StringUtils.hasText(requiredName)) {
-                    merged.add(requiredName);
-                }
-            }
-        }
-        merged.addAll(propertyNames);
-        schema.put("required", new ArrayList<>(merged));
+        schema.put("required", new ArrayList<>(new LinkedHashSet<>(propertyNames)));
     }
 
     private boolean isCampaignAngleSection(ExperimentPipelineJobDto job) {

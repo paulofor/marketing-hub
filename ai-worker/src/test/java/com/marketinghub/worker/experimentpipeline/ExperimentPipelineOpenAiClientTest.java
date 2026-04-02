@@ -251,6 +251,64 @@ class ExperimentPipelineOpenAiClientTest {
     }
 
     @Test
+    void enforcesAdditionalPropertiesFalseForNestedObjectSchemas() {
+        AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                15L,
+                "landing-page-copy",
+                "gpt-5.2",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "input": [
+                            {"role": "user", "content": "Prompt da landing"}
+                          ],
+                          "text": {
+                            "format": {
+                              "type": "json_schema",
+                              "schema": {
+                                "type": "object",
+                                "properties": {
+                                  "landingPageCopy": {
+                                    "type": "object",
+                                    "properties": {
+                                      "messageMatchSource": {"type": "string"}
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                        """,
+                Instant.now());
+
+        client.generate(job);
+
+        Map<String, Object> payload = payloadRef.get();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> text = (Map<String, Object>) payload.get("text");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> format = (Map<String, Object>) text.get("format");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> schema = (Map<String, Object>) format.get("schema");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> properties = (Map<String, Object>) schema.get("properties");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> landingPageCopy = (Map<String, Object>) properties.get("landingPageCopy");
+        assertThat(schema.get("additionalProperties")).isEqualTo(false);
+        assertThat(landingPageCopy.get("additionalProperties")).isEqualTo(false);
+    }
+
+    @Test
     void enforcesGpt52ModelForEveryPipelineCall() {
         AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
         ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(

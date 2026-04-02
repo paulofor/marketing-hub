@@ -456,6 +456,7 @@ public class ExperimentPipelineOpenAiClient {
             return;
         }
         if (isObjectSchema(schema)) {
+            schema.put("additionalProperties", false);
             Object propertiesNode = schema.get("properties");
             if (propertiesNode instanceof Map<?, ?> propertiesRaw) {
                 Map<String, Object> properties = (Map<String, Object>) propertiesRaw;

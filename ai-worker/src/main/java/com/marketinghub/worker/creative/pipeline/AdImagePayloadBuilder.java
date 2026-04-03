@@ -77,7 +77,7 @@ public class AdImagePayloadBuilder {
 
     String choosePlacement(VisualVariant variant) {
         String raw = normalize(variant.placement());
-        if (raw.contains("story") || raw.contains("reel")) {
+        if (raw.contains("story") || raw.contains("stories") || raw.contains("reel")) {
             return "stories";
         }
         return "feed";
@@ -139,7 +139,7 @@ public class AdImagePayloadBuilder {
                 + "Estilo visual: " + style + ". "
                 + (StringUtils.hasText(direction) ? "Direções visuais: " + direction + ". " : "")
                 + (StringUtils.hasText(idea) ? "Ideia-base: " + idea + ". " : "")
-                + "Composição simples e forte, sem colunas, sem múltiplos cards e sem mini-textos. "
+                + "composição simples e forte, sem colunas, sem múltiplos cards e sem mini-textos. "
                 + "Texto sobreposto curto e legível: headline '" + safe(overlay.headline()) + "', subhead '"
                 + safe(overlay.subhead()) + "', badge '" + safe(overlay.badge()) + "', CTA '"
                 + safe(overlay.cta()) + "'. "

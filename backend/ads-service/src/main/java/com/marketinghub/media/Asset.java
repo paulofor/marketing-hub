@@ -45,6 +45,10 @@ public class Asset {
     @Column(columnDefinition = "LONGTEXT")
     private String prompt;
 
+    @Lob
+    @Column(name = "prompt_intermediate", columnDefinition = "LONGTEXT")
+    private String promptIntermediate;
+
     @CreationTimestamp
     private Instant createdAt;
 

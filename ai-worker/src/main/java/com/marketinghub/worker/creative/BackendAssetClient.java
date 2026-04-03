@@ -50,7 +50,11 @@ public class BackendAssetClient {
      * Sends the provided image bytes to {@code POST /api/assets} in the backend and returns the
      * relative URL exposed by the service.
      */
-    public String uploadImage(byte[] content, String filename, String model, String prompt) {
+    public String uploadImage(byte[] content,
+                              String filename,
+                              String model,
+                              String prompt,
+                              String intermediatePrompt) {
         if (content == null || content.length == 0) {
             throw new IllegalArgumentException("Image content must not be empty");
         }
@@ -61,7 +65,7 @@ public class BackendAssetClient {
         BackendAssetUploadException lastException = null;
         for (String targetUrl : resolveUploadUrls()) {
             try {
-                return performUpload(content, effectiveName, targetUrl, model, prompt);
+                return performUpload(content, effectiveName, targetUrl, model, prompt, intermediatePrompt);
             } catch (BackendAssetUploadException ex) {
                 if (!shouldFallback(ex)) {
                     throw ex;
@@ -98,7 +102,12 @@ public class BackendAssetClient {
         return List.of(primary, fallback);
     }
 
-    private String performUpload(byte[] content, String filename, String url, String model, String prompt) {
+    private String performUpload(byte[] content,
+                                 String filename,
+                                 String url,
+                                 String model,
+                                 String prompt,
+                                 String intermediatePrompt) {
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         ByteArrayResource resource = new ByteArrayResource(content) {
             @Override
@@ -111,6 +120,9 @@ public class BackendAssetClient {
         HttpEntity<ByteArrayResource> filePart = new HttpEntity<>(resource, partHeaders);
         body.add("file", filePart);
         body.add("prompt", prompt);
+        if (StringUtils.hasText(intermediatePrompt)) {
+            body.add("intermediatePrompt", intermediatePrompt);
+        }
         if (StringUtils.hasText(model)) {
             body.add("model", model);
         }

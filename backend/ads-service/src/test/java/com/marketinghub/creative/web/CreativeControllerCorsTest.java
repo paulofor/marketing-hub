@@ -47,7 +47,7 @@ class CreativeControllerCorsTest {
                 "https://cdn.test/mock.png",
                 "experiments/creatives/mock.png",
                 AssetUploadCategory.EXPERIMENT_CREATIVE);
-        when(creativeService.uploadImage(any(), any(), any(), any(), any(), any(), any()))
+        when(creativeService.uploadImage(any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(mockResponse);
 
         MockMultipartFile file = new MockMultipartFile(
@@ -68,7 +68,7 @@ class CreativeControllerCorsTest {
                 "https://cdn.test/large.png",
                 "experiments/creatives/large.png",
                 AssetUploadCategory.EXPERIMENT_CREATIVE);
-        when(creativeService.uploadImage(any(), any(), any(), any(), any(), any(), any()))
+        when(creativeService.uploadImage(any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(largeResponse);
 
         byte[] largePayload = new byte[4 * 1024 * 1024];

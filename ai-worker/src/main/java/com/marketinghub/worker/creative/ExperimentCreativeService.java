@@ -133,8 +133,9 @@ public class ExperimentCreativeService {
                 continue;
             }
             try {
+                String intermediatePrompt = buildPipelineIntermediatePrompt(plan, req);
                 String imagePrompt = buildPipelineImagePrompt(experiment, plan, req);
-                String imageUrl = imageClient.generateImage(imagePrompt);
+                String imageUrl = imageClient.generateImage(imagePrompt, intermediatePrompt);
                 req.setImageUrl(imageUrl);
             } catch (Exception e) {
                 log.error("Failed to generate pipeline image for experiment {} (variant {})", experiment.getId(), plan.variantKey(), e);
@@ -318,6 +319,37 @@ public class ExperimentCreativeService {
         parts.add("Lembre-se de que o Worker AI usará o modelo gpt-imagem-1.5.");
         parts.add("Não inclua logos das plataformas e evite rostos genéricos sem contexto.");
         return String.join(" ", parts);
+    }
+
+    private String buildPipelineIntermediatePrompt(PipelineAdCreativePlan plan, CreateCreativeRequest request) {
+        List<String> parts = new ArrayList<>();
+        if (plan.imageBriefing() != null) {
+            if (StringUtils.hasText(plan.imageBriefing().visualBriefing())) {
+                parts.add("Briefing visual: " + plan.imageBriefing().visualBriefing());
+            }
+            if (StringUtils.hasText(plan.imageBriefing().hierarchy())) {
+                parts.add("Hierarquia: " + plan.imageBriefing().hierarchy());
+            }
+            if (StringUtils.hasText(plan.imageBriefing().formatByPlacement())) {
+                parts.add("Formato por placement: " + plan.imageBriefing().formatByPlacement());
+            }
+            if (StringUtils.hasText(plan.imageBriefing().messageMatchNotes())) {
+                parts.add("Mensagem espelhada: " + plan.imageBriefing().messageMatchNotes());
+            }
+            if (StringUtils.hasText(plan.imageBriefing().complianceNotes())) {
+                parts.add("Compliance: " + plan.imageBriefing().complianceNotes());
+            }
+        }
+        if (StringUtils.hasText(plan.variantKey())) {
+            parts.add("Variação: " + plan.variantKey());
+        }
+        if (StringUtils.hasText(request.getHeadline())) {
+            parts.add("Headline: " + request.getHeadline());
+        }
+        if (StringUtils.hasText(request.getPrimaryText())) {
+            parts.add("Texto principal: " + request.getPrimaryText());
+        }
+        return String.join("\n", parts);
     }
 
     private static String truncate(String value, int max) {

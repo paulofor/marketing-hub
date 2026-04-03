@@ -91,6 +91,7 @@ class CreativeServiceTest {
                 file,
                 "dall-e-3",
                 "prompt text",
+                "intermediate prompt",
                 AssetUploadCategory.EXPERIMENT_CREATIVE,
                 1L,
                 null,
@@ -104,6 +105,7 @@ class CreativeServiceTest {
         assertThat(saved.getStatus()).isEqualTo(AssetStatus.READY);
         assertThat(saved.getModel()).isEqualTo("dall-e-3");
         assertThat(saved.getPrompt()).isEqualTo("prompt text");
+        assertThat(saved.getPromptIntermediate()).isEqualTo("intermediate prompt");
         assertThat(saved.getPayload()).contains("EXPERIMENT_CREATIVE");
     }
 

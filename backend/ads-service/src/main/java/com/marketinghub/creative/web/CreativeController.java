@@ -72,6 +72,9 @@ public class CreativeController {
             if (asset != null && StringUtils.hasText(asset.getPrompt())) {
                 dto.setImagePrompt(asset.getPrompt().trim());
             }
+            if (asset != null && StringUtils.hasText(asset.getPromptIntermediate())) {
+                dto.setImageIntermediatePrompt(asset.getPromptIntermediate().trim());
+            }
         });
         return dtos;
     }
@@ -96,13 +99,16 @@ public class CreativeController {
     @PostMapping("/api/assets")
     public ResponseEntity<AssetUploadResponse> upload(@RequestParam("file") MultipartFile file,
                                                       @RequestParam(value = "prompt", required = false) String prompt,
+                                                      @RequestParam(value = "intermediatePrompt", required = false)
+                                                      String intermediatePrompt,
                                                       @RequestParam(value = "model", required = false) String model,
                                                       @RequestParam(value = "category", required = false) String category,
                                                       @RequestParam(value = "experimentId", required = false) Long experimentId,
                                                       @RequestParam(value = "flowId", required = false) Long flowId,
                                                       @RequestParam(value = "flowSlug", required = false) String flowSlug) throws IOException {
         AssetUploadCategory uploadCategory = AssetUploadCategory.fromKey(category);
-        AssetUploadResponse response = service.uploadImage(file, model, prompt, uploadCategory, experimentId, flowId, flowSlug);
+        AssetUploadResponse response = service.uploadImage(file, model, prompt, intermediatePrompt,
+                uploadCategory, experimentId, flowId, flowSlug);
         HttpHeaders headers = new HttpHeaders();
         if (StringUtils.hasText(response.url())) {
             headers.setLocation(URI.create(response.url()));

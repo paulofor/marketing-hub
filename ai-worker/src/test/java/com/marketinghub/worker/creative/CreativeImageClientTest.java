@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -64,7 +65,7 @@ class CreativeImageClientTest {
 
     @Test
     void uploadsReturnedImageToBackend() {
-        when(backendAssetClient.uploadImage(any(), any(), any(), any())).thenReturn("/uploads/img.jpg");
+        when(backendAssetClient.uploadImage(any(), any(), any(), any(), any())).thenReturn("/uploads/img.jpg");
 
         String result = client.generateImage("prompt");
 
@@ -76,7 +77,8 @@ class CreativeImageClientTest {
         verify(backendAssetClient).uploadImage(any(byte[].class),
                 argThat(name -> name.startsWith("creative-") && name.endsWith(".jpg")),
                 argThat(model -> model.equals("gpt-image-1")),
-                argThat(prompt -> prompt.equals("prompt")));
+                argThat(prompt -> prompt.equals("prompt")),
+                isNull());
     }
 
     @Test
@@ -88,13 +90,13 @@ class CreativeImageClientTest {
         ExchangeFunction exchange = stubImageApi(requestPayload, body, HttpStatus.OK);
         WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);
         CreativeImageClient largeClient = new CreativeImageClient(builder, backendAssetClient, optimizer, "key", "http://openai", "gpt-image-1");
-        when(backendAssetClient.uploadImage(any(), any(), any(), any())).thenReturn("/uploads/large.jpg");
+        when(backendAssetClient.uploadImage(any(), any(), any(), any(), any())).thenReturn("/uploads/large.jpg");
 
         String result = largeClient.generateImage("prompt");
 
         assertThat(result).isEqualTo("/uploads/large.jpg");
         verify(backendAssetClient).uploadImage(argThat(bytes -> bytes.length > 0),
-                argThat(name -> name.endsWith(".jpg")), any(), any());
+                argThat(name -> name.endsWith(".jpg")), any(), any(), isNull());
     }
 
     @Test
@@ -123,7 +125,7 @@ class CreativeImageClientTest {
         ExchangeFunction exchange = stubImageApi(requestPayload, body, HttpStatus.OK);
         WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);
         CreativeImageClient dalleClient = new CreativeImageClient(builder, backendAssetClient, optimizer, "key", "http://openai", "dall-e-3");
-        when(backendAssetClient.uploadImage(any(), any(), any(), any())).thenReturn("/uploads/dalle.jpg");
+        when(backendAssetClient.uploadImage(any(), any(), any(), any(), any())).thenReturn("/uploads/dalle.jpg");
 
         String result = dalleClient.generateImage("prompt");
 
@@ -212,4 +214,3 @@ class CreativeImageClientTest {
         }
     }
 }
-

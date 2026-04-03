@@ -20,5 +20,6 @@ public class CreativeDto {
     private String leadGenFormId;
     private String instagramUserId;
     private String imagePrompt;
+    private String imageIntermediatePrompt;
     private CreativeStatus status;
 }

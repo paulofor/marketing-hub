@@ -6,6 +6,8 @@ import com.marketinghub.creative.dto.CreativeDto;
 import com.marketinghub.creative.mapper.CreativeMapper;
 import com.marketinghub.creative.service.CreativeService;
 import com.marketinghub.creative.dto.UpdateCreativeLabelsRequest;
+import com.marketinghub.media.Asset;
+import com.marketinghub.media.repository.AssetRepository;
 import com.marketinghub.storage.AssetUploadCategory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -15,8 +17,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.StreamSupport;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * REST controller for creatives.
@@ -25,10 +32,12 @@ import java.util.stream.StreamSupport;
 public class CreativeController {
     private final CreativeService service;
     private final CreativeMapper mapper;
+    private final AssetRepository assetRepository;
 
-    public CreativeController(CreativeService service, CreativeMapper mapper) {
+    public CreativeController(CreativeService service, CreativeMapper mapper, AssetRepository assetRepository) {
         this.service = service;
         this.mapper = mapper;
+        this.assetRepository = assetRepository;
     }
 
     @PostMapping("/api/experiments/{id}/creatives")
@@ -38,9 +47,33 @@ public class CreativeController {
 
     @GetMapping("/api/experiments/{id}/creatives")
     public List<CreativeDto> list(@PathVariable Long id) {
-        return StreamSupport.stream(service.listByExperiment(id).spliterator(), false)
+        List<CreativeDto> dtos = StreamSupport.stream(service.listByExperiment(id).spliterator(), false)
                 .map(mapper::toDto)
                 .toList();
+        List<String> creativeUrls = dtos.stream()
+                .map(CreativeDto::getImageUrl)
+                .filter(StringUtils::hasText)
+                .toList();
+        if (creativeUrls.isEmpty()) {
+            return dtos;
+        }
+        Map<String, Asset> assetsByUrl = assetRepository.findByUrlIn(creativeUrls).stream()
+                .filter(asset -> StringUtils.hasText(asset.getUrl()))
+                .collect(Collectors.toMap(
+                        Asset::getUrl,
+                        Function.identity(),
+                        (left, right) -> {
+                            Long leftId = Objects.requireNonNullElse(left.getId(), 0L);
+                            Long rightId = Objects.requireNonNullElse(right.getId(), 0L);
+                            return Comparator.<Long>naturalOrder().compare(leftId, rightId) >= 0 ? left : right;
+                        }));
+        dtos.forEach(dto -> {
+            Asset asset = assetsByUrl.get(dto.getImageUrl());
+            if (asset != null && StringUtils.hasText(asset.getPrompt())) {
+                dto.setImagePrompt(asset.getPrompt().trim());
+            }
+        });
+        return dtos;
     }
 
     @PutMapping("/api/creatives/{id}")

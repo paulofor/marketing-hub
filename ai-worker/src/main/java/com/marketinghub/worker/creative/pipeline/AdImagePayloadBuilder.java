@@ -161,9 +161,28 @@ public class AdImagePayloadBuilder {
 
     void validateSingleVisualFocus(String prompt) {
         String normalized = normalize(prompt);
-        if (normalized.contains("infografico") || normalized.contains("dashboard") || normalized.contains("multiplos cards")) {
+        if (mentionsForbiddenStyleWithoutNegation(normalized, "infografico")
+                || mentionsForbiddenStyleWithoutNegation(normalized, "dashboard")
+                || mentionsForbiddenStyleWithoutNegation(normalized, "multiplos cards")) {
             throw new IllegalArgumentException("Prompt final parece infográfico/confuso");
         }
+    }
+
+    private boolean mentionsForbiddenStyleWithoutNegation(String normalizedPrompt, String token) {
+        int index = normalizedPrompt.indexOf(token);
+        while (index >= 0) {
+            int contextStart = Math.max(0, index - 20);
+            String leftContext = normalizedPrompt.substring(contextStart, index).trim();
+            boolean negated = leftContext.endsWith("sem")
+                    || leftContext.endsWith("evitar")
+                    || leftContext.endsWith("evite")
+                    || leftContext.endsWith("evitando");
+            if (!negated) {
+                return true;
+            }
+            index = normalizedPrompt.indexOf(token, index + token.length());
+        }
+        return false;
     }
 
     void validatePromptReadability(String prompt, OverlayCopy overlay) {

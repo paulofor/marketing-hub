@@ -297,8 +297,10 @@ landingCompleta {
 const LANDING_LAYOUT_PROMPT_TEMPLATE = `${COMMON_PIPELINE_PROMPT}
 
 Contexto do nicho: {nicho}
-Persona: {persona}
+Dor principal: {primaryPain}
 Promessa principal: {primaryPromise}
+Mecanismo resumido: {mechanismSummary}
+Prova resumida: {proofSummary}
 CTA principal: {cta}
 
 Textos da landing já definidos:
@@ -314,26 +316,30 @@ Objetivo:
 Criar o wireframe textual da landing page.
 
 Regras:
-1. A página deve ser mobile-first.
-2. O hero e o formulário devem aparecer sem exigir muito scroll.
-3. O wireframe deve ser experimental, não apenas estrutural.
-4. Adicione variantLayoutId para cada proposta com um valor entre:
+1. A estrutura deve deixar claro, logo no primeiro bloco, para qual nicho a página foi feita.
+2. A página deve ser mobile-first.
+3. O hero e o formulário devem aparecer sem exigir muito scroll.
+4. O wireframe deve ser experimental, não apenas estrutural.
+5. Adicione variantLayoutId para cada proposta com um valor entre:
    - form-first
    - proof-first
-5. O layout base deve preservar:
+   - story-first
+6. O layout base deve preservar:
    - hero + formulário acima da dobra
    - CTA recorrente
    - FAQ e compliance no footer
-6. Cada seção deve ter uma função clara.
-7. Adicione mobilePriorityScore por seção (inteiro de 1 a 10) para priorização em telas pequenas.
-8. Adicione dropOffRisk por bloco com um valor entre: baixo, médio, alto.
-9. Adicione sectionDependsOn para amarrar cada bloco ao dado de campanha:
+7. Cada seção deve ter uma função clara.
+8. Adicione mobilePriorityScore por seção (inteiro de 1 a 10) para priorização em telas pequenas.
+9. Adicione dropOffRisk por bloco com um valor entre: baixo, médio, alto.
+10. Adicione sectionDependsOn para amarrar cada bloco ao dado de campanha:
    - hero ← primaryPromise
    - prova ← proofSummary
    - CTA ← primaryCTA
-10. O CTA principal deve reaparecer em pontos estratégicos.
-11. O layout deve minimizar atrito e reforçar continuidade com o anúncio.
-12. Não criar seções desnecessárias.
+11. O CTA principal deve reaparecer em pontos estratégicos.
+12. O layout deve minimizar atrito e reforçar continuidade com o anúncio.
+13. Não usar linguagem de consultoria.
+14. Não criar seções desnecessárias.
+15. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para {nicho}.
 
 Formato esperado:
 JSON com:

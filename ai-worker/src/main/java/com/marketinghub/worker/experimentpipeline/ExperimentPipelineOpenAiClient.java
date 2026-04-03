@@ -135,15 +135,18 @@ public class ExperimentPipelineOpenAiClient {
             - Hero/headline e seções principais já redigidas
 
             Regras:
-            1. pageGoal precisa deixar explícito qual ação a página deve gerar.
-            2. variantLayoutId deve ser form-first, proof-first ou story-first.
-            3. sectionOrder deve mapear cada bloco com sectionId, sectionName, objective, contentType (hero, form, split, proof, timeline, faq, cta), copySource, uiNotes, messageMatchDependency e sectionDependsOn.
-            4. Cada bloco precisa informar mobilePriorityScore (1 a 10) e dropOffRisk (baixo, medio ou alto).
-            5. Se houver CTA no bloco, preencher ctaSlot com hasCta=true, ctaLabel, ctaVariant (hero, mid, final, sticky ou inline), matchAdCta e notes.
-            6. formPlacementNotes deve informar em quantos scrolls o formulário aparece e se há versão sticky.
-            7. ctaPlacementNotes garante repetição literal do CTA aprovado em posições estratégicas.
-            8. mobilePriorityNotes destaca o que aparece antes da rolagem.
-            9. consistencyChecks precisa incluir CTA_MATCH e EXPERIENCE_CONTINUITY com status PASS/WARN/FAIL e detalhes.
+            1. A estrutura deve deixar claro, logo no primeiro bloco, para qual nicho a página foi feita.
+            2. pageGoal precisa deixar explícito qual ação a página deve gerar.
+            3. variantLayoutId deve ser form-first, proof-first ou story-first.
+            4. sectionOrder deve mapear cada bloco com sectionId, sectionName, objective, contentType (hero, form, split, proof, timeline, faq, cta), copySource, uiNotes, messageMatchDependency e sectionDependsOn.
+            5. Cada bloco precisa informar mobilePriorityScore (1 a 10) e dropOffRisk (baixo, medio ou alto).
+            6. Se houver CTA no bloco, preencher ctaSlot com hasCta=true, ctaLabel, ctaVariant (hero, mid, final, sticky ou inline), matchAdCta e notes.
+            7. formPlacementNotes deve informar em quantos scrolls o formulário aparece e se há versão sticky.
+            8. ctaPlacementNotes garante repetição literal do CTA aprovado em posições estratégicas.
+            9. mobilePriorityNotes destaca o que aparece antes da rolagem.
+            10. consistencyChecks precisa incluir CTA_MATCH e EXPERIENCE_CONTINUITY com status PASS/WARN/FAIL e detalhes.
+            11. Não usar linguagem de consultoria e não criar estrutura genérica para qualquer mercado.
+            12. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para o nicho informado.
 
             Formato obrigatório (JSON):
             - pageGoal,

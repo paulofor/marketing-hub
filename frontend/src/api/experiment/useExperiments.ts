@@ -69,6 +69,7 @@ export interface Experiment {
   creativeTextPrompt?: string | null;
   campaignAngle?: string | null;
   adCopy?: string | null;
+  adImageBriefing?: string | null;
   creativeImagePrompt?: string | null;
   instagramAccount?: InstagramAccountSummary | null;
   /**

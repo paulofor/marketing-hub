@@ -262,6 +262,7 @@ public class ExperimentCreativeService {
                                             PipelineAdCreativePlan plan,
                                             CreateCreativeRequest request) {
         List<String> parts = new ArrayList<>();
+        parts.add("A imagem deve ter a persona representando o nicho, uma headline e uma subheadline esteticamente bem posicionada");
         parts.add("Você é um diretor de arte criando criativos originais para anúncios do Meta Ads.");
         if ("STORY".equalsIgnoreCase(plan.format())) {
             parts.add("Formato vertical 1080x1920 (Stories/Reels) com foco no terço central e respeitando o CTA nativo.");

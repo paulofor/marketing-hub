@@ -638,19 +638,6 @@ public class ExperimentService {
                     HttpStatus.BAD_REQUEST,
                     "Conclua as etapas de Texto do Anúncio e Prompt da Imagem antes de gerar anúncios do pipeline.");
         }
-        if (!hasValidDestination(exp)) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Defina uma URL de destino ou um Instant Form aprovado antes de gerar anúncios do pipeline.");
-        }
-    }
-
-    private boolean hasValidDestination(Experiment exp) {
-        if (StringUtils.hasText(exp.getFollowUpActionUrl())) {
-            return true;
-        }
-        FacebookInstantForm instantForm = exp.getFacebookInstantForm();
-        return instantForm != null && StringUtils.hasText(instantForm.getFormId());
     }
 
     @Transactional

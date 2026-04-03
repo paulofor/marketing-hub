@@ -1,5 +1,7 @@
 package com.marketinghub.worker.creative;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.util.UrlUtils;
 import java.util.List;
 import org.slf4j.Logger;
@@ -24,6 +26,7 @@ import reactor.core.publisher.Mono;
 @Component
 public class BackendAssetClient {
     private static final Logger log = LoggerFactory.getLogger(BackendAssetClient.class);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final WebClient webClient;
     private final String backendBaseUrl;
@@ -125,11 +128,41 @@ public class BackendAssetClient {
                                 .flatMap(bodyContent -> Mono.error(new BackendAssetUploadException(
                                         status, url, bodyContent)));
                     }
-                    return response.bodyToMono(String.class);
+                    return response.bodyToMono(String.class)
+                            .map(BackendAssetClient::extractAssetUrl)
+                            .filter(StringUtils::hasText)
+                            .switchIfEmpty(Mono.error(new BackendAssetUploadException(
+                                    "Backend did not return an asset URL")));
                 })
                 .blockOptional()
                 .orElseThrow(() -> new BackendAssetUploadException(
                         "Backend did not return an asset URL"));
+    }
+
+    static String extractAssetUrl(String responseBody) {
+        if (!StringUtils.hasText(responseBody)) {
+            return null;
+        }
+        try {
+            JsonNode node = OBJECT_MAPPER.readTree(responseBody);
+            if (node == null || node.isNull()) {
+                return null;
+            }
+            if (node.isTextual()) {
+                return node.asText();
+            }
+            JsonNode urlNode = node.path("url");
+            if (urlNode.isTextual() && StringUtils.hasText(urlNode.asText())) {
+                return urlNode.asText();
+            }
+            JsonNode imageUrlNode = node.path("imageUrl");
+            if (imageUrlNode.isTextual() && StringUtils.hasText(imageUrlNode.asText())) {
+                return imageUrlNode.asText();
+            }
+            return null;
+        } catch (Exception ignored) {
+            return responseBody;
+        }
     }
 
     private boolean shouldFallback(BackendAssetUploadException exception) {
@@ -192,4 +225,3 @@ public class BackendAssetClient {
         }
     }
 }
-

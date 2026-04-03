@@ -173,8 +173,7 @@ public class AdImagePayloadBuilder {
         while (index >= 0) {
             int sentenceStart = Math.max(normalizedPrompt.lastIndexOf('.', index),
                     Math.max(normalizedPrompt.lastIndexOf(';', index), normalizedPrompt.lastIndexOf(':', index)));
-            int contextStart = Math.max(sentenceStart + 1, index - 80);
-            String leftContext = normalizedPrompt.substring(contextStart, index).trim();
+            String leftContext = normalizedPrompt.substring(sentenceStart + 1, index).trim();
             boolean negated = leftContext.contains(" sem ")
                     || leftContext.endsWith(" sem")
                     || leftContext.contains(" evitar ")

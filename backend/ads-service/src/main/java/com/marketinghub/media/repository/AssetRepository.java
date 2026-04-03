@@ -12,4 +12,5 @@ import java.util.List;
 public interface AssetRepository extends JpaRepository<Asset, Long> {
     List<Asset> findByStatus(AssetStatus status);
     List<Asset> findByStatusAndCampaignId(AssetStatus status, Long campaignId);
+    List<Asset> findByUrlIn(List<String> urls);
 }

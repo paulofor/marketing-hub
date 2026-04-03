@@ -646,6 +646,12 @@ export default function CriativosTab({ experimentId }: Props) {
             {c.headline || "Sem headline"}
           </h3>
           <p className="creative-card-text mb-0">{c.primaryText}</p>
+          {c.imagePrompt?.trim() && (
+            <details className="creative-card-prompt mt-2">
+              <summary>Ver prompt que gerou imagem</summary>
+              <p className="mb-0 mt-2">{c.imagePrompt.trim()}</p>
+            </details>
+          )}
           {(c.cta || c.destinationUrl || c.leadGenFormId) && (
             <div className="creative-card-meta small text-muted">
               {c.cta && <span className="me-2">CTA: {c.cta}</span>}

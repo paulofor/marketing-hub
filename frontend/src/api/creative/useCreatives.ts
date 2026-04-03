@@ -14,6 +14,7 @@ export interface Creative {
   destinationUrl?: string;
   leadGenFormId?: string;
   instagramUserId?: string;
+  imagePrompt?: string;
 }
 
 export function useCreatives(expId: string) {

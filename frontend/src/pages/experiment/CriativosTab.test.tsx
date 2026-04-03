@@ -123,6 +123,46 @@ describe("CriativosTab", () => {
     expect(await screen.findByText("Prompt detalhado da imagem")).toBeInTheDocument();
   });
 
+  it("shows previous image prompt below ad card when toggled", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.endsWith("/experiments/1/creatives")) {
+        return Promise.resolve({
+          data: [
+            {
+              id: 78,
+              headline: "H1",
+              primaryText: "P1",
+              imagePrompt: "Prompt final da imagem",
+              status: "DRAFT",
+            },
+          ],
+        });
+      }
+      if (url.endsWith("/experiments/1")) {
+        return Promise.resolve({
+          data: {
+            creativesToGenerate: 0,
+            creativeImagePrompt: "Prompt base anterior",
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <CriativosTab experimentId="1" />
+      </QueryClientProvider>,
+    );
+
+    const previousPromptButton = await screen.findByRole("button", {
+      name: "Ver prompt anterior da imagem",
+    });
+    previousPromptButton.click();
+    expect(await screen.findByText("Prompt base anterior")).toBeInTheDocument();
+  });
+
   it("shows pipeline banner when data is available", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url.endsWith("/experiments/1/creatives")) {

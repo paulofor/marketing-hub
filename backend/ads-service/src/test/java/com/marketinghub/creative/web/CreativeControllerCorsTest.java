@@ -12,6 +12,7 @@ import com.marketinghub.WebConfig;
 import com.marketinghub.creative.dto.AssetUploadResponse;
 import com.marketinghub.creative.mapper.CreativeMapper;
 import com.marketinghub.creative.service.CreativeService;
+import com.marketinghub.media.repository.AssetRepository;
 import com.marketinghub.storage.AssetUploadCategory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,9 @@ class CreativeControllerCorsTest {
 
     @MockBean
     private CreativeMapper creativeMapper;
+
+    @MockBean
+    private AssetRepository assetRepository;
 
     @Test
     void uploadImageRespondsWithCorsHeaders() throws Exception {

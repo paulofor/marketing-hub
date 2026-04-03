@@ -263,6 +263,21 @@ public class ExperimentCreativeService {
                                             CreateCreativeRequest request) {
         List<String> parts = new ArrayList<>();
         parts.add("A imagem deve ter a persona representando o nicho, uma headline e uma subheadline esteticamente bem posicionada");
+        parts.add("""
+                A mensagem deve:
+                - criar uma cena mental concreta
+                - conectar a ideia a uma experiência já vivida
+                - tocar identidade, desejo ou medo silencioso do leitor
+                - incluir um gatilho cotidiano que faça a mensagem retornar à mente
+                - ligar o presente a uma consequência futura
+
+                Evite:
+                - generalidades
+                - clichês
+                - exagero publicitário
+                - abstração sem imagem
+                - frases motivacionais genéricas
+                """);
         parts.add("Você é um diretor de arte criando criativos originais para anúncios do Meta Ads.");
         if ("STORY".equalsIgnoreCase(plan.format())) {
             parts.add("Formato vertical 1080x1920 (Stories/Reels) com foco no terço central e respeitando o CTA nativo.");

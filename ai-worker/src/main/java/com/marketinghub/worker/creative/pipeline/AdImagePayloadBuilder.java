@@ -171,12 +171,18 @@ public class AdImagePayloadBuilder {
     private boolean mentionsForbiddenStyleWithoutNegation(String normalizedPrompt, String token) {
         int index = normalizedPrompt.indexOf(token);
         while (index >= 0) {
-            int contextStart = Math.max(0, index - 20);
+            int sentenceStart = Math.max(normalizedPrompt.lastIndexOf('.', index),
+                    Math.max(normalizedPrompt.lastIndexOf(';', index), normalizedPrompt.lastIndexOf(':', index)));
+            int contextStart = Math.max(sentenceStart + 1, index - 80);
             String leftContext = normalizedPrompt.substring(contextStart, index).trim();
-            boolean negated = leftContext.endsWith("sem")
-                    || leftContext.endsWith("evitar")
-                    || leftContext.endsWith("evite")
-                    || leftContext.endsWith("evitando");
+            boolean negated = leftContext.contains(" sem ")
+                    || leftContext.endsWith(" sem")
+                    || leftContext.contains(" evitar ")
+                    || leftContext.startsWith("evitar ")
+                    || leftContext.contains(" evite ")
+                    || leftContext.startsWith("evite ")
+                    || leftContext.contains(" evitando ")
+                    || leftContext.startsWith("evitando ");
             if (!negated) {
                 return true;
             }

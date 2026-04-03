@@ -87,6 +87,42 @@ describe("CriativosTab", () => {
     (await screen.findByLabelText("Preview")).click();
     await screen.findByText("Patrocinado");
   });
+
+  it("shows image prompt below ad card when toggled", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.endsWith("/experiments/1/creatives")) {
+        return Promise.resolve({
+          data: [
+            {
+              id: 77,
+              headline: "H1",
+              primaryText: "P1",
+              imagePrompt: "Prompt detalhado da imagem",
+              status: "DRAFT",
+            },
+          ],
+        });
+      }
+      if (url.endsWith("/experiments/1")) {
+        return Promise.resolve({ data: { creativesToGenerate: 0 } });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <CriativosTab experimentId="1" />
+      </QueryClientProvider>,
+    );
+
+    const toggleButton = await screen.findByRole("button", {
+      name: "Ver prompt da imagem",
+    });
+    toggleButton.click();
+    expect(await screen.findByText("Prompt detalhado da imagem")).toBeInTheDocument();
+  });
+
   it("shows pipeline banner when data is available", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url.endsWith("/experiments/1/creatives")) {

@@ -134,16 +134,18 @@
   overflow: hidden;
 }
 
-.creative-card-prompt summary {
-  cursor: pointer;
-  color: var(--bs-primary, #0d6efd);
-  font-size: 0.875rem;
+.creative-card-prompt-container {
+  margin-top: 0.75rem;
 }
 
-.creative-card-prompt p {
+.creative-card-prompt-text {
   white-space: pre-wrap;
   color: var(--bs-secondary-color, #6c757d);
   font-size: 0.875rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 0.5rem;
+  background: var(--bs-tertiary-bg, #f8f9fa);
 }
 
 .creative-card-meta {

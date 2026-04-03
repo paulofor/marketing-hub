@@ -1271,12 +1271,17 @@ function GenericGenerationSummaryPanel({
   latestGeneration,
 }: GenericGenerationSummaryPanelProps) {
   const defaultPrompt = SECTION_PROMPT_DEFAULTS[section.key];
+  const promptUsed = latestGeneration?.prompt?.trim() || defaultPrompt;
   const parsedContent = useMemo(
     () => parseSectionContent(section.key, latestGeneration?.rawResponse),
     [latestGeneration?.rawResponse, section.key],
   );
 
-  const { hasStructuredData, preview } = resolveStructuredPreview(section.key, parsedContent);
+  const { hasStructuredData, preview } = resolveStructuredPreview(
+    section.key,
+    parsedContent,
+    promptUsed,
+  );
   const fallbackRaw = latestGeneration?.rawResponse?.trim();
   const hasData = hasStructuredData || Boolean(fallbackRaw);
   const badgeVariant = hasData ? "info" : "secondary";
@@ -1441,12 +1446,16 @@ function parseSectionContent(
 function resolveStructuredPreview(
   sectionKey: ContentGenerationSectionKey,
   parsed?: ImagePromptContent | LandingCopyContent | LandingLayoutContent,
+  promptUsed?: string,
 ): { hasStructuredData: boolean; preview?: ReactNode } {
   switch (sectionKey) {
     case "image-prompt": {
       const content = parsed as ImagePromptContent | undefined;
       if (hasImagePromptContent(content)) {
-        return { hasStructuredData: true, preview: <ImagePromptPreview content={content} /> };
+        return {
+          hasStructuredData: true,
+          preview: <ImagePromptPreview content={content} promptUsed={promptUsed} />,
+        };
       }
       return { hasStructuredData: false };
     }
@@ -1460,7 +1469,10 @@ function resolveStructuredPreview(
     case "landing-layout": {
       const content = parsed as LandingLayoutContent | undefined;
       if (hasLandingLayoutContent(content)) {
-        return { hasStructuredData: true, preview: <LandingLayoutPreview content={content} /> };
+        return {
+          hasStructuredData: true,
+          preview: <LandingLayoutPreview content={content} promptUsed={promptUsed} />,
+        };
       }
       return { hasStructuredData: false };
     }
@@ -1507,7 +1519,39 @@ function describeGenerationSummary(
   }
 }
 
-function ImagePromptPreview({ content }: { content: ImagePromptContent }) {
+function PromptUsedDetails({
+  promptUsed,
+  summaryLabel,
+}: {
+  promptUsed?: string;
+  summaryLabel?: string;
+}) {
+  if (!promptUsed) return null;
+
+  return (
+    <details className="mt-2">
+      <summary className="small text-primary" role="button">
+        {summaryLabel ?? "Ver prompt usado"}
+      </summary>
+      <div className="border rounded p-2 mt-2 bg-body-tertiary">
+        <p className="text-muted small mb-1">
+          Texto do prompt enviado ao Worker IA nesta geração:
+        </p>
+        <pre className="small mb-0" style={{ whiteSpace: "pre-wrap" }}>
+          {promptUsed}
+        </pre>
+      </div>
+    </details>
+  );
+}
+
+function ImagePromptPreview({
+  content,
+  promptUsed,
+}: {
+  content: ImagePromptContent;
+  promptUsed?: string;
+}) {
   return (
     <div className="row g-3">
       {content.briefings.map((briefing, index) => (
@@ -1548,6 +1592,7 @@ function ImagePromptPreview({ content }: { content: ImagePromptContent }) {
                 </ul>
               </div>
             ) : null}
+            <PromptUsedDetails summaryLabel="Ver prompt usado no briefing" promptUsed={promptUsed} />
           </div>
         </div>
       ))}
@@ -1700,7 +1745,13 @@ function LandingCopyBlockView({
   );
 }
 
-function LandingLayoutPreview({ content }: { content: LandingLayoutContent }) {
+function LandingLayoutPreview({
+  content,
+  promptUsed,
+}: {
+  content: LandingLayoutContent;
+  promptUsed?: string;
+}) {
   return (
     <div className="mt-3 d-flex flex-column gap-3">
       <div className="row g-3">
@@ -1753,6 +1804,10 @@ function LandingLayoutPreview({ content }: { content: LandingLayoutContent }) {
                   Risco de drop: {section.dropOffRisk}
                 </span>
               ) : null}
+              <PromptUsedDetails
+                summaryLabel="Ver prompt usado neste bloco"
+                promptUsed={promptUsed}
+              />
             </div>
           ))}
         </div>

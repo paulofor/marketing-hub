@@ -158,6 +158,9 @@ export default function CriativosTab({ experimentId }: Props) {
   const [processingCreativeId, setProcessingCreativeId] = useState<number | null>(
     null,
   );
+  const [expandedPromptByCreativeId, setExpandedPromptByCreativeId] = useState<
+    Record<number, boolean>
+  >({});
   const [textPrompt, setTextPrompt] = useState("");
   const [imagePrompt, setImagePrompt] = useState("");
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
@@ -606,6 +609,16 @@ export default function CriativosTab({ experimentId }: Props) {
   const renderCreativeCard = (c: Creative) => {
     const imageUrl = c.imageUrl ? resolveAssetUrl(c.imageUrl) : undefined;
     const isProcessing = processingCreativeId === c.id;
+    const hasImagePrompt = Boolean(c.imagePrompt?.trim());
+    const isPromptExpanded = Boolean(expandedPromptByCreativeId[c.id]);
+
+    const togglePromptVisibility = () => {
+      setExpandedPromptByCreativeId((current) => ({
+        ...current,
+        [c.id]: !current[c.id],
+      }));
+    };
+
     return (
       <article
         key={c.id}
@@ -646,12 +659,6 @@ export default function CriativosTab({ experimentId }: Props) {
             {c.headline || "Sem headline"}
           </h3>
           <p className="creative-card-text mb-0">{c.primaryText}</p>
-          {c.imagePrompt?.trim() && (
-            <details className="creative-card-prompt mt-2">
-              <summary>Ver prompt que gerou imagem</summary>
-              <p className="mb-0 mt-2">{c.imagePrompt.trim()}</p>
-            </details>
-          )}
           {(c.cta || c.destinationUrl || c.leadGenFormId) && (
             <div className="creative-card-meta small text-muted">
               {c.cta && <span className="me-2">CTA: {c.cta}</span>}
@@ -714,6 +721,25 @@ export default function CriativosTab({ experimentId }: Props) {
               <span>Preview</span>
             </button>
           </div>
+          {hasImagePrompt && (
+            <div className="creative-card-prompt-container">
+              <button
+                type="button"
+                className="btn btn-outline-info btn-sm w-100"
+                onClick={togglePromptVisibility}
+                disabled={isProcessing}
+              >
+                {isPromptExpanded
+                  ? "Ocultar prompt da imagem"
+                  : "Ver prompt da imagem"}
+              </button>
+              {isPromptExpanded && (
+                <p className="creative-card-prompt-text mb-0 mt-2">
+                  {c.imagePrompt?.trim()}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </article>
     );

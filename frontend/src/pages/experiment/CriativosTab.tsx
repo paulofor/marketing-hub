@@ -161,6 +161,8 @@ export default function CriativosTab({ experimentId }: Props) {
   const [expandedPromptByCreativeId, setExpandedPromptByCreativeId] = useState<
     Record<number, boolean>
   >({});
+  const [expandedPreviousPromptByCreativeId, setExpandedPreviousPromptByCreativeId] =
+    useState<Record<number, boolean>>({});
   const [textPrompt, setTextPrompt] = useState("");
   const [imagePrompt, setImagePrompt] = useState("");
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
@@ -611,9 +613,19 @@ export default function CriativosTab({ experimentId }: Props) {
     const isProcessing = processingCreativeId === c.id;
     const hasImagePrompt = Boolean(c.imagePrompt?.trim());
     const isPromptExpanded = Boolean(expandedPromptByCreativeId[c.id]);
+    const hasPreviousImagePrompt = Boolean(imagePrompt.trim());
+    const isPreviousPromptExpanded = Boolean(
+      expandedPreviousPromptByCreativeId[c.id],
+    );
 
     const togglePromptVisibility = () => {
       setExpandedPromptByCreativeId((current) => ({
+        ...current,
+        [c.id]: !current[c.id],
+      }));
+    };
+    const togglePreviousPromptVisibility = () => {
+      setExpandedPreviousPromptByCreativeId((current) => ({
         ...current,
         [c.id]: !current[c.id],
       }));
@@ -736,6 +748,25 @@ export default function CriativosTab({ experimentId }: Props) {
               {isPromptExpanded && (
                 <p className="creative-card-prompt-text mb-0 mt-2">
                   {c.imagePrompt?.trim()}
+                </p>
+              )}
+            </div>
+          )}
+          {hasPreviousImagePrompt && (
+            <div className="creative-card-prompt-container">
+              <button
+                type="button"
+                className="btn btn-outline-info btn-sm w-100"
+                onClick={togglePreviousPromptVisibility}
+                disabled={isProcessing}
+              >
+                {isPreviousPromptExpanded
+                  ? "Ocultar prompt anterior da imagem"
+                  : "Ver prompt anterior da imagem"}
+              </button>
+              {isPreviousPromptExpanded && (
+                <p className="creative-card-prompt-text mb-0 mt-2">
+                  {imagePrompt.trim()}
                 </p>
               )}
             </div>

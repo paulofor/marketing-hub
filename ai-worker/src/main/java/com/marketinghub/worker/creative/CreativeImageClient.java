@@ -76,6 +76,10 @@ public class CreativeImageClient {
     }
 
     public String generateImage(String prompt) {
+        return generateImage(prompt, null);
+    }
+
+    public String generateImage(String prompt, String intermediatePrompt) {
         if (!enabled) {
             log.warn("Skipping image generation because OpenAI API key is missing");
             return null;
@@ -124,7 +128,7 @@ public class CreativeImageClient {
                             optimized.content().length);
                 }
                 String filename = "creative-" + UUID.randomUUID() + "." + optimized.extension();
-                return assetClient.uploadImage(optimized.content(), filename, model, prompt);
+                return assetClient.uploadImage(optimized.content(), filename, model, prompt, intermediatePrompt);
             } catch (IllegalArgumentException e) {
                 throw new RuntimeException("Failed to decode image payload", e);
             }

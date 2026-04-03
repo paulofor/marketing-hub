@@ -163,6 +163,8 @@ export default function CriativosTab({ experimentId }: Props) {
   >({});
   const [expandedPreviousPromptByCreativeId, setExpandedPreviousPromptByCreativeId] =
     useState<Record<number, boolean>>({});
+  const [expandedIntermediatePromptByCreativeId, setExpandedIntermediatePromptByCreativeId] =
+    useState<Record<number, boolean>>({});
   const [textPrompt, setTextPrompt] = useState("");
   const [imagePrompt, setImagePrompt] = useState("");
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
@@ -617,6 +619,10 @@ export default function CriativosTab({ experimentId }: Props) {
     const isPreviousPromptExpanded = Boolean(
       expandedPreviousPromptByCreativeId[c.id],
     );
+    const hasIntermediateImagePrompt = Boolean(c.imageIntermediatePrompt?.trim());
+    const isIntermediatePromptExpanded = Boolean(
+      expandedIntermediatePromptByCreativeId[c.id],
+    );
 
     const togglePromptVisibility = () => {
       setExpandedPromptByCreativeId((current) => ({
@@ -626,6 +632,12 @@ export default function CriativosTab({ experimentId }: Props) {
     };
     const togglePreviousPromptVisibility = () => {
       setExpandedPreviousPromptByCreativeId((current) => ({
+        ...current,
+        [c.id]: !current[c.id],
+      }));
+    };
+    const toggleIntermediatePromptVisibility = () => {
+      setExpandedIntermediatePromptByCreativeId((current) => ({
         ...current,
         [c.id]: !current[c.id],
       }));
@@ -767,6 +779,25 @@ export default function CriativosTab({ experimentId }: Props) {
               {isPreviousPromptExpanded && (
                 <p className="creative-card-prompt-text mb-0 mt-2">
                   {imagePrompt.trim()}
+                </p>
+              )}
+            </div>
+          )}
+          {hasIntermediateImagePrompt && (
+            <div className="creative-card-prompt-container">
+              <button
+                type="button"
+                className="btn btn-outline-info btn-sm w-100"
+                onClick={toggleIntermediatePromptVisibility}
+                disabled={isProcessing}
+              >
+                {isIntermediatePromptExpanded
+                  ? "Ocultar prompt intermediário"
+                  : "Ver prompt intermediário"}
+              </button>
+              {isIntermediatePromptExpanded && (
+                <p className="creative-card-prompt-text mb-0 mt-2">
+                  {c.imageIntermediatePrompt?.trim()}
                 </p>
               )}
             </div>

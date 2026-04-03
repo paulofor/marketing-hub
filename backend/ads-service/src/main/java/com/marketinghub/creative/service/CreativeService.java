@@ -153,6 +153,7 @@ public class CreativeService {
     public AssetUploadResponse uploadImage(MultipartFile file,
                                                                          String model,
                                                                          String prompt,
+                                                                         String intermediatePrompt,
                                                                          AssetUploadCategory category,
                                                                          Long experimentId,
                                                                          Long flowId,
@@ -165,6 +166,8 @@ public class CreativeService {
         AssetStorageService.StoredObject storedObject = assetStorageService.store(file, context);
         String cleanedModel = StringUtils.hasText(model) ? model.trim() : null;
         String cleanedPrompt = StringUtils.hasText(prompt) ? prompt.trim() : null;
+        String cleanedIntermediatePrompt =
+                StringUtils.hasText(intermediatePrompt) ? intermediatePrompt.trim() : null;
         Asset asset = Asset.builder()
                 .type(AssetType.IMAGE)
                 .provider(MediaProvider.USER_UPLOAD)
@@ -173,6 +176,7 @@ public class CreativeService {
                 .externalId(storedObject.storedFileName())
                 .model(cleanedModel)
                 .prompt(cleanedPrompt)
+                .promptIntermediate(cleanedIntermediatePrompt)
                 .payload(buildAssetPayload(storedObject, resolvedCategory, experimentId, flowId, flowSlug))
                 .build();
         assetRepository.save(asset);

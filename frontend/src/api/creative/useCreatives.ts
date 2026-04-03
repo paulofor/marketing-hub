@@ -15,6 +15,7 @@ export interface Creative {
   leadGenFormId?: string;
   instagramUserId?: string;
   imagePrompt?: string;
+  imageIntermediatePrompt?: string;
 }
 
 export function useCreatives(expId: string) {

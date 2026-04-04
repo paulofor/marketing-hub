@@ -10,6 +10,7 @@ import {
   useExperimentPipelineTotalCostUsd,
 } from "../../api/experiment/useExperimentPipelineJobHistory";
 import { useExperiment } from "../../api/experiment/useExperiment";
+import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
 
 const SECTION_OPTIONS = [
   { value: "", label: "Todas as seções" },
@@ -42,11 +43,6 @@ function formatDateTime(value?: string) {
     dateStyle: "short",
     timeStyle: "short",
   });
-}
-
-function formatJsonBlock(content?: string) {
-  if (!content) return "Sem conteúdo registrado.";
-  return content;
 }
 
 function formatPromptBlock(content?: string) {
@@ -85,12 +81,17 @@ export default function ExperimentPipelineJobsPage() {
     section,
   });
 
-  const detailQuery = useExperimentPipelineJobDetail(id, selectedJobId ?? undefined);
+  const detailQuery = useExperimentPipelineJobDetail(
+    id,
+    selectedJobId ?? undefined,
+  );
   const experimentQuery = useExperiment(id);
   const totalCostUsdQuery = useExperimentPipelineTotalCostUsd(id);
 
-  const historyData: ExperimentPipelineJobHistoryPage | undefined = jobsQuery.data;
-  const jobs: ExperimentPipelineGenerationJobSummary[] = historyData?.content ?? [];
+  const historyData: ExperimentPipelineJobHistoryPage | undefined =
+    jobsQuery.data;
+  const jobs: ExperimentPipelineGenerationJobSummary[] =
+    historyData?.content ?? [];
   const totalPages = historyData?.totalPages ?? 0;
   const totalElements = historyData?.totalElements ?? 0;
 
@@ -105,7 +106,9 @@ export default function ExperimentPipelineJobsPage() {
     <div>
       <div className="d-flex justify-content-between align-items-start mb-3">
         <div>
-          <PageTitle icon={experimentIcon}>Jobs do pipeline do experimento</PageTitle>
+          <PageTitle icon={experimentIcon}>
+            Jobs do pipeline do experimento
+          </PageTitle>
           <p className="text-muted mb-0">
             Histórico da tabela <code>experiment_pipeline_generation_job</code>.
           </p>
@@ -140,22 +143,29 @@ export default function ExperimentPipelineJobsPage() {
               </select>
             </div>
             <div className="text-muted small">
-              Exibindo {jobs.length} de {totalElements} jobs ({selectedSectionLabel}).
+              Exibindo {jobs.length} de {totalElements} jobs (
+              {selectedSectionLabel}).
             </div>
             <div className="text-muted small">
               Custo total do experimento:{" "}
-              <strong>{formatCurrencyBrl(experimentQuery.data?.cost ?? null)}</strong>
+              <strong>
+                {formatCurrencyBrl(experimentQuery.data?.cost ?? null)}
+              </strong>
             </div>
             <div className="text-muted small">
               Custo total do pipeline (todos os jobs):{" "}
-              <strong>{formatCurrencyUsd(totalCostUsdQuery.data ?? null)}</strong>
+              <strong>
+                {formatCurrencyUsd(totalCostUsdQuery.data ?? null)}
+              </strong>
             </div>
           </div>
 
           {jobsQuery.isLoading ? (
             <p className="text-muted mb-0">Carregando jobs...</p>
           ) : jobs.length === 0 ? (
-            <p className="text-muted mb-0">Nenhum job encontrado para os filtros atuais.</p>
+            <p className="text-muted mb-0">
+              Nenhum job encontrado para os filtros atuais.
+            </p>
           ) : (
             <div className="table-responsive">
               <table className="table table-sm align-middle mb-0">
@@ -188,7 +198,9 @@ export default function ExperimentPipelineJobsPage() {
                         </td>
                         <td>{job.stage ?? "—"}</td>
                         <td>{job.model ?? "—"}</td>
-                        <td className="text-end">{formatCurrencyUsd(job.costUsd)}</td>
+                        <td className="text-end">
+                          {formatCurrencyUsd(job.costUsd)}
+                        </td>
                         <td>{formatDateTime(job.finishedAt)}</td>
                         <td className="text-end">
                           <button
@@ -259,12 +271,13 @@ export default function ExperimentPipelineJobsPage() {
                   <strong>ID:</strong> {detailQuery.data.id}
                 </div>
                 <div className="small text-muted">
-                  <strong>Input/Output tokens:</strong> {detailQuery.data.inputTokens ?? "—"} /
-                  {" "}
+                  <strong>Input/Output tokens:</strong>{" "}
+                  {detailQuery.data.inputTokens ?? "—"} /{" "}
                   {detailQuery.data.outputTokens ?? "—"}
                 </div>
                 <div className="small text-muted">
-                  <strong>Custo do job:</strong> {formatCurrencyUsd(detailQuery.data.costUsd)}
+                  <strong>Custo do job:</strong>{" "}
+                  {formatCurrencyUsd(detailQuery.data.costUsd)}
                 </div>
                 <div>
                   <h6>Prompt completo</h6>
@@ -274,27 +287,27 @@ export default function ExperimentPipelineJobsPage() {
                 </div>
                 <div>
                   <h6>Instruções customizadas</h6>
-                  <pre className="bg-body-tertiary p-3 rounded small mb-0 text-wrap">
-                    {formatJsonBlock(detailQuery.data.customInstructions)}
-                  </pre>
+                  <CollapsibleJsonViewer
+                    content={detailQuery.data.customInstructions}
+                  />
                 </div>
                 <div>
                   <h6>Chamada do endpoint</h6>
-                  <pre className="bg-body-tertiary p-3 rounded small mb-0 text-wrap">
-                    {formatJsonBlock(detailQuery.data.requestBodyJson)}
-                  </pre>
+                  <CollapsibleJsonViewer
+                    content={detailQuery.data.requestBodyJson}
+                  />
                 </div>
                 <div>
                   <h6>Retorno do endpoint (raw)</h6>
-                  <pre className="bg-body-tertiary p-3 rounded small mb-0 text-wrap">
-                    {formatJsonBlock(detailQuery.data.rawResponse)}
-                  </pre>
+                  <CollapsibleJsonViewer
+                    content={detailQuery.data.rawResponse}
+                  />
                 </div>
                 <div>
                   <h6>Conteúdo processado</h6>
-                  <pre className="bg-body-tertiary p-3 rounded small mb-0 text-wrap">
-                    {formatJsonBlock(detailQuery.data.responseContent)}
-                  </pre>
+                  <CollapsibleJsonViewer
+                    content={detailQuery.data.responseContent}
+                  />
                 </div>
               </div>
             ) : null}

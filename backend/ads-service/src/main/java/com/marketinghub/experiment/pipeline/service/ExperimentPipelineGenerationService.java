@@ -531,11 +531,16 @@ public class ExperimentPipelineGenerationService {
             sb.append("1. Gerar exatamente 3 briefings, um por variação do anúncio: dor, resultado e prova.\n");
             sb.append("2. Em cada briefing, preencher visualAngle com: dor, resultado ou prova.\n");
             sb.append("3. Em cada briefing, preencher mustMatchAdVariant com: dor, resultado ou prova.\n");
-            sb.append("4. Em cada briefing, definir assetType com um valor entre: estatico, carrossel, story-vertical.\n");
+            sb.append("4. Em cada briefing, definir assetType com um valor: estatico.\n");
             sb.append("5. Em cada briefing, definir imageTextMaxWords (inteiro de 3 a 12) para limitar texto sobreposto.\n");
             sb.append("6. Garantir coerência entre criativo, copy da variação e promessa da landing pós-clique.\n");
             sb.append("7. Preservar hierarchy visual, safe margins e notas de compliance por peça.\n");
-            sb.append("8. Evitar claims absolutos e qualquer linguagem de consultoria.\n\n");
+            sb.append("8. Evitar claims absolutos e qualquer linguagem de consultoria.\n");
+            sb.append("9. Definir nicheCue: como o nicho será reconhecido visualmente em até 1 segundo.\n");
+            sb.append("10. Definir focalVisual: um único elemento principal que domina a peça.\n");
+            sb.append("11. Definir humanPresence com: obrigatoria, opcional ou proibida.\n");
+            sb.append("12. Se houver figura humana, ela deve representar o nicho em contexto real e não como rosto genérico decorativo.\n");
+            sb.append("13. O CTA visual não pode ser o elemento dominante da peça.\n\n");
         }
 
         if (section == ExperimentPipelineSection.LANDING_PAGE_COPY) {

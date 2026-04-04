@@ -47,6 +47,11 @@ function formatJsonBlock(content?: string) {
   return content;
 }
 
+function formatPromptBlock(content?: string) {
+  if (!content) return "Sem conteúdo registrado.";
+  return content.replace(/\\n/g, "\n").replace(/\/n/g, "\n");
+}
+
 export default function ExperimentPipelineJobsPage() {
   const { id } = useParams();
   const [page, setPage] = useState(0);
@@ -229,7 +234,7 @@ export default function ExperimentPipelineJobsPage() {
                 <div>
                   <h6>Prompt completo</h6>
                   <pre className="bg-body-tertiary p-3 rounded small mb-0 text-wrap">
-                    {formatJsonBlock(detailQuery.data.prompt)}
+                    {formatPromptBlock(detailQuery.data.prompt)}
                   </pre>
                 </div>
                 <div>

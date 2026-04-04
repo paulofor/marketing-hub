@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import * as Tabs from "@radix-ui/react-tabs";
 import axios from "axios";
+import { Link } from "react-router-dom";
 import type { Hypothesis } from "../../api/hypothesis/useHypothesisBoard";
 import { CampaignAngleSummary, hasCampaignAngleContent, parseCampaignAnglePayload } from "./campaignAngleParser";
 import { AdCopyContent, hasAdCopyContent, parseAdCopyPayload } from "./adCopyParser";
@@ -635,6 +636,22 @@ export default function ExperimentContentGenerationTab({
     [jobsQuery.data],
   );
 
+  const latestJobIdBySection = useMemo(
+    () =>
+      (jobsQuery.data ?? []).reduce<Partial<Record<ContentGenerationSectionKey, string>>>(
+        (acc, job) => {
+          const sectionKey = normalizeJobSection(job.section);
+          if (!sectionKey || acc[sectionKey]) {
+            return acc;
+          }
+          acc[sectionKey] = job.id;
+          return acc;
+        },
+        {},
+      ),
+    [jobsQuery.data],
+  );
+
   const mergedRequestsBySection = useMemo(
     () =>
       CONTENT_GENERATION_SECTIONS.reduce<
@@ -1124,9 +1141,11 @@ export default function ExperimentContentGenerationTab({
                     ) : (
                       <>
                         <GenericGenerationSummaryPanel
+                          experimentId={experimentId}
                           section={section}
                           isLoading={isLoadingSectionGenerations[section.key]}
                           latestGeneration={sectionGenerations[section.key][0]}
+                          sourceJobId={latestJobIdBySection[section.key]}
                         />
                         <GenericGenerationHistoryList
                           section={section}
@@ -1293,15 +1312,19 @@ export default function ExperimentContentGenerationTab({
 }
 
 interface GenericGenerationSummaryPanelProps {
+  experimentId: string;
   section: ContentGenerationSection;
   isLoading: boolean;
   latestGeneration?: SimpleGenerationRow;
+  sourceJobId?: string;
 }
 
 function GenericGenerationSummaryPanel({
+  experimentId,
   section,
   isLoading,
   latestGeneration,
+  sourceJobId,
 }: GenericGenerationSummaryPanelProps) {
   const defaultPrompt = SECTION_PROMPT_DEFAULTS[section.key];
   const promptUsed = latestGeneration?.prompt?.trim() || defaultPrompt;
@@ -1339,6 +1362,14 @@ function GenericGenerationSummaryPanel({
               <p className="text-muted small mb-0 mt-1">
                 Última atualização: {formatDateTime(latestGeneration.createdAt)}
               </p>
+            ) : null}
+            {sourceJobId ? (
+              <Link
+                to={`/experiments/${experimentId}/pipeline-jobs?section=${SECTION_API_PATHS[section.key]}&jobId=${sourceJobId}`}
+                className="btn btn-link btn-sm p-0 mt-1"
+              >
+                Ver detalhe do job que gerou esta resposta
+              </Link>
             ) : null}
           </div>
         </div>

@@ -286,51 +286,53 @@ public class ExperimentCreativeService {
         }
         if (plan.imageBriefing() != null) {
             if (StringUtils.hasText(plan.imageBriefing().visualBriefing())) {
-                parts.add("Briefing visual: " + plan.imageBriefing().visualBriefing());
+                parts.add("Briefing visual:\n\n " + plan.imageBriefing().visualBriefing());
             }
             if (StringUtils.hasText(plan.imageBriefing().hierarchy())) {
-                parts.add("Hierarquia sugerida: " + plan.imageBriefing().hierarchy());
+                parts.add("Hierarquia sugerida:\n\n " + plan.imageBriefing().hierarchy());
             }
             if (StringUtils.hasText(plan.imageBriefing().safeMargins())) {
-                parts.add("Margens de segurança: " + plan.imageBriefing().safeMargins());
+                parts.add("Margens de segurança:\n\n " + plan.imageBriefing().safeMargins());
             }
             if (StringUtils.hasText(plan.imageBriefing().formatByPlacement())) {
-                parts.add("Adaptação desejada: " + plan.imageBriefing().formatByPlacement());
+                parts.add("Adaptação desejada:\n\n " + plan.imageBriefing().formatByPlacement());
             }
             if (StringUtils.hasText(plan.imageBriefing().messageMatchNotes())) {
-                parts.add("Mensagem obrigatória: " + plan.imageBriefing().messageMatchNotes());
+                parts.add("Mensagem obrigatória:\n\n " + plan.imageBriefing().messageMatchNotes());
             }
             if (StringUtils.hasText(plan.imageBriefing().complianceNotes())) {
-                parts.add("Notas de compliance: " + plan.imageBriefing().complianceNotes());
+                parts.add("Notas de compliance:\n\n " + plan.imageBriefing().complianceNotes());
             }
             if (plan.imageBriefing().supportingKeywords() != null && !plan.imageBriefing().supportingKeywords().isEmpty()) {
-                parts.add("Palavras-chave de apoio: " + String.join(", ", plan.imageBriefing().supportingKeywords()));
+                parts.add("Palavras-chave de apoio:\n\n " + String.join(", ", plan.imageBriefing().supportingKeywords()));
             }
             if (plan.imageBriefing().imageTextMaxWords() != null) {
-                parts.add("Limite máximo de " + plan.imageBriefing().imageTextMaxWords() + " palavras sobre a imagem.");
+                parts.add("Limite máximo de palavras sobre a imagem:\n\n "
+                        + plan.imageBriefing().imageTextMaxWords()
+                        + " palavras.");
             }
         }
         if (StringUtils.hasText(plan.variantKey())) {
-            parts.add("Ângulo da variação: " + plan.variantKey() + ".");
+            parts.add("Ângulo da variação:\n\n " + plan.variantKey() + ".");
         }
         if (StringUtils.hasText(plan.headline())) {
-            parts.add("Headline de referência: \"" + plan.headline() + "\".");
+            parts.add("Headline de referência:\n\n \"" + plan.headline() + "\".");
         }
         if (StringUtils.hasText(plan.primaryText())) {
-            parts.add("Texto principal orientado para dor/promessa: " + plan.primaryText());
+            parts.add("Texto principal orientado para dor/promessa:\n\n " + plan.primaryText());
         }
         if (StringUtils.hasText(plan.description())) {
-            parts.add("Complemento/contexto: " + plan.description());
+            parts.add("Complemento/contexto:\n\n " + plan.description());
         }
         if (StringUtils.hasText(plan.ctaText())) {
-            parts.add("CTA textual visível: \"" + plan.ctaText() + "\".");
+            parts.add("CTA textual visível:\n\n \"" + plan.ctaText() + "\".");
         }
         if (StringUtils.hasText(request.getDestinationUrl())) {
             parts.add("Representar a ideia de destino digital (landing page) em vez de uma conversa humana.");
         }
         Hypothesis hypothesis = experiment.getHypothesisRef();
         if (hypothesis != null && StringUtils.hasText(hypothesis.getPromise())) {
-            parts.add("Promessa central da hipótese: " + hypothesis.getPromise() + ".");
+            parts.add("Promessa central da hipótese:\n\n " + hypothesis.getPromise() + ".");
         }
         parts.add("Lembre-se de que o Worker AI usará o modelo gpt-imagem-1.5.");
         parts.add("Não inclua logos das plataformas e evite rostos genéricos sem contexto.");

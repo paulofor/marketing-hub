@@ -78,6 +78,125 @@ interface FeedbackState {
   description?: string;
 }
 
+interface PromptSourceField {
+  label: string;
+  source: string;
+  markers: string[];
+}
+
+const PIPELINE_PROMPT_SOURCE_FIELDS: PromptSourceField[] = [
+  {
+    label: "Regras de mensagem",
+    source: "buildPipelineImagePrompt (base)",
+    markers: ["A mensagem deve:"],
+  },
+  {
+    label: "Direção de arte",
+    source: "buildPipelineImagePrompt (base)",
+    markers: ["Você é um diretor de arte"],
+  },
+  {
+    label: "Formato por placement",
+    source: "plan.format",
+    markers: ["Formato feed 1080x1350", "Formato vertical 1080x1920"],
+  },
+  {
+    label: "Briefing visual",
+    source: "plan.imageBriefing.visualBriefing",
+    markers: ["Briefing visual:"],
+  },
+  {
+    label: "Hierarquia sugerida",
+    source: "plan.imageBriefing.hierarchy",
+    markers: ["Hierarquia sugerida:"],
+  },
+  {
+    label: "Margens de segurança",
+    source: "plan.imageBriefing.safeMargins",
+    markers: ["Margens de segurança:"],
+  },
+  {
+    label: "Adaptação desejada",
+    source: "plan.imageBriefing.formatByPlacement",
+    markers: ["Adaptação desejada:"],
+  },
+  {
+    label: "Mensagem obrigatória",
+    source: "plan.imageBriefing.messageMatchNotes",
+    markers: ["Mensagem obrigatória:"],
+  },
+  {
+    label: "Notas de compliance",
+    source: "plan.imageBriefing.complianceNotes",
+    markers: ["Notas de compliance:"],
+  },
+  {
+    label: "Palavras-chave de apoio",
+    source: "plan.imageBriefing.supportingKeywords",
+    markers: ["Palavras-chave de apoio:"],
+  },
+  {
+    label: "Limite de palavras na imagem",
+    source: "plan.imageBriefing.imageTextMaxWords",
+    markers: ["Limite máximo de palavras sobre a imagem:"],
+  },
+  {
+    label: "Ângulo da variação",
+    source: "plan.variantKey",
+    markers: ["Ângulo da variação:"],
+  },
+  {
+    label: "Headline de referência",
+    source: "plan.headline",
+    markers: ["Headline de referência:"],
+  },
+  {
+    label: "Texto principal",
+    source: "plan.primaryText",
+    markers: ["Texto principal orientado para dor/promessa:"],
+  },
+  {
+    label: "Complemento/contexto",
+    source: "plan.description",
+    markers: ["Complemento/contexto:"],
+  },
+  {
+    label: "CTA textual visível",
+    source: "plan.ctaText",
+    markers: ["CTA textual visível:"],
+  },
+  {
+    label: "Destino digital",
+    source: "request.destinationUrl",
+    markers: ["Representar a ideia de destino digital"],
+  },
+  {
+    label: "Promessa da hipótese",
+    source: "experiment.hypothesisRef.promise",
+    markers: ["Promessa central da hipótese:"],
+  },
+  {
+    label: "Modelo do Worker IA",
+    source: "buildPipelineImagePrompt (base)",
+    markers: ["Lembre-se de que o Worker AI usará o modelo gpt-imagem-1.5."],
+  },
+  {
+    label: "Restrição de logos e rostos",
+    source: "buildPipelineImagePrompt (base)",
+    markers: ["Não inclua logos das plataformas"],
+  },
+];
+
+const resolvePromptSourceStatus = (prompt?: string | null) => {
+  const normalizedPrompt = prompt?.trim() ?? "";
+  return PIPELINE_PROMPT_SOURCE_FIELDS.map((field) => ({
+    ...field,
+    hasContent:
+      normalizedPrompt.length > 0 &&
+      field.markers.some((marker) => normalizedPrompt.includes(marker)),
+  }));
+};
+
 const statusVariant = (status: string) => {
   switch (status) {
     case "READY":
@@ -623,6 +742,7 @@ export default function CriativosTab({ experimentId }: Props) {
     const isIntermediatePromptExpanded = Boolean(
       expandedIntermediatePromptByCreativeId[c.id],
     );
+    const promptSourceStatus = resolvePromptSourceStatus(c.imagePrompt);
 
     const togglePromptVisibility = () => {
       setExpandedPromptByCreativeId((current) => ({
@@ -758,9 +878,31 @@ export default function CriativosTab({ experimentId }: Props) {
                   : "Ver prompt da imagem"}
               </button>
               {isPromptExpanded && (
-                <p className="creative-card-prompt-text mb-0 mt-2">
-                  {c.imagePrompt?.trim()}
-                </p>
+                <>
+                  <p className="creative-card-prompt-text mb-0 mt-2">
+                    {c.imagePrompt?.trim()}
+                  </p>
+                  <div className="creative-card-prompt-source mt-2">
+                    <p className="creative-card-prompt-source-title mb-2">
+                      Origem dos trechos do prompt
+                    </p>
+                    <ul className="creative-card-prompt-source-list mb-0">
+                      {promptSourceStatus.map((field) => (
+                        <li key={field.label}>
+                          <span>{field.label}</span>
+                          <code>{field.source}</code>
+                          <span
+                            className={`badge rounded-pill ${
+                              field.hasContent ? "text-bg-success" : "text-bg-secondary"
+                            }`}
+                          >
+                            {field.hasContent ? "Com conteúdo" : "Sem conteúdo"}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </>
               )}
             </div>
           )}

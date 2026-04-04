@@ -45,9 +45,67 @@ function formatDateTime(value?: string) {
   });
 }
 
-function formatPromptBlock(content?: string) {
-  if (!content) return "Sem conteúdo registrado.";
+type PromptSegment = {
+  type: "text" | "json";
+  content: string;
+};
+
+function normalizePromptContent(content?: string) {
+  if (!content) return "";
   return content.replace(/\\n/g, "\n").replace(/\/n/g, "\n");
+}
+
+function formatJsonSnippet(content: string) {
+  const trimmed = content.trim();
+  if (!trimmed) return content;
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    return JSON.stringify(parsed, null, 2);
+  } catch {
+    return content;
+  }
+}
+
+function buildPromptSegments(content?: string): PromptSegment[] {
+  const normalized = normalizePromptContent(content);
+  if (!normalized) {
+    return [{ type: "text", content: "Sem conteúdo registrado." }];
+  }
+
+  const fenceRegex = /```json\s*([\s\S]*?)```/gi;
+  const segments: PromptSegment[] = [];
+  let match: RegExpExecArray | null;
+  let lastIndex = 0;
+
+  while ((match = fenceRegex.exec(normalized)) !== null) {
+    const textBeforeMatch = normalized.slice(lastIndex, match.index);
+    if (textBeforeMatch) {
+      segments.push({ type: "text", content: textBeforeMatch });
+    }
+
+    segments.push({
+      type: "json",
+      content: formatJsonSnippet(match[1]),
+    });
+
+    lastIndex = fenceRegex.lastIndex;
+  }
+
+  if (lastIndex < normalized.length) {
+    segments.push({ type: "text", content: normalized.slice(lastIndex) });
+  }
+
+  if (segments.length === 0) {
+    return [
+      {
+        type: "json",
+        content: formatJsonSnippet(normalized),
+      },
+    ];
+  }
+
+  return segments;
 }
 
 function formatCurrencyBrl(value?: number | null) {
@@ -281,9 +339,28 @@ export default function ExperimentPipelineJobsPage() {
                 </div>
                 <div>
                   <h6>Prompt completo</h6>
-                  <pre className="bg-body-tertiary p-3 rounded small mb-0 text-wrap">
-                    {formatPromptBlock(detailQuery.data.prompt)}
-                  </pre>
+                  <div className="d-flex flex-column gap-2">
+                    {buildPromptSegments(detailQuery.data.prompt).map(
+                      (segment, index) =>
+                        segment.type === "json" ? (
+                          <div key={`prompt-json-${index}`}>
+                            <small className="text-muted d-block mb-1">
+                              Trecho JSON formatado
+                            </small>
+                            <pre className="bg-dark text-light p-3 rounded small mb-0 overflow-auto">
+                              {segment.content}
+                            </pre>
+                          </div>
+                        ) : (
+                          <pre
+                            key={`prompt-text-${index}`}
+                            className="bg-body-tertiary p-3 rounded small mb-0 text-wrap"
+                          >
+                            {segment.content}
+                          </pre>
+                        ),
+                    )}
+                  </div>
                 </div>
                 <div>
                   <h6>Instruções customizadas</h6>

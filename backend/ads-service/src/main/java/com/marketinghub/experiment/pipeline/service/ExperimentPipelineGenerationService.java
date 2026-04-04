@@ -11,6 +11,8 @@ import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJob;
 import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJobStage;
 import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJobStatus;
 import com.marketinghub.experiment.pipeline.ExperimentPipelineSection;
+import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationJobDetailDto;
+import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationJobSummaryDto;
 import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationRequest;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobCompletionRequest;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobDto;
@@ -27,7 +29,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -113,6 +118,32 @@ public class ExperimentPipelineGenerationService {
                 .stream()
                 .map(this::toDto)
                 .toList();
+    }
+
+
+    @Transactional(readOnly = true)
+    public Page<ExperimentPipelineGenerationJobSummaryDto> listJobsPage(Long experimentId,
+                                                                        ExperimentPipelineSection section,
+                                                                        int page,
+                                                                        int size) {
+        Pageable pageable = PageRequest.of(
+                Math.max(page, 0),
+                Math.max(1, Math.min(size, 100)),
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<ExperimentPipelineGenerationJob> jobs = section == null
+                ? jobRepository.findByExperimentId(experimentId, pageable)
+                : jobRepository.findByExperimentIdAndSection(experimentId, section, pageable);
+        return jobs.map(this::toSummaryDto);
+    }
+
+    @Transactional(readOnly = true)
+    public ExperimentPipelineGenerationJobDetailDto getJobDetail(Long experimentId, UUID jobId) {
+        ExperimentPipelineGenerationJob job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Job não encontrado"));
+        if (!job.getExperiment().getId().equals(experimentId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Job não encontrado para este experimento");
+        }
+        return toDetailDto(job);
     }
 
     @Transactional
@@ -592,6 +623,46 @@ public class ExperimentPipelineGenerationService {
             case LANDING_PAGE_COPY -> experiment.setLandingPageCopy(normalized);
             case LANDING_PAGE_WIREFRAME -> experiment.setLandingPageWireframe(normalized);
         }
+    }
+
+
+    private ExperimentPipelineGenerationJobSummaryDto toSummaryDto(ExperimentPipelineGenerationJob job) {
+        return ExperimentPipelineGenerationJobSummaryDto.builder()
+                .id(job.getId())
+                .experimentId(job.getExperiment().getId())
+                .section(job.getSection())
+                .status(job.getStatus() != null ? job.getStatus().name() : null)
+                .stage(job.getStage() != null ? job.getStage().name() : null)
+                .model(job.getModel())
+                .errorMessage(job.getErrorMessage())
+                .createdAt(job.getCreatedAt())
+                .startedAt(job.getStartedAt())
+                .finishedAt(job.getFinishedAt())
+                .build();
+    }
+
+    private ExperimentPipelineGenerationJobDetailDto toDetailDto(ExperimentPipelineGenerationJob job) {
+        return ExperimentPipelineGenerationJobDetailDto.builder()
+                .id(job.getId())
+                .experimentId(job.getExperiment().getId())
+                .section(job.getSection())
+                .status(job.getStatus() != null ? job.getStatus().name() : null)
+                .stage(job.getStage() != null ? job.getStage().name() : null)
+                .model(job.getModel())
+                .workerId(job.getWorkerId())
+                .customInstructions(job.getCustomInstructions())
+                .prompt(job.getPrompt())
+                .requestBodyJson(job.getRequestBodyJson())
+                .responseContent(job.getResponseContent())
+                .rawResponse(job.getRawResponse())
+                .errorMessage(job.getErrorMessage())
+                .inputTokens(job.getInputTokens())
+                .outputTokens(job.getOutputTokens())
+                .costUsd(job.getCostUsd())
+                .createdAt(job.getCreatedAt())
+                .startedAt(job.getStartedAt())
+                .finishedAt(job.getFinishedAt())
+                .build();
     }
 
     private ExperimentPipelineGenerationJobDto toDto(ExperimentPipelineGenerationJob job) {

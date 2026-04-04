@@ -9,6 +9,7 @@ export interface ExperimentPipelineGenerationJobSummary {
   stage: string;
   model?: string;
   errorMessage?: string;
+  costUsd?: number;
   createdAt?: string;
   startedAt?: string;
   finishedAt?: string;

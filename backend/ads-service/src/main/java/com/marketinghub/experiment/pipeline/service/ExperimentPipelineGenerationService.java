@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ai.generation.dto.AiWorkerGenerationRequest;
 import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
+import com.marketinghub.cost.CostAttributionService;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.dto.ExperimentDto;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
@@ -67,17 +68,20 @@ public class ExperimentPipelineGenerationService {
     private final ExperimentPipelineGenerationJobRepository jobRepository;
     private final ExperimentMapper experimentMapper;
     private final AiWorkerGenerationService generationService;
+    private final CostAttributionService costAttributionService;
     private final ObjectMapper objectMapper;
 
     public ExperimentPipelineGenerationService(ExperimentRepository experimentRepository,
                                                ExperimentPipelineGenerationJobRepository jobRepository,
                                                ExperimentMapper experimentMapper,
                                                AiWorkerGenerationService generationService,
+                                               CostAttributionService costAttributionService,
                                                ObjectMapper objectMapper) {
         this.experimentRepository = experimentRepository;
         this.jobRepository = jobRepository;
         this.experimentMapper = experimentMapper;
         this.generationService = generationService;
+        this.costAttributionService = costAttributionService;
         this.objectMapper = objectMapper;
     }
 
@@ -207,6 +211,10 @@ public class ExperimentPipelineGenerationService {
                 .outputTokens(request.outputTokens())
                 .costUsd(estimatedCost)
                 .build());
+
+        if (estimatedCost != null) {
+            costAttributionService.addUsdCostToExperimentHierarchy(experiment, estimatedCost);
+        }
 
         job.setStatus(ExperimentPipelineGenerationJobStatus.COMPLETED);
         job.setStage(ExperimentPipelineGenerationJobStage.COMPLETED);
@@ -635,6 +643,7 @@ public class ExperimentPipelineGenerationService {
                 .stage(job.getStage() != null ? job.getStage().name() : null)
                 .model(job.getModel())
                 .errorMessage(job.getErrorMessage())
+                .costUsd(job.getCostUsd())
                 .createdAt(job.getCreatedAt())
                 .startedAt(job.getStartedAt())
                 .finishedAt(job.getFinishedAt())

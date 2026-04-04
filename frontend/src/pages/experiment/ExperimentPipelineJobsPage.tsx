@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
+import { useExperiment } from "../../api/experiment/useExperiment";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import {
   type ExperimentPipelineGenerationJobSummary,
@@ -42,6 +43,24 @@ function formatDateTime(value?: string) {
   });
 }
 
+function formatUsd(value?: number | null) {
+  if (value === null || value === undefined) return "—";
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
+  }).format(value);
+}
+
+function formatBrl(value?: number | null) {
+  if (value === null || value === undefined) return "—";
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(value);
+}
+
 function formatJsonBlock(content?: string) {
   if (!content) return "Sem conteúdo registrado.";
   return content;
@@ -66,6 +85,7 @@ export default function ExperimentPipelineJobsPage() {
   });
 
   const detailQuery = useExperimentPipelineJobDetail(id, selectedJobId ?? undefined);
+  const experimentQuery = useExperiment(id ?? "");
 
   const historyData: ExperimentPipelineJobHistoryPage | undefined = jobsQuery.data;
   const jobs: ExperimentPipelineGenerationJobSummary[] = historyData?.content ?? [];
@@ -120,6 +140,9 @@ export default function ExperimentPipelineJobsPage() {
             <div className="text-muted small">
               Exibindo {jobs.length} de {totalElements} jobs ({selectedSectionLabel}).
             </div>
+            <div className="text-muted small">
+              Custo total do experimento: <strong>{formatBrl(experimentQuery.data?.cost)}</strong>
+            </div>
           </div>
 
           {jobsQuery.isLoading ? (
@@ -137,6 +160,7 @@ export default function ExperimentPipelineJobsPage() {
                     <th>Stage</th>
                     <th>Modelo</th>
                     <th>Fim</th>
+                    <th>Custo do job (USD)</th>
                     <th className="text-end">Ações</th>
                   </tr>
                 </thead>
@@ -158,6 +182,7 @@ export default function ExperimentPipelineJobsPage() {
                         <td>{job.stage ?? "—"}</td>
                         <td>{job.model ?? "—"}</td>
                         <td>{formatDateTime(job.finishedAt)}</td>
+                        <td>{formatUsd(job.costUsd)}</td>
                         <td className="text-end">
                           <button
                             type="button"
@@ -230,6 +255,9 @@ export default function ExperimentPipelineJobsPage() {
                   <strong>Input/Output tokens:</strong> {detailQuery.data.inputTokens ?? "—"} /
                   {" "}
                   {detailQuery.data.outputTokens ?? "—"}
+                </div>
+                <div className="small text-muted">
+                  <strong>Custo do job (USD):</strong> {formatUsd(detailQuery.data.costUsd)}
                 </div>
                 <div>
                   <h6>Prompt completo</h6>

@@ -666,6 +666,9 @@ export default function ExperimentDetailPage() {
           <Link to="facebook-api-logs" className="btn btn-outline-info me-2">
             Chamadas Meta
           </Link>
+          <Link to="pipeline-jobs" className="btn btn-outline-dark me-2">
+            Jobs do pipeline
+          </Link>
           <button
             type="button"
             className="btn btn-outline-danger me-2"
@@ -1058,6 +1061,12 @@ export default function ExperimentDetailPage() {
                 className="btn btn-outline-secondary btn-sm"
               >
                 Logs da Graph API
+              </Link>
+              <Link
+                to="pipeline-jobs"
+                className="btn btn-outline-dark btn-sm"
+              >
+                Jobs do pipeline
               </Link>
             </div>
           </div>

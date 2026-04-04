@@ -141,6 +141,12 @@ public class ExperimentPipelineGenerationService {
         return jobRepository.sumCostUsdByExperimentId(experimentId);
     }
 
+    private void ensureExperimentExists(Long experimentId) {
+        if (!experimentRepository.existsById(experimentId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Experimento não encontrado");
+        }
+    }
+
     @Transactional(readOnly = true)
     public ExperimentPipelineGenerationJobDetailDto getJobDetail(Long experimentId, UUID jobId) {
         ExperimentPipelineGenerationJob job = jobRepository.findById(jobId)

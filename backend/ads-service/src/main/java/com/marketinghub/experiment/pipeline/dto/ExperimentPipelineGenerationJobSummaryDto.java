@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.pipeline.dto;
 
 import com.marketinghub.experiment.pipeline.ExperimentPipelineSection;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.Builder;
@@ -14,6 +15,7 @@ public record ExperimentPipelineGenerationJobSummaryDto(
         String stage,
         String model,
         String errorMessage,
+        BigDecimal costUsd,
         Instant createdAt,
         Instant startedAt,
         Instant finishedAt) {

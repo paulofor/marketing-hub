@@ -7,6 +7,7 @@ import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationJobS
 import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationRequest;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobDto;
 import com.marketinghub.experiment.pipeline.service.ExperimentPipelineGenerationService;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -61,6 +62,11 @@ public class ExperimentPipelineController {
                 parsedSection,
                 page != null ? page : 0,
                 size != null ? size : 20);
+    }
+
+    @GetMapping("/jobs/total-cost-usd")
+    public BigDecimal getTotalCostUsd(@PathVariable Long id) {
+        return generationService.totalCostUsd(id);
     }
 
     @GetMapping("/jobs/{jobId}")

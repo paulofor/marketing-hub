@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import {
@@ -128,9 +128,12 @@ function formatCurrencyUsd(value?: number | null) {
 
 export default function ExperimentPipelineJobsPage() {
   const { id } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [page, setPage] = useState(0);
-  const [section, setSection] = useState("");
-  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [section, setSection] = useState(searchParams.get("section") ?? "");
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(
+    searchParams.get("jobId"),
+  );
 
   const jobsQuery = useExperimentPipelineJobHistory({
     experimentId: id,
@@ -159,6 +162,25 @@ export default function ExperimentPipelineJobsPage() {
       "Todas as seções",
     [section],
   );
+
+  useEffect(() => {
+    const sectionParam = searchParams.get("section") ?? "";
+    const jobIdParam = searchParams.get("jobId");
+    setSection(sectionParam);
+    setSelectedJobId(jobIdParam);
+    setPage(0);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const nextParams = new URLSearchParams();
+    if (section) {
+      nextParams.set("section", section);
+    }
+    if (selectedJobId) {
+      nextParams.set("jobId", selectedJobId);
+    }
+    setSearchParams(nextParams, { replace: true });
+  }, [section, selectedJobId, setSearchParams]);
 
   return (
     <div>

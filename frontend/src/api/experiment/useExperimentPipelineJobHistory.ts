@@ -9,6 +9,7 @@ export interface ExperimentPipelineGenerationJobSummary {
   stage: string;
   model?: string;
   errorMessage?: string;
+  costUsd?: number;
   createdAt?: string;
   startedAt?: string;
   finishedAt?: string;
@@ -98,6 +99,19 @@ export function useExperimentPipelineJobDetail(
     queryFn: async () => {
       const { data } = await axios.get<ExperimentPipelineGenerationJobDetail>(
         `/api/experiments/${experimentId}/pipeline/jobs/${jobId}`,
+      );
+      return data;
+    },
+  });
+}
+
+export function useExperimentPipelineTotalCostUsd(experimentId?: string) {
+  return useQuery({
+    queryKey: ["experiment-pipeline-job-total-cost-usd", experimentId],
+    enabled: Boolean(experimentId),
+    queryFn: async () => {
+      const { data } = await axios.get<number>(
+        `/api/experiments/${experimentId}/pipeline/jobs/total-cost-usd`,
       );
       return data;
     },

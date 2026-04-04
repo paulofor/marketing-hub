@@ -136,6 +136,11 @@ public class ExperimentPipelineGenerationService {
         return jobs.map(this::toSummaryDto);
     }
 
+    public BigDecimal totalCostUsd(Long experimentId) {
+        ensureExperimentExists(experimentId);
+        return jobRepository.sumCostUsdByExperimentId(experimentId);
+    }
+
     @Transactional(readOnly = true)
     public ExperimentPipelineGenerationJobDetailDto getJobDetail(Long experimentId, UUID jobId) {
         ExperimentPipelineGenerationJob job = jobRepository.findById(jobId)
@@ -635,6 +640,7 @@ public class ExperimentPipelineGenerationService {
                 .stage(job.getStage() != null ? job.getStage().name() : null)
                 .model(job.getModel())
                 .errorMessage(job.getErrorMessage())
+                .costUsd(job.getCostUsd())
                 .createdAt(job.getCreatedAt())
                 .startedAt(job.getStartedAt())
                 .finishedAt(job.getFinishedAt())

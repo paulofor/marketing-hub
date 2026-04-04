@@ -97,7 +97,7 @@ describe("CriativosTab", () => {
               id: 77,
               headline: "H1",
               primaryText: "P1",
-              imagePrompt: "Prompt detalhado da imagem",
+              imagePrompt: "Prompt detalhado da imagem. Briefing visual:\n\n Contraste alto.",
               status: "DRAFT",
             },
           ],
@@ -120,7 +120,13 @@ describe("CriativosTab", () => {
       name: "Ver prompt da imagem",
     });
     toggleButton.click();
-    expect(await screen.findByText("Prompt detalhado da imagem")).toBeInTheDocument();
+    expect(await screen.findByText(/Prompt detalhado da imagem/i)).toBeInTheDocument();
+    expect(await screen.findByText("Origem dos trechos do prompt")).toBeInTheDocument();
+    expect(await screen.findByText("Briefing visual")).toBeInTheDocument();
+    expect(await screen.findByText("Hierarquia sugerida")).toBeInTheDocument();
+    expect(await screen.findByText("Margens de segurança")).toBeInTheDocument();
+    expect(screen.getByText("Com conteúdo")).toBeInTheDocument();
+    expect(screen.getAllByText("Sem conteúdo").length).toBeGreaterThan(0);
   });
 
   it("shows previous image prompt below ad card when toggled", async () => {

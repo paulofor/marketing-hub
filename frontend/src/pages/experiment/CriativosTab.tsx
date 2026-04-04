@@ -189,11 +189,49 @@ const PIPELINE_PROMPT_SOURCE_FIELDS: PromptSourceField[] = [
 
 const resolvePromptSourceStatus = (prompt?: string | null) => {
   const normalizedPrompt = prompt?.trim() ?? "";
+  const allMarkers = PIPELINE_PROMPT_SOURCE_FIELDS.flatMap((field) => field.markers);
+
+  const extractContentValue = (markers: string[]) => {
+    if (!normalizedPrompt) {
+      return null;
+    }
+
+    for (const marker of markers) {
+      const startIndex = normalizedPrompt.indexOf(marker);
+      if (startIndex === -1) {
+        continue;
+      }
+
+      const contentStart = startIndex + marker.length;
+      const nextMarkerIndex = allMarkers
+        .map((nextMarker) => normalizedPrompt.indexOf(nextMarker, contentStart))
+        .filter((index) => index !== -1)
+        .sort((a, b) => a - b)[0];
+
+      const rawValue = normalizedPrompt.slice(
+        contentStart,
+        nextMarkerIndex === undefined ? normalizedPrompt.length : nextMarkerIndex,
+      );
+
+      const cleanedValue = rawValue
+        .replace(/^[\s:\-•]+/, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (cleanedValue.length > 0) {
+        return cleanedValue;
+      }
+    }
+
+    return null;
+  };
+
   return PIPELINE_PROMPT_SOURCE_FIELDS.map((field) => ({
     ...field,
     hasContent:
       normalizedPrompt.length > 0 &&
       field.markers.some((marker) => normalizedPrompt.includes(marker)),
+    contentValue: extractContentValue(field.markers),
   }));
 };
 
@@ -898,6 +936,11 @@ export default function CriativosTab({ experimentId }: Props) {
                           >
                             {field.hasContent ? "Com conteúdo" : "Sem conteúdo"}
                           </span>
+                          {field.hasContent && (
+                            <small className="creative-card-prompt-source-value">
+                              {field.contentValue ?? "Trecho identificado no prompt (sem valor explícito)."}
+                            </small>
+                          )}
                         </li>
                       ))}
                     </ul>

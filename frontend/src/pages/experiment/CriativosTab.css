@@ -181,6 +181,17 @@
   word-break: break-word;
 }
 
+.creative-card-prompt-source-value {
+  font-size: 0.75rem;
+  color: var(--bs-body-color, #212529);
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.375rem;
+  background: var(--bs-tertiary-bg, #f8f9fa);
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+  white-space: normal;
+  word-break: break-word;
+}
+
 .creative-card-meta {
   display: flex;
   flex-direction: column;

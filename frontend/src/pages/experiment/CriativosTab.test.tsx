@@ -126,6 +126,7 @@ describe("CriativosTab", () => {
     expect(await screen.findByText("Hierarquia sugerida")).toBeInTheDocument();
     expect(await screen.findByText("Margens de segurança")).toBeInTheDocument();
     expect(screen.getByText("Com conteúdo")).toBeInTheDocument();
+    expect(screen.getByText("Contraste alto.")).toBeInTheDocument();
     expect(screen.getAllByText("Sem conteúdo").length).toBeGreaterThan(0);
   });
 

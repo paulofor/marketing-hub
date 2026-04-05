@@ -33,6 +33,7 @@ import {
   parseLandingLayoutPayload,
 } from "./landingLayoutParser";
 import { useExperimentPipelineJobs } from "../../api/experiment/useExperimentPipelineJobs";
+import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
 
 type ContentGenerationSectionKey =
   | "campaign-angle"
@@ -497,30 +498,135 @@ interface PromptLineItem {
   content: string;
 }
 
-function buildPromptLineItems(promptUsed: string): PromptLineItem[] {
-  return promptUsed.split("\n").map((line) => {
-    const trimmed = line.trim();
-    if (!trimmed) return { kind: "text", content: "" };
+type PromptSegment = {
+  type: "text" | "json";
+  content: string;
+};
 
-    const inlineJsonMatch = trimmed.match(/^([^:]+):\s*([\[{].*)$/);
-    if (inlineJsonMatch) {
-      const [, title, jsonRaw] = inlineJsonMatch;
-      const formattedJson = tryFormatJsonBlock(jsonRaw);
-      if (formattedJson) {
-        return {
-          kind: "title",
-          content: `${title}:__JSON__${formattedJson}`,
-        };
+function findJsonBoundary(content: string, startIndex: number) {
+  const openingChar = content[startIndex];
+  const closingChar = openingChar === "{" ? "}" : "]";
+  let depth = 0;
+  let inString = false;
+  let isEscaped = false;
+
+  for (let index = startIndex; index < content.length; index += 1) {
+    const currentChar = content[index];
+
+    if (inString) {
+      if (isEscaped) {
+        isEscaped = false;
+        continue;
       }
+      if (currentChar === "\\") {
+        isEscaped = true;
+        continue;
+      }
+      if (currentChar === '"') {
+        inString = false;
+      }
+      continue;
     }
 
-    const formattedJson = tryFormatJsonBlock(trimmed);
-    if (formattedJson) {
-      return { kind: "json", content: formattedJson };
+    if (currentChar === '"') {
+      inString = true;
+      continue;
     }
 
-    const isTitle = trimmed.endsWith(":") && !trimmed.startsWith("- ");
-    return { kind: isTitle ? "title" : "text", content: line };
+    if (currentChar === openingChar) {
+      depth += 1;
+      continue;
+    }
+
+    if (currentChar === closingChar) {
+      depth -= 1;
+      if (depth === 0) return index;
+    }
+  }
+
+  return -1;
+}
+
+function splitTextWithInlineJson(content: string): PromptSegment[] {
+  const segments: PromptSegment[] = [];
+  let index = 0;
+  let textStart = 0;
+
+  while (index < content.length) {
+    const char = content[index];
+    const isPotentialJsonStart = char === "{" || char === "[";
+
+    if (!isPotentialJsonStart) {
+      index += 1;
+      continue;
+    }
+
+    const boundary = findJsonBoundary(content, index);
+    if (boundary === -1) {
+      index += 1;
+      continue;
+    }
+
+    const candidate = content.slice(index, boundary + 1).trim();
+    try {
+      JSON.parse(candidate);
+    } catch {
+      index += 1;
+      continue;
+    }
+
+    const textBeforeJson = content.slice(textStart, index);
+    if (textBeforeJson.trim()) {
+      segments.push({ type: "text", content: textBeforeJson.trim() });
+    }
+
+    segments.push({
+      type: "json",
+      content: tryFormatJsonBlock(candidate) ?? candidate,
+    });
+
+    index = boundary + 1;
+    textStart = index;
+  }
+
+  const remainingText = content.slice(textStart);
+  if (remainingText.trim()) {
+    segments.push({ type: "text", content: remainingText.trim() });
+  }
+
+  return segments;
+}
+
+function buildPromptLineItems(promptUsed: string): PromptLineItem[] {
+  const normalized = promptUsed.replace(/\\n/g, "\n").replace(/\/n/g, "\n");
+
+  return splitTextWithInlineJson(normalized).flatMap<PromptLineItem>((segment) => {
+    if (segment.type === "json") {
+      return [{ kind: "json", content: segment.content }];
+    }
+
+    return segment.content.split("\n").map<PromptLineItem>((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return { kind: "text", content: "" };
+
+      const inlineJsonMatch = trimmed.match(/^([^:]+):\s*([\[{].*)$/);
+      if (inlineJsonMatch) {
+        const [, title, jsonRaw] = inlineJsonMatch;
+        const formattedJson = tryFormatJsonBlock(jsonRaw);
+        if (formattedJson) {
+          return {
+            kind: "title",
+            content: `${title}:__JSON__${formattedJson}`,
+          };
+        }
+      }
+
+      const isTitle = trimmed.endsWith(":") && !trimmed.startsWith("- ");
+      return {
+        kind: isTitle ? "title" : "text",
+        content: line,
+      };
+    });
   });
 }
 
@@ -1761,13 +1867,12 @@ function PromptUsedDetails({
           {lineItems.map((item, index) => {
             if (item.kind === "json") {
               return (
-                <pre
-                  key={`prompt-line-${index}`}
-                  className="small mb-1"
-                  style={{ whiteSpace: "pre-wrap" }}
-                >
-                  {item.content}
-                </pre>
+                <div key={`prompt-line-${index}`} className="small mb-1">
+                  <CollapsibleJsonViewer
+                    content={item.content}
+                    emptyMessage="Sem bloco JSON nesta seção."
+                  />
+                </div>
               );
             }
 
@@ -1776,12 +1881,12 @@ function PromptUsedDetails({
               return (
                 <div key={`prompt-line-${index}`} className="mb-1">
                   <strong>{title}:</strong>
-                  <pre
-                    className="small mb-0 mt-1"
-                    style={{ whiteSpace: "pre-wrap" }}
-                  >
-                    {json}
-                  </pre>
+                  <div className="small mt-1">
+                    <CollapsibleJsonViewer
+                      content={json}
+                      emptyMessage="Sem bloco JSON nesta seção."
+                    />
+                  </div>
                 </div>
               );
             }

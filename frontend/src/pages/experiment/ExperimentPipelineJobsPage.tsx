@@ -50,6 +50,108 @@ type PromptSegment = {
   content: string;
 };
 
+function findJsonBoundary(content: string, startIndex: number) {
+  const openingChar = content[startIndex];
+  const closingChar = openingChar === "{" ? "}" : "]";
+  let depth = 0;
+  let inString = false;
+  let isEscaped = false;
+
+  for (let index = startIndex; index < content.length; index += 1) {
+    const currentChar = content[index];
+
+    if (inString) {
+      if (isEscaped) {
+        isEscaped = false;
+        continue;
+      }
+      if (currentChar === "\\") {
+        isEscaped = true;
+        continue;
+      }
+      if (currentChar === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (currentChar === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (currentChar === openingChar) {
+      depth += 1;
+      continue;
+    }
+
+    if (currentChar === closingChar) {
+      depth -= 1;
+      if (depth === 0) {
+        return index;
+      }
+    }
+  }
+
+  return -1;
+}
+
+function splitTextWithInlineJson(content: string): PromptSegment[] {
+  const segments: PromptSegment[] = [];
+  let index = 0;
+  let textStart = 0;
+
+  while (index < content.length) {
+    const char = content[index];
+    const isPotentialJsonStart = char === "{" || char === "[";
+
+    if (!isPotentialJsonStart) {
+      index += 1;
+      continue;
+    }
+
+    const boundary = findJsonBoundary(content, index);
+    if (boundary === -1) {
+      index += 1;
+      continue;
+    }
+
+    const candidate = content.slice(index, boundary + 1).trim();
+    let isValidJson = false;
+    try {
+      JSON.parse(candidate);
+      isValidJson = true;
+    } catch {
+      isValidJson = false;
+    }
+
+    if (!isValidJson) {
+      index += 1;
+      continue;
+    }
+
+    const textBeforeJson = content.slice(textStart, index);
+    if (textBeforeJson.trim()) {
+      segments.push({ type: "text", content: textBeforeJson.trim() });
+    }
+
+    segments.push({
+      type: "json",
+      content: formatJsonSnippet(candidate),
+    });
+
+    index = boundary + 1;
+    textStart = index;
+  }
+
+  const remainingText = content.slice(textStart);
+  if (remainingText.trim()) {
+    segments.push({ type: "text", content: remainingText.trim() });
+  }
+
+  return segments;
+}
+
 function normalizePromptContent(content?: string) {
   if (!content) return "";
   return content.replace(/\\n/g, "\n").replace(/\/n/g, "\n");
@@ -96,16 +198,26 @@ function buildPromptSegments(content?: string): PromptSegment[] {
     segments.push({ type: "text", content: normalized.slice(lastIndex) });
   }
 
-  if (segments.length === 0) {
-    return [
-      {
-        type: "json",
-        content: formatJsonSnippet(normalized),
-      },
-    ];
+  if (segments.length > 0) {
+    return segments.flatMap((segment) => {
+      if (segment.type === "json") {
+        return segment;
+      }
+      return splitTextWithInlineJson(segment.content);
+    });
   }
 
-  return segments;
+  const inlineSegments = splitTextWithInlineJson(normalized);
+  if (inlineSegments.length > 0) {
+    return inlineSegments;
+  }
+
+  return [
+    {
+      type: "json",
+      content: formatJsonSnippet(normalized),
+    },
+  ];
 }
 
 function formatCurrencyBrl(value?: number | null) {
@@ -374,12 +486,13 @@ export default function ExperimentPipelineJobsPage() {
                             </pre>
                           </div>
                         ) : (
-                          <pre
+                          <div
                             key={`prompt-text-${index}`}
-                            className="bg-body-tertiary p-3 rounded small mb-0 text-wrap"
+                            className="bg-body-tertiary p-3 rounded small mb-0"
+                            style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
                           >
                             {segment.content}
-                          </pre>
+                          </div>
                         ),
                     )}
                   </div>

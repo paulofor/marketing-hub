@@ -4,11 +4,34 @@ import * as Tabs from "@radix-ui/react-tabs";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import type { Hypothesis } from "../../api/hypothesis/useHypothesisBoard";
-import { CampaignAngleSummary, hasCampaignAngleContent, parseCampaignAnglePayload } from "./campaignAngleParser";
-import { AdCopyContent, hasAdCopyContent, parseAdCopyPayload } from "./adCopyParser";
-import { ImagePromptContent, hasImagePromptContent, parseImagePromptPayload } from "./imageBriefingParser";
-import { LandingCopyBlock, LandingCopyContent, LandingCopyFormField, LandingCopyVersion, hasLandingCopyContent, parseLandingCopyPayload } from "./landingCopyParser";
-import { LandingLayoutContent, hasLandingLayoutContent, parseLandingLayoutPayload } from "./landingLayoutParser";
+import {
+  CampaignAngleSummary,
+  hasCampaignAngleContent,
+  parseCampaignAnglePayload,
+} from "./campaignAngleParser";
+import {
+  AdCopyContent,
+  hasAdCopyContent,
+  parseAdCopyPayload,
+} from "./adCopyParser";
+import {
+  ImagePromptContent,
+  hasImagePromptContent,
+  parseImagePromptPayload,
+} from "./imageBriefingParser";
+import {
+  LandingCopyBlock,
+  LandingCopyContent,
+  LandingCopyFormField,
+  LandingCopyVersion,
+  hasLandingCopyContent,
+  parseLandingCopyPayload,
+} from "./landingCopyParser";
+import {
+  LandingLayoutContent,
+  hasLandingLayoutContent,
+  parseLandingLayoutPayload,
+} from "./landingLayoutParser";
 import { useExperimentPipelineJobs } from "../../api/experiment/useExperimentPipelineJobs";
 
 type ContentGenerationSectionKey =
@@ -92,20 +115,24 @@ interface SectionInvalidationState {
   sourceTimestamp: number;
 }
 
-const SECTION_REQUEST_INITIAL_STATE: Record<ContentGenerationSectionKey, SectionRequestState> =
-  CONTENT_GENERATION_SECTIONS.reduce(
-    (acc, section) => ({ ...acc, [section.key]: { status: "IDLE" } }),
-    {} as Record<ContentGenerationSectionKey, SectionRequestState>,
-  );
+const SECTION_REQUEST_INITIAL_STATE: Record<
+  ContentGenerationSectionKey,
+  SectionRequestState
+> = CONTENT_GENERATION_SECTIONS.reduce(
+  (acc, section) => ({ ...acc, [section.key]: { status: "IDLE" } }),
+  {} as Record<ContentGenerationSectionKey, SectionRequestState>,
+);
 
-const SECTION_DEFAULT_INSTRUCTIONS: Record<ContentGenerationSectionKey, string> =
-  CONTENT_GENERATION_SECTIONS.reduce(
-    (acc, section) => ({
-      ...acc,
-      [section.key]: `Quantidade sugerida: ${section.defaultQuantity}`,
-    }),
-    {} as Record<ContentGenerationSectionKey, string>,
-  );
+const SECTION_DEFAULT_INSTRUCTIONS: Record<
+  ContentGenerationSectionKey,
+  string
+> = CONTENT_GENERATION_SECTIONS.reduce(
+  (acc, section) => ({
+    ...acc,
+    [section.key]: `Quantidade sugerida: ${section.defaultQuantity}`,
+  }),
+  {} as Record<ContentGenerationSectionKey, string>,
+);
 
 const JOB_SECTION_ALIASES: Record<string, ContentGenerationSectionKey> = {
   CAMPAIGN_ANGLE: "campaign-angle",
@@ -138,8 +165,6 @@ const STAGE_LABELS: Record<string, string> = {
   COMPLETED: "Finalizada",
   FAILED: "Falhou",
 };
-
-
 
 const COMMON_PIPELINE_PROMPT = `Você cria ativos de campanha para o Marketing Hub.
 
@@ -457,6 +482,48 @@ function parseTimestamp(value?: string) {
   return Number.isNaN(parsed) ? undefined : parsed;
 }
 
+function tryFormatJsonBlock(raw: string): string | undefined {
+  const trimmed = raw.trim();
+  if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) return undefined;
+  try {
+    return JSON.stringify(JSON.parse(trimmed), null, 2);
+  } catch {
+    return undefined;
+  }
+}
+
+interface PromptLineItem {
+  kind: "text" | "title" | "json";
+  content: string;
+}
+
+function buildPromptLineItems(promptUsed: string): PromptLineItem[] {
+  return promptUsed.split("\n").map((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return { kind: "text", content: "" };
+
+    const inlineJsonMatch = trimmed.match(/^([^:]+):\s*([\[{].*)$/);
+    if (inlineJsonMatch) {
+      const [, title, jsonRaw] = inlineJsonMatch;
+      const formattedJson = tryFormatJsonBlock(jsonRaw);
+      if (formattedJson) {
+        return {
+          kind: "title",
+          content: `${title}:__JSON__${formattedJson}`,
+        };
+      }
+    }
+
+    const formattedJson = tryFormatJsonBlock(trimmed);
+    if (formattedJson) {
+      return { kind: "json", content: formattedJson };
+    }
+
+    const isTitle = trimmed.endsWith(":") && !trimmed.startsWith("- ");
+    return { kind: isTitle ? "title" : "text", content: line };
+  });
+}
+
 function getSectionMetadata(domain?: string) {
   if (!domain?.startsWith("experiment.pipeline.")) {
     return undefined;
@@ -487,7 +554,9 @@ function getDefaultInstructions(sectionKey: ContentGenerationSectionKey) {
   return SECTION_DEFAULT_INSTRUCTIONS[sectionKey];
 }
 
-function normalizeJobSection(value?: string): ContentGenerationSectionKey | undefined {
+function normalizeJobSection(
+  value?: string,
+): ContentGenerationSectionKey | undefined {
   if (!value) return undefined;
   const direct = JOB_SECTION_ALIASES[value];
   if (direct) return direct;
@@ -516,7 +585,11 @@ function getWorkerStatus(request: SectionRequestState) {
     };
   }
 
-  if (request.status === "PROCESSING" || request.startedAt || request.stageLabel) {
+  if (
+    request.status === "PROCESSING" ||
+    request.startedAt ||
+    request.stageLabel
+  ) {
     return {
       label: "Worker IA em processamento",
       badge: "warning",
@@ -545,8 +618,6 @@ function getErrorMessage(error: unknown) {
   return "Falha ao processar solicitação.";
 }
 
-
-
 export default function ExperimentContentGenerationTab({
   experimentId,
   experimentName,
@@ -566,19 +637,23 @@ export default function ExperimentContentGenerationTab({
   >([]);
   const [isLoadingAdCopy, setIsLoadingAdCopy] = useState(false);
   const [sectionGenerations, setSectionGenerations] = useState<
-    Record<"image-prompt" | "landing-copy" | "landing-layout", SimpleGenerationRow[]>
+    Record<
+      "image-prompt" | "landing-copy" | "landing-layout",
+      SimpleGenerationRow[]
+    >
   >({
     "image-prompt": [],
     "landing-copy": [],
     "landing-layout": [],
   });
-  const [isLoadingSectionGenerations, setIsLoadingSectionGenerations] = useState<
-    Record<"image-prompt" | "landing-copy" | "landing-layout", boolean>
-  >({
-    "image-prompt": false,
-    "landing-copy": false,
-    "landing-layout": false,
-  });
+  const [isLoadingSectionGenerations, setIsLoadingSectionGenerations] =
+    useState<
+      Record<"image-prompt" | "landing-copy" | "landing-layout", boolean>
+    >({
+      "image-prompt": false,
+      "landing-copy": false,
+      "landing-layout": false,
+    });
   const [isRequestingBySection, setIsRequestingBySection] = useState<
     Record<ContentGenerationSectionKey, boolean>
   >(() =>
@@ -605,50 +680,52 @@ export default function ExperimentContentGenerationTab({
     () =>
       (jobsQuery.data ?? []).reduce<
         Record<ContentGenerationSectionKey, SectionRequestState>
-      >((acc, job) => {
-        const sectionKey = normalizeJobSection(job.section);
-        if (!sectionKey) {
+      >(
+        (acc, job) => {
+          const sectionKey = normalizeJobSection(job.section);
+          if (!sectionKey) {
+            return acc;
+          }
+          if (acc[sectionKey]?.requestedAt) {
+            return acc;
+          }
+          const status: RequestUiStatus =
+            job.status === "COMPLETED"
+              ? "COMPLETED"
+              : job.status === "FAILED"
+                ? "FAILED"
+                : "PROCESSING";
+          const stageLabel =
+            STAGE_LABELS[job.stage] ??
+            (job.stage ? job.stage.split("_").join(" ") : undefined);
+          acc[sectionKey] = {
+            status,
+            requestedAt: job.createdAt,
+            startedAt: job.startedAt,
+            completedAt: job.finishedAt,
+            customInstructions: job.customInstructions,
+            errorMessage: job.errorMessage,
+            stageLabel,
+          };
           return acc;
-        }
-        if (acc[sectionKey]?.requestedAt) {
-          return acc;
-        }
-        const status: RequestUiStatus =
-          job.status === "COMPLETED"
-            ? "COMPLETED"
-            : job.status === "FAILED"
-              ? "FAILED"
-              : "PROCESSING";
-        const stageLabel =
-          STAGE_LABELS[job.stage] ??
-          (job.stage ? job.stage.split("_").join(" ") : undefined);
-        acc[sectionKey] = {
-          status,
-          requestedAt: job.createdAt,
-          startedAt: job.startedAt,
-          completedAt: job.finishedAt,
-          customInstructions: job.customInstructions,
-          errorMessage: job.errorMessage,
-          stageLabel,
-        };
-        return acc;
-      }, { ...SECTION_REQUEST_INITIAL_STATE }),
+        },
+        { ...SECTION_REQUEST_INITIAL_STATE },
+      ),
     [jobsQuery.data],
   );
 
   const latestJobIdBySection = useMemo(
     () =>
-      (jobsQuery.data ?? []).reduce<Partial<Record<ContentGenerationSectionKey, string>>>(
-        (acc, job) => {
-          const sectionKey = normalizeJobSection(job.section);
-          if (!sectionKey || acc[sectionKey]) {
-            return acc;
-          }
-          acc[sectionKey] = job.id;
+      (jobsQuery.data ?? []).reduce<
+        Partial<Record<ContentGenerationSectionKey, string>>
+      >((acc, job) => {
+        const sectionKey = normalizeJobSection(job.section);
+        if (!sectionKey || acc[sectionKey]) {
           return acc;
-        },
-        {},
-      ),
+        }
+        acc[sectionKey] = job.id;
+        return acc;
+      }, {}),
     [jobsQuery.data],
   );
 
@@ -656,15 +733,18 @@ export default function ExperimentContentGenerationTab({
     () =>
       CONTENT_GENERATION_SECTIONS.reduce<
         Record<ContentGenerationSectionKey, SectionRequestState>
-      >((acc, section) => {
-        const backendState = requestsFromBackend[section.key];
-        const localState = requestsBySection[section.key];
-        acc[section.key] =
-          localState.status !== "IDLE" && backendState.status === "IDLE"
-            ? localState
-            : backendState;
-        return acc;
-      }, { ...SECTION_REQUEST_INITIAL_STATE }),
+      >(
+        (acc, section) => {
+          const backendState = requestsFromBackend[section.key];
+          const localState = requestsBySection[section.key];
+          acc[section.key] =
+            localState.status !== "IDLE" && backendState.status === "IDLE"
+              ? localState
+              : backendState;
+          return acc;
+        },
+        { ...SECTION_REQUEST_INITIAL_STATE },
+      ),
     [requestsFromBackend, requestsBySection],
   );
 
@@ -772,16 +852,15 @@ export default function ExperimentContentGenerationTab({
     const loadCampaignAngles = async () => {
       try {
         setIsLoadingCampaignAngles(true);
-        const { data: response } = await axios.get<PageResponse<AiGenerationRecord>>(
-          "/api/ai/generations",
-          {
-            params: {
-              referenceId: experimentId,
-              domain: "experiment.pipeline.campaign-angle",
-              size: 20,
-            },
+        const { data: response } = await axios.get<
+          PageResponse<AiGenerationRecord>
+        >("/api/ai/generations", {
+          params: {
+            referenceId: experimentId,
+            domain: "experiment.pipeline.campaign-angle",
+            size: 20,
           },
-        );
+        });
 
         const orderedByLatest = [...(response.content ?? [])]
           .map((generation) => ({
@@ -789,9 +868,9 @@ export default function ExperimentContentGenerationTab({
             fields: parseCampaignAnglePayload(generation.rawResponse),
           }))
           .sort(
-          (a, b) =>
-            (parseTimestamp(b.createdAt) ?? Number.MIN_SAFE_INTEGER) -
-            (parseTimestamp(a.createdAt) ?? Number.MIN_SAFE_INTEGER),
+            (a, b) =>
+              (parseTimestamp(b.createdAt) ?? Number.MIN_SAFE_INTEGER) -
+              (parseTimestamp(a.createdAt) ?? Number.MIN_SAFE_INTEGER),
           );
         setCampaignAngleGenerations(orderedByLatest);
       } catch {
@@ -805,11 +884,9 @@ export default function ExperimentContentGenerationTab({
   }, [experimentId]);
 
   useEffect(() => {
-    const sectionsToLoad: Array<"image-prompt" | "landing-copy" | "landing-layout"> = [
-      "image-prompt",
-      "landing-copy",
-      "landing-layout",
-    ];
+    const sectionsToLoad: Array<
+      "image-prompt" | "landing-copy" | "landing-layout"
+    > = ["image-prompt", "landing-copy", "landing-layout"];
 
     const loadSection = async (
       sectionKey: "image-prompt" | "landing-copy" | "landing-layout",
@@ -819,16 +896,15 @@ export default function ExperimentContentGenerationTab({
           ...previous,
           [sectionKey]: true,
         }));
-        const { data: response } = await axios.get<PageResponse<AiGenerationRecord>>(
-          "/api/ai/generations",
-          {
-            params: {
-              referenceId: experimentId,
-              domain: `experiment.pipeline.${SECTION_API_PATHS[sectionKey]}`,
-              size: 20,
-            },
+        const { data: response } = await axios.get<
+          PageResponse<AiGenerationRecord>
+        >("/api/ai/generations", {
+          params: {
+            referenceId: experimentId,
+            domain: `experiment.pipeline.${SECTION_API_PATHS[sectionKey]}`,
+            size: 20,
           },
-        );
+        });
 
         const orderedByLatest = [...(response.content ?? [])].sort(
           (a, b) =>
@@ -852,23 +928,24 @@ export default function ExperimentContentGenerationTab({
       }
     };
 
-    void Promise.all(sectionsToLoad.map((sectionKey) => loadSection(sectionKey)));
+    void Promise.all(
+      sectionsToLoad.map((sectionKey) => loadSection(sectionKey)),
+    );
   }, [experimentId]);
 
   useEffect(() => {
     const loadAdCopy = async () => {
       try {
         setIsLoadingAdCopy(true);
-        const { data: response } = await axios.get<PageResponse<AiGenerationRecord>>(
-          "/api/ai/generations",
-          {
-            params: {
-              referenceId: experimentId,
-              domain: "experiment.pipeline.ad-copy",
-              size: 20,
-            },
+        const { data: response } = await axios.get<
+          PageResponse<AiGenerationRecord>
+        >("/api/ai/generations", {
+          params: {
+            referenceId: experimentId,
+            domain: "experiment.pipeline.ad-copy",
+            size: 20,
           },
-        );
+        });
 
         const orderedByLatest = [...(response.content ?? [])]
           .map((generation) => ({
@@ -958,7 +1035,9 @@ export default function ExperimentContentGenerationTab({
         },
       });
 
-      const sortedPipelineGenerations: PipelineReportRecord[] = (response.content ?? [])
+      const sortedPipelineGenerations: PipelineReportRecord[] = (
+        response.content ?? []
+      )
         .map((item) => ({
           ...item,
           metadata: getSectionMetadata(item.domain),
@@ -978,12 +1057,14 @@ export default function ExperimentContentGenerationTab({
       );
       const latestCampaignAngle =
         campaignAngleGenerations[campaignAngleGenerations.length - 1];
-      const pipelineGenerations = sortedPipelineGenerations.filter((generation) => {
-        if (generation.metadata.sectionKey !== "campaign-angle") {
-          return true;
-        }
-        return generation.id === latestCampaignAngle?.id;
-      });
+      const pipelineGenerations = sortedPipelineGenerations.filter(
+        (generation) => {
+          if (generation.metadata.sectionKey !== "campaign-angle") {
+            return true;
+          }
+          return generation.id === latestCampaignAngle?.id;
+        },
+      );
 
       const reportLines = [
         "# Relatório consolidado do pipeline de conteúdo do experimento",
@@ -1065,7 +1146,9 @@ export default function ExperimentContentGenerationTab({
               <div key={card.key} className="col-12 col-md-6 col-xl">
                 <div className="border rounded p-3 h-100 bg-light-subtle d-flex flex-column gap-2">
                   <div>
-                    <h6 className="mb-1">Resumo da {card.title.toLowerCase()}</h6>
+                    <h6 className="mb-1">
+                      Resumo da {card.title.toLowerCase()}
+                    </h6>
                     <p className="mb-0 text-muted small">{card.description}</p>
                   </div>
                   <p className="mb-0 small lh-base">{card.content}</p>
@@ -1116,7 +1199,9 @@ export default function ExperimentContentGenerationTab({
                           isLoading={isLoadingCampaignAngles}
                           savedAngle={persistedCampaignAngle}
                           fallbackAngle={campaignAngleGenerations[0]?.fields}
-                          fallbackTimestamp={campaignAngleGenerations[0]?.createdAt}
+                          fallbackTimestamp={
+                            campaignAngleGenerations[0]?.createdAt
+                          }
                           rawContent={campaignAngle}
                         />
                         <CampaignAngleHistoryList
@@ -1191,7 +1276,8 @@ export default function ExperimentContentGenerationTab({
                   </button>
                 </div>
                 <small className="text-muted">
-                  Caso deixe em branco enviaremos: {getDefaultInstructions(section.key)}.
+                  Caso deixe em branco enviaremos:{" "}
+                  {getDefaultInstructions(section.key)}.
                 </small>
               </div>
             </section>
@@ -1203,12 +1289,17 @@ export default function ExperimentContentGenerationTab({
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
             <div>
-              <h5 className="card-title mb-1">Acompanhamento das solicitações IA</h5>
+              <h5 className="card-title mb-1">
+                Acompanhamento das solicitações IA
+              </h5>
               <p className="text-muted mb-0">
-                Monitoramos o status de cada etapa enviada ao Worker IA e avisamos quando uma dependência precisar ser refeita.
+                Monitoramos o status de cada etapa enviada ao Worker IA e
+                avisamos quando uma dependência precisar ser refeita.
               </p>
             </div>
-            <span className="badge text-bg-light">Atualiza automaticamente</span>
+            <span className="badge text-bg-light">
+              Atualiza automaticamente
+            </span>
           </div>
           {jobsQuery.isLoading ? (
             <p className="small text-muted mt-3 mb-0">
@@ -1246,12 +1337,12 @@ export default function ExperimentContentGenerationTab({
                     </span>
                   </div>
                   <small className="text-muted">
-                    Solicitado em: {formatDateTime(request.requestedAt)} · Concluído em:{' '}
-                    {formatDateTime(request.completedAt)}
+                    Solicitado em: {formatDateTime(request.requestedAt)} ·
+                    Concluído em: {formatDateTime(request.completedAt)}
                   </small>
                   <div className="small d-flex flex-column gap-1">
                     <div>
-                      <strong>1. Solicitação do usuário:</strong>{' '}
+                      <strong>1. Solicitação do usuário:</strong>{" "}
                       {request.requestedAt
                         ? `enviada em ${formatDateTime(request.requestedAt)}.`
                         : "ainda não enviada."}
@@ -1268,7 +1359,7 @@ export default function ExperimentContentGenerationTab({
                       </span>
                     </div>
                     <div>
-                      <strong>3. Conclusão:</strong>{' '}
+                      <strong>3. Conclusão:</strong>{" "}
                       {request.completedAt
                         ? `finalizada em ${formatDateTime(request.completedAt)}.`
                         : request.status === "FAILED"
@@ -1288,8 +1379,9 @@ export default function ExperimentContentGenerationTab({
                   ) : null}
                   {invalidation ? (
                     <small className="text-warning-emphasis">
-                      Dependência atualizada em {invalidation.sourceSection} ({' '}
-                      {formatDateTime(invalidation.sourceAt)}). Gere esta etapa novamente.
+                      Dependência atualizada em {invalidation.sourceSection} ({" "}
+                      {formatDateTime(invalidation.sourceAt)}). Gere esta etapa
+                      novamente.
                     </small>
                   ) : null}
                   {request.errorMessage ? (
@@ -1337,11 +1429,14 @@ function GenericGenerationSummaryPanel({
     section.key,
     parsedContent,
     promptUsed,
+    latestGeneration?.createdAt,
   );
   const fallbackRaw = latestGeneration?.rawResponse?.trim();
   const hasData = hasStructuredData || Boolean(fallbackRaw);
   const badgeVariant = hasData ? "info" : "secondary";
-  const badgeLabel = hasData ? "Última geração do Worker IA" : "Aguardando geração";
+  const badgeLabel = hasData
+    ? "Última geração do Worker IA"
+    : "Aguardando geração";
 
   return (
     <div className="card border-0 shadow-sm">
@@ -1357,7 +1452,9 @@ function GenericGenerationSummaryPanel({
             </p>
           </div>
           <div className="text-end">
-            <span className={`badge text-bg-${badgeVariant}`}>{badgeLabel}</span>
+            <span className={`badge text-bg-${badgeVariant}`}>
+              {badgeLabel}
+            </span>
             {hasData && latestGeneration?.createdAt ? (
               <p className="text-muted small mb-0 mt-1">
                 Última atualização: {formatDateTime(latestGeneration.createdAt)}
@@ -1376,7 +1473,11 @@ function GenericGenerationSummaryPanel({
 
         {isLoading ? (
           <div className="d-flex align-items-center gap-2 text-muted mt-3">
-            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+            <span
+              className="spinner-border spinner-border-sm"
+              role="status"
+              aria-hidden="true"
+            />
             Carregando conteúdo estruturado...
           </div>
         ) : hasStructuredData && preview ? (
@@ -1389,7 +1490,8 @@ function GenericGenerationSummaryPanel({
           </div>
         ) : (
           <div className="alert alert-info mt-3 mb-0" role="status">
-            Nenhum conteúdo disponível ainda. Solicite o Worker IA para preencher esta seção.
+            Nenhum conteúdo disponível ainda. Solicite o Worker IA para
+            preencher esta seção.
           </div>
         )}
 
@@ -1398,12 +1500,18 @@ function GenericGenerationSummaryPanel({
             Ver referência do prompt interno desta seção
           </summary>
           <div className="alert alert-secondary mt-2 mb-0" role="status">
-            <div className="fw-semibold">Prompt interno aplicado automaticamente.</div>
+            <div className="fw-semibold">
+              Prompt interno aplicado automaticamente.
+            </div>
             <div className="small mt-1">
-              Esta seção usa instruções codificadas na aplicação e contexto da hipótese.
+              Esta seção usa instruções codificadas na aplicação e contexto da
+              hipótese.
             </div>
             {defaultPrompt ? (
-              <pre className="small mb-0 mt-2" style={{ whiteSpace: "pre-wrap" }}>
+              <pre
+                className="small mb-0 mt-2"
+                style={{ whiteSpace: "pre-wrap" }}
+              >
                 {defaultPrompt}
               </pre>
             ) : (
@@ -1441,14 +1549,20 @@ function GenericGenerationHistoryList({
           </div>
           {generations.length > 0 ? (
             <span className="badge text-bg-light">
-              {generations.length === 1 ? "1 geração" : `${generations.length} gerações`}
+              {generations.length === 1
+                ? "1 geração"
+                : `${generations.length} gerações`}
             </span>
           ) : null}
         </div>
 
         {isLoading && generations.length === 0 ? (
           <div className="d-flex align-items-center gap-2 text-muted mt-3">
-            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+            <span
+              className="spinner-border spinner-border-sm"
+              role="status"
+              aria-hidden="true"
+            />
             Carregando histórico...
           </div>
         ) : generations.length === 0 ? (
@@ -1458,26 +1572,43 @@ function GenericGenerationHistoryList({
         ) : (
           <div className="mt-3 d-flex flex-column gap-2">
             {generations.map((generation) => {
-              const parsed = parseSectionContent(section.key, generation.rawResponse);
+              const parsed = parseSectionContent(
+                section.key,
+                generation.rawResponse,
+              );
               const summary = describeGenerationSummary(section.key, parsed);
               return (
-                <div key={generation.id} className="border rounded p-3 bg-body-tertiary">
+                <div
+                  key={generation.id}
+                  className="border rounded p-3 bg-body-tertiary"
+                >
                   <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
-                    <p className="fw-semibold mb-1">{formatDateTime(generation.createdAt)}</p>
+                    <p className="fw-semibold mb-1">
+                      {formatDateTime(generation.createdAt)}
+                    </p>
                     {generation.model ? (
-                      <span className="badge text-bg-light">{generation.model}</span>
+                      <span className="badge text-bg-light">
+                        {generation.model}
+                      </span>
                     ) : null}
                   </div>
                   <p className="small text-muted mb-1 mt-2">{summary}</p>
                   {generation.rawResponse ? (
                     <details className="mt-1">
-                      <summary className="small text-muted">Ver JSON bruto</summary>
-                      <pre className="small mb-0 mt-2" style={{ whiteSpace: "pre-wrap" }}>
+                      <summary className="small text-muted">
+                        Ver JSON bruto
+                      </summary>
+                      <pre
+                        className="small mb-0 mt-2"
+                        style={{ whiteSpace: "pre-wrap" }}
+                      >
                         {generation.rawResponse.trim()}
                       </pre>
                     </details>
                   ) : (
-                    <p className="small text-muted mb-0">Sem resposta registrada.</p>
+                    <p className="small text-muted mb-0">
+                      Sem resposta registrada.
+                    </p>
                   )}
                 </div>
               );
@@ -1488,7 +1619,6 @@ function GenericGenerationHistoryList({
     </div>
   );
 }
-
 
 function parseSectionContent(
   sectionKey: ContentGenerationSectionKey,
@@ -1511,6 +1641,7 @@ function resolveStructuredPreview(
   sectionKey: ContentGenerationSectionKey,
   parsed?: ImagePromptContent | LandingCopyContent | LandingLayoutContent,
   promptUsed?: string,
+  executedAt?: string,
 ): { hasStructuredData: boolean; preview?: ReactNode } {
   switch (sectionKey) {
     case "image-prompt": {
@@ -1518,7 +1649,13 @@ function resolveStructuredPreview(
       if (hasImagePromptContent(content)) {
         return {
           hasStructuredData: true,
-          preview: <ImagePromptPreview content={content} promptUsed={promptUsed} />,
+          preview: (
+            <ImagePromptPreview
+              content={content}
+              promptUsed={promptUsed}
+              executedAt={executedAt}
+            />
+          ),
         };
       }
       return { hasStructuredData: false };
@@ -1526,7 +1663,10 @@ function resolveStructuredPreview(
     case "landing-copy": {
       const content = parsed as LandingCopyContent | undefined;
       if (hasLandingCopyContent(content)) {
-        return { hasStructuredData: true, preview: <LandingCopyPreview content={content} /> };
+        return {
+          hasStructuredData: true,
+          preview: <LandingCopyPreview content={content} />,
+        };
       }
       return { hasStructuredData: false };
     }
@@ -1535,7 +1675,13 @@ function resolveStructuredPreview(
       if (hasLandingLayoutContent(content)) {
         return {
           hasStructuredData: true,
-          preview: <LandingLayoutPreview content={content} promptUsed={promptUsed} />,
+          preview: (
+            <LandingLayoutPreview
+              content={content}
+              promptUsed={promptUsed}
+              executedAt={executedAt}
+            />
+          ),
         };
       }
       return { hasStructuredData: false };
@@ -1554,14 +1700,18 @@ function describeGenerationSummary(
       const typed = content as ImagePromptContent | undefined;
       if (hasImagePromptContent(typed)) {
         const total = typed.briefings.length;
-        return total === 1 ? "1 briefing visual estruturado." : `${total} briefings visuais estruturados.`;
+        return total === 1
+          ? "1 briefing visual estruturado."
+          : `${total} briefings visuais estruturados.`;
       }
       return "Sem briefings estruturados nesta geração.";
     }
     case "landing-copy": {
       const typed = content as LandingCopyContent | undefined;
       if (hasLandingCopyContent(typed)) {
-        const blocks = [typed.landingCurta, typed.landingCompleta].filter(Boolean).length;
+        const blocks = [typed.landingCurta, typed.landingCompleta].filter(
+          Boolean,
+        ).length;
         return blocks === 2
           ? "Landing curta e completa atualizadas."
           : "Uma versão de landing estruturada nesta geração.";
@@ -1586,11 +1736,14 @@ function describeGenerationSummary(
 function PromptUsedDetails({
   promptUsed,
   summaryLabel,
+  executedAt,
 }: {
   promptUsed?: string;
   summaryLabel?: string;
+  executedAt?: string;
 }) {
   if (!promptUsed) return null;
+  const lineItems = buildPromptLineItems(promptUsed);
 
   return (
     <details className="mt-2">
@@ -1601,9 +1754,57 @@ function PromptUsedDetails({
         <p className="text-muted small mb-1">
           Texto do prompt enviado ao Worker IA nesta geração:
         </p>
-        <pre className="small mb-0" style={{ whiteSpace: "pre-wrap" }}>
-          {promptUsed}
-        </pre>
+        <p className="small mb-2">
+          <strong>Execução do job:</strong> {formatDateTime(executedAt)}
+        </p>
+        <div className="small d-flex flex-column gap-1">
+          {lineItems.map((item, index) => {
+            if (item.kind === "json") {
+              return (
+                <pre
+                  key={`prompt-line-${index}`}
+                  className="small mb-1"
+                  style={{ whiteSpace: "pre-wrap" }}
+                >
+                  {item.content}
+                </pre>
+              );
+            }
+
+            if (item.kind === "title" && item.content.includes(":__JSON__")) {
+              const [title, json] = item.content.split(":__JSON__");
+              return (
+                <div key={`prompt-line-${index}`} className="mb-1">
+                  <strong>{title}:</strong>
+                  <pre
+                    className="small mb-0 mt-1"
+                    style={{ whiteSpace: "pre-wrap" }}
+                  >
+                    {json}
+                  </pre>
+                </div>
+              );
+            }
+
+            if (item.kind === "title") {
+              return (
+                <p key={`prompt-line-${index}`} className="mb-0">
+                  <strong>{item.content}</strong>
+                </p>
+              );
+            }
+
+            return (
+              <p
+                key={`prompt-line-${index}`}
+                className="mb-0"
+                style={{ whiteSpace: "pre-wrap" }}
+              >
+                {item.content}
+              </p>
+            );
+          })}
+        </div>
       </div>
     </details>
   );
@@ -1612,9 +1813,11 @@ function PromptUsedDetails({
 function ImagePromptPreview({
   content,
   promptUsed,
+  executedAt,
 }: {
   content: ImagePromptContent;
   promptUsed?: string;
+  executedAt?: string;
 }) {
   return (
     <div className="row g-3">
@@ -1622,13 +1825,18 @@ function ImagePromptPreview({
         <div className="col-12 col-xl-4" key={`briefing-${index}`}>
           <div className="border rounded p-3 bg-light-subtle h-100">
             <div className="d-flex justify-content-between align-items-center mb-2">
-              <span className="badge text-bg-primary">Briefing {index + 1}</span>
+              <span className="badge text-bg-primary">
+                Briefing {index + 1}
+              </span>
               {briefing.assetType ? (
-                <span className="badge text-bg-light text-uppercase">{briefing.assetType}</span>
+                <span className="badge text-bg-light text-uppercase">
+                  {briefing.assetType}
+                </span>
               ) : null}
             </div>
             <p className="small mb-1">
-              <strong>Mensagem espelhada:</strong> {briefing.mustMatchAdVariant ?? "—"}
+              <strong>Mensagem espelhada:</strong>{" "}
+              {briefing.mustMatchAdVariant ?? "—"}
             </p>
             <p className="small mb-1">
               <strong>Ângulo visual:</strong> {briefing.visualAngle ?? "—"}
@@ -1640,11 +1848,14 @@ function ImagePromptPreview({
               <strong>Hierarquia:</strong> {briefing.hierarchy ?? "—"}
             </p>
             <p className="small mb-1">
-              <strong>Formato por placement:</strong> {briefing.formatByPlacement ?? "—"}
+              <strong>Formato por placement:</strong>{" "}
+              {briefing.formatByPlacement ?? "—"}
             </p>
             <p className="small mb-1">
               <strong>Limite de palavras:</strong>{" "}
-              {briefing.imageTextMaxWords ? `${briefing.imageTextMaxWords} palavras` : "—"}
+              {briefing.imageTextMaxWords
+                ? `${briefing.imageTextMaxWords} palavras`
+                : "—"}
             </p>
             {briefing.supportingKeywords?.length ? (
               <div className="small">
@@ -1656,7 +1867,11 @@ function ImagePromptPreview({
                 </ul>
               </div>
             ) : null}
-            <PromptUsedDetails summaryLabel="Ver prompt usado no briefing" promptUsed={promptUsed} />
+            <PromptUsedDetails
+              summaryLabel="Ver prompt usado no briefing"
+              promptUsed={promptUsed}
+              executedAt={executedAt}
+            />
           </div>
         </div>
       ))}
@@ -1669,15 +1884,22 @@ function LandingCopyPreview({ content }: { content: LandingCopyContent }) {
     <div className="mt-3">
       {content.messageMatchSource ? (
         <div className="alert alert-warning py-2 mb-3">
-          <strong>Message match:</strong> Espelhar headline "{content.messageMatchSource}".
+          <strong>Message match:</strong> Espelhar headline "
+          {content.messageMatchSource}".
         </div>
       ) : null}
       <div className="row g-3">
         <div className="col-12 col-xl-6">
-          <LandingCopyVersionCard title="Landing curta" version={content.landingCurta} />
+          <LandingCopyVersionCard
+            title="Landing curta"
+            version={content.landingCurta}
+          />
         </div>
         <div className="col-12 col-xl-6">
-          <LandingCopyVersionCard title="Landing completa" version={content.landingCompleta} />
+          <LandingCopyVersionCard
+            title="Landing completa"
+            version={content.landingCompleta}
+          />
         </div>
       </div>
     </div>
@@ -1704,7 +1926,8 @@ function LandingCopyVersionCard({
       <div>
         <p className="text-uppercase small text-muted mb-1">{title}</p>
         <p className="small mb-0">
-          <strong>Promessa:</strong> {version.heroPromise ?? version.offerPromise ?? "—"}
+          <strong>Promessa:</strong>{" "}
+          {version.heroPromise ?? version.offerPromise ?? "—"}
         </p>
       </div>
       {version.heroTitle ? (
@@ -1728,18 +1951,30 @@ function LandingCopyVersionCard({
       {version.formMicrocopy ? (
         <div className="small">
           <p className="fw-semibold mb-1">Microcopy do formulário</p>
-          {version.formMicrocopy.headline && <p className="mb-0">{version.formMicrocopy.headline}</p>}
+          {version.formMicrocopy.headline && (
+            <p className="mb-0">{version.formMicrocopy.headline}</p>
+          )}
           {version.formMicrocopy.support && (
             <p className="text-muted mb-0">{version.formMicrocopy.support}</p>
           )}
           {version.formMicrocopy.instructions && (
-            <p className="text-muted mb-0">{version.formMicrocopy.instructions}</p>
+            <p className="text-muted mb-0">
+              {version.formMicrocopy.instructions}
+            </p>
           )}
         </div>
       ) : null}
-      {version.formFields ? <LandingCopyFormFields fields={version.formFields} /> : null}
-      <LandingCopyBlockView label="Benefícios" block={version.benefitsSection} />
-      <LandingCopyBlockView label="Como funciona" block={version.howItWorksSection} />
+      {version.formFields ? (
+        <LandingCopyFormFields fields={version.formFields} />
+      ) : null}
+      <LandingCopyBlockView
+        label="Benefícios"
+        block={version.benefitsSection}
+      />
+      <LandingCopyBlockView
+        label="Como funciona"
+        block={version.howItWorksSection}
+      />
       <LandingCopyBlockView label="Prova" block={version.proofSection} />
       <LandingCopyBlockView label="Oferta" block={version.offerSection} />
       <LandingCopyBlockView
@@ -1797,7 +2032,9 @@ function LandingCopyBlockView({
     <div className="small">
       <p className="fw-semibold mb-1">{label}</p>
       {block.title ? <p className="mb-0">{block.title}</p> : null}
-      {block.description ? <p className="text-muted mb-0">{block.description}</p> : null}
+      {block.description ? (
+        <p className="text-muted mb-0">{block.description}</p>
+      ) : null}
       {block.bullets?.length ? (
         <ul className="mb-0 ps-3">
           {block.bullets.map((item, index) => (
@@ -1812,9 +2049,11 @@ function LandingCopyBlockView({
 function LandingLayoutPreview({
   content,
   promptUsed,
+  executedAt,
 }: {
   content: LandingLayoutContent;
   promptUsed?: string;
+  executedAt?: string;
 }) {
   return (
     <div className="mt-3 d-flex flex-column gap-3">
@@ -1831,22 +2070,33 @@ function LandingLayoutPreview({
         <div className="col-12 col-lg-4">
           <div className="border rounded p-3 bg-body-tertiary h-100">
             <p className="text-uppercase small text-muted mb-1">CTA</p>
-            <p className="small mb-1">{content.ctaPlacementNotes ?? "Sem observações"}</p>
+            <p className="small mb-1">
+              {content.ctaPlacementNotes ?? "Sem observações"}
+            </p>
             <p className="text-uppercase small text-muted mb-1">Formulário</p>
-            <p className="small mb-0">{content.formPlacementNotes ?? "Sem instruções"}</p>
+            <p className="small mb-0">
+              {content.formPlacementNotes ?? "Sem instruções"}
+            </p>
           </div>
         </div>
         <div className="col-12 col-lg-4">
           <div className="border rounded p-3 bg-body-tertiary h-100">
-            <p className="text-uppercase small text-muted mb-1">Prioridade mobile</p>
-            <p className="small mb-0">{content.mobilePriorityNotes ?? "Sem notas"}</p>
+            <p className="text-uppercase small text-muted mb-1">
+              Prioridade mobile
+            </p>
+            <p className="small mb-0">
+              {content.mobilePriorityNotes ?? "Sem notas"}
+            </p>
           </div>
         </div>
       </div>
       {content.sectionOrder?.length ? (
         <div className="d-flex flex-column gap-2">
           {content.sectionOrder.map((section, index) => (
-            <div key={`${section.sectionName ?? index}`} className="border rounded p-3 bg-body-tertiary">
+            <div
+              key={`${section.sectionName ?? index}`}
+              className="border rounded p-3 bg-body-tertiary"
+            >
               <div className="d-flex justify-content-between align-items-center gap-2">
                 <strong>{section.sectionName || `Bloco ${index + 1}`}</strong>
                 {section.mobilePriorityScore ? (
@@ -1871,12 +2121,15 @@ function LandingLayoutPreview({
               <PromptUsedDetails
                 summaryLabel="Ver prompt usado neste bloco"
                 promptUsed={promptUsed}
+                executedAt={executedAt}
               />
             </div>
           ))}
         </div>
       ) : (
-        <p className="text-muted small mb-0">Nenhum bloco estrutural informado.</p>
+        <p className="text-muted small mb-0">
+          Nenhum bloco estrutural informado.
+        </p>
       )}
     </div>
   );
@@ -1925,7 +2178,9 @@ function AdCopySummaryPanel({
             </p>
           </div>
           <div className="text-end">
-            <span className={`badge text-bg-${badgeVariant}`}>{badgeLabel}</span>
+            <span className={`badge text-bg-${badgeVariant}`}>
+              {badgeLabel}
+            </span>
             {!savedCopy && fallbackTimestamp ? (
               <p className="text-muted small mb-0 mt-1">
                 Última atualização: {formatDateTime(fallbackTimestamp)}
@@ -1946,19 +2201,43 @@ function AdCopySummaryPanel({
         ) : hasData ? (
           <div className="row g-3 mt-2">
             {resolvedCopy?.primaryTextVariants?.map((variant, index) => (
-              <div className="col-12 col-xl-4" key={`${variant.label}-${index}`}>
+              <div
+                className="col-12 col-xl-4"
+                key={`${variant.label}-${index}`}
+              >
                 <div className="border rounded p-3 h-100 bg-light-subtle">
                   <p className="text-uppercase small fw-semibold text-muted mb-2">
                     {variant.label || `V${index + 1}`}
                   </p>
-                  <p className="small mb-1"><strong>Hook:</strong> {variant.openingHookType || "—"}</p>
-                  <p className="small mb-1"><strong>Placement:</strong> {variant.placementHint || "—"}</p>
-                  <p className="small mb-1"><strong>Texto curto:</strong> {variant.lengthVariants?.curta || variant.primaryText || "—"}</p>
-                  <p className="small mb-1"><strong>Texto médio:</strong> {variant.lengthVariants?.media || "—"}</p>
-                  <p className="small mb-2"><strong>Texto longo:</strong> {variant.lengthVariants?.longa || "—"}</p>
-                  <p className="small mb-2"><strong>Headline:</strong> {variant.headline || "—"}</p>
-                  <p className="small mb-2"><strong>Descrição:</strong> {variant.description || "—"}</p>
-                  <p className="small mb-1"><strong>CTA:</strong> {variant.ctaText || "—"}</p>
+                  <p className="small mb-1">
+                    <strong>Hook:</strong> {variant.openingHookType || "—"}
+                  </p>
+                  <p className="small mb-1">
+                    <strong>Placement:</strong> {variant.placementHint || "—"}
+                  </p>
+                  <p className="small mb-1">
+                    <strong>Texto curto:</strong>{" "}
+                    {variant.lengthVariants?.curta ||
+                      variant.primaryText ||
+                      "—"}
+                  </p>
+                  <p className="small mb-1">
+                    <strong>Texto médio:</strong>{" "}
+                    {variant.lengthVariants?.media || "—"}
+                  </p>
+                  <p className="small mb-2">
+                    <strong>Texto longo:</strong>{" "}
+                    {variant.lengthVariants?.longa || "—"}
+                  </p>
+                  <p className="small mb-2">
+                    <strong>Headline:</strong> {variant.headline || "—"}
+                  </p>
+                  <p className="small mb-2">
+                    <strong>Descrição:</strong> {variant.description || "—"}
+                  </p>
+                  <p className="small mb-1">
+                    <strong>CTA:</strong> {variant.ctaText || "—"}
+                  </p>
                   <p className="small mb-0">
                     <strong>Compliance:</strong>{" "}
                     {variant.compliance?.semGarantiaAbsoluta &&
@@ -1973,14 +2252,19 @@ function AdCopySummaryPanel({
           </div>
         ) : (
           <div className="alert alert-info mt-3" role="status">
-            Nenhum texto do anúncio disponível ainda. Solicite o Worker IA para preencher os blocos.
+            Nenhum texto do anúncio disponível ainda. Solicite o Worker IA para
+            preencher os blocos.
           </div>
         )}
 
         {rawText && !hasData ? (
           <details className="mt-3">
-            <summary className="small text-muted">Ver conteúdo bruto salvo</summary>
-            <pre className="bg-body-secondary rounded p-3 small mb-0">{rawText}</pre>
+            <summary className="small text-muted">
+              Ver conteúdo bruto salvo
+            </summary>
+            <pre className="bg-body-secondary rounded p-3 small mb-0">
+              {rawText}
+            </pre>
           </details>
         ) : null}
       </div>
@@ -2006,14 +2290,20 @@ function AdCopyHistoryList({ generations, isLoading }: AdCopyHistoryListProps) {
           </div>
           {generations.length > 0 ? (
             <span className="badge text-bg-light">
-              {generations.length === 1 ? "1 geração" : `${generations.length} gerações`}
+              {generations.length === 1
+                ? "1 geração"
+                : `${generations.length} gerações`}
             </span>
           ) : null}
         </div>
 
         {isLoading && generations.length === 0 ? (
           <div className="d-flex align-items-center gap-2 text-muted mt-3">
-            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+            <span
+              className="spinner-border spinner-border-sm"
+              role="status"
+              aria-hidden="true"
+            />
             Carregando histórico...
           </div>
         ) : generations.length === 0 ? (
@@ -2023,35 +2313,73 @@ function AdCopyHistoryList({ generations, isLoading }: AdCopyHistoryListProps) {
         ) : (
           <div className="mt-3 d-flex flex-column gap-2">
             {generations.map((generation) => (
-              <div key={generation.id} className="border rounded p-3 bg-body-tertiary">
+              <div
+                key={generation.id}
+                className="border rounded p-3 bg-body-tertiary"
+              >
                 <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
-                  <p className="fw-semibold mb-1">{formatDateTime(generation.createdAt)}</p>
+                  <p className="fw-semibold mb-1">
+                    {formatDateTime(generation.createdAt)}
+                  </p>
                   {generation.model ? (
-                    <span className="badge text-bg-light">{generation.model}</span>
+                    <span className="badge text-bg-light">
+                      {generation.model}
+                    </span>
                   ) : null}
                 </div>
                 <div className="mt-2 d-flex flex-column gap-2">
-                  {generation.fields?.primaryTextVariants?.map((variant, index) => (
-                    <div className="border rounded p-2 bg-white" key={`${generation.id}-${variant.label}-${index}`}>
-                      <p className="small fw-semibold mb-1">{variant.label || `V${index + 1}`}</p>
-                      <p className="small mb-1"><strong>Hook:</strong> {variant.openingHookType || "—"}</p>
-                      <p className="small mb-1"><strong>Placement:</strong> {variant.placementHint || "—"}</p>
-                      <p className="small mb-1"><strong>Texto curto:</strong> {variant.lengthVariants?.curta || variant.primaryText || "—"}</p>
-                      <p className="small mb-1"><strong>Texto médio:</strong> {variant.lengthVariants?.media || "—"}</p>
-                      <p className="small mb-1"><strong>Texto longo:</strong> {variant.lengthVariants?.longa || "—"}</p>
-                      <p className="small mb-1"><strong>Headline:</strong> {variant.headline || "—"}</p>
-                      <p className="small mb-1"><strong>Descrição:</strong> {variant.description || "—"}</p>
-                      <p className="small mb-1"><strong>CTA:</strong> {variant.ctaText || "—"}</p>
-                      <p className="small mb-0">
-                        <strong>Compliance:</strong>{" "}
-                        {variant.compliance?.semGarantiaAbsoluta &&
-                        variant.compliance?.semPromessaIndividual &&
-                        variant.compliance?.semLinguagemDeConsultoria
-                          ? "OK"
-                          : "Revisar"}
-                      </p>
-                    </div>
-                  ))}
+                  {generation.fields?.primaryTextVariants?.map(
+                    (variant, index) => (
+                      <div
+                        className="border rounded p-2 bg-white"
+                        key={`${generation.id}-${variant.label}-${index}`}
+                      >
+                        <p className="small fw-semibold mb-1">
+                          {variant.label || `V${index + 1}`}
+                        </p>
+                        <p className="small mb-1">
+                          <strong>Hook:</strong>{" "}
+                          {variant.openingHookType || "—"}
+                        </p>
+                        <p className="small mb-1">
+                          <strong>Placement:</strong>{" "}
+                          {variant.placementHint || "—"}
+                        </p>
+                        <p className="small mb-1">
+                          <strong>Texto curto:</strong>{" "}
+                          {variant.lengthVariants?.curta ||
+                            variant.primaryText ||
+                            "—"}
+                        </p>
+                        <p className="small mb-1">
+                          <strong>Texto médio:</strong>{" "}
+                          {variant.lengthVariants?.media || "—"}
+                        </p>
+                        <p className="small mb-1">
+                          <strong>Texto longo:</strong>{" "}
+                          {variant.lengthVariants?.longa || "—"}
+                        </p>
+                        <p className="small mb-1">
+                          <strong>Headline:</strong> {variant.headline || "—"}
+                        </p>
+                        <p className="small mb-1">
+                          <strong>Descrição:</strong>{" "}
+                          {variant.description || "—"}
+                        </p>
+                        <p className="small mb-1">
+                          <strong>CTA:</strong> {variant.ctaText || "—"}
+                        </p>
+                        <p className="small mb-0">
+                          <strong>Compliance:</strong>{" "}
+                          {variant.compliance?.semGarantiaAbsoluta &&
+                          variant.compliance?.semPromessaIndividual &&
+                          variant.compliance?.semLinguagemDeConsultoria
+                            ? "OK"
+                            : "Revisar"}
+                        </p>
+                      </div>
+                    ),
+                  )}
                 </div>
               </div>
             ))}
@@ -2061,7 +2389,6 @@ function AdCopyHistoryList({ generations, isLoading }: AdCopyHistoryListProps) {
     </div>
   );
 }
-
 
 interface CampaignAngleSummaryPanelProps {
   isLoading: boolean;
@@ -2102,11 +2429,14 @@ function CampaignAngleSummaryPanel({
             </p>
             <h6 className="mb-1">Ângulo sintetizado</h6>
             <p className="text-muted small mb-0">
-              Estrutura a promessa, dor, mecanismo e prova enviados pelo Worker IA.
+              Estrutura a promessa, dor, mecanismo e prova enviados pelo Worker
+              IA.
             </p>
           </div>
           <div className="text-end">
-            <span className={`badge text-bg-${badgeVariant}`}>{badgeLabel}</span>
+            <span className={`badge text-bg-${badgeVariant}`}>
+              {badgeLabel}
+            </span>
             {!savedAngle && fallbackTimestamp ? (
               <p className="text-muted small mb-0 mt-1">
                 Última atualização: {formatDateTime(fallbackTimestamp)}
@@ -2129,7 +2459,10 @@ function CampaignAngleSummaryPanel({
             <div className="row g-3 mt-3">
               {[
                 { label: "Dor principal", value: resolvedAngle?.primaryPain },
-                { label: "Resultado / Promessa", value: resolvedAngle?.primaryPromise },
+                {
+                  label: "Resultado / Promessa",
+                  value: resolvedAngle?.primaryPromise,
+                },
                 { label: "Mecanismo", value: resolvedAngle?.mechanismSummary },
                 { label: "Prova", value: resolvedAngle?.proofSummary },
               ].map((block) => (
@@ -2140,7 +2473,9 @@ function CampaignAngleSummaryPanel({
                     </p>
                     <p className="mb-0">
                       {block.value ?? (
-                        <span className="text-muted">Ainda não preenchido.</span>
+                        <span className="text-muted">
+                          Ainda não preenchido.
+                        </span>
                       )}
                     </p>
                   </div>
@@ -2151,10 +2486,19 @@ function CampaignAngleSummaryPanel({
             <div className="row g-3 mt-1">
               {[
                 { label: "CTA recomendado", value: resolvedAngle?.cta },
-                { label: "Promessa single-minded", value: resolvedAngle?.singleMindedPromise },
+                {
+                  label: "Promessa single-minded",
+                  value: resolvedAngle?.singleMindedPromise,
+                },
                 { label: "CTA principal", value: resolvedAngle?.primaryCTA },
-                { label: "Linha de match landing", value: resolvedAngle?.landingMatchLine },
-                { label: "Estágio de funil", value: resolvedAngle?.funnelStage },
+                {
+                  label: "Linha de match landing",
+                  value: resolvedAngle?.landingMatchLine,
+                },
+                {
+                  label: "Estágio de funil",
+                  value: resolvedAngle?.funnelStage,
+                },
                 { label: "Tom sugerido", value: resolvedAngle?.tone },
               ].map((block) => (
                 <div className="col-12 col-md-6 col-xl-4" key={block.label}>
@@ -2174,14 +2518,19 @@ function CampaignAngleSummaryPanel({
           </>
         ) : (
           <div className="alert alert-info mt-3" role="status">
-            Nenhum ângulo disponível ainda. Solicite o Worker IA para preencher os blocos.
+            Nenhum ângulo disponível ainda. Solicite o Worker IA para preencher
+            os blocos.
           </div>
         )}
 
         {rawText && !hasData ? (
           <details className="mt-3">
-            <summary className="small text-muted">Ver conteúdo bruto salvo</summary>
-            <pre className="bg-body-secondary rounded p-3 small mb-0">{rawText}</pre>
+            <summary className="small text-muted">
+              Ver conteúdo bruto salvo
+            </summary>
+            <pre className="bg-body-secondary rounded p-3 small mb-0">
+              {rawText}
+            </pre>
           </details>
         ) : null}
       </div>
@@ -2194,7 +2543,10 @@ interface CampaignAngleHistoryListProps {
   isLoading: boolean;
 }
 
-function CampaignAngleHistoryList({ generations, isLoading }: CampaignAngleHistoryListProps) {
+function CampaignAngleHistoryList({
+  generations,
+  isLoading,
+}: CampaignAngleHistoryListProps) {
   return (
     <div className="card border-0 shadow-sm mt-3">
       <div className="card-body">
@@ -2230,11 +2582,15 @@ function CampaignAngleHistoryList({ generations, isLoading }: CampaignAngleHisto
         ) : (
           <div className="mt-3 d-flex flex-column gap-2">
             {generations.map((generation) => (
-              <div key={generation.id} className="border rounded p-3 bg-body-tertiary">
+              <div
+                key={generation.id}
+                className="border rounded p-3 bg-body-tertiary"
+              >
                 <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
                   <div>
                     <p className="fw-semibold mb-1">
-                      {generation.fields?.primaryPromise ?? "Promessa não estruturada"}
+                      {generation.fields?.primaryPromise ??
+                        "Promessa não estruturada"}
                     </p>
                     <p className="text-muted small mb-0">
                       {generation.fields?.primaryPain
@@ -2247,7 +2603,9 @@ function CampaignAngleHistoryList({ generations, isLoading }: CampaignAngleHisto
                       {formatDateTime(generation.createdAt)}
                     </span>
                     {generation.model ? (
-                      <p className="text-muted small mb-0 mt-1">{generation.model}</p>
+                      <p className="text-muted small mb-0 mt-1">
+                        {generation.model}
+                      </p>
                     ) : null}
                   </div>
                 </div>
@@ -2270,7 +2628,8 @@ function CampaignAngleHistoryList({ generations, isLoading }: CampaignAngleHisto
                 </div>
                 {generation.fields?.mechanismSummary ? (
                   <p className="small mb-1 mt-2">
-                    <strong>Mecanismo:</strong> {generation.fields.mechanismSummary}
+                    <strong>Mecanismo:</strong>{" "}
+                    {generation.fields.mechanismSummary}
                   </p>
                 ) : null}
                 {generation.fields?.proofSummary ? (
@@ -2286,12 +2645,14 @@ function CampaignAngleHistoryList({ generations, isLoading }: CampaignAngleHisto
                 ) : null}
                 {generation.fields?.primaryCTA ? (
                   <p className="small mb-0 text-muted">
-                    <strong>CTA principal:</strong> {generation.fields.primaryCTA}
+                    <strong>CTA principal:</strong>{" "}
+                    {generation.fields.primaryCTA}
                   </p>
                 ) : null}
                 {generation.fields?.landingMatchLine ? (
                   <p className="small mb-0 text-muted">
-                    <strong>Match landing:</strong> {generation.fields.landingMatchLine}
+                    <strong>Match landing:</strong>{" "}
+                    {generation.fields.landingMatchLine}
                   </p>
                 ) : null}
               </div>

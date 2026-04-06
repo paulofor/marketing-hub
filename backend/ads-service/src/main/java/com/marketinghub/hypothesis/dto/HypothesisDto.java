@@ -22,6 +22,7 @@ public class HypothesisDto {
     private String uniqueMechanism;
     private String entrega;
     private String successRule;
+    private String imageFilterTitle;
     private String prompt;
     private String model;
     private HypothesisFrameworkDto framework;

@@ -15,6 +15,7 @@ export interface CreateHypothesis {
   uniqueMechanism?: string;
   entrega?: string;
   successRule?: string;
+  imageFilterTitle?: string;
   prompt?: string;
   model?: string;
   offerType?: string;
@@ -32,10 +33,10 @@ export function useCreateHypothesis() {
   return useMutation({
     mutationFn: async (input: CreateHypothesis) => {
       const { marketNicheId, ...body } = input;
-      const { data } = await axios.post<Hypothesis>(
-        `/api/hypotheses`,
-        { ...body, marketNicheId },
-      );
+      const { data } = await axios.post<Hypothesis>(`/api/hypotheses`, {
+        ...body,
+        marketNicheId,
+      });
       return data;
     },
     onSuccess: (_, variables) => {

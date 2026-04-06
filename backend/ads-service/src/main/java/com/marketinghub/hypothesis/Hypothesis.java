@@ -106,6 +106,11 @@ public class Hypothesis {
     @Builder.Default
     private Set<PromptAttributeDescription> promptAttributeDescriptions = new HashSet<>();
 
+
+    /** Título curto usado para filtrar variações de imagens desta hipótese. */
+    @Column(length = 255)
+    private String imageFilterTitle;
+
     /** Regra de sucesso que define se a hipótese será validada. */
     @Lob
     private String successRule;

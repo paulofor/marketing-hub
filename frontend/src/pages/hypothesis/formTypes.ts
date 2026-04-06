@@ -66,6 +66,7 @@ export const hypothesisFormSchema = z
     uniqueMechanism: z.string().optional(),
     entrega: z.string().optional(),
     successRule: z.string().min(1),
+    imageFilterTitle: z.string().max(255).optional(),
     premiseAngleId: z.string().optional(),
     offerType: z.enum(["LEAD", "TRIPWIRE"]),
     price: z
@@ -76,7 +77,11 @@ export const hypothesisFormSchema = z
       .optional(),
     kpiTargetCpl: z.preprocess(Number, z.number()),
     offerPackageId: z
-      .preprocess((val) => (val === "" || val === null || val === undefined ? null : Number(val)), z.number().nullable())
+      .preprocess(
+        (val) =>
+          val === "" || val === null || val === undefined ? null : Number(val),
+        z.number().nullable(),
+      )
       .optional(),
     framework: hypothesisFrameworkSchema,
   })

@@ -144,6 +144,7 @@ public class HypothesisService {
                 .uniqueMechanism(req.getUniqueMechanism())
                 .entrega(req.getEntrega())
                 .successRule(req.getSuccessRule())
+                .imageFilterTitle(req.getImageFilterTitle())
                 .prompt(req.getPrompt())
                 .model(req.getModel())
                 .costUsd(req.getCostUsd())
@@ -200,9 +201,6 @@ public class HypothesisService {
     public Hypothesis update(UUID id, UpdateHypothesisRequest req) {
         validate(req);
         Hypothesis h = repository.findById(id).orElseThrow();
-        if (h.getStatus() != HypothesisStatus.BACKLOG) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "only BACKLOG hypotheses can be edited");
-        }
         h.setTitle(req.getTitle());
         h.setPremiseAngle(attachAngle(req.getPremiseAngleId()));
         h.setPromise(req.getPromise());
@@ -212,6 +210,7 @@ public class HypothesisService {
         h.setUniqueMechanism(req.getUniqueMechanism());
         h.setEntrega(req.getEntrega());
         h.setSuccessRule(req.getSuccessRule());
+        h.setImageFilterTitle(req.getImageFilterTitle());
         h.setCost(req.getCost());
         h.setExpense(req.getExpense());
         h.setOfferType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()));

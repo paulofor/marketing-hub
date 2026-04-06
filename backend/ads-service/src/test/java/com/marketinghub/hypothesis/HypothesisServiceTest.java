@@ -50,6 +50,7 @@ class HypothesisServiceTest {
         assertThat(h.getId()).isNotNull();
         assertThat(h.getStatus()).isEqualTo(HypothesisStatus.BACKLOG);
         assertThat(h.getGeneratedAt()).isNotNull();
+        assertThat(h.getImageFilterTitle()).isNull();
     }
 
     @Test
@@ -114,7 +115,7 @@ class HypothesisServiceTest {
     }
 
     @Test
-    void updateHypothesisOnlyWhenBacklog() {
+    void updateHypothesisAllowsEditingAfterStatusChange() {
         MarketNiche niche = fixtures.createAndSaveNiche();
         CreateHypothesisRequest req = new CreateHypothesisRequest();
         req.setMarketNicheId(niche.getId());
@@ -127,13 +128,16 @@ class HypothesisServiceTest {
         com.marketinghub.hypothesis.dto.UpdateHypothesisRequest u = new com.marketinghub.hypothesis.dto.UpdateHypothesisRequest();
         u.setTitle("H2");
         u.setPersona("Persona atualizada");
+        u.setImageFilterTitle("Filtro inicial");
 
         Hypothesis updated = service.update(h.getId(), u);
         assertThat(updated.getTitle()).isEqualTo("H2");
+        assertThat(updated.getImageFilterTitle()).isEqualTo("Filtro inicial");
 
         service.updateStatus(h.getId(), HypothesisStatus.TESTING);
-        assertThatThrownBy(() -> service.update(h.getId(), u))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+        u.setImageFilterTitle("Filtro após teste");
+        Hypothesis updatedAfterStatusChange = service.update(h.getId(), u);
+        assertThat(updatedAfterStatusChange.getImageFilterTitle()).isEqualTo("Filtro após teste");
     }
 
     @Test

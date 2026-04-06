@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 @Service
 public class HypothesisFrameworkGenerationWorkerService {
@@ -59,7 +58,7 @@ public class HypothesisFrameworkGenerationWorkerService {
                         claimed.hypothesisId(),
                         claimed.section(),
                         claimed.model(),
-                        truncate(payload != null ? payload.rawResponse() : null));
+                        payload != null ? payload.rawResponse() : "<vazio>");
                 backendClient.complete(claimed.id(), payload);
                 log.info("Hypothesis framework job {} completed", claimed.id());
             } catch (Exception ex) {
@@ -81,14 +80,4 @@ public class HypothesisFrameworkGenerationWorkerService {
         }
     }
 
-    private String truncate(String text) {
-        if (!StringUtils.hasText(text)) {
-            return "<vazio>";
-        }
-        int maxLength = 3_000;
-        if (text.length() <= maxLength) {
-            return text;
-        }
-        return text.substring(0, maxLength) + "... [truncated]";
-    }
 }

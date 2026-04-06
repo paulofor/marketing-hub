@@ -210,7 +210,7 @@ public class ExperimentPipelineOpenAiClient {
             if (!StringUtils.hasText(content)) {
                 throw new IllegalStateException("Resposta da OpenAI sem conteúdo JSON");
             }
-            log.info("OpenAI content preview for job {}: {}", job.id(), truncateForLog(content, 1200));
+            log.info("OpenAI content for job {}: {}", job.id(), content);
             Map<String, Object> parsed = objectMapper.readValue(content, new TypeReference<>() {});
             String sectionContent = objectMapper.writeValueAsString(parsed);
             Integer inputTokens = response.usage() != null ? response.usage().effectiveInputTokens() : null;
@@ -267,7 +267,7 @@ public class ExperimentPipelineOpenAiClient {
                             job.experimentId(),
                             job.section(),
                             ex.getStatusCode().value(),
-                            truncateForLog(ex.getResponseBodyAsString(), 1200));
+                            ex.getResponseBodyAsString());
                     throw ex;
                 }
                 log.warn("OpenAI retornou status transitório {} para job {} (experimento={}, seção={}). Tentativa {}/{}",
@@ -290,16 +290,6 @@ public class ExperimentPipelineOpenAiClient {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Thread interrompida durante retentativa para OpenAI", interruptedException);
         }
-    }
-
-    private String truncateForLog(String text, int maxLength) {
-        if (!StringUtils.hasText(text) || maxLength <= 0) {
-            return "";
-        }
-        if (text.length() <= maxLength) {
-            return text;
-        }
-        return text.substring(0, maxLength) + "... [truncated]";
     }
 
     @SuppressWarnings("unchecked")

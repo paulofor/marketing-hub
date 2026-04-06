@@ -133,7 +133,7 @@ public class ExperimentCreativeService {
                 continue;
             }
             try {
-                String intermediatePrompt = buildPipelineIntermediatePrompt(plan, req);
+                String intermediatePrompt = buildPipelineIntermediatePrompt(experiment, plan, req);
                 String imagePrompt = buildPipelineImagePrompt(experiment, plan, req);
                 String imageUrl = imageClient.generateImage(imagePrompt, intermediatePrompt);
                 req.setImageUrl(imageUrl);
@@ -319,6 +319,12 @@ public class ExperimentCreativeService {
         if (StringUtils.hasText(plan.variantKey())) {
             parts.add("Ângulo da variação:\n\n " + plan.variantKey() + ".");
         }
+        String imageFilterTitle = resolveImageFilterTitle(experiment);
+        if (StringUtils.hasText(imageFilterTitle)) {
+            parts.add("Obrigatório: usar o título de filtro \"" + imageFilterTitle
+                    + "\" em destaque dentro da imagem, com hierarquia visual elegante, tipografia legível e contraste forte.");
+            parts.add("Esse título deve ser o elemento textual mais perceptível da composição, sem poluição visual.");
+        }
         if (StringUtils.hasText(plan.headline())) {
             parts.add("Headline de referência:\n\n \"" + plan.headline() + "\".");
         }
@@ -350,7 +356,9 @@ public class ExperimentCreativeService {
         return "\"" + experiment.getNiche().getName().trim() + "\"";
     }
 
-    private String buildPipelineIntermediatePrompt(PipelineAdCreativePlan plan, CreateCreativeRequest request) {
+    private String buildPipelineIntermediatePrompt(Experiment experiment,
+                                                   PipelineAdCreativePlan plan,
+                                                   CreateCreativeRequest request) {
         List<String> parts = new ArrayList<>();
         if (plan.imageBriefing() != null) {
             if (StringUtils.hasText(plan.imageBriefing().visualBriefing())) {
@@ -372,6 +380,10 @@ public class ExperimentCreativeService {
         if (StringUtils.hasText(plan.variantKey())) {
             parts.add("Variação: " + plan.variantKey());
         }
+        String imageFilterTitle = resolveImageFilterTitle(experiment);
+        if (StringUtils.hasText(imageFilterTitle)) {
+            parts.add("Título de filtro obrigatório em destaque: " + imageFilterTitle);
+        }
         if (StringUtils.hasText(request.getHeadline())) {
             parts.add("Headline: " + request.getHeadline());
         }
@@ -379,6 +391,17 @@ public class ExperimentCreativeService {
             parts.add("Texto principal: " + request.getPrimaryText());
         }
         return String.join("\n", parts);
+    }
+
+    private String resolveImageFilterTitle(Experiment experiment) {
+        if (experiment == null || experiment.getHypothesisRef() == null) {
+            return null;
+        }
+        String imageFilterTitle = experiment.getHypothesisRef().getImageFilterTitle();
+        if (!StringUtils.hasText(imageFilterTitle)) {
+            return null;
+        }
+        return imageFilterTitle.trim();
     }
 
     private static String truncate(String value, int max) {

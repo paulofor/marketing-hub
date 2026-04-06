@@ -12,6 +12,7 @@ public class UpdateHypothesisRequest {
     private String uniqueMechanism;
     private String entrega;
     private String successRule;
+    private String imageFilterTitle;
     private String prompt;
     private String model;
     private BigDecimal cost;
@@ -48,6 +49,9 @@ public class UpdateHypothesisRequest {
 
     public String getSuccessRule() { return successRule; }
     public void setSuccessRule(String successRule) { this.successRule = successRule; }
+
+    public String getImageFilterTitle() { return imageFilterTitle; }
+    public void setImageFilterTitle(String imageFilterTitle) { this.imageFilterTitle = imageFilterTitle; }
 
     public String getPrompt() { return prompt; }
     public void setPrompt(String prompt) { this.prompt = prompt; }

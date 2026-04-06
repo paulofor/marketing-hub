@@ -11,11 +11,11 @@ import {
   type UpdateHypothesisPayload,
 } from "../../api/hypothesis/useUpdateHypothesis";
 import { HypothesisFrameworkTabsForm } from "../../components/HypothesisFrameworkTabsForm";
+import { hypothesisFormSchema, type HypothesisFormValues } from "./formTypes";
 import {
-  hypothesisFormSchema,
-  type HypothesisFormValues,
-} from "./formTypes";
-import { EMPTY_FRAMEWORK, normalizeFramework } from "../../api/hypothesis/types";
+  EMPTY_FRAMEWORK,
+  normalizeFramework,
+} from "../../api/hypothesis/types";
 
 export default function EditHypothesisPage() {
   const { nicheId, hypothesisId } = useParams();
@@ -35,6 +35,7 @@ export default function EditHypothesisPage() {
       uniqueMechanism: "",
       entrega: "",
       successRule: "",
+      imageFilterTitle: "",
       premiseAngleId: "",
       offerType: "LEAD",
       price: undefined,
@@ -58,6 +59,7 @@ export default function EditHypothesisPage() {
       uniqueMechanism: data.uniqueMechanism ?? "",
       entrega: data.entrega ?? "",
       successRule: data.successRule ?? "",
+      imageFilterTitle: data.imageFilterTitle ?? "",
       premiseAngleId: data.premiseAngleId ? String(data.premiseAngleId) : "",
       offerType: (data.offerType as "LEAD" | "TRIPWIRE") || "LEAD",
       price: data.price ?? undefined,
@@ -79,11 +81,12 @@ export default function EditHypothesisPage() {
       uniqueMechanism: values.uniqueMechanism,
       entrega: values.entrega,
       successRule: values.successRule,
+      imageFilterTitle: values.imageFilterTitle,
       premiseAngleId: values.premiseAngleId
         ? Number(values.premiseAngleId)
         : undefined,
       offerType: values.offerType,
-      price: values.offerType === "TRIPWIRE" ? values.price ?? null : null,
+      price: values.offerType === "TRIPWIRE" ? (values.price ?? null) : null,
       kpiTargetCpl: values.kpiTargetCpl ?? null,
       offerPackageId: values.offerPackageId ?? null,
       framework: values.framework,
@@ -94,9 +97,6 @@ export default function EditHypothesisPage() {
   };
 
   if (isLoading || !data) return <p>Carregando...</p>;
-  if (data.status !== "BACKLOG")
-    return <p>Edição permitida apenas para hipóteses em Backlog.</p>;
-
   return (
     <div className="hypothesis-edit-page">
       <PageTitle icon={hypothesisIcon}>Editar Hipótese</PageTitle>
@@ -209,6 +209,21 @@ export default function EditHypothesisPage() {
               {formState.errors.successRule && (
                 <div className="invalid-feedback d-block">
                   {formState.errors.successRule.message}
+                </div>
+              )}
+            </div>
+            <div className="col-md-6">
+              <label className="form-label" htmlFor="imageFilterTitle">
+                Título para filtro nas imagens
+              </label>
+              <input
+                id="imageFilterTitle"
+                {...register("imageFilterTitle")}
+                className={`form-control ${formState.errors.imageFilterTitle ? "is-invalid" : ""}`}
+              />
+              {formState.errors.imageFilterTitle && (
+                <div className="invalid-feedback d-block">
+                  {formState.errors.imageFilterTitle.message}
                 </div>
               )}
             </div>

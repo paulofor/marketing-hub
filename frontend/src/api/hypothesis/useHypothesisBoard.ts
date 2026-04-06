@@ -13,6 +13,7 @@ export interface Hypothesis {
   uniqueMechanism?: string;
   entrega?: string;
   successRule?: string;
+  imageFilterTitle?: string;
   prompt?: string;
   model?: string;
   framework?: HypothesisFramework | null;

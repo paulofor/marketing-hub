@@ -7,10 +7,7 @@ import { useNiche } from "../../api/niche/useNiche";
 import { useAngles } from "../../api/angle/useAngles";
 import { useCreateHypothesis } from "../../api/hypothesis/useCreateHypothesis";
 import { HypothesisFrameworkTabsForm } from "../../components/HypothesisFrameworkTabsForm";
-import {
-  hypothesisFormSchema,
-  type HypothesisFormValues,
-} from "./formTypes";
+import { hypothesisFormSchema, type HypothesisFormValues } from "./formTypes";
 import { EMPTY_FRAMEWORK } from "../../api/hypothesis/types";
 
 export default function NewHypothesisPage() {
@@ -31,6 +28,7 @@ export default function NewHypothesisPage() {
       uniqueMechanism: "",
       entrega: "",
       successRule: "",
+      imageFilterTitle: "",
       premiseAngleId: "",
       offerType: "LEAD",
       price: undefined,
@@ -60,11 +58,15 @@ export default function NewHypothesisPage() {
       uniqueMechanism: values.uniqueMechanism,
       entrega: values.entrega,
       successRule: values.successRule,
+      imageFilterTitle: values.imageFilterTitle,
       premiseAngleId: values.premiseAngleId
         ? Number(values.premiseAngleId)
         : undefined,
       offerType: values.offerType,
-      price: values.offerType === "TRIPWIRE" ? values.price ?? undefined : undefined,
+      price:
+        values.offerType === "TRIPWIRE"
+          ? (values.price ?? undefined)
+          : undefined,
       kpiTargetCpl: values.kpiTargetCpl ?? undefined,
       framework: values.framework,
     });
@@ -73,7 +75,8 @@ export default function NewHypothesisPage() {
 
   const handleCopy = () => {
     if (!niche) return;
-    const md = `# Nicho: ${niche.name}\n\n` +
+    const md =
+      `# Nicho: ${niche.name}\n\n` +
       `**ID:** ${niche.id}\n\n` +
       `**Descrição:**\n${niche.description ?? "-"}\n\n` +
       `**Volume de Demanda:**\n${niche.demandVolume ?? "-"}\n\n` +
@@ -103,7 +106,8 @@ export default function NewHypothesisPage() {
               </button>
             </div>
             <p className="mb-0 text-muted">
-              Use o framework abaixo para estruturar dor, promessa, mecanismo, prova e oferta antes de rodar experimentos.
+              Use o framework abaixo para estruturar dor, promessa, mecanismo,
+              prova e oferta antes de rodar experimentos.
             </p>
           </div>
         </div>
@@ -122,7 +126,9 @@ export default function NewHypothesisPage() {
                 className={`form-control ${errors.title ? "is-invalid" : ""}`}
               />
               {errors.title && (
-                <div className="invalid-feedback d-block">{errors.title.message}</div>
+                <div className="invalid-feedback d-block">
+                  {errors.title.message}
+                </div>
               )}
             </div>
             <div className="col-md-6">
@@ -135,7 +141,9 @@ export default function NewHypothesisPage() {
                 className={`form-control ${errors.persona ? "is-invalid" : ""}`}
               />
               {errors.persona && (
-                <div className="invalid-feedback d-block">{errors.persona.message}</div>
+                <div className="invalid-feedback d-block">
+                  {errors.persona.message}
+                </div>
               )}
             </div>
             <div className="col-md-6">
@@ -148,7 +156,9 @@ export default function NewHypothesisPage() {
                 className={`form-control ${errors.promise ? "is-invalid" : ""}`}
               />
               {errors.promise && (
-                <div className="invalid-feedback d-block">{errors.promise.message}</div>
+                <div className="invalid-feedback d-block">
+                  {errors.promise.message}
+                </div>
               )}
             </div>
             <div className="col-md-6">
@@ -161,14 +171,21 @@ export default function NewHypothesisPage() {
                 className={`form-control ${errors.problem ? "is-invalid" : ""}`}
               />
               {errors.problem && (
-                <div className="invalid-feedback d-block">{errors.problem.message}</div>
+                <div className="invalid-feedback d-block">
+                  {errors.problem.message}
+                </div>
               )}
             </div>
             <div className="col-md-6">
               <label className="form-label" htmlFor="mechanism">
                 Mecanismo
               </label>
-              <textarea id="mechanism" rows={2} {...register("mechanism")} className="form-control" />
+              <textarea
+                id="mechanism"
+                rows={2}
+                {...register("mechanism")}
+                className="form-control"
+              />
             </div>
             <div className="col-md-6">
               <label className="form-label" htmlFor="uniqueMechanism">
@@ -185,7 +202,12 @@ export default function NewHypothesisPage() {
               <label className="form-label" htmlFor="entrega">
                 Prova / entrega
               </label>
-              <textarea id="entrega" rows={2} {...register("entrega")} className="form-control" />
+              <textarea
+                id="entrega"
+                rows={2}
+                {...register("entrega")}
+                className="form-control"
+              />
             </div>
             <div className="col-md-6">
               <label className="form-label" htmlFor="successRule">
@@ -200,6 +222,21 @@ export default function NewHypothesisPage() {
               {errors.successRule && (
                 <div className="invalid-feedback d-block">
                   {errors.successRule.message}
+                </div>
+              )}
+            </div>
+            <div className="col-md-6">
+              <label className="form-label" htmlFor="imageFilterTitle">
+                Título para filtro nas imagens
+              </label>
+              <input
+                id="imageFilterTitle"
+                {...register("imageFilterTitle")}
+                className={`form-control ${errors.imageFilterTitle ? "is-invalid" : ""}`}
+              />
+              {errors.imageFilterTitle && (
+                <div className="invalid-feedback d-block">
+                  {errors.imageFilterTitle.message}
                 </div>
               )}
             </div>
@@ -224,7 +261,11 @@ export default function NewHypothesisPage() {
               <label className="form-label" htmlFor="offerType">
                 Tipo de oferta
               </label>
-              <select id="offerType" className="form-select" {...register("offerType")}>
+              <select
+                id="offerType"
+                className="form-select"
+                {...register("offerType")}
+              >
                 <option value="LEAD">Lead</option>
                 <option value="TRIPWIRE">Tripwire</option>
               </select>
@@ -242,7 +283,9 @@ export default function NewHypothesisPage() {
                 {...register("price")}
               />
               {errors.price && (
-                <div className="invalid-feedback d-block">{errors.price.message}</div>
+                <div className="invalid-feedback d-block">
+                  {errors.price.message}
+                </div>
               )}
             </div>
             <div className="col-md-3">
@@ -264,11 +307,18 @@ export default function NewHypothesisPage() {
           </div>
 
           <div className="mt-4">
-            <HypothesisFrameworkTabsForm hypothesisId={undefined} nicheId={nicheId} />
+            <HypothesisFrameworkTabsForm
+              hypothesisId={undefined}
+              nicheId={nicheId}
+            />
           </div>
 
           <div className="d-flex gap-2 mt-4">
-            <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting}
+            >
               {isSubmitting ? "Salvando..." : "Criar hipótese"}
             </button>
             <button

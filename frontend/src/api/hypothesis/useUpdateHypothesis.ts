@@ -15,6 +15,7 @@ export interface UpdateHypothesisPayload {
   uniqueMechanism?: string;
   entrega?: string;
   successRule?: string;
+  imageFilterTitle?: string;
   prompt?: string;
   model?: string;
   cost?: number | null;
@@ -30,7 +31,10 @@ export function useUpdateHypothesis(nicheId?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...body }: UpdateHypothesisPayload) => {
-      const { data } = await axios.put<Hypothesis>(`/api/hypotheses/${id}`, body);
+      const { data } = await axios.put<Hypothesis>(
+        `/api/hypotheses/${id}`,
+        body,
+      );
       return data;
     },
     onSuccess: () => {

@@ -1,8 +1,8 @@
 # Modelo de Dados do Experimento (visão focada)
 
 Este documento consolida, em uma única visão, as entidades mais relevantes no
-contexto de **experimentos de marketing**: nicho, hipótese, públicos, criativos,
-campanha e objetos de ativação/medição.
+contexto de **experimentos de marketing**: nicho, hipótese, segmentação,
+criativos, campanha e objetos de ativação/medição.
 
 > Fonte base: estrutura detalhada em `docs/data-model.md`.
 
@@ -53,14 +53,17 @@ erDiagram
       DATETIME facebook_release_requested_at
     }
 
-    TARGET_AUDIENCE {
+    TARGETING_ELEMENT {
       BIGINT id PK
       BIGINT market_niche_id FK
       BINARY16 hypothesis_id FK
+      VARCHAR type
+      VARCHAR term
       LONGTEXT description
       LONGTEXT prompt
       VARCHAR model
-      BOOLEAN approved
+      VARCHAR source
+      VARCHAR status
     }
 
     EXPERIMENT_TARGETING_SELECTION {
@@ -126,12 +129,12 @@ erDiagram
     CREATIVE {
       BIGINT id PK
       BIGINT experiment_id FK
-      VARCHAR type
-      LONGTEXT headlines
-      LONGTEXT primary_texts
-      LONGTEXT prompt
-      VARCHAR model
-      BOOLEAN approved
+      VARCHAR headline
+      VARCHAR primary_text
+      VARCHAR image_url
+      VARCHAR ad_format
+      VARCHAR call_to_action
+      VARCHAR status
     }
 
     CREATIVE_VARIANT {
@@ -223,9 +226,9 @@ erDiagram
     MARKET_NICHE ||--o{ EXPERIMENT : agrupa
     HYPOTHESIS ||--o{ EXPERIMENT : orienta
 
-    MARKET_NICHE ||--o{ TARGET_AUDIENCE : possui
+    MARKET_NICHE ||--o{ TARGETING_ELEMENT : possui
     MARKET_NICHE ||--o{ LEAD_PORTAL_FLOW : disponibiliza
-    HYPOTHESIS ||--o{ TARGET_AUDIENCE : refina
+    HYPOTHESIS ||--o{ TARGETING_ELEMENT : refina
 
     EXPERIMENT ||--o{ CREATIVE : gera
     EXPERIMENT ||--o{ CREATIVE_VARIANT : detalha
@@ -261,9 +264,6 @@ erDiagram
 - `hypothesis` ganhou o campo `offer_package_id`, apontando qual pacote oficial representa a oferta ativa daquela hipótese.
 - Durante o cadastro/edição o sistema valida se o pacote pertence ao mesmo nicho, evitando combinações incoerentes.
 
-## Escopo coberto
-
-
 ## Leitura rápida das relações
 
 1. **Base estratégica**
@@ -271,24 +271,24 @@ erDiagram
    - `experiment` centraliza a execução e conecta orçamento, período e status.
 
 2. **Públicos e segmentação**
-   - `target_audience` nasce de nicho/hipótese e pode ser aprovado antes da mídia.
+   - `targeting_element` nasce de nicho/hipótese e pode ser aprovado antes da mídia.
    - `ad_set` materializa segmentação e orçamento no contexto do experimento.
    - `experiment_adset_workflow` + `experiment_adset_spec` coordenam o playbook automático dos três públicos (slots Designers, Marketing e SMB) e sinalizam quando todos estão com status READY.
 
 3. **Criativos**
-   - `creative` guarda peças geradas (com `model` e `prompt`).
+   - `creative` guarda peças geradas e prontas para publicação (headline, texto principal, CTA e mídia vinculada).
    - `creative_variant` representa variações de assets/títulos/descrições.
 
 4. **Lead Portal e geração de imagens**
    - `lead_portal_flow` replica o modelo (`image_prompt_model`) e o tamanho do lote (`image_prompt_batch_size`) definidos no experimento vinculado.
    - Ao atualizar `experiment.image_generation_model` ou `experiment.images_per_package`, os valores são sincronizados e publicados automaticamente para o Lead Portal, garantindo que os pacotes usem exatamente o modelo e a quantidade configurados no experimento.
 
-4. **Campanha (Meta Ads)**
+5. **Campanha (Meta Ads)**
    - `facebook_ads_campaign` referencia diretamente o experimento.
    - Cada campanha possui `facebook_ads_ad_set` e depois `facebook_ads_ad`.
    - `facebook_ads_ad_creative` é vinculado ao anúncio publicado.
 
-5. **Conversão e medição**
+6. **Conversão e medição**
    - `lead_portal_flow` e `lead_portal_submission` registram captação de leads.
    - `metric_snapshot` consolida desempenho por criativo + ad set.
 
@@ -314,7 +314,8 @@ erDiagram
   - `primary_metric` registra qual indicador decide o sucesso da hipótese e deve ser tratado como texto legível (ex.: "CTR de link (%)").
 - O endpoint `/api/experiment-playbook` provê o playbook canônico por etapa com descrições e sugestões para preencher esses campos.
 - Registros gerados por processos do Worker IA devem manter `model` e `prompt`
-  preenchidos nos objetos aplicáveis (ex.: público, criativo, ad set, fluxo).
+  preenchidos nos objetos aplicáveis (ex.: `targeting_element`, `ad_set`,
+  `lead_portal_flow`, `deliverable_package`, `proof_artifact`).
 - O experimento funciona como eixo de rastreabilidade entre planejamento,
   geração por IA, publicação de mídia e métricas.
 

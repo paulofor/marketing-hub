@@ -143,7 +143,7 @@ public class HypothesisFrameworkOpenAiClient {
                     job.section(),
                     job.model(),
                     statusCode.value(),
-                    truncate(ex.getResponseBodyAsString()));
+                    ex.getResponseBodyAsString());
             log.debug("Payload da requisição com erro [jobId={}]: {}", job.id(), toLogJson(payload));
             throw new IllegalStateException("Falha ao gerar seção " + job.section() + " para hipótese " + job.hypothesisId(), ex);
         } catch (Exception ex) {
@@ -233,7 +233,7 @@ public class HypothesisFrameworkOpenAiClient {
             throw ex;
         } catch (Exception ex) {
             throw new InvalidJsonResponseException(
-                    "Modelo retornou JSON inválido para seção " + job.section() + ". Resposta recebida: " + truncate(content),
+                    "Modelo retornou JSON inválido para seção " + job.section() + ". Resposta recebida: " + content,
                     ex,
                     shouldRetryForInvalidJson(response, ex, content));
         }
@@ -436,26 +436,6 @@ public class HypothesisFrameworkOpenAiClient {
             return "<erro ao serializar payload: " + ex.getMessage() + ">";
         }
     }
-
-    private String truncate(String text) {
-        if (!StringUtils.hasText(text)) {
-            return "<vazio>";
-        }
-        int maxLength = 3_000;
-        if (text.length() <= maxLength) {
-            return text;
-        }
-        int suffixLength = 600;
-        int prefixLength = maxLength - suffixLength;
-        if (prefixLength <= 0 || suffixLength >= text.length()) {
-            return text.substring(0, maxLength) + "... [truncated]";
-        }
-        return text.substring(0, prefixLength)
-                + "... [truncated] ..."
-                + text.substring(text.length() - suffixLength);
-    }
-
-
 
     private static class InvalidJsonResponseException extends IllegalStateException {
         private final boolean shouldRetry;

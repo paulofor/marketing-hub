@@ -279,6 +279,7 @@ public class ExperimentCreativeService {
                 - frases motivacionais genéricas
                 """);
         parts.add("Você é um diretor de arte criando criativos originais para anúncios do Meta Ads.");
+        parts.add("Essa imagem vai aparecer no feed de muitas pessoas e precisa deixar explícito que é um produto voltado para profissionais de educação física que atendem alunos de forma autônoma.");
         if ("STORY".equalsIgnoreCase(plan.format())) {
             parts.add("Formato vertical 1080x1920 (Stories/Reels) com foco no terço central e respeitando o CTA nativo.");
         } else {

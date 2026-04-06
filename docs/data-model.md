@@ -279,9 +279,19 @@ triggering ad set generation.
 - `hypothesis` VARCHAR(255)
 - `facebook_page_id` BIGINT
 - `facebook_instant_form_id` BIGINT
+- `facebook_pixel_id` VARCHAR(64)
+- `facebook_pixel_code` LONGTEXT
+- `facebook_pixel_created_at` TIMESTAMP
+- `facebook_release_requested_at` DATETIME
+- `funnel_reset_at` DATETIME(6)
 - `follow_up_action_url` VARCHAR(512)
+- `lead_portal_flow_model` VARCHAR(191)
 - `lead_portal_flow_id` BIGINT
+- `selected_sample_email_id` BIGINT
+- `image_model_id` BIGINT
+- `image_model_quality_id` BIGINT
 - `instagram_account_id` BIGINT
+- `metric_preset_id` VARCHAR(50)
 - `kpi_target_cpl` DECIMAL(10,2) DEFAULT 45.00
 - `stop_loss_cpl` DECIMAL(10,2) DEFAULT 90.00
 - `sample_size` INT DEFAULT 1500
@@ -289,44 +299,66 @@ triggering ad set generation.
 - `target_cvr` DECIMAL(5,2) DEFAULT 5.00
 - `mde_percent` DECIMAL(5,2) DEFAULT 40.0
 - `daily_budget` DECIMAL(10,2)
+- `unit_price_brl` DECIMAL(10,2)
 - `cost` DECIMAL(10,2)
+- `total_cost` DECIMAL(12,2)
 - `expense` DECIMAL(10,2)
 - `creatives_to_generate` INT
+- `instant_forms_to_generate` INT
+- `emails_to_generate` INT
+- `sample_emails_to_generate` INT
+- `deliverables_to_generate` INT
+- `lead_portal_flows_to_generate` INT
+- `images_per_package` INT NOT NULL DEFAULT 20
+- `open_images_per_package` INT
+- `compressed_images_per_package` INT
 - `start_date` DATE
 - `end_date` DATE
-- `status` VARCHAR(20)
+- `status` VARCHAR(32)
 - `platform` VARCHAR(50)
+- `stage` VARCHAR(32) NOT NULL DEFAULT 'AD'
+- `creative_generation_mode` VARCHAR(32) NOT NULL DEFAULT 'DEFAULT'
+- `primary_variable` VARCHAR(191)
+- `primary_metric` VARCHAR(191)
 - `creative_approved` BOOLEAN DEFAULT FALSE
 - `journey_template_id` BIGINT NOT NULL
+- `creative_text_prompt` LONGTEXT
+- `creative_image_prompt` LONGTEXT
+- `campaign_angle` LONGTEXT
+- `ad_copy` LONGTEXT
+- `ad_image_briefing` LONGTEXT
+- `landing_page_copy` LONGTEXT
+- `landing_page_wireframe` LONGTEXT
 - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
 Defines a marketing experiment for a specific niche and hypothesis. Each
-experiment aggregates the creative variants, ad sets and landing pages that
-will be executed and measured during the test cycle. The `daily_budget` field
-stores the expected spend per day (in BRL) and is used by the Facebook Ads
-worker to build ad sets with the correct amount in cents for the Graph API.
+experiment aggregates the creative variants, ad sets, landing pages and lead
+capture assets that will be executed and measured during the test cycle.
 
 **Relationships**
 
-- `facebook_page_id` → FK `fb_page.id`: optional link that identifies the
-  Facebook Page to be used when publishing campaigns for the experiment. When
-  defined, the worker can override the account default and push ads using the
-  selected page metadata.
-- `facebook_instant_form_id` → FK `fb_instant_form.id`: when present, the
-  experiment reuses a Meta Instant Form that was planned for the same
-  hypothesis, ensuring multiple campaigns can capture leads with the same
-  optimized flow.
-- `follow_up_action_url` garante que todos os instant forms publicados a partir
-  do experimento direcionem o usuário para a mesma página de agradecimento
-  (follow-up) após o envio, atendendo à exigência da Meta por um link válido.
-- `journey_template_id` → FK `journey_template.id`: vínculo obrigatório
-  que reaproveita o blueprint de jornada aprovado para nortear campanhas
-  e ativações omnichannel geradas a partir do experimento.
-- `lead_portal_flow_id` → FK `lead_portal_flow.id`: associa o experimento a um
-  fluxo do Portal Lead, garantindo que todos os contatos capturados através das
-  campanhas sejam direcionados para o conjunto correto de perguntas, coleta de
-  dados e upload de imagens.
+- `hypothesis_id` → FK `hypothesis.id`: associação obrigatória com a hipótese
+  validada para o experimento.
+- `facebook_page_id` → FK `fb_page.id`: página utilizada para publicar anúncios
+  quando o experimento precisa sobrescrever o padrão da conta.
+- `facebook_instant_form_id` → FK `fb_instant_form.id`: instant form padrão
+  reutilizado para as campanhas ligadas ao experimento.
+- `lead_portal_flow_id` → FK `lead_portal_flow.id`: define o fluxo do Portal
+  Lead usado para captação e coleta de respostas.
+- `follow_up_action_url` padroniza a URL de agradecimento para os instant
+  forms e jornadas de conversão do experimento.
+- `selected_sample_email_id` → FK `experiment_sample_email.id`: e-mail de
+  amostra escolhido para notificações e fluxos de follow-up.
+- `image_model_id` → FK `image_generation_model.id` e
+  `image_model_quality_id` → FK `image_generation_quality.id`: controla o
+  provedor e a qualidade configurada para geração de imagens no pipeline.
+- `metric_preset_id` → FK `metric_preset.id`: preset opcional para preencher
+  automaticamente metas de métricas (amostra, stop loss e MDE).
+- `journey_template_id` → FK `journey_template.id`: vínculo obrigatório com o
+  blueprint de jornada aprovado para campanhas omnichannel.
+- `instagram_account_id` → FK `ig_account.id`: conta de Instagram usada para
+  publicação quando a estratégia inclui posicionamentos dessa rede.
 
 ### lead_portal_flow
 

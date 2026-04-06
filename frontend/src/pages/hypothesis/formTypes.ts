@@ -69,12 +69,10 @@ export const hypothesisFormSchema = z
     imageFilterTitle: z.string().max(255).optional(),
     premiseAngleId: z.string().optional(),
     offerType: z.enum(["LEAD", "TRIPWIRE"]),
-    price: z
-      .preprocess(
-        (v) => (v === "" || v === undefined ? undefined : Number(v)),
-        z.number(),
-      )
-      .optional(),
+    price: z.preprocess(
+      (v) => (v === "" || v === undefined ? undefined : Number(v)),
+      z.number().optional(),
+    ),
     kpiTargetCpl: z.preprocess(Number, z.number()),
     offerPackageId: z
       .preprocess(

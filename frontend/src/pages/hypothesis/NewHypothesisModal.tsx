@@ -18,12 +18,10 @@ const schema = z
     successRule: z.string().min(1, "obrigatório"),
     premiseAngleId: z.string().optional(),
     offerType: z.enum(["LEAD", "TRIPWIRE"]),
-    price: z
-      .preprocess(
-        (v) => (v === "" || v === undefined ? undefined : Number(v)),
-        z.number().min(5, "mín. 5").max(297, "máx. 297"),
-      )
-      .optional(),
+    price: z.preprocess(
+      (v) => (v === "" || v === undefined ? undefined : Number(v)),
+      z.number().min(5, "mín. 5").max(297, "máx. 297").optional(),
+    ),
     kpiTargetCpl: z.preprocess(Number, z.number().min(1, "mín. 1")),
     description: z.string().max(200, "máx. 200 caracteres").optional(),
   });

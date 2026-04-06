@@ -279,6 +279,10 @@ public class ExperimentCreativeService {
                 - frases motivacionais genéricas
                 """);
         parts.add("Você é um diretor de arte criando criativos originais para anúncios do Meta Ads.");
+        String nicheName = resolveNicheName(experiment);
+        parts.add("Essa imagem vai aparecer no feed de muitas pessoas e precisa deixar explícito que é um produto voltado para o nicho "
+                + nicheName
+                + ".");
         if ("STORY".equalsIgnoreCase(plan.format())) {
             parts.add("Formato vertical 1080x1920 (Stories/Reels) com foco no terço central e respeitando o CTA nativo.");
         } else {
@@ -337,6 +341,13 @@ public class ExperimentCreativeService {
         parts.add("Lembre-se de que o Worker AI usará o modelo gpt-imagem-1.5.");
         parts.add("Não inclua logos das plataformas e evite rostos genéricos sem contexto.");
         return String.join(" ", parts);
+    }
+
+    private String resolveNicheName(Experiment experiment) {
+        if (experiment == null || experiment.getNiche() == null || !StringUtils.hasText(experiment.getNiche().getName())) {
+            return "do experimento";
+        }
+        return "\"" + experiment.getNiche().getName().trim() + "\"";
     }
 
     private String buildPipelineIntermediatePrompt(PipelineAdCreativePlan plan, CreateCreativeRequest request) {

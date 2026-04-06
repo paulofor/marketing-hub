@@ -29,3 +29,7 @@ lead-portal:
     access-key-id: test-access-key
     secret-access-key: test-secret-key
     region: us-east-1
+
+worker:
+  scheduling:
+    enabled: false

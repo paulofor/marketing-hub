@@ -26,15 +26,6 @@ const schema = z
       .optional(),
     kpiTargetCpl: z.preprocess(Number, z.number().min(1, "mín. 1")),
     description: z.string().max(200, "máx. 200 caracteres").optional(),
-  })
-  .superRefine((val, ctx) => {
-    if (val.offerType === "TRIPWIRE" && val.price === undefined) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Preço obrigatório",
-        path: ["price"],
-      });
-    }
   });
 
 type FormData = z.infer<typeof schema>;

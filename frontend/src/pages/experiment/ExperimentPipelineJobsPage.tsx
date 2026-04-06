@@ -50,6 +50,144 @@ type PromptSegment = {
   content: string;
 };
 
+interface PromptSourceHint {
+  label: string;
+  source: string;
+  markers: string[];
+}
+
+const PROMPT_SOURCE_HINTS: PromptSourceHint[] = [
+  {
+    label: "Regras de mensagem",
+    source: "buildPipelineImagePrompt (base)",
+    markers: ["A mensagem deve:"],
+  },
+  {
+    label: "Direção de arte",
+    source: "buildPipelineImagePrompt (base)",
+    markers: ["Você é um diretor de arte"],
+  },
+  {
+    label: "Formato por placement",
+    source: "plan.format",
+    markers: ["Formato feed 1080x1350", "Formato vertical 1080x1920"],
+  },
+  {
+    label: "Briefing visual",
+    source: "plan.imageBriefing.visualBriefing",
+    markers: ["Briefing visual:"],
+  },
+  {
+    label: "Hierarquia sugerida",
+    source: "plan.imageBriefing.hierarchy",
+    markers: ["Hierarquia sugerida:"],
+  },
+  {
+    label: "Margens de segurança",
+    source: "plan.imageBriefing.safeMargins",
+    markers: ["Margens de segurança:"],
+  },
+  {
+    label: "Adaptação desejada",
+    source: "plan.imageBriefing.formatByPlacement",
+    markers: ["Adaptação desejada:"],
+  },
+  {
+    label: "Mensagem obrigatória",
+    source: "plan.imageBriefing.messageMatchNotes",
+    markers: ["Mensagem obrigatória:"],
+  },
+  {
+    label: "Notas de compliance",
+    source: "plan.imageBriefing.complianceNotes",
+    markers: ["Notas de compliance:"],
+  },
+  {
+    label: "Palavras-chave de apoio",
+    source: "plan.imageBriefing.supportingKeywords",
+    markers: ["Palavras-chave de apoio:"],
+  },
+  {
+    label: "Limite de palavras na imagem",
+    source: "plan.imageBriefing.imageTextMaxWords",
+    markers: ["Limite máximo de palavras sobre a imagem:"],
+  },
+  {
+    label: "Ângulo da variação",
+    source: "plan.variantKey",
+    markers: ["Ângulo da variação:"],
+  },
+  {
+    label: "Headline de referência",
+    source: "plan.headline",
+    markers: ["Headline de referência:"],
+  },
+  {
+    label: "Texto principal",
+    source: "plan.primaryText",
+    markers: ["Texto principal orientado para dor/promessa:"],
+  },
+  {
+    label: "Complemento/contexto",
+    source: "plan.description",
+    markers: ["Complemento/contexto:"],
+  },
+  {
+    label: "CTA textual visível",
+    source: "plan.ctaText",
+    markers: ["CTA textual visível:"],
+  },
+  {
+    label: "Destino digital",
+    source: "request.destinationUrl",
+    markers: ["Representar a ideia de destino digital"],
+  },
+  {
+    label: "Promessa da hipótese",
+    source: "experiment.hypothesisRef.promise",
+    markers: ["Promessa central da hipótese:"],
+  },
+  {
+    label: "Modelo do Worker IA",
+    source: "buildPipelineImagePrompt (base)",
+    markers: ["Lembre-se de que o Worker AI usará o modelo gpt-imagem-1.5."],
+  },
+  {
+    label: "Restrição de logos e rostos",
+    source: "buildPipelineImagePrompt (base)",
+    markers: ["Não inclua logos das plataformas"],
+  },
+];
+
+function resolvePromptSegmentOrigins(segment: PromptSegment) {
+  if (segment.type === "json") {
+    return [
+      {
+        label: "Trecho JSON",
+        source: "Prompt serializado",
+      },
+    ];
+  }
+
+  const matchedOrigins = PROMPT_SOURCE_HINTS.filter((hint) =>
+    hint.markers.some((marker) => segment.content.includes(marker)),
+  ).map((hint) => ({
+    label: hint.label,
+    source: hint.source,
+  }));
+
+  if (matchedOrigins.length > 0) {
+    return matchedOrigins;
+  }
+
+  return [
+    {
+      label: "Trecho sem marcador conhecido",
+      source: "Texto livre do prompt",
+    },
+  ];
+}
+
 function findJsonBoundary(content: string, startIndex: number) {
   const openingChar = content[startIndex];
   const closingChar = openingChar === "{" ? "}" : "]";
@@ -481,6 +619,18 @@ export default function ExperimentPipelineJobsPage() {
                             <small className="text-muted d-block mb-1">
                               Trecho JSON formatado
                             </small>
+                            <div className="d-flex flex-wrap gap-2 mb-2">
+                              {resolvePromptSegmentOrigins(segment).map(
+                                (origin) => (
+                                  <span
+                                    key={`${index}-${origin.label}-${origin.source}`}
+                                    className="badge text-bg-light border"
+                                  >
+                                    Origem: {origin.label} ({origin.source})
+                                  </span>
+                                ),
+                              )}
+                            </div>
                             <pre className="bg-dark text-light p-3 rounded small mb-0 overflow-auto">
                               {segment.content}
                             </pre>
@@ -491,6 +641,18 @@ export default function ExperimentPipelineJobsPage() {
                             className="bg-body-tertiary p-3 rounded small mb-0"
                             style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
                           >
+                            <div className="d-flex flex-wrap gap-2 mb-2">
+                              {resolvePromptSegmentOrigins(segment).map(
+                                (origin) => (
+                                  <span
+                                    key={`${index}-${origin.label}-${origin.source}`}
+                                    className="badge text-bg-light border"
+                                  >
+                                    Origem: {origin.label} ({origin.source})
+                                  </span>
+                                ),
+                              )}
+                            </div>
                             {segment.content}
                           </div>
                         ),

@@ -151,4 +151,27 @@ class ExperimentCreativeServiceTest {
         assertThat(experiment.getCreativeGenerationMode()).isEqualTo(CreativeGenerationMode.DEFAULT);
     }
 
+    @Test
+    void pipelineModeHighlightsHypothesisImageFilterTitleInPrompt() {
+        experiment.setCreativeGenerationMode(CreativeGenerationMode.PIPELINE_ADS);
+        experiment.setCreativesToGenerate(1);
+        experiment.getHypothesisRef().setImageFilterTitle("Mães empreendedoras");
+        experiment.setAdCopy("""
+                {"adCopy":{"primaryTextVariants":[{"label":"dor","primaryText":"Texto","headline":"Headline","description":"Descrição","ctaText":"Saiba mais"}]}}
+                """);
+        experiment.setAdImageBriefing("""
+                {"adImageBriefing":{"briefings":[{"mustMatchAdVariant":"dor","visualBriefing":"Use contraste simples","hierarchy":"1) promessa 2) CTA","safeMargins":"10%","assetType":"estatico"}]}}
+                """);
+        when(experimentRepository.findAllToGenerateCreatives()).thenReturn(List.of(experiment));
+        when(imageClient.generateImage(anyString(), anyString())).thenReturn("img");
+        when(creativeService.create(eq(1L), any(CreateCreativeRequest.class))).thenReturn(new Creative());
+
+        service.generate();
+
+        ArgumentCaptor<String> finalPromptCaptor = ArgumentCaptor.forClass(String.class);
+        verify(imageClient).generateImage(finalPromptCaptor.capture(), anyString());
+        String prompt = finalPromptCaptor.getValue();
+        assertThat(prompt).contains("Obrigatório: usar o título de filtro \"Mães empreendedoras\" em destaque dentro da imagem");
+    }
+
 }

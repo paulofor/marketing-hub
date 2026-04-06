@@ -84,15 +84,6 @@ export const hypothesisFormSchema = z
       )
       .optional(),
     framework: hypothesisFrameworkSchema,
-  })
-  .superRefine((val, ctx) => {
-    if (val.offerType === "TRIPWIRE" && val.price === undefined) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Preço obrigatório",
-        path: ["price"],
-      });
-    }
   });
 
 export type HypothesisFormValues = z.infer<typeof hypothesisFormSchema>;

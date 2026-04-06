@@ -134,21 +134,6 @@ export default function EditHypothesisPage() {
               )}
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor="promise">
-                Promessa
-              </label>
-              <input
-                id="promise"
-                {...register("promise")}
-                className={`form-control ${formState.errors.promise ? "is-invalid" : ""}`}
-              />
-              {formState.errors.promise && (
-                <div className="invalid-feedback d-block">
-                  {formState.errors.promise.message}
-                </div>
-              )}
-            </div>
-            <div className="col-md-6">
               <label className="form-label" htmlFor="problem">
                 Problema
               </label>
@@ -195,22 +180,6 @@ export default function EditHypothesisPage() {
                 {...register("entrega")}
                 className="form-control"
               />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label" htmlFor="successRule">
-                Regra de sucesso
-              </label>
-              <textarea
-                id="successRule"
-                rows={2}
-                {...register("successRule")}
-                className={`form-control ${formState.errors.successRule ? "is-invalid" : ""}`}
-              />
-              {formState.errors.successRule && (
-                <div className="invalid-feedback d-block">
-                  {formState.errors.successRule.message}
-                </div>
-              )}
             </div>
             <div className="col-md-6">
               <label className="form-label" htmlFor="imageFilterTitle">

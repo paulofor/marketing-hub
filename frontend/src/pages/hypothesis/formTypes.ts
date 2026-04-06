@@ -59,13 +59,13 @@ export const hypothesisFrameworkSchema = z.object({
 export const hypothesisFormSchema = z
   .object({
     title: z.string().min(8).max(120),
-    promise: z.string().min(1).max(140),
+    promise: z.string().max(140).optional(),
     problem: z.string().min(1),
     persona: z.string().min(1),
     mechanism: z.string().optional(),
     uniqueMechanism: z.string().optional(),
     entrega: z.string().optional(),
-    successRule: z.string().min(1),
+    successRule: z.string().optional(),
     imageFilterTitle: z.string().max(255).optional(),
     premiseAngleId: z.string().optional(),
     offerType: z.enum(["LEAD", "TRIPWIRE"]),

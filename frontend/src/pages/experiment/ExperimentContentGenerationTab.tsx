@@ -47,6 +47,7 @@ type ContentGenerationSectionKey =
   | "image-prompt"
   | "landing-copy"
   | "landing-layout"
+  | "landing-image-planning"
   | "landing-html";
 
 interface ContentGenerationSection {
@@ -91,6 +92,13 @@ const CONTENT_GENERATION_SECTIONS: ContentGenerationSection[] = [
     description:
       "Sugira estruturas visuais e ordem de seções para a página de conversão.",
     defaultQuantity: 2,
+  },
+  {
+    key: "landing-image-planning",
+    label: "Planejamento de Imagens da Landing",
+    description:
+      "Planeje prompts, posicionamento e direção visual das imagens antes da geração final do HTML.",
+    defaultQuantity: 1,
   },
   {
     key: "landing-html",
@@ -155,6 +163,7 @@ const JOB_SECTION_ALIASES: Record<string, ContentGenerationSectionKey> = {
   AD_IMAGE_BRIEFING: "image-prompt",
   LANDING_PAGE_COPY: "landing-copy",
   LANDING_PAGE_WIREFRAME: "landing-layout",
+  LANDING_PAGE_IMAGE_PLANNING: "landing-image-planning",
   LANDING_PAGE_HTML: "landing-html",
 };
 
@@ -421,12 +430,41 @@ htmlDocument,
 summary,
 consistencyChecks`;
 
+const LANDING_IMAGE_PLANNING_PROMPT_TEMPLATE = `${COMMON_PIPELINE_PROMPT}
+
+Objetivo:
+Criar o Planejamento de Imagens da Landing antes do HTML final, usando o ângulo da campanha, os textos da landing e o layout aprovado.
+
+Regras:
+1. Entregar images[] com no mínimo 4 imagens planejadas para seções reais da landing.
+2. Cada imagem precisa incluir:
+   - sectionId e sectionName
+   - placement (hero|benefit|mechanism|proof|offer|faq|cta)
+   - hierarchyLevel (primary|secondary|support)
+   - objective
+   - imagePrompt
+   - dimensions.desktop e dimensions.mobile
+   - messageMatchNotes
+3. Sempre incluir negativePrompt, complianceNotes e textOverlayGuidance.
+4. Definir sequencingNotes e ctaIntegrationNotes para manter continuidade com o CTA.
+5. Manter foco em clareza, informação e atratividade visual sem quebrar o ângulo da campanha.
+
+Formato esperado:
+JSON com:
+pageGoal,
+visualDirectionSummary,
+sequencingNotes,
+ctaIntegrationNotes,
+images,
+consistencyChecks`;
+
 const SECTION_PROMPT_DEFAULTS: Partial<
   Record<ContentGenerationSectionKey, string>
 > = {
   "ad-copy": AD_COPY_PROMPT_TEMPLATE,
   "landing-copy": LANDING_COPY_PROMPT_TEMPLATE,
   "landing-layout": LANDING_LAYOUT_PROMPT_TEMPLATE,
+  "landing-image-planning": LANDING_IMAGE_PLANNING_PROMPT_TEMPLATE,
   "landing-html": LANDING_HTML_PROMPT_TEMPLATE,
 };
 
@@ -436,6 +474,7 @@ const SECTION_API_PATHS: Record<ContentGenerationSectionKey, string> = {
   "image-prompt": "ad-image-briefing",
   "landing-copy": "landing-page-copy",
   "landing-layout": "landing-page-wireframe",
+  "landing-image-planning": "landing-page-image-planning",
   "landing-html": "landing-page-html",
 };
 
@@ -478,12 +517,20 @@ interface PipelineReportRecord extends AiGenerationRecord {
   };
 }
 
+type HistorySectionKey =
+  | "image-prompt"
+  | "landing-copy"
+  | "landing-layout"
+  | "landing-image-planning"
+  | "landing-html";
+
 const REPORT_SECTION_ORDER: ContentGenerationSectionKey[] = [
   "campaign-angle",
   "ad-copy",
   "image-prompt",
   "landing-copy",
   "landing-layout",
+  "landing-image-planning",
   "landing-html",
 ];
 
@@ -496,6 +543,8 @@ const REPORT_DOMAIN_ALIASES: Record<string, ContentGenerationSectionKey> = {
   "landing-copy": "landing-copy",
   "landing-page-wireframe": "landing-layout",
   "landing-layout": "landing-layout",
+  "landing-page-image-planning": "landing-image-planning",
+  "landing-image-planning": "landing-image-planning",
   "landing-page-html": "landing-html",
   "landing-html": "landing-html",
 };
@@ -782,23 +831,20 @@ export default function ExperimentContentGenerationTab({
   >([]);
   const [isLoadingAdCopy, setIsLoadingAdCopy] = useState(false);
   const [sectionGenerations, setSectionGenerations] = useState<
-    Record<
-      "image-prompt" | "landing-copy" | "landing-layout" | "landing-html",
-      SimpleGenerationRow[]
-    >
+    Record<HistorySectionKey, SimpleGenerationRow[]>
   >({
     "image-prompt": [],
     "landing-copy": [],
     "landing-layout": [],
+    "landing-image-planning": [],
     "landing-html": [],
   });
   const [isLoadingSectionGenerations, setIsLoadingSectionGenerations] =
-    useState<
-      Record<"image-prompt" | "landing-copy" | "landing-layout" | "landing-html", boolean>
-    >({
+    useState<Record<HistorySectionKey, boolean>>({
       "image-prompt": false,
       "landing-copy": false,
       "landing-layout": false,
+      "landing-image-planning": false,
       "landing-html": false,
     });
   const [isRequestingBySection, setIsRequestingBySection] = useState<
@@ -1031,12 +1077,16 @@ export default function ExperimentContentGenerationTab({
   }, [experimentId]);
 
   useEffect(() => {
-    const sectionsToLoad: Array<
-      "image-prompt" | "landing-copy" | "landing-layout" | "landing-html"
-    > = ["image-prompt", "landing-copy", "landing-layout", "landing-html"];
+    const sectionsToLoad: HistorySectionKey[] = [
+      "image-prompt",
+      "landing-copy",
+      "landing-layout",
+      "landing-image-planning",
+      "landing-html",
+    ];
 
     const loadSection = async (
-      sectionKey: "image-prompt" | "landing-copy" | "landing-layout" | "landing-html",
+      sectionKey: HistorySectionKey,
     ) => {
       try {
         setIsLoadingSectionGenerations((previous) => ({
@@ -1783,6 +1833,8 @@ function parseSectionContent(
       return parseLandingCopyPayload(raw);
     case "landing-layout":
       return parseLandingLayoutPayload(raw);
+    case "landing-image-planning":
+      return undefined;
     case "landing-html":
       return parseLandingHtmlPayload(raw);
     default:
@@ -1854,6 +1906,8 @@ function resolveStructuredPreview(
       }
       return { hasStructuredData: false };
     }
+    case "landing-image-planning":
+      return { hasStructuredData: false };
     case "landing-html": {
       const content = parsed as LandingHtmlContent | undefined;
       if (hasLandingHtmlContent(content)) {
@@ -1906,6 +1960,8 @@ function describeGenerationSummary(
       }
       return "Wireframe ainda não estruturado.";
     }
+    case "landing-image-planning":
+      return "Planejamento de imagens registrado para a landing.";
     case "landing-html": {
       const typed = content as LandingHtmlContent | undefined;
       if (hasLandingHtmlContent(typed)) {

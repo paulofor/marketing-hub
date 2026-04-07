@@ -696,6 +696,40 @@ public class ExperimentPipelineGenerationService {
             return;
         }
 
+        if (section == ExperimentPipelineSection.LANDING_PAGE_IMAGE_PLANNING) {
+            sb.append("\nDiretriz específica para Planejamento de Imagens da Landing:\n");
+            sb.append(COMMON_CAMPAIGN_ASSET_RULES).append("\n");
+            sb.append("Contexto do nicho: ").append(niche).append("\n");
+            sb.append("Ângulo da campanha: ").append(campaignAngle).append("\n");
+            sb.append("Dor principal: ").append(primaryPain).append("\n");
+            sb.append("Promessa principal: ").append(primaryPromise).append("\n");
+            sb.append("Mecanismo resumido: ").append(mechanismSummary).append("\n");
+            sb.append("Prova resumida: ").append(proofSummary).append("\n");
+            sb.append("CTA obrigatório: ").append(landingCtaForInstructions).append("\n");
+            appendIfPresent(sb, "Linha de match com landing", landingMatchLine);
+            sb.append("\nObjetivo:\n");
+            sb.append("Planejar todas as imagens da landing antes do HTML final, conectando ângulo da campanha, copy da landing e layout aprovado.\n\n");
+            sb.append("Regras:\n");
+            sb.append("1. images[] deve ter no mínimo 4 itens com sectionId e sectionName existentes no wireframe.\n");
+            sb.append("2. Cada item precisa trazer imagePrompt, objective, visualStyle, composition, focalPoint, supportingElements e mood.\n");
+            sb.append("3. Definir placement (hero, benefit, mechanism, proof, offer, faq, cta) e hierarchyLevel (primary, secondary, support).\n");
+            sb.append("4. Cada item precisa informar dimensions (desktop e mobile), safeMargins e textOverlayGuidance.\n");
+            sb.append("5. Sempre preencher messageMatchNotes explicando como a imagem reforça promessa/CTA sem desviar o ângulo.\n");
+            sb.append("6. Sempre preencher complianceNotes evitando linguagem de consultoria e claims absolutos.\n");
+            sb.append("7. Incluir negativePrompt e generationHints para orientar geração consistente e informativa.\n");
+            sb.append("8. ctaIntegrationNotes deve indicar onde o CTA aparece junto da imagem sem competir com a leitura.\n");
+            sb.append("9. sequencingNotes deve explicar a ordem narrativa das imagens ao longo da página.\n");
+            sb.append("10. consistencyChecks deve incluir IMAGE_MESSAGE_MATCH, VISUAL_HIERARCHY e CTA_CONTINUITY (PASS/WARN/FAIL).\n\n");
+            sb.append("Formato obrigatório:\n");
+            sb.append("- pageGoal\n");
+            sb.append("- visualDirectionSummary\n");
+            sb.append("- sequencingNotes\n");
+            sb.append("- ctaIntegrationNotes\n");
+            sb.append("- images[]\n");
+            sb.append("- consistencyChecks[]\n");
+            return;
+        }
+
         if (section == ExperimentPipelineSection.LANDING_PAGE_HTML) {
             sb.append("\nDiretriz específica para implementação final da landing (HTML/CSS/JS):\n");
             sb.append(COMMON_CAMPAIGN_ASSET_RULES).append("\n");
@@ -743,6 +777,9 @@ public class ExperimentPipelineGenerationService {
         if (StringUtils.hasText(experiment.getLandingPageWireframe())) {
             sb.append("\nWireframe da landing:\n").append(experiment.getLandingPageWireframe().trim()).append("\n");
         }
+        if (StringUtils.hasText(experiment.getLandingPageImagePlanning())) {
+            sb.append("\nPlanejamento de imagens da landing:\n").append(experiment.getLandingPageImagePlanning().trim()).append("\n");
+        }
     }
 
     private void applySectionContent(Experiment experiment,
@@ -755,6 +792,7 @@ public class ExperimentPipelineGenerationService {
             case AD_IMAGE_BRIEFING -> experiment.setAdImageBriefing(normalized);
             case LANDING_PAGE_COPY -> experiment.setLandingPageCopy(normalized);
             case LANDING_PAGE_WIREFRAME -> experiment.setLandingPageWireframe(normalized);
+            case LANDING_PAGE_IMAGE_PLANNING -> experiment.setLandingPageImagePlanning(normalized);
             case LANDING_PAGE_HTML -> experiment.setLandingPageHtml(normalized);
         }
     }
@@ -1100,8 +1138,83 @@ public class ExperimentPipelineGenerationService {
             ), metadataSchema);
             case LANDING_PAGE_COPY -> schemaWithMetadata("landingPageCopy", landingPageCopyFieldSchema(), metadataSchema);
             case LANDING_PAGE_WIREFRAME -> schemaWithMetadata("landingPageWireframe", landingPageWireframeFieldSchema(), metadataSchema);
+            case LANDING_PAGE_IMAGE_PLANNING -> schemaWithMetadata(
+                    "landingPageImagePlanning",
+                    landingPageImagePlanningFieldSchema(),
+                    metadataSchema);
             case LANDING_PAGE_HTML -> schemaWithMetadata("landingPageHtml", landingPageHtmlFieldSchema(), metadataSchema);
         };
+    }
+
+    private Map<String, Object> landingPageImagePlanningFieldSchema() {
+        Map<String, Object> imageSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("sectionId", stringSchema()),
+                        Map.entry("sectionName", stringSchema()),
+                        Map.entry("placement", Map.of(
+                                "type", "string",
+                                "enum", List.of("hero", "benefit", "mechanism", "proof", "offer", "faq", "cta")
+                        )),
+                        Map.entry("hierarchyLevel", Map.of(
+                                "type", "string",
+                                "enum", List.of("primary", "secondary", "support")
+                        )),
+                        Map.entry("objective", stringSchema()),
+                        Map.entry("imagePrompt", stringSchema()),
+                        Map.entry("negativePrompt", stringSchema()),
+                        Map.entry("visualStyle", stringSchema()),
+                        Map.entry("composition", stringSchema()),
+                        Map.entry("focalPoint", stringSchema()),
+                        Map.entry("supportingElements", arrayOfStringsSchema(0)),
+                        Map.entry("mood", stringSchema()),
+                        Map.entry("dimensions", Map.of(
+                                "type", "object",
+                                "additionalProperties", false,
+                                "properties", Map.of(
+                                        "desktop", stringSchema(),
+                                        "mobile", stringSchema()
+                                ),
+                                "required", List.of("desktop", "mobile")
+                        )),
+                        Map.entry("safeMargins", stringSchema()),
+                        Map.entry("textOverlayGuidance", stringSchema()),
+                        Map.entry("generationHints", arrayOfStringsSchema(0)),
+                        Map.entry("messageMatchNotes", stringSchema()),
+                        Map.entry("complianceNotes", stringSchema())
+                ),
+                "required", List.of(
+                        "sectionId",
+                        "sectionName",
+                        "placement",
+                        "hierarchyLevel",
+                        "objective",
+                        "imagePrompt",
+                        "dimensions",
+                        "messageMatchNotes")
+        );
+        return Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("pageGoal", stringSchema()),
+                        Map.entry("visualDirectionSummary", stringSchema()),
+                        Map.entry("sequencingNotes", stringSchema()),
+                        Map.entry("ctaIntegrationNotes", stringSchema()),
+                        Map.entry("images", Map.of(
+                                "type", "array",
+                                "minItems", 4,
+                                "items", imageSchema
+                        )),
+                        Map.entry("consistencyChecks", Map.of(
+                                "type", "array",
+                                "minItems", 3,
+                                "items", consistencyCheckSchema()
+                        ))
+                ),
+                "required", List.of("pageGoal", "images", "consistencyChecks")
+        );
     }
 
     private Map<String, Object> landingPageHtmlFieldSchema() {

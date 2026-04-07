@@ -719,6 +719,12 @@ public class ExperimentService {
         if (experiment.getPlatform() != ExperimentPlatform.FACEBOOK) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Experiment platform must be Facebook");
         }
+        if (!StringUtils.hasText(experiment.getFacebookPixelId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Experiment must have a Facebook pixel registered before release"
+            );
+        }
         experiment.setStatus(ExperimentStatus.PLANNED);
         experiment.setFacebookReleaseRequestedAt(Instant.now());
         experimentFunnelEventRepository.deleteByExperimentId(id);

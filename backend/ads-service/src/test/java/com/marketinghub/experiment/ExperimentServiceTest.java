@@ -420,6 +420,7 @@ class ExperimentServiceTest {
         req1.setInstagramAccountId(createInstagramAccount().getId());
         var expApproved = service.create(req1);
         expApproved.setCreativeApproved(true);
+        expApproved.setFacebookPixelId("pixel-exp-approved");
         experimentRepository.save(expApproved);
         service.releaseForFacebook(expApproved.getId());
 
@@ -504,6 +505,8 @@ class ExperimentServiceTest {
         req.setLeadPortalFlowId(createLeadPortalFlow(niche));
         req.setInstagramAccountId(createInstagramAccount().getId());
         Experiment experiment = service.create(req);
+        experiment.setFacebookPixelId("pixel-status");
+        experimentRepository.save(experiment);
 
         Experiment released = service.releaseForFacebook(experiment.getId());
         assertThat(released.getFacebookReleaseRequestedAt()).isNotNull();
@@ -549,6 +552,7 @@ class ExperimentServiceTest {
         req.setInstagramAccountId(createInstagramAccount().getId());
         Experiment experiment = service.create(req);
         experiment.setCreativeApproved(true);
+        experiment.setFacebookPixelId("pixel-release");
         experimentRepository.save(experiment);
 
         experimentFunnelEventRepository.save(ExperimentFunnelEvent.builder()
@@ -563,6 +567,45 @@ class ExperimentServiceTest {
         assertThat(released.getStatus()).isEqualTo(ExperimentStatus.PLANNED);
         assertThat(released.getFacebookReleaseRequestedAt()).isNotNull();
         assertThat(experimentFunnelEventRepository.count()).isZero();
+    }
+
+    @Test
+    void releaseForFacebookRequiresRegisteredPixel() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Pixel").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("AP").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("HP")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("ExpNoPixel");
+        req.setHypothesis("H");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_150");
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+        req.setInstagramAccountId(createInstagramAccount().getId());
+        Experiment experiment = service.create(req);
+
+        assertThatThrownBy(() -> service.releaseForFacebook(experiment.getId()))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("Facebook pixel registered");
     }
 
     @Test

@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface ExperimentPipelineGenerationJobRepository extends JpaRepository<ExperimentPipelineGenerationJob, UUID> {
     List<ExperimentPipelineGenerationJob> findByExperimentIdAndSectionAndStatusInOrderByCreatedAtDesc(
@@ -28,6 +29,24 @@ public interface ExperimentPipelineGenerationJobRepository extends JpaRepository
     Page<ExperimentPipelineGenerationJob> findByExperimentIdAndSection(Long experimentId,
                                                                        ExperimentPipelineSection section,
                                                                        Pageable pageable);
+
+    @Query("""
+            select j
+            from ExperimentPipelineGenerationJob j
+            where j.experiment.id = :experimentId
+              and j.status = com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJobStatus.COMPLETED
+              and (:section is null or j.section = :section)
+              and j.createdAt = (
+                  select max(j2.createdAt)
+                  from ExperimentPipelineGenerationJob j2
+                  where j2.experiment.id = j.experiment.id
+                    and j2.section = j.section
+                    and j2.status = com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJobStatus.COMPLETED
+              )
+            """)
+    List<ExperimentPipelineGenerationJob> findLatestCompletedPerSectionByExperimentId(
+            @Param("experimentId") Long experimentId,
+            @Param("section") ExperimentPipelineSection section);
 
     @Query("select coalesce(sum(j.costUsd), 0) from ExperimentPipelineGenerationJob j where j.experiment.id = :experimentId")
     BigDecimal sumCostUsdByExperimentId(Long experimentId);

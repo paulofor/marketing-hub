@@ -28,6 +28,7 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -35,6 +36,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -137,14 +139,24 @@ public class ExperimentPipelineGenerationService {
                                                                         ExperimentPipelineSection section,
                                                                         int page,
                                                                         int size) {
+        ensureExperimentExists(experimentId);
         Pageable pageable = PageRequest.of(
                 Math.max(page, 0),
                 Math.max(1, Math.min(size, 100)),
                 Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<ExperimentPipelineGenerationJob> jobs = section == null
-                ? jobRepository.findByExperimentId(experimentId, pageable)
-                : jobRepository.findByExperimentIdAndSection(experimentId, section, pageable);
-        return jobs.map(this::toSummaryDto);
+        List<ExperimentPipelineGenerationJob> latestCompletedJobs = jobRepository
+                .findLatestCompletedPerSectionByExperimentId(experimentId, section)
+                .stream()
+                .sorted(Comparator.comparing(ExperimentPipelineGenerationJob::getCreatedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+        int start = Math.min((int) pageable.getOffset(), latestCompletedJobs.size());
+        int end = Math.min(start + pageable.getPageSize(), latestCompletedJobs.size());
+        List<ExperimentPipelineGenerationJobSummaryDto> content = latestCompletedJobs.subList(start, end)
+                .stream()
+                .map(this::toSummaryDto)
+                .toList();
+        return new PageImpl<>(content, pageable, latestCompletedJobs.size());
     }
 
     public BigDecimal totalCostUsd(Long experimentId) {

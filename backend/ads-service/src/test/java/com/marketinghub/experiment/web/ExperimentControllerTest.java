@@ -104,12 +104,12 @@ class ExperimentControllerTest {
 
     @BeforeEach
     void cleanDb() {
-        repository.deleteAll();
-        leadPortalFlowRepository.deleteAll();
         creativeRepo.deleteAll();
+        campaignRepository.deleteAll();
+        leadPortalFlowRepository.deleteAll();
+        repository.deleteAll();
         journeyTemplateRepository.deleteAll();
         targetingElementRepository.deleteAll();
-        campaignRepository.deleteAll();
         instagramAccountRepository.deleteAll();
         hypothesisRepository.deleteAll();
         angleRepository.deleteAll();

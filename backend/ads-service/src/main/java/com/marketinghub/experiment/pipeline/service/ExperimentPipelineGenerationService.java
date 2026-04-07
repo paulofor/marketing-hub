@@ -372,6 +372,7 @@ public class ExperimentPipelineGenerationService {
             case AD_IMAGE_BRIEFING -> experiment.getAdImageBriefing();
             case LANDING_PAGE_COPY -> experiment.getLandingPageCopy();
             case LANDING_PAGE_WIREFRAME -> experiment.getLandingPageWireframe();
+            case LANDING_PAGE_IMAGE_PLANNING -> experiment.getLandingPageImagePlanning();
             case LANDING_PAGE_HTML -> experiment.getLandingPageHtml();
         };
         if (!StringUtils.hasText(predecessorContent)) {

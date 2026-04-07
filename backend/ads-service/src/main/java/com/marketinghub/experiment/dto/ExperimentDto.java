@@ -32,6 +32,7 @@ public class ExperimentDto {
     private String adImageBriefing;
     private String landingPageCopy;
     private String landingPageWireframe;
+    private String landingPageHtml;
     private InstagramAccountDto instagramAccount;
     private String facebookPixelId;
     private String facebookPixelCode;

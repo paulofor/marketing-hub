@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: V2037_04_07__experiment_landing_page_html.sql
+      relativeToChangelogFile: true
+  - include:
       file: V2037_04_06__add_image_filter_title_to_hypothesis.sql
       relativeToChangelogFile: true
   - include:

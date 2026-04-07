@@ -32,6 +32,11 @@ import {
   hasLandingLayoutContent,
   parseLandingLayoutPayload,
 } from "./landingLayoutParser";
+import {
+  LandingHtmlContent,
+  hasLandingHtmlContent,
+  parseLandingHtmlPayload,
+} from "./landingHtmlParser";
 import { extractObjectCandidates } from "./parserUtils";
 import { useExperimentPipelineJobs } from "../../api/experiment/useExperimentPipelineJobs";
 import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
@@ -41,7 +46,8 @@ type ContentGenerationSectionKey =
   | "ad-copy"
   | "image-prompt"
   | "landing-copy"
-  | "landing-layout";
+  | "landing-layout"
+  | "landing-html";
 
 interface ContentGenerationSection {
   key: ContentGenerationSectionKey;
@@ -85,6 +91,13 @@ const CONTENT_GENERATION_SECTIONS: ContentGenerationSection[] = [
     description:
       "Sugira estruturas visuais e ordem de seções para a página de conversão.",
     defaultQuantity: 2,
+  },
+  {
+    key: "landing-html",
+    label: "HTML da Landing",
+    description:
+      "Integre copy + layout e gere o HTML final com CSS e scripts para uso no formulário.",
+    defaultQuantity: 1,
   },
 ];
 
@@ -142,6 +155,7 @@ const JOB_SECTION_ALIASES: Record<string, ContentGenerationSectionKey> = {
   AD_IMAGE_BRIEFING: "image-prompt",
   LANDING_PAGE_COPY: "landing-copy",
   LANDING_PAGE_WIREFRAME: "landing-layout",
+  LANDING_PAGE_HTML: "landing-html",
 };
 
 const STATUS_LABELS: Record<RequestUiStatus, string> = {
@@ -388,12 +402,32 @@ mobilePriorityNotes,
 ctaPlacementNotes,
 formPlacementNotes`;
 
+const LANDING_HTML_PROMPT_TEMPLATE = `${COMMON_PIPELINE_PROMPT}
+
+Objetivo:
+Unificar os textos da landing + wireframe em um HTML final pronto para renderização no formulário do experimento.
+
+Regras:
+1. Entregar documento HTML completo com CSS e JavaScript embutidos.
+2. Repetir literalmente o CTA principal definido nas etapas anteriores.
+3. Layout mobile-first com formulário acima da dobra sempre que possível.
+4. Incluir validação dos campos obrigatórios no JavaScript.
+5. Incluir bloco de compliance reforçando entrega digital via IA.
+6. Não usar dependências externas.
+
+Formato esperado:
+JSON com:
+htmlDocument,
+summary,
+consistencyChecks`;
+
 const SECTION_PROMPT_DEFAULTS: Partial<
   Record<ContentGenerationSectionKey, string>
 > = {
   "ad-copy": AD_COPY_PROMPT_TEMPLATE,
   "landing-copy": LANDING_COPY_PROMPT_TEMPLATE,
   "landing-layout": LANDING_LAYOUT_PROMPT_TEMPLATE,
+  "landing-html": LANDING_HTML_PROMPT_TEMPLATE,
 };
 
 const SECTION_API_PATHS: Record<ContentGenerationSectionKey, string> = {
@@ -402,6 +436,7 @@ const SECTION_API_PATHS: Record<ContentGenerationSectionKey, string> = {
   "image-prompt": "ad-image-briefing",
   "landing-copy": "landing-page-copy",
   "landing-layout": "landing-page-wireframe",
+  "landing-html": "landing-page-html",
 };
 
 interface ExperimentContentGenerationTabProps {
@@ -449,6 +484,7 @@ const REPORT_SECTION_ORDER: ContentGenerationSectionKey[] = [
   "image-prompt",
   "landing-copy",
   "landing-layout",
+  "landing-html",
 ];
 
 const REPORT_DOMAIN_ALIASES: Record<string, ContentGenerationSectionKey> = {
@@ -460,6 +496,8 @@ const REPORT_DOMAIN_ALIASES: Record<string, ContentGenerationSectionKey> = {
   "landing-copy": "landing-copy",
   "landing-page-wireframe": "landing-layout",
   "landing-layout": "landing-layout",
+  "landing-page-html": "landing-html",
+  "landing-html": "landing-html",
 };
 
 function getFrameworkSummary(value?: string) {
@@ -745,21 +783,23 @@ export default function ExperimentContentGenerationTab({
   const [isLoadingAdCopy, setIsLoadingAdCopy] = useState(false);
   const [sectionGenerations, setSectionGenerations] = useState<
     Record<
-      "image-prompt" | "landing-copy" | "landing-layout",
+      "image-prompt" | "landing-copy" | "landing-layout" | "landing-html",
       SimpleGenerationRow[]
     >
   >({
     "image-prompt": [],
     "landing-copy": [],
     "landing-layout": [],
+    "landing-html": [],
   });
   const [isLoadingSectionGenerations, setIsLoadingSectionGenerations] =
     useState<
-      Record<"image-prompt" | "landing-copy" | "landing-layout", boolean>
+      Record<"image-prompt" | "landing-copy" | "landing-layout" | "landing-html", boolean>
     >({
       "image-prompt": false,
       "landing-copy": false,
       "landing-layout": false,
+      "landing-html": false,
     });
   const [isRequestingBySection, setIsRequestingBySection] = useState<
     Record<ContentGenerationSectionKey, boolean>
@@ -992,11 +1032,11 @@ export default function ExperimentContentGenerationTab({
 
   useEffect(() => {
     const sectionsToLoad: Array<
-      "image-prompt" | "landing-copy" | "landing-layout"
-    > = ["image-prompt", "landing-copy", "landing-layout"];
+      "image-prompt" | "landing-copy" | "landing-layout" | "landing-html"
+    > = ["image-prompt", "landing-copy", "landing-layout", "landing-html"];
 
     const loadSection = async (
-      sectionKey: "image-prompt" | "landing-copy" | "landing-layout",
+      sectionKey: "image-prompt" | "landing-copy" | "landing-layout" | "landing-html",
     ) => {
       try {
         setIsLoadingSectionGenerations((previous) => ({
@@ -1537,6 +1577,7 @@ function GenericGenerationSummaryPanel({
     parsedContent,
     promptUsed,
     latestGeneration?.createdAt,
+    experimentId,
   );
   const fallbackRaw = latestGeneration?.rawResponse?.trim();
   const hasData = hasStructuredData || Boolean(fallbackRaw);
@@ -1733,7 +1774,7 @@ function GenericGenerationHistoryList({
 function parseSectionContent(
   sectionKey: ContentGenerationSectionKey,
   raw?: string | null,
-): ImagePromptContent | LandingCopyContent | LandingLayoutContent | undefined {
+): ImagePromptContent | LandingCopyContent | LandingLayoutContent | LandingHtmlContent | undefined {
   if (!raw) return undefined;
   switch (sectionKey) {
     case "image-prompt":
@@ -1742,6 +1783,8 @@ function parseSectionContent(
       return parseLandingCopyPayload(raw);
     case "landing-layout":
       return parseLandingLayoutPayload(raw);
+    case "landing-html":
+      return parseLandingHtmlPayload(raw);
     default:
       return undefined;
   }
@@ -1763,9 +1806,10 @@ function normalizeRawResponseForJsonViewer(raw?: string | null): string | undefi
 
 function resolveStructuredPreview(
   sectionKey: ContentGenerationSectionKey,
-  parsed?: ImagePromptContent | LandingCopyContent | LandingLayoutContent,
+  parsed?: ImagePromptContent | LandingCopyContent | LandingLayoutContent | LandingHtmlContent,
   promptUsed?: string,
   executedAt?: string,
+  experimentId?: string,
 ): { hasStructuredData: boolean; preview?: ReactNode } {
   switch (sectionKey) {
     case "image-prompt": {
@@ -1810,6 +1854,16 @@ function resolveStructuredPreview(
       }
       return { hasStructuredData: false };
     }
+    case "landing-html": {
+      const content = parsed as LandingHtmlContent | undefined;
+      if (hasLandingHtmlContent(content)) {
+        return {
+          hasStructuredData: true,
+          preview: <LandingHtmlPreview content={content} experimentId={experimentId} />,
+        };
+      }
+      return { hasStructuredData: false };
+    }
     default:
       return { hasStructuredData: false };
   }
@@ -1817,7 +1871,7 @@ function resolveStructuredPreview(
 
 function describeGenerationSummary(
   sectionKey: ContentGenerationSectionKey,
-  content?: ImagePromptContent | LandingCopyContent | LandingLayoutContent,
+  content?: ImagePromptContent | LandingCopyContent | LandingLayoutContent | LandingHtmlContent,
 ): string {
   switch (sectionKey) {
     case "image-prompt": {
@@ -1851,6 +1905,15 @@ function describeGenerationSummary(
           : "Wireframe atualizado sem blocos detalhados.";
       }
       return "Wireframe ainda não estruturado.";
+    }
+    case "landing-html": {
+      const typed = content as LandingHtmlContent | undefined;
+      if (hasLandingHtmlContent(typed)) {
+        return typed.htmlDocument
+          ? "Landing final em HTML/CSS/JS pronta para uso."
+          : "HTML da landing atualizado.";
+      }
+      return "HTML final ainda não estruturado.";
     }
     default:
       return "Geração registrada.";
@@ -2254,6 +2317,85 @@ function LandingLayoutPreview({
           Nenhum bloco estrutural informado.
         </p>
       )}
+    </div>
+  );
+}
+
+function LandingHtmlPreview({
+  content,
+  experimentId,
+}: {
+  content: LandingHtmlContent;
+  experimentId?: string;
+}) {
+  const [isApplying, setIsApplying] = useState(false);
+  const canRender = Boolean(content.htmlDocument?.trim());
+
+  const handleApplyToForm = async () => {
+    if (!experimentId) return;
+    try {
+      setIsApplying(true);
+      await axios.post(
+        `/api/experiments/${experimentId}/pipeline/landing-page-html/apply-to-form`,
+      );
+      toast.success("HTML da landing aplicado no formulário do experimento.");
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  return (
+    <div className="d-flex flex-column gap-3 mt-3">
+      {content.summary ? (
+        <div className="alert alert-info py-2 mb-0">
+          <strong>Resumo:</strong> {content.summary}
+        </div>
+      ) : null}
+      <div className="d-flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="btn btn-outline-primary"
+          disabled={isApplying || !experimentId || !canRender}
+          onClick={handleApplyToForm}
+        >
+          {isApplying ? (
+            <span className="d-inline-flex align-items-center gap-1">
+              <span
+                className="spinner-border spinner-border-sm"
+                role="status"
+                aria-hidden="true"
+              />
+              Aplicando...
+            </span>
+          ) : (
+            "Usar como formulário do experimento"
+          )}
+        </button>
+      </div>
+      {canRender ? (
+        <div className="border rounded overflow-hidden">
+          <iframe
+            title="Pré-visualização da landing final"
+            srcDoc={content.htmlDocument}
+            style={{ width: "100%", height: "720px", border: "0" }}
+            sandbox="allow-forms allow-modals allow-popups allow-scripts"
+          />
+        </div>
+      ) : (
+        <p className="text-muted small mb-0">
+          Sem HTML final estruturado nesta geração.
+        </p>
+      )}
+      {content.htmlDocument ? (
+        <details>
+          <summary className="small text-muted">Ver HTML bruto</summary>
+          <pre className="bg-body-secondary rounded p-3 small mb-0 mt-2">
+            {content.htmlDocument}
+          </pre>
+        </details>
+      ) : null}
     </div>
   );
 }

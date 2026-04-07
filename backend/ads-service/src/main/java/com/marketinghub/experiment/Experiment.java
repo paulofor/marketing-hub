@@ -189,6 +189,9 @@ public class Experiment {
     @Column(name = "landing_page_wireframe", columnDefinition = "LONGTEXT")
     private String landingPageWireframe;
 
+    @Column(name = "landing_page_html", columnDefinition = "LONGTEXT")
+    private String landingPageHtml;
+
     /** Quantidade de criativos a serem gerados pelo worker. */
     @Column(name = "creatives_to_generate")
     private Integer creativesToGenerate;

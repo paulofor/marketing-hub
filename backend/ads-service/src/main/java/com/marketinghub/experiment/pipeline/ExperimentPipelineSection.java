@@ -7,7 +7,8 @@ public enum ExperimentPipelineSection {
     AD_COPY("ad-copy", CAMPAIGN_ANGLE),
     AD_IMAGE_BRIEFING("ad-image-briefing", AD_COPY),
     LANDING_PAGE_COPY("landing-page-copy", AD_IMAGE_BRIEFING),
-    LANDING_PAGE_WIREFRAME("landing-page-wireframe", LANDING_PAGE_COPY);
+    LANDING_PAGE_WIREFRAME("landing-page-wireframe", LANDING_PAGE_COPY),
+    LANDING_PAGE_HTML("landing-page-html", LANDING_PAGE_WIREFRAME);
 
     private final String path;
     private final ExperimentPipelineSection predecessor;

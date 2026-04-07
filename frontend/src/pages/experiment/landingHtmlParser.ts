@@ -5,7 +5,23 @@ export interface LandingHtmlContent {
   summary?: string;
 }
 
-function resolveLandingHtmlPayload(candidate: JsonRecord): JsonRecord | undefined {
+function resolveLandingHtmlPayload(
+  candidate: JsonRecord,
+): JsonRecord | undefined {
+  if (
+    candidate.artifact &&
+    typeof candidate.artifact === "object" &&
+    !Array.isArray(candidate.artifact)
+  ) {
+    const artifact = candidate.artifact as JsonRecord;
+    if (
+      artifact.content &&
+      typeof artifact.content === "object" &&
+      !Array.isArray(artifact.content)
+    ) {
+      return artifact.content as JsonRecord;
+    }
+  }
   if (
     candidate.landingPageHtml &&
     typeof candidate.landingPageHtml === "object" &&
@@ -23,7 +39,9 @@ export function hasLandingHtmlContent(
   return Boolean(pickText(payload.htmlDocument) || pickText(payload.summary));
 }
 
-export function parseLandingHtmlPayload(raw?: string | null): LandingHtmlContent | undefined {
+export function parseLandingHtmlPayload(
+  raw?: string | null,
+): LandingHtmlContent | undefined {
   const candidates = extractObjectCandidates(raw);
   for (const candidate of candidates) {
     const scope = resolveLandingHtmlPayload(candidate);

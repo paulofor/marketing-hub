@@ -60,6 +60,21 @@ export interface LandingCopyContent {
 
 function resolveLandingPayload(candidate: JsonRecord): JsonRecord | undefined {
   if (
+    candidate.artifact &&
+    typeof candidate.artifact === "object" &&
+    !Array.isArray(candidate.artifact)
+  ) {
+    const artifact = candidate.artifact as JsonRecord;
+    if (
+      artifact.content &&
+      typeof artifact.content === "object" &&
+      !Array.isArray(artifact.content)
+    ) {
+      return artifact.content as JsonRecord;
+    }
+  }
+
+  if (
     candidate.text &&
     typeof candidate.text === "string" &&
     candidate.type === "output_text"
@@ -78,8 +93,8 @@ function resolveLandingPayload(candidate: JsonRecord): JsonRecord | undefined {
     return candidate.landingPageCopy as JsonRecord;
   }
   if (typeof candidate.landingPageCopy === "string") {
-    const nested = extractObjectCandidates(candidate.landingPageCopy).find((entry) =>
-      hasLandingPayloadShape(entry),
+    const nested = extractObjectCandidates(candidate.landingPageCopy).find(
+      (entry) => hasLandingPayloadShape(entry),
     );
     if (nested) return nested;
   }
@@ -115,10 +130,10 @@ function resolveLandingPayload(candidate: JsonRecord): JsonRecord | undefined {
 function hasLandingPayloadShape(candidate: JsonRecord): boolean {
   return Boolean(
     candidate.landingCurta ||
-      candidate.landingCompleta ||
-      candidate.landingLonga ||
-      candidate.shortVersion ||
-      candidate.longVersion,
+    candidate.landingCompleta ||
+    candidate.landingLonga ||
+    candidate.shortVersion ||
+    candidate.longVersion,
   );
 }
 
@@ -132,8 +147,11 @@ function hasVersionContent(version?: LandingCopyVersion): boolean {
   });
 }
 
-function parseFormMicrocopy(value: unknown): LandingCopyFormMicrocopy | undefined {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+function parseFormMicrocopy(
+  value: unknown,
+): LandingCopyFormMicrocopy | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    return undefined;
   const payload = value as JsonRecord;
   const microcopy: LandingCopyFormMicrocopy = {
     headline: pickText(payload.headline),
@@ -147,7 +165,8 @@ function parseFormFields(value: unknown): LandingCopyFormField[] | undefined {
   if (!Array.isArray(value)) return undefined;
   const fields = value
     .map((entry) => {
-      if (!entry || typeof entry !== "object" || Array.isArray(entry)) return undefined;
+      if (!entry || typeof entry !== "object" || Array.isArray(entry))
+        return undefined;
       const field = entry as JsonRecord;
       const parsed: LandingCopyFormField = {
         label: pickText(field.label ?? field.name),
@@ -157,7 +176,11 @@ function parseFormFields(value: unknown): LandingCopyFormField[] | undefined {
         required: field.required === true,
       };
       const hasAny = Object.values(parsed).some((val) =>
-        typeof val === "boolean" ? val : typeof val === "string" ? val.trim().length > 0 : false,
+        typeof val === "boolean"
+          ? val
+          : typeof val === "string"
+            ? val.trim().length > 0
+            : false,
       );
       return hasAny ? parsed : undefined;
     })
@@ -197,7 +220,8 @@ function parseFaq(value: unknown): LandingCopyFaqItem[] | undefined {
   if (!Array.isArray(items)) return undefined;
   const parsed = items
     .map((entry) => {
-      if (!entry || typeof entry !== "object" || Array.isArray(entry)) return undefined;
+      if (!entry || typeof entry !== "object" || Array.isArray(entry))
+        return undefined;
       const payload = entry as JsonRecord;
       const item: LandingCopyFaqItem = {
         question: pickText(payload.question),
@@ -210,7 +234,8 @@ function parseFaq(value: unknown): LandingCopyFaqItem[] | undefined {
 }
 
 function parseVersion(value: unknown): LandingCopyVersion | undefined {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    return undefined;
   const payload = value as JsonRecord;
   const version: LandingCopyVersion = {
     heroPromise: pickText(payload.heroPromise ?? payload.promise),
@@ -218,11 +243,15 @@ function parseVersion(value: unknown): LandingCopyVersion | undefined {
     heroTitle: pickText(payload.heroTitle ?? payload.headline),
     heroSubtitle: pickText(payload.heroSubtitle ?? payload.subheadline),
     heroBullets: toStringArray(payload.heroBullets ?? payload.bullets),
-    primaryCTA: pickText(payload.primaryCTA ?? payload.cta ?? payload.ctaPrincipal),
+    primaryCTA: pickText(
+      payload.primaryCTA ?? payload.cta ?? payload.ctaPrincipal,
+    ),
     formMicrocopy: parseFormMicrocopy(payload.formMicrocopy ?? payload.form),
     formFields: parseFormFields(payload.formFields ?? payload.fields),
     benefitsSection: parseBlock(payload.benefitsSection ?? payload.benefits),
-    howItWorksSection: parseBlock(payload.howItWorksSection ?? payload.howItWorks),
+    howItWorksSection: parseBlock(
+      payload.howItWorksSection ?? payload.howItWorks,
+    ),
     proofSection: parseBlock(payload.proofSection ?? payload.proof),
     offerSection: parseBlock(payload.offerSection ?? payload.offerDetails),
     objectionHandlingSection: parseBlock(
@@ -238,18 +267,27 @@ export function hasLandingCopyContent(
   payload?: LandingCopyContent | null,
 ): payload is LandingCopyContent {
   if (!payload) return false;
-  return Boolean(hasVersionContent(payload.landingCurta) || hasVersionContent(payload.landingCompleta));
+  return Boolean(
+    hasVersionContent(payload.landingCurta) ||
+    hasVersionContent(payload.landingCompleta),
+  );
 }
 
-export function parseLandingCopyPayload(raw?: string | null): LandingCopyContent | undefined {
+export function parseLandingCopyPayload(
+  raw?: string | null,
+): LandingCopyContent | undefined {
   const candidates = extractObjectCandidates(raw);
   for (const candidate of candidates) {
     const scope = resolveLandingPayload(candidate);
     if (!scope) continue;
     const parsed: LandingCopyContent = {
-      messageMatchSource: pickText(scope.messageMatchSource ?? scope.messageMatch ?? scope.headlineSource),
+      messageMatchSource: pickText(
+        scope.messageMatchSource ?? scope.messageMatch ?? scope.headlineSource,
+      ),
       landingCurta: parseVersion(scope.landingCurta ?? scope.shortVersion),
-      landingCompleta: parseVersion(scope.landingCompleta ?? scope.landingLonga ?? scope.longVersion),
+      landingCompleta: parseVersion(
+        scope.landingCompleta ?? scope.landingLonga ?? scope.longVersion,
+      ),
     };
     if (hasLandingCopyContent(parsed)) {
       return parsed;

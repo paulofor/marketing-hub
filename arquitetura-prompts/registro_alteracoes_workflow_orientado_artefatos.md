@@ -16,4 +16,29 @@ As alterações serão adicionadas conforme forem implementadas, incluindo:
 
 ## Histórico
 
-_Conteúdo será inserido nas próximas iterações._
+### 2026-04-07 — Migração da experiência de landing para artefatos (frontend)
+
+- **Item alterado:** prompts de geração para `Texto da Landing`, `Layout da Landing`, `Planejamento de Imagens da Landing` e `HTML da Landing`.
+  - **O que mudou:** os prompts dessas etapas passaram a exigir envelope `artifact` (`artifactType`, `artifactVersion`, `status`, `parentArtifactIds`, `content`), alinhando a saída com o workflow orientado a artefatos.
+  - **Impacto esperado:** padronização de contratos entre etapas do pipeline, reduzindo ambiguidade de payload e facilitando lineage/versionamento.
+  - **Arquivos relacionados:** `frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx`.
+
+- **Item alterado:** renderização e parsing de `Planejamento de Imagens da Landing`.
+  - **O que mudou:** foi criado parser dedicado (`landingImagePlanningParser`) com suporte a envelope de artefato e variações legadas; a UI agora mostra resumo visual do planejamento e cards de imagens com preview quando existir URL.
+  - **Impacto esperado:** maior visibilidade operacional sobre o plano de imagens antes da etapa de HTML, com diagnóstico rápido de ausência de assets.
+  - **Arquivos relacionados:** `frontend/src/pages/experiment/landingImagePlanningParser.ts`, `frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx`.
+
+- **Item alterado:** compatibilidade dos parsers de landing com envelope de artefato.
+  - **O que mudou:** parsers de `landing copy`, `landing layout` e `landing html` passaram a ler `artifact.content` além do formato antigo.
+  - **Impacto esperado:** transição segura para o novo workflow sem quebrar histórico de execuções já persistidas.
+  - **Arquivos relacionados:** `frontend/src/pages/experiment/landingCopyParser.ts`, `frontend/src/pages/experiment/landingLayoutParser.ts`, `frontend/src/pages/experiment/landingHtmlParser.ts`.
+
+- **Item alterado:** pré-visualização do HTML final da landing.
+  - **O que mudou:** `iframe` de preview passou a usar `allow-same-origin` no sandbox para facilitar carregamento de imagens quando a origem exigir contexto de mesma origem.
+  - **Impacto esperado:** redução de casos em que o HTML renderiza sem imagens na aba de pré-visualização.
+  - **Arquivos relacionados:** `frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx`.
+
+- **Item alterado:** cobertura automatizada dos novos contratos.
+  - **O que mudou:** inclusão de testes para parser de planejamento de imagens e parser de HTML em formato de artefato; expansão dos testes de copy/layout para validar envelope `artifact`.
+  - **Impacto esperado:** proteção contra regressões durante a evolução do contrato de saída do Worker IA.
+  - **Arquivos relacionados:** `frontend/src/pages/experiment/landingImagePlanningParser.test.ts`, `frontend/src/pages/experiment/landingHtmlParser.test.ts`, `frontend/src/pages/experiment/landingCopyParser.test.ts`, `frontend/src/pages/experiment/landingLayoutParser.test.ts`.

@@ -30,7 +30,21 @@ describe("landingLayoutParser", () => {
   });
 
   it("returns undefined for payloads without structure", () => {
-    const parsed = parseLandingLayoutPayload("{\"wireframe\":\"texto livre\"}");
+    const parsed = parseLandingLayoutPayload('{"wireframe":"texto livre"}');
     expect(parsed).toBeUndefined();
+  });
+
+  it("reads artifact-oriented envelope", () => {
+    const raw = JSON.stringify({
+      artifact: {
+        artifactType: "experiment.landing.layout",
+        content: {
+          pageGoal: "Gerar lead qualificado",
+          variantLayoutId: "proof-first",
+        },
+      },
+    });
+    const parsed = parseLandingLayoutPayload(raw);
+    expect(parsed?.variantLayoutId).toBe("proof-first");
   });
 });

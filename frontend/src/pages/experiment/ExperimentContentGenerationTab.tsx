@@ -33,6 +33,11 @@ import {
   parseLandingLayoutPayload,
 } from "./landingLayoutParser";
 import {
+  LandingImagePlanningContent,
+  hasLandingImagePlanningContent,
+  parseLandingImagePlanningPayload,
+} from "./landingImagePlanningParser";
+import {
   LandingHtmlContent,
   hasLandingHtmlContent,
   parseLandingHtmlPayload,
@@ -309,8 +314,14 @@ Regras:
 
 Formato esperado:
 JSON com:
-messageMatchSource,
-landingCurta {
+artifact {
+  artifactType: "experiment.landing.copy",
+  artifactVersion: "v1",
+  status: "DRAFT|VALIDATED|APPROVED",
+  parentArtifactIds: [],
+  content: {
+    messageMatchSource,
+    landingCurta {
   heroPromise,
   offerPromise,
   heroTitle,
@@ -325,9 +336,9 @@ landingCurta {
   offerSection,
   objectionHandlingSection,
   faqSection,
-  closingCTA
-},
-landingCompleta {
+      closingCTA
+    },
+    landingCompleta {
   heroPromise,
   offerPromise,
   heroTitle,
@@ -342,7 +353,9 @@ landingCompleta {
   offerSection,
   objectionHandlingSection,
   faqSection,
-  closingCTA
+      closingCTA
+    }
+  }
 }`;
 
 const LANDING_LAYOUT_PROMPT_TEMPLATE = `${COMMON_PIPELINE_PROMPT}
@@ -394,9 +407,15 @@ Regras:
 
 Formato esperado:
 JSON com:
-pageGoal,
-variantLayoutId,
-sectionOrder [
+artifact {
+  artifactType: "experiment.landing.layout",
+  artifactVersion: "v1",
+  status: "DRAFT|VALIDATED|APPROVED",
+  parentArtifactIds: [],
+  content: {
+    pageGoal,
+    variantLayoutId,
+    sectionOrder [
   {
     "sectionName": "",
     "objective": "",
@@ -405,11 +424,13 @@ sectionOrder [
     "mobilePriorityScore": 0,
     "dropOffRisk": "baixo|médio|alto",
     "sectionDependsOn": ""
+      }
+    ],
+    mobilePriorityNotes,
+    ctaPlacementNotes,
+    formPlacementNotes
   }
-],
-mobilePriorityNotes,
-ctaPlacementNotes,
-formPlacementNotes`;
+}`;
 
 const LANDING_HTML_PROMPT_TEMPLATE = `${COMMON_PIPELINE_PROMPT}
 
@@ -426,9 +447,22 @@ Regras:
 
 Formato esperado:
 JSON com:
-htmlDocument,
-summary,
-consistencyChecks`;
+artifact {
+  artifactType: "experiment.landing.html",
+  artifactVersion: "v1",
+  status: "DRAFT|VALIDATED|APPROVED",
+  parentArtifactIds: [],
+  content: {
+    htmlDocument,
+    summary,
+    consistencyChecks
+  }
+}
+
+Regra obrigatória de imagens:
+- Toda tag <img> deve ter src absoluto válido (https://... ou data:image/...).
+- Nunca use caminhos relativos como "/assets/..." ou "./imagem.jpg" no htmlDocument.
+- Se não houver imagem final disponível, renderize placeholder visual no CSS sem quebrar layout.`;
 
 const LANDING_IMAGE_PLANNING_PROMPT_TEMPLATE = `${COMMON_PIPELINE_PROMPT}
 
@@ -451,12 +485,20 @@ Regras:
 
 Formato esperado:
 JSON com:
-pageGoal,
-visualDirectionSummary,
-sequencingNotes,
-ctaIntegrationNotes,
-images,
-consistencyChecks`;
+artifact {
+  artifactType: "experiment.landing.image_plan",
+  artifactVersion: "v1",
+  status: "DRAFT|VALIDATED|APPROVED",
+  parentArtifactIds: [],
+  content: {
+    pageGoal,
+    visualDirectionSummary,
+    sequencingNotes,
+    ctaIntegrationNotes,
+    images,
+    consistencyChecks
+  }
+}`;
 
 const SECTION_PROMPT_DEFAULTS: Partial<
   Record<ContentGenerationSectionKey, string>
@@ -688,34 +730,36 @@ function splitTextWithInlineJson(content: string): PromptSegment[] {
 function buildPromptLineItems(promptUsed: string): PromptLineItem[] {
   const normalized = promptUsed.replace(/\\n/g, "\n").replace(/\/n/g, "\n");
 
-  return splitTextWithInlineJson(normalized).flatMap<PromptLineItem>((segment) => {
-    if (segment.type === "json") {
-      return [{ kind: "json", content: segment.content }];
-    }
-
-    return segment.content.split("\n").map<PromptLineItem>((line) => {
-      const trimmed = line.trim();
-      if (!trimmed) return { kind: "text", content: "" };
-
-      const inlineJsonMatch = trimmed.match(/^([^:]+):\s*([\[{].*)$/);
-      if (inlineJsonMatch) {
-        const [, title, jsonRaw] = inlineJsonMatch;
-        const formattedJson = tryFormatJsonBlock(jsonRaw);
-        if (formattedJson) {
-          return {
-            kind: "title",
-            content: `${title}:__JSON__${formattedJson}`,
-          };
-        }
+  return splitTextWithInlineJson(normalized).flatMap<PromptLineItem>(
+    (segment) => {
+      if (segment.type === "json") {
+        return [{ kind: "json", content: segment.content }];
       }
 
-      const isTitle = trimmed.endsWith(":") && !trimmed.startsWith("- ");
-      return {
-        kind: isTitle ? "title" : "text",
-        content: line,
-      };
-    });
-  });
+      return segment.content.split("\n").map<PromptLineItem>((line) => {
+        const trimmed = line.trim();
+        if (!trimmed) return { kind: "text", content: "" };
+
+        const inlineJsonMatch = trimmed.match(/^([^:]+):\s*([\[{].*)$/);
+        if (inlineJsonMatch) {
+          const [, title, jsonRaw] = inlineJsonMatch;
+          const formattedJson = tryFormatJsonBlock(jsonRaw);
+          if (formattedJson) {
+            return {
+              kind: "title",
+              content: `${title}:__JSON__${formattedJson}`,
+            };
+          }
+        }
+
+        const isTitle = trimmed.endsWith(":") && !trimmed.startsWith("- ");
+        return {
+          kind: isTitle ? "title" : "text",
+          content: line,
+        };
+      });
+    },
+  );
 }
 
 function getSectionMetadata(domain?: string) {
@@ -760,8 +804,7 @@ export function selectLatestGenerationPerSection(
     const candidateTimestamp = parseTimestamp(generation.createdAt) ?? -1;
     const candidateIsMoreRecent =
       candidateTimestamp > currentTimestamp ||
-      (candidateTimestamp === currentTimestamp &&
-        generation.id > current.id);
+      (candidateTimestamp === currentTimestamp && generation.id > current.id);
 
     if (candidateIsMoreRecent) {
       latestBySection.set(generation.metadata.sectionKey, generation);
@@ -1125,9 +1168,7 @@ export default function ExperimentContentGenerationTab({
       "landing-html",
     ];
 
-    const loadSection = async (
-      sectionKey: HistorySectionKey,
-    ) => {
+    const loadSection = async (sectionKey: HistorySectionKey) => {
       try {
         setIsLoadingSectionGenerations((previous) => ({
           ...previous,
@@ -1854,7 +1895,13 @@ function GenericGenerationHistoryList({
 function parseSectionContent(
   sectionKey: ContentGenerationSectionKey,
   raw?: string | null,
-): ImagePromptContent | LandingCopyContent | LandingLayoutContent | LandingHtmlContent | undefined {
+):
+  | ImagePromptContent
+  | LandingCopyContent
+  | LandingLayoutContent
+  | LandingImagePlanningContent
+  | LandingHtmlContent
+  | undefined {
   if (!raw) return undefined;
   switch (sectionKey) {
     case "image-prompt":
@@ -1864,7 +1911,7 @@ function parseSectionContent(
     case "landing-layout":
       return parseLandingLayoutPayload(raw);
     case "landing-image-planning":
-      return undefined;
+      return parseLandingImagePlanningPayload(raw);
     case "landing-html":
       return parseLandingHtmlPayload(raw);
     default:
@@ -1872,7 +1919,9 @@ function parseSectionContent(
   }
 }
 
-function normalizeRawResponseForJsonViewer(raw?: string | null): string | undefined {
+function normalizeRawResponseForJsonViewer(
+  raw?: string | null,
+): string | undefined {
   if (!raw) return undefined;
   const trimmed = raw.trim();
   if (!trimmed) return undefined;
@@ -1888,7 +1937,12 @@ function normalizeRawResponseForJsonViewer(raw?: string | null): string | undefi
 
 function resolveStructuredPreview(
   sectionKey: ContentGenerationSectionKey,
-  parsed?: ImagePromptContent | LandingCopyContent | LandingLayoutContent | LandingHtmlContent,
+  parsed?:
+    | ImagePromptContent
+    | LandingCopyContent
+    | LandingLayoutContent
+    | LandingImagePlanningContent
+    | LandingHtmlContent,
   promptUsed?: string,
   executedAt?: string,
   experimentId?: string,
@@ -1936,14 +1990,24 @@ function resolveStructuredPreview(
       }
       return { hasStructuredData: false };
     }
-    case "landing-image-planning":
+    case "landing-image-planning": {
+      const content = parsed as LandingImagePlanningContent | undefined;
+      if (hasLandingImagePlanningContent(content)) {
+        return {
+          hasStructuredData: true,
+          preview: <LandingImagePlanningPreview content={content} />,
+        };
+      }
       return { hasStructuredData: false };
+    }
     case "landing-html": {
       const content = parsed as LandingHtmlContent | undefined;
       if (hasLandingHtmlContent(content)) {
         return {
           hasStructuredData: true,
-          preview: <LandingHtmlPreview content={content} experimentId={experimentId} />,
+          preview: (
+            <LandingHtmlPreview content={content} experimentId={experimentId} />
+          ),
         };
       }
       return { hasStructuredData: false };
@@ -1955,7 +2019,12 @@ function resolveStructuredPreview(
 
 function describeGenerationSummary(
   sectionKey: ContentGenerationSectionKey,
-  content?: ImagePromptContent | LandingCopyContent | LandingLayoutContent | LandingHtmlContent,
+  content?:
+    | ImagePromptContent
+    | LandingCopyContent
+    | LandingLayoutContent
+    | LandingImagePlanningContent
+    | LandingHtmlContent,
 ): string {
   switch (sectionKey) {
     case "image-prompt": {
@@ -1990,8 +2059,16 @@ function describeGenerationSummary(
       }
       return "Wireframe ainda não estruturado.";
     }
-    case "landing-image-planning":
+    case "landing-image-planning": {
+      const typed = content as LandingImagePlanningContent | undefined;
+      if (hasLandingImagePlanningContent(typed)) {
+        const total = typed.images.length;
+        return total > 0
+          ? `${total} imagens planejadas para a landing.`
+          : "Planejamento visual registrado sem imagens detalhadas.";
+      }
       return "Planejamento de imagens registrado para a landing.";
+    }
     case "landing-html": {
       const typed = content as LandingHtmlContent | undefined;
       if (hasLandingHtmlContent(typed)) {
@@ -2466,7 +2543,7 @@ function LandingHtmlPreview({
             title="Pré-visualização da landing final"
             srcDoc={content.htmlDocument}
             style={{ width: "100%", height: "720px", border: "0" }}
-            sandbox="allow-forms allow-modals allow-popups allow-scripts"
+            sandbox="allow-forms allow-modals allow-popups allow-same-origin allow-scripts"
           />
         </div>
       ) : (
@@ -2482,6 +2559,101 @@ function LandingHtmlPreview({
           </pre>
         </details>
       ) : null}
+    </div>
+  );
+}
+
+function LandingImagePlanningPreview({
+  content,
+}: {
+  content: LandingImagePlanningContent;
+}) {
+  return (
+    <div className="d-flex flex-column gap-3 mt-3">
+      <div className="row g-3">
+        <div className="col-12 col-lg-6">
+          <div className="border rounded p-3 bg-body-tertiary h-100">
+            <p className="text-uppercase small text-muted mb-1">
+              Objetivo visual
+            </p>
+            <p className="fw-semibold mb-1">{content.pageGoal ?? "—"}</p>
+            <p className="small text-muted mb-0">
+              {content.visualDirectionSummary ??
+                "Sem resumo da direção visual."}
+            </p>
+          </div>
+        </div>
+        <div className="col-12 col-lg-6">
+          <div className="border rounded p-3 bg-body-tertiary h-100">
+            <p className="text-uppercase small text-muted mb-1">
+              Sequenciamento
+            </p>
+            <p className="small mb-2">
+              {content.sequencingNotes ?? "Sem notas."}
+            </p>
+            <p className="text-uppercase small text-muted mb-1">
+              Integração com CTA
+            </p>
+            <p className="small mb-0">
+              {content.ctaIntegrationNotes ?? "Sem notas."}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {content.images.length ? (
+        <div className="row g-3">
+          {content.images.map((image, index) => (
+            <div
+              className="col-12 col-xl-6"
+              key={`${image.sectionId ?? "img"}-${index}`}
+            >
+              <div className="border rounded p-3 h-100 bg-light-subtle d-flex flex-column gap-2">
+                <div className="d-flex justify-content-between align-items-center gap-2">
+                  <strong>{image.sectionName ?? `Imagem ${index + 1}`}</strong>
+                  {image.placement ? (
+                    <span className="badge text-bg-light text-uppercase">
+                      {image.placement}
+                    </span>
+                  ) : null}
+                </div>
+                {image.imageUrl ? (
+                  <img
+                    src={image.imageUrl}
+                    alt={
+                      image.altText ??
+                      image.sectionName ??
+                      `Imagem ${index + 1}`
+                    }
+                    className="img-fluid rounded border"
+                    style={{ maxHeight: "220px", objectFit: "cover" }}
+                  />
+                ) : null}
+                <p className="small mb-0">
+                  <strong>Objetivo:</strong> {image.objective ?? "—"}
+                </p>
+                <p className="small mb-0">
+                  <strong>Prompt:</strong> {image.imagePrompt ?? "—"}
+                </p>
+                {image.negativePrompt ? (
+                  <p className="small mb-0">
+                    <strong>Negative prompt:</strong> {image.negativePrompt}
+                  </p>
+                ) : null}
+                <p className="small mb-0">
+                  <strong>Desktop/Mobile:</strong>{" "}
+                  {image.desktopDimensions ?? "—"} /{" "}
+                  {image.mobileDimensions ?? "—"}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-muted small mb-0">
+          Planejamento estruturado sem imagens com URL de visualização.
+        </p>
+      )}
     </div>
   );
 }

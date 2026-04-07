@@ -40,11 +40,13 @@ describe("landingCopyParser", () => {
     expect(hasLandingCopyContent(parsed)).toBe(true);
     expect(parsed?.messageMatchSource).toBe("Headline A");
     expect(parsed?.landingCurta?.benefitsSection?.bullets).toHaveLength(2);
-    expect(parsed?.landingCompleta?.faqSection?.[0]?.question).toContain("Serve");
+    expect(parsed?.landingCompleta?.faqSection?.[0]?.question).toContain(
+      "Serve",
+    );
   });
 
   it("returns undefined when no recognizable landing structure is present", () => {
-    const parsed = parseLandingCopyPayload("{\"landing\":\"texto solto\"}");
+    const parsed = parseLandingCopyPayload('{"landing":"texto solto"}');
     expect(parsed).toBeUndefined();
   });
 
@@ -82,6 +84,26 @@ describe("landingCopyParser", () => {
     expect(hasLandingCopyContent(parsed)).toBe(true);
     expect(parsed?.messageMatchSource).toBe("Dor principal do nicho");
     expect(parsed?.landingCurta?.primaryCTA).toBe("Gerar amostra");
-    expect(parsed?.landingCurta?.benefitsSection?.bullets?.[0]).toBe("Mensagem alinhada");
+    expect(parsed?.landingCurta?.benefitsSection?.bullets?.[0]).toBe(
+      "Mensagem alinhada",
+    );
+  });
+
+  it("extracts artifact-oriented landing copy", () => {
+    const raw = JSON.stringify({
+      artifact: {
+        artifactType: "experiment.landing.copy",
+        content: {
+          messageMatchSource: "Headline B",
+          landingCurta: {
+            heroTitle: "Headline curta",
+            primaryCTA: "Desbloquear kit",
+          },
+        },
+      },
+    });
+    const parsed = parseLandingCopyPayload(raw);
+    expect(parsed?.messageMatchSource).toBe("Headline B");
+    expect(parsed?.landingCurta?.primaryCTA).toBe("Desbloquear kit");
   });
 });

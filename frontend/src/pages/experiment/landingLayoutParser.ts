@@ -28,6 +28,20 @@ export interface LandingLayoutContent {
 
 function resolveLayoutPayload(candidate: JsonRecord): JsonRecord | undefined {
   if (
+    candidate.artifact &&
+    typeof candidate.artifact === "object" &&
+    !Array.isArray(candidate.artifact)
+  ) {
+    const artifact = candidate.artifact as JsonRecord;
+    if (
+      artifact.content &&
+      typeof artifact.content === "object" &&
+      !Array.isArray(artifact.content)
+    ) {
+      return artifact.content as JsonRecord;
+    }
+  }
+  if (
     candidate.landingPageWireframe &&
     typeof candidate.landingPageWireframe === "object" &&
     !Array.isArray(candidate.landingPageWireframe)
@@ -74,12 +88,14 @@ export function hasLandingLayoutContent(
   if (!payload) return false;
   return Boolean(
     pickText(payload.pageGoal) ||
-      pickText(payload.variantLayoutId) ||
-      payload.sectionOrder?.length,
+    pickText(payload.variantLayoutId) ||
+    payload.sectionOrder?.length,
   );
 }
 
-export function parseLandingLayoutPayload(raw?: string | null): LandingLayoutContent | undefined {
+export function parseLandingLayoutPayload(
+  raw?: string | null,
+): LandingLayoutContent | undefined {
   const candidates = extractObjectCandidates(raw);
   for (const candidate of candidates) {
     const scope = resolveLayoutPayload(candidate);

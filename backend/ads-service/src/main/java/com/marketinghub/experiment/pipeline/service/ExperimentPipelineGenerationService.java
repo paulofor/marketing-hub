@@ -30,6 +30,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -160,12 +161,13 @@ public class ExperimentPipelineGenerationService {
                     "Landing HTML ainda não foi gerado para este experimento");
         }
         LeadPortalFlow flowRef = experiment.getLeadPortalFlow();
+        LeadPortalFlow flow;
         if (flowRef == null || flowRef.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Experimento não possui fluxo de Lead Portal vinculado");
+            flow = createLeadPortalFlowFromLandingHtml(experiment);
+        } else {
+            flow = leadPortalFlowRepository.findById(flowRef.getId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Fluxo do Lead Portal não encontrado"));
         }
-        LeadPortalFlow flow = leadPortalFlowRepository.findById(flowRef.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Fluxo do Lead Portal não encontrado"));
         flow.setCustomFormHtml(experiment.getLandingPageHtml().trim());
         LeadPortalFlow saved = leadPortalFlowRepository.save(flow);
         if (saved.isApproved()) {
@@ -177,6 +179,42 @@ public class ExperimentPipelineGenerationService {
             }
         }
         return experimentMapper.toDto(experiment);
+    }
+
+    private LeadPortalFlow createLeadPortalFlowFromLandingHtml(Experiment experiment) {
+        Long experimentId = experiment.getId();
+        String slug = buildUniqueLeadPortalFlowSlug("exp-" + experimentId + "-landing");
+        LeadPortalFlow flow = LeadPortalFlow.builder()
+                .name("Landing - Experimento " + experimentId)
+                .slug(slug)
+                .description("Fluxo criado automaticamente a partir do HTML da landing page do experimento " + experimentId)
+                .model(DEFAULT_MODEL)
+                .prompt("Pipeline: landing-page-html/apply-to-form")
+                .marketNiche(experiment.getNiche())
+                .experiment(experiment)
+                .build();
+        LeadPortalFlow saved = leadPortalFlowRepository.save(flow);
+        experiment.setLeadPortalFlow(saved);
+        experimentRepository.save(experiment);
+        return saved;
+    }
+
+    private String buildUniqueLeadPortalFlowSlug(String baseSlug) {
+        String normalized = normalizeSlug(baseSlug);
+        String candidate = normalized;
+        int suffix = 2;
+        while (leadPortalFlowRepository.findBySlug(candidate).isPresent()) {
+            candidate = normalized + "-" + suffix;
+            suffix++;
+        }
+        return candidate;
+    }
+
+    private String normalizeSlug(String value) {
+        String slug = value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+        slug = slug.replaceAll("[^a-z0-9]+", "-");
+        slug = slug.replaceAll("(^-+|-+$)", "");
+        return StringUtils.hasText(slug) ? slug : "landing-experiment";
     }
 
     private void ensureExperimentExists(Long experimentId) {

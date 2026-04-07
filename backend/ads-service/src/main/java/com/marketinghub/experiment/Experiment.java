@@ -189,6 +189,9 @@ public class Experiment {
     @Column(name = "landing_page_wireframe", columnDefinition = "LONGTEXT")
     private String landingPageWireframe;
 
+    @Column(name = "landing_page_image_planning", columnDefinition = "LONGTEXT")
+    private String landingPageImagePlanning;
+
     @Column(name = "landing_page_html", columnDefinition = "LONGTEXT")
     private String landingPageHtml;
 

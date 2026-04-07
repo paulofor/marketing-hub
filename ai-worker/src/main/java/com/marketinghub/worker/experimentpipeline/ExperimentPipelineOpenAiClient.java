@@ -175,6 +175,35 @@ public class ExperimentPipelineOpenAiClient {
             - summary
             - consistencyChecks[] com CTA_MATCH, PROMISE_MATCH e FORM_USABILITY
             """;
+    private static final String LANDING_IMAGE_PLANNING_PROMPT_SUFFIX = """
+            Objetivo:
+            Planejar as imagens da landing antes da geração final do HTML, usando o ângulo da campanha, os textos da landing e o layout já aprovado.
+
+            Insumos garantidos:
+            - Ângulo da campanha (dor, promessa, mecanismo, prova)
+            - Texto da landing aprovado
+            - Wireframe/layout da landing aprovado
+            - CTA principal já validado
+
+            Regras:
+            1. Entregar images[] com no mínimo 4 itens ligados a sectionId/sectionName reais do wireframe.
+            2. Cada item deve incluir objective, placement, hierarchyLevel, imagePrompt e messageMatchNotes.
+            3. imagePrompt deve ser específico para o contexto da seção (não genérico).
+            4. Definir dimensions.desktop e dimensions.mobile para orientar implementação responsiva.
+            5. Incluir safeMargins e textOverlayGuidance quando houver texto sobre imagem.
+            6. Incluir complianceNotes e negativePrompt para evitar ruído visual e promessas indevidas.
+            7. ctaIntegrationNotes deve explicar onde o CTA aparece junto das imagens sem competir com o conteúdo.
+            8. sequencingNotes deve explicar a ordem narrativa das imagens ao longo da página.
+            9. consistencyChecks precisa incluir IMAGE_MESSAGE_MATCH, VISUAL_HIERARCHY e CTA_CONTINUITY.
+
+            Formato obrigatório (JSON):
+            - pageGoal
+            - visualDirectionSummary
+            - sequencingNotes
+            - ctaIntegrationNotes
+            - images[]
+            - consistencyChecks[]
+            """;
 
 
     private final ObjectMapper objectMapper;
@@ -347,6 +376,9 @@ public class ExperimentPipelineOpenAiClient {
         }
         if (isLandingLayoutSection(job) && !base.contains("pageGoal,")) {
             return base + "\n\n" + LANDING_LAYOUT_PROMPT_SUFFIX;
+        }
+        if (isLandingImagePlanningSection(job) && !base.contains("visualDirectionSummary")) {
+            return base + "\n\n" + LANDING_IMAGE_PLANNING_PROMPT_SUFFIX;
         }
         if (isLandingHtmlSection(job) && !base.contains("htmlDocument")) {
             return base + "\n\n" + LANDING_HTML_PROMPT_SUFFIX;
@@ -543,5 +575,16 @@ public class ExperimentPipelineOpenAiClient {
                 || "landing-page_html".equals(normalized)
                 || "landing-html".equals(normalized)
                 || "landing_html".equals(normalized);
+    }
+
+    private boolean isLandingImagePlanningSection(ExperimentPipelineJobDto job) {
+        if (job == null || !StringUtils.hasText(job.section())) {
+            return false;
+        }
+        String normalized = job.section().trim().toLowerCase(Locale.ROOT);
+        return "landing-page-image-planning".equals(normalized)
+                || "landing-page_image_planning".equals(normalized)
+                || "landing-image-planning".equals(normalized)
+                || "landing_image_planning".equals(normalized);
     }
 }

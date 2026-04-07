@@ -44,6 +44,11 @@ public class ExperimentPipelineController {
         return generationService.generate(id, parsed, payload);
     }
 
+    @PostMapping("/landing-page-html/apply-to-form")
+    public ExperimentDto applyLandingHtmlToForm(@PathVariable Long id) {
+        return generationService.applyLandingHtmlToLeadPortalForm(id);
+    }
+
     @GetMapping("/jobs")
     public List<ExperimentPipelineGenerationJobDto> listJobs(@PathVariable Long id,
                                                              @RequestParam(value = "size", defaultValue = "30") Integer size) {

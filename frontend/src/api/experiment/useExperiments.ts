@@ -70,6 +70,9 @@ export interface Experiment {
   campaignAngle?: string | null;
   adCopy?: string | null;
   adImageBriefing?: string | null;
+  landingPageCopy?: string | null;
+  landingPageWireframe?: string | null;
+  landingPageHtml?: string | null;
   creativeImagePrompt?: string | null;
   instagramAccount?: InstagramAccountSummary | null;
   /**

@@ -19,6 +19,7 @@ const SECTION_OPTIONS = [
   { value: "ad-image-briefing", label: "Prompt da imagem" },
   { value: "landing-page-copy", label: "Texto da landing" },
   { value: "landing-page-wireframe", label: "Layout da landing" },
+  { value: "landing-page-html", label: "HTML da landing" },
 ];
 
 const STATUS_LABELS: Record<string, string> = {

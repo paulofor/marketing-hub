@@ -18,6 +18,10 @@ import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGener
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobDto;
 import com.marketinghub.experiment.pipeline.repository.ExperimentPipelineGenerationJobRepository;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.leadportal.LeadPortalFlow;
+import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
+import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
+import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
 import com.marketinghub.openai.OpenAiCostEstimator;
 import com.marketinghub.openai.OpenAiResponse;
 import java.math.BigDecimal;
@@ -67,17 +71,23 @@ public class ExperimentPipelineGenerationService {
     private final ExperimentPipelineGenerationJobRepository jobRepository;
     private final ExperimentMapper experimentMapper;
     private final AiWorkerGenerationService generationService;
+    private final LeadPortalFlowRepository leadPortalFlowRepository;
+    private final LeadPortalFlowPublisher leadPortalFlowPublisher;
     private final ObjectMapper objectMapper;
 
     public ExperimentPipelineGenerationService(ExperimentRepository experimentRepository,
                                                ExperimentPipelineGenerationJobRepository jobRepository,
                                                ExperimentMapper experimentMapper,
                                                AiWorkerGenerationService generationService,
+                                               LeadPortalFlowRepository leadPortalFlowRepository,
+                                               LeadPortalFlowPublisher leadPortalFlowPublisher,
                                                ObjectMapper objectMapper) {
         this.experimentRepository = experimentRepository;
         this.jobRepository = jobRepository;
         this.experimentMapper = experimentMapper;
         this.generationService = generationService;
+        this.leadPortalFlowRepository = leadPortalFlowRepository;
+        this.leadPortalFlowPublisher = leadPortalFlowPublisher;
         this.objectMapper = objectMapper;
     }
 
@@ -139,6 +149,34 @@ public class ExperimentPipelineGenerationService {
     public BigDecimal totalCostUsd(Long experimentId) {
         ensureExperimentExists(experimentId);
         return jobRepository.sumCostUsdByExperimentId(experimentId);
+    }
+
+    @Transactional
+    public ExperimentDto applyLandingHtmlToLeadPortalForm(Long experimentId) {
+        Experiment experiment = experimentRepository.findById(experimentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Experimento não encontrado"));
+        if (!StringUtils.hasText(experiment.getLandingPageHtml())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Landing HTML ainda não foi gerado para este experimento");
+        }
+        LeadPortalFlow flowRef = experiment.getLeadPortalFlow();
+        if (flowRef == null || flowRef.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Experimento não possui fluxo de Lead Portal vinculado");
+        }
+        LeadPortalFlow flow = leadPortalFlowRepository.findById(flowRef.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Fluxo do Lead Portal não encontrado"));
+        flow.setCustomFormHtml(experiment.getLandingPageHtml().trim());
+        LeadPortalFlow saved = leadPortalFlowRepository.save(flow);
+        if (saved.isApproved()) {
+            try {
+                leadPortalFlowPublisher.publish(saved);
+            } catch (LeadPortalPublicationException ex) {
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                        "Falha ao publicar fluxo com o novo HTML da landing", ex);
+            }
+        }
+        return experimentMapper.toDto(experiment);
     }
 
     private void ensureExperimentExists(Long experimentId) {
@@ -284,6 +322,7 @@ public class ExperimentPipelineGenerationService {
             case AD_IMAGE_BRIEFING -> experiment.getAdImageBriefing();
             case LANDING_PAGE_COPY -> experiment.getLandingPageCopy();
             case LANDING_PAGE_WIREFRAME -> experiment.getLandingPageWireframe();
+            case LANDING_PAGE_HTML -> experiment.getLandingPageHtml();
         };
         if (!StringUtils.hasText(predecessorContent)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
@@ -606,7 +645,31 @@ public class ExperimentPipelineGenerationService {
             return;
         }
 
+        if (section == ExperimentPipelineSection.LANDING_PAGE_HTML) {
+            sb.append("\nDiretriz específica para implementação final da landing (HTML/CSS/JS):\n");
+            sb.append(COMMON_CAMPAIGN_ASSET_RULES).append("\n");
+            sb.append("Contexto do nicho: ").append(niche).append("\n");
+            sb.append("Headline de referência: ").append(primaryAdHeadline).append("\n");
+            sb.append("CTA obrigatório: ").append(landingCtaForInstructions).append("\n");
+            appendIfPresent(sb, "Linha de match com landing", landingMatchLine);
+            sb.append("\nObjetivo:\n");
+            sb.append("Unificar copy + wireframe e entregar uma landing final pronta para uso em formulário do experimento.\n\n");
+            sb.append("Regras:\n");
+            sb.append("1. Entregar HTML completo com <style> e <script> internos (sem dependências externas).\n");
+            sb.append("2. Garantir mobile-first e acessibilidade básica (labels, aria, foco visível).\n");
+            sb.append("3. Repetir o CTA principal exatamente como no anúncio e nas seções anteriores.\n");
+            sb.append("4. O formulário deve coletar apenas nome, whatsapp e objetivo principal.\n");
+            sb.append("5. Incluir validação de campos obrigatórios no JavaScript.\n");
+            sb.append("6. Não usar claims absolutos, nem linguagem de consultoria.\n");
+            sb.append("7. Incluir bloco de compliance reforçando entrega digital via IA.\n");
+            sb.append("8. O código deve ser limpo, legível e pronto para ser renderizado em iframe.\n\n");
+            sb.append("Formato obrigatório:\n");
+            sb.append("- htmlDocument: string com o documento completo final.\n");
+            sb.append("- summary: resumo curto das decisões de implementação.\n");
+            sb.append("- consistencyChecks: checks com CTA_MATCH, PROMISE_MATCH e FORM_USABILITY.\n");
+            return;
         }
+    }
 
     private void appendPreviousOutputs(StringBuilder sb,
                                        Experiment experiment,
@@ -626,6 +689,9 @@ public class ExperimentPipelineGenerationService {
         if (StringUtils.hasText(experiment.getLandingPageCopy())) {
             sb.append("\nTextos da landing:\n").append(experiment.getLandingPageCopy().trim()).append("\n");
         }
+        if (StringUtils.hasText(experiment.getLandingPageWireframe())) {
+            sb.append("\nWireframe da landing:\n").append(experiment.getLandingPageWireframe().trim()).append("\n");
+        }
     }
 
     private void applySectionContent(Experiment experiment,
@@ -638,6 +704,7 @@ public class ExperimentPipelineGenerationService {
             case AD_IMAGE_BRIEFING -> experiment.setAdImageBriefing(normalized);
             case LANDING_PAGE_COPY -> experiment.setLandingPageCopy(normalized);
             case LANDING_PAGE_WIREFRAME -> experiment.setLandingPageWireframe(normalized);
+            case LANDING_PAGE_HTML -> experiment.setLandingPageHtml(normalized);
         }
     }
 
@@ -942,7 +1009,25 @@ public class ExperimentPipelineGenerationService {
             ), metadataSchema);
             case LANDING_PAGE_COPY -> schemaWithMetadata("landingPageCopy", landingPageCopyFieldSchema(), metadataSchema);
             case LANDING_PAGE_WIREFRAME -> schemaWithMetadata("landingPageWireframe", landingPageWireframeFieldSchema(), metadataSchema);
+            case LANDING_PAGE_HTML -> schemaWithMetadata("landingPageHtml", landingPageHtmlFieldSchema(), metadataSchema);
         };
+    }
+
+    private Map<String, Object> landingPageHtmlFieldSchema() {
+        return Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("htmlDocument", stringSchema()),
+                        Map.entry("summary", stringSchema()),
+                        Map.entry("consistencyChecks", Map.of(
+                                "type", "array",
+                                "minItems", 3,
+                                "items", consistencyCheckSchema()
+                        ))
+                ),
+                "required", List.of("htmlDocument", "summary", "consistencyChecks")
+        );
     }
 
     private Map<String, Object> landingPageCopyFieldSchema() {

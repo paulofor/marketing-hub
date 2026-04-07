@@ -158,6 +158,23 @@ public class ExperimentPipelineOpenAiClient {
             - formPlacementNotes
             - consistencyChecks[]
             """;
+    private static final String LANDING_HTML_PROMPT_SUFFIX = """
+            Objetivo:
+            Unificar a copy e o wireframe aprovados em uma landing final pronta para uso no formulário do experimento.
+
+            Regras:
+            1. Entregar documento HTML completo com CSS e JavaScript embutidos.
+            2. O CTA principal deve ser idêntico ao CTA aprovado nas etapas anteriores.
+            3. O formulário deve ser mobile-first e conter nome, whatsapp e objetivo principal.
+            4. Incluir validação de campos obrigatórios no JavaScript.
+            5. Incluir bloco de compliance reforçando entrega digital via IA e sem consultoria.
+            6. Não usar bibliotecas externas nem assets remotos.
+
+            Formato obrigatório (JSON):
+            - htmlDocument
+            - summary
+            - consistencyChecks[] com CTA_MATCH, PROMISE_MATCH e FORM_USABILITY
+            """;
 
 
     private final ObjectMapper objectMapper;
@@ -330,6 +347,9 @@ public class ExperimentPipelineOpenAiClient {
         }
         if (isLandingLayoutSection(job) && !base.contains("pageGoal,")) {
             return base + "\n\n" + LANDING_LAYOUT_PROMPT_SUFFIX;
+        }
+        if (isLandingHtmlSection(job) && !base.contains("htmlDocument")) {
+            return base + "\n\n" + LANDING_HTML_PROMPT_SUFFIX;
         }
         return base;
     }
@@ -512,5 +532,16 @@ public class ExperimentPipelineOpenAiClient {
                 || "landing-page_wireframe".equals(normalized)
                 || "landing-layout".equals(normalized)
                 || "landing_layout".equals(normalized);
+    }
+
+    private boolean isLandingHtmlSection(ExperimentPipelineJobDto job) {
+        if (job == null || !StringUtils.hasText(job.section())) {
+            return false;
+        }
+        String normalized = job.section().trim().toLowerCase(Locale.ROOT);
+        return "landing-page-html".equals(normalized)
+                || "landing-page_html".equals(normalized)
+                || "landing-html".equals(normalized)
+                || "landing_html".equals(normalized);
     }
 }

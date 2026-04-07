@@ -32,6 +32,7 @@ import {
   hasLandingLayoutContent,
   parseLandingLayoutPayload,
 } from "./landingLayoutParser";
+import { extractObjectCandidates } from "./parserUtils";
 import { useExperimentPipelineJobs } from "../../api/experiment/useExperimentPipelineJobs";
 import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
 
@@ -1590,9 +1591,10 @@ function GenericGenerationSummaryPanel({
           <div className="mt-3">{preview}</div>
         ) : fallbackRaw ? (
           <div className="border rounded p-3 mt-3 bg-light-subtle">
-            <pre className="small mb-0" style={{ whiteSpace: "pre-wrap" }}>
-              {fallbackRaw}
-            </pre>
+            <CollapsibleJsonViewer
+              content={normalizeRawResponseForJsonViewer(fallbackRaw)}
+              emptyMessage="Sem resposta registrada."
+            />
           </div>
         ) : (
           <div className="alert alert-info mt-3 mb-0" role="status">
@@ -1704,12 +1706,14 @@ function GenericGenerationHistoryList({
                       <summary className="small text-muted">
                         Ver JSON bruto
                       </summary>
-                      <pre
-                        className="small mb-0 mt-2"
-                        style={{ whiteSpace: "pre-wrap" }}
-                      >
-                        {generation.rawResponse.trim()}
-                      </pre>
+                      <div className="mt-2">
+                        <CollapsibleJsonViewer
+                          content={normalizeRawResponseForJsonViewer(
+                            generation.rawResponse,
+                          )}
+                          emptyMessage="Sem JSON bruto nesta geração."
+                        />
+                      </div>
                     </details>
                   ) : (
                     <p className="small text-muted mb-0">
@@ -1740,6 +1744,20 @@ function parseSectionContent(
       return parseLandingLayoutPayload(raw);
     default:
       return undefined;
+  }
+}
+
+function normalizeRawResponseForJsonViewer(raw?: string | null): string | undefined {
+  if (!raw) return undefined;
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+  try {
+    JSON.parse(trimmed);
+    return trimmed;
+  } catch {
+    const [candidate] = extractObjectCandidates(trimmed);
+    if (!candidate) return trimmed;
+    return JSON.stringify(candidate, null, 2);
   }
 }
 

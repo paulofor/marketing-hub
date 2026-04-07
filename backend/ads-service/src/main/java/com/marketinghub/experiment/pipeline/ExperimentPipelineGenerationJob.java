@@ -37,7 +37,7 @@ public class ExperimentPipelineGenerationJob {
     private Experiment experiment;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 48)
+    @Column(nullable = false, length = 128)
     private ExperimentPipelineSection section;
 
     @Enumerated(EnumType.STRING)

@@ -691,6 +691,46 @@ function getSectionMetadata(domain?: string) {
     sectionOrder,
   };
 }
+
+export function selectLatestGenerationPerSection(
+  generations: PipelineReportRecord[],
+): PipelineReportRecord[] {
+  const latestBySection = new Map<
+    ContentGenerationSectionKey,
+    PipelineReportRecord
+  >();
+
+  generations.forEach((generation) => {
+    const current = latestBySection.get(generation.metadata.sectionKey);
+    if (!current) {
+      latestBySection.set(generation.metadata.sectionKey, generation);
+      return;
+    }
+
+    const currentTimestamp = parseTimestamp(current.createdAt) ?? -1;
+    const candidateTimestamp = parseTimestamp(generation.createdAt) ?? -1;
+    const candidateIsMoreRecent =
+      candidateTimestamp > currentTimestamp ||
+      (candidateTimestamp === currentTimestamp &&
+        generation.id > current.id);
+
+    if (candidateIsMoreRecent) {
+      latestBySection.set(generation.metadata.sectionKey, generation);
+    }
+  });
+
+  return [...latestBySection.values()].sort((a, b) => {
+    if (a.metadata.sectionOrder !== b.metadata.sectionOrder) {
+      return a.metadata.sectionOrder - b.metadata.sectionOrder;
+    }
+
+    return (
+      (parseTimestamp(a.createdAt) ?? Number.MAX_SAFE_INTEGER) -
+      (parseTimestamp(b.createdAt) ?? Number.MAX_SAFE_INTEGER)
+    );
+  });
+}
+
 function getSectionLabel(sectionKey: ContentGenerationSectionKey) {
   return SECTION_LABEL_BY_KEY[sectionKey] ?? sectionKey;
 }
@@ -1199,18 +1239,8 @@ export default function ExperimentContentGenerationTab({
             (parseTimestamp(b.createdAt) ?? Number.MAX_SAFE_INTEGER)
           );
         });
-      const campaignAngleGenerations = sortedPipelineGenerations.filter(
-        (generation) => generation.metadata.sectionKey === "campaign-angle",
-      );
-      const latestCampaignAngle =
-        campaignAngleGenerations[campaignAngleGenerations.length - 1];
-      const pipelineGenerations = sortedPipelineGenerations.filter(
-        (generation) => {
-          if (generation.metadata.sectionKey !== "campaign-angle") {
-            return true;
-          }
-          return generation.id === latestCampaignAngle?.id;
-        },
+      const pipelineGenerations = selectLatestGenerationPerSection(
+        sortedPipelineGenerations,
       );
 
       const reportLines = [

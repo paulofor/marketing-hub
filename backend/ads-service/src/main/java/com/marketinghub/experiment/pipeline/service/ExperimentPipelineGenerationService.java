@@ -650,7 +650,8 @@ public class ExperimentPipelineGenerationService {
             sb.append("7. faq precisa ter no mínimo 3 perguntas com objectionTag descrevendo a objeção atendida.\n");
             sb.append("8. consistencyChecks deve listar pelo menos CTA_MATCH, PROMISE_MATCH e GOOGLE_LANDING_BEST_PRACTICES indicando status PASS/WARN/FAIL.\n");
             sb.append("9. messageMatchNotes e messageMatchSource devem garantir continuidade literal da promessa do anúncio.\n");
-            sb.append("10. complianceNotes precisa reforçar que a oferta é entregue por ativos digitais (sem consultoria ou call).\n\n");
+            sb.append("10. complianceNotes precisa reforçar que a oferta é entregue por ativos digitais (sem consultoria ou call).\n");
+            sb.append("11. Não serializar JSON dentro de campos de texto; objetos e listas do schema devem ser retornados como JSON real, sem aspas escapadas.\n\n");
             sb.append("Formato obrigatório:\n");
             sb.append("- Preencher hero com eyebrow, headline, subheadline, promise, supportingCopy, proofBadge, microcopy e CTA.\n");
             sb.append("- Preencher messageMatchSource com a headline real do anúncio usada como referência: " + primaryAdHeadline + ".\n");
@@ -747,7 +748,7 @@ public class ExperimentPipelineGenerationService {
     private void applySectionContent(Experiment experiment,
                                      ExperimentPipelineSection section,
                                      String content) {
-        String normalized = StringUtils.hasText(content) ? content.trim() : null;
+        String normalized = normalizeSectionContent(section, content);
         switch (section) {
             case CAMPAIGN_ANGLE -> experiment.setCampaignAngle(normalized);
             case AD_COPY -> experiment.setAdCopy(normalized);
@@ -755,6 +756,46 @@ public class ExperimentPipelineGenerationService {
             case LANDING_PAGE_COPY -> experiment.setLandingPageCopy(normalized);
             case LANDING_PAGE_WIREFRAME -> experiment.setLandingPageWireframe(normalized);
             case LANDING_PAGE_HTML -> experiment.setLandingPageHtml(normalized);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private String normalizeSectionContent(ExperimentPipelineSection section, String content) {
+        if (!StringUtils.hasText(content)) {
+            return null;
+        }
+        String trimmed = content.trim();
+        if (section != ExperimentPipelineSection.LANDING_PAGE_COPY) {
+            return trimmed;
+        }
+        try {
+            Object parsedAny = objectMapper.readValue(trimmed, Object.class);
+            if (!(parsedAny instanceof Map<?, ?> parsedRaw)) {
+                return trimmed;
+            }
+            Map<String, Object> parsed = (Map<String, Object>) parsedRaw;
+            boolean changed = false;
+
+            if ("output_text".equals(parsed.get("type")) && parsed.get("text") instanceof String textValue) {
+                Object nested = objectMapper.readValue(textValue, Object.class);
+                if (nested instanceof Map<?, ?> nestedRaw) {
+                    parsed = (Map<String, Object>) nestedRaw;
+                    changed = true;
+                }
+            }
+
+            Object landingPageCopy = parsed.get("landingPageCopy");
+            if (landingPageCopy instanceof String landingPageCopyText) {
+                Object nestedLandingCopy = objectMapper.readValue(landingPageCopyText, Object.class);
+                if (nestedLandingCopy instanceof Map<?, ?>) {
+                    parsed.put("landingPageCopy", nestedLandingCopy);
+                    changed = true;
+                }
+            }
+
+            return changed ? objectMapper.writeValueAsString(parsed) : trimmed;
+        } catch (Exception ignored) {
+            return trimmed;
         }
     }
 

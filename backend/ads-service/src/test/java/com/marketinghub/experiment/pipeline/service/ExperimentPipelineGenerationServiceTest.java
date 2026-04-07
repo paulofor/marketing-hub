@@ -4,6 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.dto.ExperimentDto;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
+import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJob;
+import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJobStage;
+import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJobStatus;
+import com.marketinghub.experiment.pipeline.ExperimentPipelineSection;
+import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobCompletionRequest;
 import com.marketinghub.experiment.pipeline.repository.ExperimentPipelineGenerationJobRepository;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.leadportal.LeadPortalFlow;
@@ -19,9 +24,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.atLeastOnce;
@@ -117,5 +124,39 @@ class ExperimentPipelineGenerationServiceTest {
         verify(leadPortalFlowRepository, never()).findBySlug(any());
         verify(experimentRepository, never()).save(any());
         assertEquals("<section>ok</section>", linkedFlow.getCustomFormHtml());
+    }
+
+    @Test
+    void completeJobNormalizesStringifiedLandingCopyBeforePersistingOnExperiment() throws Exception {
+        Experiment experiment = new Experiment();
+        experiment.setId(42L);
+
+        UUID jobId = UUID.randomUUID();
+        ExperimentPipelineGenerationJob job = ExperimentPipelineGenerationJob.builder()
+                .id(jobId)
+                .experiment(experiment)
+                .section(ExperimentPipelineSection.LANDING_PAGE_COPY)
+                .status(ExperimentPipelineGenerationJobStatus.PROCESSING)
+                .stage(ExperimentPipelineGenerationJobStage.SENT_TO_OPENAI)
+                .model("gpt-5.2")
+                .prompt("prompt")
+                .build();
+
+        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+
+        ExperimentPipelineGenerationJobCompletionRequest request = new ExperimentPipelineGenerationJobCompletionRequest(
+                "{\"landingPageCopy\":\"{\\\"pageGoal\\\":\\\"Gerar lead\\\",\\\"primaryCTA\\\":\\\"Quero minha prévia\\\"}\"}",
+                "{\"id\":\"resp_1\"}",
+                "{\"model\":\"gpt-5.2\"}",
+                100,
+                50,
+                null);
+
+        service.completeJob(jobId, request);
+
+        ObjectMapper mapper = new ObjectMapper();
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> persisted = mapper.readValue(experiment.getLandingPageCopy(), java.util.Map.class);
+        assertTrue(persisted.get("landingPageCopy") instanceof java.util.Map);
     }
 }

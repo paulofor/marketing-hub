@@ -263,6 +263,7 @@ export default function ExperimentDetailPage() {
   const hasLeadPortalFlow =
     readinessSummary?.hasLeadPortalFlow ??
     Boolean(data.leadPortalFlowId ?? data.leadPortalFlowName);
+  const hasFacebookPixelRegistered = Boolean(data.facebookPixelId);
   const hasCreativesReady =
     readinessSummary?.hasCreatives ?? data.creativeApproved;
   const readinessCreativeCount = readinessSummary?.creativeCount ?? 0;
@@ -313,6 +314,16 @@ export default function ExperimentDetailPage() {
           : "Selecione e salve pelo menos uma segmentação com ID da Meta na aba Segmentação.",
       action: hasCompleteTargeting ? undefined : () => setTab("targeting"),
       actionLabel: hasCompleteTargeting ? undefined : "Ir para Segmentação",
+    },
+    {
+      id: "facebook-pixel",
+      title: "Pixel registrado na Meta",
+      isMet: hasFacebookPixelRegistered,
+      hint: hasFacebookPixelRegistered
+        ? `Pixel ${data.facebookPixelId} já registrado para este experimento.`
+        : "Aguarde o worker registrar o pixel na Meta antes de liberar o experimento.",
+      action: hasFacebookPixelRegistered ? undefined : () => setTab("overview"),
+      actionLabel: hasFacebookPixelRegistered ? undefined : "Ver Pixel",
     },
   ];
 

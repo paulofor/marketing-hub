@@ -33,6 +33,7 @@ public class FrameworkImageOpenAiBatchClient {
     private static final String IMAGE_GENERATION_ENDPOINT = "/v1/images/generations";
     private static final String BATCH_COMPLETION_WINDOW = "24h";
     private static final String BATCH_FILE_NAME = "framework-image-batch.jsonl";
+    private static final int DEFAULT_MAX_IN_MEMORY_SIZE = 10 * 1024 * 1024; // 10 MB
     private static final Duration DEFAULT_BATCH_POLL_INTERVAL = Duration.ofMillis(500);
     private static final Duration DEFAULT_BATCH_TIMEOUT = Duration.ofMinutes(5);
     private static final Set<String> TERMINAL_BATCH_STATUSES =
@@ -53,7 +54,9 @@ public class FrameworkImageOpenAiBatchClient {
                                            @Value("${openai.batch-timeout:PT5M}") Duration batchTimeout) {
         this.defaultModel = defaultModel;
         this.enabled = StringUtils.hasText(apiKey);
-        WebClient.Builder clientBuilder = builder.clone().baseUrl(baseUrl);
+        WebClient.Builder clientBuilder = builder.clone()
+                .baseUrl(baseUrl)
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(DEFAULT_MAX_IN_MEMORY_SIZE));
         if (enabled) {
             clientBuilder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
         }

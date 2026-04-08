@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,9 +21,12 @@ class FrameworkImageServiceTest {
     @Mock
     private FrameworkImageBackendClient backendClient;
 
+    @Mock
+    private FrameworkImageOpenAiBatchClient openAiBatchClient;
+
     @Test
-    void processPendingClaimsUpdatesStagesAndCompletes() {
-        FrameworkImageService service = new FrameworkImageService(backendClient, "worker-test");
+    void processPendingClaimsRunsBatchAndCompletesWithOpenAiReadyStage() {
+        FrameworkImageService service = new FrameworkImageService(backendClient, openAiBatchClient, "worker-test");
         UUID jobId = UUID.randomUUID();
         FrameworkImageJobDto job = new FrameworkImageJobDto(
                 jobId,
@@ -31,7 +35,7 @@ class FrameworkImageServiceTest {
                 "PENDING",
                 "WAITING_AI_WORKER",
                 null,
-                "gpt-image-1",
+                "gpt-image-1.5",
                 "prompt",
                 null,
                 null,
@@ -45,19 +49,26 @@ class FrameworkImageServiceTest {
 
         when(backendClient.listPending(20)).thenReturn(List.of(job));
         when(backendClient.claim(jobId, "worker-test")).thenReturn(job);
+        when(openAiBatchClient.generateBatch(List.of(job))).thenReturn(Map.of(
+                jobId,
+                FrameworkImageOpenAiBatchClient.FrameworkImageBatchResult.success(
+                        jobId,
+                        "batch-123",
+                        "gpt-image-1.5",
+                        "prompt"
+                )));
 
         service.processPending();
 
         verify(backendClient).updateStage(jobId, FrameworkImageJobStage.SENT_TO_OPENAI_BATCH);
         verify(backendClient).updateStage(jobId, FrameworkImageJobStage.WAITING_OPENAI_BATCH);
         verify(backendClient).updateStage(jobId, FrameworkImageJobStage.OPENAI_IMAGE_READY);
-        verify(backendClient).updateStage(jobId, FrameworkImageJobStage.UPLOADED_TO_CLOUDFLARE);
         verify(backendClient).complete(eq(jobId), any(FrameworkImageJobCompletionPayload.class));
     }
 
     @Test
-    void processPendingFailsJobWhenStageTransitionThrows() {
-        FrameworkImageService service = new FrameworkImageService(backendClient, "worker-test");
+    void processPendingFailsAllClaimedJobsWhenBatchThrows() {
+        FrameworkImageService service = new FrameworkImageService(backendClient, openAiBatchClient, "worker-test");
         UUID jobId = UUID.randomUUID();
         FrameworkImageJobDto job = new FrameworkImageJobDto(
                 jobId,
@@ -80,19 +91,17 @@ class FrameworkImageServiceTest {
 
         when(backendClient.listPending(20)).thenReturn(List.of(job));
         when(backendClient.claim(jobId, "worker-test")).thenReturn(job);
-        org.mockito.Mockito.doThrow(new IllegalStateException("backend unavailable"))
-                .when(backendClient)
-                .updateStage(jobId, FrameworkImageJobStage.SENT_TO_OPENAI_BATCH);
+        when(openAiBatchClient.generateBatch(List.of(job))).thenThrow(new IllegalStateException("batch down"));
 
         service.processPending();
 
-        verify(backendClient).fail(jobId, "backend unavailable");
+        verify(backendClient).fail(jobId, "batch down");
         verify(backendClient, never()).complete(eq(jobId), any(FrameworkImageJobCompletionPayload.class));
     }
 
     @Test
     void processPendingSkipsWhenJobCannotBeClaimed() {
-        FrameworkImageService service = new FrameworkImageService(backendClient, "worker-test");
+        FrameworkImageService service = new FrameworkImageService(backendClient, openAiBatchClient, "worker-test");
         UUID jobId = UUID.randomUUID();
         FrameworkImageJobDto job = new FrameworkImageJobDto(
                 jobId,
@@ -120,5 +129,6 @@ class FrameworkImageServiceTest {
 
         verify(backendClient, never()).updateStage(eq(jobId), any(FrameworkImageJobStage.class));
         verify(backendClient, never()).complete(eq(jobId), any(FrameworkImageJobCompletionPayload.class));
+        verify(openAiBatchClient, never()).generateBatch(any());
     }
 }

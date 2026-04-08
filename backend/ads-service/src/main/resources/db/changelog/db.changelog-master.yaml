@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: V2037_04_08__framework_image_generation_job_queue.sql
+      relativeToChangelogFile: true
+  - include:
       file: V2037_04_07__experiment_landing_page_image_planning.sql
       relativeToChangelogFile: true
   - include:

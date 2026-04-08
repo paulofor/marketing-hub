@@ -574,6 +574,11 @@ interface PipelineReportRecord extends AiGenerationRecord {
   };
 }
 
+interface PersistedReportPayloads {
+  campaignAngle?: CampaignAngleSummary;
+  adCopy?: AdCopyContent;
+}
+
 type HistorySectionKey =
   | "image-prompt"
   | "landing-copy"
@@ -836,6 +841,24 @@ export function selectLatestGenerationPerSection(
       (parseTimestamp(b.createdAt) ?? Number.MAX_SAFE_INTEGER)
     );
   });
+}
+
+export function resolvePersistedReportPayload(
+  sectionKey: ContentGenerationSectionKey,
+  payloads: PersistedReportPayloads,
+): string | undefined {
+  switch (sectionKey) {
+    case "campaign-angle":
+      return payloads.campaignAngle
+        ? JSON.stringify(payloads.campaignAngle, null, 2)
+        : undefined;
+    case "ad-copy":
+      return payloads.adCopy
+        ? JSON.stringify(payloads.adCopy, null, 2)
+        : undefined;
+    default:
+      return undefined;
+  }
 }
 
 function getSectionLabel(sectionKey: ContentGenerationSectionKey) {
@@ -1350,6 +1373,10 @@ export default function ExperimentContentGenerationTab({
       const pipelineGenerations = selectLatestGenerationPerSection(
         sortedPipelineGenerations,
       );
+      const persistedPayloads: PersistedReportPayloads = {
+        campaignAngle: persistedCampaignAngle,
+        adCopy: persistedAdCopy,
+      };
 
       const reportLines = [
         "# Relatório consolidado do pipeline de conteúdo do experimento",
@@ -1362,22 +1389,36 @@ export default function ExperimentContentGenerationTab({
           ? [
               "Nenhuma geração de IA do pipeline de experimento foi encontrada para este experimento.",
             ]
-          : pipelineGenerations.flatMap((generation, index) => [
-              `### ${index + 1}. ${generation.metadata.sectionLabel}`,
-              `- Data: ${formatDateTime(generation.createdAt)}`,
-              `- Modelo: ${generation.model ?? "Não informado"}`,
-              "",
-              "**Prompt**",
-              "```text",
-              generation.prompt?.trim() || "Sem prompt registrado.",
-              "```",
-              "",
-              "**Resultado**",
-              "```text",
-              generation.rawResponse?.trim() || "Sem resposta registrada.",
-              "```",
-              "",
-            ])),
+          : pipelineGenerations.flatMap((generation, index) => {
+              const persistedPayload = resolvePersistedReportPayload(
+                generation.metadata.sectionKey,
+                persistedPayloads,
+              );
+
+              return [
+                `### ${index + 1}. ${generation.metadata.sectionLabel}`,
+                `- Data: ${formatDateTime(generation.createdAt)}`,
+                `- Modelo: ${generation.model ?? "Não informado"}`,
+                "",
+                "**Prompt**",
+                "```text",
+                generation.prompt?.trim() || "Sem prompt registrado.",
+                "```",
+                "",
+                "**Resultado**",
+                "```text",
+                generation.rawResponse?.trim() || "Sem resposta registrada.",
+                "```",
+                "",
+                "**Persistido no sistema**",
+                ...(persistedPayload
+                  ? ["```json", persistedPayload, "```"]
+                  : [
+                      "Nenhum payload persistido encontrado para esta seção no experimento.",
+                    ]),
+                "",
+              ];
+            })),
       ];
 
       const markdown = reportLines.join("\n");

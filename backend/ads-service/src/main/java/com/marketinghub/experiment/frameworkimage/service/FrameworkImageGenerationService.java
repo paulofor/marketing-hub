@@ -9,6 +9,7 @@ import com.marketinghub.experiment.frameworkimage.FrameworkImageGenerationJobSta
 import com.marketinghub.experiment.frameworkimage.dto.FrameworkImageGenerationItemStatusDto;
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageGenerationJobCompletionRequest;
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageGenerationJobDto;
+import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageWebnizationPendingAssetDto;
 import com.marketinghub.experiment.frameworkimage.repository.FrameworkImageGenerationJobRepository;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import java.time.Instant;
@@ -47,6 +48,23 @@ public class FrameworkImageGenerationService {
                         PageRequest.of(0, Math.max(1, Math.min(limit, 50))))
                 .stream()
                 .map(this::toDto)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<FrameworkImageWebnizationPendingAssetDto> listPendingWebnizationAssets(int limit) {
+        return jobRepository.findByStatusAndStageInAndAssetIdIsNotNullAndSourceUrlIsNotNullAndWebUrlIsNullOrderByUpdatedAtAsc(
+                        FrameworkImageGenerationJobStatus.COMPLETED,
+                        Set.of(FrameworkImageGenerationJobStage.NOTIFIED_BACKEND, FrameworkImageGenerationJobStage.WAITING_WEBNIZATION),
+                        PageRequest.of(0, Math.max(1, Math.min(limit, 100))))
+                .stream()
+                .map(job -> new FrameworkImageWebnizationPendingAssetDto(
+                        job.getId(),
+                        job.getExperiment().getId(),
+                        job.getPlanningItemKey(),
+                        job.getAssetId(),
+                        job.getSourceUrl(),
+                        job.getUpdatedAt()))
                 .toList();
     }
 
@@ -107,6 +125,27 @@ public class FrameworkImageGenerationService {
         job.setStage(FrameworkImageGenerationJobStage.FAILED);
         job.setErrorMessage(StringUtils.hasText(errorMessage) ? errorMessage.trim() : "Falha desconhecida");
         job.setFinishedAt(Instant.now());
+    }
+
+    @Transactional
+    public void markAssetAsWebReady(Long assetId, String webUrl) {
+        FrameworkImageGenerationJob job = jobRepository.findFirstByAssetIdOrderByCreatedAtDesc(assetId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset não encontrado"));
+        String normalizedWebUrl = normalizeRequired(webUrl, "webUrl é obrigatório");
+
+        if (normalizedWebUrl.equals(job.getWebUrl()) && job.getStage() == FrameworkImageGenerationJobStage.WEB_READY) {
+            return;
+        }
+
+        job.setWebUrl(normalizedWebUrl);
+        job.setStage(FrameworkImageGenerationJobStage.WEB_READY);
+        if (job.getStatus() != FrameworkImageGenerationJobStatus.COMPLETED) {
+            job.setStatus(FrameworkImageGenerationJobStatus.COMPLETED);
+        }
+        if (job.getFinishedAt() == null) {
+            job.setFinishedAt(Instant.now());
+        }
+        job.setErrorMessage(null);
     }
 
     @Transactional

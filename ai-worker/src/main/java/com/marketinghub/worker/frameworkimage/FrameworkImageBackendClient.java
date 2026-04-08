@@ -44,6 +44,21 @@ public class FrameworkImageBackendClient {
         return payload != null ? payload : List.of();
     }
 
+    public List<FrameworkImageWebnizationPendingAssetDto> listPendingWebnization(int limit) {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/framework-image/assets/pending-webnization");
+        String uri = url + "?limit=" + Math.max(1, limit);
+        List<FrameworkImageWebnizationPendingAssetDto> payload = webClient.get()
+                .uri(uri)
+                .exchangeToFlux(response -> handleWebnizationListResponse(uri, response.statusCode(), response))
+                .collectList()
+                .onErrorResume(err -> {
+                    log.error("Failed to fetch pending framework image webnization assets", err);
+                    return Mono.just(Collections.emptyList());
+                })
+                .block();
+        return payload != null ? payload : List.of();
+    }
+
     public FrameworkImageJobDto claim(UUID jobId, String workerId) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/framework-image/jobs/", jobId.toString(), "/claim");
         return webClient.post()
@@ -86,6 +101,16 @@ public class FrameworkImageBackendClient {
                 .block();
     }
 
+    public void markWebReady(Long assetId, String webUrl) {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/framework-image/assets/", assetId.toString(), "/web-ready");
+        webClient.post()
+                .uri(url)
+                .bodyValue(Collections.singletonMap("webUrl", webUrl))
+                .retrieve()
+                .bodyToMono(Void.class)
+                .block();
+    }
+
     private Flux<FrameworkImageJobDto> handleListResponse(String uri,
                                                            HttpStatusCode status,
                                                            org.springframework.web.reactive.function.client.ClientResponse response) {
@@ -96,5 +121,18 @@ public class FrameworkImageBackendClient {
                             "GET %s failed with status %s: %s".formatted(uri, status, body))));
         }
         return response.bodyToFlux(FrameworkImageJobDto.class);
+    }
+
+    private Flux<FrameworkImageWebnizationPendingAssetDto> handleWebnizationListResponse(
+            String uri,
+            HttpStatusCode status,
+            org.springframework.web.reactive.function.client.ClientResponse response) {
+        if (status.isError()) {
+            return response.bodyToMono(String.class)
+                    .defaultIfEmpty("")
+                    .flatMapMany(body -> Mono.error(new IllegalStateException(
+                            "GET %s failed with status %s: %s".formatted(uri, status, body))));
+        }
+        return response.bodyToFlux(FrameworkImageWebnizationPendingAssetDto.class);
     }
 }

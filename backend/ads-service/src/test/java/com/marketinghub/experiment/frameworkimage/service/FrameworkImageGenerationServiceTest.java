@@ -16,8 +16,10 @@ import com.marketinghub.experiment.frameworkimage.FrameworkImageGenerationJobSta
 import com.marketinghub.experiment.frameworkimage.dto.FrameworkImageGenerationItemStatusDto;
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageGenerationJobCompletionRequest;
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageGenerationJobDto;
+import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageWebnizationPendingAssetDto;
 import com.marketinghub.experiment.frameworkimage.repository.FrameworkImageGenerationJobRepository;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -209,5 +211,49 @@ class FrameworkImageGenerationServiceTest {
         assertThat(items.get(0).status()).isEqualTo("PROCESSING");
         assertThat(items.get(1).planningItemKey()).isEqualTo("faq");
         assertThat(items.get(1).status()).isEqualTo("PLANNED");
+    }
+
+    @Test
+    void listPendingWebnizationAssetsReturnsCompletedAssetsWithoutWebUrl() {
+        FrameworkImageGenerationJob pendingWebnization = FrameworkImageGenerationJob.builder()
+                .id(UUID.randomUUID())
+                .experiment(Experiment.builder().id(44L).build())
+                .planningItemKey("hero")
+                .status(FrameworkImageGenerationJobStatus.COMPLETED)
+                .stage(FrameworkImageGenerationJobStage.NOTIFIED_BACKEND)
+                .assetId(501L)
+                .sourceUrl("https://cdn/source.jpg")
+                .updatedAt(Instant.parse("2026-04-08T10:00:00Z"))
+                .build();
+        when(jobRepository.findByStatusAndStageInAndAssetIdIsNotNullAndSourceUrlIsNotNullAndWebUrlIsNullOrderByUpdatedAtAsc(
+                eq(FrameworkImageGenerationJobStatus.COMPLETED), any(Set.class), any()))
+                .thenReturn(List.of(pendingWebnization));
+
+        List<FrameworkImageWebnizationPendingAssetDto> assets = service.listPendingWebnizationAssets(20);
+
+        assertThat(assets).hasSize(1);
+        assertThat(assets.get(0).assetId()).isEqualTo(501L);
+        assertThat(assets.get(0).jobId()).isEqualTo(pendingWebnization.getId());
+    }
+
+    @Test
+    void markAssetAsWebReadyUpdatesStageAndKeepsOperationIdempotent() {
+        FrameworkImageGenerationJob job = FrameworkImageGenerationJob.builder()
+                .id(UUID.randomUUID())
+                .status(FrameworkImageGenerationJobStatus.COMPLETED)
+                .stage(FrameworkImageGenerationJobStage.NOTIFIED_BACKEND)
+                .assetId(901L)
+                .sourceUrl("https://cdn/source.jpg")
+                .build();
+        when(jobRepository.findFirstByAssetIdOrderByCreatedAtDesc(901L)).thenReturn(Optional.of(job));
+
+        service.markAssetAsWebReady(901L, " https://cdn/web.webp ");
+
+        assertThat(job.getStage()).isEqualTo(FrameworkImageGenerationJobStage.WEB_READY);
+        assertThat(job.getWebUrl()).isEqualTo("https://cdn/web.webp");
+        assertThat(job.getStatus()).isEqualTo(FrameworkImageGenerationJobStatus.COMPLETED);
+
+        service.markAssetAsWebReady(901L, "https://cdn/web.webp");
+        assertThat(job.getWebUrl()).isEqualTo("https://cdn/web.webp");
     }
 }

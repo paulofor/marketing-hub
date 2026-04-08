@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.frameworkimage.repository;
 
 import com.marketinghub.experiment.frameworkimage.FrameworkImageGenerationJob;
+import com.marketinghub.experiment.frameworkimage.FrameworkImageGenerationJobStage;
 import com.marketinghub.experiment.frameworkimage.FrameworkImageGenerationJobStatus;
 import java.util.Collection;
 import java.util.List;
@@ -19,4 +20,11 @@ public interface FrameworkImageGenerationJobRepository extends JpaRepository<Fra
             Collection<FrameworkImageGenerationJobStatus> statuses);
 
     List<FrameworkImageGenerationJob> findByExperimentIdOrderByCreatedAtDesc(Long experimentId);
+
+    List<FrameworkImageGenerationJob> findByStatusAndStageInAndAssetIdIsNotNullAndSourceUrlIsNotNullAndWebUrlIsNullOrderByUpdatedAtAsc(
+            FrameworkImageGenerationJobStatus status,
+            Collection<FrameworkImageGenerationJobStage> stages,
+            Pageable pageable);
+
+    Optional<FrameworkImageGenerationJob> findFirstByAssetIdOrderByCreatedAtDesc(Long assetId);
 }

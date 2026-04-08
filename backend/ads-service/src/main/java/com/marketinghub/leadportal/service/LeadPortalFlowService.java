@@ -16,6 +16,8 @@ import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.niche.MarketNiche;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +34,7 @@ import java.util.regex.Pattern;
  */
 @Service
 public class LeadPortalFlowService {
+    private static final Logger log = LoggerFactory.getLogger(LeadPortalFlowService.class);
     private static final Pattern SLUG_PATTERN = Pattern.compile("^[a-z0-9]+(?:-[a-z0-9]+)*$");
     private static final Pattern DATA_KEY_PATTERN = Pattern.compile("^[A-Za-z][A-Za-z0-9_-]*$");
 
@@ -219,8 +222,8 @@ public class LeadPortalFlowService {
                 flowPublisher.remove(saved.getSlug());
             }
         } catch (LeadPortalPublicationException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                    "failed to synchronise lead portal flow", ex);
+            log.warn("Lead portal flow approval updated locally, but synchronisation failed for flow {} (approved={})",
+                    saved.getSlug(), approved, ex);
         }
         return saved;
     }

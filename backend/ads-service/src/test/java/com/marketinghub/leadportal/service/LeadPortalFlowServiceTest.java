@@ -17,13 +17,12 @@ import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -102,13 +101,15 @@ class LeadPortalFlowServiceTest {
     }
 
     @Test
-    void updateApprovalPropagatesPublisherErrors() {
+    void updateApprovalKeepsLocalStateWhenPublisherFails() {
         doThrow(new LeadPortalPublicationException("fail", new RuntimeException()))
                 .when(flowPublisher).publish(flow);
 
-        assertThatThrownBy(() -> service.updateApproval(1L, true))
-                .isInstanceOf(ResponseStatusException.class)
-                .extracting(Throwable::getCause)
-                .isInstanceOf(LeadPortalPublicationException.class);
+        LeadPortalFlow updated = service.updateApproval(1L, true);
+
+        verify(repository).save(flow);
+        verify(flowPublisher).publish(flow);
+        verify(flowPublisher, never()).remove(anyString());
+        assertThat(updated.isApproved()).isTrue();
     }
 }

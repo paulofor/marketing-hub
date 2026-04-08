@@ -16,6 +16,18 @@ As alterações serão adicionadas conforme forem implementadas, incluindo:
 
 ## Histórico
 
+### 2026-04-08 — Refino incremental do item `Layout da Landing`
+
+- **Item alterado:** `Layout da Landing` no pipeline de experimento.
+  - **O que mudou:** os prompts do item de layout (frontend, backend e worker) passaram a exigir `mediaSlot` e `compositionNotes` por seção, além de reforçar explicitamente que a etapa de layout não deve gerar HTML final.
+  - **Impacto esperado:** melhora da separação de responsabilidades entre layout e HTML final, com contrato mais claro para hierarquia, slots de mídia e leitura mobile-first.
+  - **Arquivos relacionados:** `frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx`, `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`, `ai-worker/src/main/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClient.java`.
+
+- **Item alterado:** parsing e preview de `Layout da Landing` no frontend.
+  - **O que mudou:** o parser do layout passou a ler os novos campos opcionais `mediaSlot` e `compositionNotes`, e o preview exibe essas informações por bloco.
+  - **Impacto esperado:** maior observabilidade operacional da intenção de composição visual antes da etapa de geração de HTML.
+  - **Arquivos relacionados:** `frontend/src/pages/experiment/landingLayoutParser.ts`, `frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx`.
+
 ### 2026-04-07 — Migração da experiência de landing para artefatos (frontend)
 
 - **Item alterado:** prompts de geração para `Texto da Landing`, `Layout da Landing`, `Planejamento de Imagens da Landing` e `HTML da Landing`.

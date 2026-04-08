@@ -145,8 +145,11 @@ public class ExperimentPipelineOpenAiClient {
             8. ctaPlacementNotes garante repetição literal do CTA aprovado em posições estratégicas.
             9. mobilePriorityNotes destaca o que aparece antes da rolagem.
             10. consistencyChecks precisa incluir CTA_MATCH e EXPERIENCE_CONTINUITY com status PASS/WARN/FAIL e detalhes.
-            11. Não usar linguagem de consultoria e não criar estrutura genérica para qualquer mercado.
-            12. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para o nicho informado.
+            11. Cada bloco deve preencher mediaSlot com: none, image, illustration, chart, icon-set ou video-thumb.
+            12. Cada bloco deve preencher compositionNotes detalhando hierarquia, ritmo de leitura e composição mobile-first.
+            13. Não transformar o layout em HTML final; esta etapa define apenas ordem, hierarquia e slots de mídia.
+            14. Não usar linguagem de consultoria e não criar estrutura genérica para qualquer mercado.
+            15. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para o nicho informado.
 
             Formato obrigatório (JSON):
             - pageGoal,

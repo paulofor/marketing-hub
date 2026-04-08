@@ -687,10 +687,14 @@ public class ExperimentPipelineGenerationService {
             sb.append("8. ctaPlacementNotes deve garantir repetição literal do CTA principal em toda a página.\n");
             sb.append("9. consistencyChecks deve incluir CTA_MATCH e EXPERIENCE_CONTINUITY (status PASS/WARN/FAIL) descrevendo se o anúncio e a landing estão alinhados.\n");
             sb.append("10. mobilePriorityNotes deve destacar o que precisa aparecer antes da rolagem.\n");
-            sb.append("11. Não usar linguagem de consultoria e não criar estrutura que pareça página genérica para qualquer mercado.\n");
-            sb.append("12. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para ").append(niche).append(".\n\n");
+            sb.append("11. Cada sectionOrder[i] deve preencher mediaSlot com: none, image, illustration, chart, icon-set ou video-thumb.\n");
+            sb.append("12. Cada sectionOrder[i] deve preencher compositionNotes explicando hierarquia visual, densidade de conteúdo e leitura mobile-first.\n");
+            sb.append("13. Não transformar o layout em HTML final; esta etapa deve decidir ordem, hierarquia e slots de mídia.\n");
+            sb.append("14. Não usar linguagem de consultoria e não criar estrutura que pareça página genérica para qualquer mercado.\n");
+            sb.append("15. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para ").append(niche).append(".\n\n");
             sb.append("Formato obrigatório:\n");
             sb.append("- Preencher sectionOrder respeitando a ordem real da landing e referenciando sectionId de bodySections quando existir.\n");
+            sb.append("- Preencher mediaSlot e compositionNotes em todas as seções.\n");
             sb.append("- Preencher ctaSlot dentro das seções com CTA.\n");
             sb.append("- Preencher consistencyChecks e observações finais (mobilePriorityNotes, ctaPlacementNotes, formPlacementNotes).\n");
             sb.append("- Reforçar message match usando primaryAdHeadline, landingMatchLine e " + landingCtaForInstructions + " como referência fixa.\n");

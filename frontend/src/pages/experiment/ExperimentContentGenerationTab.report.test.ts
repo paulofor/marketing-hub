@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { selectLatestGenerationPerSection } from "./ExperimentContentGenerationTab";
+import {
+  resolvePersistedReportPayload,
+  selectLatestGenerationPerSection,
+} from "./ExperimentContentGenerationTab";
 
 describe("selectLatestGenerationPerSection", () => {
   it("mantém somente o registro mais recente de cada seção", () => {
@@ -56,5 +59,38 @@ describe("selectLatestGenerationPerSection", () => {
       "landing-layout",
     ]);
     expect(result.find((item: any) => item.metadata.sectionKey === "landing-copy")?.id).toBe(11);
+  });
+});
+
+describe("resolvePersistedReportPayload", () => {
+  it("retorna o payload persistido para campaign-angle e ad-copy", () => {
+    const payloads = {
+      campaignAngle: {
+        angle: "Ângulo principal",
+        promise: "Promessa",
+      },
+      adCopy: {
+        hook: "Hook principal",
+        primaryTextVariants: ["Texto 1"],
+        headlineVariants: ["Headline 1"],
+        ctaSuggestions: ["Falar no WhatsApp"],
+      },
+    } as any;
+
+    expect(resolvePersistedReportPayload("campaign-angle", payloads)).toContain(
+      "\"angle\": \"Ângulo principal\"",
+    );
+    expect(resolvePersistedReportPayload("ad-copy", payloads)).toContain(
+      "\"hook\": \"Hook principal\"",
+    );
+  });
+
+  it("retorna undefined para seções sem persistência dedicada", () => {
+    const payloads = {
+      campaignAngle: { angle: "Ângulo principal" },
+      adCopy: { hook: "Hook principal" },
+    } as any;
+
+    expect(resolvePersistedReportPayload("landing-copy", payloads)).toBeUndefined();
   });
 });

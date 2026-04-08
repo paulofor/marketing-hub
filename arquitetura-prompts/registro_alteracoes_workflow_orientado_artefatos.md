@@ -16,6 +16,18 @@ As alterações serão adicionadas conforme forem implementadas, incluindo:
 
 ## Histórico
 
+### 2026-04-08 — Refino incremental do item `Planejamento de Imagens da Landing`
+
+- **Item alterado:** `Planejamento de Imagens da Landing` no pipeline de experimento.
+  - **O que mudou:** os prompts do item (frontend, backend e worker) passaram a exigir explicitamente `priority` (high/medium/low) e `altText` por imagem, além do `placement` já existente.
+  - **Impacto esperado:** contrato mais explícito para priorização visual e acessibilidade de imagem antes da etapa de HTML, com melhor previsibilidade para geração e montagem final.
+  - **Arquivos relacionados:** `frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx`, `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`, `ai-worker/src/main/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClient.java`.
+
+- **Item alterado:** parsing e preview de `Planejamento de Imagens da Landing` no frontend.
+  - **O que mudou:** o parser passou a ler `priority` (com fallback `priorityLevel`) e o preview agora exibe badges de prioridade e o `altText` de cada imagem planejada.
+  - **Impacto esperado:** maior observabilidade do plano visual e validação mais clara dos campos mínimos esperados antes da renderização da landing.
+  - **Arquivos relacionados:** `frontend/src/pages/experiment/landingImagePlanningParser.ts`, `frontend/src/pages/experiment/landingImagePlanningParser.test.ts`, `frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx`.
+
 ### 2026-04-08 — Refino incremental do item `Layout da Landing`
 
 - **Item alterado:** `Layout da Landing` no pipeline de experimento.

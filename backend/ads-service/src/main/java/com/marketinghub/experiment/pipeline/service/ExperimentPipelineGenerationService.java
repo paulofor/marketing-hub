@@ -717,8 +717,8 @@ public class ExperimentPipelineGenerationService {
             sb.append("Regras:\n");
             sb.append("1. images[] deve ter no mínimo 4 itens com sectionId e sectionName existentes no wireframe.\n");
             sb.append("2. Cada item precisa trazer imagePrompt, objective, visualStyle, composition, focalPoint, supportingElements e mood.\n");
-            sb.append("3. Definir placement (hero, benefit, mechanism, proof, offer, faq, cta) e hierarchyLevel (primary, secondary, support).\n");
-            sb.append("4. Cada item precisa informar dimensions (desktop e mobile), safeMargins e textOverlayGuidance.\n");
+            sb.append("3. Definir placement (hero, benefit, mechanism, proof, offer, faq, cta), priority (high, medium, low) e hierarchyLevel (primary, secondary, support).\n");
+            sb.append("4. Cada item precisa informar dimensions (desktop e mobile), safeMargins, textOverlayGuidance e altText.\n");
             sb.append("5. Sempre preencher messageMatchNotes explicando como a imagem reforça promessa/CTA sem desviar o ângulo.\n");
             sb.append("6. Sempre preencher complianceNotes evitando linguagem de consultoria e claims absolutos.\n");
             sb.append("7. Incluir negativePrompt e generationHints para orientar geração consistente e informativa.\n");

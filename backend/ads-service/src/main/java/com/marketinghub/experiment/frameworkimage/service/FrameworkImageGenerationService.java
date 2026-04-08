@@ -22,6 +22,9 @@ import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -29,16 +32,23 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class FrameworkImageGenerationService {
+    private static final Logger log = LoggerFactory.getLogger(FrameworkImageGenerationService.class);
     private final FrameworkImageGenerationJobRepository jobRepository;
     private final ExperimentRepository experimentRepository;
     private final ObjectMapper objectMapper;
+    private final boolean rolloutEnabled;
+    private final int rolloutPercentage;
 
     public FrameworkImageGenerationService(FrameworkImageGenerationJobRepository jobRepository,
                                            ExperimentRepository experimentRepository,
-                                           ObjectMapper objectMapper) {
+                                           ObjectMapper objectMapper,
+                                           @Value("${framework-image.rollout.enabled:true}") boolean rolloutEnabled,
+                                           @Value("${framework-image.rollout.percentage:100}") int rolloutPercentage) {
         this.jobRepository = jobRepository;
         this.experimentRepository = experimentRepository;
         this.objectMapper = objectMapper;
+        this.rolloutEnabled = rolloutEnabled;
+        this.rolloutPercentage = Math.min(100, Math.max(0, rolloutPercentage));
     }
 
     @Transactional(readOnly = true)
@@ -78,6 +88,8 @@ public class FrameworkImageGenerationService {
         job.setStage(FrameworkImageGenerationJobStage.CLAIMED);
         job.setWorkerId(StringUtils.hasText(workerId) ? workerId.trim() : "unknown-worker");
         job.setStartedAt(Instant.now());
+        log.info("framework-image-job-claimed jobId={} experimentId={} stage={} workerId={}",
+                job.getId(), job.getExperiment().getId(), job.getStage(), job.getWorkerId());
         return toDto(job);
     }
 
@@ -112,6 +124,9 @@ public class FrameworkImageGenerationService {
         job.setWebUrl(normalize(request.webUrl()));
         job.setErrorMessage(null);
         job.setFinishedAt(Instant.now());
+        log.info("framework-image-job-completed jobId={} experimentId={} stage={} workerId={} assetId={} batchId={} model={}",
+                job.getId(), job.getExperiment().getId(), job.getStage(), job.getWorkerId(),
+                job.getAssetId(), job.getBatchId(), job.getModel());
     }
 
     @Transactional
@@ -125,6 +140,9 @@ public class FrameworkImageGenerationService {
         job.setStage(FrameworkImageGenerationJobStage.FAILED);
         job.setErrorMessage(StringUtils.hasText(errorMessage) ? errorMessage.trim() : "Falha desconhecida");
         job.setFinishedAt(Instant.now());
+        log.warn("framework-image-job-failed jobId={} experimentId={} stage={} workerId={} assetId={} batchId={} error={}",
+                job.getId(), job.getExperiment().getId(), job.getStage(), job.getWorkerId(),
+                job.getAssetId(), job.getBatchId(), job.getErrorMessage());
     }
 
     @Transactional
@@ -146,6 +164,8 @@ public class FrameworkImageGenerationService {
             job.setFinishedAt(Instant.now());
         }
         job.setErrorMessage(null);
+        log.info("framework-image-asset-web-ready jobId={} experimentId={} stage={} assetId={} webUrl={}",
+                job.getId(), job.getExperiment().getId(), job.getStage(), job.getAssetId(), job.getWebUrl());
     }
 
     @Transactional
@@ -181,6 +201,12 @@ public class FrameworkImageGenerationService {
 
     @Transactional
     public List<FrameworkImageGenerationJobDto> enqueueJobsForExperiment(Long experimentId) {
+        if (!isRolloutEligible(experimentId)) {
+            log.info("framework-image-rollout-skipped experimentId={} enabled={} percentage={}",
+                    experimentId, rolloutEnabled, rolloutPercentage);
+            return List.of();
+        }
+
         Experiment experiment = experimentRepository.findById(experimentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Experimento não encontrado"));
 
@@ -188,6 +214,24 @@ public class FrameworkImageGenerationService {
                 .filter(item -> StringUtils.hasText(item.prompt()))
                 .map(item -> enqueueJob(experimentId, item.planningItemKey(), null, item.prompt()))
                 .toList();
+    }
+
+    @Transactional
+    public int failStaleProcessingJobs(Instant staleBefore, int limit, String staleReason) {
+        List<FrameworkImageGenerationJob> staleJobs = jobRepository.findByStatusAndStartedAtBeforeOrderByStartedAtAsc(
+                FrameworkImageGenerationJobStatus.PROCESSING,
+                staleBefore,
+                PageRequest.of(0, Math.max(1, Math.min(limit, 200))));
+        for (FrameworkImageGenerationJob job : staleJobs) {
+            job.setStatus(FrameworkImageGenerationJobStatus.FAILED);
+            job.setStage(FrameworkImageGenerationJobStage.FAILED);
+            job.setFinishedAt(Instant.now());
+            job.setErrorMessage(staleReason);
+            log.warn("framework-image-job-stale-timeout jobId={} experimentId={} stage={} workerId={} assetId={} batchId={} startedAt={}",
+                    job.getId(), job.getExperiment().getId(), job.getStage(), job.getWorkerId(),
+                    job.getAssetId(), job.getBatchId(), job.getStartedAt());
+        }
+        return staleJobs.size();
     }
 
     @Transactional(readOnly = true)
@@ -256,6 +300,18 @@ public class FrameworkImageGenerationService {
 
     private String normalize(String value) {
         return StringUtils.hasText(value) ? value.trim() : null;
+    }
+
+    private boolean isRolloutEligible(Long experimentId) {
+        if (!rolloutEnabled || rolloutPercentage <= 0) {
+            return false;
+        }
+        if (rolloutPercentage >= 100) {
+            return true;
+        }
+        long normalizedExperimentId = experimentId == null ? 0L : Math.abs(experimentId);
+        long bucket = normalizedExperimentId % 100;
+        return bucket < rolloutPercentage;
     }
 
     private FrameworkImageGenerationJobDto toDto(FrameworkImageGenerationJob job) {

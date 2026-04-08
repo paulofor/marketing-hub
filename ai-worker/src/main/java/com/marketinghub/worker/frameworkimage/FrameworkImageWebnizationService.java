@@ -59,11 +59,11 @@ public class FrameworkImageWebnizationService {
                         optimized.content(),
                         asset.assetId() + "-web-ready.jpg");
                 backendClient.markWebReady(asset.assetId(), uploaded.publicUrl());
-                log.info("Framework image asset {} web-ready published (jobId={}, objectKey={})",
-                        asset.assetId(), asset.jobId(), uploaded.objectKey());
+                log.info("Framework image web-ready published jobId={} experimentId={} assetId={} webUrl={} objectKey={}",
+                        asset.jobId(), asset.experimentId(), asset.assetId(), uploaded.publicUrl(), uploaded.objectKey());
             } catch (Exception ex) {
-                log.error("Framework image webnization failed for asset {} (jobId={}): {}",
-                        asset.assetId(), asset.jobId(), ex.getMessage(), ex);
+                log.error("Framework image webnization failed jobId={} experimentId={} assetId={} error={}",
+                        asset.jobId(), asset.experimentId(), asset.assetId(), ex.getMessage(), ex);
             }
         }
     }

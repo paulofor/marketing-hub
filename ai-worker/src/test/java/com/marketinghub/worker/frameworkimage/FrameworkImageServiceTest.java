@@ -42,7 +42,9 @@ class FrameworkImageServiceTest {
                 WebClient.builder(),
                 3,
                 java.time.Duration.ofMillis(10),
-                "worker-test");
+                "worker-test",
+                true,
+                100);
         UUID jobId = UUID.randomUUID();
         FrameworkImageJobDto job = new FrameworkImageJobDto(
                 jobId,
@@ -98,7 +100,9 @@ class FrameworkImageServiceTest {
                 WebClient.builder(),
                 3,
                 java.time.Duration.ofMillis(10),
-                "worker-test");
+                "worker-test",
+                true,
+                100);
         UUID jobId = UUID.randomUUID();
         FrameworkImageJobDto job = new FrameworkImageJobDto(
                 jobId,
@@ -139,7 +143,9 @@ class FrameworkImageServiceTest {
                 WebClient.builder(),
                 3,
                 java.time.Duration.ofMillis(10),
-                "worker-test");
+                "worker-test",
+                true,
+                100);
         UUID jobId = UUID.randomUUID();
         FrameworkImageJobDto job = new FrameworkImageJobDto(
                 jobId,

@@ -633,6 +633,92 @@ function parseTimestamp(value?: string) {
   return Number.isNaN(parsed) ? undefined : parsed;
 }
 
+function normalizeImageMatchValue(value?: string) {
+  return (value ?? "").trim().toLowerCase();
+}
+
+function resolveGeneratedImageUrl(item: FrameworkImageStatusItem) {
+  return item.webUrl ?? item.sourceUrl;
+}
+
+function mergeGeneratedImagesIntoLandingHtml(
+  htmlDocument?: string,
+  generatedImages: FrameworkImageStatusItem[] = [],
+) {
+  if (!htmlDocument?.trim() || generatedImages.length === 0) {
+    return htmlDocument ?? "";
+  }
+
+  if (typeof window === "undefined" || typeof DOMParser === "undefined") {
+    return htmlDocument;
+  }
+
+  const parser = new DOMParser();
+  const parsed = parser.parseFromString(htmlDocument, "text/html");
+  const imageElements = Array.from(parsed.querySelectorAll("img"));
+  if (imageElements.length === 0) {
+    return htmlDocument;
+  }
+
+  const availableImages = generatedImages
+    .map((item) => ({
+      url: resolveGeneratedImageUrl(item),
+      planningItemKey: normalizeImageMatchValue(item.planningItemKey),
+      sectionName: normalizeImageMatchValue(item.sectionName),
+    }))
+    .filter((item) => Boolean(item.url));
+
+  if (availableImages.length === 0) {
+    return htmlDocument;
+  }
+
+  const consumed = new Set<number>();
+  const consumeImage = (index: number) => {
+    consumed.add(index);
+    return availableImages[index];
+  };
+
+  const findFirstUnusedByMatcher = (
+    matcher: (candidate: (typeof availableImages)[number]) => boolean,
+  ) => {
+    const matchIndex = availableImages.findIndex(
+      (candidate, index) => !consumed.has(index) && matcher(candidate),
+    );
+    if (matchIndex === -1) return undefined;
+    return consumeImage(matchIndex);
+  };
+
+  imageElements.forEach((imgElement) => {
+    const matchCandidates = [
+      imgElement.getAttribute("data-planning-item-key"),
+      imgElement.getAttribute("data-section-name"),
+      imgElement.getAttribute("data-image-key"),
+      imgElement.id,
+      imgElement.getAttribute("alt"),
+      imgElement.getAttribute("class"),
+    ]
+      .map((value) => normalizeImageMatchValue(value ?? undefined))
+      .filter((value) => value.length > 0);
+
+    const matched =
+      findFirstUnusedByMatcher((candidate) =>
+        matchCandidates.some(
+          (value) =>
+            value === candidate.planningItemKey ||
+            value === candidate.sectionName ||
+            value.includes(candidate.planningItemKey) ||
+            value.includes(candidate.sectionName),
+        ),
+      ) ?? findFirstUnusedByMatcher(() => true);
+
+    if (matched?.url) {
+      imgElement.setAttribute("src", matched.url);
+    }
+  });
+
+  return parsed.documentElement.outerHTML;
+}
+
 function tryFormatJsonBlock(raw: string): string | undefined {
   const trimmed = raw.trim();
   if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) return undefined;
@@ -2771,6 +2857,14 @@ function LandingHtmlPreview({
       ),
     [frameworkImageStatusQuery.data],
   );
+  const mergedHtmlPreview = useMemo(
+    () =>
+      mergeGeneratedImagesIntoLandingHtml(
+        content.htmlDocument,
+        resolvedGeneratedImages,
+      ),
+    [content.htmlDocument, resolvedGeneratedImages],
+  );
 
   const handleApplyToForm = async () => {
     if (!experimentId) return;
@@ -2819,7 +2913,7 @@ function LandingHtmlPreview({
         <div className="border rounded overflow-hidden">
           <iframe
             title="Pré-visualização da landing final"
-            srcDoc={content.htmlDocument}
+            srcDoc={mergedHtmlPreview}
             style={{ width: "100%", height: "720px", border: "0" }}
             sandbox="allow-forms allow-modals allow-popups allow-same-origin allow-scripts"
           />
@@ -2849,7 +2943,7 @@ function LandingHtmlPreview({
                 <div className="border rounded overflow-hidden">
                   <iframe
                     title="Landing final com imagens geradas"
-                    srcDoc={content.htmlDocument}
+                    srcDoc={mergedHtmlPreview}
                     style={{ width: "100%", height: "560px", border: "0" }}
                     sandbox="allow-forms allow-modals allow-popups allow-same-origin allow-scripts"
                   />

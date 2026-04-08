@@ -106,8 +106,8 @@ class ExperimentControllerTest {
     void cleanDb() {
         creativeRepo.deleteAll();
         campaignRepository.deleteAll();
-        leadPortalFlowRepository.deleteAll();
         repository.deleteAll();
+        leadPortalFlowRepository.deleteAll();
         journeyTemplateRepository.deleteAll();
         targetingElementRepository.deleteAll();
         instagramAccountRepository.deleteAll();

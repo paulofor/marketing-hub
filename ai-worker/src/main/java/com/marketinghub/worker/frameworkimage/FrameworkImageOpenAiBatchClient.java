@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -226,13 +227,19 @@ public class FrameworkImageOpenAiBatchClient {
                 ImageGenerationResponse response = mapper.convertValue(output.response().body(), ImageGenerationResponse.class);
                 String model = StringUtils.hasText(response.model()) ? response.model() : defaultModel;
                 String prompt = response.prompt();
-                boolean hasImageData = response.hasImageData();
-                if (!hasImageData) {
+                ImageData imageData = response.firstImageData();
+                if (imageData == null) {
                     results.put(jobId, FrameworkImageBatchResult.failure(jobId, batchId,
                             "OpenAI batch response did not include image data"));
                     continue;
                 }
-                results.put(jobId, FrameworkImageBatchResult.success(jobId, batchId, model, prompt));
+                results.put(jobId, FrameworkImageBatchResult.success(
+                        jobId,
+                        batchId,
+                        model,
+                        prompt,
+                        decodeBase64(imageData.base64()),
+                        imageData.url()));
             } catch (Exception ex) {
                 throw new RuntimeException("Failed to parse OpenAI image batch output line", ex);
             }
@@ -259,6 +266,17 @@ public class FrameworkImageOpenAiBatchClient {
         return TERMINAL_BATCH_STATUSES.contains(status.toLowerCase(Locale.ROOT));
     }
 
+    private byte[] decodeBase64(String base64) {
+        if (!StringUtils.hasText(base64)) {
+            return null;
+        }
+        try {
+            return Base64.getDecoder().decode(base64);
+        } catch (IllegalArgumentException ex) {
+            throw new RuntimeException("Failed to decode OpenAI image payload", ex);
+        }
+    }
+
     private Duration normalizeDuration(Duration candidate, Duration fallback) {
         if (candidate == null || candidate.isNegative() || candidate.isZero()) {
             return fallback;
@@ -277,14 +295,21 @@ public class FrameworkImageOpenAiBatchClient {
                                             String batchId,
                                             String model,
                                             String prompt,
+                                            byte[] imageContent,
+                                            String imageUrl,
                                             boolean success,
                                             String errorMessage) {
-        public static FrameworkImageBatchResult success(UUID jobId, String batchId, String model, String prompt) {
-            return new FrameworkImageBatchResult(jobId, batchId, model, prompt, true, null);
+        public static FrameworkImageBatchResult success(UUID jobId,
+                                                        String batchId,
+                                                        String model,
+                                                        String prompt,
+                                                        byte[] imageContent,
+                                                        String imageUrl) {
+            return new FrameworkImageBatchResult(jobId, batchId, model, prompt, imageContent, imageUrl, true, null);
         }
 
         public static FrameworkImageBatchResult failure(UUID jobId, String batchId, String errorMessage) {
-            return new FrameworkImageBatchResult(jobId, batchId, null, null, false, errorMessage);
+            return new FrameworkImageBatchResult(jobId, batchId, null, null, null, null, false, errorMessage);
         }
     }
 
@@ -314,15 +339,18 @@ public class FrameworkImageOpenAiBatchClient {
     private record ImageGenerationResponse(String model,
                                            String prompt,
                                            List<ImageData> data) {
-        boolean hasImageData() {
+        ImageData firstImageData() {
             if (data == null || data.isEmpty()) {
-                return false;
+                return null;
             }
             ImageData first = data.get(0);
             if (first == null) {
-                return false;
+                return null;
             }
-            return StringUtils.hasText(first.url()) || StringUtils.hasText(first.base64());
+            if (!StringUtils.hasText(first.url()) && !StringUtils.hasText(first.base64())) {
+                return null;
+            }
+            return first;
         }
     }
 

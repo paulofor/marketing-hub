@@ -6,6 +6,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.marketinghub.worker.creative.CreativeImageOptimizer;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.reactive.function.client.WebClient;
 
 @ExtendWith(MockitoExtension.class)
 class FrameworkImageServiceTest {
@@ -24,9 +26,23 @@ class FrameworkImageServiceTest {
     @Mock
     private FrameworkImageOpenAiBatchClient openAiBatchClient;
 
+    @Mock
+    private FrameworkImageStorageClient storageClient;
+
+    @Mock
+    private CreativeImageOptimizer imageOptimizer;
+
     @Test
     void processPendingClaimsRunsBatchAndCompletesWithOpenAiReadyStage() {
-        FrameworkImageService service = new FrameworkImageService(backendClient, openAiBatchClient, "worker-test");
+        FrameworkImageService service = new FrameworkImageService(
+                backendClient,
+                openAiBatchClient,
+                storageClient,
+                imageOptimizer,
+                WebClient.builder(),
+                3,
+                java.time.Duration.ofMillis(10),
+                "worker-test");
         UUID jobId = UUID.randomUUID();
         FrameworkImageJobDto job = new FrameworkImageJobDto(
                 jobId,
@@ -55,20 +71,34 @@ class FrameworkImageServiceTest {
                         jobId,
                         "batch-123",
                         "gpt-image-1.5",
-                        "prompt"
+                        "prompt",
+                        new byte[] {1, 2, 3},
+                        null
                 )));
+        when(imageOptimizer.optimize(any())).thenReturn(new CreativeImageOptimizer.OptimizedImage(new byte[] {1, 2, 3}, "jpg"));
+        when(storageClient.upload(any(), any())).thenReturn(
+                new FrameworkImageStorageClient.UploadedFrameworkImage("framework-image/test.jpg", "https://cdn.example/framework-image/test.jpg"));
 
         service.processPending();
 
         verify(backendClient).updateStage(jobId, FrameworkImageJobStage.SENT_TO_OPENAI_BATCH);
         verify(backendClient).updateStage(jobId, FrameworkImageJobStage.WAITING_OPENAI_BATCH);
         verify(backendClient).updateStage(jobId, FrameworkImageJobStage.OPENAI_IMAGE_READY);
+        verify(backendClient).updateStage(jobId, FrameworkImageJobStage.UPLOADED_TO_CLOUDFLARE);
         verify(backendClient).complete(eq(jobId), any(FrameworkImageJobCompletionPayload.class));
     }
 
     @Test
     void processPendingFailsAllClaimedJobsWhenBatchThrows() {
-        FrameworkImageService service = new FrameworkImageService(backendClient, openAiBatchClient, "worker-test");
+        FrameworkImageService service = new FrameworkImageService(
+                backendClient,
+                openAiBatchClient,
+                storageClient,
+                imageOptimizer,
+                WebClient.builder(),
+                3,
+                java.time.Duration.ofMillis(10),
+                "worker-test");
         UUID jobId = UUID.randomUUID();
         FrameworkImageJobDto job = new FrameworkImageJobDto(
                 jobId,
@@ -101,7 +131,15 @@ class FrameworkImageServiceTest {
 
     @Test
     void processPendingSkipsWhenJobCannotBeClaimed() {
-        FrameworkImageService service = new FrameworkImageService(backendClient, openAiBatchClient, "worker-test");
+        FrameworkImageService service = new FrameworkImageService(
+                backendClient,
+                openAiBatchClient,
+                storageClient,
+                imageOptimizer,
+                WebClient.builder(),
+                3,
+                java.time.Duration.ofMillis(10),
+                "worker-test");
         UUID jobId = UUID.randomUUID();
         FrameworkImageJobDto job = new FrameworkImageJobDto(
                 jobId,

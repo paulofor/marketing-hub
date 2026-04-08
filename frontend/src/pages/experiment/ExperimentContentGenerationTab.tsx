@@ -440,7 +440,7 @@ artifact {
 const LANDING_HTML_PROMPT_TEMPLATE = `${COMMON_PIPELINE_PROMPT}
 
 Objetivo:
-Unificar os textos da landing + wireframe em um HTML final pronto para renderização no formulário do experimento.
+Unificar os textos da landing + wireframe + planejamento de imagens em um HTML final pronto para renderização no formulário do experimento.
 
 Regras:
 1. Entregar documento HTML completo com CSS e JavaScript embutidos.
@@ -448,7 +448,12 @@ Regras:
 3. Layout mobile-first com formulário acima da dobra sempre que possível.
 4. Incluir validação dos campos obrigatórios no JavaScript.
 5. Incluir bloco de compliance reforçando entrega digital via IA.
-6. Não usar dependências externas.
+6. Consumir explicitamente os artefatos anteriores:
+   - texto da landing para narrativa e message match;
+   - layout da landing para ordem/hierarquia e mediaSlot;
+   - planejamento de imagens para posicionamento visual e altText.
+7. Não inventar estrutura visual fora do layout/plano de imagens sem justificar nos consistencyChecks.
+8. Não usar dependências externas.
 
 Formato esperado:
 JSON com:
@@ -466,6 +471,7 @@ artifact {
 
 Regra obrigatória de imagens:
 - Toda tag <img> deve ter src absoluto válido (https://... ou data:image/...).
+- Toda tag <img> deve reutilizar altText e placement definidos no planejamento de imagens.
 - Nunca use caminhos relativos como "/assets/..." ou "./imagem.jpg" no htmlDocument.
 - Se não houver imagem final disponível, renderize placeholder visual no CSS sem quebrar layout.`;
 

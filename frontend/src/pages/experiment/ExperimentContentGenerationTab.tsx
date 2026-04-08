@@ -2722,6 +2722,14 @@ function LandingHtmlPreview({
 }) {
   const [isApplying, setIsApplying] = useState(false);
   const canRender = Boolean(content.htmlDocument?.trim());
+  const frameworkImageStatusQuery = useFrameworkImageStatuses(experimentId);
+  const resolvedGeneratedImages = useMemo(
+    () =>
+      (frameworkImageStatusQuery.data ?? []).filter(
+        (item) => Boolean(item.webUrl || item.sourceUrl),
+      ),
+    [frameworkImageStatusQuery.data],
+  );
 
   const handleApplyToForm = async () => {
     if (!experimentId) return;
@@ -2780,6 +2788,118 @@ function LandingHtmlPreview({
           Sem HTML final estruturado nesta geração.
         </p>
       )}
+      <div className="card border-0 shadow-sm">
+        <div className="card-body">
+          <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+              <h6 className="card-title mb-1">Visão final: landing + imagens</h6>
+              <p className="text-muted small mb-0">
+                Centraliza o HTML final com as imagens geradas para revisão
+                antes da aprovação.
+              </p>
+            </div>
+            <span className="badge text-bg-light">
+              {resolvedGeneratedImages.length} imagem(ns) com preview
+            </span>
+          </div>
+          <div className="row g-3 mt-1">
+            <div className="col-12 col-xxl-8">
+              {canRender ? (
+                <div className="border rounded overflow-hidden">
+                  <iframe
+                    title="Landing final com imagens geradas"
+                    srcDoc={content.htmlDocument}
+                    style={{ width: "100%", height: "560px", border: "0" }}
+                    sandbox="allow-forms allow-modals allow-popups allow-same-origin allow-scripts"
+                  />
+                </div>
+              ) : (
+                <div className="alert alert-secondary mb-0" role="status">
+                  Gere o HTML final para habilitar a visão consolidada.
+                </div>
+              )}
+            </div>
+            <div className="col-12 col-xxl-4">
+              <div className="border rounded p-3 bg-body-tertiary h-100 d-flex flex-column gap-2">
+                <p className="text-uppercase small text-muted fw-semibold mb-1">
+                  Imagens geradas
+                </p>
+                {frameworkImageStatusQuery.isLoading ? (
+                  <div className="d-flex align-items-center gap-2 text-muted small">
+                    <span
+                      className="spinner-border spinner-border-sm"
+                      role="status"
+                      aria-hidden="true"
+                    />
+                    Carregando imagens...
+                  </div>
+                ) : null}
+                {frameworkImageStatusQuery.isError ? (
+                  <div className="alert alert-danger py-2 mb-0 small" role="alert">
+                    Não foi possível carregar as imagens geradas.
+                  </div>
+                ) : null}
+                {!frameworkImageStatusQuery.isLoading &&
+                !frameworkImageStatusQuery.isError &&
+                resolvedGeneratedImages.length === 0 ? (
+                  <div className="alert alert-secondary py-2 mb-0 small" role="status">
+                    Nenhuma imagem final disponível ainda. Gere as imagens no
+                    bloco de planejamento.
+                  </div>
+                ) : null}
+                {!frameworkImageStatusQuery.isLoading &&
+                !frameworkImageStatusQuery.isError &&
+                resolvedGeneratedImages.length > 0 ? (
+                  <div className="d-flex flex-column gap-2">
+                    {resolvedGeneratedImages.map((item) => {
+                      const imageUrl = item.webUrl ?? item.sourceUrl;
+                      if (!imageUrl) return null;
+                      return (
+                        <div
+                          key={`${item.planningItemKey}-${imageUrl}`}
+                          className="border rounded p-2 bg-body"
+                        >
+                          <img
+                            src={imageUrl}
+                            alt={item.sectionName ?? item.planningItemKey}
+                            className="img-fluid rounded border"
+                            style={{ maxHeight: "140px", width: "100%", objectFit: "cover" }}
+                          />
+                          <p className="small fw-semibold mb-1 mt-2">
+                            {item.sectionName ?? item.planningItemKey}
+                          </p>
+                          <div className="d-flex flex-wrap gap-2">
+                            {item.webUrl ? (
+                              <a
+                                href={item.webUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="small"
+                              >
+                                Abrir versão web
+                              </a>
+                            ) : null}
+                            {item.sourceUrl ? (
+                              <a
+                                href={item.sourceUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="small"
+                              >
+                                Abrir origem
+                              </a>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       {content.htmlDocument ? (
         <details>
           <summary className="small text-muted">Ver HTML bruto</summary>

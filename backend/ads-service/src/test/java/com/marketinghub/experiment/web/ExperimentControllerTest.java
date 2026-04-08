@@ -106,6 +106,15 @@ class ExperimentControllerTest {
     void cleanDb() {
         creativeRepo.deleteAll();
         campaignRepository.deleteAll();
+
+        var experiments = repository.findAll();
+        experiments.forEach(experiment -> experiment.setLeadPortalFlow(null));
+        repository.saveAll(experiments);
+
+        var leadPortalFlows = leadPortalFlowRepository.findAll();
+        leadPortalFlows.forEach(flow -> flow.setExperiment(null));
+        leadPortalFlowRepository.saveAll(leadPortalFlows);
+
         repository.deleteAll();
         leadPortalFlowRepository.deleteAll();
         journeyTemplateRepository.deleteAll();

@@ -18,6 +18,7 @@ describe("landingImagePlanningParser", () => {
               sectionId: "hero",
               sectionName: "Hero",
               placement: "hero",
+              priority: "high",
               objective: "Reforçar promessa",
               imagePrompt: "Personal trainer com celular e dashboard",
               dimensions: {
@@ -39,6 +40,7 @@ describe("landingImagePlanningParser", () => {
     expect(parsed?.images[0]?.imageUrl).toBe(
       "https://cdn.exemplo.com/hero.jpg",
     );
+    expect(parsed?.images[0]?.priority).toBe("high");
     expect(parsed?.images[0]?.desktopDimensions).toBe("1440x900");
   });
 

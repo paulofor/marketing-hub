@@ -9,6 +9,7 @@ export interface LandingPlannedImage {
   sectionId?: string;
   sectionName?: string;
   placement?: string;
+  priority?: string;
   hierarchyLevel?: string;
   objective?: string;
   imagePrompt?: string;
@@ -88,6 +89,7 @@ function parseImage(value: unknown): LandingPlannedImage | undefined {
     sectionId: pickText(payload.sectionId),
     sectionName: pickText(payload.sectionName),
     placement: pickText(payload.placement),
+    priority: pickText(payload.priority ?? payload.priorityLevel),
     hierarchyLevel: pickText(payload.hierarchyLevel),
     objective: pickText(payload.objective),
     imagePrompt: pickText(payload.imagePrompt ?? payload.prompt),

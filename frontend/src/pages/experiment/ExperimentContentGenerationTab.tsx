@@ -479,9 +479,11 @@ Regras:
 2. Cada imagem precisa incluir:
    - sectionId e sectionName
    - placement (hero|benefit|mechanism|proof|offer|faq|cta)
+   - priority (high|medium|low)
    - hierarchyLevel (primary|secondary|support)
    - objective
    - imagePrompt
+   - altText
    - dimensions.desktop e dimensions.mobile
    - messageMatchNotes
 3. Sempre incluir negativePrompt, complianceNotes e textOverlayGuidance.
@@ -2624,11 +2626,18 @@ function LandingImagePlanningPreview({
               <div className="border rounded p-3 h-100 bg-light-subtle d-flex flex-column gap-2">
                 <div className="d-flex justify-content-between align-items-center gap-2">
                   <strong>{image.sectionName ?? `Imagem ${index + 1}`}</strong>
-                  {image.placement ? (
-                    <span className="badge text-bg-light text-uppercase">
-                      {image.placement}
-                    </span>
-                  ) : null}
+                  <div className="d-flex align-items-center gap-2">
+                    {image.priority ? (
+                      <span className="badge text-bg-warning text-uppercase">
+                        {image.priority}
+                      </span>
+                    ) : null}
+                    {image.placement ? (
+                      <span className="badge text-bg-light text-uppercase">
+                        {image.placement}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
                 {image.imageUrl ? (
                   <img
@@ -2647,6 +2656,9 @@ function LandingImagePlanningPreview({
                 </p>
                 <p className="small mb-0">
                   <strong>Prompt:</strong> {image.imagePrompt ?? "—"}
+                </p>
+                <p className="small mb-0">
+                  <strong>Alt text:</strong> {image.altText ?? "—"}
                 </p>
                 {image.negativePrompt ? (
                   <p className="small mb-0">

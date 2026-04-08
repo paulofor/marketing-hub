@@ -98,6 +98,7 @@ class FrameworkImageGenerationServiceTest {
         UUID jobId = UUID.randomUUID();
         FrameworkImageGenerationJob job = FrameworkImageGenerationJob.builder()
                 .id(jobId)
+                .experiment(Experiment.builder().id(55L).build())
                 .status(FrameworkImageGenerationJobStatus.PROCESSING)
                 .stage(FrameworkImageGenerationJobStage.WAITING_OPENAI_BATCH)
                 .build();
@@ -240,6 +241,7 @@ class FrameworkImageGenerationServiceTest {
     void markAssetAsWebReadyUpdatesStageAndKeepsOperationIdempotent() {
         FrameworkImageGenerationJob job = FrameworkImageGenerationJob.builder()
                 .id(UUID.randomUUID())
+                .experiment(Experiment.builder().id(77L).build())
                 .status(FrameworkImageGenerationJobStatus.COMPLETED)
                 .stage(FrameworkImageGenerationJobStage.NOTIFIED_BACKEND)
                 .assetId(901L)

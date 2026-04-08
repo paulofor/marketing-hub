@@ -16,6 +16,18 @@ As alterações serão adicionadas conforme forem implementadas, incluindo:
 
 ## Histórico
 
+### 2026-04-08 — Refino incremental do item `HTML da Landing`
+
+- **Item alterado:** `HTML da Landing` no pipeline de experimento.
+  - **O que mudou:** os prompts do item (frontend, backend e worker) passaram a exigir consumo explícito de `landing-page-copy`, `landing-page-wireframe` e `landing-page-image-planning`, com regra para não inventar estrutura visual fora desses artefatos sem justificar nos checks.
+  - **Impacto esperado:** maior previsibilidade na montagem final do HTML, reduzindo desvios de layout e reforçando a separação entre decisão de copy/layout/imagens e implementação final.
+  - **Arquivos relacionados:** `frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx`, `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`, `ai-worker/src/main/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClient.java`.
+
+- **Item alterado:** regra de renderização de imagens no `HTML da Landing`.
+  - **O que mudou:** os prompts agora exigem `src` absoluto válido para `<img>` e reutilização de `altText` definido no planejamento de imagens, além do check `IMAGE_PLAN_BINDING` no bloco `consistencyChecks`.
+  - **Impacto esperado:** melhoria de compatibilidade no preview/renderização e maior aderência do HTML ao plano visual aprovado, com reforço de acessibilidade.
+  - **Arquivos relacionados:** `frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx`, `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`, `ai-worker/src/main/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClient.java`.
+
 ### 2026-04-08 — Refino incremental do item `Planejamento de Imagens da Landing`
 
 - **Item alterado:** `Planejamento de Imagens da Landing` no pipeline de experimento.

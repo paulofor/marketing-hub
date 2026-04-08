@@ -743,7 +743,7 @@ public class ExperimentPipelineGenerationService {
             sb.append("CTA obrigatório: ").append(landingCtaForInstructions).append("\n");
             appendIfPresent(sb, "Linha de match com landing", landingMatchLine);
             sb.append("\nObjetivo:\n");
-            sb.append("Unificar copy + wireframe e entregar uma landing final pronta para uso em formulário do experimento.\n\n");
+            sb.append("Unificar copy + wireframe + planejamento de imagens e entregar uma landing final pronta para uso em formulário do experimento.\n\n");
             sb.append("Regras:\n");
             sb.append("1. Entregar HTML completo com <style> e <script> internos (sem dependências externas).\n");
             sb.append("2. Garantir mobile-first e acessibilidade básica (labels, aria, foco visível).\n");
@@ -752,11 +752,17 @@ public class ExperimentPipelineGenerationService {
             sb.append("5. Incluir validação de campos obrigatórios no JavaScript.\n");
             sb.append("6. Não usar claims absolutos, nem linguagem de consultoria.\n");
             sb.append("7. Incluir bloco de compliance reforçando entrega digital via IA.\n");
-            sb.append("8. O código deve ser limpo, legível e pronto para ser renderizado em iframe.\n\n");
+            sb.append("8. Consumir explicitamente os artefatos anteriores:\n");
+            sb.append("   - copy da landing para narrativa e message match;\n");
+            sb.append("   - wireframe para ordem/hierarquia e mediaSlot;\n");
+            sb.append("   - planejamento de imagens para placement, prioridade e altText.\n");
+            sb.append("9. Não inventar estrutura visual fora do layout/plano de imagens sem justificar nos consistencyChecks.\n");
+            sb.append("10. O código deve ser limpo, legível e pronto para ser renderizado em iframe.\n");
+            sb.append("11. Toda tag <img> deve usar src absoluto válido (https://... ou data:image/...) e reaproveitar altText do planejamento de imagens.\n\n");
             sb.append("Formato obrigatório:\n");
             sb.append("- htmlDocument: string com o documento completo final.\n");
             sb.append("- summary: resumo curto das decisões de implementação.\n");
-            sb.append("- consistencyChecks: checks com CTA_MATCH, PROMISE_MATCH e FORM_USABILITY.\n");
+            sb.append("- consistencyChecks: checks com CTA_MATCH, PROMISE_MATCH, IMAGE_PLAN_BINDING e FORM_USABILITY.\n");
             return;
         }
     }

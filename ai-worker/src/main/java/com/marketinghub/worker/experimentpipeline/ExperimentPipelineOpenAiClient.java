@@ -163,7 +163,7 @@ public class ExperimentPipelineOpenAiClient {
             """;
     private static final String LANDING_HTML_PROMPT_SUFFIX = """
             Objetivo:
-            Unificar a copy e o wireframe aprovados em uma landing final pronta para uso no formulário do experimento.
+            Unificar a copy, o wireframe e o planejamento de imagens aprovados em uma landing final pronta para uso no formulário do experimento.
 
             Regras:
             1. Entregar documento HTML completo com CSS e JavaScript embutidos.
@@ -171,12 +171,18 @@ public class ExperimentPipelineOpenAiClient {
             3. O formulário deve ser mobile-first e conter nome, whatsapp e objetivo principal.
             4. Incluir validação de campos obrigatórios no JavaScript.
             5. Incluir bloco de compliance reforçando entrega digital via IA e sem consultoria.
-            6. Não usar bibliotecas externas nem assets remotos.
+            6. Consumir explicitamente os artefatos anteriores:
+               - copy da landing para narrativa e message match;
+               - wireframe para ordem/hierarquia e mediaSlot;
+               - planejamento de imagens para placement e altText.
+            7. Não inventar estrutura visual fora do layout/plano de imagens sem justificar nos consistencyChecks.
+            8. Não usar bibliotecas externas.
+            9. Toda tag <img> deve usar src absoluto válido (https://... ou data:image/...) e reutilizar altText do planejamento de imagens.
 
             Formato obrigatório (JSON):
             - htmlDocument
             - summary
-            - consistencyChecks[] com CTA_MATCH, PROMISE_MATCH e FORM_USABILITY
+            - consistencyChecks[] com CTA_MATCH, PROMISE_MATCH, IMAGE_PLAN_BINDING e FORM_USABILITY
             """;
     private static final String LANDING_IMAGE_PLANNING_PROMPT_SUFFIX = """
             Objetivo:

@@ -1,5 +1,6 @@
 package com.marketinghub.leadportal.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.marketinghub.leadportal.model.SimpleFormStyleDefinition;
 import jakarta.validation.Valid;
@@ -114,6 +115,7 @@ public class UpsertFlowRequest {
         this.simpleFormStyle = simpleFormStyle;
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class SimpleFormStylePayload {
         private String slug;
         private String name;

@@ -17,4 +17,6 @@ public interface FrameworkImageGenerationJobRepository extends JpaRepository<Fra
             Long experimentId,
             String planningItemKey,
             Collection<FrameworkImageGenerationJobStatus> statuses);
+
+    List<FrameworkImageGenerationJob> findByExperimentIdOrderByCreatedAtDesc(Long experimentId);
 }

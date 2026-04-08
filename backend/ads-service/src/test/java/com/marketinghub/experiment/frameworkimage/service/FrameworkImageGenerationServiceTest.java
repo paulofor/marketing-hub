@@ -8,10 +8,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.frameworkimage.FrameworkImageGenerationJob;
 import com.marketinghub.experiment.frameworkimage.FrameworkImageGenerationJobStage;
 import com.marketinghub.experiment.frameworkimage.FrameworkImageGenerationJobStatus;
+import com.marketinghub.experiment.frameworkimage.dto.FrameworkImageGenerationItemStatusDto;
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageGenerationJobCompletionRequest;
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageGenerationJobDto;
 import com.marketinghub.experiment.frameworkimage.repository.FrameworkImageGenerationJobRepository;
@@ -45,7 +47,7 @@ class FrameworkImageGenerationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new FrameworkImageGenerationService(jobRepository, experimentRepository);
+        service = new FrameworkImageGenerationService(jobRepository, experimentRepository, new ObjectMapper());
     }
 
     @Test
@@ -146,5 +148,66 @@ class FrameworkImageGenerationServiceTest {
 
         assertThat(jobs).hasSize(1);
         assertThat(jobs.get(0).planningItemKey()).isEqualTo("hero-1");
+    }
+
+    @Test
+    void enqueueJobsForExperimentMapsPlanningAndIgnoresItemsWithoutPrompt() {
+        Experiment experiment = Experiment.builder()
+                .id(22L)
+                .landingPageImagePlanning("""
+                        {
+                          "images": [
+                            {"sectionId":"hero","sectionName":"Hero","imagePrompt":"Prompt 1"},
+                            {"sectionId":"benefit","sectionName":"Benefícios","imagePrompt":"   "},
+                            {"sectionId":"offer","sectionName":"Oferta","prompt":"Prompt 3"}
+                          ]
+                        }
+                        """)
+                .build();
+        when(experimentRepository.findById(22L)).thenReturn(Optional.of(experiment));
+        when(jobRepository.findFirstByExperimentIdAndPlanningItemKeyAndStatusInOrderByCreatedAtDesc(eq(22L), any(), any(Set.class)))
+                .thenReturn(Optional.empty());
+        when(jobRepository.save(any(FrameworkImageGenerationJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        List<FrameworkImageGenerationJobDto> jobs = service.enqueueJobsForExperiment(22L);
+
+        assertThat(jobs).hasSize(2);
+        assertThat(jobs).extracting(FrameworkImageGenerationJobDto::planningItemKey)
+                .containsExactly("hero", "offer");
+    }
+
+    @Test
+    void listJobsByExperimentReturnsPlannedAndJobStatuses() {
+        Experiment experiment = Experiment.builder()
+                .id(30L)
+                .landingPageImagePlanning("""
+                        {
+                          "landingPageImagePlanning": {
+                            "images": [
+                              {"sectionId":"hero","sectionName":"Hero","imagePrompt":"Prompt Hero"},
+                              {"sectionId":"faq","sectionName":"FAQ","imagePrompt":"Prompt FAQ"}
+                            ]
+                          }
+                        }
+                        """)
+                .build();
+        FrameworkImageGenerationJob heroJob = FrameworkImageGenerationJob.builder()
+                .id(UUID.randomUUID())
+                .experiment(experiment)
+                .planningItemKey("hero")
+                .status(FrameworkImageGenerationJobStatus.PROCESSING)
+                .stage(FrameworkImageGenerationJobStage.CLAIMED)
+                .build();
+
+        when(experimentRepository.findById(30L)).thenReturn(Optional.of(experiment));
+        when(jobRepository.findByExperimentIdOrderByCreatedAtDesc(30L)).thenReturn(List.of(heroJob));
+
+        List<FrameworkImageGenerationItemStatusDto> items = service.listJobsByExperiment(30L);
+
+        assertThat(items).hasSize(2);
+        assertThat(items.get(0).planningItemKey()).isEqualTo("hero");
+        assertThat(items.get(0).status()).isEqualTo("PROCESSING");
+        assertThat(items.get(1).planningItemKey()).isEqualTo("faq");
+        assertThat(items.get(1).status()).isEqualTo("PLANNED");
     }
 }

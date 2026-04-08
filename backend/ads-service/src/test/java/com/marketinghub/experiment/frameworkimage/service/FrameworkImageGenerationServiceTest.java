@@ -49,7 +49,7 @@ class FrameworkImageGenerationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new FrameworkImageGenerationService(jobRepository, experimentRepository, new ObjectMapper());
+        service = new FrameworkImageGenerationService(jobRepository, experimentRepository, new ObjectMapper(), true, 100);
     }
 
     @Test
@@ -255,5 +255,38 @@ class FrameworkImageGenerationServiceTest {
 
         service.markAssetAsWebReady(901L, "https://cdn/web.webp");
         assertThat(job.getWebUrl()).isEqualTo("https://cdn/web.webp");
+    }
+
+    @Test
+    void enqueueJobsForExperimentReturnsEmptyWhenRolloutDisabled() {
+        FrameworkImageGenerationService disabledRolloutService =
+                new FrameworkImageGenerationService(jobRepository, experimentRepository, new ObjectMapper(), false, 100);
+
+        List<FrameworkImageGenerationJobDto> jobs = disabledRolloutService.enqueueJobsForExperiment(99L);
+
+        assertThat(jobs).isEmpty();
+        verify(experimentRepository, never()).findById(99L);
+    }
+
+    @Test
+    void failStaleProcessingJobsMarksProcessingJobsAsFailed() {
+        FrameworkImageGenerationJob staleJob = FrameworkImageGenerationJob.builder()
+                .id(UUID.randomUUID())
+                .experiment(Experiment.builder().id(55L).build())
+                .status(FrameworkImageGenerationJobStatus.PROCESSING)
+                .stage(FrameworkImageGenerationJobStage.CLAIMED)
+                .startedAt(Instant.parse("2026-04-08T08:00:00Z"))
+                .build();
+        when(jobRepository.findByStatusAndStartedAtBeforeOrderByStartedAtAsc(
+                eq(FrameworkImageGenerationJobStatus.PROCESSING), any(Instant.class), any()))
+                .thenReturn(List.of(staleJob));
+
+        int failed = service.failStaleProcessingJobs(Instant.parse("2026-04-08T09:00:00Z"), 10, "timed out");
+
+        assertThat(failed).isEqualTo(1);
+        assertThat(staleJob.getStatus()).isEqualTo(FrameworkImageGenerationJobStatus.FAILED);
+        assertThat(staleJob.getStage()).isEqualTo(FrameworkImageGenerationJobStage.FAILED);
+        assertThat(staleJob.getErrorMessage()).isEqualTo("timed out");
+        assertThat(staleJob.getFinishedAt()).isNotNull();
     }
 }

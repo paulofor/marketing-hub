@@ -27,4 +27,9 @@ public interface FrameworkImageGenerationJobRepository extends JpaRepository<Fra
             Pageable pageable);
 
     Optional<FrameworkImageGenerationJob> findFirstByAssetIdOrderByCreatedAtDesc(Long assetId);
+
+    List<FrameworkImageGenerationJob> findByStatusAndStartedAtBeforeOrderByStartedAtAsc(
+            FrameworkImageGenerationJobStatus status,
+            java.time.Instant startedAt,
+            Pageable pageable);
 }

@@ -28,6 +28,8 @@ public class FrameworkImageService {
     private final String workerId;
     private final int uploadAttempts;
     private final Duration uploadBackoff;
+    private final boolean enabled;
+    private final int rolloutPercentage;
 
     public FrameworkImageService(FrameworkImageBackendClient backendClient,
                                  FrameworkImageOpenAiBatchClient openAiBatchClient,
@@ -36,7 +38,9 @@ public class FrameworkImageService {
                                  WebClient.Builder webClientBuilder,
                                  @Value("${framework-image.upload.max-attempts:3}") int uploadAttempts,
                                  @Value("${framework-image.upload.backoff:PT0.3S}") Duration uploadBackoff,
-                                 @Value("${worker.id:}") String configuredWorkerId) {
+                                 @Value("${worker.id:}") String configuredWorkerId,
+                                 @Value("${framework-image.enabled:true}") boolean enabled,
+                                 @Value("${framework-image.rollout.percentage:100}") int rolloutPercentage) {
         this.backendClient = backendClient;
         this.openAiBatchClient = openAiBatchClient;
         this.storageClient = storageClient;
@@ -45,9 +49,15 @@ public class FrameworkImageService {
         this.workerId = resolveWorkerId(configuredWorkerId);
         this.uploadAttempts = uploadAttempts > 0 ? uploadAttempts : DEFAULT_UPLOAD_ATTEMPTS;
         this.uploadBackoff = normalizeDuration(uploadBackoff, DEFAULT_UPLOAD_BACKOFF);
+        this.enabled = enabled;
+        this.rolloutPercentage = Math.min(100, Math.max(0, rolloutPercentage));
     }
 
     public void processPending() {
+        if (!enabled || rolloutPercentage <= 0) {
+            log.debug("Framework image generation worker disabled (enabled={}, rolloutPercentage={})", enabled, rolloutPercentage);
+            return;
+        }
         List<FrameworkImageJobDto> pendingJobs = backendClient.listPending(20);
         if (pendingJobs.isEmpty()) {
             log.debug("Framework image worker found no pending jobs");
@@ -58,6 +68,11 @@ public class FrameworkImageService {
         Map<UUID, FrameworkImageJobDto> claimedJobs = new LinkedHashMap<>();
 
         for (FrameworkImageJobDto job : pendingJobs) {
+            if (!isRolloutEligible(job.experimentId())) {
+                log.info("Framework image rollout skipped jobId={} experimentId={} workerId={} rolloutPercentage={}",
+                        job.id(), job.experimentId(), workerId, rolloutPercentage);
+                continue;
+            }
             FrameworkImageJobDto claimed = backendClient.claim(job.id(), workerId);
             if (claimed == null) {
                 log.info("Framework image job {} could not be claimed by worker {}", job.id(), workerId);
@@ -101,8 +116,9 @@ public class FrameworkImageService {
                         uploaded.publicUrl(),
                         claimedJob.webUrl());
                 backendClient.complete(claimedJob.id(), completionPayload);
-                log.info("Framework image job {} uploaded to Cloudflare and notified backend (batchId={}, objectKey={})",
-                        claimedJob.id(), result.batchId(), uploaded.objectKey());
+                log.info("Framework image job completed jobId={} experimentId={} assetId={} batchId={} workerId={} model={} objectKey={}",
+                        claimedJob.id(), claimedJob.experimentId(), claimedJob.assetId(), result.batchId(),
+                        workerId, completionPayload.model(), uploaded.objectKey());
             }
         } catch (Exception ex) {
             String reason = buildFailureReason(ex);
@@ -190,5 +206,14 @@ public class FrameworkImageService {
             return fallback;
         }
         return candidate;
+    }
+
+    private boolean isRolloutEligible(Long experimentId) {
+        if (rolloutPercentage >= 100) {
+            return true;
+        }
+        long normalizedExperimentId = experimentId == null ? 0L : Math.abs(experimentId);
+        long bucket = normalizedExperimentId % 100;
+        return bucket < rolloutPercentage;
     }
 }

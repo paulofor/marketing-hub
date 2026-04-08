@@ -112,6 +112,7 @@ class ExperimentControllerTest {
         targetingElementRepository.deleteAll();
         instagramAccountRepository.deleteAll();
         hypothesisRepository.deleteAll();
+        metricPresetRepository.deleteAll();
         angleRepository.deleteAll();
         nicheRepo.deleteAll();
         MarketNiche niche = fixtures.createAndSaveNiche();

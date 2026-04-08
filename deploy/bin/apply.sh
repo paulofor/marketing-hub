@@ -39,6 +39,15 @@ tag_image_if_exists() {
   fi
 }
 
+cleanup_previous_tags() {
+  local repository="$1"
+  local keep_tag="$2"
+
+  docker image ls "${repository}" --format '{{.Repository}}:{{.Tag}}' \
+    | awk -F':' -v keep_tag="${keep_tag}" '$2 != "<none>" && $2 != keep_tag {print $0}' \
+    | xargs -r docker image rm >/dev/null 2>&1 || true
+}
+
 if [[ "${IMAGE_TAG}" != "latest" ]]; then
   tag_image_if_exists "${BACKEND_IMAGE}:${IMAGE_TAG}" "${BACKEND_IMAGE}:latest"
   tag_image_if_exists "${FRONTEND_IMAGE}:${IMAGE_TAG}" "${FRONTEND_IMAGE}:latest"
@@ -50,6 +59,10 @@ docker compose down --remove-orphans || true
 
 # Start only backend/frontend stack on app host
 docker compose up -d backend frontend
+
+cleanup_previous_tags "${BACKEND_IMAGE}" "latest"
+cleanup_previous_tags "${FRONTEND_IMAGE}" "latest"
+cleanup_previous_tags "${VIDEO_IMAGE}" "latest"
 
 docker image prune -f >/dev/null 2>&1 || true
 rm -f "${BACKEND_TAR}" "${FRONTEND_TAR}" "${VIDEO_TAR}" >/dev/null 2>&1 || true

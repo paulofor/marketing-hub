@@ -101,6 +101,9 @@ class ExperimentPipelineGenerationServiceTest {
         assertEquals("exp-10-landing", created.getSlug());
         assertEquals("gpt-5.2", created.getModel());
         assertEquals("Pipeline: landing-page-html/apply-to-form", created.getPrompt());
+        assertTrue(created.isApproved());
+        assertNotNull(created.getApprovedAt());
+        verify(leadPortalFlowPublisher).publish(any(LeadPortalFlow.class));
     }
 
     @Test
@@ -123,6 +126,7 @@ class ExperimentPipelineGenerationServiceTest {
 
         verify(leadPortalFlowRepository, never()).findBySlug(any());
         verify(experimentRepository, never()).save(any());
+        verify(leadPortalFlowPublisher, never()).publish(any());
         assertEquals("<section>ok</section>", linkedFlow.getCustomFormHtml());
     }
 

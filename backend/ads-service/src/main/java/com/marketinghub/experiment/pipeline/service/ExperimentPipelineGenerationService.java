@@ -202,6 +202,8 @@ public class ExperimentPipelineGenerationService {
                 .description("Fluxo criado automaticamente a partir do HTML da landing page do experimento " + experimentId)
                 .model(DEFAULT_MODEL)
                 .prompt("Pipeline: landing-page-html/apply-to-form")
+                .approved(true)
+                .approvedAt(Instant.now())
                 .marketNiche(experiment.getNiche())
                 .experiment(experiment)
                 .build();

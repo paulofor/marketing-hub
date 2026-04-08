@@ -44,6 +44,8 @@ import {
 } from "./landingHtmlParser";
 import { extractObjectCandidates } from "./parserUtils";
 import { useExperimentPipelineJobs } from "../../api/experiment/useExperimentPipelineJobs";
+import { useFrameworkImageStatuses } from "../../api/experiment/useFrameworkImageStatuses";
+import { useGenerateFrameworkImages } from "../../api/experiment/useGenerateFrameworkImages";
 import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
 
 type ContentGenerationSectionKey =
@@ -964,6 +966,8 @@ export default function ExperimentContentGenerationTab({
   >(() => ({ ...SECTION_REQUEST_INITIAL_STATE }));
 
   const jobsQuery = useExperimentPipelineJobs(experimentId);
+  const frameworkImageStatusQuery = useFrameworkImageStatuses(experimentId);
+  const generateFrameworkImages = useGenerateFrameworkImages(experimentId);
 
   const requestsFromBackend = useMemo(
     () =>
@@ -1518,6 +1522,24 @@ export default function ExperimentContentGenerationTab({
                           generations={sectionGenerations[section.key]}
                           isLoading={isLoadingSectionGenerations[section.key]}
                         />
+                        {section.key === "landing-image-planning" ? (
+                          <FrameworkImageGenerationPanel
+                            onGenerate={async () => {
+                              try {
+                                await generateFrameworkImages.mutateAsync();
+                                toast.success(
+                                  "Solicitação de geração das imagens enviada para o Worker IA.",
+                                );
+                              } catch (error) {
+                                toast.error(getErrorMessage(error));
+                              }
+                            }}
+                            isGenerating={generateFrameworkImages.isPending}
+                            statuses={frameworkImageStatusQuery.data ?? []}
+                            isLoading={frameworkImageStatusQuery.isLoading}
+                            isError={frameworkImageStatusQuery.isError}
+                          />
+                        ) : null}
                       </>
                     )}
                   </div>
@@ -2169,6 +2191,192 @@ function PromptUsedDetails({
         </div>
       </div>
     </details>
+  );
+}
+
+interface FrameworkImageGenerationPanelProps {
+  statuses: FrameworkImageStatusItem[];
+  isLoading: boolean;
+  isError: boolean;
+  isGenerating: boolean;
+  onGenerate: () => Promise<void>;
+}
+
+type FrameworkImageStatusItem = {
+  planningItemKey: string;
+  sectionName?: string;
+  status: string;
+  stage?: string;
+  model?: string;
+  sourceUrl?: string;
+  webUrl?: string;
+  errorMessage?: string;
+  startedAt?: string;
+  finishedAt?: string;
+  updatedAt?: string;
+};
+
+const FRAMEWORK_IMAGE_STATUS_BADGE: Record<string, string> = {
+  PLANNED: "secondary",
+  PENDING: "secondary",
+  PROCESSING: "warning",
+  COMPLETED: "success",
+  FAILED: "danger",
+};
+
+const FRAMEWORK_IMAGE_STAGE_LABEL: Record<string, string> = {
+  WAITING_AI_WORKER: "Aguardando AI Worker",
+  CLAIMED: "Job em processamento",
+  SENT_TO_OPENAI_BATCH: "Enviada para lote OpenAI",
+  WAITING_OPENAI_BATCH: "Aguardando resposta OpenAI",
+  OPENAI_IMAGE_READY: "Imagem da OpenAI pronta",
+  UPLOADED_TO_CLOUDFLARE: "Upload no Cloudflare concluído",
+  NOTIFIED_BACKEND: "Backend notificado",
+  WAITING_WEBNIZATION: "Aguardando webnização",
+  WEB_READY: "Versão web pronta",
+  FAILED: "Falhou",
+};
+
+function FrameworkImageGenerationPanel({
+  statuses,
+  isLoading,
+  isError,
+  isGenerating,
+  onGenerate,
+}: FrameworkImageGenerationPanelProps) {
+  const sortedStatuses = useMemo(
+    () =>
+      [...statuses].sort(
+        (a, b) =>
+          (parseTimestamp(b.updatedAt) ?? Number.MIN_SAFE_INTEGER) -
+          (parseTimestamp(a.updatedAt) ?? Number.MIN_SAFE_INTEGER),
+      ),
+    [statuses],
+  );
+
+  return (
+    <div className="card border-0 shadow-sm mt-3">
+      <div className="card-body">
+        <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
+          <div>
+            <h6 className="card-title mb-1">Geração das imagens planejadas</h6>
+            <p className="text-muted small mb-0">
+              Dispare a geração final e acompanhe a timeline de cada item do
+              planejamento até a versão web-ready.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn btn-success btn-sm"
+            onClick={() => void onGenerate()}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <span className="d-inline-flex align-items-center gap-1">
+                <span
+                  className="spinner-border spinner-border-sm"
+                  role="status"
+                  aria-hidden="true"
+                />
+                Gerando...
+              </span>
+            ) : (
+              "Gerar imagens"
+            )}
+          </button>
+        </div>
+
+        {isLoading ? (
+          <div className="d-flex align-items-center gap-2 text-muted mt-3">
+            <span className="spinner-border spinner-border-sm" aria-hidden="true" />
+            Carregando status de geração...
+          </div>
+        ) : null}
+        {isError ? (
+          <div className="alert alert-danger mt-3 mb-0" role="alert">
+            Não foi possível carregar o status das imagens do framework.
+          </div>
+        ) : null}
+        {!isLoading && !isError && sortedStatuses.length === 0 ? (
+          <div className="alert alert-secondary mt-3 mb-0" role="status">
+            Nenhum item encontrado ainda. Gere o planejamento e clique em
+            <strong> Gerar imagens</strong> para iniciar o processamento.
+          </div>
+        ) : null}
+
+        {!isLoading && !isError && sortedStatuses.length > 0 ? (
+          <div className="table-responsive mt-3">
+            <table className="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Status</th>
+                  <th>Etapa atual</th>
+                  <th>Modelo</th>
+                  <th>Origem</th>
+                  <th>Web</th>
+                  <th>Atualização</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedStatuses.map((item) => {
+                  const normalizedStatus = item.status?.toUpperCase() ?? "PLANNED";
+                  const statusLabel =
+                    normalizedStatus === "PLANNED" ? "Planejada" : normalizedStatus;
+                  const badge = FRAMEWORK_IMAGE_STATUS_BADGE[normalizedStatus] ?? "light";
+                  const stageLabel = item.stage
+                    ? FRAMEWORK_IMAGE_STAGE_LABEL[item.stage] ?? item.stage
+                    : "Aguardando processamento";
+
+                  return (
+                    <tr key={item.planningItemKey}>
+                      <td>
+                        <div className="fw-semibold">{item.sectionName ?? item.planningItemKey}</div>
+                        {item.sectionName &&
+                        item.planningItemKey !== item.sectionName ? (
+                          <div className="small text-muted">{item.planningItemKey}</div>
+                        ) : null}
+                      </td>
+                      <td>
+                        <span className={`badge text-bg-${badge}`}>{statusLabel}</span>
+                        {item.errorMessage ? (
+                          <div className="small text-danger mt-1">
+                            Erro: {item.errorMessage}
+                          </div>
+                        ) : null}
+                      </td>
+                      <td className="small">{stageLabel}</td>
+                      <td className="small">{item.model ?? "—"}</td>
+                      <td className="small">
+                        {item.sourceUrl ? (
+                          <a href={item.sourceUrl} target="_blank" rel="noreferrer">
+                            Ver origem
+                          </a>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="small">
+                        {item.webUrl ? (
+                          <a href={item.webUrl} target="_blank" rel="noreferrer">
+                            Ver versão final
+                          </a>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="small">
+                        {formatDateTime(item.updatedAt ?? item.finishedAt ?? item.startedAt)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+      </div>
+    </div>
   );
 }
 

@@ -85,6 +85,19 @@ public class LeadPortalFlowService {
                         "Lead portal flow not found: " + id));
     }
 
+
+    public LeadPortalFlow getApprovedBySlug(String slug) {
+        String normalizedSlug = normalizeSlug(slug);
+        LeadPortalFlow flow = repository.findBySlug(normalizedSlug)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Lead portal flow not found: " + normalizedSlug));
+        if (!flow.isApproved()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Lead portal flow not found: " + normalizedSlug);
+        }
+        return flow;
+    }
+
     @Transactional
     public LeadPortalFlow create(CreateLeadPortalFlowRequest request) {
         String name = normalizeName(request.getName());

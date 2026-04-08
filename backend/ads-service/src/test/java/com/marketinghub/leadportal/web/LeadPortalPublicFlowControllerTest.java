@@ -1,0 +1,91 @@
+package com.marketinghub.leadportal.web;
+
+import com.marketinghub.ads.AdsServiceApplication;
+import com.marketinghub.leadportal.LeadPortalFlow;
+import com.marketinghub.leadportal.LeadPortalFlowQuestion;
+import com.marketinghub.leadportal.LeadPortalQuestionType;
+import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.repository.MarketNicheRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest(classes = AdsServiceApplication.class)
+@AutoConfigureMockMvc
+@TestPropertySource(properties = {
+        "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+        "spring.datasource.driverClassName=org.h2.Driver",
+        "spring.datasource.username=sa",
+        "spring.datasource.password=",
+        "spring.jpa.hibernate.ddl-auto=create",
+        "spring.liquibase.enabled=false"
+})
+class LeadPortalPublicFlowControllerTest {
+
+    @Autowired
+    MockMvc mockMvc;
+    @Autowired
+    LeadPortalFlowRepository flowRepository;
+    @Autowired
+    MarketNicheRepository marketNicheRepository;
+
+    @BeforeEach
+    void cleanDatabase() {
+        flowRepository.deleteAll();
+        marketNicheRepository.deleteAll();
+    }
+
+    @Test
+    void getBySlugReturnsApprovedFlow() throws Exception {
+        MarketNiche niche = marketNicheRepository.save(MarketNiche.builder().name("Nicho Teste").build());
+        LeadPortalFlow flow = LeadPortalFlow.builder()
+                .name("Fluxo Landing")
+                .slug("exp-10-landing")
+                .approved(true)
+                .marketNiche(niche)
+                .build();
+
+        LeadPortalFlowQuestion question = LeadPortalFlowQuestion.builder()
+                .flow(flow)
+                .title("Qual é o seu nome?")
+                .dataKey("nome")
+                .type(LeadPortalQuestionType.TEXT)
+                .required(true)
+                .position(0)
+                .options(List.of())
+                .build();
+        flow.setQuestions(List.of(question));
+        flowRepository.save(flow);
+
+        mockMvc.perform(get("/api/flows/exp-10-landing"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slug").value("exp-10-landing"))
+                .andExpect(jsonPath("$.name").value("Fluxo Landing"))
+                .andExpect(jsonPath("$.questions[0].dataKey").value("nome"));
+    }
+
+    @Test
+    void getBySlugReturnsNotFoundWhenFlowIsNotApproved() throws Exception {
+        MarketNiche niche = marketNicheRepository.save(MarketNiche.builder().name("Nicho Teste").build());
+        flowRepository.save(LeadPortalFlow.builder()
+                .name("Fluxo Rascunho")
+                .slug("exp-10-landing")
+                .approved(false)
+                .marketNiche(niche)
+                .build());
+
+        mockMvc.perform(get("/api/flows/exp-10-landing"))
+                .andExpect(status().isNotFound());
+    }
+}

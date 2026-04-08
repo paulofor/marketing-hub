@@ -1,6 +1,7 @@
 package com.marketinghub.leadportal.web;
 
 import com.marketinghub.ads.AdsServiceApplication;
+import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.LeadPortalFlowQuestion;
 import com.marketinghub.leadportal.LeadPortalQuestionType;
@@ -38,10 +39,13 @@ class LeadPortalPublicFlowControllerTest {
     @Autowired
     LeadPortalFlowRepository flowRepository;
     @Autowired
+    ExperimentRepository experimentRepository;
+    @Autowired
     MarketNicheRepository marketNicheRepository;
 
     @BeforeEach
     void cleanDatabase() {
+        experimentRepository.deleteAll();
         flowRepository.deleteAll();
         marketNicheRepository.deleteAll();
     }

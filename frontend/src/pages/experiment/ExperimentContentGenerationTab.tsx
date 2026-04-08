@@ -1496,7 +1496,11 @@ export default function ExperimentContentGenerationTab({
             <Tabs.Trigger
               key={section.key}
               value={section.key}
-              className="btn btn-outline-primary"
+              className={`btn ${
+                activeSection === section.key
+                  ? "btn-primary"
+                  : "btn-outline-primary"
+              }`}
             >
               {section.label}
             </Tabs.Trigger>

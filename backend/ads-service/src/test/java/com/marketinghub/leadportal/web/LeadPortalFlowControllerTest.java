@@ -74,8 +74,8 @@ class LeadPortalFlowControllerTest {
 
     @BeforeEach
     void cleanDatabase() {
-        repository.deleteAll();
         experimentRepository.deleteAll();
+        repository.deleteAll();
         hypothesisRepository.deleteAll();
         marketNicheRepository.deleteAll();
         journeyTemplateRepository.deleteAll();

@@ -11,6 +11,8 @@ export interface LandingLayoutSection {
   objective?: string;
   contentType?: string;
   uiNotes?: string;
+  mediaSlot?: string;
+  compositionNotes?: string;
   mobilePriorityScore?: number;
   dropOffRisk?: string;
   sectionDependsOn?: string;
@@ -68,6 +70,8 @@ function parseSection(value: unknown): LandingLayoutSection | undefined {
     objective: pickText(payload.objective),
     contentType: pickText(payload.contentType),
     uiNotes: pickText(payload.uiNotes ?? payload.notes),
+    mediaSlot: pickText(payload.mediaSlot),
+    compositionNotes: pickText(payload.compositionNotes),
     mobilePriorityScore: pickNumber(payload.mobilePriorityScore),
     dropOffRisk: pickText(payload.dropOffRisk),
     sectionDependsOn: pickText(payload.sectionDependsOn),

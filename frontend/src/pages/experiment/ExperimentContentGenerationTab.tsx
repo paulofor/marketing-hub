@@ -403,7 +403,10 @@ Regras:
 12. O layout deve minimizar atrito e reforçar continuidade com o anúncio.
 13. Não usar linguagem de consultoria.
 14. Não criar seções desnecessárias.
-15. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para {nicho}.
+15. Cada seção deve declarar mediaSlot (none, image, illustration, chart, icon-set ou video-thumb) com a função visual esperada.
+16. Cada seção deve declarar compositionNotes com instruções de composição e hierarquia visual para guiar a etapa de HTML.
+17. Não transformar o layout em HTML final; foque apenas em ordem, hierarquia, slots e leitura mobile-first.
+18. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para {nicho}.
 
 Formato esperado:
 JSON com:
@@ -421,6 +424,8 @@ artifact {
     "objective": "",
     "contentType": "",
     "uiNotes": "",
+    "mediaSlot": "none|image|illustration|chart|icon-set|video-thumb",
+    "compositionNotes": "",
     "mobilePriorityScore": 0,
     "dropOffRisk": "baixo|médio|alto",
     "sectionDependsOn": ""
@@ -2456,6 +2461,14 @@ function LandingLayoutPreview({
               </div>
               {section.objective ? (
                 <p className="small mb-1">{section.objective}</p>
+              ) : null}
+              {section.mediaSlot ? (
+                <p className="text-muted small mb-1">
+                  Slot de mídia: {section.mediaSlot}
+                </p>
+              ) : null}
+              {section.compositionNotes ? (
+                <p className="small mb-1">{section.compositionNotes}</p>
               ) : null}
               {section.sectionDependsOn ? (
                 <p className="text-muted small mb-1">

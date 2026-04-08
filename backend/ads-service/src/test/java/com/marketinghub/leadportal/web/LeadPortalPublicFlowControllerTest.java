@@ -1,7 +1,6 @@
 package com.marketinghub.leadportal.web;
 
 import com.marketinghub.ads.AdsServiceApplication;
-import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.LeadPortalFlowQuestion;
 import com.marketinghub.leadportal.LeadPortalQuestionType;
@@ -25,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(classes = AdsServiceApplication.class)
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+        "spring.datasource.url=jdbc:h2:mem:leadportal-public-flow;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
         "spring.datasource.driverClassName=org.h2.Driver",
         "spring.datasource.username=sa",
         "spring.datasource.password=",
@@ -39,13 +38,10 @@ class LeadPortalPublicFlowControllerTest {
     @Autowired
     LeadPortalFlowRepository flowRepository;
     @Autowired
-    ExperimentRepository experimentRepository;
-    @Autowired
     MarketNicheRepository marketNicheRepository;
 
     @BeforeEach
     void cleanDatabase() {
-        experimentRepository.deleteAll();
         flowRepository.deleteAll();
         marketNicheRepository.deleteAll();
     }

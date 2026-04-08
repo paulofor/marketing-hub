@@ -1,6 +1,7 @@
 package com.marketinghub.leadportal.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.leadportal.dto.FlowQuestionRequest;
 import com.marketinghub.leadportal.dto.UpsertFlowRequest;
 import com.marketinghub.leadportal.model.Flow;
@@ -172,6 +173,25 @@ class FlowControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.questions").isArray())
                 .andExpect(jsonPath("$.questions", hasSize(0)));
+    }
+
+
+    @Test
+    void upsertFlowIgnoresUnknownSimpleFormStyleFields() throws Exception {
+        ObjectNode payload = (ObjectNode) objectMapper.readTree(objectMapper.writeValueAsString(buildRequest()));
+        ObjectNode style = payload.putObject("simpleFormStyle");
+        style.put("slug", "hero-style");
+        style.put("name", "Hero Style");
+        ObjectNode definition = style.putObject("definition");
+        definition.put("backgroundColor", "#fff");
+        definition.put("buttonBackground", "#000");
+        style.put("previewImageUrl", "https://cdn.example.com/style.png");
+
+        mockMvc.perform(put("/api/flows/diagnostico-com-estilo")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slug").value("diagnostico-com-estilo"));
     }
 
     private UpsertFlowRequest buildRequest() {

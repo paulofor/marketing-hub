@@ -25,5 +25,8 @@ public interface LeadPortalFlowRepository extends JpaRepository<LeadPortalFlow, 
     List<LeadPortalFlow> findAllByMarketNicheIdOrderByCreatedAtDesc(Long marketNicheId);
 
     @EntityGraph(attributePaths = {"questions", "questions.options", "experiment", "marketNiche", "simpleFormStyle"})
+    List<LeadPortalFlow> findAllByApprovedTrue();
+
+    @EntityGraph(attributePaths = {"questions", "questions.options", "experiment", "marketNiche", "simpleFormStyle"})
     Optional<LeadPortalFlow> findBySlug(String slug);
 }

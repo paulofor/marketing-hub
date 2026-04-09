@@ -113,7 +113,7 @@ public class FrameworkImageOpenAiBatchClient {
 
     private Map<String, Object> buildGenerationPayload(FrameworkImageJobDto job) {
         Map<String, Object> payload = new LinkedHashMap<>();
-        String selectedModel = StringUtils.hasText(job.model()) ? job.model().trim() : defaultModel;
+        String selectedModel = resolveModel(job.model());
         payload.put("model", selectedModel);
         payload.put("prompt", job.prompt());
         if (supportsResponseFormat(selectedModel)) {
@@ -231,7 +231,7 @@ public class FrameworkImageOpenAiBatchClient {
                 }
 
                 ImageGenerationResponse response = mapper.convertValue(output.response().body(), ImageGenerationResponse.class);
-                String model = StringUtils.hasText(response.model()) ? response.model() : defaultModel;
+                String model = resolveModel(response.model());
                 String prompt = response.prompt();
                 ImageData imageData = response.firstImageData();
                 if (imageData == null) {
@@ -297,6 +297,19 @@ public class FrameworkImageOpenAiBatchClient {
             return fallback;
         }
         return candidate;
+    }
+
+    private String resolveModel(String requestedModel) {
+        String normalizedDefaultModel = StringUtils.hasText(defaultModel) ? defaultModel.trim() : "gpt-image-1.5";
+        if (!StringUtils.hasText(requestedModel)) {
+            return normalizedDefaultModel;
+        }
+
+        String trimmed = requestedModel.trim();
+        if ("gpt-image-1".equalsIgnoreCase(trimmed) || "gpt-image-1.0".equalsIgnoreCase(trimmed)) {
+            return normalizedDefaultModel;
+        }
+        return trimmed;
     }
 
     private boolean supportsResponseFormat(String selectedModel) {

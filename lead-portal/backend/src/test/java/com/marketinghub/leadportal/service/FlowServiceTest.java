@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.leadportal.catalog.SimpleFlowCatalog;
 import com.marketinghub.leadportal.entity.FlowEntity;
 import com.marketinghub.leadportal.model.Flow;
@@ -53,7 +54,8 @@ class FlowServiceTest {
                 meterRegistry,
                 simpleFlowCatalog,
                 flowAssetService,
-                simpleFormStyleDefaults);
+                simpleFormStyleDefaults,
+                new CustomFormHtmlResolver(new ObjectMapper()));
         when(simpleFlowCatalog.find(anyString())).thenReturn(Optional.empty());
     }
 

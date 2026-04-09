@@ -222,6 +222,22 @@ class FlowControllerTest {
                 .andExpect(content().string(containsString("Ao menos uma pergunta")));
     }
 
+
+    @Test
+    void getFlowConvertsLandingPagePayloadIntoHtmlDocument() throws Exception {
+        UpsertFlowRequest request = buildRequest();
+        request.setCustomFormHtml("{\"landingPageHtml\":{\"htmlDocument\":\"<html><body>Landing</body></html>\"}}");
+
+        mockMvc.perform(put("/api/flows/landing-preview")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/flows/landing-preview"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.customFormHtml").value(containsString("<body>Landing</body>")));
+    }
+
     private UpsertFlowRequest buildRequest() {
         FlowQuestionRequest question = new FlowQuestionRequest();
         question.setTitle("Qual o seu nome?");

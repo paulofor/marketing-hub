@@ -12,6 +12,7 @@ import com.marketinghub.leadportal.repository.FlowRepository;
 import com.marketinghub.leadportal.style.SimpleFormStyleDefaults;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
+import java.util.Objects;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ public class FlowService {
     private final SimpleFlowCatalog simpleFlowCatalog;
     private final FlowAssetService flowAssetService;
     private final SimpleFormStyleDefaults simpleFormStyleDefaults;
+    private final CustomFormHtmlResolver customFormHtmlResolver;
 
     public FlowService(
             FlowRepository repository,
@@ -31,13 +33,15 @@ public class FlowService {
             MeterRegistry meterRegistry,
             SimpleFlowCatalog simpleFlowCatalog,
             FlowAssetService flowAssetService,
-            SimpleFormStyleDefaults simpleFormStyleDefaults) {
+            SimpleFormStyleDefaults simpleFormStyleDefaults,
+            CustomFormHtmlResolver customFormHtmlResolver) {
         this.repository = repository;
         this.accessRepository = accessRepository;
         this.meterRegistry = meterRegistry;
         this.simpleFlowCatalog = simpleFlowCatalog;
         this.flowAssetService = flowAssetService;
         this.simpleFormStyleDefaults = simpleFormStyleDefaults;
+        this.customFormHtmlResolver = customFormHtmlResolver;
     }
 
     @Transactional
@@ -47,7 +51,8 @@ public class FlowService {
                     "Fluxos simples são gerenciados automaticamente e não podem ser editados.");
         }
 
-        Flow flowWithDefaults = applyStyleDefaults(flow);
+        Flow normalized = normalizeCustomFormHtml(flow);
+        Flow flowWithDefaults = applyStyleDefaults(normalized);
         Flow processedFlow = flowAssetService.optimizeAssets(flowWithDefaults);
         Flow flowToPersist = processedFlow != null ? processedFlow : flowWithDefaults;
 
@@ -57,7 +62,7 @@ public class FlowService {
                 .ifPresent(existing -> entityToSave.setAccessCount(existing.getAccessCount()));
 
         FlowEntity saved = repository.save(entityToSave);
-        return applyStyleDefaults(saved.toModel());
+        return applyStyleDefaults(normalizeCustomFormHtml(saved.toModel()));
     }
 
     @Transactional(readOnly = true)
@@ -66,14 +71,14 @@ public class FlowService {
                 .findById(slug)
                 .map(FlowEntity::toModel)
                 .orElseThrow(() -> new FlowNotFoundException(slug)));
-        return applyStyleDefaults(flow);
+        return applyStyleDefaults(normalizeCustomFormHtml(flow));
     }
 
     @Transactional
     public Flow getAndTrackAccess(String slug, FlowAccessMetadata accessMetadata) {
         return simpleFlowCatalog.find(slug)
                 .map(flow -> {
-                    Flow preparedFlow = applyStyleDefaults(flow);
+                    Flow preparedFlow = applyStyleDefaults(normalizeCustomFormHtml(flow));
                     recordAccessMetric(slug);
                     registerAccess(slug, accessMetadata);
                     return preparedFlow;
@@ -97,6 +102,7 @@ public class FlowService {
     public Collection<Flow> list() {
         return repository.findAll().stream()
                 .map(FlowEntity::toModel)
+                .map(this::normalizeCustomFormHtml)
                 .map(this::applyStyleDefaults)
                 .toList();
     }
@@ -106,12 +112,12 @@ public class FlowService {
                 .findById(slug)
                 .orElseThrow(() -> new FlowNotFoundException(slug));
 
-        Flow originalFlow = applyStyleDefaults(entity.toModel());
+        Flow originalFlow = applyStyleDefaults(normalizeCustomFormHtml(entity.toModel()));
         Flow optimizedFlow = flowAssetService.optimizeAssets(originalFlow);
 
         Flow flowToReturn = originalFlow;
         if (optimizedFlow != null) {
-            Flow optimizedWithDefaults = applyStyleDefaults(optimizedFlow);
+            Flow optimizedWithDefaults = applyStyleDefaults(normalizeCustomFormHtml(optimizedFlow));
             if (!optimizedWithDefaults.equals(originalFlow)) {
                 FlowEntity updatedEntity = FlowEntity.fromModel(optimizedWithDefaults);
                 updatedEntity.setAccessCount(entity.getAccessCount());
@@ -149,6 +155,28 @@ public class FlowService {
                 flow.imageBatchSize(),
                 flow.questions(),
                 enrichedStyle);
+    }
+
+    private Flow normalizeCustomFormHtml(Flow flow) {
+        if (flow == null) {
+            return null;
+        }
+        String normalizedHtml = customFormHtmlResolver.normalize(flow.customFormHtml());
+        if (Objects.equals(normalizedHtml, flow.customFormHtml())) {
+            return flow;
+        }
+        return new Flow(
+                flow.slug(),
+                flow.name(),
+                flow.description(),
+                normalizedHtml,
+                flow.model(),
+                flow.prompt(),
+                flow.imagePromptModel(),
+                flow.imagePromptTemplate(),
+                flow.imageBatchSize(),
+                flow.questions(),
+                flow.simpleFormStyle());
     }
 
     private void registerAccess(String slug, FlowAccessMetadata metadata) {

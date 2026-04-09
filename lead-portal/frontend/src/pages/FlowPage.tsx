@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { API_BASE_URL, fetchLeadPortalFlow, registerFlowRenderComplete } from "../api";
 import FlowForm from "../components/FlowForm";
 import { resolveAssetUrl } from "../utils/resolveAssetUrl";
+import { normalizeCustomTemplateHtml } from "../utils/customTemplateHtml";
 import { getVisitorIdCookie } from "../utils/visitorCookie";
 import { useCampaignCode } from "../hooks/useCampaignCode";
 import type { FlowQuestion, LeadPortalFlow, LeadPortalSimpleFormStyleDefinition } from "../types";
@@ -36,7 +37,11 @@ export default function FlowPage() {
     () => extractSimpleFormMetadata(flow?.questions ?? []),
     [flow?.questions],
   );
-  const hasCustomTemplate = Boolean(flow?.customFormHtml && flow.customFormHtml.trim().length > 0);
+  const customTemplateHtml = useMemo(
+    () => normalizeCustomTemplateHtml(flow?.customFormHtml),
+    [flow?.customFormHtml],
+  );
+  const hasCustomTemplate = Boolean(customTemplateHtml);
   const customTemplateVariables = useMemo(() => {
     if (!hasCustomTemplate || !flow) {
       return null;
@@ -98,10 +103,10 @@ export default function FlowPage() {
           ...flow,
           questions: formQuestions,
         };
-  if (hasCustomTemplate) {
+  if (hasCustomTemplate && customTemplateHtml) {
     const templateVariables = customTemplateVariables ?? new Map<string, string>();
     return (
-      <CustomFlowTemplate html={flow.customFormHtml ?? ""} variables={templateVariables} />
+      <CustomFlowTemplate html={customTemplateHtml} variables={templateVariables} />
     );
   }
 

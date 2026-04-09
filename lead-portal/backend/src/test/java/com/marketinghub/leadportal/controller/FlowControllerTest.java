@@ -194,6 +194,34 @@ class FlowControllerTest {
                 .andExpect(jsonPath("$.slug").value("diagnostico-com-estilo"));
     }
 
+    @Test
+    void upsertFlowAllowsCustomFormWithoutQuestions() throws Exception {
+        UpsertFlowRequest request = new UpsertFlowRequest();
+        request.setName("Exp 10 Landing");
+        request.setDescription("Landing personalizada");
+        request.setCustomFormHtml("<section>Exp 10</section>");
+        request.setQuestions(List.of());
+
+        mockMvc.perform(put("/api/flows/exp-10-landing")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.customFormHtml").value(containsString("Exp 10")))
+                .andExpect(jsonPath("$.questions", hasSize(0)));
+    }
+
+    @Test
+    void upsertFlowRequiresQuestionsWhenCustomFormMissing() throws Exception {
+        UpsertFlowRequest request = new UpsertFlowRequest();
+        request.setName("Fluxo sem perguntas");
+
+        mockMvc.perform(put("/api/flows/fluxo-sem-perguntas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("Ao menos uma pergunta")));
+    }
+
     private UpsertFlowRequest buildRequest() {
         FlowQuestionRequest question = new FlowQuestionRequest();
         question.setTitle("Qual o seu nome?");

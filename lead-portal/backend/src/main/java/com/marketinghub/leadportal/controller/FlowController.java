@@ -37,6 +37,9 @@ public class FlowController {
     @PutMapping("/{slug}")
     public FlowResponse upsertFlow(@PathVariable("slug") String slug,
                                    @Valid @RequestBody UpsertFlowRequest request) {
+        List<com.marketinghub.leadportal.dto.FlowQuestionRequest> questionRequests =
+                request.getQuestions() == null ? List.of() : request.getQuestions();
+
         Flow flow = new Flow(
                 slug,
                 request.getName(),
@@ -47,7 +50,7 @@ public class FlowController {
                 request.getImagePromptModel(),
                 request.getImagePromptTemplate(),
                 request.getImageBatchSize(),
-                request.getQuestions().stream().map(this::toQuestion).toList(),
+                questionRequests.stream().map(this::toQuestion).toList(),
                 mapStyle(request.getSimpleFormStyle()));
         return FlowResponse.from(flowService.save(flow));
     }

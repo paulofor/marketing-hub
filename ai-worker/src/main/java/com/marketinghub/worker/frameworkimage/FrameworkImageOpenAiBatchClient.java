@@ -50,7 +50,7 @@ public class FrameworkImageOpenAiBatchClient {
     public FrameworkImageOpenAiBatchClient(WebClient.Builder builder,
                                            @Value("${openai.api-key:}") String apiKey,
                                            @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-                                           @Value("${openai.image-model:gpt-image-1}") String defaultModel,
+                                           @Value("${openai.image-model:gpt-image-1.5}") String defaultModel,
                                            @Value("${openai.max-in-memory-size-bytes:52428800}") int maxInMemorySizeBytes,
                                            @Value("${openai.batch-poll-interval:PT0.5S}") Duration batchPollInterval,
                                            @Value("${openai.batch-timeout:PT5M}") Duration batchTimeout) {

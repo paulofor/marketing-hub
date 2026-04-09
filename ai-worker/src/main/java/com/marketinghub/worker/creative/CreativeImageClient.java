@@ -50,7 +50,7 @@ public class CreativeImageClient {
                                CreativeImageOptimizer imageOptimizer,
                                @Value("${openai.api-key:}") String apiKey,
                                @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-                               @Value("${openai.image-model:gpt-image-1}") String model) {
+                               @Value("${openai.image-model:gpt-image-1.5}") String model) {
         this.enabled = apiKey != null && !apiKey.isBlank();
         HttpClient httpClient = HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) CONNECT_TIMEOUT.toMillis())

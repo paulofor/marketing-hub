@@ -856,7 +856,10 @@ export default function SimpleLeadPortalFormCard({
                       O HTML é renderizado em um iframe próprio, sem o cabeçalho ou as seções padrão do fluxo simples.
                     </li>
                     <li>
-                      Não injetamos mais o formulário automático. Inclua o seu próprio <code>&lt;form&gt;</code> enviando um POST multipart para <code>{`{{url}}`}</code>.
+                      Não injetamos mais o formulário automático. Inclua o seu próprio <code>&lt;form&gt;</code> enviando um POST multipart para <code>{`{{url}}`}</code>, com lógica de envio assíncrona (validar, desabilitar botão durante o envio e tratar feedback de sucesso/erro).
+                    </li>
+                    <li>
+                      O campo <code>email</code> deve estar sempre presente e obrigatório no formulário, pois toda comunicação com o lead ocorre por e-mail.
                     </li>
                     <li>
                       Variáveis disponíveis: <code>{`{{imagem1}}`}</code>, <code>{`{{imagem2}}`}</code>, <code>{`{{imagem3}}`}</code> e <code>{`{{url}}`}</code> (endpoint de submissão).
@@ -1481,33 +1484,12 @@ function createSimpleFormTemplateQuestions({
       required: true,
     },
     {
-      title: "Forma de contato",
-      dataKey: "forma_contato",
-      type: "SINGLE_CHOICE",
-      required: true,
-      options: ["Instagram", "WhatsApp", "Telefone"],
-    },
-    {
       title: "Qual é o seu @ no Instagram?",
       dataKey: "instagram",
       type: "TEXT",
       required: false,
       description:
-        "Este campo aparece quando a forma de contato for Instagram.",
-    },
-    {
-      title: "Qual é o seu número do WhatsApp?",
-      dataKey: "whatsapp",
-      type: "TEXT",
-      required: false,
-      description: "Este campo aparece quando a forma de contato for WhatsApp.",
-    },
-    {
-      title: "Qual é o seu número de telefone?",
-      dataKey: "telefone",
-      type: "TEXT",
-      required: false,
-      description: "Este campo aparece quando a forma de contato for Telefone.",
+        "Opcional: ajuda a personalizar as prévias, mas a comunicação será por e-mail.",
     },
     {
       title: optionsQuestionTitle.trim() || "Em quais frentes você atua?",

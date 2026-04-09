@@ -163,10 +163,56 @@ public class ExperimentLeadPortalFlowService {
                 }
             }
         }
+        ensureRequiredEmailQuestion(flow, questions, usedKeys);
         if (questions.isEmpty() || questions.get(questions.size() - 1).getType() != LeadPortalQuestionType.IMAGE_UPLOAD) {
             questions.add(createImageUploadQuestion(flow, usedKeys, questions.size()));
         }
+        reindexQuestions(questions);
         return questions;
+    }
+
+    private void ensureRequiredEmailQuestion(LeadPortalFlow flow,
+                                             List<LeadPortalFlowQuestion> questions,
+                                             Set<String> usedKeys) {
+        for (LeadPortalFlowQuestion question : questions) {
+            if (question.getType() == LeadPortalQuestionType.EMAIL) {
+                question.setRequired(true);
+                if (!StringUtils.hasText(question.getTitle())) {
+                    question.setTitle("E-mail");
+                }
+                if (!StringUtils.hasText(question.getPlaceholder())) {
+                    question.setPlaceholder("voce@email.com");
+                }
+                return;
+            }
+        }
+
+        String dataKey = "email";
+        int suffix = 2;
+        while (usedKeys.contains(dataKey)) {
+            dataKey = "email_" + suffix++;
+        }
+        usedKeys.add(dataKey);
+
+        LeadPortalFlowQuestion emailQuestion = LeadPortalFlowQuestion.builder()
+                .flow(flow)
+                .title("E-mail")
+                .dataKey(dataKey)
+                .type(LeadPortalQuestionType.EMAIL)
+                .required(true)
+                .placeholder("voce@email.com")
+                .position(1)
+                .options(new ArrayList<>())
+                .build();
+
+        int insertionIndex = Math.min(questions.size(), 1);
+        questions.add(insertionIndex, emailQuestion);
+    }
+
+    private void reindexQuestions(List<LeadPortalFlowQuestion> questions) {
+        for (int i = 0; i < questions.size(); i++) {
+            questions.get(i).setPosition(i);
+        }
     }
 
     private LeadPortalFlowQuestion toQuestion(LeadPortalFlow flow,

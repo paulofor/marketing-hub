@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: V2037_04_09__lead_portal_flow_prompt_email_requirement.sql
+      relativeToChangelogFile: true
+  - include:
       file: V2037_04_08__framework_image_generation_job_queue.sql
       relativeToChangelogFile: true
   - include:

@@ -86,7 +86,7 @@ Em "questions" retorne objetos com as chaves:
 - "description" e "placeholder": textos auxiliares opcionais;
 - "options": lista de respostas sugeridas (obrigatória para SINGLE_CHOICE e MULTIPLE_CHOICE).
 
-Solicite perguntas simples que façam o lead refletir sobre o problema e o diagnóstico, usando opções de resposta realistas sempre que houver múltipla escolha. Finalize SEMPRE cada fluxo com uma pergunta do tipo IMAGE_UPLOAD pedindo de forma objetiva uma foto nítida do empreendimento para criar materiais de divulgação e melhorias.
+Solicite perguntas simples que façam o lead refletir sobre o problema e o diagnóstico, usando opções de resposta realistas sempre que houver múltipla escolha. Inclua SEMPRE uma pergunta obrigatória do tipo EMAIL com `dataKey` igual a `email`, pois toda comunicação com o lead é feita por e-mail. Considere que o frontend envia o formulário via POST multipart (`FormData`) para `{{url}}` com envio assíncrono e feedback de sucesso/erro. Finalize SEMPRE cada fluxo com uma pergunta do tipo IMAGE_UPLOAD pedindo de forma objetiva uma foto nítida do empreendimento para criar materiais de divulgação e melhorias.
 
 {{#if experiment.name}}
 Experimento: {{experiment.name}}

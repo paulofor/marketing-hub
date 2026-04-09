@@ -85,6 +85,7 @@ public class ExperimentFunnelService {
     @Transactional
     public Instant resetFunnel(Long experimentId) {
         Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
+        eventRepository.deleteByExperimentId(experimentId);
         Instant now = Instant.now();
         experiment.setFunnelResetAt(now);
         experimentRepository.save(experiment);

@@ -42,6 +42,7 @@ class ExperimentFunnelServiceResetTest {
 
         Instant resetAt = service.resetFunnel(9L);
 
+        verify(eventRepository).deleteByExperimentId(9L);
         verify(experimentRepository).save(experiment);
         assertNotNull(experiment.getFunnelResetAt());
         assertEquals(experiment.getFunnelResetAt(), resetAt);

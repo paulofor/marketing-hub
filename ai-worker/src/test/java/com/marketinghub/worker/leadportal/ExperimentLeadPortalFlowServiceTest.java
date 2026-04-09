@@ -125,6 +125,12 @@ class ExperimentLeadPortalFlowServiceTest {
         assertThat(savedFlow.getExperiment()).isEqualTo(experiment);
         assertThat(savedFlow.getCostUsd()).isEqualByComparingTo(BigDecimal.valueOf(0.12));
         assertThat(savedFlow.getQuestions()).isNotEmpty();
+        LeadPortalFlowQuestion emailQuestion = savedFlow.getQuestions().stream()
+                .filter(question -> question.getType() == LeadPortalQuestionType.EMAIL)
+                .findFirst()
+                .orElseThrow();
+        assertThat(emailQuestion.isRequired()).isTrue();
+        assertThat(emailQuestion.getPlaceholder()).isEqualTo("voce@email.com");
         LeadPortalFlowQuestion lastQuestion = savedFlow.getQuestions().get(savedFlow.getQuestions().size() - 1);
         assertThat(lastQuestion.getType()).isEqualTo(LeadPortalQuestionType.IMAGE_UPLOAD);
         assertThat(lastQuestion.getDataKey()).startsWith("foto_problema");

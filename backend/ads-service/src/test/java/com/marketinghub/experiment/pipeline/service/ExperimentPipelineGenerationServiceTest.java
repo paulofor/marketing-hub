@@ -50,6 +50,8 @@ class ExperimentPipelineGenerationServiceTest {
     private LeadPortalFlowRepository leadPortalFlowRepository;
     @Mock
     private LeadPortalFlowPublisher leadPortalFlowPublisher;
+    @Mock
+    private LandingPageImageInjector landingPageImageInjector;
 
     private ExperimentPipelineGenerationService service;
 
@@ -62,7 +64,8 @@ class ExperimentPipelineGenerationServiceTest {
                 generationService,
                 leadPortalFlowRepository,
                 leadPortalFlowPublisher,
-                new ObjectMapper());
+                new ObjectMapper(),
+                landingPageImageInjector);
     }
 
     @Test
@@ -86,6 +89,7 @@ class ExperimentPipelineGenerationServiceTest {
         ExperimentDto dto = new ExperimentDto();
         dto.setId(10L);
         when(experimentMapper.toDto(experiment)).thenReturn(dto);
+        when(landingPageImageInjector.injectImages(10L, "<form>landing</form>")).thenReturn("<form>landing</form>");
 
         ExperimentDto result = service.applyLandingHtmlToLeadPortalForm(10L);
 
@@ -121,6 +125,7 @@ class ExperimentPipelineGenerationServiceTest {
         when(leadPortalFlowRepository.findById(900L)).thenReturn(Optional.of(linkedFlow));
         when(leadPortalFlowRepository.save(any(LeadPortalFlow.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(experimentMapper.toDto(experiment)).thenReturn(new ExperimentDto());
+        when(landingPageImageInjector.injectImages(11L, "<section>ok</section>")).thenReturn("<section>ok</section>");
 
         service.applyLandingHtmlToLeadPortalForm(11L);
 

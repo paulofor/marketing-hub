@@ -1,0 +1,21 @@
+server:
+  port: ${SERVER_PORT:8096}
+
+spring:
+  application:
+    name: mcp-server
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&serverTimezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:marketing_hub_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:${MYSQL_PASS:}}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+mcp:
+  server-name: ${MCP_SERVER_NAME:marketing-hub-mcp}
+  server-version: ${MCP_SERVER_VERSION:1.0.0}

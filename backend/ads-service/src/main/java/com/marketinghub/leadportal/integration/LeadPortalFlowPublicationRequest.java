@@ -35,8 +35,14 @@ public record LeadPortalFlowPublicationRequest(
             Pattern.CASE_INSENSITIVE);
 
     public static LeadPortalFlowPublicationRequest from(LeadPortalFlow flow) {
+        return from(flow, null);
+    }
+
+    public static LeadPortalFlowPublicationRequest from(LeadPortalFlow flow, String heroImageOverride) {
         LeadPortalSimpleFormStyle style = flow.getSimpleFormStyle();
-        String experimentHeroImageUrl = resolveExperimentHeroImageUrl(flow);
+        String experimentHeroImageUrl = StringUtils.hasText(heroImageOverride)
+                ? heroImageOverride
+                : resolveExperimentHeroImageUrl(flow);
         SimpleFormStylePayload stylePayload = style == null ? null : new SimpleFormStylePayload(
                 style.getSlug(),
                 style.getName(),

@@ -78,6 +78,35 @@ class LeadPortalFlowPublicationRequestTest {
         assertThat(payload.simpleFormStyle().definition().heroImageUrl()).isEqualTo(styleImage);
     }
 
+    @Test
+    void fromHonorsExplicitHeroImageOverride() {
+        String overrideImage = "https://cdn.override/hero.jpg";
+        Experiment experiment = Experiment.builder()
+                .landingPageImagePlanning("{}")
+                .landingPageHtml("<img src='https://fallback.test/hero.jpg' />")
+                .build();
+
+        LeadPortalSimpleFormStyle style = LeadPortalSimpleFormStyle.builder()
+                .slug("style-override")
+                .name("Style Override")
+                .definition(sampleDefinition("https://images.unsplash.com/photo-default"))
+                .build();
+
+        LeadPortalFlow flow = LeadPortalFlow.builder()
+                .slug("exp-override")
+                .name("Flow")
+                .experiment(experiment)
+                .simpleFormStyle(style)
+                .questions(List.of())
+                .build();
+
+        LeadPortalFlowPublicationRequest payload = LeadPortalFlowPublicationRequest.from(flow, overrideImage);
+
+        assertThat(payload.simpleFormStyle()).isNotNull();
+        assertThat(payload.simpleFormStyle().definition()).isNotNull();
+        assertThat(payload.simpleFormStyle().definition().heroImageUrl()).isEqualTo(overrideImage);
+    }
+
     private LeadPortalSimpleFormStyleDefinition sampleDefinition(String heroImageUrl) {
         return new LeadPortalSimpleFormStyleDefinition(
                 "#050816",

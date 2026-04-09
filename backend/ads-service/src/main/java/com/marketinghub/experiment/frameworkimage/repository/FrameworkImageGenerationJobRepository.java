@@ -21,6 +21,11 @@ public interface FrameworkImageGenerationJobRepository extends JpaRepository<Fra
 
     List<FrameworkImageGenerationJob> findByExperimentIdOrderByCreatedAtDesc(Long experimentId);
 
+    List<FrameworkImageGenerationJob> findByExperimentIdAndPlanningItemKeyInAndStatusOrderByCreatedAtDesc(
+            Long experimentId,
+            Collection<String> planningItemKeys,
+            FrameworkImageGenerationJobStatus status);
+
     List<FrameworkImageGenerationJob> findByStatusAndStageInAndAssetIdIsNotNullAndSourceUrlIsNotNullAndWebUrlIsNullOrderByUpdatedAtAsc(
             FrameworkImageGenerationJobStatus status,
             Collection<FrameworkImageGenerationJobStage> stages,

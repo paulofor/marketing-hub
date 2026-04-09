@@ -150,6 +150,8 @@ public class ExperimentPipelineOpenAiClient {
             13. Não transformar o layout em HTML final; esta etapa define apenas ordem, hierarquia e slots de mídia.
             14. Não usar linguagem de consultoria e não criar estrutura genérica para qualquer mercado.
             15. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para o nicho informado.
+            16. Orientar uiNotes/compositionNotes com variação intencional de cores de fundo entre seções para sinalizar mudança de assunto e facilitar escaneabilidade.
+            17. Garantir equilíbrio visual entre texto e imagem em cada bloco, explicando como mediaSlot e copy dividem atenção sem competir entre si.
 
             Formato obrigatório (JSON):
             - pageGoal,
@@ -159,6 +161,8 @@ public class ExperimentPipelineOpenAiClient {
             - mobilePriorityNotes
             - ctaPlacementNotes
             - formPlacementNotes
+            - backgroundColorStrategy
+            - textImageBalanceNotes
             - consistencyChecks[]
             """;
     private static final String LANDING_HTML_PROMPT_SUFFIX = """

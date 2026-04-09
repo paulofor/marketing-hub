@@ -187,6 +187,10 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("sectionDependsOn");
         assertThat(userPrompt).contains("messageMatchSummary");
         assertThat(userPrompt).contains("ctaSlot");
+        assertThat(userPrompt).contains("variação intencional de cores de fundo entre seções");
+        assertThat(userPrompt).contains("equilíbrio visual entre texto e imagem");
+        assertThat(userPrompt).contains("backgroundColorStrategy");
+        assertThat(userPrompt).contains("textImageBalanceNotes");
     }
 
     @Test

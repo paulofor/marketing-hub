@@ -4,10 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.marketinghub.leadportal.model.SimpleFormStyleDefinition;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.util.StringUtils;
 
 public class UpsertFlowRequest {
 
@@ -31,9 +32,16 @@ public class UpsertFlowRequest {
 
     private SimpleFormStylePayload simpleFormStyle;
 
-    @NotEmpty(message = "Ao menos uma pergunta é obrigatória")
     @Valid
     private List<FlowQuestionRequest> questions = new ArrayList<>();
+
+    @AssertTrue(message = "Ao menos uma pergunta é obrigatória quando o template personalizado está vazio")
+    public boolean isCustomFormOrQuestionsPresent() {
+        if (StringUtils.hasText(customFormHtml)) {
+            return true;
+        }
+        return questions != null && !questions.isEmpty();
+    }
 
     public String getName() {
         return name;

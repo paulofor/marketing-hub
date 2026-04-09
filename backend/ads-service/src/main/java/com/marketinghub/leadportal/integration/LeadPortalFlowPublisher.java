@@ -1,6 +1,7 @@
 package com.marketinghub.leadportal.integration;
 
 import com.marketinghub.leadportal.LeadPortalFlow;
+import java.net.URI;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -10,8 +11,6 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URI;
-
 /**
  * Publishes approved lead portal flows to the public lead portal application.
  */
@@ -20,10 +19,14 @@ public class LeadPortalFlowPublisher {
 
     private final RestTemplate restTemplate;
     private final LeadPortalIntegrationProperties properties;
+    private final ExperimentHeroImageResolver heroImageResolver;
 
-    public LeadPortalFlowPublisher(RestTemplate restTemplate, LeadPortalIntegrationProperties properties) {
+    public LeadPortalFlowPublisher(RestTemplate restTemplate,
+                                   LeadPortalIntegrationProperties properties,
+                                   ExperimentHeroImageResolver heroImageResolver) {
         this.restTemplate = restTemplate;
         this.properties = properties;
+        this.heroImageResolver = heroImageResolver;
     }
 
     public void publish(LeadPortalFlow flow) {
@@ -31,7 +34,8 @@ public class LeadPortalFlowPublisher {
             return;
         }
         URI uri = buildUri(flow.getSlug());
-        LeadPortalFlowPublicationRequest payload = LeadPortalFlowPublicationRequest.from(flow);
+        String heroImageOverride = heroImageResolver.resolve(flow.getExperiment()).orElse(null);
+        LeadPortalFlowPublicationRequest payload = LeadPortalFlowPublicationRequest.from(flow, heroImageOverride);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         try {

@@ -77,6 +77,7 @@ public class ExperimentPipelineGenerationService {
     private final LeadPortalFlowRepository leadPortalFlowRepository;
     private final LeadPortalFlowPublisher leadPortalFlowPublisher;
     private final ObjectMapper objectMapper;
+    private final LandingPageImageInjector landingPageImageInjector;
 
     public ExperimentPipelineGenerationService(ExperimentRepository experimentRepository,
                                                ExperimentPipelineGenerationJobRepository jobRepository,
@@ -84,7 +85,8 @@ public class ExperimentPipelineGenerationService {
                                                AiWorkerGenerationService generationService,
                                                LeadPortalFlowRepository leadPortalFlowRepository,
                                                LeadPortalFlowPublisher leadPortalFlowPublisher,
-                                               ObjectMapper objectMapper) {
+                                               ObjectMapper objectMapper,
+                                               LandingPageImageInjector landingPageImageInjector) {
         this.experimentRepository = experimentRepository;
         this.jobRepository = jobRepository;
         this.experimentMapper = experimentMapper;
@@ -92,6 +94,7 @@ public class ExperimentPipelineGenerationService {
         this.leadPortalFlowRepository = leadPortalFlowRepository;
         this.leadPortalFlowPublisher = leadPortalFlowPublisher;
         this.objectMapper = objectMapper;
+        this.landingPageImageInjector = landingPageImageInjector;
     }
 
     @Transactional
@@ -180,7 +183,10 @@ public class ExperimentPipelineGenerationService {
             flow = leadPortalFlowRepository.findById(flowRef.getId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Fluxo do Lead Portal não encontrado"));
         }
-        flow.setCustomFormHtml(experiment.getLandingPageHtml().trim());
+        String payloadWithImages = landingPageImageInjector.injectImages(
+                experiment.getId(),
+                experiment.getLandingPageHtml());
+        flow.setCustomFormHtml(payloadWithImages != null ? payloadWithImages.trim() : null);
         LeadPortalFlow saved = leadPortalFlowRepository.save(flow);
         if (saved.isApproved()) {
             try {

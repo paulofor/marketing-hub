@@ -2,8 +2,10 @@ package com.marketinghub.mcpserver.controller;
 
 import com.marketinghub.mcpserver.config.McpProperties;
 import com.marketinghub.mcpserver.service.DatabaseDiagnosticsService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +18,9 @@ import java.util.Map;
 @RequestMapping("/mcp")
 public class McpController {
 
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String BEARER_PREFIX = "Bearer ";
+
     private final McpProperties properties;
     private final DatabaseDiagnosticsService databaseDiagnosticsService;
 
@@ -25,9 +30,14 @@ public class McpController {
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Map<String, Object>> handleRequest(@RequestBody Map<String, Object> request) {
-        String method = String.valueOf(request.getOrDefault("method", ""));
+    public ResponseEntity<Map<String, Object>> handleRequest(@RequestBody Map<String, Object> request,
+                                                             HttpServletRequest httpServletRequest) {
         Object id = request.get("id");
+        if (!isAuthorized(httpServletRequest)) {
+            return ResponseEntity.status(401).body(error(id, -32001, "Unauthorized"));
+        }
+
+        String method = String.valueOf(request.getOrDefault("method", ""));
 
         return switch (method) {
             case "initialize" -> ResponseEntity.ok(success(id, Map.of(
@@ -50,6 +60,17 @@ public class McpController {
             case "tools/call" -> ResponseEntity.ok(callTool(id, request));
             default -> ResponseEntity.ok(error(id, -32601, "Method not found: " + method));
         };
+    }
+
+    private boolean isAuthorized(HttpServletRequest request) {
+        if (!StringUtils.hasText(properties.apiKey())) {
+            return true;
+        }
+
+        String authHeader = request.getHeader(AUTHORIZATION_HEADER);
+        return StringUtils.hasText(authHeader)
+                && authHeader.startsWith(BEARER_PREFIX)
+                && properties.apiKey().equals(authHeader.substring(BEARER_PREFIX.length()));
     }
 
     private Map<String, Object> callTool(Object id, Map<String, Object> request) {

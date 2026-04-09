@@ -1,0 +1,11 @@
+{
+  "name": "marketing-hub-db",
+  "description": "MCP do Marketing Hub para diagnóstico de banco (db_health)",
+  "transport": {
+    "type": "http",
+    "url": "https://mcp.seudominio.com/mcp",
+    "headers": {
+      "Authorization": "Bearer ${MCP_API_KEY}"
+    }
+  }
+}

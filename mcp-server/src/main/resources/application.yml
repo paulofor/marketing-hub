@@ -19,3 +19,4 @@ management:
 mcp:
   server-name: ${MCP_SERVER_NAME:marketing-hub-mcp}
   server-version: ${MCP_SERVER_VERSION:1.0.0}
+  api-key: ${MCP_API_KEY:}

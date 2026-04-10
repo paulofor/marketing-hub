@@ -25,10 +25,12 @@ import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
 import com.marketinghub.openai.OpenAiCostEstimator;
 import com.marketinghub.openai.OpenAiResponse;
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -804,11 +806,49 @@ public class ExperimentPipelineGenerationService {
             sb.append("12. Toda tag <img> deve usar src absoluto válido (https://... ou data:image/...) e reaproveitar altText do planejamento de imagens.\n\n");
             sb.append("13. Cada <img> deve incluir binding explícito canônico com o plano usando data-image-section-id + data-image-binding-key como chave primária de aderência.\n");
             sb.append("14. Também preencher data-image-role (semântico/humano), data-conversion-role, data-attention-priority, data-visual-weight, data-distance-to-cta e data-supports-form-conversion.\n\n");
+            appendImageBindingSummary(sb, experiment);
             sb.append("Formato obrigatório:\n");
             sb.append("- htmlDocument: string com o documento completo final.\n");
             sb.append("- summary: resumo curto das decisões de implementação.\n");
             sb.append("- consistencyChecks: checks com CTA_MATCH, PROMISE_MATCH, IMAGE_PLAN_BINDING, SURFACE_SPEC_BINDING, FORM_SPEC_BINDING e FORM_USABILITY.\n");
             return;
+        }
+    }
+
+    private void appendImageBindingSummary(StringBuilder sb, Experiment experiment) {
+        List<ImagePlanBindingContract> bindings = loadImagePlanBindings(experiment);
+        if (bindings.isEmpty()) {
+            return;
+        }
+        sb.append("\nBindings canônicos de imagem (copie nos atributos data-* de cada <img>):\n");
+        for (ImagePlanBindingContract binding : bindings) {
+            sb.append("- sectionId=").append(binding.sectionId())
+                    .append(" | imageBindingKey=").append(binding.imageBindingKey())
+                    .append(" | imageRole=").append(binding.imageRole())
+                    .append(" | conversionRole=").append(binding.conversionRole())
+                    .append(" | attention=").append(binding.attentionPriority())
+                    .append(" | visualWeight=").append(binding.visualWeight())
+                    .append(" | distanceToCTA=").append(binding.distanceToCta())
+                    .append(" | supportsFormConversion=").append(binding.supportsFormConversion())
+                    .append("\n");
+        }
+        sb.append("Para cada imagem acima, declare data-image-section-id, data-image-binding-key, data-image-role, data-conversion-role, data-attention-priority, data-visual-weight, data-distance-to-cta e data-supports-form-conversion.\n");
+    }
+
+    private List<ImagePlanBindingContract> loadImagePlanBindings(Experiment experiment) {
+        if (experiment == null || !StringUtils.hasText(experiment.getLandingPageImagePlanning())) {
+            return List.of();
+        }
+        try {
+            Map<String, Object> imagePlanRoot = readObject(experiment.getLandingPageImagePlanning(), "Planejamento de imagens da landing inválido");
+            Map<String, Object> imagePlanPayload = unwrapSectionPayload(imagePlanRoot, "landingPageImagePlanning");
+            return extractExpectedImagePlanBindings(imagePlanPayload);
+        } catch (ResponseStatusException ex) {
+            log.warn("Falha ao carregar bindings de imagem para o prompt: {}", ex.getReason());
+            return List.of();
+        } catch (Exception ex) {
+            log.warn("Falha inesperada ao carregar bindings de imagem para o prompt: {}", ex.getMessage());
+            return List.of();
         }
     }
 
@@ -895,10 +935,53 @@ public class ExperimentPipelineGenerationService {
                 return trimmed;
             }
         }
+        if (section == ExperimentPipelineSection.LANDING_PAGE_IMAGE_PLANNING) {
+            return normalizeLandingPageImagePlanningPayload(trimmed);
+        }
         if (section != ExperimentPipelineSection.LANDING_PAGE_HTML) {
             return trimmed;
         }
         return normalizeLandingPageHtmlPayload(experiment, trimmed);
+    }
+
+    @SuppressWarnings("unchecked")
+    private String normalizeLandingPageImagePlanningPayload(String rawContent) {
+        if (!StringUtils.hasText(rawContent)) {
+            return rawContent;
+        }
+        try {
+            Map<String, Object> root = readObject(rawContent, "Planejamento de imagens da landing inválido");
+            Map<String, Object> payload = unwrapSectionPayload(root, "landingPageImagePlanning");
+            if (!(payload.get("images") instanceof List<?> rawImages) || rawImages.isEmpty()) {
+                return rawContent;
+            }
+            Set<String> usedKeys = new HashSet<>();
+            boolean changed = false;
+            int index = 0;
+            for (Object rawImage : rawImages) {
+                index++;
+                if (!(rawImage instanceof Map<?, ?> rawImageMap)) {
+                    continue;
+                }
+                Map<String, Object> image = (Map<String, Object>) rawImageMap;
+                String canonicalKey = canonicalBindingKey(image, index, usedKeys);
+                if (!StringUtils.hasText(canonicalKey)) {
+                    continue;
+                }
+                String existingKey = asTrimmedString(image.get("imageBindingKey"));
+                if (!canonicalKey.equals(existingKey)) {
+                    image.put("imageBindingKey", canonicalKey);
+                    changed = true;
+                }
+            }
+            if (changed) {
+                log.info("Normalização de imageBindingKey aplicada em landingPageImagePlanning (imagens={})", rawImages.size());
+                return objectMapper.writeValueAsString(root);
+            }
+        } catch (Exception ex) {
+            log.warn("Falha ao normalizar landingPageImagePlanning: {}", ex.getMessage());
+        }
+        return rawContent;
     }
 
     @SuppressWarnings("unchecked")
@@ -1976,25 +2059,28 @@ public class ExperimentPipelineGenerationService {
             return List.of();
         }
         List<ImagePlanBindingContract> bindings = new ArrayList<>();
+        Set<String> usedKeys = new HashSet<>();
+        int index = 0;
         for (Object rawImage : rawImages) {
+            index++;
             if (!(rawImage instanceof Map<?, ?> rawImageMap)) {
                 continue;
             }
             Map<String, Object> image = (Map<String, Object>) rawImageMap;
             String sectionId = normalizeHtmlAttr(asTrimmedString(image.get("sectionId")));
-            String imageBindingKey = normalizeHtmlAttr(resolveBindingKeyFromPlanning(image));
+            String imageBindingKey = canonicalBindingKey(image, index, usedKeys);
             String imageRole = normalizeHtmlAttr(asTrimmedString(image.get("imageRole")));
             String conversionRole = normalizeHtmlAttr(asTrimmedString(image.get("conversionRole")));
             String attentionPriority = normalizeHtmlAttr(asTrimmedString(image.get("attentionPriority")));
             String visualWeight = normalizeHtmlAttr(asTrimmedString(image.get("visualWeight")));
             String distanceToCta = normalizeHtmlAttr(asTrimmedString(image.get("distanceToCTA")));
-            if (!(image.get("supportsFormConversion") instanceof Boolean supportsFormConversion)) {
+            boolean supportsFormConversion = image.get("supportsFormConversion") instanceof Boolean flag && flag;
+            if (!StringUtils.hasText(sectionId) || !StringUtils.hasText(imageBindingKey) || !StringUtils.hasText(imageRole)
+                    || !StringUtils.hasText(conversionRole) || !StringUtils.hasText(attentionPriority)
+                    || !StringUtils.hasText(visualWeight) || !StringUtils.hasText(distanceToCta)) {
                 continue;
             }
-            if (!StringUtils.hasText(sectionId) || !StringUtils.hasText(imageBindingKey) || !StringUtils.hasText(imageRole) || !StringUtils.hasText(conversionRole)
-                    || !StringUtils.hasText(attentionPriority) || !StringUtils.hasText(visualWeight) || !StringUtils.hasText(distanceToCta)) {
-                continue;
-            }
+            image.put("imageBindingKey", imageBindingKey);
             bindings.add(new ImagePlanBindingContract(sectionId, imageBindingKey, imageRole, conversionRole, attentionPriority, visualWeight, distanceToCta, supportsFormConversion));
         }
         return bindings;
@@ -2025,20 +2111,62 @@ public class ExperimentPipelineGenerationService {
         return bindings;
     }
 
-    private String resolveBindingKeyFromPlanning(Map<String, Object> image) {
-        String bindingKey = asTrimmedString(image.get("imageBindingKey"));
-        if (StringUtils.hasText(bindingKey)) {
-            return bindingKey;
+    private String canonicalBindingKey(Map<String, Object> image, int index, Set<String> usedKeys) {
+        List<String> candidates = List.of(
+                asTrimmedString(image.get("imageBindingKey")),
+                asTrimmedString(image.get("imageRole")),
+                asTrimmedString(image.get("sectionId")),
+                "binding-" + index
+        );
+        for (String candidate : candidates) {
+            String slug = slugifyBindingKey(candidate);
+            if (StringUtils.hasText(slug)) {
+                return registerUniqueBindingKey(slug, usedKeys);
+            }
         }
-        return asTrimmedString(image.get("imageRole"));
+        return registerUniqueBindingKey("binding-" + index, usedKeys);
+    }
+
+    private String slugifyBindingKey(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("-{2,}", "-")
+                .replaceAll("^-|-$", "");
+        if (normalized.length() > 64) {
+            normalized = normalized.substring(0, 64).replaceAll("-+$", "");
+        }
+        return normalized.length() >= 3 ? normalized : "";
+    }
+
+    private String registerUniqueBindingKey(String base, Set<String> usedKeys) {
+        String candidate = StringUtils.hasText(base) ? base : "binding";
+        int suffix = 2;
+        while (usedKeys.contains(candidate)) {
+            String suffixToken = "-" + suffix++;
+            int maxLength = Math.max(3, 64 - suffixToken.length());
+            String truncatedBase = candidate.length() > maxLength
+                    ? candidate.substring(0, maxLength).replaceAll("-+$", "")
+                    : candidate;
+            if (!StringUtils.hasText(truncatedBase)) {
+                truncatedBase = "binding";
+            }
+            candidate = truncatedBase + suffixToken;
+        }
+        usedKeys.add(candidate);
+        return candidate;
     }
 
     private String resolveBindingKeyFromHtmlAttrs(Map<String, String> attrs) {
-        String bindingKey = normalizeHtmlAttr(attrs.get("data-image-binding-key"));
+        String bindingKey = slugifyBindingKey(attrs.get("data-image-binding-key"));
         if (StringUtils.hasText(bindingKey)) {
             return bindingKey;
         }
-        return normalizeHtmlAttr(attrs.get("data-image-role"));
+        return slugifyBindingKey(attrs.get("data-image-role"));
     }
 
     private String summarizeImageBindingPairs(List<ImagePlanBindingContract> bindings) {

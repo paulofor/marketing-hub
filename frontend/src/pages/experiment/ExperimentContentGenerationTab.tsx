@@ -766,6 +766,56 @@ function tryFormatJsonBlock(raw: string): string | undefined {
   }
 }
 
+function extractReadableResult(rawResponse?: string): string | undefined {
+  const trimmed = rawResponse?.trim();
+  if (!trimmed) return undefined;
+
+  try {
+    const parsed = JSON.parse(trimmed) as {
+      output_text?: unknown;
+      output?: Array<{
+        content?: Array<{
+          type?: string;
+          text?: unknown;
+        }>;
+      }>;
+    };
+
+    if (typeof parsed.output_text === "string" && parsed.output_text.trim()) {
+      return parsed.output_text.trim();
+    }
+
+    const outputTextCandidate = parsed.output
+      ?.flatMap((item) => item.content ?? [])
+      .find((contentItem) => contentItem.type === "output_text");
+    if (
+      outputTextCandidate &&
+      typeof outputTextCandidate.text === "string" &&
+      outputTextCandidate.text.trim()
+    ) {
+      return outputTextCandidate.text.trim();
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
+}
+
+function wrapLongLines(content: string, maxLength = 88): string {
+  return content
+    .split("\n")
+    .map((line) => {
+      if (line.length <= maxLength) return line;
+      const chunks: string[] = [];
+      for (let index = 0; index < line.length; index += maxLength) {
+        chunks.push(line.slice(index, index + maxLength));
+      }
+      return chunks.join("\n");
+    })
+    .join("\n");
+}
+
 interface PromptLineItem {
   kind: "text" | "title" | "json";
   content: string;
@@ -1528,9 +1578,19 @@ export default function ExperimentContentGenerationTab({
                 generation.prompt?.trim() || "Sem prompt registrado.",
                 "```",
                 "",
-                "**Resultado**",
+                "**Resultado (legível)**",
                 "```text",
-                generation.rawResponse?.trim() || "Sem resposta registrada.",
+                extractReadableResult(generation.rawResponse) ??
+                  "Não foi possível extrair um resumo legível desta resposta.",
+                "```",
+                "",
+                "**Resposta bruta (JSON)**",
+                "```json",
+                wrapLongLines(
+                  tryFormatJsonBlock(generation.rawResponse ?? "") ??
+                    generation.rawResponse?.trim() ??
+                    "Sem resposta registrada.",
+                ),
                 "```",
                 "",
                 "**Persistido no sistema**",

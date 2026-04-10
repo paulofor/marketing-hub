@@ -199,6 +199,22 @@ Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
     "title": "string",
     "submitLabel": "string",
     "submitTarget": "string",
+    "submitMethod": "POST",
+    "submitEncoding": "multipart/form-data",
+    "submitPayloadContract": {
+      "endpoint": "/api/flows/{slug}/submissions",
+      "requiredMultipartFields": ["payload"],
+      "payloadJsonShape": {
+        "name": "string",
+        "email": "string",
+        "answers": {
+          "campo": "string | string[]"
+        },
+        "imageKey": "string",
+        "campaignCode": "string"
+      },
+      "optionalMultipartFields": ["image"]
+    },
     "fields": [
       {
         "id": "string",

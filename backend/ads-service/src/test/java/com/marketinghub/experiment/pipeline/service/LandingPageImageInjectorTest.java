@@ -62,6 +62,44 @@ class LandingPageImageInjectorTest {
     }
 
     @Test
+    void injectsByDataPlanningItemKeyWhenSectionIdDoesNotMatch() {
+        String html = """
+                <!doctype html>
+                <html><body>
+                  <section id="hero-top">
+                    <img src="https://placehold.co/1600x900/png?text=Hero" data-planning-item-key="s0-hero" />
+                  </section>
+                </body></html>
+                """;
+        when(jobRepository.findByExperimentIdOrderByCreatedAtDesc(anyLong()))
+                .thenReturn(List.of(completedJob("s0-hero", "https://cdn.example.com/hero-final.jpg", null)));
+
+        String enriched = injector.injectImages(123L, html);
+
+        assertThat(enriched).contains("https://cdn.example.com/hero-final.jpg");
+        assertThat(enriched).doesNotContain("placehold.co");
+    }
+
+    @Test
+    void replacesPlaceholderWithNextGeneratedImageWhenNoDirectMatchExists() {
+        String html = """
+                <!doctype html>
+                <html><body>
+                  <section id="intro">
+                    <img src="https://placehold.co/1600x1000/png?text=Timeline" alt="Timeline visual" />
+                  </section>
+                </body></html>
+                """;
+        when(jobRepository.findByExperimentIdOrderByCreatedAtDesc(anyLong()))
+                .thenReturn(List.of(completedJob("s9-proof", "https://cdn.example.com/timeline-final.jpg", null)));
+
+        String enriched = injector.injectImages(987L, html);
+
+        assertThat(enriched).contains("https://cdn.example.com/timeline-final.jpg");
+        assertThat(enriched).doesNotContain("placehold.co");
+    }
+
+    @Test
     void keepsOriginalPayloadWhenNoImagesAreAvailable() {
         String payload = "{}";
         when(jobRepository.findByExperimentIdOrderByCreatedAtDesc(anyLong())).thenReturn(List.of());

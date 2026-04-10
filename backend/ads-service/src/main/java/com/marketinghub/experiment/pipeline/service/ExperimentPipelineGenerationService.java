@@ -1743,11 +1743,13 @@ public class ExperimentPipelineGenerationService {
         Map<String, Object> wireframeRoot = readObject(experiment.getLandingPageWireframe(), "Wireframe da landing inválido");
         Map<String, Object> wireframePayload = unwrapSectionPayload(wireframeRoot, "landingPageWireframe");
         if (!(wireframePayload.get("formSpec") instanceof Map<?, ?> rawFormSpec)) {
+            log.warn("Validação landing HTML (experimentId={}): wireframe sem formSpec estruturado", experiment.getId());
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Wireframe da landing sem formSpec estruturado");
         }
 
         List<FormFieldContract> expectedFields = extractExpectedFormFields((Map<String, Object>) rawFormSpec);
         if (expectedFields.isEmpty()) {
+            log.warn("Validação landing HTML (experimentId={}): formSpec.fields vazio", experiment.getId());
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Wireframe da landing sem campos em formSpec.fields");
         }
 
@@ -1755,6 +1757,7 @@ public class ExperimentPipelineGenerationService {
         Map<String, Object> htmlPayload = unwrapSectionPayload(htmlRoot, "landingPageHtml");
         String htmlDocument = asTrimmedString(htmlPayload.get("htmlDocument"));
         if (!StringUtils.hasText(htmlDocument)) {
+            log.warn("Validação landing HTML (experimentId={}): htmlDocument ausente no payload", experiment.getId());
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "landingPageHtml.htmlDocument não encontrado");
         }
 
@@ -1767,6 +1770,10 @@ public class ExperimentPipelineGenerationService {
                 .toList();
 
         if (!expectedSorted.equals(actualSorted)) {
+            log.warn("Validação landing HTML (experimentId={}): divergência de formulário detectada. expected={}, actual={}",
+                    experiment.getId(),
+                    expectedSorted,
+                    actualSorted);
             throw new ResponseStatusException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Divergência de formulário: landing-page-html deve reproduzir exatamente landing-page-wireframe.formSpec");
@@ -1829,6 +1836,7 @@ public class ExperimentPipelineGenerationService {
         Map<String, Object> wireframePayload = unwrapSectionPayload(wireframeRoot, "landingPageWireframe");
         List<SectionSurfaceContract> expectedSurfaces = extractExpectedSectionSurfaces(wireframePayload);
         if (expectedSurfaces.isEmpty()) {
+            log.warn("Validação landing HTML (experimentId={}): wireframe sem sectionOrder.surfaceSpec", experiment.getId());
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Wireframe da landing sem sectionOrder.surfaceSpec estruturado");
         }
 
@@ -1836,6 +1844,7 @@ public class ExperimentPipelineGenerationService {
         Map<String, Object> htmlPayload = unwrapSectionPayload(htmlRoot, "landingPageHtml");
         String htmlDocument = asTrimmedString(htmlPayload.get("htmlDocument"));
         if (!StringUtils.hasText(htmlDocument)) {
+            log.warn("Validação landing HTML (experimentId={}): htmlDocument ausente para validação de surfaceSpec", experiment.getId());
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "landingPageHtml.htmlDocument não encontrado");
         }
 
@@ -1848,6 +1857,10 @@ public class ExperimentPipelineGenerationService {
                 .toList();
 
         if (!expectedSorted.equals(actualSorted)) {
+            log.warn("Validação landing HTML (experimentId={}): divergência de surfaceSpec detectada. expected={}, actual={}",
+                    experiment.getId(),
+                    expectedSorted,
+                    actualSorted);
             throw new ResponseStatusException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Divergência de superfície: landing-page-html deve reproduzir exatamente landing-page-wireframe.sectionOrder.surfaceSpec");
@@ -1920,6 +1933,7 @@ public class ExperimentPipelineGenerationService {
         Map<String, Object> htmlPayload = unwrapSectionPayload(htmlRoot, "landingPageHtml");
         String htmlDocument = asTrimmedString(htmlPayload.get("htmlDocument"));
         if (!StringUtils.hasText(htmlDocument)) {
+            log.warn("Validação landing HTML (experimentId={}): htmlDocument ausente para validação de image plan", experiment.getId());
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "landingPageHtml.htmlDocument não encontrado");
         }
 
@@ -1932,6 +1946,10 @@ public class ExperimentPipelineGenerationService {
                 .toList();
 
         if (!expectedSorted.equals(actualSorted)) {
+            log.warn("Validação landing HTML (experimentId={}): divergência de image plan detectada. expected={}, actual={}",
+                    experiment.getId(),
+                    expectedSorted,
+                    actualSorted);
             throw new ResponseStatusException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Divergência de imagens: landing-page-html deve reproduzir o binding explícito do landing-page-image-planning por sectionId/imageRole");

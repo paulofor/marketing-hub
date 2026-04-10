@@ -33,8 +33,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -48,6 +51,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class ExperimentPipelineGenerationService {
+    private static final Pattern FORM_CONTROL_TAG_PATTERN = Pattern.compile("(?is)<(input|textarea|select)\\b[^>]*>");
+    private static final Pattern ATTRIBUTE_PATTERN = Pattern.compile("(?is)([a-zA-Z_:][-a-zA-Z0-9_:.]*)\\s*=\\s*([\"'])(.*?)\\2");
     private static final String DEFAULT_MODEL = "gpt-5.2";
     private static final Duration STALE_PENDING_TIMEOUT = Duration.ofMinutes(10);
     private static final Duration STALE_PROCESSING_TIMEOUT = Duration.ofMinutes(20);
@@ -699,10 +704,20 @@ public class ExperimentPipelineGenerationService {
             sb.append("12. Cada sectionOrder[i] deve preencher compositionNotes explicando hierarquia visual, densidade de conteúdo e leitura mobile-first.\n");
             sb.append("13. Não transformar o layout em HTML final; esta etapa deve decidir ordem, hierarquia e slots de mídia.\n");
             sb.append("14. Não usar linguagem de consultoria e não criar estrutura que pareça página genérica para qualquer mercado.\n");
-            sb.append("15. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para ").append(niche).append(".\n\n");
+            sb.append("15. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para ").append(niche).append(".\n");
+            sb.append("16. Definir formSpec como contrato estruturado do formulário com esta configuração:\n");
+            sb.append("   - formId: lead-capture-primary\n");
+            sb.append("   - title: Receber a prévia do Kit (IA)\n");
+            sb.append("   - submitLabel: Desbloquear o Kit (receber a prévia gerada por IA)\n");
+            sb.append("   - submitTarget: #desbloquear\n");
+            sb.append("   - fields exatamente nesta ordem: nome (text, required=true), email (email, required=true), whatsapp (tel, required=false)\n");
+            sb.append("   - placeholders: Seu nome, voce@exemplo.com, (DDD) 9XXXX-XXXX\n");
+            sb.append("   - consent: enabled=true, required=false, label preenchido\n");
+            sb.append("   - successState: title e message preenchidos.\n\n");
             sb.append("Formato obrigatório:\n");
             sb.append("- Preencher sectionOrder respeitando a ordem real da landing e referenciando sectionId de bodySections quando existir.\n");
             sb.append("- Preencher mediaSlot e compositionNotes em todas as seções.\n");
+            sb.append("- Preencher formSpec completo como fonte única da verdade para campos e obrigatoriedade do formulário.\n");
             sb.append("- Preencher ctaSlot dentro das seções com CTA.\n");
             sb.append("- Preencher consistencyChecks e observações finais (mobilePriorityNotes, ctaPlacementNotes, formPlacementNotes).\n");
             sb.append("- Reforçar message match usando primaryAdHeadline, landingMatchLine e " + landingCtaForInstructions + " como referência fixa.\n");
@@ -756,21 +771,22 @@ public class ExperimentPipelineGenerationService {
             sb.append("1. Entregar HTML completo com <style> e <script> internos (sem dependências externas).\n");
             sb.append("2. Garantir mobile-first e acessibilidade básica (labels, aria, foco visível).\n");
             sb.append("3. Repetir o CTA principal exatamente como no anúncio e nas seções anteriores.\n");
-            sb.append("4. O formulário deve coletar apenas nome, whatsapp e objetivo principal.\n");
+            sb.append("4. O formulário deve ser renderizado a partir de wireframe.formSpec como fonte única da verdade (sem inventar, remover, renomear ou trocar required).\n");
             sb.append("5. Incluir validação de campos obrigatórios no JavaScript.\n");
             sb.append("6. Não usar claims absolutos, nem linguagem de consultoria.\n");
             sb.append("7. Incluir bloco de compliance reforçando entrega digital via IA.\n");
             sb.append("8. Consumir explicitamente os artefatos anteriores:\n");
             sb.append("   - copy da landing para narrativa e message match;\n");
             sb.append("   - wireframe para ordem/hierarquia e mediaSlot;\n");
-            sb.append("   - planejamento de imagens para placement, prioridade e altText.\n");
+            sb.append("   - planejamento de imagens para placement, prioridade e altText;\n");
+            sb.append("   - wireframe.formSpec para renderização exata dos campos do formulário.\n");
             sb.append("9. Não inventar estrutura visual fora do layout/plano de imagens sem justificar nos consistencyChecks.\n");
             sb.append("10. O código deve ser limpo, legível e pronto para ser renderizado em iframe.\n");
             sb.append("11. Toda tag <img> deve usar src absoluto válido (https://... ou data:image/...) e reaproveitar altText do planejamento de imagens.\n\n");
             sb.append("Formato obrigatório:\n");
             sb.append("- htmlDocument: string com o documento completo final.\n");
             sb.append("- summary: resumo curto das decisões de implementação.\n");
-            sb.append("- consistencyChecks: checks com CTA_MATCH, PROMISE_MATCH, IMAGE_PLAN_BINDING e FORM_USABILITY.\n");
+            sb.append("- consistencyChecks: checks com CTA_MATCH, PROMISE_MATCH, IMAGE_PLAN_BINDING, FORM_SPEC_BINDING e FORM_USABILITY.\n");
             return;
         }
     }
@@ -812,7 +828,10 @@ public class ExperimentPipelineGenerationService {
             case LANDING_PAGE_COPY -> experiment.setLandingPageCopy(normalized);
             case LANDING_PAGE_WIREFRAME -> experiment.setLandingPageWireframe(normalized);
             case LANDING_PAGE_IMAGE_PLANNING -> experiment.setLandingPageImagePlanning(normalized);
-            case LANDING_PAGE_HTML -> experiment.setLandingPageHtml(normalized);
+            case LANDING_PAGE_HTML -> {
+                validateLandingHtmlFormConsistency(experiment, normalized);
+                experiment.setLandingPageHtml(normalized);
+            }
         }
     }
 
@@ -1356,6 +1375,53 @@ public class ExperimentPipelineGenerationService {
     }
 
     private Map<String, Object> landingPageWireframeFieldSchema() {
+        Map<String, Object> formFieldSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("name", stringSchema()),
+                        Map.entry("type", Map.of("type", "string", "enum", List.of("text", "email", "tel"))),
+                        Map.entry("label", stringSchema()),
+                        Map.entry("required", Map.of("type", "boolean")),
+                        Map.entry("placeholder", stringSchema())
+                ),
+                "required", List.of("name", "type", "label", "required", "placeholder")
+        );
+        Map<String, Object> formSpecSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("formId", stringSchema()),
+                        Map.entry("title", stringSchema()),
+                        Map.entry("submitLabel", stringSchema()),
+                        Map.entry("submitTarget", stringSchema()),
+                        Map.entry("fields", Map.of(
+                                "type", "array",
+                                "minItems", 3,
+                                "items", formFieldSchema
+                        )),
+                        Map.entry("consent", Map.of(
+                                "type", "object",
+                                "additionalProperties", false,
+                                "properties", Map.of(
+                                        "enabled", Map.of("type", "boolean"),
+                                        "required", Map.of("type", "boolean"),
+                                        "label", stringSchema()
+                                ),
+                                "required", List.of("enabled", "required", "label")
+                        )),
+                        Map.entry("successState", Map.of(
+                                "type", "object",
+                                "additionalProperties", false,
+                                "properties", Map.of(
+                                        "title", stringSchema(),
+                                        "message", stringSchema()
+                                ),
+                                "required", List.of("title", "message")
+                        ))
+                ),
+                "required", List.of("formId", "title", "submitLabel", "submitTarget", "fields", "consent", "successState")
+        );
         Map<String, Object> ctaSlotSchema = Map.of(
                 "type", "object",
                 "additionalProperties", false,
@@ -1414,10 +1480,155 @@ public class ExperimentPipelineGenerationService {
                                 "type", "array",
                                 "minItems", 2,
                                 "items", consistencyCheckSchema()
-                        ))
+                        )),
+                        Map.entry("formSpec", formSpecSchema)
                 ),
-                "required", List.of("pageGoal", "variantLayoutId", "sectionOrder", "consistencyChecks")
+                "required", List.of("pageGoal", "variantLayoutId", "sectionOrder", "consistencyChecks", "formSpec")
         );
+    }
+
+    @SuppressWarnings("unchecked")
+    private void validateLandingHtmlFormConsistency(Experiment experiment, String landingHtmlContent) {
+        if (!StringUtils.hasText(landingHtmlContent) || !StringUtils.hasText(experiment.getLandingPageWireframe())) {
+            return;
+        }
+
+        Map<String, Object> wireframeRoot = readObject(experiment.getLandingPageWireframe(), "Wireframe da landing inválido");
+        Map<String, Object> wireframePayload = unwrapSectionPayload(wireframeRoot, "landingPageWireframe");
+        if (!(wireframePayload.get("formSpec") instanceof Map<?, ?> rawFormSpec)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Wireframe da landing sem formSpec estruturado");
+        }
+
+        List<FormFieldContract> expectedFields = extractExpectedFormFields((Map<String, Object>) rawFormSpec);
+        if (expectedFields.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Wireframe da landing sem campos em formSpec.fields");
+        }
+
+        Map<String, Object> htmlRoot = readObject(landingHtmlContent, "Payload da landing HTML inválido");
+        Map<String, Object> htmlPayload = unwrapSectionPayload(htmlRoot, "landingPageHtml");
+        String htmlDocument = asTrimmedString(htmlPayload.get("htmlDocument"));
+        if (!StringUtils.hasText(htmlDocument)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "landingPageHtml.htmlDocument não encontrado");
+        }
+
+        List<FormFieldContract> actualFields = extractFieldsFromHtmlDocument(htmlDocument);
+        List<FormFieldContract> expectedSorted = expectedFields.stream()
+                .sorted(Comparator.comparing(FormFieldContract::name))
+                .toList();
+        List<FormFieldContract> actualSorted = actualFields.stream()
+                .sorted(Comparator.comparing(FormFieldContract::name))
+                .toList();
+
+        if (!expectedSorted.equals(actualSorted)) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Divergência de formulário: landing-page-html deve reproduzir exatamente landing-page-wireframe.formSpec");
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<FormFieldContract> extractExpectedFormFields(Map<String, Object> formSpec) {
+        if (!(formSpec.get("fields") instanceof List<?> rawFields)) {
+            return List.of();
+        }
+        List<FormFieldContract> fields = new ArrayList<>();
+        for (Object rawField : rawFields) {
+            if (!(rawField instanceof Map<?, ?> rawFieldMap)) {
+                continue;
+            }
+            Map<String, Object> field = (Map<String, Object>) rawFieldMap;
+            String name = normalizeHtmlAttr(asTrimmedString(field.get("name")));
+            String type = normalizeHtmlAttr(asTrimmedString(field.get("type")));
+            if (!StringUtils.hasText(name) || !StringUtils.hasText(type) || !(field.get("required") instanceof Boolean required)) {
+                continue;
+            }
+            fields.add(new FormFieldContract(name, type, required));
+        }
+        return fields;
+    }
+
+    private List<FormFieldContract> extractFieldsFromHtmlDocument(String htmlDocument) {
+        List<FormFieldContract> fields = new ArrayList<>();
+        Matcher tagMatcher = FORM_CONTROL_TAG_PATTERN.matcher(htmlDocument);
+        while (tagMatcher.find()) {
+            String tag = tagMatcher.group();
+            Map<String, String> attrs = parseHtmlAttributes(tag);
+            String name = normalizeHtmlAttr(attrs.get("name"));
+            if (!StringUtils.hasText(name)) {
+                continue;
+            }
+            String type = normalizeHtmlAttr(attrs.get("type"));
+            if (!StringUtils.hasText(type)) {
+                type = "text";
+            }
+            if (!Set.of("text", "email", "tel").contains(type)) {
+                continue;
+            }
+            boolean required = attrs.containsKey("required") || tag.toLowerCase(Locale.ROOT).contains(" required");
+            fields.add(new FormFieldContract(name, type, required));
+        }
+        return fields;
+    }
+
+    private Map<String, String> parseHtmlAttributes(String tag) {
+        Map<String, String> attrs = new LinkedHashMap<>();
+        Matcher matcher = ATTRIBUTE_PATTERN.matcher(tag);
+        while (matcher.find()) {
+            attrs.put(matcher.group(1).toLowerCase(Locale.ROOT), matcher.group(3));
+        }
+        return attrs;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> unwrapSectionPayload(Map<String, Object> payload, String fieldName) {
+        if (payload.get("artifact") instanceof Map<?, ?> rawArtifact) {
+            Map<String, Object> artifact = (Map<String, Object>) rawArtifact;
+            if (artifact.get("content") instanceof Map<?, ?> rawContent) {
+                return (Map<String, Object>) rawContent;
+            }
+        }
+        if (payload.get(fieldName) instanceof Map<?, ?> rawField) {
+            return (Map<String, Object>) rawField;
+        }
+        return payload;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> readObject(String rawJson, String errorMessage) {
+        try {
+            Object parsed = objectMapper.readValue(rawJson, Object.class);
+            if (parsed instanceof Map<?, ?> rawMap) {
+                return (Map<String, Object>) rawMap;
+            }
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, errorMessage);
+        } catch (JsonProcessingException ex) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, errorMessage, ex);
+        }
+    }
+
+    private String asTrimmedString(Object value) {
+        return value instanceof String text ? text.trim() : "";
+    }
+
+    private String normalizeHtmlAttr(String value) {
+        return StringUtils.hasText(value) ? value.trim().toLowerCase(Locale.ROOT) : "";
+    }
+
+    private record FormFieldContract(String name, String type, boolean required) {
+        @Override
+        public boolean equals(Object obj) {
+            if (!(obj instanceof FormFieldContract other)) {
+                return false;
+            }
+            return Objects.equals(name, other.name)
+                    && Objects.equals(type, other.type)
+                    && required == other.required;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, type, required);
+        }
     }
 
     private Map<String, Object> consistencyCheckSchema() {

@@ -16,6 +16,18 @@ As alterações serão adicionadas conforme forem implementadas, incluindo:
 
 ## Histórico
 
+### 2026-04-10 — Consistência determinística de formulário entre `landing-page-wireframe` e `landing-page-html`
+
+- **Item alterado:** `landing-page-wireframe` e `landing-page-html` no pipeline de experimento.
+  - **O que mudou:** o wireframe passou a exigir `formSpec` estruturado como contrato explícito de formulário (campos, tipos, obrigatoriedade, consentimento e estado de sucesso), e o prompt do HTML passou a consumir esse contrato como fonte única da verdade, proibindo invenção/remoção/renomeação de campos.
+  - **Impacto esperado:** redução de drift entre artefatos de landing e previsibilidade maior na renderização do formulário final.
+  - **Arquivos relacionados:** `frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx`, `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`, `ai-worker/src/main/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClient.java`.
+
+- **Item alterado:** validação de publicação do `landing-page-html`.
+  - **O que mudou:** foi adicionada validação determinística no backend para comparar os campos reais do formulário no `htmlDocument` com `formSpec.fields` do wireframe, bloqueando conclusão do job quando houver divergência de campo/tipo/obrigatoriedade.
+  - **Impacto esperado:** impede que o HTML final altere contrato de formulário por conta própria, reforçando o wireframe como fonte única.
+  - **Arquivos relacionados:** `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`.
+
 ### 2026-04-08 — Refino incremental do item `HTML da Landing`
 
 - **Item alterado:** `HTML da Landing` no pipeline de experimento.

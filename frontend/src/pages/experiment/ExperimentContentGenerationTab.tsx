@@ -409,6 +409,17 @@ Regras:
 16. Cada seção deve declarar compositionNotes com instruções de composição e hierarquia visual para guiar a etapa de HTML.
 17. Não transformar o layout em HTML final; foque apenas em ordem, hierarquia, slots e leitura mobile-first.
 18. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para {nicho}.
+19. Defina formSpec como contrato estruturado único do formulário com:
+    - formId: "lead-capture-primary"
+    - title: "Receber a prévia do Kit (IA)"
+    - submitLabel: "Desbloquear o Kit (receber a prévia gerada por IA)"
+    - submitTarget: "#desbloquear"
+    - fields exatamente nesta ordem:
+      1) nome (text, required=true, placeholder "Seu nome")
+      2) email (email, required=true, placeholder "voce@exemplo.com")
+      3) whatsapp (tel, required=false, placeholder "(DDD) 9XXXX-XXXX")
+    - consent: enabled=true, required=false, label preenchido
+    - successState com title e message.
 
 Formato esperado:
 JSON com:
@@ -435,7 +446,8 @@ artifact {
     ],
     mobilePriorityNotes,
     ctaPlacementNotes,
-    formPlacementNotes
+    formPlacementNotes,
+    formSpec
   }
 }`;
 
@@ -453,9 +465,11 @@ Regras:
 6. Consumir explicitamente os artefatos anteriores:
    - texto da landing para narrativa e message match;
    - layout da landing para ordem/hierarquia e mediaSlot;
-   - planejamento de imagens para posicionamento visual e altText.
+   - planejamento de imagens para posicionamento visual e altText;
+   - wireframe.formSpec para renderizar exatamente os campos e obrigatoriedade do formulário.
 7. Não inventar estrutura visual fora do layout/plano de imagens sem justificar nos consistencyChecks.
-8. Não usar dependências externas.
+8. É proibido inventar/remover/renomear campos do formulário fora do formSpec.
+9. Não usar dependências externas.
 
 Formato esperado:
 JSON com:

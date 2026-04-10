@@ -335,9 +335,17 @@ public class ExperimentPipelineOpenAiClient {
 
     @SuppressWarnings("unchecked")
     private void ensureLandingHtmlHasStaticFormContract(Map<String, Object> parsed, ExperimentPipelineJobDto job) {
-        if (!isLandingHtmlSection(job) || parsed == null) {
+        if (parsed == null) {
             return;
         }
+        String normalizedSection = normalizeSection(job);
+        if (!isSection(job, "landing-page-html", "landing-html")) {
+            return;
+        }
+        log.info("LANDING_PAGE_HTML detectado para normalização no worker (jobId={}, sectionOriginal={}, sectionNormalizada={})",
+                job != null ? job.id() : null,
+                job != null ? job.section() : null,
+                normalizedSection);
 
         Map<String, Object> payload = parsed;
         if (parsed.get("landingPageHtml") instanceof Map<?, ?> landingPageHtml) {
@@ -352,6 +360,13 @@ public class ExperimentPipelineOpenAiClient {
         String updatedDocument = enforceStaticFormContract(htmlDocument);
         if (!htmlDocument.equals(updatedDocument)) {
             payload.put("htmlDocument", updatedDocument);
+            log.info("Normalização de formulário aplicada no worker (jobId={}, fields={})",
+                    job != null ? job.id() : null,
+                    extractFieldSnapshot(updatedDocument));
+        } else {
+            log.info("Normalização de formulário não alterou HTML (jobId={}, fields={})",
+                    job != null ? job.id() : null,
+                    extractFieldSnapshot(htmlDocument));
         }
     }
 
@@ -662,54 +677,58 @@ public class ExperimentPipelineOpenAiClient {
     }
 
     private boolean isCampaignAngleSection(ExperimentPipelineJobDto job) {
-        if (job == null || !StringUtils.hasText(job.section())) {
-            return false;
-        }
-        String normalized = job.section().trim().toLowerCase(Locale.ROOT);
-        return "campaign-angle".equals(normalized) || "campaign_angle".equals(normalized);
+        return isSection(job, "campaign-angle", "campaign_angle");
     }
 
     private boolean isLandingCopySection(ExperimentPipelineJobDto job) {
-        if (job == null || !StringUtils.hasText(job.section())) {
-            return false;
-        }
-        String normalized = job.section().trim().toLowerCase(Locale.ROOT);
-        return "landing-page-copy".equals(normalized)
-                || "landing-page_copy".equals(normalized)
-                || "landing-copy".equals(normalized)
-                || "landing_copy".equals(normalized);
+        return isSection(job, "landing-page-copy", "landing-page_copy", "landing-copy", "landing_copy");
     }
 
     private boolean isLandingLayoutSection(ExperimentPipelineJobDto job) {
-        if (job == null || !StringUtils.hasText(job.section())) {
-            return false;
-        }
-        String normalized = job.section().trim().toLowerCase(Locale.ROOT);
-        return "landing-page-wireframe".equals(normalized)
-                || "landing-page_wireframe".equals(normalized)
-                || "landing-layout".equals(normalized)
-                || "landing_layout".equals(normalized);
+        return isSection(job, "landing-page-wireframe", "landing-page_wireframe", "landing-layout", "landing_layout");
     }
 
     private boolean isLandingHtmlSection(ExperimentPipelineJobDto job) {
-        if (job == null || !StringUtils.hasText(job.section())) {
-            return false;
-        }
-        String normalized = job.section().trim().toLowerCase(Locale.ROOT);
-        return "landing-page-html".equals(normalized)
-                || "landing-page_html".equals(normalized)
-                || "landing-html".equals(normalized)
-                || "landing_html".equals(normalized);
+        return isSection(job, "landing-page-html", "landing-page_html", "landing-html", "landing_html");
     }
 
     private boolean isLandingImagePlanningSection(ExperimentPipelineJobDto job) {
+        return isSection(job, "landing-page-image-planning", "landing-page_image_planning", "landing-image-planning", "landing_image_planning");
+    }
+
+    private boolean isSection(ExperimentPipelineJobDto job, String... aliases) {
         if (job == null || !StringUtils.hasText(job.section())) {
             return false;
         }
-        String normalized = job.section().trim().toLowerCase(Locale.ROOT);
-        return "landing-page-image-planning".equals(normalized)
-                || "landing-page_image_planning".equals(normalized)
-                || "landing-image-planning".equals(normalized)
-                || "landing_image_planning".equals(normalized);
+        String normalized = normalizeSection(job);
+        for (String alias : aliases) {
+            if (normalizeSection(alias).equals(normalized)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String normalizeSection(ExperimentPipelineJobDto job) {
+        return normalizeSection(job != null ? job.section() : null);
+    }
+
+    private String normalizeSection(String rawSection) {
+        if (!StringUtils.hasText(rawSection)) {
+            return "";
+        }
+        return rawSection.trim()
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("(^-|-$)", "");
+    }
+
+    private String extractFieldSnapshot(String htmlDocument) {
+        Set<String> fields = new LinkedHashSet<>();
+        Matcher matcher = Pattern.compile("(?is)<(input|select|textarea)\\b[^>]*\\bname\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>").matcher(htmlDocument);
+        while (matcher.find()) {
+            fields.add(matcher.group(2).trim().toLowerCase(Locale.ROOT));
+        }
+        return fields.toString();
     }
 }

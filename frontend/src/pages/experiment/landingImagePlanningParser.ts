@@ -8,9 +8,18 @@ import {
 export interface LandingPlannedImage {
   sectionId?: string;
   sectionName?: string;
+  imageRole?: string;
+  conversionRole?: string;
+  emotionalJob?: string;
+  sectionVisualGoal?: string;
   placement?: string;
   priority?: string;
   hierarchyLevel?: string;
+  attentionPriority?: string;
+  visualWeight?: string;
+  distanceToCTA?: string;
+  supportsFormConversion?: string;
+  formRelationNotes?: string;
   objective?: string;
   imagePrompt?: string;
   negativePrompt?: string;
@@ -88,9 +97,21 @@ function parseImage(value: unknown): LandingPlannedImage | undefined {
   const parsed: LandingPlannedImage = {
     sectionId: pickText(payload.sectionId),
     sectionName: pickText(payload.sectionName),
+    imageRole: pickText(payload.imageRole),
+    conversionRole: pickText(payload.conversionRole),
+    emotionalJob: pickText(payload.emotionalJob),
+    sectionVisualGoal: pickText(payload.sectionVisualGoal),
     placement: pickText(payload.placement),
     priority: pickText(payload.priority ?? payload.priorityLevel),
     hierarchyLevel: pickText(payload.hierarchyLevel),
+    attentionPriority: pickText(payload.attentionPriority),
+    visualWeight: pickText(payload.visualWeight),
+    distanceToCTA: pickText(payload.distanceToCTA),
+    supportsFormConversion:
+      typeof payload.supportsFormConversion === "boolean"
+        ? String(payload.supportsFormConversion)
+        : pickText(payload.supportsFormConversion),
+    formRelationNotes: pickText(payload.formRelationNotes),
     objective: pickText(payload.objective),
     imagePrompt: pickText(payload.imagePrompt ?? payload.prompt),
     negativePrompt: pickText(payload.negativePrompt),

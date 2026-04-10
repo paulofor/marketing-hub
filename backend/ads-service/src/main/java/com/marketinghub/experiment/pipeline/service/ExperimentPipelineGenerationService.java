@@ -54,6 +54,7 @@ public class ExperimentPipelineGenerationService {
     private static final Pattern FORM_CONTROL_TAG_PATTERN = Pattern.compile("(?is)<(input|textarea|select)\\b[^>]*>");
     private static final Pattern ATTRIBUTE_PATTERN = Pattern.compile("(?is)([a-zA-Z_:][-a-zA-Z0-9_:.]*)\\s*=\\s*([\"'])(.*?)\\2");
     private static final Pattern OPENING_TAG_PATTERN = Pattern.compile("(?is)<([a-z0-9:-]+)\\b[^>]*>");
+    private static final Pattern IMG_TAG_PATTERN = Pattern.compile("(?is)<img\\b[^>]*>");
     private static final String DEFAULT_MODEL = "gpt-5.2";
     private static final Duration STALE_PENDING_TIMEOUT = Duration.ofMinutes(10);
     private static final Duration STALE_PROCESSING_TIMEOUT = Duration.ofMinutes(20);
@@ -743,14 +744,17 @@ public class ExperimentPipelineGenerationService {
             sb.append("Regras:\n");
             sb.append("1. images[] deve ter no mínimo 4 itens com sectionId e sectionName existentes no wireframe.\n");
             sb.append("2. Cada item precisa trazer imagePrompt, objective, visualStyle, composition, focalPoint, supportingElements e mood.\n");
-            sb.append("3. Definir placement (hero, benefit, mechanism, proof, offer, faq, cta), priority (high, medium, low) e hierarchyLevel (primary, secondary, support).\n");
-            sb.append("4. Cada item precisa informar dimensions (desktop e mobile), safeMargins, textOverlayGuidance e altText.\n");
-            sb.append("5. Sempre preencher messageMatchNotes explicando como a imagem reforça promessa/CTA sem desviar o ângulo.\n");
-            sb.append("6. Sempre preencher complianceNotes evitando linguagem de consultoria e claims absolutos.\n");
-            sb.append("7. Incluir negativePrompt e generationHints para orientar geração consistente e informativa.\n");
-            sb.append("8. ctaIntegrationNotes deve indicar onde o CTA aparece junto da imagem sem competir com a leitura.\n");
-            sb.append("9. sequencingNotes deve explicar a ordem narrativa das imagens ao longo da página.\n");
-            sb.append("10. consistencyChecks deve incluir IMAGE_MESSAGE_MATCH, VISUAL_HIERARCHY e CTA_CONTINUITY (PASS/WARN/FAIL).\n\n");
+            sb.append("3. Cada item precisa incluir imageRole, conversionRole, emotionalJob e sectionVisualGoal para explicitar função visual e contribuição para conversão.\n");
+            sb.append("4. Definir placement (hero, benefit, mechanism, proof, offer, faq, cta), priority (high, medium, low), hierarchyLevel (primary, secondary, support), attentionPriority (high, medium, low), visualWeight (primary, secondary, support) e distanceToCTA (near, medium, far).\n");
+            sb.append("5. Cada item precisa informar dimensions (desktop e mobile), safeMargins, textOverlayGuidance, altText e layoutBinding (preferredDesktopPlacement, preferredMobilePlacement, desktopAspectRatio, mobileAspectRatio, allowCrop, safeCropZones).\n");
+            sb.append("6. supportsFormConversion deve indicar explicitamente se a imagem ajuda o envio do lead e formRelationNotes deve explicar como empurra leitura para CTA/form sem competir com ele.\n");
+            sb.append("7. sectionId deve existir no wireframe e não pode repetir com imageRole conflitando no mesmo bloco.\n");
+            sb.append("8. Sempre preencher messageMatchNotes explicando como a imagem reforça promessa/CTA sem desviar o ângulo.\n");
+            sb.append("9. Sempre preencher complianceNotes evitando linguagem de consultoria e claims absolutos.\n");
+            sb.append("10. Incluir negativePrompt e generationHints para orientar geração consistente e informativa.\n");
+            sb.append("11. ctaIntegrationNotes deve indicar onde o CTA aparece junto da imagem sem competir com a leitura.\n");
+            sb.append("12. sequencingNotes deve explicar a ordem narrativa das imagens ao longo da página.\n");
+            sb.append("13. consistencyChecks deve incluir IMAGE_MESSAGE_MATCH, VISUAL_HIERARCHY e CTA_CONTINUITY (PASS/WARN/FAIL).\n\n");
             sb.append("Formato obrigatório:\n");
             sb.append("- pageGoal\n");
             sb.append("- visualDirectionSummary\n");
@@ -781,12 +785,13 @@ public class ExperimentPipelineGenerationService {
             sb.append("8. Consumir explicitamente os artefatos anteriores:\n");
             sb.append("   - copy da landing para narrativa e message match;\n");
             sb.append("   - wireframe para ordem/hierarquia e mediaSlot;\n");
-            sb.append("   - planejamento de imagens para placement, prioridade e altText;\n");
+            sb.append("   - planejamento de imagens para imageRole, conversionRole, layoutBinding, prioridade e altText;\n");
             sb.append("   - wireframe.formSpec para renderização exata dos campos do formulário.\n");
             sb.append("9. Renderizar cada seção com data-section-id e aplicar exatamente wireframe.sectionOrder[i].surfaceSpec via data-surface-token, data-surface-style e data-surface-contrast.\n");
             sb.append("10. Não inventar estrutura visual fora do layout/plano de imagens sem justificar nos consistencyChecks.\n");
             sb.append("11. O código deve ser limpo, legível e pronto para ser renderizado em iframe.\n");
             sb.append("12. Toda tag <img> deve usar src absoluto válido (https://... ou data:image/...) e reaproveitar altText do planejamento de imagens.\n\n");
+            sb.append("13. Cada <img> deve incluir binding explícito com o plano usando data-image-section-id, data-image-role, data-conversion-role, data-attention-priority, data-visual-weight, data-distance-to-cta e data-supports-form-conversion.\n\n");
             sb.append("Formato obrigatório:\n");
             sb.append("- htmlDocument: string com o documento completo final.\n");
             sb.append("- summary: resumo curto das decisões de implementação.\n");
@@ -835,6 +840,7 @@ public class ExperimentPipelineGenerationService {
             case LANDING_PAGE_HTML -> {
                 validateLandingHtmlFormConsistency(experiment, normalized);
                 validateLandingHtmlSurfaceConsistency(experiment, normalized);
+                validateLandingHtmlImagePlanConsistency(experiment, normalized);
                 experiment.setLandingPageHtml(normalized);
             }
         }
@@ -1190,12 +1196,40 @@ public class ExperimentPipelineGenerationService {
     }
 
     private Map<String, Object> landingPageImagePlanningFieldSchema() {
+        Map<String, Object> safeCropZonesSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.of(
+                        "top", Map.of("type", "number", "minimum", 0, "maximum", 1),
+                        "right", Map.of("type", "number", "minimum", 0, "maximum", 1),
+                        "bottom", Map.of("type", "number", "minimum", 0, "maximum", 1),
+                        "left", Map.of("type", "number", "minimum", 0, "maximum", 1)
+                ),
+                "required", List.of("top", "right", "bottom", "left")
+        );
+        Map<String, Object> layoutBindingSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("preferredDesktopPlacement", Map.of("type", "string", "enum", List.of("left", "right", "center", "background"))),
+                        Map.entry("preferredMobilePlacement", Map.of("type", "string", "enum", List.of("above-copy", "below-copy", "inline", "background"))),
+                        Map.entry("desktopAspectRatio", stringSchema()),
+                        Map.entry("mobileAspectRatio", stringSchema()),
+                        Map.entry("allowCrop", Map.of("type", "boolean")),
+                        Map.entry("safeCropZones", safeCropZonesSchema)
+                ),
+                "required", List.of("preferredDesktopPlacement", "preferredMobilePlacement", "desktopAspectRatio", "mobileAspectRatio", "allowCrop", "safeCropZones")
+        );
         Map<String, Object> imageSchema = Map.of(
                 "type", "object",
                 "additionalProperties", false,
                 "properties", Map.ofEntries(
                         Map.entry("sectionId", stringSchema()),
                         Map.entry("sectionName", stringSchema()),
+                        Map.entry("imageRole", stringSchema()),
+                        Map.entry("conversionRole", stringSchema()),
+                        Map.entry("emotionalJob", stringSchema()),
+                        Map.entry("sectionVisualGoal", stringSchema()),
                         Map.entry("placement", Map.of(
                                 "type", "string",
                                 "enum", List.of("hero", "benefit", "mechanism", "proof", "offer", "faq", "cta")
@@ -1212,6 +1246,21 @@ public class ExperimentPipelineGenerationService {
                         Map.entry("focalPoint", stringSchema()),
                         Map.entry("supportingElements", arrayOfStringsSchema(0)),
                         Map.entry("mood", stringSchema()),
+                        Map.entry("layoutBinding", layoutBindingSchema),
+                        Map.entry("attentionPriority", Map.of(
+                                "type", "string",
+                                "enum", List.of("high", "medium", "low")
+                        )),
+                        Map.entry("visualWeight", Map.of(
+                                "type", "string",
+                                "enum", List.of("primary", "secondary", "support")
+                        )),
+                        Map.entry("distanceToCTA", Map.of(
+                                "type", "string",
+                                "enum", List.of("near", "medium", "far")
+                        )),
+                        Map.entry("supportsFormConversion", Map.of("type", "boolean")),
+                        Map.entry("formRelationNotes", stringSchema()),
                         Map.entry("dimensions", Map.of(
                                 "type", "object",
                                 "additionalProperties", false,
@@ -1230,9 +1279,19 @@ public class ExperimentPipelineGenerationService {
                 "required", List.of(
                         "sectionId",
                         "sectionName",
+                        "imageRole",
+                        "conversionRole",
+                        "emotionalJob",
+                        "sectionVisualGoal",
                         "placement",
                         "hierarchyLevel",
                         "objective",
+                        "layoutBinding",
+                        "attentionPriority",
+                        "visualWeight",
+                        "distanceToCTA",
+                        "supportsFormConversion",
+                        "formRelationNotes",
                         "imagePrompt",
                         "dimensions",
                         "messageMatchNotes")
@@ -1673,6 +1732,94 @@ public class ExperimentPipelineGenerationService {
         return new ArrayList<>(contractsBySectionId.values());
     }
 
+    @SuppressWarnings("unchecked")
+    private void validateLandingHtmlImagePlanConsistency(Experiment experiment, String landingHtmlContent) {
+        if (!StringUtils.hasText(landingHtmlContent) || !StringUtils.hasText(experiment.getLandingPageImagePlanning())) {
+            return;
+        }
+
+        Map<String, Object> imagePlanRoot = readObject(experiment.getLandingPageImagePlanning(), "Planejamento de imagens da landing inválido");
+        Map<String, Object> imagePlanPayload = unwrapSectionPayload(imagePlanRoot, "landingPageImagePlanning");
+        List<ImagePlanBindingContract> expectedBindings = extractExpectedImagePlanBindings(imagePlanPayload);
+        if (expectedBindings.isEmpty()) {
+            return;
+        }
+
+        Map<String, Object> htmlRoot = readObject(landingHtmlContent, "Payload da landing HTML inválido");
+        Map<String, Object> htmlPayload = unwrapSectionPayload(htmlRoot, "landingPageHtml");
+        String htmlDocument = asTrimmedString(htmlPayload.get("htmlDocument"));
+        if (!StringUtils.hasText(htmlDocument)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "landingPageHtml.htmlDocument não encontrado");
+        }
+
+        List<ImagePlanBindingContract> actualBindings = extractImagePlanBindingsFromHtmlDocument(htmlDocument);
+        List<ImagePlanBindingContract> expectedSorted = expectedBindings.stream()
+                .sorted(Comparator.comparing(ImagePlanBindingContract::sectionId).thenComparing(ImagePlanBindingContract::imageRole))
+                .toList();
+        List<ImagePlanBindingContract> actualSorted = actualBindings.stream()
+                .sorted(Comparator.comparing(ImagePlanBindingContract::sectionId).thenComparing(ImagePlanBindingContract::imageRole))
+                .toList();
+
+        if (!expectedSorted.equals(actualSorted)) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Divergência de imagens: landing-page-html deve reproduzir o binding explícito do landing-page-image-planning por sectionId/imageRole");
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<ImagePlanBindingContract> extractExpectedImagePlanBindings(Map<String, Object> imagePlanPayload) {
+        if (!(imagePlanPayload.get("images") instanceof List<?> rawImages)) {
+            return List.of();
+        }
+        List<ImagePlanBindingContract> bindings = new ArrayList<>();
+        for (Object rawImage : rawImages) {
+            if (!(rawImage instanceof Map<?, ?> rawImageMap)) {
+                continue;
+            }
+            Map<String, Object> image = (Map<String, Object>) rawImageMap;
+            String sectionId = normalizeHtmlAttr(asTrimmedString(image.get("sectionId")));
+            String imageRole = normalizeHtmlAttr(asTrimmedString(image.get("imageRole")));
+            String conversionRole = normalizeHtmlAttr(asTrimmedString(image.get("conversionRole")));
+            String attentionPriority = normalizeHtmlAttr(asTrimmedString(image.get("attentionPriority")));
+            String visualWeight = normalizeHtmlAttr(asTrimmedString(image.get("visualWeight")));
+            String distanceToCta = normalizeHtmlAttr(asTrimmedString(image.get("distanceToCTA")));
+            if (!(image.get("supportsFormConversion") instanceof Boolean supportsFormConversion)) {
+                continue;
+            }
+            if (!StringUtils.hasText(sectionId) || !StringUtils.hasText(imageRole) || !StringUtils.hasText(conversionRole)
+                    || !StringUtils.hasText(attentionPriority) || !StringUtils.hasText(visualWeight) || !StringUtils.hasText(distanceToCta)) {
+                continue;
+            }
+            bindings.add(new ImagePlanBindingContract(sectionId, imageRole, conversionRole, attentionPriority, visualWeight, distanceToCta, supportsFormConversion));
+        }
+        return bindings;
+    }
+
+    private List<ImagePlanBindingContract> extractImagePlanBindingsFromHtmlDocument(String htmlDocument) {
+        List<ImagePlanBindingContract> bindings = new ArrayList<>();
+        Matcher tagMatcher = IMG_TAG_PATTERN.matcher(htmlDocument);
+        while (tagMatcher.find()) {
+            String tag = tagMatcher.group();
+            Map<String, String> attrs = parseHtmlAttributes(tag);
+            String sectionId = normalizeHtmlAttr(attrs.get("data-image-section-id"));
+            String imageRole = normalizeHtmlAttr(attrs.get("data-image-role"));
+            String conversionRole = normalizeHtmlAttr(attrs.get("data-conversion-role"));
+            String attentionPriority = normalizeHtmlAttr(attrs.get("data-attention-priority"));
+            String visualWeight = normalizeHtmlAttr(attrs.get("data-visual-weight"));
+            String distanceToCta = normalizeHtmlAttr(attrs.get("data-distance-to-cta"));
+            String supportsFormConversionRaw = normalizeHtmlAttr(attrs.get("data-supports-form-conversion"));
+            if (!StringUtils.hasText(sectionId) || !StringUtils.hasText(imageRole) || !StringUtils.hasText(conversionRole)
+                    || !StringUtils.hasText(attentionPriority) || !StringUtils.hasText(visualWeight)
+                    || !StringUtils.hasText(distanceToCta) || !StringUtils.hasText(supportsFormConversionRaw)) {
+                continue;
+            }
+            boolean supportsFormConversion = "true".equalsIgnoreCase(supportsFormConversionRaw);
+            bindings.add(new ImagePlanBindingContract(sectionId, imageRole, conversionRole, attentionPriority, visualWeight, distanceToCta, supportsFormConversion));
+        }
+        return bindings;
+    }
+
     private Map<String, String> parseHtmlAttributes(String tag) {
         Map<String, String> attrs = new LinkedHashMap<>();
         Matcher matcher = ATTRIBUTE_PATTERN.matcher(tag);
@@ -1735,6 +1882,15 @@ public class ExperimentPipelineGenerationService {
     }
 
     private record SectionSurfaceContract(String sectionId, String surfaceToken, String style, String contrastMode) {
+    }
+
+    private record ImagePlanBindingContract(String sectionId,
+                                            String imageRole,
+                                            String conversionRole,
+                                            String attentionPriority,
+                                            String visualWeight,
+                                            String distanceToCta,
+                                            boolean supportsFormConversion) {
     }
 
     private Map<String, Object> consistencyCheckSchema() {

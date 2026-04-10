@@ -16,6 +16,18 @@ As alterações serão adicionadas conforme forem implementadas, incluindo:
 
 ## Histórico
 
+### 2026-04-10 — Amarração visual e de conversão entre `landing-page-image-planning` e `landing-page-html`
+
+- **Item alterado:** `landing-page-image-planning` no pipeline de experimento.
+  - **O que mudou:** o contrato de `images[]` foi fortalecido para exigir, por imagem, `imageRole`, `conversionRole`, `emotionalJob`, `sectionVisualGoal`, `layoutBinding` (incluindo `safeCropZones`), `attentionPriority`, `visualWeight`, `distanceToCTA`, `supportsFormConversion` e `formRelationNotes`.
+  - **Impacto esperado:** planejamento visual menos genérico, maior alinhamento da imagem com layout/copy da seção e direcionamento explícito para conversão em lead.
+  - **Arquivos relacionados:** `frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx`, `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`, `ai-worker/src/main/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClient.java`, `frontend/src/pages/experiment/landingImagePlanningParser.ts`.
+
+- **Item alterado:** binding determinístico de imagem no `landing-page-html`.
+  - **O que mudou:** o HTML passou a exigir atributos de amarração por `<img>` (`data-image-section-id`, `data-image-role`, `data-conversion-role`, `data-attention-priority`, `data-visual-weight`, `data-distance-to-cta`, `data-supports-form-conversion`) e o backend adicionou validação determinística comparando esses atributos com o `landing-page-image-planning`.
+  - **Impacto esperado:** redução de drift entre o plano visual e o HTML final, com vínculo mais rígido por `sectionId` e função de conversão da imagem.
+  - **Arquivos relacionados:** `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`, `frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx`, `ai-worker/src/main/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClient.java`.
+
 
 ### 2026-04-10 — Contrato explícito de superfícies entre `landing-page-wireframe` e `landing-page-html`
 

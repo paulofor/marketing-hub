@@ -189,12 +189,13 @@ public class ExperimentPipelineOpenAiClient {
             6. Consumir explicitamente os artefatos anteriores:
                - copy da landing para narrativa e message match;
                - wireframe para ordem/hierarquia e mediaSlot;
-               - planejamento de imagens para placement e altText;
+               - planejamento de imagens para imageRole, conversionRole, layoutBinding, placement e altText;
                - wireframe.formSpec para contrato de campos e obrigatoriedade do formulário.
             7. Cada seção renderizada deve incluir data-section-id e aplicar exatamente wireframe.sectionOrder[i].surfaceSpec usando data-surface-token, data-surface-style e data-surface-contrast.
             8. Não inventar estrutura visual fora do layout/plano de imagens sem justificar nos consistencyChecks.
             9. Não usar bibliotecas externas.
             10. Toda tag <img> deve usar src absoluto válido (https://... ou data:image/...) e reutilizar altText do planejamento de imagens.
+            11. Cada <img> deve declarar data-image-section-id, data-image-role, data-conversion-role, data-attention-priority, data-visual-weight, data-distance-to-cta e data-supports-form-conversion conforme o plano de imagens.
 
             Formato obrigatório (JSON):
             - htmlDocument
@@ -213,15 +214,17 @@ public class ExperimentPipelineOpenAiClient {
 
             Regras:
             1. Entregar images[] com no mínimo 4 itens ligados a sectionId/sectionName reais do wireframe.
-            2. Cada item deve incluir objective, placement, priority, hierarchyLevel, imagePrompt e messageMatchNotes.
+            2. Cada item deve incluir objective, placement, priority, hierarchyLevel, imagePrompt, messageMatchNotes, imageRole, conversionRole, emotionalJob e sectionVisualGoal.
             3. imagePrompt deve ser específico para o contexto da seção (não genérico).
             4. Definir dimensions.desktop e dimensions.mobile para orientar implementação responsiva.
             5. Incluir safeMargins e textOverlayGuidance quando houver texto sobre imagem.
             6. Sempre incluir altText descritivo para cada imagem planejada.
-            7. Incluir complianceNotes e negativePrompt para evitar ruído visual e promessas indevidas.
-            8. ctaIntegrationNotes deve explicar onde o CTA aparece junto das imagens sem competir com o conteúdo.
-            9. sequencingNotes deve explicar a ordem narrativa das imagens ao longo da página.
-            10. consistencyChecks precisa incluir IMAGE_MESSAGE_MATCH, VISUAL_HIERARCHY e CTA_CONTINUITY.
+            7. Incluir layoutBinding com preferredDesktopPlacement, preferredMobilePlacement, desktopAspectRatio, mobileAspectRatio, allowCrop e safeCropZones(top/right/bottom/left).
+            8. Incluir attentionPriority, visualWeight, distanceToCTA, supportsFormConversion e formRelationNotes para ligar a imagem ao objetivo de lead.
+            9. Incluir complianceNotes e negativePrompt para evitar ruído visual e promessas indevidas.
+            10. ctaIntegrationNotes deve explicar onde o CTA aparece junto das imagens sem competir com o conteúdo.
+            11. sequencingNotes deve explicar a ordem narrativa das imagens ao longo da página.
+            12. consistencyChecks precisa incluir IMAGE_MESSAGE_MATCH, VISUAL_HIERARCHY e CTA_CONTINUITY.
 
             Formato obrigatório (JSON):
             - pageGoal

@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { API_BASE_URL, fetchLeadPortalFlow, registerFlowRenderComplete } from "../api";
+import {
+  API_BASE_URL,
+  fetchLeadPortalFlow,
+  registerFlowRenderComplete,
+  submitFlowSubmission,
+} from "../api";
 import FlowForm from "../components/FlowForm";
 import { resolveAssetUrl } from "../utils/resolveAssetUrl";
 import { normalizeCustomTemplateHtml } from "../utils/customTemplateHtml";
@@ -106,7 +111,13 @@ export default function FlowPage() {
   if (hasCustomTemplate && customTemplateHtml) {
     const templateVariables = customTemplateVariables ?? new Map<string, string>();
     return (
-      <CustomFlowTemplate html={customTemplateHtml} variables={templateVariables} />
+      <CustomFlowTemplate
+        html={customTemplateHtml}
+        variables={templateVariables}
+        flowSlug={flow.slug}
+        campaignCode={campaignCode}
+        onSubmitted={() => setHasSubmitted(true)}
+      />
     );
   }
 
@@ -224,11 +235,20 @@ export default function FlowPage() {
 interface CustomFlowTemplateProps {
   html: string;
   variables: Map<string, string>;
+  flowSlug: string;
+  campaignCode?: string | null;
+  onSubmitted?: () => void;
 }
 
 const TOKEN_REGEX = /\{\{\s*([a-zA-Z0-9_-]+)\s*\}\}/g;
 
-function CustomFlowTemplate({ html, variables }: CustomFlowTemplateProps) {
+function CustomFlowTemplate({
+  html,
+  variables,
+  flowSlug,
+  campaignCode,
+  onSubmitted,
+}: CustomFlowTemplateProps) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const bridgeCleanupRef = useRef<(() => void) | null>(null);
@@ -284,7 +304,11 @@ function CustomFlowTemplate({ html, variables }: CustomFlowTemplateProps) {
       if (!doc) {
         return;
       }
-      const newBridgeCleanup = attachCustomTemplateBridge(iframe);
+      const newBridgeCleanup = attachCustomTemplateBridge(iframe, {
+        flowSlug,
+        campaignCode,
+        onSubmitted,
+      });
       if (newBridgeCleanup) {
         bridgeCleanupRef.current = newBridgeCleanup;
       }
@@ -309,7 +333,7 @@ function CustomFlowTemplate({ html, variables }: CustomFlowTemplateProps) {
       cleanupObserver();
       cleanupBridge();
     };
-  }, [processedHtml]);
+  }, [processedHtml, flowSlug, campaignCode, onSubmitted]);
 
   if (!processedHtml) {
     return (
@@ -333,7 +357,16 @@ function CustomFlowTemplate({ html, variables }: CustomFlowTemplateProps) {
 }
 
 
-function attachCustomTemplateBridge(iframe: HTMLIFrameElement) {
+interface CustomTemplateBridgeOptions {
+  flowSlug: string;
+  campaignCode?: string | null;
+  onSubmitted?: () => void;
+}
+
+function attachCustomTemplateBridge(
+  iframe: HTMLIFrameElement,
+  options: CustomTemplateBridgeOptions,
+) {
   const doc = iframe.contentDocument;
   const win = iframe.contentWindow;
   if (!doc || !win) {
@@ -366,6 +399,48 @@ function attachCustomTemplateBridge(iframe: HTMLIFrameElement) {
 
   doc.addEventListener("click", handleAnchorClick, true);
 
+  const handleFormSubmit = async (event: Event) => {
+    const target = event.target as HTMLFormElement | null;
+    if (!target || target.tagName.toLowerCase() !== "form") {
+      return;
+    }
+    event.preventDefault();
+    if (target.dataset.leadPortalSubmitting === "true") {
+      return;
+    }
+
+    target.dataset.leadPortalSubmitting = "true";
+    toggleTemplateSubmitButtons(target, true);
+
+    try {
+      const parsed = parseTemplateSubmissionPayload(target, options.campaignCode);
+      await submitFlowSubmission(options.flowSlug, parsed.payload, parsed.image);
+      target.dataset.leadPortalSubmitted = "true";
+      target.dispatchEvent(
+        new CustomEvent("leadportal:submission-success", { bubbles: true }),
+      );
+      options.onSubmitted?.();
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível enviar suas respostas.";
+      target.dataset.leadPortalSubmitError = message;
+      target.dispatchEvent(
+        new CustomEvent("leadportal:submission-error", {
+          bubbles: true,
+          detail: { message },
+        }),
+      );
+      console.error("Falha ao enviar formulário customizado", error);
+    } finally {
+      target.dataset.leadPortalSubmitting = "false";
+      toggleTemplateSubmitButtons(target, false);
+    }
+  };
+
+  doc.addEventListener("submit", handleFormSubmit, true);
+
   const originalScrollTo = win.scrollTo.bind(win);
   win.scrollTo = (optionsOrX?: number | ScrollToOptions, maybeY?: number) => {
     const { top, behavior } = normalizeScrollArguments(optionsOrX, maybeY);
@@ -383,11 +458,93 @@ function attachCustomTemplateBridge(iframe: HTMLIFrameElement) {
 
   return () => {
     doc.removeEventListener("click", handleAnchorClick, true);
+    doc.removeEventListener("submit", handleFormSubmit, true);
     win.scrollTo = originalScrollTo;
     if (elementProto && originalScrollIntoView) {
       elementProto.scrollIntoView = originalScrollIntoView;
     }
   };
+}
+
+function toggleTemplateSubmitButtons(form: HTMLFormElement, isSubmitting: boolean) {
+  const submitButtons = form.querySelectorAll<HTMLButtonElement | HTMLInputElement>(
+    'button[type="submit"], input[type="submit"]',
+  );
+  submitButtons.forEach((button) => {
+    button.disabled = isSubmitting;
+    button.setAttribute("aria-busy", isSubmitting ? "true" : "false");
+  });
+}
+
+function parseTemplateSubmissionPayload(
+  form: HTMLFormElement,
+  campaignCode?: string | null,
+) {
+  const formData = new FormData(form);
+  const answers: Record<string, string | string[]> = {};
+  let image: File | null = null;
+  let imageKey: string | undefined;
+  let name = "";
+  let email = "";
+
+  formData.forEach((rawValue, rawKey) => {
+    const key = normalizeTemplateFieldKey(rawKey);
+    if (!key) {
+      return;
+    }
+
+    if (rawValue instanceof File) {
+      if (rawValue.size > 0 && !image) {
+        image = rawValue;
+        imageKey = key;
+      }
+      return;
+    }
+
+    const value = String(rawValue ?? "").trim();
+    if (!value) {
+      return;
+    }
+
+    if (!name && isNameField(key)) {
+      name = value;
+    }
+    if (!email && isEmailField(key)) {
+      email = value;
+    }
+
+    const previousValue = answers[key];
+    if (previousValue === undefined) {
+      answers[key] = value;
+    } else if (Array.isArray(previousValue)) {
+      answers[key] = [...previousValue, value];
+    } else {
+      answers[key] = [previousValue, value];
+    }
+  });
+
+  return {
+    payload: {
+      name,
+      email,
+      answers,
+      imageKey,
+      campaignCode: campaignCode ?? undefined,
+    },
+    image,
+  };
+}
+
+function normalizeTemplateFieldKey(rawKey: string) {
+  return rawKey?.trim().toLowerCase() ?? "";
+}
+
+function isNameField(key: string) {
+  return key.includes("nome") || key.includes("name");
+}
+
+function isEmailField(key: string) {
+  return key.includes("email") || key === "e-mail";
 }
 
 function normalizeScrollArguments(optionsOrX?: number | ScrollToOptions, maybeY?: number) {

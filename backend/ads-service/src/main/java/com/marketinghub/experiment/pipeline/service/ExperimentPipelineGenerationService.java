@@ -468,8 +468,8 @@ public class ExperimentPipelineGenerationService {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", model);
         body.put("input", List.of(
-                Map.of("role", "system", "content", buildSystemPrompt(section)),
-                Map.of("role", "user", "content", userPrompt)
+                inputMessage("system", buildSystemPrompt(section)),
+                inputMessage("user", userPrompt)
         ));
         body.put("text", Map.of(
                 "format", Map.of(
@@ -480,6 +480,20 @@ public class ExperimentPipelineGenerationService {
                 )
         ));
         return body;
+    }
+
+    private Map<String, Object> inputMessage(String role, String text) {
+        return Map.of(
+                "role", role,
+                "content", List.of(inputTextContent(text))
+        );
+    }
+
+    private Map<String, Object> inputTextContent(String text) {
+        return Map.of(
+                "type", "input_text",
+                "text", text
+        );
     }
 
     private String buildSystemPrompt(ExperimentPipelineSection section) {

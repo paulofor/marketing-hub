@@ -57,7 +57,10 @@ class ExperimentPipelineOpenAiClientTest {
         Map<String, Object> payload = payloadRef.get();
         @SuppressWarnings("unchecked")
         var input = (java.util.List<Map<String, Object>>) payload.get("input");
-        String userPrompt = String.valueOf(input.get(1).get("content"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> contentPart = (Map<String, Object>) ((java.util.List<?>) input.get(1).get("content")).get(0);
+        assertThat(contentPart.get("type")).isEqualTo("input_text");
+        String userPrompt = firstInputText((Map<String, Object>) input.get(1));
         assertThat(userPrompt).startsWith("Você cria ativos de campanha para o Marketing Hub.");
         assertThat(userPrompt).contains("Prompt original de angulo");
         assertThat(userPrompt).contains("Crie a base estratégica de uma campanha Meta Ads + landing page para este produto.");
@@ -98,7 +101,7 @@ class ExperimentPipelineOpenAiClientTest {
         Map<String, Object> payload = payloadRef.get();
         @SuppressWarnings("unchecked")
         var input = (java.util.List<Map<String, Object>>) payload.get("input");
-        String userPrompt = String.valueOf(input.get(0).get("content"));
+        String userPrompt = firstInputText((Map<String, Object>) input.get(0));
         assertThat(userPrompt).startsWith("Você cria ativos de campanha para o Marketing Hub.");
         assertThat(userPrompt).contains("Prompt de anuncio");
         assertThat(userPrompt).doesNotContain("proofSummary,");
@@ -134,7 +137,7 @@ class ExperimentPipelineOpenAiClientTest {
         Map<String, Object> payload = payloadRef.get();
         @SuppressWarnings("unchecked")
         var input = (java.util.List<Map<String, Object>>) payload.get("input");
-        String userPrompt = String.valueOf(input.get(0).get("content"));
+        String userPrompt = firstInputText((Map<String, Object>) input.get(0));
         assertThat(userPrompt).startsWith("Você cria ativos de campanha para o Marketing Hub.");
         assertThat(userPrompt).contains("Prompt da landing");
         assertThat(userPrompt).contains("Continuar exatamente a promessa do anúncio clicado");
@@ -176,7 +179,7 @@ class ExperimentPipelineOpenAiClientTest {
         Map<String, Object> payload = payloadRef.get();
         @SuppressWarnings("unchecked")
         var input = (java.util.List<Map<String, Object>>) payload.get("input");
-        String userPrompt = String.valueOf(input.get(0).get("content"));
+        String userPrompt = firstInputText((Map<String, Object>) input.get(0));
         assertThat(userPrompt).startsWith("Você cria ativos de campanha para o Marketing Hub.");
         assertThat(userPrompt).contains("Prompt do wireframe");
         assertThat(userPrompt).contains("variantLayoutId");
@@ -610,6 +613,20 @@ class ExperimentPipelineOpenAiClientTest {
 
         Map<String, Object> payload = payloadRef.get();
         assertThat(payload.get("model")).isEqualTo("gpt-5.2");
+    }
+
+    @SuppressWarnings("unchecked")
+    private String firstInputText(Map<String, Object> message) {
+        Object contentNode = message.get("content");
+        if (contentNode instanceof java.util.List<?> list && !list.isEmpty()) {
+            Object first = list.get(0);
+            if (first instanceof Map<?, ?> contentMap) {
+                Object text = ((Map<String, Object>) contentMap).get("text");
+                return text != null ? text.toString() : null;
+            }
+            return first != null ? first.toString() : null;
+        }
+        return contentNode != null ? contentNode.toString() : null;
     }
 
     private ExchangeFunction capturePayloadExchange(AtomicReference<Map<String, Object>> payloadRef) {

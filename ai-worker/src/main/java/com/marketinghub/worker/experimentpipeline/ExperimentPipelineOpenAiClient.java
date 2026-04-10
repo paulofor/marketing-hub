@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.OpenAiCostEstimator;
 import com.marketinghub.worker.openai.OpenAiResponse;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -492,16 +493,61 @@ public class ExperimentPipelineOpenAiClient {
                 continue;
             }
             Map<String, Object> message = (Map<String, Object>) messageRaw;
-            Object role = message.get("role");
-            if (!(role instanceof String roleValue) || !"user".equalsIgnoreCase(roleValue)) {
-                continue;
+            String roleValue = message.get("role") instanceof String role ? role : null;
+            boolean prependPipelinePrompt = roleValue != null && "user".equalsIgnoreCase(roleValue);
+            List<Object> normalizedContent = normalizeMessageContent(message.get("content"), job, prependPipelinePrompt);
+            if (normalizedContent != null) {
+                message.put("content", normalizedContent);
             }
-            Object contentNode = message.get("content");
-            if (!(contentNode instanceof String content)) {
-                continue;
-            }
-            message.put("content", withPipelinePrompt(content, job));
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Object> normalizeMessageContent(Object contentNode,
+                                                 ExperimentPipelineJobDto job,
+                                                 boolean prependPipelinePrompt) {
+        if (contentNode instanceof List<?> contentList) {
+            List<Object> normalized = new ArrayList<>();
+            for (Object part : contentList) {
+                normalized.add(normalizeContentPart(part, job, prependPipelinePrompt));
+            }
+            return normalized;
+        }
+        if (contentNode == null) {
+            return null;
+        }
+        return List.of(normalizeContentPart(contentNode, job, prependPipelinePrompt));
+    }
+
+    @SuppressWarnings("unchecked")
+    private Object normalizeContentPart(Object part,
+                                        ExperimentPipelineJobDto job,
+                                        boolean prependPipelinePrompt) {
+        if (part instanceof Map<?, ?> mapPart) {
+            Map<String, Object> mutable = new LinkedHashMap<>((Map<String, Object>) mapPart);
+            Object typeNode = mutable.get("type");
+            String type = typeNode instanceof String typeValue && StringUtils.hasText(typeValue)
+                    ? typeValue
+                    : "input_text";
+            mutable.put("type", type);
+            if ("input_text".equals(type)) {
+                Object textNode = mutable.get("text");
+                String textValue = textNode != null ? String.valueOf(textNode) : "";
+                mutable.put("text", withMaybePipelinePrompt(textValue, job, prependPipelinePrompt));
+            }
+            return mutable;
+        }
+        if (part instanceof String textPart) {
+            return Map.of("type", "input_text", "text", withMaybePipelinePrompt(textPart, job, prependPipelinePrompt));
+        }
+        return Map.of("type", "input_text", "text", withMaybePipelinePrompt(String.valueOf(part), job, prependPipelinePrompt));
+    }
+
+    private String withMaybePipelinePrompt(String text, ExperimentPipelineJobDto job, boolean prependPipelinePrompt) {
+        if (!prependPipelinePrompt) {
+            return text;
+        }
+        return withPipelinePrompt(text, job);
     }
 
     private String withPipelinePrompt(String prompt, ExperimentPipelineJobDto job) {

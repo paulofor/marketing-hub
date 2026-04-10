@@ -477,6 +477,57 @@ class ExperimentPipelineOpenAiClientTest {
     }
 
     @Test
+    void injectsStaticFormFieldsForLandingPageHtmlWhenModelReturnsDynamicFormOnly() throws Exception {
+        String openAiText = MAPPER.writeValueAsString(Map.of(
+                "landingPageHtml", Map.of(
+                        "htmlDocument", """
+                                <!doctype html>
+                                <html lang="pt-BR">
+                                <body>
+                                  <form id="lead-capture-primary">
+                                    <div id="form-fields"></div>
+                                  </form>
+                                </body>
+                                </html>
+                                """,
+                        "summary", "ok",
+                        "consistencyChecks", List.of()
+                )));
+
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), openAiText)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                20L,
+                "landing-page-html",
+                "gpt-5.2",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "input": [
+                            {"role": "user", "content": "Prompt da landing html"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        ExperimentPipelineJobCompletionPayload payload = client.generate(job);
+        Map<String, Object> content = MAPPER.readValue(payload.responseContent(), new TypeReference<>() {});
+        @SuppressWarnings("unchecked")
+        Map<String, Object> landingPageHtml = (Map<String, Object>) content.get("landingPageHtml");
+        String htmlDocument = String.valueOf(landingPageHtml.get("htmlDocument")).toLowerCase();
+
+        assertThat(htmlDocument).contains("name=\"nome\"");
+        assertThat(htmlDocument).contains("name=\"email\"");
+        assertThat(htmlDocument).contains("name=\"whatsapp\"");
+    }
+
+    @Test
     void enforcesGpt52ModelForEveryPipelineCall() {
         AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
         ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
@@ -508,6 +559,11 @@ class ExperimentPipelineOpenAiClientTest {
     }
 
     private ExchangeFunction capturePayloadExchange(AtomicReference<Map<String, Object>> payloadRef) {
+        return capturePayloadExchange(payloadRef, "{\"content\":\"ok\"}");
+    }
+
+    private ExchangeFunction capturePayloadExchange(AtomicReference<Map<String, Object>> payloadRef,
+                                                    String outputText) {
         return request ->
                 readBodyAsString(request.body())
                         .flatMap(body -> {
@@ -516,17 +572,23 @@ class ExperimentPipelineOpenAiClientTest {
                             } catch (Exception ex) {
                                 return Mono.error(ex);
                             }
-                            String responseBody = """
-                                    {
-                                      "id": "resp_test",
-                                      "status": "completed",
-                                      "output": [{
-                                        "type": "message",
-                                        "content": [{"type": "output_text", "text": "{\\"content\\":\\"ok\\"}"}]
-                                      }],
-                                      "usage": {"input_tokens": 100, "output_tokens": 20, "total_tokens": 120}
-                                    }
-                                    """;
+                            String responseBody;
+                            try {
+                                responseBody = MAPPER.writeValueAsString(Map.of(
+                                        "id", "resp_test",
+                                        "status", "completed",
+                                        "output", List.of(Map.of(
+                                                "type", "message",
+                                                "content", List.of(Map.of(
+                                                        "type", "output_text",
+                                                        "text", outputText
+                                                ))
+                                        )),
+                                        "usage", Map.of("input_tokens", 100, "output_tokens", 20, "total_tokens", 120)
+                                ));
+                            } catch (Exception ex) {
+                                return Mono.error(ex);
+                            }
                             ClientResponse response = ClientResponse.create(HttpStatus.OK)
                                     .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                                     .body(responseBody)

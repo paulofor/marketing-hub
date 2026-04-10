@@ -291,6 +291,7 @@ public class ExperimentPipelineOpenAiClient {
             }
             log.info("OpenAI content for job {}: {}", job.id(), content);
             Map<String, Object> parsed = objectMapper.readValue(content, new TypeReference<>() {});
+            ensureLandingHtmlHasStaticFormContract(parsed, job.section());
             String sectionContent = objectMapper.writeValueAsString(parsed);
             Integer inputTokens = response.usage() != null ? response.usage().effectiveInputTokens() : null;
             Integer outputTokens = response.usage() != null ? response.usage().effectiveOutputTokens() : null;
@@ -303,6 +304,61 @@ public class ExperimentPipelineOpenAiClient {
                     OpenAiCostEstimator.estimateUsd(effectiveModel, response.usage()));
         } catch (Exception ex) {
             throw new IllegalStateException("Falha ao gerar seção " + job.section() + " do experimento " + job.experimentId(), ex);
+        }
+    }
+
+
+    @SuppressWarnings("unchecked")
+    private void ensureLandingHtmlHasStaticFormContract(Map<String, Object> parsed, String section) {
+        if (!"landing-page-html".equalsIgnoreCase(section) || parsed == null) {
+            return;
+        }
+
+        Map<String, Object> payload = parsed;
+        if (parsed.get("landingPageHtml") instanceof Map<?, ?> landingPageHtml) {
+            payload = (Map<String, Object>) landingPageHtml;
+        }
+
+        Object htmlObject = payload.get("htmlDocument");
+        if (!(htmlObject instanceof String htmlDocument) || htmlDocument.isBlank()) {
+            return;
+        }
+
+        String normalizedHtml = htmlDocument.toLowerCase(Locale.ROOT);
+        if (normalizedHtml.contains("name=\"nome\"")
+                && normalizedHtml.contains("name=\"email\"")
+                && normalizedHtml.contains("name=\"whatsapp\"")) {
+            return;
+        }
+
+        String staticFields = """
+                <div class="field">
+                  <label for="field_nome">Nome</label>
+                  <input type="text" id="field_nome" name="nome" placeholder="Seu nome" required aria-required="true" autocomplete="name" />
+                  <div class="error" id="field_nome_error" style="display:none" role="alert"></div>
+                </div>
+                <div class="field">
+                  <label for="field_email">E-mail</label>
+                  <input type="email" id="field_email" name="email" placeholder="voce@exemplo.com" required aria-required="true" autocomplete="email" />
+                  <div class="error" id="field_email_error" style="display:none" role="alert"></div>
+                </div>
+                <div class="field">
+                  <label for="field_whatsapp">WhatsApp (opcional)</label>
+                  <input type="tel" id="field_whatsapp" name="whatsapp" placeholder="(DDD) 9XXXX-XXXX" aria-required="false" autocomplete="tel" />
+                  <div class="help">Opcional. Se preencher, podemos enviar o acesso também por lá.</div>
+                  <div class="error" id="field_whatsapp_error" style="display:none" role="alert"></div>
+                </div>
+                """.trim();
+
+        String marker = "<div id=\"form-fields\"></div>";
+        if (htmlDocument.contains(marker)) {
+            payload.put("htmlDocument", htmlDocument.replace(marker, "<div id=\"form-fields\">\n" + staticFields + "\n</div>"));
+            return;
+        }
+
+        String fallbackMarker = "</form>";
+        if (htmlDocument.contains(fallbackMarker)) {
+            payload.put("htmlDocument", htmlDocument.replace(fallbackMarker, "<div id=\"form-fields\" style=\"display:none\">\n" + staticFields + "\n</div>\n</form>"));
         }
     }
 

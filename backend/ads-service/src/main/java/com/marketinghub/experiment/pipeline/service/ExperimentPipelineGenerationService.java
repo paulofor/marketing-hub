@@ -1946,22 +1946,24 @@ public class ExperimentPipelineGenerationService {
                 expectedBindings.size(),
                 summarizeImageBindingPairs(expectedBindings),
                 summarizeImageBindingPairs(actualBindings));
-        List<ImagePlanBindingContract> expectedSorted = expectedBindings.stream()
-                .sorted(Comparator.comparing(ImagePlanBindingContract::sectionId).thenComparing(ImagePlanBindingContract::imageBindingKey))
+        List<String> expectedBindingPairs = expectedBindings.stream()
+                .map(binding -> binding.sectionId() + "/" + binding.imageBindingKey())
+                .sorted()
                 .toList();
-        List<ImagePlanBindingContract> actualSorted = actualBindings.stream()
-                .sorted(Comparator.comparing(ImagePlanBindingContract::sectionId).thenComparing(ImagePlanBindingContract::imageBindingKey))
+        List<String> actualBindingPairs = actualBindings.stream()
+                .map(binding -> binding.sectionId() + "/" + binding.imageBindingKey())
+                .sorted()
                 .toList();
 
-        if (!expectedSorted.equals(actualSorted)) {
+        if (!expectedBindingPairs.equals(actualBindingPairs)) {
             log.warn("Validação landing HTML (experimentId={}): divergência de image plan detectada. expected={}, actual={}",
                     experiment.getId(),
-                    expectedSorted,
-                    actualSorted);
+                    expectedBindings,
+                    actualBindings);
             log.warn("Validação landing HTML (experimentId={}): divergência específica de pares expected={} actual={}",
                     experiment.getId(),
-                    summarizeImageBindingPairs(expectedSorted),
-                    summarizeImageBindingPairs(actualSorted));
+                    expectedBindingPairs,
+                    actualBindingPairs);
             throw new ResponseStatusException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Divergência de imagens: landing-page-html deve reproduzir o binding explícito canônico do landing-page-image-planning por sectionId/imageBindingKey");

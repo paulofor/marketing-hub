@@ -304,26 +304,27 @@ class ExperimentPipelineGenerationServiceTest {
     }
 
     @Test
-    void completeJobReproducesCurrent422ScenarioWhenHtmlDriftsFromImagePlanningBinding() {
+    void completeJobAcceptsHtmlWhenCanonicalSectionIdAndBindingKeyMatchEvenIfOtherImageMetadataDiffers() {
         Experiment experiment = buildLandingHtmlValidationExperiment(203L);
+        ExperimentPipelineGenerationJob job = createLandingHtmlJob(experiment);
 
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                () -> service.completeJob(createLandingHtmlJob(experiment).getId(), landingHtmlCompletionRequest("""
-                        <!doctype html><html><body>
-                        <section data-section-id='hero' data-surface-token='surface-base' data-surface-style='band' data-surface-contrast='normal'>
-                          <img src='https://cdn.example.com/hero.jpg' alt='Hero'
-                               data-image-section-id='hero'
-                               data-image-binding-key='hero_pain_anchor'
-                               data-image-role='Hero Pain Anchor'
-                               data-conversion-role='wrong-conversion'
-                               data-attention-priority='high'
-                               data-visual-weight='primary'
-                               data-distance-to-cta='near'
-                               data-supports-form-conversion='true' />
-                          <form id='lead-capture-primary'><input type='text' name='nome' required /><input type='email' name='email' required /><input type='tel' name='whatsapp' /></form>
-                        </section></body></html>
-                        """)));
-        assertTrue(exception.getReason().contains("sectionId/imageBindingKey"));
+        service.completeJob(job.getId(), landingHtmlCompletionRequest("""
+                <!doctype html><html><body>
+                <section data-section-id='hero' data-surface-token='surface-base' data-surface-style='band' data-surface-contrast='normal'>
+                  <img src='https://cdn.example.com/hero.jpg' alt='Hero'
+                       data-image-section-id='hero'
+                       data-image-binding-key='hero_pain_anchor'
+                       data-image-role='Hero Pain Anchor'
+                       data-conversion-role='wrong-conversion'
+                       data-attention-priority='high'
+                       data-visual-weight='primary'
+                       data-distance-to-cta='near'
+                       data-supports-form-conversion='true' />
+                  <form id='lead-capture-primary'><input type='text' name='nome' required /><input type='email' name='email' required /><input type='tel' name='whatsapp' /></form>
+                </section></body></html>
+                """));
+
+        assertNotNull(experiment.getLandingPageHtml());
     }
 
     @Test

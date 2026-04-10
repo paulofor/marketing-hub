@@ -14,7 +14,7 @@ Este documento define o **modelo canônico** dos artefatos do pipeline de experi
 | `campaignAngle` | Ângulo estratégico por variação de comunicação | `visualAngle`, `hook`, `promise`, `objections`, `messageMatch` | LLM |
 | `landingPageCopy` | Texto da landing estruturado para validação e renderização | `pageGoal`, `messageMatchSource`, `messageMatchNotes`, `primaryCTA`, `complianceNotes`, `hero`, `bodySections`, `ctaBlocks`, `faq`, `consistencyChecks` | LLM |
 | `landingPageWireframe` | Estrutura/layout por seção + contrato do formulário | `variantLayoutId`, `sectionOrder`, `mobilePriorityNotes`, `ctaPlacementNotes`, `formPlacementNotes`, `formSpec`, `consistencyChecks` | LLM |
-| `landingImagePlan` | Plano visual e pacote de prompt de imagem por seção | `sectionId`, `imageRole`, `promptPackage`, `altText`, `priority` | LLM |
+| `landingPageImagePlanning` | Planejamento visual da landing com binding canônico por seção/imagem | `pageGoal`, `images[]`, `consistencyChecks[]`, `sectionId`, `imageBindingKey`, `imageRole`, `conversionRole`, `layoutBinding` | LLM |
 | `landingCodeBundle` | Entrega final da página renderizada/publicável | `html`, `css`, `js`, `imageRefs`, `metadata` | Builder |
 
 ## Artefato do item **Texto da Landing** (`LANDING_PAGE_COPY`)
@@ -101,10 +101,95 @@ No pipeline operacional, o item **Layout da Landing** corresponde ao artefato `l
 ### Regras de validação críticas do item
 
 1. O wireframe deve preservar **message match** com a copy de landing e com o CTA oficial do anúncio.
-2. `sectionOrder[].sectionId` deve manter rastreabilidade com os demais artefatos (`landingPageCopy`, `landingImagePlan`, `landingCodeBundle`).
+2. `sectionOrder[].sectionId` deve manter rastreabilidade com os demais artefatos (`landingPageCopy`, `landingPageImagePlanning`, `landingCodeBundle`).
 3. Cada bloco em `sectionOrder[]` deve declarar `mobilePriorityScore`, `dropOffRisk` e `surfaceSpec`.
 4. `formSpec` é a **fonte única da verdade** para os campos do formulário na etapa de `LANDING_PAGE_HTML` (sem inventar/remover/renomear campos).
 5. `variantLayoutId` deve ficar restrito aos valores canônicos (`form-first`, `proof-first`, `story-first`).
+
+## Artefato do item **Planejamento de Imagens da Landing** (`LANDING_PAGE_IMAGE_PLANNING`)
+
+No pipeline operacional, o item **Planejamento de Imagens da Landing** corresponde ao artefato `landingPageImagePlanning`, persistido em `experiment.landing_page_image_planning` e gerado na seção `LANDING_PAGE_IMAGE_PLANNING`.
+
+### Envelope do artefato (saída canônica do pipeline)
+
+- `artifact.artifactType`: `experiment.landing.image-planning`
+- `artifact.artifactVersion`: `v1`
+- `artifact.status`: `DRAFT | VALIDATED | APPROVED`
+- `artifact.parentArtifactIds`: lista de dependências de artefatos anteriores
+- `artifact.content`: payload canônico de planejamento (`landingPageImagePlanning`)
+
+### Campos canônicos obrigatórios
+
+- Raiz de `landingPageImagePlanning`:
+  - `pageGoal`
+  - `images[]` (mínimo 4 itens)
+  - `consistencyChecks[]` (mínimo 3 itens)
+- Campos de apoio de raiz (recomendados no contrato atual):
+  - `visualDirectionSummary`
+  - `sequencingNotes`
+  - `ctaIntegrationNotes`
+- Bloco `images[]`:
+  - Identificação/rastreabilidade:
+    - `sectionId`
+    - `sectionName`
+    - `imageBindingKey` (slug canônico: `^[a-z0-9_\-]{3,64}$`)
+  - Função visual e de conversão:
+    - `imageRole`
+    - `conversionRole`
+    - `emotionalJob`
+    - `sectionVisualGoal`
+    - `objective`
+    - `placement` (`hero`, `benefit`, `mechanism`, `proof`, `offer`, `faq`, `cta`)
+    - `hierarchyLevel` (`primary`, `secondary`, `support`)
+    - `attentionPriority` (`high`, `medium`, `low`)
+    - `visualWeight` (`primary`, `secondary`, `support`)
+    - `distanceToCTA` (`near`, `medium`, `far`)
+    - `supportsFormConversion` (boolean)
+    - `formRelationNotes`
+  - Prompting e direção criativa:
+    - `imagePrompt`
+    - `negativePrompt`
+    - `generationHints[]`
+    - `visualStyle`
+    - `composition`
+    - `focalPoint`
+    - `supportingElements[]`
+    - `mood`
+    - `messageMatchNotes`
+    - `complianceNotes`
+  - Layout e constraints:
+    - `layoutBinding.preferredDesktopPlacement` (`left`, `right`, `center`, `background`)
+    - `layoutBinding.preferredMobilePlacement` (`above-copy`, `below-copy`, `inline`, `background`)
+    - `layoutBinding.desktopAspectRatio`
+    - `layoutBinding.mobileAspectRatio`
+    - `layoutBinding.allowCrop`
+    - `layoutBinding.safeCropZones.top|right|bottom|left` (0..1)
+    - `dimensions.desktop`
+    - `dimensions.mobile`
+    - `safeMargins`
+    - `textOverlayGuidance`
+
+### Chaves de binding usadas nas integrações posteriores
+
+- Chave primária canônica por imagem no plano:
+  - `sectionId + imageBindingKey`
+- Chaves obrigatórias que devem ser refletidas no HTML final (atributos `data-*`):
+  - `data-image-section-id` ← `sectionId`
+  - `data-image-binding-key` ← `imageBindingKey`
+  - `data-image-role` ← `imageRole`
+  - `data-conversion-role` ← `conversionRole`
+  - `data-attention-priority` ← `attentionPriority`
+  - `data-visual-weight` ← `visualWeight`
+  - `data-distance-to-cta` ← `distanceToCTA`
+  - `data-supports-form-conversion` ← `supportsFormConversion`
+
+### Regras de validação críticas do item
+
+1. `images[]` deve conter ao menos 4 itens e cada `sectionId` deve existir no `landingPageWireframe.sectionOrder[]`.
+2. Cada item de `images[]` deve conter todos os campos mandatórios de contrato: `sectionId`, `sectionName`, `imageBindingKey`, `imageRole`, `conversionRole`, `emotionalJob`, `sectionVisualGoal`, `placement`, `hierarchyLevel`, `objective`, `layoutBinding`, `attentionPriority`, `visualWeight`, `distanceToCTA`, `supportsFormConversion`, `formRelationNotes`, `imagePrompt`, `dimensions` e `messageMatchNotes`.
+3. `imageBindingKey` deve ser curto/canônico e único no contexto do plano; quando necessário o pipeline normaliza para slug.
+4. `consistencyChecks[]` deve incluir explicitamente: `IMAGE_MESSAGE_MATCH`, `VISUAL_HIERARCHY` e `CTA_CONTINUITY`.
+5. O par `sectionId/imageBindingKey` é a referência oficial para validação de aderência entre `LANDING_PAGE_IMAGE_PLANNING` e `LANDING_PAGE_HTML`.
 
 ## Dependência lógica sugerida
 
@@ -117,7 +202,7 @@ flowchart LR
   E --> F[campaignAngle]
   F --> G[landingPageCopy]
   G --> H[landingPageWireframe]
-  H --> I[landingImagePlan]
+  H --> I[landingPageImagePlanning]
   I --> J[landingCodeBundle]
 ```
 
@@ -125,7 +210,7 @@ flowchart LR
 
 1. `evidenceItem` deve referenciar a origem em `sourceDocument` por `citation`/`url`.
 2. `campaignAngle` deve manter **message match** com `offerSpec` e `mechanismSpec`.
-3. `landingPageCopy`, `landingPageWireframe` e `landingImagePlan` devem compartilhar o mesmo `sectionId` para cada seção.
+3. `landingPageCopy`, `landingPageWireframe` e `landingPageImagePlanning` devem compartilhar o mesmo `sectionId` para cada seção.
 4. `landingCodeBundle` deve manter rastreabilidade de ativos por `imageRefs` e metadados em `metadata`.
 5. Todo artefato gerado por IA deve preservar metadados de auditoria (por exemplo: `model` e `prompt`) no fluxo de persistência.
 
@@ -368,19 +453,77 @@ flowchart LR
       }
     }
   },
-  "landingImagePlan": [
-    {
-      "sectionId": "hero",
-      "imageRole": "contextual-proof",
-      "promptPackage": {
-        "subject": "profissional analisando dashboard",
-        "style": "editorial clean",
-        "lighting": "natural"
+  "landingPageImagePlanning": {
+    "pageGoal": "Conectar promessa do anúncio ao CTA principal com reforço visual por seção",
+    "visualDirectionSummary": "Estilo realista editorial, foco em clareza e continuidade narrativa",
+    "sequencingNotes": "Hero abre com contexto; prova reforça confiança; CTA fecha sem ruído",
+    "ctaIntegrationNotes": "Imagens direcionam leitura para o formulário sem competir com o botão",
+    "images": [
+      {
+        "sectionId": "hero",
+        "sectionName": "Hero",
+        "imageBindingKey": "hero-context-proof",
+        "imageRole": "contextual-proof",
+        "conversionRole": "attention-anchor",
+        "emotionalJob": "reduzir incerteza inicial",
+        "sectionVisualGoal": "explicar rapidamente cenário e resultado esperado",
+        "placement": "hero",
+        "hierarchyLevel": "primary",
+        "objective": "ancorar promessa acima da dobra",
+        "imagePrompt": "Profissional de marketing analisando painel de métricas em notebook, ambiente moderno, luz natural, composição limpa",
+        "negativePrompt": "texto ilegível, watermark, elementos exagerados",
+        "visualStyle": "editorial clean",
+        "composition": "regra dos terços, sujeito à direita",
+        "focalPoint": "rosto e dashboard",
+        "supportingElements": ["notebook", "gráficos", "caderno"],
+        "mood": "confiança prática",
+        "layoutBinding": {
+          "preferredDesktopPlacement": "right",
+          "preferredMobilePlacement": "above-copy",
+          "desktopAspectRatio": "16:9",
+          "mobileAspectRatio": "4:5",
+          "allowCrop": true,
+          "safeCropZones": {
+            "top": 0.1,
+            "right": 0.1,
+            "bottom": 0.1,
+            "left": 0.1
+          }
+        },
+        "attentionPriority": "high",
+        "visualWeight": "primary",
+        "distanceToCTA": "near",
+        "supportsFormConversion": true,
+        "formRelationNotes": "Direciona olhar para headline e botão principal",
+        "dimensions": {
+          "desktop": "1600x900",
+          "mobile": "1080x1350"
+        },
+        "safeMargins": "10% em todas as bordas",
+        "textOverlayGuidance": "evitar texto no terço inferior esquerdo",
+        "generationHints": ["realismo fotográfico", "tons neutros"],
+        "messageMatchNotes": "Reforça a promessa de melhorar aproveitamento do tráfego",
+        "complianceNotes": "Sem claims absolutos de resultado"
+      }
+    ],
+    "consistencyChecks": [
+      {
+        "check": "IMAGE_MESSAGE_MATCH",
+        "status": "PASS",
+        "details": "A imagem reforça promessa e CTA sem desvio"
       },
-      "altText": "Profissional avaliando indicadores de campanha",
-      "priority": "high"
-    }
-  ],
+      {
+        "check": "VISUAL_HIERARCHY",
+        "status": "PASS",
+        "details": "Hierarquia visual preserva foco no CTA"
+      },
+      {
+        "check": "CTA_CONTINUITY",
+        "status": "PASS",
+        "details": "Leitura visual conduz para o mesmo CTA da copy"
+      }
+    ]
+  },
   "landingCodeBundle": {
     "html": "<html>...</html>",
     "css": "/* ... */",

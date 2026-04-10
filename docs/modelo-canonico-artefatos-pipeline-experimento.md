@@ -191,6 +191,67 @@ No pipeline operacional, o item **Planejamento de Imagens da Landing** correspon
 4. `consistencyChecks[]` deve incluir explicitamente: `IMAGE_MESSAGE_MATCH`, `VISUAL_HIERARCHY` e `CTA_CONTINUITY`.
 5. O par `sectionId/imageBindingKey` é a referência oficial para validação de aderência entre `LANDING_PAGE_IMAGE_PLANNING` e `LANDING_PAGE_HTML`.
 
+## Artefato do item **HTML da Landing** (`LANDING_PAGE_HTML`)
+
+No pipeline operacional, o item **HTML da Landing** corresponde ao artefato `landingPageHtml`, persistido em `experiment.landing_page_html` e gerado na seção `LANDING_PAGE_HTML`.
+
+### Envelope do artefato (saída canônica do pipeline)
+
+- `artifact.artifactType`: `experiment.landing.html`
+- `artifact.artifactVersion`: `v1`
+- `artifact.status`: `DRAFT | VALIDATED | APPROVED`
+- `artifact.parentArtifactIds`: lista de dependências de artefatos anteriores
+- `artifact.content`: payload canônico final (`landingPageHtml`)
+
+### Campos canônicos obrigatórios
+
+- Raiz de `landingPageHtml`:
+  - `htmlDocument` (documento HTML completo com `<style>` e `<script>` internos)
+  - `summary` (resumo curto das decisões de implementação)
+  - `consistencyChecks[]` (mínimo 3 itens)
+- Bloco `consistencyChecks[]`:
+  - `check`, `status`, `details`
+  - Deve incluir explicitamente: `CTA_MATCH`, `PROMISE_MATCH`, `IMAGE_PLAN_BINDING`, `SURFACE_SPEC_BINDING`, `FORM_SPEC_BINDING` e `FORM_USABILITY`
+
+### Artefatos de entrada obrigatórios consumidos pelo `LANDING_PAGE_HTML`
+
+- `landingPageCopy`:
+  - narrativa da página
+  - `messageMatchSource`, `primaryCTA`, blocos `hero/bodySections/ctaBlocks`
+- `landingPageWireframe`:
+  - ordem e hierarquia de `sectionOrder[]`
+  - `surfaceSpec` por seção
+  - `formSpec` como fonte única da verdade para o formulário
+- `landingPageImagePlanning`:
+  - plano de imagens por `sectionId + imageBindingKey`
+  - metadados de conversão e prioridade para binding em `data-*`
+
+### Chaves e atributos canônicos de binding no HTML
+
+- Em cada `<section>`:
+  - `data-section-id` ← `wireframe.sectionOrder[].sectionId`
+  - `data-surface-token` ← `wireframe.sectionOrder[].surfaceSpec.surfaceToken`
+  - `data-surface-style` ← `wireframe.sectionOrder[].surfaceSpec.style`
+  - `data-surface-contrast` ← `wireframe.sectionOrder[].surfaceSpec.contrastMode`
+- Em cada `<img>` (binding obrigatório com o plano de imagens):
+  - `data-image-section-id` ← `landingPageImagePlanning.images[].sectionId`
+  - `data-image-binding-key` ← `landingPageImagePlanning.images[].imageBindingKey`
+  - `data-image-role` ← `landingPageImagePlanning.images[].imageRole`
+  - `data-conversion-role` ← `landingPageImagePlanning.images[].conversionRole`
+  - `data-attention-priority` ← `landingPageImagePlanning.images[].attentionPriority`
+  - `data-visual-weight` ← `landingPageImagePlanning.images[].visualWeight`
+  - `data-distance-to-cta` ← `landingPageImagePlanning.images[].distanceToCTA`
+  - `data-supports-form-conversion` ← `landingPageImagePlanning.images[].supportsFormConversion`
+
+### Regras de validação críticas do item
+
+1. O `htmlDocument` deve ser completo (com `<style>` e `<script>` internos), sem dependências externas.
+2. O CTA principal no HTML deve repetir exatamente o CTA oficial já definido nos artefatos anteriores.
+3. O formulário deve reproduzir exatamente `wireframe.formSpec` (sem inventar/remover/renomear campos e sem alterar `required`).
+4. Todas as seções renderizadas devem manter `data-section-id` e refletir `surfaceSpec` via `data-surface-token`, `data-surface-style` e `data-surface-contrast`.
+5. Toda `<img>` deve usar `src` absoluto válido (`https://...` ou `data:image/...`) e manter binding canônico com `data-image-section-id + data-image-binding-key`.
+6. `consistencyChecks[]` deve registrar a aderência de CTA, promessa, formulário, surfaces e binding de imagens.
+
 ## Dependência lógica sugerida
 
 ```mermaid

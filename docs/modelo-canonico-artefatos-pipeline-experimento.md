@@ -13,7 +13,7 @@ Este documento define o **modelo canônico** dos artefatos do pipeline de experi
 | `offerSpec` | Definição estruturada da oferta/produto | `promise`, `scope`, `deliverables`, `constraints`, `pricingIdea` | LLM |
 | `campaignAngle` | Ângulo estratégico por variação de comunicação | `visualAngle`, `hook`, `promise`, `objections`, `messageMatch` | LLM |
 | `landingPageCopy` | Texto da landing estruturado para validação e renderização | `pageGoal`, `messageMatchSource`, `messageMatchNotes`, `primaryCTA`, `complianceNotes`, `hero`, `bodySections`, `ctaBlocks`, `faq`, `consistencyChecks` | LLM |
-| `landingPageLayout` | Estrutura/layout por seção | `layoutType`, `order`, `mediaSlot`, `hierarchy`, `ratio` | LLM |
+| `landingPageWireframe` | Estrutura/layout por seção + contrato do formulário | `variantLayoutId`, `sectionOrder`, `mobilePriorityNotes`, `ctaPlacementNotes`, `formPlacementNotes`, `formSpec`, `consistencyChecks` | LLM |
 | `landingImagePlan` | Plano visual e pacote de prompt de imagem por seção | `sectionId`, `imageRole`, `promptPackage`, `altText`, `priority` | LLM |
 | `landingCodeBundle` | Entrega final da página renderizada/publicável | `html`, `css`, `js`, `imageRefs`, `metadata` | Builder |
 
@@ -51,6 +51,61 @@ No pipeline operacional, o item visual **Texto da Landing** corresponde ao artef
 4. `consistencyChecks[]` deve incluir explicitamente: `CTA_MATCH`, `PROMISE_MATCH` e `GOOGLE_LANDING_BEST_PRACTICES`.
 5. `complianceNotes` deve deixar explícito que a entrega é digital/automatizada.
 
+## Artefato do item **Layout da Landing** (`LANDING_PAGE_WIREFRAME`)
+
+No pipeline operacional, o item **Layout da Landing** corresponde ao artefato `landingPageWireframe`, persistido em `experiment.landing_page_wireframe` e gerado na seção `LANDING_PAGE_WIREFRAME`.
+
+### Envelope do artefato (saída canônica do pipeline)
+
+- `artifact.artifactType`: `experiment.landing.layout`
+- `artifact.artifactVersion`: `v1`
+- `artifact.status`: `DRAFT | VALIDATED | APPROVED`
+- `artifact.parentArtifactIds`: lista de dependências de artefatos anteriores
+- `artifact.content`: payload canônico do wireframe (`landingPageWireframe`)
+
+### Campos canônicos obrigatórios
+
+- Raiz de `landingPageWireframe`:
+  - `pageGoal`
+  - `variantLayoutId` (`form-first`, `proof-first`, `story-first`)
+  - `sectionOrder[]` (mínimo 4 itens)
+  - `consistencyChecks[]` (mínimo 2 itens)
+  - `formSpec`
+- Bloco `sectionOrder[]`:
+  - `sectionId`, `sectionName`, `objective`, `contentType`
+  - `copySource`, `uiNotes`, `messageMatchDependency`, `sectionDependsOn`
+  - `mobilePriorityScore` (1..10), `dropOffRisk` (`baixo`, `medio`, `alto`)
+  - `surfaceSpec` (obrigatório)
+  - `ctaSlot` (opcional, mas recomendado para seções com CTA)
+- Bloco `sectionOrder[].surfaceSpec`:
+  - `surfaceToken`
+  - `style` (`band`, `solid`, `gradient-soft`, `image-tint`)
+  - `contrastMode` (`normal`, `high`, `soft`)
+  - `notes`
+- Bloco `sectionOrder[].ctaSlot`:
+  - `hasCta`
+  - `ctaLabel`
+  - `ctaVariant` (`hero`, `mid`, `final`, `sticky`, `inline`)
+  - `matchAdCta`
+  - `notes`
+- Notas de apoio:
+  - `mobilePriorityNotes`
+  - `ctaPlacementNotes`
+  - `formPlacementNotes`
+- Bloco `formSpec`:
+  - `formId`, `title`, `submitLabel`, `submitTarget`
+  - `fields[]` com `id`, `name`, `label`, `type`, `required`, `placeholder`, `autocomplete`, `helpText`
+  - `consent` com `enabled`, `required`, `label`
+  - `successState` com `title`, `message`
+
+### Regras de validação críticas do item
+
+1. O wireframe deve preservar **message match** com a copy de landing e com o CTA oficial do anúncio.
+2. `sectionOrder[].sectionId` deve manter rastreabilidade com os demais artefatos (`landingPageCopy`, `landingImagePlan`, `landingCodeBundle`).
+3. Cada bloco em `sectionOrder[]` deve declarar `mobilePriorityScore`, `dropOffRisk` e `surfaceSpec`.
+4. `formSpec` é a **fonte única da verdade** para os campos do formulário na etapa de `LANDING_PAGE_HTML` (sem inventar/remover/renomear campos).
+5. `variantLayoutId` deve ficar restrito aos valores canônicos (`form-first`, `proof-first`, `story-first`).
+
 ## Dependência lógica sugerida
 
 ```mermaid
@@ -61,7 +116,7 @@ flowchart LR
   D --> E[offerSpec]
   E --> F[campaignAngle]
   F --> G[landingPageCopy]
-  G --> H[landingPageLayout]
+  G --> H[landingPageWireframe]
   H --> I[landingImagePlan]
   I --> J[landingCodeBundle]
 ```
@@ -70,7 +125,7 @@ flowchart LR
 
 1. `evidenceItem` deve referenciar a origem em `sourceDocument` por `citation`/`url`.
 2. `campaignAngle` deve manter **message match** com `offerSpec` e `mechanismSpec`.
-3. `landingPageCopy`, `landingPageLayout` e `landingImagePlan` devem compartilhar o mesmo `sectionId` para cada seção.
+3. `landingPageCopy`, `landingPageWireframe` e `landingImagePlan` devem compartilhar o mesmo `sectionId` para cada seção.
 4. `landingCodeBundle` deve manter rastreabilidade de ativos por `imageRefs` e metadados em `metadata`.
 5. Todo artefato gerado por IA deve preservar metadados de auditoria (por exemplo: `model` e `prompt`) no fluxo de persistência.
 
@@ -240,16 +295,79 @@ flowchart LR
       }
     ]
   },
-  "landingPageLayout": [
-    {
-      "sectionId": "hero",
-      "layoutType": "split",
-      "order": 1,
-      "mediaSlot": "right",
-      "hierarchy": "headline>proof>cta",
-      "ratio": "60/40"
+  "landingPageWireframe": {
+    "pageGoal": "Capturar leads qualificados para diagnóstico",
+    "variantLayoutId": "form-first",
+    "sectionOrder": [
+      {
+        "sectionId": "hero",
+        "sectionName": "Hero + Form",
+        "objective": "Reforçar promessa e capturar lead acima da dobra",
+        "contentType": "hero",
+        "copySource": "landingPageCopy.hero",
+        "uiNotes": "Bloco compacto com alto contraste",
+        "messageMatchDependency": "headline_ad",
+        "sectionDependsOn": "primaryPromise",
+        "mobilePriorityScore": 10,
+        "dropOffRisk": "baixo",
+        "surfaceSpec": {
+          "surfaceToken": "surface-base",
+          "style": "solid",
+          "contrastMode": "high",
+          "notes": "Priorizar leitura do título e CTA"
+        },
+        "ctaSlot": {
+          "hasCta": true,
+          "ctaLabel": "Quero minha landing",
+          "ctaVariant": "hero",
+          "matchAdCta": "Quero minha landing",
+          "notes": "CTA principal acima da dobra"
+        }
+      }
+    ],
+    "mobilePriorityNotes": "Hero e formulário primeiro; FAQ no final.",
+    "ctaPlacementNotes": "CTA em hero, meio e fechamento.",
+    "formPlacementNotes": "Formulário ancorado no hero para menor atrito.",
+    "consistencyChecks": [
+      {
+        "check": "CTA_MATCH",
+        "status": "PASS",
+        "details": "CTA do wireframe igual ao anúncio"
+      },
+      {
+        "check": "MESSAGE_MATCH",
+        "status": "PASS",
+        "details": "Hierarquia e narrativa compatíveis com a copy"
+      }
+    ],
+    "formSpec": {
+      "formId": "lead-capture-primary",
+      "title": "Receber a prévia do Kit (IA)",
+      "submitLabel": "Desbloquear o Kit (receber a prévia gerada por IA)",
+      "submitTarget": "#desbloquear",
+      "fields": [
+        {
+          "id": "nome",
+          "name": "nome",
+          "label": "Nome",
+          "type": "text",
+          "required": true,
+          "placeholder": "Seu nome",
+          "autocomplete": "name",
+          "helpText": "Como devemos te chamar"
+        }
+      ],
+      "consent": {
+        "enabled": true,
+        "required": false,
+        "label": "Aceito receber a prévia no contato informado."
+      },
+      "successState": {
+        "title": "Prévia enviada",
+        "message": "Confira seu e-mail para acessar o material."
+      }
     }
-  ],
+  },
   "landingImagePlan": [
     {
       "sectionId": "hero",

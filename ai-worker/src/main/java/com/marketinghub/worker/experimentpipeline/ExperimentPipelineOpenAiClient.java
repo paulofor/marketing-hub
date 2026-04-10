@@ -152,8 +152,9 @@ public class ExperimentPipelineOpenAiClient {
             15. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para o nicho informado.
             16. Cada bloco deve preencher surfaceSpec com surfaceToken, style, contrastMode e notes para contrato explícito de superfície visual por seção.
             17. Alternar surfaceToken entre surface-base e surface-alt-* para reforçar escaneabilidade e hierarquia visual entre seções consecutivas.
-            18. Garantir equilíbrio visual entre texto e imagem em cada bloco, explicando como mediaSlot e copy dividem atenção sem competir entre si.
-            19. Definir formSpec como contrato único do formulário com:
+            18. Garantir variação intencional de cores de fundo entre seções, explicando a estratégia em backgroundColorStrategy.
+            19. Garantir equilíbrio visual entre texto e imagem em cada bloco, explicando como mediaSlot e copy dividem atenção sem competir entre si e detalhando em textImageBalanceNotes.
+            20. Definir formSpec como contrato único do formulário com:
                 - formId: lead-capture-primary
                 - title: Receber a prévia do Kit (IA)
                 - submitLabel: Desbloquear o Kit (receber a prévia gerada por IA)
@@ -173,6 +174,8 @@ public class ExperimentPipelineOpenAiClient {
             - mobilePriorityNotes
             - ctaPlacementNotes
             - formPlacementNotes
+            - backgroundColorStrategy
+            - textImageBalanceNotes
             - formSpec
             - consistencyChecks[]
             """;

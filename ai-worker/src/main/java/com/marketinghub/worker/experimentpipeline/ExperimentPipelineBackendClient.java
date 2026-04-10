@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +21,8 @@ import reactor.core.publisher.Mono;
 @Component
 public class ExperimentPipelineBackendClient {
     private static final Logger log = LoggerFactory.getLogger(ExperimentPipelineBackendClient.class);
+    private static final Pattern FORM_CONTROL_TAG_PATTERN = Pattern.compile("(?is)<(input|textarea|select)\\b[^>]*>");
+    private static final Pattern ATTRIBUTE_PATTERN = Pattern.compile("(?is)([a-zA-Z_:][-a-zA-Z0-9_:.]*)\\s*=\\s*([\"'])(.*?)\\2");
 
     private final WebClient webClient;
     private final String backendBaseUrl;
@@ -61,7 +65,11 @@ public class ExperimentPipelineBackendClient {
 
     public void complete(UUID jobId, ExperimentPipelineJobCompletionPayload payload) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/experiment-pipeline/jobs/", jobId.toString(), "/complete");
-        log.info("POST /complete do pipeline (jobId={}, keys={})", jobId, summarizeCompletionPayloadKeys(payload));
+        log.info("POST /complete do pipeline (jobId={}, url={}, keys={}, landingHtmlDiag={})",
+                jobId,
+                url,
+                summarizeCompletionPayloadKeys(payload),
+                summarizeLandingHtmlDiagnostic(payload));
         try {
             webClient.post()
                     .uri(url)
@@ -72,7 +80,12 @@ public class ExperimentPipelineBackendClient {
         } catch (WebClientResponseException ex) {
             String summarizedBody = summarizeErrorBody(ex.getResponseBodyAsString());
             if (ex.getStatusCode().value() == 422) {
-                log.error("Erro 422 ao completar job de pipeline {}: {}", jobId, summarizedBody);
+                log.error("Erro 422 ao completar job de pipeline {} (url={}, keys={}, landingHtmlDiag={}): {}",
+                        jobId,
+                        url,
+                        summarizeCompletionPayloadKeys(payload),
+                        summarizeLandingHtmlDiagnostic(payload),
+                        summarizedBody);
             } else {
                 log.error("Erro HTTP {} ao completar job de pipeline {}: {}",
                         ex.getStatusCode().value(), jobId, summarizedBody);
@@ -133,5 +146,56 @@ public class ExperimentPipelineBackendClient {
         }
         String compact = rawBody.replaceAll("\\s+", " ").trim();
         return compact.length() > 300 ? compact.substring(0, 300) + "..." : compact;
+    }
+
+    @SuppressWarnings("unchecked")
+    private String summarizeLandingHtmlDiagnostic(ExperimentPipelineJobCompletionPayload payload) {
+        if (payload == null || payload.responseContent() == null) {
+            return "[sem-payload]";
+        }
+        try {
+            Map<String, Object> parsed = objectMapper.readValue(payload.responseContent(), Map.class);
+            Object node = parsed.containsKey("landingPageHtml") ? parsed.get("landingPageHtml") : parsed;
+            if (!(node instanceof Map<?, ?> rawMap)) {
+                return "[landingPageHtml-ausente]";
+            }
+            Map<String, Object> landingPayload = (Map<String, Object>) rawMap;
+            Object htmlNode = landingPayload.get("htmlDocument");
+            if (!(htmlNode instanceof String htmlDocument) || htmlDocument.isBlank()) {
+                return "[htmlDocument-ausente]";
+            }
+            return "htmlLength=" + htmlDocument.length() + ", formFields=" + extractFieldSnapshot(htmlDocument);
+        } catch (Exception ignored) {
+            return "[landing-html-nao-processavel]";
+        }
+    }
+
+    private String extractFieldSnapshot(String htmlDocument) {
+        Matcher matcher = FORM_CONTROL_TAG_PATTERN.matcher(htmlDocument);
+        List<String> fields = new java.util.ArrayList<>();
+        while (matcher.find()) {
+            String tag = matcher.group();
+            Map<String, String> attrs = parseAttributes(tag);
+            String name = attrs.get("name");
+            if (name == null || name.isBlank()) {
+                continue;
+            }
+            String type = attrs.get("type");
+            if (type == null || type.isBlank()) {
+                type = "text";
+            }
+            boolean required = attrs.containsKey("required") || tag.toLowerCase().contains(" required");
+            fields.add(name + ":" + type + ":" + required);
+        }
+        return fields.isEmpty() ? "[]" : fields.toString();
+    }
+
+    private Map<String, String> parseAttributes(String tag) {
+        Map<String, String> attrs = new java.util.LinkedHashMap<>();
+        Matcher matcher = ATTRIBUTE_PATTERN.matcher(tag);
+        while (matcher.find()) {
+            attrs.put(matcher.group(1).toLowerCase(), matcher.group(3));
+        }
+        return attrs;
     }
 }

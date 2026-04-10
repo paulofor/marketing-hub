@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @Service
@@ -77,6 +78,10 @@ public class ExperimentPipelineGenerationWorkerService {
         WebClientResponseException httpError = findHttpError(ex);
         if (httpError != null) {
             HttpStatus status = HttpStatus.resolve(httpError.getStatusCode().value());
+            if (status == HttpStatus.UNPROCESSABLE_ENTITY) {
+                return "Rejeitado pelo backend ao completar o job (422). Motivo: "
+                        + summarizeHttpErrorBody(httpError.getResponseBodyAsString());
+            }
             if (status == HttpStatus.BAD_GATEWAY
                     || status == HttpStatus.SERVICE_UNAVAILABLE
                     || status == HttpStatus.GATEWAY_TIMEOUT
@@ -90,6 +95,14 @@ public class ExperimentPipelineGenerationWorkerService {
             return "Falha desconhecida";
         }
         return message.length() > 500 ? message.substring(0, 500) : message;
+    }
+
+    private String summarizeHttpErrorBody(String responseBody) {
+        if (!StringUtils.hasText(responseBody)) {
+            return "backend não retornou detalhes";
+        }
+        String compact = responseBody.replaceAll("\\s+", " ").trim();
+        return compact.length() > 500 ? compact.substring(0, 500) + "..." : compact;
     }
 
     private WebClientResponseException findHttpError(Throwable throwable) {

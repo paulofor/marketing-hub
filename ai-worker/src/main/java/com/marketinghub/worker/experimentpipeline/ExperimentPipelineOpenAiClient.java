@@ -152,6 +152,17 @@ public class ExperimentPipelineOpenAiClient {
             15. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para o nicho informado.
             16. Orientar uiNotes/compositionNotes com variação intencional de cores de fundo entre seções para sinalizar mudança de assunto e facilitar escaneabilidade.
             17. Garantir equilíbrio visual entre texto e imagem em cada bloco, explicando como mediaSlot e copy dividem atenção sem competir entre si.
+            18. Definir formSpec como contrato único do formulário com:
+                - formId: lead-capture-primary
+                - title: Receber a prévia do Kit (IA)
+                - submitLabel: Desbloquear o Kit (receber a prévia gerada por IA)
+                - submitTarget: #desbloquear
+                - fields exatamente nesta ordem:
+                  1) nome (type=text, required=true, placeholder=Seu nome)
+                  2) email (type=email, required=true, placeholder=voce@exemplo.com)
+                  3) whatsapp (type=tel, required=false, placeholder=(DDD) 9XXXX-XXXX)
+                - consent.enabled=true, consent.required=false e consent.label preenchido
+                - successState com title e message.
 
             Formato obrigatório (JSON):
             - pageGoal,
@@ -161,6 +172,7 @@ public class ExperimentPipelineOpenAiClient {
             - mobilePriorityNotes
             - ctaPlacementNotes
             - formPlacementNotes
+            - formSpec
             - backgroundColorStrategy
             - textImageBalanceNotes
             - consistencyChecks[]
@@ -172,13 +184,14 @@ public class ExperimentPipelineOpenAiClient {
             Regras:
             1. Entregar documento HTML completo com CSS e JavaScript embutidos.
             2. O CTA principal deve ser idêntico ao CTA aprovado nas etapas anteriores.
-            3. O formulário deve ser mobile-first e conter nome, whatsapp e objetivo principal.
+            3. O formulário deve ser mobile-first e renderizado exatamente a partir de wireframe.formSpec (sem inventar/remover/renomear/trocar required).
             4. Incluir validação de campos obrigatórios no JavaScript.
             5. Incluir bloco de compliance reforçando entrega digital via IA e sem consultoria.
             6. Consumir explicitamente os artefatos anteriores:
                - copy da landing para narrativa e message match;
                - wireframe para ordem/hierarquia e mediaSlot;
-               - planejamento de imagens para placement e altText.
+               - planejamento de imagens para placement e altText;
+               - wireframe.formSpec para contrato de campos e obrigatoriedade do formulário.
             7. Não inventar estrutura visual fora do layout/plano de imagens sem justificar nos consistencyChecks.
             8. Não usar bibliotecas externas.
             9. Toda tag <img> deve usar src absoluto válido (https://... ou data:image/...) e reutilizar altText do planejamento de imagens.
@@ -186,7 +199,7 @@ public class ExperimentPipelineOpenAiClient {
             Formato obrigatório (JSON):
             - htmlDocument
             - summary
-            - consistencyChecks[] com CTA_MATCH, PROMISE_MATCH, IMAGE_PLAN_BINDING e FORM_USABILITY
+            - consistencyChecks[] com CTA_MATCH, PROMISE_MATCH, IMAGE_PLAN_BINDING, FORM_SPEC_BINDING e FORM_USABILITY
             """;
     private static final String LANDING_IMAGE_PLANNING_PROMPT_SUFFIX = """
             Objetivo:

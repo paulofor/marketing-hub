@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -205,6 +207,29 @@ public class ExperimentPipelineOpenAiClient {
             - summary
             - consistencyChecks[] com CTA_MATCH, PROMISE_MATCH, IMAGE_PLAN_BINDING, SURFACE_SPEC_BINDING, FORM_SPEC_BINDING e FORM_USABILITY
             """;
+    private static final Pattern FORM_FIELD_BLOCK_PATTERN = Pattern.compile(
+            "(?is)<div\\b[^>]*class\\s*=\\s*\"[^\"]*field[^\"]*\"[^>]*>.*?</div>");
+    private static final String STATIC_FORM_FIELDS_HTML = """
+            <div class="field">
+              <label for="field_nome">Nome</label>
+              <input type="text" id="field_nome" name="nome" placeholder="Seu nome" required aria-required="true" autocomplete="name" />
+              <div class="help">Só para personalizar o envio.</div>
+              <div class="error" id="field_nome_error" style="display:none" role="alert"></div>
+            </div>
+            <div class="field">
+              <label for="field_email">E-mail</label>
+              <input type="email" id="field_email" name="email" placeholder="voce@exemplo.com" required aria-required="true" autocomplete="email" />
+              <div class="help">Vamos enviar a prévia diretamente para o seu e-mail.</div>
+              <div class="error" id="field_email_error" style="display:none" role="alert"></div>
+            </div>
+            <div class="field">
+              <label for="field_whatsapp">WhatsApp (opcional)</label>
+              <input type="tel" id="field_whatsapp" name="whatsapp" placeholder="(DDD) 9XXXX-XXXX" aria-required="false" autocomplete="tel" />
+              <div class="help">Opcional. Se preencher, podemos enviar a prévia também por lá.</div>
+              <div class="error" id="field_whatsapp_error" style="display:none" role="alert"></div>
+            </div>
+            """;
+
     private static final String LANDING_IMAGE_PLANNING_PROMPT_SUFFIX = """
             Objetivo:
             Planejar as imagens da landing antes da geração final do HTML, usando o ângulo da campanha, os textos da landing e o layout já aprovado.
@@ -291,7 +316,7 @@ public class ExperimentPipelineOpenAiClient {
             }
             log.info("OpenAI content for job {}: {}", job.id(), content);
             Map<String, Object> parsed = objectMapper.readValue(content, new TypeReference<>() {});
-            ensureLandingHtmlHasStaticFormContract(parsed, job.section());
+            ensureLandingHtmlHasStaticFormContract(parsed, job);
             String sectionContent = objectMapper.writeValueAsString(parsed);
             Integer inputTokens = response.usage() != null ? response.usage().effectiveInputTokens() : null;
             Integer outputTokens = response.usage() != null ? response.usage().effectiveOutputTokens() : null;
@@ -309,8 +334,8 @@ public class ExperimentPipelineOpenAiClient {
 
 
     @SuppressWarnings("unchecked")
-    private void ensureLandingHtmlHasStaticFormContract(Map<String, Object> parsed, String section) {
-        if (!"landing-page-html".equalsIgnoreCase(section) || parsed == null) {
+    private void ensureLandingHtmlHasStaticFormContract(Map<String, Object> parsed, ExperimentPipelineJobDto job) {
+        if (!isLandingHtmlSection(job) || parsed == null) {
             return;
         }
 
@@ -324,43 +349,54 @@ public class ExperimentPipelineOpenAiClient {
             return;
         }
 
-        String normalizedHtml = htmlDocument.toLowerCase(Locale.ROOT);
-        if (normalizedHtml.contains("name=\"nome\"")
-                && normalizedHtml.contains("name=\"email\"")
-                && normalizedHtml.contains("name=\"whatsapp\"")) {
-            return;
-        }
-
-        String staticFields = """
-                <div class="field">
-                  <label for="field_nome">Nome</label>
-                  <input type="text" id="field_nome" name="nome" placeholder="Seu nome" required aria-required="true" autocomplete="name" />
-                  <div class="error" id="field_nome_error" style="display:none" role="alert"></div>
-                </div>
-                <div class="field">
-                  <label for="field_email">E-mail</label>
-                  <input type="email" id="field_email" name="email" placeholder="voce@exemplo.com" required aria-required="true" autocomplete="email" />
-                  <div class="error" id="field_email_error" style="display:none" role="alert"></div>
-                </div>
-                <div class="field">
-                  <label for="field_whatsapp">WhatsApp (opcional)</label>
-                  <input type="tel" id="field_whatsapp" name="whatsapp" placeholder="(DDD) 9XXXX-XXXX" aria-required="false" autocomplete="tel" />
-                  <div class="help">Opcional. Se preencher, podemos enviar o acesso também por lá.</div>
-                  <div class="error" id="field_whatsapp_error" style="display:none" role="alert"></div>
-                </div>
-                """.trim();
-
-        String marker = "<div id=\"form-fields\"></div>";
-        if (htmlDocument.contains(marker)) {
-            payload.put("htmlDocument", htmlDocument.replace(marker, "<div id=\"form-fields\">\n" + staticFields + "\n</div>"));
-            return;
-        }
-
-        String fallbackMarker = "</form>";
-        if (htmlDocument.contains(fallbackMarker)) {
-            payload.put("htmlDocument", htmlDocument.replace(fallbackMarker, "<div id=\"form-fields\" style=\"display:none\">\n" + staticFields + "\n</div>\n</form>"));
+        String updatedDocument = enforceStaticFormContract(htmlDocument);
+        if (!htmlDocument.equals(updatedDocument)) {
+            payload.put("htmlDocument", updatedDocument);
         }
     }
+
+    private String enforceStaticFormContract(String htmlDocument) {
+        String lowerDocument = htmlDocument.toLowerCase(Locale.ROOT);
+        int formStart = lowerDocument.indexOf("<form");
+        if (formStart < 0) {
+            return htmlDocument;
+        }
+        int formOpenEnd = htmlDocument.indexOf('>', formStart);
+        if (formOpenEnd < 0) {
+            return htmlDocument;
+        }
+        int formClose = lowerDocument.indexOf("</form>", formOpenEnd);
+        if (formClose < 0) {
+            return htmlDocument;
+        }
+
+        String beforeForm = htmlDocument.substring(0, formStart);
+        String formOpenTag = htmlDocument.substring(formStart, formOpenEnd + 1);
+        String formInner = htmlDocument.substring(formOpenEnd + 1, formClose);
+        String afterForm = htmlDocument.substring(formClose);
+
+        String sanitizedInner = stripDynamicFormFields(formInner);
+        if (StringUtils.hasText(sanitizedInner)) {
+            sanitizedInner = sanitizedInner.stripLeading();
+        }
+
+        StringBuilder rebuiltForm = new StringBuilder(formOpenTag.length() + STATIC_FORM_FIELDS_HTML.length() + sanitizedInner.length() + 32);
+        rebuiltForm.append(formOpenTag).append('\n').append(STATIC_FORM_FIELDS_HTML);
+        if (StringUtils.hasText(sanitizedInner)) {
+            rebuiltForm.append('\n').append(sanitizedInner);
+        }
+
+        return beforeForm + rebuiltForm + afterForm;
+    }
+
+    private String stripDynamicFormFields(String formInner) {
+        if (!StringUtils.hasText(formInner)) {
+            return "";
+        }
+        Matcher matcher = FORM_FIELD_BLOCK_PATTERN.matcher(formInner);
+        return matcher.replaceAll("");
+    }
+
 
     private String enforceRequiredModel(Map<String, Object> payload, ExperimentPipelineJobDto job) {
         if (payload == null) {

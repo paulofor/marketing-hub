@@ -150,9 +150,10 @@ public class ExperimentPipelineOpenAiClient {
             13. Não transformar o layout em HTML final; esta etapa define apenas ordem, hierarquia e slots de mídia.
             14. Não usar linguagem de consultoria e não criar estrutura genérica para qualquer mercado.
             15. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para o nicho informado.
-            16. Orientar uiNotes/compositionNotes com variação intencional de cores de fundo entre seções para sinalizar mudança de assunto e facilitar escaneabilidade.
-            17. Garantir equilíbrio visual entre texto e imagem em cada bloco, explicando como mediaSlot e copy dividem atenção sem competir entre si.
-            18. Definir formSpec como contrato único do formulário com:
+            16. Cada bloco deve preencher surfaceSpec com surfaceToken, style, contrastMode e notes para contrato explícito de superfície visual por seção.
+            17. Alternar surfaceToken entre surface-base e surface-alt-* para reforçar escaneabilidade e hierarquia visual entre seções consecutivas.
+            18. Garantir equilíbrio visual entre texto e imagem em cada bloco, explicando como mediaSlot e copy dividem atenção sem competir entre si.
+            19. Definir formSpec como contrato único do formulário com:
                 - formId: lead-capture-primary
                 - title: Receber a prévia do Kit (IA)
                 - submitLabel: Desbloquear o Kit (receber a prévia gerada por IA)
@@ -173,8 +174,6 @@ public class ExperimentPipelineOpenAiClient {
             - ctaPlacementNotes
             - formPlacementNotes
             - formSpec
-            - backgroundColorStrategy
-            - textImageBalanceNotes
             - consistencyChecks[]
             """;
     private static final String LANDING_HTML_PROMPT_SUFFIX = """
@@ -192,14 +191,15 @@ public class ExperimentPipelineOpenAiClient {
                - wireframe para ordem/hierarquia e mediaSlot;
                - planejamento de imagens para placement e altText;
                - wireframe.formSpec para contrato de campos e obrigatoriedade do formulário.
-            7. Não inventar estrutura visual fora do layout/plano de imagens sem justificar nos consistencyChecks.
-            8. Não usar bibliotecas externas.
-            9. Toda tag <img> deve usar src absoluto válido (https://... ou data:image/...) e reutilizar altText do planejamento de imagens.
+            7. Cada seção renderizada deve incluir data-section-id e aplicar exatamente wireframe.sectionOrder[i].surfaceSpec usando data-surface-token, data-surface-style e data-surface-contrast.
+            8. Não inventar estrutura visual fora do layout/plano de imagens sem justificar nos consistencyChecks.
+            9. Não usar bibliotecas externas.
+            10. Toda tag <img> deve usar src absoluto válido (https://... ou data:image/...) e reutilizar altText do planejamento de imagens.
 
             Formato obrigatório (JSON):
             - htmlDocument
             - summary
-            - consistencyChecks[] com CTA_MATCH, PROMISE_MATCH, IMAGE_PLAN_BINDING, FORM_SPEC_BINDING e FORM_USABILITY
+            - consistencyChecks[] com CTA_MATCH, PROMISE_MATCH, IMAGE_PLAN_BINDING, SURFACE_SPEC_BINDING, FORM_SPEC_BINDING e FORM_USABILITY
             """;
     private static final String LANDING_IMAGE_PLANNING_PROMPT_SUFFIX = """
             Objetivo:

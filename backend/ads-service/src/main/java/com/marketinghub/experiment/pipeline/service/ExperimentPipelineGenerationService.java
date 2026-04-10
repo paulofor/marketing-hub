@@ -53,6 +53,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class ExperimentPipelineGenerationService {
     private static final Pattern FORM_CONTROL_TAG_PATTERN = Pattern.compile("(?is)<(input|textarea|select)\\b[^>]*>");
     private static final Pattern ATTRIBUTE_PATTERN = Pattern.compile("(?is)([a-zA-Z_:][-a-zA-Z0-9_:.]*)\\s*=\\s*([\"'])(.*?)\\2");
+    private static final Pattern OPENING_TAG_PATTERN = Pattern.compile("(?is)<([a-z0-9:-]+)\\b[^>]*>");
     private static final String DEFAULT_MODEL = "gpt-5.2";
     private static final Duration STALE_PENDING_TIMEOUT = Duration.ofMinutes(10);
     private static final Duration STALE_PROCESSING_TIMEOUT = Duration.ofMinutes(20);
@@ -702,10 +703,12 @@ public class ExperimentPipelineGenerationService {
             sb.append("10. mobilePriorityNotes deve destacar o que precisa aparecer antes da rolagem.\n");
             sb.append("11. Cada sectionOrder[i] deve preencher mediaSlot com: none, image, illustration, chart, icon-set ou video-thumb.\n");
             sb.append("12. Cada sectionOrder[i] deve preencher compositionNotes explicando hierarquia visual, densidade de conteúdo e leitura mobile-first.\n");
-            sb.append("13. Não transformar o layout em HTML final; esta etapa deve decidir ordem, hierarquia e slots de mídia.\n");
-            sb.append("14. Não usar linguagem de consultoria e não criar estrutura que pareça página genérica para qualquer mercado.\n");
-            sb.append("15. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para ").append(niche).append(".\n");
-            sb.append("16. Definir formSpec como contrato estruturado do formulário com esta configuração:\n");
+            sb.append("13. Cada sectionOrder[i] deve preencher surfaceSpec com surfaceToken, style, contrastMode e notes para formalizar a superfície visual da seção.\n");
+            sb.append("14. Use surfaceToken alternando entre surface-base e surface-alt-* para reforçar escaneabilidade entre seções consecutivas.\n");
+            sb.append("15. Não transformar o layout em HTML final; esta etapa deve decidir ordem, hierarquia e slots de mídia.\n");
+            sb.append("16. Não usar linguagem de consultoria e não criar estrutura que pareça página genérica para qualquer mercado.\n");
+            sb.append("17. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para ").append(niche).append(".\n");
+            sb.append("18. Definir formSpec como contrato estruturado do formulário com esta configuração:\n");
             sb.append("   - formId: lead-capture-primary\n");
             sb.append("   - title: Receber a prévia do Kit (IA)\n");
             sb.append("   - submitLabel: Desbloquear o Kit (receber a prévia gerada por IA)\n");
@@ -716,7 +719,7 @@ public class ExperimentPipelineGenerationService {
             sb.append("   - successState: title e message preenchidos.\n\n");
             sb.append("Formato obrigatório:\n");
             sb.append("- Preencher sectionOrder respeitando a ordem real da landing e referenciando sectionId de bodySections quando existir.\n");
-            sb.append("- Preencher mediaSlot e compositionNotes em todas as seções.\n");
+            sb.append("- Preencher mediaSlot, compositionNotes e surfaceSpec em todas as seções.\n");
             sb.append("- Preencher formSpec completo como fonte única da verdade para campos e obrigatoriedade do formulário.\n");
             sb.append("- Preencher ctaSlot dentro das seções com CTA.\n");
             sb.append("- Preencher consistencyChecks e observações finais (mobilePriorityNotes, ctaPlacementNotes, formPlacementNotes).\n");
@@ -780,13 +783,14 @@ public class ExperimentPipelineGenerationService {
             sb.append("   - wireframe para ordem/hierarquia e mediaSlot;\n");
             sb.append("   - planejamento de imagens para placement, prioridade e altText;\n");
             sb.append("   - wireframe.formSpec para renderização exata dos campos do formulário.\n");
-            sb.append("9. Não inventar estrutura visual fora do layout/plano de imagens sem justificar nos consistencyChecks.\n");
-            sb.append("10. O código deve ser limpo, legível e pronto para ser renderizado em iframe.\n");
-            sb.append("11. Toda tag <img> deve usar src absoluto válido (https://... ou data:image/...) e reaproveitar altText do planejamento de imagens.\n\n");
+            sb.append("9. Renderizar cada seção com data-section-id e aplicar exatamente wireframe.sectionOrder[i].surfaceSpec via data-surface-token, data-surface-style e data-surface-contrast.\n");
+            sb.append("10. Não inventar estrutura visual fora do layout/plano de imagens sem justificar nos consistencyChecks.\n");
+            sb.append("11. O código deve ser limpo, legível e pronto para ser renderizado em iframe.\n");
+            sb.append("12. Toda tag <img> deve usar src absoluto válido (https://... ou data:image/...) e reaproveitar altText do planejamento de imagens.\n\n");
             sb.append("Formato obrigatório:\n");
             sb.append("- htmlDocument: string com o documento completo final.\n");
             sb.append("- summary: resumo curto das decisões de implementação.\n");
-            sb.append("- consistencyChecks: checks com CTA_MATCH, PROMISE_MATCH, IMAGE_PLAN_BINDING, FORM_SPEC_BINDING e FORM_USABILITY.\n");
+            sb.append("- consistencyChecks: checks com CTA_MATCH, PROMISE_MATCH, IMAGE_PLAN_BINDING, SURFACE_SPEC_BINDING, FORM_SPEC_BINDING e FORM_USABILITY.\n");
             return;
         }
     }
@@ -830,6 +834,7 @@ public class ExperimentPipelineGenerationService {
             case LANDING_PAGE_IMAGE_PLANNING -> experiment.setLandingPageImagePlanning(normalized);
             case LANDING_PAGE_HTML -> {
                 validateLandingHtmlFormConsistency(experiment, normalized);
+                validateLandingHtmlSurfaceConsistency(experiment, normalized);
                 experiment.setLandingPageHtml(normalized);
             }
         }
@@ -1422,6 +1427,17 @@ public class ExperimentPipelineGenerationService {
                 ),
                 "required", List.of("formId", "title", "submitLabel", "submitTarget", "fields", "consent", "successState")
         );
+        Map<String, Object> surfaceSpecSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("surfaceToken", stringSchema()),
+                        Map.entry("style", Map.of("type", "string", "enum", List.of("band", "solid", "gradient-soft", "image-tint"))),
+                        Map.entry("contrastMode", Map.of("type", "string", "enum", List.of("normal", "high", "soft"))),
+                        Map.entry("notes", stringSchema())
+                ),
+                "required", List.of("surfaceToken", "style", "contrastMode", "notes")
+        );
         Map<String, Object> ctaSlotSchema = Map.of(
                 "type", "object",
                 "additionalProperties", false,
@@ -1454,9 +1470,10 @@ public class ExperimentPipelineGenerationService {
                         Map.entry("sectionDependsOn", stringSchema()),
                         Map.entry("mobilePriorityScore", integerSchema(1, 10)),
                         Map.entry("dropOffRisk", Map.of("type", "string", "enum", List.of("baixo", "medio", "alto"))),
+                        Map.entry("surfaceSpec", surfaceSpecSchema),
                         Map.entry("ctaSlot", ctaSlotSchema)
                 ),
-                "required", List.of("sectionId", "sectionName", "objective", "contentType", "mobilePriorityScore", "dropOffRisk")
+                "required", List.of("sectionId", "sectionName", "objective", "contentType", "mobilePriorityScore", "dropOffRisk", "surfaceSpec")
         );
         return Map.of(
                 "type", "object",
@@ -1570,6 +1587,92 @@ public class ExperimentPipelineGenerationService {
         return fields;
     }
 
+
+
+    @SuppressWarnings("unchecked")
+    private void validateLandingHtmlSurfaceConsistency(Experiment experiment, String landingHtmlContent) {
+        if (!StringUtils.hasText(landingHtmlContent) || !StringUtils.hasText(experiment.getLandingPageWireframe())) {
+            return;
+        }
+
+        Map<String, Object> wireframeRoot = readObject(experiment.getLandingPageWireframe(), "Wireframe da landing inválido");
+        Map<String, Object> wireframePayload = unwrapSectionPayload(wireframeRoot, "landingPageWireframe");
+        List<SectionSurfaceContract> expectedSurfaces = extractExpectedSectionSurfaces(wireframePayload);
+        if (expectedSurfaces.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Wireframe da landing sem sectionOrder.surfaceSpec estruturado");
+        }
+
+        Map<String, Object> htmlRoot = readObject(landingHtmlContent, "Payload da landing HTML inválido");
+        Map<String, Object> htmlPayload = unwrapSectionPayload(htmlRoot, "landingPageHtml");
+        String htmlDocument = asTrimmedString(htmlPayload.get("htmlDocument"));
+        if (!StringUtils.hasText(htmlDocument)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "landingPageHtml.htmlDocument não encontrado");
+        }
+
+        List<SectionSurfaceContract> actualSurfaces = extractSectionSurfacesFromHtmlDocument(htmlDocument);
+        List<SectionSurfaceContract> expectedSorted = expectedSurfaces.stream()
+                .sorted(Comparator.comparing(SectionSurfaceContract::sectionId))
+                .toList();
+        List<SectionSurfaceContract> actualSorted = actualSurfaces.stream()
+                .sorted(Comparator.comparing(SectionSurfaceContract::sectionId))
+                .toList();
+
+        if (!expectedSorted.equals(actualSorted)) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Divergência de superfície: landing-page-html deve reproduzir exatamente landing-page-wireframe.sectionOrder.surfaceSpec");
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<SectionSurfaceContract> extractExpectedSectionSurfaces(Map<String, Object> wireframePayload) {
+        if (!(wireframePayload.get("sectionOrder") instanceof List<?> rawSections)) {
+            return List.of();
+        }
+        List<SectionSurfaceContract> surfaces = new ArrayList<>();
+        for (Object rawSection : rawSections) {
+            if (!(rawSection instanceof Map<?, ?> rawSectionMap)) {
+                continue;
+            }
+            Map<String, Object> section = (Map<String, Object>) rawSectionMap;
+            String sectionId = normalizeHtmlAttr(asTrimmedString(section.get("sectionId")));
+            if (!(section.get("surfaceSpec") instanceof Map<?, ?> rawSurfaceMap)) {
+                continue;
+            }
+            Map<String, Object> surfaceSpec = (Map<String, Object>) rawSurfaceMap;
+            String surfaceToken = normalizeHtmlAttr(asTrimmedString(surfaceSpec.get("surfaceToken")));
+            String style = normalizeHtmlAttr(asTrimmedString(surfaceSpec.get("style")));
+            String contrastMode = normalizeHtmlAttr(asTrimmedString(surfaceSpec.get("contrastMode")));
+            if (!StringUtils.hasText(sectionId) || !StringUtils.hasText(surfaceToken)
+                    || !StringUtils.hasText(style) || !StringUtils.hasText(contrastMode)) {
+                continue;
+            }
+            surfaces.add(new SectionSurfaceContract(sectionId, surfaceToken, style, contrastMode));
+        }
+        return surfaces;
+    }
+
+    private List<SectionSurfaceContract> extractSectionSurfacesFromHtmlDocument(String htmlDocument) {
+        Map<String, SectionSurfaceContract> contractsBySectionId = new LinkedHashMap<>();
+        Matcher tagMatcher = OPENING_TAG_PATTERN.matcher(htmlDocument);
+        while (tagMatcher.find()) {
+            String tag = tagMatcher.group();
+            Map<String, String> attrs = parseHtmlAttributes(tag);
+            String sectionId = normalizeHtmlAttr(attrs.get("data-section-id"));
+            if (!StringUtils.hasText(sectionId)) {
+                continue;
+            }
+            String surfaceToken = normalizeHtmlAttr(attrs.get("data-surface-token"));
+            String style = normalizeHtmlAttr(attrs.get("data-surface-style"));
+            String contrastMode = normalizeHtmlAttr(attrs.get("data-surface-contrast"));
+            if (!StringUtils.hasText(surfaceToken) || !StringUtils.hasText(style) || !StringUtils.hasText(contrastMode)) {
+                continue;
+            }
+            contractsBySectionId.put(sectionId, new SectionSurfaceContract(sectionId, surfaceToken, style, contrastMode));
+        }
+        return new ArrayList<>(contractsBySectionId.values());
+    }
+
     private Map<String, String> parseHtmlAttributes(String tag) {
         Map<String, String> attrs = new LinkedHashMap<>();
         Matcher matcher = ATTRIBUTE_PATTERN.matcher(tag);
@@ -1629,6 +1732,9 @@ public class ExperimentPipelineGenerationService {
         public int hashCode() {
             return Objects.hash(name, type, required);
         }
+    }
+
+    private record SectionSurfaceContract(String sectionId, String surfaceToken, String style, String contrastMode) {
     }
 
     private Map<String, Object> consistencyCheckSchema() {

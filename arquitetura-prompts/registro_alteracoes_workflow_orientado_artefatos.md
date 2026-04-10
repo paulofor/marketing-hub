@@ -16,6 +16,23 @@ As alterações serão adicionadas conforme forem implementadas, incluindo:
 
 ## Histórico
 
+### 2026-04-10 — Binding canônico de imagem no `landing-page-html` com fallback legado
+
+- **Item alterado:** contrato mínimo `landing-page-image-planning -> landing-page-html -> validação /complete`.
+  - **O que mudou:** foi introduzido `imageBindingKey` (curto/canônico) no contrato de `landing-page-image-planning` e no binding obrigatório do HTML (`data-image-binding-key`), mantendo `imageRole` apenas como campo semântico auxiliar.
+  - **Impacto esperado:** reduz drift por texto semântico livre e torna a validação estrutural deterministicamente ancorada em `sectionId + imageBindingKey`.
+  - **Arquivos relacionados:** `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`, `ai-worker/src/main/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClient.java`, `frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx`.
+
+- **Item alterado:** validação determinística de aderência de imagem no backend (`/complete` do `landing-page-html`).
+  - **O que mudou:** a comparação backend passou a priorizar `sectionId + imageBindingKey` com fallback incremental para legado (`imageRole` quando `imageBindingKey` estiver ausente), mantendo verificação dos demais atributos críticos (`conversionRole`, `attentionPriority`, `visualWeight`, `distanceToCTA`, `supportsFormConversion`).
+  - **Impacto esperado:** corrige a causa raiz do 422 por divergência de binding frágil e preserva compatibilidade com payloads anteriores.
+  - **Arquivos relacionados:** `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`.
+
+- **Item alterado:** cobertura de testes para cenário real de 422 e caminho canônico/legado.
+  - **O que mudou:** foram adicionados testes cobrindo falha por binding key incorreto, falha por binding textual aproximado, reprodução do 422 real por drift, sucesso com binding canônico exato e sucesso com fallback legado.
+  - **Impacto esperado:** proteção contra regressão no contrato de binding entre planejamento de imagens e HTML final.
+  - **Arquivos relacionados:** `backend/ads-service/src/test/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationServiceTest.java`.
+
 ### 2026-04-10 — Correção incremental do `landing-page-html` para evitar 422 no `/complete`
 
 - **Item alterado:** normalização final de `landing-page-html` no fechamento do job.

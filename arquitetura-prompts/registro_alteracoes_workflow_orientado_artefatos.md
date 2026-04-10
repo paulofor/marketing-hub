@@ -16,6 +16,19 @@ As alterações serão adicionadas conforme forem implementadas, incluindo:
 
 ## Histórico
 
+
+### 2026-04-10 — Contrato explícito de superfícies entre `landing-page-wireframe` e `landing-page-html`
+
+- **Item alterado:** `landing-page-wireframe` e `landing-page-html` no pipeline de experimento.
+  - **O que mudou:** cada item de `sectionOrder` passou a exigir `surfaceSpec` estruturado (`surfaceToken`, `style`, `contrastMode`, `notes`) para formalizar a intenção visual de superfície por seção.
+  - **Impacto esperado:** alternância de fundos/superfícies deixa de ser implícita e passa a ser um contrato explícito antes da etapa de HTML.
+  - **Arquivos relacionados:** `frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx`, `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`, `ai-worker/src/main/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClient.java`.
+
+- **Item alterado:** validação determinística de superfícies no `landing-page-html`.
+  - **O que mudou:** backend agora valida de forma determinística se o `htmlDocument` aplica exatamente o `surfaceSpec` do wireframe por `sectionId`, exigindo `data-section-id`, `data-surface-token`, `data-surface-style` e `data-surface-contrast`.
+  - **Impacto esperado:** bloqueia deriva visual no HTML final e impede reinterpretar superfícies fora do contrato do wireframe.
+  - **Arquivos relacionados:** `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`.
+
 ### 2026-04-10 — Consistência determinística de formulário entre `landing-page-wireframe` e `landing-page-html`
 
 - **Item alterado:** `landing-page-wireframe` e `landing-page-html` no pipeline de experimento.

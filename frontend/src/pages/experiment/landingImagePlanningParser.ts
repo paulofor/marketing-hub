@@ -8,6 +8,7 @@ import {
 export interface LandingPlannedImage {
   sectionId?: string;
   sectionName?: string;
+  imageBindingKey?: string;
   imageRole?: string;
   conversionRole?: string;
   emotionalJob?: string;
@@ -97,6 +98,7 @@ function parseImage(value: unknown): LandingPlannedImage | undefined {
   const parsed: LandingPlannedImage = {
     sectionId: pickText(payload.sectionId),
     sectionName: pickText(payload.sectionName),
+    imageBindingKey: pickText(payload.imageBindingKey),
     imageRole: pickText(payload.imageRole),
     conversionRole: pickText(payload.conversionRole),
     emotionalJob: pickText(payload.emotionalJob),

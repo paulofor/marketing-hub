@@ -497,7 +497,8 @@ artifact {
 Regra obrigatória de imagens:
 - Toda tag <img> deve ter src absoluto válido (https://... ou data:image/...).
 - Toda tag <img> deve reutilizar altText e placement definidos no planejamento de imagens.
-- Toda tag <img> deve declarar data-image-section-id, data-image-role, data-conversion-role, data-attention-priority, data-visual-weight, data-distance-to-cta e data-supports-form-conversion conforme o planejamento.
+- Toda tag <img> deve declarar data-image-section-id e data-image-binding-key como binding canônico obrigatório do planejamento.
+- Toda tag <img> também deve declarar data-image-role (semântico), data-conversion-role, data-attention-priority, data-visual-weight, data-distance-to-cta e data-supports-form-conversion.
 - Nunca use caminhos relativos como "/assets/..." ou "./imagem.jpg" no htmlDocument.
 - Se não houver imagem final disponível, renderize placeholder visual no CSS sem quebrar layout.`;
 
@@ -510,6 +511,7 @@ Regras:
 1. Entregar images[] com no mínimo 4 imagens planejadas para seções reais da landing.
 2. Cada imagem precisa incluir:
    - sectionId e sectionName
+   - imageBindingKey (curto, estável e canônico)
    - imageRole
    - conversionRole
    - emotionalJob

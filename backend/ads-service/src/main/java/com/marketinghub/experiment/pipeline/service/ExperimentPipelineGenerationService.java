@@ -755,7 +755,7 @@ public class ExperimentPipelineGenerationService {
             sb.append("Regras:\n");
             sb.append("1. images[] deve ter no mínimo 4 itens com sectionId e sectionName existentes no wireframe.\n");
             sb.append("2. Cada item precisa trazer imagePrompt, objective, visualStyle, composition, focalPoint, supportingElements e mood.\n");
-            sb.append("3. Cada item precisa incluir imageRole, conversionRole, emotionalJob e sectionVisualGoal para explicitar função visual e contribuição para conversão.\n");
+            sb.append("3. Cada item precisa incluir imageBindingKey (curto/canônico), imageRole, conversionRole, emotionalJob e sectionVisualGoal para explicitar função visual e contribuição para conversão.\n");
             sb.append("4. Definir placement (hero, benefit, mechanism, proof, offer, faq, cta), priority (high, medium, low), hierarchyLevel (primary, secondary, support), attentionPriority (high, medium, low), visualWeight (primary, secondary, support) e distanceToCTA (near, medium, far).\n");
             sb.append("5. Cada item precisa informar dimensions (desktop e mobile), safeMargins, textOverlayGuidance, altText e layoutBinding (preferredDesktopPlacement, preferredMobilePlacement, desktopAspectRatio, mobileAspectRatio, allowCrop, safeCropZones).\n");
             sb.append("6. supportsFormConversion deve indicar explicitamente se a imagem ajuda o envio do lead e formRelationNotes deve explicar como empurra leitura para CTA/form sem competir com ele.\n");
@@ -802,7 +802,8 @@ public class ExperimentPipelineGenerationService {
             sb.append("10. Não inventar estrutura visual fora do layout/plano de imagens sem justificar nos consistencyChecks.\n");
             sb.append("11. O código deve ser limpo, legível e pronto para ser renderizado em iframe.\n");
             sb.append("12. Toda tag <img> deve usar src absoluto válido (https://... ou data:image/...) e reaproveitar altText do planejamento de imagens.\n\n");
-            sb.append("13. Cada <img> deve incluir binding explícito com o plano usando data-image-section-id, data-image-role, data-conversion-role, data-attention-priority, data-visual-weight, data-distance-to-cta e data-supports-form-conversion.\n\n");
+            sb.append("13. Cada <img> deve incluir binding explícito canônico com o plano usando data-image-section-id + data-image-binding-key como chave primária de aderência.\n");
+            sb.append("14. Também preencher data-image-role (semântico/humano), data-conversion-role, data-attention-priority, data-visual-weight, data-distance-to-cta e data-supports-form-conversion.\n\n");
             sb.append("Formato obrigatório:\n");
             sb.append("- htmlDocument: string com o documento completo final.\n");
             sb.append("- summary: resumo curto das decisões de implementação.\n");
@@ -1397,6 +1398,7 @@ public class ExperimentPipelineGenerationService {
                 "properties", Map.ofEntries(
                         Map.entry("sectionId", stringSchema()),
                         Map.entry("sectionName", stringSchema()),
+                        Map.entry("imageBindingKey", Map.of("type", "string", "pattern", "^[a-z0-9_\\-]{3,64}$")),
                         Map.entry("imageRole", stringSchema()),
                         Map.entry("conversionRole", stringSchema()),
                         Map.entry("emotionalJob", stringSchema()),
@@ -1450,6 +1452,7 @@ public class ExperimentPipelineGenerationService {
                 "required", List.of(
                         "sectionId",
                         "sectionName",
+                        "imageBindingKey",
                         "imageRole",
                         "conversionRole",
                         "emotionalJob",
@@ -1938,11 +1941,16 @@ public class ExperimentPipelineGenerationService {
         }
 
         List<ImagePlanBindingContract> actualBindings = extractImagePlanBindingsFromHtmlDocument(htmlDocument);
+        log.info("Validação landing HTML image binding (experimentId={}): plannedCount={}, expectedPairs={}, foundPairs={}",
+                experiment.getId(),
+                expectedBindings.size(),
+                summarizeImageBindingPairs(expectedBindings),
+                summarizeImageBindingPairs(actualBindings));
         List<ImagePlanBindingContract> expectedSorted = expectedBindings.stream()
-                .sorted(Comparator.comparing(ImagePlanBindingContract::sectionId).thenComparing(ImagePlanBindingContract::imageRole))
+                .sorted(Comparator.comparing(ImagePlanBindingContract::sectionId).thenComparing(ImagePlanBindingContract::imageBindingKey))
                 .toList();
         List<ImagePlanBindingContract> actualSorted = actualBindings.stream()
-                .sorted(Comparator.comparing(ImagePlanBindingContract::sectionId).thenComparing(ImagePlanBindingContract::imageRole))
+                .sorted(Comparator.comparing(ImagePlanBindingContract::sectionId).thenComparing(ImagePlanBindingContract::imageBindingKey))
                 .toList();
 
         if (!expectedSorted.equals(actualSorted)) {
@@ -1950,9 +1958,13 @@ public class ExperimentPipelineGenerationService {
                     experiment.getId(),
                     expectedSorted,
                     actualSorted);
+            log.warn("Validação landing HTML (experimentId={}): divergência específica de pares expected={} actual={}",
+                    experiment.getId(),
+                    summarizeImageBindingPairs(expectedSorted),
+                    summarizeImageBindingPairs(actualSorted));
             throw new ResponseStatusException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Divergência de imagens: landing-page-html deve reproduzir o binding explícito do landing-page-image-planning por sectionId/imageRole");
+                    "Divergência de imagens: landing-page-html deve reproduzir o binding explícito canônico do landing-page-image-planning por sectionId/imageBindingKey");
         }
     }
 
@@ -1968,6 +1980,7 @@ public class ExperimentPipelineGenerationService {
             }
             Map<String, Object> image = (Map<String, Object>) rawImageMap;
             String sectionId = normalizeHtmlAttr(asTrimmedString(image.get("sectionId")));
+            String imageBindingKey = normalizeHtmlAttr(resolveBindingKeyFromPlanning(image));
             String imageRole = normalizeHtmlAttr(asTrimmedString(image.get("imageRole")));
             String conversionRole = normalizeHtmlAttr(asTrimmedString(image.get("conversionRole")));
             String attentionPriority = normalizeHtmlAttr(asTrimmedString(image.get("attentionPriority")));
@@ -1976,11 +1989,11 @@ public class ExperimentPipelineGenerationService {
             if (!(image.get("supportsFormConversion") instanceof Boolean supportsFormConversion)) {
                 continue;
             }
-            if (!StringUtils.hasText(sectionId) || !StringUtils.hasText(imageRole) || !StringUtils.hasText(conversionRole)
+            if (!StringUtils.hasText(sectionId) || !StringUtils.hasText(imageBindingKey) || !StringUtils.hasText(imageRole) || !StringUtils.hasText(conversionRole)
                     || !StringUtils.hasText(attentionPriority) || !StringUtils.hasText(visualWeight) || !StringUtils.hasText(distanceToCta)) {
                 continue;
             }
-            bindings.add(new ImagePlanBindingContract(sectionId, imageRole, conversionRole, attentionPriority, visualWeight, distanceToCta, supportsFormConversion));
+            bindings.add(new ImagePlanBindingContract(sectionId, imageBindingKey, imageRole, conversionRole, attentionPriority, visualWeight, distanceToCta, supportsFormConversion));
         }
         return bindings;
     }
@@ -1992,21 +2005,48 @@ public class ExperimentPipelineGenerationService {
             String tag = tagMatcher.group();
             Map<String, String> attrs = parseHtmlAttributes(tag);
             String sectionId = normalizeHtmlAttr(attrs.get("data-image-section-id"));
+            String imageBindingKey = resolveBindingKeyFromHtmlAttrs(attrs);
             String imageRole = normalizeHtmlAttr(attrs.get("data-image-role"));
             String conversionRole = normalizeHtmlAttr(attrs.get("data-conversion-role"));
             String attentionPriority = normalizeHtmlAttr(attrs.get("data-attention-priority"));
             String visualWeight = normalizeHtmlAttr(attrs.get("data-visual-weight"));
             String distanceToCta = normalizeHtmlAttr(attrs.get("data-distance-to-cta"));
             String supportsFormConversionRaw = normalizeHtmlAttr(attrs.get("data-supports-form-conversion"));
-            if (!StringUtils.hasText(sectionId) || !StringUtils.hasText(imageRole) || !StringUtils.hasText(conversionRole)
+            if (!StringUtils.hasText(sectionId) || !StringUtils.hasText(imageBindingKey) || !StringUtils.hasText(imageRole) || !StringUtils.hasText(conversionRole)
                     || !StringUtils.hasText(attentionPriority) || !StringUtils.hasText(visualWeight)
                     || !StringUtils.hasText(distanceToCta) || !StringUtils.hasText(supportsFormConversionRaw)) {
                 continue;
             }
             boolean supportsFormConversion = "true".equalsIgnoreCase(supportsFormConversionRaw);
-            bindings.add(new ImagePlanBindingContract(sectionId, imageRole, conversionRole, attentionPriority, visualWeight, distanceToCta, supportsFormConversion));
+            bindings.add(new ImagePlanBindingContract(sectionId, imageBindingKey, imageRole, conversionRole, attentionPriority, visualWeight, distanceToCta, supportsFormConversion));
         }
         return bindings;
+    }
+
+    private String resolveBindingKeyFromPlanning(Map<String, Object> image) {
+        String bindingKey = asTrimmedString(image.get("imageBindingKey"));
+        if (StringUtils.hasText(bindingKey)) {
+            return bindingKey;
+        }
+        return asTrimmedString(image.get("imageRole"));
+    }
+
+    private String resolveBindingKeyFromHtmlAttrs(Map<String, String> attrs) {
+        String bindingKey = normalizeHtmlAttr(attrs.get("data-image-binding-key"));
+        if (StringUtils.hasText(bindingKey)) {
+            return bindingKey;
+        }
+        return normalizeHtmlAttr(attrs.get("data-image-role"));
+    }
+
+    private String summarizeImageBindingPairs(List<ImagePlanBindingContract> bindings) {
+        if (bindings == null || bindings.isEmpty()) {
+            return "[]";
+        }
+        return bindings.stream()
+                .map(binding -> binding.sectionId() + "/" + binding.imageBindingKey())
+                .toList()
+                .toString();
     }
 
     private Map<String, String> parseHtmlAttributes(String tag) {
@@ -2074,6 +2114,7 @@ public class ExperimentPipelineGenerationService {
     }
 
     private record ImagePlanBindingContract(String sectionId,
+                                            String imageBindingKey,
                                             String imageRole,
                                             String conversionRole,
                                             String attentionPriority,

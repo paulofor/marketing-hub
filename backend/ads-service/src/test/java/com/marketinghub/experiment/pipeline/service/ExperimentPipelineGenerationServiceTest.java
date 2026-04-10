@@ -22,6 +22,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -30,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.atLeastOnce;
@@ -254,5 +256,234 @@ class ExperimentPipelineGenerationServiceTest {
         assertFalse(html.contains("objetivo principal"));
         assertTrue(summary.contains("wireframe.formspec"));
         assertTrue(checks.stream().anyMatch(check -> "FORM_USABILITY".equals(check.get("check"))));
+    }
+
+    @Test
+    void completeJobRejectsLandingHtmlWhenSectionMatchesButBindingKeyIsWrong() {
+        Experiment experiment = buildLandingHtmlValidationExperiment(201L);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> service.completeJob(createLandingHtmlJob(experiment).getId(), landingHtmlCompletionRequest("""
+                        <!doctype html><html><body>
+                        <section data-section-id='hero' data-surface-token='surface-base' data-surface-style='band' data-surface-contrast='normal'>
+                          <img src='https://cdn.example.com/hero.jpg' alt='Hero'
+                               data-image-section-id='hero'
+                               data-image-binding-key='hero_wrong_key'
+                               data-image-role='Hero Pain Anchor'
+                               data-conversion-role='grab-attention'
+                               data-attention-priority='high'
+                               data-visual-weight='primary'
+                               data-distance-to-cta='near'
+                               data-supports-form-conversion='true' />
+                          <form id='lead-capture-primary'><input type='text' name='nome' required /><input type='email' name='email' required /><input type='tel' name='whatsapp' /></form>
+                        </section></body></html>
+                        """)));
+        assertTrue(exception.getReason().contains("sectionId/imageBindingKey"));
+    }
+
+    @Test
+    void completeJobRejectsLandingHtmlWhenUsingApproximateTextualRoleInsteadOfCanonicalBinding() {
+        Experiment experiment = buildLandingHtmlValidationExperiment(202L);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> service.completeJob(createLandingHtmlJob(experiment).getId(), landingHtmlCompletionRequest("""
+                        <!doctype html><html><body>
+                        <section data-section-id='hero' data-surface-token='surface-base' data-surface-style='band' data-surface-contrast='normal'>
+                          <img src='https://cdn.example.com/hero.jpg' alt='Hero'
+                               data-image-section-id='hero'
+                               data-image-role='Hero Pain Anchor Approx'
+                               data-conversion-role='grab-attention'
+                               data-attention-priority='high'
+                               data-visual-weight='primary'
+                               data-distance-to-cta='near'
+                               data-supports-form-conversion='true' />
+                          <form id='lead-capture-primary'><input type='text' name='nome' required /><input type='email' name='email' required /><input type='tel' name='whatsapp' /></form>
+                        </section></body></html>
+                        """)));
+        assertTrue(exception.getReason().contains("sectionId/imageBindingKey"));
+    }
+
+    @Test
+    void completeJobReproducesCurrent422ScenarioWhenHtmlDriftsFromImagePlanningBinding() {
+        Experiment experiment = buildLandingHtmlValidationExperiment(203L);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> service.completeJob(createLandingHtmlJob(experiment).getId(), landingHtmlCompletionRequest("""
+                        <!doctype html><html><body>
+                        <section data-section-id='hero' data-surface-token='surface-base' data-surface-style='band' data-surface-contrast='normal'>
+                          <img src='https://cdn.example.com/hero.jpg' alt='Hero'
+                               data-image-section-id='hero'
+                               data-image-binding-key='hero_pain_anchor'
+                               data-image-role='Hero Pain Anchor'
+                               data-conversion-role='wrong-conversion'
+                               data-attention-priority='high'
+                               data-visual-weight='primary'
+                               data-distance-to-cta='near'
+                               data-supports-form-conversion='true' />
+                          <form id='lead-capture-primary'><input type='text' name='nome' required /><input type='email' name='email' required /><input type='tel' name='whatsapp' /></form>
+                        </section></body></html>
+                        """)));
+        assertTrue(exception.getReason().contains("sectionId/imageBindingKey"));
+    }
+
+    @Test
+    void completeJobSucceedsWhenCanonicalImageBindingMatchesPlanningExactly() {
+        Experiment experiment = buildLandingHtmlValidationExperiment(204L);
+        ExperimentPipelineGenerationJob job = createLandingHtmlJob(experiment);
+
+        service.completeJob(job.getId(), landingHtmlCompletionRequest("""
+                <!doctype html><html><body>
+                <section data-section-id='hero' data-surface-token='surface-base' data-surface-style='band' data-surface-contrast='normal'>
+                  <img src='https://cdn.example.com/hero.jpg' alt='Hero'
+                       data-image-section-id='hero'
+                       data-image-binding-key='hero_pain_anchor'
+                       data-image-role='Hero Pain Anchor'
+                       data-conversion-role='grab-attention'
+                       data-attention-priority='high'
+                       data-visual-weight='primary'
+                       data-distance-to-cta='near'
+                       data-supports-form-conversion='true' />
+                  <form id='lead-capture-primary'><input type='text' name='nome' required /><input type='email' name='email' required /><input type='tel' name='whatsapp' /></form>
+                </section></body></html>
+                """));
+
+        assertNotNull(experiment.getLandingPageHtml());
+    }
+
+    @Test
+    void completeJobSupportsLegacyFallbackWhenPlanningAndHtmlDoNotSendBindingKey() {
+        Experiment experiment = buildLandingHtmlValidationExperiment(205L);
+        experiment.setLandingPageImagePlanning("""
+                {
+                  "landingPageImagePlanning": {
+                    "images": [
+                      {
+                        "sectionId": "hero",
+                        "imageRole": "Hero Pain Anchor",
+                        "conversionRole": "grab-attention",
+                        "attentionPriority": "high",
+                        "visualWeight": "primary",
+                        "distanceToCTA": "near",
+                        "supportsFormConversion": true
+                      }
+                    ]
+                  }
+                }
+                """);
+        ExperimentPipelineGenerationJob job = createLandingHtmlJob(experiment);
+
+        service.completeJob(job.getId(), landingHtmlCompletionRequest("""
+                <!doctype html><html><body>
+                <section data-section-id='hero' data-surface-token='surface-base' data-surface-style='band' data-surface-contrast='normal'>
+                  <img src='https://cdn.example.com/hero.jpg' alt='Hero'
+                       data-image-section-id='hero'
+                       data-image-role='Hero Pain Anchor'
+                       data-conversion-role='grab-attention'
+                       data-attention-priority='high'
+                       data-visual-weight='primary'
+                       data-distance-to-cta='near'
+                       data-supports-form-conversion='true' />
+                  <form id='lead-capture-primary'><input type='text' name='nome' required /><input type='email' name='email' required /><input type='tel' name='whatsapp' /></form>
+                </section></body></html>
+                """));
+
+        assertNotNull(experiment.getLandingPageHtml());
+    }
+
+    private Experiment buildLandingHtmlValidationExperiment(long experimentId) {
+        Experiment experiment = new Experiment();
+        experiment.setId(experimentId);
+        experiment.setLandingPageWireframe("""
+                {
+                  "landingPageWireframe": {
+                    "sectionOrder": [
+                      {
+                        "sectionId": "hero",
+                        "surfaceSpec": {
+                          "surfaceToken": "surface-base",
+                          "style": "band",
+                          "contrastMode": "normal",
+                          "notes": "hero"
+                        }
+                      }
+                    ],
+                    "formSpec": {
+                      "formId": "lead-capture-primary",
+                      "title": "Receber a prévia do Kit (IA)",
+                      "submitLabel": "Desbloquear o Kit (receber a prévia gerada por IA)",
+                      "submitTarget": "#desbloquear",
+                      "fields": [
+                        {"name": "nome", "type": "text", "required": true},
+                        {"name": "email", "type": "email", "required": true},
+                        {"name": "whatsapp", "type": "tel", "required": false}
+                      ],
+                      "consent": {"enabled": true, "required": false, "label": "ok"},
+                      "successState": {"title": "ok", "message": "ok"}
+                    }
+                  }
+                }
+                """);
+        experiment.setLandingPageImagePlanning("""
+                {
+                  "landingPageImagePlanning": {
+                    "images": [
+                      {
+                        "sectionId": "hero",
+                        "imageBindingKey": "hero_pain_anchor",
+                        "imageRole": "Hero Pain Anchor",
+                        "conversionRole": "grab-attention",
+                        "attentionPriority": "high",
+                        "visualWeight": "primary",
+                        "distanceToCTA": "near",
+                        "supportsFormConversion": true
+                      }
+                    ]
+                  }
+                }
+                """);
+        return experiment;
+    }
+
+    private ExperimentPipelineGenerationJob createLandingHtmlJob(Experiment experiment) {
+        UUID jobId = UUID.randomUUID();
+        ExperimentPipelineGenerationJob job = ExperimentPipelineGenerationJob.builder()
+                .id(jobId)
+                .experiment(experiment)
+                .section(ExperimentPipelineSection.LANDING_PAGE_HTML)
+                .status(ExperimentPipelineGenerationJobStatus.PROCESSING)
+                .stage(ExperimentPipelineGenerationJobStage.SENT_TO_OPENAI)
+                .model("gpt-5.2")
+                .prompt("prompt")
+                .build();
+        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+        return job;
+    }
+
+    private ExperimentPipelineGenerationJobCompletionRequest landingHtmlCompletionRequest(String htmlDocument) {
+        return new ExperimentPipelineGenerationJobCompletionRequest(
+                """
+                        {
+                          "landingPageHtml": {
+                            "htmlDocument": %s,
+                            "summary": "ok",
+                            "consistencyChecks": [
+                              {"check":"FORM_USABILITY","status":"PASS","details":"ok"}
+                            ]
+                          }
+                        }
+                        """.formatted(quoteJsonString(htmlDocument)),
+                "{\"id\":\"resp_html\"}",
+                "{\"model\":\"gpt-5.2\"}",
+                120,
+                80,
+                null);
+    }
+
+    private String quoteJsonString(String value) {
+        return "\"" + value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r") + "\"";
     }
 }

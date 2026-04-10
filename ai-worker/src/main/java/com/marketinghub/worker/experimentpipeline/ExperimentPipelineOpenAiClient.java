@@ -200,7 +200,8 @@ public class ExperimentPipelineOpenAiClient {
             8. Não inventar estrutura visual fora do layout/plano de imagens sem justificar nos consistencyChecks.
             9. Não usar bibliotecas externas.
             10. Toda tag <img> deve usar src absoluto válido (https://... ou data:image/...) e reutilizar altText do planejamento de imagens.
-            11. Cada <img> deve declarar data-image-section-id, data-image-role, data-conversion-role, data-attention-priority, data-visual-weight, data-distance-to-cta e data-supports-form-conversion conforme o plano de imagens.
+            11. Cada <img> deve declarar data-image-section-id e data-image-binding-key como binding canônico obrigatório do plano de imagens.
+            12. Cada <img> também deve declarar data-image-role (semântico), data-conversion-role, data-attention-priority, data-visual-weight, data-distance-to-cta e data-supports-form-conversion.
 
             Formato obrigatório (JSON):
             - htmlDocument
@@ -242,7 +243,7 @@ public class ExperimentPipelineOpenAiClient {
 
             Regras:
             1. Entregar images[] com no mínimo 4 itens ligados a sectionId/sectionName reais do wireframe.
-            2. Cada item deve incluir objective, placement, priority, hierarchyLevel, imagePrompt, messageMatchNotes, imageRole, conversionRole, emotionalJob e sectionVisualGoal.
+            2. Cada item deve incluir imageBindingKey (curto/canônico), objective, placement, priority, hierarchyLevel, imagePrompt, messageMatchNotes, imageRole, conversionRole, emotionalJob e sectionVisualGoal.
             3. imagePrompt deve ser específico para o contexto da seção (não genérico).
             4. Definir dimensions.desktop e dimensions.mobile para orientar implementação responsiva.
             5. Incluir safeMargins e textOverlayGuidance quando houver texto sobre imagem.

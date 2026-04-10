@@ -6,10 +6,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.experiment.frameworkimage.FrameworkImageGenerationJob;
 import com.marketinghub.experiment.frameworkimage.repository.FrameworkImageGenerationJobRepository;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Predicate;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -119,24 +123,93 @@ public class LandingPageImageInjector {
         try {
             Document document = Jsoup.parse(html, "", Parser.htmlParser());
             document.outputSettings().prettyPrint(false);
+            List<ImageCandidate> availableImages = sectionImages.entrySet().stream()
+                    .map(entry -> new ImageCandidate(normalizeMatchValue(entry.getKey()), entry.getValue()))
+                    .filter(candidate -> StringUtils.hasText(candidate.url()))
+                    .toList();
+            if (availableImages.isEmpty()) {
+                return html;
+            }
+
+            Set<Integer> consumedIndexes = new HashSet<>();
             boolean changed = false;
-            for (Map.Entry<String, String> entry : sectionImages.entrySet()) {
-                Element section = document.getElementById(entry.getKey());
-                if (section == null) {
-                    continue;
+            for (Element imageElement : document.select("img")) {
+                ImageCandidate matched = consumeFirstAvailable(availableImages, consumedIndexes,
+                        candidate -> collectMatchCandidates(imageElement).stream()
+                                .anyMatch(value -> value.equals(candidate.matchKey())
+                                        || value.contains(candidate.matchKey())));
+
+                if (matched == null && shouldFallbackToNextImage(imageElement)) {
+                    matched = consumeFirstAvailable(availableImages, consumedIndexes, candidate -> true);
                 }
-                Element image = section.selectFirst("img");
-                if (image == null) {
-                    log.debug("No <img> found inside section {} while injecting framework images", entry.getKey());
-                    continue;
+
+                if (matched != null && !Objects.equals(imageElement.attr("src"), matched.url())) {
+                    imageElement.attr("src", matched.url());
+                    changed = true;
                 }
-                image.attr("src", entry.getValue());
-                changed = true;
             }
             return changed ? document.outerHtml() : html;
         } catch (Exception ex) {
             log.warn("Failed to inject framework images into landing page HTML", ex);
             return html;
         }
+    }
+
+    private List<String> collectMatchCandidates(Element imageElement) {
+        List<String> candidates = new ArrayList<>();
+        addCandidate(candidates, imageElement.attr("data-planning-item-key"));
+        addCandidate(candidates, imageElement.attr("data-section-id"));
+        addCandidate(candidates, imageElement.attr("data-section-name"));
+        addCandidate(candidates, imageElement.attr("data-image-key"));
+        addCandidate(candidates, imageElement.id());
+        addCandidate(candidates, imageElement.attr("alt"));
+        addCandidate(candidates, imageElement.className());
+        Element closestSection = imageElement.closest("section");
+        if (closestSection != null) {
+            addCandidate(candidates, closestSection.id());
+            addCandidate(candidates, closestSection.attr("data-section-id"));
+            addCandidate(candidates, closestSection.attr("data-planning-item-key"));
+            addCandidate(candidates, closestSection.className());
+        }
+        return candidates;
+    }
+
+    private void addCandidate(List<String> candidates, String rawValue) {
+        String normalized = normalizeMatchValue(rawValue);
+        if (StringUtils.hasText(normalized)) {
+            candidates.add(normalized);
+        }
+    }
+
+    private String normalizeMatchValue(String rawValue) {
+        return rawValue == null ? "" : rawValue.trim().toLowerCase();
+    }
+
+    private boolean shouldFallbackToNextImage(Element imageElement) {
+        String src = normalizeMatchValue(imageElement.attr("src"));
+        return !StringUtils.hasText(src)
+                || src.startsWith("about:blank")
+                || src.contains("placehold.co")
+                || src.contains("placeholder");
+    }
+
+    private ImageCandidate consumeFirstAvailable(List<ImageCandidate> availableImages,
+                                                 Set<Integer> consumedIndexes,
+                                                 Predicate<ImageCandidate> matcher) {
+        for (int index = 0; index < availableImages.size(); index++) {
+            if (consumedIndexes.contains(index)) {
+                continue;
+            }
+            ImageCandidate candidate = availableImages.get(index);
+            if (!matcher.test(candidate)) {
+                continue;
+            }
+            consumedIndexes.add(index);
+            return candidate;
+        }
+        return null;
+    }
+
+    private record ImageCandidate(String matchKey, String url) {
     }
 }

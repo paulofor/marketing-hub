@@ -16,6 +16,23 @@ As alterações serão adicionadas conforme forem implementadas, incluindo:
 
 ## Histórico
 
+### 2026-04-10 — Correção incremental do `landing-page-html` para evitar 422 no `/complete`
+
+- **Item alterado:** normalização final de `landing-page-html` no fechamento do job.
+  - **O que mudou:** o backend passou a normalizar deterministicamente `landingPageHtml` no `completeJob` usando `landingPageWireframe.formSpec` como fonte única da verdade, incluindo reconstrução estrutural dos campos no `htmlDocument` e atualização coerente de `summary` e `consistencyChecks`.
+  - **Impacto esperado:** elimina divergência entre wireframe e HTML final (ex.: remoção de `objetivo`, preservação de `email` obrigatório), reduzindo erros 422 de contrato no fechamento do job.
+  - **Arquivos relacionados:** `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`, `backend/ads-service/src/test/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationServiceTest.java`.
+
+- **Item alterado:** detecção e diagnóstico do fluxo `LANDING_PAGE_HTML` no worker.
+  - **O que mudou:** a identificação de seção no worker foi unificada para aceitar nomes com hífen, underscore e enum (ex.: `LANDING_PAGE_HTML`), com logs de diagnóstico sobre seção detectada, aplicação de normalização e snapshot dos campos finais.
+  - **Impacto esperado:** garante execução do caminho de normalização no tipo real do job e aumenta observabilidade do contrato efetivamente enviado ao backend.
+  - **Arquivos relacionados:** `ai-worker/src/main/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClient.java`, `ai-worker/src/test/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClientTest.java`.
+
+- **Item alterado:** observabilidade do payload final no POST `/complete`.
+  - **O que mudou:** o client do worker passou a registrar shape das chaves enviadas ao `/complete` e, em erros HTTP (incluindo 422), um resumo de baixo risco do corpo retornado pelo backend.
+  - **Impacto esperado:** facilita diagnóstico da divergência de contrato sem depender de tentativa e erro.
+  - **Arquivos relacionados:** `ai-worker/src/main/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineBackendClient.java`.
+
 ### 2026-04-10 — Amarração visual e de conversão entre `landing-page-image-planning` e `landing-page-html`
 
 - **Item alterado:** `landing-page-image-planning` no pipeline de experimento.

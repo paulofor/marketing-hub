@@ -528,6 +528,60 @@ class ExperimentPipelineOpenAiClientTest {
     }
 
     @Test
+    void normalizesLandingPageHtmlWhenSectionComesAsEnumName() throws Exception {
+        String openAiText = MAPPER.writeValueAsString(Map.of(
+                "landingPageHtml", Map.of(
+                        "htmlDocument", """
+                                <!doctype html>
+                                <html lang="pt-BR">
+                                <body>
+                                  <form id="lead-capture-primary">
+                                    <div class="field"><label>Nome</label><input type="text" name="nome" required /></div>
+                                    <div class="field"><label>Objetivo principal</label><select name="objetivo"><option>A</option></select></div>
+                                  </form>
+                                </body>
+                                </html>
+                                """,
+                        "summary", "resumo antigo",
+                        "consistencyChecks", List.of(Map.of("check", "FORM_USABILITY", "status", "PASS", "details", "Objetivo principal obrigatório"))
+                )));
+
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), openAiText)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                20L,
+                "LANDING_PAGE_HTML",
+                "gpt-5.2",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "input": [
+                            {"role": "user", "content": "Prompt da landing html"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        ExperimentPipelineJobCompletionPayload payload = client.generate(job);
+        Map<String, Object> content = MAPPER.readValue(payload.responseContent(), new TypeReference<>() {});
+        @SuppressWarnings("unchecked")
+        Map<String, Object> landingPageHtml = (Map<String, Object>) content.get("landingPageHtml");
+        String htmlDocument = String.valueOf(landingPageHtml.get("htmlDocument")).toLowerCase();
+
+        assertThat(htmlDocument).contains("name=\"nome\"");
+        assertThat(htmlDocument).contains("name=\"email\"");
+        assertThat(htmlDocument).contains("name=\"whatsapp\"");
+        assertThat(htmlDocument).doesNotContain("name=\"objetivo\"");
+        assertThat(htmlDocument).doesNotContain("<select name=\"objetivo\"");
+    }
+
+    @Test
     void enforcesGpt52ModelForEveryPipelineCall() {
         AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
         ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(

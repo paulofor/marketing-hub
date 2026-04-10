@@ -1,8 +1,10 @@
 package com.marketinghub.worker.experimentpipeline;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.util.UrlUtils;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -20,6 +23,7 @@ public class ExperimentPipelineBackendClient {
     private final WebClient webClient;
     private final String backendBaseUrl;
     private final String apiPrefix;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ExperimentPipelineBackendClient(WebClient.Builder builder,
                                            @Value("${backend.base-url:http://191.252.181.168:8000}") String backendBaseUrl,
@@ -57,12 +61,24 @@ public class ExperimentPipelineBackendClient {
 
     public void complete(UUID jobId, ExperimentPipelineJobCompletionPayload payload) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/experiment-pipeline/jobs/", jobId.toString(), "/complete");
-        webClient.post()
-                .uri(url)
-                .bodyValue(payload)
-                .retrieve()
-                .bodyToMono(Void.class)
-                .block();
+        log.info("POST /complete do pipeline (jobId={}, keys={})", jobId, summarizeCompletionPayloadKeys(payload));
+        try {
+            webClient.post()
+                    .uri(url)
+                    .bodyValue(payload)
+                    .retrieve()
+                    .bodyToMono(Void.class)
+                    .block();
+        } catch (WebClientResponseException ex) {
+            String summarizedBody = summarizeErrorBody(ex.getResponseBodyAsString());
+            if (ex.getStatusCode().value() == 422) {
+                log.error("Erro 422 ao completar job de pipeline {}: {}", jobId, summarizedBody);
+            } else {
+                log.error("Erro HTTP {} ao completar job de pipeline {}: {}",
+                        ex.getStatusCode().value(), jobId, summarizedBody);
+            }
+            throw ex;
+        }
     }
 
     public void fail(UUID jobId, String errorMessage) {
@@ -96,5 +112,26 @@ public class ExperimentPipelineBackendClient {
                             "GET %s failed with status %s: %s".formatted(uri, status, body))));
         }
         return response.bodyToFlux(ExperimentPipelineJobDto.class);
+    }
+
+    private String summarizeCompletionPayloadKeys(ExperimentPipelineJobCompletionPayload payload) {
+        if (payload == null || payload.responseContent() == null) {
+            return "[]";
+        }
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> parsed = objectMapper.readValue(payload.responseContent(), Map.class);
+            return parsed.keySet().toString();
+        } catch (Exception ignored) {
+            return "[unparseable-response-content]";
+        }
+    }
+
+    private String summarizeErrorBody(String rawBody) {
+        if (rawBody == null || rawBody.isBlank()) {
+            return "[sem corpo de erro]";
+        }
+        String compact = rawBody.replaceAll("\\s+", " ").trim();
+        return compact.length() > 300 ? compact.substring(0, 300) + "..." : compact;
     }
 }

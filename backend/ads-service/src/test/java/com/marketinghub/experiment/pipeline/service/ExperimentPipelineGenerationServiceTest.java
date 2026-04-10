@@ -29,6 +29,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.atLeastOnce;
@@ -167,5 +168,91 @@ class ExperimentPipelineGenerationServiceTest {
         @SuppressWarnings("unchecked")
         java.util.Map<String, Object> persisted = mapper.readValue(experiment.getLandingPageCopy(), java.util.Map.class);
         assertTrue(persisted.get("landingPageCopy") instanceof java.util.Map);
+    }
+
+    @Test
+    void completeJobNormalizesLandingPageHtmlFormContractAndAvoidsPrevious422Scenario() throws Exception {
+        Experiment experiment = new Experiment();
+        experiment.setId(77L);
+        experiment.setLandingPageWireframe("""
+                {
+                  "landingPageWireframe": {
+                    "sectionOrder": [
+                      {
+                        "sectionId": "hero",
+                        "surfaceSpec": {
+                          "surfaceToken": "surface-base",
+                          "style": "band",
+                          "contrastMode": "normal",
+                          "notes": "hero"
+                        }
+                      }
+                    ],
+                    "formSpec": {
+                      "formId": "lead-capture-primary",
+                      "title": "Receber a prévia do Kit (IA)",
+                      "submitLabel": "Desbloquear o Kit (receber a prévia gerada por IA)",
+                      "submitTarget": "#desbloquear",
+                      "fields": [
+                        {"name": "nome", "type": "text", "required": true},
+                        {"name": "email", "type": "email", "required": true},
+                        {"name": "whatsapp", "type": "tel", "required": false}
+                      ],
+                      "consent": {"enabled": true, "required": false, "label": "ok"},
+                      "successState": {"title": "ok", "message": "ok"}
+                    }
+                  }
+                }
+                """);
+
+        UUID jobId = UUID.randomUUID();
+        ExperimentPipelineGenerationJob job = ExperimentPipelineGenerationJob.builder()
+                .id(jobId)
+                .experiment(experiment)
+                .section(ExperimentPipelineSection.LANDING_PAGE_HTML)
+                .status(ExperimentPipelineGenerationJobStatus.PROCESSING)
+                .stage(ExperimentPipelineGenerationJobStage.SENT_TO_OPENAI)
+                .model("gpt-5.2")
+                .prompt("prompt")
+                .build();
+        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+
+        ExperimentPipelineGenerationJobCompletionRequest request = new ExperimentPipelineGenerationJobCompletionRequest(
+                """
+                        {
+                          "landingPageHtml": {
+                            "htmlDocument": "<!doctype html><html><body><section data-section-id='hero' data-surface-token='surface-base' data-surface-style='band' data-surface-contrast='normal'><form id='lead-capture-primary'><div class='field'><input type='text' name='nome' required /></div><div class='field'><select name='objetivo'><option>a</option></select></div></form><button type='submit'>Desbloquear o Kit (receber a prévia gerada por IA)</button></section></body></html>",
+                            "summary": "form antigo com objetivo principal",
+                            "consistencyChecks": [
+                              {"check":"FORM_USABILITY","status":"PASS","details":"objetivo principal obrigatório"}
+                            ]
+                          }
+                        }
+                        """,
+                "{\"id\":\"resp_77\"}",
+                "{\"model\":\"gpt-5.2\"}",
+                120,
+                80,
+                null);
+
+        service.completeJob(jobId, request);
+
+        ObjectMapper mapper = new ObjectMapper();
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> persisted = mapper.readValue(experiment.getLandingPageHtml(), java.util.Map.class);
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> landingPageHtml = (java.util.Map<String, Object>) persisted.get("landingPageHtml");
+        String html = String.valueOf(landingPageHtml.get("htmlDocument")).toLowerCase();
+        String summary = String.valueOf(landingPageHtml.get("summary")).toLowerCase();
+        @SuppressWarnings("unchecked")
+        java.util.List<java.util.Map<String, Object>> checks = (java.util.List<java.util.Map<String, Object>>) landingPageHtml.get("consistencyChecks");
+
+        assertTrue(html.contains("name=\"nome\""));
+        assertTrue(html.contains("name=\"email\""));
+        assertTrue(html.contains("name=\"whatsapp\""));
+        assertFalse(html.contains("name=\"objetivo\""));
+        assertFalse(html.contains("objetivo principal"));
+        assertTrue(summary.contains("wireframe.formspec"));
+        assertTrue(checks.stream().anyMatch(check -> "FORM_USABILITY".equals(check.get("check"))));
     }
 }

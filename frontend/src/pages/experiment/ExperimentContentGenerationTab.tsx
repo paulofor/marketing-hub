@@ -497,6 +497,7 @@ artifact {
 Regra obrigatória de imagens:
 - Toda tag <img> deve ter src absoluto válido (https://... ou data:image/...).
 - Toda tag <img> deve reutilizar altText e placement definidos no planejamento de imagens.
+- Toda tag <img> deve declarar data-image-section-id, data-image-role, data-conversion-role, data-attention-priority, data-visual-weight, data-distance-to-cta e data-supports-form-conversion conforme o planejamento.
 - Nunca use caminhos relativos como "/assets/..." ou "./imagem.jpg" no htmlDocument.
 - Se não houver imagem final disponível, renderize placeholder visual no CSS sem quebrar layout.`;
 
@@ -509,13 +510,26 @@ Regras:
 1. Entregar images[] com no mínimo 4 imagens planejadas para seções reais da landing.
 2. Cada imagem precisa incluir:
    - sectionId e sectionName
+   - imageRole
+   - conversionRole
+   - emotionalJob
+   - sectionVisualGoal
    - placement (hero|benefit|mechanism|proof|offer|faq|cta)
    - priority (high|medium|low)
    - hierarchyLevel (primary|secondary|support)
+   - attentionPriority (high|medium|low)
+   - visualWeight (primary|secondary|support)
+   - distanceToCTA (near|medium|far)
+   - supportsFormConversion
+   - formRelationNotes
    - objective
    - imagePrompt
    - altText
    - dimensions.desktop e dimensions.mobile
+   - layoutBinding.preferredDesktopPlacement, layoutBinding.preferredMobilePlacement
+   - layoutBinding.desktopAspectRatio, layoutBinding.mobileAspectRatio
+   - layoutBinding.allowCrop
+   - layoutBinding.safeCropZones.top/right/bottom/left
    - messageMatchNotes
 3. Sempre incluir negativePrompt, complianceNotes e textOverlayGuidance.
 4. Definir sequencingNotes e ctaIntegrationNotes para manter continuidade com o CTA.

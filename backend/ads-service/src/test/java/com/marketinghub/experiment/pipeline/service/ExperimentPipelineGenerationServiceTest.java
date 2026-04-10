@@ -26,6 +26,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -87,6 +89,7 @@ class ExperimentPipelineGenerationServiceTest {
             }
             return flow;
         });
+
         when(experimentRepository.save(any(Experiment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ExperimentDto dto = new ExperimentDto();
@@ -391,6 +394,75 @@ class ExperimentPipelineGenerationServiceTest {
         assertNotNull(experiment.getLandingPageHtml());
     }
 
+    @Test
+    void completeLandingImagePlanningNormalizesBindingKeysWhenMissing() throws Exception {
+        Experiment experiment = new Experiment();
+        experiment.setId(42L);
+        ExperimentPipelineGenerationJob job = createLandingImagePlanningJob(experiment);
+
+        String payload = """
+                {
+                  "landingPageImagePlanning": {
+                    "images": [
+                      {
+                        "sectionId": "s0-hero-variant",
+                        "sectionName": "Hero",
+                        "imageRole": "Hero Pain Anchor",
+                        "conversionRole": "grab-attention",
+                        "emotionalJob": "urgencia",
+                        "sectionVisualGoal": "Mostrar continuidade com o anúncio",
+                        "placement": "hero",
+                        "hierarchyLevel": "primary",
+                        "objective": "Garantir message match",
+                        "imagePrompt": "Foto realista",
+                        "negativePrompt": "none",
+                        "visualStyle": "photo",
+                        "composition": "rule of thirds",
+                        "focalPoint": "subject",
+                        "supportingElements": ["element"],
+                        "mood": "direct",
+                        "layoutBinding": {
+                          "preferredDesktopPlacement": "right",
+                          "preferredMobilePlacement": "above-copy",
+                          "desktopAspectRatio": "16:9",
+                          "mobileAspectRatio": "4:5",
+                          "allowCrop": true,
+                          "safeCropZones": {
+                            "top": 0.1,
+                            "right": 0.1,
+                            "bottom": 0.1,
+                            "left": 0.1
+                          }
+                        },
+                        "attentionPriority": "high",
+                        "visualWeight": "primary",
+                        "distanceToCTA": "near",
+                        "supportsFormConversion": true,
+                        "formRelationNotes": "notes",
+                        "dimensions": {
+                          "desktop": "1600x900",
+                          "mobile": "1080x1350"
+                        },
+                        "safeMargins": "10%",
+                        "textOverlayGuidance": "none",
+                        "generationHints": ["hint"],
+                        "messageMatchNotes": "notes",
+                        "complianceNotes": "notes"
+                      }
+                    ]
+                  }
+                }
+                """;
+
+        service.completeJob(job.getId(), landingImagePlanningCompletionRequest(payload));
+
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> stored = mapper.readValue(experiment.getLandingPageImagePlanning(), Map.class);
+        Map<String, Object> planning = (Map<String, Object>) stored.get("landingPageImagePlanning");
+        List<Map<String, Object>> images = (List<Map<String, Object>>) planning.get("images");
+        assertEquals("hero-pain-anchor", images.get(0).get("imageBindingKey"));
+    }
+
     private Experiment buildLandingHtmlValidationExperiment(long experimentId) {
         Experiment experiment = new Experiment();
         experiment.setId(experimentId);
@@ -458,6 +530,31 @@ class ExperimentPipelineGenerationServiceTest {
                 .build();
         when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
         return job;
+    }
+
+    private ExperimentPipelineGenerationJob createLandingImagePlanningJob(Experiment experiment) {
+        UUID jobId = UUID.randomUUID();
+        ExperimentPipelineGenerationJob job = ExperimentPipelineGenerationJob.builder()
+                .id(jobId)
+                .experiment(experiment)
+                .section(ExperimentPipelineSection.LANDING_PAGE_IMAGE_PLANNING)
+                .status(ExperimentPipelineGenerationJobStatus.PROCESSING)
+                .stage(ExperimentPipelineGenerationJobStage.SENT_TO_OPENAI)
+                .model("gpt-5.2")
+                .prompt("prompt")
+                .build();
+        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+        return job;
+    }
+
+    private ExperimentPipelineGenerationJobCompletionRequest landingImagePlanningCompletionRequest(String payload) {
+        return new ExperimentPipelineGenerationJobCompletionRequest(
+                payload,
+                "{\"id\":\"resp_planning\"}",
+                "{\"model\":\"gpt-5.2\"}",
+                90,
+                60,
+                null);
     }
 
     private ExperimentPipelineGenerationJobCompletionRequest landingHtmlCompletionRequest(String htmlDocument) {

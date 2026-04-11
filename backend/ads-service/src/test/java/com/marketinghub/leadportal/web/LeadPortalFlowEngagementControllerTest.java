@@ -1,6 +1,7 @@
 package com.marketinghub.leadportal.web;
 
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
+import com.marketinghub.leadportal.dto.LeadPortalSubmissionEngagementContractV1;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -50,7 +51,10 @@ class LeadPortalFlowEngagementControllerTest {
 
     @Test
     void registerSubmissionForwardsPayload() throws Exception {
-        when(experimentFunnelService.registerFormSubmission(eq("flow-slug"), any())).thenReturn(true);
+        when(experimentFunnelService.registerFormSubmission(
+                eq("flow-slug"),
+                any(LeadPortalSubmissionEngagementContractV1.class)))
+                .thenReturn(true);
         mockMvc.perform(post("/api/public/lead-portal/flows/flow-slug/submission")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -64,7 +68,9 @@ class LeadPortalFlowEngagementControllerTest {
                                 """))
                 .andExpect(status().isOk());
 
-        verify(experimentFunnelService).registerFormSubmission(eq("flow-slug"), any());
+        verify(experimentFunnelService).registerFormSubmission(
+                eq("flow-slug"),
+                any(LeadPortalSubmissionEngagementContractV1.class));
     }
 
 }

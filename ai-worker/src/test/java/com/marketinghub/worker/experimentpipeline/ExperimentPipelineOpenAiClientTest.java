@@ -530,6 +530,7 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(htmlDocument).contains("enctype=\"multipart/form-data\"");
         assertThat(htmlDocument).contains("action=\"/api/flows/{slug}/submissions\"");
         assertThat(htmlDocument).contains("id=\"lead-capture-submit-contract\"");
+        assertThat(htmlDocument).contains("var slugtoken = /\\{slug\\}|%7bslug%7d/i;");
     }
 
     @Test
@@ -586,6 +587,7 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(htmlDocument).doesNotContain("<select name=\"objetivo\"");
         assertThat(htmlDocument).contains("action=\"/api/flows/{slug}/submissions\"");
         assertThat(htmlDocument).contains("id=\"lead-capture-submit-contract\"");
+        assertThat(htmlDocument).contains("var slugtoken = /\\{slug\\}|%7bslug%7d/i;");
     }
 
     @Test

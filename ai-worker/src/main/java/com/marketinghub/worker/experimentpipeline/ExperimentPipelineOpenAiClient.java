@@ -248,8 +248,9 @@ public class ExperimentPipelineOpenAiClient {
                 var slugMatch = pathname.match(/\\/flows\\/([^/?#]+)/i);
                 var slug = slugMatch && slugMatch[1] ? slugMatch[1] : '';
                 var endpointTemplate = form.getAttribute('action') || '/api/flows/{slug}/submissions';
-                var endpoint = endpointTemplate.indexOf('{slug}') >= 0
-                  ? endpointTemplate.replace('{slug}', slug || 'formpersonal')
+                var slugToken = /\\{slug\\}|%7Bslug%7D/i;
+                var endpoint = slugToken.test(endpointTemplate)
+                  ? endpointTemplate.replace(slugToken, slug || 'formpersonal')
                   : endpointTemplate;
                 var formData = new FormData(form);
                 var nome = (formData.get('nome') || '').toString().trim();

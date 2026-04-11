@@ -298,6 +298,7 @@ Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
     "title": "string",
     "submitLabel": "string",
     "submitTarget": "string",
+    "submitTargetTemplateRule": "Quando usar placeholder de slug, manter exatamente {slug} (sem codificar para %7Bslug%7D).",
     "cta": {
       "label": "string",
       "target": "string",

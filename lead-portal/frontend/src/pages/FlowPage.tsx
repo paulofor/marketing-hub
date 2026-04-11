@@ -9,7 +9,11 @@ import {
 } from "../api";
 import FlowForm from "../components/FlowForm";
 import { resolveAssetUrl } from "../utils/resolveAssetUrl";
-import { normalizeCustomTemplateHtml } from "../utils/customTemplateHtml";
+import {
+  normalizeCustomTemplatePayload,
+  type CustomTemplateFormFieldSpec,
+  type CustomTemplateFormSpec,
+} from "../utils/customTemplateHtml";
 import { getVisitorIdCookie } from "../utils/visitorCookie";
 import { useCampaignCode } from "../hooks/useCampaignCode";
 import type { FlowQuestion, LeadPortalFlow, LeadPortalSimpleFormStyleDefinition } from "../types";
@@ -42,10 +46,12 @@ export default function FlowPage() {
     () => extractSimpleFormMetadata(flow?.questions ?? []),
     [flow?.questions],
   );
-  const customTemplateHtml = useMemo(
-    () => normalizeCustomTemplateHtml(flow?.customFormHtml),
+  const customTemplatePayload = useMemo(
+    () => normalizeCustomTemplatePayload(flow?.customFormHtml),
     [flow?.customFormHtml],
   );
+  const customTemplateHtml = customTemplatePayload?.html;
+  const customTemplateFormSpec = customTemplatePayload?.formSpec;
   const hasCustomTemplate = Boolean(customTemplateHtml);
   const customTemplateVariables = useMemo(() => {
     if (!hasCustomTemplate || !flow) {
@@ -63,6 +69,14 @@ export default function FlowPage() {
     registerFlowRenderComplete(resolvedFlowSlug, getVisitorIdCookie(), campaignCode)
       .then(() => {
         if (!cancelled) {
+          window.dispatchEvent(
+            new CustomEvent("lead-portal-render-complete", {
+              detail: {
+                flowSlug: resolvedFlowSlug,
+                campaignCode: campaignCode ?? null,
+              },
+            }),
+          );
           setHasTrackedRenderComplete(true);
         }
       })
@@ -115,6 +129,7 @@ export default function FlowPage() {
         html={customTemplateHtml}
         variables={templateVariables}
         flowSlug={flow.slug}
+        formSpec={customTemplateFormSpec}
         campaignCode={campaignCode}
         onSubmitted={() => setHasSubmitted(true)}
       />
@@ -236,6 +251,7 @@ interface CustomFlowTemplateProps {
   html: string;
   variables: Map<string, string>;
   flowSlug: string;
+  formSpec?: CustomTemplateFormSpec;
   campaignCode?: string | null;
   onSubmitted?: () => void;
 }
@@ -246,6 +262,7 @@ function CustomFlowTemplate({
   html,
   variables,
   flowSlug,
+  formSpec,
   campaignCode,
   onSubmitted,
 }: CustomFlowTemplateProps) {
@@ -306,6 +323,7 @@ function CustomFlowTemplate({
       }
       const newBridgeCleanup = attachCustomTemplateBridge(iframe, {
         flowSlug,
+        formSpec,
         campaignCode,
         onSubmitted,
       });
@@ -333,7 +351,7 @@ function CustomFlowTemplate({
       cleanupObserver();
       cleanupBridge();
     };
-  }, [processedHtml, flowSlug, campaignCode, onSubmitted]);
+  }, [processedHtml, flowSlug, formSpec, campaignCode, onSubmitted]);
 
   if (!processedHtml) {
     return (
@@ -359,6 +377,7 @@ function CustomFlowTemplate({
 
 interface CustomTemplateBridgeOptions {
   flowSlug: string;
+  formSpec?: CustomTemplateFormSpec;
   campaignCode?: string | null;
   onSubmitted?: () => void;
 }
@@ -371,6 +390,9 @@ function attachCustomTemplateBridge(
   const win = iframe.contentWindow;
   if (!doc || !win) {
     return null;
+  }
+  if (options.formSpec) {
+    renderManagedTemplateForm(doc, options.formSpec);
   }
 
   const handleAnchorClick = (event: MouseEvent) => {
@@ -416,8 +438,23 @@ function attachCustomTemplateBridge(
       const parsed = parseTemplateSubmissionPayload(target, options.campaignCode);
       await submitFlowSubmission(options.flowSlug, parsed.payload, parsed.image);
       target.dataset.leadPortalSubmitted = "true";
+      writeManagedTemplateFeedback(
+        target,
+        "success",
+        options.formSpec?.successState?.title ?? "Tudo certo!",
+        options.formSpec?.successState?.message ?? "Recebemos seus dados com sucesso.",
+      );
       target.dispatchEvent(
         new CustomEvent("leadportal:submission-success", { bubbles: true }),
+      );
+      window.dispatchEvent(
+        new CustomEvent("lead_portal_submission", {
+          detail: {
+            flowSlug: options.flowSlug,
+            campaignCode: options.campaignCode ?? null,
+            mode: "managed-runtime",
+          },
+        }),
       );
       options.onSubmitted?.();
     } catch (error) {
@@ -426,6 +463,7 @@ function attachCustomTemplateBridge(
           ? error.message
           : "Não foi possível enviar suas respostas.";
       target.dataset.leadPortalSubmitError = message;
+      writeManagedTemplateFeedback(target, "error", "Erro ao enviar", message);
       target.dispatchEvent(
         new CustomEvent("leadportal:submission-error", {
           bubbles: true,
@@ -474,6 +512,104 @@ function toggleTemplateSubmitButtons(form: HTMLFormElement, isSubmitting: boolea
     button.disabled = isSubmitting;
     button.setAttribute("aria-busy", isSubmitting ? "true" : "false");
   });
+}
+
+function renderManagedTemplateForm(doc: Document, formSpec: CustomTemplateFormSpec) {
+  const target =
+    (doc.getElementById(formSpec.formId) as HTMLFormElement | null) ??
+    (doc.querySelector("form") as HTMLFormElement | null);
+  if (!target) {
+    return;
+  }
+  target.id = formSpec.formId;
+  target.setAttribute("novalidate", "novalidate");
+  target.setAttribute("data-lead-portal-managed", "true");
+  target.removeAttribute("action");
+  target.removeAttribute("method");
+  target.querySelectorAll("[data-runtime-node='true']").forEach((node) => node.remove());
+
+  const fragment = doc.createDocumentFragment();
+  if (formSpec.title) {
+    const title = doc.createElement("h2");
+    title.textContent = formSpec.title;
+    title.setAttribute("data-runtime-node", "true");
+    fragment.appendChild(title);
+  }
+
+  formSpec.fields.forEach((field) => {
+    fragment.appendChild(buildManagedField(doc, field));
+  });
+
+  if (formSpec.consent?.enabled && formSpec.consent.label) {
+    const consentWrapper = doc.createElement("label");
+    consentWrapper.setAttribute("data-runtime-node", "true");
+    consentWrapper.style.display = "flex";
+    consentWrapper.style.gap = "0.5rem";
+    const consentInput = doc.createElement("input");
+    consentInput.type = "checkbox";
+    consentInput.name = "consentimento";
+    if (formSpec.consent.required) {
+      consentInput.required = true;
+    }
+    const consentText = doc.createElement("span");
+    consentText.textContent = formSpec.consent.label;
+    consentWrapper.appendChild(consentInput);
+    consentWrapper.appendChild(consentText);
+    fragment.appendChild(consentWrapper);
+  }
+
+  const submitButton = doc.createElement("button");
+  submitButton.type = "submit";
+  submitButton.textContent = formSpec.submitLabel;
+  submitButton.setAttribute("data-runtime-node", "true");
+  submitButton.className = "lead-portal-runtime-submit";
+  fragment.appendChild(submitButton);
+
+  const feedback = doc.createElement("div");
+  feedback.setAttribute("data-runtime-node", "true");
+  feedback.setAttribute("data-runtime-feedback", "true");
+  feedback.setAttribute("role", "status");
+  feedback.setAttribute("aria-live", "polite");
+  feedback.style.marginTop = "0.75rem";
+  fragment.appendChild(feedback);
+
+  target.replaceChildren(fragment);
+}
+
+function buildManagedField(doc: Document, field: CustomTemplateFormFieldSpec) {
+  const wrapper = doc.createElement("div");
+  wrapper.setAttribute("data-runtime-node", "true");
+  wrapper.className = "lead-portal-runtime-field";
+
+  const label = doc.createElement("label");
+  label.htmlFor = `field_${field.name}`;
+  label.textContent = field.required ? `${field.label} *` : field.label;
+
+  const input = doc.createElement("input");
+  input.id = `field_${field.name}`;
+  input.name = field.name;
+  input.type = field.type;
+  input.required = field.required;
+  input.placeholder = field.placeholder ?? "";
+  input.autocomplete = field.type === "email" ? "email" : field.type === "tel" ? "tel" : "name";
+
+  wrapper.appendChild(label);
+  wrapper.appendChild(input);
+  return wrapper;
+}
+
+function writeManagedTemplateFeedback(
+  form: HTMLFormElement,
+  status: "success" | "error",
+  title: string,
+  message: string,
+) {
+  const container = form.querySelector<HTMLElement>("[data-runtime-feedback='true']");
+  if (!container) {
+    return;
+  }
+  container.dataset.status = status;
+  container.textContent = `${title} ${message}`.trim();
 }
 
 function parseTemplateSubmissionPayload(

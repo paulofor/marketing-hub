@@ -22,6 +22,7 @@ public record LeadPortalFlowPublicationRequest(
         String name,
         String description,
         String customFormHtml,
+        EngagementContractMetadata engagementContract,
         String model,
         String prompt,
         String imagePromptModel,
@@ -53,6 +54,7 @@ public record LeadPortalFlowPublicationRequest(
                 flow.getName(),
                 flow.getDescription(),
                 flow.getCustomFormHtml(),
+                EngagementContractMetadata.defaultV1(),
                 flow.getModel(),
                 flow.getPrompt(),
                 flow.getImagePromptModel(),
@@ -182,5 +184,25 @@ public record LeadPortalFlowPublicationRequest(
             String name,
             LeadPortalSimpleFormStyleDefinition definition,
             String previewImageUrl) {
+    }
+
+    public record EngagementContractMetadata(
+            String version,
+            String renderCompleteEndpoint,
+            String submissionEndpoint,
+            String idempotencyField,
+            List<String> submissionRequiredFields) {
+
+        private static final String RENDER_ENDPOINT = "/api/public/lead-portal/flows/{slug}/render-complete";
+        private static final String SUBMISSION_ENDPOINT = "/api/public/lead-portal/flows/{slug}/submission";
+
+        public static EngagementContractMetadata defaultV1() {
+            return new EngagementContractMetadata(
+                    "lead-portal-submission-engagement.v1",
+                    RENDER_ENDPOINT,
+                    SUBMISSION_ENDPOINT,
+                    "submissionId",
+                    List.of("slug", "submissionId", "submittedAt", "contato"));
+        }
     }
 }

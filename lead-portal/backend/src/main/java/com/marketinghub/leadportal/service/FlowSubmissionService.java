@@ -233,7 +233,13 @@ public class FlowSubmissionService {
         }
         try {
             ExperimentFunnelTrackingClient.TrackingResult result = trackingClient.registerSubmission(
-                    flow.slug(), submission.id(), submission.createdAt(), submission.campaignCode());
+                    flow.slug(),
+                    submission.id(),
+                    submission.createdAt(),
+                    submission.campaignCode(),
+                    submission.name(),
+                    submission.email(),
+                    extractContactPhone(submission.answers()));
             if (result == ExperimentFunnelTrackingClient.TrackingResult.FAILED) {
                 log.warn("Falha ao reenviar submission {} do fluxo {} para o Marketing Hub",
                         submission.id(), flow.slug());
@@ -243,6 +249,25 @@ public class FlowSubmissionService {
         } catch (RuntimeException ex) {
             log.warn("Erro ao reenviar submission {} do fluxo {} ao Marketing Hub", submission.id(), flow.slug(), ex);
         }
+    }
+
+    private String extractContactPhone(Map<String, Object> answers) {
+        if (answers == null || answers.isEmpty()) {
+            return null;
+        }
+        return answers.entrySet().stream()
+                .filter(entry -> entry.getKey() != null)
+                .filter(entry -> {
+                    String key = entry.getKey().toLowerCase();
+                    return key.contains("telefone") || key.contains("whatsapp") || key.contains("phone");
+                })
+                .map(Map.Entry::getValue)
+                .filter(value -> value != null)
+                .map(Object::toString)
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .findFirst()
+                .orElse(null);
     }
 
     private void registerImagePackage(Flow flow, FlowSubmission submission, boolean hasImage) {

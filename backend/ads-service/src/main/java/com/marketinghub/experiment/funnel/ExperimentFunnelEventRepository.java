@@ -16,6 +16,12 @@ public interface ExperimentFunnelEventRepository extends JpaRepository<Experimen
     String RENDER_COMPLETE_SOURCE = "lead-portal-render-complete";
     String SUBMISSION_SOURCE = "lead_portal_submission";
 
+    boolean existsByExperimentIdAndStageAndSourceAndPayload(
+            Long experimentId,
+            ExperimentFunnelStage stage,
+            String source,
+            String payload);
+
     @Query("""
             select e.stage as stage,
                    count(e.id) as total,

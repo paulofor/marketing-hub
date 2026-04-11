@@ -368,7 +368,7 @@ function CustomFlowTemplate({
         className="flow-custom-template-frame"
         srcDoc={processedHtml}
         title="Conteúdo personalizado do fluxo"
-        sandbox="allow-same-origin allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-downloads allow-top-navigation-by-user-activation"
+        sandbox="allow-same-origin allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-downloads allow-top-navigation-by-user-activation"
       />
     </div>
   );
@@ -659,6 +659,8 @@ function parseTemplateSubmissionPayload(
     }
   });
 
+  ensureRequiredSubmissionContractFields(name, email);
+
   return {
     payload: {
       name,
@@ -669,6 +671,15 @@ function parseTemplateSubmissionPayload(
     },
     image,
   };
+}
+
+function ensureRequiredSubmissionContractFields(name: string, email: string) {
+  if (!name.trim()) {
+    throw new Error("Contrato de submissão v1 exige contato.nome preenchido.");
+  }
+  if (!email.trim()) {
+    throw new Error("Contrato de submissão v1 exige contato.email preenchido.");
+  }
 }
 
 function normalizeTemplateFieldKey(rawKey: string) {

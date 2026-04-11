@@ -230,6 +230,51 @@ public class ExperimentPipelineOpenAiClient {
               <div class="error" id="field_whatsapp_error" style="display:none" role="alert"></div>
             </div>
             """;
+    private static final String STATIC_FORM_SUBMIT_SCRIPT = """
+            <script id="lead-capture-submit-contract">
+            (function () {
+              var form = document.getElementById('lead-capture-primary');
+              if (!form || form.dataset.staticSubmitContractApplied === 'true') {
+                return;
+              }
+              form.dataset.staticSubmitContractApplied = 'true';
+              form.addEventListener('submit', async function (event) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                var pathname = window.location.pathname || '';
+                var slugMatch = pathname.match(/\\/flows\\/([^/?#]+)/i);
+                var slug = slugMatch && slugMatch[1] ? slugMatch[1] : '';
+                var endpointTemplate = form.getAttribute('action') || '/api/flows/{slug}/submissions';
+                var endpoint = endpointTemplate.indexOf('{slug}') >= 0
+                  ? endpointTemplate.replace('{slug}', slug || 'formpersonal')
+                  : endpointTemplate;
+                var formData = new FormData(form);
+                var nome = (formData.get('nome') || '').toString().trim();
+                var email = (formData.get('email') || '').toString().trim();
+                var whatsapp = (formData.get('whatsapp') || '').toString().trim();
+                var answers = {};
+                if (whatsapp) {
+                  answers.whatsapp = whatsapp;
+                }
+                var campaignCode = new URLSearchParams(window.location.search).get('campaign')
+                  || new URLSearchParams(window.location.search).get('utm_campaign');
+                var payload = { name: nome, email: email, answers: answers };
+                if (campaignCode) {
+                  payload.campaignCode = campaignCode;
+                }
+                formData.set('payload', JSON.stringify(payload));
+                try {
+                  var response = await fetch(endpoint, { method: 'POST', body: formData });
+                  if (!response.ok) {
+                    throw new Error('Falha ao enviar formulário: ' + response.status);
+                  }
+                } catch (error) {
+                  console.error(error);
+                }
+              }, true);
+            })();
+            </script>
+            """;
 
     private static final String LANDING_IMAGE_PLANNING_PROMPT_SUFFIX = """
             Objetivo:
@@ -396,13 +441,14 @@ public class ExperimentPipelineOpenAiClient {
             sanitizedInner = sanitizedInner.stripLeading();
         }
 
-        StringBuilder rebuiltForm = new StringBuilder(formOpenTag.length() + STATIC_FORM_FIELDS_HTML.length() + sanitizedInner.length() + 32);
-        rebuiltForm.append(formOpenTag).append('\n').append(STATIC_FORM_FIELDS_HTML);
+        String normalizedFormOpenTag = normalizeFormOpenTag(formOpenTag);
+        StringBuilder rebuiltForm = new StringBuilder(normalizedFormOpenTag.length() + STATIC_FORM_FIELDS_HTML.length() + sanitizedInner.length() + 32);
+        rebuiltForm.append(normalizedFormOpenTag).append('\n').append(STATIC_FORM_FIELDS_HTML);
         if (StringUtils.hasText(sanitizedInner)) {
             rebuiltForm.append('\n').append(sanitizedInner);
         }
-
-        return beforeForm + rebuiltForm + afterForm;
+        String normalizedDocument = beforeForm + rebuiltForm + afterForm;
+        return ensureStaticSubmitScript(normalizedDocument);
     }
 
     private String stripDynamicFormFields(String formInner) {
@@ -411,6 +457,39 @@ public class ExperimentPipelineOpenAiClient {
         }
         Matcher matcher = FORM_FIELD_BLOCK_PATTERN.matcher(formInner);
         return matcher.replaceAll("");
+    }
+
+    private String normalizeFormOpenTag(String formOpenTag) {
+        String updated = upsertAttribute(formOpenTag, "id", "lead-capture-primary");
+        updated = upsertAttribute(updated, "method", "post");
+        updated = upsertAttribute(updated, "enctype", "multipart/form-data");
+        return upsertAttribute(updated, "action", "/api/flows/{slug}/submissions");
+    }
+
+    private String upsertAttribute(String tag, String attributeName, String value) {
+        Pattern pattern = Pattern.compile("(?i)\\s+" + Pattern.quote(attributeName) + "\\s*=\\s*(['\"]).*?\\1");
+        Matcher matcher = pattern.matcher(tag);
+        String replacement = " " + attributeName + "=\"" + value + "\"";
+        if (matcher.find()) {
+            return matcher.replaceFirst(replacement);
+        }
+        int closeIdx = tag.lastIndexOf('>');
+        if (closeIdx < 0) {
+            return tag;
+        }
+        return tag.substring(0, closeIdx) + replacement + tag.substring(closeIdx);
+    }
+
+    private String ensureStaticSubmitScript(String htmlDocument) {
+        if (!StringUtils.hasText(htmlDocument) || htmlDocument.contains("id=\"lead-capture-submit-contract\"")) {
+            return htmlDocument;
+        }
+        String lower = htmlDocument.toLowerCase(Locale.ROOT);
+        int bodyClose = lower.lastIndexOf("</body>");
+        if (bodyClose >= 0) {
+            return htmlDocument.substring(0, bodyClose) + STATIC_FORM_SUBMIT_SCRIPT + "\n" + htmlDocument.substring(bodyClose);
+        }
+        return htmlDocument + "\n" + STATIC_FORM_SUBMIT_SCRIPT;
     }
 
 

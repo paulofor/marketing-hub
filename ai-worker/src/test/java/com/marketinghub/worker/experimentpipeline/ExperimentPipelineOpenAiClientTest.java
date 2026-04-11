@@ -525,6 +525,11 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(htmlDocument).contains("name=\"nome\"");
         assertThat(htmlDocument).contains("name=\"email\"");
         assertThat(htmlDocument).contains("name=\"whatsapp\"");
+        assertThat(htmlDocument).contains("id=\"lead-capture-primary\"");
+        assertThat(htmlDocument).contains("method=\"post\"");
+        assertThat(htmlDocument).contains("enctype=\"multipart/form-data\"");
+        assertThat(htmlDocument).contains("action=\"/api/flows/{slug}/submissions\"");
+        assertThat(htmlDocument).contains("id=\"lead-capture-submit-contract\"");
     }
 
     @Test
@@ -579,6 +584,8 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(htmlDocument).contains("name=\"whatsapp\"");
         assertThat(htmlDocument).doesNotContain("name=\"objetivo\"");
         assertThat(htmlDocument).doesNotContain("<select name=\"objetivo\"");
+        assertThat(htmlDocument).contains("action=\"/api/flows/{slug}/submissions\"");
+        assertThat(htmlDocument).contains("id=\"lead-capture-submit-contract\"");
     }
 
     @Test

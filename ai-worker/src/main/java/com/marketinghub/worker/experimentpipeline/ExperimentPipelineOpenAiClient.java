@@ -199,9 +199,12 @@ public class ExperimentPipelineOpenAiClient {
             7. Cada seção renderizada deve incluir data-section-id e aplicar exatamente wireframe.sectionOrder[i].surfaceSpec usando data-surface-token, data-surface-style e data-surface-contrast.
             8. Não inventar estrutura visual fora do layout/plano de imagens sem justificar nos consistencyChecks.
             9. Não usar bibliotecas externas.
-            10. Toda tag <img> deve usar src absoluto válido (https://... ou data:image/...) e reutilizar altText do planejamento de imagens.
-            11. Cada <img> deve declarar data-image-section-id e data-image-binding-key como binding canônico obrigatório do plano de imagens.
-            12. Cada <img> também deve declarar data-image-role (semântico), data-conversion-role, data-attention-priority, data-visual-weight, data-distance-to-cta e data-supports-form-conversion.
+            10. Renderizar imagens somente para itens listados em landingPageImagePlanning.images[].
+            11. É proibido adicionar qualquer tag <img> fora dessa lista, mesmo que o wireframe sugira mídia visual em outras seções.
+            12. Se uma seção tiver contentType=split e não existir imagem correspondente em landingPageImagePlanning.images[], renderizar o bloco sem <img>.
+            13. Toda tag <img> permitida deve usar src absoluto válido (https://... ou data:image/...) e reutilizar altText do planejamento de imagens.
+            14. Cada <img> deve declarar data-image-section-id e data-image-binding-key como binding canônico obrigatório do plano de imagens.
+            15. Cada <img> também deve declarar data-image-role (semântico), data-conversion-role, data-attention-priority, data-visual-weight, data-distance-to-cta e data-supports-form-conversion.
 
             Formato obrigatório (JSON):
             - htmlDocument

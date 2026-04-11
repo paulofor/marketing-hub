@@ -448,7 +448,7 @@ function attachCustomTemplateBridge(
   };
 
   const elementProto = win.Element?.prototype;
-  const originalScrollIntoView = elementProto?.scrollIntoView?.bind(elementProto);
+  const originalScrollIntoView = elementProto?.scrollIntoView;
   if (elementProto && typeof elementProto.scrollIntoView === "function") {
     elementProto.scrollIntoView = function scrollIntoViewOverride(arg?: boolean | ScrollIntoViewOptions) {
       const behavior = normalizeBehavior(arg);

@@ -255,6 +255,7 @@ class ExperimentPipelineGenerationServiceTest {
         assertTrue(html.contains("name=\"nome\""));
         assertTrue(html.contains("name=\"email\""));
         assertTrue(html.contains("name=\"whatsapp\""));
+        assertTrue(html.contains("button type=\"submit\" form=\"lead-capture-primary\""));
         assertFalse(html.contains("name=\"objetivo\""));
         assertFalse(html.contains("objetivo principal"));
         assertTrue(summary.contains("wireframe.formspec"));

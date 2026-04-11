@@ -203,6 +203,7 @@ Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
     "submitEncoding": "multipart/form-data",
     "submitPayloadContract": {
       "endpoint": "/api/flows/{slug}/submissions",
+      "endpointResolution": "obrigatorio resolver {slug} a partir de /flows/{slug} em runtime e executar POST multipart/form-data",
       "requiredMultipartFields": ["payload"],
       "payloadJsonShape": {
         "name": "string",

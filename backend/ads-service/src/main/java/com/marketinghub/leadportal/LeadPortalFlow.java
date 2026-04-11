@@ -54,6 +54,10 @@ public class LeadPortalFlow {
     @Column(name = "custom_form_html", columnDefinition = "LONGTEXT")
     private String customFormHtml;
 
+    @Builder.Default
+    @Column(name = "schema_first", nullable = false)
+    private boolean schemaFirst = false;
+
     @Column(name = "image_prompt_batch_size")
     private Integer imagePromptBatchSize;
 

@@ -13,6 +13,7 @@ public class CreateLeadPortalFlowRequest {
     private String slug;
     private String description;
     private String customFormHtml;
+    private Boolean schemaFirst;
     private Long marketNicheId;
     private Long experimentId;
     private String model;

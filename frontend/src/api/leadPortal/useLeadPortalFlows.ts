@@ -24,6 +24,7 @@ export interface LeadPortalFlow {
   publicUrl?: string | null;
   description?: string | null;
   customFormHtml?: string | null;
+  schemaFirst?: boolean;
   model?: string | null;
   prompt?: string | null;
   imagePromptModel?: string | null;

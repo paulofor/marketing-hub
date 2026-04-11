@@ -71,6 +71,10 @@ public class Experiment {
     @Column(name = "lead_portal_flow_model", length = 191)
     private String leadPortalFlowModel;
 
+    @Builder.Default
+    @Column(name = "schema_first_lead_portal_enabled", nullable = false)
+    private boolean schemaFirstLeadPortalEnabled = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lead_portal_flow_id")
     private LeadPortalFlow leadPortalFlow;

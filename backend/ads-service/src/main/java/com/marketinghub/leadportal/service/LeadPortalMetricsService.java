@@ -76,7 +76,7 @@ public class LeadPortalMetricsService {
                 FROM experiment e
                 LEFT JOIN (
                     SELECT lps.experiment_id,
-                           lps.id AS submission_id,
+                           CONCAT('legacy:', lps.id) AS submission_id,
                            lps.lead_id,
                            lps.primary_contact_name,
                            lps.primary_contact_email,
@@ -93,7 +93,7 @@ public class LeadPortalMetricsService {
                              lps.primary_contact_phone
                     UNION ALL
                     SELECT exp.id AS experiment_id,
-                           fs.id AS submission_id,
+                           CAST(fs.id AS CHAR(64)) AS submission_id,
                            NULL AS lead_id,
                            fs.name AS primary_contact_name,
                            fs.email AS primary_contact_email,

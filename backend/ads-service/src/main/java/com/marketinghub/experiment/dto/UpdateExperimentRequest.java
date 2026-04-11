@@ -69,6 +69,9 @@ public class UpdateExperimentRequest {
     private String leadPortalFlowModel;
     @JsonIgnore
     private boolean leadPortalFlowModelPresent;
+    private Boolean schemaFirstLeadPortalEnabled;
+    @JsonIgnore
+    private boolean schemaFirstLeadPortalEnabledPresent;
     @JsonIgnore
     private boolean dailyBudgetPresent;
     private Long leadPortalFlowId;
@@ -122,6 +125,12 @@ public class UpdateExperimentRequest {
     public void setLeadPortalFlowModel(String leadPortalFlowModel) {
         this.leadPortalFlowModel = leadPortalFlowModel;
         this.leadPortalFlowModelPresent = true;
+    }
+
+    @JsonSetter(value = "schemaFirstLeadPortalEnabled", nulls = Nulls.SET)
+    public void setSchemaFirstLeadPortalEnabled(Boolean schemaFirstLeadPortalEnabled) {
+        this.schemaFirstLeadPortalEnabled = schemaFirstLeadPortalEnabled;
+        this.schemaFirstLeadPortalEnabledPresent = true;
     }
 
     @JsonSetter(value = "openImagesPerPackage", nulls = Nulls.SET)

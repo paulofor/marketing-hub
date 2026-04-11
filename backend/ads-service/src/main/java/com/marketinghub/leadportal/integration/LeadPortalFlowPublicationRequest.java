@@ -22,6 +22,9 @@ public record LeadPortalFlowPublicationRequest(
         String name,
         String description,
         String customFormHtml,
+        String legacyPreviewHtml,
+        String renderMode,
+        FormSpec formSpec,
         EngagementContractMetadata engagementContract,
         String model,
         String prompt,
@@ -54,16 +57,26 @@ public record LeadPortalFlowPublicationRequest(
                 flow.getName(),
                 flow.getDescription(),
                 flow.getCustomFormHtml(),
+                flow.getCustomFormHtml(),
+                resolveRenderMode(flow),
+                new FormSpec(flow.getQuestions().stream()
+                        .map(LeadPortalFlowPublicationRequest::toQuestion)
+                        .toList()),
                 EngagementContractMetadata.defaultV1(),
                 flow.getModel(),
                 flow.getPrompt(),
                 flow.getImagePromptModel(),
                 flow.getImagePromptTemplate(),
                 flow.getImagePromptBatchSize(),
-                flow.getQuestions().stream()
-                        .map(LeadPortalFlowPublicationRequest::toQuestion)
-                        .toList(),
+                flow.getQuestions().stream().map(LeadPortalFlowPublicationRequest::toQuestion).toList(),
                 stylePayload);
+    }
+
+    private static String resolveRenderMode(LeadPortalFlow flow) {
+        if (flow.isSchemaFirst()) {
+            return "schema-first";
+        }
+        return flow.getQuestions() == null || flow.getQuestions().isEmpty() ? "legacy-html" : "fallback";
     }
 
     private static LeadPortalSimpleFormStyleDefinition mergeDefinitionWithExperimentImage(
@@ -177,6 +190,9 @@ public record LeadPortalFlowPublicationRequest(
             String description,
             String placeholder,
             List<String> options) {
+    }
+
+    public record FormSpec(List<Question> questions) {
     }
 
     public record SimpleFormStylePayload(

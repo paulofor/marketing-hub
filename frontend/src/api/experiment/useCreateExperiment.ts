@@ -32,6 +32,7 @@ export interface CreateExperiment {
   instagramAccountId: number;
   imageModelId?: number;
   imageModelQualityId?: number;
+  schemaFirstLeadPortalEnabled?: boolean;
   creativeTextPrompt?: string;
   creativeImagePrompt?: string;
 }

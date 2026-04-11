@@ -8,6 +8,7 @@ export interface UpdateLeadPortalFlowRequest {
   slug?: string;
   description?: string | null;
   customFormHtml?: string | null;
+  schemaFirst?: boolean;
   marketNicheId?: number | string | null;
   model?: string | null;
   simpleFormStyleId?: number | string | null;

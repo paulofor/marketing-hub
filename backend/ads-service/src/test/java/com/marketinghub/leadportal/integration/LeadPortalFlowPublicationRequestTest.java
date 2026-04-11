@@ -45,6 +45,7 @@ class LeadPortalFlowPublicationRequestTest {
         LeadPortalFlowPublicationRequest payload = LeadPortalFlowPublicationRequest.from(flow);
 
         assertThat(payload.simpleFormStyle()).isNotNull();
+        assertThat(payload.renderMode()).isEqualTo("legacy-html");
         assertThat(payload.simpleFormStyle().definition()).isNotNull();
         assertThat(payload.simpleFormStyle().definition().heroImageUrl()).isEqualTo(pipelineImage);
     }
@@ -74,6 +75,7 @@ class LeadPortalFlowPublicationRequestTest {
         LeadPortalFlowPublicationRequest payload = LeadPortalFlowPublicationRequest.from(flow);
 
         assertThat(payload.simpleFormStyle()).isNotNull();
+        assertThat(payload.renderMode()).isEqualTo("legacy-html");
         assertThat(payload.simpleFormStyle().definition()).isNotNull();
         assertThat(payload.simpleFormStyle().definition().heroImageUrl()).isEqualTo(styleImage);
     }
@@ -103,6 +105,7 @@ class LeadPortalFlowPublicationRequestTest {
         LeadPortalFlowPublicationRequest payload = LeadPortalFlowPublicationRequest.from(flow, overrideImage);
 
         assertThat(payload.simpleFormStyle()).isNotNull();
+        assertThat(payload.renderMode()).isEqualTo("legacy-html");
         assertThat(payload.simpleFormStyle().definition()).isNotNull();
         assertThat(payload.simpleFormStyle().definition().heroImageUrl()).isEqualTo(overrideImage);
     }

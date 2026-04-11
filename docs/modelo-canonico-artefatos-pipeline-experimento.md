@@ -199,6 +199,7 @@ Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
     "title": "string",
     "submitLabel": "string",
     "submitTarget": "string",
+    "submitOwnership": "inside-form | external-with-form-attr",
     "fields": [
       {
         "name": "string",

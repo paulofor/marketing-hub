@@ -1046,7 +1046,23 @@ public class ExperimentPipelineGenerationService {
         for (FormFieldContract field : formFields) {
             appendFieldMarkup(document, form, field);
         }
+        bindExternalSubmitButtonsToForm(document, form);
         return document.outerHtml();
+    }
+
+    private void bindExternalSubmitButtonsToForm(Document document, Element form) {
+        String formId = StringUtils.hasText(form.id()) ? form.id() : "lead-capture-primary";
+        form.attr("id", formId);
+        for (Element submitControl : document.select("button[type=submit],input[type=submit]")) {
+            Element ownerForm = submitControl.closest("form");
+            if (ownerForm == form) {
+                continue;
+            }
+            if (StringUtils.hasText(submitControl.attr("form"))) {
+                continue;
+            }
+            submitControl.attr("form", formId);
+        }
     }
 
     private void appendFieldMarkup(Document document, Element form, FormFieldContract field) {

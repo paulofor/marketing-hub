@@ -14,6 +14,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     services:
       mysql:
         image: mysql:5.7
@@ -48,7 +49,7 @@ jobs:
       - name: Run tests
         run: mvn -B -s settings.xml test
       - name: Build
-        run: mvn -B -s settings.xml package
+        run: mvn -B -s settings.xml package -DskipTests
 
   docker:
     runs-on: ubuntu-latest

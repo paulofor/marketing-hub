@@ -27,6 +27,7 @@ export interface CreateLeadPortalFlowRequest {
   slug: string;
   description?: string;
   customFormHtml?: string | null;
+  schemaFirst?: boolean;
   experimentId?: number | string | null;
   marketNicheId: number | string;
   model?: string;

@@ -31,6 +31,7 @@ export interface UpdateExperiment {
   facebookInstantFormId?: number | null;
   instagramAccountId?: number | null;
   followUpActionUrl?: string | null;
+  schemaFirstLeadPortalEnabled?: boolean;
   creativeTextPrompt?: string | null;
   creativeImagePrompt?: string | null;
   leadPortalFlowId?: number | null;

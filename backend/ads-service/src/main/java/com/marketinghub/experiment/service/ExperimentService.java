@@ -311,6 +311,7 @@ public class ExperimentService {
                 .instagramAccount(attachInstagramAccount(request.getInstagramAccountId()))
                 .journeyTemplate(journeyTemplate)
                 .leadPortalFlowModel(request.getLeadPortalFlowModel())
+                .schemaFirstLeadPortalEnabled(Boolean.TRUE.equals(request.getSchemaFirstLeadPortalEnabled()))
                 .leadPortalFlow(leadPortalFlow)
                 .imageGenerationModel(imageSelection.model())
                 .imageGenerationQuality(imageSelection.quality())
@@ -402,6 +403,7 @@ public class ExperimentService {
                 .facebookInstantForm(original.getFacebookInstantForm())
                 .journeyTemplate(original.getJourneyTemplate())
                 .leadPortalFlowModel(original.getLeadPortalFlowModel())
+                .schemaFirstLeadPortalEnabled(original.isSchemaFirstLeadPortalEnabled())
                 .leadPortalFlow(original.getLeadPortalFlow())
                 .imageGenerationModel(original.getImageGenerationModel())
                 .imageGenerationQuality(original.getImageGenerationQuality())
@@ -555,6 +557,9 @@ public class ExperimentService {
         }
         if (request.isLeadPortalFlowModelPresent()) {
             exp.setLeadPortalFlowModel(request.getLeadPortalFlowModel());
+        }
+        if (request.isSchemaFirstLeadPortalEnabledPresent()) {
+            exp.setSchemaFirstLeadPortalEnabled(Boolean.TRUE.equals(request.getSchemaFirstLeadPortalEnabled()));
         }
         if (request.isCreativeTextPromptPresent()) {
             exp.setCreativeTextPrompt(normalizePrompt(request.getCreativeTextPrompt()));

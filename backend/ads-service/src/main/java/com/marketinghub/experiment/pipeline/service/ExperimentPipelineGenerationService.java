@@ -202,6 +202,8 @@ public class ExperimentPipelineGenerationService {
                 experiment.getId(),
                 experiment.getLandingPageHtml());
         flow.setCustomFormHtml(payloadWithImages != null ? payloadWithImages.trim() : null);
+        flow.setSchemaFirst(true);
+        experiment.setSchemaFirstLeadPortalEnabled(true);
         LeadPortalFlow saved = leadPortalFlowRepository.save(flow);
         if (saved.isApproved()) {
             try {
@@ -223,6 +225,7 @@ public class ExperimentPipelineGenerationService {
                 .description("Fluxo criado automaticamente a partir do HTML da landing page do experimento " + experimentId)
                 .model(DEFAULT_MODEL)
                 .prompt("Pipeline: landing-page-html/apply-to-form")
+                .schemaFirst(true)
                 .approved(true)
                 .approvedAt(Instant.now())
                 .marketNiche(experiment.getNiche())
@@ -230,6 +233,7 @@ public class ExperimentPipelineGenerationService {
                 .build();
         LeadPortalFlow saved = leadPortalFlowRepository.save(flow);
         experiment.setLeadPortalFlow(saved);
+        experiment.setSchemaFirstLeadPortalEnabled(true);
         experimentRepository.save(experiment);
         return saved;
     }

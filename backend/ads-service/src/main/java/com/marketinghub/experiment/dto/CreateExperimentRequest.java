@@ -50,6 +50,7 @@ public class CreateExperimentRequest {
     private Long instagramAccountId;
     private String followUpActionUrl;
     private String leadPortalFlowModel;
+    private Boolean schemaFirstLeadPortalEnabled;
     private Long leadPortalFlowId;
     private Long imageModelId;
     private Long imageModelQualityId;

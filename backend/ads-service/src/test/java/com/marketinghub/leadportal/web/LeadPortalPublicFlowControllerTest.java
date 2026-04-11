@@ -72,6 +72,8 @@ class LeadPortalPublicFlowControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.slug").value("exp-10-landing"))
                 .andExpect(jsonPath("$.name").value("Fluxo Landing"))
+                .andExpect(jsonPath("$.renderMode").value("fallback"))
+                .andExpect(jsonPath("$.formSpec.questions[0].dataKey").value("nome"))
                 .andExpect(jsonPath("$.questions[0].dataKey").value("nome"));
     }
 

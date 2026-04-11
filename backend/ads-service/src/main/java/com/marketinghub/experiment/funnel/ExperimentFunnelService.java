@@ -246,11 +246,23 @@ public class ExperimentFunnelService {
                         SELECT COUNT(*) AS total,
                                COUNT(DISTINCT lead_id) AS unique_count,
                                MAX(submitted_at) AS last_event
-                        FROM lead_portal_submission
-                        WHERE experiment_id = ?
-                          AND (? IS NULL OR submitted_at >= ?)
-                        """, experimentId, baseline, baseline),
-                "Envios do formulário (lead_portal_submission)");
+                        FROM (
+                            SELECT CONCAT('legacy:', lps.id) AS canonical_submission_id,
+                                   lps.lead_id,
+                                   lps.submitted_at
+                            FROM lead_portal_submission lps
+                            WHERE lps.experiment_id = ?
+                            UNION
+                            SELECT CAST(fs.id AS CHAR(64)) AS canonical_submission_id,
+                                   NULL AS lead_id,
+                                   fs.created_at AS submitted_at
+                            FROM flow_submissions fs
+                            JOIN lead_portal_flow f ON f.slug = fs.flow_slug
+                            WHERE %s
+                        ) submissions
+                        WHERE (? IS NULL OR submitted_at >= ?)
+                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId, experimentId, baseline, baseline),
+                "Envios do formulário (lead_portal_submission + flow_submissions)");
 
         mergeMetric(stages, ExperimentFunnelStage.ABERTURA_EMAIL_AMOSTRA,
                 fetchSingleMetric("""

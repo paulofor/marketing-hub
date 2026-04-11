@@ -312,6 +312,7 @@ export default function LeadPortalFlowTab({
                       <LeadFlowPreview
                         flowName={flow.name}
                         questions={flow.questions}
+                        customFormHtml={flow.customFormHtml}
                         viewport={activeViewport}
                       />
                     </div>
@@ -392,15 +393,19 @@ interface LeadFlowPreviewProps {
     options: string[];
     placeholder?: string | null;
   }>;
+  customFormHtml?: string | null;
   viewport: PreviewViewport;
 }
 
 function LeadFlowPreview({
   flowName,
   questions,
+  customFormHtml,
   viewport,
 }: LeadFlowPreviewProps) {
   const isMobile = viewport === "mobile";
+  const hasQuestionSchema = questions.length > 0;
+  const hasLegacyHtml = Boolean(customFormHtml?.trim());
   return (
     <div className="d-flex justify-content-center">
       <div
@@ -416,23 +421,33 @@ function LeadFlowPreview({
             Assim o lead verá o formulário no portal.
           </p>
         </div>
-        <form
-          className="d-flex flex-column gap-3"
-          onSubmit={(event) => event.preventDefault()}
-        >
-          {questions.map((question) => (
-            <div key={question.id}>
-              <label className="form-label fw-semibold">
-                {question.title}
-                {question.required ? " *" : ""}
-              </label>
-              {renderPreviewField(question)}
-            </div>
-          ))}
-          <button type="button" className="btn btn-primary" disabled>
-            Enviar respostas
-          </button>
-        </form>
+        {hasQuestionSchema ? (
+          <form
+            className="d-flex flex-column gap-3"
+            onSubmit={(event) => event.preventDefault()}
+          >
+            {questions.map((question) => (
+              <div key={question.id}>
+                <label className="form-label fw-semibold">
+                  {question.title}
+                  {question.required ? " *" : ""}
+                </label>
+                {renderPreviewField(question)}
+              </div>
+            ))}
+            <button type="button" className="btn btn-primary" disabled>
+              Enviar respostas
+            </button>
+          </form>
+        ) : hasLegacyHtml ? (
+          <div className="alert alert-secondary mb-0 small">
+            Fluxo legado: este preview usa <code>customFormHtml</code> apenas para referência.
+          </div>
+        ) : (
+          <div className="alert alert-light mb-0 small">
+            Nenhum schema de formulário disponível.
+          </div>
+        )}
       </div>
     </div>
   );

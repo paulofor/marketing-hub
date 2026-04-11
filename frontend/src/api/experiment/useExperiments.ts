@@ -66,6 +66,7 @@ export interface Experiment {
   facebookReleaseRequestedAt?: string | null;
   followUpActionUrl?: string | null;
   leadPortalFlowModel?: string | null;
+  schemaFirstLeadPortalEnabled?: boolean;
   creativeTextPrompt?: string | null;
   campaignAngle?: string | null;
   adCopy?: string | null;

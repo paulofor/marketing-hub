@@ -25,6 +25,7 @@ public class ExperimentDto {
     private FacebookInstantFormDto facebookInstantForm;
     private String followUpActionUrl;
     private String leadPortalFlowModel;
+    private boolean schemaFirstLeadPortalEnabled;
     private String creativeTextPrompt;
     private String creativeImagePrompt;
     private String campaignAngle;

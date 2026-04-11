@@ -788,11 +788,11 @@ public class ExperimentPipelineGenerationService {
             sb.append("\nObjetivo:\n");
             sb.append("Unificar copy + wireframe + planejamento de imagens e entregar uma landing final pronta para uso em formulário do experimento.\n\n");
             sb.append("Regras:\n");
-            sb.append("1. Entregar HTML completo com <style> e <script> internos (sem dependências externas).\n");
+            sb.append("1. Entregar HTML completo com estrutura visual e campos do formulário (sem lógica de submit acoplada no HTML/JS gerado).\n");
             sb.append("2. Garantir mobile-first e acessibilidade básica (labels, aria, foco visível).\n");
             sb.append("3. Repetir o CTA principal exatamente como no anúncio e nas seções anteriores.\n");
             sb.append("4. O formulário deve ser renderizado a partir de wireframe.formSpec como fonte única da verdade (sem inventar, remover, renomear ou trocar required).\n");
-            sb.append("5. Incluir validação de campos obrigatórios no JavaScript.\n");
+            sb.append("5. Não implementar fetch/XHR/form.submit/onSubmit customizado nem redirecionamento de submit no HTML/JS gerado; o runtime oficial fará a submissão.\n");
             sb.append("6. Não usar claims absolutos, nem linguagem de consultoria.\n");
             sb.append("7. Incluir bloco de compliance reforçando entrega digital via IA.\n");
             sb.append("8. Consumir explicitamente os artefatos anteriores:\n");
@@ -809,6 +809,7 @@ public class ExperimentPipelineGenerationService {
             appendImageBindingSummary(sb, experiment);
             sb.append("Formato obrigatório:\n");
             sb.append("- htmlDocument: string com o documento completo final.\n");
+            sb.append("- formSpec: contrato explícito do formulário contendo fields/required e metadados de CTA para runtime oficial.\n");
             sb.append("- summary: resumo curto das decisões de implementação.\n");
             sb.append("- consistencyChecks: checks com CTA_MATCH, PROMISE_MATCH, IMAGE_PLAN_BINDING, SURFACE_SPEC_BINDING, FORM_SPEC_BINDING e FORM_USABILITY.\n");
             return;
@@ -1011,6 +1012,7 @@ public class ExperimentPipelineGenerationService {
             }
             String normalizedHtml = rebuildFormFromSpec(htmlDocument, formFields);
             htmlPayload.put("htmlDocument", normalizedHtml);
+            htmlPayload.put("formSpec", buildLandingHtmlFormSpec((Map<String, Object>) rawFormSpec));
             htmlPayload.put("summary", summarizeNormalizedForm(formFields, submitLabel));
             htmlPayload.put("consistencyChecks", buildLandingHtmlConsistencyChecks(formFields, submitLabel));
             log.info("Normalização determinística de formulário aplicada no LANDING_PAGE_HTML (experimentId={}, fields={})",
@@ -1577,11 +1579,69 @@ public class ExperimentPipelineGenerationService {
     }
 
     private Map<String, Object> landingPageHtmlFieldSchema() {
+        Map<String, Object> formFieldSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("name", stringSchema()),
+                        Map.entry("type", Map.of("type", "string", "enum", List.of("text", "email", "tel"))),
+                        Map.entry("label", stringSchema()),
+                        Map.entry("required", Map.of("type", "boolean")),
+                        Map.entry("placeholder", stringSchema())
+                ),
+                "required", List.of("name", "type", "label", "required", "placeholder")
+        );
+        Map<String, Object> formSpecSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("formId", stringSchema()),
+                        Map.entry("title", stringSchema()),
+                        Map.entry("submitLabel", stringSchema()),
+                        Map.entry("submitTarget", stringSchema()),
+                        Map.entry("cta", Map.of(
+                                "type", "object",
+                                "additionalProperties", false,
+                                "properties", Map.of(
+                                        "label", stringSchema(),
+                                        "target", stringSchema(),
+                                        "variant", stringSchema()
+                                ),
+                                "required", List.of("label", "target", "variant")
+                        )),
+                        Map.entry("fields", Map.of(
+                                "type", "array",
+                                "minItems", 1,
+                                "items", formFieldSchema
+                        )),
+                        Map.entry("consent", Map.of(
+                                "type", "object",
+                                "additionalProperties", false,
+                                "properties", Map.of(
+                                        "enabled", Map.of("type", "boolean"),
+                                        "required", Map.of("type", "boolean"),
+                                        "label", stringSchema()
+                                ),
+                                "required", List.of("enabled", "required", "label")
+                        )),
+                        Map.entry("successState", Map.of(
+                                "type", "object",
+                                "additionalProperties", false,
+                                "properties", Map.of(
+                                        "title", stringSchema(),
+                                        "message", stringSchema()
+                                ),
+                                "required", List.of("title", "message")
+                        ))
+                ),
+                "required", List.of("formId", "submitLabel", "submitTarget", "cta", "fields")
+        );
         return Map.of(
                 "type", "object",
                 "additionalProperties", false,
                 "properties", Map.ofEntries(
                         Map.entry("htmlDocument", stringSchema()),
+                        Map.entry("formSpec", formSpecSchema),
                         Map.entry("summary", stringSchema()),
                         Map.entry("consistencyChecks", Map.of(
                                 "type", "array",
@@ -1589,8 +1649,27 @@ public class ExperimentPipelineGenerationService {
                                 "items", consistencyCheckSchema()
                         ))
                 ),
-                "required", List.of("htmlDocument", "summary", "consistencyChecks")
+                "required", List.of("htmlDocument", "formSpec", "summary", "consistencyChecks")
         );
+    }
+
+    private Map<String, Object> buildLandingHtmlFormSpec(Map<String, Object> wireframeFormSpec) {
+        Map<String, Object> normalized = new LinkedHashMap<>();
+        normalized.put("formId", asTrimmedString(wireframeFormSpec.get("formId")));
+        normalized.put("title", asTrimmedString(wireframeFormSpec.get("title")));
+        String submitLabel = asTrimmedString(wireframeFormSpec.get("submitLabel"));
+        String submitTarget = asTrimmedString(wireframeFormSpec.get("submitTarget"));
+        normalized.put("submitLabel", submitLabel);
+        normalized.put("submitTarget", submitTarget);
+        normalized.put("fields", wireframeFormSpec.getOrDefault("fields", List.of()));
+        normalized.put("consent", wireframeFormSpec.getOrDefault("consent", Map.of()));
+        normalized.put("successState", wireframeFormSpec.getOrDefault("successState", Map.of()));
+        normalized.put("cta", Map.of(
+                "label", submitLabel,
+                "target", submitTarget,
+                "variant", "primary"
+        ));
+        return normalized;
     }
 
     private Map<String, Object> landingPageCopyFieldSchema() {

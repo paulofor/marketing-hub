@@ -199,33 +199,13 @@ Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
     "title": "string",
     "submitLabel": "string",
     "submitTarget": "string",
-    "submitMethod": "POST",
-    "submitEncoding": "multipart/form-data",
-    "submitPayloadContract": {
-      "endpoint": "/api/flows/{slug}/submissions",
-      "endpointResolution": "obrigatorio resolver {slug} a partir de /flows/{slug} em runtime e executar POST multipart/form-data",
-      "requiredMultipartFields": ["payload"],
-      "payloadJsonShape": {
-        "name": "string",
-        "email": "string",
-        "answers": {
-          "campo": "string | string[]"
-        },
-        "imageKey": "string",
-        "campaignCode": "string"
-      },
-      "optionalMultipartFields": ["image"]
-    },
     "fields": [
       {
-        "id": "string",
         "name": "string",
         "label": "string",
-        "type": "string",
+        "type": "text | email | tel",
         "required": "boolean",
-        "placeholder": "string",
-        "autocomplete": "string",
-        "helpText": "string"
+        "placeholder": "string"
       }
     ],
     "consent": {
@@ -312,6 +292,35 @@ Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
 ```json
 {
   "htmlDocument": "string",
+  "formSpec": {
+    "formId": "string",
+    "title": "string",
+    "submitLabel": "string",
+    "submitTarget": "string",
+    "cta": {
+      "label": "string",
+      "target": "string",
+      "variant": "hero | mid | final | sticky | inline"
+    },
+    "fields": [
+      {
+        "name": "string",
+        "label": "string",
+        "type": "text | email | tel",
+        "required": "boolean",
+        "placeholder": "string"
+      }
+    ],
+    "consent": {
+      "enabled": "boolean",
+      "required": "boolean",
+      "label": "string"
+    },
+    "successState": {
+      "title": "string",
+      "message": "string"
+    }
+  },
   "summary": "string",
   "consistencyChecks": [
     {

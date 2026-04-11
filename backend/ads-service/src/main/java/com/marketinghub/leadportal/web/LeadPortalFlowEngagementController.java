@@ -1,9 +1,10 @@
 package com.marketinghub.leadportal.web;
 
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
+import com.marketinghub.leadportal.dto.LeadPortalSubmissionEngagementContractV1;
 import com.marketinghub.leadportal.dto.RegisterLeadPortalRenderCompleteRequest;
-import com.marketinghub.leadportal.dto.RegisterLeadPortalSubmissionRequest;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -32,9 +33,34 @@ public class LeadPortalFlowEngagementController {
     }
 
     @PostMapping("/{slug}/submission")
-    public void registerSubmission(@PathVariable String slug,
-                                   @RequestBody @Valid RegisterLeadPortalSubmissionRequest request) {
-        experimentFunnelService.registerFormSubmission(slug, request);
+    public ResponseEntity<LeadPortalEngagementAckResponse> registerSubmission(@PathVariable String slug,
+                                                                               @RequestBody @Valid LeadPortalSubmissionEngagementContractV1 request) {
+        if (!slug.equals(request.slug())) {
+            throw new IllegalArgumentException("Slug da rota diverge do payload de submissão");
+        }
+        boolean accepted = experimentFunnelService.registerFormSubmission(slug, request);
+        if (!accepted) {
+            return ResponseEntity.ok(new LeadPortalEngagementAckResponse(
+                    LeadPortalSubmissionEngagementContractV1.VERSION,
+                    slug,
+                    request.submissionId(),
+                    "duplicate",
+                    "Evento de submissão já recebido anteriormente (idempotente)."));
+        }
+        return ResponseEntity.ok(new LeadPortalEngagementAckResponse(
+                LeadPortalSubmissionEngagementContractV1.VERSION,
+                slug,
+                request.submissionId(),
+                "accepted",
+                "Evento de submissão registrado com sucesso."));
+    }
+
+    public record LeadPortalEngagementAckResponse(
+            String contractVersion,
+            String slug,
+            String submissionId,
+            String status,
+            String message) {
     }
 
 }

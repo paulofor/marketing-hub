@@ -79,8 +79,17 @@ export interface LeadPortalFlow {
   name: string;
   description?: string | null;
   customFormHtml?: string | null;
+  engagementContract?: LeadPortalEngagementContract | null;
   questions: FlowQuestion[];
   simpleFormStyle?: LeadPortalSimpleFormStyle | null;
+}
+
+export interface LeadPortalEngagementContract {
+  version: string;
+  renderCompleteEndpoint: string;
+  submissionEndpoint: string;
+  idempotencyField?: string | null;
+  submissionRequiredFields?: string[];
 }
 
 export interface FlowSubmissionPayload {

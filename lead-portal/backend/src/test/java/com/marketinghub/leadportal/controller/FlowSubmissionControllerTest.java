@@ -79,7 +79,7 @@ class FlowSubmissionControllerTest {
                         ResponseBytes.fromByteArray(GetObjectResponse.builder().build(), "conteudo".getBytes()));
 
         Mockito.lenient()
-                .when(trackingClient.registerSubmission(Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.any()))
+                .when(trackingClient.registerSubmission(Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenReturn(TrackingResult.FORWARDED);
 
         imagePackageRepository.deleteAll();

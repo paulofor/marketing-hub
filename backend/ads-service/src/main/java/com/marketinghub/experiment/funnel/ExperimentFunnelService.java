@@ -4,6 +4,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
 import com.marketinghub.experiment.funnel.dto.RegisterExperimentFunnelEventRequest;
 import com.marketinghub.experiment.funnel.ExperimentFunnelEventRepository.StageAggregation;
+import com.marketinghub.leadportal.dto.LeadPortalSubmissionEngagementContractV1;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.model.Lead;
 import com.marketinghub.repository.LeadRepository;
@@ -117,7 +118,7 @@ public class ExperimentFunnelService {
     }
 
     @Transactional
-    public void registerFormSubmission(String flowSlug, RegisterLeadPortalSubmissionRequest request) {
+    public boolean registerFormSubmission(String flowSlug, RegisterLeadPortalSubmissionRequest request) {
         if (flowSlug == null || flowSlug.isBlank()) {
             throw new IllegalArgumentException("Slug do fluxo é obrigatório");
         }
@@ -129,6 +130,14 @@ public class ExperimentFunnelService {
                 .orElseThrow(() -> new IllegalArgumentException("Fluxo não vinculado a experimento"));
 
         String payload = "submissionId=" + request.submissionId().trim();
+        boolean duplicated = eventRepository.existsByExperimentIdAndStageAndSourceAndPayload(
+                experiment.getId(),
+                ExperimentFunnelStage.ENVIO_FORM,
+                ExperimentFunnelEventRepository.SUBMISSION_SOURCE,
+                payload);
+        if (duplicated) {
+            return false;
+        }
         Instant occurredAt = Optional.ofNullable(request.submittedAt()).orElse(Instant.now());
 
         ExperimentFunnelEvent event = ExperimentFunnelEvent.builder()
@@ -140,6 +149,22 @@ public class ExperimentFunnelService {
                 .occurredAt(occurredAt)
                 .build();
         eventRepository.save(event);
+        return true;
+    }
+
+    @Transactional
+    public boolean registerFormSubmission(String flowSlug, LeadPortalSubmissionEngagementContractV1 request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Payload de submissão é obrigatório");
+        }
+        if (!LeadPortalSubmissionEngagementContractV1.VERSION.equals(request.contractVersion())) {
+            throw new IllegalArgumentException("Versão de contrato não suportada: " + request.contractVersion());
+        }
+        RegisterLeadPortalSubmissionRequest legacyRequest = new RegisterLeadPortalSubmissionRequest(
+                request.submissionId(),
+                request.submittedAt(),
+                request.campaignCode());
+        return registerFormSubmission(flowSlug, legacyRequest);
     }
 
     private Lead resolveLead(UUID leadId) {

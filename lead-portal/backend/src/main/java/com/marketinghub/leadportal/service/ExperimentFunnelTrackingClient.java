@@ -26,6 +26,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class ExperimentFunnelTrackingClient {
 
     private static final Logger log = LoggerFactory.getLogger(ExperimentFunnelTrackingClient.class);
+    private static final String SUBMISSION_CONTRACT_VERSION = "lead-portal-submission-engagement.v1";
 
     public enum TrackingResult {
         FORWARDED,
@@ -67,7 +68,14 @@ public class ExperimentFunnelTrackingClient {
         return sendTrackingRequest(endpoint, entity, "render-complete", slug);
     }
 
-    public TrackingResult registerSubmission(String slug, UUID submissionId, Instant submittedAt, String campaignCode) {
+    public TrackingResult registerSubmission(
+            String slug,
+            UUID submissionId,
+            Instant submittedAt,
+            String campaignCode,
+            String contactName,
+            String contactEmail,
+            String contactPhone) {
         if (!StringUtils.hasText(slug)) {
             throw new IllegalArgumentException("O slug do fluxo é obrigatório");
         }
@@ -80,7 +88,14 @@ public class ExperimentFunnelTrackingClient {
                 .buildAndExpand(slug.trim())
                 .toUri();
 
-        HttpEntity<Map<String, Object>> entity = buildSubmissionPayload(submissionId, submittedAt, campaignCode);
+        HttpEntity<Map<String, Object>> entity = buildSubmissionPayload(
+                slug,
+                submissionId,
+                submittedAt,
+                campaignCode,
+                contactName,
+                contactEmail,
+                contactPhone);
         return sendTrackingRequest(endpoint, entity, "submission", slug);
     }
 
@@ -123,12 +138,27 @@ public class ExperimentFunnelTrackingClient {
         return new HttpEntity<>(body, headers);
     }
 
-    private HttpEntity<Map<String, Object>> buildSubmissionPayload(UUID submissionId, Instant submittedAt, String campaignCode) {
+    private HttpEntity<Map<String, Object>> buildSubmissionPayload(
+            String slug,
+            UUID submissionId,
+            Instant submittedAt,
+            String campaignCode,
+            String contactName,
+            String contactEmail,
+            String contactPhone) {
         Map<String, Object> body = new HashMap<>();
+        body.put("contractVersion", SUBMISSION_CONTRACT_VERSION);
+        body.put("slug", slug.trim());
         body.put("submissionId", submissionId.toString());
-        if (submittedAt != null) {
-            body.put("submittedAt", submittedAt.toString());
+        body.put("submittedAt", (submittedAt != null ? submittedAt : Instant.now()).toString());
+        body.put("idempotencyKey", submissionId.toString());
+        Map<String, String> contato = new HashMap<>();
+        contato.put("nome", contactName);
+        contato.put("email", contactEmail);
+        if (contactPhone != null && !contactPhone.trim().isEmpty()) {
+            contato.put("telefone", contactPhone.trim());
         }
+        body.put("contato", contato);
         if (campaignCode != null && !campaignCode.trim().isEmpty()) {
             body.put("campaignCode", campaignCode.trim());
         }

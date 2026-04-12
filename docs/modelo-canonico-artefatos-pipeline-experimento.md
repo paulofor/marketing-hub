@@ -299,6 +299,32 @@ Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
     "submitLabel": "string",
     "submitTarget": "string",
     "submitTargetTemplateRule": "Quando usar placeholder de slug, manter exatamente {slug} (sem codificar para %7Bslug%7D).",
+    "submissionRuntime": {
+      "mode": "async-fetch",
+      "onSubmit": {
+        "preventDefault": "boolean",
+        "validityGate": "checkValidity+reportValidity",
+        "request": {
+          "urlSource": "form.action",
+          "methodSource": "form.method.toUpperCase()",
+          "bodySource": "new FormData(form)"
+        },
+        "buttonState": {
+          "disableDuringRequest": "boolean",
+          "loadingLabel": "string",
+          "restoreLabelAfterRequest": "string"
+        },
+        "successFeedback": {
+          "inlineElementId": "string",
+          "displayMode": "block|flex|inline-block",
+          "resetForm": "boolean"
+        },
+        "errorFeedback": {
+          "mode": "inline|alert",
+          "message": "string"
+        }
+      }
+    },
     "cta": {
       "label": "string",
       "target": "string",

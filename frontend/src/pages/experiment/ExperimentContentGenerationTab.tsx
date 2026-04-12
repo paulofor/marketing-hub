@@ -468,7 +468,13 @@ Regras:
 1. Entregar documento HTML completo com CSS e JavaScript embutidos.
 2. Repetir literalmente o CTA principal definido nas etapas anteriores.
 3. Layout mobile-first com formulário acima da dobra sempre que possível.
-4. Incluir validação dos campos obrigatórios no JavaScript.
+4. Implementar o envio com o mesmo conceito das páginas manuais:
+   - interceptar submit com event.preventDefault();
+   - validar form.checkValidity()/form.reportValidity();
+   - enviar com fetch(form.action, { method: form.method.toUpperCase(), body: new FormData(form) });
+   - desabilitar botão e exibir estado "Enviando..." durante a requisição;
+   - mostrar sucesso inline sem redirecionamento e resetar o formulário;
+   - tratar erro com feedback claro ao usuário.
 5. Incluir bloco de compliance reforçando entrega digital via IA.
 6. Consumir explicitamente os artefatos anteriores:
    - texto da landing para narrativa e message match;
@@ -479,6 +485,7 @@ Regras:
 8. Não inventar estrutura visual fora do layout/plano de imagens sem justificar nos consistencyChecks.
 9. É proibido inventar/remover/renomear campos do formulário fora do formSpec.
 10. Não usar dependências externas.
+11. O form action deve usar exatamente formSpec.submitTarget.
 
 Formato esperado:
 JSON com:

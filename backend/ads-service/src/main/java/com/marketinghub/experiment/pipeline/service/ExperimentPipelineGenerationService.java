@@ -1084,7 +1084,7 @@ public class ExperimentPipelineGenerationService {
             if (!StringUtils.hasText(htmlDocument)) {
                 return rawContent;
             }
-            String normalizedHtml = rebuildFormFromSpec(htmlDocument, formFields);
+            String normalizedHtml = rebuildFormFromSpec(htmlDocument, formFields, (Map<String, Object>) rawFormSpec);
             htmlPayload.put("htmlDocument", normalizedHtml);
             htmlPayload.put("formSpec", buildLandingHtmlFormSpec((Map<String, Object>) rawFormSpec));
             htmlPayload.put("summary", summarizeNormalizedForm(formFields, submitLabel));
@@ -1103,20 +1103,34 @@ public class ExperimentPipelineGenerationService {
         }
     }
 
-    private String rebuildFormFromSpec(String htmlDocument, List<FormFieldContract> formFields) {
+    private String rebuildFormFromSpec(String htmlDocument,
+                                       List<FormFieldContract> formFields,
+                                       Map<String, Object> wireframeFormSpec) {
         Document document = Jsoup.parse(htmlDocument, "", org.jsoup.parser.Parser.htmlParser());
-        Element form = document.selectFirst("form#lead-capture-primary");
+        String expectedFormId = asTrimmedString(wireframeFormSpec.get("formId"));
+        String expectedSubmitTarget = asTrimmedString(wireframeFormSpec.get("submitTarget"));
+        Element form = StringUtils.hasText(expectedFormId)
+                ? document.selectFirst("form#" + expectedFormId)
+                : document.selectFirst("form#lead-capture-primary");
         if (form == null) {
             form = document.selectFirst("form");
         }
         if (form == null) {
             return htmlDocument;
         }
+        if (StringUtils.hasText(expectedFormId)) {
+            form.attr("id", expectedFormId);
+        }
+        form.attr("method", "post");
+        if (StringUtils.hasText(expectedSubmitTarget)) {
+            form.attr("action", expectedSubmitTarget);
+        }
         form.select("input[name],select[name],textarea[name],label[for],.error[id^=field_],.help").remove();
         for (FormFieldContract field : formFields) {
             appendFieldMarkup(document, form, field);
         }
         bindExternalSubmitButtonsToForm(document, form);
+        ensureDefaultSubmitRuntime(document, form);
         return document.outerHtml();
     }
 
@@ -1133,6 +1147,51 @@ public class ExperimentPipelineGenerationService {
             }
             submitControl.attr("form", formId);
         }
+    }
+
+    private void ensureDefaultSubmitRuntime(Document document, Element form) {
+        String html = document.outerHtml();
+        if (SUBMIT_LISTENER_PATTERN.matcher(html).find()
+                && PREVENT_DEFAULT_PATTERN.matcher(html).find()
+                && FETCH_FORM_ACTION_PATTERN.matcher(html).find()
+                && FORM_DATA_PATTERN.matcher(html).find()
+                && SUBMIT_DISABLE_PATTERN.matcher(html).find()
+                && SUBMIT_ENABLE_PATTERN.matcher(html).find()) {
+            return;
+        }
+        String formId = StringUtils.hasText(form.id()) ? form.id() : "lead-capture-primary";
+        Element body = document.body();
+        if (body == null) {
+            body = document.appendElement("body");
+        }
+        body.appendElement("script")
+                .attr("data-generated-runtime", "lead-capture")
+                .append("""
+                        (() => {
+                          const form = document.getElementById('%s');
+                          if (!form) return;
+                          form.addEventListener('submit', async (event) => {
+                            event.preventDefault();
+                            const submitButton = form.querySelector('button[type="submit"],input[type="submit"]');
+                            if (submitButton) submitButton.disabled = true;
+                            try {
+                              if (!form.checkValidity()) {
+                                form.reportValidity();
+                                return;
+                              }
+                              const formData = new FormData(form);
+                              const response = await fetch(form.action, { method: 'POST', body: formData });
+                              const successState = document.getElementById('submit-success-state');
+                              if (response.ok && successState) {
+                                successState.textContent = 'success';
+                                successState.style.display = 'block';
+                              }
+                            } finally {
+                              if (submitButton) submitButton.disabled = false;
+                            }
+                          });
+                        })();
+                        """.formatted(formId));
     }
 
     private void appendFieldMarkup(Document document, Element form, FormFieldContract field) {

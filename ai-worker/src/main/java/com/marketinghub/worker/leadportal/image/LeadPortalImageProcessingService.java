@@ -262,16 +262,22 @@ public class LeadPortalImageProcessingService {
 
     private void handleBatchFailure(List<LeadPortalImagePackageClient.ImagePackage> packages, Throwable throwable) {
         String reason = resolveFailureReason(throwable);
+        boolean transientFailure = isTransientError(throwable);
         log.warn(
-                "Lead-portal prompt-only batch falhou com motivo '{}'; reagendando {} pacote(s) para retry",
+                "Lead-portal prompt-only batch falhou com motivo '{}'; {} {} pacote(s)",
                 reason,
+                transientFailure ? "reagendando" : "marcando como falho sem retry",
                 packages != null ? packages.size() : 0,
                 throwable);
         if (packages == null || packages.isEmpty()) {
             return;
         }
         for (LeadPortalImagePackageClient.ImagePackage imagePackage : packages) {
-            requestPromptBatchRetry(imagePackage.id(), reason);
+            if (transientFailure) {
+                requestPromptBatchRetry(imagePackage.id(), reason);
+                continue;
+            }
+            packageClient.markFailed(imagePackage.id(), reason);
         }
     }
 

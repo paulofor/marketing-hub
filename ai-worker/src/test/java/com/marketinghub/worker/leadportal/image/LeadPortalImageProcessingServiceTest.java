@@ -227,7 +227,7 @@ class LeadPortalImageProcessingServiceTest {
     }
 
     @Test
-    void retriesPromptOnlyPackageWhenBatchRequestFails() {
+    void marksPromptOnlyPackageAsFailedWhenBatchErrorIsNotTransient() {
         LeadPortalImagePackageClient.ImagePackage promptOnlyPackage = new LeadPortalImagePackageClient.ImagePackage(
                 6L,
                 UUID.fromString("123e4567-e89b-12d3-a456-426614174006"),
@@ -241,13 +241,38 @@ class LeadPortalImageProcessingServiceTest {
                 2L);
 
         when(packageClient.listRecentPackages()).thenReturn(List.of(promptOnlyPackage));
-        when(imageClient.generatePromptBatch(any())).thenThrow(new RuntimeException("OpenAI indisponível"));
+        when(imageClient.generatePromptBatch(any())).thenThrow(new RuntimeException("Falha de parsing do batch"));
 
         service.process();
 
-        verify(packageClient).markRetry(eq(promptOnlyPackage.id()), contains("OpenAI indisponível"));
+        verify(packageClient, never()).markRetry(eq(promptOnlyPackage.id()), anyString());
+        verify(packageClient).markFailed(eq(promptOnlyPackage.id()), contains("Falha de parsing do batch"));
         verify(packageClient, never()).submitResults(anyLong(), any(), anyString(), anyString());
+    }
+
+    @Test
+    void retriesPromptOnlyPackageWhenBatchFailureIsTransient() {
+        LeadPortalImagePackageClient.ImagePackage promptOnlyPackage = new LeadPortalImagePackageClient.ImagePackage(
+                7L,
+                UUID.fromString("123e4567-e89b-12d3-a456-426614174007"),
+                null,
+                1,
+                0,
+                "gpt-image-1",
+                "prompt com timeout",
+                "treatment",
+                1L,
+                2L);
+
+        when(packageClient.listRecentPackages()).thenReturn(List.of(promptOnlyPackage));
+        when(imageClient.generatePromptBatch(any()))
+                .thenThrow(new RuntimeException(new TimeoutException("OpenAI timeout")));
+
+        service.process();
+
+        verify(packageClient).markRetry(eq(promptOnlyPackage.id()), contains("OpenAI timeout"));
         verify(packageClient, never()).markFailed(eq(promptOnlyPackage.id()), anyString());
+        verify(packageClient, never()).submitResults(anyLong(), any(), anyString(), anyString());
     }
 
     private Map<String, LeadPortalOpenAiImageClient.BatchGenerationResult> successfulBatch(long packageId, int totalImages) {

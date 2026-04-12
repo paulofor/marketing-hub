@@ -435,11 +435,25 @@ public class LeadPortalOpenAiImageClient {
     }
 
     private String downloadBatchFile(String fileId) {
-        return webClient.get()
+        byte[] content = webClient.get()
                 .uri("/files/{id}/content", fileId)
-                .retrieve()
-                .bodyToMono(String.class)
+                .accept(MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN)
+                .exchangeToMono(response -> {
+                    if (response.statusCode().isError()) {
+                        return response.bodyToMono(String.class)
+                                .defaultIfEmpty("")
+                                .flatMap(body -> Mono.error(new ImageGenerationException(
+                                        response.statusCode(),
+                                        "Failed to download OpenAI batch output file " + fileId
+                                                + (body.isBlank() ? "" : " (" + body + ")"))));
+                    }
+                    return response.bodyToMono(byte[].class);
+                })
                 .block(REQUEST_TIMEOUT);
+        if (content == null || content.length == 0) {
+            throw new IllegalStateException("OpenAI returned an empty batch output file");
+        }
+        return new String(content, StandardCharsets.UTF_8);
     }
 
     private Map<String, BatchGenerationResult> parseBatchOutput(String content) {

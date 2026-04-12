@@ -368,7 +368,7 @@ function CustomFlowTemplate({
         className="flow-custom-template-frame"
         srcDoc={processedHtml}
         title="Conteúdo personalizado do fluxo"
-        sandbox="allow-same-origin allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-downloads allow-top-navigation-by-user-activation"
+        sandbox="allow-same-origin allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-downloads allow-top-navigation-by-user-activation"
       />
     </div>
   );

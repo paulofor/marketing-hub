@@ -266,7 +266,10 @@ public class ExperimentPipelineOpenAiClient {
                 if (campaignCode) {
                   payload.campaignCode = campaignCode;
                 }
-                formData.set('payload', JSON.stringify(payload));
+                formData.set(
+                  'payload',
+                  new Blob([JSON.stringify(payload)], { type: 'application/json' })
+                );
                 try {
                   var response = await fetch(endpoint, { method: 'POST', body: formData });
                   if (!response.ok) {

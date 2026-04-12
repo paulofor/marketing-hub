@@ -5,8 +5,9 @@ import com.marketinghub.leadportal.dto.FlowSubmissionRequest;
 import com.marketinghub.leadportal.dto.FlowSubmissionResponse;
 import com.marketinghub.leadportal.model.FlowSubmission;
 import com.marketinghub.leadportal.service.FlowSubmissionService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.ConstraintViolationException;
-import jakarta.validation.Valid;
 import jakarta.validation.Validator;
 import java.net.URI;
 import java.util.UUID;
@@ -36,23 +37,26 @@ public class FlowSubmissionController {
     private final FlowSubmissionService submissionService;
     private final FormDataSubmissionRequestFactory formDataFactory;
     private final Validator validator;
+    private final ObjectMapper objectMapper;
 
     public FlowSubmissionController(
             FlowSubmissionService submissionService,
             FormDataSubmissionRequestFactory formDataFactory,
-            Validator validator) {
+            Validator validator,
+            ObjectMapper objectMapper) {
         this.submissionService = submissionService;
         this.formDataFactory = formDataFactory;
         this.validator = validator;
+        this.objectMapper = objectMapper;
     }
 
     @PostMapping(value = "/{slug}/submissions", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<FlowSubmissionResponse> submit(
             @PathVariable("slug") String slug,
-            @RequestPart(value = "payload", required = false) @Valid FlowSubmissionRequest payload,
+            @RequestPart(value = "payload", required = false) String payloadRaw,
             @RequestParam MultiValueMap<String, String> formFields,
             @RequestPart(value = "image", required = false) MultipartFile imageFile) {
-        FlowSubmissionRequest request = payload != null ? payload : fromFormData(slug, formFields);
+        FlowSubmissionRequest request = resolveRequest(slug, payloadRaw, formFields);
         FlowSubmission submission = submissionService.create(slug, request, imageFile);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
@@ -103,5 +107,24 @@ public class FlowSubmissionController {
                         .path(submission.id().toString())
                         .path("/image")
                         .toUriString());
+    }
+
+    private FlowSubmissionRequest resolveRequest(
+            String slug,
+            String payloadRaw,
+            MultiValueMap<String, String> formFields) {
+        if (payloadRaw == null || payloadRaw.isBlank()) {
+            return fromFormData(slug, formFields);
+        }
+        try {
+            FlowSubmissionRequest request = objectMapper.readValue(payloadRaw, FlowSubmissionRequest.class);
+            var violations = validator.validate(request);
+            if (!violations.isEmpty()) {
+                throw new ConstraintViolationException(violations);
+            }
+            return request;
+        } catch (JsonProcessingException ex) {
+            throw new IllegalArgumentException("Payload inválido para submissão.", ex);
+        }
     }
 }

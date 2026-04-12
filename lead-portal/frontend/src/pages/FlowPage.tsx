@@ -430,6 +430,7 @@ function attachCustomTemplateBridge(
       return;
     }
     event.preventDefault();
+    event.stopImmediatePropagation();
     if (target.dataset.leadPortalSubmitting === "true") {
       return;
     }

@@ -60,6 +60,12 @@ import org.slf4j.LoggerFactory;
 public class ExperimentPipelineGenerationService {
     private static final Logger log = LoggerFactory.getLogger(ExperimentPipelineGenerationService.class);
     private static final Pattern FORM_CONTROL_TAG_PATTERN = Pattern.compile("(?is)<(input|textarea|select)\\b[^>]*>");
+    private static final Pattern SUBMIT_LISTENER_PATTERN = Pattern.compile("(?is)addEventListener\\s*\\(\\s*['\"]submit['\"]");
+    private static final Pattern PREVENT_DEFAULT_PATTERN = Pattern.compile("(?is)event\\.preventDefault\\s*\\(");
+    private static final Pattern FETCH_FORM_ACTION_PATTERN = Pattern.compile("(?is)fetch\\s*\\(\\s*form\\.action");
+    private static final Pattern FORM_DATA_PATTERN = Pattern.compile("(?is)new\\s+FormData\\s*\\(\\s*form\\s*\\)");
+    private static final Pattern SUBMIT_DISABLE_PATTERN = Pattern.compile("(?is)submitButton\\.disabled\\s*=\\s*true");
+    private static final Pattern SUBMIT_ENABLE_PATTERN = Pattern.compile("(?is)submitButton\\.disabled\\s*=\\s*false");
     private static final Pattern ATTRIBUTE_PATTERN = Pattern.compile("(?is)([a-zA-Z_:][-a-zA-Z0-9_:.]*)\\s*=\\s*([\"'])(.*?)\\2");
     private static final Pattern OPENING_TAG_PATTERN = Pattern.compile("(?is)<([a-z0-9:-]+)\\b[^>]*>");
     private static final Pattern IMG_TAG_PATTERN = Pattern.compile("(?is)<img\\b[^>]*>");
@@ -730,7 +736,7 @@ public class ExperimentPipelineGenerationService {
             sb.append("   - formId: lead-capture-primary\n");
             sb.append("   - title: Receber a prévia do Kit (IA)\n");
             sb.append("   - submitLabel: Desbloquear o Kit (receber a prévia gerada por IA)\n");
-            sb.append("   - submitTarget: #desbloquear\n");
+            sb.append("   - submitTarget: /api/flows/{slug}/submissions\n");
             sb.append("   - fields exatamente nesta ordem: nome (text, required=true), email (email, required=true), whatsapp (tel, required=false)\n");
             sb.append("   - placeholders: Seu nome, voce@exemplo.com, (DDD) 9XXXX-XXXX\n");
             sb.append("   - consent: enabled=true, required=false, label preenchido\n");
@@ -792,11 +798,17 @@ public class ExperimentPipelineGenerationService {
             sb.append("\nObjetivo:\n");
             sb.append("Unificar copy + wireframe + planejamento de imagens e entregar uma landing final pronta para uso em formulário do experimento.\n\n");
             sb.append("Regras:\n");
-            sb.append("1. Entregar HTML completo com estrutura visual e campos do formulário (sem lógica de submit acoplada no HTML/JS gerado).\n");
+            sb.append("1. Entregar HTML completo com estrutura visual e campos do formulário.\n");
             sb.append("2. Garantir mobile-first e acessibilidade básica (labels, aria, foco visível).\n");
             sb.append("3. Repetir o CTA principal exatamente como no anúncio e nas seções anteriores.\n");
             sb.append("4. O formulário deve ser renderizado a partir de wireframe.formSpec como fonte única da verdade (sem inventar, remover, renomear ou trocar required).\n");
-            sb.append("5. Não implementar fetch/XHR/form.submit/onSubmit customizado nem redirecionamento de submit no HTML/JS gerado; o runtime oficial fará a submissão.\n");
+            sb.append("5. O envio deve seguir o padrão das páginas manuais:\n");
+            sb.append("   - form.addEventListener('submit', async (event) => { event.preventDefault(); ... })\n");
+            sb.append("   - validar com form.checkValidity()/form.reportValidity() antes do envio\n");
+            sb.append("   - usar fetch(form.action, { method: form.method.toUpperCase(), body: new FormData(form) })\n");
+            sb.append("   - desabilitar o botão durante o envio (estado \"Enviando...\") e reabilitar no finally\n");
+            sb.append("   - exibir mensagem de sucesso inline sem redirecionar a página\n");
+            sb.append("   - em erro, mostrar feedback claro para o usuário\n");
             sb.append("6. Não usar claims absolutos, nem linguagem de consultoria.\n");
             sb.append("7. Incluir bloco de compliance reforçando entrega digital via IA.\n");
             sb.append("8. Consumir explicitamente os artefatos anteriores:\n");
@@ -896,10 +908,68 @@ public class ExperimentPipelineGenerationService {
             case LANDING_PAGE_IMAGE_PLANNING -> experiment.setLandingPageImagePlanning(normalized);
             case LANDING_PAGE_HTML -> {
                 validateLandingHtmlFormConsistency(experiment, normalized);
+                validateLandingHtmlSubmissionRuntime(experiment, normalized);
                 validateLandingHtmlSurfaceConsistency(experiment, normalized);
                 validateLandingHtmlImagePlanConsistency(experiment, normalized);
                 experiment.setLandingPageHtml(normalized);
             }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void validateLandingHtmlSubmissionRuntime(Experiment experiment, String landingHtmlContent) {
+        if (!StringUtils.hasText(landingHtmlContent)) {
+            return;
+        }
+
+        Map<String, Object> htmlRoot = readObject(landingHtmlContent, "Payload da landing HTML inválido");
+        Map<String, Object> htmlPayload = unwrapSectionPayload(htmlRoot, "landingPageHtml");
+        String htmlDocument = asTrimmedString(htmlPayload.get("htmlDocument"));
+        if (!StringUtils.hasText(htmlDocument)) {
+            return;
+        }
+
+        if (!(htmlPayload.get("formSpec") instanceof Map<?, ?> rawFormSpec)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "landingPageHtml.formSpec não encontrado");
+        }
+        Map<String, Object> formSpec = (Map<String, Object>) rawFormSpec;
+        String expectedFormId = asTrimmedString(formSpec.get("formId"));
+        String expectedSubmitTarget = asTrimmedString(formSpec.get("submitTarget"));
+
+        Document document = Jsoup.parse(htmlDocument);
+        Element formElement = StringUtils.hasText(expectedFormId)
+                ? document.getElementById(expectedFormId)
+                : document.selectFirst("form");
+        if (formElement == null) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "HTML da landing sem <form> compatível com formSpec.formId");
+        }
+
+        String method = formElement.attr("method");
+        if (!StringUtils.hasText(method) || !"post".equalsIgnoreCase(method.trim())) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Formulário da landing deve usar method=\"post\"");
+        }
+
+        String action = asTrimmedString(formElement.attr("action"));
+        if (!StringUtils.hasText(action)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Formulário da landing deve declarar atributo action");
+        }
+        if (StringUtils.hasText(expectedSubmitTarget) && !Objects.equals(action, expectedSubmitTarget)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Formulário da landing deve usar formSpec.submitTarget no action");
+        }
+
+        String lowered = htmlDocument.toLowerCase(Locale.ROOT);
+        if (!SUBMIT_LISTENER_PATTERN.matcher(htmlDocument).find()
+                || !PREVENT_DEFAULT_PATTERN.matcher(htmlDocument).find()
+                || !FETCH_FORM_ACTION_PATTERN.matcher(htmlDocument).find()
+                || !FORM_DATA_PATTERN.matcher(htmlDocument).find()
+                || !SUBMIT_DISABLE_PATTERN.matcher(htmlDocument).find()
+                || !SUBMIT_ENABLE_PATTERN.matcher(htmlDocument).find()
+                || !lowered.contains("checkvalidity")
+                || !lowered.contains("reportvalidity")
+                || !lowered.contains("success")) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "HTML da landing deve seguir o runtime de envio padrão (submit assíncrono com validação, loading e sucesso inline)");
         }
     }
 

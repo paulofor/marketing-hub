@@ -346,6 +346,9 @@ function CustomFlowTemplate({
     };
 
     iframe.addEventListener("load", handleLoad);
+    if (iframe.contentDocument?.readyState === "complete") {
+      handleLoad();
+    }
     return () => {
       iframe.removeEventListener("load", handleLoad);
       cleanupObserver();

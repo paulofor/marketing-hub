@@ -31,6 +31,7 @@ public class OpenAiChatGptClient implements ChatGptClient {
 
     private static final Logger log = LoggerFactory.getLogger(OpenAiChatGptClient.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final int MAX_TOOL_CALL_ROUNDS = 8;
 
     private final HttpClient httpClient;
     private final String apiKey;
@@ -98,6 +99,7 @@ public class OpenAiChatGptClient implements ChatGptClient {
 
             OpenAiResponse response = executeResponseRequest(payload);
 
+            int toolCallRounds = 0;
             while (true) {
                 if (response == null) {
                     log.error("OpenAI returned null response for product {}", product.getId());
@@ -110,6 +112,14 @@ public class OpenAiChatGptClient implements ChatGptClient {
 
                 List<OpenAiResponse.OpenAiToolCall> toolCalls = response.firstToolCalls();
                 if (!toolCalls.isEmpty()) {
+                    if (toolCallRounds >= MAX_TOOL_CALL_ROUNDS) {
+                        log.error(
+                                "OpenAI exceeded maximum tool-call rounds ({}) for product {}",
+                                MAX_TOOL_CALL_ROUNDS,
+                                product.getId());
+                        return product;
+                    }
+                    toolCallRounds++;
                     OpenAiResponse.OpenAiToolCall toolCall = toolCalls.get(0);
                     String functionName = toolCall.function() != null ? toolCall.function().name() : null;
                     if (log.isInfoEnabled()) {

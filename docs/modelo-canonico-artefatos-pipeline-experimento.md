@@ -307,7 +307,9 @@ Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
         "request": {
           "urlSource": "form.action",
           "methodSource": "form.method.toUpperCase()",
-          "bodySource": "new FormData(form)"
+          "bodySource": "new FormData(form)",
+          "payloadPartName": "payload",
+          "payloadPartContentType": "application/json"
         },
         "buttonState": {
           "disableDuringRequest": "boolean",

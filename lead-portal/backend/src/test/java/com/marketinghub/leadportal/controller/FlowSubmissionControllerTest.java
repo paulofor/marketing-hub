@@ -241,6 +241,33 @@ class FlowSubmissionControllerTest {
                 .isEqualTo("meta-campanha-42");
     }
 
+    @Test
+    void acceptsPayloadPartSentAsPlainTextJson() throws Exception {
+        String payload = """
+                {
+                  "name": "Cliente Script",
+                  "email": "cliente.script@example.com",
+                  "imageKey": "referencia",
+                  "answers": {
+                    "nome": "Cliente Script",
+                    "email": "cliente.script@example.com",
+                    "objetivo": "Aumentar conversão"
+                  }
+                }
+                """;
+
+        MockMultipartFile payloadPart = new MockMultipartFile(
+                "payload", "payload", MediaType.TEXT_PLAIN_VALUE, payload.getBytes());
+        MockMultipartFile imagePart = new MockMultipartFile(
+                "image", "referencia.png", MediaType.IMAGE_PNG_VALUE, "conteudo".getBytes());
+
+        mockMvc.perform(multipart("/api/flows/planejamento-acao-21-dias/submissions")
+                        .file(payloadPart)
+                        .file(imagePart))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.flowSlug").value("planejamento-acao-21-dias"));
+    }
+
 
     @Test
     void missingRequiredImageReturnsBadRequest() throws Exception {
@@ -363,4 +390,3 @@ class FlowSubmissionControllerTest {
                 .andExpect(jsonPath("$.flowSlug").value("fluxo-custom-html"));
     }
 }
-

@@ -241,8 +241,6 @@ export default function ExperimentFunnelTab({
               <thead>
                 <tr>
                   <th style={{ minWidth: 220 }}>Etapa</th>
-                  <th>Automático</th>
-                  <th>Manuais</th>
                   <th>Total</th>
                   <th>Custo por conv.</th>
                   <th>Únicos</th>
@@ -257,8 +255,6 @@ export default function ExperimentFunnelTab({
                         {stage.order}. {stage.label}
                       </div>
                     </td>
-                    <td>{stage.autoCount}</td>
-                    <td>{stage.manualCount}</td>
                     <td>
                       <strong>{stage.totalCount}</strong>
                     </td>

@@ -21,7 +21,7 @@ services:
     ports:
       - "4567:4567"
     volumes:
-      - /etc/openai/chave:/run/secrets/openai_api_key:ro
+      - ${OPENAI_API_KEY_HOST_FILE:-/root/infra/openai-token/openai_api_key}:/run/secrets/openai_api_key:ro
       - ${AI_WORKER_LOG_DIR:-./logs}:/var/log/ai-worker
 
   email-service:
@@ -122,7 +122,7 @@ services:
     ports:
       - "8093:8080"
     volumes:
-      - /etc/openai/chave:/run/secrets/openai_api_key:ro
+      - ${OPENAI_API_KEY_HOST_FILE:-/root/infra/openai-token/openai_api_key}:/run/secrets/openai_api_key:ro
 
   institutional-site:
     build:

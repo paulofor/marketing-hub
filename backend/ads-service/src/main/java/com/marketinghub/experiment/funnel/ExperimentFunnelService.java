@@ -213,7 +213,7 @@ public class ExperimentFunnelService {
                                MAX(updated_at) AS last_event
                         FROM experiment_campaign_metric
                         WHERE experiment_id = ?
-                          AND (? IS NULL OR updated_at >= ?)
+                          AND (? IS NULL OR updated_at > ?)
                         """, experimentId, baseline, baseline),
                 "Impressões vindas do Facebook Ads (experiment_campaign_metric)");
 
@@ -224,7 +224,7 @@ public class ExperimentFunnelService {
                                MAX(updated_at) AS last_event
                         FROM experiment_campaign_metric
                         WHERE experiment_id = ?
-                          AND (? IS NULL OR updated_at >= ?)
+                          AND (? IS NULL OR updated_at > ?)
                         """, experimentId, baseline, baseline),
                 "Cliques do anúncio para o formulário (experiment_campaign_metric)");
 
@@ -237,7 +237,7 @@ public class ExperimentFunnelService {
                         WHERE experiment_id = ?
                           AND stage = 'VISUALIZACAO_FORM'
                           AND source = ?
-                          AND (? IS NULL OR occurred_at >= ?)
+                          AND (? IS NULL OR occurred_at > ?)
                         """, experimentId, ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE, baseline, baseline),
                 "Renderização completa registrada pelo Lead Portal (evento lead-portal-render-complete)");
 
@@ -260,7 +260,7 @@ public class ExperimentFunnelService {
                             JOIN lead_portal_flow f ON f.slug = fs.flow_slug
                             WHERE %s
                         ) submissions
-                        WHERE (? IS NULL OR submitted_at >= ?)
+                        WHERE (? IS NULL OR submitted_at > ?)
                         """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId, experimentId, baseline, baseline),
                 "Envios do formulário (lead_portal_submission + flow_submissions)");
 
@@ -274,7 +274,7 @@ public class ExperimentFunnelService {
                         JOIN lead_portal_flow f ON f.slug = s.flow_slug
                         WHERE %s
                           AND p.email_opened_at IS NOT NULL
-                          AND (? IS NULL OR p.email_opened_at >= ?)
+                          AND (? IS NULL OR p.email_opened_at > ?)
                         """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId, baseline, baseline),
                 "Aberturas de e-mail de amostra (flow_submission_image_package.email_opened_at)");
 
@@ -288,7 +288,7 @@ public class ExperimentFunnelService {
                         JOIN lead_portal_flow f ON f.slug = s.flow_slug
                         WHERE %s
                           AND p.checkout_accessed_at IS NOT NULL
-                          AND (? IS NULL OR p.checkout_accessed_at >= ?)
+                          AND (? IS NULL OR p.checkout_accessed_at > ?)
                         """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId, baseline, baseline),
                 "Acessos ao checkout registrados via tracking público (lead_portal_purchase.checkout_accessed_at)");
 
@@ -302,7 +302,7 @@ public class ExperimentFunnelService {
                         JOIN lead_portal_flow f ON f.slug = s.flow_slug
                         WHERE %s
                           AND (p.payment_approved_at IS NOT NULL OR p.mp_status = 'approved')
-                          AND (? IS NULL OR COALESCE(p.payment_approved_at, p.updated_at) >= ?)
+                          AND (? IS NULL OR COALESCE(p.payment_approved_at, p.updated_at) > ?)
                         """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId, baseline, baseline),
                 "Pagamentos aprovados (lead_portal_purchase)");
 
@@ -318,7 +318,7 @@ public class ExperimentFunnelService {
                         WHERE %s
                           AND d.email_request_id IS NOT NULL
                           AND el.opened_at IS NOT NULL
-                          AND (? IS NULL OR el.opened_at >= ?)
+                          AND (? IS NULL OR el.opened_at > ?)
                         """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId, baseline, baseline),
                 "Abertura do e-mail de entrega (lead_portal_premium_delivery -> email_log)");
 
@@ -333,7 +333,7 @@ public class ExperimentFunnelService {
                         WHERE %s
                           AND p.payment_purchase_id IS NOT NULL
                           AND p.images_viewed_at IS NOT NULL
-                          AND (? IS NULL OR p.images_viewed_at >= ?)
+                          AND (? IS NULL OR p.images_viewed_at > ?)
                         """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId, baseline, baseline),
                 "Downloads/visualizações do material pago (flow_submission_image_package.images_viewed_at)");
     }

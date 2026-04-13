@@ -50,7 +50,7 @@ public class ExperimentFunnelAttributionService {
                   AND stage = 'VISUALIZACAO_FORM'
                   AND source = ?
                   AND campaign_code IS NOT NULL
-                  AND (? IS NULL OR occurred_at >= ?)
+                  AND (? IS NULL OR occurred_at > ?)
                 GROUP BY campaign_code
                 """;
         queryByCampaignCode(sql, ExperimentFunnelStage.VISUALIZACAO_FORM, target,
@@ -64,7 +64,7 @@ public class ExperimentFunnelAttributionService {
                 JOIN lead_portal_flow f ON f.slug = s.flow_slug
                 WHERE s.campaign_code IS NOT NULL
                   AND %s
-                  AND (? IS NULL OR s.created_at >= ?)
+                  AND (? IS NULL OR s.created_at > ?)
                 GROUP BY s.campaign_code
                 """.formatted(ExperimentFunnelService.FLOW_SCOPE_CONDITION);
         queryByCampaignCode(sql, ExperimentFunnelStage.ENVIO_FORM, target,
@@ -80,7 +80,7 @@ public class ExperimentFunnelAttributionService {
                 WHERE s.campaign_code IS NOT NULL
                   AND %s
                   AND p.email_opened_at IS NOT NULL
-                  AND (? IS NULL OR p.email_opened_at >= ?)
+                  AND (? IS NULL OR p.email_opened_at > ?)
                 GROUP BY s.campaign_code
                 """.formatted(ExperimentFunnelService.FLOW_SCOPE_CONDITION);
         queryByCampaignCode(sql, ExperimentFunnelStage.ABERTURA_EMAIL_AMOSTRA, target,
@@ -96,7 +96,7 @@ public class ExperimentFunnelAttributionService {
                 WHERE s.campaign_code IS NOT NULL
                   AND %s
                   AND p.checkout_accessed_at IS NOT NULL
-                  AND (? IS NULL OR p.checkout_accessed_at >= ?)
+                  AND (? IS NULL OR p.checkout_accessed_at > ?)
                 GROUP BY s.campaign_code
                 """.formatted(ExperimentFunnelService.FLOW_SCOPE_CONDITION);
         queryByCampaignCode(sql, ExperimentFunnelStage.ACESSO_CHECKOUT, target,
@@ -112,7 +112,7 @@ public class ExperimentFunnelAttributionService {
                 WHERE s.campaign_code IS NOT NULL
                   AND %s
                   AND (p.payment_approved_at IS NOT NULL OR p.mp_status = 'approved')
-                  AND (? IS NULL OR COALESCE(p.payment_approved_at, p.updated_at) >= ?)
+                  AND (? IS NULL OR COALESCE(p.payment_approved_at, p.updated_at) > ?)
                 GROUP BY s.campaign_code
                 """.formatted(ExperimentFunnelService.FLOW_SCOPE_CONDITION);
         queryByCampaignCode(sql, ExperimentFunnelStage.COMPRA, target,
@@ -130,7 +130,7 @@ public class ExperimentFunnelAttributionService {
                   AND %s
                   AND d.email_request_id IS NOT NULL
                   AND el.opened_at IS NOT NULL
-                  AND (? IS NULL OR el.opened_at >= ?)
+                  AND (? IS NULL OR el.opened_at > ?)
                 GROUP BY s.campaign_code
                 """.formatted(ExperimentFunnelService.FLOW_SCOPE_CONDITION);
         queryByCampaignCode(sql, ExperimentFunnelStage.ABERTURA_EMAIL_COMPRA, target,
@@ -147,7 +147,7 @@ public class ExperimentFunnelAttributionService {
                   AND %s
                   AND p.payment_purchase_id IS NOT NULL
                   AND p.images_viewed_at IS NOT NULL
-                  AND (? IS NULL OR p.images_viewed_at >= ?)
+                  AND (? IS NULL OR p.images_viewed_at > ?)
                 GROUP BY s.campaign_code
                 """.formatted(ExperimentFunnelService.FLOW_SCOPE_CONDITION);
         queryByCampaignCode(sql, ExperimentFunnelStage.DOWNLOAD_MATERIAL_PAGO, target,

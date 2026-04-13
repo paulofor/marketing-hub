@@ -30,7 +30,7 @@ public interface ExperimentFunnelEventRepository extends JpaRepository<Experimen
             from ExperimentFunnelEvent e
             where e.experiment.id = :experimentId
               and (e.source is null or e.source <> :excludedSource)
-              and (:baseline is null or e.occurredAt >= :baseline)
+              and (:baseline is null or e.occurredAt > :baseline)
             group by e.stage
             """)
     List<StageAggregation> aggregateByExperiment(@Param("experimentId") Long experimentId,

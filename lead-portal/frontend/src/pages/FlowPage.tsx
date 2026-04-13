@@ -8,6 +8,7 @@ import {
   submitFlowSubmission,
 } from "../api";
 import FlowForm from "../components/FlowForm";
+import SubmissionSuccessCard from "../components/SubmissionSuccessCard";
 import { resolveAssetUrl } from "../utils/resolveAssetUrl";
 import {
   normalizeCustomTemplatePayload,
@@ -16,18 +17,30 @@ import {
 } from "../utils/customTemplateHtml";
 import { getVisitorIdCookie } from "../utils/visitorCookie";
 import { useCampaignCode } from "../hooks/useCampaignCode";
-import type { FlowQuestion, LeadPortalFlow, LeadPortalSimpleFormStyleDefinition } from "../types";
+import type {
+  FlowQuestion,
+  FlowSubmissionResponse,
+  LeadPortalFlow,
+  LeadPortalSimpleFormStyleDefinition,
+} from "../types";
 
 export default function FlowPage() {
   const { slug } = useParams<{ slug: string }>();
   const campaignCode = useCampaignCode();
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [hasTrackedRenderComplete, setHasTrackedRenderComplete] = useState(false);
+  const [submissionResult, setSubmissionResult] = useState<FlowSubmissionResponse | null>(null);
 
   useEffect(() => {
     setHasSubmitted(false);
     setHasTrackedRenderComplete(false);
+    setSubmissionResult(null);
   }, [slug]);
+
+  const handleSubmissionComplete = (result: FlowSubmissionResponse) => {
+    setSubmissionResult(result);
+    setHasSubmitted(true);
+  };
 
   const { data: flow, isLoading, isError, error } = useQuery({
     queryKey: ["lead-portal-flow", slug, campaignCode ?? null],
@@ -124,15 +137,31 @@ export default function FlowPage() {
         };
   if (hasCustomTemplate && customTemplateHtml) {
     const templateVariables = customTemplateVariables ?? new Map<string, string>();
+    const successState = customTemplateFormSpec?.successState;
     return (
-      <CustomFlowTemplate
-        html={customTemplateHtml}
-        variables={templateVariables}
-        flowSlug={flow.slug}
-        formSpec={customTemplateFormSpec}
-        campaignCode={campaignCode}
-        onSubmitted={() => setHasSubmitted(true)}
-      />
+      <div className="flow-page flow-page--custom" style={styleVars}>
+        {hasSubmitted ? (
+          <div className="flow-custom-feedback">
+            <SubmissionSuccessCard
+              name={submissionResult?.name}
+              email={submissionResult?.email}
+              title={successState?.title}
+              message={successState?.message}
+            />
+          </div>
+        ) : (
+          <div className="flow-custom-template">
+            <CustomFlowTemplate
+              html={customTemplateHtml}
+              variables={templateVariables}
+              flowSlug={flow.slug}
+              formSpec={customTemplateFormSpec}
+              campaignCode={campaignCode}
+              onSubmitted={handleSubmissionComplete}
+            />
+          </div>
+        )}
+      </div>
     );
   }
 
@@ -240,7 +269,7 @@ export default function FlowPage() {
         <FlowForm
           flow={flowForForm}
           campaignCode={campaignCode}
-          onSubmitted={() => setHasSubmitted(true)}
+          onSubmitted={handleSubmissionComplete}
         />
       </div>
     </div>
@@ -253,7 +282,7 @@ interface CustomFlowTemplateProps {
   flowSlug: string;
   formSpec?: CustomTemplateFormSpec;
   campaignCode?: string | null;
-  onSubmitted?: () => void;
+  onSubmitted?: (result: FlowSubmissionResponse) => void;
 }
 
 const TOKEN_REGEX = /\{\{\s*([a-zA-Z0-9_-]+)\s*\}\}/g;
@@ -382,7 +411,7 @@ interface CustomTemplateBridgeOptions {
   flowSlug: string;
   formSpec?: CustomTemplateFormSpec;
   campaignCode?: string | null;
-  onSubmitted?: () => void;
+  onSubmitted?: (result: FlowSubmissionResponse) => void;
 }
 
 function attachCustomTemplateBridge(
@@ -440,7 +469,7 @@ function attachCustomTemplateBridge(
 
     try {
       const parsed = parseTemplateSubmissionPayload(target, options.campaignCode);
-      await submitFlowSubmission(options.flowSlug, parsed.payload, parsed.image);
+      const response = await submitFlowSubmission(options.flowSlug, parsed.payload, parsed.image);
       target.dataset.leadPortalSubmitted = "true";
       writeManagedTemplateFeedback(
         target,
@@ -460,7 +489,7 @@ function attachCustomTemplateBridge(
           },
         }),
       );
-      options.onSubmitted?.();
+      options.onSubmitted?.(response);
     } catch (error) {
       const message =
         error instanceof Error

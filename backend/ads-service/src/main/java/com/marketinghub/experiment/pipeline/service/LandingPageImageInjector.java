@@ -161,6 +161,10 @@ public class LandingPageImageInjector {
         addCandidate(candidates, imageElement.attr("data-section-id"));
         addCandidate(candidates, imageElement.attr("data-section-name"));
         addCandidate(candidates, imageElement.attr("data-image-key"));
+        addCandidate(candidates, imageElement.attr("data-image-section-id"));
+        addCandidate(candidates, imageElement.attr("data-image-binding-key"));
+        addCandidate(candidates, imageElement.attr("data-image-role"));
+        addCandidate(candidates, imageElement.attr("data-conversion-role"));
         addCandidate(candidates, imageElement.id());
         addCandidate(candidates, imageElement.attr("alt"));
         addCandidate(candidates, imageElement.className());

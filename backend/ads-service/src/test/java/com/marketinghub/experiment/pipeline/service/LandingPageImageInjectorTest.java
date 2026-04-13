@@ -100,6 +100,30 @@ class LandingPageImageInjectorTest {
     }
 
     @Test
+    void injectsImageByImageSectionAttributes() {
+        String html = """
+                <!doctype html>
+                <html><body>
+                  <section id=\"hero\">
+                    <img
+                      src=\"https://images.unsplash.com/photo-placeholder?auto=format&fit=crop&w=1600&q=70\"
+                      data-image-section-id=\"s0-hero-pt-variant10-v1\"
+                      data-image-binding-key=\"hero-dor-quanto-custa\"
+                    />
+                  </section>
+                </body></html>
+                """;
+        when(jobRepository.findByExperimentIdOrderByCreatedAtDesc(anyLong()))
+                .thenReturn(List.of(completedJob("s0-hero-pt-variant10-v1",
+                        "https://cdn.example.com/hero-runtime.jpg", null)));
+
+        String enriched = injector.injectImages(42L, html);
+
+        assertThat(enriched).contains("https://cdn.example.com/hero-runtime.jpg");
+        assertThat(enriched).doesNotContain("images.unsplash.com/photo-placeholder");
+    }
+
+    @Test
     void keepsOriginalPayloadWhenNoImagesAreAvailable() {
         String payload = "{}";
         when(jobRepository.findByExperimentIdOrderByCreatedAtDesc(anyLong())).thenReturn(List.of());

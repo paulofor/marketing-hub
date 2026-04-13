@@ -8,11 +8,19 @@
     "isolatedModules": true,
     "esModuleInterop": true,
     "target": "ESNext",
-    "lib": ["ESNext", "DOM"],
+    "lib": [
+      "ESNext",
+      "DOM"
+    ],
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "noEmit": true
+    "noEmit": true,
+    "ignoreDeprecations": "6.0"
   },
-  "include": ["vite.config.ts"],
-  "exclude": ["src"]
+  "include": [
+    "vite.config.ts"
+  ],
+  "exclude": [
+    "src"
+  ]
 }

@@ -1090,6 +1090,25 @@ form.flow-form {
   }
 }
 
+.flow-page--custom {
+  min-height: 100vh;
+}
+
+.flow-custom-template,
+.flow-custom-feedback {
+  width: 100%;
+}
+
+.flow-custom-feedback {
+  display: flex;
+  justify-content: center;
+  padding: 2rem 1rem 3rem;
+}
+
+.flow-custom-feedback .thank-you-card {
+  width: min(100%, 640px);
+}
+
 .flow-page--custom .flow-custom-template {
   width: 100%;
 }

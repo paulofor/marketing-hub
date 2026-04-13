@@ -290,6 +290,11 @@ Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
 
 ## `landingPageHtml`
 
+> Cada documento HTML gerado pela etapa `landingPageHtml` traz atributos de dados para vincular os visuais planejados aos ativos finais.
+> Os principais atributos são `data-image-section-id` (mapeia o `planning_item_key`), `data-image-binding-key` (chave semântica)
+> e `data-image-role`/`data-conversion-role` (indicam o papel do ativo). Esses marcadores permitem que o pipeline substitua
+> placeholders genéricos por imagens aprovadas automaticamente durante a publicação das landings.
+
 ```json
 {
   "htmlDocument": "string",

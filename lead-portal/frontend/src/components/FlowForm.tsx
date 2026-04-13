@@ -1,5 +1,6 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { submitFlowSubmission } from "../api";
+import SubmissionSuccessCard from "./SubmissionSuccessCard";
 import {
   FlowQuestion,
   FlowQuestionType,
@@ -207,7 +208,7 @@ export default function FlowForm({
 
   if (submissionResult) {
     return (
-      <ThankYouPanel
+      <SubmissionSuccessCard
         name={submissionResult.name}
         email={submissionResult.email}
       />
@@ -362,29 +363,6 @@ function resolveContactFollowUpConfig(
   return Object.keys(followUpByOption).length > 0
     ? { contactQuestionKey: contactQuestion.dataKey, followUpByOption }
     : null;
-}
-
-function ThankYouPanel({ name, email }: { name: string; email: string }) {
-  const isGmailAddress = /@gmail\.com$/i.test(email.trim());
-
-  return (
-    <div className="thank-you-card">
-      <h2>Respostas enviadas!</h2>
-      <p>
-        Obrigado, {name || "cliente"}. Recebemos suas respostas e em breve
-        entraremos em contato pelo e-mail
-        <strong> {email}</strong>.
-      </p>
-      {isGmailAddress ? (
-        <p className="gmail-tip">
-          Se você usa Gmail, confira também a pasta <strong>Todos os e-mails</strong>
-          ou a aba de <strong>Promoções</strong>, pois nossa mensagem pode ser
-          direcionada para lá.
-        </p>
-      ) : null}
-      <p>Você pode fechar esta página com segurança.</p>
-    </div>
-  );
 }
 
 interface QuestionFieldProps {

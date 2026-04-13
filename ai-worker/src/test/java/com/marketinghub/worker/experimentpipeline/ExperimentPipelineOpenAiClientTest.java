@@ -531,6 +531,8 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(htmlDocument).contains("action=\"/api/flows/{slug}/submissions\"");
         assertThat(htmlDocument).contains("id=\"lead-capture-submit-contract\"");
         assertThat(htmlDocument).contains("var slugtoken = /\\{slug\\}|%7bslug%7d/i;");
+        assertThat(htmlDocument).contains("lead-capture-success-message");
+        assertThat(htmlDocument).contains("aguarde: em instantes você receberá a prévia no e-mail informado");
     }
 
     @Test
@@ -588,6 +590,8 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(htmlDocument).contains("action=\"/api/flows/{slug}/submissions\"");
         assertThat(htmlDocument).contains("id=\"lead-capture-submit-contract\"");
         assertThat(htmlDocument).contains("var slugtoken = /\\{slug\\}|%7bslug%7d/i;");
+        assertThat(htmlDocument).contains("lead-capture-success-message");
+        assertThat(htmlDocument).contains("aguarde: em instantes você receberá a prévia no e-mail informado");
     }
 
     @Test

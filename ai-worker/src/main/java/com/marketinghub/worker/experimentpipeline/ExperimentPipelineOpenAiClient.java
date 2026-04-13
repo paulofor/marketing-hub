@@ -205,6 +205,9 @@ public class ExperimentPipelineOpenAiClient {
             13. Toda tag <img> permitida deve usar src absoluto válido (https://... ou data:image/...) e reutilizar altText do planejamento de imagens.
             14. Cada <img> deve declarar data-image-section-id e data-image-binding-key como binding canônico obrigatório do plano de imagens.
             15. Cada <img> também deve declarar data-image-role (semântico), data-conversion-role, data-attention-priority, data-visual-weight, data-distance-to-cta e data-supports-form-conversion.
+            16. Aplicar posicionamento de imagem determinístico por layoutBinding: cada bloco com imagem deve renderizar data-image-desktop-placement e data-image-mobile-placement com os valores de layoutBinding, além de classes CSS explícitas para cada variação (left/right/center/background e above-copy/below-copy/inline/background).
+            17. No mobile (<=768px), respeitar sempre preferredMobilePlacement e impedir overlap de texto/imagem.
+            18. Após envio bem-sucedido do formulário, exibir mensagem clara orientando o usuário a aguardar o e-mail com a prévia.
 
             Formato obrigatório (JSON):
             - htmlDocument
@@ -244,6 +247,12 @@ public class ExperimentPipelineOpenAiClient {
               form.addEventListener('submit', async function (event) {
                 event.preventDefault();
                 event.stopImmediatePropagation();
+                var submitButton = form.querySelector('[type="submit"]');
+                var originalButtonText = submitButton ? submitButton.textContent : '';
+                if (submitButton) {
+                  submitButton.disabled = true;
+                  submitButton.textContent = 'Enviando...';
+                }
                 var pathname = window.location.pathname || '';
                 var slugMatch = pathname.match(/\\/flows\\/([^/?#]+)/i);
                 var slug = slugMatch && slugMatch[1] ? slugMatch[1] : '';
@@ -275,8 +284,40 @@ public class ExperimentPipelineOpenAiClient {
                   if (!response.ok) {
                     throw new Error('Falha ao enviar formulário: ' + response.status);
                   }
+                  var successMessage = document.getElementById('lead-capture-success-message');
+                  if (!successMessage) {
+                    successMessage = document.createElement('div');
+                    successMessage.id = 'lead-capture-success-message';
+                    successMessage.setAttribute('role', 'status');
+                    successMessage.style.marginTop = '12px';
+                    successMessage.style.padding = '12px';
+                    successMessage.style.borderRadius = '10px';
+                    successMessage.style.background = '#ecfdf3';
+                    successMessage.style.color = '#065f46';
+                    successMessage.style.fontWeight = '600';
+                    form.appendChild(successMessage);
+                  }
+                  successMessage.textContent = 'Recebemos seus dados com sucesso! Aguarde: em instantes você receberá a prévia no e-mail informado.';
+                  successMessage.style.display = 'block';
+                  form.reset();
                 } catch (error) {
                   console.error(error);
+                  var fallbackError = document.getElementById('lead-capture-error-message');
+                  if (!fallbackError) {
+                    fallbackError = document.createElement('div');
+                    fallbackError.id = 'lead-capture-error-message';
+                    fallbackError.setAttribute('role', 'alert');
+                    fallbackError.style.marginTop = '12px';
+                    fallbackError.style.color = '#b91c1c';
+                    fallbackError.textContent = 'Não foi possível enviar agora. Tente novamente em alguns instantes.';
+                    form.appendChild(fallbackError);
+                  }
+                  fallbackError.style.display = 'block';
+                } finally {
+                  if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalButtonText || 'Enviar';
+                  }
                 }
               }, true);
             })();

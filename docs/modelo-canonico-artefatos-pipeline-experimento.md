@@ -319,7 +319,8 @@ Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
         "successFeedback": {
           "inlineElementId": "string",
           "displayMode": "block|flex|inline-block",
-          "resetForm": "boolean"
+          "resetForm": "boolean",
+          "waitForEmailMessage": "string"
         },
         "errorFeedback": {
           "mode": "inline|alert",
@@ -348,10 +349,29 @@ Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
     },
     "successState": {
       "title": "string",
-      "message": "string"
+      "message": "string",
+      "nextStepHint": "string"
     }
   },
   "summary": "string",
+  "imagePlacementContract": {
+    "requiredDataAttributes": [
+      "data-image-desktop-placement",
+      "data-image-mobile-placement"
+    ],
+    "requiredDesktopClasses": [
+      "image-placement-left",
+      "image-placement-right",
+      "image-placement-center",
+      "image-placement-background"
+    ],
+    "requiredMobileClasses": [
+      "image-mobile-above-copy",
+      "image-mobile-below-copy",
+      "image-mobile-inline",
+      "image-mobile-background"
+    ]
+  },
   "consistencyChecks": [
     {
       "check": "CTA_MATCH | PROMISE_MATCH | IMAGE_PLAN_BINDING | SURFACE_SPEC_BINDING | FORM_SPEC_BINDING | FORM_USABILITY",

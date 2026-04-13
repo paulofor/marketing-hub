@@ -53,7 +53,7 @@ mvn spring-boot:run
      -e SPRING_DATASOURCE_USERNAME="marketing_hub_user" \
      -e MYSQL_PASS="<senha-do-banco>" \
      -e OPENAI_API_KEY_FILE="/run/secrets/openai_api_key" \
-     -v /etc/openai/chave:/run/secrets/openai_api_key:ro \
+     -v ${OPENAI_API_KEY_HOST_FILE:-/root/infra/openai-token/openai_api_key}:/run/secrets/openai_api_key:ro \
      marketinghub/ai-worker:latest
    ```
 

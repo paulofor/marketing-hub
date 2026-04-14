@@ -1,4 +1,4 @@
-# agents.md — Contrato operacional
+# AGNETS.md — Contrato operacional
 
 > Consulte este arquivo antes de alterar qualquer módulo. Para todas as regras canônicas, a fonte de verdade é `docs/canonical/system-governance-canon.v2.md`.
 

@@ -242,13 +242,14 @@ export default function ExperimentFunnelTab({
                 <tr>
                   <th style={{ minWidth: 220 }}>Etapa</th>
                   <th>Total</th>
+                  <th>% vs. etapa anterior</th>
                   <th>Custo por conv.</th>
                   <th>Únicos</th>
                   <th>Último evento</th>
                 </tr>
               </thead>
               <tbody>
-                {selectableStages.map((stage) => (
+                {selectableStages.map((stage, index) => (
                   <tr key={stage.stage}>
                     <td>
                       <div className="fw-semibold">
@@ -258,6 +259,7 @@ export default function ExperimentFunnelTab({
                     <td>
                       <strong>{stage.totalCount}</strong>
                     </td>
+                    <td>{formatRateComparedToPreviousStage(stage.totalCount, selectableStages[index - 1]?.totalCount)}</td>
                     <td>
                       {formatCostPerConversion(normalizedTotalSpend, stage.totalCount)}
                     </td>
@@ -416,4 +418,18 @@ function calculateCostPerConversion(totalSpend: number | null, totalConversions?
 function formatCostPerConversion(totalSpend: number | null, totalConversions?: number | null) {
   const cost = calculateCostPerConversion(totalSpend, totalConversions);
   return cost === null ? "—" : formatCurrency(cost);
+}
+
+function formatRateComparedToPreviousStage(
+  currentCount?: number | null,
+  previousCount?: number | null,
+) {
+  if (!currentCount || currentCount < 0) {
+    return "0%";
+  }
+  if (!previousCount || previousCount <= 0) {
+    return "—";
+  }
+  const conversionRate = (currentCount / previousCount) * 100;
+  return `${conversionRate.toFixed(1).replace(".", ",")}%`;
 }

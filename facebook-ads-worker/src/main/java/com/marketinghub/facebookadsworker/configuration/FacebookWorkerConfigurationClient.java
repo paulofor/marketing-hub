@@ -101,6 +101,7 @@ public class FacebookWorkerConfigurationClient {
         Long accountId,
         String adAccountId,
         String accessToken,
+        String systemUserAccessToken,
         String appId,
         String appSecret,
         String defaultPageId,

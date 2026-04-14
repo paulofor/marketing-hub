@@ -430,6 +430,7 @@ fb_account|authorized_user_name|varchar(255)|YES|NULL||
 fb_account|authorized_user_email|varchar(320)|YES|NULL||
 fb_account|app_id|varchar(255)|YES|NULL||
 fb_account|app_secret|longtext|YES|NULL||
+fb_account|system_user_access_token|longtext|YES|NULL||
 fb_account|token_renewal_enabled|tinyint(1)|NO|0||
 fb_account|token_renewal_status|varchar(40)|YES|NULL||
 fb_account|token_renewal_last_attempt_at|datetime|YES|NULL||
@@ -1445,7 +1446,7 @@ visual_proof|proof_type|varchar(255)|YES|NULL||
 
 ### `fb_account`
 - **Finalidade da tabela:** Armazena dados relacionados a **fb_account** no contexto do Marketing Hub.
-- **Campos (34):**
+- **Campos (35):**
   - `id`: Identificador único do registro. (tipo `bigint(20)`; obrigatório; chave `PRI`).
   - `currency`: Campo usado para armazenar informações de **currency**. (tipo `varchar(255)`; opcional).
   - `name`: Nome de exibição do registro. (tipo `varchar(255)`; opcional).
@@ -1457,6 +1458,7 @@ visual_proof|proof_type|varchar(255)|YES|NULL||
   - `authorized_user_email`: Campo usado para armazenar informações de **authorized user email**. (tipo `varchar(320)`; opcional).
   - `app_id`: Chave de referência para o registro relacionado de **app**. (tipo `varchar(255)`; opcional).
   - `app_secret`: Campo usado para armazenar informações de **app secret**. (tipo `longtext`; opcional).
+  - `system_user_access_token`: Campo usado para armazenar o **token de usuário do sistema** utilizado pelo worker do Facebook Ads. (tipo `longtext`; opcional).
   - `token_renewal_enabled`: Campo usado para armazenar informações de **token renewal enabled**. (tipo `tinyint(1)`; obrigatório; default `0`).
   - `token_renewal_status`: Campo usado para armazenar informações de **token renewal status**. (tipo `varchar(40)`; opcional).
   - `token_renewal_last_attempt_at`: Campo usado para armazenar informações de **token renewal last attempt at**. (tipo `datetime`; opcional).

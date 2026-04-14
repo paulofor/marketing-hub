@@ -76,6 +76,7 @@ O cartão também lista itens operacionais que não travam o worker, mas devem s
 2. **Custo por etapa** – o cartão mostra o gasto total sincronizado pela Marketing API do Meta Ads e divide o valor por conversão em cada etapa, permitindo encontrar gargalos sem sair do experimento. (Fonte externa: [Meta Marketing API](https://developers.facebook.com/docs/marketing-api/)).
 3. **Zerar contagens** – o botão atualiza `experiment.funnel_reset_at`, e somente eventos com `occurred_at >= funnel_reset_at` permanecem visíveis. Use quando testes internos poluírem o funil sem necessidade de liberar novamente o worker.
 4. **Execução registrada por anúncio** – cada criativo listado traz sua referência de rastreio e a tabela de conversões para as etapas 3 a 9, permitindo diagnosticar rapidamente qual anúncio sustentou o restante do funil.
+5. **Diagnóstico estatístico por etapa** – o backend expõe `GET /api/experiments/{experimentId}/funnel/diagnostics` com status por transição prioritária, separando explicitamente risco estatístico (`INSUFFICIENT_DATA`, `WEAK_SIGNAL`, `STATISTICALLY_FAILED`) de suspeita técnica (`TECHNICAL_ISSUE_SUSPECTED`). A UI consome o diagnóstico e não replica regras críticas.
 
 ## 9. Dependências externas e domínio publicado
 
@@ -86,5 +87,5 @@ O cartão também lista itens operacionais que não travam o worker, mas devem s
 
 - `system-governance-canon.v2.md` – precedência canônica e critérios de criação de novos cânones.
 - `ExperimentReadinessService` (backend) – cálculo dos bloqueios.
-- Endpoints: `/api/facebook-campaigns/experiments-ready`, `/api/facebook-pixels`.
+- Endpoints: `/api/facebook-campaigns/experiments-ready`, `/api/facebook-pixels`, `/api/experiments/{experimentId}/funnel/diagnostics`.
 - Tabelas do schema `marketinghubdb`: `experiment`, `creative`, `lead_portal_flow`, `targeting_element`, `experiment_campaign_metric`.

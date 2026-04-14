@@ -6,11 +6,13 @@ import ExperimentFunnelTab from "./ExperimentFunnelTab";
 import { useExperimentFunnel } from "../../api/experiment/useExperimentFunnel";
 import { useRegisterExperimentFunnelEvent } from "../../api/experiment/useRegisterExperimentFunnelEvent";
 import { useResetExperimentFunnel } from "../../api/experiment/useResetExperimentFunnel";
+import { useExperimentFunnelDiagnostics } from "../../api/experiment/useExperimentFunnelDiagnostics";
 import "@testing-library/jest-dom/vitest";
 
 vi.mock("../../api/experiment/useExperimentFunnel");
 vi.mock("../../api/experiment/useRegisterExperimentFunnelEvent");
 vi.mock("../../api/experiment/useResetExperimentFunnel");
+vi.mock("../../api/experiment/useExperimentFunnelDiagnostics");
 
 const renderWithClient = (ui: ReactElement) => {
   const client = new QueryClient();
@@ -61,6 +63,30 @@ describe("ExperimentFunnelTab", () => {
       mutateAsync: vi.fn(),
       isPending: false,
     });
+
+    (useExperimentFunnelDiagnostics as unknown as Mock).mockReturnValue({
+      data: {
+        diagnostics: [
+          {
+            stageKey: "ENVIO_FORM",
+            stageLabel: "Envio do formulário",
+            attempts: 39,
+            successes: 0,
+            observedRate: 0,
+            minAcceptableRate: 0.1,
+            upper95RateIfZero: 0.0769,
+            status: "STATISTICALLY_FAILED",
+            reasonCode: "RULE_OF_THREE_FAILED",
+            message: "Etapa reprovada estatisticamente no limite definido.",
+            technicalIssueSuspected: false,
+          },
+        ],
+        contextualAlert:
+          "Alerta contextual: o evento principal de otimização ainda está com volume baixo para aprendizado da mídia.",
+      },
+      isLoading: false,
+      isError: false,
+    });
   });
 
   it("highlights the total spend", () => {
@@ -77,6 +103,14 @@ describe("ExperimentFunnelTab", () => {
     expect(screen.getByText(/Última sincronização/)).toBeInTheDocument();
   });
 
+  it("renders the diagnostic block with backend messages", () => {
+    renderWithClient(<ExperimentFunnelTab experimentId="42" totalSpend={100} />);
+
+    expect(screen.getByText("Diagnóstico estatístico do funil")).toBeInTheDocument();
+    expect(screen.getByText(/Etapa reprovada estatisticamente/)).toBeInTheDocument();
+    expect(screen.getByText(/Alerta contextual/)).toBeInTheDocument();
+  });
+
   it("shows the cost per conversion for each stage", () => {
     renderWithClient(
       <ExperimentFunnelTab experimentId="42" totalSpend={100} />,
@@ -85,10 +119,10 @@ describe("ExperimentFunnelTab", () => {
     const rows = screen.getAllByRole("row");
     const firstStageRow = rows[1];
     const firstStageCells = within(firstStageRow).getAllByRole("cell");
-    expect(firstStageCells[4]).toHaveTextContent(/R\$\s*1,00/);
+    expect(firstStageCells[3]).toHaveTextContent(/R\$\s*1,00/);
 
     const secondStageRow = rows[2];
     const secondStageCells = within(secondStageRow).getAllByRole("cell");
-    expect(secondStageCells[4]).toHaveTextContent("—");
+    expect(secondStageCells[3]).toHaveTextContent("—");
   });
 });

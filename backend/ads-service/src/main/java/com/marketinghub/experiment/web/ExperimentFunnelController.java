@@ -1,6 +1,8 @@
 package com.marketinghub.experiment.web;
 
+import com.marketinghub.experiment.funnel.ExperimentFunnelDiagnosticService;
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
+import com.marketinghub.experiment.funnel.dto.ExperimentFunnelDiagnosticsResponseDto;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelResetResponse;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
 import com.marketinghub.experiment.funnel.dto.RegisterExperimentFunnelEventRequest;
@@ -18,10 +20,17 @@ import java.util.List;
 public class ExperimentFunnelController {
 
     private final ExperimentFunnelService experimentFunnelService;
+    private final ExperimentFunnelDiagnosticService experimentFunnelDiagnosticService;
 
     @GetMapping
     public List<ExperimentFunnelStageDto> summarize(@PathVariable Long experimentId) {
         return experimentFunnelService.summarize(experimentId);
+    }
+
+
+    @GetMapping("/diagnostics")
+    public ExperimentFunnelDiagnosticsResponseDto diagnostics(@PathVariable Long experimentId) {
+        return experimentFunnelDiagnosticService.diagnose(experimentId);
     }
 
     @PostMapping("/events")

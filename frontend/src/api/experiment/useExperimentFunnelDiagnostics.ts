@@ -18,6 +18,13 @@ export interface ExperimentFunnelStageDiagnostic {
   observedRate?: number | null;
   minAcceptableRate?: number | null;
   upper95RateIfZero?: number | null;
+  thresholdChecks?: {
+    minAcceptableRate?: number | null;
+    attemptsFor95Confidence: number;
+    upper95RateIfZero?: number | null;
+    statisticallyFailed: boolean;
+    attemptsTargetReached: boolean;
+  }[];
   status: FunnelDiagnosticStatus;
   reasonCode: string;
   message: string;

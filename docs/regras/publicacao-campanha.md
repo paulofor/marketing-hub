@@ -54,7 +54,10 @@ há configuração faltante antes de liberar a campanha.
 - A segunda seção "Configurações do experimento" exibe os itens operacionais
   acima (conta, página, Instagram e orçamento).
 - Uma terceira seção "Fluxo operacional do Meta" relembra passos complementares
-  (instant form, plataforma e status Planejado).
+  (instant form, plataforma, status Planejado e o pixel automático do Facebook).
+- O item "Pixel do Facebook" aparece nesse bloco para deixar claro se o worker já criou
+  o identificador após a liberação. Enquanto isso não acontece, o checklist orienta o
+  operador a aguardar a criação automática.
 
 Quando todos os bloqueios estão prontos, o cartão sinaliza **Pronto** e o worker
 pode publicar as campanhas para o experimento.
@@ -66,6 +69,7 @@ pode publicar as campanhas para o experimento.
 3. O worker só consome `/api/facebook-campaigns/experiments-ready` para experimentos com status Planejado **e** liberação registrada; mudar o status manualmente não libera o job.
 4. Sempre que for necessário reiniciar a operação (por exemplo, depois de um reset de campanhas), basta clicar novamente no botão para gerar um novo carimbo de liberação e limpar o funil de testes.
 5. O campo `facebook_release_requested_at` agora permanece preenchido mesmo após o experimento mudar para RUNNING/PAUSED, garantindo que o funil continue filtrando os eventos coletados antes da última liberação. Ele só é atualizado quando o botão é acionado novamente.
+6. A liberação também coloca o experimento na fila do worker de pixels. O pixel é criado automaticamente assim que o status fica `PLANNED`, por isso o botão não exige mais um pixel prévio: ele é o gatilho para a criação e para o preenchimento dos campos `facebook_pixel_id` e `facebook_pixel_code`.
 
 ## Monitoramento do funil por experimento
 

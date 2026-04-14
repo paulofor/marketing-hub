@@ -328,21 +328,6 @@ export default function ExperimentDetailPage() {
       action: hasCompleteTargeting ? undefined : () => setTab("targeting"),
       actionLabel: hasCompleteTargeting ? undefined : "Ir para Segmentação",
     },
-    {
-      id: "facebook-pixel",
-      title: "Pixel registrado na Meta",
-      isMet: hasFacebookPixelRegistered,
-      hint: hasFacebookPixelRegistered
-        ? `Pixel ${data.facebookPixelId} já registrado para este experimento.`
-        : "Aguarde o worker registrar o pixel na Meta antes de liberar o experimento.",
-      action: hasFacebookPixelRegistered
-        ? undefined
-        : () => {
-            setShouldScrollToPixel(true);
-            setTab("overview");
-          },
-      actionLabel: hasFacebookPixelRegistered ? undefined : "Ver Pixel",
-    },
   ];
 
   const isReadyForFacebook = blockingChecklist.every((c) => c.isMet);
@@ -467,6 +452,23 @@ export default function ExperimentDetailPage() {
       actionDisabled:
         data.status === "PLANNED" ? undefined : releaseButtonDisabled,
       actionLoading: data.status === "PLANNED" ? undefined : releaseInProgress,
+    },
+    {
+      id: "facebook-pixel",
+      title: "Pixel do Facebook",
+      isMet: hasFacebookPixelRegistered,
+      hint: hasFacebookPixelRegistered
+        ? `Pixel ${data.facebookPixelId} já registrado para este experimento.`
+        : data.status === "PLANNED"
+          ? "O worker está criando o pixel automaticamente; isso pode levar alguns minutos."
+          : "O pixel será criado automaticamente assim que você liberar o experimento para o worker.",
+      action: hasFacebookPixelRegistered
+        ? undefined
+        : () => {
+            setShouldScrollToPixel(true);
+            setTab("overview");
+          },
+      actionLabel: hasFacebookPixelRegistered ? undefined : "Ver Pixel",
     },
   ];
   const checklistGroups = [

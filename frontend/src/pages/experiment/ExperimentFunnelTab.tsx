@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { useExperimentFunnel, type ExperimentFunnelStageSummary } from "../../api/experiment/useExperimentFunnel";
 import { useRegisterExperimentFunnelEvent } from "../../api/experiment/useRegisterExperimentFunnelEvent";
 import { useResetExperimentFunnel } from "../../api/experiment/useResetExperimentFunnel";
+import { useExperimentFunnelDiagnostics, type FunnelDiagnosticStatus } from "../../api/experiment/useExperimentFunnelDiagnostics";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -33,6 +34,7 @@ export default function ExperimentFunnelTab({
   spendLastSyncedAt,
 }: ExperimentFunnelTabProps) {
   const { data, isLoading, isError } = useExperimentFunnel(experimentId);
+  const diagnosticsQuery = useExperimentFunnelDiagnostics(experimentId);
   const stages = (data ?? []).slice().sort((a, b) => a.order - b.order);
   const normalizedTotalSpend = normalizeSpend(totalSpend);
   const fallbackStages: ExperimentFunnelStageSummary[] = [
@@ -272,6 +274,43 @@ export default function ExperimentFunnelTab({
           </div>
         )}
 
+        {diagnosticsQuery.isError ? (
+          <div className="alert alert-warning py-2 mt-4" role="alert">
+            Não foi possível carregar o diagnóstico estatístico agora.
+          </div>
+        ) : null}
+
+        {diagnosticsQuery.data?.diagnostics?.length ? (
+          <div className="mt-4">
+            <h6 className="mb-2">Diagnóstico estatístico do funil</h6>
+            {diagnosticsQuery.data.contextualAlert ? (
+              <div className="alert alert-warning py-2" role="alert">
+                {diagnosticsQuery.data.contextualAlert}
+              </div>
+            ) : null}
+            <div className="list-group mb-3">
+              {diagnosticsQuery.data.diagnostics.map((item) => (
+                <div key={item.stageKey} className="list-group-item">
+                  <div className="d-flex flex-wrap justify-content-between gap-2 align-items-start">
+                    <div>
+                      <div className="fw-semibold">{item.stageLabel}</div>
+                      <div className="small text-muted">{item.message}</div>
+                      <div className="small text-muted">
+                        Tentativas: {item.attempts} · Sucessos: {item.successes}
+                        {item.minAcceptableRate != null ? ` · Mín. aceitável: ${formatPercent(item.minAcceptableRate)}` : ""}
+                        {item.upper95RateIfZero != null ? ` · Limite 95% (0 sucessos): ${formatPercent(item.upper95RateIfZero)}` : ""}
+                      </div>
+                    </div>
+                    <span className={`badge ${statusBadgeClass(item.status)}`} title="Diagnóstico calculado no backend">
+                      {statusLabel(item.status)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         <hr className="my-4" />
         <form className="row g-3 align-items-end" onSubmit={onSubmit}>
           <div className="col-12 col-lg-3">
@@ -432,4 +471,44 @@ function formatRateComparedToPreviousStage(
   }
   const conversionRate = (currentCount / previousCount) * 100;
   return `${conversionRate.toFixed(1).replace(".", ",")}%`;
+}
+
+function formatPercent(value?: number | null) {
+  if (value == null || Number.isNaN(value)) {
+    return "—";
+  }
+  return `${(value * 100).toFixed(1).replace(".", ",")}%`;
+}
+
+function statusLabel(status: FunnelDiagnosticStatus) {
+  switch (status) {
+    case "NO_DATA":
+      return "Sem dados";
+    case "INSUFFICIENT_DATA":
+      return "Ainda cedo";
+    case "TECHNICAL_ISSUE_SUSPECTED":
+      return "Suspeita técnica";
+    case "WEAK_SIGNAL":
+      return "Sinal fraco";
+    case "STATISTICALLY_FAILED":
+      return "Reprovada";
+    default:
+      return "Saudável/Inconclusiva";
+  }
+}
+
+function statusBadgeClass(status: FunnelDiagnosticStatus) {
+  switch (status) {
+    case "NO_DATA":
+    case "INSUFFICIENT_DATA":
+      return "text-bg-secondary";
+    case "TECHNICAL_ISSUE_SUSPECTED":
+      return "text-bg-warning";
+    case "WEAK_SIGNAL":
+      return "text-bg-info";
+    case "STATISTICALLY_FAILED":
+      return "text-bg-danger";
+    default:
+      return "text-bg-success";
+  }
 }

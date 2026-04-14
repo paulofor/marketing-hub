@@ -81,11 +81,12 @@ o valor aponta para o próprio container do worker e pode causar `Connection ref
 
 ## Pixels e eventos
 
-A sincronização de pixels e o envio de eventos foram desativados por padrão
-para evitar erros de permissão ao lidar com contas que não liberaram o uso de
-pixels. O agendador `FacebookPixelScheduler` só é registrado quando a
-propriedade `facebookpixel.enabled` está definida como `true`. Mantendo o valor
-padrão (`false`), o worker limita-se a publicar campanha, conjunto e anúncio.
+A sincronização de pixels e o envio de eventos agora ficam **habilitados por padrão**.
+O agendador `FacebookPixelScheduler` continua condicionado à propriedade
+`facebookpixel.enabled`, portanto basta definir o valor como `false` se for
+necessário desligar o recurso em algum ambiente com permissões restritas.
+Quando o job está ativo o worker consulta `/api/facebook-pixels/experiments-ready`
+e cria o pixel antes de enviar os eventos de conversão.
 
 O fluxo automatizado cria toda a hierarquia necessária para veiculação:
 

@@ -29,6 +29,7 @@ import com.marketinghub.imagegeneration.repository.ImageGenerationQualityReposit
 import com.marketinghub.sampleemail.SampleEmail;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -357,7 +358,12 @@ public class ExperimentService {
     }
 
     public java.util.List<Experiment> listReadyForPixel() {
-        return repository.findReadyForPixel(ExperimentStatus.PLANNED, ExperimentPlatform.FACEBOOK);
+        java.util.List<ExperimentStatus> eligibleStatuses = java.util.List.of(
+                ExperimentStatus.PLANNED,
+                ExperimentStatus.RUNNING,
+                ExperimentStatus.PAUSED
+        );
+        return repository.findReadyForPixel(eligibleStatuses, ExperimentPlatform.FACEBOOK);
     }
 
     @Transactional

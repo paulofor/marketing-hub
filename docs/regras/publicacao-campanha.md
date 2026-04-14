@@ -69,7 +69,7 @@ pode publicar as campanhas para o experimento.
 3. O worker só consome `/api/facebook-campaigns/experiments-ready` para experimentos com status Planejado **e** liberação registrada; mudar o status manualmente não libera o job.
 4. Sempre que for necessário reiniciar a operação (por exemplo, depois de um reset de campanhas), basta clicar novamente no botão para gerar um novo carimbo de liberação e limpar o funil de testes.
 5. O campo `facebook_release_requested_at` agora permanece preenchido mesmo após o experimento mudar para RUNNING/PAUSED, garantindo que o funil continue filtrando os eventos coletados antes da última liberação. Ele só é atualizado quando o botão é acionado novamente.
-6. A liberação também coloca o experimento na fila do worker de pixels. O pixel é criado automaticamente assim que o status fica `PLANNED`, por isso o botão não exige mais um pixel prévio: ele é o gatilho para a criação e para o preenchimento dos campos `facebook_pixel_id` e `facebook_pixel_code`.
+6. A liberação também coloca o experimento na fila do worker de pixels. O worker agora consulta somente os experimentos de Facebook com `facebook_release_requested_at` preenchido, `creative_approved = true`, status em (`PLANNED`, `RUNNING`, `PAUSED`) e `facebook_pixel_id` em branco. Assim, mesmo que o operador altere o status para RUNNING ou PAUSED antes do próximo ciclo, o pixel será criado e registrado via `/api/facebook-pixels`. Acionar o botão novamente gera um novo carimbo e recoloca o experimento na fila caso seja necessário recriar o pixel.
 
 ## Monitoramento do funil por experimento
 

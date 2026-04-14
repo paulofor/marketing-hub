@@ -74,12 +74,13 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
             left join fetch e.facebookPage fp
             left join fetch e.facebookInstantForm fif
             left join fetch e.leadPortalFlow flow
-            where e.status = :status
+            where e.status in :statuses
               and e.platform = :platform
               and e.creativeApproved = true
+              and e.facebookReleaseRequestedAt is not null
               and e.facebookPixelId is null
             """)
-    List<Experiment> findReadyForPixel(@Param("status") ExperimentStatus status,
+    List<Experiment> findReadyForPixel(@Param("statuses") List<ExperimentStatus> statuses,
                                        @Param("platform") ExperimentPlatform platform);
 
     /**

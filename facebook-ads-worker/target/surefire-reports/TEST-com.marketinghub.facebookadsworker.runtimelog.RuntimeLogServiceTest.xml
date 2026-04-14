@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClientTest" time="0.752" tests="2" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.marketinghub.facebookadsworker.runtimelog.RuntimeLogServiceTest" time="0.002" tests="2" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="21"/>
     <property name="sun.jnu.encoding" value="ANSI_X3.4-1968"/>
@@ -55,30 +55,6 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="65.0"/>
   </properties>
-  <testcase name="shouldReturnEmptyWhenBackendClosesConnectionBeforeResponding" classname="com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClientTest" time="0.647">
-    <system-out><![CDATA[15:47:47.570 [main] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Requesting Facebook worker configuration from backend: url==>http://localhost:42669/api/accounts/facebook/worker-config, params={}
-15:47:47.871 [reactor-http-epoll-2] WARN reactor.netty.http.client.HttpClientConnect -- [78e6997e-1, L:/127.0.0.1:34210 ! R:localhost/127.0.0.1:42669] The connection observed an error
-reactor.netty.http.client.PrematureCloseException: Connection prematurely closed BEFORE response
-15:47:47.877 [main] WARN com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Failed to fetch Facebook worker configuration from backend: Connection prematurely closed BEFORE response. Connection will be retried on the next cycle.
-]]></system-out>
-    <system-err><![CDATA[Apr 14, 2026 3:47:47 PM okhttp3.mockwebserver.MockWebServer$SocketHandler handle
-WARNING: MockWebServer[42669] connection from /127.0.0.1 didn't make a request
-]]></system-err>
-  </testcase>
-  <testcase name="logsMissingConfigurationWarningOnlyOncePerOutage" classname="com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClientTest" time="0.104">
-    <system-out><![CDATA[15:47:47.922 [main] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Requesting Facebook worker configuration from backend: url==>http://localhost:34415/api/accounts/facebook/worker-config, params={}
-15:47:47.954 [reactor-http-epoll-3] WARN com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Facebook worker configuration not found in backend; skipping Facebook automation
-15:47:47.955 [reactor-http-epoll-3] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Backend responded with HTTP 404 when fetching Facebook worker configuration: url<==http://localhost:34415/api/accounts/facebook/worker-config, response=
-15:47:47.955 [main] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Received Facebook worker configuration response from backend: url<==http://localhost:34415/api/accounts/facebook/worker-config, response=null
-15:47:47.955 [main] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Requesting Facebook worker configuration from backend: url==>http://localhost:34415/api/accounts/facebook/worker-config, params={}
-15:47:47.958 [reactor-http-epoll-3] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Backend responded with HTTP 404 when fetching Facebook worker configuration: url<==http://localhost:34415/api/accounts/facebook/worker-config, response=
-15:47:47.958 [main] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Received Facebook worker configuration response from backend: url<==http://localhost:34415/api/accounts/facebook/worker-config, response=null
-15:47:47.958 [main] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Requesting Facebook worker configuration from backend: url==>http://localhost:34415/api/accounts/facebook/worker-config, params={}
-15:47:48.009 [main] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Received Facebook worker configuration response from backend: url<==http://localhost:34415/api/accounts/facebook/worker-config, response={"accountId":1,"adAccountId":"act_1","accessToken":"token","appId":"app","appSecret":"secret","defaultPageId":"42","defaultInstagramActorId":"24","defaultWebsiteUrl":"https://example.com","defaultLeadGenFormId":null,"defaultCreativeMessageTemplate":"Conheça %s","defaultCallToActionType":"LEARN_MORE","adSetDailyBudget":"2000","adSetBillingEvent":"IMPRESSIONS","adSetOptimizationGoal":"LINK_CLICKS","adSetDestinationType":"WEBSITE","adSetBidStrategy":"LOWEST_COST_WITHOUT_CAP","adSetBidAmount":"150","adSetTargetCountry":"BR"}
-15:47:48.012 [main] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Requesting Facebook worker configuration from backend: url==>http://localhost:34415/api/accounts/facebook/worker-config, params={}
-15:47:48.015 [reactor-http-epoll-3] WARN com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Facebook worker configuration not found in backend; skipping Facebook automation
-15:47:48.015 [reactor-http-epoll-3] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Backend responded with HTTP 404 when fetching Facebook worker configuration: url<==http://localhost:34415/api/accounts/facebook/worker-config, response=
-15:47:48.015 [main] INFO com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient -- Received Facebook worker configuration response from backend: url<==http://localhost:34415/api/accounts/facebook/worker-config, response=null
-]]></system-out>
-  </testcase>
+  <testcase name="shouldReadOnlyTailLines" classname="com.marketinghub.facebookadsworker.runtimelog.RuntimeLogServiceTest" time="0.001"/>
+  <testcase name="shouldReturnUnavailableWhenFileDoesNotExist" classname="com.marketinghub.facebookadsworker.runtimelog.RuntimeLogServiceTest" time="0.001"/>
 </testsuite>

@@ -124,6 +124,7 @@ docs/canonical/
 ├─ lead-capture-canon.v1.md                   # fluxos do Lead Portal, packages e payments
 ├─ media-packages-canon.v1.md                 # lifecycle watermark → zip → email → entrega
 ├─ ads-integrations-canon.v1.md               # contratos Meta / canais pagos
+├─ facebook-campaign-publication-canon.v1.md   # prontidão, liberação e funil do Facebook Ads Worker
 ├─ ai-workers-canon.v1.md                     # prompts, modelos e auditoria cross services
 └─ <domínio>-decision-schema.v1.json          # schemas específicos quando necessário
 ```

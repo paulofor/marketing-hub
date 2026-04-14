@@ -109,6 +109,9 @@ describe("ExperimentFunnelTab", () => {
     expect(screen.getByText("Diagnóstico estatístico do funil")).toBeInTheDocument();
     expect(screen.getByText(/Etapa reprovada estatisticamente/)).toBeInTheDocument();
     expect(screen.getByText(/Alerta contextual/)).toBeInTheDocument();
+    expect(screen.getByText("Mín. aceitável: 5,0%")).toBeInTheDocument();
+    expect(screen.getByText("Mín. aceitável: 3,0%")).toBeInTheDocument();
+    expect(screen.getByText("Mín. aceitável: 2,0%")).toBeInTheDocument();
   });
 
   it("shows the cost per conversion for each stage", () => {

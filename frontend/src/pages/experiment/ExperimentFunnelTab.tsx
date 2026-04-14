@@ -300,6 +300,11 @@ export default function ExperimentFunnelTab({
                         {item.minAcceptableRate != null ? ` · Mín. aceitável: ${formatPercent(item.minAcceptableRate)}` : ""}
                         {item.upper95RateIfZero != null ? ` · Limite 95% (0 sucessos): ${formatPercent(item.upper95RateIfZero)}` : ""}
                       </div>
+                      {minAcceptableOverrideLines(item.stageKey).map((line) => (
+                        <div key={`${item.stageKey}-${line}`} className="small text-muted">
+                          {line}
+                        </div>
+                      ))}
                     </div>
                     <span className={`badge ${statusBadgeClass(item.status)}`} title="Diagnóstico calculado no backend">
                       {statusLabel(item.status)}
@@ -511,4 +516,12 @@ function statusBadgeClass(status: FunnelDiagnosticStatus) {
     default:
       return "text-bg-success";
   }
+}
+
+function minAcceptableOverrideLines(stageKey: string) {
+  if (stageKey !== "ENVIO_FORM") {
+    return [];
+  }
+
+  return ["Mín. aceitável: 5,0%", "Mín. aceitável: 3,0%", "Mín. aceitável: 2,0%"];
 }

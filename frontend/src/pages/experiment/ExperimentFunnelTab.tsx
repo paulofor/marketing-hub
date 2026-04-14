@@ -300,9 +300,18 @@ export default function ExperimentFunnelTab({
                         {item.minAcceptableRate != null ? ` · Mín. aceitável: ${formatPercent(item.minAcceptableRate)}` : ""}
                         {item.upper95RateIfZero != null ? ` · Limite 95% (0 sucessos): ${formatPercent(item.upper95RateIfZero)}` : ""}
                       </div>
-                      {minAcceptableOverrideLines(item.stageKey).map((line) => (
-                        <div key={`${item.stageKey}-${line}`} className="small text-muted">
-                          {line}
+                      {item.thresholdChecks?.map((thresholdCheck) => (
+                        <div
+                          key={`${item.stageKey}-${thresholdCheck.minAcceptableRate}`}
+                          className={`small ${thresholdCheck.statisticallyFailed ? "text-danger" : "text-muted"}`}
+                        >
+                          Limite {formatPercent(thresholdCheck.minAcceptableRate)} · Tentativas mín. (95%, 0 sucessos): {thresholdCheck.attemptsFor95Confidence}
+                          {thresholdCheck.upper95RateIfZero != null ? ` · Limite 95% atual: ${formatPercent(thresholdCheck.upper95RateIfZero)}` : ""}
+                          {thresholdCheck.statisticallyFailed
+                            ? " · Reprovada"
+                            : thresholdCheck.attemptsTargetReached
+                              ? " · Alvo de tentativas atingido"
+                              : " · Ainda coletando"}
                         </div>
                       ))}
                     </div>
@@ -516,12 +525,4 @@ function statusBadgeClass(status: FunnelDiagnosticStatus) {
     default:
       return "text-bg-success";
   }
-}
-
-function minAcceptableOverrideLines(stageKey: string) {
-  if (stageKey !== "ENVIO_FORM") {
-    return [];
-  }
-
-  return ["Mín. aceitável: 5,0%", "Mín. aceitável: 3,0%", "Mín. aceitável: 2,0%"];
 }

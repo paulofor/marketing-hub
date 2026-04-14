@@ -75,6 +75,22 @@ describe("ExperimentFunnelTab", () => {
             observedRate: 0,
             minAcceptableRate: 0.1,
             upper95RateIfZero: 0.0769,
+            thresholdChecks: [
+              {
+                minAcceptableRate: 0.1,
+                attemptsFor95Confidence: 30,
+                upper95RateIfZero: 0.0769,
+                statisticallyFailed: true,
+                attemptsTargetReached: true,
+              },
+              {
+                minAcceptableRate: 0.05,
+                attemptsFor95Confidence: 60,
+                upper95RateIfZero: 0.0769,
+                statisticallyFailed: false,
+                attemptsTargetReached: false,
+              },
+            ],
             status: "STATISTICALLY_FAILED",
             reasonCode: "RULE_OF_THREE_FAILED",
             message: "Etapa reprovada estatisticamente no limite definido.",
@@ -109,9 +125,8 @@ describe("ExperimentFunnelTab", () => {
     expect(screen.getByText("Diagnóstico estatístico do funil")).toBeInTheDocument();
     expect(screen.getByText(/Etapa reprovada estatisticamente/)).toBeInTheDocument();
     expect(screen.getByText(/Alerta contextual/)).toBeInTheDocument();
-    expect(screen.getByText("Mín. aceitável: 5,0%")).toBeInTheDocument();
-    expect(screen.getByText("Mín. aceitável: 3,0%")).toBeInTheDocument();
-    expect(screen.getByText("Mín. aceitável: 2,0%")).toBeInTheDocument();
+    expect(screen.getByText(/Limite 10,0% · Tentativas mín\. .*: 30/)).toBeInTheDocument();
+    expect(screen.getByText(/Limite 5,0% · Tentativas mín\. .*: 60/)).toBeInTheDocument();
   });
 
   it("shows the cost per conversion for each stage", () => {

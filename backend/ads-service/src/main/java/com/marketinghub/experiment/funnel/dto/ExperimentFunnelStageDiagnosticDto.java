@@ -10,6 +10,7 @@ public record ExperimentFunnelStageDiagnosticDto(
         Double observedRate,
         Double minAcceptableRate,
         Double upper95RateIfZero,
+        java.util.List<FunnelThresholdCheckDto> thresholdChecks,
         FunnelDiagnosticStatus status,
         FunnelDiagnosticReasonCode reasonCode,
         String message,

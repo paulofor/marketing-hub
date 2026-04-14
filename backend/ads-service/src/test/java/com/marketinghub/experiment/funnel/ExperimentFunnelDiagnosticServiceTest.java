@@ -42,7 +42,10 @@ class ExperimentFunnelDiagnosticServiceTest {
                 .anySatisfy(item -> {
                     if (item.stageKey() == ExperimentFunnelStage.ENVIO_FORM) {
                         assertThat(item.status()).isEqualTo(FunnelDiagnosticStatus.STATISTICALLY_FAILED);
-                        assertThat(item.upper95RateIfZero()).isLessThan(item.minAcceptableRate());
+                        assertThat(item.upper95RateIfZero()).isLessThanOrEqualTo(item.minAcceptableRate());
+                        assertThat(item.thresholdChecks())
+                                .extracting(check -> check.minAcceptableRate())
+                                .containsExactly(0.10, 0.05, 0.03, 0.02);
                     }
                 });
     }

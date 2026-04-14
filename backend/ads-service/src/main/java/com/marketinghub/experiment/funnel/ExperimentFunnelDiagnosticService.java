@@ -5,6 +5,7 @@ import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDiagnosticDto
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticReasonCode;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticStatus;
+import com.marketinghub.experiment.funnel.dto.FunnelThresholdCheckDto;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -53,6 +54,7 @@ public class ExperimentFunnelDiagnosticService {
         long successes = Optional.ofNullable(byStage.get(rule.to()))
                 .map(ExperimentFunnelStageDto::getTotalCount)
                 .orElse(0L);
+        List<FunnelThresholdCheckDto> thresholdChecks = buildThresholdChecks(rule, attempts, successes);
 
         if (attempts == 0 && successes == 0) {
             return new ExperimentFunnelStageDiagnosticDto(
@@ -63,6 +65,7 @@ public class ExperimentFunnelDiagnosticService {
                     null,
                     rule.minAcceptableRate(),
                     null,
+                    thresholdChecks,
                     FunnelDiagnosticStatus.NO_DATA,
                     FunnelDiagnosticReasonCode.NO_ATTEMPTS,
                     "Ainda não há dados dessa etapa para concluir.",
@@ -79,6 +82,7 @@ public class ExperimentFunnelDiagnosticService {
                     attempts > 0 ? (double) successes / attempts : null,
                     rule.minAcceptableRate(),
                     null,
+                    thresholdChecks,
                     FunnelDiagnosticStatus.TECHNICAL_ISSUE_SUSPECTED,
                     FunnelDiagnosticReasonCode.SEQUENTIAL_INCONSISTENCY,
                     "Possível problema técnico nesta etapa. Os números entre etapas sequenciais estão inconsistentes.",
@@ -100,13 +104,14 @@ public class ExperimentFunnelDiagnosticService {
                         observedRate,
                         rule.minAcceptableRate(),
                         upper95,
+                        thresholdChecks,
                         FunnelDiagnosticStatus.INSUFFICIENT_DATA,
                         FunnelDiagnosticReasonCode.LOW_SAMPLE_SIZE,
                         "Ainda cedo para concluir nesta etapa.",
                         false
                 );
             }
-            if (upper95 < rule.minAcceptableRate()) {
+            if (upper95 <= rule.minAcceptableRate()) {
                 return new ExperimentFunnelStageDiagnosticDto(
                         rule.to(),
                         rule.to().getLabel(),
@@ -115,6 +120,7 @@ public class ExperimentFunnelDiagnosticService {
                         observedRate,
                         rule.minAcceptableRate(),
                         upper95,
+                        thresholdChecks,
                         FunnelDiagnosticStatus.STATISTICALLY_FAILED,
                         FunnelDiagnosticReasonCode.RULE_OF_THREE_FAILED,
                         "Etapa reprovada estatisticamente no limite definido.",
@@ -129,6 +135,7 @@ public class ExperimentFunnelDiagnosticService {
                     observedRate,
                     rule.minAcceptableRate(),
                     upper95,
+                    thresholdChecks,
                     FunnelDiagnosticStatus.WEAK_SIGNAL,
                     FunnelDiagnosticReasonCode.RULE_OF_THREE_STILL_INCONCLUSIVE,
                     "Sinal fraco nesta etapa. Continue coletando eventos.",
@@ -145,6 +152,7 @@ public class ExperimentFunnelDiagnosticService {
                     observedRate,
                     rule.minAcceptableRate(),
                     null,
+                    thresholdChecks,
                     FunnelDiagnosticStatus.WEAK_SIGNAL,
                     FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
                     "Sinal fraco nesta etapa. Continue monitorando.",
@@ -160,11 +168,35 @@ public class ExperimentFunnelDiagnosticService {
                 observedRate,
                 rule.minAcceptableRate(),
                 null,
+                thresholdChecks,
                 FunnelDiagnosticStatus.HEALTHY_OR_INCONCLUSIVE,
                 FunnelDiagnosticReasonCode.HEALTHY_OR_INCONCLUSIVE,
                 "Sem indício forte de reprovação estatística nesta etapa.",
                 false
         );
+    }
+
+    private List<FunnelThresholdCheckDto> buildThresholdChecks(ExperimentFunnelDiagnosticConfig.ConversionRuleSpec rule,
+                                                               long attempts,
+                                                               long successes) {
+        return rule.allThresholdRates().stream()
+                .map(thresholdRate -> {
+                    int attemptsFor95Confidence = (int) Math.ceil(3.0 / thresholdRate);
+                    Double upper95 = attempts > 0 ? 3.0 / attempts : null;
+                    boolean attemptsTargetReached = attempts >= attemptsFor95Confidence;
+                    boolean statisticallyFailed = successes == 0
+                            && attemptsTargetReached
+                            && upper95 != null
+                            && upper95 <= thresholdRate;
+                    return new FunnelThresholdCheckDto(
+                            thresholdRate,
+                            attemptsFor95Confidence,
+                            upper95,
+                            statisticallyFailed,
+                            attemptsTargetReached
+                    );
+                })
+                .toList();
     }
 
 }

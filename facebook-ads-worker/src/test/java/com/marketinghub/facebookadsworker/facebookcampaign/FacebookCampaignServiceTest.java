@@ -654,6 +654,7 @@ class FacebookCampaignServiceTest {
             1L,
             "1",
             "token",
+            "system-token",
             "app",
             "secret",
             "42",
@@ -1172,6 +1173,7 @@ class FacebookCampaignServiceTest {
             1L,
             "1",
             accessToken,
+            accessToken,
             "app",
             "secret",
             "42",
@@ -1194,6 +1196,7 @@ class FacebookCampaignServiceTest {
         return new FacebookWorkerConfiguration(
             1L,
             "1",
+            accessToken,
             accessToken,
             "app",
             "secret",

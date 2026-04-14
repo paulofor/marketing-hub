@@ -82,6 +82,11 @@ public class FacebookPixelService {
             LOGGER.warn("Facebook ad account id is not configured; skipping pixel creation");
             return;
         }
+        if (!StringUtils.hasText(config.systemUserAccessToken())) {
+            LOGGER.warn("Facebook system user access token is not configured; skipping pixel creation");
+            return;
+        }
+        String systemUserToken = config.systemUserAccessToken().trim();
         List<ExperimentPixel> experiments = fetchExperimentsReadyForPixel();
         if (experiments.isEmpty()) {
             return;
@@ -89,8 +94,8 @@ public class FacebookPixelService {
         for (ExperimentPixel exp : experiments) {
             try {
                 String pixelName = buildPixelName(exp);
-                String pixelId = facebookAdsService.createPixel(config.adAccountId(), pixelName);
-                String pixelCode = facebookAdsService.fetchPixelCode(pixelId);
+                String pixelId = facebookAdsService.createPixel(config.adAccountId(), pixelName, systemUserToken);
+                String pixelCode = facebookAdsService.fetchPixelCode(pixelId, systemUserToken);
                 registerPixel(exp.experimentId(), pixelId, pixelCode);
             } catch (Exception ex) {
                 LOGGER.error(

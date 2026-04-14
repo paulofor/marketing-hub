@@ -119,6 +119,14 @@ public class FacebookAccount {
     @Column(columnDefinition = "LONGTEXT")
     private String appSecret;
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @Column(name = "system_user_access_token", columnDefinition = "LONGTEXT")
+    private String systemUserAccessToken;
+    @Transient
+    @JsonIgnore
+    @Setter(AccessLevel.NONE)
+    private boolean systemUserAccessTokenProvided;
+
     @Column(name = "worker_enabled")
     private boolean workerEnabled;
 
@@ -179,6 +187,22 @@ public class FacebookAccount {
     @JsonIgnore
     public boolean isAccessTokenProvided() {
         return accessTokenProvided;
+    }
+
+    public void setSystemUserAccessToken(String systemUserAccessToken) {
+        this.systemUserAccessToken = systemUserAccessToken;
+    }
+
+    @JsonSetter("systemUserAccessToken")
+    public void jsonSystemUserAccessTokenSetter(String systemUserAccessToken) {
+        this.systemUserAccessTokenProvided = true;
+        this.systemUserAccessToken = systemUserAccessToken;
+    }
+
+    @Transient
+    @JsonIgnore
+    public boolean isSystemUserAccessTokenProvided() {
+        return systemUserAccessTokenProvided;
     }
 
     public void setDefaultPageId(String defaultPageId) {

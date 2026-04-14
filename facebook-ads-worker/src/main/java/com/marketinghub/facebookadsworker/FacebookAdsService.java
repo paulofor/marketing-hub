@@ -131,6 +131,13 @@ public class FacebookAdsService {
         return token;
     }
 
+    private String resolveAccessToken(String overrideToken) {
+        if (hasText(overrideToken)) {
+            return overrideToken.trim();
+        }
+        return requireAccessToken();
+    }
+
     public void updateAccessToken(String newToken) {
         if (!hasText(newToken)) {
             throw new IllegalArgumentException("newToken must not be blank");
@@ -174,24 +181,32 @@ public class FacebookAdsService {
     }
 
     public String createPixel(String adAccountId, String name) {
+        return createPixel(adAccountId, name, null);
+    }
+
+    public String createPixel(String adAccountId, String name, String accessTokenOverride) {
         if (!hasText(adAccountId)) {
             throw new IllegalArgumentException("adAccountId must not be blank");
         }
         Map<String, Object> body = new HashMap<>();
         body.put("name", name);
-        body.put("access_token", requireAccessToken());
+        body.put("access_token", resolveAccessToken(accessTokenOverride));
         String path = buildVersionedPath("/act_" + adAccountId + "/adspixels");
         JsonNode response = executePost(path, body);
         return response.path("id").asText();
     }
 
     public String fetchPixelCode(String pixelId) {
+        return fetchPixelCode(pixelId, null);
+    }
+
+    public String fetchPixelCode(String pixelId, String accessTokenOverride) {
         if (!hasText(pixelId)) {
             return null;
         }
         String path = UriComponentsBuilder.fromPath(buildVersionedPath("/" + pixelId))
             .queryParam("fields", "code")
-            .queryParam("access_token", requireAccessToken())
+            .queryParam("access_token", resolveAccessToken(accessTokenOverride))
             .build()
             .toString();
         FacebookApiResponse response = executeGet(path);

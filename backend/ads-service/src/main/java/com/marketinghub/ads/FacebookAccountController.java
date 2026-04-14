@@ -109,6 +109,10 @@ public class FacebookAccountController {
             }
         }
 
+        if (account.isSystemUserAccessTokenProvided()) {
+            persisted.setSystemUserAccessToken(account.getSystemUserAccessToken());
+        }
+
         if (account.isAppSecretProvided()) {
             persisted.overwriteAppSecret(account.getAppSecret());
         }
@@ -207,6 +211,7 @@ public class FacebookAccountController {
         account.setName(trim(account.getName()));
         account.setCurrency(trim(account.getCurrency()));
         account.setAccessToken(trimToNull(account.getAccessToken()));
+        account.setSystemUserAccessToken(trimToNull(account.getSystemUserAccessToken()));
         account.setAuthorizedUserId(trimToNull(account.getAuthorizedUserId()));
         account.setAuthorizedUserName(trimToNull(account.getAuthorizedUserName()));
         account.setAuthorizedUserEmail(trimToNull(account.getAuthorizedUserEmail()));
@@ -265,6 +270,7 @@ public class FacebookAccountController {
             account.getId(),
             account.getAdAccountId(),
             account.getAccessToken(),
+            account.getSystemUserAccessToken(),
             account.getAppId(),
             account.getAppSecret(),
             account.getDefaultPageId(),
@@ -425,6 +431,7 @@ public class FacebookAccountController {
         Long accountId,
         String adAccountId,
         String accessToken,
+        String systemUserAccessToken,
         String appId,
         String appSecret,
         String defaultPageId,

@@ -846,6 +846,7 @@ allow variants to be created before an experiment is defined.
 - `authorized_user_email` VARCHAR(320)
 - `app_id` VARCHAR(255)
 - `app_secret` LONGTEXT
+- `system_user_access_token` LONGTEXT
 - `token_renewal_enabled` TINYINT(1) DEFAULT 0
 - `token_renewal_status` VARCHAR(40)
 - `token_renewal_last_attempt_at` DATETIME
@@ -875,6 +876,8 @@ em `token_renewal_last_error` quando a renovação falha. A conta marcada como
 `worker_enabled = 1` é exposta pelo endpoint `GET /api/accounts/facebook/worker-config`
 e fornece os parâmetros padrão utilizados pelo `facebook-ads-worker` (ID da conta
 de anúncios, token, App ID/Secret, página fallback, orçamento diário etc.).
+O campo `system_user_access_token` armazena o token privilegiado do usuário de sistema
+necessário para criar pixels e, futuramente, gerenciar públicos diretamente pela API.
 
 ### ig_account
 

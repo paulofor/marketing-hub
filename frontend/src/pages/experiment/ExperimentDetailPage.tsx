@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -70,6 +70,8 @@ export default function ExperimentDetailPage() {
   );
   const { data: presets } = useMetricPresets();
   const [tab, setTab] = useState("overview");
+  const [shouldScrollToPixel, setShouldScrollToPixel] = useState(false);
+  const pixelSectionRef = useRef<HTMLDivElement | null>(null);
   const [journeyError, setJourneyError] = useState<string | null>(null);
   const { data: facebookConfig, isLoading: isLoadingFacebookConfig } =
     useFacebookConfigurationStatus();
@@ -125,6 +127,17 @@ export default function ExperimentDetailPage() {
       setTab("overview");
     }
   }, [tab, hasInstantFormSteps, hasEmailSteps]);
+
+  useEffect(() => {
+    if (!shouldScrollToPixel || tab !== "overview") {
+      return;
+    }
+    pixelSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+    setShouldScrollToPixel(false);
+  }, [shouldScrollToPixel, tab]);
   const assignmentsWithSteps = useMemo(() => {
     const assignments = journeyAssignments?.assignments ?? [];
     if (assignments.length === 0) {
@@ -322,7 +335,12 @@ export default function ExperimentDetailPage() {
       hint: hasFacebookPixelRegistered
         ? `Pixel ${data.facebookPixelId} já registrado para este experimento.`
         : "Aguarde o worker registrar o pixel na Meta antes de liberar o experimento.",
-      action: hasFacebookPixelRegistered ? undefined : () => setTab("overview"),
+      action: hasFacebookPixelRegistered
+        ? undefined
+        : () => {
+            setShouldScrollToPixel(true);
+            setTab("overview");
+          },
       actionLabel: hasFacebookPixelRegistered ? undefined : "Ver Pixel",
     },
   ];
@@ -1237,7 +1255,7 @@ export default function ExperimentDetailPage() {
             </div>
             <ExperimentLearningPanel experimentId={expId} />
             <ExperimentReportPanel experimentId={expId} />
-            <div className="card">
+            <div className="card" ref={pixelSectionRef}>
               <div className="card-body">
                 <div className="d-flex justify-content-between align-items-start mb-2">
                   <div>

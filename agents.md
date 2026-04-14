@@ -1,64 +1,48 @@
-# agents.md — Contract for Codex agent
+# agents.md — Contrato operacional
 
-> Sempre consulte este arquivo antes de realizar qualquer alteração no repositório.
+> Consulte este arquivo antes de alterar qualquer módulo. Para todas as regras canônicas, a fonte de verdade é `docs/canonical/system-governance-canon.v2.md`.
 
-## Build & Test
+## 1. Fontes de verdade
 
-- **Backend**
-  - Build & publish: `cd backend/ads-service && mvn -s ../settings.xml deploy`
-  - Publicar o pacote para ser usado pelo **AI Worker** no GitHub Packages repository.
-  - Tests: `cd backend/ads-service && mvn -s ../settings.xml test`
-  - **AI Worker**
-    - Build: `cd ai-worker && mvn -s settings.xml package`
-    - Tests: `cd ai-worker && mvn -s settings.xml test`
-    - Downloads the `ads-service` artifact from the `paulofor/ads-service` GitHub Packages repository.
-- **Frontend**
-  - Build: `npm run build`
-  - Tests: `npm run test`
-  - Sempre que adicionar uma chamada ou funcionalidade que consuma o backend, valide que a URL configurada está correta para evitar erros 404.
+- **Governança**: System Governance Canon (precedência, ownership e critérios de novos cânones).
+- **Modelo de dados**: `docs/modelo-dados-experimento.md`. Alterou entidades ou relacionamentos? Atualize o documento imediatamente.
+- **Liquibase / MySQL 5.7**: `docs/database/liquibase-mysql57.md`. Use sempre `databaseChangeLog` em YAML, `preConditions` com `dbms:mysql`, `splitStatements: true`, `stripComments: true` e valide mentalmente o SQL.
+- **DRIs**: mudanças cross-domain precisam de ADR registrado no diretório correspondente.
 
-## Conventions
+## 2. Build & Test essenciais
 
-- Na pasta `manual do usuario`, todos os links devem abrir em uma nova aba utilizando `target="_blank"` para manter o usuário no documento.
-- DataBase: MySql 5
-- Modelo de Dados atualizado: docs/data-model.md
-  - Todo o modelo de dados deve permanecer no projeto **backend**. O projeto
-    **ai-worker** deve reutilizar esse modelo e não manter uma cópia
-    própria.
-  - Todos os métodos de consulta e manipulação de banco de dados deve ser códificado
-    no projeto **backend** e pode ser utilizado no projeto **ai-worker**
-- Sempre prefira fazer filtros na consulta ao banco de dados, evite buscar muitos registros
-  para tratamento em memória.
-- Java 21 + Spring Boot 3
-- React 18 + Vite + TypeScript
-- Zustand for state, TanStack Query for data fetching
-- Prettier (frontend) and Spotless (backend) for formatting
-- Sempre que crir uma nova chamado ao backend verifique se ela existe. Se não existir entenda se faz sentido e se sim construa no backend o endpoint documentando ele.
-  caso positivo, o endpoint correspondente deve ser implementado.
-- Campos de formulário que acionam serviços do Worker IA devem incluir um tooltip explicativo
-- Todo registro de entidade produzido por um processo do **Worker IA** deve possuir os atributos `modelo` e `prompt`, que devem ser preenchidos no momento da criação do registro.
-- Todo changelog `.sql` **DEVE** começar na **primeira linha** com: `--liquibase formatted sql`
-- Para scripts específicos de MySQL, use `dbms:mysql` **na mesma linha** do changeset: `--changeset <autor>:<id> dbms:mysql`
-- Use precondições para idempotência, por exemplo:
-  ```
-  --preconditions onFail:MARK_RAN
-  --precondition-sql-check expectedResult:0 <SQL que retorna 0 quando deve executar>
-  ```
-- **Template mínimo sugerido**:
-  ```sql
-  --liquibase formatted sql
-  --changeset repo:<yyyy-mm-dd>-<id> dbms:mysql
-  --preconditions onFail:MARK_RAN
-  --precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'sua_tabela';
-  -- seu SQL aqui
-  ```
-- **Processamento de imagens**
-  - 🚨 **Regra imutável**: a criação e utilização de imagens "ficou incrível" e deve seguir o fluxo abaixo em absolutamente qualquer cenário ou projeto, sem exceções.
-  - Pipeline atual (não altere sem alinhar todas as camadas):
-    1. **Validação de entrada no frontend** (`frontend/src/pages/experiment/CriativosTab.tsx`): antes do upload a aba **Criativos** garante largura mínima de 600px e exibe feedback claro quando o arquivo não atende ao requisito.
-    2. **Normalização e otimização no Worker IA** (`CreativeImageOptimizer`): remove o canal alfa aplicando fundo branco, redimensiona quando ultrapassa a dimensão máxima configurada (`creative.image.max-dimension`, padrão 1024px) e converte para JPEG. Em seguida percorre combinações de qualidade (0.85 → 0.45) e escala (100% → 50%) respeitando o orçamento `creative.image.max-bytes` (padrão 900 KB); se nenhuma variante atingir o limite, retorna o menor candidato possível registrando o alerta correspondente.
-    3. **Upload para o backend** (`BackendAssetClient`/`POST /api/assets` → `CreativeService.uploadImage`): envia o arquivo otimizado, preservando `model` (opcional) e `prompt` (obrigatório) para cumprir os atributos exigidos (`modelo` e `prompt`).
-  - Novos fluxos de processamento de imagem devem reutilizar esse pipeline ou estender `CreativeImageOptimizer`, mantendo compatibilidade com o backend (`POST /api/assets`).
-## Secrets
+| Módulo | Build | Testes | Observações |
+| --- | --- | --- | --- |
+| `backend/ads-service` | `cd backend/ads-service && mvn -s ../settings.xml deploy` | `mvn -s ../settings.xml test` | Publica artefato consumido pelo `ai-worker` (GitHub Packages `paulofor/ads-service`). |
+| `ai-worker` | `cd ai-worker && mvn -s settings.xml package` | `mvn -s settings.xml test` | Baixa o artefato do `ads-service` publicado. |
+| `frontend` (MarketingHub) | `cd frontend && npm install && npm run build` | `npm run test` | Confirme URLs de backend antes de subir novas chamadas. |
+| Outros serviços (lead-portal, email-service, workers específicos) | Consulte o README local antes de subir pipelines. |  | Alinhe com o backend antes de tocar contratos compartilhados.
 
-- Do **NOT** commit `.env`. Use GitHub Actions secrets for tokens.
+## 3. Convenções de engenharia
+
+- **Tecnologias padrão**: Java 21 + Spring Boot 3, React 18 + Vite + TypeScript, Zustand para state, TanStack Query para dados. Formatação: Spotless (backend) e Prettier (frontend).
+- **Banco**: MySQL 5.7. Somente o backend acessa o banco; demais módulos conversam via APIs do backend. Prefira filtros no SQL ao invés de pós-processar em memória.
+- **Modelo único**: entidades residem no backend. O `ai-worker` reutiliza o modelo do backend; não mantenha cópias. Toda consulta ou manipulação de dados nasce no backend e é exposta via contrato explícito.
+- **Fluxo entre containers**: nada de chamadas diretas entre serviços (frontend, workers, lead-portal etc). Todo tráfego passa pelo backend principal; apenas o backend fala com o banco.
+- **Novos endpoints**: verifique se o contrato já existe; caso contrário, defina-o no backend, atualize a documentação e adicione testes.
+- **Manual do usuário**: todos os links devem usar `target="_blank"`.
+- **Worker IA**: qualquer campo que acione serviços de IA precisa de tooltip explicando o efeito. Registros criados pelo worker devem persistir `modelo` e `prompt` no momento da criação.
+- **Publicação de imagens**: siga o pipeline imutável (validação no frontend, otimização no `CreativeImageOptimizer`, upload via `POST /api/assets`). Novos fluxos devem reutilizar ou estender esse pipeline.
+
+## 4. Módulos e responsabilidades
+
+- **MarketingHub Backend / Frontend**: camada administrativa e UI principal do sistema.
+- **Facebook Ads Worker**: integração com a API da Meta para campanhas e públicos.
+- **Worker AI**: integrações com modelos OpenAI para geração e otimização de ativos.
+- **Lead Portal (backend/frontend)**: experiência dedicada aos leads após anúncios.
+- **Lead Portal Payments Service**: pagamentos via Mercado Pago.
+- **Email Service**: envio transacional integrado ao Amazon SES.
+- **Image Watermark Service**: gera marcas-d'água para prévias.
+- **Image Zipper Service**: monta e distribui pacotes de produtos/amostras.
+
+Documente qualquer alteração cross-módulo no cânone correspondente e sincronize contratos antes de integrar.
+
+## 5. Segurança e secrets
+
+- Nunca commite `.env` ou credenciais. Use GitHub Actions secrets.
+- Revise variáveis sensíveis nos pipelines antes de publicar artefatos.

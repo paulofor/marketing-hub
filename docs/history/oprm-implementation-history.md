@@ -134,3 +134,45 @@ Foi implementada a fase 3 do OPRM com inferência de rotina operacional a partir
 **Próximo passo sugerido:**  
 - implementar fase 4 com `desiredOutcomeSignal`, `mechanismOpportunitySignal` e `dorResultadoOfertaMecanismoProvaInput`
 - definir contrato explícito de publicação de artefatos do OPRM no backend principal
+
+## 2026-04-15 — fase 4: integração com o framework
+
+**Status:** concluído
+
+**Resumo:**  
+Foi implementada a fase 4 do OPRM para transformar a rotina inferida em insumo direto do framework dor→resultado→oferta→mecanismo→prova, incluindo geração estruturada de `desiredOutcomeSignal`, `mechanismOpportunitySignal` e publicação do artefato `dorResultadoOfertaMecanismoProvaInput`.
+
+**O que foi implementado:**  
+- criação do serviço `FrameworkIntegrationService` para orquestrar a integração a partir do `occupationPersonaRoutineCard` da fase 3
+- implementação dos artefatos de domínio `DesiredOutcomeSignal`, `MechanismOpportunitySignal` e `DorResultadoOfertaMecanismoProvaInputPayload`
+- criação do endpoint `POST /api/oprm/phase4/integrate` para execução da integração do framework por ocupação
+- atualização da documentação do módulo com endpoint e exemplo de payload da fase 4
+- adição de teste unitário dedicado da fase 4 para validar geração do artefato de integração
+
+**Arquivos principais alterados:**  
+- `oprm/src/main/java/com/marketinghub/oprm/application/FrameworkIntegrationService.java`
+- `oprm/src/main/java/com/marketinghub/oprm/api/Phase4Controller.java`
+- `oprm/src/main/java/com/marketinghub/oprm/api/Phase4IntegrateRequest.java`
+- `oprm/src/main/java/com/marketinghub/oprm/domain/DesiredOutcomeSignal.java`
+- `oprm/src/main/java/com/marketinghub/oprm/domain/MechanismOpportunitySignal.java`
+- `oprm/src/main/java/com/marketinghub/oprm/domain/DorResultadoOfertaMecanismoProvaInputPayload.java`
+- `oprm/src/test/java/com/marketinghub/oprm/application/FrameworkIntegrationServiceTest.java`
+- `oprm/README.md`
+
+**Contratos / artefatos afetados:**  
+- `desiredOutcomeSignal`
+- `mechanismOpportunitySignal`
+- `dorResultadoOfertaMecanismoProvaInput`
+- endpoint interno do módulo: `POST /api/oprm/phase4/integrate`
+
+**Testes executados:**  
+- `cd oprm && mvn test` — **passou**
+
+**Limitações ou pendências:**  
+- os sinais da fase 4 ainda são derivados por heurísticas determinísticas e não usam calibração com feedback downstream
+- publicação dos artefatos continua local ao módulo, sem persistência end-to-end no backend principal
+- faltam contratos HTTP versionados entre backend principal e OPRM para ingestão/persistência dos novos artefatos
+
+**Próximo passo sugerido:**  
+- implementar fase 5 com feedback loop para recalibrar scores por ocupação
+- definir contrato de publicação/persistência com backend para lineage completo dos artefatos da fase 4

@@ -1,12 +1,12 @@
 # OPRM (Occupation Persona Routine Mapper)
 
-Módulo Spring Boot interno do Marketing Hub para as fases 1, 2 e 3 do plano OPRM:
+Módulo Spring Boot interno do Marketing Hub para as fases 1, 2, 3 e 4 do plano OPRM:
 
 - resolução ocupacional (`Occupation Resolver`)
 - intake estruturado baseado em fontes ocupacionais do MVP
 - enriquecimento web com política de allowlist
 - inferência de rotina operacional com geração de sinais de tarefa, restrição, dor e workaround
-- geração dos artefatos `occupationProfileSnapshot`, `occupationWebSourceSnapshot` e `occupationPersonaRoutineCard`
+- geração dos artefatos `occupationProfileSnapshot`, `occupationWebSourceSnapshot`, `occupationPersonaRoutineCard` e `dorResultadoOfertaMecanismoProvaInput`
 - suporte inicial às 6 ocupações do MVP
 
 ## Executar localmente
@@ -29,6 +29,10 @@ mvn spring-boot:run
 ## Endpoint da fase 3
 
 - `POST /api/oprm/phase3/infer`
+
+## Endpoint da fase 4
+
+- `POST /api/oprm/phase4/integrate`
 
 Exemplo de payload:
 
@@ -60,5 +64,16 @@ Exemplo de payload da fase 3:
   "nicheName": "fitness",
   "locale": "pt-BR",
   "correlationId": "oprm-demo-003"
+}
+```
+
+Exemplo de payload da fase 4:
+
+```json
+{
+  "occupationLabel": "treinador pessoal",
+  "nicheName": "fitness",
+  "locale": "pt-BR",
+  "correlationId": "oprm-demo-004"
 }
 ```

@@ -43,3 +43,48 @@ Foi criada a implementação inicial da fase 1 do módulo OPRM com estrutura Spr
 **Próximo passo sugerido:**  
 - implementar fase 2 com captura web por allowlist e `occupationWebSourceSnapshot`
 - definir contrato explícito de troca entre OPRM e backend para jobs e publicação de artefatos
+
+## 2026-04-15 — fase 2: enriquecimento web
+
+**Status:** concluído
+
+**Resumo:**  
+Foi implementada a fase 2 do OPRM com pipeline inicial de enriquecimento web por allowlist, captura de páginas públicas por ocupação do MVP e publicação do artefato canônico `occupationWebSourceSnapshot` com lineage e sinais semânticos para apoiar as próximas fases.
+
+**O que foi implementado:**  
+- criação do serviço `WebEnrichmentService` para resolver ocupação, aplicar política de fontes e capturar sementes públicas
+- implementação de `OccupationSourcePolicyProfile` com allowlist, blocklist e metadados de risco para governar coleta
+- implementação de fetch HTTP inicial (`HttpWebPageFetcher`) com extração de título/conteúdo, hash e classificação de tipo de fonte
+- criação do endpoint `POST /api/oprm/phase2/enrich` para disparar enriquecimento web por ocupação
+- criação do artefato `occupationWebSourceSnapshot` com fontes capturadas, sinais semânticos e resumo de enriquecimento
+- adição de testes unitários da fase 2 para geração do artefato e validação de ocupação não suportada
+
+**Arquivos principais alterados:**  
+- `oprm/src/main/java/com/marketinghub/oprm/application/WebEnrichmentService.java`
+- `oprm/src/main/java/com/marketinghub/oprm/api/Phase2Controller.java`
+- `oprm/src/main/java/com/marketinghub/oprm/api/Phase2EnrichRequest.java`
+- `oprm/src/main/java/com/marketinghub/oprm/domain/OccupationWebSourceSnapshotPayload.java`
+- `oprm/src/main/java/com/marketinghub/oprm/domain/OccupationSourcePolicyProfile.java`
+- `oprm/src/main/java/com/marketinghub/oprm/domain/CapturedWebSource.java`
+- `oprm/src/main/java/com/marketinghub/oprm/infra/enrichment/HttpWebPageFetcher.java`
+- `oprm/src/main/java/com/marketinghub/oprm/infra/enrichment/OccupationSourcePolicyRegistry.java`
+- `oprm/src/main/java/com/marketinghub/oprm/infra/enrichment/OccupationWebSeedRegistry.java`
+- `oprm/src/test/java/com/marketinghub/oprm/application/WebEnrichmentServiceTest.java`
+- `oprm/README.md`
+
+**Contratos / artefatos afetados:**  
+- `occupationSourcePolicyProfile`
+- `occupationWebSourceSnapshot`
+- endpoint interno do módulo: `POST /api/oprm/phase2/enrich`
+
+**Testes executados:**  
+- `cd oprm && mvn test` — **passou**
+
+**Limitações ou pendências:**  
+- pipeline de enriquecimento ainda não publica artefatos no backend principal do Marketing Hub
+- seeds de URL estão em registro local estático e ainda não possuem gestão dinâmica por backend
+- crawler atual não implementa persistência de cache transitório nem retry/backoff avançado
+
+**Próximo passo sugerido:**  
+- implementar fase 3 com inferência de rotina (`routineTaskPattern`, `routineConstraintSignal`, `routinePainSignal`, `routineWorkaroundSignal`)
+- definir contrato explícito de jobs/publicação com backend para persistir snapshots e lineage end-to-end

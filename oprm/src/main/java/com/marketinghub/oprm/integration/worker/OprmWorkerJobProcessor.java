@@ -1,9 +1,14 @@
 package com.marketinghub.oprm.integration.worker;
 
-import com.marketinghub.oprm.application.FrameworkIntegrationService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.oprm.application.OprmArtifactPipelineService;
 import com.marketinghub.oprm.domain.ArtifactEnvelope;
+import com.marketinghub.oprm.integration.client.BackendArtifactPublishClient;
 import com.marketinghub.oprm.integration.client.BackendJobClient;
 import com.marketinghub.oprm.integration.client.BackendStatusClient;
+import com.marketinghub.oprm.integration.contract.OprmArtifactEnvelopeDto;
+import com.marketinghub.oprm.integration.contract.OprmArtifactPublishRequest;
+import com.marketinghub.oprm.integration.contract.OprmArtifactStatus;
 import com.marketinghub.oprm.integration.contract.OprmContractVersion;
 import com.marketinghub.oprm.integration.contract.OprmJobClaimRequest;
 import com.marketinghub.oprm.integration.contract.OprmJobClaimResponse;
@@ -12,6 +17,7 @@ import com.marketinghub.oprm.integration.contract.OprmJobStatus;
 import com.marketinghub.oprm.integration.contract.OprmJobStatusUpdateRequest;
 import com.marketinghub.oprm.integration.contract.OprmJobType;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,7 +33,9 @@ public class OprmWorkerJobProcessor {
 
     private final BackendJobClient backendJobClient;
     private final BackendStatusClient backendStatusClient;
-    private final FrameworkIntegrationService frameworkIntegrationService;
+    private final BackendArtifactPublishClient backendArtifactPublishClient;
+    private final OprmArtifactPipelineService artifactPipelineService;
+    private final ObjectMapper objectMapper;
     private final String workerId;
     private final String workerVersion;
     private final int claimLeaseSeconds;
@@ -35,13 +43,17 @@ public class OprmWorkerJobProcessor {
 
     public OprmWorkerJobProcessor(BackendJobClient backendJobClient,
                                   BackendStatusClient backendStatusClient,
-                                  FrameworkIntegrationService frameworkIntegrationService,
+                                  BackendArtifactPublishClient backendArtifactPublishClient,
+                                  OprmArtifactPipelineService artifactPipelineService,
+                                  ObjectMapper objectMapper,
                                   @Value("${oprm.worker.id:oprm-worker-local}") String workerId,
                                   @Value("${oprm.worker.version:0.1.0}") String workerVersion,
                                   @Value("${oprm.worker.claim-lease-seconds:120}") int claimLeaseSeconds) {
         this.backendJobClient = backendJobClient;
         this.backendStatusClient = backendStatusClient;
-        this.frameworkIntegrationService = frameworkIntegrationService;
+        this.backendArtifactPublishClient = backendArtifactPublishClient;
+        this.artifactPipelineService = artifactPipelineService;
+        this.objectMapper = objectMapper;
         this.workerId = workerId;
         this.workerVersion = workerVersion;
         this.claimLeaseSeconds = claimLeaseSeconds;
@@ -78,19 +90,21 @@ public class OprmWorkerJobProcessor {
                 throw new IllegalStateException("unsupported OPRM job type for Sprint 2: " + detail.jobType());
             }
 
-            ArtifactEnvelope artifact = frameworkIntegrationService.integrateRoutineSignals(
+            List<ArtifactEnvelope> artifacts = artifactPipelineService.runPipeline(
                     detail.occupationSeedRef(),
                     "default",
                     "pt-BR",
                     detail.correlationId()
             );
 
+            artifacts.forEach(artifact -> publishArtifact(claimedJob.jobId(), detail.correlationId(), artifact));
+
             updateStatus(claimedJob.jobId(), OprmJobStatus.SUCCEEDED, "phase-run",
-                    "OPRM job completed", null, null, Map.of("artifactType", artifact.artifactType()));
-            log.info("oprm-job-processed jobId={} correlationId={} artifactType={}",
+                    "OPRM job completed", null, null, Map.of("artifactsPublished", artifacts.size()));
+            log.info("oprm-job-processed jobId={} correlationId={} artifactsPublished={}",
                     claimedJob.jobId(),
                     detail.correlationId(),
-                    artifact.artifactType());
+                    artifacts.size());
         } catch (Exception ex) {
             if (activeJobId != null) {
                 updateStatus(activeJobId, OprmJobStatus.FAILED, "phase-run",
@@ -100,6 +114,39 @@ public class OprmWorkerJobProcessor {
         } finally {
             running.set(false);
         }
+    }
+
+    private void publishArtifact(String jobId, String correlationId, ArtifactEnvelope artifact) {
+        OprmArtifactEnvelopeDto envelopeDto = new OprmArtifactEnvelopeDto(
+                artifact.artifactType(),
+                artifact.artifactVersion(),
+                artifact.artifactId(),
+                artifact.moduleName(),
+                artifact.producer(),
+                artifact.createdAt().toString(),
+                artifact.correlationId(),
+                artifact.traceId(),
+                artifact.sourceRefs(),
+                artifact.inputRefs(),
+                objectMapper.convertValue(artifact.payload(), Map.class),
+                OprmArtifactStatus.valueOf(artifact.status()),
+                artifact.confidenceScore(),
+                artifact.metadata()
+        );
+
+        OprmArtifactPublishRequest publishRequest = new OprmArtifactPublishRequest(
+                jobId,
+                correlationId,
+                envelopeDto,
+                Map.of(
+                        "sourceRefs", artifact.sourceRefs(),
+                        "inputRefs", artifact.inputRefs(),
+                        "producer", artifact.producer()
+                ),
+                jobId + ":" + artifact.artifactId()
+        );
+
+        backendArtifactPublishClient.publish(publishRequest);
     }
 
     private void updateStatus(String jobId,

@@ -3,6 +3,9 @@ databaseChangeLog:
       file: changesets/2026-04-15-oprm-job-orchestration.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-04-15-oprm-artifact-publication.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2037-04-15-facebook-campaign-stop.yaml
       relativeToChangelogFile: true
   - include:

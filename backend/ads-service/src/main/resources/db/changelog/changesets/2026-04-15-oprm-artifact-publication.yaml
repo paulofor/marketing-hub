@@ -1,0 +1,158 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-04-15-04-oprm-artifact
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_artifact
+      changes:
+        - createTable:
+            tableName: oprm_artifact
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: job_id
+                  type: CHAR(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: artifact_id
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: artifact_type
+                  type: VARCHAR(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: artifact_version
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: module_name
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: producer
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: artifact_created_at
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: correlation_id
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: occupation_seed_ref
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: trace_id
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source_refs_json
+                  type: LONGTEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: input_refs_json
+                  type: LONGTEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payload_json
+                  type: LONGTEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lineage_json
+                  type: LONGTEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: metadata_json
+                  type: LONGTEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: artifact_status
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: confidence_score
+                  type: DECIMAL(5,4)
+              - column:
+                  name: idempotency_key
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: oprm_artifact
+            baseColumnNames: job_id
+            referencedTableName: oprm_job
+            referencedColumnNames: id
+            constraintName: fk_oprm_artifact_job
+            onDelete: CASCADE
+        - addUniqueConstraint:
+            tableName: oprm_artifact
+            columnNames: artifact_id
+            constraintName: uk_oprm_artifact_artifact_id
+        - addUniqueConstraint:
+            tableName: oprm_artifact
+            columnNames: idempotency_key
+            constraintName: uk_oprm_artifact_idempotency
+        - createIndex:
+            tableName: oprm_artifact
+            indexName: idx_oprm_artifact_correlation
+            columns:
+              - column:
+                  name: correlation_id
+        - createIndex:
+            tableName: oprm_artifact
+            indexName: idx_oprm_artifact_occupation_status
+            columns:
+              - column:
+                  name: occupation_seed_ref
+              - column:
+                  name: artifact_status
+        - createIndex:
+            tableName: oprm_artifact
+            indexName: idx_oprm_artifact_job_id
+            columns:
+              - column:
+                  name: job_id

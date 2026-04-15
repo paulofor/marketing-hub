@@ -249,6 +249,9 @@ databaseChangeLog:
       file: V2026_04_10__drop_fb_account_business_manager_app_id.sql
       relativeToChangelogFile: true
   - include:
+      file: V2026_04_15__add_fb_account_pixel_owner_business_id.sql
+      relativeToChangelogFile: true
+  - include:
       file: V2026_05_01__track_fb_worker_config_errors.sql
       relativeToChangelogFile: true
   - include:

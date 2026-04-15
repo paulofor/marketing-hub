@@ -315,6 +315,7 @@ public class FacebookAccountControllerTest {
             .adSetDestinationType("WEBSITE")
             .adSetBidStrategy("LOWEST_COST_WITHOUT_CAP")
             .adSetTargetCountry("BR")
+            .pixelOwnerBusinessId("123456789012345")
             .workerEnabled(true)
             .build());
 
@@ -327,7 +328,8 @@ public class FacebookAccountControllerTest {
             .andExpect(jsonPath("$.adSetDailyBudget").value("2000"))
             .andExpect(jsonPath("$.adSetBillingEvent").value("IMPRESSIONS"))
             .andExpect(jsonPath("$.defaultCallToActionType").value("SIGN_UP"))
-            .andExpect(jsonPath("$.defaultCreativeMessageTemplate").value("Campanha %s"));
+            .andExpect(jsonPath("$.defaultCreativeMessageTemplate").value("Campanha %s"))
+            .andExpect(jsonPath("$.pixelOwnerBusinessId").value("123456789012345"));
     }
 
     @Test
@@ -346,6 +348,7 @@ public class FacebookAccountControllerTest {
             .adSetDestinationType("WEBSITE")
             .adSetBidStrategy("LOWEST_COST_WITHOUT_CAP")
             .adSetTargetCountry("BR")
+            .pixelOwnerBusinessId("123456789012345")
             .workerEnabled(true)
             .build());
 
@@ -373,6 +376,7 @@ public class FacebookAccountControllerTest {
             .adSetOptimizationGoal("LINK_CLICKS")
             .adSetDestinationType("WEBSITE")
             .adSetTargetCountry("BR")
+            .pixelOwnerBusinessId("123456789012345")
             .workerEnabled(true)
             .build());
 
@@ -394,6 +398,7 @@ public class FacebookAccountControllerTest {
             .adSetOptimizationGoal("LINK_CLICKS")
             .adSetDestinationType("WEBSITE")
             .adSetTargetCountry("BR")
+            .pixelOwnerBusinessId("123456789012345")
             .workerEnabled(true)
             .build());
 

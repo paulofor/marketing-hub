@@ -87,6 +87,11 @@ public class FacebookPixelService {
             return;
         }
         String systemUserToken = config.systemUserAccessToken().trim();
+        if (!StringUtils.hasText(config.pixelOwnerBusinessId())) {
+            LOGGER.warn("Facebook pixel owner business id is not configured; skipping pixel creation");
+            return;
+        }
+        String pixelOwnerBusinessId = config.pixelOwnerBusinessId().trim();
         List<ExperimentPixel> experiments = fetchExperimentsReadyForPixel();
         if (experiments.isEmpty()) {
             return;
@@ -94,7 +99,12 @@ public class FacebookPixelService {
         for (ExperimentPixel exp : experiments) {
             try {
                 String pixelName = buildPixelName(exp);
-                String pixelId = facebookAdsService.createPixel(config.adAccountId(), pixelName, systemUserToken);
+                String pixelId = facebookAdsService.createPixel(
+                    config.adAccountId(),
+                    pixelName,
+                    pixelOwnerBusinessId,
+                    systemUserToken
+                );
                 String pixelCode = facebookAdsService.fetchPixelCode(pixelId, systemUserToken);
                 registerPixel(exp.experimentId(), pixelId, pixelCode);
             } catch (Exception ex) {

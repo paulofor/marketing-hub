@@ -90,6 +90,10 @@ public class FacebookAccountController {
             persisted.setDefaultLeadGenFormId(account.getDefaultLeadGenFormId());
         }
 
+        if (account.isPixelOwnerBusinessIdProvided()) {
+            persisted.setPixelOwnerBusinessId(account.getPixelOwnerBusinessId());
+        }
+
         if (account.isAccessTokenProvided()) {
             String newToken = account.getAccessToken();
             if (newToken == null) {
@@ -223,6 +227,7 @@ public class FacebookAccountController {
         account.setDefaultInstagramActorId(trimToNull(account.getDefaultInstagramActorId()));
         account.setDefaultCreativeMessageTemplate(trimToNull(account.getDefaultCreativeMessageTemplate()));
         account.setDefaultCallToActionType(trimToNull(account.getDefaultCallToActionType()));
+        account.setPixelOwnerBusinessId(trimToNull(account.getPixelOwnerBusinessId()));
         account.setAdSetDailyBudget(trimToNull(account.getAdSetDailyBudget()));
         account.setAdSetBillingEvent(trimToNull(account.getAdSetBillingEvent()));
         account.setAdSetOptimizationGoal(trimToNull(account.getAdSetOptimizationGoal()));
@@ -271,6 +276,7 @@ public class FacebookAccountController {
             account.getAdAccountId(),
             account.getAccessToken(),
             account.getSystemUserAccessToken(),
+            account.getPixelOwnerBusinessId(),
             account.getAppId(),
             account.getAppSecret(),
             account.getDefaultPageId(),
@@ -432,6 +438,7 @@ public class FacebookAccountController {
         String adAccountId,
         String accessToken,
         String systemUserAccessToken,
+        String pixelOwnerBusinessId,
         String appId,
         String appSecret,
         String defaultPageId,

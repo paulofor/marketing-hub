@@ -15,7 +15,7 @@ public record ArtifactEnvelope(
         String traceId,
         List<String> sourceRefs,
         List<String> inputRefs,
-        OccupationProfileSnapshotPayload payload,
+        Object payload,
         String status,
         double confidenceScore,
         Map<String, Object> metadata) {

@@ -7,10 +7,8 @@ import com.marketinghub.oprm.domain.OccupationProfileSnapshotPayload;
 import com.marketinghub.oprm.infra.StructuredOccupationCatalog;
 import org.springframework.stereotype.Service;
 
-import java.text.Normalizer;
 import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -34,11 +32,11 @@ public class OccupationResolverService {
     }
 
     public ArtifactEnvelope resolveToProfileSnapshot(String rawOccupationLabel, String nicheName, String locale, String correlationId) {
-        String normalized = normalize(rawOccupationLabel);
+        String normalized = OccupationLabelNormalizer.normalize(rawOccupationLabel);
         OccupationCatalogItem item = resolveItem(normalized)
                 .orElseThrow(() -> new IllegalArgumentException("occupation_not_supported_for_phase_1: " + rawOccupationLabel));
 
-        boolean exactName = normalize(item.occupationName()).equals(normalized);
+        boolean exactName = OccupationLabelNormalizer.normalize(item.occupationName()).equals(normalized);
         double confidence = exactName ? 0.98 : 0.92;
 
         OccupationAliasResolution aliasResolution = new OccupationAliasResolution(
@@ -88,19 +86,9 @@ public class OccupationResolverService {
 
     private Optional<OccupationCatalogItem> resolveItem(String normalizedLabel) {
         return catalog.listAll().stream()
-                .filter(item -> normalize(item.occupationName()).equals(normalizedLabel)
-                        || item.aliases().stream().map(this::normalize).anyMatch(normalizedLabel::equals))
+                .filter(item -> OccupationLabelNormalizer.normalize(item.occupationName()).equals(normalizedLabel)
+                        || item.aliases().stream().map(OccupationLabelNormalizer::normalize).anyMatch(normalizedLabel::equals))
                 .findFirst();
     }
 
-    private String normalize(String value) {
-        if (value == null) {
-            return "";
-        }
-        String cleaned = Normalizer.normalize(value, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}+", "")
-                .toLowerCase(Locale.ROOT)
-                .trim();
-        return cleaned.replaceAll("\\s+", " ");
-    }
 }

@@ -1,6 +1,7 @@
 package com.marketinghub.oprm.application;
 
 import com.marketinghub.oprm.domain.ArtifactEnvelope;
+import com.marketinghub.oprm.domain.OccupationProfileSnapshotPayload;
 import com.marketinghub.oprm.infra.StructuredOccupationCatalog;
 import org.junit.jupiter.api.Test;
 
@@ -16,8 +17,9 @@ class OccupationResolverServiceTest {
         ArtifactEnvelope result = service.resolveToProfileSnapshot("treinador pessoal", "fitness", "pt-BR", "corr-1");
 
         assertEquals("occupationProfileSnapshot", result.artifactType());
-        assertEquals("personal trainer", result.payload().occupationName());
-        assertEquals("ALIAS", result.payload().aliasResolution().matchType());
+        OccupationProfileSnapshotPayload payload = (OccupationProfileSnapshotPayload) result.payload();
+        assertEquals("personal trainer", payload.occupationName());
+        assertEquals("ALIAS", payload.aliasResolution().matchType());
         assertEquals("GENERATED", result.status());
     }
 

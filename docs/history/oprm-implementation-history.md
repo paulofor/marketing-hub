@@ -508,3 +508,35 @@ Foi concluída a Sprint 5 com contract tests de integração backend↔OPRM, ins
 **Próximo passo sugerido:**  
 - adicionar exportação de tracing distribuído (OpenTelemetry) com propagação de `traceparent` backend↔worker
 - evoluir heartbeat para persistência agregada por worker/janela de tempo para dashboards operacionais
+
+## 2026-04-15 — hardening de migração: correção de preConditions Liquibase (MySQL 5.7)
+
+**Status:** concluído
+
+**Resumo:**  
+Foi corrigido o changelog incremental da fase 5 do OPRM para resolver falha de parsing no Liquibase durante o `validate` do GitHub Actions, ajustando a estrutura YAML de `preConditions` para o formato aceito no parser usado com MySQL 5.7.
+
+**O que foi implementado:**  
+- correção da sintaxe YAML de `preConditions` no changeset de criação de `oprm_feedback_snapshot`
+- correção da sintaxe YAML de `preConditions` no changeset de criação de `oprm_feedback_history`
+- manutenção das condições canônicas para MySQL (`dbms: mysql` + `not tableExists`) sem alterar a intenção funcional da migração
+
+**Arquivos principais alterados:**  
+- `backend/ads-service/src/main/resources/db/changelog/changesets/2026-04-15-oprm-feedback-loop.yaml`
+- `docs/history/oprm-implementation-history.md`
+
+**Contratos / artefatos afetados:**  
+- nenhum contrato novo
+- artefato técnico afetado: changelog Liquibase incremental da fase 5 do OPRM
+
+**Testes executados:**  
+- `ruby -e "require 'yaml'; YAML.load_file('backend/ads-service/src/main/resources/db/changelog/changesets/2026-04-15-oprm-feedback-loop.yaml'); puts 'YAML OK'"` — **passou**
+- `cd backend/ads-service && mvn -s ../settings.xml -DskipTests liquibase:validate` — **falhou** por indisponibilidade de rede para resolver dependências Maven no ambiente local
+
+**Limitações ou pendências:**  
+- validação completa do Liquibase no Maven ficou pendente localmente por indisponibilidade de rede para baixar dependências
+- recomendada revalidação no pipeline GitHub Actions após merge
+
+**Próximo passo sugerido:**  
+- reexecutar a action de backend para confirmar `liquibase:validate` sem erro de parsing
+- manter o padrão de `preConditions` em lista nos próximos changesets YAML para evitar regressão de parser

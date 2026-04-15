@@ -408,3 +408,54 @@ Foi concluída a Sprint 3 da integração OPRM com publicação remota de artefa
 **Próximo passo sugerido:**  
 - executar Sprint 4 para persistir `occupationFeedbackLoopSnapshot` e histórico de recalibração por ocupação no backend
 - adicionar ingestão de snapshots downstream no fluxo do backend para retroalimentar o OPRM com estado persistido
+
+## 2026-04-15 — sprint 4: feedback loop persistido + histórico por ocupação
+
+**Status:** concluído
+
+**Resumo:**  
+Foi implementada a Sprint 4 com persistência do feedback loop no backend, histórico por ocupação consultável e integração do worker para recalibração usando estado persistido, eliminando dependência exclusiva de histórico em memória local.
+
+**O que foi implementado:**  
+- criação dos modelos persistentes no backend `oprm_feedback_snapshot` e `oprm_feedback_history` com changelog incremental para MySQL
+- implementação do endpoint `POST /api/oprm/feedback` para persistir snapshot de recalibração vindo do worker OPRM
+- implementação do endpoint `GET /api/oprm/feedback/history` para carregar histórico por ocupação/persona e suportar reprocessamento com estado persistido
+- criação de `BackendFeedbackClient` no OPRM para publicar feedback e recuperar histórico persistido do backend
+- extensão do `OprmWorkerJobProcessor` para suportar `FEEDBACK_RECALIBRATION` com publicação de `occupationFeedbackLoopSnapshot` e persistência de feedback no backend
+- refatoração de `FeedbackLoopService` para receber histórico persistido como entrada e não depender de mapa em memória para manter histórico entre execuções
+- atualização do checklist da Sprint 4 no plano único de integração
+
+**Arquivos principais alterados:**  
+- `backend/ads-service/src/main/resources/db/changelog/changesets/2026-04-15-oprm-feedback-loop.yaml`
+- `backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/OprmFeedbackSnapshot.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/OprmFeedbackHistory.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/repository/OprmFeedbackSnapshotRepository.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/repository/OprmFeedbackHistoryRepository.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/dto/OprmFeedbackPublishRequestDto.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/dto/OprmFeedbackHistoryEntryDto.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/service/OprmFeedbackService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/web/OprmFeedbackController.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/client/BackendFeedbackClient.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/contract/OprmFeedbackHistoryEntryResponse.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/worker/OprmWorkerJobProcessor.java`
+- `oprm/src/main/java/com/marketinghub/oprm/application/FeedbackLoopService.java`
+- `docs/novos-modulos/OPRM/oprm_plano_unico_desenvolvimento_integracao.md`
+
+**Contratos / artefatos afetados:**  
+- endpoint `POST /api/oprm/feedback` implementado no backend para persistência do feedback loop
+- endpoint `GET /api/oprm/feedback/history` implementado para recuperar histórico persistido por ocupação/persona
+- artefato `occupationFeedbackLoopSnapshot` passa a ser publicado com histórico consolidado e reprocessável
+
+**Testes executados:**  
+- `cd backend/ads-service && mvn -q -DskipTests compile` — **passou**
+- `cd oprm && mvn -q test` — **passou**
+
+**Limitações ou pendências:**  
+- ingestão de `HypothesisPerformanceSnapshot` downstream no worker ainda usa lista vazia por ausência de fonte operacional integrada no payload de job
+- cobertura de contract tests e observabilidade completa continua planejada para Sprint 5
+
+**Próximo passo sugerido:**  
+- executar Sprint 5 com contract testing (Spring Cloud Contract), health/readiness e métricas operacionais
+- integrar fonte downstream de `HypothesisPerformanceSnapshot` no payload dos jobs de `FEEDBACK_RECALIBRATION`
+

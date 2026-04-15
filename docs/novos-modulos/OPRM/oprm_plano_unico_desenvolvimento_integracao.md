@@ -518,10 +518,10 @@ A fase de integração deve tratar explicitamente ao menos estes artefatos:
 - [x] vínculo job → artifact funcionando
 
 ### Sprint 4
-- [ ] feedback loop persistido
-- [ ] histórico por ocupação persistido
-- [ ] ingestão de snapshot downstream funcionando
-- [ ] recalibração usando estado persistido
+- [x] feedback loop persistido
+- [x] histórico por ocupação persistido
+- [x] ingestão de snapshot downstream funcionando
+- [x] recalibração usando estado persistido
 
 ### Sprint 5
 - [ ] contract tests criados

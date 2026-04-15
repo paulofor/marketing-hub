@@ -1,0 +1,178 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-04-15-05-oprm-feedback-snapshot
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_feedback_snapshot
+      changes:
+        - createTable:
+            tableName: oprm_feedback_snapshot
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: job_id
+                  type: CHAR(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: correlation_id
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: occupation_name
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: persona_label
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: baseline_routine_artifact_id
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: baseline_framework_artifact_id
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: recalibrated_pain_signals_json
+                  type: LONGTEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: recalibrated_mechanism_signals_json
+                  type: LONGTEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: hypothesis_comparison_json
+                  type: LONGTEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: score_reweighting_json
+                  type: LONGTEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: generated_at
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: oprm_feedback_snapshot
+            baseColumnNames: job_id
+            referencedTableName: oprm_job
+            referencedColumnNames: id
+            constraintName: fk_oprm_feedback_snapshot_job
+            onDelete: CASCADE
+        - createIndex:
+            tableName: oprm_feedback_snapshot
+            indexName: idx_oprm_feedback_snapshot_occ_persona
+            columns:
+              - column:
+                  name: occupation_name
+              - column:
+                  name: persona_label
+              - column:
+                  name: generated_at
+
+  - changeSet:
+      id: 2026-04-15-06-oprm-feedback-history
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_feedback_history
+      changes:
+        - createTable:
+            tableName: oprm_feedback_history
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: occupation_name
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: persona_label
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: correlation_id
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: generated_at
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: previous_routine_confidence
+                  type: DECIMAL(5,4)
+              - column:
+                  name: recalibrated_routine_confidence
+                  type: DECIMAL(5,4)
+              - column:
+                  name: previous_framework_confidence
+                  type: DECIMAL(5,4)
+              - column:
+                  name: recalibrated_framework_confidence
+                  type: DECIMAL(5,4)
+              - column:
+                  name: average_hypothesis_impact
+                  type: DECIMAL(5,4)
+              - column:
+                  name: notes
+                  type: LONGTEXT
+              - column:
+                  name: created_at
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: oprm_feedback_history
+            indexName: idx_oprm_feedback_history_occ_persona
+            columns:
+              - column:
+                  name: occupation_name
+              - column:
+                  name: persona_label
+              - column:
+                  name: generated_at

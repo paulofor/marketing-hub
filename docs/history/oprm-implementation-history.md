@@ -176,3 +176,48 @@ Foi implementada a fase 4 do OPRM para transformar a rotina inferida em insumo d
 **Próximo passo sugerido:**  
 - implementar fase 5 com feedback loop para recalibrar scores por ocupação
 - definir contrato de publicação/persistência com backend para lineage completo dos artefatos da fase 4
+
+## 2026-04-15 — fase 5: feedback loop
+
+**Status:** concluído
+
+**Resumo:**  
+Foi implementada a fase 5 do OPRM com feedback loop para recalibração dos sinais e scores a partir da performance de hipóteses, geração de histórico incremental por ocupação e publicação do artefato `occupationFeedbackLoopSnapshot`.
+
+**O que foi implementado:**  
+- criação do serviço `FeedbackLoopService` para orquestrar inferência de rotina, integração com framework e recalibração baseada em feedback downstream
+- implementação de comparação estruturada entre rotina inferida e performance de hipóteses (`HypothesisRoutineFit`)
+- implementação de reponderação de sinais (`RoutinePainSignal` e `MechanismOpportunitySignal`) e de confiança agregada do ciclo
+- implementação de histórico incremental em memória por ocupação para registrar recalibrações sucessivas da fase 5
+- criação do endpoint `POST /api/oprm/phase5/feedback` com payload para snapshots de performance de hipóteses
+- atualização do cânone de artefatos e do README do módulo para incluir o artefato e fluxo da fase 5
+- criação de testes unitários da fase 5 para validar geração do artefato e acumulação de histórico por ocupação
+
+**Arquivos principais alterados:**  
+- `oprm/src/main/java/com/marketinghub/oprm/application/FeedbackLoopService.java`
+- `oprm/src/main/java/com/marketinghub/oprm/api/Phase5Controller.java`
+- `oprm/src/main/java/com/marketinghub/oprm/api/Phase5FeedbackRequest.java`
+- `oprm/src/main/java/com/marketinghub/oprm/domain/OccupationFeedbackLoopPayload.java`
+- `oprm/src/main/java/com/marketinghub/oprm/domain/OccupationFeedbackHistoryEntry.java`
+- `oprm/src/main/java/com/marketinghub/oprm/domain/HypothesisPerformanceSnapshot.java`
+- `oprm/src/main/java/com/marketinghub/oprm/domain/HypothesisRoutineFit.java`
+- `oprm/src/test/java/com/marketinghub/oprm/application/FeedbackLoopServiceTest.java`
+- `oprm/README.md`
+- `docs/oprm_canonico_artefatos.md`
+
+**Contratos / artefatos afetados:**  
+- `occupationFeedbackLoopSnapshot`
+- endpoint interno do módulo: `POST /api/oprm/phase5/feedback`
+- `HypothesisPerformanceSnapshot` (payload de entrada da fase 5)
+
+**Testes executados:**  
+- `cd oprm && mvn test` — **passou**
+
+**Limitações ou pendências:**  
+- histórico por ocupação está em memória local do processo e ainda não foi persistido no backend principal
+- cálculo de aderência entre hipótese e rotina usa heurística textual simples e precisa de evolução para comparação semântica mais robusta
+- ainda não existe contrato HTTP versionado com backend principal para ingestão automática de métricas de hipótese
+
+**Próximo passo sugerido:**  
+- implementar fase 6 de hardening operacional (persistência remota do feedback loop, observabilidade e integração contínua com backend)
+- versionar contrato HTTP entre backend principal e OPRM para ingestão/publicação completa dos artefatos da fase 5

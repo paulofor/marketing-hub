@@ -10,8 +10,6 @@ import com.marketinghub.oprm.domain.OccupationFeedbackLoopPayload;
 import com.marketinghub.oprm.domain.OccupationPersonaRoutineCardPayload;
 import com.marketinghub.oprm.domain.RoutinePainSignal;
 import com.marketinghub.oprm.domain.RoutineTaskPattern;
-import org.springframework.stereotype.Service;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -19,8 +17,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
+import org.springframework.stereotype.Service;
 
 @Service
 public class FeedbackLoopService {
@@ -29,7 +26,6 @@ public class FeedbackLoopService {
 
     private final RoutineInferenceService routineInferenceService;
     private final FrameworkIntegrationService frameworkIntegrationService;
-    private final Map<String, List<OccupationFeedbackHistoryEntry>> feedbackHistoryByOccupation = new ConcurrentHashMap<>();
 
     public FeedbackLoopService(RoutineInferenceService routineInferenceService,
                                FrameworkIntegrationService frameworkIntegrationService) {
@@ -42,6 +38,15 @@ public class FeedbackLoopService {
                                                     String locale,
                                                     String correlationId,
                                                     List<HypothesisPerformanceSnapshot> performanceSnapshots) {
+        return recalibrateWithFeedback(rawOccupationLabel, nicheName, locale, correlationId, performanceSnapshots, List.of());
+    }
+
+    public ArtifactEnvelope recalibrateWithFeedback(String rawOccupationLabel,
+                                                    String nicheName,
+                                                    String locale,
+                                                    String correlationId,
+                                                    List<HypothesisPerformanceSnapshot> performanceSnapshots,
+                                                    List<OccupationFeedbackHistoryEntry> persistedHistory) {
         ArtifactEnvelope routineEnvelope = routineInferenceService.inferRoutine(rawOccupationLabel, nicheName, locale, correlationId);
         ArtifactEnvelope frameworkEnvelope = frameworkIntegrationService.integrateRoutineSignals(rawOccupationLabel, nicheName, locale, correlationId);
 
@@ -74,13 +79,14 @@ public class FeedbackLoopService {
                 "phase-5 feedback recalibration using hypothesis performance snapshots"
         );
 
-        List<OccupationFeedbackHistoryEntry> occupationHistory = registerHistory(
-                routinePayload.occupationName(),
-                historyEntry
-        );
+        List<OccupationFeedbackHistoryEntry> occupationHistory = mergeHistory(persistedHistory, historyEntry);
 
         Map<String, Double> scoreReweighting = Map.of(
                 "average_hypothesis_impact", averageImpact,
+                "previous_routine_confidence", routineEnvelope.confidenceScore(),
+                "recalibrated_routine_confidence", recalibratedRoutineConfidence,
+                "previous_framework_confidence", frameworkEnvelope.confidenceScore(),
+                "recalibrated_framework_confidence", recalibratedFrameworkConfidence,
                 "routine_confidence_delta", recalibratedRoutineConfidence - routineEnvelope.confidenceScore(),
                 "framework_confidence_delta", recalibratedFrameworkConfidence - frameworkEnvelope.confidenceScore(),
                 "pain_intensity_multiplier", 0.90 + (averageImpact * 0.20),
@@ -224,21 +230,14 @@ public class FeedbackLoopService {
         return capScore((ctrScore * 0.30) + (conversionScore * 0.45) + (cpaScore * 0.15) + (snapshot.confidenceScore() * 0.10));
     }
 
-    private List<OccupationFeedbackHistoryEntry> registerHistory(String occupationName,
-                                                                 OccupationFeedbackHistoryEntry entry) {
-        String key = occupationName.toLowerCase(Locale.ROOT);
-        List<OccupationFeedbackHistoryEntry> updatedHistory = feedbackHistoryByOccupation.compute(key, (k, oldValue) -> {
-            List<OccupationFeedbackHistoryEntry> next = oldValue == null ? new ArrayList<>() : new ArrayList<>(oldValue);
-            next.add(entry);
-            if (next.size() > MAX_HISTORY_SIZE) {
-                return next.stream()
-                        .skip(next.size() - MAX_HISTORY_SIZE)
-                        .collect(Collectors.toCollection(ArrayList::new));
-            }
-            return next;
-        });
-
-        return List.copyOf(updatedHistory);
+    private List<OccupationFeedbackHistoryEntry> mergeHistory(List<OccupationFeedbackHistoryEntry> persistedHistory,
+                                                              OccupationFeedbackHistoryEntry latestEntry) {
+        List<OccupationFeedbackHistoryEntry> merged = new ArrayList<>(persistedHistory == null ? List.of() : persistedHistory);
+        merged.add(latestEntry);
+        if (merged.size() <= MAX_HISTORY_SIZE) {
+            return List.copyOf(merged);
+        }
+        return List.copyOf(merged.subList(merged.size() - MAX_HISTORY_SIZE, merged.size()));
     }
 
     private double recalibrateConfidence(double previousConfidence, double averageImpact) {

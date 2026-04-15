@@ -85,15 +85,17 @@ class FeedbackLoopServiceTest {
                 List.of()
         );
 
+        OccupationFeedbackLoopPayload firstPayload = (OccupationFeedbackLoopPayload) firstRun.payload();
+
         ArtifactEnvelope secondRun = service.recalibrateWithFeedback(
                 "personal trainer",
                 "fitness",
                 "pt-BR",
                 "corr-phase5-3",
-                List.of()
+                List.of(),
+                firstPayload.occupationHistory()
         );
 
-        OccupationFeedbackLoopPayload firstPayload = (OccupationFeedbackLoopPayload) firstRun.payload();
         OccupationFeedbackLoopPayload secondPayload = (OccupationFeedbackLoopPayload) secondRun.payload();
 
         assertEquals(1, firstPayload.occupationHistory().size());

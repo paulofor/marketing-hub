@@ -1169,6 +1169,53 @@ class FacebookCampaignServiceTest {
         assertEquals(0, facebook.getRequestCount());
     }
 
+    @Test
+    void pausesCampaignWhenStopRequestIsReturned() throws Exception {
+        backend.enqueueResponse(new MockResponse()
+            .setBody("[{\"id\":\"camp-1\",\"externalId\":\"98765\",\"experimentId\":55}]")
+            .setHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"success\":true}")
+            .setHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setResponseCode(204));
+
+        service.pauseCampaignsRequestedForStop();
+
+        RecordedRequest stopGet = backend.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(stopGet);
+        assertEquals("/api/facebook-campaigns/stop-requests", stopGet.getPath());
+
+        RecordedRequest facebookPost = facebook.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(facebookPost);
+        assertEquals("/v23.0/98765", facebookPost.getPath());
+        assertTrue(facebookPost.getBody().readUtf8().contains("\"status\":\"PAUSED\""));
+
+        RecordedRequest stopResult = backend.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(stopResult);
+        assertEquals("/api/facebook-campaigns/camp-1/stop-results", stopResult.getPath());
+        assertTrue(stopResult.getBody().readUtf8().contains("\"success\":true"));
+    }
+
+    @Test
+    void resolvesStopRequestWithoutExternalId() throws Exception {
+        backend.enqueueResponse(new MockResponse()
+            .setBody("[{\"id\":\"camp-2\",\"externalId\":null,\"experimentId\":77}]")
+            .setHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setResponseCode(204));
+
+        service.pauseCampaignsRequestedForStop();
+
+        RecordedRequest stopGet = backend.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(stopGet);
+        assertEquals("/api/facebook-campaigns/stop-requests", stopGet.getPath());
+
+        RecordedRequest stopResult = backend.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(stopResult);
+        assertEquals("/api/facebook-campaigns/camp-2/stop-results", stopResult.getPath());
+        assertTrue(stopResult.getBody().readUtf8().contains("\"success\":true"));
+        assertEquals(0, facebook.getRequestCount());
+    }
+
+
     private FacebookWorkerConfiguration configurationWithAccessToken(String accessToken) {
         return new FacebookWorkerConfiguration(
             1L,

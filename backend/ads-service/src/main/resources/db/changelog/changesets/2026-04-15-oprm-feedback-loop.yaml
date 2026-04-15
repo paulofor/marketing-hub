@@ -3,8 +3,8 @@ databaseChangeLog:
       id: 2026-04-15-05-oprm-feedback-snapshot
       author: codex
       preConditions:
-        onFail: MARK_RAN
-        onError: HALT
+        - onFail: MARK_RAN
+        - onError: HALT
         - dbms:
             type: mysql
         - not:
@@ -104,8 +104,8 @@ databaseChangeLog:
       id: 2026-04-15-06-oprm-feedback-history
       author: codex
       preConditions:
-        onFail: MARK_RAN
-        onError: HALT
+        - onFail: MARK_RAN
+        - onError: HALT
         - dbms:
             type: mysql
         - not:

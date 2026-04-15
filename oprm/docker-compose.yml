@@ -1,0 +1,9 @@
+version: '3.8'
+services:
+  oprm-worker:
+    build: .
+    container_name: oprm-worker
+    ports:
+      - "8093:8093"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default

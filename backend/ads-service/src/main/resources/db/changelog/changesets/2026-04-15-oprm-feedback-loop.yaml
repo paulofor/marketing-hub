@@ -3,13 +3,13 @@ databaseChangeLog:
       id: 2026-04-15-05-oprm-feedback-snapshot
       author: codex
       preConditions:
-        - onFail: MARK_RAN
-        - onError: HALT
-        - dbms:
-            type: mysql
-        - not:
-            tableExists:
-              tableName: oprm_feedback_snapshot
+        onFail: MARK_RAN
+        onError: HALT
+        dbms:
+          type: mysql
+        not:
+          tableExists:
+            tableName: oprm_feedback_snapshot
       changes:
         - createTable:
             tableName: oprm_feedback_snapshot
@@ -104,13 +104,13 @@ databaseChangeLog:
       id: 2026-04-15-06-oprm-feedback-history
       author: codex
       preConditions:
-        - onFail: MARK_RAN
-        - onError: HALT
-        - dbms:
-            type: mysql
-        - not:
-            tableExists:
-              tableName: oprm_feedback_history
+        onFail: MARK_RAN
+        onError: HALT
+        dbms:
+          type: mysql
+        not:
+          tableExists:
+            tableName: oprm_feedback_history
       changes:
         - createTable:
             tableName: oprm_feedback_history

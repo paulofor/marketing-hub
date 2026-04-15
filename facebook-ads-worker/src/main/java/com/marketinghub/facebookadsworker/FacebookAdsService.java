@@ -2073,6 +2073,17 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         return response.path("id").asText();
     }
 
+    public void pauseCampaign(String campaignId) {
+        if (!hasText(campaignId)) {
+            return;
+        }
+        Map<String, Object> body = new HashMap<>();
+        body.put("status", "PAUSED");
+        body.put("access_token", requireAccessToken());
+        String path = buildVersionedPath("/" + campaignId);
+        executePost(path, body);
+    }
+
     public void deleteAd(String adId) {
         deleteMarketingObject(adId, "ad");
     }

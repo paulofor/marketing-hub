@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2037-04-15-facebook-campaign-stop
+      author: assistant
+      preConditions:
+        onFail: MARK_RAN
+        dbms:
+          type: mysql
+        not:
+          columnExists:
+            tableName: facebook_ads_campaign
+            columnName: stop_requested_at
+      changes:
+        - addColumn:
+            tableName: facebook_ads_campaign
+            columns:
+              - column:
+                  name: stop_reason
+                  type: VARCHAR(100)
+                  remarks: motivo interno para a pausa automática
+              - column:
+                  name: stop_requested_at
+                  type: DATETIME(6)
+              - column:
+                  name: stop_completed_at
+                  type: DATETIME(6)
+              - column:
+                  name: stop_last_error
+                  type: TEXT

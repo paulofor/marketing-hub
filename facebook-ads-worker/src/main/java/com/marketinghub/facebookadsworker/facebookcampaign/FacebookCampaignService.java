@@ -95,33 +95,27 @@ public class FacebookCampaignService {
         this.experimentFacebookApiLogClient = experimentFacebookApiLogClient;
     }
 
-    public void createCampaignsFromExperiments() {
+    private Optional<FacebookWorkerConfiguration> prepareConfiguration(String contextLabel) {
         if (accessTokenExpired.get()) {
             if (hasTokenChangedSinceExpiration()) {
-                LOGGER.info(
-                    "Detected refreshed Facebook access token after a previous expiration; resuming campaign processing."
-                );
+                LOGGER.info("Detected refreshed Facebook access token after a previous expiration; resuming {}.", contextLabel);
                 accessTokenExpired.set(false);
                 accessTokenExpiryWarningLogged.set(false);
                 lastExpiredAccessToken.set(null);
             } else {
-            FacebookAccessTokenManager.RenewalAttemptResult renewalResult = accessTokenManager.tryRenewAccessTokenIfPossible();
-            if (renewalResult.outcome() == FacebookAccessTokenManager.RenewalOutcome.SUCCESS) {
-                LOGGER.info(
-                    "Facebook access token renewed automatically after a previous expiration; resuming campaign processing."
-                );
-                accessTokenExpired.set(false);
-                accessTokenExpiryWarningLogged.set(false);
-                lastExpiredAccessToken.set(null);
-            } else {
-                if (accessTokenExpiryWarningLogged.compareAndSet(false, true)) {
-                    LOGGER.warn(
-                        "Skipping Facebook campaign processing because the configured access token has expired; renew the token and restart the worker."
-                    );
-                    logAutomaticRenewalOutcome(renewalResult);
+                FacebookAccessTokenManager.RenewalAttemptResult renewalResult = accessTokenManager.tryRenewAccessTokenIfPossible();
+                if (renewalResult.outcome() == FacebookAccessTokenManager.RenewalOutcome.SUCCESS) {
+                    LOGGER.info("Facebook access token renewed automatically after a previous expiration; resuming {}.", contextLabel);
+                    accessTokenExpired.set(false);
+                    accessTokenExpiryWarningLogged.set(false);
+                    lastExpiredAccessToken.set(null);
+                } else {
+                    if (accessTokenExpiryWarningLogged.compareAndSet(false, true)) {
+                        LOGGER.warn("Skipping {} because the configured access token has expired; renew the token and restart the worker.", contextLabel);
+                        logAutomaticRenewalOutcome(renewalResult);
+                    }
+                    return Optional.empty();
                 }
-                return;
-            }
             }
         } else {
             accessTokenExpiryWarningLogged.set(false);
@@ -130,27 +124,36 @@ public class FacebookCampaignService {
         var configuration = configurationClient.fetchConfiguration();
         if (configuration.isEmpty()) {
             if (configurationUnavailableWarningLogged.compareAndSet(false, true)) {
-                LOGGER.warn("Facebook worker configuration is unavailable; skipping campaign creation");
+                LOGGER.warn("Facebook worker configuration is unavailable; skipping {}", contextLabel);
             }
-            return;
+            return Optional.empty();
         }
         configurationUnavailableWarningLogged.set(false);
 
         FacebookWorkerConfiguration config = configuration.get();
         String configuredToken = config.accessToken();
         if (!StringUtils.hasText(configuredToken)) {
-            LOGGER.error("Facebook worker configuration is missing an access token; skipping campaign processing");
-            return;
+            LOGGER.error("Facebook worker configuration is missing an access token; skipping {}", contextLabel);
+            return Optional.empty();
         }
         String currentToken = facebookAdsService.getCurrentAccessToken();
         if (!Objects.equals(configuredToken, currentToken)) {
             try {
                 facebookAdsService.updateAccessToken(configuredToken);
             } catch (IllegalArgumentException ex) {
-                LOGGER.error("Facebook worker configuration returned an invalid access token: {}", ex.getMessage());
-                return;
+                LOGGER.error("Facebook worker configuration returned an invalid access token while preparing {}: {}", contextLabel, ex.getMessage());
+                return Optional.empty();
             }
         }
+        return Optional.of(config);
+    }
+
+    public void createCampaignsFromExperiments() {
+        var configuration = prepareConfiguration("campaign creation");
+        if (configuration.isEmpty()) {
+            return;
+        }
+        FacebookWorkerConfiguration config = configuration.get();
 
         List<Experiment> experiments = Collections.emptyList();
         String experimentsUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns/experiments-ready");
@@ -198,6 +201,18 @@ public class FacebookCampaignService {
             }
             processExperiment(exp, config);
         });
+    }
+
+    public void pauseCampaignsRequestedForStop() {
+        var configuration = prepareConfiguration("campaign stop sync");
+        if (configuration.isEmpty()) {
+            return;
+        }
+        List<FacebookCampaignStopRequest> requests = fetchStopRequests();
+        if (requests.isEmpty()) {
+            return;
+        }
+        requests.forEach(this::handleStopRequest);
     }
 
     private void processExperiment(Experiment exp, FacebookWorkerConfiguration config) {
@@ -552,6 +567,86 @@ public class FacebookCampaignService {
         }
     }
 
+    private List<FacebookCampaignStopRequest> fetchStopRequests() {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns/stop-requests");
+        LOGGER.info(
+            "Requesting Facebook campaign stop requests from backend: url==>{}, params={}",
+            url,
+            JsonLogFormatter.wrap(objectMapper, Collections.emptyMap())
+        );
+        try {
+            List<FacebookCampaignStopRequest> requests = backendClient.get()
+                .uri(url)
+                .retrieve()
+                .bodyToFlux(FacebookCampaignStopRequest.class)
+                .collectList()
+                .block();
+            LOGGER.info(
+                "Received stop requests from backend: url<=={}, response={}",
+                url,
+                JsonLogFormatter.wrap(objectMapper, requests)
+            );
+            return requests != null ? requests : Collections.emptyList();
+        } catch (WebClientRequestException ex) {
+            LOGGER.warn("Failed to fetch Facebook campaign stop requests: url==>{}", url, ex);
+            return Collections.emptyList();
+        }
+    }
+
+    private void handleStopRequest(FacebookCampaignStopRequest request) {
+        if (request == null || !StringUtils.hasText(request.id())) {
+            return;
+        }
+        if (!StringUtils.hasText(request.externalId())) {
+            LOGGER.info(
+                "Campaign {} has no externalId on Facebook; marking stop request as completed without calling the API.",
+                request.id()
+            );
+            notifyStopResult(request.id(), true, "Campaign not published on Facebook yet");
+            return;
+        }
+        try {
+            facebookAdsService.pauseCampaign(request.externalId());
+            LOGGER.info("Paused Facebook campaign {} requested for experiment {}", request.externalId(), request.experimentId());
+            notifyStopResult(request.id(), true, null);
+        } catch (FacebookAccessTokenExpiredException ex) {
+            handleAccessTokenExpiration("campaign stop sync", ex);
+            notifyStopResult(request.id(), false, "Access token expired while pausing campaign");
+        } catch (FacebookPermissionException ex) {
+            LOGGER.error(
+                "Facebook permission error while pausing campaign {}: message={}, details={}",
+                request.externalId(),
+                ex.getMessage(),
+                ex.getErrorDetails(),
+                ex
+            );
+            notifyStopResult(request.id(), false, ex.getMessage());
+        } catch (Exception ex) {
+            LOGGER.warn("Unexpected error while pausing campaign {}: {}", request.externalId(), ex.getMessage(), ex);
+            notifyStopResult(request.id(), false, ex.getMessage());
+        }
+    }
+
+    private void notifyStopResult(String campaignId, boolean success, String message) {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns/" + campaignId + "/stop-results");
+        FacebookCampaignStopResultPayload payload = new FacebookCampaignStopResultPayload(success, message);
+        LOGGER.info(
+            "Reporting Facebook campaign stop result to backend: url==>{}, payload={}",
+            url,
+            JsonLogFormatter.wrap(objectMapper, payload)
+        );
+        try {
+            backendClient.post()
+                .uri(url)
+                .bodyValue(payload)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+        } catch (Exception ex) {
+            LOGGER.warn("Failed to notify backend about stop result for campaign {}: {}", campaignId, ex.getMessage());
+        }
+    }
+
     private void cleanupFailedPublication(String campaignId, String adSetId, List<String> adIds) {
         if (!StringUtils.hasText(campaignId)) {
             return;
@@ -888,6 +983,17 @@ public class FacebookCampaignService {
         Instant createdAt
     ) {
     }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record FacebookCampaignStopRequest(
+            @JsonProperty("id") String id,
+            @JsonProperty("externalId") String externalId,
+            String adAccountId,
+            Long experimentId,
+            String stopReason
+    ) {}
+
+    private record FacebookCampaignStopResultPayload(boolean success, String message) {}
 
     public record Experiment(
         long id,
@@ -1400,7 +1506,7 @@ public class FacebookCampaignService {
                 shareLink = InstantFormPublicationHelper.buildInstantFormShareLink(normalizedFormId);
             }
         } catch (FacebookAccessTokenExpiredException ex) {
-            handleAccessTokenExpirationDuringPublication(ex);
+            handleAccessTokenExpiration("instant form publication", ex);
         } catch (FacebookPermissionException ex) {
             LOGGER.error(
                 "Facebook permission error while publishing instant form: experimentId={}, formId={}, message={}, details={}",
@@ -1429,12 +1535,13 @@ public class FacebookCampaignService {
         return new InstantFormResolution(new InstantFormDestination(shareLink, normalizedFormId), publicationUpdate);
     }
 
-    private void handleAccessTokenExpirationDuringPublication(FacebookAccessTokenExpiredException ex) {
+    private void handleAccessTokenExpiration(String processLabel, FacebookAccessTokenExpiredException ex) {
         lastExpiredAccessToken.compareAndSet(null, facebookAdsService.getCurrentAccessToken());
         FacebookAccessTokenManager.RenewalAttemptResult renewalResult = accessTokenManager.tryRenewAccessTokenIfPossible();
         if (renewalResult.outcome() == FacebookAccessTokenManager.RenewalOutcome.SUCCESS) {
             LOGGER.info(
-                "Facebook access token renewed automatically after detecting expiration while publishing instant forms."
+                "Facebook access token renewed automatically after detecting expiration while {}.",
+                processLabel
             );
             accessTokenExpired.set(false);
             accessTokenExpiryWarningLogged.set(false);
@@ -1445,7 +1552,9 @@ public class FacebookCampaignService {
         accessTokenExpiryWarningLogged.set(false);
         if (firstDetection) {
             LOGGER.error(
-                "Facebook access token expired while publishing instant forms; the worker will pause publication until renewal. message={}, details={}",
+                "Facebook access token expired while {}; the worker will pause {} until renewal. message={}, details={}",
+                processLabel,
+                processLabel,
                 ex.getMessage(),
                 ex.getErrorDetails()
             );

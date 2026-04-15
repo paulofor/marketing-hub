@@ -62,6 +62,19 @@ public class FacebookAdsCampaign {
     @Column(name = "api_version")
     private String apiVersion;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "stop_reason", length = 100)
+    private FacebookCampaignStopReason stopReason;
+
+    @Column(name = "stop_requested_at")
+    private Instant stopRequestedAt;
+
+    @Column(name = "stop_completed_at")
+    private Instant stopCompletedAt;
+
+    @Column(name = "stop_last_error", columnDefinition = "TEXT")
+    private String stopLastError;
+
     @ElementCollection(targetClass = SpecialAdCategory.class)
     @CollectionTable(
             name = "facebook_ads_campaign_special_ad_category",

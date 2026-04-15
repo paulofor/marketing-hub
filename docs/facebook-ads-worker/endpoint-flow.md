@@ -130,9 +130,23 @@ sequenceDiagram
 | POST | `/v23.0/act_<adAccountId>/adsets` | `FacebookAdsService.createAdSet` | Daily budget, billing event, optimization goal, destination type, targeting por país, promoted page | Inclui `bid_strategy` e `bid_amount` quando configurados |
 | POST | `/v23.0/act_<adAccountId>/adcreatives` | `FacebookAdsService.createAdCreative` | `object_story_spec` com `page_id`, `instagram_user_id`, mensagem, CTA, link ou lead form | CTA só envia `value` quando há URL ou formulário |
 | POST | `/v23.0/act_<adAccountId>/ads` | `FacebookAdsService.createAd` | Nome, `adset_id`, `creative_id`, `status=PAUSED` | Mantido pausado para revisão manual |
+| POST | `/v23.0/{campaignId}` | `FacebookAdsService.pauseCampaign` | `status=PAUSED`, `access_token` | Conforme [referência oficial da Marketing API](https://developers.facebook.com/docs/marketing-api/reference/ad-campaign/#Updating) |
 | GET | `/v23.0/{campaignId}/insights` | `FacebookAdsService.getCampaignMetrics` | Retorna métricas agregadas da campanha | Trata `(#190)` como token expirado |
 | GET | `/v23.0/oauth/access_token` | `FacebookAdsService.renewLongLivedToken` | Query com `grant_type=fb_exchange_token`, `client_id`, `client_secret`, `fb_exchange_token` | Logs mascaram o token e retornam `expires_in` |
 
+
+## Pausa automática de campanhas
+
+- Quando o backend identifica reprovação estatística no estágio de envio do formulário (limite de 3%), cada campanha vinculada recebe `stop_reason` e `stop_requested_at`.
+- O agendador `FacebookCampaignStopScheduler` dispara `FacebookCampaignService.pauseCampaignsRequestedForStop()` para consumir esses pedidos periodicamente.
+- Se uma campanha ainda não foi publicada (`external_id` ausente), o worker apenas confirma o pedido; caso contrário envia `status=PAUSED` para a Graph API antes da confirmação.
+
+### Chamadas ao backend
+
+| Método | Caminho | Origem | Objetivo | Observações |
+| --- | --- | --- | --- | --- |
+| GET | `/api/facebook-campaigns/stop-requests` | `FacebookCampaignService` | Listar campanhas com pausa pendente | Lista vazia indica nenhuma ação necessária |
+| POST | `/api/facebook-campaigns/{id}/stop-results` | `FacebookCampaignService` | Confirmar sucesso ou erro da pausa | Erros mantêm o pedido ativo e registram `stop_last_error` |
 
 ## Renovação automática de tokens
 

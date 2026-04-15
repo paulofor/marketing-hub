@@ -8,7 +8,7 @@ O diretório `deploy/` contém os artefatos de deploy. Atualmente os deploys est
 2. Copie os arquivos para o servidor (ex.: via `scp`).
 3. No host de **backend/frontend** (`191.252.181.168`), execute `deploy/bin/apply.sh`. O script irá:
    - carregar os `tar` encontrados em `/tmp`;
-   - atualizar as tags `latest` (quando `IMAGE_TAG` for fornecido);
+   - atualizar as tags dos serviços com `IMAGE_TAG` (evitando dependência exclusiva de `latest`);
    - aplicar apenas `backend` e `frontend` no `docker-compose.yml`.
 
 ### Variáveis relevantes
@@ -60,8 +60,9 @@ Quando for necessário atualizar **somente** o serviço `oprm-worker` no host `1
 
 1. Gere a imagem do módulo OPRM e exporte para tar:
    ```bash
-   docker build -f oprm/Dockerfile -t marketinghub-oprm:latest oprm
-   docker save marketinghub-oprm:latest -o /tmp/oprm-image.tar
+   IMAGE_TAG=2026.04.15
+   docker build -f oprm/Dockerfile -t marketinghub-oprm:${IMAGE_TAG} oprm
+   docker save marketinghub-oprm:${IMAGE_TAG} -o /tmp/oprm-image.tar
    ```
 2. Copie o tar e os arquivos de deploy para o servidor:
    ```bash
@@ -74,8 +75,7 @@ Quando for necessário atualizar **somente** o serviço `oprm-worker` no host `1
    sudo mv /tmp/docker-compose.yml /opt/marketinghub/containers/docker-compose.yml
    sudo mv /tmp/apply-oprm-only.sh /opt/marketinghub/containers/apply-oprm-only.sh
    sudo chmod +x /opt/marketinghub/containers/apply-oprm-only.sh
-   OPRM_BACKEND_BASE_URL=http://191.252.181.168:8000 sudo /opt/marketinghub/containers/apply-oprm-only.sh
+   OPRM_BACKEND_BASE_URL=http://191.252.181.168:8000 IMAGE_TAG=${IMAGE_TAG} sudo /opt/marketinghub/containers/apply-oprm-only.sh
    ```
 
 Esse fluxo atualiza só o container `marketinghub-oprm`, preservando os demais serviços já em execução.
-

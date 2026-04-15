@@ -9,6 +9,7 @@ import com.marketinghub.oprm.domain.OccupationFeedbackHistoryEntry;
 import com.marketinghub.oprm.domain.OccupationFeedbackLoopPayload;
 import com.marketinghub.oprm.integration.client.BackendArtifactPublishClient;
 import com.marketinghub.oprm.integration.client.BackendFeedbackClient;
+import com.marketinghub.oprm.integration.client.BackendHeartbeatClient;
 import com.marketinghub.oprm.integration.client.BackendJobClient;
 import com.marketinghub.oprm.integration.client.BackendStatusClient;
 import com.marketinghub.oprm.integration.contract.OprmArtifactEnvelopeDto;
@@ -28,13 +29,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.MDC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(name = "oprm.jobs.polling-enabled", havingValue = "true", matchIfMissing = true)
 public class OprmWorkerJobProcessor {
     private static final Logger log = LoggerFactory.getLogger(OprmWorkerJobProcessor.class);
 
@@ -42,8 +46,10 @@ public class OprmWorkerJobProcessor {
     private final BackendStatusClient backendStatusClient;
     private final BackendArtifactPublishClient backendArtifactPublishClient;
     private final BackendFeedbackClient backendFeedbackClient;
+    private final BackendHeartbeatClient backendHeartbeatClient;
     private final OprmArtifactPipelineService artifactPipelineService;
     private final FeedbackLoopService feedbackLoopService;
+    private final OprmWorkerMetrics workerMetrics;
     private final ObjectMapper objectMapper;
     private final String workerId;
     private final String workerVersion;
@@ -54,8 +60,10 @@ public class OprmWorkerJobProcessor {
                                   BackendStatusClient backendStatusClient,
                                   BackendArtifactPublishClient backendArtifactPublishClient,
                                   BackendFeedbackClient backendFeedbackClient,
+                                  BackendHeartbeatClient backendHeartbeatClient,
                                   OprmArtifactPipelineService artifactPipelineService,
                                   FeedbackLoopService feedbackLoopService,
+                                  OprmWorkerMetrics workerMetrics,
                                   ObjectMapper objectMapper,
                                   @Value("${oprm.worker.id:oprm-worker-local}") String workerId,
                                   @Value("${oprm.worker.version:0.1.0}") String workerVersion,
@@ -64,8 +72,10 @@ public class OprmWorkerJobProcessor {
         this.backendStatusClient = backendStatusClient;
         this.backendArtifactPublishClient = backendArtifactPublishClient;
         this.backendFeedbackClient = backendFeedbackClient;
+        this.backendHeartbeatClient = backendHeartbeatClient;
         this.artifactPipelineService = artifactPipelineService;
         this.feedbackLoopService = feedbackLoopService;
+        this.workerMetrics = workerMetrics;
         this.objectMapper = objectMapper;
         this.workerId = workerId;
         this.workerVersion = workerVersion;
@@ -74,6 +84,7 @@ public class OprmWorkerJobProcessor {
 
     @Scheduled(fixedDelayString = "${oprm.worker.loop-delay-ms:15000}")
     public void pollAndProcess() {
+        long loopStart = System.nanoTime();
         if (!running.compareAndSet(false, true)) {
             return;
         }
@@ -95,6 +106,8 @@ public class OprmWorkerJobProcessor {
 
             OprmJobClaimResponse claimedJob = claimed.get();
             activeJobId = claimedJob.jobId();
+            workerMetrics.incrementJobsClaimed();
+            MDC.put("correlationId", claimedJob.correlationId());
 
             OprmJobDetailResponse detail = backendJobClient.getJobDetail(claimedJob.jobId());
             updateStatus(claimedJob.jobId(), OprmJobStatus.RUNNING, "phase-run", "OPRM job started", null, null, Map.of());
@@ -109,18 +122,24 @@ public class OprmWorkerJobProcessor {
 
             updateStatus(claimedJob.jobId(), OprmJobStatus.SUCCEEDED, "phase-run",
                     "OPRM job completed", null, null, Map.of());
+            workerMetrics.incrementJobsSucceeded();
         } catch (Exception ex) {
             if (activeJobId != null) {
                 updateStatus(activeJobId, OprmJobStatus.FAILED, "phase-run",
                         "OPRM job failed", "JOB_EXECUTION_ERROR", ex.getMessage(), Map.of());
+                workerMetrics.incrementJobsFailed();
             }
             log.error("oprm-worker-loop-failure", ex);
         } finally {
+            workerMetrics.recordLoopDuration(System.nanoTime() - loopStart);
+            publishHeartbeat();
+            MDC.clear();
             running.set(false);
         }
     }
 
     private void processOccupationMapping(String jobId, OprmJobDetailResponse detail) {
+        long phaseStart = System.nanoTime();
         List<ArtifactEnvelope> artifacts = artifactPipelineService.runPipeline(
                 detail.occupationSeedRef(),
                 "default",
@@ -129,6 +148,7 @@ public class OprmWorkerJobProcessor {
         );
 
         artifacts.forEach(artifact -> publishArtifact(jobId, detail.correlationId(), artifact));
+        workerMetrics.recordPhaseDuration("occupation-mapping", System.nanoTime() - phaseStart);
 
         updateStatus(jobId, OprmJobStatus.RUNNING, "phase-artifacts",
                 "OPRM occupation mapping artifacts published", null, null,
@@ -142,6 +162,7 @@ public class OprmWorkerJobProcessor {
     }
 
     private void processFeedbackRecalibration(String jobId, OprmJobDetailResponse detail) {
+        long phaseStart = System.nanoTime();
         String occupationName = detail.occupationSeedRef();
         String personaLabel = detail.occupationSeedRef();
         List<OprmFeedbackHistoryEntryResponse> persistedHistory =
@@ -192,6 +213,7 @@ public class OprmWorkerJobProcessor {
         updateStatus(jobId, OprmJobStatus.RUNNING, "phase-feedback",
                 "OPRM feedback loop persisted in backend", null, null,
                 Map.of("historyLoaded", domainHistory.size(), "feedbackPublished", 1));
+        workerMetrics.recordPhaseDuration("feedback-recalibration", System.nanoTime() - phaseStart);
 
         log.info("oprm-job-processed jobId={} correlationId={} feedbackHistoryLoaded={} jobType={}",
                 jobId,
@@ -230,7 +252,32 @@ public class OprmWorkerJobProcessor {
                 jobId + ":" + artifact.artifactId()
         );
 
-        backendArtifactPublishClient.publish(publishRequest);
+        try {
+            backendArtifactPublishClient.publish(publishRequest);
+            workerMetrics.incrementArtifactsPublished();
+        } catch (Exception ex) {
+            workerMetrics.incrementBackendPublishFailures();
+            throw ex;
+        }
+    }
+
+    private void publishHeartbeat() {
+        Map<String, Object> health = Map.of(
+                "running", running.get(),
+                "workerId", workerId
+        );
+        try {
+            backendHeartbeatClient.publish(new com.marketinghub.oprm.integration.contract.OprmHeartbeatRequest(
+                    workerId,
+                    workerVersion,
+                    OprmContractVersion.V1,
+                    Instant.now().toString(),
+                    health,
+                    workerMetrics.countersSnapshot()
+            ));
+        } catch (Exception heartbeatException) {
+            log.warn("oprm-heartbeat-publish-failed workerId={}", workerId, heartbeatException);
+        }
     }
 
     private void updateStatus(String jobId,

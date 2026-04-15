@@ -524,12 +524,12 @@ A fase de integração deve tratar explicitamente ao menos estes artefatos:
 - [x] recalibração usando estado persistido
 
 ### Sprint 5
-- [ ] contract tests criados
-- [ ] healthchecks ativos
-- [ ] métricas expostas
-- [ ] tracing básico ativo
-- [ ] deploy validado com compose
-- [ ] tags imutáveis adotadas
+- [x] contract tests criados
+- [x] healthchecks ativos
+- [x] métricas expostas
+- [x] tracing básico ativo
+- [x] deploy validado com compose
+- [x] tags imutáveis adotadas
 
 ---
 

@@ -459,3 +459,52 @@ Foi implementada a Sprint 4 com persistência do feedback loop no backend, hist�
 - executar Sprint 5 com contract testing (Spring Cloud Contract), health/readiness e métricas operacionais
 - integrar fonte downstream de `HypothesisPerformanceSnapshot` no payload dos jobs de `FEEDBACK_RECALIBRATION`
 
+
+## 2026-04-15 — sprint 5: contract testing, observabilidade e hardening operacional
+
+**Status:** concluído
+
+**Resumo:**  
+Foi concluída a Sprint 5 com contract tests de integração backend↔OPRM, instrumentação operacional no worker (health/readiness, métricas e tracing por `correlationId`) e hardening de deploy para uso de tags imutáveis no fluxo de compose/apply.
+
+**O que foi implementado:**  
+- criação de contract tests de integração no OPRM com Spring Cloud Contract WireMock para os fluxos de `claim`, `detail`, `status`, `publish artifact` e `heartbeat`
+- inclusão de actuator + Prometheus no módulo OPRM e exposição das métricas mínimas (`oprm.jobs.*`, `oprm.artifacts.published`, `oprm.backend.publish.failures`, `oprm.loop.duration`, `oprm.phase.duration`)
+- criação de componente de métricas operacionais do worker com counters/timers e snapshot para heartbeat
+- extensão do `OprmWorkerJobProcessor` com tracing básico via MDC (`correlationId`), medição de duração de loop/fase e publicação periódica de heartbeat
+- implementação do endpoint backend `POST /api/oprm/heartbeat` para receber heartbeat operacional do worker
+- atualização do deploy (`docker-compose` + `apply-oprm-only.sh` + documentação) para adoção de tags imutáveis por variável de ambiente e healthcheck de readiness no serviço OPRM
+- atualização do checklist da Sprint 5 no plano único de integração
+
+**Arquivos principais alterados:**  
+- `oprm/pom.xml`
+- `oprm/src/main/resources/application.properties`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/worker/OprmWorkerMetrics.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/worker/OprmWorkerJobProcessor.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/client/BackendHeartbeatClient.java`
+- `oprm/src/test/java/com/marketinghub/oprm/integration/contract/OprmBackendContractTest.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/dto/OprmHeartbeatRequestDto.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/web/OprmHeartbeatController.java`
+- `deploy/docker-compose.yml`
+- `deploy/bin/apply-oprm-only.sh`
+- `deploy/README.md`
+- `oprm/README.md`
+- `docs/novos-modulos/OPRM/oprm_plano_unico_desenvolvimento_integracao.md`
+
+**Contratos / artefatos afetados:**  
+- endpoint de heartbeat operacional implementado no backend: `POST /api/oprm/heartbeat`
+- contract tests de integração backend↔OPRM para endpoints principais do worker (`/api/oprm/jobs/claim`, `/api/oprm/jobs/{jobId}`, `/api/oprm/jobs/{jobId}/status`, `/api/oprm/artifacts`, `/api/oprm/heartbeat`)
+- observabilidade operacional do worker com métricas canônicas da Sprint 5
+
+**Testes executados:**  
+- `cd oprm && mvn -q test` — **passou**
+- `cd backend/ads-service && mvn -q -DskipTests compile` — **passou**
+- `docker compose -f deploy/docker-compose.yml config` — **bloqueado por ambiente** (`docker` indisponível no runner)
+
+**Limitações ou pendências:**  
+- tracing atual é básico por MDC/logging e ainda não inclui exportador distribuído (OTel/Zipkin)
+- endpoint de heartbeat no backend registra eventos em log; retenção histórica persistida não foi adicionada nesta sprint
+
+**Próximo passo sugerido:**  
+- adicionar exportação de tracing distribuído (OpenTelemetry) com propagação de `traceparent` backend↔worker
+- evoluir heartbeat para persistência agregada por worker/janela de tempo para dashboards operacionais

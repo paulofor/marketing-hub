@@ -58,6 +58,9 @@ fi
 docker compose down --remove-orphans || true
 
 # Start only backend/frontend stack on app host
+BACKEND_IMAGE_TAG=latest \
+FRONTEND_IMAGE_TAG=latest \
+VIDEO_MGMT_IMAGE_TAG=latest \
 docker compose up -d backend frontend
 
 cleanup_previous_tags "${BACKEND_IMAGE}" "latest"

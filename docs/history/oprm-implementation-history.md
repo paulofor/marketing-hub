@@ -358,3 +358,53 @@ Foi implementada a base operacional da Sprint 2 para integrar OPRM e backend com
 **Próximo passo sugerido:**  
 - executar Sprint 3 com endpoint de publish artifact e persistência dos envelopes canônicos com lineage
 - adicionar consulta operacional de jobs/eventos para observabilidade de fila e diagnóstico de retry
+
+## 2026-04-15 — sprint 3: publicação remota de artefatos + persistência end-to-end
+
+**Status:** concluído
+
+**Resumo:**  
+Foi concluída a Sprint 3 da integração OPRM com publicação remota de artefatos para o backend principal, persistência de envelope canônico com lineage e vínculo operacional entre job e artefatos gerados no ciclo do worker.
+
+**O que foi implementado:**  
+- criação do endpoint backend `POST /api/oprm/artifacts` com persistência de envelope, lineage e controle de idempotência
+- criação da consulta de artefatos no backend com filtros por `correlationId`, `occupationSeedRef` e `status`
+- criação do modelo persistente `oprm_artifact` com vínculo ao `oprm_job` e índices para consulta operacional
+- implementação no worker OPRM de publicação remota de artefatos após processamento do job
+- implementação do pipeline de artefatos da Sprint 3 no worker publicando: `occupationProfileSnapshot`, `occupationWebSourceSnapshot`, `occupationPersonaRoutineCard`, `desiredOutcomeSignal`, `mechanismOpportunitySignal` e `dorResultadoOfertaMecanismoProvaInput`
+- atualização do checklist da Sprint 3 no plano único de integração
+
+**Arquivos principais alterados:**  
+- `backend/ads-service/src/main/resources/db/changelog/changesets/2026-04-15-oprm-artifact-publication.yaml`
+- `backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/OprmArtifact.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/OprmArtifactStatus.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/repository/OprmArtifactRepository.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/service/OprmArtifactService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/web/OprmArtifactController.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/dto/OprmArtifactEnvelopeDto.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/dto/OprmArtifactPublishRequestDto.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/dto/OprmArtifactPublishResponseDto.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/dto/OprmArtifactSummaryDto.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/client/BackendArtifactPublishClient.java`
+- `oprm/src/main/java/com/marketinghub/oprm/application/OprmArtifactPipelineService.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/worker/OprmWorkerJobProcessor.java`
+- `docs/novos-modulos/OPRM/oprm_plano_unico_desenvolvimento_integracao.md`
+
+**Contratos / artefatos afetados:**  
+- endpoint `POST /api/oprm/artifacts` implementado no backend com persistência de envelope canônico
+- endpoint `GET /api/oprm/artifacts` implementado para consulta operacional por correlação/ocupação/status
+- artefatos publicados no fluxo do worker: `occupationProfileSnapshot`, `occupationWebSourceSnapshot`, `occupationPersonaRoutineCard`, `desiredOutcomeSignal`, `mechanismOpportunitySignal`, `dorResultadoOfertaMecanismoProvaInput`
+
+**Testes executados:**  
+- `cd backend/ads-service && mvn -q -DskipTests compile` — **passou**
+- `cd oprm && mvn -q test` — **passou**
+
+**Limitações ou pendências:**  
+- o endpoint de consulta retorna resumo operacional do artefato; leitura completa do payload persistido ainda não foi exposta
+- validação de contrato automatizada em CI (Spring Cloud Contract) permanece como item da Sprint 5
+- o loop de job ainda mantém suporte funcional principal para `OCCUPATION_MAPPING`
+
+**Próximo passo sugerido:**  
+- executar Sprint 4 para persistir `occupationFeedbackLoopSnapshot` e histórico de recalibração por ocupação no backend
+- adicionar ingestão de snapshots downstream no fluxo do backend para retroalimentar o OPRM com estado persistido

@@ -512,10 +512,10 @@ A fase de integração deve tratar explicitamente ao menos estes artefatos:
 - [x] loop real do worker funcionando
 
 ### Sprint 3
-- [ ] endpoint de publish artifact implementado
-- [ ] envelopes persistidos
-- [ ] lineage persistido
-- [ ] vínculo job → artifact funcionando
+- [x] endpoint de publish artifact implementado
+- [x] envelopes persistidos
+- [x] lineage persistido
+- [x] vínculo job → artifact funcionando
 
 ### Sprint 4
 - [ ] feedback loop persistido

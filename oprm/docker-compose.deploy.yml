@@ -1,0 +1,4 @@
+services:
+  oprm-worker:
+    image: ${OPRM_IMAGE}
+    build: null

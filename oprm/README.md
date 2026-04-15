@@ -1,6 +1,6 @@
 # OPRM (Occupation Persona Routine Mapper)
 
-Módulo Spring Boot interno do Marketing Hub para as fases 1, 2, 3, 4 e 5 do plano OPRM:
+Módulo Spring Boot interno do Marketing Hub para as fases 1, 2, 3, 4, 5 e finalização operacional do plano OPRM:
 
 - resolução ocupacional (`Occupation Resolver`)
 - intake estruturado baseado em fontes ocupacionais do MVP
@@ -110,4 +110,23 @@ Exemplo de payload da fase 5:
     }
   ]
 }
+```
+
+
+## Deploy do container (host 177.153.62.107)
+
+Arquivos de deploy do módulo:
+
+- `oprm/docker-compose.deploy.yml` (override para uso com imagem publicada)
+- `deploy/docker-compose.yml` (stack consolidada com serviço `oprm-worker`)
+- `deploy/bin/apply-oprm-only.sh` (atualização sem reiniciar outros serviços)
+
+Fluxo resumido:
+
+```bash
+docker build -f oprm/Dockerfile -t marketinghub-oprm:latest oprm
+docker save marketinghub-oprm:latest -o /tmp/oprm-image.tar
+scp /tmp/oprm-image.tar deploy/bin/apply-oprm-only.sh deploy/docker-compose.yml <usuario>@177.153.62.107:/tmp/
+ssh <usuario>@177.153.62.107
+OPRM_BACKEND_BASE_URL=http://191.252.181.168:8000 sudo /opt/marketinghub/containers/apply-oprm-only.sh
 ```

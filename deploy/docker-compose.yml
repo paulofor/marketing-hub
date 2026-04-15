@@ -38,6 +38,19 @@ services:
     ports:
       - "${VIDEO_MANAGEMENT_PORT:-8095}:8095"
 
+  oprm-worker:
+    image: ${OPRM_IMAGE:-marketinghub-oprm}:latest
+    container_name: marketinghub-oprm
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: ${OPRM_SPRING_PROFILE:-default}
+      OPRM_BACKEND_BASE_URL: ${OPRM_BACKEND_BASE_URL:-http://191.252.181.168:8000}
+      OPRM_JOBS_POLLING_ENABLED: ${OPRM_JOBS_POLLING_ENABLED:-false}
+      OPRM_JOBS_POLL_INTERVAL: ${OPRM_JOBS_POLL_INTERVAL:-PT5M}
+      TZ: America/Sao_Paulo
+    ports:
+      - "${OPRM_PORT:-8093}:8093"
+
   mcp-server:
     image: ${MCP_SERVER_IMAGE:-marketinghub-mcp-server}:latest
     container_name: marketinghub-mcp-server

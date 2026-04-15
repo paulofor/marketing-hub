@@ -51,3 +51,31 @@ Quando for necessário atualizar **somente** o serviço `video-management` no ho
    ```
 
 Esse fluxo atualiza só o container `marketinghub-video-management`, preservando `backend` e `frontend` em execução.
+
+## Deploy apenas do módulo OPRM
+
+Quando for necessário atualizar **somente** o serviço `oprm-worker` no host `177.153.62.107`, use o fluxo abaixo.
+
+> Neste cenário, o OPRM deve apontar para o backend remoto em `191.252.181.168` (porta `8000`).
+
+1. Gere a imagem do módulo OPRM e exporte para tar:
+   ```bash
+   docker build -f oprm/Dockerfile -t marketinghub-oprm:latest oprm
+   docker save marketinghub-oprm:latest -o /tmp/oprm-image.tar
+   ```
+2. Copie o tar e os arquivos de deploy para o servidor:
+   ```bash
+   scp /tmp/oprm-image.tar deploy/bin/apply-oprm-only.sh deploy/docker-compose.yml <usuario>@177.153.62.107:/tmp/
+   ```
+3. No servidor, mova os arquivos para o diretório de deploy e rode o apply específico:
+   ```bash
+   ssh <usuario>@177.153.62.107
+   sudo mkdir -p /opt/marketinghub/containers
+   sudo mv /tmp/docker-compose.yml /opt/marketinghub/containers/docker-compose.yml
+   sudo mv /tmp/apply-oprm-only.sh /opt/marketinghub/containers/apply-oprm-only.sh
+   sudo chmod +x /opt/marketinghub/containers/apply-oprm-only.sh
+   OPRM_BACKEND_BASE_URL=http://191.252.181.168:8000 sudo /opt/marketinghub/containers/apply-oprm-only.sh
+   ```
+
+Esse fluxo atualiza só o container `marketinghub-oprm`, preservando os demais serviços já em execução.
+

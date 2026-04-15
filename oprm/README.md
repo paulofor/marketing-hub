@@ -113,6 +113,13 @@ Exemplo de payload da fase 5:
 ```
 
 
+
+## Contrato oficial backend ↔ OPRM (Sprint 1)
+
+- OpenAPI v1: `docs/novos-modulos/OPRM/contracts/oprm-backend-integration-openapi.v1.yaml`
+- Versionamento: `docs/novos-modulos/OPRM/contracts/oprm-contrato-versionamento.md`
+- DTOs comuns (alinhamento de contrato): `oprm/src/main/java/com/marketinghub/oprm/integration/contract`
+
 ## Deploy do container (host 177.153.62.107)
 
 Arquivos de deploy do módulo:

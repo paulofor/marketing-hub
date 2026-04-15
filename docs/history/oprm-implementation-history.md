@@ -258,3 +258,53 @@ Foi concluída a preparação de finalização operacional do OPRM para publica�
 **Próximo passo sugerido:**  
 - executar o fluxo de cópia e apply no host `177.153.62.107` com usuário de infraestrutura
 - versionar contrato HTTP backend↔OPRM para jobs e publicação de artefatos end-to-end
+
+## 2026-04-15 — sprint 1: contrato oficial backend ↔ OPRM
+
+**Status:** concluído
+
+**Resumo:**  
+Foi consolidado o contrato oficial de integração da Sprint 1 entre backend principal e OPRM com OpenAPI v1, DTOs comuns de troca e política inicial de versionamento/erros HTTP para remover ambiguidades de comunicação entre os módulos.
+
+**O que foi implementado:**  
+- criação do documento OpenAPI v1 para endpoints de claim, detail, status, artifacts, feedback e heartbeat
+- criação de DTOs comuns do contrato em `oprm` para job, artifact, status, feedback, heartbeat e erro de API
+- criação de enums canônicos de `jobStatus`, `jobType` e `artifactStatus` para alinhamento semântico
+- criação da documentação de versionamento do contrato com regras de compatibilidade e política de erro HTTP
+- atualização do README do módulo com links oficiais de contrato da Sprint 1
+
+**Arquivos principais alterados:**  
+- `docs/novos-modulos/OPRM/contracts/oprm-backend-integration-openapi.v1.yaml`
+- `docs/novos-modulos/OPRM/contracts/oprm-contrato-versionamento.md`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/contract/OprmContractVersion.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/contract/OprmJobClaimRequest.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/contract/OprmJobClaimResponse.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/contract/OprmJobDetailResponse.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/contract/OprmArtifactEnvelopeDto.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/contract/OprmArtifactPublishRequest.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/contract/OprmArtifactPublishResponse.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/contract/OprmJobStatusUpdateRequest.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/contract/OprmFeedbackPublishRequest.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/contract/OprmHeartbeatRequest.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/contract/OprmApiErrorResponse.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/contract/OprmJobType.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/contract/OprmJobStatus.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/contract/OprmArtifactStatus.java`
+- `oprm/README.md`
+
+**Contratos / artefatos afetados:**  
+- contrato HTTP versionado v1: `/api/oprm/jobs/claim`, `/api/oprm/jobs/{jobId}`, `/api/oprm/jobs/{jobId}/status`, `/api/oprm/artifacts`, `/api/oprm/feedback`, `/api/oprm/heartbeat`
+- DTOs comuns: `OprmJobClaimRequest`, `OprmJobDetailResponse`, `OprmArtifactPublishRequest`, `OprmJobStatusUpdateRequest`, `OprmFeedbackPublishRequest`, `OprmHeartbeatRequest`
+- política de versionamento: `contractVersion` série `1.x`
+
+**Testes executados:**  
+- `cd oprm && mvn test` — **passou**
+
+**Limitações ou pendências:**  
+- contrato está publicado e documentado, mas endpoints backend ainda não foram implementados
+- ainda não existe contract testing automatizado em CI para validar compatibilidade backend ↔ OPRM
+- integração runtime com claim real de jobs será tratada na Sprint 2
+
+**Próximo passo sugerido:**  
+- implementar Sprint 2 com modelo de job no backend e endpoints reais de claim/detail/status
+- criar clients HTTP no OPRM usando os DTOs comuns da Sprint 1

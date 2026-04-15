@@ -181,15 +181,22 @@ public class FacebookAdsService {
     }
 
     public String createPixel(String adAccountId, String name) {
-        return createPixel(adAccountId, name, null);
+        return createPixel(adAccountId, name, null, null);
     }
 
     public String createPixel(String adAccountId, String name, String accessTokenOverride) {
+        return createPixel(adAccountId, name, null, accessTokenOverride);
+    }
+
+    public String createPixel(String adAccountId, String name, String ownerBusinessId, String accessTokenOverride) {
         if (!hasText(adAccountId)) {
             throw new IllegalArgumentException("adAccountId must not be blank");
         }
         Map<String, Object> body = new HashMap<>();
         body.put("name", name);
+        if (hasText(ownerBusinessId)) {
+            body.put("owner_business", ownerBusinessId.trim());
+        }
         body.put("access_token", resolveAccessToken(accessTokenOverride));
         String path = buildVersionedPath("/act_" + adAccountId + "/adspixels");
         JsonNode response = executePost(path, body);

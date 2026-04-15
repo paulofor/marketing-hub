@@ -81,6 +81,13 @@ public class FacebookAccount {
     @Column(name = "default_call_to_action_type")
     private String defaultCallToActionType;
 
+    @Column(name = "pixel_owner_business_id", length = 64)
+    private String pixelOwnerBusinessId;
+    @Transient
+    @JsonIgnore
+    @Setter(AccessLevel.NONE)
+    private boolean pixelOwnerBusinessIdProvided;
+
     @Column(name = "ad_set_daily_budget")
     private String adSetDailyBudget;
 
@@ -235,6 +242,22 @@ public class FacebookAccount {
     @JsonIgnore
     public boolean isDefaultInstagramActorIdProvided() {
         return defaultInstagramActorIdProvided;
+    }
+
+    public void setPixelOwnerBusinessId(String pixelOwnerBusinessId) {
+        this.pixelOwnerBusinessId = pixelOwnerBusinessId;
+    }
+
+    @JsonSetter("pixelOwnerBusinessId")
+    public void jsonPixelOwnerBusinessIdSetter(String pixelOwnerBusinessId) {
+        this.pixelOwnerBusinessIdProvided = true;
+        this.pixelOwnerBusinessId = pixelOwnerBusinessId;
+    }
+
+    @Transient
+    @JsonIgnore
+    public boolean isPixelOwnerBusinessIdProvided() {
+        return pixelOwnerBusinessIdProvided;
     }
 
     @JsonSetter("defaultLeadGenFormId")

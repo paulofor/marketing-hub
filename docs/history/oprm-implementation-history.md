@@ -540,3 +540,35 @@ Foi corrigido o changelog incremental da fase 5 do OPRM para resolver falha de p
 **Próximo passo sugerido:**  
 - reexecutar a action de backend para confirmar `liquibase:validate` sem erro de parsing
 - manter o padrão de `preConditions` em lista nos próximos changesets YAML para evitar regressão de parser
+
+## 2026-04-15 — hardening de migração: alinhamento preConditions do cluster de jobs do OPRM
+
+**Status:** concluído
+
+**Resumo:**  
+Foram alinhados os changeSets YAML do cluster de orquestração de jobs e publicação de artefatos do OPRM para remover a mistura inválida de mapas e listas em `preConditions`, eliminando o erro de parsing visto no `liquibase:validate` do GitHub Actions.
+
+**O que foi implementado:**  
+- normalização dos blocos `preConditions` para `oprm_job`, `oprm_job_input` e `oprm_job_event` no arquivo `2026-04-15-oprm-job-orchestration.yaml`
+- ajuste do changeSet `2026-04-15-oprm-artifact-publication.yaml` para o mesmo formato aceito pelo parser do Liquibase 4.26.0
+- harmonização do `2026-04-15-oprm-feedback-loop.yaml` para compartilhar o padrão e evitar regressões futuras
+
+**Arquivos principais alterados:**  
+- `backend/ads-service/src/main/resources/db/changelog/changesets/2026-04-15-oprm-job-orchestration.yaml`
+- `backend/ads-service/src/main/resources/db/changelog/changesets/2026-04-15-oprm-artifact-publication.yaml`
+- `backend/ads-service/src/main/resources/db/changelog/changesets/2026-04-15-oprm-feedback-loop.yaml`
+
+**Contratos / artefatos afetados:**  
+- tabelas: `oprm_job`, `oprm_job_input`, `oprm_job_event`, `oprm_artifact`, `oprm_feedback_snapshot`, `oprm_feedback_history`
+- nenhum contrato HTTP novo
+
+**Testes executados:**  
+- `cd backend/ads-service && mvn -DskipTests org.liquibase:liquibase-maven-plugin:4.26.0:validate -Dliquibase.url=offline:mysql -Dliquibase.username=dummy -Dliquibase.password=dummy -Dliquibase.changeLogFile=src/main/resources/db/changelog/db.changelog-master.yaml` — **passou** (modo offline, validação sintática do changelog)
+
+**Limitações ou pendências:**  
+- validação ocorreu em URL offline; ainda é necessário confirmar a execução conectada ao MySQL 5.7 real no pipeline
+- não foi executado `liquibase update` contra banco físico, então as tabelas ainda não existem fora do changelog
+
+**Próximo passo sugerido:**  
+- reexecutar o workflow de backend no GitHub Actions para confirmar `liquibase:validate` com o banco real
+- planejar o `liquibase updateSQL`/`update` direcionado para staging antes da sincronização com o worker OPRM

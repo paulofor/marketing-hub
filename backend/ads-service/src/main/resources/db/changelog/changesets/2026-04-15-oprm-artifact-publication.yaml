@@ -5,11 +5,11 @@ databaseChangeLog:
       preConditions:
         onFail: MARK_RAN
         onError: HALT
-        - dbms:
-            type: mysql
-        - not:
-            tableExists:
-              tableName: oprm_artifact
+        dbms:
+          type: mysql
+        not:
+          tableExists:
+            tableName: oprm_artifact
       changes:
         - createTable:
             tableName: oprm_artifact

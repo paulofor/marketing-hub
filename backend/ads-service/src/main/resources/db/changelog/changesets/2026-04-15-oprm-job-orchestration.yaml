@@ -5,11 +5,11 @@ databaseChangeLog:
       preConditions:
         onFail: MARK_RAN
         onError: HALT
-        - dbms:
-            type: mysql
-        - not:
-            tableExists:
-              tableName: oprm_job
+        dbms:
+          type: mysql
+        not:
+          tableExists:
+            tableName: oprm_job
       changes:
         - createTable:
             tableName: oprm_job
@@ -94,11 +94,11 @@ databaseChangeLog:
       preConditions:
         onFail: MARK_RAN
         onError: HALT
-        - dbms:
-            type: mysql
-        - not:
-            tableExists:
-              tableName: oprm_job_input
+        dbms:
+          type: mysql
+        not:
+          tableExists:
+            tableName: oprm_job_input
       changes:
         - createTable:
             tableName: oprm_job_input
@@ -149,11 +149,11 @@ databaseChangeLog:
       preConditions:
         onFail: MARK_RAN
         onError: HALT
-        - dbms:
-            type: mysql
-        - not:
-            tableExists:
-              tableName: oprm_job_event
+        dbms:
+          type: mysql
+        not:
+          tableExists:
+            tableName: oprm_job_event
       changes:
         - createTable:
             tableName: oprm_job_event

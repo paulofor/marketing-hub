@@ -221,3 +221,40 @@ Foi implementada a fase 5 do OPRM com feedback loop para recalibração dos sina
 **Próximo passo sugerido:**  
 - implementar fase 6 de hardening operacional (persistência remota do feedback loop, observabilidade e integração contínua com backend)
 - versionar contrato HTTP entre backend principal e OPRM para ingestão/publicação completa dos artefatos da fase 5
+
+## 2026-04-15 — fase de finalização: containerização e publicação operacional
+
+**Status:** parcial
+
+**Resumo:**  
+Foi concluída a preparação de finalização operacional do OPRM para publicação em container no host `177.153.62.107`, incluindo artefatos YML e script de apply dedicado para atualização isolada do módulo sem reiniciar os demais serviços.
+
+**O que foi implementado:**  
+- criação do arquivo `oprm/docker-compose.deploy.yml` para execução do módulo por imagem publicada
+- adição do serviço `oprm-worker` no `deploy/docker-compose.yml` com variáveis de ambiente e porta dedicadas
+- criação do script `deploy/bin/apply-oprm-only.sh` para carregar imagem tar, atualizar tag `latest` e aplicar somente o serviço OPRM
+- atualização da documentação de deploy com passo a passo específico do host `177.153.62.107`
+- atualização do README do módulo com os arquivos de deploy e fluxo resumido de publicação
+
+**Arquivos principais alterados:**  
+- `oprm/docker-compose.deploy.yml`
+- `deploy/docker-compose.yml`
+- `deploy/bin/apply-oprm-only.sh`
+- `deploy/README.md`
+- `oprm/README.md`
+
+**Contratos / artefatos afetados:**  
+- nenhum contrato de API novo
+- artefatos operacionais de deploy do container OPRM (`docker-compose` e script de apply)
+
+**Testes executados:**  
+- `cd oprm && mvn test` — **passou**
+- `docker compose -f deploy/docker-compose.yml config` — **bloqueado por ambiente** (`docker` indisponível neste runner)
+
+**Limitações ou pendências:**  
+- publicação remota no host `177.153.62.107` depende de credenciais de SSH e execução no ambiente de infraestrutura
+- integração ativa com backend principal segue como próxima etapa funcional (o módulo ainda não consome endpoint remoto real)
+
+**Próximo passo sugerido:**  
+- executar o fluxo de cópia e apply no host `177.153.62.107` com usuário de infraestrutura
+- versionar contrato HTTP backend↔OPRM para jobs e publicação de artefatos end-to-end

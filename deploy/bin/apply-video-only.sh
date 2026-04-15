@@ -33,7 +33,10 @@ cleanup_previous_tags() {
 
 # Atualiza somente o módulo de vídeo sem reiniciar backend/frontend
 # (backend/frontend permanecem no host 191.252.181.168)
-VIDEO_BACKEND_BASE_URL="${VIDEO_BACKEND_BASE_URL}" docker compose up -d --no-deps video-management
+VIDEO_MGMT_IMAGE="${VIDEO_IMAGE}" \
+VIDEO_MGMT_IMAGE_TAG=latest \
+VIDEO_BACKEND_BASE_URL="${VIDEO_BACKEND_BASE_URL}" \
+docker compose up -d --no-deps video-management
 
 cleanup_previous_tags "${VIDEO_IMAGE}" "latest"
 

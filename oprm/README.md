@@ -120,6 +120,23 @@ Exemplo de payload da fase 5:
 - Versionamento: `docs/novos-modulos/OPRM/contracts/oprm-contrato-versionamento.md`
 - DTOs comuns (alinhamento de contrato): `oprm/src/main/java/com/marketinghub/oprm/integration/contract`
 
+## Integração Sprint 2 — worker consumindo jobs reais
+
+Configurações do worker:
+
+- `OPRM_BACKEND_BASE_URL` (default `http://localhost:8080`)
+- `OPRM_WORKER_ID`
+- `OPRM_WORKER_VERSION`
+- `OPRM_WORKER_CLAIM_LEASE_SECONDS`
+- `OPRM_WORKER_LOOP_DELAY_MS`
+
+Fluxo implementado:
+
+1. claim em `POST /api/oprm/jobs/claim`
+2. detalhamento em `GET /api/oprm/jobs/{jobId}`
+3. atualização de status em `POST /api/oprm/jobs/{jobId}/status`
+4. execução do job `OCCUPATION_MAPPING` no loop agendado do worker
+
 ## Deploy do container (host 177.153.62.107)
 
 Arquivos de deploy do módulo:

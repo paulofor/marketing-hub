@@ -163,6 +163,12 @@ erDiagram
       ENUM status
       ENUM budget_mode
       BIGINT daily_budget_minor
+      BIGINT lifetime_budget_minor
+      VARCHAR api_version
+      ENUM stop_reason
+      DATETIME stop_requested_at
+      DATETIME stop_completed_at
+      LONGTEXT stop_last_error
     }
 
     FACEBOOK_ADS_AD_SET {
@@ -305,6 +311,12 @@ erDiagram
 - Somente experimentos com `status = PLANNED` **e** essa coluna preenchida entram na fila `/api/facebook-campaigns/experiments-ready`.
 - A data registrada também serve como baseline do funil: eventos automáticos e manuais anteriores a este instante deixam de ser contabilizados, garantindo que os testes feitos antes da liberação não contaminem os números oficiais.
 
+### Stop automático por reprovação no formulário
+
+- Quando o estágio `ENVIO_FORM` acumula tentativas suficientes para o limite estatístico de 3% (regra dos 3 eventos sem sucesso), o backend executa o serviço `ExperimentFunnelAutoStopService`.
+- O serviço marca o experimento como `INVALIDATED` e preenche `facebook_ads_campaign.stop_reason`, `stop_requested_at` e `stop_last_error = NULL` para todas as campanhas vinculadas ainda não pausadas.
+- O Facebook Ads Worker consome `/api/facebook-campaigns/stop-requests`, chama a Graph API para aplicar `status=PAUSED` e confirma via `/api/facebook-campaigns/{id}/stop-results`.
+- `stop_completed_at` registra quando a pausa efetiva foi confirmada e evita que o pedido volte para a fila.
 
 ## Observações de implementação
 

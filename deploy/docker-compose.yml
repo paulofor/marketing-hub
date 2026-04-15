@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   backend:
-    image: ${BACKEND_IMAGE:-marketinghub-backend}:latest
+    image: ${BACKEND_IMAGE:-marketinghub-backend}:${BACKEND_IMAGE_TAG:-2026.04.15}
     container_name: marketinghub-backend
     restart: unless-stopped
     environment:
@@ -14,7 +14,7 @@ services:
       - ./volumes/backend/logs:/app/logs
 
   frontend:
-    image: ${FRONTEND_IMAGE:-marketinghub-frontend}:latest
+    image: ${FRONTEND_IMAGE:-marketinghub-frontend}:${FRONTEND_IMAGE_TAG:-2026.04.15}
     container_name: marketinghub-frontend
     restart: unless-stopped
     depends_on:
@@ -23,7 +23,7 @@ services:
       - "${FRONTEND_PORT:-5173}:5173"
 
   video-management:
-    image: ${VIDEO_MGMT_IMAGE:-marketinghub-video-management}:latest
+    image: ${VIDEO_MGMT_IMAGE:-marketinghub-video-management}:${VIDEO_MGMT_IMAGE_TAG:-2026.04.15}
     container_name: marketinghub-video-management
     restart: unless-stopped
     depends_on:
@@ -39,9 +39,9 @@ services:
       - "${VIDEO_MANAGEMENT_PORT:-8095}:8095"
 
   oprm-worker:
-    image: ${OPRM_IMAGE:-marketinghub-oprm}:latest
+    image: ${OPRM_IMAGE:-marketinghub-oprm}:${OPRM_IMAGE_TAG:-2026.04.15}
     container_name: marketinghub-oprm
-    restart: unless-stopped
+    restart: on-failure:5
     environment:
       SPRING_PROFILES_ACTIVE: ${OPRM_SPRING_PROFILE:-default}
       OPRM_BACKEND_BASE_URL: ${OPRM_BACKEND_BASE_URL:-http://191.252.181.168:8000}
@@ -50,9 +50,15 @@ services:
       TZ: America/Sao_Paulo
     ports:
       - "${OPRM_PORT:-8093}:8093"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8093/actuator/health/readiness"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
 
   mcp-server:
-    image: ${MCP_SERVER_IMAGE:-marketinghub-mcp-server}:latest
+    image: ${MCP_SERVER_IMAGE:-marketinghub-mcp-server}:${MCP_SERVER_IMAGE_TAG:-2026.04.15}
     container_name: marketinghub-mcp-server
     restart: unless-stopped
     depends_on:

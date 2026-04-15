@@ -4,7 +4,7 @@ set -euo pipefail
 DEPLOY_DIR=${DEPLOY_DIR:-/opt/marketinghub/containers}
 OPRM_TAR=${OPRM_TAR:-/tmp/oprm-image.tar}
 OPRM_IMAGE=${OPRM_IMAGE:-marketinghub-oprm}
-IMAGE_TAG=${IMAGE_TAG:-latest}
+IMAGE_TAG=${IMAGE_TAG:-2026.04.15}
 OPRM_BACKEND_BASE_URL=${OPRM_BACKEND_BASE_URL:-http://191.252.181.168:8000}
 OPRM_SPRING_PROFILE=${OPRM_SPRING_PROFILE:-default}
 OPRM_JOBS_POLLING_ENABLED=${OPRM_JOBS_POLLING_ENABLED:-false}
@@ -17,12 +17,9 @@ if [[ -f "${OPRM_TAR}" ]]; then
   docker load -i "${OPRM_TAR}"
 fi
 
-if [[ "${IMAGE_TAG}" != "latest" ]]; then
-  if docker image inspect "${OPRM_IMAGE}:${IMAGE_TAG}" >/dev/null 2>&1; then
-    docker tag "${OPRM_IMAGE}:${IMAGE_TAG}" "${OPRM_IMAGE}:latest"
-  else
-    echo "[apply-oprm-only.sh] Aviso: imagem ${OPRM_IMAGE}:${IMAGE_TAG} não encontrada; mantendo latest atual." >&2
-  fi
+if ! docker image inspect "${OPRM_IMAGE}:${IMAGE_TAG}" >/dev/null 2>&1; then
+  echo "[apply-oprm-only.sh] Erro: imagem ${OPRM_IMAGE}:${IMAGE_TAG} não encontrada." >&2
+  exit 1
 fi
 
 cleanup_previous_tags() {
@@ -39,9 +36,11 @@ OPRM_BACKEND_BASE_URL="${OPRM_BACKEND_BASE_URL}" \
 OPRM_SPRING_PROFILE="${OPRM_SPRING_PROFILE}" \
 OPRM_JOBS_POLLING_ENABLED="${OPRM_JOBS_POLLING_ENABLED}" \
 OPRM_JOBS_POLL_INTERVAL="${OPRM_JOBS_POLL_INTERVAL}" \
+OPRM_IMAGE="${OPRM_IMAGE}" \
+OPRM_IMAGE_TAG="${IMAGE_TAG}" \
   docker compose up -d --no-deps oprm-worker
 
-cleanup_previous_tags "${OPRM_IMAGE}" "latest"
+cleanup_previous_tags "${OPRM_IMAGE}" "${IMAGE_TAG}"
 
 docker image prune -f >/dev/null 2>&1 || true
 rm -f "${OPRM_TAR}" >/dev/null 2>&1 || true

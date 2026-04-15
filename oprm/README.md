@@ -137,6 +137,24 @@ Fluxo implementado:
 3. atualização de status em `POST /api/oprm/jobs/{jobId}/status`
 4. execução do job `OCCUPATION_MAPPING` no loop agendado do worker
 
+## Sprint 5 — observabilidade e hardening operacional
+
+- contract tests de integração backend ↔ OPRM em `oprm/src/test/java/com/marketinghub/oprm/integration/contract/OprmBackendContractTest.java`
+- métricas expostas por actuator/prometheus:
+  - `oprm.jobs.claimed`
+  - `oprm.jobs.succeeded`
+  - `oprm.jobs.failed`
+  - `oprm.artifacts.published`
+  - `oprm.backend.publish.failures`
+  - `oprm.loop.duration`
+  - `oprm.phase.duration`
+- health/readiness habilitados em:
+  - `/actuator/health/liveness`
+  - `/actuator/health/readiness`
+  - `/actuator/prometheus`
+- heartbeat do worker publicado para `POST /api/oprm/heartbeat`
+- logs com `correlationId` via MDC no processamento de jobs
+
 ## Deploy do container (host 177.153.62.107)
 
 Arquivos de deploy do módulo:
@@ -148,9 +166,10 @@ Arquivos de deploy do módulo:
 Fluxo resumido:
 
 ```bash
-docker build -f oprm/Dockerfile -t marketinghub-oprm:latest oprm
-docker save marketinghub-oprm:latest -o /tmp/oprm-image.tar
+IMAGE_TAG=2026.04.15
+docker build -f oprm/Dockerfile -t marketinghub-oprm:${IMAGE_TAG} oprm
+docker save marketinghub-oprm:${IMAGE_TAG} -o /tmp/oprm-image.tar
 scp /tmp/oprm-image.tar deploy/bin/apply-oprm-only.sh deploy/docker-compose.yml <usuario>@177.153.62.107:/tmp/
 ssh <usuario>@177.153.62.107
-OPRM_BACKEND_BASE_URL=http://191.252.181.168:8000 sudo /opt/marketinghub/containers/apply-oprm-only.sh
+OPRM_BACKEND_BASE_URL=http://191.252.181.168:8000 IMAGE_TAG=${IMAGE_TAG} sudo /opt/marketinghub/containers/apply-oprm-only.sh
 ```

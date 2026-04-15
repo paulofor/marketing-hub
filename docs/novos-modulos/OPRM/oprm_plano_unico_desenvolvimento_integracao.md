@@ -506,10 +506,10 @@ A fase de integração deve tratar explicitamente ao menos estes artefatos:
 - [ ] histórico atualizado
 
 ### Sprint 2
-- [ ] modelo de job criado no backend
-- [ ] endpoints de claim/detail/status implementados
-- [ ] clients HTTP criados no OPRM
-- [ ] loop real do worker funcionando
+- [x] modelo de job criado no backend
+- [x] endpoints de claim/detail/status implementados
+- [x] clients HTTP criados no OPRM
+- [x] loop real do worker funcionando
 
 ### Sprint 3
 - [ ] endpoint de publish artifact implementado

@@ -308,3 +308,53 @@ Foi consolidado o contrato oficial de integração da Sprint 1 entre backend pri
 **Próximo passo sugerido:**  
 - implementar Sprint 2 com modelo de job no backend e endpoints reais de claim/detail/status
 - criar clients HTTP no OPRM usando os DTOs comuns da Sprint 1
+
+## 2026-04-15 — sprint 2: job orchestration no backend + consumo real no OPRM
+
+**Status:** concluído
+
+**Resumo:**  
+Foi implementada a base operacional da Sprint 2 para integrar OPRM e backend com modelo de jobs persistido no backend, endpoints reais de claim/detail/status e loop agendado no worker OPRM consumindo jobs reais e reportando transições de status.
+
+**O que foi implementado:**  
+- criação do modelo de orquestração no backend com `oprm_job`, `oprm_job_input` e `oprm_job_event`
+- implementação dos endpoints `POST /api/oprm/jobs`, `POST /api/oprm/jobs/claim`, `GET /api/oprm/jobs/{jobId}` e `POST /api/oprm/jobs/{jobId}/status`
+- implementação de lock lógico no claim via update condicional de status (`PENDING` → `CLAIMED`) para evitar duplicidade de claim
+- implementação no OPRM dos clients HTTP `BackendJobClient` e `BackendStatusClient`
+- implementação de loop agendado do worker (`OprmWorkerJobProcessor`) com claim, detail, execução de `OCCUPATION_MAPPING` e atualização de status `RUNNING`/`SUCCEEDED`/`FAILED`
+- atualização da documentação do OPRM e do checklist da Sprint 2 no plano de integração
+
+**Arquivos principais alterados:**  
+- `backend/ads-service/src/main/resources/db/changelog/changesets/2026-04-15-oprm-job-orchestration.yaml`
+- `backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/OprmJob.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/OprmJobInput.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/OprmJobEvent.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/repository/OprmJobRepository.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/service/OprmJobOrchestrationService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/web/OprmJobController.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/client/BackendJobClient.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/client/BackendStatusClient.java`
+- `oprm/src/main/java/com/marketinghub/oprm/integration/worker/OprmWorkerJobProcessor.java`
+- `oprm/src/main/java/com/marketinghub/oprm/OprmApplication.java`
+- `oprm/src/main/resources/application.properties`
+- `oprm/README.md`
+- `docs/novos-modulos/OPRM/oprm_plano_unico_desenvolvimento_integracao.md`
+
+**Contratos / artefatos afetados:**  
+- endpoints de orquestração de job: `POST /api/oprm/jobs/claim`, `GET /api/oprm/jobs/{jobId}`, `POST /api/oprm/jobs/{jobId}/status`
+- endpoint auxiliar de criação de job no backend para orquestração operacional: `POST /api/oprm/jobs`
+- estados de job canônicos da integração: `PENDING`, `CLAIMED`, `RUNNING`, `SUCCEEDED`, `FAILED`, `RETRY_WAIT`, `CANCELLED`
+
+**Testes executados:**  
+- `cd backend/ads-service && mvn -q -DskipTests compile` — **passou**
+- `cd oprm && mvn -q test` — **passou**
+
+**Limitações ou pendências:**  
+- execução do worker na Sprint 2 atual processa somente o tipo `OCCUPATION_MAPPING`; `FEEDBACK_RECALIBRATION` ainda não foi implementado no loop
+- o timeout de lease foi incluído no modelo, mas a rotina automática de requeue por lease expirado ainda não foi entregue
+- publicação remota de artefatos no backend permanece para Sprint 3
+
+**Próximo passo sugerido:**  
+- executar Sprint 3 com endpoint de publish artifact e persistência dos envelopes canônicos com lineage
+- adicionar consulta operacional de jobs/eventos para observabilidade de fila e diagnóstico de retry

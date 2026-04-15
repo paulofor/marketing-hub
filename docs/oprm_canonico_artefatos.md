@@ -472,6 +472,29 @@ Payload sugerido:
 - `proof_angle_summary`
 - `evidence_refs`
 
+### 13.3 `occupationFeedbackLoopSnapshot`
+Representa o artefato de recalibração da fase 5 com feedback de hipóteses e performance do Marketing Hub.
+
+Uso:
+- reponderar scores de dor, mecanismo e confiança
+- manter histórico incremental por ocupação
+- comparar rotina inferida com resultado de hipóteses downstream
+
+Payload sugerido:
+- `persona_label`
+- `occupation_name`
+- `niche_name`
+- `baseline_routine_artifact_id`
+- `baseline_framework_artifact_id`
+- `recalibrated_pain_signals`
+- `recalibrated_mechanism_signals`
+- `hypothesis_comparison`
+- `occupation_history`
+- `recalibrated_routine_confidence`
+- `recalibrated_framework_confidence`
+- `score_reweighting`
+- `evidence_refs`
+
 ---
 
 ## 14. Regras de naming

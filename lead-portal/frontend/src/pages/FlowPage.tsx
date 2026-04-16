@@ -66,6 +66,8 @@ export default function FlowPage() {
   const customTemplateHtml = customTemplatePayload?.html;
   const customTemplateFormSpec = customTemplatePayload?.formSpec;
   const hasCustomTemplate = Boolean(customTemplateHtml);
+  const shouldRenderStandaloneTemplate =
+    hasCustomTemplate && Boolean(customTemplateHtml) && flow?.customFormRenderMode === "STANDALONE_PAGE";
   const customTemplateVariables = useMemo(() => {
     if (!hasCustomTemplate || !flow) {
       return null;
@@ -137,6 +139,18 @@ export default function FlowPage() {
         };
   if (hasCustomTemplate && customTemplateHtml) {
     const templateVariables = customTemplateVariables ?? new Map<string, string>();
+    if (shouldRenderStandaloneTemplate) {
+      return (
+        <StandaloneCustomFlowTemplate
+          html={customTemplateHtml}
+          variables={templateVariables}
+          flowSlug={flow.slug}
+          formSpec={customTemplateFormSpec}
+          campaignCode={campaignCode}
+          onSubmitted={handleSubmissionComplete}
+        />
+      );
+    }
     const successState = customTemplateFormSpec?.successState;
     return (
       <div className="flow-page flow-page--custom" style={styleVars}>
@@ -407,12 +421,145 @@ function CustomFlowTemplate({
 }
 
 
+function StandaloneCustomFlowTemplate({
+  html,
+  variables,
+  flowSlug,
+  formSpec,
+  campaignCode,
+  onSubmitted,
+}: CustomFlowTemplateProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const processedHtml = useMemo(
+    () => renderTemplateWithTokens(html ?? "", variables),
+    [html, variables],
+  );
+  const parsedDocument = useMemo(
+    () => parseStandaloneTemplateDocument(processedHtml),
+    [processedHtml],
+  );
+  const requiresManagedRuntime = Boolean(formSpec);
+
+  useEffect(() => {
+    if (!parsedDocument || typeof document === "undefined") {
+      return;
+    }
+    const appendedNodes: Element[] = [];
+    parsedDocument.headNodes.forEach((nodeHtml) => {
+      const instantiated = instantiateHeadNodeFromHtml(nodeHtml);
+      if (instantiated) {
+        instantiated.setAttribute("data-flow-standalone-head", "true");
+        document.head.appendChild(instantiated);
+        appendedNodes.push(instantiated);
+      }
+    });
+    let previousTitle: string | null = null;
+    if (parsedDocument.title) {
+      previousTitle = document.title;
+      document.title = parsedDocument.title;
+    }
+    const restoredAttributes: Array<{ name: string; previous: string | null }> = [];
+    parsedDocument.bodyAttributes.forEach(({ name, value }) => {
+      const previous = document.body.getAttribute(name);
+      restoredAttributes.push({ name, previous });
+      document.body.setAttribute(name, value);
+    });
+    return () => {
+      appendedNodes.forEach((node) => node.remove());
+      if (previousTitle !== null) {
+        document.title = previousTitle;
+      }
+      restoredAttributes.forEach(({ name, previous }) => {
+        if (previous === null) {
+          document.body.removeAttribute(name);
+        } else {
+          document.body.setAttribute(name, previous);
+        }
+      });
+    };
+  }, [parsedDocument]);
+
+  useEffect(() => {
+    if (!parsedDocument?.bodyHtml || typeof document === "undefined") {
+      return;
+    }
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+    const scripts = Array.from(container.querySelectorAll("script"));
+    scripts.forEach((script) => {
+      const replacement = document.createElement("script");
+      Array.from(script.attributes).forEach((attr) => {
+        replacement.setAttribute(attr.name, attr.value);
+      });
+      replacement.text = script.textContent ?? "";
+      script.replaceWith(replacement);
+    });
+  }, [parsedDocument?.bodyHtml]);
+
+  useEffect(() => {
+    if (!requiresManagedRuntime || typeof document === "undefined" || typeof window === "undefined") {
+      return;
+    }
+    const cleanup = attachCustomTemplateBridgeToDocument(
+      document,
+      window,
+      {
+        flowSlug,
+        formSpec,
+        campaignCode,
+        onSubmitted,
+        rootElement: containerRef.current ?? document.body,
+      },
+      {
+        scrollToElement: (element, behavior) => {
+          element.scrollIntoView({ behavior, block: "start" });
+        },
+      },
+    );
+    return cleanup;
+  }, [
+    requiresManagedRuntime,
+    flowSlug,
+    formSpec,
+    campaignCode,
+    onSubmitted,
+    parsedDocument?.bodyHtml,
+  ]);
+
+  if (!processedHtml) {
+    return (
+      <div className="flow-standalone-container flow-standalone-container--empty">
+        <p className="flow-message">Nenhum HTML personalizado configurado.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flow-standalone-container">
+      <div
+        ref={containerRef}
+        className="flow-standalone-content"
+        dangerouslySetInnerHTML={{ __html: parsedDocument?.bodyHtml ?? processedHtml }}
+      />
+    </div>
+  );
+}
+
+
 interface CustomTemplateBridgeOptions {
   flowSlug: string;
   formSpec?: CustomTemplateFormSpec;
   campaignCode?: string | null;
   onSubmitted?: (result: FlowSubmissionResponse) => void;
+  rootElement?: Element | null;
 }
+
+interface CustomTemplateBridgeContext {
+  scrollToElement?: (element: Element, behavior: ScrollBehavior) => void;
+}
+
 
 function attachCustomTemplateBridge(
   iframe: HTMLIFrameElement,
@@ -423,14 +570,43 @@ function attachCustomTemplateBridge(
   if (!doc || !win) {
     return null;
   }
+  const rootElement = doc.body ?? doc.documentElement ?? null;
+  return attachCustomTemplateBridgeToDocument(
+    doc,
+    win,
+    {
+      ...options,
+      rootElement,
+    },
+    {
+      scrollToElement: (element, behavior) => {
+        scrollParentToElement(iframe, element, behavior);
+      },
+    },
+  );
+}
+
+function attachCustomTemplateBridgeToDocument(
+  doc: Document,
+  win: Window,
+  options: CustomTemplateBridgeOptions,
+  context?: CustomTemplateBridgeContext,
+) {
   if (options.formSpec) {
     renderManagedTemplateForm(doc, options.formSpec);
   }
+
+  const scrollToElement = context?.scrollToElement ?? ((element: Element, behavior: ScrollBehavior) => {
+    element.scrollIntoView({ behavior, block: "start" });
+  });
 
   const handleAnchorClick = (event: MouseEvent) => {
     const target = event.target as Element | null;
     const anchor = target?.closest?.('a[href^="#"]') as HTMLAnchorElement | null;
     if (!anchor) {
+      return;
+    }
+    if (options.rootElement && !options.rootElement.contains(anchor)) {
       return;
     }
     const href = anchor.getAttribute("href");
@@ -448,7 +624,7 @@ function attachCustomTemplateBridge(
     event.preventDefault();
     const behaviorAttr = anchor.getAttribute("data-scroll-behavior");
     const behavior: ScrollBehavior = behaviorAttr === "auto" ? "auto" : "smooth";
-    scrollParentToElement(iframe, anchorTarget, behavior);
+    scrollToElement(anchorTarget, behavior);
   };
 
   doc.addEventListener("click", handleAnchorClick, true);
@@ -456,6 +632,9 @@ function attachCustomTemplateBridge(
   const handleFormSubmit = async (event: Event) => {
     const target = event.target as HTMLFormElement | null;
     if (!target || target.tagName.toLowerCase() !== "form") {
+      return;
+    }
+    if (options.rootElement && !options.rootElement.contains(target)) {
       return;
     }
     event.preventDefault();
@@ -486,54 +665,41 @@ function attachCustomTemplateBridge(
             flowSlug: options.flowSlug,
             campaignCode: options.campaignCode ?? null,
             mode: "managed-runtime",
+            status: "success",
+            submissionId: response?.id ?? null,
           },
         }),
       );
       options.onSubmitted?.(response);
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Não foi possível enviar suas respostas.";
-      target.dataset.leadPortalSubmitError = message;
-      writeManagedTemplateFeedback(target, "error", "Erro ao enviar", message);
-      target.dispatchEvent(
-        new CustomEvent("leadportal:submission-error", {
-          bubbles: true,
-          detail: { message },
+      console.error("Falha ao enviar formulário do template", error);
+      writeManagedTemplateFeedback(
+        target,
+        "error",
+        "Não foi possível enviar agora",
+        "Tente novamente em instantes.",
+      );
+      window.dispatchEvent(
+        new CustomEvent("lead_portal_submission", {
+          detail: {
+            flowSlug: options.flowSlug,
+            campaignCode: options.campaignCode ?? null,
+            mode: "managed-runtime",
+            status: "error",
+          },
         }),
       );
-      console.error("Falha ao enviar formulário customizado", error);
     } finally {
-      target.dataset.leadPortalSubmitting = "false";
       toggleTemplateSubmitButtons(target, false);
+      delete target.dataset.leadPortalSubmitting;
     }
   };
 
   doc.addEventListener("submit", handleFormSubmit, true);
 
-  const originalScrollTo = win.scrollTo.bind(win);
-  win.scrollTo = (optionsOrX?: number | ScrollToOptions, maybeY?: number) => {
-    const { top, behavior } = normalizeScrollArguments(optionsOrX, maybeY);
-    scrollParentToDocumentOffset(iframe, top ?? 0, behavior);
-  };
-
-  const elementProto = win.Element?.prototype;
-  const originalScrollIntoView = elementProto?.scrollIntoView;
-  if (elementProto && typeof elementProto.scrollIntoView === "function") {
-    elementProto.scrollIntoView = function scrollIntoViewOverride(arg?: boolean | ScrollIntoViewOptions) {
-      const behavior = normalizeBehavior(arg);
-      scrollParentToElement(iframe, this, behavior);
-    };
-  }
-
   return () => {
     doc.removeEventListener("click", handleAnchorClick, true);
     doc.removeEventListener("submit", handleFormSubmit, true);
-    win.scrollTo = originalScrollTo;
-    if (elementProto && originalScrollIntoView) {
-      elementProto.scrollIntoView = originalScrollIntoView;
-    }
   };
 }
 
@@ -774,6 +940,66 @@ function getDocumentScrollTop(win: Window, doc: Document) {
   return win.scrollY || doc.documentElement.scrollTop || doc.body.scrollTop || 0;
 }
 
+
+interface ParsedStandaloneTemplate {
+  headNodes: string[];
+  bodyHtml: string;
+  title: string | null;
+  bodyAttributes: Array<{ name: string; value: string }>;
+}
+
+function parseStandaloneTemplateDocument(html?: string | null): ParsedStandaloneTemplate | null {
+  if (!html) {
+    return null;
+  }
+  if (typeof DOMParser === "undefined") {
+    return {
+      headNodes: [],
+      bodyHtml: html,
+      title: null,
+      bodyAttributes: [],
+    };
+  }
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+  const headNodes = Array.from(doc.head?.children ?? []).map((element) => element.outerHTML);
+  const bodyAttributes = doc.body
+    ? Array.from(doc.body.attributes).map((attr) => ({
+        name: attr.name,
+        value: attr.value,
+      }))
+    : [];
+  let bodyHtml = doc.body?.innerHTML ?? "";
+  if (!bodyHtml.trim() && doc.documentElement) {
+    bodyHtml = doc.documentElement.innerHTML ?? "";
+  }
+  if (!bodyHtml.trim()) {
+    bodyHtml = html;
+  }
+  const title = doc.title || null;
+  return { headNodes, bodyHtml, title, bodyAttributes };
+}
+
+function instantiateHeadNodeFromHtml(nodeHtml: string): HTMLElement | null {
+  if (typeof document === "undefined") {
+    return null;
+  }
+  const template = document.createElement("template");
+  template.innerHTML = (nodeHtml ?? "").trim();
+  const element = template.content.firstElementChild as HTMLElement | null;
+  if (!element) {
+    return null;
+  }
+  if (element.tagName?.toLowerCase() === "script") {
+    const script = document.createElement("script");
+    Array.from(element.attributes).forEach((attr) => {
+      script.setAttribute(attr.name, attr.value);
+    });
+    script.text = element.textContent ?? "";
+    return script;
+  }
+  return element;
+}
 
 function buildCustomHtmlTemplateVariables(flow: LeadPortalFlow, metadata: SimpleFormMetadata) {
   const variables = new Map<string, string>();

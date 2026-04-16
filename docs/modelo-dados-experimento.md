@@ -207,6 +207,8 @@ erDiagram
       BOOLEAN approved
     }
 
+    > Campo derivado: `custom_form_render_mode` define se o HTML personalizado do fluxo deve ser entregue no modo padrão via iframe (`IFRAME`) ou como página independente (`STANDALONE_PAGE`). Os fluxos criados pelo pipeline de imagens sempre enviam documentos completos (`<!doctype html>`) e passam a ser expostos diretamente, sem iframe, para preservar CSS e scripts originais.
+
     LEAD_PORTAL_SUBMISSION {
       BIGINT id PK
       BIGINT flow_id FK

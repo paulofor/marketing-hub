@@ -1135,3 +1135,20 @@ form.flow-form {
 .flow-custom-template--empty {
   padding: 2rem 1rem;
 }
+
+
+.flow-standalone-container {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+.flow-standalone-content {
+  width: 100%;
+  min-height: 100vh;
+}
+
+.flow-standalone-container--empty {
+  padding: 2rem 1rem;
+}

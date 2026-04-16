@@ -114,6 +114,7 @@ import OprmOfferPage from "./pages/oprm/OprmOfferPage";
 import OprmEvidencePage from "./pages/oprm/OprmEvidencePage";
 import OprmFeedbackPage from "./pages/oprm/OprmFeedbackPage";
 import OprmOperationsPage from "./pages/oprm/OprmOperationsPage";
+import OprmOccupationCatalogPage from "./pages/oprm/OprmOccupationCatalogPage";
 
 export default function App() {
   return (
@@ -278,6 +279,10 @@ export default function App() {
               <Route
                 path="/oprm/operations"
                 element={<OprmOperationsPage />}
+              />
+              <Route
+                path="/oprm/occupations"
+                element={<OprmOccupationCatalogPage />}
               />
               <Route path="/angles" element={<AnglesPage />} />
               <Route path="/visual-proofs" element={<VisualProofsPage />} />

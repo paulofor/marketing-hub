@@ -18,6 +18,8 @@ tags:
     description: Publicação e consulta de artefatos canônicos OPRM
   - name: workspace
     description: Endpoints de leitura para telas do módulo OPRM
+  - name: occupation-catalog
+    description: Gestão administrativa do catálogo de ocupações do OPRM
   - name: feedback
     description: Feedback loop e histórico de recalibração
   - name: operations
@@ -96,6 +98,96 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/OprmWorkspaceOccupationSummary'
+
+  /api/oprm/occupations:
+    get:
+      tags: [occupation-catalog]
+      summary: Lista ocupações cadastradas no catálogo do OPRM
+      operationId: listOprmOccupations
+      responses:
+        '200':
+          description: Lista de ocupações do catálogo.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OprmOccupationCatalogItem'
+    post:
+      tags: [occupation-catalog]
+      summary: Cadastra uma ocupação no catálogo do OPRM
+      operationId: createOprmOccupation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OprmOccupationCatalogUpsertRequest'
+      responses:
+        '201':
+          description: Ocupação cadastrada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmOccupationCatalogItem'
+        '409':
+          description: occupationSeedRef já cadastrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmApiErrorResponse'
+
+  /api/oprm/occupations/{occupationId}:
+    put:
+      tags: [occupation-catalog]
+      summary: Atualiza uma ocupação do catálogo do OPRM
+      operationId: updateOprmOccupation
+      parameters:
+        - in: path
+          name: occupationId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OprmOccupationCatalogUpsertRequest'
+      responses:
+        '200':
+          description: Ocupação atualizada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmOccupationCatalogItem'
+        '404':
+          description: Ocupação não encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmApiErrorResponse'
+    delete:
+      tags: [occupation-catalog]
+      summary: Exclui uma ocupação do catálogo do OPRM
+      operationId: deleteOprmOccupation
+      parameters:
+        - in: path
+          name: occupationId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Ocupação excluída com sucesso.
+        '404':
+          description: Ocupação não encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmApiErrorResponse'
 
   /api/oprm/jobs/{jobId}:
     get:
@@ -389,6 +481,48 @@ components:
           type: string
           format: date-time
         leaseExpiresAt:
+          type: string
+          format: date-time
+
+    OprmOccupationCatalogUpsertRequest:
+      type: object
+      required: [occupationSeedRef, displayName]
+      properties:
+        occupationSeedRef:
+          type: string
+          example: dentista
+        displayName:
+          type: string
+          example: Dentista
+        aliases:
+          type: array
+          items:
+            type: string
+          example: [odontologista, odonto]
+        active:
+          type: boolean
+          example: true
+
+    OprmOccupationCatalogItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        occupationSeedRef:
+          type: string
+        displayName:
+          type: string
+        aliases:
+          type: array
+          items:
+            type: string
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
           type: string
           format: date-time
 

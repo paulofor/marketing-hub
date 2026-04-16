@@ -37,4 +37,9 @@ describe("OPRM navigation", () => {
     setup(<App />, ["/oprm/operations"]);
     expect(await screen.findByText(/carregando jobs do oprm/i)).toBeTruthy();
   });
+
+  it("renders loading state on /oprm/occupations route", async () => {
+    setup(<App />, ["/oprm/occupations"]);
+    expect(await screen.findByText(/carregando catálogo de ocupações/i)).toBeTruthy();
+  });
 });

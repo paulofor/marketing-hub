@@ -124,7 +124,7 @@ Exemplo de payload da fase 5:
 
 Configurações do worker:
 
-- `OPRM_BACKEND_BASE_URL` (default `http://localhost:8080`)
+- `OPRM_BACKEND_BASE_URL` (default `http://191.252.181.168:8000`)
 - `OPRM_WORKER_ID`
 - `OPRM_WORKER_VERSION`
 - `OPRM_WORKER_CLAIM_LEASE_SECONDS`

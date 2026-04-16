@@ -95,7 +95,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Configure SSH
         env:
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_CHAVE != '' && secrets.VPS_SSH_CHAVE || secrets.VPS_SSH_KEY }}
         run: |
           install -m 700 -d ~/.ssh
           printf '%s\n' "${VPS_SSH_KEY}" > ~/.ssh/id_ed25519

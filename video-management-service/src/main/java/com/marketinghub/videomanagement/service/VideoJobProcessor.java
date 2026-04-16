@@ -10,6 +10,7 @@ import com.marketinghub.videomanagement.client.payload.JobClaimPayload;
 import com.marketinghub.videomanagement.client.payload.JobCompletionPayload;
 import com.marketinghub.videomanagement.client.payload.JobExpirationPayload;
 import com.marketinghub.videomanagement.client.payload.JobFailurePayload;
+import com.marketinghub.videomanagement.client.payload.JobHeartbeatPayload;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import com.marketinghub.videomanagement.exception.BackendIntegrationException;
 import com.marketinghub.videomanagement.service.VideoAssetUploader.UploadedAssets;
@@ -19,7 +20,6 @@ import com.marketinghub.videomanagement.service.provider.VideoProviderException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import java.util.Map;
 
@@ -47,8 +47,11 @@ public class VideoJobProcessor {
     public void process(SalesVideoJob job) {
         log.info("Processando job {} para profile {}", job.id(), job.profileId());
         try {
-            backendClient.claimJob(job.id(), new JobClaimPayload(properties.getWorkerId(),
-                    "Claim automático pelo video-management-service"));
+            if (!claimJob(job)) {
+                return;
+            }
+            backendClient.reportHeartbeat(job.id(), new JobHeartbeatPayload(
+                    "Job em execução pelo worker " + properties.getWorkerId(), null));
             SalesVideoProfile profile = loadProfile(job);
             VideoProvider provider = providerRegistry.resolve(job)
                     .orElseThrow(() -> new VideoProviderException("Nenhum provider configurado para o job"));
@@ -69,29 +72,45 @@ public class VideoJobProcessor {
                     "Vídeo processado com sucesso",
                     metadataJson));
             log.info("Job {} concluído com vídeo {}", job.id(), uploadedAssets.videoAssetId());
-        } catch (VideoProviderException | BackendIntegrationException ex) {
+        } catch (VideoProviderException ex) {
             log.warn("Falha ao processar job {}: {}", job.id(), ex.getMessage());
             if (isExpiredFailure(ex)) {
                 backendClient.expireJob(job.id(), new JobExpirationPayload(
                         "Provider informou asset expirado",
                         ex.getMessage()));
             } else {
-                String failureCode = ex instanceof VideoProviderException providerException
-                        ? providerException.getCode()
-                        : "VIDEO_PROVIDER_ERROR";
+                String failureCode = ex.getCode();
                 backendClient.failJob(job.id(), new JobFailurePayload(
                         failureCode,
-                        ex.getMessage(),
+                        buildFailureDetail(ex),
                         SalesVideoStatus.VIDEO_FAILED,
                         ex.getMessage()));
             }
+        } catch (BackendIntegrationException ex) {
+            if (isDuplicateClaim(ex) || isNotFound(ex)) {
+                log.info("Job {} não será processado neste worker (status={}): {}",
+                        job.id(), ex.getStatusCode(), ex.getMessage());
+                return;
+            }
+            log.error("Falha de integração com backend ao processar job {}: {}", job.id(), ex.getMessage());
+            safeFailJob(job.id(), "BACKEND_INTEGRATION_ERROR", ex.getMessage(), "Falha ao comunicar com backend");
         } catch (Exception ex) {
             log.error("Erro inesperado ao processar job {}", job.id(), ex);
-            backendClient.failJob(job.id(), new JobFailurePayload(
-                    "VIDEO_MODULE_ERROR",
-                    ex.getMessage(),
-                    SalesVideoStatus.VIDEO_FAILED,
-                    "Falha inesperada ao processar job"));
+            safeFailJob(job.id(), "VIDEO_MODULE_ERROR", ex.getMessage(), "Falha inesperada ao processar job");
+        }
+    }
+
+    private boolean claimJob(SalesVideoJob job) {
+        try {
+            backendClient.claimJob(job.id(), new JobClaimPayload(properties.getWorkerId(),
+                    "Claim automático pelo video-management-service"));
+            return true;
+        } catch (BackendIntegrationException ex) {
+            if (isDuplicateClaim(ex) || isNotFound(ex)) {
+                log.info("Claim recusado para job {} (status={}): {}", job.id(), ex.getStatusCode(), ex.getMessage());
+                return false;
+            }
+            throw ex;
         }
     }
 
@@ -107,6 +126,31 @@ public class VideoJobProcessor {
             throw new VideoProviderException("Job não está vinculado a um profile");
         }
         return backendClient.fetchProfile(job.profileId());
+    }
+
+    private void safeFailJob(Long jobId,
+                             String code,
+                             String detail,
+                             String message) {
+        try {
+            backendClient.failJob(jobId, new JobFailurePayload(code, detail, SalesVideoStatus.VIDEO_FAILED, message));
+        } catch (Exception failEx) {
+            log.error("Falha ao registrar erro do job {} no backend: {}", jobId, failEx.getMessage());
+        }
+    }
+
+    private boolean isDuplicateClaim(BackendIntegrationException ex) {
+        return ex.getStatusCode() != null && ex.getStatusCode() == 409;
+    }
+
+    private boolean isNotFound(BackendIntegrationException ex) {
+        return ex.getStatusCode() != null && ex.getStatusCode() == 404;
+    }
+
+    private String buildFailureDetail(VideoProviderException ex) {
+        String reason = ex.getCode();
+        boolean retryable = "PROVIDER_TIMEOUT".equalsIgnoreCase(reason) || "PROVIDER_RATE_LIMIT".equalsIgnoreCase(reason);
+        return "retryable=%s;code=%s;message=%s".formatted(retryable, reason, ex.getMessage());
     }
 
     private String serializeMetadata(Map<String, Object> metadata) {

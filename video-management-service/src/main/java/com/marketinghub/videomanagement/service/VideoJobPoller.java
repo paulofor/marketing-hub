@@ -2,6 +2,7 @@ package com.marketinghub.videomanagement.service;
 
 import com.marketinghub.videomanagement.client.BackendVideoClient;
 import com.marketinghub.videomanagement.client.dto.SalesVideoJob;
+import com.marketinghub.videomanagement.client.dto.SalesVideoStatus;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 
 @Component
 public class VideoJobPoller {
@@ -37,8 +39,30 @@ public class VideoJobPoller {
                 log.info("Encontrados {} jobs pendentes", jobs.size());
                 jobs.forEach(dispatcher::dispatch);
             }
+            if (properties.getJobs().isOrphanRecoveryEnabled()) {
+                recoverOrphanJobs();
+            }
         } catch (Exception ex) {
             log.error("Falha ao executar poll de jobs", ex);
         }
+    }
+
+    private void recoverOrphanJobs() {
+        List<SalesVideoJob> processingJobs = backendClient.fetchJobsByStatus(
+                SalesVideoStatus.VIDEO_PROCESSING, properties.getJobs().getBatchSize());
+        if (processingJobs.isEmpty()) {
+            return;
+        }
+        long staleBeforeMillis = System.currentTimeMillis() - properties.getJobs().getOrphanThreshold().toMillis();
+        List<SalesVideoJob> orphanCandidates = processingJobs.stream()
+                .filter(Objects::nonNull)
+                .filter(job -> job.updatedAt() != null && job.updatedAt().toEpochMilli() <= staleBeforeMillis)
+                .toList();
+        if (orphanCandidates.isEmpty()) {
+            return;
+        }
+        log.warn("Recuperação automática encontrou {} jobs órfãos/candidatos (threshold={}s)",
+                orphanCandidates.size(), properties.getJobs().getOrphanThreshold().toSeconds());
+        orphanCandidates.forEach(dispatcher::dispatch);
     }
 }

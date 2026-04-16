@@ -88,6 +88,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SalesVideoJobDto'
+        '404':
+          description: Job não encontrado para claim
+        '409':
+          description: Job já está claimed por outro worker
 
   /internal/video/jobs/{jobId}/heartbeat:
     post:
@@ -393,6 +397,11 @@ components:
         failureDetail: { type: string }
         status: { $ref: '#/components/schemas/SalesVideoStatus' }
         message: { type: string }
+        retryable:
+          type: boolean
+          description: Sinaliza se a falha é elegível para retry técnico automático.
+        retryReason:
+          $ref: '#/components/schemas/SalesVideoRetryReason'
 
     JobExpirationRequest:
       type: object

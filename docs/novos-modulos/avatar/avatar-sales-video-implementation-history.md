@@ -13,12 +13,78 @@ Cada entrada descreve:
 ---
 
 ## Índice rápido
+- 2026-04-16 — Sprint V2 (robustez do ciclo assíncrono e recuperação de órfãos)
 - 2026-04-16 — Sprint V1 (contrato de integração e atualização de planejamento)
 - 2026-04-16 — Sprint V1 (implementação do adapter real e integração backend)
 
 ---
 
 ## Entradas
+
+## 2026-04-16 — Sprint V2 (robustez do ciclo assíncrono e recuperação de órfãos)
+
+**Status:** concluída com pendências
+
+### Resumo
+- A Sprint V2 fortaleceu o ciclo assíncrono com deduplicação de claim, retry técnico para integração backend e recuperação automática de jobs órfãos.
+- O `video-management-service` passou a tratar concorrência de workers como condição operacional prevista.
+- O contrato OpenAPI foi atualizado para deixar explícitos cenários de claim concorrente.
+
+### O que foi implementado
+- Tratamento seguro de `claim` duplicado (`409`) e job inexistente (`404`) no `VideoJobProcessor`.
+- Retry técnico para chamadas ao backend com tentativas e backoff configuráveis.
+- Recuperação de jobs órfãos (`VIDEO_PROCESSING` stale) no `VideoJobPoller`.
+- Heartbeat explícito no início do processamento.
+- Enriquecimento do modelo local de job para refletir campos de retry/tenant já existentes no contrato.
+
+### O que foi alterado
+- Arquivos:
+  - `video-management-service/src/main/java/com/marketinghub/videomanagement/exception/BackendIntegrationException.java`
+  - `video-management-service/src/main/java/com/marketinghub/videomanagement/config/VideoManagementProperties.java`
+  - `video-management-service/src/main/java/com/marketinghub/videomanagement/client/dto/SalesVideoJob.java`
+  - `video-management-service/src/main/java/com/marketinghub/videomanagement/client/BackendVideoClient.java`
+  - `video-management-service/src/main/java/com/marketinghub/videomanagement/service/VideoJobProcessor.java`
+  - `video-management-service/src/main/java/com/marketinghub/videomanagement/service/VideoJobPoller.java`
+  - `video-management-service/src/main/resources/application.yml`
+  - `video-management-service/src/test/java/com/marketinghub/videomanagement/service/VideoJobProcessorTest.java`
+  - `video-management-service/src/test/java/com/marketinghub/videomanagement/service/VideoAssetUploaderTest.java`
+  - `video-management-service/src/test/java/com/marketinghub/videomanagement/service/provider/StubVideoProviderTest.java`
+  - `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml`
+  - `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md`
+  - `docs/novos-modulos/avatar/avatar-sales-video-implementation-history.md`
+- Módulos:
+  - `video-management-service`
+  - documentação canônica do módulo Avatar Sales Video
+- Endpoints/contratos:
+  - `/internal/video/jobs` (uso adicional para status `VIDEO_PROCESSING`)
+  - `/internal/video/jobs/{jobId}/claim` (tratamento explícito de `404` e `409`)
+  - `/internal/video/jobs/{jobId}/heartbeat`
+  - `/internal/video/jobs/{jobId}/fail`
+
+### Contratos e artefatos afetados
+- `avatar.salesVideoRenderJob.v1` (campos de retry, tenant, progress e status de execução).
+- `avatar.salesVideoJobEvent.v1` (maior previsibilidade de heartbeat/progresso em cenários de recuperação).
+- `JobFailureRequest` atualizado com `retryable` e `retryReason` no Swagger canônico de integração.
+
+### Testes e validações executados
+- Teste unitário de claim duplicado no `VideoJobProcessorTest`.
+- Suíte de testes do `video-management-service` para validar regressão local.
+- Revisão de aderência da documentação do plano e do Swagger com o protocolo de histórico.
+
+### Limitações e pendências
+- Ainda sem validação E2E em staging dos cenários de órfão + concorrência com backend compartilhado.
+- Sem métricas e alertas para observar taxa de recuperação/retry em produção (Sprint V3).
+- Retry técnico atual é focado em falhas transitórias de integração, sem reabertura automática de novo job canônico no backend.
+
+### Próximo passo sugerido
+- Executar Sprint V3 com foco em observabilidade operacional (métricas, logs correlacionáveis, dashboards e alertas).
+
+### Handoff para a próxima etapa
+- Prioridade imediata: instrumentação de métricas para backlog, retries e orphans recoveries.
+- O que não deve ser refeito: deduplicação de claim e retry técnico transitório já implementados neste ciclo.
+- Riscos abertos: divergência de semântica de `updatedAt` entre ambientes pode afetar limiar de órfão.
+- Dependências externas: ambiente staging com carga concorrente e provider real habilitado.
+- Onde continuar: `video-management-service/src/main/java/com/marketinghub/videomanagement/service/VideoJobPoller.java` e `.../BackendVideoClient.java`.
 
 ## 2026-04-16 — Sprint V1 (contrato de integração e atualização de planejamento)
 

@@ -179,25 +179,40 @@ Fortalecer o comportamento do fluxo quando houver timeout, falha parcial, expira
 ## Fechamento da sprint — preencher pelo Codex
 
 ### Status
-- 
+- concluída com pendências (robustez operacional implementada no worker de vídeo; validação E2E em staging ainda pendente)
 
 ### O que foi implementado
-- 
+- proteção de claim duplicado no `video-management-service`: conflitos `409` e jobs ausentes `404` agora são tratados como skip seguro, sem falha indevida.
+- política de retry técnico para chamadas ao backend com tentativas configuráveis e backoff (`backendCallMaxAttempts` + `backendCallBackoff`).
+- recuperação de jobs órfãos via polling adicional de `VIDEO_PROCESSING` com limiar configurável (`orphanThreshold`) e redispatch automático.
+- heartbeat explícito no início da execução para reforçar sinal de liveness antes do ciclo de provider.
+- classificação de falhas de provider com sinalização de retryabilidade no detalhe de falha.
 
 ### Regras novas de timeout/heartbeat/retry
-- 
+- **Claim deduplicado**: `claim` que retornar `409` não derruba job nem gera `VIDEO_FAILED`; worker apenas registra e segue.
+- **Retry técnico de backend**: erros `429/5xx` (e falhas transitórias de rede) fazem retry automático com backoff; erros funcionais (`4xx` não transitórios) não fazem retry.
+- **Heartbeat mínimo obrigatório**: envio no início da execução + heartbeats por progresso.
+- **Recuperação de órfãos**: jobs `VIDEO_PROCESSING` sem atualização recente acima do `orphanThreshold` entram em fila de recuperação.
 
 ### Falhas tratadas
-- 
+- claim concorrente entre workers.
+- indisponibilidade transitória do backend durante operações de claim/progress/complete/fail.
+- job em processamento sem atualização recente (órfão operacional).
+- diferenciação de falhas expiradas (`PROVIDER_ASSET_EXPIRED`) vs falhas técnicas retryáveis (`PROVIDER_TIMEOUT`, `PROVIDER_RATE_LIMIT`).
 
 ### Limitações restantes
-- 
+- retry técnico ainda depende do backend para eventual criação/encadeamento de novo job (`retry_of_job_id`) quando política exigir novo registro explícito.
+- sem watchdog de execução máxima por job no worker (controle ainda majoritariamente orientado por timeout do provider).
+- sem métrica/alerta para taxa de recuperação de órfãos (escopo Sprint V3).
 
 ### Pendências carregadas para a Sprint V3
-- 
+- instrumentar métricas de retries, claims recusados e recuperações de órfãos.
+- criar dashboards e alertas mínimos para backlog `VIDEO_REQUESTED` e `VIDEO_PROCESSING`.
+- validar em staging os cenários de concorrência e recuperação automática contra o backend `191.252.181.168`.
 
 ### Evidências/testes executados
-- 
+- suíte de testes do `video-management-service` com cobertura de claim duplicado no `VideoJobProcessorTest`.
+- revisão de compatibilidade do contrato OpenAPI para `claim` com respostas `409`/`404`.
 
 ---
 
@@ -495,14 +510,14 @@ Iniciar a transição do módulo de “pipeline técnico funcional” para “pi
 ## Handoff para a próxima sprint
 
 ### 1. Resumo factual do estado atual
-- O que está concluído: contrato de integração backend ↔ módulo de vídeo formalizado e backlog da Sprint V1 consolidado.
-- O que está parcialmente concluído: validação do fluxo com provider real (dependente de credenciais, adapter final e testes em staging).
-- O que ainda não começou: robustez avançada de retry/timeout, observabilidade operacional e rollout controlado.
+- O que está concluído: Sprint V1 (adapter real inicial) + Sprint V2 (deduplicação de claim, retry técnico de backend e recuperação de órfãos).
+- O que está parcialmente concluído: validação E2E em staging do provider real com cenários de falha/expiração sob carga concorrente.
+- O que ainda não começou: observabilidade operacional estruturada (métricas, dashboards, alertas) e rollout controlado.
 
 ### 2. Pendências carregadas
-- Pendência 1: implementar política de timeout + heartbeat + detecção de job órfão no worker de vídeo.
-- Pendência 2: endurecer retry técnico sem duplicação silenciosa de processamento.
-- Pendência 3: validar cenários de expiração de asset com transição de estado previsível no backend.
+- Pendência 1: instrumentar métricas de `retry`, `claim_conflict` e `orphan_recovery`.
+- Pendência 2: configurar dashboards/alertas para latência total e acúmulo de backlog.
+- Pendência 3: executar bateria E2E em staging com cenários de sucesso/falha/expiração/concorrência.
 
 ### 3. Riscos abertos
 - Risco 1: divergência entre estado externo do provider e estado canônico interno (`SalesVideoStatus`).
@@ -512,7 +527,9 @@ Iniciar a transição do módulo de “pipeline técnico funcional” para “pi
 ### 4. Decisões tomadas nesta sprint
 - Decisão 1: manter backend como única fonte de verdade para estado e persistência do módulo.
 - Decisão 2: formalizar o contrato de integração em OpenAPI dentro do diretório canônico do módulo.
-- Decisão 3: carregar para a Sprint V2 toda regra de robustez operacional (claim/timeout/retry/expiração).
+- Decisão 3: tratar `claim` concorrente como condição esperada (skip seguro), sem marcar falha funcional no job.
+- Decisão 4: adotar retry técnico com backoff apenas para falhas transitórias (`429/5xx`).
+- Decisão 5: ativar recuperação automática de jobs órfãos por idade de `updatedAt` em `VIDEO_PROCESSING`.
 
 ### 5. Contratos/artefatos afetados
 - Endpoint: `/internal/video/jobs/*` e `/api/sales-videos/profiles/{profileId}`.
@@ -522,9 +539,9 @@ Iniciar a transição do módulo de “pipeline técnico funcional” para “pi
 - Flags: pendente para Sprint V6 (rollout por tenant/feature flag).
 
 ### 6. Instruções para o próximo ciclo do Codex
-- Prioridade imediata: Sprint V2 com foco em robustez do ciclo assíncrono e prevenção de jobs órfãos.
-- O que não deve ser refeito: contrato de endpoints já mapeado/documentado para integração backend ↔ módulo de vídeo.
-- Onde continuar: `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md` e `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml`.
+- Prioridade imediata: Sprint V3 com foco em observabilidade (métricas, logs correlacionáveis, dashboards e alertas).
+- O que não deve ser refeito: regras de claim deduplicado, retry técnico transitório e recuperação de órfãos implementadas na Sprint V2.
+- Onde continuar: `video-management-service/src/main/java/com/marketinghub/videomanagement/service/VideoJobPoller.java`, `.../BackendVideoClient.java` e documentação canônica de observabilidade do módulo.
 
 ---
 

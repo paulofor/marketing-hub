@@ -122,7 +122,7 @@ public class OprmJobOrchestrationService {
     @Transactional(readOnly = true)
     public List<OprmWorkspaceOccupationSummaryDto> listWorkspaceOccupations() {
         Map<String, OprmJob> latestJobByOccupation = new LinkedHashMap<>();
-        for (OprmJob job : repository.findTop500ByOrderByCreatedAtDesc()) {
+        for (OprmJob job : jobRepository.findTop500ByOrderByCreatedAtDesc()) {
             latestJobByOccupation.putIfAbsent(job.getOccupationSeedRef(), job);
         }
 

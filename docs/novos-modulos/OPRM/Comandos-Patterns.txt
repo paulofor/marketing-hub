@@ -117,3 +117,16 @@ Mantenha registros conforme : docs/novos-modulos/OPRM/protocolo-historico-implan
 Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v2.md 
 
 Leia para seguir e manter os canônicos de artefatos: docs/oprm_canonico_artefatos.md
+
+
+----------------------------------------------------------------------------------------------------------------------------------------
+
+(Erro com imagem da tela)
+
+Especificação de Telas :docs/novos-modulos/OPRM/oprm_especificacao_telas_menu_com_sprints.md
+
+Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v2.md 
+
+Leia para seguir e manter os canônicos de artefatos: docs/oprm_canonico_artefatos.md
+
+Mantenha registros conforme : docs/novos-modulos/OPRM/protocolo-historico-implantacao-codex.md

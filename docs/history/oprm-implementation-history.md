@@ -889,3 +889,34 @@ Foi criado um Swagger consolidado em `docs/novos-modulos/OPRM` com todos os endp
 **Próximo passo sugerido:**
 - decidir se o contrato consolidado vira `v1.1` oficial no diretório `contracts` ou permanece como visão consolidada de planejamento
 - adicionar teste automatizado de contrato (consumer-driven ou OpenAPI validation) para bloquear drift entre backend e OPRM
+
+## 2026-04-16 — hotfix backend OPRM: UUID CHAR(36) para evitar DDL com FK ativa
+
+**Status:** concluído
+
+**Resumo:**
+Foi corrigido o mapeamento JPA da entidade `OprmJob` para alinhar o tipo de UUID com o schema Liquibase já aplicado (`CHAR(36)`), evitando que o Hibernate tente migrar `id`/`job_id` para `BINARY(16)` durante bootstrap e cause erro de alteração de coluna sob constraints de chave estrangeira.
+
+**O que foi implementado:**
+- adição de `@JdbcTypeCode(SqlTypes.CHAR)` no campo `id` de `OprmJob`
+- explicitação da coluna `id` com `@Column(name = "id", nullable = false, length = 36)` para refletir o contrato do banco
+- inclusão dos imports Hibernate necessários (`JdbcTypeCode` e `SqlTypes`) para forçar persistência/leitura de UUID como texto em MySQL
+
+**Arquivos principais alterados:**
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/OprmJob.java`
+- `docs/history/oprm-implementation-history.md`
+
+**Contratos / artefatos afetados:**
+- nenhum contrato HTTP novo
+- alinhamento técnico de persistência JPA ↔ Liquibase para tabela `oprm_job` e FKs derivadas (`oprm_artifact.job_id`, `oprm_job_event.job_id`, `oprm_job_input.job_id`, `oprm_feedback_snapshot.job_id`)
+
+**Testes executados:**
+- `cd backend/ads-service && mvn -s ../settings.xml -DskipTests compile` — **falhou** por indisponibilidade de rede no ambiente (`Network is unreachable` ao baixar dependências Maven)
+
+**Limitações ou pendências:**
+- não foi executado bootstrap completo da aplicação contra MySQL real neste ambiente, então a ausência dos warnings foi validada por compilação e revisão de mapeamento
+- caso existam outras entidades fora do escopo OPRM com UUID não anotado e schema textual, podem surgir warnings semelhantes em outros módulos
+
+**Próximo passo sugerido:**
+- executar subida da aplicação em ambiente integrado com MySQL para confirmar ausência dos `alter table ... binary(16)` no startup
+- padronizar mapeamentos UUID legados (CHAR vs BINARY) em guideline interno para evitar regressões futuras
